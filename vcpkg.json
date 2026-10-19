@@ -1,0 +1,16 @@
+{
+  "name": "dwe",
+  "version": "0.1.0",
+  "builtin-baseline": "664933b8d385dfc01f4e0cdff4c7c74e71f6a740",
+  "dependencies": [
+    { "name": "sdl3", "features": ["vulkan"] },
+    "vulkan",
+    { "name": "vulkan-loader", "features": ["xcb", "xlib", "wayland"] },
+    "vk-bootstrap",
+    "vulkan-validationlayers",
+    "lua",
+    "sol2",
+    { "name": "imgui", "features": ["sdl3-binding", "vulkan-binding", "docking-experimental"] },
+    "doctest"
+  ]
+}

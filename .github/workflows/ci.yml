@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the development image
+        run: scripts/dev.sh image
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          restore-keys: vcpkg-
+
+      - name: Check the format
+        run: scripts/dev.sh format --check
+
+      - name: Configure
+        env:
+          PRESET: ci
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+        run: scripts/dev.sh configure
+
+      - name: Build
+        env:
+          PRESET: ci
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+        run: scripts/dev.sh build
+
+      - name: Test
+        env:
+          PRESET: ci
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+        run: scripts/dev.sh test

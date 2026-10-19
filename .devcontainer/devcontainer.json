@@ -1,0 +1,11 @@
+{
+  "name": "dwe",
+  "build": { "dockerfile": "Dockerfile" },
+  "mounts": ["source=dwe-vcpkg-cache,target=/cache/vcpkg,type=volume"],
+  "remoteUser": "ubuntu",
+  "customizations": {
+    "vscode": {
+      "extensions": ["llvm-vs-code-extensions.vscode-clangd", "ms-vscode.cmake-tools"]
+    }
+  }
+}
