@@ -13,6 +13,8 @@
 #include <limits>
 #include <map>
 #include <numbers>
+#include <optional>
+#include <ranges>
 #include <set>
 #include <span>
 #include <string>
@@ -28,19 +30,6 @@ using Quat = std::array<double, 4>; // x, y, z, w, as glTF stores it
 constexpr double Fixed12 = 4096.0;
 constexpr Quat IdentityRotation{0.0, 0.0, 0.0, 1.0};
 
-// Texture page and CLUT fields of a textured primitive.
-constexpr unsigned TsbPageXMask = 0x0F;
-constexpr unsigned TsbPageYShift = 4;
-constexpr unsigned TsbBlendingShift = 5;
-constexpr unsigned TsbDepthShift = 7;
-constexpr unsigned TwoBits = 3;
-constexpr int PageWidth = 64;
-constexpr int PageHeight = 256;
-constexpr unsigned CbaXMask = 0x3F;
-constexpr unsigned CbaYShift = 6;
-constexpr unsigned CbaYMask = 0x1FF;
-constexpr int ClutXStep = 16;
-constexpr unsigned DirectColorDepth = 2;
 // A texture-modulating colour of 128 leaves the texel as it is.
 constexpr double NeutralModulation = 128.0;
 constexpr double FullColor = 255.0;
@@ -130,7 +119,8 @@ BonePose identityPose() {
 // What makes two primitives need different glTF materials.
 struct MaterialKey {
     bool textured = false;
-    int paletteRow = -1; // -1: no image
+    int texture = -1; // -1: no texture given
+    int palette = -1; // -1: no image
     bool semiTransparent = false;
     std::uint8_t blending = 0; // the TSB's semi-transparency mode, for textured primitives
     bool doubleSided = false;
@@ -153,44 +143,56 @@ struct Group {
 };
 
 struct TextureMapping {
-    int paletteRow = -1;
+    int texture = -1;
+    int palette = -1;
     std::array<std::array<float, 2>, 4> uvs{};
 };
 
-core::Result<TextureMapping> mapTexture(const TmdPrimitive& primitive, const ModelTexture& texture) {
-    const unsigned depth = (primitive.tsb >> TsbDepthShift) & TwoBits;
-    if (depth > DirectColorDepth) {
+// Finds the texture and palette a textured primitive reads, and its UVs on that texture.
+core::Result<TextureMapping> mapTexture(const TmdPrimitive& primitive, std::span<const ModelTexture> textures) {
+    const std::uint8_t depth = primitive.depth();
+    if (depth > TmdDirectColorDepth) {
         return core::fail(
             std::format("primitive has texture page {:#06x} with a reserved colour depth", primitive.tsb));
     }
+    // Texel coordinates across VRAM in the primitive's depth, so a page and a texture can be compared.
     const int texelsPerHalfword = 4 >> depth;
-    const int pageX = static_cast<int>(primitive.tsb & TsbPageXMask) * PageWidth;
-    const int pageY = static_cast<int>((primitive.tsb >> TsbPageYShift) & 1U) * PageHeight;
-    const int offsetX = (pageX - texture.pixelX) * texelsPerHalfword;
-    const int offsetY = pageY - texture.pixelY;
+    const int pageX = primitive.pageX() * texelsPerHalfword;
+    const int pageY = primitive.pageY();
+    const auto corners = std::span(primitive.uvs).first(primitive.vertexCount);
+    const auto [minU, maxU] = std::ranges::minmax(corners | std::views::transform(&TmdUv::u));
+    const auto [minV, maxV] = std::ranges::minmax(corners | std::views::transform(&TmdUv::v));
 
-    TextureMapping mapping;
-    for (std::size_t i = 0; i < primitive.vertexCount; ++i) {
-        mapping.uvs[i] = {static_cast<float>(primitive.uvs[i].u + offsetX) / static_cast<float>(texture.width),
-                          static_cast<float>(primitive.uvs[i].v + offsetY) / static_cast<float>(texture.height)};
-    }
-    if (texture.pngPerPaletteRow.empty()) {
+    for (std::size_t i = 0; i < textures.size(); ++i) {
+        const ModelTexture& texture = textures[i];
+        const int left = texture.pixelX * texelsPerHalfword;
+        const int top = texture.pixelY;
+        if (texture.depth != depth || pageX + minU < left || pageX + maxU > left + texture.width ||
+            pageY + minV < top || pageY + maxV > top + texture.height) {
+            continue;
+        }
+        int palette = -1;
+        if (!texture.palettes.empty()) {
+            const auto found = std::ranges::find_if(texture.palettes, [&](const TexturePalette& candidate) {
+                return depth == TmdDirectColorDepth ||
+                       (candidate.clutX == primitive.clutX() && candidate.clutY == primitive.clutY());
+            });
+            if (found == texture.palettes.end()) {
+                continue;
+            }
+            palette = static_cast<int>(found - texture.palettes.begin());
+        }
+        TextureMapping mapping{.texture = static_cast<int>(i), .palette = palette, .uvs = {}};
+        for (std::size_t c = 0; c < corners.size(); ++c) {
+            mapping.uvs[c] = {static_cast<float>(pageX + corners[c].u - left) / static_cast<float>(texture.width),
+                              static_cast<float>(pageY + corners[c].v - top) / static_cast<float>(texture.height)};
+        }
         return mapping;
     }
-    if (depth == DirectColorDepth) {
-        mapping.paletteRow = 0;
-        return mapping;
-    }
-    const int clutX = static_cast<int>(primitive.cba & CbaXMask) * ClutXStep;
-    const int clutY = static_cast<int>((primitive.cba >> CbaYShift) & CbaYMask);
-    const int row = clutY - texture.clutY;
-    if (std::cmp_not_equal(clutX, texture.clutX) || row < 0 ||
-        std::cmp_greater_equal(row, texture.pngPerPaletteRow.size())) {
-        return core::fail(std::format("primitive uses the palette at ({}, {}); the texture has {} rows at ({}, {})",
-                                      clutX, clutY, texture.pngPerPaletteRow.size(), texture.clutX, texture.clutY));
-    }
-    mapping.paletteRow = row;
-    return mapping;
+    return core::fail(std::format("no texture holds texels u {}-{} v {}-{} of the {}-bit page at ({}, {}) with the "
+                                  "palette at ({}, {})",
+                                  minU, maxU, minV, maxV, 4 << depth, primitive.pageX(), primitive.pageY(),
+                                  primitive.clutX(), primitive.clutY()));
 }
 
 // Returns the vector scaled to length 1, or fallback if it has no length.
@@ -205,25 +207,26 @@ Vec3 normalized(const Vec3& v, const Vec3& fallback) {
 // Adds a primitive's corners to its group. The console draws clockwise faces as the front, glTF counter-clockwise
 // ones, so the triangles are written in reverse order; a quad is the triangles (0, 1, 2) and (1, 3, 2).
 core::Result<void> addPrimitive(const TmdObject& object, const TmdPrimitive& primitive, const Rigid& bind,
-                                std::size_t bone, const std::optional<ModelTexture>& texture,
+                                std::size_t bone, std::span<const ModelTexture> textures,
                                 std::map<MaterialKey, Group>& groups) {
     MaterialKey key{.textured = primitive.isTextured(),
-                    .paletteRow = -1,
+                    .texture = -1,
+                    .palette = -1,
                     .semiTransparent = primitive.isSemiTransparent(),
                     .blending = 0,
                     .doubleSided = primitive.isDoubleSided(),
                     .lit = primitive.isLit()};
     TextureMapping mapping;
     if (key.textured) {
-        key.blending = key.semiTransparent ? static_cast<std::uint8_t>((primitive.tsb >> TsbBlendingShift) & TwoBits)
-                                           : std::uint8_t{0};
-        if (texture) {
-            auto mapped = mapTexture(primitive, *texture);
+        key.blending = key.semiTransparent ? primitive.blending() : std::uint8_t{0};
+        if (!textures.empty()) {
+            auto mapped = mapTexture(primitive, textures);
             if (!mapped) {
                 return std::unexpected(mapped.error());
             }
             mapping = *mapped;
-            key.paletteRow = mapping.paletteRow;
+            key.texture = mapping.texture;
+            key.palette = mapping.palette;
         }
     }
 
@@ -250,7 +253,7 @@ core::Result<void> addPrimitive(const TmdObject& object, const TmdPrimitive& pri
                 group.normals.push_back(static_cast<float>(value));
             }
         }
-        if (key.textured && texture) {
+        if (key.texture >= 0) {
             group.uvs.push_back(mapping.uvs[i][0]);
             group.uvs.push_back(mapping.uvs[i][1]);
         }
@@ -381,14 +384,26 @@ struct Document {
     std::vector<PrimitiveInfo> primitives;
     std::vector<MaterialKey> materials;
     std::vector<std::optional<std::size_t>> materialImages;
+    std::vector<std::string> materialExtras;
     std::vector<std::size_t> imageViews;
     std::vector<NodeInfo> nodes;
     std::size_t inverseBindMatrices = 0;
     std::vector<AnimationInfo> animations;
 };
 
-std::string materialExtras(const MaterialKey& key) {
-    return std::format(R"({{"paletteRow":{},"blending":{}}})", key.paletteRow, key.blending);
+// Where a material's texels and palette sit in VRAM, so the original's addressing can be traced back.
+std::string materialExtras(const MaterialKey& key, std::span<const ModelTexture> textures) {
+    if (key.texture < 0) {
+        return std::format(R"({{"blending":{}}})", key.blending);
+    }
+    const ModelTexture& texture = textures[static_cast<std::size_t>(key.texture)];
+    std::string clut = "null";
+    if (key.palette >= 0) {
+        const TexturePalette& palette = texture.palettes[static_cast<std::size_t>(key.palette)];
+        clut = std::format("[{},{}]", palette.clutX, palette.clutY);
+    }
+    return std::format(R"({{"image":[{},{}],"depth":{},"clut":{},"blending":{}}})", texture.pixelX, texture.pixelY,
+                       texture.depth, clut, key.blending);
 }
 
 std::string animationExtras(const Animation& animation) {
@@ -564,7 +579,7 @@ core::Result<std::vector<std::byte>> writeGlb(Document& document, std::size_t bo
         material.alpha_cutoff = 0.5F;
         material.double_sided = key.doubleSided ? 1 : 0;
         material.unlit = key.lit ? 0 : 1;
-        material.extras.data = text(materialExtras(key));
+        material.extras.data = text(document.materialExtras[i]);
     }
 
     std::vector<std::vector<cgltf_attribute>> attributes(document.primitives.size());
@@ -730,7 +745,7 @@ core::Result<std::vector<std::byte>> writeGlb(Document& document, std::size_t bo
 
 core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd, std::span<const SkeletonBone> skeleton,
                                                    std::span<const Animation> animations,
-                                                   const std::optional<ModelTexture>& texture) {
+                                                   std::span<const ModelTexture> textures) {
     if (auto valid = validateSkeleton(skeleton, tmd.objects.size()); !valid) {
         return std::unexpected(valid.error());
     }
@@ -743,8 +758,9 @@ core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd, std::span<con
     if (skeleton.size() > MaxAnimationBones) {
         return core::fail(std::format("a skeleton of {} bones is not supported", skeleton.size()));
     }
-    if (texture && (texture->width == 0 || texture->height == 0)) {
-        return core::fail("the texture has no size");
+    if (std::ranges::any_of(textures,
+                            [](const ModelTexture& texture) { return texture.width == 0 || texture.height == 0; })) {
+        return core::fail("a texture has no size");
     }
 
     // The default pose is the first animation's first tick, as the original shows a model before it animates. The
@@ -786,33 +802,32 @@ core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd, std::span<con
         }
         const TmdObject& object = tmd.objects[static_cast<std::size_t>(skeleton[bone].objIndex)];
         for (const TmdPrimitive& primitive : object.primitives) {
-            if (auto added = addPrimitive(object, primitive, bind[bone], bone, texture, groups); !added) {
+            if (auto added = addPrimitive(object, primitive, bind[bone], bone, textures, groups); !added) {
                 return std::unexpected(added.error());
             }
         }
     }
 
-    // One image per palette row in use, in row order.
-    std::map<int, std::size_t> imageOfRow;
+    // One image per texture and palette in use, in that order. Palettes are only set when a texture has them.
+    std::map<std::pair<int, int>, std::size_t> imageOf;
     for (const auto& [key, group] : groups) {
-        if (key.paletteRow >= 0) {
-            imageOfRow.emplace(key.paletteRow, 0);
+        if (key.palette >= 0) {
+            imageOf.emplace(std::pair{key.texture, key.palette}, 0);
         }
     }
-    // Rows are only set when there is a texture (mapTexture), so the map is empty without one.
-    if (texture.has_value()) {
-        for (auto& [row, image] : imageOfRow) {
-            image = document.imageViews.size();
-            document.imageViews.push_back(document.addView(texture->pngPerPaletteRow[static_cast<std::size_t>(row)]));
-        }
+    for (auto& [where, image] : imageOf) {
+        image = document.imageViews.size();
+        const ModelTexture& texture = textures[static_cast<std::size_t>(where.first)];
+        document.imageViews.push_back(document.addView(texture.palettes[static_cast<std::size_t>(where.second)].png));
     }
     for (const auto& [key, group] : groups) {
         std::optional<std::size_t> image;
-        if (key.paletteRow >= 0) {
-            image = imageOfRow.find(key.paletteRow)->second;
+        if (key.palette >= 0) {
+            image = imageOf.find(std::pair{key.texture, key.palette})->second;
         }
         document.materials.push_back(key);
         document.materialImages.push_back(image);
+        document.materialExtras.push_back(materialExtras(key, textures));
 
         PrimitiveInfo primitive{.attributes = {}, .indices = 0, .material = document.materials.size() - 1};
         primitive.attributes.push_back(

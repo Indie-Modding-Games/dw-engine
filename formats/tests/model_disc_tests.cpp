@@ -9,10 +9,12 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -98,14 +100,11 @@ TEST_CASE("a model of the user's disc is read and every animation plays") {
 
     // The textures of these models: a 4-bit TIM at (320, 0) with its palettes from (0, 488), one row per palette.
     const std::array<std::byte, 1> placeholder{};
-    const ModelTexture texture{.pixelX = 320,
-                               .pixelY = 0,
-                               .clutX = 0,
-                               .clutY = 488,
-                               .width = 256,
-                               .height = 128,
-                               .pngPerPaletteRow = std::vector<std::span<const std::byte>>(16, placeholder)};
-    const auto glb = writeModelGlb(mmd->tmd, skeleton, animations, texture);
+    ModelTexture texture{.pixelX = 320, .pixelY = 0, .width = 256, .height = 128, .depth = 0, .palettes = {}};
+    for (std::uint16_t row = 0; row < 16; ++row) {
+        texture.palettes.push_back({.clutX = 0, .clutY = static_cast<std::uint16_t>(488 + row), .png = placeholder});
+    }
+    const auto glb = writeModelGlb(mmd->tmd, skeleton, animations, std::span(&texture, 1));
     REQUIRE_MESSAGE(glb.has_value(), glb.error().message);
 
     const cgltf_options options{};

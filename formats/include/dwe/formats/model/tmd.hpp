@@ -61,7 +61,21 @@ struct TmdPrimitive {
     [[nodiscard]] bool isSemiTransparent() const { return (mode & TmdModeSemiTransparent) != 0; }
     [[nodiscard]] bool isLit() const { return (flag & TmdFlagNoLight) == 0; }
     [[nodiscard]] bool isDoubleSided() const { return (flag & TmdFlagDoubleSided) != 0; }
+
+    // The texture page's corner in VRAM: x in halfwords, y in rows.
+    [[nodiscard]] std::uint16_t pageX() const { return static_cast<std::uint16_t>((tsb & 0x0FU) * 64U); }
+    [[nodiscard]] std::uint16_t pageY() const { return static_cast<std::uint16_t>(((tsb >> 4U) & 1U) * 256U); }
+    // The semi-transparency mode of the page (ABR).
+    [[nodiscard]] std::uint8_t blending() const { return static_cast<std::uint8_t>((tsb >> 5U) & 3U); }
+    // The colour depth of the page: 0 = 4-bit, 1 = 8-bit, 2 = 16-bit, 3 = reserved.
+    [[nodiscard]] std::uint8_t depth() const { return static_cast<std::uint8_t>((tsb >> 7U) & 3U); }
+    // The palette's position in VRAM: x in halfwords, y in rows.
+    [[nodiscard]] std::uint16_t clutX() const { return static_cast<std::uint16_t>((cba & 0x3FU) * 16U); }
+    [[nodiscard]] std::uint16_t clutY() const { return static_cast<std::uint16_t>((cba >> 6U) & 0x1FFU); }
 };
+
+// The colour depth of 16-bit texture pages, which read colours instead of palette indices.
+inline constexpr std::uint8_t TmdDirectColorDepth = 2;
 
 struct TmdObject {
     std::vector<TmdVector> vertices;

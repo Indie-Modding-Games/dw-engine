@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -27,14 +28,15 @@ const std::vector<SkeletonBone> sampleSkeleton{{.objIndex = -1, .parentIndex = -
 constexpr std::array<std::byte, 4> FirstRowImage{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}};
 constexpr std::array<std::byte, 3> SecondRowImage{std::byte{5}, std::byte{6}, std::byte{7}};
 
-ModelTexture sampleTexture() {
-    return {.pixelX = 320,
-            .pixelY = 0,
-            .clutX = 0,
-            .clutY = 488,
-            .width = 256,
-            .height = 128,
-            .pngPerPaletteRow = {FirstRowImage, SecondRowImage}};
+// A 4-bit texture at (320, 0) with two palettes, as the model's textured primitives expect.
+std::vector<ModelTexture> sampleTexture() {
+    return {{.pixelX = 320,
+             .pixelY = 0,
+             .width = 256,
+             .height = 128,
+             .depth = 0,
+             .palettes = {{.clutX = 0, .clutY = 488, .png = FirstRowImage},
+                          {.clutX = 0, .clutY = 489, .png = SecondRowImage}}}};
 }
 
 std::vector<Animation> sampleAnimations() {
@@ -147,7 +149,7 @@ TEST_CASE("a model is written as a GLB that reads back with its nodes, mesh, ski
 TEST_CASE("without animations the model rests at the bind pose, turned to Y up") {
     const auto tmd = readTmd(buildSampleTmd());
     REQUIRE(tmd.has_value());
-    const auto glb = writeModelGlb(*tmd, sampleSkeleton, {}, std::nullopt);
+    const auto glb = writeModelGlb(*tmd, sampleSkeleton, {}, {});
     REQUIRE(glb.has_value());
     const auto parsed = parse(*glb);
     const cgltf_data& data = *parsed;
@@ -188,20 +190,80 @@ TEST_CASE("a model that does not fit its skeleton, animations or texture is not 
 
     auto badSkeleton = sampleSkeleton;
     badSkeleton[3].objIndex = 2;
-    CHECK_FALSE(writeModelGlb(*tmd, badSkeleton, {}, std::nullopt).has_value());
+    CHECK_FALSE(writeModelGlb(*tmd, badSkeleton, {}, {}).has_value());
 
     const std::vector<SkeletonBone> shorter(sampleSkeleton.begin(), sampleSkeleton.end() - 1);
-    CHECK_FALSE(writeModelGlb(*tmd, shorter, animations, std::nullopt).has_value());
+    CHECK_FALSE(writeModelGlb(*tmd, shorter, animations, {}).has_value());
 
-    auto oneRow = sampleTexture();
-    oneRow.pngPerPaletteRow.pop_back();
-    CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, oneRow).has_value());
+    auto onePalette = sampleTexture();
+    onePalette[0].palettes.pop_back();
+    CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, onePalette).has_value());
 
     auto otherClut = sampleTexture();
-    otherClut.clutX = 16;
+    for (auto& palette : otherClut[0].palettes) {
+        palette.clutX = 16;
+    }
     CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, otherClut).has_value());
 
+    auto narrower = sampleTexture();
+    narrower[0].width = 128;
+    CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, narrower).has_value());
+
+    auto otherDepth = sampleTexture();
+    otherDepth[0].depth = 1;
+    CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, otherDepth).has_value());
+
     auto noSize = sampleTexture();
-    noSize.width = 0;
+    noSize[0].width = 0;
     CHECK_FALSE(writeModelGlb(*tmd, sampleSkeleton, {}, noSize).has_value());
+}
+
+TEST_CASE("a primitive takes the first texture that holds its texels and its palette") {
+    const auto tmd = readTmd(buildSampleTmd());
+    REQUIRE(tmd.has_value());
+    // An 8-bit texture over the same texels, a texture without the second palette, a texture with only the second
+    // palette, and the whole page without palettes, which only gives UVs.
+    const std::vector<ModelTexture> textures{
+        {.pixelX = 320,
+         .pixelY = 0,
+         .width = 128,
+         .height = 128,
+         .depth = 1,
+         .palettes = {{.clutX = 0, .clutY = 488, .png = SecondRowImage}}},
+        {.pixelX = 320,
+         .pixelY = 0,
+         .width = 256,
+         .height = 128,
+         .depth = 0,
+         .palettes = {{.clutX = 0, .clutY = 488, .png = FirstRowImage}}},
+        {.pixelX = 320,
+         .pixelY = 0,
+         .width = 256,
+         .height = 128,
+         .depth = 0,
+         .palettes = {{.clutX = 0, .clutY = 489, .png = SecondRowImage}}},
+        {.pixelX = 320, .pixelY = 0, .width = 256, .height = 256, .depth = 0, .palettes = {}}};
+    const auto glb = writeModelGlb(*tmd, sampleSkeleton, {}, textures);
+    REQUIRE(glb.has_value());
+    const auto parsed = parse(*glb);
+    const cgltf_data& data = *parsed;
+    CHECK(data.images_count == 2);
+    std::vector<std::string_view> extras;
+    for (std::size_t i = 0; i < data.materials_count; ++i) {
+        REQUIRE(data.materials[i].extras.data != nullptr);
+        extras.emplace_back(data.materials[i].extras.data);
+    }
+    CHECK(std::ranges::contains(extras, R"({"image":[320,0],"depth":0,"clut":[0,488],"blending":0})"));
+    CHECK(std::ranges::contains(extras, R"({"image":[320,0],"depth":0,"clut":[0,489],"blending":0})"));
+
+    // Without the textures that have palettes, the page gives UVs but no image.
+    const auto uvsOnly = writeModelGlb(*tmd, sampleSkeleton, {}, std::span(textures).last(1));
+    REQUIRE(uvsOnly.has_value());
+    const auto reread = parse(*uvsOnly);
+    CHECK(reread->images_count == 0);
+    bool hasUvs = false;
+    for (std::size_t i = 0; i < reread->meshes[0].primitives_count; ++i) {
+        hasUvs = hasUvs || attribute(reread->meshes[0].primitives[i], cgltf_attribute_type_texcoord) != nullptr;
+    }
+    CHECK(hasUvs);
 }

@@ -79,8 +79,8 @@ La textura no está en el MMD: sale de `CHDAT\ALLTIM.TIM`, un TIM de 4 bits por 
 ([formatos](../architecture/formats.md#el-disco)). El original la sube a otro sitio de la VRAM según el hueco
 (jugador, compañero o NPC) y reescribe la página y la paleta de cada primitiva al cargarla
 (`graphics.c: updateTMDTextureData`), pero los ficheros ya apuntan a la posición propia del TIM: página 5, que es su
-`(320, 0)`, y paletas desde `(0, 488)`. Por eso el extractor no tiene que corregir nada: las `u v` son coordenadas del
-TIM y la fila de paleta es `y de CBA - 488`.
+`(320, 0)`, y paletas desde `(0, 488)`. Por eso el extractor no tiene que corregir nada: sube el TIM a su sitio y
+cada primitiva encuentra sus texels y su paleta en él (ver [glTF](#texturas)).
 
 ## Esqueletos
 
@@ -180,15 +180,37 @@ La misma entrada da siempre los mismos bytes.
 - **Primitivas:** una por material. Atributos: `POSITION`, `NORMAL` (si tiene luz), `TEXCOORD_0` (si tiene textura y
   se da la textura), `COLOR_0` (si no tiene textura o no tiene luz; con textura, 128 = 1.0 porque modula el texel) y
   los de la piel.
-- **Materiales:** por fila de paleta, semitransparencia, dos caras y luz. Sin luz usa `KHR_materials_unlit`. Uno
+- **Materiales:** por textura y paleta, semitransparencia, dos caras y luz. Sin luz usa `KHR_materials_unlit`. Uno
   semitransparente usa `BLEND` y guarda el modo de la consola en `extras.blending` (`BLEND` solo se le parece). Si no,
   con textura usa `MASK`, para recortar los texels que la consola no dibuja (los que el PNG trae con alfa 0).
-- **Textura:** el escritor recibe dónde está el TIM en VRAM y un PNG por fila de paleta, y mete en el GLB solo las filas
-  que se usan, con filtro `NEAREST`. Las `u v` se dividen entre el tamaño del TIM.
+- **Texturas:** ver [abajo](#texturas).
 - **Animaciones:** una por animación (`anim_NN`, con NN el id), con un fotograma por tick, interpolación lineal,
   rotación en cuaterniones y traslación del hueso 0 = movimiento raíz. Un canal se omite si el hueso no se mueve de la
   pose del nodo en toda la animación. En `extras`: id, `frameCount`, `hasScale`, `ticksPerSecond`, `tickCount`,
   `endsInLoop`, los bucles, los movimientos de textura y los sonidos (todos con su tick).
+
+### Texturas
+
+La consola no sabe de ficheros de textura: cada primitiva con textura dice dónde lee en la VRAM. `TSB` da la página
+(x = `(tsb & 0xF) * 64` halfwords, y = `((tsb >> 4) & 1) * 256` filas) y la profundidad (`(tsb >> 7) & 3`: 0 = 4 bits,
+1 = 8 bits, 2 = 16 bits), las `u v` son texels dentro de la página, y `CBA` da la paleta (x = `(cba & 0x3F) * 16`,
+y = `(cba >> 6) & 0x1FF`). `TmdPrimitive` tiene esos campos ya calculados (`pageX`, `pageY`, `depth`, `clutX`,
+`clutY`, `blending`).
+
+`writeModelGlb` recibe una lista de texturas (`ModelTexture`), cada una con su rectángulo en VRAM (en halfwords x,
+filas y), su profundidad, su ancho y alto en texels, y un PNG por paleta (`TexturePalette`, con su posición en VRAM).
+Una textura sin paletas no tiene imagen: sirve para dar a una primitiva las `u v` de su página sin decir qué se ve.
+
+- Cada primitiva con textura toma la **primera** textura de su profundidad que contenga todos sus texels (las `u v` del
+  borde lejano pueden quedar una más allá del último) y, si tiene paletas, la que esté en su `CBA`. Quien llama pone
+  primero lo que se subió más tarde, porque eso es lo que tapa a lo anterior en la VRAM.
+- Si ninguna textura le sirve, la escritura falla con el motivo. El extractor entonces escribe el modelo sin texturas
+  y lo apunta en `unknowns`.
+- Las `u v` se pasan a coordenadas de la textura elegida: se dividen entre su ancho y su alto.
+- Solo entran en el GLB las combinaciones textura y paleta que alguna primitiva usa, con filtro `NEAREST`.
+- Cada material lleva en `extras` dónde lee en la VRAM: `{"image": [x, y], "depth": d, "clut": [x, y], "blending": b}`,
+  con `image` = esquina de su textura y `clut` = su paleta. `clut` es `null` en las de 16 bits y en las texturas sin
+  imagen, cuya esquina es la de la página. Un material sin textura solo lleva `{"blending": b}`.
 
 ## Pruebas
 
