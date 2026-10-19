@@ -1,0 +1,129 @@
+#include <dwe/input/input_state.hpp>
+#include <dwe/input/keys.hpp>
+
+#include <doctest/doctest.h>
+
+using namespace dwe::input;
+using namespace dwe::platform;
+
+namespace {
+
+constexpr GamepadId Pad = 7;
+
+InputState withGamepad() {
+    InputState input{defaultActionMap()};
+    input.handle(GamepadConnected{Pad, GamepadFamily::PlayStation, "DualSense"});
+    return input;
+}
+
+} // namespace
+
+TEST_CASE("a key drives every action bound to it") {
+    InputState input{defaultActionMap()};
+    input.handle(KeyChanged{keys::Return, true, false});
+    CHECK(input.isDown("confirm"));
+    CHECK(input.wasPressed("confirm"));
+    CHECK_FALSE(input.isDown("cancel"));
+    CHECK(input.lastDevice() == DeviceKind::KeyboardMouse);
+}
+
+TEST_CASE("a press is reported for one tick, even if released before the tick") {
+    InputState input{defaultActionMap()};
+    input.handle(KeyChanged{keys::Space, true, false});
+    input.handle(KeyChanged{keys::Space, false, false});
+    CHECK_FALSE(input.isDown("confirm"));
+    CHECK(input.wasPressed("confirm"));
+    input.endTick();
+    CHECK_FALSE(input.wasPressed("confirm"));
+}
+
+TEST_CASE("key repeats are not new presses") {
+    InputState input{defaultActionMap()};
+    input.handle(KeyChanged{keys::Return, true, false});
+    input.endTick();
+    input.handle(KeyChanged{keys::Return, true, true});
+    CHECK_FALSE(input.wasPressed("confirm"));
+    CHECK(input.isDown("confirm"));
+}
+
+TEST_CASE("gamepad buttons drive actions and switch the prompts to that gamepad") {
+    InputState input = withGamepad();
+    input.handle(GamepadButtonChanged{Pad, GamepadButton::East, true});
+    CHECK(input.isDown("cancel"));
+    CHECK(input.lastDevice() == DeviceKind::Gamepad);
+    CHECK(input.lastGamepadFamily() == GamepadFamily::PlayStation);
+}
+
+TEST_CASE("events of an unknown gamepad are ignored") {
+    InputState input{defaultActionMap()};
+    input.handle(GamepadButtonChanged{Pad, GamepadButton::South, true});
+    CHECK_FALSE(input.isDown("confirm"));
+}
+
+TEST_CASE("the stick deadzone is ignored and the rest is rescaled") {
+    InputState input = withGamepad();
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftX, 0.1F});
+    CHECK(input.value("move_right") == doctest::Approx(0.0F));
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftX, 0.6F});
+    CHECK(input.value("move_right") == doctest::Approx(0.5F));
+    CHECK(input.value("move_left") == doctest::Approx(0.0F));
+}
+
+TEST_CASE("pushing a stick past the middle is a press") {
+    InputState input = withGamepad();
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftY, -0.9F});
+    CHECK(input.wasPressed("move_up"));
+}
+
+TEST_CASE("a diagonal direction never exceeds length 1") {
+    InputState input{defaultActionMap()};
+    input.handle(KeyChanged{keys::D, true, false});
+    input.handle(KeyChanged{keys::S, true, false});
+    const Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
+    CHECK(move.x == doctest::Approx(0.7071F).epsilon(0.001));
+    CHECK(move.y == doctest::Approx(0.7071F).epsilon(0.001));
+}
+
+TEST_CASE("disconnecting a gamepad is reported for one tick and releases its controls") {
+    InputState input = withGamepad();
+    input.handle(GamepadButtonChanged{Pad, GamepadButton::South, true});
+    input.handle(GamepadDisconnected{Pad});
+    CHECK(input.gamepadLost());
+    CHECK_FALSE(input.isDown("confirm"));
+    CHECK(input.gamepads().empty());
+    input.endTick();
+    CHECK_FALSE(input.gamepadLost());
+}
+
+TEST_CASE("an action can be rebound") {
+    InputState input{defaultActionMap()};
+    input.actionMap().clear("confirm");
+    input.actionMap().bind("confirm", KeyBinding{keys::E});
+    input.handle(KeyChanged{keys::Return, true, false});
+    CHECK_FALSE(input.isDown("confirm"));
+    input.handle(KeyChanged{keys::E, true, false});
+    CHECK(input.isDown("confirm"));
+}
+
+TEST_CASE("a stick is pressed exactly when it starts to count as down") {
+    InputState input = withGamepad();
+    // 0.55 is past the middle of the raw range but, after the deadzone, still short of it.
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftX, 0.55F});
+    CHECK_FALSE(input.isDown("move_right"));
+    CHECK_FALSE(input.wasPressed("move_right"));
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftX, 0.7F});
+    CHECK(input.isDown("move_right"));
+    CHECK(input.wasPressed("move_right"));
+}
+
+TEST_CASE("losing focus releases everything that was held") {
+    InputState input = withGamepad();
+    input.handle(KeyChanged{keys::Return, true, false});
+    input.handle(GamepadAxisMoved{Pad, GamepadAxis::LeftX, 1.0F});
+    CHECK(input.isDown("confirm"));
+    CHECK(input.isDown("move_right"));
+    input.handle(FocusLost{});
+    CHECK_FALSE(input.isDown("confirm"));
+    CHECK_FALSE(input.isDown("move_right"));
+    CHECK(input.value("move_right") == doctest::Approx(0.0F));
+}
