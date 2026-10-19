@@ -10,4 +10,5 @@ dwe_add_module(formats
         src/disc/sector.cpp
         src/exe/psx_exe.cpp
         src/image/tim.cpp
+        src/image/tim_packs.cpp
     DEPS core)
