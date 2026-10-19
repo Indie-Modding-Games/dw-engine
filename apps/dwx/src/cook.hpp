@@ -39,7 +39,8 @@ struct Cooker {
                                                  const CookOptions& options) = nullptr;
 };
 
-// The cookers dwx knows: PNG to KTX2 and GLB checked and kept. A file of any other type is copied as is.
+// The cookers dwx knows: PNG to KTX2, GLB checked and kept, and WAV to Ogg Opus. A file of any other type is copied
+// as is.
 std::span<const Cooker> cookers();
 
 // Returns the cooker for a source file's extension, or nullptr if the file is copied as is.

@@ -1,5 +1,8 @@
+#include <dwe/assets/content_check.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/sound.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/formats/audio/wav.hpp>
 #include <dwe/formats/image/png.hpp>
 
 #include <doctest/doctest.h>
@@ -197,4 +200,23 @@ TEST_CASE("lookup images pass through the cook as PNG and sidecars set the colou
     CHECK(cookError(folder).contains("mask_meta.yaml"));
     folder.write("src/ui/mask_meta.yaml", "color_space: hdr\n");
     CHECK(cookError(folder).contains("mask.png: its sidecar's color_space is not srgb or linear"));
+}
+
+TEST_CASE("a WAV in a pack cooks to Ogg Opus with the same id") {
+    const TempFolder folder;
+    writeSourcePack(folder);
+    const std::vector<std::int16_t> pcm(4410, 1000);
+    const auto wav = dwe::formats::audio::writeWav(
+        dwe::formats::audio::WavSound{.pcm = pcm, .sampleRate = 11025, .loop = {}, .unityNote = 60});
+    folder.write("src/sound/x/sample_001.wav", std::string{reinterpret_cast<const char*>(wav.data()), wav.size()});
+    const CookSummary summary = cooked(folder);
+    CHECK(summary.cooked == 3);
+    const std::filesystem::path out = folder.path() / "out";
+    CHECK_FALSE(std::filesystem::exists(out / "sound/x/sample_001.wav"));
+    const auto sound = dwe::assets::decodeOpus(readOrEmpty(out / "sound/x/sample_001.opus"));
+    REQUIRE(sound.has_value());
+    CHECK(sound->pcm.size() == 19200);
+    // dwx validate and dwe-game --check-content open it too.
+    const auto opened = dwe::assets::openAsset("opus", readOrEmpty(out / "sound/x/sample_001.opus"));
+    CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
 }

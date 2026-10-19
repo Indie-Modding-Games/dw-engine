@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "audio_cooker.hpp"
 #include "dwx.hpp"
 #include "texture_cooker.hpp"
 
@@ -76,6 +77,12 @@ constexpr std::array Registry = {
            .outputExtension = "glb",
            .plan = nullptr,
            .cook = checkGlb},
+    Cooker{.name = "audio",
+           .version = 1,
+           .sourceExtension = "wav",
+           .outputExtension = "opus",
+           .plan = nullptr,
+           .cook = cookAudio},
 };
 
 // The id suffix and type of the YAML file that describes an asset, as dwx extract writes it (asset_names: metadataOf).

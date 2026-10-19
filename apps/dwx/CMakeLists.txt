@@ -1,8 +1,17 @@
+find_package(Opus CONFIG REQUIRED)
+# libopusenc ships no CMake package: its library and header, from the vcpkg tree.
+find_library(DWE_OPUSENC_LIBRARY NAMES opusenc REQUIRED)
+find_path(DWE_OPUSENC_INCLUDE_DIR opusenc.h PATH_SUFFIXES opus REQUIRED)
+add_library(dwe_opusenc INTERFACE)
+target_link_libraries(dwe_opusenc INTERFACE ${DWE_OPUSENC_LIBRARY} Opus::opus)
+target_include_directories(dwe_opusenc SYSTEM INTERFACE ${DWE_OPUSENC_INCLUDE_DIR})
+
 # The tool's code is a module so its tests can link it; the command line is a thin app on top.
 dwe_add_module(dwx
     LAYER apps
     SOURCES
         src/asset_names.cpp
+        src/audio_cooker.cpp
         src/audio_extractors.cpp
         src/base_pack.cpp
         src/cook.cpp
@@ -29,6 +38,7 @@ dwe_add_module(dwx
         src/verify.cpp
         src/video_extractors.cpp
     DEPS core formats assets
+    PRIVATE_LIBS dwe_opusenc
     TEST_LIBS dwe_cgltf)
 
 if(BUILD_TESTING)
