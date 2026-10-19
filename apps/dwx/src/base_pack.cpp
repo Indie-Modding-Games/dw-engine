@@ -60,6 +60,34 @@ bool isExtension(std::string_view extension) {
            std::ranges::all_of(extension, [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'); });
 }
 
+// Writes an output: its bytes, or what its stream gives, part by part.
+core::Result<void> writeOutput(const std::filesystem::path& file, const OutputFile& output) {
+    if (!output.stream) {
+        return writeFile(file, output.bytes);
+    }
+    std::error_code error;
+    std::filesystem::create_directories(file.parent_path(), error);
+    if (error) {
+        return core::fail(std::format("cannot create {}: {}", file.parent_path().string(), error.message()));
+    }
+    std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+    const auto written = output.stream([&](std::span<const std::byte> part) -> core::Result<void> {
+        stream.write(reinterpret_cast<const char*>(part.data()), static_cast<std::streamsize>(part.size()));
+        if (!stream) {
+            return core::fail(std::format("cannot write {}", file.string()));
+        }
+        return {};
+    });
+    if (!written) {
+        return core::fail(std::format("{}: {}", file.string(), written.error().message));
+    }
+    stream.close();
+    if (!stream) {
+        return core::fail(std::format("cannot write {}", file.string()));
+    }
+    return {};
+}
+
 core::Result<void> writeText(const std::filesystem::path& file, std::string_view text) {
     return writeFile(file, std::as_bytes(std::span{text}));
 }
@@ -144,13 +172,17 @@ std::vector<FileWork> extractFiles(const Disc& disc, std::span<const Extractor> 
     return work;
 }
 
-// Groups the outputs with the same extension and bytes, in the order of their first output.
+// Groups the outputs with the same extension and bytes, in the order of their first output; streamed outputs are
+// left out.
 std::vector<std::vector<std::string>> findDuplicates(const std::vector<OutputFile>& outputs,
                                                      const std::vector<core::Sha1Digest>& digests) {
     std::map<std::string, std::vector<std::string>> byContent;
     std::vector<std::string> order;
     for (std::size_t i = 0; i < outputs.size(); ++i) {
         const OutputFile& output = outputs[i];
+        if (output.stream) {
+            continue;
+        }
         const std::string key = std::format("{}:{}", output.extension, core::toHex(digests[i]));
         auto& paths = byContent[key];
         if (paths.empty()) {
@@ -381,7 +413,7 @@ core::Result<void> writeBasePack(const std::filesystem::path& folder, const Extr
         return std::unexpected{coverage.error()};
     }
     for (const auto& output : run.outputs) {
-        if (auto written = writeFile(folder / outputPath(output), output.bytes); !written) {
+        if (auto written = writeOutput(folder / outputPath(output), output); !written) {
             return written;
         }
     }

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -79,8 +80,33 @@ dwe::core::Result<Extraction> twinFile(const Disc& /*disc*/, const IsoFile& file
     return extraction;
 }
 
+// A test extractor that streams the same three-part file for every file of folder A.
+dwe::core::Result<Extraction> streamedFile(const Disc& /*disc*/, const IsoFile& file) {
+    Extraction extraction;
+    std::string name = "bad";
+    if (file.path == "A/ONE.BIN") {
+        name = "one";
+    } else if (file.path == "A/TWO.BIN") {
+        name = "two";
+    }
+    extraction.outputs.push_back(OutputFile{.id = *AssetId::parse("stream/" + name),
+                                            .extension = "bin",
+                                            .bytes = {},
+                                            .stream = [](const ByteSink& sink) -> dwe::core::Result<void> {
+                                                for (std::uint8_t part = 0; part < 3; ++part) {
+                                                    if (auto written = sink(fixtures::patternBytes(1000, part));
+                                                        !written) {
+                                                        return written;
+                                                    }
+                                                }
+                                                return {};
+                                            }});
+    return extraction;
+}
+
 constexpr std::array TestRegistry = {Extractor{.name = "copy", .handles = handlesFolderA, .extract = copyFile}};
 constexpr std::array TwinRegistry = {Extractor{.name = "twin", .handles = handlesFolderA, .extract = twinFile}};
+constexpr std::array StreamRegistry = {Extractor{.name = "stream", .handles = handlesFolderA, .extract = streamedFile}};
 constexpr std::array ClashingRegistry = {
     Extractor{.name = "clash", .handles = handlesFolderA, .extract = clashingFile}};
 
@@ -212,6 +238,25 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
     const auto assets = checkBasePack(first, *run);
     REQUIRE(assets.has_value());
     CHECK(*assets == 3); // two outputs and the coverage report
+}
+
+TEST_CASE("streamed outputs are written part by part and are not compared for duplicates") {
+    const TestDisc fixture;
+    const auto run = runExtractors(fixture.disc(), StreamRegistry);
+    REQUIRE(run.has_value());
+    CHECK(run->duplicates.empty());
+    const TempFolder temp;
+    REQUIRE(prepareOutputFolder(temp.path(), false).has_value());
+    REQUIRE(writeBasePack(temp.path(), *run, fixture.info).has_value());
+    const auto files = readTree(temp.path());
+    std::string expected;
+    for (std::uint8_t part = 0; part < 3; ++part) {
+        for (const std::byte value : fixtures::patternBytes(1000, part)) {
+            expected += static_cast<char>(value);
+        }
+    }
+    CHECK(files.at("stream/one.bin") == expected);
+    CHECK(files.at("stream/bad.bin") == expected);
 }
 
 TEST_CASE("the output folder is only emptied when dwx wrote it") {

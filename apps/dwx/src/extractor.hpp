@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -16,12 +17,22 @@
 
 namespace dwe::dwx {
 
+// Takes the parts of a streamed output, in order.
+using ByteSink = std::function<core::Result<void>(std::span<const std::byte>)>;
+
+// Gives a streamed output's bytes part by part to the sink and stops at the sink's first error.
+using OutputStream = std::function<core::Result<void>(const ByteSink& sink)>;
+
 // A file an extractor gives to the base pack. Its path is built from the asset id and the extension only, so no
 // name read from the disc can take it out of the pack's folder.
 struct OutputFile {
     assets::AssetId id;
     std::string extension; // lowercase letters and digits: "png", "yaml"
     std::vector<std::byte> bytes;
+    // For an output too large to hold in memory (decoded video): when set, the pack writes what it gives instead of
+    // bytes, so the file never sits whole in memory. It owns what it needs (never the disc), gives the same bytes
+    // every time and may run on any thread. Streamed outputs are left out of the search for duplicates.
+    OutputStream stream = nullptr;
 };
 
 // Returns the path of an output inside the pack, with '/' between folders: "card/000.png".
