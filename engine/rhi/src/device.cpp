@@ -6,8 +6,14 @@
 #include <VkBootstrap.h>
 
 #include <array>
+#include <cstdint>
+#include <deque>
 #include <format>
+#include <functional>
+#include <utility>
 #include <vector>
+
+#include "transition.hpp"
 
 namespace dwe::rhi {
 namespace {
@@ -31,6 +37,23 @@ VkBool32 VKAPI_PTR logValidationMessage(VkDebugUtilsMessageSeverityFlagBitsEXT s
     }
     return VK_FALSE;
 }
+
+struct FrameSlot {
+    VkCommandPool pool = VK_NULL_HANDLE;
+    VkCommandBuffer commands = VK_NULL_HANDLE;
+    VkSemaphore imageAcquired = VK_NULL_HANDLE;
+    VkFence finished = VK_NULL_HANDLE;
+    // The number of the frame last submitted from this slot, which its fence waits for.
+    std::uint64_t submittedFrame = 0;
+};
+
+// Something released while the GPU may still use it, and the number of the last frame that may.
+struct Retired {
+    std::uint64_t lastFrame;
+    std::function<void()> destroy;
+};
+
+} // namespace
 
 void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to,
                      VkPipelineStageFlags2 srcStage, VkAccessFlags2 srcAccess, VkPipelineStageFlags2 dstStage,
@@ -59,15 +82,6 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
     vkCmdPipelineBarrier2(commands, &dependency);
 }
 
-struct FrameSlot {
-    VkCommandPool pool = VK_NULL_HANDLE;
-    VkCommandBuffer commands = VK_NULL_HANDLE;
-    VkSemaphore imageAcquired = VK_NULL_HANDLE;
-    VkFence finished = VK_NULL_HANDLE;
-};
-
-} // namespace
-
 struct Device::Impl {
     const platform::Window* window = nullptr;
     bool vsync = true;
@@ -91,10 +105,16 @@ struct Device::Impl {
 
     std::array<FrameSlot, FramesInFlight> frames{};
     std::size_t frameIndex = 0;
+    // Frames are numbered from 1 in the order they are submitted.
+    std::uint64_t submittedFrames = 0;
+    // Ordered by lastFrame, which never decreases.
+    std::deque<Retired> retired;
 
     core::Result<void> createSwapchain();
     void destroySwapchainViews();
     core::Result<void> createFrames();
+    // Runs what was retired for the frames up to completedFrame, which the GPU has finished.
+    void destroyRetired(std::uint64_t completedFrame);
 
     Impl() = default;
     Impl(const Impl&) = delete;
@@ -173,9 +193,19 @@ core::Result<void> Device::Impl::createFrames() {
     return {};
 }
 
+void Device::Impl::destroyRetired(std::uint64_t completedFrame) {
+    while (!retired.empty() && retired.front().lastFrame <= completedFrame) {
+        // Popped before running, so a destroy function may retire more.
+        const std::function<void()> destroy = std::move(retired.front().destroy);
+        retired.pop_front();
+        destroy();
+    }
+}
+
 Device::Impl::~Impl() {
     if (device.device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(device);
+        destroyRetired(submittedFrames + 1);
         for (FrameSlot& frame : frames) {
             vkDestroyFence(device, frame.finished, nullptr);
             vkDestroySemaphore(device, frame.imageAcquired, nullptr);
@@ -277,6 +307,8 @@ std::optional<Frame> Device::beginFrame() {
     Impl& impl = *impl_;
     FrameSlot& slot = impl.frames[impl.frameIndex];
     vkWaitForFences(impl.device, 1, &slot.finished, VK_TRUE, UINT64_MAX);
+    // A fence also covers everything submitted before it, so every frame up to this slot's is done.
+    impl.destroyRetired(slot.submittedFrame);
 
     const platform::PixelSize size = impl.window->pixelSize();
     if (size.width <= 0 || size.height <= 0) {
@@ -380,6 +412,7 @@ void Device::endFrame(const Frame& frame) {
     submit.signalSemaphoreInfoCount = 1;
     submit.pSignalSemaphoreInfos = &signal;
     vkQueueSubmit2(impl.queue, 1, &submit, slot.finished);
+    slot.submittedFrame = ++impl.submittedFrames;
 
     VkSwapchainKHR swapchain = impl.swapchain;
     VkPresentInfoKHR present{};
@@ -397,8 +430,14 @@ void Device::endFrame(const Frame& frame) {
     impl.frameIndex = (impl.frameIndex + 1) % FramesInFlight;
 }
 
+void Device::destroyLater(std::function<void()> destroy) {
+    // The frame being recorded, or the next one if none is, may still draw with what the caller released.
+    impl_->retired.push_back(Retired{.lastFrame = impl_->submittedFrames + 1, .destroy = std::move(destroy)});
+}
+
 void Device::waitIdle() {
     vkDeviceWaitIdle(impl_->device);
+    impl_->destroyRetired(impl_->submittedFrames + 1);
 }
 
 NativeHandles Device::nativeHandles() const {

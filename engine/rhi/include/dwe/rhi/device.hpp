@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -69,7 +70,12 @@ public:
     // Submits the frame and presents its image.
     void endFrame(const Frame& frame);
 
-    // Waits until the GPU has finished all submitted work.
+    // Runs destroy once the GPU has finished every frame that may use what it destroys: the frames submitted so far
+    // and the one being recorded (or the next one, between frames). For objects released while frames are in flight.
+    void destroyLater(std::function<void()> destroy);
+
+    // Waits until the GPU has finished all submitted work, then runs everything passed to destroyLater. Call it
+    // between frames, never while one is being recorded.
     void waitIdle();
 
     [[nodiscard]] NativeHandles nativeHandles() const;
