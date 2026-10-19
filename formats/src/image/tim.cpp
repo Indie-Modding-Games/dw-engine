@@ -2,6 +2,7 @@
 #include <dwe/formats/image/tim.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <format>
 #include <string_view>
 
@@ -143,16 +144,18 @@ core::Result<std::vector<std::uint8_t>> timIndices(const Tim& tim) {
     if (!isIndexed(tim.mode)) {
         return core::fail("only 4- and 8-bit TIMs have colour indices");
     }
-    std::vector<std::uint8_t> indices;
-    indices.reserve(std::size_t{timWidth(tim)} * tim.imageRect.height);
-    for (const std::byte value : tim.data) {
-        if (tim.mode == TimPixelMode::Indexed4) {
-            // The first pixel of each byte is in the low nibble.
-            indices.push_back(std::to_integer<std::uint8_t>(value & std::byte{0x0F}));
-            indices.push_back(std::to_integer<std::uint8_t>(value >> 4));
-        } else {
-            indices.push_back(std::to_integer<std::uint8_t>(value));
-        }
+    // Each byte is one index of an 8-bit image; copied whole, which matters for large images in debug builds.
+    if (tim.mode == TimPixelMode::Indexed8) {
+        std::vector<std::uint8_t> indices(tim.data.size());
+        std::memcpy(indices.data(), tim.data.data(), tim.data.size());
+        return indices;
+    }
+    std::vector<std::uint8_t> indices(tim.data.size() * 2);
+    for (std::size_t i = 0; i < tim.data.size(); ++i) {
+        // The first pixel of each byte is in the low nibble.
+        const auto value = std::to_integer<std::uint8_t>(tim.data[i]);
+        indices[2 * i] = value & 0x0FU;
+        indices[(2 * i) + 1] = value >> 4U;
     }
     return indices;
 }

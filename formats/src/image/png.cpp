@@ -3,7 +3,11 @@
 #include <lodepng.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
 #include <format>
+#include <memory>
+#include <span>
 
 namespace dwe::formats::image {
 
@@ -11,18 +15,31 @@ namespace {
 
 constexpr std::size_t MaxPaletteSize = 256;
 
-core::Result<std::vector<std::byte>> encode(const std::vector<unsigned char>& raw, std::uint32_t width,
+// lodepng allocates its output with malloc unless it is built with its own allocators.
+struct FreeBuffer {
+    void operator()(unsigned char* buffer) const {
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory): lodepng's buffer needs free.
+        std::free(buffer);
+    }
+};
+
+// Encodes the pixels with lodepng's C interface, which reads them in place and returns one buffer: copies of large
+// images in vectors cost more than the compression in debug builds.
+core::Result<std::vector<std::byte>> encode(std::span<const unsigned char> raw, std::uint32_t width,
                                             std::uint32_t height, lodepng::State& state) {
     // Write exactly the colour type asked for, never one lodepng finds smaller, so the output does not change with
     // the image's content.
     state.encoder.auto_convert = 0;
-    std::vector<unsigned char> png;
-    if (const unsigned error = lodepng::encode(png, raw, width, height, state); error != 0) {
+    unsigned char* buffer = nullptr;
+    std::size_t size = 0;
+    const unsigned error = lodepng_encode(&buffer, &size, raw.data(), width, height, &state);
+    const std::unique_ptr<unsigned char, FreeBuffer> owner{buffer};
+    if (error != 0) {
         return core::fail(std::format("cannot encode the PNG: {}", lodepng_error_text(error)));
     }
-    std::vector<std::byte> bytes(png.size());
-    std::ranges::transform(png, bytes.begin(), [](unsigned char value) { return std::byte{value}; });
-    return bytes;
+    std::vector<std::byte> png(size);
+    std::memcpy(png.data(), buffer, size);
+    return png;
 }
 
 core::Result<void> checkSize(std::uint32_t width, std::uint32_t height, std::size_t pixelCount) {
@@ -64,8 +81,11 @@ core::Result<std::vector<std::byte>> encodePngIndexed(std::uint32_t width, std::
     if (palette.empty() || palette.size() > MaxPaletteSize) {
         return core::fail(std::format("a PNG palette has 1 to 256 colours, not {}", palette.size()));
     }
-    if (const auto highest = std::ranges::max(indices); highest >= palette.size()) {
-        return core::fail(std::format("colour index {} is outside the {}-colour palette", highest, palette.size()));
+    // Every 8-bit index is inside a full palette, so only smaller ones need the check.
+    if (palette.size() < MaxPaletteSize) {
+        if (const auto highest = std::ranges::max(indices); highest >= palette.size()) {
+            return core::fail(std::format("colour index {} is outside the {}-colour palette", highest, palette.size()));
+        }
     }
     lodepng::State state;
     for (LodePNGColorMode* mode : {&state.info_raw, &state.info_png.color}) {
@@ -77,8 +97,7 @@ core::Result<std::vector<std::byte>> encodePngIndexed(std::uint32_t width, std::
             }
         }
     }
-    const std::vector<unsigned char> raw(indices.begin(), indices.end());
-    return encode(raw, width, height, state);
+    return encode(indices, width, height, state);
 }
 
 } // namespace dwe::formats::image

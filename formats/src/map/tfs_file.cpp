@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <format>
 
 namespace dwe::formats::map {
@@ -46,8 +47,7 @@ core::Result<TfsFile> readTfsFile(std::span<const std::byte> file) {
         tile.unknown00 = c.u32();
         const auto pixels = c.take(TilePixels);
         tile.pixels.resize(TilePixels);
-        std::ranges::transform(pixels, tile.pixels.begin(),
-                               [](std::byte b) { return std::to_integer<std::uint8_t>(b); });
+        std::memcpy(tile.pixels.data(), pixels.data(), TilePixels);
     }
     return tfs;
 }

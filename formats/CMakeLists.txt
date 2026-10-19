@@ -36,6 +36,12 @@ dwe_add_module(formats
     PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng dwe_cgltf)
 
+# lodepng compresses every image dwx writes, and its debug build is three times slower; nobody steps into it, so
+# debug builds link its release build. Not on Windows, where debug and release code use different C runtimes.
+if(NOT WIN32)
+    set_target_properties(lodepng PROPERTIES MAP_IMPORTED_CONFIG_DEBUG Release)
+endif()
+
 # The tests check the YAML documents against the JSON Schemas of content/schemas.
 if(TARGET dwe_formats_tests)
     target_compile_definitions(dwe_formats_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
