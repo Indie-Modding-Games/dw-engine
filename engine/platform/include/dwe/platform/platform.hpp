@@ -35,7 +35,7 @@ public:
 
     // Sleeps until an event arrives or the timeout passes, leaving the event to be polled. For idle loops, such as
     // while the window is minimized.
-    void waitForEvents(std::chrono::milliseconds timeout);
+    void waitForEvents(std::chrono::milliseconds timeout) const;
 
     // Vibrates a gamepad; low and high are the strengths of the two motors, from 0 to 1.
     void rumble(GamepadId gamepad, float low, float high, std::chrono::milliseconds duration);

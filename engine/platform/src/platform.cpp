@@ -1,3 +1,4 @@
+#include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/platform/platform.hpp>
 
@@ -150,7 +151,8 @@ Platform::~Platform() {
     SDL_Quit();
 }
 
-void Platform::waitForEvents(std::chrono::milliseconds timeout) {
+void Platform::waitForEvents(std::chrono::milliseconds timeout) const {
+    DWE_ASSERT(active_);
     SDL_WaitEventTimeout(nullptr, static_cast<Sint32>(timeout.count()));
 }
 
@@ -196,7 +198,7 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
             const char* name = SDL_GetGamepadName(gamepad);
             gamepads_[event.gdevice.which] = gamepad;
             events.emplace_back(GamepadConnected{
-                .id = event.gdevice.which, .family = familyOf(gamepad), .name = name ? name : "Gamepad"});
+                .id = event.gdevice.which, .family = familyOf(gamepad), .name = name != nullptr ? name : "Gamepad"});
             break;
         }
         case SDL_EVENT_GAMEPAD_REMOVED:
@@ -238,6 +240,7 @@ void Platform::rumble(GamepadId gamepad, float low, float high, std::chrono::mil
 }
 
 double Platform::nowSeconds() const {
+    DWE_ASSERT(active_);
     return static_cast<double>(SDL_GetTicksNS()) / static_cast<double>(SDL_NS_PER_SECOND);
 }
 

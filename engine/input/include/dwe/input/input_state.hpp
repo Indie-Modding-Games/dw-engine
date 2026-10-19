@@ -65,7 +65,7 @@ public:
 
 private:
     struct GamepadState {
-        platform::GamepadId id;
+        platform::GamepadId id{};
         std::array<bool, platform::GamepadButtonCount> buttons{};
         std::array<float, platform::GamepadAxisCount> axes{};
     };

@@ -32,9 +32,7 @@ bool sameControl(const Binding& binding, const T& changed) {
     }
     if constexpr (std::is_same_v<T, KeyBinding>) {
         return candidate->key == changed.key;
-    } else if constexpr (std::is_same_v<T, MouseBinding>) {
-        return candidate->button == changed.button;
-    } else if constexpr (std::is_same_v<T, GamepadButtonBinding>) {
+    } else if constexpr (std::is_same_v<T, MouseBinding> || std::is_same_v<T, GamepadButtonBinding>) {
         return candidate->button == changed.button;
     } else {
         return candidate->axis == changed.axis && candidate->direction == changed.direction;
