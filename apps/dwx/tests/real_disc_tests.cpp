@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "base_pack.hpp"
+#include "disc_description.hpp"
 #include "temp_folder.hpp"
 
 using namespace dwe::dwx;
@@ -25,7 +26,7 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 
 } // namespace
 
-TEST_CASE("the user's disc: the images are extracted into a base pack the engine mounts") {
+TEST_CASE("the user's disc: the tables and images are extracted into a base pack the engine mounts") {
     const char* path = std::getenv("DWE_DISC");
     if (path == nullptr || std::string_view{path}.empty()) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
@@ -35,8 +36,11 @@ TEST_CASE("the user's disc: the images are extracted into a base pack the engine
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = dwe::formats::disc::readIsoVolume(*image);
     REQUIRE_MESSAGE(volume.has_value(), errorOf(volume));
-    const DiscInfo info{.volumeId = volume->volumeId, .executablePath = "", .executableSha1 = "", .version = ""};
-    const Disc disc{*image, *volume, info};
+    const DiscDescription description = describeDisc(*image, *volume);
+    REQUIRE(description.warnings.empty());
+    REQUIRE(description.tables.has_value());
+    const DiscInfo& info = description.info;
+    const Disc disc{*image, *volume, info, description.tables ? &*description.tables : nullptr};
 
     const auto run = runExtractors(disc, extractors());
     REQUIRE_MESSAGE(run.has_value(), errorOf(run));
@@ -50,6 +54,18 @@ TEST_CASE("the user's disc: the images are extracted into a base pack the engine
     CHECK(taken("tim_pack") == 2);
     CHECK(taken("stacked_tim") == 2);
     CHECK(taken("tim_file") > 10);
+    CHECK(taken("executable") == 1);
+    CHECK(taken("boot_config") == 1);
+    const auto has = [&run](std::string_view prefix) {
+        return std::ranges::any_of(run->outputs,
+                                   [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
+    };
+    CHECK(has("data/digimon"));
+    CHECK(has("data/maps"));
+    // With the tables, Digimon textures are named, never numbered.
+    CHECK(has("digimon/"));
+    CHECK_FALSE(has("digimon/0"));
+    CHECK_FALSE(has("digimon/1"));
     // ALLTIM's 180 Digimon textures and CARD.ALL's 66 cards, with their metadata.
     CHECK(summary.outputs > (180 + 66) * 2);
 

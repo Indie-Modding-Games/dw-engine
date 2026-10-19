@@ -4,6 +4,7 @@ dwe_add_module(dwx
     SOURCES
         src/asset_names.cpp
         src/base_pack.cpp
+        src/disc_description.cpp
         src/extract.cpp
         src/extract_disc.cpp
         src/extractors.cpp
