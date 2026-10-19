@@ -171,4 +171,11 @@ inline std::vector<std::byte> buildFontVhb(std::span<const std::byte> vh, std::s
     return b.bytes();
 }
 
+// A SEQ header: "pQES", version 1, the resolution and tempo, rhythm 1/4.
+inline Bytes seqHeader(std::uint16_t resolution, std::uint32_t tempo) {
+    Bytes b;
+    b.text("pQES").be32(1).be16(resolution).be24(tempo).u8(1).u8(4);
+    return b;
+}
+
 } // namespace dwe::formats::audio::test
