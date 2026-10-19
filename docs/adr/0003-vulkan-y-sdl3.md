@@ -11,7 +11,9 @@ GPU de PS1, y queremos control total sobre él.
 ## Decisión
 
 - **Vulkan 1.3** como base, con dynamic rendering y synchronization2.
-- Librerías de apoyo: **volk** (carga de funciones), **VMA** (memoria) y **vk-bootstrap** (inicialización).
+- Librerías de apoyo: **vk-bootstrap** (inicialización) y, desde la fase 2, **VMA** (memoria). Las funciones de Vulkan
+  se enlazan con el loader del sistema. No se usa volk, porque el backend Vulkan de Dear ImGui que trae vcpkg enlaza
+  el loader directamente y mezclar los dos rompe el enlazado.
 - Shaders en **Slang**, compilados a SPIR-V.
 - **SDL3** para ventana, input (teclado, ratón y mandos), audio y ficheros. No se usa SDL_GPU.
 - Todo el acceso a Vulkan queda dentro del módulo `rhi`.

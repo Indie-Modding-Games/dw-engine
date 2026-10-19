@@ -4,7 +4,7 @@ Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da 
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Base | S | En curso: documentación |
+| 0 | Base | S | En curso: el código base compila y funciona en Linux |
 | 1 | Tubería de assets | M | Pendiente |
 | 2 | Prueba vertical | M | Pendiente |
 | 3 | Núcleo jugable | L | Pendiente |
@@ -28,6 +28,22 @@ Antes de la fase 3, el repositorio de diseño tiene que tener escritos los **pil
 
 **Hecho cuando:** se abre una ventana, un mando o el teclado mueven algo en pantalla, se ejecuta un script de Lua y la
 CI pasa.
+
+**Estado (2026-10-19):**
+
+| Punto | Estado |
+|---|---|
+| Documentación, ADR, plan y convenciones | Hecho |
+| CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests y formato en verde en local. La CI aún no ha corrido en GitHub |
+| CI de Windows | Pendiente |
+| clang-tidy limpio | Pendiente: quedan avisos de estilo; la CI todavía no lo pasa |
+| Ventana y dispositivo Vulkan | Hecho: swapchain que se rehace al cambiar de tamaño, sin errores de validación |
+| Entrada por acciones, conexión en caliente | Hecho con teclado; mandos sin probar en una máquina real |
+| Lógica a paso fijo y render desacoplado | Hecho |
+| VM de Lua aislada con recarga en caliente | Hecho |
+| Log y consola ImGui | Hecho |
+| Comprobación del disco por SHA-1 | Pendiente |
+| Limpieza de los repositorios actuales | Pendiente: decisión del equipo |
 
 ## Fase 1 — Tubería de assets
 

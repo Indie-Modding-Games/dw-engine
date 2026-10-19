@@ -2,10 +2,12 @@
 
 ```
 engine/
+├─ .devcontainer/           imagen Docker de desarrollo: Clang, libc++, CMake, vcpkg (ADR 0015)
 ├─ .github/
 │  ├─ workflows/            ci.yml (build, tests, formato, docs), release.yml
 │  └─ CODEOWNERS
 ├─ cmake/                   funciones propias: dwe_add_module, warnings, sanitizers
+│  └─ toolchains/           compilador y biblioteca estándar de cada plataforma
 ├─ docs/                    esta documentación
 ├─ engine/                  módulos del motor
 │  ├─ core/
@@ -17,7 +19,8 @@ engine/
 │  ├─ assets/
 │  ├─ scene/
 │  ├─ script/
-│  └─ ui/
+│  ├─ ui/
+│  └─ debug/                consola y paneles de desarrollo (Dear ImGui)
 ├─ game/                    reglas del juego
 │  ├─ partner/              cuidado, vida, evolución
 │  ├─ battle/
@@ -41,9 +44,11 @@ engine/
 │  ├─ integration/          tests que cruzan módulos
 │  ├─ simulation/           simulaciones de balance sobre los rulesets
 │  └─ golden/               capturas de render de referencia
+├─ scripts/                 dev.sh: la entrada de todo el desarrollo (image, build, test, run…)
 ├─ third_party/             solo parches o lo que no esté en vcpkg
+├─ triplets/                triplets propios de vcpkg (dependencias con Clang y libc++)
 ├─ CMakeLists.txt
-├─ CMakePresets.json        linux-gcc, linux-clang, windows-clang
+├─ CMakePresets.json        linux-clang-debug, linux-clang-release, ci (windows-clang llegará después)
 ├─ vcpkg.json               dependencias con versiones fijadas
 ├─ .clang-format · .clang-tidy · .editorconfig · .gitattributes · .gitignore
 └─ README.md · CONTRIBUTING.md · CHANGELOG.md · LICENSE · THIRD_PARTY.md

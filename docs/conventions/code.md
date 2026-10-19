@@ -19,6 +19,7 @@
 | Tipos, clases y enums | `PascalCase` | `EvolutionRule` |
 | Funciones | `camelCase`, con verbo | `loadPack`, `tickCare`, `isSleeping` |
 | Variables y miembros | `camelCase` | `hunger`, `currentMap` |
+| Miembros privados | `camelCase` con `_` al final | `tickSeconds_` |
 | Constantes y valores de enum | `PascalCase` | `MaxPartySize`, `Weather::Rain` |
 | Macros (solo si no hay alternativa) | `UPPER_SNAKE` con prefijo | `DWE_ASSERT` |
 

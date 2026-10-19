@@ -54,7 +54,7 @@ flowchart TB
         partner --- battle --- field --- world --- story --- inventory --- save --- modes
     end
     subgraph services[servicios]
-        script[script: Lua 5.5 + sol2] --- ui[ui: RmlUi]
+        script[script: Lua 5.5 + sol2] --- ui[ui: RmlUi] --- debug[debug: Dear ImGui]
     end
     subgraph systems[sistemas]
         render --- audio --- input[input: acciones] --- assets[assets: VFS y paquetes] --- scene[scene: ECS]
@@ -74,7 +74,7 @@ flowchart TB
 | núcleo | `core` | Tipos, matemáticas, log, memoria, errores (`std::expected`) |
 | base | `platform`, `rhi` | Ventana, input, ficheros, hilos y tiempo (SDL3); dispositivo de GPU, memoria, pipelines y sincronización (Vulkan) |
 | sistemas | `render`, `audio`, `input`, `assets`, `scene` | Grafo de render, materiales, skinning y fondos; mezcla y síntesis; acciones, contextos y perfiles de teclado, ratón y mandos; sistema de ficheros virtual, paquetes y recarga en caliente; mundo ECS (EnTT) |
-| servicios | `script`, `ui` | VM de Lua, sandbox y bindings; menús, HUD y minimapa |
+| servicios | `script`, `ui`, `debug` | VM de Lua, sandbox y bindings; menús, HUD y minimapa; herramientas de desarrollo (consola, paneles) |
 | juego | `game/*` | Las reglas: cuidado, vida y evolución, batalla, campo, mundo, historia, inventario, guardado y modos |
 | apps | `game`, `editor`, `dwx` | Puntos de entrada |
 | aparte | `formats` | Lectura de los formatos de PS1. **Solo** lo usa `dwx` |
@@ -96,7 +96,7 @@ flowchart TB
 | Área | Elección | ADR |
 |---|---|---|
 | Lenguaje y build | C++26, CMake con presets, vcpkg | [0002](../adr/0002-cpp26.md) |
-| Render y plataforma | Vulkan 1.3 (volk, VMA, vk-bootstrap), shaders en Slang; SDL3 | [0003](../adr/0003-vulkan-y-sdl3.md) |
+| Render y plataforma | Vulkan 1.3 (vk-bootstrap; VMA desde la fase 2), shaders en Slang; SDL3 | [0003](../adr/0003-vulkan-y-sdl3.md) |
 | Scripting | Lua 5.5 + sol2 | [0004](../adr/0004-lua-y-sol2.md) |
 | Entrada | SDL3 (teclado, ratón y mandos), con acciones y perfiles | [0014](../adr/0014-mandos-y-entrada.md) |
 | Entidades | EnTT | [0012](../adr/0012-ecs-con-entt.md) |

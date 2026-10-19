@@ -14,6 +14,15 @@ que sirve de base para un mod con lógica, menús, historia y modos de juego nue
 - **No está afiliado** con los titulares de la licencia original ni cuenta con su respaldo. Todas las marcas
   pertenecen a sus dueños.
 
+## Compilar y jugar
+
+Solo necesitas Docker y una GPU con Vulkan 1.3. Los detalles están en
+[Preparar el entorno](docs/getting-started/setup.md).
+
+```bash
+scripts/dev.sh image && scripts/dev.sh configure && scripts/dev.sh build && scripts/dev.sh run
+```
+
 ## Documentación
 
 Empieza por [docs/README.md](docs/README.md). Ahí se explica qué leer según tu rol.

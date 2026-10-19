@@ -11,7 +11,7 @@ Aquí solo va lo técnico.
 | Rol | Lee primero |
 |---|---|
 | Todo el equipo | [Visión general](architecture/overview.md) · [Política legal de assets](legal/assets.md) · [Plan](roadmap.md) · [Glosario](glossary.md) |
-| Programación | [Estructura del repositorio](architecture/repository-layout.md) · [Reglas de dependencias](architecture/dependency-rules.md) · [Convenciones de código](conventions/code.md) |
+| Programación | [Preparar el entorno](getting-started/setup.md) · [Estructura del repositorio](architecture/repository-layout.md) · [Reglas de dependencias](architecture/dependency-rules.md) · [Convenciones de código](conventions/code.md) |
 | Arte y audio | [Tubería de assets](architecture/assets-pipeline.md) · [Política legal de assets](legal/assets.md) |
 | Diseño y guion | [Ciclo de diseño](conventions/design-cycle.md) · [Fichas de referencia](reference/README.md) · [Visión general](architecture/overview.md) · [Tubería de assets](architecture/assets-pipeline.md) |
 | Quien quiera proponer un cambio grande | [Cómo funcionan los ADR](adr/README.md) |
@@ -22,7 +22,7 @@ Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos s
 
 | Tipo | Para qué | Carpeta |
 |---|---|---|
-| Tutorial | Aprender desde cero | `getting-started/` (llega en la fase 0) |
+| Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
 | Guía práctica | Hacer una tarea concreta | `guides/` (llega con cada sistema) |
 | Referencia | Consultar un detalle exacto | [`reference/`](reference/README.md) (el original), `formats/`, `modding/` (llegan en las fases 1 y 4) |
 | Explicación | Entender por qué es así | [`architecture/`](architecture/), [`adr/`](adr/README.md) |
