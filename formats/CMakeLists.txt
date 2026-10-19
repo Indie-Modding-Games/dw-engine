@@ -56,6 +56,11 @@ dwe_add_module(formats
         src/text/font.cpp
         src/text/game_text.cpp
         src/text/string_manifest.cpp
+        src/video/mdec.cpp
+        src/video/media_files.cpp
+        src/video/movie.cpp
+        src/video/str.cpp
+        src/video/xa_adpcm.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng dwe_cgltf)
@@ -65,6 +70,10 @@ dwe_add_module(formats
 if(NOT WIN32)
     set_target_properties(lodepng PROPERTIES MAP_IMPORTED_CONFIG_DEBUG Release)
 endif()
+
+# dwx decodes every frame of the movies, about 13 000 of them, and the unoptimised MDEC decoder takes minutes for that,
+# so this file is optimised in debug builds too; it keeps its debug info and sanitizers.
+set_source_files_properties(src/video/mdec.cpp PROPERTIES COMPILE_OPTIONS "$<$<CONFIG:Debug>:-O2>")
 
 # The tests check the YAML documents against the JSON Schemas of content/schemas.
 if(TARGET dwe_formats_tests)

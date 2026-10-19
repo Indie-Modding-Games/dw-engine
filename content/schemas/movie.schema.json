@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Movie",
+  "description": "What dwx found in one STR movie file; it goes next to video.y4m and audio.wav. formats/src/video/movie.cpp writes it.",
+  "type": "object",
+  "required": ["source", "video", "audio", "sectors", "playback"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "description": "Path of the file on the disc's volume.", "type": "string" },
+    "video": {
+      "type": "object",
+      "required": ["width", "height", "frames", "first_frame", "fps", "bitstream_version", "chroma", "range"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "frames": { "description": "Frames in video.y4m: every frame of the file, in order.", "type": "integer" },
+        "first_frame": { "description": "Number of the first frame in the stream (the game counts from 1).", "type": "integer" },
+        "fps": {
+          "description": "Frames per second as the drive feeds them: 150 sectors per second over the sectors each frame takes.",
+          "type": "object",
+          "required": ["numerator", "denominator"],
+          "additionalProperties": false,
+          "properties": {
+            "numerator": { "type": "integer" },
+            "denominator": { "type": "integer" }
+          }
+        },
+        "bitstream_version": { "type": "integer" },
+        "chroma": { "description": "Chroma layout of video.y4m (YUV4MPEG2 C tag).", "enum": ["420jpeg"] },
+        "range": { "description": "Sample range of video.y4m.", "enum": ["full"] }
+      }
+    },
+    "audio": {
+      "description": "The XA audio decoded to audio.wav (16-bit PCM), or null when the file has none.",
+      "type": ["object", "null"],
+      "required": ["sample_rate", "channels", "sample_frames", "source_bits"],
+      "additionalProperties": false,
+      "properties": {
+        "sample_rate": { "type": "integer" },
+        "channels": { "type": "integer" },
+        "sample_frames": { "type": "integer" },
+        "source_bits": { "description": "Bits per ADPCM sample on the disc (4 or 8).", "type": "integer" }
+      }
+    },
+    "sectors": {
+      "type": "object",
+      "required": ["total", "video", "audio", "padding"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer" },
+        "video": { "type": "integer" },
+        "audio": { "type": "integer" },
+        "padding": { "type": "integer" }
+      }
+    },
+    "playback": {
+      "description": "The movie's entry in MOV_MOVIES (mov.c), or null when the version is not known.",
+      "type": ["object", "null"],
+      "required": ["table_index", "path", "start_frame", "frame_count"],
+      "additionalProperties": false,
+      "properties": {
+        "table_index": { "description": "Index the game plays it with (MOV_playMovie).", "type": "integer" },
+        "path": { "type": "string" },
+        "start_frame": { "type": "integer" },
+        "frame_count": { "description": "The game stops when a frame's number reaches it.", "type": "integer" }
+      }
+    }
+  }
+}
