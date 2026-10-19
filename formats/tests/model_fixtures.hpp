@@ -128,4 +128,62 @@ inline std::vector<std::byte> buildSampleTmd() {
     return buildTmd({first, second});
 }
 
+// Builds an MMD: header, the TMD, then the animation table and the streams. An empty stream leaves its entry at 0.
+inline std::vector<std::byte> buildMmd(std::span<const std::byte> tmd,
+                                       const std::vector<std::vector<std::byte>>& streams) {
+    ByteWriter mmd;
+    mmd.u32(8);
+    mmd.u32(static_cast<std::uint32_t>(8 + tmd.size()));
+    mmd.append(tmd);
+    const std::size_t table = mmd.size();
+    for (std::size_t i = 0; i < streams.size(); ++i) {
+        mmd.u32(0);
+    }
+    for (std::size_t i = 0; i < streams.size(); ++i) {
+        if (streams[i].empty()) {
+            continue;
+        }
+        mmd.patchU32(table + (i * 4), static_cast<std::uint32_t>(mmd.size() - table));
+        mmd.append(streams[i]);
+    }
+    return mmd.bytes();
+}
+
+// The skeleton of the sample animations: the entity root, the body root, and two bones drawing objects 0 and 1.
+inline constexpr std::size_t SampleBoneCount = 4;
+
+// Animation with a scale per bone, ten frames: keyframes on frame 1 (bone 1 rotation Y and location X, bone 2
+// scale X, root motion on Z), a sound and a texture move on 2, keyframes that stop everything on 4, a loop from 5
+// to 8 played twice that turns bone 3 on X during frame 6, and a last sound on 9. A texture move never starts a
+// frame in the original: the check for a loop start at the top of a tick would take it for one.
+inline std::vector<std::byte> buildSampleAnimationWithLoop() {
+    ByteWriter s;
+    s.u16(0x8000 | 10);
+    s.words({4096, 4096, 4096, 0, 100, 0, 0, -50, 0});
+    s.words({2048, 4096, 8192, 0, 0, 0, 10, 0, 0});
+    s.words({4096, 4096, 4096, 1024, 0, 0, 0, 20, 0});
+    s.words({0x0001, 0x8000 | 0x400 | 0x100 | 1, 4, 10, -8, 0x8000 | 0x4000 | 2, 2, 4096, 0x8000 | 0x40 | 0, 1, 10});
+    s.words({0x4002, 0x0405});
+    s.words({0x3002, 0x0102, 0x0304, 0x0506});
+    s.words({0x0004, 0x8000 | 0x400 | 0x100 | 1, 1, 0, 0, 0x8000 | 0x4000 | 2, 1, 0, 0x8000 | 0x40 | 0, 1, 0});
+    s.words({0x1002});
+    s.words({0x0006, 0x8000 | 0x800 | 3, 1, 4});
+    s.words({0x0007, 0x8000 | 0x800 | 3, 1, 0});
+    s.words({0x2008, 5});
+    s.words({0x4009, 0x0101});
+    s.words({0x0FFF});
+    return s.bytes();
+}
+
+// Animation without scale whose loop from frame 2 to 4 repeats forever, turning bone 1 on Z.
+inline std::vector<std::byte> buildSampleAnimationForever() {
+    ByteWriter s;
+    s.u16(100);
+    s.words({0, 0, 0, 0, 0, 0});
+    s.words({0, 0, 0, 0, 0, 0});
+    s.words({0, 0, 0, 0, 0, 0});
+    s.words({0x10FF, 0x0002, 0x8000 | 0x200 | 1, 1, 3, 0x2004, 2});
+    return s.bytes();
+}
+
 } // namespace dwe::formats::model::testing

@@ -14,6 +14,9 @@ dwe_add_module(formats
         src/image/png.cpp
         src/image/tim.cpp
         src/image/tim_packs.cpp
+        src/model/animation.cpp
+        src/model/mmd.cpp
+        src/model/skeleton.cpp
         src/model/tmd.cpp
     DEPS core
     PRIVATE_LIBS lodepng
