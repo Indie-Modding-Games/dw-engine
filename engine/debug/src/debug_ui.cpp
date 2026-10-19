@@ -74,8 +74,8 @@ struct DebugUi::Impl {
     bool visible = false;
     bool scrollToBottom = true;
 
-    void drawStats(const FrameStats& stats) const;
-    void drawInput(const input::InputState& input) const;
+    static void drawStats(const FrameStats& stats);
+    static void drawInput(const input::InputState& input);
     void drawConsole(script::ScriptVm& scripts);
 };
 
@@ -137,6 +137,7 @@ DebugUi::~DebugUi() {
     ImGui::DestroyContext();
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static): the event goes to the ImGui context it owns.
 void DebugUi::handleRawEvent(const SDL_Event& event) {
     ImGui_ImplSDL3_ProcessEvent(&event);
 }
@@ -164,33 +165,39 @@ void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input
                                                         IM_COL32(255, 160, 40, 255));
     }
     if (impl_->visible) {
-        impl_->drawStats(stats);
-        impl_->drawInput(input);
+        Impl::drawStats(stats);
+        Impl::drawInput(input);
         impl_->drawConsole(scripts);
     }
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.commands);
 }
 
-void DebugUi::Impl::drawStats(const FrameStats& stats) const {
+void DebugUi::Impl::drawStats(const FrameStats& stats) {
     ImGui::SetNextWindowPos({10, 10}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Frame", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%.0f fps (%.2f ms)", stats.framesPerSecond, stats.frameMilliseconds);
-    ImGui::Text("logic ticks this frame: %d", stats.ticksThisFrame);
+    ImGui::TextUnformatted(
+        std::format("{:.0f} fps ({:.2f} ms)", stats.framesPerSecond, stats.frameMilliseconds).c_str());
+    ImGui::TextUnformatted(std::format("logic ticks this frame: {}", stats.ticksThisFrame).c_str());
     ImGui::End();
 }
 
-void DebugUi::Impl::drawInput(const input::InputState& input) const {
+void DebugUi::Impl::drawInput(const input::InputState& input) {
     ImGui::SetNextWindowPos({10, 90}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Input", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     const bool gamepad = input.lastDevice() == input::DeviceKind::Gamepad;
-    ImGui::Text("last device: %s", gamepad ? familyLabel(input.lastGamepadFamily()) : "keyboard and mouse");
+    ImGui::TextUnformatted(
+        std::format("last device: {}", gamepad ? familyLabel(input.lastGamepadFamily()) : "keyboard and mouse")
+            .c_str());
     ImGui::Separator();
     if (input.gamepads().empty()) {
-        ImGui::TextDisabled("no gamepad connected");
+        ImGui::BeginDisabled();
+        ImGui::TextUnformatted("no gamepad connected");
+        ImGui::EndDisabled();
     }
     for (const input::ConnectedGamepad& pad : input.gamepads()) {
-        ImGui::BulletText("%s (%s)", pad.name.c_str(), familyLabel(pad.family));
+        ImGui::Bullet();
+        ImGui::TextUnformatted(std::format("{} ({})", pad.name, familyLabel(pad.family)).c_str());
     }
     ImGui::Separator();
     for (const auto& entry : input.actionMap().entries()) {

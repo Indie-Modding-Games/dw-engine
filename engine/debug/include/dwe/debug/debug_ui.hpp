@@ -33,6 +33,8 @@ public:
 
     DebugUi(const DebugUi&) = delete;
     DebugUi& operator=(const DebugUi&) = delete;
+    DebugUi(DebugUi&&) = delete;
+    DebugUi& operator=(DebugUi&&) = delete;
     ~DebugUi();
 
     void handleRawEvent(const SDL_Event& event);
