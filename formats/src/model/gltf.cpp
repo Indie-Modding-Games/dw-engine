@@ -431,8 +431,7 @@ std::string animationExtras(const Animation& animation) {
 // Adds the channels of one animation. A channel is left out when the bone keeps its default value for the whole
 // animation, the default being its node's transform.
 void addAnimation(Document& document, const Animation& animation, std::span<const BonePose> defaults) {
-    AnimationInfo info{
-        .name = std::format("anim_{:02}", animation.id), .channels = {}, .extras = animationExtras(animation)};
+    AnimationInfo info{.name = animationName(animation.id), .channels = {}, .extras = animationExtras(animation)};
     const std::uint32_t ticks = animation.tickCount();
     std::vector<float> times(ticks);
     for (std::uint32_t t = 0; t < ticks; ++t) {
@@ -742,6 +741,10 @@ core::Result<std::vector<std::byte>> writeGlb(Document& document, std::size_t bo
 }
 
 } // namespace
+
+std::string animationName(std::size_t id) {
+    return std::format("anim_{:02}", id);
+}
 
 core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd, std::span<const SkeletonBone> skeleton,
                                                    std::span<const Animation> animations,

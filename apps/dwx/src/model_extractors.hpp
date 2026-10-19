@@ -19,7 +19,9 @@
 namespace dwe::dwx {
 
 // The Digimon models, CHDAT/MMD<n>/<name>.MMD: the skeleton of their type from the executable, every animation and
-// the type's texture from CHDAT/ALLTIM.TIM.
+// the type's texture from CHDAT/ALLTIM.TIM. Next to each model goes its contract (content/schemas/
+// model_contract.schema.json): the skeleton and the animations of the original, which dwx validate checks the model
+// against.
 bool handlesDigimonModel(std::string_view path);
 core::Result<Extraction> extractDigimonModel(const Disc& disc, const formats::disc::IsoFile& file);
 
@@ -45,6 +47,8 @@ struct BuiltModel {
     std::vector<std::string> notes;
     std::vector<ModelVariant> variants;
     std::size_t texturedPrimitives = 0;
+    // The glTF names of every animation the original model has, including any that could not be converted.
+    std::vector<std::string> animations;
 };
 
 // Builds a Digimon's model from its MMD file, its texture TIM (uploaded where the TIM says) and its skeleton.

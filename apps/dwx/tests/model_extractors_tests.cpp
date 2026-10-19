@@ -111,6 +111,8 @@ TEST_CASE("a Digimon model gets its skeleton, its animations and an image per pa
     CHECK(parsed->nodes_count == skeleton.size() + 1);
     CHECK(parsed->animations_count == 2);
     CHECK(parsed->images_count == 2);
+    // The contract names the animations of the original's slots, skipping the empty one.
+    CHECK(model->animations == std::vector<std::string>{"anim_00", "anim_02"});
 
     // A texture somewhere else leaves the primitives with their UVs and no image, and says so.
     const auto elsewhere = buildDigimonModel(

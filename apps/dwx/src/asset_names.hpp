@@ -87,6 +87,15 @@ core::Result<assets::AssetId> fontImage();
 // slot as a 3-digit number when the tables are not known.
 core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t slot, std::string_view leaf);
 
+// digimon/<slug>/contract: what a Digimon's model must keep, its skeleton and its animations.
+core::Result<assets::AssetId> modelContract(const GameTables* tables, std::size_t type);
+
+// The models that must have a contract next to them, under ContractLeaf: every Digimon's, in any pack.
+inline constexpr std::string_view ContractedModels = "digimon/*/model";
+inline constexpr std::string_view ContractLeaf = "contract";
+// The schema of the contracts; dwx validate checks the model a contract names against it.
+inline constexpr std::string_view ContractSchema = "model_contract";
+
 // A schema of content/schemas and the patterns of the ids of the documents that follow it (assets::SchemaRule).
 struct DocumentSchema {
     std::string_view schema;

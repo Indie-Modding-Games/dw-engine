@@ -132,6 +132,10 @@ sobre su página, sin imagen, y van a `unknowns`.
   animaciones son todas las del MMD y la escena es solo la entrada del tipo en `CHDAT/ALLTIM.TIM`, que se lee sin
   leer el pack entero (9 sectores por tipo, `model.c: loadDigimonTexture`). Una animación que no se puede reproducir
   va a `unknowns` y el resto del modelo se escribe igual.
+- Junto a cada modelo de Digimon va su **contrato**, `contract.yaml`: el fichero del modelo, el Digimon cuyo esqueleto
+  tiene, el padre de cada hueso (de `DIGIMON_SKELETONS`) y el nombre (`anim_<nn>`) de cada animación del MMD,
+  también de las que no se pudieron reproducir. Un modelo que lo sustituya, el de un mod por ejemplo, tiene que
+  cumplirlo.
 - **Otros modelos** (`static_model`): un nodo por objeto, todos en la raíz, sin animaciones. La escena depende del
   modelo:
   - Puertas (`DOOR/DOOR<nn>.TMD`): los mapas cuya entrada de `DOOR_MAPDATA` incluye la puerta
@@ -196,7 +200,7 @@ content/base/
 ├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, evolution, raise, cards,
 │                       tournaments, medals, music, shops, maps
 ├─ disc/boot.yaml       SYSTEM.CNF
-├─ digimon/<id>/texture.png + texture_meta.yaml, model.glb
+├─ digimon/<id>/texture.png + texture_meta.yaml, model.glb + contract.yaml
 ├─ card/<n>.png + <n>_meta.yaml
 ├─ map/<id>/data.yaml, background_<variante>.png, texture8/<n>.png, texture4/<n>.png (+ _meta.yaml)
 ├─ arena/<nombre>/collision.yaml
@@ -220,6 +224,7 @@ dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de
 | `map` | `map/*/data` |
 | `collision` | `arena/*/collision` |
 | `image` | los `_meta` de las imágenes: `map/*/texture8/*_meta`, `map/*/texture4/*_meta`, `digimon/*/texture_meta`, `card/*_meta`, `effect/*/texture_meta`, `texture/**_meta` |
+| `model_contract` | `digimon/*/contract` |
 | `sound_bank` | `sound/*/bank_meta`, `sound/*/*/bank_meta`, `music/*/font_meta` |
 | `script` | `script/maphead`, `script/*/*` |
 | `text` | `text/*/*` |
@@ -253,6 +258,7 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Efecto de una técnica (`names::effectAsset`) | `effect/<id de la técnica>/<hoja>`, o la ranura con 3 cifras sin tablas | `effect/<id>/script`, `effect/<id>/model` |
 | Película (`names::movieAsset`) | `movie/<nombre>/<hoja>` | `MOVIE/OP1.STR` → `movie/op1/video` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
+| Contrato del modelo de un Digimon (`names::modelContract`) | `digimon/<id>/contract` | `digimon/agum/contract` |
 
 - El id de un Digimon es el de `makeTableIds`, que sale del nombre de fichero de su modelo
   (`PTR_DIGIMON_FILE_NAMES`, cuatro letras en minúsculas). Sin tablas es el tipo con 3 cifras. Todos los assets de un
@@ -315,7 +321,7 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y
 | Mapas: fondos | 513 PNG |
 | Mapas: TIM de 8 y 4 bits | 413 + 167 PNG, con sus YAML |
 | Colisión de arenas (`arena/`) | 2 YAML |
-| Modelos de Digimon (`digimon/<id>/model`) | 178 GLB |
+| Modelos de Digimon (`digimon/<id>/model`) | 178 GLB + 178 contratos YAML |
 | Otros modelos (`model/`) | 66 GLB + 4 variantes |
 | Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |

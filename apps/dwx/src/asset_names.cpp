@@ -147,6 +147,10 @@ core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t 
     return assets::AssetId::parse(std::format("effect/{}/{}", named ? tables->ids.moves[slot] : number(slot), leaf));
 }
 
+core::Result<assets::AssetId> modelContract(const GameTables* tables, std::size_t type) {
+    return digimonAsset(tables, type, ContractLeaf);
+}
+
 const std::vector<DocumentSchema>& documentSchemas() {
     static const std::vector<DocumentSchema> schemas{
         {.schema = "cards", .ids = {"data/cards"}},
@@ -171,6 +175,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "image",
          .ids = {"map/*/texture8/*_meta", "map/*/texture4/*_meta", "digimon/*/texture_meta", "card/*_meta",
                  "effect/*/texture_meta", "texture/**_meta"}},
+        {.schema = ContractSchema, .ids = {"digimon/*/contract"}},
         {.schema = "sound_bank", .ids = {"sound/*/bank_meta", "sound/*/*/bank_meta", "music/*/font_meta"}},
         {.schema = "script", .ids = {"script/maphead", "script/*/*"}},
         {.schema = "text", .ids = {"text/*/*"}},

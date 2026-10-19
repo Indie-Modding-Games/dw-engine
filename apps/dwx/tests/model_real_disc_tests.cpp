@@ -57,11 +57,19 @@ TEST_CASE("the user's disc: every model becomes a GLB that cgltf validates") {
         REQUIRE_MESSAGE(extraction.has_value(), file.path, ": ", errorOf(extraction));
         const bool isDigimon = extractor->name == "digimon_model";
         REQUIRE(!extraction->outputs.empty());
-        CHECK((!isDigimon || extraction->outputs.size() == 1));
+        // A Digimon's model comes with its contract and has no variants.
+        CHECK((!isDigimon || extraction->outputs.size() == 2));
+        if (isDigimon) {
+            CHECK(extraction->outputs[1].id.str().ends_with("/contract"));
+            CHECK(extraction->outputs[1].extension == "yaml");
+        }
         (isDigimon ? digimon : others) += 1;
-        variants += extraction->outputs.size() - 1;
+        variants += isDigimon ? 0 : extraction->outputs.size() - 1;
         partial += extraction->unknowns.empty() ? 0 : 1;
         for (const auto& output : extraction->outputs) {
+            if (output.extension != "glb") {
+                continue;
+            }
             const auto& glb = output.bytes;
             totalBytes += glb.size();
             const cgltf_options options{};

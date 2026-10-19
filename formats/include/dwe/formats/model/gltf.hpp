@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace dwe::formats::model {
@@ -31,6 +32,9 @@ struct ModelTexture {
     // Empty: the UVs are written but no image is embedded. A 16-bit image has one entry, whatever its position.
     std::vector<TexturePalette> palettes;
 };
+
+// The name writeModelGlb gives an animation of the original: anim_ and its id in two digits, such as anim_07.
+std::string animationName(std::size_t id);
 
 // Writes a model as a single binary glTF 2.0 file (.glb): a node per bone, one mesh skinned rigidly to the bones
 // (each vertex has weight 1 on the bone that draws its object), and an animation per simulated animation, sampled at
