@@ -26,7 +26,13 @@ void printUsage() {
     std::println(stderr,
                  "      the engine mounts it. A folder that dwx did not write is refused unless --force, which");
     std::println(stderr, "      writes into it without deleting anything.");
-    std::println(stderr, "Exit codes: 0 known and consistent (extract: written), 1 unknown or inconsistent, 2 error.");
+    std::println(stderr, "  dwx cook <pack folder> -o <folder>");
+    std::println(stderr,
+                 "      Cooks a pack into the forms the game loads: PNG to KTX2 with mipmaps, binary glTF checked,");
+    std::println(stderr,
+                 "      everything else copied. A folder from an earlier cook is updated: only what changed is");
+    std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
+    std::println(stderr, "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error.");
 }
 
 } // namespace
@@ -64,6 +70,12 @@ int main(int argc, char** argv) {
         if (paths.size() == 1) {
             return list ? listDisc(std::filesystem::path{paths.front()}, verifyImage)
                         : extractDisc(std::filesystem::path{paths.front()}, out, force);
+        }
+    }
+    if (command == "cook" && arguments.size() == 5) {
+        const std::string_view option{arguments[3]};
+        if (option == "-o" || option == "--out") {
+            return cook(std::filesystem::path{arguments[2]}, std::filesystem::path{arguments[4]});
         }
     }
     printUsage();

@@ -3,7 +3,9 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/sha1.hpp>
 
+#include <cstddef>
 #include <filesystem>
+#include <span>
 
 namespace dwe::dwx {
 
@@ -16,6 +18,9 @@ constexpr int ExitFailed = 2;
 // Hashes a file in chunks, so a whole disc image never has to fit in memory.
 core::Result<core::Sha1Digest> hashFile(const std::filesystem::path& path);
 
+// Writes a whole file, creating the folders it needs.
+core::Result<void> writeFile(const std::filesystem::path& file, std::span<const std::byte> bytes);
+
 // dwx verify: hashes a file and says which known release it belongs to.
 int verify(const std::filesystem::path& path);
 
@@ -25,5 +30,8 @@ int listDisc(const std::filesystem::path& path, bool verifyImage);
 // dwx extract: writes the base pack and its coverage report from a disc image into a folder, then checks that the
 // engine mounts it.
 int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force);
+
+// dwx cook: cooks the pack in one folder into another, in the forms the game loads.
+int cook(const std::filesystem::path& pack, const std::filesystem::path& out);
 
 } // namespace dwe::dwx

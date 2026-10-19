@@ -5,6 +5,7 @@ dwe_add_module(dwx
         src/asset_names.cpp
         src/audio_extractors.cpp
         src/base_pack.cpp
+        src/cook.cpp
         src/disc_description.cpp
         src/effect_extractors.cpp
         src/extract.cpp

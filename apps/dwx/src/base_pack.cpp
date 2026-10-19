@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+#include "dwx.hpp"
+
 namespace dwe::dwx {
 
 namespace {
@@ -56,20 +58,6 @@ YamlNode quotedList(std::span<const std::string> texts) {
 bool isExtension(std::string_view extension) {
     return !extension.empty() &&
            std::ranges::all_of(extension, [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'); });
-}
-
-core::Result<void> writeFile(const std::filesystem::path& file, std::span<const std::byte> bytes) {
-    std::error_code error;
-    std::filesystem::create_directories(file.parent_path(), error);
-    if (error) {
-        return core::fail(std::format("cannot create {}: {}", file.parent_path().string(), error.message()));
-    }
-    std::ofstream stream{file, std::ios::binary | std::ios::trunc};
-    stream.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-    if (!stream) {
-        return core::fail(std::format("cannot write {}", file.string()));
-    }
-    return {};
 }
 
 core::Result<void> writeText(const std::filesystem::path& file, std::string_view text) {
@@ -180,6 +168,20 @@ std::vector<std::vector<std::string>> findDuplicates(const std::vector<OutputFil
 }
 
 } // namespace
+
+core::Result<void> writeFile(const std::filesystem::path& file, std::span<const std::byte> bytes) {
+    std::error_code error;
+    std::filesystem::create_directories(file.parent_path(), error);
+    if (error) {
+        return core::fail(std::format("cannot create {}: {}", file.parent_path().string(), error.message()));
+    }
+    std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+    stream.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (!stream) {
+        return core::fail(std::format("cannot write {}", file.string()));
+    }
+    return {};
+}
 
 std::string_view fileStatusName(FileStatus status) {
     switch (status) {
