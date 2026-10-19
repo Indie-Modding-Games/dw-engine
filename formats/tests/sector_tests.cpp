@@ -30,6 +30,22 @@ TEST_CASE("raw sectors give the user data of their mode and form") {
     CHECK(decodedMode1->userData.data() == mode1.data() + 16);
 }
 
+TEST_CASE("mode 2 sectors keep their subheader") {
+    auto audio = fixtures::makeRawSector(Bytes(Form2DataSize), 2, SectorForm::Form2);
+    fixtures::putU8(audio, 16, 1);
+    fixtures::putU8(audio, 17, 3);
+    fixtures::putU8(audio, 18, 0x64);
+    fixtures::putU8(audio, 19, 0x05);
+    const auto decoded = decodeSector(audio, SectorLayout::Raw);
+    REQUIRE(decoded.has_value());
+    CHECK(decoded->subheader == XaSubheader{.file = 1, .channel = 3, .submode = 0x64, .coding = 0x05});
+
+    const auto mode1 = fixtures::makeRawSector(Bytes(Form1DataSize), 1, SectorForm::Form1);
+    CHECK_FALSE(decodeSector(mode1, SectorLayout::Raw)->subheader.has_value());
+    const Bytes cooked(Form1DataSize);
+    CHECK_FALSE(decodeSector(cooked, SectorLayout::Cooked)->subheader.has_value());
+}
+
 TEST_CASE("malformed raw sectors are rejected") {
     auto sector = fixtures::makeRawSector({}, 2, SectorForm::Form1);
     CHECK_FALSE(decodeSector(std::span{sector}.first(RawSectorSize - 1), SectorLayout::Raw).has_value());

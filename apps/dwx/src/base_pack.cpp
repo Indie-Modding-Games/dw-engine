@@ -94,7 +94,7 @@ public:
             return sector;
         }
         copy.assign(sector->userData.begin(), sector->userData.end());
-        return formats::disc::SectorData{.form = sector->form, .userData = copy};
+        return formats::disc::SectorData{.form = sector->form, .userData = copy, .subheader = sector->subheader};
     }
 
 private:

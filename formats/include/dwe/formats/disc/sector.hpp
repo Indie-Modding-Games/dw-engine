@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 
 namespace dwe::formats::disc {
@@ -32,10 +33,23 @@ enum class SectorForm : std::uint8_t {
     Form2, // 2324 bytes: mode 2 form 2
 };
 
+// The subheader of a mode 2 sector (CD-ROM XA): the file and channel of an interleaved stream the sector belongs to,
+// what it holds (submode bits) and, for audio, how the samples are coded.
+struct XaSubheader {
+    std::uint8_t file = 0;
+    std::uint8_t channel = 0;
+    std::uint8_t submode = 0;
+    std::uint8_t coding = 0;
+
+    bool operator==(const XaSubheader&) const = default;
+};
+
 // The user data of one sector. The span points into the buffer the sector was decoded from.
 struct SectorData {
     SectorForm form;
     std::span<const std::byte> userData;
+    // Only mode 2 sectors of a raw image have one; a cooked image does not keep it.
+    std::optional<XaSubheader> subheader;
 };
 
 // Decodes one stored sector: checks the sync pattern and the mode of a raw sector and returns its user data.
