@@ -43,6 +43,13 @@ jobs:
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
         run: scripts/dev.sh build
 
+      # After the build: the compile commands read the module maps that the build writes.
+      - name: Run clang-tidy
+        env:
+          PRESET: ci
+          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+        run: scripts/dev.sh tidy --warnings-as-errors='*'
+
       - name: Test
         env:
           PRESET: ci

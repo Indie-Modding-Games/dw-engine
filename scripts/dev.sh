@@ -20,7 +20,7 @@ Usage: scripts/dev.sh <command> [args]
   build               Build the preset
   test                Run the tests of the preset
   format [--check]    Format the sources with clang-format
-  tidy                Run clang-tidy on the sources
+  tidy [args]         Run clang-tidy on the sources, passing it args
   run [args]          Run the game on the host
 EOF
 }
@@ -85,7 +85,7 @@ case "$command" in
         fi
         ;;
     tidy)
-        sources | grep '\.cpp$' | in_container xargs -r clang-tidy -p "build/$preset" --quiet
+        sources | grep '\.cpp$' | in_container xargs -r clang-tidy -p "build/$preset" --quiet "$@"
         ;;
     run)
         build_dir="$root/build/$preset"
