@@ -64,14 +64,14 @@ cero pendientes.
 |---|---|
 | Disco: CUE, sectores, ISO9660 y tabla de ficheros del ejecutable | Hecho. `dwx extract --list` lista los 818 ficheros del disco US con su SHA-1; la tabla del ejecutable coincide con el volumen |
 | Sistema de ficheros virtual con capas y manifiestos | Hecho: módulo `assets` (IDs por nombre, `pack.yaml`, capas, override por ID) y YAML en `core` ([ADR 0016](adr/0016-yaml-con-libyaml.md)) |
-| TIM y packs → PNG | En curso |
-| `dwx extract` a `content/base/` con informe de cobertura | Pendiente |
-| TMD/MMD y animaciones → glTF | En curso |
-| Mapas y tablas del ejecutable → PNG + YAML, esquemas | En curso |
+| TIM y packs → PNG | Hecho: TIM sueltos, apilados, ALLTIM y CARD.ALL (315 PNG con su paleta en YAML) |
+| `dwx extract` a `content/base/` con informe de cobertura | Hecho: paquete base que monta el VFS, salida determinista y `coverage.yaml`. Disco US: 55 de 818 ficheros extraídos; el resto, pendiente |
+| TMD/MMD y animaciones → glTF | Lectores y escritor `.glb` hechos; falta conectarlos a `dwx extract` |
+| Mapas y tablas del ejecutable → PNG + YAML, esquemas | Lectores, YAML y esquemas hechos; falta conectarlos a `dwx extract` |
 | Textos, VHB/SEQ, STR, scripts SCN | Pendiente |
 | `dwx validate`, `cook` y `pack` | Pendiente |
-| Visor ImGui | Pendiente |
-| Fichas de referencia: cuidado, evolución y batalla | En revisión |
+| Visor ImGui | En curso (texturas; las mallas necesitan el render de la fase 2) |
+| Fichas de referencia: cuidado, evolución y batalla | Hecho, con los puntos dudosos marcados |
 
 ## Fase 2 — Prueba vertical
 
