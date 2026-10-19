@@ -19,6 +19,10 @@ Las reglas que no cambian ([dependencias](dependency-rules.md), [tubería de ass
 - `dwx extract` identifica la versión por el SHA-1 de la imagen y de su ejecutable. El decomp solo tiene SHA-1 del
   ejecutable y de los overlays (`config/<ver>/*.yaml`); la lista de SHA-1 de cada fichero de datos la generamos
   nosotros la primera vez, desde un disco verificado, y se guarda en `formats/` como tabla (solo hashes y nombres).
+- Ya existe la primera pieza: `dwx verify <fichero>` calcula el SHA-1 de un fichero y lo busca en la tabla de
+  `formats/disc` (`known_releases.cpp`). Hoy la tabla tiene los ejecutables de las seis versiones del decomp; **faltan
+  los hashes de las imágenes completas** (pistas de Redump), que se añaden desde la ficha de Redump o desde un volcado
+  verificado, nunca a ojo.
 
 ## Organización de `formats/`
 
@@ -198,6 +202,7 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 
 | Comando | Entrada → salida | Qué comprueba |
 |---|---|---|
+| `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
 | `dwx extract <imagen> [--out content/base]` | Disco → fuente | SHA-1 de la imagen y versión; cada fichero de la tabla tiene un extractor; informe de cobertura |
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) |
 | `dwx cook <paquete>` | Fuente → cocinado | Que todo lo cocinado se puede volver a leer |
