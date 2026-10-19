@@ -11,6 +11,7 @@ dwe_add_module(dwx
         src/extract_disc.cpp
         src/extractors.cpp
         src/game_tables.cpp
+        src/ktx2.cpp
         src/image_extractors.cpp
         src/map_extractors.cpp
         src/overlay_extractor.cpp
@@ -20,6 +21,7 @@ dwe_add_module(dwx
         src/model_extractors.cpp
         src/model_textures.cpp
         src/text_extractors.cpp
+        src/texture_cooker.cpp
         src/verify.cpp
     DEPS core formats assets
     TEST_LIBS dwe_cgltf)
