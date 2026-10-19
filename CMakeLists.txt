@@ -16,3 +16,4 @@ if(BUILD_TESTING)
 endif()
 
 add_subdirectory(engine)
+add_subdirectory(apps)
