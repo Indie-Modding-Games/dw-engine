@@ -6,7 +6,9 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -29,8 +31,8 @@ using dwe::formats::disc::SectorLayout;
 
 namespace {
 
-// A test extractor for the files of folder A: it copies each one to test/<name>.bin, reports an unknown for TWO and
-// fails on BAD.
+// A test extractor for the files of folder A: it copies each one to test/<name>.bin, reports an unknown and a note
+// for TWO and fails on BAD.
 bool handlesFolderA(std::string_view path) {
     return path.starts_with("A/");
 }
@@ -49,17 +51,36 @@ dwe::core::Result<Extraction> copyFile(const Disc& disc, const IsoFile& file) {
         OutputFile{.id = *AssetId::parse("test/" + name), .extension = "bin", .bytes = std::move(*bytes)});
     if (file.path == "A/TWO.BIN") {
         extraction.unknowns.emplace_back("the last byte means nothing yet");
+        extraction.notes.emplace_back("a note for the reader");
     }
     return extraction;
 }
 
 dwe::core::Result<Extraction> clashingFile(const Disc& /*disc*/, const IsoFile& /*file*/) {
     Extraction extraction;
-    extraction.outputs.push_back(OutputFile{.id = *AssetId::parse("coverage"), .extension = "bin", .bytes = {}});
+    extraction.outputs.push_back(OutputFile{.id = *AssetId::parse("dwx/coverage"), .extension = "bin", .bytes = {}});
+    return extraction;
+}
+
+// A test extractor that gives the same bytes for every file of folder A, once as an image and once as text.
+dwe::core::Result<Extraction> twinFile(const Disc& /*disc*/, const IsoFile& file) {
+    std::string name = file.path;
+    std::ranges::replace(name, '/', '_');
+    std::ranges::transform(name, name.begin(),
+                           [](char c) { return c == '.' ? '_' : static_cast<char>(std::tolower(c)); });
+    Extraction extraction;
+    for (const auto* extension : {"png", "yaml"}) {
+        const std::string suffix = std::string_view{extension} == "png" ? "" : "_text";
+        extraction.outputs.push_back(
+            OutputFile{.id = *AssetId::parse("twin/" + name.substr(0, name.size() - 4) + suffix),
+                       .extension = extension,
+                       .bytes = fixtures::patternBytes(16, 7)});
+    }
     return extraction;
 }
 
 constexpr std::array TestRegistry = {Extractor{.name = "copy", .handles = handlesFolderA, .extract = copyFile}};
+constexpr std::array TwinRegistry = {Extractor{.name = "twin", .handles = handlesFolderA, .extract = twinFile}};
 constexpr std::array ClashingRegistry = {
     Extractor{.name = "clash", .handles = handlesFolderA, .extract = clashingFile}};
 
@@ -124,6 +145,23 @@ TEST_CASE("files get the status of their extraction") {
     CHECK(summary.outputs == 2);
 }
 
+TEST_CASE("outputs with the same bytes are reported as duplicates") {
+    const TestDisc fixture;
+    const auto run = runExtractors(fixture.disc(), TwinRegistry);
+    REQUIRE(run.has_value());
+    // Each file of folder A gives the same image and the same text; an image and a text are never the same output.
+    REQUIRE(run->duplicates.size() == 2);
+    CHECK(run->duplicates[0] == std::vector<std::string>{"twin/a_bad.png", "twin/a_one.png", "twin/a_two.png"});
+    CHECK(run->duplicates[1].size() == 3);
+    CHECK(summarize(*run).duplicates == 4);
+    const auto text = coverageYaml(*run, fixture.info);
+    REQUIRE(text.has_value());
+    const auto yaml = dwe::core::parseYaml(*text);
+    REQUIRE(yaml.has_value());
+    CHECK(yaml->find("summary")->find("duplicate_outputs")->text() == "4");
+    CHECK(yaml->find("duplicates")->items()[0].items().size() == 3);
+}
+
 TEST_CASE("an output id that is reserved or repeated is an error") {
     const TestDisc fixture;
     CHECK_FALSE(runExtractors(fixture.disc(), ClashingRegistry).has_value());
@@ -144,6 +182,7 @@ TEST_CASE("the coverage report lists every file") {
     CHECK(two.find("status")->text() == "partial");
     CHECK(two.find("extractor")->text() == "copy");
     CHECK(two.find("unknowns")->items().size() == 1);
+    CHECK(two.find("notes")->items()[0].text() == "a note for the reader");
     CHECK(yaml->find("files")->items()[3].find("extractor") == nullptr);
 }
 
@@ -161,7 +200,7 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
     const auto files = readTree(first);
     CHECK(files == readTree(second));
     CHECK(files.contains("pack.yaml"));
-    CHECK(files.contains("coverage.yaml"));
+    CHECK(files.contains("dwx/coverage.yaml"));
     CHECK(files.contains(".dwx-extract"));
     CHECK(files.at("test/one.bin").size() == 3000);
 

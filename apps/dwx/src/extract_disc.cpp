@@ -78,7 +78,7 @@ int extractDisc(const std::filesystem::path& path, const std::filesystem::path& 
                  summary.partial, summary.pending);
     std::println("Bytes covered: {} of {} ({:.1f} %)", summary.bytesCovered, summary.bytes,
                  percent(summary.bytesCovered, summary.bytes));
-    std::println("Outputs: {}", summary.outputs);
+    std::println("Outputs: {} ({} repeat another output byte for byte)", summary.outputs, summary.duplicates);
 
     const auto assets = checkBasePack(out, *run);
     if (!assets) {

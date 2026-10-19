@@ -9,6 +9,7 @@
 #include <array>
 #include <format>
 #include <fstream>
+#include <map>
 #include <set>
 #include <system_error>
 #include <utility>
@@ -23,12 +24,14 @@ using core::YamlNode;
 constexpr std::string_view PackId = "base";
 constexpr std::string_view PackVersion = "0.1.0";
 constexpr std::string_view ManifestFile = "pack.yaml";
-constexpr std::string_view CoverageFile = "coverage.yaml";
+// The tool's own files go in its folder of the pack, so their ids cannot clash with an asset's.
+constexpr std::string_view ToolFolder = "dwx/";
+constexpr std::string_view CoverageFile = "dwx/coverage.yaml";
 // Hidden, so the virtual file system does not take it for an asset.
 constexpr std::string_view MarkerFile = ".dwx-extract";
 constexpr std::string_view MarkerText = "Written by dwx extract. The next extraction empties this folder.\n";
-// The pack's own files take these asset ids.
-constexpr std::array ReservedIds = {std::string_view{"pack"}, std::string_view{"coverage"}};
+// The manifest takes this asset id.
+constexpr std::string_view ManifestId = "pack";
 
 YamlNode quoted(std::string text) {
     return YamlNode::scalar(std::move(text), YamlNode::ScalarStyle::Quoted);
@@ -79,6 +82,27 @@ core::Result<std::string> manifestYaml() {
     return core::emitYaml(manifest);
 }
 
+// Groups the outputs with the same extension and bytes, in the order of their first output.
+std::vector<std::vector<std::string>> findDuplicates(const std::vector<OutputFile>& outputs) {
+    std::map<std::string, std::vector<std::string>> byContent;
+    std::vector<std::string> order;
+    for (const auto& output : outputs) {
+        const std::string key = std::format("{}:{}", output.extension, core::toHex(core::sha1(output.bytes)));
+        auto& paths = byContent[key];
+        if (paths.empty()) {
+            order.push_back(key);
+        }
+        paths.push_back(outputPath(output));
+    }
+    std::vector<std::vector<std::string>> groups;
+    for (const auto& key : order) {
+        if (auto& paths = byContent[key]; paths.size() > 1) {
+            groups.push_back(std::move(paths));
+        }
+    }
+    return groups;
+}
+
 } // namespace
 
 std::string_view fileStatusName(FileStatus status) {
@@ -95,7 +119,7 @@ std::string_view fileStatusName(FileStatus status) {
 
 core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry) {
     ExtractionRun run;
-    std::set<std::string, std::less<>> ids{ReservedIds.begin(), ReservedIds.end()};
+    std::set<std::string, std::less<>> ids{std::string{ManifestId}};
     for (const auto& file : disc.volume().files) {
         const auto digest = formats::disc::hashIsoFile(disc.source(), file);
         if (!digest) {
@@ -106,7 +130,8 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
                           .extractor = {},
                           .status = FileStatus::Pending,
                           .outputs = {},
-                          .unknowns = {}};
+                          .unknowns = {},
+                          .notes = {}};
         if (const Extractor* extractor = findExtractor(registry, file.path); extractor != nullptr) {
             report.extractor = extractor->name;
             auto extraction = extractor->extract(disc, file);
@@ -118,7 +143,7 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
                         return core::fail(std::format("{}: extractor {} gave '{}' the extension '{}'", file.path,
                                                       extractor->name, output.id.str(), output.extension));
                     }
-                    if (!ids.insert(output.id.str()).second) {
+                    if (output.id.str().starts_with(ToolFolder) || !ids.insert(output.id.str()).second) {
                         return core::fail(std::format("{}: extractor {} gave the asset id '{}' twice or a reserved "
                                                       "one",
                                                       file.path, extractor->name, output.id.str()));
@@ -127,11 +152,13 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
                     run.outputs.push_back(std::move(output));
                 }
                 report.unknowns = std::move(extraction->unknowns);
+                report.notes = std::move(extraction->notes);
             }
             report.status = report.unknowns.empty() ? FileStatus::Extracted : FileStatus::Partial;
         }
         run.files.push_back(std::move(report));
     }
+    run.duplicates = findDuplicates(run.outputs);
     return run;
 }
 
@@ -139,6 +166,9 @@ CoverageSummary summarize(const ExtractionRun& run) {
     CoverageSummary summary;
     summary.files = run.files.size();
     summary.outputs = run.outputs.size();
+    for (const auto& group : run.duplicates) {
+        summary.duplicates += group.size() - 1;
+    }
     for (const auto& report : run.files) {
         summary.bytes += report.file.size;
         switch (report.status) {
@@ -174,6 +204,7 @@ core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo&
     totals.set("bytes", number(summary.bytes));
     totals.set("bytes_covered", number(summary.bytesCovered));
     totals.set("outputs", number(summary.outputs));
+    totals.set("duplicate_outputs", number(summary.duplicates));
 
     YamlNode files = YamlNode::sequence();
     for (const auto& report : run.files) {
@@ -191,6 +222,9 @@ core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo&
         if (!report.unknowns.empty()) {
             entry.set("unknowns", quotedList(report.unknowns));
         }
+        if (!report.notes.empty()) {
+            entry.set("notes", quotedList(report.notes));
+        }
         files.append(std::move(entry));
     }
 
@@ -198,6 +232,11 @@ core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo&
     root.set("disc", std::move(disc));
     root.set("summary", std::move(totals));
     root.set("files", std::move(files));
+    YamlNode duplicates = YamlNode::sequence();
+    for (const auto& group : run.duplicates) {
+        duplicates.append(quotedList(group));
+    }
+    root.set("duplicates", std::move(duplicates));
     return core::emitYaml(root);
 }
 

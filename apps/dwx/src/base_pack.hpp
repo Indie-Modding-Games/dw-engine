@@ -33,12 +33,16 @@ struct FileReport {
     FileStatus status = FileStatus::Pending;
     std::vector<std::string> outputs; // paths inside the pack
     std::vector<std::string> unknowns;
+    std::vector<std::string> notes;
 };
 
 // Everything one extraction made, in the volume's path order.
 struct ExtractionRun {
     std::vector<FileReport> files;
     std::vector<OutputFile> outputs;
+    // Outputs with the same extension and bytes, as groups of paths in output order; the same image stored in
+    // several disc files gives one group.
+    std::vector<std::vector<std::string>> duplicates;
 };
 
 // The totals of an extraction.
@@ -50,17 +54,19 @@ struct CoverageSummary {
     std::uint64_t bytes = 0;
     std::uint64_t bytesCovered = 0; // in files that are extracted or partial
     std::size_t outputs = 0;
+    std::size_t duplicates = 0; // outputs that repeat an earlier one
 };
 
 // Hashes every file of the volume and runs the extractor that takes it. An extractor that fails leaves its file
-// partial, with the error as an unknown; two outputs with the same asset id are an error of the tool.
+// partial, with the error as an unknown; two outputs with the same asset id, or one in the tool's own folder (dwx/),
+// are an error of the tool.
 core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry);
 
 // Counts the files of each status and the bytes covered.
 CoverageSummary summarize(const ExtractionRun& run);
 
-// Writes the coverage report: the disc, the totals and, per file, its path, size, SHA-1, extractor, status, outputs
-// and unknowns. The same run gives the same text.
+// Writes the coverage report: the disc, the totals, per file its path, size, SHA-1, extractor, status, outputs,
+// unknowns and notes, and the groups of duplicate outputs. The same run gives the same text.
 core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo& info);
 
 // Makes the output folder ready: creates it, or empties it if a previous extraction wrote it. A folder with other

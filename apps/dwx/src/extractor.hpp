@@ -30,6 +30,9 @@ struct Extraction {
     // What it did not understand or had to skip: byte ranges, fields, entries that did not decode, warnings of the
     // readers. A file with unknowns is reported as partly extracted.
     std::vector<std::string> unknowns;
+    // What a reader of the report should know that is not missing: what the file holds that is not an asset, where
+    // the data refers to something absent.
+    std::vector<std::string> notes;
 };
 
 // What the tools know about the disc as a whole.
