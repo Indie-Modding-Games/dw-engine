@@ -51,12 +51,17 @@ function(dwe_apply_options target)
         # clang-cl takes clang's -W options as they are, but its -Wall means -Weverything, as cl's /Wall does: /W4 is
         # clang's -Wall -Wextra. Exceptions are off in the compiler and in the MSVC STL.
         target_compile_options(${target} PRIVATE /W4 ${warnings} /EHs-c-)
-        target_compile_definitions(${target} PRIVATE _HAS_EXCEPTIONS=0)
+        # Without exceptions at() cannot report anything, so the STL checks indexing instead: debug builds already
+        # do with _ITERATOR_DEBUG_LEVEL=2, and hardening adds the cheap checks to the others.
+        target_compile_definitions(${target} PRIVATE _HAS_EXCEPTIONS=0 _MSVC_STL_HARDENING=1)
         if(DWE_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE /WX)
         endif()
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra ${warnings} -fno-exceptions)
+        # Without exceptions at() cannot report anything, so libc++ checks indexing and other preconditions instead.
+        target_compile_definitions(${target} PRIVATE
+            _LIBCPP_HARDENING_MODE=$<IF:$<CONFIG:Debug>,_LIBCPP_HARDENING_MODE_EXTENSIVE,_LIBCPP_HARDENING_MODE_FAST>)
         if(DWE_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
         endif()
