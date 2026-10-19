@@ -91,6 +91,11 @@ encima.
 | `sources(id)` | Todos los paquetes que tienen ese ID, de abajo arriba |
 | `overriddenIds()` | Los IDs que tiene más de un paquete, para depurar qué sobrescribe a qué |
 
+Un paquete también puede ser un [archivo `.pak`](../formats/pak.md), que se abre con `PakFileSystem`. Cada paquete
+se monta con su propio sistema de ficheros (`PackLocation`: el sistema de ficheros y la raíz del paquete en él), así
+que una pila puede mezclar carpetas y archivos: `mount(sistemaDeFicheros, carpetas)` es el caso de todos en el mismo.
+`listPackFiles` lista los ficheros de un paquete con su ID y comprueba las mismas reglas que el montaje.
+
 Para saber qué montar, `findPacks(carpeta)` devuelve la propia carpeta si tiene `pack.yaml`, y si no, cada subcarpeta
 inmediata que lo tenga. Así se puede montar `content/base` o todo `content/`.
 

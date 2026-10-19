@@ -20,3 +20,10 @@ Ninguna página contiene datos del juego: solo estructuras, nombres de fichero y
 | [`dwx extract`](extract.md) | Paquete base, ids de asset, extractores e informe de cobertura | `apps/dwx` |
 | [Textos y fuente](textos.md) | Juego de caracteres, cadenas de bytes y texto de script a UTF-8 con etiquetas, fuente a atlas PNG y manifiesto de cadenas | `formats/text` |
 | [Scripts de eventos](scripts.md) | `MAPHEAD.SCN`, `DG.SCN`, cabecera, desensamblador, barrido y listado YAML | `formats/script` |
+
+Los formatos propios del motor, los que escribe `dwx` para el estado cocinado:
+
+| Página | Qué cubre | Código |
+|---|---|---|
+| [Archivo `.pak`](pak.md) | Un paquete en un solo fichero: cabecera, tabla de contenidos, SHA-1 por entrada, cómo se monta | `engine/assets` |
+| [Texturas KTX2](ktx2.md) | Los campos de KTX2 que escribe `dwx cook` y cómo calcula los mipmaps | `apps/dwx` |

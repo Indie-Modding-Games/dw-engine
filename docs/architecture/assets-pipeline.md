@@ -30,7 +30,7 @@ cobertura que lista lo que falte.
 | Tipo | Original | Fuente | Cocinado |
 |---|---|---|---|
 | Modelos y animaciones | TMD/MMD | glTF 2.0 (malla, esqueleto y animaciones) | Malla binaria + paquete de animaciones |
-| Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 (BC7) |
+| Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 (hoy RGBA8 sin comprimir; BC7 o Basis cuando se apruebe) |
 | Fondos de mapa | Imagen prerenderizada de día, atardecer y noche | PNG por capa + máscara de profundidad | KTX2 |
 | Datos de mapa | Colisión, warps, NPCs, cámara | YAML | Binario |
 | Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | Binario |
@@ -75,17 +75,54 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 |---|---|
 | `dwx extract <disco>` | Comprueba el SHA-1 del disco y genera la base en formato fuente |
 | `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon) |
-| `dwx cook <paquete>` | Fuente → cocinado |
-| `dwx pack <paquete>` | Genera un paquete distribuible con su manifiesto |
+| `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado, en otra carpeta |
+| `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
 
 La primera vez que se abre el juego, el launcher ejecuta `extract` y `cook` sobre el disco del usuario y guarda el
 resultado en caché.
+
+## Cocinar
+
+`dwx cook` lee un paquete en formato fuente y escribe otro con el mismo `pack.yaml` y los mismos IDs, pero cada
+fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+
+| Fuente | Cocinado | Cocinero |
+|---|---|---|
+| PNG | KTX2 RGBA8 sin comprimir, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
+| GLB | El mismo GLB, con la cabecera comprobada | `glb` |
+| Cualquier otro (YAML, WAV, MIDI, SF2…) | Copiado tal cual | — |
+
+- Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina.
+- **Caché:** la carpeta de salida guarda en `.dwx-cook` (oculto, así no es un asset), por cada fichero, el SHA-1 de
+  su fuente, el cocinero con su versión y el SHA-1 de lo que escribió. Al volver a cocinar en la misma carpeta, lo que
+  no cambió se deja como está, lo que cambió (o se tocó a mano) se cocina otra vez y lo que ya no tiene fuente se
+  borra. Dos assets con los mismos bytes se cocinan una sola vez.
+- **Determinista:** el mismo paquete da los mismos bytes, con caché o sin ella.
+- Se niega a escribir en una carpeta con ficheros que no escribió `dwx cook`, y en una que esté dentro del paquete o
+  lo contenga.
+- Lo que falta, porque necesita dependencias que el equipo tiene que aprobar: supercompresión Basis o BC7 para las
+  texturas y Opus para el audio. Están en las propuestas del ADR 0017.
+
+## Empaquetar
+
+`dwx pack` guarda un paquete (fuente o cocinado) en un [archivo `.pak`](../formats/pak.md): el `pack.yaml` y todos
+sus ficheros, ordenados por ID, con el SHA-1 de cada uno. No comprime todavía. Al terminar abre el archivo y lee cada
+entrada para comprobar que coincide con la carpeta.
+
+El motor monta un `.pak` igual que una carpeta (`PakFileSystem`), así que en una misma pila puede haber paquetes de
+las dos clases: por ejemplo, la base en `.pak` y un mod en su carpeta mientras se edita.
+
+```text
+dwx extract disco.cue --out content/base
+dwx cook content/base -o content/cooked
+dwx pack content/cooked -o base.pak
+```
 
 ## Dónde vive cada cosa
 
 | Qué | Dónde |
 |---|---|
-| Base extraída (`content/base/`) | Solo en la máquina de cada usuario; está en `.gitignore` |
+| Base extraída (`content/base/`) y cocinada (`content/cooked/`) | Solo en la máquina de cada usuario; están en `.gitignore` |
 | Datos y Lua creados por el equipo | `content/packs/` en este repositorio |
 | Arte fuente del equipo (`.blend`, `.kra`, glTF, audio) | Repositorio de assets con Git LFS |
 | Fixtures para tests y CI | `content/fixtures/`, hechos por el equipo |

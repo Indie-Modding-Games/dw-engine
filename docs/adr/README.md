@@ -50,3 +50,4 @@ sustituido.
 | [0014](0014-mandos-y-entrada.md) | Mandos y entrada por acciones | Propuesta |
 | [0015](0015-desarrollo-en-contenedor.md) | Compilar dentro de un contenedor Docker | Aceptada |
 | [0016](0016-yaml-con-libyaml.md) | YAML con libyaml, envuelto en `core` | Aceptada |
+| [0017](0017-cocinado-y-archivos-pak.md) | Cocinado sin dependencias nuevas y archivos `.pak` propios | Propuesta |
