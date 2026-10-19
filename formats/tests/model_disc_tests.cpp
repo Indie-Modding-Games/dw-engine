@@ -1,14 +1,18 @@
 #include <dwe/formats/model/animation.hpp>
+#include <dwe/formats/model/gltf.hpp>
 #include <dwe/formats/model/mmd.hpp>
 #include <dwe/formats/model/skeleton.hpp>
 
+#include <cgltf.h>
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -48,7 +52,8 @@ std::vector<SkeletonBone> parseSkeleton(std::string_view text) {
 } // namespace
 
 // Runs only on a developer's machine, against a file of their own disc: DWE_MMD_SAMPLE is the path of an MMD and
-// DWE_MMD_SKELETON, if set, its skeleton as "object:parent,...". Nothing from the disc is part of the repository.
+// DWE_MMD_SKELETON, if set, its skeleton as "object:parent,...", which also writes the model as a GLB, reads it back
+// and, with DWE_GLB_OUT, saves it there. Nothing from the disc is part of the repository.
 TEST_CASE("a model of the user's disc is read and every animation plays") {
     const char* path = std::getenv("DWE_MMD_SAMPLE");
     if (path == nullptr) {
@@ -74,7 +79,7 @@ TEST_CASE("a model of the user's disc is read and every animation plays") {
     const auto skeleton = parseSkeleton(skeletonText);
     const auto valid = validateSkeleton(skeleton, mmd->tmd.objects.size());
     REQUIRE_MESSAGE(valid.has_value(), valid.error().message);
-    std::size_t played = 0;
+    std::vector<Animation> animations;
     std::size_t ticks = 0;
     std::size_t forever = 0;
     for (std::size_t id = 0; id < mmd->animations.size(); ++id) {
@@ -85,9 +90,51 @@ TEST_CASE("a model of the user's disc is read and every animation plays") {
         const auto animation =
             simulateAnimation(std::span(bytes).subspan(*offset), static_cast<std::uint8_t>(id), skeleton.size());
         REQUIRE_MESSAGE(animation.has_value(), animation.error().message);
-        ++played;
         ticks += animation->tickCount();
         forever += animation->endsInLoop ? 1 : 0;
+        animations.push_back(*animation);
     }
-    MESSAGE(played, " animations, ", ticks, " ticks, ", forever, " end in a loop");
+    MESSAGE(animations.size(), " animations, ", ticks, " ticks, ", forever, " end in a loop");
+
+    // The textures of these models: a 4-bit TIM at (320, 0) with its palettes from (0, 488), one row per palette.
+    const std::array<std::byte, 1> placeholder{};
+    const ModelTexture texture{.pixelX = 320,
+                               .pixelY = 0,
+                               .clutX = 0,
+                               .clutY = 488,
+                               .width = 256,
+                               .height = 128,
+                               .pngPerPaletteRow = std::vector<std::span<const std::byte>>(16, placeholder)};
+    const auto glb = writeModelGlb(mmd->tmd, skeleton, animations, texture);
+    REQUIRE_MESSAGE(glb.has_value(), glb.error().message);
+
+    const cgltf_options options{};
+    cgltf_data* data = nullptr;
+    REQUIRE(cgltf_parse(&options, glb->data(), glb->size(), &data) == cgltf_result_success);
+    const std::unique_ptr<cgltf_data, decltype(&cgltf_free)> parsed(data, &cgltf_free);
+    REQUIRE(cgltf_load_buffers(&options, data, nullptr) == cgltf_result_success);
+    REQUIRE(cgltf_validate(data) == cgltf_result_success);
+    std::size_t vertices = 0;
+    for (std::size_t i = 0; i < data->meshes[0].primitives_count; ++i) {
+        const cgltf_primitive& primitive = data->meshes[0].primitives[i];
+        for (std::size_t a = 0; a < primitive.attributes_count; ++a) {
+            const cgltf_attribute& attribute = primitive.attributes[a];
+            if (attribute.type == cgltf_attribute_type_position) {
+                vertices += attribute.data->count;
+            }
+            if (attribute.type != cgltf_attribute_type_texcoord) {
+                continue;
+            }
+            std::vector<float> uvs(attribute.data->count * 2);
+            cgltf_accessor_unpack_floats(attribute.data, uvs.data(), uvs.size());
+            CHECK(std::ranges::all_of(uvs, [](float uv) { return uv >= 0.0F && uv <= 1.0F; }));
+        }
+    }
+    MESSAGE(glb->size(), " bytes of GLB, ", vertices, " vertices, ", data->materials_count, " materials, ",
+            data->images_count, " palette rows");
+
+    if (const char* out = std::getenv("DWE_GLB_OUT"); out != nullptr && *out != '\0') {
+        std::ofstream file(out, std::ios::binary);
+        file.write(reinterpret_cast<const char*>(glb->data()), static_cast<std::streamsize>(glb->size()));
+    }
 }
