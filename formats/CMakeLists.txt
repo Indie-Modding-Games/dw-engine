@@ -1,10 +1,5 @@
 find_package(lodepng CONFIG REQUIRED)
 
-# cgltf is two headers without a CMake package; src/model/cgltf.cpp compiles them once.
-find_path(CGLTF_INCLUDE_DIR cgltf.h REQUIRED)
-add_library(dwe_cgltf INTERFACE)
-target_include_directories(dwe_cgltf SYSTEM INTERFACE ${CGLTF_INCLUDE_DIR})
-
 dwe_add_module(formats
     LAYER base
     SOURCES
@@ -44,7 +39,6 @@ dwe_add_module(formats
         src/map/map_yaml.cpp
         src/map/tfs_file.cpp
         src/model/animation.cpp
-        src/model/cgltf.cpp
         src/model/gltf.cpp
         src/model/mmd.cpp
         src/model/skeleton.cpp

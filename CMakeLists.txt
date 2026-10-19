@@ -15,6 +15,7 @@ if(BUILD_TESTING)
     dwe_apply_options(dwe_test_main)
 endif()
 
+add_subdirectory(third_party)
 add_subdirectory(engine)
 add_subdirectory(formats)
 add_subdirectory(apps)
