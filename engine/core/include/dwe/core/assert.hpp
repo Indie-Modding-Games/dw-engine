@@ -8,7 +8,7 @@
 // bug, and continuing would only hide where it happened.
 #define DWE_ASSERT(condition)                                                                                          \
     do {                                                                                                               \
-        if (!(condition)) {                                                                                            \
+        if (const bool dweAssertHolds = (condition); !dweAssertHolds) {                                                \
             ::dwe::core::logError("assertion failed: {} ({}:{})", #condition, __FILE__, __LINE__);                     \
             std::abort();                                                                                              \
         }                                                                                                              \

@@ -28,9 +28,9 @@ struct Frame {
 };
 
 struct ClearColor {
-    float red;
-    float green;
-    float blue;
+    float red = 0.0F;
+    float green = 0.0F;
+    float blue = 0.0F;
     float alpha = 1.0F;
 };
 
@@ -54,6 +54,8 @@ public:
 
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
+    Device(Device&&) = delete;
+    Device& operator=(Device&&) = delete;
     ~Device();
 
     // Waits for a free frame and acquires the next swapchain image. Returns nothing when there is nothing to draw

@@ -95,6 +95,12 @@ struct Device::Impl {
     core::Result<void> createSwapchain();
     void destroySwapchainViews();
     core::Result<void> createFrames();
+
+    Impl() = default;
+    Impl(const Impl&) = delete;
+    Impl& operator=(const Impl&) = delete;
+    Impl(Impl&&) = delete;
+    Impl& operator=(Impl&&) = delete;
     ~Impl();
 };
 
@@ -317,6 +323,7 @@ std::optional<Frame> Device::beginFrame() {
 }
 
 void Device::beginRendering(const Frame& frame, ClearColor clear) {
+    DWE_ASSERT(frame.commands == impl_->frames[impl_->frameIndex].commands);
     VkRenderingAttachmentInfo color{};
     color.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     color.imageView = frame.view;
@@ -335,6 +342,7 @@ void Device::beginRendering(const Frame& frame, ClearColor clear) {
 }
 
 void Device::endRendering(const Frame& frame) {
+    DWE_ASSERT(frame.commands == impl_->frames[impl_->frameIndex].commands);
     vkCmdEndRendering(frame.commands);
 }
 
