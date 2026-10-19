@@ -69,9 +69,11 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script |
 | `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS y TRN) |
 | `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
+| `effect` | `ETCHI/EFEDAT.EFE` | Por técnica: `effect.yaml`, `script.yaml`, la textura y, si tiene TMD, un GLB ([Efectos](efectos.md)) |
 
 Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md),
-[Overlays](overlays.md), [Audio](audio.md), [Textos y fuente](textos.md) y [Scripts de eventos](scripts.md).
+[Overlays](overlays.md), [Audio](audio.md), [Textos y fuente](textos.md), [Scripts de eventos](scripts.md) y
+[Efectos](efectos.md).
 
 ### El ejecutable y `SYSTEM.CNF`
 
@@ -186,6 +188,7 @@ content/base/
 ├─ model/<carpetas>/<nombre>.glb
 ├─ sound/<banco>/[<entrada>/]bank.sf2, sample_<n>.wav, bank_meta.yaml
 ├─ music/<fuente>/font.sf2, track_<n>.mid, font_meta.yaml
+├─ effect/<técnica>/effect.yaml, script.yaml, texture.png + texture_meta.yaml, model.glb
 └─ texture/<carpetas>/<nombre>.png + <nombre>_meta.yaml
 ```
 
@@ -207,6 +210,7 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Fichero con varios TIM | `texture/<carpetas>/<nombre>/<n con 3 cifras>` | el tercero de `STDDAT/T_TOGI.TIM` → `texture/stddat/t_togi/002` |
 | Banco de sonidos (`names::soundAsset`) | `sound/<banco>/<hoja>`, o `sound/<banco>/<entrada con 3 cifras>/<hoja>` en un fichero empaquetado | `sound/ss/bank`, `sound/vball/003/sample_001` |
 | Fuente de música (`names::musicAsset`) | `music/<fuente con 3 cifras>/<hoja>` | `music/001/font`, `music/001/track_00` |
+| Efecto de una técnica (`names::effectAsset`) | `effect/<id de la técnica>/<hoja>`, o la ranura con 3 cifras sin tablas | `effect/<id>/script`, `effect/<id>/model` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
 
 - El id de un Digimon es el de `makeTableIds`, que sale del nombre de fichero de su modelo
@@ -256,8 +260,8 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 786 extraídos, 25 parciales y 7 pendientes; 193,8 de 331,2 MB
-(58,5 %). Salen 3814 salidas, de las que 356 repiten otra byte a byte:
+Con el disco US (`SLUS_010.32`): 818 ficheros, 788 extraídos, 26 parciales y 4 pendientes; 197,1 de 331,2 MB
+(59,5 %). Salen 4618 salidas, de las que 403 repiten otra byte a byte:
 
 | Tipo | Salidas |
 |---|---|
@@ -273,7 +277,9 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 786 extraídos, 25 parciales y 7 
 | Otros modelos (`model/`) | 66 GLB |
 | Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
+| Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
 
+- Efectos: `ETCHI/EFEDAT.EFE` es parcial por 40 rangos de datos que ningún script direcciona ([Efectos](efectos.md)).
 - Overlays: 15 extraídos; es parcial `SHOP_REL.BIN`, cuyos datos (`[0x7860, 0x7E0C)`) no nombra nada en el decomp.
 - `MAP/MAP16/MGEN17.MAP`, que ninguna entrada de `MAP_ENTRIES` nombra, se extrae como `map/mgen17` con las opciones
   que da el propio fichero.
@@ -290,10 +296,10 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 786 extraídos, 25 parciales y 7 
     `ETCNA/WARP.TMD` (cada mapa de cristales tiene los suyos).
   - Seis con la escena deducida (`BOSS_EFE`, `ABOX`, `BIGBOX`, `GAND`, `SMABOX`, `T_YAMA`) y `ETCNA/DOOR.TMD`, que
     el original no carga nunca (es igual que `DOOR00.TMD`).
-- Pendientes: los vídeos (4 `.STR`), los scripts (2 `.SCN`) y los efectos (1 `.EFE`).
+- Pendientes: los vídeos (4 `.STR`).
 - Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62), los nueve TIM de
-  `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43) y
-  pistas repetidas entre fuentes de música (6).
+  `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43),
+  pistas repetidas entre fuentes de música (6) y texturas, modelos y un script que comparten varias técnicas (47).
 - Audio: los siete `.VHB` se extraen enteros. Los 112 bancos de sonidos tienen 642 muestras (19 con bucle, 13 más
   allá de `vs` en `VBALL`, 16 que ningún tono toca) y 661 valores de sonido; las 33 fuentes, 205 muestras y 74
   pistas (14 suenan una vez, 60 en bucle; 63 están en la lista de música de la tienda). 102 tonos tienen un

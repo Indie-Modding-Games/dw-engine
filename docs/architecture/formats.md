@@ -174,9 +174,10 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
   `script_interp.c: tickScript`. `formats/script` los desensambla a una lista de instrucciones con argumentos tipados
   y `dwx extract` escribe un listado YAML por script (detalle en [Scripts de eventos](../formats/scripts.md)). La
   traducción a Lua es trabajo de la fase 4 y se validará con un informe de opcodes no traducidos.
-- **EFE** (`ETCHI\EFEDAT.EFE`): scripts de efectos de batalla. Cabecera `EfeFileHeader` de 0x34 bytes con los offsets de
-  sus partes; el intérprete (`battle_effect.c: BTL_runEFEScript`) tiene 97 subopcodes. El interior **está a medio
-  estudiar**.
+- **EFE** (`ETCHI\EFEDAT.EFE`): efectos de batalla, una ranura de 0x5000 bytes por técnica. Cabecera
+  `EfeFileHeader` de 0x34 bytes con los offsets de sus partes: área de datos, dos scripts, salas de trabajo, TMD y
+  TIM. El intérprete (`battle_effect.c: BTL_runEFEScript`) tiene 18 opcodes de longitud fija y 97 subopcodes.
+  `formats/effect` lo decodifica todo y tipa el área de datos siguiendo los scripts ([detalle](../formats/efectos.md)).
 
 ## Audio
 
@@ -230,7 +231,7 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 ## Lo que no se sabe
 
-- El interior de los EFE.
+- 652 bytes del área de datos de 33 ranuras de los EFE que ningún script direcciona ([detalle](../formats/efectos.md)).
 - Los datos de `SHOP_REL.BIN`, que el decomp no compila.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
@@ -240,7 +241,7 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 | Comando | Entrada → salida | Qué comprueba |
 |---|---|---|
 | `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
-| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas, audio); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
+| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas, audio, efectos); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) |
 | `dwx cook <paquete>` | Fuente → cocinado | Que todo lo cocinado se puede volver a leer |
 | `dwx pack <paquete>` | Cocinado → `.pak` + manifiesto | Id, versión, dependencias y prioridad del manifiesto |

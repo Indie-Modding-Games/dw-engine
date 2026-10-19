@@ -15,6 +15,7 @@ Ninguna página contiene datos del juego: solo estructuras, nombres de fichero y
 | [Tablas](tablas.md) | Tablas de datos del ejecutable por versión, direcciones de los overlays, escape de textos, YAML con ids de texto y esquemas | `formats/exe`, `content/schemas` |
 | [Overlays](overlays.md) | `*_REL.BIN`: cabecera, partes, ficheros incrustados y tablas de pesca, torneo, versus y entrenamiento | `formats/exe/overlay*`, `content/schemas` |
 | [Mapas](mapas.md) | `MAP_ENTRIES` y tablas de mapa, `.MAP`, `.TFS`, composición del fondo por paleta, YAML del mapa y colisión | `formats/map`, `content/schemas/map.schema.json` |
+| [Efectos](efectos.md) | `ETCHI/EFEDAT.EFE`: ranuras por técnica, cabecera, scripts y sus 97 subopcodes, área de datos, texturas en VRAM y modelos | `formats/effect` |
 | [Audio](audio.md) | VHB, VAB, ADPCM, SEQ, bancos empaquetados y escritura en SF2, WAV y MIDI | `formats/audio` |
 | [`dwx extract`](extract.md) | Paquete base, ids de asset, extractores e informe de cobertura | `apps/dwx` |
 | [Textos y fuente](textos.md) | Juego de caracteres, cadenas de bytes y texto de script a UTF-8 con etiquetas, fuente a atlas PNG y manifiesto de cadenas | `formats/text` |
