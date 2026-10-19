@@ -41,6 +41,13 @@ core::Result<assets::AssetId> tableDocument(std::string_view name);
 // disc/boot: the boot settings of SYSTEM.CNF.
 core::Result<assets::AssetId> bootConfig();
 
+// map/<slug>/<leaf>: an asset of a field map, such as its data ("data") or a background ("background_day"). The
+// slug is the map's id from the executable's tables (made from its MAP_ENTRIES file name).
+core::Result<assets::AssetId> mapAsset(std::string_view slug, std::string_view leaf);
+
+// map/<slug>/texture<bits>/<index>: one of the 8-bit or 4-bit TIMs of a map, numbered from 0 in each kind.
+core::Result<assets::AssetId> mapImage(std::string_view slug, int bitsPerPixel, std::size_t index);
+
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 

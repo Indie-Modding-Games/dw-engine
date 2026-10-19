@@ -56,12 +56,16 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     CHECK(taken("tim_file") > 10);
     CHECK(taken("executable") == 1);
     CHECK(taken("boot_config") == 1);
+    // Every map file but one has a MAP_ENTRIES record; the one without stays partial.
+    CHECK(taken("map") > 200);
+    CHECK(taken("map_background") == taken("map"));
     const auto has = [&run](std::string_view prefix) {
         return std::ranges::any_of(run->outputs,
                                    [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
     };
     CHECK(has("data/digimon"));
     CHECK(has("data/maps"));
+    CHECK(has("map/"));
     // With the tables, Digimon textures are named, never numbered.
     CHECK(has("digimon/"));
     CHECK_FALSE(has("digimon/0"));

@@ -1,0 +1,249 @@
+#include "map_extractors.hpp"
+
+#include <dwe/core/yaml.hpp>
+#include <dwe/formats/image/png.hpp>
+#include <dwe/formats/image/tim.hpp>
+#include <dwe/formats/image/tim_packs.hpp>
+#include <dwe/formats/map/map_file.hpp>
+#include <dwe/formats/map/map_yaml.hpp>
+#include <dwe/formats/map/tfs_file.hpp>
+
+#include <algorithm>
+#include <format>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "asset_names.hpp"
+#include "game_tables.hpp"
+#include "image_extractors.hpp"
+
+namespace dwe::dwx {
+
+namespace {
+
+using formats::exe::MapEntry;
+using formats::exe::MapEntryFlags;
+
+constexpr std::string_view MapFolder = "MAP/MAP";
+constexpr std::string_view MapExtension = ".MAP";
+constexpr std::string_view BackgroundExtension = ".TFS";
+// The palettes whose use is known: day, dusk and night (map.c: updateTimeOfDay).
+constexpr std::size_t KnownPalettes = 3;
+// A bit of MapEntry::flags that no known code reads.
+constexpr std::uint8_t UnreadFlag = 0x20;
+
+// A .MAP file, read with the MAP_ENTRIES record that names it.
+struct LoadedMap {
+    std::size_t id = 0;                  // the first record that names the file
+    std::vector<std::size_t> sharedWith; // other records that name it
+    std::string slug;
+    std::vector<std::byte> bytes;
+    formats::map::MapFile map;
+};
+
+bool isMapPath(std::string_view path, std::string_view extension) {
+    return path.starts_with(MapFolder) && path.ends_with(extension);
+}
+
+// Reads the .MAP file at mapPath with its MAP_ENTRIES record: the record says how many TIMs the file has and whether
+// it has NPC records.
+core::Result<LoadedMap> loadMap(const Disc& disc, std::string_view mapPath) {
+    const GameTables* tables = disc.tables();
+    if (tables == nullptr) {
+        return core::fail("the executable's tables are not known; a map needs its MAP_ENTRIES record");
+    }
+    LoadedMap loaded;
+    std::vector<std::size_t> ids;
+    const auto& entries = tables->tables.mapEntries;
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (!entries[i].filename.empty() && mapVolumePath(i, entries[i].filename, MapExtension) == mapPath) {
+            ids.push_back(i);
+        }
+    }
+    if (ids.empty()) {
+        return core::fail(std::format("no MAP_ENTRIES record names {}, so its image counts are not known", mapPath));
+    }
+    const formats::disc::IsoFile* file = disc.findFile(mapPath);
+    if (file == nullptr) {
+        return core::fail(std::format("{} is not on the disc", mapPath));
+    }
+    auto bytes = formats::disc::readIsoFile(disc.source(), *file);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    const MapEntry& entry = entries[ids.front()];
+    auto map = formats::map::readMapFile(*bytes, {.imageCount8 = entry.num8bppImages,
+                                                  .imageCount4 = entry.num4bppImages,
+                                                  .hasNpcs = (entry.flags & MapEntryFlags::HasNpcs) != 0});
+    if (!map) {
+        return std::unexpected{map.error()};
+    }
+    loaded.id = ids.front();
+    loaded.sharedWith.assign(ids.begin() + 1, ids.end());
+    loaded.slug = tables->ids.maps[loaded.id];
+    loaded.bytes = std::move(*bytes);
+    loaded.map = std::move(*map);
+    return loaded;
+}
+
+// Notes the other records that name the same file; the file is extracted once, under the first record's slug.
+void noteSharedEntries(const Disc& disc, const LoadedMap& loaded, Extraction& extraction) {
+    for (const std::size_t id : loaded.sharedWith) {
+        extraction.notes.push_back(std::format("MAP_ENTRIES[{}] ({}) names the same file; it is extracted as {}", id,
+                                               disc.tables()->ids.maps[id], loaded.slug));
+    }
+}
+
+core::Result<OutputFile> yamlOutput(const core::Result<assets::AssetId>& id, const core::YamlNode& node) {
+    if (!id) {
+        return std::unexpected{id.error()};
+    }
+    const auto text = core::emitYaml(node);
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
+    const auto bytes = std::as_bytes(std::span{*text});
+    return OutputFile{.id = *id, .extension = "yaml", .bytes = std::vector<std::byte>(bytes.begin(), bytes.end())};
+}
+
+// Adds the TIMs of one image section. A section holds one TIM; anything after it that is not zero is reported.
+core::Result<void> addSectionImages(Extraction& extraction, const LoadedMap& loaded, std::string_view source,
+                                    const formats::map::MapImageSection& section, std::size_t& index) {
+    const auto bytes = std::span{loaded.bytes}.subspan(section.offset, section.size);
+    const auto list = formats::image::readTimSequence(bytes);
+    if (!list || list->entries.empty()) {
+        extraction.unknowns.push_back(std::format("{}-bit image section at 0x{:x}: {}", section.bitsPerPixel,
+                                                  section.offset,
+                                                  list ? "it does not start with a TIM" : list.error().message));
+        return {};
+    }
+    for (const auto& [offset, tim] : list->entries) {
+        const auto id = names::mapImage(loaded.slug, section.bitsPerPixel, index);
+        if (!id) {
+            return std::unexpected{id.error()};
+        }
+        const TimPlace place{.source = source, .entry = index, .offset = section.offset + offset};
+        if (auto added = addTimImage(extraction, *id, tim, place); !added) {
+            return added;
+        }
+        ++index;
+    }
+    const auto rest = bytes.subspan(list->end);
+    if (std::ranges::any_of(rest, [](std::byte value) { return value != std::byte{0}; })) {
+        extraction.unknowns.push_back(std::format("{}-bit image section at 0x{:x}: {} bytes after its images",
+                                                  section.bitsPerPixel, section.offset, rest.size()));
+    }
+    return {};
+}
+
+std::string replaceExtension(std::string_view path, std::string_view extension) {
+    return std::string{path.substr(0, path.rfind('.'))} + std::string{extension};
+}
+
+} // namespace
+
+bool handlesMapFile(std::string_view path) {
+    return isMapPath(path, MapExtension);
+}
+
+core::Result<Extraction> extractMapFile(const Disc& disc, const formats::disc::IsoFile& file) {
+    const auto loaded = loadMap(disc, file.path);
+    if (!loaded) {
+        return std::unexpected{loaded.error()};
+    }
+    const GameTables& tables = *disc.tables();
+    Extraction extraction;
+    auto data =
+        yamlOutput(names::mapAsset(loaded->slug, "data"),
+                   formats::map::mapToYaml(loaded->map, {.maps = tables.ids.maps, .digimon = tables.ids.digimon}));
+    if (!data) {
+        return std::unexpected{data.error()};
+    }
+    extraction.outputs.push_back(std::move(*data));
+
+    std::size_t images8 = 0;
+    std::size_t images4 = 0;
+    for (const auto& section : loaded->map.images) {
+        std::size_t& index = section.bitsPerPixel == 8 ? images8 : images4;
+        if (auto added = addSectionImages(extraction, *loaded, file.path, section, index); !added) {
+            return std::unexpected{added.error()};
+        }
+    }
+    if ((tables.tables.mapEntries[loaded->id].flags & UnreadFlag) != 0) {
+        extraction.unknowns.push_back(
+            std::format("MAP_ENTRIES[{}] sets flag 0x{:02x}, which no known code reads", loaded->id, UnreadFlag));
+    }
+    noteSharedEntries(disc, *loaded, extraction);
+    return extraction;
+}
+
+bool handlesMapBackground(std::string_view path) {
+    return isMapPath(path, BackgroundExtension);
+}
+
+core::Result<Extraction> extractMapBackground(const Disc& disc, const formats::disc::IsoFile& file) {
+    const auto loaded = loadMap(disc, replaceExtension(file.path, MapExtension));
+    if (!loaded) {
+        return std::unexpected{loaded.error()};
+    }
+    const auto bytes = formats::disc::readIsoFile(disc.source(), file);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    const auto tfs = formats::map::readTfsFile(*bytes);
+    if (!tfs) {
+        return std::unexpected{tfs.error()};
+    }
+    const auto backgrounds = formats::map::composeBackgrounds(*tfs, loaded->map.setup);
+    if (!backgrounds) {
+        return std::unexpected{backgrounds.error()};
+    }
+
+    Extraction extraction;
+    for (std::size_t i = 0; i < backgrounds->size(); ++i) {
+        const auto& image = (*backgrounds)[i];
+        std::vector<formats::image::Rgba8> palette;
+        std::ranges::transform(image.palette, std::back_inserter(palette), formats::image::toRgba8);
+        auto png = formats::image::encodePngIndexed(static_cast<std::uint32_t>(image.width),
+                                                    static_cast<std::uint32_t>(image.height), image.indices, palette);
+        if (!png) {
+            return std::unexpected{png.error()};
+        }
+        const auto id = names::mapAsset(loaded->slug, "background_" + formats::map::backgroundVariantName(i));
+        if (!id) {
+            return std::unexpected{id.error()};
+        }
+        extraction.outputs.push_back(OutputFile{.id = *id, .extension = "png", .bytes = std::move(*png)});
+    }
+
+    const auto used = static_cast<std::size_t>(
+        std::ranges::count_if(loaded->map.setup.tiles, [](std::int32_t tile) { return tile != -1; }));
+    if (tfs->tiles.size() > used) {
+        extraction.unknowns.push_back(
+            std::format("{} of its {} tiles are not on the map's grid", tfs->tiles.size() - used, tfs->tiles.size()));
+    }
+    if (tfs->palettes.size() > KnownPalettes) {
+        const std::size_t last = tfs->palettes.size() - 1;
+        extraction.unknowns.push_back(
+            last == KnownPalettes
+                ? std::format("palette {}: what it is for is not known (the original uploads it to video memory row "
+                              "484)",
+                              last)
+                : std::format("palettes {} to {}: what they are for is not known (the original uploads them to video "
+                              "memory rows 484 and on)",
+                              KnownPalettes, last));
+    }
+    const std::uint8_t flags = disc.tables()->tables.mapEntries[loaded->id].flags;
+    if ((flags & MapEntryFlags::NoTimeOfDay) != 0 && tfs->palettes.size() > 1) {
+        extraction.notes.emplace_back("the map has a fixed time of day: the original only shows the day background");
+    } else if ((flags & MapEntryFlags::NoTimeOfDay) == 0 && tfs->palettes.size() < KnownPalettes) {
+        extraction.notes.push_back(
+            std::format("the map changes with the time of day but has {} palette(s)", tfs->palettes.size()));
+    }
+    noteSharedEntries(disc, *loaded, extraction);
+    return extraction;
+}
+
+} // namespace dwe::dwx

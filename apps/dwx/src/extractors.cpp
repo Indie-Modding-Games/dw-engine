@@ -2,6 +2,7 @@
 
 #include "extractor.hpp"
 #include "image_extractors.hpp"
+#include "map_extractors.hpp"
 #include "table_extractors.hpp"
 
 namespace dwe::dwx {
@@ -15,6 +16,8 @@ constexpr std::array Registry = {
     Extractor{.name = "tim_file", .handles = handlesTimFile, .extract = extractTimFile},
     Extractor{.name = "executable", .handles = handlesExecutable, .extract = extractExecutable},
     Extractor{.name = "boot_config", .handles = handlesBootConfig, .extract = extractBootConfig},
+    Extractor{.name = "map", .handles = handlesMapFile, .extract = extractMapFile},
+    Extractor{.name = "map_background", .handles = handlesMapBackground, .extract = extractMapBackground},
 };
 
 } // namespace

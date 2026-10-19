@@ -27,13 +27,6 @@ using formats::image::TimPixelMode;
 // The files the original reads with utils2.c: loadStackedTIMFile (main.c, vs_demo.c, vs_select.c).
 constexpr std::array StackedTimFiles = {std::string_view{"ETCDAT/ETCTIM.BIN"}, std::string_view{"STDDAT/STDTIM.BIN"}};
 
-// Where an image comes from in its disc file.
-struct TimPlace {
-    std::string_view source;          // the disc file
-    std::optional<std::size_t> entry; // its number in a pack or a list of several
-    std::size_t offset = 0;           // where its TIM starts in the file
-};
-
 std::string placeName(const TimPlace& place) {
     return place.entry ? std::format("image {} at 0x{:x}", *place.entry, place.offset)
                        : std::format("image at 0x{:x}", place.offset);
@@ -120,10 +113,10 @@ core::Result<std::pair<std::vector<std::byte>, std::string_view>> encodeTim(cons
     return std::pair{std::move(*png), std::string_view{"indexed"}};
 }
 
-// Adds the PNG and the metadata of one TIM. What could not be written goes to the extraction's unknowns and to the
-// metadata's warnings.
-core::Result<void> addTim(Extraction& extraction, const assets::AssetId& id, const Tim& tim, const TimPlace& place,
-                          std::vector<std::string> warnings) {
+} // namespace
+
+core::Result<void> addTimImage(Extraction& extraction, const assets::AssetId& id, const Tim& tim, const TimPlace& place,
+                               std::vector<std::string> warnings) {
     YamlNode meta = YamlNode::mapping();
     meta.set("source", YamlNode::scalar(std::string{place.source}, YamlNode::ScalarStyle::Quoted));
     if (place.entry) {
@@ -184,6 +177,8 @@ core::Result<void> addTim(Extraction& extraction, const assets::AssetId& id, con
     return {};
 }
 
+namespace {
+
 // Reports the bytes from start to end that nothing explained, unless they are all zero (padding).
 void reportLeftover(Extraction& extraction, std::span<const std::byte> bytes, std::size_t start, std::size_t end,
                     std::string_view what) {
@@ -217,7 +212,7 @@ core::Result<Extraction> extractTimList(const formats::image::StackedTims& list,
             return std::unexpected{id.error()};
         }
         const TimPlace place{.source = file.path, .entry = several ? std::optional{i} : std::nullopt, .offset = offset};
-        if (auto added = addTim(extraction, *id, tim, place, std::move(warnings)); !added) {
+        if (auto added = addTimImage(extraction, *id, tim, place, std::move(warnings)); !added) {
             return std::unexpected{added.error()};
         }
     }
@@ -258,7 +253,7 @@ core::Result<Extraction> extractTimPack(const Disc& disc, const formats::disc::I
             return std::unexpected{id.error()};
         }
         const TimPlace place{.source = file.path, .entry = i, .offset = offset};
-        if (auto added = addTim(extraction, *id, *tim, place, {}); !added) {
+        if (auto added = addTimImage(extraction, *id, *tim, place, {}); !added) {
             return std::unexpected{added.error()};
         }
         reportLeftover(extraction, *bytes, offset + tim->byteSize, offset + entry.size(),

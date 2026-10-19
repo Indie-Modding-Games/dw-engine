@@ -78,6 +78,14 @@ core::Result<assets::AssetId> bootConfig() {
     return assets::AssetId::parse("disc/boot");
 }
 
+core::Result<assets::AssetId> mapAsset(std::string_view slug, std::string_view leaf) {
+    return assets::AssetId::parse(std::format("map/{}/{}", slug, leaf));
+}
+
+core::Result<assets::AssetId> mapImage(std::string_view slug, int bitsPerPixel, std::size_t index) {
+    return assets::AssetId::parse(std::format("map/{}/texture{}/{}", slug, bitsPerPixel, number(index)));
+}
+
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {
     return assets::AssetId::parse(image.str() + "_meta");
 }
