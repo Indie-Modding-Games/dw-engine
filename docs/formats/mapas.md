@@ -91,6 +91,10 @@ escribe más allá del array, así que el lector no pone límite a los sprites.
 100 × 100 bytes, fila a fila, una celda por cada 100 unidades del mundo (`map_collision.c`). 0 es libre, el bit `0x80`
 es bloqueado y el resto de valores son disparadores. La sección tiene que medir exactamente 10 000 bytes.
 
+Las arenas del torneo guardan la misma rejilla en `STDDAT\*.ATR`, 10 000 bytes sin cabecera que el original lee tal
+cual en `MAP_COLLISION_DATA` (`std_setup.c: STD_loadArenaAssets`, `vs_scene.c: VS_loadArenaAssets`).
+`collisionToYaml` escribe las dos igual.
+
 ## `.TFS`
 
 El fondo prerenderizado (`map.c: readMapTFS`, `setupMap`, `updateTimeOfDay`):

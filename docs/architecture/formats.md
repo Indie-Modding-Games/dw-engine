@@ -132,7 +132,9 @@ ni compresión. El paso está en el código del original, no en el fichero, así
   cada tile en VRAM (`fila * 128 << 16 | columna * 64`). Paleta 0 = día, 1 = atardecer, 2 = noche.
 - **Tablas relacionadas:** `DOOR_MAPDATA[24]` (modelos `DOOR\DOORnn.TMD` y su posición), `TOILET_DATA`,
   `MAP_LIGHT_UPDATE_DATA`.
-- **`STDDAT\*.ATR`:** colisión de la arena del torneo. **Sin estudiar.**
+- **`STDDAT\*.ATR`:** colisión de la arena del torneo: la misma rejilla de 100 × 100 `u8` que la sección de colisión
+  de un mapa, que el original lee tal cual en `MAP_COLLISION_DATA` (`std_setup.c: STD_loadArenaAssets`,
+  `vs_scene.c: VS_loadArenaAssets`). `dwx extract` la escribe como `arena/<nombre>/collision.yaml`.
 
 Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colisión (detalle en
 [Mapas](../formats/mapas.md)).
@@ -204,7 +206,7 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 ## Lo que no se sabe
 
 - `MMM.DAT` (26 MB): está en la tabla de ficheros pero no se ha encontrado código que lo lea.
-- Para qué son las paletas de `.TFS` después de la tercera, el formato `.ATR` y el interior de los EFE.
+- Para qué son las paletas de `.TFS` después de la tercera y el interior de los EFE.
 - Los códigos de texto `02` y `03`.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
@@ -214,13 +216,13 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 | Comando | Entrada → salida | Qué comprueba |
 |---|---|---|
 | `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
-| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión por el ejecutable; un extractor por tipo de fichero; informe de cobertura; el motor monta el resultado ([detalle](../formats/extract.md)) |
+| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) |
 | `dwx cook <paquete>` | Fuente → cocinado | Que todo lo cocinado se puede volver a leer |
 | `dwx pack <paquete>` | Cocinado → `.pak` + manifiesto | Id, versión, dependencias y prioridad del manifiesto |
 
 - **Informe de cobertura:** por cada fichero del disco, qué extractor lo leyó, qué produjo y qué partes no entendió
-  (`coverage.yaml`, [detalle](../formats/extract.md)). La fase 1 se cierra con cero pendientes.
+  (`dwx/coverage.yaml`, [detalle](../formats/extract.md)). La fase 1 se cierra con cero pendientes.
 - **Determinista:** la misma entrada da la misma salida byte a byte, para poder comparar extracciones en la CI con un
   disco que el equipo tenga en local.
 - **Tests:** cada lector se prueba con fixtures sintéticos generados por los propios tests (un TIM de 2 × 2, un MAP
