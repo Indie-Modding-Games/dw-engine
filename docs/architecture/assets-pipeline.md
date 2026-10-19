@@ -44,7 +44,8 @@ cobertura que lista lo que falte.
 ## Capas de contenido
 
 El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es un **paquete** con su manifiesto
-(id, versión, dependencias y prioridad). Si dos capas definen el mismo asset, gana la de arriba.
+(id, versión, dependencias y prioridad). Si dos capas definen el mismo asset, gana la de arriba. Los detalles
+(manifiesto, IDs, orden de la pila y errores) están en [Paquetes y sistema de ficheros virtual](vfs.md).
 
 | Prioridad | Capa | Quién la hace |
 |---|---|---|
