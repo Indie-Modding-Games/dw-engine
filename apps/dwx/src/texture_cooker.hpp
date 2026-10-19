@@ -1,12 +1,14 @@
 #pragma once
 
-#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/core/yaml.hpp>
 
 #include <cstddef>
 #include <span>
 #include <vector>
+
+#include "cook.hpp"
 
 namespace dwe::dwx {
 
@@ -16,11 +18,14 @@ namespace dwe::dwx {
 // srgb is set, and weighted by alpha, so transparent texels do not darken their neighbours.
 std::vector<assets::Image> buildMipChain(const assets::Image& image, bool srgb);
 
-// Returns true if an asset's texture holds colour, stored as sRGB. Ids whose last segment ends in _depth, _mask or
-// _normal hold other data and are stored linear.
-bool isColorTexture(const assets::AssetId& id);
+// Decides how a PNG cooks. It is copied as is when it holds lookup data, which a KTX2 of RGBA colours would lose:
+// when the PNG is indexed (colour type 3: the indices and the palette are kept, so the engine can still swap
+// palettes), or when its sidecar says png: indexed or has a clut_rect (dwx extract writes both for TIM images with a
+// CLUT). Otherwise it is stored in the sidecar's color_space, srgb or linear, sRGB when the sidecar does not say.
+// Fails on a sidecar that is not a mapping or a color_space that is neither.
+core::Result<CookOptions> planTexture(std::span<const std::byte> png, const core::YamlNode* sidecar);
 
-// Cooks a PNG into an uncompressed RGBA8 KTX2 texture with its full mip chain.
-core::Result<std::vector<std::byte>> cookTexture(std::span<const std::byte> png, const assets::AssetId& id);
+// Cooks a PNG into an uncompressed RGBA8 KTX2 texture with its full mip chain, in the options' colour space.
+core::Result<std::vector<std::byte>> cookTexture(std::span<const std::byte> png, const CookOptions& options);
 
 } // namespace dwe::dwx

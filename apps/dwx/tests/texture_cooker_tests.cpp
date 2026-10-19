@@ -1,19 +1,25 @@
-#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/image.hpp>
+#include <dwe/core/yaml.hpp>
+#include <dwe/formats/image/png.hpp>
 
 #include <doctest/doctest.h>
 
 #include <array>
 #include <cstdint>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "ktx2.hpp"
 #include "texture_cooker.hpp"
 
 using namespace dwe::dwx;
-using dwe::assets::AssetId;
 using dwe::assets::Image;
+using dwe::core::YamlNode;
+using dwe::formats::image::encodePngIndexed;
+using dwe::formats::image::encodePngRgba;
+using dwe::formats::image::Rgba8;
+using dwe::formats::image::RgbaImage;
 
 namespace {
 
@@ -47,10 +53,10 @@ std::uint64_t u64At(const std::vector<std::byte>& bytes, std::size_t offset) {
     return u32At(bytes, offset) | (std::uint64_t{u32At(bytes, offset + 4)} << 32U);
 }
 
-AssetId idOf(std::string_view text) {
-    auto id = AssetId::parse(text);
-    REQUIRE(id.has_value());
-    return *id;
+YamlNode yamlOf(std::string_view text) {
+    auto node = dwe::core::parseYaml(text);
+    REQUIRE(node.has_value());
+    return std::move(*node);
 }
 
 } // namespace
@@ -141,10 +147,58 @@ TEST_CASE("a KTX2 texture is laid out as the Khronos specification says") {
     CHECK(u32At(linear, dfdOffset + 28 + (3 * 16)) == (24U | (7U << 16U) | (0x0FU << 24U)));
 }
 
-TEST_CASE("textures are colour unless their name says otherwise") {
-    CHECK(isColorTexture(idOf("map/start/background_day")));
-    CHECK(isColorTexture(idOf("masks/background")));
-    CHECK_FALSE(isColorTexture(idOf("map/start/background_depth")));
-    CHECK_FALSE(isColorTexture(idOf("digimon/x/skin_normal")));
-    CHECK_FALSE(isColorTexture(idOf("ui_mask")));
+TEST_CASE("indexed PNGs and images whose sidecar says indexed or CLUT pass through") {
+    const std::array<std::uint8_t, 4> indices{0, 1, 1, 0};
+    const std::array palette{Rgba8{.r = 0, .g = 0, .b = 0, .a = 255}, Rgba8{.r = 255, .g = 0, .b = 0, .a = 255}};
+    const auto indexed = encodePngIndexed(2, 2, indices, palette);
+    REQUIRE(indexed.has_value());
+    const auto rgba = encodePngRgba(RgbaImage{.width = 1, .height = 1, .pixels = {palette[1]}});
+    REQUIRE(rgba.has_value());
+
+    // An indexed PNG holds indices and a palette, with or without a sidecar.
+    const auto bare = planTexture(*indexed, nullptr);
+    REQUIRE(bare.has_value());
+    CHECK(bare->passThrough);
+    const YamlNode saysRgba = yamlOf("png: rgba\nmode: direct16\n");
+    CHECK(planTexture(*indexed, &saysRgba)->passThrough);
+
+    // An RGBA PNG cooks unless its sidecar says it is indexed or a CLUT.
+    const auto plain = planTexture(*rgba, nullptr);
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->passThrough);
+    CHECK(plain->colorSpace == ColorSpace::Srgb);
+    CHECK_FALSE(planTexture(*rgba, &saysRgba)->passThrough);
+    const YamlNode saysIndexed = yamlOf("png: indexed\npng_palette: 0\n");
+    CHECK(planTexture(*rgba, &saysIndexed)->passThrough);
+    const YamlNode hasClut = yamlOf("png: rgba\nclut_rect: {x: 0, y: 480, width: 16, height: 1}\n");
+    CHECK(planTexture(*rgba, &hasClut)->passThrough);
+
+    CHECK_FALSE(planTexture(std::vector<std::byte>(8), nullptr).has_value());
+}
+
+TEST_CASE("the colour space of a texture comes from its sidecar") {
+    const auto rgba =
+        encodePngRgba(RgbaImage{.width = 1, .height = 1, .pixels = {Rgba8{.r = 1, .g = 2, .b = 3, .a = 4}}});
+    REQUIRE(rgba.has_value());
+    const YamlNode linear = yamlOf("color_space: linear\n");
+    const YamlNode srgb = yamlOf("color_space: srgb\n");
+    CHECK(planTexture(*rgba, &linear)->colorSpace == ColorSpace::Linear);
+    CHECK(planTexture(*rgba, &srgb)->colorSpace == ColorSpace::Srgb);
+
+    // A name no longer decides it.
+    CHECK(planTexture(*rgba, nullptr)->colorSpace == ColorSpace::Srgb);
+
+    const YamlNode unknown = yamlOf("color_space: gamma\n");
+    const auto wrong = planTexture(*rgba, &unknown);
+    REQUIRE_FALSE(wrong.has_value());
+    CHECK(wrong.error().message.contains("color_space"));
+    const YamlNode list = yamlOf("- color_space\n");
+    CHECK_FALSE(planTexture(*rgba, &list).has_value());
+
+    const auto cooked = cookTexture(*rgba, CookOptions{.passThrough = false, .colorSpace = ColorSpace::Linear});
+    REQUIRE(cooked.has_value());
+    CHECK(u32At(*cooked, 12) == 37); // VK_FORMAT_R8G8B8A8_UNORM
+    const auto colour = cookTexture(*rgba, CookOptions{});
+    REQUIRE(colour.has_value());
+    CHECK(u32At(*colour, 12) == 43); // VK_FORMAT_R8G8B8A8_SRGB
 }

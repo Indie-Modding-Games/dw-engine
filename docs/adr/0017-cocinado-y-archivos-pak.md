@@ -18,11 +18,15 @@ ninguna y dejar el camino preparado.
 - **`dwx cook <paquete> -o <carpeta>`** pasa cada fichero por el **cocinero de su extensión**, en un registro como el
   de los extractores. Lo que no tiene cocinero se copia tal cual. Los cocineros de la v1:
   - **PNG → KTX2** RGBA8 sin comprimir, con la cadena de mipmaps completa, en sRGB para el color y lineal para los
-    datos (ids que acaban en `_depth`, `_mask` o `_normal`). El contenedor KTX2 se escribe a mano según la
-    especificación de Khronos ([KTX2](../formats/ktx2.md)).
+    datos. El contenedor KTX2 se escribe a mano según la especificación de Khronos ([KTX2](../formats/ktx2.md)).
+    Lo deciden los metadatos, no el nombre: el espacio de color sale de la clave `color_space` del YAML lateral
+    (`<id>_meta.yaml`; sRGB si no la tiene), y los PNG con datos de paleta se copian tal cual (ver abajo).
+  - **Datos de paleta, tal cual:** hasta que se decida cómo dibuja el motor las paletas, un PNG indexado, o uno cuyo
+    YAML lateral dice `png: indexed` o tiene `clut_rect`, no se convierte: se copia como PNG para no perder los
+    índices ni la paleta.
   - **GLB → GLB**: se comprueba la cabecera y se copia.
-- **Caché por contenido:** la carpeta de salida guarda en `.dwx-cook` el SHA-1 de la fuente, el nombre y la versión
-  del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos assets con los
+- **Caché por contenido:** la carpeta de salida guarda en `.dwx-cook` el SHA-1 de la fuente, el nombre, la versión
+  y las opciones del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos assets con los
   mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella.
 - **`dwx pack <paquete> -o <fichero.pak>`** escribe un archivo `.pak` propio, versionado y documentado
   ([formato](../formats/pak.md)): cabecera, datos alineados a 16 bytes, y al final la tabla de contenidos ordenada por

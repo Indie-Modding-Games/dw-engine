@@ -35,6 +35,15 @@ std::string pngText(std::uint8_t red) {
     return {reinterpret_cast<const char*>(png->data()), png->size()};
 }
 
+std::string indexedPngText() {
+    const std::vector<std::uint8_t> indices{0, 1, 2, 1};
+    const std::vector<dwe::formats::image::Rgba8> palette{
+        {.r = 0, .g = 0, .b = 0, .a = 0}, {.r = 255, .g = 0, .b = 0, .a = 255}, {.r = 0, .g = 0, .b = 255, .a = 255}};
+    const auto png = dwe::formats::image::encodePngIndexed(2, 2, indices, palette);
+    REQUIRE(png.has_value());
+    return {reinterpret_cast<const char*>(png->data()), png->size()};
+}
+
 // A binary glTF with only its header, which is all the cooker checks.
 std::string glbText() {
     return std::string{"glTF\x02\x00\x00\x00\x0C\x00\x00\x00", 12};
@@ -145,4 +154,47 @@ TEST_CASE("cooking refuses folders it does not own and files that do not cook") 
     folder.write("src/digimon/x/model.glb", glbText());
     folder.write("src/map/start/background.png", "not a png");
     CHECK(cookError(folder).contains("background.png: not a PNG"));
+}
+
+TEST_CASE("lookup images pass through the cook as PNG and sidecars set the colour space") {
+    const TempFolder folder;
+    writeSourcePack(folder);
+    // Indexed, with no sidecar, like a map background drawn with one of its palettes.
+    folder.write("src/map/start/background_palette3.png", indexedPngText());
+    // RGBA, but its sidecar says it has a CLUT.
+    folder.write("src/card/001.png", pngText(40));
+    folder.write("src/card/001_meta.yaml", "mode: direct16\nclut_rect: {x: 0, y: 480, width: 16, height: 1}\n"
+                                           "png: rgba\n");
+    folder.write("src/ui/mask.png", pngText(50));
+    folder.write("src/ui/mask_meta.yaml", "color_space: linear\n");
+
+    CookSummary summary = cooked(folder);
+    CHECK(summary.assets == 8);
+    CHECK(summary.cooked == 3);
+    CHECK(summary.passed == 2);
+    CHECK(summary.copied == 3);
+    const std::filesystem::path out = folder.path() / "out";
+    CHECK(readOrEmpty(out / "map/start/background_palette3.png") ==
+          readOrEmpty(folder.path() / "src/map/start/background_palette3.png"));
+    CHECK(readOrEmpty(out / "card/001.png") == readOrEmpty(folder.path() / "src/card/001.png"));
+    CHECK_FALSE(std::filesystem::exists(out / "card/001.ktx2"));
+    const auto mask = readOrEmpty(out / "ui/mask.ktx2");
+    REQUIRE(mask.size() > 16);
+    CHECK(u32At(mask, 12) == 37);
+    CHECK(u32At(readOrEmpty(out / "map/start/background.ktx2"), 12) == 43);
+
+    // A sidecar that changes how its image cooks makes it cook again, though the image is the same.
+    folder.write("src/card/001_meta.yaml", "mode: direct16\npng: rgba\n");
+    folder.write("src/ui/mask_meta.yaml", "color_space: srgb\n");
+    summary = cooked(folder);
+    CHECK(summary.cooked == 2);
+    CHECK(summary.removed == 1);
+    CHECK_FALSE(std::filesystem::exists(out / "card/001.png"));
+    CHECK(u32At(readOrEmpty(out / "card/001.ktx2"), 12) == 43);
+    CHECK(u32At(readOrEmpty(out / "ui/mask.ktx2"), 12) == 43);
+
+    folder.write("src/ui/mask_meta.yaml", "color_space: [");
+    CHECK(cookError(folder).contains("mask_meta.yaml"));
+    folder.write("src/ui/mask_meta.yaml", "color_space: hdr\n");
+    CHECK(cookError(folder).contains("mask.png: its sidecar's color_space is not srgb or linear"));
 }

@@ -133,18 +133,38 @@ std::vector<assets::Image> buildMipChain(const assets::Image& image, bool srgb) 
     return levels;
 }
 
-bool isColorTexture(const assets::AssetId& id) {
-    const std::string_view text = id.str();
-    const std::string_view name = text.substr(text.rfind('/') + 1);
-    return !name.ends_with("_depth") && !name.ends_with("_mask") && !name.ends_with("_normal");
+core::Result<CookOptions> planTexture(std::span<const std::byte> png, const core::YamlNode* sidecar) {
+    const auto header = assets::inspectPng(png);
+    if (!header) {
+        return std::unexpected{header.error()};
+    }
+    CookOptions options{.passThrough = header->indexed, .colorSpace = ColorSpace::Srgb};
+    if (sidecar == nullptr) {
+        return options;
+    }
+    if (!sidecar->isMapping()) {
+        return core::fail("its sidecar is not a mapping");
+    }
+    const core::YamlNode* kind = sidecar->find("png");
+    if ((kind != nullptr && kind->isScalar() && kind->text() == "indexed") || sidecar->find("clut_rect") != nullptr) {
+        options.passThrough = true;
+    }
+    if (const core::YamlNode* space = sidecar->find("color_space")) {
+        if (space->isScalar() && space->text() == "linear") {
+            options.colorSpace = ColorSpace::Linear;
+        } else if (!space->isScalar() || space->text() != "srgb") {
+            return core::fail("its sidecar's color_space is not srgb or linear");
+        }
+    }
+    return options;
 }
 
-core::Result<std::vector<std::byte>> cookTexture(std::span<const std::byte> png, const assets::AssetId& id) {
+core::Result<std::vector<std::byte>> cookTexture(std::span<const std::byte> png, const CookOptions& options) {
     const auto image = assets::decodePng(png);
     if (!image) {
         return std::unexpected{image.error()};
     }
-    const bool srgb = isColorTexture(id);
+    const bool srgb = options.colorSpace == ColorSpace::Srgb;
     return writeKtx2(srgb ? Ktx2Format::Rgba8Srgb : Ktx2Format::Rgba8Unorm, buildMipChain(*image, srgb));
 }
 

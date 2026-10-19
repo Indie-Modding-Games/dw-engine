@@ -10,8 +10,19 @@ rellena. La decisión está en el [ADR 0017](../adr/0017-cocinado-y-archivos-pak
 - Una textura 2D, sin array ni cubo, con la **cadena de mipmaps completa** hasta 1×1.
 - Texels **RGBA8 sin comprimir** y sin supercompresión: `VK_FORMAT_R8G8B8A8_SRGB` (43) para el color y
   `VK_FORMAT_R8G8B8A8_UNORM` (37) para los datos.
-- **Color o datos:** todo PNG es color salvo que el último segmento de su id acabe en `_depth`, `_mask` o `_normal`.
-  Ninguna textura de la extracción actual acaba así; la regla es para las máscaras y mapas de normales que vengan.
+- **Color o datos:** lo dice el YAML lateral de la imagen (`<id>_meta.yaml`, el que escribe `dwx extract` para cada
+  TIM) con la clave `color_space`: `srgb` (color) o `linear` (profundidad, máscaras, normales). Sin la clave, o sin
+  YAML lateral, es color. Otro valor es un error. El extractor no escribe la clave porque todo lo que extrae es color;
+  está para las máscaras y mapas de normales que vengan. El nombre del id ya no cuenta.
+- **No todo PNG se convierte.** Un PNG que guarda datos de búsqueda (índices y paleta) se copia tal cual, como PNG,
+  porque un KTX2 de colores RGBA perdería los índices y el motor ya no podría cambiar de paleta. Se copia si:
+  - el propio PNG es indexado (tipo de color 3 en su cabecera `IHDR`): `dwx extract` escribe indexado todo lo que
+    tiene CLUT, como los TIM de 4 y 8 bits, los fondos de mapa (`background_day`, `_dusk`, `_night` y
+    `background_paletteN`, que son el mismo fondo dibujado con otra paleta) y el atlas de la fuente; o
+  - su YAML lateral dice `png: indexed` o tiene `clut_rect`, es decir, viene de un TIM con CLUT.
+
+  Es provisional, hasta decidir cómo dibuja el motor las paletas. Se mira el contenido y los metadatos, nunca el
+  nombre: los fondos de mapa no tienen YAML lateral, pero su PNG es indexado, y eso basta.
 
 Todos los enteros son little-endian.
 

@@ -49,7 +49,7 @@ std::uint32_t u32At(std::span<const std::byte> bytes, std::size_t offset) {
 
 // The game loads binary glTF as dwx extract writes it; cooking only checks the header so a broken file fails here
 // rather than at load time.
-core::Result<std::vector<std::byte>> checkGlb(std::span<const std::byte> source, const assets::AssetId& /*id*/) {
+core::Result<std::vector<std::byte>> checkGlb(std::span<const std::byte> source, const CookOptions& /*options*/) {
     if (source.size() < GlbHeaderSize || u32At(source, 0) != GlbMagic) {
         return core::fail("not a binary glTF file");
     }
@@ -64,9 +64,23 @@ core::Result<std::vector<std::byte>> checkGlb(std::span<const std::byte> source,
 }
 
 constexpr std::array Registry = {
-    Cooker{.name = "texture", .version = 1, .sourceExtension = "png", .outputExtension = "ktx2", .cook = cookTexture},
-    Cooker{.name = "glb", .version = 1, .sourceExtension = "glb", .outputExtension = "glb", .cook = checkGlb},
+    Cooker{.name = "texture",
+           .version = 2,
+           .sourceExtension = "png",
+           .outputExtension = "ktx2",
+           .plan = planTexture,
+           .cook = cookTexture},
+    Cooker{.name = "glb",
+           .version = 1,
+           .sourceExtension = "glb",
+           .outputExtension = "glb",
+           .plan = nullptr,
+           .cook = checkGlb},
 };
+
+// The id suffix and type of the YAML file that describes an asset, as dwx extract writes it (asset_names: metadataOf).
+constexpr std::string_view SidecarSuffix = "_meta";
+constexpr std::string_view SidecarExtension = ".yaml";
 
 // What the cache knows about one output file: the source and cooker it came from and its own digest.
 struct CacheRecord {
@@ -82,8 +96,33 @@ std::string_view textOf(std::span<const std::byte> bytes) {
     return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
-std::string cookerKey(const Cooker* cooker) {
-    return cooker == nullptr ? std::string{CopyKey} : std::format("{}/{}", cooker->name, cooker->version);
+// The cache key of how an asset is made: copied, or the cooker with the options that change its bytes.
+std::string cookerKey(const Cooker* cooker, const CookOptions& options) {
+    if (cooker == nullptr || options.passThrough) {
+        return std::string{CopyKey};
+    }
+    return std::format("{}/{}{}", cooker->name, cooker->version,
+                       options.colorSpace == ColorSpace::Linear ? "/linear" : "");
+}
+
+// Reads and parses the sidecar of an asset, if the pack has one.
+core::Result<std::optional<YamlNode>> readSidecar(const assets::FileSystem& fileSystem,
+                                                  const std::filesystem::path& pack,
+                                                  const std::map<std::string, std::string, std::less<>>& pathsById,
+                                                  const assets::AssetId& id) {
+    const auto found = pathsById.find(id.str() + std::string{SidecarSuffix});
+    if (found == pathsById.end() || !found->second.ends_with(SidecarExtension)) {
+        return std::nullopt;
+    }
+    const auto bytes = fileSystem.readFile(pack / found->second);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    auto sidecar = core::parseYaml(textOf(*bytes));
+    if (!sidecar) {
+        return core::fail(std::format("{}: {}", (pack / found->second).string(), sidecar.error().message));
+    }
+    return std::optional{std::move(*sidecar)};
 }
 
 bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder) {
@@ -216,7 +255,7 @@ core::Result<std::size_t> removeStaleFiles(const std::filesystem::path& out, con
 // What a cook does with one asset.
 enum class Step : std::uint8_t {
     Cook,  // run its cooker
-    Copy,  // copy it as is: no cooker takes its type
+    Copy,  // copy it as is: no cooker takes its type, or its cooker's plan passes it through
     Keep,  // leave what an earlier cook wrote: same source, same cooker, untouched since
     Share, // copy the output of an earlier asset with the same source and cooker
 };
@@ -224,7 +263,9 @@ enum class Step : std::uint8_t {
 // One asset of a cook.
 struct Job {
     const assets::PackFile* file = nullptr;
-    const Cooker* cooker = nullptr;
+    const Cooker* cooker = nullptr; // null when copied as is
+    bool passed = false;            // a cooker takes its type, but its plan passes it through
+    CookOptions options;
     std::string outputPath;
     CacheRecord record;
     Step step = Step::Cook;
@@ -273,7 +314,7 @@ core::Result<void> produce(Job& job, const std::filesystem::path& pack, const st
         return core::fail(std::format("{} changed while cooking", sourcePath.string()));
     }
     const auto bytes =
-        job.cooker == nullptr ? core::Result<std::vector<std::byte>>{*source} : job.cooker->cook(*source, job.file->id);
+        job.cooker == nullptr ? core::Result<std::vector<std::byte>>{*source} : job.cooker->cook(*source, job.options);
     if (!bytes) {
         return core::fail(std::format("{}: {}", sourcePath.string(), bytes.error().message));
     }
@@ -316,22 +357,45 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry, const std::
         return std::unexpected{cache.error()};
     }
 
-    // Hashes every source and checks what an earlier cook left, on several threads.
+    std::map<std::string, std::string, std::less<>> pathsById;
+    for (const assets::PackFile& file : *files) {
+        pathsById.emplace(file.id.str(), file.path);
+    }
+
+    // Hashes every source, decides how it cooks and checks what an earlier cook left, on several threads.
     std::vector<Job> jobs(files->size());
     runInParallel(jobs.size(), [&](std::size_t index) {
         Job& job = jobs[index];
         job.file = &(*files)[index];
         job.cooker = findCooker(registry, job.file->path.substr(job.file->path.rfind('.') + 1));
-        job.outputPath = job.cooker == nullptr ? job.file->path
-                                               : std::format("{}.{}", job.file->id.str(), job.cooker->outputExtension);
         const auto source = disk.readFile(pack / job.file->path);
         if (!source) {
             job.result = std::unexpected{source.error()};
             return;
         }
+        if (job.cooker != nullptr && job.cooker->plan != nullptr) {
+            const auto sidecar = readSidecar(disk, pack, pathsById, job.file->id);
+            if (!sidecar) {
+                job.result = std::unexpected{sidecar.error()};
+                return;
+            }
+            auto options = job.cooker->plan(*source, *sidecar ? &**sidecar : nullptr);
+            if (!options) {
+                job.result =
+                    core::fail(std::format("{}: {}", (pack / job.file->path).string(), options.error().message));
+                return;
+            }
+            job.options = *options;
+        }
+        if (job.options.passThrough) {
+            job.cooker = nullptr;
+            job.passed = true;
+        }
+        job.outputPath = job.cooker == nullptr ? job.file->path
+                                               : std::format("{}.{}", job.file->id.str(), job.cooker->outputExtension);
         job.sourceSize = source->size();
-        job.record =
-            CacheRecord{.source = core::toHex(core::sha1(*source)), .cooker = cookerKey(job.cooker), .sha1 = {}};
+        job.record = CacheRecord{
+            .source = core::toHex(core::sha1(*source)), .cooker = cookerKey(job.cooker, job.options), .sha1 = {}};
         if (auto kept = keptDigest(*cache, job.outputPath, job.record, out / job.outputPath)) {
             job.record.sha1 = std::move(*kept);
             job.step = Step::Keep;
@@ -395,6 +459,9 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry, const std::
     summary.assets = jobs.size();
     summary.cooked = countOf(Step::Cook);
     summary.copied = countOf(Step::Copy);
+    summary.passed = static_cast<std::size_t>(
+        std::ranges::count_if(jobs, [](const Job& job) { return job.step == Step::Copy && job.passed; }));
+    summary.copied -= summary.passed;
     summary.kept = countOf(Step::Keep);
     summary.shared = countOf(Step::Share);
     if (auto saved = writeFile(out / ManifestName, *manifest); !saved) {
@@ -427,9 +494,9 @@ int cook(const std::filesystem::path& pack, const std::filesystem::path& out) {
         return ExitFailed;
     }
     std::println("Cooked pack: {}", out.string());
-    std::println("Assets: {} ({} cooked, {} copied, {} kept from the last cook, {} shared with an asset with the same "
-                 "bytes)",
-                 summary->assets, summary->cooked, summary->copied, summary->kept, summary->shared);
+    std::println("Assets: {} ({} cooked, {} copied, {} passed through as lookup data, {} kept from the last cook, {} "
+                 "shared with an asset with the same bytes)",
+                 summary->assets, summary->cooked, summary->copied, summary->passed, summary->kept, summary->shared);
     std::println("Bytes: {} of source, {} cooked; {} stale files removed", summary->sourceBytes, summary->outputBytes,
                  summary->removed);
     return ExitOk;

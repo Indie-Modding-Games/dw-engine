@@ -89,12 +89,17 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 | Fuente | Cocinado | Cocinero |
 |---|---|---|
 | PNG | KTX2 RGBA8 sin comprimir, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
+| PNG indexado, o con YAML lateral que dice `png: indexed` o `clut_rect` | El mismo PNG: son datos de paleta | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
 | Cualquier otro (YAML, WAV, MIDI, SF2…) | Copiado tal cual | — |
 
-- Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina.
+- Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina. Antes de
+  cocinar, el plan del cocinero lee el fichero y su **YAML lateral** (el asset `<id>_meta.yaml`, si existe) y decide
+  las opciones: dejarlo pasar tal cual o el espacio de color (`color_space: srgb | linear`). Las reglas de las texturas
+  están en [KTX2](../formats/ktx2.md).
 - **Caché:** la carpeta de salida guarda en `.dwx-cook` (oculto, así no es un asset), por cada fichero, el SHA-1 de
-  su fuente, el cocinero con su versión y el SHA-1 de lo que escribió. Al volver a cocinar en la misma carpeta, lo que
+  su fuente, el cocinero con su versión y sus opciones, y el SHA-1 de lo que escribió. Si el YAML lateral cambia la
+  decisión, el fichero se cocina otra vez aunque no haya cambiado. Al volver a cocinar en la misma carpeta, lo que
   no cambió se deja como está, lo que cambió (o se tocó a mano) se cocina otra vez y lo que ya no tiene fuente se
   borra. Dos assets con los mismos bytes se cocinan una sola vez.
 - **Determinista:** el mismo paquete da los mismos bytes, con caché o sin ella.
