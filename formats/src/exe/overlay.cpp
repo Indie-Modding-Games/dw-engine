@@ -6,6 +6,8 @@
 #include <array>
 #include <format>
 #include <iterator>
+#include <optional>
+#include <string>
 
 namespace dwe::formats::exe {
 
@@ -41,13 +43,15 @@ constexpr OverlayLayout plain(std::string_view path, std::uint32_t loadAddress,
             .headerOffset = 0,
             .embeddedFiles = {},
             .storedMemoryOffset = storedMemoryOffset,
-            .built = true};
+            .build = "us",
+            .note = {},
+            .dataRanges = {}};
 }
 
-// An overlay the decomp does not build: only its header says where its code and data are.
+// An overlay the decomp does not build for its version: only its header says where its code and data are.
 constexpr OverlayLayout unbuilt(std::string_view path, std::uint32_t loadAddress) {
     OverlayLayout layout = plain(path, loadAddress, std::nullopt);
-    layout.built = false;
+    layout.build = {};
     return layout;
 }
 
@@ -59,7 +63,9 @@ constexpr OverlayLayout battle(std::string_view path, std::size_t storedMemoryOf
             .headerOffset = BattleHeaderOffset,
             .embeddedFiles = BattleEmbeddedFiles,
             .storedMemoryOffset = storedMemoryOffset,
-            .built = true};
+            .build = "us",
+            .note = {},
+            .dataRanges = {}};
 }
 
 // US: load addresses from utils2.c and overlay.ld; header offsets and the start of the *_bss_us data from
@@ -83,6 +89,64 @@ constexpr std::array Layouts = {
     plain("ENDI_REL.BIN", 0x80060000, 0xD98),
     plain("EAB_REL.BIN", 0x80060000, 0x17D0),
 };
+
+// Checks one range of the data map; returns why it does not hold what the map says, or nothing.
+std::optional<std::string> checkDataRange(std::span<const std::byte> file, const OverlayLayout& layout,
+                                          const OverlayParts& parts, const OverlayDataRange& range) {
+    const auto bytes = file.subspan(range.begin, range.end - range.begin);
+    if (range.kind == OverlayDataKind::Numbers) {
+        return std::nullopt;
+    }
+    if (range.kind == OverlayDataKind::Text) {
+        if (bytes.back() != std::byte{0}) {
+            return "the text does not end with a zero";
+        }
+        return std::nullopt;
+    }
+    if (range.begin % 4 != 0 || bytes.size() % 4 != 0) {
+        return "the addresses are not whole aligned words";
+    }
+    const FileRange target = range.kind == OverlayDataKind::JumpTable ? parts.code : parts.data;
+    const std::uint64_t first = std::uint64_t{layout.loadAddress} + target.begin;
+    const std::uint64_t last = std::uint64_t{layout.loadAddress} + target.end;
+    ByteCursor c{bytes};
+    while (c.remaining() != 0) {
+        const std::size_t at = range.begin + c.offset();
+        const std::uint32_t address = c.u32();
+        const bool zero = address == 0 && range.kind == OverlayDataKind::Pointers;
+        const bool aligned = range.kind == OverlayDataKind::Pointers || address % 4 == 0;
+        if (!zero && (address < first || address >= last || !aligned)) {
+            return std::format("the word at 0x{:X} (0x{:08X}) does not point into the {}", at, address,
+                               range.kind == OverlayDataKind::JumpTable ? "code" : "data");
+        }
+    }
+    return std::nullopt;
+}
+
+// Checks that the data map covers the data end to end and that every range holds what the map says; keeps the ranges
+// that do.
+void checkDataRanges(std::span<const std::byte> file, const OverlayLayout& layout, OverlayParts& parts) {
+    std::size_t next = parts.data.begin;
+    for (const OverlayDataRange& range : layout.dataRanges) {
+        if (range.begin != next || range.end <= range.begin || range.end > parts.data.end) {
+            parts.mismatches.push_back(std::format("[0x{:X}, 0x{:X}): the data map does not cover the data end to end; "
+                                                   "its range [0x{:X}, 0x{:X}) does not come next",
+                                                   next, parts.data.end, range.begin, range.end));
+            return;
+        }
+        if (const auto why = checkDataRange(file, layout, parts, range)) {
+            parts.mismatches.push_back(
+                std::format("[0x{:X}, 0x{:X}): {}: {}", range.begin, range.end, range.what, *why));
+        } else {
+            parts.dataRanges.push_back(range);
+        }
+        next = range.end;
+    }
+    if (next != parts.data.end) {
+        parts.mismatches.push_back(
+            std::format("[0x{:X}, 0x{:X}): the data map stops before the end of the data", next, parts.data.end));
+    }
+}
 
 } // namespace
 
@@ -166,6 +230,9 @@ core::Result<OverlayParts> readOverlayParts(std::span<const std::byte> file, con
     parts.storedMemory = {.begin = storedBegin, .end = parts.trailer.begin};
     if (!allZero(file.subspan(parts.trailer.begin))) {
         parts.mismatches.emplace_back("the last word of the file is not zero");
+    }
+    if (!layout.dataRanges.empty()) {
+        checkDataRanges(file, layout, parts);
     }
     return parts;
 }

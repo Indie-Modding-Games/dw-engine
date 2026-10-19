@@ -105,7 +105,7 @@ void noteParts(std::span<const std::byte> file, const OverlayLayout& layout, con
                                            formats::exe::escapeGameText(parts.header.name)));
     extraction.notes.push_back(std::format("{}: code; it is not an asset", range(parts.code)));
     if (parts.data.size() != 0) {
-        if (layout.built) {
+        if (!layout.build.empty()) {
             extraction.notes.push_back(std::format(
                 "{}: data of the code (jump tables, texts, sprite, camera and effect constants), all of it named by "
                 "the decomp's symbols; {}",

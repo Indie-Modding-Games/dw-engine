@@ -5,12 +5,15 @@
 #include <array>
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <vector>
 
 #include "overlay_fixture.hpp"
 
 using dwe::formats::exe::findOverlayLayout;
+using dwe::formats::exe::OverlayDataKind;
+using dwe::formats::exe::OverlayDataRange;
 using dwe::formats::exe::OverlayEmbeddedFile;
 using dwe::formats::exe::OverlayHeaderSize;
 using dwe::formats::exe::OverlayLayout;
@@ -19,6 +22,7 @@ using dwe::formats::exe::readOverlayHeader;
 using dwe::formats::exe::readOverlayParts;
 using dwe::formats::test::makeOverlayFile;
 using dwe::formats::test::OverlayFileSpec;
+using dwe::formats::test::putU32;
 
 namespace {
 
@@ -31,7 +35,43 @@ OverlayLayout testLayout(std::size_t headerOffset, std::optional<std::size_t> st
             .headerOffset = headerOffset,
             .embeddedFiles = {},
             .storedMemoryOffset = storedMemoryOffset,
-            .built = true};
+            .build = "test",
+            .note = {},
+            .dataRanges = {}};
+}
+
+// A data map of 0x20 bytes after 0x20 bytes of code: a jump table, pointers, text and numbers.
+constexpr std::array TestDataRanges = {
+    OverlayDataRange{
+        .begin = 0x60, .end = 0x68, .kind = OverlayDataKind::JumpTable, .what = "a switch", .executableAddress = 0},
+    OverlayDataRange{
+        .begin = 0x68, .end = 0x70, .kind = OverlayDataKind::Pointers, .what = "a table", .executableAddress = 0},
+    OverlayDataRange{
+        .begin = 0x70, .end = 0x78, .kind = OverlayDataKind::Text, .what = "a text", .executableAddress = 0},
+    OverlayDataRange{
+        .begin = 0x78, .end = 0x80, .kind = OverlayDataKind::Numbers, .what = "numbers", .executableAddress = 0},
+};
+
+// The overlay the test data map describes: cases into the code, a zero and a pointer into the data, a text.
+std::vector<std::byte> mappedOverlay() {
+    auto file = makeOverlayFile({.leading = {},
+                                 .id = 1,
+                                 .address = Load,
+                                 .name = "TEST_REL.BIN",
+                                 .codeSize = 0x20,
+                                 .data = std::vector<std::byte>(0x20, std::byte{7})});
+    putU32(file, 0x60, Load + 0x40);
+    putU32(file, 0x64, Load + 0x5C);
+    putU32(file, 0x68, 0);
+    putU32(file, 0x6C, Load + 0x78);
+    file[0x77] = std::byte{0};
+    return file;
+}
+
+OverlayLayout mappedLayout(std::span<const OverlayDataRange> ranges) {
+    OverlayLayout layout = testLayout(0, std::nullopt);
+    layout.dataRanges = ranges;
+    return layout;
 }
 
 } // namespace
@@ -136,6 +176,56 @@ TEST_CASE("where a file does not match its layout, the parts say so") {
     CHECK_FALSE(readOverlayParts(file, testLayout(4, std::nullopt)).has_value());
 }
 
+TEST_CASE("an overlay's data map is checked range by range") {
+    const auto file = mappedOverlay();
+    const auto layout = mappedLayout(TestDataRanges);
+    const auto parts = readOverlayParts(file, layout);
+    REQUIRE(parts.has_value());
+    CHECK(parts->mismatches.empty());
+    CHECK(parts->dataRanges.size() == TestDataRanges.size());
+
+    const auto mismatchOf = [&](std::size_t offset, std::uint32_t word) {
+        auto changed = file;
+        putU32(changed, offset, word);
+        const auto checked = readOverlayParts(changed, layout);
+        REQUIRE(checked.has_value());
+        CHECK(checked->dataRanges.size() == TestDataRanges.size() - 1);
+        REQUIRE(checked->mismatches.size() == 1);
+        return checked->mismatches[0];
+    };
+    CHECK(mismatchOf(0x64, Load + 0x60).starts_with("[0x60, 0x68): a switch: the word at 0x64"));
+    CHECK(mismatchOf(0x60, Load + 0x42).contains("does not point into the code"));
+    CHECK(mismatchOf(0x60, 0).contains("does not point into the code"));
+    CHECK(mismatchOf(0x6C, Load + 0x40).starts_with("[0x68, 0x70): a table"));
+    CHECK(mismatchOf(0x74, 0x07070707).starts_with("[0x70, 0x78): a text: the text does not end with a zero"));
+}
+
+TEST_CASE("a data map that leaves a gap in the data, or runs past it, is a mismatch") {
+    const auto file = mappedOverlay();
+    const auto shorter = readOverlayParts(file, mappedLayout(std::span{TestDataRanges}.first(3)));
+    REQUIRE(shorter.has_value());
+    REQUIRE(shorter->mismatches.size() == 1);
+    CHECK(shorter->mismatches[0] == "[0x78, 0x80): the data map stops before the end of the data");
+
+    const auto gap = readOverlayParts(file, mappedLayout(std::span{TestDataRanges}.subspan(1)));
+    REQUIRE(gap.has_value());
+    REQUIRE(gap->mismatches.size() == 1);
+    CHECK(gap->mismatches[0].starts_with("[0x60, 0x80): the data map does not cover the data end to end"));
+    CHECK(gap->dataRanges.empty());
+
+    // A header whose data ends 8 bytes earlier: the last range runs past the data.
+    auto shortened = file;
+    shortened.resize(shortened.size() - 8);
+    putU32(shortened, 0x10, 0x18);
+    putU32(shortened, 0x6C, 0);
+    putU32(shortened, shortened.size() - 4, 0);
+    const auto past = readOverlayParts(shortened, mappedLayout(TestDataRanges));
+    REQUIRE(past.has_value());
+    REQUIRE(past->mismatches.size() == 1);
+    CHECK(past->mismatches[0].ends_with("its range [0x78, 0x80) does not come next"));
+    CHECK(past->dataRanges.size() == 3);
+}
+
 TEST_CASE("the US layouts cover the sixteen overlays") {
     std::size_t us = 0;
     for (const OverlayLayout& layout : overlayLayouts()) {
@@ -150,6 +240,9 @@ TEST_CASE("the US layouts cover the sixteen overlays") {
             next = embedded.offset + embedded.size;
         }
         CHECK(next == layout.headerOffset);
+        for (std::size_t i = 1; i < layout.dataRanges.size(); ++i) {
+            CHECK(layout.dataRanges[i].begin == layout.dataRanges[i - 1].end);
+        }
     }
     CHECK(us == 16);
     REQUIRE(findOverlayLayout("us", "FISH_REL.BIN").has_value());
@@ -157,8 +250,9 @@ TEST_CASE("the US layouts cover the sixteen overlays") {
     REQUIRE(findOverlayLayout("us", "STD_REL.BIN").has_value());
     const OverlayLayout fishing = findOverlayLayout("us", "FISH_REL.BIN").value_or(OverlayLayout{});
     CHECK(fishing.loadAddress == 0x80070000);
-    CHECK(fishing.built);
-    CHECK_FALSE(findOverlayLayout("us", "SHOP_REL.BIN").value_or(OverlayLayout{}).built);
+    CHECK(fishing.build == "us");
+    CHECK(fishing.dataRanges.empty());
+    CHECK(findOverlayLayout("us", "SHOP_REL.BIN").value_or(OverlayLayout{}).build.empty());
     CHECK(findOverlayLayout("us", "STD_REL.BIN").value_or(OverlayLayout{}).embeddedFiles.size() == 5);
     CHECK_FALSE(findOverlayLayout("other", "FISH_REL.BIN").has_value());
     CHECK_FALSE(findOverlayLayout("us", "NONE_REL.BIN").has_value());
