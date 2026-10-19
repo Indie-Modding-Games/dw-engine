@@ -6,6 +6,7 @@ dwe_add_module(dwx
         src/audio_extractors.cpp
         src/base_pack.cpp
         src/disc_description.cpp
+        src/effect_extractors.cpp
         src/extract.cpp
         src/extract_disc.cpp
         src/extractors.cpp

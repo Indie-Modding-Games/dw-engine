@@ -1,6 +1,7 @@
 #include <array>
 
 #include "audio_extractors.hpp"
+#include "effect_extractors.hpp"
 #include "extractor.hpp"
 #include "image_extractors.hpp"
 #include "map_extractors.hpp"
@@ -30,6 +31,7 @@ constexpr std::array Registry = {
     Extractor{.name = "event_script", .handles = handlesScriptFile, .extract = extractScriptFile},
     Extractor{.name = "overlay", .handles = handlesOverlay, .extract = extractOverlay},
     Extractor{.name = "padding", .handles = handlesPadding, .extract = extractPadding},
+    Extractor{.name = "effect", .handles = handlesEffectFile, .extract = extractEffectFile},
 };
 
 } // namespace

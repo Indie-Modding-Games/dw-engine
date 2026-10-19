@@ -77,4 +77,9 @@ core::Result<assets::AssetId> textTable(std::string_view language, std::string_v
 // font/main: the atlas of the executable's font; its metadata is metadataOf of it.
 core::Result<assets::AssetId> fontImage();
 
+// effect/<slug>/<leaf>: an asset of a battle effect slot of ETCHI/EFEDAT.EFE ("script", "texture", "model"...). A slot
+// is the effect of the technique with its number, so the slug is the move's id from the executable's tables, or the
+// slot as a 3-digit number when the tables are not known.
+core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t slot, std::string_view leaf);
+
 } // namespace dwe::dwx::names

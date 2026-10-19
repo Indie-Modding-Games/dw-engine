@@ -133,4 +133,9 @@ core::Result<assets::AssetId> fontImage() {
     return assets::AssetId::parse("font/main");
 }
 
+core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t slot, std::string_view leaf) {
+    const bool named = tables != nullptr && slot < tables->ids.moves.size();
+    return assets::AssetId::parse(std::format("effect/{}/{}", named ? tables->ids.moves[slot] : number(slot), leaf));
+}
+
 } // namespace dwe::dwx::names
