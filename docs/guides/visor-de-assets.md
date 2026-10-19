@@ -18,10 +18,12 @@ paquete da cada uno, qué sobrescribe y, si es una textura PNG, cómo se ve. El 
 
 3. Abre el overlay (`º`, `` ` `` o `F1`) y marca **asset viewer** en la ventana **Frame**. Sale la ventana **Assets**.
 
-La carpeta puede ser un paquete (tiene `pack.yaml` en la raíz) o una carpeta con paquetes, uno por subcarpeta. Se monta
-con el sistema de ficheros virtual, con sus capas, prioridades y dependencias ([paquetes](../architecture/vfs.md)). Al
-arrancar, el log dice qué se ha montado: una línea `asset viewer: mounted '<carpeta>': <n> assets; packs ...` con
-cada paquete, su versión y su capa.
+La carpeta puede ser un paquete (tiene `pack.yaml` en la raíz) o una carpeta con paquetes: subcarpetas con
+`pack.yaml` y archivos `.pak` (los que escribe `dwx pack`), mezclados. Si hay una carpeta y un `.pak` con el mismo
+nombre (`base/` y `base.pak`), se monta la carpeta y la ventana dice que el archivo quedó fuera. Se monta con el
+sistema de ficheros virtual, con sus capas, prioridades y dependencias ([paquetes](../architecture/vfs.md), que
+explica estas reglas). Al arrancar, el log dice qué se ha montado: una línea
+`asset viewer: mounted '<carpeta>': <n> assets; packs ...` con cada paquete, su versión y su capa.
 
 En la propia ventana puedes escribir otra carpeta y pulsar **Mount** (o Intro) para montarla sin reiniciar; sirve
 también para recargar después de volver a extraer.

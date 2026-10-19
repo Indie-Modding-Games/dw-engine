@@ -117,8 +117,22 @@ se monta con su propio sistema de ficheros (`PackLocation`: el sistema de ficher
 que una pila puede mezclar carpetas y archivos: `mount(sistemaDeFicheros, carpetas)` es el caso de todos en el mismo.
 `listPackFiles` lista los ficheros de un paquete con su ID y comprueba las mismas reglas que el montaje.
 
-Para saber qué montar, `findPacks(carpeta)` devuelve la propia carpeta si tiene `pack.yaml`, y si no, cada subcarpeta
-inmediata que lo tenga. Así se puede montar `content/base` o todo `content/`.
+Para saber qué montar, `findPacks(carpeta)` devuelve la propia carpeta si tiene `pack.yaml` (y nada más). Si no,
+devuelve cada subcarpeta inmediata que lo tenga y cada fichero `.pak` inmediato, ordenados por ruta. Así se puede
+montar `content/base`, todo `content/` o un `content/` que mezcle carpetas y archivos. Las reglas de precedencia:
+
+- Una carpeta gana al `.pak` con su nombre: con `base/` y `base.pak` se monta `base/`, y `base.pak` sale en
+  `hidden`. La carpeta es lo que se edita y el archivo se construye a partir de ella (`dwx pack`), así que la carpeta
+  es la versión más reciente.
+- Solo cuenta el nombre del fichero, no el `id` de su `pack.yaml`: dos paquetes con nombres distintos y el mismo `id`
+  se devuelven los dos y el montaje falla con «mounted twice», que dice las dos rutas.
+- Un `.pak` dentro de una subcarpeta no cuenta (igual que un `pack.yaml` dos niveles más abajo), y un `.pak` dentro
+  de una carpeta que ya es un paquete es un asset de ese paquete.
+- El orden de la pila no lo decide `findPacks`: lo deciden la capa y la prioridad de cada manifiesto al montar.
+
+`openPacks(disco, encontrados)` abre cada archivo con `PakFileSystem` y devuelve las `PackLocation` para `mount`
+junto con los archivos abiertos, que deben vivir tanto como el sistema de ficheros virtual. El visor de assets del
+overlay de depuración lo usa así y dice en su estado qué archivos quedaron ocultos.
 
 ## Errores
 

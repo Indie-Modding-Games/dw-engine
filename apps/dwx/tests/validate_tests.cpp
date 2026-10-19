@@ -1,4 +1,5 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -16,10 +17,12 @@
 
 #include "asset_names.hpp"
 #include "media_fixtures.hpp"
+#include "temp_folder.hpp"
 #include "validate.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::MemoryFileSystem;
+using dwe::assets::testing::TempFolder;
 
 namespace {
 
@@ -176,6 +179,34 @@ content/broken/sound/odd/bank_meta.yaml:2:6: $.map: 'nowhere' names map/nowhere/
 content/broken/sound/odd/bank_meta.yaml:3:8: $.count: expected integer, found string
 )";
     CHECK(textOf(*report) == expected);
+}
+
+TEST_CASE("a pack in a .pak archive is checked like a folder") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    const TempFolder folder;
+    const std::filesystem::path content = folder.path() / "content";
+    std::filesystem::create_directories(content);
+    const auto written = dwe::assets::writePak(files, "content/base", content / "base.pak");
+    REQUIRE_MESSAGE(written.has_value(), errorOf(written));
+    const auto schemas = files.listFiles("content/schemas");
+    REQUIRE(schemas.has_value());
+    for (const std::string& schema : *schemas) {
+        const auto bytes = files.readFile(std::filesystem::path{"content/schemas"} / schema);
+        REQUIRE(bytes.has_value());
+        folder.write(std::filesystem::path{"content/schemas"} / schema,
+                     std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    }
+    const dwe::assets::DiskFileSystem disk;
+    const auto report = validatePacks(disk, content, content / "schemas");
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(textOf(*report).empty());
+    CHECK(report->packs == 1);
+    CHECK(report->assets == 5);
+    CHECK(report->documents == 4);
+    CHECK(report->references == 4);
+    CHECK(report->contracts == 1);
 }
 
 TEST_CASE("a manifest that cannot be read for its schema is a problem") {

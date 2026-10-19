@@ -5,10 +5,12 @@
 #include <dwe/assets/pack_manifest.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dwe::assets {
@@ -83,9 +85,35 @@ private:
 // no two files may give the same one.
 core::Result<std::vector<PackFile>> listPackFiles(const FileSystem& fileSystem, const std::filesystem::path& root);
 
-// The packs in a content folder, sorted: the folder itself when it has a pack.yaml, otherwise each folder right
-// under it that has one. A folder without packs gives none; one that cannot be listed is an error.
-core::Result<std::vector<std::filesystem::path>> findPacks(const FileSystem& fileSystem,
-                                                           const std::filesystem::path& folder);
+// The extension of a pack in a single file, a .pak archive (pak.hpp).
+inline constexpr std::string_view PakExtension = ".pak";
+
+// A pack that findPacks found.
+struct FoundPack {
+    enum class Kind : std::uint8_t {
+        Folder,  // a folder with a pack.yaml
+        Archive, // a .pak file, opened with PakFileSystem
+    };
+    std::filesystem::path path;
+    Kind kind = Kind::Folder;
+
+    friend bool operator==(const FoundPack&, const FoundPack&) = default;
+};
+
+// What findPacks found in a content folder.
+struct PackSearch {
+    // Sorted by path.
+    std::vector<FoundPack> packs;
+    // Archives left out because a folder pack has the same name, sorted.
+    std::vector<std::filesystem::path> hidden;
+};
+
+// The packs in a content folder. When the folder has a pack.yaml it is the only pack. Otherwise every folder right
+// under it with a pack.yaml is a pack, and so is every .pak file right under it, except that a folder wins over the
+// archive with its name: with both base/ and base.pak, base/ is mounted and base.pak is reported as hidden, since the
+// folder is what one edits and the archive is built from it. Packs whose names differ but whose pack.yaml give the
+// same id are all returned, and mounting them fails. A folder without packs gives none; one that cannot be listed
+// is an error.
+core::Result<PackSearch> findPacks(const FileSystem& fileSystem, const std::filesystem::path& folder);
 
 } // namespace dwe::assets

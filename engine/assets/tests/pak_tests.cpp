@@ -15,6 +15,7 @@
 
 using dwe::assets::AssetId;
 using dwe::assets::DiskFileSystem;
+using dwe::assets::FoundPack;
 using dwe::assets::PackLocation;
 using dwe::assets::PakEntrySize;
 using dwe::assets::PakFileSystem;
@@ -128,6 +129,51 @@ TEST_CASE("a folder pack overrides a .pak pack below it") {
     CHECK(*background == std::vector{std::byte{'h'}, std::byte{'d'}});
     CHECK(collision->size() == 10);
     CHECK(vfs->sources(*AssetId::parse("map/start/background")).size() == 2);
+}
+
+TEST_CASE("the .pak archives of a content folder are found, opened and mounted with its folders") {
+    const TempFolder folder;
+    writeFixturePack(folder);
+    folder.write("content/hd/pack.yaml", "id: hd\nversion: 0.1.0\nlayer: remaster\ndependencies:\n  - id: base\n"
+                                         "    min_version: 1.0.0\n");
+    folder.write("content/hd/map/start/background.png", "hd");
+    const DiskFileSystem disk;
+    REQUIRE(writePak(disk, folder.path() / "base", folder.path() / "content/base.pak").has_value());
+    // Built from hd/, so the folder next to it is used instead.
+    REQUIRE(writePak(disk, folder.path() / "content/hd", folder.path() / "content/hd.pak").has_value());
+
+    const auto found = dwe::assets::findPacks(disk, folder.path() / "content");
+    REQUIRE_MESSAGE(found.has_value(), found.error().message);
+    CHECK(found->packs ==
+          std::vector{FoundPack{.path = folder.path() / "content/base.pak", .kind = FoundPack::Kind::Archive},
+                      FoundPack{.path = folder.path() / "content/hd", .kind = FoundPack::Kind::Folder}});
+    CHECK(found->hidden == std::vector{folder.path() / "content/hd.pak"});
+
+    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    REQUIRE(opened.has_value());
+    CHECK(opened->archives.size() == 1);
+    REQUIRE(opened->locations.size() == 2);
+    CHECK(opened->locations[0].fileSystem == opened->archives[0].get());
+    CHECK(opened->locations[1].fileSystem == &disk);
+    const auto vfs = VirtualFileSystem::mount(opened->locations);
+    REQUIRE(vfs.has_value());
+    const auto background = vfs->read(*AssetId::parse("map/start/background"));
+    REQUIRE(background.has_value());
+    CHECK(*background == std::vector{std::byte{'h'}, std::byte{'d'}});
+    CHECK(vfs->resolve(*AssetId::parse("map/start/collision"))->file ==
+          folder.path() / "content/base.pak/map/start/collision.yaml");
+}
+
+TEST_CASE("opening packs fails on an archive that does not open") {
+    const TempFolder folder;
+    folder.write("content/broken.pak", "not an archive");
+    const DiskFileSystem disk;
+    const auto found = dwe::assets::findPacks(disk, folder.path() / "content");
+    REQUIRE(found.has_value());
+    REQUIRE(found->packs.size() == 1);
+    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    REQUIRE_FALSE(opened.has_value());
+    CHECK(opened.error().message.contains("broken.pak"));
 }
 
 TEST_CASE("a .pak is laid out as documented and written deterministically") {

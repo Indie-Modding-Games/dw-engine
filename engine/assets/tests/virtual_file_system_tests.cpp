@@ -12,6 +12,7 @@
 
 using dwe::assets::AssetId;
 using dwe::assets::DiskFileSystem;
+using dwe::assets::FoundPack;
 using dwe::assets::MemoryFileSystem;
 using dwe::assets::VirtualFileSystem;
 using dwe::assets::testing::TempFolder;
@@ -206,15 +207,42 @@ TEST_CASE("packs are found in a content folder or as the folder itself") {
 
     const auto content = dwe::assets::findPacks(memory, "packs");
     REQUIRE(content.has_value());
-    CHECK(*content == std::vector<std::filesystem::path>{"packs/base", "packs/hd"});
+    CHECK(content->packs == std::vector{FoundPack{.path = "packs/base", .kind = FoundPack::Kind::Folder},
+                                        FoundPack{.path = "packs/hd", .kind = FoundPack::Kind::Folder}});
+    CHECK(content->hidden.empty());
 
     const auto single = dwe::assets::findPacks(memory, "packs/base");
     REQUIRE(single.has_value());
-    CHECK(*single == std::vector<std::filesystem::path>{"packs/base"});
+    CHECK(single->packs == std::vector{FoundPack{.path = "packs/base", .kind = FoundPack::Kind::Folder}});
 
     const auto none = dwe::assets::findPacks(memory, "packs/notes");
     REQUIRE(none.has_value());
-    CHECK(none->empty());
+    CHECK(none->packs.empty());
 
     CHECK_FALSE(dwe::assets::findPacks(memory, "missing").has_value());
+}
+
+TEST_CASE(".pak archives are found next to folder packs, and a folder wins over the archive with its name") {
+    MemoryFileSystem memory;
+    addPack(memory, "base", "base");
+    addPack(memory, "hd", "remaster");
+    memory.addFile("packs/music.pak", "an archive");
+    memory.addFile("packs/hd.pak", "the archive built from hd/");
+    memory.addFile("packs/.pak", "no name");
+    memory.addFile("packs/base.pak.txt", "not an archive");
+    memory.addFile("packs/notes/old.pak", "too deep to count");
+
+    const auto content = dwe::assets::findPacks(memory, "packs");
+    REQUIRE(content.has_value());
+    CHECK(content->packs == std::vector{FoundPack{.path = "packs/base", .kind = FoundPack::Kind::Folder},
+                                        FoundPack{.path = "packs/hd", .kind = FoundPack::Kind::Folder},
+                                        FoundPack{.path = "packs/music.pak", .kind = FoundPack::Kind::Archive}});
+    CHECK(content->hidden == std::vector<std::filesystem::path>{"packs/hd.pak"});
+
+    // A pack folder is the only pack, even with archives in it.
+    memory.addFile("packs/base/extra.pak", "an asset of base");
+    const auto single = dwe::assets::findPacks(memory, "packs/base");
+    REQUIRE(single.has_value());
+    CHECK(single->packs == std::vector{FoundPack{.path = "packs/base", .kind = FoundPack::Kind::Folder}});
+    CHECK(single->hidden.empty());
 }

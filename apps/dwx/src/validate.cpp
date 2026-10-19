@@ -3,6 +3,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/model.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
@@ -401,15 +402,20 @@ private:
 
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,
                                              const std::filesystem::path& schemaFolder) {
-    const auto roots = assets::findPacks(fileSystem, folder);
-    if (!roots) {
-        return std::unexpected{roots.error()};
+    const auto found = assets::findPacks(fileSystem, folder);
+    if (!found) {
+        return std::unexpected{found.error()};
     }
-    if (roots->empty()) {
+    if (found->packs.empty()) {
         return core::fail(
-            std::format("{} has no pack.yaml, nor do the folders right under it", assets::pathText(folder)));
+            std::format("{} has no pack.yaml nor .pak, nor do the folders right under it", assets::pathText(folder)));
     }
-    const auto stack = VirtualFileSystem::mount(fileSystem, *roots);
+    // The archives stay open while the stack is checked.
+    const auto opened = assets::openPacks(fileSystem, found->packs);
+    if (!opened) {
+        return std::unexpected{opened.error()};
+    }
+    const auto stack = VirtualFileSystem::mount(opened->locations);
     if (!stack) {
         return std::unexpected{stack.error()};
     }
@@ -421,8 +427,8 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem, 
     if (!normal.has_filename()) {
         normal = normal.parent_path();
     }
-    const auto roots = assets::findPacks(fileSystem, normal);
-    const bool isPack = roots && roots->size() == 1 && roots->front().lexically_normal() == normal;
+    const auto found = assets::findPacks(fileSystem, normal);
+    const bool isPack = found && found->packs.size() == 1 && found->packs.front().path.lexically_normal() == normal;
     if (!isPack) {
         return normal / "schemas";
     }

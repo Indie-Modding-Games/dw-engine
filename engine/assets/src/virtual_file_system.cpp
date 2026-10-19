@@ -246,24 +246,39 @@ core::Result<std::vector<PackFile>> listPackFiles(const FileSystem& fileSystem, 
     return sorted;
 }
 
-core::Result<std::vector<std::filesystem::path>> findPacks(const FileSystem& fileSystem,
-                                                           const std::filesystem::path& folder) {
+core::Result<PackSearch> findPacks(const FileSystem& fileSystem, const std::filesystem::path& folder) {
     const auto files = fileSystem.listFiles(folder);
     if (!files) {
         return std::unexpected{files.error()};
     }
-    std::vector<std::filesystem::path> packs;
+    std::vector<std::string> folders;
+    std::vector<std::string> archives;
     for (const std::string& file : *files) {
         if (file == ManifestName) {
-            return std::vector{folder};
+            return PackSearch{.packs = {FoundPack{.path = folder, .kind = FoundPack::Kind::Folder}}, .hidden = {}};
         }
         const std::size_t slash = file.find('/');
         if (slash != std::string::npos && std::string_view{file}.substr(slash + 1) == ManifestName) {
-            packs.push_back(folder / file.substr(0, slash));
+            folders.push_back(file.substr(0, slash));
+        } else if (slash == std::string::npos && file.size() > PakExtension.size() && file.ends_with(PakExtension)) {
+            archives.push_back(file);
         }
     }
-    std::ranges::sort(packs);
-    return packs;
+    PackSearch search;
+    for (const std::string& name : folders) {
+        search.packs.push_back(FoundPack{.path = folder / name, .kind = FoundPack::Kind::Folder});
+    }
+    for (const std::string& archive : archives) {
+        const std::string_view name = std::string_view{archive}.substr(0, archive.size() - PakExtension.size());
+        if (std::ranges::contains(folders, name)) {
+            search.hidden.push_back(folder / archive);
+        } else {
+            search.packs.push_back(FoundPack{.path = folder / archive, .kind = FoundPack::Kind::Archive});
+        }
+    }
+    std::ranges::sort(search.packs, {}, &FoundPack::path);
+    std::ranges::sort(search.hidden);
+    return search;
 }
 
 std::vector<AssetId> VirtualFileSystem::overriddenIds() const {

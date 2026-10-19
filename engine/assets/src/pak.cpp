@@ -8,9 +8,13 @@
 #include <format>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <system_error>
+#include <utility>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -358,6 +362,23 @@ core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const
         return core::fail(std::format("cannot write '{}'", pathText(archive)));
     }
     return entries;
+}
+
+core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs) {
+    OpenedPacks opened;
+    for (const FoundPack& pack : packs) {
+        if (pack.kind == FoundPack::Kind::Folder) {
+            opened.locations.push_back(PackLocation{.fileSystem = &folders, .root = pack.path});
+            continue;
+        }
+        auto archive = PakFileSystem::open(pack.path);
+        if (!archive) {
+            return std::unexpected{archive.error()};
+        }
+        opened.locations.push_back(PackLocation{.fileSystem = archive->get(), .root = pack.path});
+        opened.archives.push_back(std::move(*archive));
+    }
+    return opened;
 }
 
 } // namespace dwe::assets

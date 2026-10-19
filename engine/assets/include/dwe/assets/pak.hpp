@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/sha1.hpp>
 
@@ -71,5 +72,17 @@ private:
 // files give the same archive, byte for byte. Returns the entries written.
 core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const std::filesystem::path& packRoot,
                                              const std::filesystem::path& archive);
+
+// The packs that findPacks found, ready to mount.
+struct OpenedPacks {
+    // Open while this lives: a VirtualFileSystem mounted from locations must not outlive it.
+    std::vector<std::unique_ptr<PakFileSystem>> archives;
+    // One per pack, in the order given.
+    std::vector<PackLocation> locations;
+};
+
+// Opens packs for mounting: a folder pack is read through the given file system, which must outlive the result, and
+// an archive is opened from disk with PakFileSystem. Fails on the first archive that does not open.
+core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs);
 
 } // namespace dwe::assets

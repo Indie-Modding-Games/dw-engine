@@ -1,6 +1,7 @@
 #include "asset_viewer.hpp"
 
 #include <dwe/assets/image.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/core/log.hpp>
 
 #include <imgui.h>
@@ -48,22 +49,27 @@ void AssetViewer::mount(const std::filesystem::path& folder) {
     releasePreview();
     selected_.reset();
     vfs_.reset();
+    archives_.clear();
     ids_.clear();
 
     std::error_code error;
     if (!std::filesystem::is_directory(folder, error)) {
         status_ = std::format("There is no folder '{}'.", text);
         core::logInfo("asset viewer: no content folder at '{}'", text);
-    } else if (auto packs = assets::findPacks(disk_, folder); !packs) {
-        status_ = packs.error().message;
+    } else if (auto found = assets::findPacks(disk_, folder); !found) {
+        status_ = found.error().message;
         core::logWarning("asset viewer: {}", status_);
-    } else if (packs->empty()) {
+    } else if (found->packs.empty()) {
         status_ = std::format("There are no packs in '{}'.", text);
         core::logInfo("asset viewer: no packs in '{}'", text);
-    } else if (auto vfs = assets::VirtualFileSystem::mount(disk_, *packs); !vfs) {
+    } else if (auto opened = assets::openPacks(disk_, found->packs); !opened) {
+        status_ = opened.error().message;
+        core::logWarning("asset viewer: {}", status_);
+    } else if (auto vfs = assets::VirtualFileSystem::mount(opened->locations); !vfs) {
         status_ = vfs.error().message;
         core::logWarning("asset viewer: {}", status_);
     } else {
+        archives_ = std::move(opened->archives);
         vfs_.emplace(std::move(*vfs));
         ids_ = vfs_->ids();
         std::string stack;
@@ -73,6 +79,10 @@ void AssetViewer::mount(const std::filesystem::path& folder) {
         }
         status_ = std::format("{} assets. Packs from the bottom of the stack up: {}.", ids_.size(), stack);
         core::logInfo("asset viewer: mounted '{}': {} assets; packs {}", text, ids_.size(), stack);
+        for (const std::filesystem::path& hidden : found->hidden) {
+            status_ += std::format(" {} is left out: the folder with its name is used.", assets::pathText(hidden));
+            core::logInfo("asset viewer: '{}' left out: the folder with its name is used", assets::pathText(hidden));
+        }
     }
     applyFilter();
 }

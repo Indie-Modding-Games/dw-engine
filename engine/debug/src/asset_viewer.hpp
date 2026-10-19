@@ -2,6 +2,7 @@
 
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/rhi/texture.hpp>
@@ -11,6 +12,7 @@
 #include <array>
 #include <cstddef>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -57,6 +59,8 @@ private:
 
     rhi::Device* device_;
     assets::DiskFileSystem disk_;
+    // The .pak archives of the mounted packs; vfs_ reads through them, so it is reset first.
+    std::vector<std::unique_ptr<assets::PakFileSystem>> archives_;
     std::array<char, 512> folder_{};
     std::optional<assets::VirtualFileSystem> vfs_;
     std::string status_;

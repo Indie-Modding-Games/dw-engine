@@ -1,5 +1,6 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
@@ -68,12 +69,18 @@ std::optional<Options> parseOptions(std::span<char* const> arguments) {
 // one line per asset that fails; exits with success only when there is none.
 int checkContentFolder(const std::filesystem::path& folder) {
     const assets::DiskFileSystem disk;
-    const auto roots = assets::findPacks(disk, folder);
-    if (!roots || roots->empty()) {
-        core::logError("no packs in {}: {}", assets::pathText(folder), roots ? "no pack.yaml" : roots.error().message);
+    const auto found = assets::findPacks(disk, folder);
+    if (!found || found->packs.empty()) {
+        core::logError("no packs in {}: {}", assets::pathText(folder),
+                       found ? "no pack.yaml nor .pak" : found.error().message);
         return EXIT_FAILURE;
     }
-    const auto stack = assets::VirtualFileSystem::mount(disk, *roots);
+    const auto opened = assets::openPacks(disk, found->packs);
+    if (!opened) {
+        core::logError("cannot open the packs of {}: {}", assets::pathText(folder), opened.error().message);
+        return EXIT_FAILURE;
+    }
+    const auto stack = assets::VirtualFileSystem::mount(opened->locations);
     if (!stack) {
         core::logError("cannot mount {}: {}", assets::pathText(folder), stack.error().message);
         return EXIT_FAILURE;
@@ -82,7 +89,8 @@ int checkContentFolder(const std::filesystem::path& folder) {
     for (const assets::ContentProblem& problem : problems) {
         std::println("{}: {}", problem.file, problem.message);
     }
-    std::println("{} assets in {} packs, {} cannot be opened", stack->ids().size(), roots->size(), problems.size());
+    std::println("{} assets in {} packs, {} cannot be opened", stack->ids().size(), found->packs.size(),
+                 problems.size());
     return problems.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
