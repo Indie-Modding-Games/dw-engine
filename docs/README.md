@@ -13,7 +13,7 @@ Aquí solo va lo técnico.
 | Todo el equipo | [Visión general](architecture/overview.md) · [Política legal de assets](legal/assets.md) · [Plan](roadmap.md) · [Glosario](glossary.md) |
 | Programación | [Preparar el entorno](getting-started/setup.md) · [Estructura del repositorio](architecture/repository-layout.md) · [Reglas de dependencias](architecture/dependency-rules.md) · [Formatos del original y `dwx`](architecture/formats.md) · [Paquetes y sistema de ficheros virtual](architecture/vfs.md) · [Convenciones de código](conventions/code.md) |
 | Arte y audio | [Tubería de assets](architecture/assets-pipeline.md) · [Paquetes](architecture/vfs.md) · [Política legal de assets](legal/assets.md) |
-| Diseño y guion | [Ciclo de diseño](conventions/design-cycle.md) · [Fichas de referencia](reference/README.md) · [Visión general](architecture/overview.md) · [Tubería de assets](architecture/assets-pipeline.md) |
+| Diseño y guion | [Ciclo de diseño](conventions/design-cycle.md) · [Fichas de referencia](reference/README.md) ([cuidado](reference/care.md), [evolución](reference/evolution.md), [batalla](reference/battle.md)) · [Visión general](architecture/overview.md) · [Tubería de assets](architecture/assets-pipeline.md) |
 | Quien quiera proponer un cambio grande | [Cómo funcionan los ADR](adr/README.md) |
 
 ## Cómo está organizada
