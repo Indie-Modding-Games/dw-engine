@@ -5,7 +5,7 @@ Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
 | 0 | Base | S | Casi cerrada: todo hecho en Linux; falta que la CI corra en GitHub (Windows sin verificar) y la limpieza de repositorios |
-| 1 | Tubería de assets | M | Pendiente |
+| 1 | Tubería de assets | M | En curso |
 | 2 | Prueba vertical | M | Pendiente |
 | 3 | Núcleo jugable | L | Pendiente |
 | 4 | Contenido y modos | XL, continuo | Pendiente |
@@ -57,6 +57,21 @@ CI pasa.
 
 **Hecho cuando:** cada fichero del disco US se extrae y el motor carga el resultado. El informe de cobertura está a
 cero pendientes.
+
+**Estado:**
+
+| Punto | Estado |
+|---|---|
+| Disco: CUE, sectores, ISO9660 y tabla de ficheros del ejecutable | Hecho. `dwx extract --list` lista los 818 ficheros del disco US con su SHA-1; la tabla del ejecutable coincide con el volumen |
+| Sistema de ficheros virtual con capas y manifiestos | Hecho: módulo `assets` (IDs por nombre, `pack.yaml`, capas, override por ID) y YAML en `core` ([ADR 0016](adr/0016-yaml-con-libyaml.md)) |
+| TIM y packs → PNG | En curso |
+| `dwx extract` a `content/base/` con informe de cobertura | Pendiente |
+| TMD/MMD y animaciones → glTF | En curso |
+| Mapas y tablas del ejecutable → PNG + YAML, esquemas | En curso |
+| Textos, VHB/SEQ, STR, scripts SCN | Pendiente |
+| `dwx validate`, `cook` y `pack` | Pendiente |
+| Visor ImGui | Pendiente |
+| Fichas de referencia: cuidado, evolución y batalla | En revisión |
 
 ## Fase 2 — Prueba vertical
 
