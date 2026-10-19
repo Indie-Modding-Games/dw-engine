@@ -9,9 +9,14 @@ dwe_add_module(formats
     LAYER base
     SOURCES
         src/audio/adpcm.cpp
+        src/audio/envelope.cpp
+        src/audio/midi.cpp
         src/audio/seq.cpp
+        src/audio/sf2.cpp
         src/audio/vab.cpp
+        src/audio/vab_sf2.cpp
         src/audio/vhb.cpp
+        src/audio/wav.cpp
         src/disc/boot.cpp
         src/disc/cue_sheet.cpp
         src/disc/disc_image.cpp
