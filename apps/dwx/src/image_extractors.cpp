@@ -253,7 +253,7 @@ core::Result<Extraction> extractTimPack(const Disc& disc, const formats::disc::I
             extraction.unknowns.push_back(std::format("entry {} at 0x{:x}: {}", i, offset, tim.error().message));
             continue;
         }
-        const auto id = names::packEntry(file.path, i);
+        const auto id = names::packEntry(disc.tables(), file.path, i);
         if (!id) {
             return std::unexpected{id.error()};
         }

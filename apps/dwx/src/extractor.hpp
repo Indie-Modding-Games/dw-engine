@@ -5,11 +5,14 @@
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "game_tables.hpp"
 
 namespace dwe::dwx {
 
@@ -46,17 +49,28 @@ struct DiscInfo {
 // The disc, as the extractors see it. It refers to objects that must outlive it.
 class Disc {
 public:
-    Disc(formats::disc::SectorSource& source, const formats::disc::IsoVolume& volume, const DiscInfo& info)
-        : source_(&source), volume_(&volume), info_(&info) {}
+    Disc(formats::disc::SectorSource& source, const formats::disc::IsoVolume& volume, const DiscInfo& info,
+         const GameTables* tables = nullptr)
+        : source_(&source), volume_(&volume), info_(&info), tables_(tables) {}
 
     [[nodiscard]] formats::disc::SectorSource& source() const { return *source_; }
     [[nodiscard]] const formats::disc::IsoVolume& volume() const { return *volume_; }
     [[nodiscard]] const DiscInfo& info() const { return *info_; }
+    // The executable's tables, or nullptr when the version or its layout is not known.
+    [[nodiscard]] const GameTables* tables() const { return tables_; }
+
+    // Returns the file with this volume path ("MAP/MAP1/NAME.MAP"), or nullptr.
+    [[nodiscard]] const formats::disc::IsoFile* findFile(std::string_view path) const {
+        const auto& files = volume_->files;
+        const auto found = std::ranges::lower_bound(files, path, std::less<>{}, &formats::disc::IsoFile::path);
+        return found != files.end() && found->path == path ? &*found : nullptr;
+    }
 
 private:
     formats::disc::SectorSource* source_;
     const formats::disc::IsoVolume* volume_;
     const DiscInfo* info_;
+    const GameTables* tables_;
 };
 
 // Turns disc files into source assets. A new kind of file is one more entry in the registry (extractors.cpp) and

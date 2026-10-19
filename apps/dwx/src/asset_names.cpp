@@ -30,8 +30,15 @@ std::string segment(std::string_view discName) {
     return text;
 }
 
-core::Result<assets::AssetId> digimonTexture(std::size_t type) {
-    return assets::AssetId::parse(std::format("digimon/{}/texture", number(type)));
+std::string digimonSlug(const GameTables* tables, std::size_t type) {
+    if (tables != nullptr && type < tables->ids.digimon.size()) {
+        return tables->ids.digimon[type];
+    }
+    return number(type);
+}
+
+core::Result<assets::AssetId> digimonAsset(const GameTables* tables, std::size_t type, std::string_view leaf) {
+    return assets::AssetId::parse(std::format("digimon/{}/{}", digimonSlug(tables, type), leaf));
 }
 
 core::Result<assets::AssetId> cardImage(std::size_t card) {
@@ -53,14 +60,22 @@ core::Result<assets::AssetId> discImage(std::string_view volumePath, std::option
     return assets::AssetId::parse(id);
 }
 
-core::Result<assets::AssetId> packEntry(std::string_view volumePath, std::size_t index) {
+core::Result<assets::AssetId> packEntry(const GameTables* tables, std::string_view volumePath, std::size_t index) {
     if (volumePath == AllTimPath) {
-        return digimonTexture(index);
+        return digimonAsset(tables, index, "texture");
     }
     if (volumePath == CardPath) {
         return cardImage(index);
     }
     return discImage(volumePath, index);
+}
+
+core::Result<assets::AssetId> tableDocument(std::string_view name) {
+    return assets::AssetId::parse(std::format("data/{}", name));
+}
+
+core::Result<assets::AssetId> bootConfig() {
+    return assets::AssetId::parse("disc/boot");
 }
 
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {

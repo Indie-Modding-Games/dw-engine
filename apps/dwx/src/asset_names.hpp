@@ -8,15 +8,22 @@
 #include <string>
 #include <string_view>
 
-// The asset ids of the base pack. They live here, and only here, so the scheme can change in one place: when the
-// executable's tables are extracted, Digimon and cards get names instead of numbers.
+#include "game_tables.hpp"
+
+// The asset ids of the base pack. They live here, and only here, so the scheme can change in one place. Names come
+// from the executable's tables when the version is known (GameTables::ids); without them, numbers stand in.
 namespace dwe::dwx::names {
 
 // Turns a name from the disc into an id segment: lowercase, and '_' for anything that is not a letter or a digit.
 std::string segment(std::string_view discName);
 
-// digimon/<type>/texture: the texture of a Digimon type, from CHDAT/ALLTIM.TIM. The type is a 3-digit number.
-core::Result<assets::AssetId> digimonTexture(std::size_t type);
+// The id segment of a Digimon type: its id from the executable's tables (made from its model file name), or the
+// type as a 3-digit number when the tables are not known.
+std::string digimonSlug(const GameTables* tables, std::size_t type);
+
+// digimon/<slug>/<leaf>: an asset of a Digimon type, such as its texture ("texture", from CHDAT/ALLTIM.TIM) or its
+// model ("model"). Every extractor names Digimon assets with this function.
+core::Result<assets::AssetId> digimonAsset(const GameTables* tables, std::size_t type, std::string_view leaf);
 
 // card/<id>: the picture of a card, from CARD/CARD.ALL. The id is a 3-digit number.
 core::Result<assets::AssetId> cardImage(std::size_t card);
@@ -26,7 +33,13 @@ core::Result<assets::AssetId> cardImage(std::size_t card);
 core::Result<assets::AssetId> discImage(std::string_view volumePath, std::optional<std::size_t> index);
 
 // The id of an entry of a known pack: Digimon textures and cards have their own ids, other packs use discImage.
-core::Result<assets::AssetId> packEntry(std::string_view volumePath, std::size_t index);
+core::Result<assets::AssetId> packEntry(const GameTables* tables, std::string_view volumePath, std::size_t index);
+
+// data/<name>: a document of the executable's tables ("digimon", "moves"...).
+core::Result<assets::AssetId> tableDocument(std::string_view name);
+
+// disc/boot: the boot settings of SYSTEM.CNF.
+core::Result<assets::AssetId> bootConfig();
 
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);

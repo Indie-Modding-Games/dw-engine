@@ -115,12 +115,19 @@ TEST_CASE("asset ids follow the scheme") {
     CHECK(names::segment("T_TOGI") == "t_togi");
     CHECK(names::segment("16TAISEN") == "16taisen");
     CHECK(names::segment("A-B.C") == "a_b_c");
-    CHECK(names::digimonTexture(3)->str() == "digimon/003/texture");
+    CHECK(names::digimonAsset(nullptr, 3, "texture")->str() == "digimon/003/texture");
+    GameTables tables;
+    tables.ids.digimon = {"first", "second"};
+    CHECK(names::digimonSlug(&tables, 1) == "second");
+    CHECK(names::digimonAsset(&tables, 1, "model")->str() == "digimon/second/model");
+    CHECK(names::digimonAsset(&tables, 2, "texture")->str() == "digimon/002/texture"); // past the table
     CHECK(names::cardImage(65)->str() == "card/065");
     CHECK(names::discImage("STDDAT/GRADE/AN.TIM", std::nullopt)->str() == "texture/stddat/grade/an");
     CHECK(names::discImage("STDDAT/T_TOGI.TIM", 2)->str() == "texture/stddat/t_togi/002");
-    CHECK(names::packEntry("CHDAT/ALLTIM.TIM", 10)->str() == "digimon/010/texture");
-    CHECK(names::packEntry("CARD/CARD.ALL", 1)->str() == "card/001");
+    CHECK(names::packEntry(nullptr, "CHDAT/ALLTIM.TIM", 10)->str() == "digimon/010/texture");
+    CHECK(names::packEntry(&tables, "CHDAT/ALLTIM.TIM", 0)->str() == "digimon/first/texture");
+    CHECK(names::packEntry(&tables, "CARD/CARD.ALL", 1)->str() == "card/001");
+    CHECK(names::tableDocument("moves")->str() == "data/moves");
     CHECK(names::metadataOf(*names::cardImage(1))->str() == "card/001_meta");
 }
 

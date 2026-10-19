@@ -3,37 +3,63 @@
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/known_releases.hpp>
+#include <dwe/formats/exe/executable_layout.hpp>
 
 #include <cstdio>
+#include <optional>
 #include <print>
+#include <utility>
 
 #include "base_pack.hpp"
 #include "dwx.hpp"
+#include "game_tables.hpp"
 
 namespace dwe::dwx {
 
 namespace {
 
-// Identifies the version by the executable; an unknown executable only leaves the version empty.
-DiscInfo describeDisc(formats::disc::DiscImage& image, const formats::disc::IsoVolume& volume) {
-    DiscInfo info{.volumeId = volume.volumeId, .executablePath = {}, .executableSha1 = {}, .version = {}};
+// What the extraction knows about the disc before it looks at its files.
+struct DiscDescription {
+    DiscInfo info;
+    std::optional<GameTables> tables;
+};
+
+// Identifies the version by the executable and reads its tables. An unknown executable leaves the version empty and
+// the tables unread, so assets are named by number.
+DiscDescription describeDisc(formats::disc::DiscImage& image, const formats::disc::IsoVolume& volume) {
+    DiscDescription description{
+        .info = {.volumeId = volume.volumeId, .executablePath = {}, .executableSha1 = {}, .version = {}},
+        .tables = std::nullopt};
+    DiscInfo& info = description.info;
     const auto executable = formats::disc::findBootExecutable(image, volume);
     if (!executable) {
         std::println(stderr, "dwx: warning: {}", executable.error().message);
-        return info;
+        return description;
     }
     info.executablePath = executable->path;
     const auto bytes = formats::disc::readIsoFile(image, *executable);
     if (!bytes) {
         std::println(stderr, "dwx: warning: {}", bytes.error().message);
-        return info;
+        return description;
     }
     const auto digest = core::sha1(*bytes);
     info.executableSha1 = core::toHex(digest);
     if (const auto release = formats::disc::findKnownRelease(digest)) {
         info.version = release->version;
     }
-    return info;
+    const auto layout = formats::exe::findExecutableLayout(info.version);
+    if (!layout) {
+        std::println(stderr, "dwx: warning: the tables of this executable are not known; assets get numbers");
+        return description;
+    }
+    auto tables = readGameTables(*bytes, *layout);
+    if (!tables) {
+        std::println(stderr, "dwx: warning: the tables of version {} cannot be read: {}", info.version,
+                     tables.error().message);
+        return description;
+    }
+    description.tables = std::move(*tables);
+    return description;
 }
 
 double percent(std::uint64_t part, std::uint64_t whole) {
@@ -53,11 +79,17 @@ int extractDisc(const std::filesystem::path& path, const std::filesystem::path& 
         std::println(stderr, "dwx: {}", volume.error().message);
         return ExitFailed;
     }
-    const DiscInfo info = describeDisc(*image, *volume);
+    const DiscDescription description = describeDisc(*image, *volume);
+    const DiscInfo& info = description.info;
     std::println("Disc: {}, {} files, executable {} ({})", info.volumeId, volume->files.size(), info.executablePath,
                  info.version.empty() ? "unknown version" : info.version);
 
-    const Disc disc{*image, *volume, info};
+    if (description.tables) {
+        std::println("Tables: {} Digimon, {} maps; assets take their names", description.tables->ids.digimon.size(),
+                     description.tables->ids.maps.size());
+    }
+
+    const Disc disc{*image, *volume, info, description.tables ? &*description.tables : nullptr};
     const auto run = runExtractors(disc, extractors());
     if (!run) {
         std::println(stderr, "dwx: {}", run.error().message);

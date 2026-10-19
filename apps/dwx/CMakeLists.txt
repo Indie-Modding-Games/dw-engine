@@ -7,7 +7,9 @@ dwe_add_module(dwx
         src/extract.cpp
         src/extract_disc.cpp
         src/extractors.cpp
+        src/game_tables.cpp
         src/image_extractors.cpp
+        src/table_extractors.cpp
         src/verify.cpp
     DEPS core formats assets)
 
