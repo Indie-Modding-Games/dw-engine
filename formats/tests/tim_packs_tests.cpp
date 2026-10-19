@@ -79,6 +79,30 @@ TEST_CASE("stacked TIMs advance by width × height and warn when the block lengt
     CHECK(stack->warnings[0].find("TIM 0") != std::string::npos);
 }
 
+TEST_CASE("a TIM sequence advances by the block lengths and stops before trailing bytes") {
+    // 3 × 1 units is odd: the original's stacked arithmetic would land 2 bytes short of the next TIM.
+    const auto odd =
+        directTim(TimPixelMode::Direct16, {.x = 0, .y = 0, .width = 3, .height = 1}, bytesOf({1, 0, 2, 0, 3, 0}));
+    std::vector<std::byte> file;
+    appendTim(file, odd);
+    const std::size_t second = file.size();
+    appendTim(file, smallIndexedTim());
+    const std::size_t end = file.size();
+    putU32(file, 0xFFFF);
+
+    const auto sequence = readTimSequence(file);
+    REQUIRE(sequence.has_value());
+    REQUIRE(sequence->entries.size() == 2);
+    CHECK(sequence->entries[1].offset == second);
+    CHECK(sequence->end == end);
+    CHECK(sequence->warnings.empty());
+
+    const auto stacked = readStackedTims(file);
+    REQUIRE(stacked.has_value());
+    CHECK(stacked->entries.size() == 1);
+    CHECK(stacked->warnings.size() == 1);
+}
+
 TEST_CASE("a file that does not start with a TIM gives an empty stack and a warning") {
     const auto stack = readStackedTims(bytesOf({0x11, 0, 0, 0}));
     REQUIRE(stack.has_value());

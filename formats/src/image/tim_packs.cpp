@@ -43,26 +43,32 @@ std::size_t originalStackedSize(const Tim& tim) {
     return size;
 }
 
-} // namespace
+// How far one TIM of a list is from the next.
+enum class Stride : std::uint8_t {
+    Original,     // what width × height give, as loadStackedTIMFile computes it
+    BlockLengths, // what the block lengths say
+};
 
-core::Result<StackedTims> readStackedTims(std::span<const std::byte> bytes) {
+core::Result<StackedTims> walkTims(std::span<const std::byte> bytes, Stride stride) {
     StackedTims stack;
     const ByteReader reader{bytes};
     std::size_t offset = 0;
     while (reader.u32(offset) == TimMagic) {
         auto tim = readTim(bytes.subspan(offset));
         if (!tim) {
-            return core::fail(
-                std::format("stacked TIM {} at 0x{:x}: {}", stack.entries.size(), offset, tim.error().message));
+            return core::fail(std::format("TIM {} at 0x{:x}: {}", stack.entries.size(), offset, tim.error().message));
         }
-        const std::size_t size = originalStackedSize(*tim);
-        if (size != tim->byteSize) {
-            stack.warnings.push_back(std::format("stacked TIM {} at 0x{:x}: width × height give {} bytes, the block "
-                                                 "lengths give {}; using {}",
-                                                 stack.entries.size(), offset, size, tim->byteSize, size));
+        std::size_t size = tim->byteSize;
+        if (stride == Stride::Original) {
+            size = originalStackedSize(*tim);
+            if (size != tim->byteSize) {
+                stack.warnings.push_back(std::format("TIM {} at 0x{:x}: width × height give {} bytes, the block "
+                                                     "lengths give {}; using {}",
+                                                     stack.entries.size(), offset, size, tim->byteSize, size));
+            }
         }
         if (!reader.contains(offset, size)) {
-            return core::fail(std::format("stacked TIM {} at 0x{:x} runs past the end", stack.entries.size(), offset));
+            return core::fail(std::format("TIM {} at 0x{:x} runs past the end", stack.entries.size(), offset));
         }
         stack.entries.push_back(StackedTim{.offset = offset, .tim = std::move(*tim)});
         offset += size;
@@ -72,6 +78,16 @@ core::Result<StackedTims> readStackedTims(std::span<const std::byte> bytes) {
         stack.warnings.emplace_back("the file does not start with a TIM");
     }
     return stack;
+}
+
+} // namespace
+
+core::Result<StackedTims> readStackedTims(std::span<const std::byte> bytes) {
+    return walkTims(bytes, Stride::Original);
+}
+
+core::Result<StackedTims> readTimSequence(std::span<const std::byte> bytes) {
+    return walkTims(bytes, Stride::BlockLengths);
 }
 
 std::span<const KnownPack> knownPacks() {

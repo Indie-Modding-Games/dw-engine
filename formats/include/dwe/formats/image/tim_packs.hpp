@@ -30,6 +30,11 @@ struct StackedTims {
 // When they disagree the original's size is used and the result carries a warning.
 core::Result<StackedTims> readStackedTims(std::span<const std::byte> bytes);
 
+// Reads a file of TIMs stored one after another, each starting where the block lengths of the one before end. A
+// plain .TIM file is the case of one TIM; the arena textures hold several (std_setup.c: STD_loadArenaTIMToVRAM). The
+// list stops at the first word that is not 0x10.
+core::Result<StackedTims> readTimSequence(std::span<const std::byte> bytes);
+
 // What each entry of a pack holds.
 enum class PackEntryFormat : std::uint8_t { Tim };
 
