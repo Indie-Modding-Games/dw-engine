@@ -116,6 +116,11 @@ core::Result<assets::AssetId> musicAsset(std::size_t font, std::string_view leaf
     return assets::AssetId::parse(std::format("music/{}/{}", number(font), leaf));
 }
 
+core::Result<assets::AssetId> movieAsset(std::string_view volumePath, std::string_view leaf) {
+    const std::string_view name = volumePath.substr(volumePath.rfind('/') + 1);
+    return assets::AssetId::parse(std::format("movie/{}/{}", segment(name.substr(0, name.find('.'))), leaf));
+}
+
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {
     return assets::AssetId::parse(image.str() + "_meta");
 }

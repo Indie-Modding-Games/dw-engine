@@ -65,6 +65,9 @@ core::Result<assets::AssetId> soundAsset(std::string_view bank, std::optional<st
 // original's 1-based number (sound.c: loadMusicFont) as a 3-digit number.
 core::Result<assets::AssetId> musicAsset(std::size_t font, std::string_view leaf);
 
+// movie/<name>/<leaf>: a file of a movie, such as its video ("video"). MOVIE/OP1.STR is movie/op1.
+core::Result<assets::AssetId> movieAsset(std::string_view volumePath, std::string_view leaf);
+
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 

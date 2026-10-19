@@ -49,7 +49,8 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     const CoverageSummary summary = summarize(*run);
     CHECK(summary.files > 500);
     CHECK(summary.extracted + summary.partial >= 50);
-    CHECK(summary.pending > 0);
+    // Every file of the disc has an extractor.
+    CHECK(summary.pending == 0);
     const auto has = [&run](std::string_view prefix) {
         return std::ranges::any_of(run->outputs,
                                    [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
@@ -86,6 +87,8 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     };
     CHECK(taken("padding") == 1);
     CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
+    CHECK(taken("movie") == 4);
+    CHECK(statusOf("MOVIE/OP1.STR") == FileStatus::Extracted);
     // Every overlay is understood, SHOP_REL.BIN through its data map: its tables match the executable's copies but for
     // one row of characters.
     CHECK(taken("overlay") == 16);

@@ -10,6 +10,7 @@
 #include "padding_extractor.hpp"
 #include "script_extractors.hpp"
 #include "table_extractors.hpp"
+#include "video_extractors.hpp"
 
 namespace dwe::dwx {
 
@@ -32,6 +33,7 @@ constexpr std::array Registry = {
     Extractor{.name = "overlay", .handles = handlesOverlay, .extract = extractOverlay},
     Extractor{.name = "padding", .handles = handlesPadding, .extract = extractPadding},
     Extractor{.name = "effect", .handles = handlesEffectFile, .extract = extractEffectFile},
+    Extractor{.name = "movie", .handles = handlesMovie, .extract = extractMovie},
 };
 
 } // namespace

@@ -26,6 +26,7 @@ dwe_add_module(dwx
         src/text_extractors.cpp
         src/texture_cooker.cpp
         src/verify.cpp
+        src/video_extractors.cpp
     DEPS core formats assets
     TEST_LIBS dwe_cgltf)
 
