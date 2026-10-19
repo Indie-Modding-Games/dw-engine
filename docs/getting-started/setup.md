@@ -96,6 +96,7 @@ no llevan sanitizers.
 | `scripts/dev.sh tidy` | Pasa clang-tidy (necesita un `build` previo) |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
+| `build/<preset>/apps/dwx/dwx validate content/base` | Comprueba un paquete o una carpeta de paquetes: esquemas, referencias, contratos de los modelos y que cada asset se abre ([detalle](../architecture/assets-pipeline.md#dwx-validate)) |
 
 ## Editor
 

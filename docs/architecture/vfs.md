@@ -57,8 +57,10 @@ schemas:
 
 Las reglas de todos los paquetes montados valen para todos: un mod que sobrescribe `data/digimon` no necesita
 repetirla, y su documento se comprueba con el mismo esquema que el de la base. Se declara el esquema en el manifiesto
-y no se adivina por la ruta, para que un tipo de documento nuevo nunca pase sin comprobar: `dwx validate` da error si
-un documento no encaja en ninguna regla o encaja en reglas de dos esquemas distintos.
+y no se adivina por la ruta, para que un tipo de documento nuevo nunca pase sin comprobar:
+[`dwx validate`](assets-pipeline.md#dwx-validate) da error si un documento no encaja en ninguna regla o encaja en
+reglas de dos esquemas distintos. `dwx extract` escribe en el `pack.yaml` de la base una regla para cada tipo de
+documento que genera (`names::documentSchemas` en `apps/dwx/src/asset_names.cpp`).
 
 ## IDs de asset
 

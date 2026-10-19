@@ -25,14 +25,15 @@ dwe_add_module(dwx
         src/pack.cpp
         src/text_extractors.cpp
         src/texture_cooker.cpp
+        src/validate.cpp
         src/verify.cpp
         src/video_extractors.cpp
     DEPS core formats assets
     TEST_LIBS dwe_cgltf)
 
 if(BUILD_TESTING)
-    # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the temporary folder of the
-    # assets tests and check the documents against content/schemas.
+    # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the temporary folder and
+    # the media files of the assets tests and check the documents and the schemas of content/schemas.
     target_include_directories(dwe_dwx_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/formats/tests
         ${PROJECT_SOURCE_DIR}/engine/assets/tests)

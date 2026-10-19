@@ -1,5 +1,6 @@
 // Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has one.
 
+#include <dwe/assets/file_system.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
@@ -8,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <format>
 #include <string>
 #include <string_view>
 
@@ -15,6 +17,7 @@
 #include "disc_description.hpp"
 #include "schema_check.hpp"
 #include "temp_folder.hpp"
+#include "validate.hpp"
 
 using namespace dwe::dwx;
 
@@ -28,7 +31,7 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 
 } // namespace
 
-TEST_CASE("the user's disc: the tables and images are extracted into a base pack the engine mounts") {
+TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates and opens") {
     const char* path = std::getenv("DWE_DISC");
     if (path == nullptr || std::string_view{path}.empty()) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
@@ -136,4 +139,16 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     const auto assets = checkBasePack(temp.path() / "base", *run);
     REQUIRE_MESSAGE(assets.has_value(), errorOf(assets));
     CHECK(*assets == summary.outputs + 1);
+
+    // dwx validate: every document follows its schema, every reference and contract holds and every asset opens with
+    // the engine's readers.
+    const dwe::assets::DiskFileSystem disk;
+    const auto report = validatePacks(disk, temp.path() / "base", DWE_SCHEMA_DIR);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    for (const ValidationProblem& problem : report->problems) {
+        MESSAGE(std::format("{}:{}:{}: {}", problem.file, problem.line, problem.column, problem.message));
+    }
+    CHECK(report->problems.empty());
+    CHECK(report->assets == *assets);
+    CHECK(report->contracts > 170);
 }

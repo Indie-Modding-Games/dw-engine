@@ -1,11 +1,13 @@
 #include <cstdio>
 #include <filesystem>
+#include <optional>
 #include <print>
 #include <span>
 #include <string_view>
 #include <vector>
 
 #include "dwx.hpp"
+#include "validate.hpp"
 
 namespace dwe::dwx {
 
@@ -34,6 +36,10 @@ void printUsage() {
     std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
     std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
     std::println(stderr, "      Writes a pack as a single .pak archive and checks that it reads back.");
+    std::println(stderr, "  dwx validate [--schemas <folder>] <pack folder|content folder>");
+    std::println(stderr, "      Checks a pack, or every pack of a folder, before the engine loads them: each YAML");
+    std::println(stderr, "      document against its JSON Schema (default: the schemas folder next to the packs),");
+    std::println(stderr, "      the assets they name, the models against their contracts and that every asset opens.");
     std::println(stderr, "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error.");
 }
 
@@ -80,6 +86,22 @@ int main(int argc, char** argv) {
             const std::filesystem::path folder{arguments[2]};
             const std::filesystem::path out{arguments[4]};
             return command == "cook" ? cook(folder, out) : pack(folder, out);
+        }
+    }
+    if (command == "validate") {
+        std::optional<std::filesystem::path> schemas;
+        std::vector<std::string_view> folders;
+        const auto options = arguments.subspan(2);
+        for (std::size_t i = 0; i < options.size(); ++i) {
+            const std::string_view option{options[i]};
+            if (option == "--schemas" && i + 1 < options.size()) {
+                schemas = options[++i];
+            } else {
+                folders.push_back(option);
+            }
+        }
+        if (folders.size() == 1) {
+            return validate(std::filesystem::path{folders.front()}, schemas);
         }
     }
     printUsage();

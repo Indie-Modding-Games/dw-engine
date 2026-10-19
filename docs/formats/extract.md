@@ -134,8 +134,8 @@ sobre su página, sin imagen, y van a `unknowns`.
   va a `unknowns` y el resto del modelo se escribe igual.
 - Junto a cada modelo de Digimon va su **contrato**, `contract.yaml`: el fichero del modelo, el Digimon cuyo esqueleto
   tiene, el padre de cada hueso (de `DIGIMON_SKELETONS`) y el nombre (`anim_<nn>`) de cada animación del MMD,
-  también de las que no se pudieron reproducir. Un modelo que lo sustituya, el de un mod por ejemplo, tiene que
-  cumplirlo.
+  también de las que no se pudieron reproducir. [`dwx validate`](../architecture/assets-pipeline.md#dwx-validate)
+  comprueba que el modelo, el original o el de un mod, lo cumple.
 - **Otros modelos** (`static_model`): un nodo por objeto, todos en la raíz, sin animaciones. La escena depende del
   modelo:
   - Puertas (`DOOR/DOOR<nn>.TMD`): los mapas cuya entrada de `DOOR_MAPDATA` incluye la puerta
@@ -234,7 +234,7 @@ dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de
 | `coverage` | `dwx/coverage` |
 
 Las reglas salen de `names::documentSchemas` (`apps/dwx/src/asset_names.cpp`). Un tipo de documento nuevo necesita
-esquema y regla.
+esquema y regla: sin ellos, `dwx validate` falla en el test del disco.
 
 ### Ids de asset
 

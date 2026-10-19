@@ -74,7 +74,7 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 | Comando | Qué hace |
 |---|---|
 | `dwx extract <disco>` | Comprueba el SHA-1 del disco y genera la base en formato fuente |
-| `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon) |
+| `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon); ver [abajo](#dwx-validate) |
 | `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado, en otra carpeta |
 | `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
 
@@ -117,6 +117,52 @@ dwx extract disco.cue --out content/base
 dwx cook content/base -o content/cooked
 dwx pack content/cooked -o base.pak
 ```
+
+## `dwx validate`
+
+```text
+dwx validate [--schemas <carpeta>] <paquete | carpeta de paquetes>
+```
+
+Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`), tal como los va a usar el motor y antes
+de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se comprueba junto con la base que
+sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
+(`content/schemas` en los dos ejemplos). El código está en `apps/dwx/src/validate.cpp`.
+
+Qué comprueba:
+
+1. **Manifiestos:** cada `pack.yaml` sigue `pack.schema.json`.
+2. **Esquemas:** cada documento YAML sigue el esquema que le asignan las reglas `schemas` de los manifiestos montados
+   ([VFS](vfs.md#esquemas-de-los-documentos)). Es un error que un documento no encaje en ninguna regla, que encaje en
+   reglas de dos esquemas o que el esquema no exista o use algo fuera del
+   [subconjunto de JSON Schema](json-schema.md) que entiende el motor.
+3. **Referencias:** cada texto que el esquema marca con `assetReference` tiene que llevar a un asset de la pila
+   ([cómo se escribe](json-schema.md#referencias-a-assets)). Hoy lo marcan el SoundFont, las muestras y las pistas de
+   los bancos de sonido y de música, el destino de cada warp y el Digimon de cada NPC de un mapa, la textura y el
+   modelo de cada efecto, el modelo de cada contrato y las salidas del informe de cobertura.
+4. **Metadatos:** cada `<nombre>_meta` describe un asset `<nombre>` que tiene que existir.
+5. **Modelos glTF:** las imágenes y los buffers que un modelo lee de fuera de su fichero tienen que estar junto a él.
+6. **Contratos:** cada `digimon/<id>/model` necesita su `digimon/<id>/contract`, y el modelo que nombra un contrato
+   tiene que tener una piel con un hueso por cada entrada de `joint_parents`, con esos padres y en ese orden, y una
+   animación con cada nombre de `animations` (puede tener más). El extractor escribe el contrato con el esqueleto del
+   tipo en el ejecutable y las animaciones del MMD original ([esquema](../../content/schemas/model_contract.schema.json)),
+   así que un modelo HD que lo cumple se puede animar como el original.
+7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
+   `dwe-game --check-content`: PNG, glTF/GLB, YAML, WAV, SF2, MIDI e Y4M.
+
+Límite conocido: los operandos de los scripts (`script/…` y el `script.yaml` de cada efecto) se guardan tal como
+están en el disco, y el esquema solo comprueba su forma (un número, una variable, una dirección o una etiqueta), no lo
+que significan para cada instrucción. Un id de juego que un script lleve como número (un mapa, un objeto, un Digimon)
+no se sigue como referencia.
+
+El informe tiene una línea por problema, `fichero:línea:columna: mensaje` (sin línea ni columna si no se refiere a un
+sitio del YAML), ordenadas por fichero, sitio y mensaje, y un resumen. La misma pila da siempre el mismo informe. Sale
+con 0 si no hay problemas, 1 si los hay y 2 si no se puede comprobar (no hay paquetes o no se pueden montar).
+
+Con el disco US, recién extraído: 1 paquete, 4801 assets, 2074 documentos, 9259 referencias, 178 contratos y ningún
+problema. El test del disco (`DWE_DISC`, en `apps/dwx/tests/real_disc_tests.cpp`) extrae, valida y abre el paquete
+base con el mismo resultado; sin disco se salta. En el build `ci` tarda alrededor de dos minutos, casi todo en
+descomprimir los 1530 PNG.
 
 ## Dónde vive cada cosa
 

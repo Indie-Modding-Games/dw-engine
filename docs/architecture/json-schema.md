@@ -29,6 +29,25 @@ Un ciclo de `$ref` que no baja por el documento (`a` → `b` → `a`) es un erro
 Quien compila el esquema puede añadir **palabras clave de anotación** propias. Su valor tiene que ser un texto, y la
 comprobación devuelve, junto a los problemas, cada texto del documento al que se aplican.
 
+## Referencias a assets
+
+`dwx validate` registra una palabra clave de anotación, `assetReference`, que convierte un texto del documento en una
+referencia a un asset de la pila. Su valor es una plantilla donde `{}` es el texto:
+
+| Plantilla | Texto | Lleva a |
+|---|---|---|
+| `"./{}"` | `"bank.sf2"` en `sound/ss/bank_meta` | el fichero `sound/ss/bank.sf2`: id `sound/ss/bank`, y tiene que ser `.sf2` |
+| `"{}"` | `"map/yaka02/data.yaml"` | el fichero `map/yaka02/data.yaml`, desde la raíz del paquete |
+| `"digimon/{}/model"` | `"agum"` | el asset `digimon/agum/model`, sea cual sea su extensión |
+
+Si el último segmento del resultado tiene extensión es un fichero, relativo a la carpeta del documento si la plantilla
+empieza por `./` y a la raíz del paquete si no; si no la tiene, es un id. La referencia tiene que resolverse en la pila
+montada, así que un mod puede apuntar a assets de la base. Solo se miran los textos: un `null` no es una referencia.
+
+```json
+"target_map_id": { "type": ["string", "null"], "assetReference": "map/{}/data" }
+```
+
 ## Tipos de un escalar YAML
 
 YAML no distingue en el texto un número de una cadena como JSON, así que cada escalar se resuelve con el esquema
