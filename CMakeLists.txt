@@ -14,3 +14,5 @@ if(BUILD_TESTING)
     target_compile_definitions(dwe_test_main PUBLIC DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS)
     dwe_apply_options(dwe_test_main)
 endif()
+
+add_subdirectory(engine)
