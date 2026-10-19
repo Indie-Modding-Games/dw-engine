@@ -41,6 +41,10 @@ dwe_add_module(formats
         src/model/mmd.cpp
         src/model/skeleton.cpp
         src/model/tmd.cpp
+        src/text/charset.cpp
+        src/text/font.cpp
+        src/text/game_text.cpp
+        src/text/string_manifest.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng dwe_cgltf)
