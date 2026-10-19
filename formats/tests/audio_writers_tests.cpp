@@ -145,6 +145,64 @@ TEST_CASE("WAV: a PCM file, with a smpl chunk only for a loop") {
               .pcm = pcm, .sampleRate = 44100, .loop = SampleLoop{.start = 1, .end = 5}, .unityNote = 48}) == looped);
 }
 
+TEST_CASE("WAV: what writeWav writes reads back") {
+    const std::vector<std::int16_t> pcm = {0, 1000, -1000, 32767, -32768};
+    const auto plain = readWav(writeWav(WavSound{.pcm = pcm, .sampleRate = 11025, .loop = {}, .unityNote = 60}));
+    REQUIRE(plain.has_value());
+    CHECK(plain->sampleRate == 11025);
+    CHECK(plain->channels == 1);
+    CHECK(plain->pcm == pcm);
+    CHECK_FALSE(plain->loop.has_value());
+    CHECK(plain->unityNote == 60);
+
+    const auto looped = readWav(
+        writeWav(WavSound{.pcm = pcm, .sampleRate = 5513, .loop = SampleLoop{.start = 1, .end = 5}, .unityNote = 48}));
+    REQUIRE(looped.has_value());
+    CHECK(looped->sampleRate == 5513);
+    CHECK(looped->loop == SampleLoop{.start = 1, .end = 5});
+    CHECK(looped->unityNote == 48);
+}
+
+TEST_CASE("WAV: files readWav does not take are errors") {
+    const std::vector<std::int16_t> pcm = {1, 2, 3, 4};
+    const auto good = writeWav(WavSound{.pcm = pcm, .sampleRate = 22050, .loop = {}, .unityNote = 60});
+    const auto errorOf = [&](auto change) {
+        auto bytes = good;
+        change(bytes);
+        const auto wav = readWav(bytes);
+        REQUIRE_FALSE(wav.has_value());
+        return wav.error().message;
+    };
+    // The fmt chunk's fields start at 20: format, channels, rate, bytes per second, block size, bits.
+    const auto put16 = [](std::vector<std::byte>& bytes, std::size_t at, std::uint16_t value) {
+        bytes[at] = static_cast<std::byte>(value & 0xFFU);
+        bytes[at + 1] = static_cast<std::byte>(value >> 8U);
+    };
+    CHECK(errorOf([](auto& bytes) { bytes[0] = std::byte{'X'}; }) == "not a RIFF WAVE file");
+    CHECK(errorOf([](auto& bytes) { bytes.pop_back(); }) == "its RIFF size does not match the file");
+    CHECK(errorOf([&](auto& bytes) { put16(bytes, 20, 3); }) == "it is not 16-bit PCM (format 3, 16 bits)");
+    CHECK(errorOf([&](auto& bytes) { put16(bytes, 34, 8); }) == "it is not 16-bit PCM (format 1, 8 bits)");
+    CHECK(errorOf([&](auto& bytes) { put16(bytes, 22, 3); }) == "it has 3 channels; only 1 or 2 are read");
+    CHECK(errorOf([&](auto& bytes) { put16(bytes, 22, 2); }) == "its block size does not match its channels");
+    CHECK(errorOf([&](auto& bytes) {
+              put16(bytes, 22, 2);
+              put16(bytes, 32, 4);
+              put16(bytes, 40, 6); // data: 6 bytes, a frame and a half
+              put16(bytes, 4, 42); // and the RIFF ends with it
+          }) == "its data is not a whole number of frames");
+    CHECK(errorOf([&](auto& bytes) { put16(bytes, 40, 9); }).starts_with("the chunk at 36 does not fit"));
+    CHECK(errorOf([&](auto& bytes) { bytes[36] = std::byte{'x'}; }) == "it has no data chunk");
+
+    const auto looped =
+        writeWav(WavSound{.pcm = pcm, .sampleRate = 22050, .loop = SampleLoop{.start = 0, .end = 4}, .unityNote = 60});
+    auto pastEnd = looped;
+    // The loop's inclusive end, in the smpl chunk that follows the fmt chunk.
+    pastEnd[36 + 8 + 36 + 12] = std::byte{9};
+    const auto wav = readWav(pastEnd);
+    REQUIRE_FALSE(wav.has_value());
+    CHECK(wav.error().message == "its loop goes past its last frame");
+}
+
 TEST_CASE("SF2: the chunks, tables and terminal records") {
     const auto bytes = writeSf2(smallFont());
     REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
