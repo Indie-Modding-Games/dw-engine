@@ -72,7 +72,7 @@ ni compresión. El paso está en el código del original, no en el fichero, así
 | Fichero | Paso | Entradas | Índice |
 |---|---|---|---|
 | `CHDAT\ALLTIM.TIM` | 9 sectores (0x4800) | 180 | tipo de Digimon |
-| `CARD\CARD.ALL` | 14 sectores | por carta | id de carta |
+| `CARD\CARD.ALL` | 14 sectores (0x7000) | 66 | id de carta |
 | `SOUND\VHB\VBALL.VHB` | 7 sectores | | `DIGIMON_VBALL_SOUND_ID[]` |
 | `SOUND\VHB\VLALL.VHB` | 15 sectores | 66 | `DIGIMON_VLALL_SOUND_ID[66]` |
 | `SOUND\VHB\FAALL.VHB` | 0x27 sectores | 33 | fuente de música |
@@ -86,7 +86,9 @@ ni compresión. El paso está en el código del original, no en el fichero, así
 - **TIM apilados** (`ETCDAT\ETCTIM.BIN`, `STDDAT\STDTIM.BIN`): TIM seguidos, cada uno con su magia `0x10`; la lista
   termina en la primera palabra que no es `0x10`. El original calcula el tamaño de cada bloque con ancho × alto, no con
   el campo de longitud: hacemos lo mismo y avisamos si no coinciden (`utils2.c: loadStackedTIMFile`).
-- **ALLTIM y CARD.ALL:** packs de TIM con paso fijo (tabla anterior).
+- **ALLTIM y CARD.ALL:** packs de paso fijo (tabla anterior) con un TIM al principio de cada entrada. En ALLTIM el
+  original ignora la posición de VRAM del TIM y usa la del modelo (`model.c: uploadModelTexture`). Detalle en
+  [TIM y packs](../formats/tim.md).
 
 ## Modelos y animaciones
 
