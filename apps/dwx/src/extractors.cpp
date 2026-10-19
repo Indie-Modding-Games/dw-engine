@@ -1,13 +1,18 @@
 #include <array>
 
 #include "extractor.hpp"
+#include "image_extractors.hpp"
 
 namespace dwe::dwx {
 
 namespace {
 
-// Every extractor, most specific first.
-constexpr std::array<Extractor, 0> Registry{};
+// Every extractor, most specific first: CHDAT/ALLTIM.TIM is a pack before it is a .TIM file.
+constexpr std::array Registry = {
+    Extractor{.name = "tim_pack", .handles = handlesTimPack, .extract = extractTimPack},
+    Extractor{.name = "stacked_tim", .handles = handlesStackedTims, .extract = extractStackedTims},
+    Extractor{.name = "tim_file", .handles = handlesTimFile, .extract = extractTimFile},
+};
 
 } // namespace
 

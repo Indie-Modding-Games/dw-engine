@@ -2,10 +2,12 @@
 dwe_add_module(dwx
     LAYER apps
     SOURCES
+        src/asset_names.cpp
         src/base_pack.cpp
         src/extract.cpp
         src/extract_disc.cpp
         src/extractors.cpp
+        src/image_extractors.cpp
         src/verify.cpp
     DEPS core formats assets)
 
