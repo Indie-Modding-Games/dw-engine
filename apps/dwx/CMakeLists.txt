@@ -18,6 +18,7 @@ dwe_add_module(dwx
         src/overlay_extractor.cpp
         src/padding_extractor.cpp
         src/script_extractors.cpp
+        src/script_maps.cpp
         src/table_extractors.cpp
         src/model_extractors.cpp
         src/model_textures.cpp
