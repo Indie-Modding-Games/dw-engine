@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace dwe::assets {
 
@@ -27,5 +28,10 @@ private:
 
     std::string text_;
 };
+
+// Returns the id of a file inside a pack: its path from the pack's root without the extension, so
+// `digimon/agumon/model.gltf` is `digimon/agumon/model`. The file name must have exactly one dot, followed by a
+// lowercase extension.
+core::Result<AssetId> assetIdOfFile(std::string_view relativePath);
 
 } // namespace dwe::assets

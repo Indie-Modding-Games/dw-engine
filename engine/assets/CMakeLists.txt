@@ -3,4 +3,6 @@ dwe_add_module(assets
     SOURCES
         src/asset_id.cpp
         src/pack_manifest.cpp
+        src/file_system.cpp
+        src/virtual_file_system.cpp
     DEPS core)
