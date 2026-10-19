@@ -21,6 +21,7 @@ dwe_add_module(dwx
         src/table_extractors.cpp
         src/model_extractors.cpp
         src/model_textures.cpp
+        src/pack.cpp
         src/text_extractors.cpp
         src/texture_cooker.cpp
         src/verify.cpp

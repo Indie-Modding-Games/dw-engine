@@ -32,6 +32,8 @@ void printUsage() {
     std::println(stderr,
                  "      everything else copied. A folder from an earlier cook is updated: only what changed is");
     std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
+    std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
+    std::println(stderr, "      Writes a pack as a single .pak archive and checks that it reads back.");
     std::println(stderr, "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error.");
 }
 
@@ -72,10 +74,12 @@ int main(int argc, char** argv) {
                         : extractDisc(std::filesystem::path{paths.front()}, out, force);
         }
     }
-    if (command == "cook" && arguments.size() == 5) {
+    if ((command == "cook" || command == "pack") && arguments.size() == 5) {
         const std::string_view option{arguments[3]};
         if (option == "-o" || option == "--out") {
-            return cook(std::filesystem::path{arguments[2]}, std::filesystem::path{arguments[4]});
+            const std::filesystem::path folder{arguments[2]};
+            const std::filesystem::path out{arguments[4]};
+            return command == "cook" ? cook(folder, out) : pack(folder, out);
         }
     }
     printUsage();

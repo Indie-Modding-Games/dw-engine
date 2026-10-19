@@ -34,4 +34,7 @@ int extractDisc(const std::filesystem::path& path, const std::filesystem::path& 
 // dwx cook: cooks the pack in one folder into another, in the forms the game loads.
 int cook(const std::filesystem::path& pack, const std::filesystem::path& out);
 
+// dwx pack: writes the pack in a folder as a .pak archive and checks that it reads back.
+int pack(const std::filesystem::path& folder, const std::filesystem::path& archive);
+
 } // namespace dwe::dwx
