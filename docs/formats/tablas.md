@@ -12,9 +12,9 @@ da el decomp:
 - **Ejecutable principal:** la cabecera PS-X EXE (`readPsxExeHeader`) da la dirección y el tamaño del texto, que
   empieza en el byte 0x800 del fichero. En el US el texto se carga en `0x80090800`, así que
   `offset = dirección − 0x80090000`.
-- **Overlays** (`*_REL.BIN`): no tienen cabecera; se cargan enteros en una dirección fija
-  (`utils2.c: loadDynamicLibrary`), que se pasa a `MemoryImage::fromOverlay`. Las del US salen del primer `vram` de
-  `config/us/<overlay>.yaml` (y de `shop_START` en `utils2.c` para SHOP):
+- **Overlays** (`*_REL.BIN`): se cargan enteros en una dirección fija (`utils2.c: loadDynamicLibrary`, que no mira
+  su cabecera), que se pasa a `MemoryImage::fromOverlay`; su estructura está en [Overlays](overlays.md). Las del US
+  salen del primer `vram` de `config/us/<overlay>.yaml` (y de `shop_START` en `utils2.c` para SHOP):
 
   | Overlays | Dirección de carga |
   |---|---|
@@ -79,8 +79,7 @@ Notas:
 - En el US, el último puntero de `MOVE_NAMES` es nulo aunque `MOVE_DATA` tiene esa técnica. Un puntero nulo en una
   tabla de textos se lee como texto vacío.
 - `RaiseData` tiene un byte de relleno en `0x0B` que no se guarda.
-- Hay tablas en los overlays (`STD_INTRO_DIGIMON_NAMES`, `BTL_COMMAND_NAMES`, `FISHING_MAP_DATA`...); se leen con
-  `MemoryImage::fromOverlay` y quedan para cuando se extraigan esos overlays.
+- Las tablas de juego de los overlays (pesca, torneo, versus y entrenamiento) están en [Overlays](overlays.md).
 
 ## Textos
 

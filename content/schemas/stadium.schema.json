@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stadium",
+  "description": "stadium.yaml: the tables of the tournament battle overlay (STD_REL.BIN).",
+  "type": "object",
+  "required": [
+    "opponent_base_stats",
+    "grades",
+    "win_chances",
+    "camera_presets",
+    "arenas"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "opponent_base_stats": {
+      "description": "STD_OPPONENT_BASE_STATS: the base stat of the opponents, by tournament (STD_initializeOpponent).",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "grades": {
+      "description": "STD_GRADES: the TIM of each tournament's grade (STD_initializeTournament).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "win_chances": {
+      "description": "The chance of each outcome by the levels of the two fighters, [level A - 3][level B - 3] (STD_setupParticipants).",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "camera_presets": {
+      "description": "Six values each, passed in order to the overlay's setCameraParams.",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 6,
+        "maxItems": 6,
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "arenas": {
+      "description": "The arenas with files: the model, TIM and collision paths and how many objects and TIMs they hold (loadArenaAssets; the counts live in the executable).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "index",
+          "model",
+          "texture",
+          "collision",
+          "model_count",
+          "texture_count"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "model": {
+            "type": "string"
+          },
+          "texture": {
+            "type": "string"
+          },
+          "collision": {
+            "type": "string"
+          },
+          "model_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "texture_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

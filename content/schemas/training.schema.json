@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Training",
+  "description": "training.yaml: the tables of the training overlay (TRN_REL.BIN); TRN2_REL.BIN has the same ones, without the learnable moves.",
+  "type": "object",
+  "required": [
+    "animations",
+    "learnable_moves",
+    "learn_weights",
+    "slot_reels",
+    "assist_rolls",
+    "spots"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "animations": {
+      "description": "TRN_TRAINING_ANIM_IDS: per partner, the training animation and the frame its hit lands on (TRN_tickOffenseTraining).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "digimon",
+          "animation",
+          "hit_frame"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": {
+            "$ref": "#/$defs/reference"
+          },
+          "animation": {
+            "type": "integer"
+          },
+          "hit_frame": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "learnable_moves": {
+      "description": "The moves training can teach, one row per special type (TRN_tryLearnMove).",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/reference"
+        }
+      }
+    },
+    "learn_weights": {
+      "description": "The weight of each learnable move by special slot, [move][slot] (TRN_tryLearnMove).",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "slot_reels": {
+      "description": "The symbols of each slot machine reel (TRN_tickSlotMachine).",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "assist_rolls": {
+      "description": "One is picked at random as the slot machine's assist (TRN_createSlotMachineBox).",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "spots": {
+      "description": "The training spots of each map (TRN_getTrainingSpotScreenPos); stat is the kind of training.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "map",
+          "spots"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "map": {
+            "$ref": "#/$defs/reference"
+          },
+          "spots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "x",
+                "y",
+                "z",
+                "stat"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                },
+                "z": {
+                  "type": "integer"
+                },
+                "stat": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "description": "The id of the referenced record, null for none, or the raw number when it is outside its table.",
+      "type": [
+        "string",
+        "integer",
+        "null"
+      ]
+    }
+  }
+}

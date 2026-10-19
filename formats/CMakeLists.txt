@@ -28,6 +28,8 @@ dwe_add_module(formats
         src/exe/executable_layout.cpp
         src/exe/memory_image.cpp
         src/exe/overlay.cpp
+        src/exe/overlay_tables.cpp
+        src/exe/overlay_yaml.cpp
         src/exe/tables.cpp
         src/exe/tables_yaml.cpp
         src/image/png.cpp

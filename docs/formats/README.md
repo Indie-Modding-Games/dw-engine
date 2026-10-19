@@ -12,7 +12,8 @@ Ninguna página contiene datos del juego: solo estructuras, nombres de fichero y
 | [Disco](disco.md) | Imagen BIN/CUE o ISO, sectores, ISO9660, ejecutable y tabla de ficheros, `dwx extract --list` | `formats/disc`, `formats/exe` |
 | [TIM y packs](tim.md) | TIM, TIM apilados, packs de paso fijo y PNG del extractor | `formats/image` |
 | [Modelos y animaciones](modelos.md) | TMD, MMD, esqueletos, simulación de animaciones y escritura en glTF | `formats/model` |
-| [Tablas](tablas.md) | Tablas de datos del ejecutable por versión, overlays, escape de textos, YAML con ids de texto y esquemas | `formats/exe`, `content/schemas` |
+| [Tablas](tablas.md) | Tablas de datos del ejecutable por versión, direcciones de los overlays, escape de textos, YAML con ids de texto y esquemas | `formats/exe`, `content/schemas` |
+| [Overlays](overlays.md) | `*_REL.BIN`: cabecera, partes, ficheros incrustados y tablas de pesca, torneo, versus y entrenamiento | `formats/exe/overlay*`, `content/schemas` |
 | [Mapas](mapas.md) | `MAP_ENTRIES` y tablas de mapa, `.MAP`, `.TFS`, composición del fondo por paleta, YAML del mapa y colisión | `formats/map`, `content/schemas/map.schema.json` |
 | [Audio](audio.md) | VHB, VAB, ADPCM, SEQ, bancos empaquetados y escritura en SF2, WAV y MIDI | `formats/audio` |
 | [`dwx extract`](extract.md) | Paquete base, ids de asset, extractores e informe de cobertura | `apps/dwx` |

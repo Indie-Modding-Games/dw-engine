@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fishing",
+  "description": "fishing.yaml: the tables of the fishing overlay (FISH_REL.BIN, fish.c): bait chances, bite chances, fish kinds, the shorelines of the water test and the two fishing maps. unknown_* fields keep the decomp's unkN names.",
+  "type": "object",
+  "required": ["bait_chances", "bite_chances", "kinds", "shorelines", "maps"],
+  "additionalProperties": false,
+  "properties": {
+    "bait_chances": {
+      "description": "FISH_BAIT_CHANCES: with r = rand() % 100, the first entry with r <= threshold gives the bait (FISH_tickRod).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "threshold"],
+        "additionalProperties": false,
+        "properties": {
+          "item": { "$ref": "#/$defs/reference" },
+          "threshold": { "type": "integer" }
+        }
+      }
+    },
+    "bite_chances": {
+      "description": "FISH_BITE_CHANCE: one row per depth from first_depth, one chance per fish kind (FISH_findFishToBite). unused: the bytes after the last row.",
+      "type": "object",
+      "required": ["first_depth", "rows", "unused"],
+      "additionalProperties": false,
+      "properties": {
+        "first_depth": { "type": "integer", "minimum": 0 },
+        "rows": { "type": "array", "items": { "type": "array", "items": { "type": "integer" } } },
+        "unused": { "type": "array", "items": { "type": "integer" } }
+      }
+    },
+    "kinds": {
+      "description": "FISH_KIND_INFO, one per fish kind; the last one is the sea serpent.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "unknown_0", "size_min", "size_max", "move_delay_min", "move_delay_max", "bait", "unknown_16"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "unknown_0": { "type": "integer" },
+          "size_min": { "type": "integer" },
+          "size_max": { "type": "integer" },
+          "move_delay_min": { "type": "integer" },
+          "move_delay_max": { "type": "integer" },
+          "bait": { "$ref": "#/$defs/reference" },
+          "unknown_16": { "type": "integer" }
+        }
+      }
+    },
+    "shorelines": {
+      "description": "The curves the water tests interpolate: by x (FISH_isFishableWater1) or by y (FISH_isFishableWater2).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["axis", "points"],
+        "additionalProperties": false,
+        "properties": {
+          "axis": { "enum": ["x", "y"] },
+          "points": { "$ref": "#/$defs/points" }
+        }
+      }
+    },
+    "maps": {
+      "description": "FISHING_MAP_DATA, one per map where the player can fish.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["map", "unknown_2", "scale", "unknown_8", "fish_scale_small", "fish_scale_large", "seadramon_times", "spots", "unknown_1c", "shoreline", "cast_range", "unknown_2a", "sprite_file", "seadramon_waypoints"],
+        "additionalProperties": false,
+        "properties": {
+          "map": { "$ref": "#/$defs/reference" },
+          "unknown_2": { "type": "integer" },
+          "scale": { "type": "integer" },
+          "unknown_8": { "type": "integer" },
+          "fish_scale_small": { "type": "integer" },
+          "fish_scale_large": { "type": "integer" },
+          "seadramon_times": {
+            "description": "The two times of day (HHMM) the sea serpent may appear; 9999 = never.",
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "spots": {
+            "description": "The spawn areas, one per fish kind.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["unknown_0", "unknown_4", "points", "unknown_d"],
+              "additionalProperties": false,
+              "properties": {
+                "unknown_0": { "type": "array", "items": { "type": "integer" } },
+                "unknown_4": { "type": "integer" },
+                "points": { "$ref": "#/$defs/points" },
+                "unknown_d": { "type": "array", "items": { "type": "integer" } }
+              }
+            }
+          },
+          "unknown_1c": { "type": "integer" },
+          "shoreline": {
+            "description": "The index in shorelines of the curve its water test walks; null when the test is none of them.",
+            "type": ["integer", "null"]
+          },
+          "cast_range": { "type": "integer" },
+          "unknown_2a": { "type": "integer" },
+          "sprite_file": { "type": "string" },
+          "seadramon_waypoints": { "$ref": "#/$defs/points" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "description": "The id of the referenced record, null for none, or the raw number when it is outside its table.",
+      "type": ["string", "integer", "null"]
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y"],
+        "additionalProperties": false,
+        "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+      }
+    }
+  }
+}
