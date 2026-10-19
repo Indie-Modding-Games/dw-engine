@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "asset_names.hpp"
+#include "text_extractors.hpp"
 
 namespace dwe::dwx {
 
@@ -92,10 +93,14 @@ core::Result<Extraction> extractExecutable(const Disc& disc, const formats::disc
         extraction.outputs.push_back(std::move(*output));
         documents += (documents.empty() ? "" : ", ") + document.name;
     }
-    extraction.notes.emplace_back("only the data tables are taken; the code and the rest of the data are not assets");
+    extraction.notes.emplace_back("only the data tables are taken, with the strings and the font; the code and the "
+                                  "rest of the data are not assets");
     extraction.notes.push_back(std::format("tables: {}", documents));
     extraction.notes.insert(extraction.notes.end(), yaml.notes.begin(), yaml.notes.end());
     noteMissingMaps(disc, *tables, extraction.notes);
+    if (auto text = addExecutableText(disc, file, extraction); !text) {
+        return std::unexpected{text.error()};
+    }
     return extraction;
 }
 

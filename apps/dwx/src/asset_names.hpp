@@ -67,4 +67,14 @@ core::Result<assets::AssetId> musicAsset(std::size_t font, std::string_view leaf
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 
+// script/<file>[/<id>]: the listing of an event script. SCN/MAPHEAD.SCN is script/maphead, script 12 of SCN/DG.SCN is
+// script/dg/012.
+core::Result<assets::AssetId> scriptListing(std::string_view volumePath, std::optional<std::size_t> id);
+
+// text/<language>/<source>: the strings of the executable ("main") or of an overlay ("btl" for BTL_REL.BIN).
+core::Result<assets::AssetId> textTable(std::string_view language, std::string_view source);
+
+// font/main: the atlas of the executable's font; its metadata is metadataOf of it.
+core::Result<assets::AssetId> fontImage();
+
 } // namespace dwe::dwx::names

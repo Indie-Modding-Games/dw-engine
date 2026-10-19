@@ -12,9 +12,11 @@ dwe_add_module(dwx
         src/game_tables.cpp
         src/image_extractors.cpp
         src/map_extractors.cpp
+        src/script_extractors.cpp
         src/table_extractors.cpp
         src/model_extractors.cpp
         src/model_textures.cpp
+        src/text_extractors.cpp
         src/verify.cpp
     DEPS core formats assets
     TEST_LIBS dwe_cgltf)

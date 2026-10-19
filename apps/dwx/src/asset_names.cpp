@@ -116,4 +116,21 @@ core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {
     return assets::AssetId::parse(image.str() + "_meta");
 }
 
+core::Result<assets::AssetId> scriptListing(std::string_view volumePath, std::optional<std::size_t> id) {
+    const std::string_view name = volumePath.substr(volumePath.rfind('/') + 1);
+    std::string text = "script/" + segment(name.substr(0, name.find('.')));
+    if (id) {
+        text += "/" + number(*id);
+    }
+    return assets::AssetId::parse(text);
+}
+
+core::Result<assets::AssetId> textTable(std::string_view language, std::string_view source) {
+    return assets::AssetId::parse(std::format("text/{}/{}", segment(language), segment(source)));
+}
+
+core::Result<assets::AssetId> fontImage() {
+    return assets::AssetId::parse("font/main");
+}
+
 } // namespace dwe::dwx::names
