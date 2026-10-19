@@ -103,6 +103,7 @@ flowchart TB
 | UI del juego | RmlUi | [0009](../adr/0009-rmlui.md) |
 | Herramientas de depuración y editor | Dear ImGui | — |
 | Formatos fuente | glTF 2.0, PNG, YAML, SF2 + MIDI, FLAC, AV1 | [0005](../adr/0005-tuberia-de-assets.md) |
+| Lectura y escritura de YAML | libyaml, envuelto en `core` | [0016](../adr/0016-yaml-con-libyaml.md) |
 | Formatos cocinados | KTX2 (BC7), mallas binarias, Opus | [0005](../adr/0005-tuberia-de-assets.md) |
 | Tests | doctest, simulaciones de balance, imágenes de referencia | [0010](../adr/0010-reglas-propias-con-rulesets.md) |
 
