@@ -176,3 +176,10 @@ TEST_CASE("cooked sounds are opened by decoding them") {
         CHECK_MESSAGE(opened.error().message.contains("Ogg"), opened.error().message);
     }
 }
+
+TEST_CASE("cooked textures are opened by transcoding them") {
+    // A valid texture opens in the cook tests of dwx; here the decoder's refusal shows which reader ran.
+    const auto opened = openAsset("ktx2", bytesOf("not a texture"));
+    REQUIRE_FALSE(opened.has_value());
+    CHECK_MESSAGE(opened.error().message.contains("KTX2"), opened.error().message);
+}

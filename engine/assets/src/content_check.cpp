@@ -3,6 +3,7 @@
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/sound.hpp>
+#include <dwe/assets/texture.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -31,6 +32,14 @@ core::Result<void> discardValue(std::span<const std::byte> bytes) {
     return {};
 }
 
+// Transcodes a cooked texture to BC7, as the engine loads it on every GPU that samples BC7.
+core::Result<void> openKtx2(std::span<const std::byte> bytes) {
+    if (auto texture = decodeKtx2(bytes, TexelEncoding::Bc7); !texture) {
+        return std::unexpected{texture.error()};
+    }
+    return {};
+}
+
 core::Result<void> openYaml(std::span<const std::byte> bytes) {
     const std::string_view text{reinterpret_cast<const char*>(bytes.data()), bytes.size()};
     if (auto document = core::parseYaml(text); !document) {
@@ -39,8 +48,9 @@ core::Result<void> openYaml(std::span<const std::byte> bytes) {
     return {};
 }
 
-constexpr std::array<std::pair<std::string_view, Opener>, 10> Openers = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 11> Openers = {{
     {"png", discardValue<decodePng>},
+    {"ktx2", openKtx2},
     {"glb", discardValue<readModel>},
     {"gltf", discardValue<readModel>},
     {"yaml", openYaml},
