@@ -24,6 +24,11 @@ dwe_add_module(formats
         src/disc/iso9660.cpp
         src/disc/known_releases.cpp
         src/disc/sector.cpp
+        src/effect/efe_analysis.cpp
+        src/effect/efe_file.cpp
+        src/effect/efe_script.cpp
+        src/effect/efe_subops.cpp
+        src/effect/efe_yaml.cpp
         src/exe/psx_exe.cpp
         src/exe/executable_layout.cpp
         src/exe/memory_image.cpp
