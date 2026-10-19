@@ -1,4 +1,5 @@
 find_package(lodepng CONFIG REQUIRED)
+find_package(zstd CONFIG REQUIRED)
 
 dwe_add_module(assets
     LAYER systems
@@ -13,7 +14,7 @@ dwe_add_module(assets
         src/media_headers.cpp
         src/content_check.cpp
     DEPS core
-    PRIVATE_LIBS lodepng dwe_cgltf
+    PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd
     TEST_LIBS lodepng)
 
 # The content check decodes every image of a pack; as in formats, debug builds link lodepng's release build, three

@@ -3,8 +3,11 @@
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 
+#include <zstd.h>
+
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <format>
 #include <fstream>
 #include <limits>
@@ -13,6 +16,7 @@
 #include <span>
 #include <string_view>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -25,6 +29,76 @@ constexpr std::array<std::byte, 8> Magic = {std::byte{0x89}, std::byte{'P'},  st
                                             std::byte{0x0D}, std::byte{0x0A}, std::byte{0x1A}, std::byte{0x0A}};
 constexpr std::string_view ManifestName = "pack.yaml";
 constexpr std::uint32_t CompressionMask = 0xFF;
+// How many files writePak holds in memory at once, read and compressed in parallel and then written in order.
+constexpr std::size_t WriteBatch = 64;
+constexpr unsigned MaxThreads = 16;
+
+// Runs task(0) to task(count - 1) on several threads and returns when all are done.
+template <typename Task>
+void runInParallel(std::size_t count, const Task& task) {
+    std::atomic<std::size_t> next{0};
+    const auto worker = [&] {
+        for (std::size_t index = next++; index < count; index = next++) {
+            task(index);
+        }
+    };
+    const unsigned threadCount = static_cast<unsigned>(std::min<std::size_t>(
+        std::clamp(std::thread::hardware_concurrency(), 1U, MaxThreads), std::max<std::size_t>(count, 1)));
+    std::vector<std::jthread> threads;
+    for (unsigned i = 1; i < threadCount; ++i) {
+        threads.emplace_back(worker);
+    }
+    worker();
+}
+
+struct FreeCompressor {
+    void operator()(ZSTD_CCtx* context) const { ZSTD_freeCCtx(context); }
+};
+
+// Compresses a file into one zstd frame with fixed settings: the level, the content size in the frame header, and
+// no checksum (the entry's SHA-1 covers it) or dictionary id. Returns nothing when that does not make it smaller.
+core::Result<std::optional<std::vector<std::byte>>> compress(std::span<const std::byte> bytes) {
+    const std::unique_ptr<ZSTD_CCtx, FreeCompressor> context{ZSTD_createCCtx()};
+    if (!context) {
+        return core::fail("cannot create a zstd context");
+    }
+    for (const auto [parameter, value] :
+         {std::pair{ZSTD_c_compressionLevel, PakZstdLevel}, std::pair{ZSTD_c_contentSizeFlag, 1},
+          std::pair{ZSTD_c_checksumFlag, 0}, std::pair{ZSTD_c_dictIDFlag, 0}, std::pair{ZSTD_c_nbWorkers, 0}}) {
+        if (const std::size_t result = ZSTD_CCtx_setParameter(context.get(), parameter, value);
+            ZSTD_isError(result) != 0) {
+            return core::fail(std::format("cannot set up zstd: {}", ZSTD_getErrorName(result)));
+        }
+    }
+    std::vector<std::byte> compressed(ZSTD_compressBound(bytes.size()));
+    const std::size_t size =
+        ZSTD_compress2(context.get(), compressed.data(), compressed.size(), bytes.data(), bytes.size());
+    if (ZSTD_isError(size) != 0) {
+        return core::fail(std::format("zstd cannot compress: {}", ZSTD_getErrorName(size)));
+    }
+    if (size >= bytes.size()) {
+        return std::nullopt;
+    }
+    compressed.resize(size);
+    return std::optional{std::move(compressed)};
+}
+
+// Expands one zstd frame that must hold exactly size bytes and nothing after it.
+core::Result<std::vector<std::byte>> decompress(std::span<const std::byte> stored, std::uint64_t size) {
+    if (ZSTD_getFrameContentSize(stored.data(), stored.size()) != size ||
+        ZSTD_findFrameCompressedSize(stored.data(), stored.size()) != stored.size()) {
+        return core::fail("it is not one zstd frame of its size");
+    }
+    std::vector<std::byte> bytes(static_cast<std::size_t>(size));
+    const std::size_t result = ZSTD_decompress(bytes.data(), bytes.size(), stored.data(), stored.size());
+    if (ZSTD_isError(result) != 0) {
+        return core::fail(std::format("zstd cannot decompress it: {}", ZSTD_getErrorName(result)));
+    }
+    if (result != size) {
+        return core::fail("it decompresses to the wrong size");
+    }
+    return bytes;
+}
 
 struct Header {
     std::uint32_t version = 0;
@@ -98,8 +172,9 @@ Header parseHeader(std::span<const std::byte, PakHeaderSize> bytes) {
 // Checks the header against the file's size. The index (table of contents, names, manifest) runs without gaps from
 // the table of contents to the end of the file, so the size bounds every allocation that follows.
 std::optional<std::string> headerProblem(const Header& header, std::uint64_t fileSize) {
-    if (header.version != PakVersion) {
-        return std::format("version {} is not supported (this build reads version {})", header.version, PakVersion);
+    if (header.version < PakOldestVersion || header.version > PakVersion) {
+        return std::format("version {} is not supported (this build reads versions {} to {})", header.version,
+                           PakOldestVersion, PakVersion);
     }
     if (header.flags != 0) {
         return std::format("unknown header flags {:#x}", header.flags);
@@ -139,18 +214,23 @@ core::Result<std::vector<PakEntry>> parseEntries(const Header& header, std::span
         const auto nameSize = fieldAt<std::uint32_t>(entry, 0x1C);
         const auto flags = fieldAt<std::uint32_t>(entry, 0x20);
         const auto reserved = fieldAt<std::uint64_t>(entry, 0x38);
-        if ((flags & CompressionMask) != static_cast<std::uint32_t>(PakCompression::None)) {
-            return core::fail(std::format("entry {} uses compression {}, which this build does not read", i,
-                                          flags & CompressionMask));
+        const std::uint32_t compression = flags & CompressionMask;
+        const bool zstd = compression == static_cast<std::uint32_t>(PakCompression::Zstd) && header.version >= 2;
+        if (compression != static_cast<std::uint32_t>(PakCompression::None) && !zstd) {
+            return core::fail(std::format("entry {} uses compression {}, which version {} does not have", i,
+                                          compression, header.version));
         }
         if ((flags & ~CompressionMask) != 0 || reserved != 0) {
             return core::fail(std::format("entry {} has unknown flags", i));
         }
-        if (storedSize != size) {
+        if (!zstd && storedSize != size) {
             return core::fail(std::format("entry {} is stored uncompressed but its sizes differ", i));
         }
+        if (zstd && size > PakMaxEntrySize) {
+            return core::fail(std::format("entry {} expands to {} bytes, more than a .pak entry may", i, size));
+        }
         if (offset < PakHeaderSize || offset % header.alignment != 0 || offset > header.tocOffset ||
-            size > header.tocOffset - offset) {
+            storedSize > header.tocOffset - offset) {
             return core::fail(std::format("entry {} lies outside the data", i));
         }
         if (std::uint64_t{nameOffset} + nameSize > names.size()) {
@@ -165,7 +245,13 @@ core::Result<std::vector<PakEntry>> parseEntries(const Header& header, std::span
             return core::fail(std::format("entry {} ('{}') is out of order or repeats an asset id", i, path));
         }
         previous = std::move(*id);
-        PakEntry& added = entries.emplace_back(PakEntry{.path = std::move(path), .offset = offset, .size = size});
+        PakEntry& added =
+            entries.emplace_back(PakEntry{.path = std::move(path),
+                                          .offset = offset,
+                                          .size = size,
+                                          .storedSize = storedSize,
+                                          .compression = zstd ? PakCompression::Zstd : PakCompression::None,
+                                          .sha1 = {}});
         std::ranges::copy(entry.subspan(0x24, added.sha1.size()), added.sha1.begin());
     }
     return entries;
@@ -194,11 +280,11 @@ std::vector<std::byte> indexBytes(std::span<const PakEntry> entries, std::span<c
         const PakEntry& entry = entries[i];
         const auto bytes = std::span{index}.subspan(i * PakEntrySize, PakEntrySize);
         putField(bytes, 0x00, entry.offset);
-        putField(bytes, 0x08, entry.size);
+        putField(bytes, 0x08, entry.storedSize);
         putField(bytes, 0x10, entry.size);
         putField(bytes, 0x18, nameOffset);
         putField(bytes, 0x1C, static_cast<std::uint32_t>(entry.path.size()));
-        putField(bytes, 0x20, static_cast<std::uint32_t>(PakCompression::None));
+        putField(bytes, 0x20, static_cast<std::uint32_t>(entry.compression));
         std::ranges::copy(entry.sha1, bytes.begin() + 0x24);
         nameOffset += static_cast<std::uint32_t>(entry.path.size());
     }
@@ -285,9 +371,15 @@ core::Result<std::vector<std::byte>> PakFileSystem::readFile(const std::filesyst
         return core::fail(std::format("cannot read '{}': it does not exist", path));
     }
     std::ifstream stream{archive_, std::ios::binary};
-    auto bytes = readAt(stream, archive_, entry->offset, entry->size);
+    auto bytes = readAt(stream, archive_, entry->offset, entry->storedSize);
     if (!bytes) {
         return bytes;
+    }
+    if (entry->compression == PakCompression::Zstd) {
+        bytes = decompress(*bytes, entry->size);
+        if (!bytes) {
+            return core::fail(std::format("cannot read '{}': {}; the archive is damaged", path, bytes.error().message));
+        }
     }
     if (core::sha1(*bytes) != entry->sha1) {
         return core::fail(
@@ -324,17 +416,49 @@ core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const
     writeBytes(stream, std::vector<std::byte>(PakHeaderSize));
     std::vector<PakEntry> entries;
     entries.reserve(files->size());
-    for (const PackFile& file : *files) {
-        const auto bytes = fileSystem.readFile(packRoot / file.path);
-        if (!bytes) {
-            return std::unexpected{bytes.error()};
+    // A file as it goes into the archive.
+    struct Stored {
+        core::Result<std::vector<std::byte>> bytes;
+        std::uint64_t size = 0;
+        PakCompression compression = PakCompression::None;
+        core::Sha1Digest sha1{};
+    };
+    for (std::size_t first = 0; first < files->size(); first += WriteBatch) {
+        const std::size_t count = std::min(WriteBatch, files->size() - first);
+        std::vector<Stored> batch(count);
+        runInParallel(count, [&](std::size_t index) {
+            Stored& stored = batch[index];
+            stored.bytes = fileSystem.readFile(packRoot / (*files)[first + index].path);
+            if (!stored.bytes) {
+                return;
+            }
+            stored.size = stored.bytes->size();
+            stored.sha1 = core::sha1(*stored.bytes);
+            auto compressed = compress(*stored.bytes);
+            if (!compressed) {
+                stored.bytes = core::fail(std::format("{}: {}", pathText(packRoot / (*files)[first + index].path),
+                                                      compressed.error().message));
+            } else if (*compressed) {
+                stored.bytes = std::move(**compressed);
+                stored.compression = PakCompression::Zstd;
+            }
+        });
+        for (std::size_t index = 0; index < count; ++index) {
+            const Stored& stored = batch[index];
+            if (!stored.bytes) {
+                return std::unexpected{stored.bytes.error()};
+            }
+            const std::uint64_t offset = alignUp(position, PakAlignment);
+            writeBytes(stream, std::span{zeros}.first(static_cast<std::size_t>(offset - position)));
+            writeBytes(stream, *stored.bytes);
+            position = offset + stored.bytes->size();
+            entries.push_back(PakEntry{.path = (*files)[first + index].path,
+                                       .offset = offset,
+                                       .size = stored.size,
+                                       .storedSize = stored.bytes->size(),
+                                       .compression = stored.compression,
+                                       .sha1 = stored.sha1});
         }
-        const std::uint64_t offset = alignUp(position, PakAlignment);
-        writeBytes(stream, std::span{zeros}.first(static_cast<std::size_t>(offset - position)));
-        writeBytes(stream, *bytes);
-        position = offset + bytes->size();
-        entries.push_back(
-            PakEntry{.path = file.path, .offset = offset, .size = bytes->size(), .sha1 = core::sha1(*bytes)});
     }
     const std::uint64_t tocOffset = alignUp(position, PakAlignment);
     writeBytes(stream, std::span{zeros}.first(static_cast<std::size_t>(tocOffset - position)));

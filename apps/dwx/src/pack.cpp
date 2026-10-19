@@ -58,11 +58,17 @@ int pack(const std::filesystem::path& folder, const std::filesystem::path& archi
         return ExitFailed;
     }
     std::uint64_t fileBytes = 0;
+    std::uint64_t storedBytes = 0;
+    std::size_t compressed = 0;
     for (const assets::PakEntry& entry : *entries) {
         fileBytes += entry.size;
+        storedBytes += entry.storedSize;
+        compressed += entry.compression == assets::PakCompression::Zstd ? 1 : 0;
     }
     std::println("Archive: {}", archive.string());
-    std::println("Files: {} ({} bytes); archive {} bytes", entries->size(), fileBytes,
+    std::println("Files: {} ({} bytes), {} compressed with zstd, {} stored as they are ({} bytes stored); archive {} "
+                 "bytes",
+                 entries->size(), fileBytes, compressed, entries->size() - compressed, storedBytes,
                  std::filesystem::file_size(archive, error));
     std::println("Check: every entry reads back and matches its SHA-1");
     return ExitOk;

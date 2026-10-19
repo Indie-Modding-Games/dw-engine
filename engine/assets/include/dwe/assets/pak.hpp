@@ -16,29 +16,41 @@
 
 namespace dwe::assets {
 
-// The .pak archive: one pack in a single file, laid out in docs/formats/pak.md. Version 1 stores every file as is.
-inline constexpr std::uint32_t PakVersion = 1;
+// The .pak archive: one pack in a single file, laid out in docs/formats/pak.md. Version 2 compresses each entry with
+// zstd when that makes it smaller; version 1 stores every file as is, and is still read.
+inline constexpr std::uint32_t PakVersion = 2;
+inline constexpr std::uint32_t PakOldestVersion = 1;
 inline constexpr std::size_t PakHeaderSize = 64;
 inline constexpr std::size_t PakEntrySize = 64;
 // Where each file's bytes start: a multiple of this, from the start of the archive.
 inline constexpr std::uint32_t PakAlignment = 16;
 
 // How the bytes of an entry are stored: the low 8 bits of its flags.
-enum class PakCompression : std::uint8_t { None = 0 };
+enum class PakCompression : std::uint8_t {
+    None = 0, // as is
+    Zstd = 1, // one zstd frame (version 2)
+};
+
+// The zstd level writePak uses. Fixed, with every other setting, so the same files give the same archive.
+inline constexpr int PakZstdLevel = 9;
+// The largest entry a compressed entry may expand to, so a forged size cannot ask for more memory than this.
+inline constexpr std::uint64_t PakMaxEntrySize = std::uint64_t{1} << 31U;
 
 // A file in a .pak archive.
 struct PakEntry {
     std::string path; // relative to the pack's root, with '/' between folders
     std::uint64_t offset = 0;
-    std::uint64_t size = 0;
-    core::Sha1Digest sha1{}; // of the file's bytes
+    std::uint64_t size = 0;       // of the file
+    std::uint64_t storedSize = 0; // in the archive: size unless compressed
+    PakCompression compression = PakCompression::None;
+    core::Sha1Digest sha1{}; // of the file's bytes, before compression
 
     friend bool operator==(const PakEntry&, const PakEntry&) = default;
 };
 
 // A .pak archive on disk seen as a file system with one folder, the archive's own path: listing it gives pack.yaml
-// and every entry, and reading <archive>/<entry> reads that entry and checks its SHA-1. Mount it with a
-// PackLocation whose root is the archive's path.
+// and every entry, and reading <archive>/<entry> reads that entry, decompresses it and checks its SHA-1. Mount it with
+// a PackLocation whose root is the archive's path.
 class PakFileSystem final : public FileSystem {
     // Only open() builds one.
     struct OpenKey {
@@ -67,9 +79,10 @@ private:
     std::vector<PakEntry> entries_;
 };
 
-// Writes the pack at a root of a file system as a .pak archive: its pack.yaml, which must be a valid manifest, and
-// every asset file, which must give valid and distinct ids. The pack's dependencies need not be there. The same
-// files give the same archive, byte for byte. Returns the entries written.
+// Writes the pack at a root of a file system as a version 2 .pak archive: its pack.yaml, which must be a valid
+// manifest, and every asset file, which must give valid and distinct ids. Each file is compressed with zstd at
+// PakZstdLevel, on several threads, and stored as is when that does not make it smaller. The pack's dependencies
+// need not be there. The same files give the same archive, byte for byte. Returns the entries written.
 core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const std::filesystem::path& packRoot,
                                              const std::filesystem::path& archive);
 

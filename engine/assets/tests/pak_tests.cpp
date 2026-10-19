@@ -17,6 +17,7 @@ using dwe::assets::AssetId;
 using dwe::assets::DiskFileSystem;
 using dwe::assets::FoundPack;
 using dwe::assets::PackLocation;
+using dwe::assets::PakCompression;
 using dwe::assets::PakEntrySize;
 using dwe::assets::PakFileSystem;
 using dwe::assets::PakHeaderSize;
@@ -45,6 +46,14 @@ std::uint64_t u64At(const std::vector<std::byte>& bytes, std::size_t offset) {
     std::uint64_t value = 0;
     for (std::size_t i = 0; i < 8; ++i) {
         value |= std::to_integer<std::uint64_t>(bytes[offset + i]) << (8U * i);
+    }
+    return value;
+}
+
+std::uint32_t u32At(const std::vector<std::byte>& bytes, std::size_t offset) {
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; i < 4; ++i) {
+        value |= std::to_integer<std::uint32_t>(bytes[offset + i]) << (8U * i);
     }
     return value;
 }
@@ -106,6 +115,9 @@ TEST_CASE("a .pak mounts with the same assets and bytes as its folder") {
         CHECK_MESSAGE(*actual == *expected, id.str());
     }
     CHECK(fromPak->resolve(*AssetId::parse("map/start/collision"))->file == archive / "map/start/collision.yaml");
+    // The text compresses; the short files do not, so they are stored as they are.
+    CHECK((*pak)->entries()[4].compression == PakCompression::Zstd);
+    CHECK((*pak)->entries()[0].compression == PakCompression::None);
 }
 
 TEST_CASE("a folder pack overrides a .pak pack below it") {
@@ -196,8 +208,23 @@ TEST_CASE("a .pak is laid out as documented and written deterministically") {
     CHECK((*again)[4].path == "readme.txt");
     for (const auto& entry : *again) {
         CHECK(entry.offset % dwe::assets::PakAlignment == 0);
+        if (entry.path != "readme.txt") {
+            CHECK(entry.compression == PakCompression::None);
+            CHECK(entry.storedSize == entry.size);
+        }
     }
+    CHECK((*again)[4].compression == PakCompression::Zstd);
+    CHECK((*again)[4].size == 100);
+    CHECK((*again)[4].storedSize < 100);
+    CHECK(u32At(bytes, 0x08) == 2);
     const std::uint64_t tocOffset = u64At(bytes, 0x18);
+    const std::uint64_t readme = tocOffset + (4 * PakEntrySize);
+    CHECK(u64At(bytes, readme + 0x00) == (*again)[4].offset);
+    CHECK(u64At(bytes, readme + 0x08) == (*again)[4].storedSize);
+    CHECK(u64At(bytes, readme + 0x10) == 100);
+    CHECK(u32At(bytes, readme + 0x20) == 1);
+    // A zstd frame, starting with its magic.
+    CHECK(u32At(bytes, (*again)[4].offset) == 0xFD2FB528);
     CHECK(tocOffset % 16 == 0);
     CHECK(u64At(bytes, 0x20) == tocOffset + (5 * PakEntrySize));
     const std::string manifest = "id: base\nversion: 1.0.0\nlayer: base\n";
@@ -235,15 +262,25 @@ TEST_CASE("a damaged .pak is refused") {
     CHECK(damage([](auto& bytes) { bytes.resize(10); }).ends_with("it is shorter than its header"));
     CHECK(damage([](auto& bytes) { bytes[1] = std::byte{'X'}; }).ends_with("it does not start with the .pak magic"));
     CHECK(damage([](auto& bytes) {
-              putU32(bytes, 0x08, 2);
-          }).ends_with("version 2 is not supported (this build reads version 1)"));
+              putU32(bytes, 0x08, 3);
+          }).ends_with("version 3 is not supported (this build reads versions 1 to 2)"));
     CHECK(damage([](auto& bytes) { bytes.pop_back(); }).ends_with("the manifest does not end the file"));
     CHECK(damage([](auto& bytes) {
               putU32(bytes, 0x10, 1000);
           }).ends_with("the names do not follow the table of contents"));
     CHECK(damage([&](auto& bytes) {
-              putU32(bytes, tocOffset + 0x20, 1);
-          }).ends_with("entry 0 uses compression 1, which this build does not read"));
+              putU32(bytes, tocOffset + 0x20, 2);
+          }).ends_with("entry 0 uses compression 2, which version 2 does not have"));
+    // Version 1 has no compression, so its readme cannot be compressed.
+    CHECK(damage([&](auto& bytes) {
+              putU32(bytes, 0x08, 1);
+          }).ends_with("entry 4 uses compression 1, which version 1 does not have"));
+    CHECK(damage([&](auto& bytes) {
+              putU32(bytes, tocOffset + (4 * PakEntrySize) + 0x14, 1);
+          }).ends_with("entry 4 expands to 4294967396 bytes, more than a .pak entry may"));
+    CHECK(damage([&](auto& bytes) {
+              putU32(bytes, tocOffset + 0x10, 7);
+          }).ends_with("entry 0 is stored uncompressed but its sizes differ"));
     CHECK(damage([&](auto& bytes) {
               putU32(bytes, tocOffset + 0x00, 0xFFFF'FFF0);
           }).ends_with("entry 0 lies outside the data"));
@@ -272,4 +309,65 @@ TEST_CASE("a .pak entry whose bytes changed does not read") {
     CHECK_FALSE((*pak)->readFile(archive / "map/start/missing.png").has_value());
     CHECK_FALSE((*pak)->readFile(folder.path() / "elsewhere.png").has_value());
     CHECK_FALSE((*pak)->listFiles(folder.path()).has_value());
+}
+
+TEST_CASE("a compressed .pak entry that is damaged does not read") {
+    const TempFolder folder;
+    const std::filesystem::path archive = writeFixturePak(folder);
+    const auto good = fileBytes(archive);
+    const std::uint64_t readme = u64At(good, 0x18) + (4 * PakEntrySize);
+    const std::uint64_t offset = u64At(good, readme);
+    const std::uint64_t stored = u64At(good, readme + 0x08);
+    const auto readError = [&](auto change) {
+        auto bytes = good;
+        change(bytes);
+        writeBytes(archive, bytes);
+        const auto pak = PakFileSystem::open(archive);
+        REQUIRE(pak.has_value());
+        CHECK((*pak)->readFile(archive / "map/start/collision.yaml").has_value());
+        const auto read = (*pak)->readFile(archive / "readme.txt");
+        REQUIRE_FALSE(read.has_value());
+        return read.error().message;
+    };
+
+    CHECK(readError([&](auto& bytes) {
+              bytes[offset] = std::byte{0};
+          }).ends_with("it is not one zstd frame of its size; the archive is damaged"));
+    // The table says the file is one byte shorter than the frame does.
+    CHECK(readError([&](auto& bytes) {
+              putU32(bytes, readme + 0x10, 99);
+          }).ends_with("it is not one zstd frame of its size; the archive is damaged"));
+    CHECK(readError([&](auto& bytes) {
+              putU32(bytes, readme + 0x08, static_cast<std::uint32_t>(stored - 1));
+          }).ends_with("the archive is damaged"));
+    CHECK(readError([&](auto& bytes) {
+              bytes[offset + stored - 1] = ~bytes[offset + stored - 1];
+          }).ends_with("the archive is damaged"));
+}
+
+TEST_CASE("a version 1 .pak still reads") {
+    const TempFolder folder;
+    folder.write("old/pack.yaml", "id: old\nversion: 1.0.0\nlayer: base\n");
+    folder.write("old/a.yaml", "a: 1\n");
+    folder.write("old/b/c.txt", "short");
+    const std::filesystem::path archive = folder.path() / "old.pak";
+    const auto entries = writePak(DiskFileSystem{}, folder.path() / "old", archive);
+    REQUIRE(entries.has_value());
+    // Nothing this short compresses, so this is a version 1 archive but for its version.
+    for (const auto& entry : *entries) {
+        REQUIRE(entry.compression == PakCompression::None);
+    }
+    auto bytes = fileBytes(archive);
+    putU32(bytes, 0x08, 1);
+    writeBytes(archive, bytes);
+
+    const auto pak = PakFileSystem::open(archive);
+    REQUIRE(pak.has_value());
+    const auto text = (*pak)->readFile(archive / "b/c.txt");
+    REQUIRE(text.has_value());
+    CHECK(text->size() == 5);
+    const std::array location{PackLocation{.fileSystem = pak->get(), .root = archive}};
+    const auto vfs = VirtualFileSystem::mount(location);
+    REQUIRE(vfs.has_value());
+    CHECK(vfs->ids().size() == 2);
 }
