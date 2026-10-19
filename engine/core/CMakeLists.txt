@@ -5,6 +5,8 @@ dwe_add_module(core
     SOURCES
         src/log.cpp
         src/sha1.cpp
+        src/json_schema.cpp
+        src/schema_pattern.cpp
         src/yaml.cpp
     PRIVATE_LIBS yaml)
 

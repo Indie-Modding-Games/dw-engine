@@ -149,5 +149,5 @@ TEST_CASE("the schema check reports unknown and missing keys") {
     document.set("extra", YamlNode::scalar("1"));
     const auto problems = checkAgainstSchema(document, "cards");
     CHECK(std::ranges::any_of(problems, [](const std::string& p) { return p.contains("'extra'"); }));
-    CHECK(std::ranges::any_of(problems, [](const std::string& p) { return p.contains("missing key 'cards'"); }));
+    CHECK(std::ranges::any_of(problems, [](const std::string& p) { return p.contains("'cards' is missing"); }));
 }
