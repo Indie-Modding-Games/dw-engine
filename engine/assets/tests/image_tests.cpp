@@ -10,6 +10,7 @@
 #include <vector>
 
 using dwe::assets::decodePng;
+using dwe::assets::inspectPng;
 using dwe::assets::MaxImageSide;
 
 namespace {
@@ -65,6 +66,33 @@ TEST_CASE("a palettized PNG decodes to its colours, transparency included") {
     const auto image = decodePng(toBytes(png));
     REQUIRE(image.has_value());
     CHECK(image->pixels == toBytes({255, 128, 0, 255, 0, 0, 0, 0, 255, 128, 0, 255}));
+}
+
+TEST_CASE("a PNG's header says its size and whether it is indexed") {
+    lodepng::State state;
+    for (LodePNGColorMode* mode : {&state.info_raw, &state.info_png.color}) {
+        mode->colortype = LCT_PALETTE;
+        mode->bitdepth = 8;
+        REQUIRE(lodepng_palette_add(mode, 0, 0, 0, 255) == 0);
+        REQUIRE(lodepng_palette_add(mode, 255, 255, 255, 255) == 0);
+    }
+    state.encoder.auto_convert = 0;
+    std::vector<unsigned char> indexed;
+    REQUIRE(lodepng::encode(indexed, std::vector<unsigned char>{0, 1, 1, 0, 1, 0}, 2, 3, state) == 0);
+
+    const auto palette = inspectPng(toBytes(indexed));
+    REQUIRE(palette.has_value());
+    CHECK(palette->width == 2);
+    CHECK(palette->height == 3);
+    CHECK(palette->indexed);
+
+    const auto rgba = inspectPng(toBytes(encode({1, 2, 3, 4, 5, 6, 7, 8}, 1, 2, LCT_RGBA)));
+    REQUIRE(rgba.has_value());
+    CHECK(rgba->width == 1);
+    CHECK(rgba->height == 2);
+    CHECK_FALSE(rgba->indexed);
+
+    CHECK_FALSE(inspectPng(toBytes({'n', 'o', 't', ' ', 'a', ' ', 'p', 'n', 'g'})).has_value());
 }
 
 TEST_CASE("bytes that are not a whole PNG are an error") {

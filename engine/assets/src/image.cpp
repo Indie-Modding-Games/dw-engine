@@ -8,6 +8,18 @@
 
 namespace dwe::assets {
 
+core::Result<PngHeader> inspectPng(std::span<const std::byte> png) {
+    unsigned width = 0;
+    unsigned height = 0;
+    lodepng::State state;
+    if (const unsigned error =
+            lodepng_inspect(&width, &height, &state, reinterpret_cast<const unsigned char*>(png.data()), png.size());
+        error != 0) {
+        return core::fail(std::format("not a PNG: {}", lodepng_error_text(error)));
+    }
+    return PngHeader{.width = width, .height = height, .indexed = state.info_png.color.colortype == LCT_PALETTE};
+}
+
 core::Result<Image> decodePng(std::span<const std::byte> png) {
     const auto* data = reinterpret_cast<const unsigned char*>(png.data());
     unsigned width = 0;
