@@ -12,11 +12,14 @@
 #include <mutex>
 #include <string>
 
+#include "asset_viewer.hpp"
+
 namespace dwe::debug {
 namespace {
 
 constexpr std::size_t ConsoleLines = 500;
-// Descriptors the backend may create for textures; the overlay only needs its font atlas.
+// Descriptors the backend may create for textures: the font atlas, the asset viewer's preview and the previews it
+// let go that are waiting for their last frames to finish.
 constexpr std::uint32_t TextureDescriptors = 16;
 
 struct ConsoleLine {
@@ -69,18 +72,23 @@ void checkVulkan(VkResult result) {
 } // namespace
 
 struct DebugUi::Impl {
+    rhi::Device* device = nullptr;
     std::shared_ptr<Console> console = std::make_shared<Console>();
     std::array<char, 256> command{};
     bool visible = false;
     bool scrollToBottom = true;
+    std::unique_ptr<AssetViewer> assets;
+    bool assetsOpen = false;
 
-    static void drawStats(const FrameStats& stats);
+    void drawStats(const FrameStats& stats);
     static void drawInput(const input::InputState& input);
     void drawConsole(script::ScriptVm& scripts);
 };
 
 core::Result<std::unique_ptr<DebugUi>> DebugUi::create(const platform::Window& window, rhi::Device& device) {
     auto impl = std::make_unique<Impl>();
+    impl->device = &device;
+    impl->assets = std::make_unique<AssetViewer>(device);
 
     std::weak_ptr<Console> weakConsole = impl->console;
     core::addLogSink([weakConsole](core::LogLevel level, std::string_view message) {
@@ -132,6 +140,9 @@ core::Result<std::unique_ptr<DebugUi>> DebugUi::create(const platform::Window& w
 DebugUi::DebugUi(std::unique_ptr<Impl> impl) : impl_{std::move(impl)} {}
 
 DebugUi::~DebugUi() {
+    // The textures of the asset viewer go back to the backend before it shuts down.
+    impl_->assets.reset();
+    impl_->device->waitIdle();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
@@ -150,6 +161,10 @@ bool DebugUi::capturesMouse() const {
     return impl_->visible && ImGui::GetIO().WantCaptureMouse;
 }
 
+void DebugUi::mountContent(const std::filesystem::path& folder) {
+    impl_->assets->mount(folder);
+}
+
 void DebugUi::toggle() {
     impl_->visible = !impl_->visible;
     impl_->scrollToBottom = true;
@@ -165,9 +180,12 @@ void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input
                                                         IM_COL32(255, 160, 40, 255));
     }
     if (impl_->visible) {
-        Impl::drawStats(stats);
+        impl_->drawStats(stats);
         Impl::drawInput(input);
         impl_->drawConsole(scripts);
+        if (impl_->assetsOpen) {
+            impl_->assets->draw(impl_->assetsOpen);
+        }
     }
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.commands);
@@ -179,11 +197,12 @@ void DebugUi::Impl::drawStats(const FrameStats& stats) {
     ImGui::TextUnformatted(
         std::format("{:.0f} fps ({:.2f} ms)", stats.framesPerSecond, stats.frameMilliseconds).c_str());
     ImGui::TextUnformatted(std::format("logic ticks this frame: {}", stats.ticksThisFrame).c_str());
+    ImGui::Checkbox("asset viewer", &assetsOpen);
     ImGui::End();
 }
 
 void DebugUi::Impl::drawInput(const input::InputState& input) {
-    ImGui::SetNextWindowPos({10, 90}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos({10, 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Input", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     const bool gamepad = input.lastDevice() == input::DeviceKind::Gamepad;
     ImGui::TextUnformatted(

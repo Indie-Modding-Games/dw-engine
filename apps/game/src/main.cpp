@@ -15,6 +15,9 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
+#include <span>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -32,6 +35,26 @@ constexpr bool Validation = false;
 #else
 constexpr bool Validation = true;
 #endif
+
+struct Options {
+    // Where the debug overlay's asset viewer looks for packs.
+    std::filesystem::path content = "content/base";
+};
+
+// Reads `dwe-game [--content <folder>]`.
+std::optional<Options> parseOptions(std::span<char* const> arguments) {
+    Options options;
+    for (std::size_t index = 1; index < arguments.size(); ++index) {
+        const std::string_view argument = arguments[index];
+        if (argument == "--content" && index + 1 < arguments.size()) {
+            options.content = arguments[++index];
+        } else {
+            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>]", argument);
+            return std::nullopt;
+        }
+    }
+    return options;
+}
 
 // Players may drop an SDL mapping file next to the game to support controllers SDL does not know yet.
 void loadUserGamepadMappings() {
@@ -72,7 +95,7 @@ struct FpsCounter {
     }
 };
 
-int run() {
+int run(const Options& options) {
     auto platform = platform::Platform::create();
     if (!platform) {
         core::logError("{}", platform.error().message);
@@ -93,6 +116,7 @@ int run() {
         core::logError("{}", debugUi.error().message);
         return EXIT_FAILURE;
     }
+    (*debugUi)->mountContent(options.content);
     loadUserGamepadMappings();
 
     input::InputState input{input::defaultActionMap()};
@@ -181,6 +205,10 @@ int run() {
 
 } // namespace
 
-int main() {
-    return run();
+int main(int argc, char** argv) {
+    const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
+    if (!options) {
+        return EXIT_FAILURE;
+    }
+    return run(*options);
 }

@@ -6,6 +6,7 @@
 #include <dwe/rhi/device.hpp>
 #include <dwe/script/script_vm.hpp>
 
+#include <filesystem>
 #include <memory>
 
 union SDL_Event;
@@ -25,8 +26,8 @@ struct Marker {
     float radius;
 };
 
-// The developer overlay, drawn with Dear ImGui: the log with a Lua command line, frame statistics and the state of
-// every input device. Toggled with the debug_console action; never part of the game's own UI.
+// The developer overlay, drawn with Dear ImGui: the log with a Lua command line, frame statistics, the state of
+// every input device and an asset viewer. Toggled with the debug_console action; never part of the game's own UI.
 class DebugUi {
 public:
     static core::Result<std::unique_ptr<DebugUi>> create(const platform::Window& window, rhi::Device& device);
@@ -46,6 +47,10 @@ public:
     [[nodiscard]] bool capturesMouse() const;
 
     void toggle();
+
+    // Mounts the packs of a content folder in the asset viewer: the folder itself if it is a pack, otherwise the
+    // packs right under it.
+    void mountContent(const std::filesystem::path& folder);
 
     // Builds the overlay for this frame and records it into the frame, which must be inside rendering.
     void draw(const rhi::Frame& frame, const FrameStats& stats, const input::InputState& input,

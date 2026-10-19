@@ -4,5 +4,6 @@ dwe_add_module(debug
     LAYER services
     SOURCES
         src/debug_ui.cpp
-    DEPS core platform rhi input script
+        src/asset_viewer.cpp
+    DEPS core platform rhi input script assets
     PRIVATE_LIBS imgui::imgui)
