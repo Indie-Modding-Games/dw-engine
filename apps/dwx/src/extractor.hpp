@@ -1,0 +1,74 @@
+#pragma once
+
+#include <dwe/assets/asset_id.hpp>
+#include <dwe/core/error.hpp>
+#include <dwe/formats/disc/iso9660.hpp>
+#include <dwe/formats/disc/sector.hpp>
+
+#include <cstddef>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace dwe::dwx {
+
+// A file an extractor gives to the base pack. Its path is built from the asset id and the extension only, so no
+// name read from the disc can take it out of the pack's folder.
+struct OutputFile {
+    assets::AssetId id;
+    std::string extension; // lowercase letters and digits: "png", "yaml"
+    std::vector<std::byte> bytes;
+};
+
+// Returns the path of an output inside the pack, with '/' between folders: "card/000.png".
+std::string outputPath(const OutputFile& output);
+
+// What an extractor made of one disc file.
+struct Extraction {
+    std::vector<OutputFile> outputs;
+    // What it did not understand or had to skip: byte ranges, fields, entries that did not decode, warnings of the
+    // readers. A file with unknowns is reported as partly extracted.
+    std::vector<std::string> unknowns;
+};
+
+// What the tools know about the disc as a whole.
+struct DiscInfo {
+    std::string volumeId;
+    std::string executablePath;
+    std::string executableSha1;
+    std::string version; // the decomp's version id ("us", "eu"...), empty when the executable is not known
+};
+
+// The disc, as the extractors see it. It refers to objects that must outlive it.
+class Disc {
+public:
+    Disc(formats::disc::SectorSource& source, const formats::disc::IsoVolume& volume, const DiscInfo& info)
+        : source_(&source), volume_(&volume), info_(&info) {}
+
+    [[nodiscard]] formats::disc::SectorSource& source() const { return *source_; }
+    [[nodiscard]] const formats::disc::IsoVolume& volume() const { return *volume_; }
+    [[nodiscard]] const DiscInfo& info() const { return *info_; }
+
+private:
+    formats::disc::SectorSource* source_;
+    const formats::disc::IsoVolume* volume_;
+    const DiscInfo* info_;
+};
+
+// Turns disc files into source assets. A new kind of file is one more entry in the registry (extractors.cpp) and
+// the two functions it names.
+struct Extractor {
+    std::string_view name;
+    // Whether it takes this file, by its path on the volume ("CHDAT/ALLTIM.TIM").
+    bool (*handles)(std::string_view path);
+    core::Result<Extraction> (*extract)(const Disc& disc, const formats::disc::IsoFile& file);
+};
+
+// Returns every extractor. The first one that handles a file takes it, so specific entries go before patterns.
+std::span<const Extractor> extractors();
+
+// Returns the extractor that takes a file, or nullptr when the file is still pending.
+const Extractor* findExtractor(std::span<const Extractor> registry, std::string_view path);
+
+} // namespace dwe::dwx

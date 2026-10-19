@@ -22,4 +22,8 @@ int verify(const std::filesystem::path& path);
 // dwx extract --list: lists every file of a disc image and checks it against the executable's file table.
 int listDisc(const std::filesystem::path& path, bool verifyImage);
 
+// dwx extract: writes the base pack and its coverage report from a disc image into a folder, then checks that the
+// engine mounts it.
+int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force);
+
 } // namespace dwe::dwx
