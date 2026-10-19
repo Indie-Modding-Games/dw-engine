@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pack manifest",
+  "description": "The pack.yaml file at the root of a content pack. engine/assets/src/pack_manifest.cpp applies the same rules.",
+  "type": "object",
+  "required": ["id", "version", "layer"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "$ref": "#/$defs/packId" },
+    "version": { "$ref": "#/$defs/version" },
+    "layer": {
+      "description": "The content layer, from the bottom up: base (1), remaster (2), mods (3), user (4). A higher layer overrides the assets of the lower ones.",
+      "enum": ["base", "remaster", "mods", "user"]
+    },
+    "priority": {
+      "description": "Orders the packs of one layer: the higher one wins. Packs with the same layer and priority are ordered by their dependencies, then by id.",
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647,
+      "default": 0
+    },
+    "name": { "description": "A name for people.", "type": "string" },
+    "description": { "description": "What the pack changes or adds.", "type": "string" },
+    "dependencies": {
+      "description": "Packs that must be mounted too, at least at the given version, in the same layer or a lower one.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "min_version"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/packId" },
+          "min_version": { "$ref": "#/$defs/version" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "packId": {
+      "description": "1 to 64 lowercase letters, digits and underscores.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]{1,64}$"
+    },
+    "version": {
+      "description": "A semantic version, MAJOR.MINOR.PATCH, without pre-release or build suffixes.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    }
+  }
+}
