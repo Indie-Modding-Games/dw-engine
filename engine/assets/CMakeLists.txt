@@ -9,6 +9,9 @@ dwe_add_module(assets
         src/virtual_file_system.cpp
         src/pak.cpp
         src/image.cpp
+        src/model.cpp
+        src/media_headers.cpp
+        src/content_check.cpp
     DEPS core
-    PRIVATE_LIBS lodepng
+    PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng)

@@ -58,6 +58,9 @@ El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las val
 - En la ventana Frame del overlay, **asset viewer** abre el [visor de assets](../guides/visor-de-assets.md). Monta
   `content/base`, o la carpeta que pases con `scripts/dev.sh run --content <carpeta>`.
 - Si tu mando no se reconoce, deja un `gamecontrollerdb.txt` de SDL en la carpeta desde la que lanzas el juego.
+- `scripts/dev.sh run --check-content content/base` no abre ventana: monta los paquetes de la carpeta, abre cada
+  asset con los lectores del motor (PNG, glTF, YAML, WAV, SF2, MIDI, Y4M), lista los que fallan y termina con error
+  si hay alguno.
 
 ## Windows
 

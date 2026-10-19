@@ -1,3 +1,6 @@
+#include <dwe/assets/content_check.hpp>
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/debug/debug_ui.hpp>
@@ -16,6 +19,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
+#include <print>
 #include <span>
 #include <string_view>
 #include <variant>
@@ -39,21 +43,47 @@ constexpr bool Validation = true;
 struct Options {
     // Where the debug overlay's asset viewer looks for packs.
     std::filesystem::path content = "content/base";
+    // Set by --check-content: open every asset of the folder's packs and quit, without a window.
+    bool checkContent = false;
 };
 
-// Reads `dwe-game [--content <folder>]`.
+// Reads `dwe-game [--content <folder>] [--check-content <folder>]`.
 std::optional<Options> parseOptions(std::span<char* const> arguments) {
     Options options;
     for (std::size_t index = 1; index < arguments.size(); ++index) {
         const std::string_view argument = arguments[index];
-        if (argument == "--content" && index + 1 < arguments.size()) {
+        if ((argument == "--content" || argument == "--check-content") && index + 1 < arguments.size()) {
             options.content = arguments[++index];
+            options.checkContent = options.checkContent || argument == "--check-content";
         } else {
-            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>]", argument);
+            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>] [--check-content <folder>]",
+                           argument);
             return std::nullopt;
         }
     }
     return options;
+}
+
+// Mounts the packs of a content folder and opens every asset the stack provides with the engine's readers. Prints
+// one line per asset that fails; exits with success only when there is none.
+int checkContentFolder(const std::filesystem::path& folder) {
+    const assets::DiskFileSystem disk;
+    const auto roots = assets::findPacks(disk, folder);
+    if (!roots || roots->empty()) {
+        core::logError("no packs in {}: {}", assets::pathText(folder), roots ? "no pack.yaml" : roots.error().message);
+        return EXIT_FAILURE;
+    }
+    const auto stack = assets::VirtualFileSystem::mount(disk, *roots);
+    if (!stack) {
+        core::logError("cannot mount {}: {}", assets::pathText(folder), stack.error().message);
+        return EXIT_FAILURE;
+    }
+    const auto problems = assets::checkContent(*stack);
+    for (const assets::ContentProblem& problem : problems) {
+        std::println("{}: {}", problem.file, problem.message);
+    }
+    std::println("{} assets in {} packs, {} cannot be opened", stack->ids().size(), roots->size(), problems.size());
+    return problems.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 // Players may drop an SDL mapping file next to the game to support controllers SDL does not know yet.
@@ -210,5 +240,5 @@ int main(int argc, char** argv) {
     if (!options) {
         return EXIT_FAILURE;
     }
-    return run(*options);
+    return options->checkContent ? checkContentFolder(options->content) : run(*options);
 }
