@@ -195,4 +195,44 @@ inline std::vector<std::byte> patternBytes(std::size_t size, std::uint8_t seed) 
     return bytes;
 }
 
+// An entry of a fake executable's file table.
+struct TableEntry {
+    std::int32_t sector;
+    std::int32_t size;
+    std::string name;
+};
+
+// A fake PS-X EXE: header, then a 4 KB text segment loaded at LoadAddress with the file table at TableAddress (the
+// given entries and a terminating one) and the names after it.
+struct FakeExecutable {
+    static constexpr std::uint32_t LoadAddress = 0x80010000;
+    static constexpr std::uint32_t TableAddress = LoadAddress + 0x100;
+    static constexpr std::size_t HeaderSize = 0x800;
+    static constexpr std::size_t TextSize = 0x1000;
+    static constexpr std::size_t NamesOffset = 0x800;
+
+    static std::vector<std::byte> build(std::span<const TableEntry> entries) {
+        std::vector<std::byte> exe(HeaderSize + TextSize);
+        putText(exe, 0, "PS-X EXE");
+        putU32(exe, 0x10, LoadAddress);
+        putU32(exe, 0x18, LoadAddress);
+        putU32(exe, 0x1C, static_cast<std::uint32_t>(TextSize));
+        const auto text = std::span{exe}.subspan(HeaderSize);
+        std::size_t nameOffset = NamesOffset;
+        const auto putEntry = [&](std::size_t index, std::int32_t sector, std::int32_t size, std::string_view name) {
+            const std::size_t offset = (TableAddress - LoadAddress) + (index * 12);
+            putU32(text, offset, static_cast<std::uint32_t>(sector));
+            putU32(text, offset + 4, static_cast<std::uint32_t>(size));
+            putU32(text, offset + 8, LoadAddress + static_cast<std::uint32_t>(nameOffset));
+            putText(text, nameOffset, name);
+            nameOffset += name.size() + 1;
+        };
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            putEntry(i, entries[i].sector, entries[i].size, entries[i].name);
+        }
+        putEntry(entries.size(), 0, 0, "NULL");
+        return exe;
+    }
+};
+
 } // namespace fixtures
