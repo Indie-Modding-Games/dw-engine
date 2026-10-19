@@ -16,7 +16,8 @@ namespace {
 constexpr std::size_t FramesInFlight = 2;
 
 // UNORM rather than SRGB, because the debug UI writes colors that are already in sRGB.
-constexpr VkSurfaceFormatKHR SwapchainFormat{VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+constexpr VkSurfaceFormatKHR SwapchainFormat{.format = VK_FORMAT_B8G8R8A8_UNORM,
+                                             .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
 
 VkBool32 VKAPI_PTR logValidationMessage(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                         VkDebugUtilsMessageTypeFlagsEXT /*types*/,
@@ -45,7 +46,11 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    barrier.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                .baseMipLevel = 0,
+                                .levelCount = 1,
+                                .baseArrayLayer = 0,
+                                .layerCount = 1};
 
     VkDependencyInfo dependency{};
     dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -118,7 +123,7 @@ core::Result<void> Device::Impl::createSwapchain() {
         vkDestroySemaphore(device, semaphore, nullptr);
     }
     renderFinished.assign(images.size(), VK_NULL_HANDLE);
-    VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
+    VkSemaphoreCreateInfo semaphoreInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, .pNext = nullptr, .flags = 0};
     for (VkSemaphore& semaphore : renderFinished) {
         vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
     }
@@ -151,10 +156,12 @@ core::Result<void> Device::Impl::createFrames() {
         allocateInfo.commandBufferCount = 1;
         vkAllocateCommandBuffers(device, &allocateInfo, &frame.commands);
 
-        VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
+        VkSemaphoreCreateInfo semaphoreInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, .pNext = nullptr, .flags = 0};
         vkCreateSemaphore(device, &semaphoreInfo, nullptr, &frame.imageAcquired);
 
-        VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT};
+        VkFenceCreateInfo fenceInfo{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .pNext = nullptr, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
         vkCreateFence(device, &fenceInfo, nullptr, &frame.finished);
     }
     return {};
@@ -298,7 +305,11 @@ std::optional<Frame> Device::beginFrame() {
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer(slot.commands, &beginInfo);
 
-    Frame frame{slot.commands, impl.images[imageIndex], impl.views[imageIndex], impl.swapchain.extent, imageIndex};
+    Frame frame{.commands = slot.commands,
+                .image = impl.images[imageIndex],
+                .view = impl.views[imageIndex],
+                .extent = impl.swapchain.extent,
+                .imageIndex = imageIndex};
     transitionImage(frame.commands, frame.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_NONE,
                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -316,7 +327,7 @@ void Device::beginRendering(const Frame& frame, ClearColor clear) {
 
     VkRenderingInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    rendering.renderArea = {{0, 0}, frame.extent};
+    rendering.renderArea = {.offset = {.x = 0, .y = 0}, .extent = frame.extent};
     rendering.layerCount = 1;
     rendering.colorAttachmentCount = 1;
     rendering.pColorAttachments = &color;

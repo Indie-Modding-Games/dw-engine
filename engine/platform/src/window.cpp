@@ -30,7 +30,7 @@ Window::~Window() {
 }
 
 PixelSize Window::pixelSize() const {
-    PixelSize size{0, 0};
+    PixelSize size{.width = 0, .height = 0};
     SDL_GetWindowSizeInPixels(window_, &size.width, &size.height);
     return size;
 }

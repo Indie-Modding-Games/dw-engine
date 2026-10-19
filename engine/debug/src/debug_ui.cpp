@@ -86,7 +86,7 @@ core::Result<std::unique_ptr<DebugUi>> DebugUi::create(const platform::Window& w
     core::addLogSink([weakConsole](core::LogLevel level, std::string_view message) {
         if (auto console = weakConsole.lock()) {
             std::scoped_lock lock{console->mutex};
-            console->lines.push_back(ConsoleLine{level, std::string{message}});
+            console->lines.push_back(ConsoleLine{.level = level, .text = std::string{message}});
             if (console->lines.size() > ConsoleLines) {
                 console->lines.pop_front();
             }

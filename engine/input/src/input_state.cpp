@@ -74,8 +74,9 @@ void InputState::handle(const Event& event) {
         lastDevice_ = DeviceKind::KeyboardMouse;
     } else if (const auto* connected = std::get_if<GamepadConnected>(&event)) {
         if (findGamepad(connected->id) == nullptr) {
-            gamepadStates_.push_back(GamepadState{connected->id});
-            gamepads_.push_back(ConnectedGamepad{connected->id, connected->family, connected->name});
+            gamepadStates_.push_back(GamepadState{.id = connected->id});
+            gamepads_.push_back(
+                ConnectedGamepad{.id = connected->id, .family = connected->family, .name = connected->name});
         }
     } else if (const auto* disconnected = std::get_if<GamepadDisconnected>(&event)) {
         std::erase_if(gamepadStates_, [&](const GamepadState& state) { return state.id == disconnected->id; });
@@ -105,7 +106,7 @@ void InputState::handle(const Event& event) {
         for (const float direction : {1.0F, -1.0F}) {
             if (axisHalf(before, direction, deadzone_) < DownThreshold &&
                 axisHalf(axis->value, direction, deadzone_) >= DownThreshold) {
-                notePressed(GamepadAxisBinding{axis->axis, direction});
+                notePressed(GamepadAxisBinding{.axis = axis->axis, .direction = direction});
             }
         }
     }
@@ -134,7 +135,7 @@ bool InputState::wasPressed(std::string_view action) const {
 
 Vector2 InputState::vector(std::string_view left, std::string_view right, std::string_view up,
                            std::string_view down) const {
-    Vector2 direction{value(right) - value(left), value(down) - value(up)};
+    Vector2 direction{.x = value(right) - value(left), .y = value(down) - value(up)};
     const float length = std::hypot(direction.x, direction.y);
     if (length > 1.0F) {
         direction.x /= length;

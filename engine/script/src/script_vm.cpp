@@ -209,7 +209,8 @@ struct ScriptVm::Impl {
     std::vector<WatchedFile> files;
 
     explicit Impl(const ScriptLimits& limits)
-        : memory{0, limits.memoryBytes}, budget{nullptr, limits.instructionsPerCall, 0},
+        : memory{.used = 0, .limit = limits.memoryBytes},
+          budget{.state = nullptr, .perCall = limits.instructionsPerCall, .left = 0},
           lua{sol::default_at_panic, allocate, &memory} {
         budget.state = lua.lua_state();
     }
@@ -267,7 +268,7 @@ core::Result<void> ScriptVm::runFile(const std::filesystem::path& path) {
 
     auto known = std::ranges::find(impl_->files, path, &WatchedFile::path);
     if (known == impl_->files.end()) {
-        impl_->files.push_back(WatchedFile{path, modifiedTime(path)});
+        impl_->files.push_back(WatchedFile{.path = path, .modified = modifiedTime(path)});
     } else {
         known->modified = modifiedTime(path);
     }

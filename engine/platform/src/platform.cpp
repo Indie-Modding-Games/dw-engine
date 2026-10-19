@@ -168,19 +168,20 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
             events.emplace_back(FocusLost{});
             break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            events.emplace_back(WindowResized{event.window.data1, event.window.data2});
+            events.emplace_back(WindowResized{.width = event.window.data1, .height = event.window.data2});
             break;
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
-            events.emplace_back(KeyChanged{static_cast<KeyCode>(event.key.scancode), event.key.down, event.key.repeat});
+            events.emplace_back(KeyChanged{
+                .key = static_cast<KeyCode>(event.key.scancode), .down = event.key.down, .repeat = event.key.repeat});
             break;
         case SDL_EVENT_MOUSE_MOTION:
-            events.emplace_back(MouseMoved{event.motion.x, event.motion.y});
+            events.emplace_back(MouseMoved{.x = event.motion.x, .y = event.motion.y});
             break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
             if (auto button = mouseButtonOf(event.button.button)) {
-                events.emplace_back(MouseButtonChanged{*button, event.button.down});
+                events.emplace_back(MouseButtonChanged{.button = *button, .down = event.button.down});
             }
             break;
         case SDL_EVENT_GAMEPAD_ADDED: {
@@ -194,7 +195,8 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
             }
             const char* name = SDL_GetGamepadName(gamepad);
             gamepads_[event.gdevice.which] = gamepad;
-            events.emplace_back(GamepadConnected{event.gdevice.which, familyOf(gamepad), name ? name : "Gamepad"});
+            events.emplace_back(GamepadConnected{
+                .id = event.gdevice.which, .family = familyOf(gamepad), .name = name ? name : "Gamepad"});
             break;
         }
         case SDL_EVENT_GAMEPAD_REMOVED:
@@ -207,12 +209,14 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
         case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
         case SDL_EVENT_GAMEPAD_BUTTON_UP:
             if (auto button = buttonOf(event.gbutton.button)) {
-                events.emplace_back(GamepadButtonChanged{event.gbutton.which, *button, event.gbutton.down});
+                events.emplace_back(
+                    GamepadButtonChanged{.id = event.gbutton.which, .button = *button, .down = event.gbutton.down});
             }
             break;
         case SDL_EVENT_GAMEPAD_AXIS_MOTION:
             if (auto axis = axisOf(event.gaxis.axis)) {
-                events.emplace_back(GamepadAxisMoved{event.gaxis.which, *axis, normalizedAxis(event.gaxis.value)});
+                events.emplace_back(GamepadAxisMoved{
+                    .id = event.gaxis.which, .axis = *axis, .value = normalizedAxis(event.gaxis.value)});
             }
             break;
         default:

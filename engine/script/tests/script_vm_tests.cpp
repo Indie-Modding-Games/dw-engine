@@ -158,7 +158,7 @@ TEST_CASE("the input API reports actions") {
     input::InputState input{input::defaultActionMap()};
     auto vm = makeVm();
     vm->bindInput(input);
-    input.handle(platform::KeyChanged{input::keys::D, true, false});
+    input.handle(platform::KeyChanged{.key = input::keys::D, .down = true, .repeat = false});
     REQUIRE(vm->runString("x, y = input.vector('move_left', 'move_right', 'move_up', 'move_down')", "test"));
     CHECK(vm->lua()["x"].get<double>() == doctest::Approx(1.0));
     REQUIRE(vm->runString("held = input.down('move_right'); device = input.device()", "test"));
