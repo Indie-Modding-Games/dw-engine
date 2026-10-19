@@ -20,7 +20,8 @@ Las reglas que no cambian ([dependencias](dependency-rules.md), [tubería de ass
   ejecutable y de los overlays (`config/<ver>/*.yaml`); la lista de SHA-1 de cada fichero de datos la generamos
   nosotros la primera vez, desde un disco verificado, y se guarda en `formats/` como tabla (solo hashes y nombres).
 - Ya existe la primera pieza: `dwx verify <fichero>` calcula el SHA-1 de un fichero y lo busca en la tabla de
-  `formats/disc` (`known_releases.cpp`). Hoy la tabla tiene los ejecutables de las seis versiones del decomp; **faltan
+  `formats/disc` (`known_releases.cpp`). Solo se soportan las versiones comerciales: **US, EU y JP** (la original y la revisión 1). Las
+  demás versiones del decomp (la demo y `jp_bombom`) quedan fuera. Hoy la tabla tiene esos cuatro ejecutables; **faltan
   los hashes de las imágenes completas** (pistas de Redump), que se añaden desde la ficha de Redump o desde un volcado
   verificado, nunca a ojo.
 
