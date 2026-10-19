@@ -95,30 +95,38 @@ FileTableCheck checkFileTable(std::span<const FileEntry> table, std::span<const 
     for (std::size_t i = 0; i < files.size(); ++i) {
         byName.emplace(filenameOf(files[i].path), i);
     }
+    const auto sameExtent = [](const FileEntry& entry, const IsoFile& file) {
+        const std::uint64_t streamSize = std::uint64_t{sectorSpan(file)} * Mode2SectorSize;
+        return std::cmp_equal(file.lba, entry.sector) &&
+               (std::cmp_equal(file.size, entry.size) || std::cmp_equal(streamSize, entry.size));
+    };
 
-    FileTableCheck check{.inTable = std::vector<bool>(files.size(), false), .tableOnly = {}, .mismatches = {}};
+    FileTableCheck check{
+        .inTable = std::vector<bool>(files.size(), false), .aliases = {}, .tableOnly = {}, .mismatches = {}};
     for (const auto& entry : table) {
         const auto [first, last] = byName.equal_range(entry.filename);
-        const auto match = std::find_if(first, last, [&](const auto& candidate) {
-            const IsoFile& file = files[candidate.second];
-            const std::uint64_t streamSize = std::uint64_t{sectorSpan(file)} * Mode2SectorSize;
-            return std::cmp_equal(file.lba, entry.sector) &&
-                   (std::cmp_equal(file.size, entry.size) || std::cmp_equal(streamSize, entry.size));
-        });
+        const auto match = std::find_if(
+            first, last, [&](const auto& candidate) { return sameExtent(entry, files[candidate.second]); });
         if (match != last) {
             check.inTable[match->second] = true;
             continue;
         }
-        if (first == last) {
-            check.tableOnly.push_back(entry);
+        if (first != last) {
+            for (auto candidate = first; candidate != last; ++candidate) {
+                const IsoFile& file = files[candidate->second];
+                check.mismatches.push_back(
+                    std::format("{}: sector {}, {} bytes in the table; {} is sector {}, {} bytes", entry.filename,
+                                entry.sector, entry.size, file.path, file.lba, file.size));
+            }
             continue;
         }
-        for (auto candidate = first; candidate != last; ++candidate) {
-            const IsoFile& file = files[candidate->second];
-            check.mismatches.push_back(std::format("{}: sector {}, {} bytes in the table; {} is sector {}, {} bytes",
-                                                   entry.filename, entry.sector, entry.size, file.path, file.lba,
-                                                   file.size));
+        const auto alias = std::ranges::find_if(files, [&](const IsoFile& file) { return sameExtent(entry, file); });
+        if (alias != files.end()) {
+            check.inTable[static_cast<std::size_t>(alias - files.begin())] = true;
+            check.aliases.push_back(std::format("{} is {}", entry.filename, alias->path));
+            continue;
         }
+        check.tableOnly.push_back(entry);
     }
     return check;
 }

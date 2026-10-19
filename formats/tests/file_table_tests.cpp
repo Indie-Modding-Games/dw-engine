@@ -72,18 +72,17 @@ TEST_CASE("table locations are known per version") {
 }
 
 TEST_CASE("the check matches table entries by name, sector and size") {
-    const std::vector<IsoFile> files{{.path = "A.BIN", .lba = 30, .size = 4096},
-                                     {.path = "DATA/A.BIN", .lba = 40, .size = 10},
-                                     {.path = "DATA/B.BIN", .lba = 50, .size = 10},
-                                     {.path = "MOVIE/C.STR", .lba = 60, .size = 4096},
-                                     {.path = "MOVIE/D.STR", .lba = 70, .size = 4096}};
-    const std::vector<FileEntry> table{{.sector = 40, .size = 10, .filename = "A.BIN"},
-                                       {.sector = 51, .size = 10, .filename = "B.BIN"},
-                                       {.sector = 60, .size = 2 * 2336, .filename = "C.STR"},
-                                       {.sector = 70, .size = 3 * 2336, .filename = "D.STR"},
-                                       {.sector = 80, .size = 10, .filename = "HIDDEN.BIN"}};
+    const std::vector<IsoFile> files{
+        {.path = "A.BIN", .lba = 30, .size = 4096},       {.path = "DATA/A.BIN", .lba = 40, .size = 10},
+        {.path = "DATA/B.BIN", .lba = 50, .size = 10},    {.path = "MOVIE/C.STR", .lba = 60, .size = 4096},
+        {.path = "MOVIE/D.STR", .lba = 70, .size = 4096}, {.path = "BOOT.EXE", .lba = 90, .size = 2048}};
+    const std::vector<FileEntry> table{
+        {.sector = 40, .size = 10, .filename = "A.BIN"},       {.sector = 51, .size = 10, .filename = "B.BIN"},
+        {.sector = 60, .size = 2 * 2336, .filename = "C.STR"}, {.sector = 70, .size = 3 * 2336, .filename = "D.STR"},
+        {.sector = 80, .size = 10, .filename = "HIDDEN.BIN"},  {.sector = 90, .size = 2048, .filename = "OTHER.EXE"}};
     const auto check = checkFileTable(table, files);
-    CHECK(check.inTable == std::vector<bool>{false, true, false, true, false});
+    CHECK(check.inTable == std::vector<bool>{false, true, false, true, false, true});
+    CHECK(check.aliases == std::vector<std::string>{"OTHER.EXE is BOOT.EXE"});
     REQUIRE(check.mismatches.size() == 2);
     CHECK(check.mismatches[0].starts_with("B.BIN"));
     CHECK(check.mismatches[1].starts_with("D.STR"));

@@ -61,8 +61,11 @@ TEST_CASE("the user's disc: the executable's file table matches the volume") {
     CHECK(table->size() + 1 == location->capacity);
 
     const auto check = checkFileTable(*table, volume->files);
-    for (const auto& mismatch : check.mismatches) {
-        MESSAGE(mismatch);
+    for (const auto& line : check.mismatches) {
+        MESSAGE(line);
+    }
+    for (const auto& line : check.aliases) {
+        MESSAGE("alias: ", line);
     }
     CHECK(check.mismatches.empty());
     for (const auto& entry : check.tableOnly) {

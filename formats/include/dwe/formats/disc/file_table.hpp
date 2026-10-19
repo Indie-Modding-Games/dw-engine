@@ -39,13 +39,15 @@ std::span<const std::string_view> pathSearchedFiles();
 
 // How the table and the volume agree.
 struct FileTableCheck {
-    std::vector<bool> inTable;           // per volume file: a table entry has its name, sector and size
-    std::vector<FileEntry> tableOnly;    // entries whose name no volume file has: files the directories hide
+    std::vector<bool> inTable;           // per volume file: a table entry has its sector and size
+    std::vector<std::string> aliases;    // one line per entry that names a volume file by another name
+    std::vector<FileEntry> tableOnly;    // entries no volume file matches: data the directories hide
     std::vector<std::string> mismatches; // one line per entry whose name is on the volume at another sector or size
 };
 
-// Matches every table entry against the volume files with the same name. A size also matches when it counts 2336
-// bytes per sector: the original reads video streams as whole mode 2 sectors (subheader, data and error detection).
+// Matches every table entry against the volume file with the same name or, failing that, the same sector and size
+// (an alias). A size also matches when it counts 2336 bytes per sector: the original reads video streams as whole
+// mode 2 sectors (subheader, data and error detection).
 FileTableCheck checkFileTable(std::span<const FileEntry> table, std::span<const IsoFile> files);
 
 } // namespace dwe::formats::disc
