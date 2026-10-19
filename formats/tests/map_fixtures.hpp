@@ -40,6 +40,7 @@ struct MapParts {
     std::int32_t gridHeight = 1;
     std::vector<std::int32_t> tiles = {0, -1};
     std::int16_t spriteCount = 1;
+    std::int16_t spriteClut = -1;
     std::int16_t instanceCount = 1;
     std::int16_t npcCount = 1;
     std::int16_t waypointCount = 2;
@@ -81,7 +82,7 @@ inline std::vector<std::byte> objectsSection(const MapParts& parts) {
     Writer w;
     w.i16(parts.spriteCount);
     for (int i = 0; i < std::min<int>(parts.spriteCount, 2); ++i) {
-        for (const int value : {256, 16, 32, 48, 10, 20, 30, -1, 4}) {
+        for (const int value : {256, 16, 32, 48, 10, 20, 30, int{parts.spriteClut}, 4}) {
             w.i16(value);
         }
     }

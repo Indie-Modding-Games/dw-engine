@@ -40,12 +40,12 @@ MapEntry entry(std::string filename, std::uint8_t flags) {
     return record;
 }
 
-// A disc with one complete map, a map file no record names, a record whose file is missing and two arena collision
-// grids, one too short. Records 0 and 1 name the same file.
+// A disc with one complete map, a map file no record names, a record whose file is missing, a map whose sprites read
+// an extra palette and two arena collision grids, one too short. Records 0 and 1 name the same file.
 struct MapDisc {
     MapDisc() {
         tables.tables.mapEntries = {entry("FIELD", HasNpcs | UnreadFlag), entry("FIELD", HasNpcs),
-                                    entry("GONE", HasNpcs)};
+                                    entry("GONE", HasNpcs), entry("GLOW", HasNpcs)};
         tables.ids = dwe::formats::exe::makeTableIds(tables.tables);
 
         dwe::formats::test::MapParts parts;
@@ -59,6 +59,10 @@ struct MapDisc {
         builder.addFile("MAP/MAP1/FIELD.MAP", dwe::formats::test::makeMap(parts));
         builder.addFile("MAP/MAP1/FIELD.TFS", dwe::formats::test::makeTfs(5, 1));
         builder.addFile("MAP/MAP2/LOST.MAP", dwe::formats::test::makeMap(parts));
+        // A sprite with clut 17 reads video memory row 485, where palette 4 goes.
+        parts.spriteClut = 17;
+        builder.addFile("MAP/MAP1/GLOW.MAP", dwe::formats::test::makeMap(parts));
+        builder.addFile("MAP/MAP1/GLOW.TFS", dwe::formats::test::makeTfs(5, 1));
         std::vector<std::byte> arena(10000, std::byte{0});
         arena[0] = std::byte{0x80};
         arena[9999] = std::byte{7};
@@ -118,8 +122,14 @@ TEST_CASE("a map gives its data and its images") {
           std::vector<std::string>{"map/field/background_day.png", "map/field/background_dusk.png",
                                    "map/field/background_night.png", "map/field/background_palette3.png",
                                    "map/field/background_palette4.png"});
-    REQUIRE(background.unknowns.size() == 1);
-    CHECK(background.unknowns[0].starts_with("palettes 3 to 4"));
+    CHECK(background.status == FileStatus::Extracted);
+    CHECK(mentions(background.notes, "palettes 3 and 4 are never shown"));
+
+    const auto& glow = reportOf(*run, "MAP/MAP1/GLOW.TFS");
+    CHECK(glow.status == FileStatus::Partial);
+    CHECK(mentions(glow.notes, "palette 3 is never shown"));
+    REQUIRE(glow.unknowns.size() == 1);
+    CHECK(glow.unknowns[0].starts_with("palette 4: 1 sprite(s) read its video memory row 485"));
 
     const auto& lost = reportOf(*run, "MAP/MAP2/LOST.MAP");
     CHECK(lost.status == FileStatus::Partial);

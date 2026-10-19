@@ -31,8 +31,13 @@ constexpr std::string_view MapExtension = ".MAP";
 constexpr std::string_view BackgroundExtension = ".TFS";
 constexpr std::string_view ArenaFolder = "STDDAT/";
 constexpr std::string_view ArenaCollisionExtension = ".ATR";
-// The palettes whose use is known: day, dusk and night (map.c: updateTimeOfDay).
+// The palettes the original switches between: day, dusk and night (map.c: updateTimeOfDay).
 constexpr std::size_t KnownPalettes = 3;
+// setupMap uploads palette i of the .TFS to video memory row 481 + i (map.c: setupMap).
+constexpr int FirstPaletteRow = 481;
+// A sprite whose clut is 16 or more reads the 8-bit CLUT at row clut + 468 (overworld.c: buildMapOverlayPrim).
+constexpr int FirstSpriteRowClut = 16;
+constexpr int SpriteRowBase = 468;
 // A bit of MapEntry::flags that no known code reads.
 constexpr std::uint8_t UnreadFlag = 0x20;
 
@@ -44,6 +49,45 @@ struct LoadedMap {
     std::vector<std::byte> bytes;
     formats::map::MapFile map;
 };
+
+// Palettes past the third are only seen through the map's sprites: one whose clut points at the palette's row reads
+// it. A palette that no sprite reads is never shown; one that a sprite reads is reported, since a TIM of the .MAP may
+// put its own CLUT in the same row.
+void notePalettesPastTheThird(const formats::map::MapFile& map, std::size_t paletteCount, Extraction& extraction) {
+    std::vector<std::size_t> unread;
+    for (std::size_t palette = KnownPalettes; palette < paletteCount; ++palette) {
+        const int row = FirstPaletteRow + static_cast<int>(palette);
+        const auto reads =
+            !map.objects ? 0
+                         : std::ranges::count_if(map.objects->sprites, [row](const formats::map::MapSprite& sprite) {
+                               return sprite.clut >= FirstSpriteRowClut && sprite.clut + SpriteRowBase == row;
+                           });
+        if (reads == 0) {
+            unread.push_back(palette);
+        } else {
+            extraction.unknowns.push_back(std::format(
+                "palette {}: {} sprite(s) read its video memory row {}, which a TIM of the map may also fill", palette,
+                reads, row));
+        }
+    }
+    if (unread.empty()) {
+        return;
+    }
+    std::string which = unread.size() == 1 ? "palette" : "palettes";
+    for (std::size_t i = 0; i < unread.size(); ++i) {
+        std::string_view separator = ",";
+        if (i == 0) {
+            separator = "";
+        } else if (i + 1 == unread.size()) {
+            separator = " and";
+        }
+        which += std::format("{} {}", separator, unread[i]);
+    }
+    which += unread.size() == 1 ? " is" : " are";
+    extraction.notes.push_back(std::format("{} never shown: the original uploads every palette to video memory, "
+                                           "switches between the first three and no sprite of the map reads the rest",
+                                           which));
+}
 
 bool isMapPath(std::string_view path, std::string_view extension) {
     return path.starts_with(MapFolder) && path.ends_with(extension);
@@ -226,17 +270,7 @@ core::Result<Extraction> extractMapBackground(const Disc& disc, const formats::d
         extraction.unknowns.push_back(
             std::format("{} of its {} tiles are not on the map's grid", tfs->tiles.size() - used, tfs->tiles.size()));
     }
-    if (tfs->palettes.size() > KnownPalettes) {
-        const std::size_t last = tfs->palettes.size() - 1;
-        extraction.unknowns.push_back(
-            last == KnownPalettes
-                ? std::format("palette {}: what it is for is not known (the original uploads it to video memory row "
-                              "484)",
-                              last)
-                : std::format("palettes {} to {}: what they are for is not known (the original uploads them to video "
-                              "memory rows 484 and on)",
-                              KnownPalettes, last));
-    }
+    notePalettesPastTheThird(loaded->map, tfs->palettes.size(), extraction);
     const std::uint8_t flags = disc.tables()->tables.mapEntries[loaded->id].flags;
     if ((flags & MapEntryFlags::NoTimeOfDay) != 0 && tfs->palettes.size() > 1) {
         extraction.notes.emplace_back("the map has a fixed time of day: the original only shows the day background");

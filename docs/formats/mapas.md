@@ -107,8 +107,12 @@ El fondo prerenderizado (`map.c: readMapTFS`, `setupMap`, `updateTimeOfDay`):
 
 El número de tiles sale del tamaño del fichero, que tiene que ser un número entero de tiles.
 
-La paleta 0 es el día, la 1 el atardecer y la 2 la noche; los mapas de hora fija usan solo la 0. El original sube las
-demás paletas a las filas 484 y siguientes de VRAM, pero no se sabe para qué se usan.
+La paleta 0 es el día, la 1 el atardecer y la 2 la noche; los mapas de hora fija usan solo la 0
+(`map.c: updateTimeOfDay`). El original sube la paleta `i` a la fila `481 + i` de VRAM (`map.c: setupMap`) y copia a
+la fila 480 la que toca. Las paletas después de la tercera solo se verían a través de un sprite del mapa cuyo `clut`
+apunte a su fila (`clut + 468`); en los 3 mapas del US que las tienen ningún sprite lo hace, así que nunca se ven.
+`setupMap` guarda además un puntero a cada paleta en `MAP_CLUTS`, que tiene 3 entradas: las que sobran pisan la
+variable siguiente.
 
 `composeBackgrounds` coloca los tiles en la rejilla del `.MAP` y da una `IndexedImage` (`ancho * 128` por `alto * 128`
 índices y su paleta) por cada paleta; las celdas vacías quedan con índice 0, como el negro con que las limpia el
@@ -148,6 +152,6 @@ con 5. Ninguna entrada usa el bit `0x20`.
 
 ## Lo que no se sabe
 
-- Para qué sirven las paletas de `.TFS` después de la tercera (3 mapas del US) y el bit `0x20` de los flags.
+- El bit `0x20` de los flags.
 - Un mapa del US de una sola paleta no tiene el bit de hora fija.
 - `unknown12`, `unknown2A`, `followMode` y `bits` de los NPC.

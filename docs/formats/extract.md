@@ -100,8 +100,10 @@ parcial. Si dos entradas nombran el mismo fichero, se extrae una vez con el id d
 - `map/<id>/background_<variante>.png` (del `.TFS`): el fondo compuesto sobre la rejilla, uno por paleta, como PNG
   indexado de 8 bits con su paleta de 256 colores. Las variantes son `day`, `dusk`, `night` y, después,
   `palette3`, `palette4`...
-- Son `unknowns`: las paletas de `.TFS` después de la tercera (no se sabe para qué son), los tiles que no caen en la
-  rejilla y el bit `0x20` de los flags de la entrada.
+- Las paletas de `.TFS` después de la tercera se escriben igual. Si ningún sprite del mapa lee su fila de VRAM, una
+  nota dice que nunca se ven; si alguno la lee, es un `unknown`, porque un TIM del `.MAP` puede poner su CLUT en la
+  misma fila.
+- Son `unknowns`: los tiles que no caen en la rejilla y el bit `0x20` de los flags de la entrada.
 
 ### Arenas
 
