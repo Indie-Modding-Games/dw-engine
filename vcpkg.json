@@ -5,7 +5,14 @@
   "dependencies": [
     { "name": "sdl3", "features": ["vulkan"] },
     "vulkan",
-    { "name": "vulkan-loader", "features": ["xcb", "xlib", "wayland"] },
+    {
+      "name": "vulkan-loader",
+      "features": [
+        { "name": "xcb", "platform": "linux" },
+        { "name": "xlib", "platform": "linux" },
+        { "name": "wayland", "platform": "linux" }
+      ]
+    },
     "vk-bootstrap",
     "vulkan-validationlayers",
     "lua",

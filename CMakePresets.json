@@ -37,12 +37,47 @@
       "displayName": "CI: Linux, Clang, debug, warnings as errors",
       "inherits": "linux-clang-debug",
       "cacheVariables": { "DWE_WARNINGS_AS_ERRORS": "ON" }
+    },
+    {
+      "name": "windows-clang",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/windows-clang-cl.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
+        "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/build/${presetName}/vcpkg_buildtrees"
+      }
+    },
+    {
+      "name": "windows-clang-debug",
+      "displayName": "Windows, clang-cl, debug",
+      "inherits": "windows-clang",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "windows-clang-release",
+      "displayName": "Windows, clang-cl, release",
+      "inherits": "windows-clang",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+    },
+    {
+      "name": "windows-ci",
+      "displayName": "CI: Windows, clang-cl, debug, warnings as errors",
+      "inherits": "windows-clang-debug",
+      "cacheVariables": { "DWE_WARNINGS_AS_ERRORS": "ON" }
     }
   ],
   "buildPresets": [
     { "name": "linux-clang-debug", "configurePreset": "linux-clang-debug" },
     { "name": "linux-clang-release", "configurePreset": "linux-clang-release" },
-    { "name": "ci", "configurePreset": "ci" }
+    { "name": "ci", "configurePreset": "ci" },
+    { "name": "windows-clang-debug", "configurePreset": "windows-clang-debug" },
+    { "name": "windows-clang-release", "configurePreset": "windows-clang-release" },
+    { "name": "windows-ci", "configurePreset": "windows-ci" }
   ],
   "testPresets": [
     {
@@ -58,6 +93,21 @@
     {
       "name": "ci",
       "configurePreset": "ci",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-clang-debug",
+      "configurePreset": "windows-clang-debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-clang-release",
+      "configurePreset": "windows-clang-release",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-ci",
+      "configurePreset": "windows-ci",
       "output": { "outputOnFailure": true }
     }
   ]

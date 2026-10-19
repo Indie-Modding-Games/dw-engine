@@ -4,6 +4,11 @@
 # The layers, from the bottom up. A module may depend on its own layer or the layers below it.
 set(DWE_LAYERS core base systems services game apps)
 
+# CMake's default flags for MSVC-style compilers turn exceptions on; the project builds without them (ADR 0007).
+if(MSVC)
+    string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
 option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 
@@ -40,11 +45,21 @@ endfunction()
 function(dwe_apply_options target)
     target_compile_features(${target} PUBLIC cxx_std_26)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
-    target_compile_options(${target} PRIVATE
-        -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnon-virtual-dtor
-        -Wold-style-cast -Wimplicit-fallthrough -fno-exceptions)
-    if(DWE_WARNINGS_AS_ERRORS)
-        target_compile_options(${target} PRIVATE -Werror)
+    set(warnings -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnon-virtual-dtor -Wold-style-cast
+        -Wimplicit-fallthrough)
+    if(MSVC)
+        # clang-cl takes clang's -W options as they are, but its -Wall means -Weverything, as cl's /Wall does: /W4 is
+        # clang's -Wall -Wextra. Exceptions are off in the compiler and in the MSVC STL.
+        target_compile_options(${target} PRIVATE /W4 ${warnings} /EHs-c-)
+        target_compile_definitions(${target} PRIVATE _HAS_EXCEPTIONS=0)
+        if(DWE_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra ${warnings} -fno-exceptions)
+        if(DWE_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
     endif()
     if(DWE_SANITIZERS)
         list(JOIN DWE_SANITIZERS "," sanitizers)
@@ -82,14 +97,17 @@ function(dwe_add_module name)
 endfunction()
 
 # dwe_add_app(<name> LAYER <layer> SOURCES <files...> DEPS <modules...> [OUTPUT_NAME <name>])
-# Declares an executable. libc++ is linked statically so the binary runs on a host without it.
+# Declares an executable. On Linux libc++ is linked statically so the binary runs on a host without it; on Windows the
+# toolchain selects the static CRT.
 function(dwe_add_app name)
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "LAYER;OUTPUT_NAME" "SOURCES;DEPS")
     _dwe_check_deps(${name} ${arg_LAYER} ${arg_DEPS})
     add_executable(${name} ${arg_SOURCES})
     list(TRANSFORM arg_DEPS PREPEND dwe:: OUTPUT_VARIABLE dep_targets)
     target_link_libraries(${name} PRIVATE ${dep_targets})
-    target_link_options(${name} PRIVATE -static-libstdc++)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_link_options(${name} PRIVATE -static-libstdc++)
+    endif()
     if(arg_OUTPUT_NAME)
         set_target_properties(${name} PROPERTIES OUTPUT_NAME ${arg_OUTPUT_NAME})
     endif()

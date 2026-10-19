@@ -44,6 +44,31 @@ El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las val
 - Edita `apps/game/scripts/main.lua` con el juego abierto: se recarga al guardar.
 - Si tu mando no se reconoce, deja un `gamecontrollerdb.txt` de SDL en la carpeta desde la que lanzas el juego.
 
+## Windows
+
+> **Escrito, sin verificar hasta el primer push.** Los presets y el job de la CI de Windows siguen la documentación de
+> CMake, vcpkg y clang-cl, pero todavía no se han ejecutado nunca.
+
+En Windows no se usa el contenedor: se compila con **clang-cl** y la biblioteca estándar de MSVC.
+
+1. Instala Visual Studio 2022 (o sus Build Tools) con "Desarrollo para el escritorio con C++", y LLVM 20 o posterior
+   (`clang-cl` en el `PATH`).
+2. Clona vcpkg en el commit del `builtin-baseline` de `vcpkg.json`, ejecuta `bootstrap-vcpkg.bat` y define
+   `VCPKG_ROOT` apuntando a esa carpeta.
+3. Desde una "Developer PowerShell for VS 2022" (trae CMake y Ninja):
+
+```powershell
+cmake --preset windows-clang-debug
+cmake --build --preset windows-clang-debug
+ctest --preset windows-clang-debug
+```
+
+Las dependencias se compilan con el triplet `x64-windows-static` (librerías estáticas y CRT estático, `/MT`), así
+que el juego no necesita que el jugador instale el runtime de Visual C++. El cargador de Vulkan (`vulkan-1.dll`) se
+copia junto al ejecutable. Para activar las validation layers en debug:
+`$env:VK_LAYER_PATH = "build\windows-clang-debug\vcpkg_installed\x64-windows-static\bin"`. Los builds de Windows
+no llevan sanitizers.
+
 ## Otros comandos
 
 | Comando | Qué hace |
