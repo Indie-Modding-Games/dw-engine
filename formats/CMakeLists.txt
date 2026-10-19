@@ -23,6 +23,9 @@ dwe_add_module(formats
         src/image/png.cpp
         src/image/tim.cpp
         src/image/tim_packs.cpp
+        src/map/map_file.cpp
+        src/map/map_yaml.cpp
+        src/map/tfs_file.cpp
         src/model/animation.cpp
         src/model/cgltf.cpp
         src/model/gltf.cpp

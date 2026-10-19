@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field map",
+  "description": "The data of one .MAP file (map.c: loadMap). formats/src/map/map_yaml.cpp writes it. Numbers are as stored in the file; the game doubles the camera values when it applies them.",
+  "type": "object",
+  "required": ["camera", "lights", "ambient", "regions", "tiles", "images", "objects", "warps", "digimon_count", "npcs", "collision"],
+  "additionalProperties": false,
+  "properties": {
+    "camera": {
+      "type": "object",
+      "required": ["viewpoint", "reference", "projection"],
+      "additionalProperties": false,
+      "properties": {
+        "viewpoint": { "$ref": "#/$defs/vector3" },
+        "reference": { "$ref": "#/$defs/vector3" },
+        "projection": { "type": "integer" }
+      }
+    },
+    "lights": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["direction", "color"],
+        "additionalProperties": false,
+        "properties": {
+          "direction": { "$ref": "#/$defs/vector3" },
+          "color": { "$ref": "#/$defs/rgb" }
+        }
+      }
+    },
+    "ambient": { "description": "Stored but ignored by the game.", "$ref": "#/$defs/rgb" },
+    "regions": {
+      "description": "Compared with the partner's favored region.",
+      "type": "object",
+      "required": ["a", "b"],
+      "additionalProperties": false,
+      "properties": {
+        "a": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } },
+        "b": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } }
+      }
+    },
+    "tiles": {
+      "description": "The background grid of 128 x 128 tiles: one row of space-separated tile ids per grid row; -1 = no tile.",
+      "type": "object",
+      "required": ["width", "height", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 0 },
+        "height": { "type": "integer", "minimum": 0 },
+        "rows": { "type": "array", "items": { "type": "string", "pattern": "^-?[0-9]+( -?[0-9]+)*$" } }
+      }
+    },
+    "images": {
+      "description": "The TIM sections of the file, by byte range.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["bits_per_pixel", "offset", "size"],
+        "additionalProperties": false,
+        "properties": {
+          "bits_per_pixel": { "enum": [4, 8] },
+          "offset": { "type": "integer", "minimum": 0 },
+          "size": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "objects": {
+      "description": "Sprites drawn over the background and their animated instances; null in maps without TIMs.",
+      "type": ["object", "null"],
+      "required": ["sprites", "instances"],
+      "additionalProperties": false,
+      "properties": {
+        "sprites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tex_x", "tex_y", "width", "height", "position", "clut", "transparency"],
+            "additionalProperties": false,
+            "properties": {
+              "tex_x": { "type": "integer" },
+              "tex_y": { "type": "integer" },
+              "width": { "type": "integer" },
+              "height": { "type": "integer" },
+              "position": { "$ref": "#/$defs/vector3" },
+              "clut": { "description": "-1 = the map palette; 0-15 = a 4-bit CLUT; 16 or more = 8-bit CLUT row clut + 468.", "type": "integer" },
+              "transparency": { "type": "integer" }
+            }
+          }
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["frames", "x", "y", "flag"],
+            "additionalProperties": false,
+            "properties": {
+              "frames": {
+                "description": "Up to the first -1: sprite index (-2 = blank) and ticks.",
+                "type": "array", "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "required": ["sprite", "time"],
+                  "additionalProperties": false,
+                  "properties": { "sprite": { "type": "integer" }, "time": { "type": "integer" } }
+                }
+              },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "flag": { "description": "1 = hidden, 0x80 = drawn in screen space.", "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "warps": {
+      "type": "array", "minItems": 10, "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["exit", "spawn", "rotation", "target_map", "target_map_id", "target_exit"],
+        "additionalProperties": false,
+        "properties": {
+          "exit": { "type": "integer", "minimum": 0 },
+          "spawn": { "$ref": "#/$defs/vector3" },
+          "rotation": { "description": "4096 = a full turn.", "type": "integer" },
+          "target_map": { "description": "Raw map id; -1 = unused exit.", "type": "integer" },
+          "target_map_id": { "description": "Id of the target map (maps.yaml), or null.", "type": ["string", "null"] },
+          "target_exit": { "type": "integer" }
+        }
+      }
+    },
+    "digimon_count": { "description": "As stored; NPC records are only read when the map has the NPC flag.", "type": "integer" },
+    "npcs": {
+      "type": "array", "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["type_id", "digimon", "follow_mode", "position", "rotation", "tracking_range", "unknown_12", "script_id", "hp", "mp", "current_hp", "current_mp", "off", "def", "speed", "brain", "bits", "charge_mode", "unknown_2a", "moves", "moves_prio", "flee", "ai_sections", "waypoints"],
+        "additionalProperties": false,
+        "properties": {
+          "type_id": { "type": "integer" },
+          "digimon": { "description": "Id of the Digimon (digimon.yaml), or null.", "type": ["string", "null"] },
+          "follow_mode": { "type": "integer" },
+          "position": { "$ref": "#/$defs/vector3" },
+          "rotation": { "$ref": "#/$defs/vector3" },
+          "tracking_range": { "type": "integer" },
+          "unknown_12": { "type": "integer" },
+          "script_id": { "type": "integer" },
+          "hp": { "type": "integer" },
+          "mp": { "type": "integer" },
+          "current_hp": { "type": "integer" },
+          "current_mp": { "type": "integer" },
+          "off": { "type": "integer" },
+          "def": { "type": "integer" },
+          "speed": { "type": "integer" },
+          "brain": { "type": "integer" },
+          "bits": { "type": "integer" },
+          "charge_mode": { "type": "integer" },
+          "unknown_2a": { "type": "integer" },
+          "moves": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } },
+          "moves_prio": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer" } },
+          "flee": { "$ref": "#/$defs/vector3" },
+          "ai_sections": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer" } },
+          "waypoints": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/vector3" } }
+        }
+      }
+    },
+    "collision": {
+      "description": "100 x 100 cells of 100 world units. Bit 0x80 = blocked; other values are trigger ids. With the legend encoding each row has one character per cell; with hex, two hex digits per cell.",
+      "type": "object",
+      "required": ["width", "height", "encoding", "legend", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "const": 100 },
+        "height": { "const": 100 },
+        "encoding": { "enum": ["legend", "hex"] },
+        "legend": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["cell", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "cell": { "type": "string", "minLength": 1, "maxLength": 1 },
+              "value": { "type": "integer", "minimum": 0, "maximum": 255 }
+            }
+          }
+        },
+        "rows": { "type": "array", "minItems": 100, "maxItems": 100, "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "vector3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } }
+    },
+    "rgb": {
+      "type": "object",
+      "required": ["r", "g", "b"],
+      "additionalProperties": false,
+      "properties": { "r": { "type": "integer" }, "g": { "type": "integer" }, "b": { "type": "integer" } }
+    }
+  }
+}
