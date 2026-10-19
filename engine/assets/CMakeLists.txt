@@ -1,5 +1,6 @@
 find_package(lodepng CONFIG REQUIRED)
 find_package(zstd CONFIG REQUIRED)
+find_package(Opus CONFIG REQUIRED)
 
 dwe_add_module(assets
     LAYER systems
@@ -13,9 +14,11 @@ dwe_add_module(assets
         src/model.cpp
         src/media_headers.cpp
         src/content_check.cpp
+        src/ogg.cpp
+        src/sound.cpp
     DEPS core
-    PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd
-    TEST_LIBS lodepng)
+    PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd Opus::opus
+    TEST_LIBS lodepng Opus::opus)
 
 # The content check decodes every image of a pack; as in formats, debug builds link lodepng's release build, three
 # times faster. Not on Windows, where debug and release code use different C runtimes.

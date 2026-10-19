@@ -167,3 +167,12 @@ TEST_CASE("the assets of a .pak layer are opened like those of a folder") {
     CHECK(problems[1].id.str() == "sound/hit");
     CHECK(problems[1].file == "mod/sound/hit.wav");
 }
+
+TEST_CASE("cooked sounds are opened by decoding them") {
+    // A valid Ogg Opus file opens in the cook tests of dwx; here the decoder's refusal shows which reader ran.
+    for (const std::string_view extension : {"opus", "ogg"}) {
+        const auto opened = openAsset(extension, bytesOf("OggS but not really"));
+        REQUIRE_FALSE(opened.has_value());
+        CHECK_MESSAGE(opened.error().message.contains("Ogg"), opened.error().message);
+    }
+}

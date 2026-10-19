@@ -13,8 +13,8 @@
 namespace dwe::assets {
 
 // Opens the bytes of an asset with the engine's reader for its file type, by extension: png decodes, glb and gltf
-// parse and validate, yaml parses, wav, sf2, mid and y4m read their headers. An extension the engine cannot read is
-// an error.
+// parse and validate, yaml parses, opus and ogg (Ogg Opus, as dwx cook writes sounds) decode, wav, sf2, mid and y4m
+// read their headers. An extension the engine cannot read is an error.
 core::Result<void> openAsset(std::string_view extension, std::span<const std::byte> bytes);
 
 // An asset the engine could not read or open.

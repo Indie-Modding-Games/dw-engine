@@ -2,6 +2,7 @@
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
+#include <dwe/assets/sound.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -38,12 +39,14 @@ core::Result<void> openYaml(std::span<const std::byte> bytes) {
     return {};
 }
 
-constexpr std::array<std::pair<std::string_view, Opener>, 8> Openers = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 10> Openers = {{
     {"png", discardValue<decodePng>},
     {"glb", discardValue<readModel>},
     {"gltf", discardValue<readModel>},
     {"yaml", openYaml},
     {"wav", discardValue<readWavHeader>},
+    {"opus", discardValue<decodeOpus>},
+    {"ogg", discardValue<decodeOpus>},
     {"sf2", discardValue<readSoundFontHeader>},
     {"mid", discardValue<readMidiHeader>},
     {"y4m", discardValue<readY4mHeader>},
