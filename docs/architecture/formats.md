@@ -118,22 +118,24 @@ ni compresión. El paso está en el código del original, no en el fichero, así
 
 ## Mapas
 
-- **`MAP_ENTRIES[255]`** (16 bytes): nombre, número de TIM de 8 y 4 bits, flags (`& 0x1F` sonido, `& 0x80` tiene NPC),
-  puertas, baño y nombre de carga. La ruta es `\MAP\MAP{id/15+1}\{nombre}.MAP|.TFS` (`map.c: buildMapPath`).
+- **`MAP_ENTRIES[255]`** (16 bytes): nombre, número de TIM de 8 y 4 bits, flags (`& 0x1F` sonido, `& 0x40` hora fija,
+  `& 0x80` tiene NPC), puertas, baño y nombre de carga. La ruta es `\MAP\MAP{id/15+1}\{nombre}.MAP|.TFS` (`map.c: buildMapPath`).
 - **`.MAP`:** tabla de offsets `u32` a sus secciones (`map.c: loadMap`):
   1. configuración: cámara, 3 luces y ambiente, proyección, regiones y la rejilla de tiles (`s32`, −1 = vacío);
   2. y 3. los TIM de 8 y 4 bits;
   4. objetos: sprites y sus instancias animadas (solo si hay imágenes);
-  5. entidades: warps (6 × 10 `s16`) y NPC (~37 `s16` cada uno + ruta) (`tamer.c`, `overworld.c`);
-  6. colisión: rejilla de 100 × 100 `s8` (celdas de 100 unidades); otros valores distintos de 0 y 0x80 son disparadores
+  5. entidades: warps (6 × 10 `s16`) y NPC (34 + 8 `s16` cada uno + 3 por punto de ruta) (`tamer.c`, `overworld.c`);
+  6. colisión: rejilla de 100 × 100 `u8` (celdas de 100 unidades); otros valores distintos de 0 y 0x80 son disparadores
      (`map_collision.c`).
-- **`.TFS`:** CLUTs de 512 bytes y tiles de 128 × 128 a 8 bits del fondo prerenderizado (`map.c: readMapTFS`). Hay dos
-  palabras que el original salta y cuyo significado no se conoce.
+- **`.TFS`:** CLUTs de 512 bytes y tiles de 128 × 128 a 8 bits del fondo prerenderizado (`map.c: readMapTFS`). Las
+  palabras que el original salta son, en los ficheros US, el tamaño del fondo (`alto << 16 | ancho`) y la posición de
+  cada tile en VRAM (`fila * 128 << 16 | columna * 64`). Paleta 0 = día, 1 = atardecer, 2 = noche.
 - **Tablas relacionadas:** `DOOR_MAPDATA[24]` (modelos `DOOR\DOORnn.TMD` y su posición), `TOILET_DATA`,
   `MAP_LIGHT_UPDATE_DATA`.
 - **`STDDAT\*.ATR`:** colisión de la arena del torneo. **Sin estudiar.**
 
-Salida: PNG por capa del fondo, YAML con cámara, luces, warps, NPC y colisión.
+Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colisión (detalle en
+[Mapas](../formats/mapas.md)).
 
 ## Textos
 
@@ -172,7 +174,8 @@ Salida: PNG por capa del fondo, YAML con cámara, luces, warps, NPC y colisión.
 
 ## El ejecutable y los overlays
 
-- **PS-X EXE** con cabecera de 0x800 bytes, cargado en `0x80090000`. Las direcciones de las tablas salen de
+- **PS-X EXE** con cabecera de 0x800 bytes; en el US el texto empieza en `0x80090800`, así que
+  `offset = dirección − 0x80090000`. Las direcciones de las tablas salen de
   `config/us/symbols.txt` del decomp; `formats/exe` guarda solo las direcciones y tamaños por versión, nunca los datos.
 - **Tablas** (US):
 
@@ -188,7 +191,7 @@ Salida: PNG por capa del fondo, YAML con cámara, luces, warps, NPC y colisión.
   | `CARD_DATA`, `TOURNAMENT_SCHEDULE`, `SHOP_MAPS`, nombres de medallas, torneos y música | | |
 
   La tienda no tiene tabla de stock: un objeto se vende si está su flag `0x180 + id`. Las tablas se extraen a YAML y
-  siembran el primer ruleset.
+  siembran el primer ruleset (detalle en [Tablas](../formats/tablas.md)).
 - **Overlays** `*_REL.BIN`: imágenes sin cabecera ni reubicaciones que se cargan enteras en una dirección fija
   (`utils2.c: loadDynamicLibrary`). Algunos (BTL, VS) empiezan con datos incrustados (TIM y TMD) que también se extraen.
 
@@ -201,7 +204,7 @@ Salida: PNG por capa del fondo, YAML con cámara, luces, warps, NPC y colisión.
 ## Lo que no se sabe
 
 - `MMM.DAT` (26 MB): está en la tabla de ficheros pero no se ha encontrado código que lo lea.
-- Las palabras que se saltan en `.TFS`, el formato `.ATR` y el interior de los EFE.
+- Para qué son las paletas de `.TFS` después de la tercera, el formato `.ATR` y el interior de los EFE.
 - Los códigos de texto `02` y `03`.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
