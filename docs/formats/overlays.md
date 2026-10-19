@@ -60,6 +60,17 @@ interfaz, posiciones del texto de combate, constantes de efectos y cámara, los 
 del torneo (`STD_INTRO_DIGIMON_NAMES`) y los recorridos del cuadro (`STD_BRACKET_PATHS`). Tampoco las del `.sdata`
 del ejecutable que no son tablas de juego, ni `REINCARNATE_BABY_TYPE` (DOOA).
 
+## Extractor
+
+`dwx` (extractor `overlay`) da cuenta de cada parte en las notas del informe, con su rango de bytes:
+
+- Ficheros incrustados: se comparan con el fichero suelto; si son iguales, una nota (`same bytes as ETCDAT/EX.TIM`)
+  y el asset sale de ese fichero. Si difieren o falta el suelto, es un `unknown`.
+- Cabecera, código (no es un asset), datos, memoria guardada y palabra final: una nota cada una.
+- Las tablas de FISH, STD, VS y TRN: `data/fishing`, `data/stadium`, `data/versus` y `data/training`.
+- Son `unknowns`: lo que `readOverlayParts` anota, un overlay sin layout para la versión, los datos de SHOP (nada en
+  el decomp los nombra) y las tablas que no se pudieron leer.
+
 ## Lo que no se sabe
 
 - Los datos de `SHOP_REL.BIN` (`[0x7860, 0x7E0C)` en el US): empiezan con una tabla de saltos a su código y no tienen

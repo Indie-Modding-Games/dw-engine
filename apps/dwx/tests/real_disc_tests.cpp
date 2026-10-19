@@ -1,5 +1,6 @@
 // Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has one.
 
+#include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 
@@ -12,6 +13,7 @@
 
 #include "base_pack.hpp"
 #include "disc_description.hpp"
+#include "schema_check.hpp"
 #include "temp_folder.hpp"
 
 using namespace dwe::dwx;
@@ -84,6 +86,26 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     };
     CHECK(taken("padding") == 1);
     CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
+    // Every overlay is understood but the one the decomp does not build.
+    CHECK(taken("overlay") == 16);
+    CHECK(std::ranges::all_of(run->files, [](const FileReport& report) {
+        return report.extractor != "overlay" ||
+               (report.status == FileStatus::Extracted) == (report.file.path != "SHOP_REL.BIN");
+    }));
+    for (const std::string_view document : {"data/fishing", "data/stadium", "data/versus", "data/training"}) {
+        CHECK(has(document));
+    }
+    // Every table document matches its schema.
+    for (const OutputFile& output : run->outputs) {
+        const std::string id = output.id.str();
+        if (!id.starts_with("data/")) {
+            continue;
+        }
+        const auto parsed = dwe::core::parseYaml(
+            std::string_view{reinterpret_cast<const char*>(output.bytes.data()), output.bytes.size()});
+        REQUIRE_MESSAGE(parsed.has_value(), id);
+        CHECK_MESSAGE(dwe::formats::test::checkAgainstSchema(*parsed, id.substr(5)).empty(), id);
+    }
     CHECK(has("data/digimon"));
     CHECK(has("data/maps"));
     CHECK(has("map/"));

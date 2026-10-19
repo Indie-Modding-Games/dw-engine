@@ -67,10 +67,11 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
 | `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
 | `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script |
+| `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS y TRN) |
 | `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
 
 Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md),
-[Audio](audio.md), [Textos y fuente](textos.md) y [Scripts de eventos](scripts.md).
+[Overlays](overlays.md), [Audio](audio.md), [Textos y fuente](textos.md) y [Scripts de eventos](scripts.md).
 
 ### El ejecutable y `SYSTEM.CNF`
 
@@ -153,6 +154,20 @@ sobre su página, sin imagen, y van a `unknowns`.
 `MMM.DAT` (27,6 MB) solo aparece en la tabla de ficheros del ejecutable; ningún código lo abre. El extractor `padding`
 comprueba que todos sus bytes son cero: si lo son, queda `extracted` sin salidas y con una nota; si no, queda parcial y
 el `unknown` lista los rangos que no son cero.
+
+### Overlays
+
+Cada `*_REL.BIN` se corta con el layout de su versión (ver [Overlays](overlays.md)) y cada parte va a una nota con su
+rango de bytes: los ficheros incrustados de BTL, STD y VS (comparados con el fichero suelto: `same bytes as
+ETCDAT/EX.TIM`; el asset sale de ese fichero), la cabecera, el código (no es un asset), los datos (constantes del
+código con nombre en los símbolos del decomp), la memoria guardada (restos del build; en MOV, los buffers del
+decodificador) y la palabra final. Las tablas de juego salen a `data/fishing`, `data/stadium`, `data/versus` y
+`data/training`; el número de objetos y TIM de las arenas se lee del ejecutable. TRN2 tiene las mismas tablas que TRN:
+se comparan y se anota.
+
+Queda parcial un overlay sin layout para la versión, uno que no cuadra con su layout, uno cuyo fichero incrustado no
+es igual al suelto, uno cuyas tablas no se pueden leer (o sin las tablas del ejecutable) y SHOP, cuyos datos no nombra
+nada en el decomp.
 
 ## El paquete base
 
@@ -241,17 +256,17 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 765 extraídos, 29 parciales y 24 pendientes; 164,8 de 331,2 MB
-(49,8 %). Salen 3808 salidas, de las que 356 repiten otra byte a byte:
+Con el disco US (`SLUS_010.32`): 818 ficheros, 786 extraídos, 25 parciales y 7 pendientes; 193,8 de 331,2 MB
+(58,5 %). Salen 3814 salidas, de las que 356 repiten otra byte a byte:
 
 | Tipo | Salidas |
 |---|---|
 | Texturas de Digimon (`digimon/`) | 180 PNG + 180 YAML |
 | Cartas (`card/`) | 66 PNG + 66 YAML |
 | Otras imágenes (`texture/`) | 69 PNG + 69 YAML |
-| Tablas (`data/`) y `SYSTEM.CNF` (`disc/`) | 12 + 1 YAML |
-| Mapas: `data.yaml` | 241 |
-| Mapas: fondos | 512 PNG |
+| Tablas del ejecutable y de los overlays (`data/`) y `SYSTEM.CNF` (`disc/`) | 12 + 4 + 1 YAML |
+| Mapas: `data.yaml` | 242 |
+| Mapas: fondos | 513 PNG |
 | Mapas: TIM de 8 y 4 bits | 413 + 167 PNG, con sus YAML |
 | Colisión de arenas (`arena/`) | 2 YAML |
 | Modelos de Digimon (`digimon/<id>/model`) | 178 GLB |
@@ -259,8 +274,10 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 765 extraídos, 29 parciales y 24
 | Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 
-- Parciales: los `.TFS` de los tres mapas con más de tres paletas, y `MAP/MAP16/MGEN17.MAP` y su `.TFS`, que ninguna
-  entrada de `MAP_ENTRIES` nombra (sin ella no se sabe cuántos TIM tiene el `.MAP`).
+- Overlays: 15 extraídos; es parcial `SHOP_REL.BIN`, cuyos datos (`[0x7860, 0x7E0C)`) no nombra nada en el decomp.
+- `MAP/MAP16/MGEN17.MAP`, que ninguna entrada de `MAP_ENTRIES` nombra, se extrae como `map/mgen17` con las opciones
+  que da el propio fichero.
+- Las paletas de `.TFS` después de la tercera (tres mapas) nunca se ven: ningún sprite lee su fila de VRAM.
 - Tres entradas de `MAP_ENTRIES` nombran ficheros que no están en el disco; van como notas del ejecutable. La 65 y la
   232 tienen el mismo nombre en carpetas distintas: solo existe el de la 232, que se extrae con el id de la 232
   (`<nombre>_232`), el que dan las tablas.
@@ -273,8 +290,7 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 765 extraídos, 29 parciales y 24
     `ETCNA/WARP.TMD` (cada mapa de cristales tiene los suyos).
   - Seis con la escena deducida (`BOSS_EFE`, `ABOX`, `BIGBOX`, `GAND`, `SMABOX`, `T_YAMA`) y `ETCNA/DOOR.TMD`, que
     el original no carga nunca (es igual que `DOOR00.TMD`).
-- Pendientes: los vídeos (`.STR`), los scripts (`.SCN`), los efectos (`.EFE`), los overlays (`*_REL.BIN` y otros
-  `.BIN`) y `MMM.DAT`.
+- Pendientes: los vídeos (4 `.STR`), los scripts (2 `.SCN`) y los efectos (1 `.EFE`).
 - Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62), los nueve TIM de
   `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43) y
   pistas repetidas entre fuentes de música (6).

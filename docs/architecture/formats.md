@@ -217,8 +217,10 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
   La tienda no tiene tabla de stock: un objeto se vende si está su flag `0x180 + id`. Las tablas se extraen a YAML y
   siembran el primer ruleset (detalle en [Tablas](../formats/tablas.md)).
-- **Overlays** `*_REL.BIN`: imágenes sin cabecera ni reubicaciones que se cargan enteras en una dirección fija
-  (`utils2.c: loadDynamicLibrary`). Algunos (BTL, VS) empiezan con datos incrustados (TIM y TMD) que también se extraen.
+- **Overlays** `*_REL.BIN`: imágenes sin reubicaciones que se cargan enteras en una dirección fija
+  (`utils2.c: loadDynamicLibrary`), con una cabecera `"MWo1"` que el cargador no mira. BTL, STD y VS empiezan con cinco
+  ficheros incrustados (TIM y TMD) que son copias exactas de ficheros sueltos. Las tablas de juego de FISH, STD, VS y
+  TRN se extraen a YAML; el código no es un asset (detalle en [Overlays](../formats/overlays.md)).
 
 ## Partidas
 
@@ -229,6 +231,7 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 ## Lo que no se sabe
 
 - El interior de los EFE.
+- Los datos de `SHOP_REL.BIN`, que el decomp no compila.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
 

@@ -12,6 +12,7 @@ dwe_add_module(dwx
         src/game_tables.cpp
         src/image_extractors.cpp
         src/map_extractors.cpp
+        src/overlay_extractor.cpp
         src/padding_extractor.cpp
         src/script_extractors.cpp
         src/table_extractors.cpp
@@ -23,11 +24,12 @@ dwe_add_module(dwx
     TEST_LIBS dwe_cgltf)
 
 if(BUILD_TESTING)
-    # The tests build synthetic discs and TIMs with the fixtures of the formats tests and use the temporary folder of
-    # the assets tests.
+    # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the temporary folder of the
+    # assets tests and check the documents against content/schemas.
     target_include_directories(dwe_dwx_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/formats/tests
         ${PROJECT_SOURCE_DIR}/engine/assets/tests)
+    target_compile_definitions(dwe_dwx_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
 endif()
 
 dwe_add_app(dwx_cli
