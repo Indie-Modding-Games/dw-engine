@@ -1,0 +1,17 @@
+# Build output
+/build/
+/out/
+/.cache/
+compile_commands.json
+
+# vcpkg
+/vcpkg_installed/
+
+# Content generated from the user's own disc: never versioned
+/content/base/
+/content/cooked/
+
+# Local settings
+CMakeUserPresets.json
+/.vscode/
+/.idea/
