@@ -10,6 +10,7 @@
 #include <array>
 #include <format>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <string>
 #include <utility>
@@ -23,6 +24,8 @@ namespace {
 
 using formats::exe::FileRange;
 using formats::exe::MemoryImage;
+using formats::exe::OverlayDataKind;
+using formats::exe::OverlayDataRange;
 using formats::exe::OverlayLayout;
 using formats::exe::OverlayParts;
 using formats::exe::OverlayTablesLayout;
@@ -76,6 +79,15 @@ core::Result<void> addDocuments(const TablesYaml& yaml, Extraction& extraction) 
     return {};
 }
 
+core::Result<MemoryImage> mapExecutable(const Disc& disc, std::vector<std::byte>& storage) {
+    auto bytes = readDiscFile(disc, disc.info().executablePath);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    storage = std::move(*bytes);
+    return MemoryImage::fromExecutable(storage);
+}
+
 // Checks the files the overlay carries against the loose files of the disc.
 void checkEmbeddedFiles(const Disc& disc, std::span<const std::byte> file, const OverlayLayout& layout,
                         Extraction& extraction) {
@@ -98,24 +110,75 @@ void checkEmbeddedFiles(const Disc& disc, std::span<const std::byte> file, const
     }
 }
 
-void noteParts(std::span<const std::byte> file, const OverlayLayout& layout, const OverlayParts& parts,
-               Extraction& extraction) {
+std::string_view kindName(OverlayDataKind kind) {
+    switch (kind) {
+    case OverlayDataKind::JumpTable:
+        return "jump table of";
+    case OverlayDataKind::Pointers:
+        return "pointers:";
+    case OverlayDataKind::Numbers:
+        return "numbers:";
+    case OverlayDataKind::Text:
+        return "text:";
+    }
+    return "";
+}
+
+core::Result<std::span<const std::byte>> executableCopy(const core::Result<MemoryImage>& executable,
+                                                        std::uint32_t address, std::size_t size) {
+    if (!executable) {
+        return std::unexpected{executable.error()};
+    }
+    return executable->bytesAt(address, size);
+}
+
+// Notes the data range by range, comparing the ranges the executable also has with its copy.
+void noteDataRanges(const Disc& disc, std::span<const std::byte> file, const OverlayLayout& layout,
+                    const OverlayParts& parts, Extraction& extraction) {
+    extraction.notes.push_back(std::format("{}: data of the code, mapped from the code of the {} build, whose symbols "
+                                           "name it; none of it is an asset",
+                                           range(parts.data), layout.build));
+    std::vector<std::byte> storage;
+    const auto executable = mapExecutable(disc, storage);
+    for (const OverlayDataRange& data : parts.dataRanges) {
+        const FileRange part{.begin = data.begin, .end = data.end};
+        std::string note = std::format("{}: {} {}", range(part), kindName(data.kind), data.what);
+        if (data.executableAddress != 0) {
+            const auto copy = executableCopy(executable, data.executableAddress, part.size());
+            if (!copy) {
+                extraction.unknowns.push_back(std::format("{}: could not be compared with the executable's copy: {}",
+                                                          range(part), copy.error().message));
+                continue;
+            }
+            const auto bytes = file.subspan(part.begin, part.size());
+            const auto differ = std::ranges::count_if(std::views::iota(std::size_t{0}, part.size()),
+                                                      [&](std::size_t i) { return bytes[i] != (*copy)[i]; });
+            note += differ == 0
+                        ? std::format("; same bytes as the executable's copy at 0x{:08X}", data.executableAddress)
+                        : std::format("; {} of its bytes differ from the executable's copy at 0x{:08X}", differ,
+                                      data.executableAddress);
+        }
+        extraction.notes.push_back(std::move(note));
+    }
+}
+
+void noteParts(const Disc& disc, std::span<const std::byte> file, const OverlayLayout& layout,
+               const OverlayParts& parts, Extraction& extraction) {
     const FileRange header{.begin = layout.headerOffset, .end = layout.headerOffset + formats::exe::OverlayHeaderSize};
     extraction.notes.push_back(std::format("{}: header, id {}, name \"{}\"", range(header), parts.header.id,
                                            formats::exe::escapeGameText(parts.header.name)));
+    if (!layout.note.empty()) {
+        extraction.notes.push_back(std::format("[0x0, 0x{:X}): {}", file.size(), layout.note));
+    }
     extraction.notes.push_back(std::format("{}: code; it is not an asset", range(parts.code)));
-    if (parts.data.size() != 0) {
-        if (!layout.build.empty()) {
-            extraction.notes.push_back(std::format(
-                "{}: data of the code (jump tables, texts, sprite, camera and effect constants), all of it named by "
-                "the decomp's symbols; {}",
-                range(parts.data),
-                hasGameplayTables(layout.path) ? "only its gameplay tables are assets" : "none of it is an asset"));
-        } else {
-            extraction.unknowns.push_back(
-                std::format("{}: data of the code; the decomp does not build this overlay, so nothing names it",
-                            range(parts.data)));
-        }
+    if (!layout.dataRanges.empty()) {
+        noteDataRanges(disc, file, layout, parts, extraction);
+    } else if (parts.data.size() != 0) {
+        extraction.notes.push_back(std::format(
+            "{}: data of the code (jump tables, texts, sprite, camera and effect constants), all of it named by the "
+            "decomp's symbols; {}",
+            range(parts.data),
+            hasGameplayTables(layout.path) ? "only its gameplay tables are assets" : "none of it is an asset"));
     }
     if (parts.storedMemory.size() != 0) {
         const std::string_view what = layout.path == MoviePath ? "the movie decoder's buffers" : "memory";
@@ -127,15 +190,6 @@ void noteParts(std::span<const std::byte> file, const OverlayLayout& layout, con
                                                range(parts.storedMemory), what, held));
     }
     extraction.notes.push_back(std::format("{}: the zero word every overlay ends with", range(parts.trailer)));
-}
-
-core::Result<MemoryImage> mapExecutable(const Disc& disc, std::vector<std::byte>& storage) {
-    auto bytes = readDiscFile(disc, disc.info().executablePath);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
-    }
-    storage = std::move(*bytes);
-    return MemoryImage::fromExecutable(storage);
 }
 
 core::Result<formats::exe::TrainingTables> readTraining(const Disc& disc, const OverlayTablesLayout& tables) {
@@ -237,7 +291,7 @@ core::Result<Extraction> extractOverlay(const Disc& disc, const formats::disc::I
     }
     extraction.unknowns.insert(extraction.unknowns.end(), parts->mismatches.begin(), parts->mismatches.end());
     checkEmbeddedFiles(disc, *bytes, *layout, extraction);
-    noteParts(*bytes, *layout, *parts, extraction);
+    noteParts(disc, *bytes, *layout, *parts, extraction);
     if (const auto converted = convertTables(disc, *bytes, *layout, extraction); !converted) {
         extraction.unknowns.push_back(std::format("{}: the gameplay tables in the data were not converted: {}",
                                                   range(parts->data), converted.error().message));

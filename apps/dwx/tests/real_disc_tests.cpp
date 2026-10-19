@@ -86,12 +86,20 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     };
     CHECK(taken("padding") == 1);
     CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
-    // Every overlay is understood but the one the decomp does not build.
+    // Every overlay is understood, SHOP_REL.BIN through its data map: its tables match the executable's copies but for
+    // one row of characters.
     CHECK(taken("overlay") == 16);
     CHECK(std::ranges::all_of(run->files, [](const FileReport& report) {
-        return report.extractor != "overlay" ||
-               (report.status == FileStatus::Extracted) == (report.file.path != "SHOP_REL.BIN");
+        return report.extractor != "overlay" || report.status == FileStatus::Extracted;
     }));
+    const auto shop =
+        std::ranges::find(run->files, "SHOP_REL.BIN", [](const FileReport& report) { return report.file.path; });
+    REQUIRE(shop != run->files.end());
+    CHECK(std::ranges::count_if(shop->notes, [](const std::string& note) {
+              return note.contains("same bytes as the executable's copy");
+          }) == 8);
+    CHECK(std::ranges::count_if(shop->notes,
+                                [](const std::string& note) { return note.contains("1 of its bytes differ"); }) == 1);
     for (const std::string_view document : {"data/fishing", "data/stadium", "data/versus", "data/training"}) {
         CHECK(has(document));
     }

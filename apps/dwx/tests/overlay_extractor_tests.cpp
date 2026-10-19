@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <memory>
 #include <string>
@@ -15,12 +16,16 @@
 
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
+#include "exe_fixture.hpp"
 #include "overlay_extractor.hpp"
 #include "overlay_fixture.hpp"
 
 using namespace dwe::dwx;
+using dwe::formats::exe::OverlayDataKind;
+using dwe::formats::test::ImageBuilder;
 using dwe::formats::test::makeOverlayFile;
 using dwe::formats::test::OverlayFileSpec;
+using dwe::formats::test::putU32;
 
 namespace {
 
@@ -72,6 +77,10 @@ std::vector<std::byte> plainOverlay(std::uint32_t loadAddress, std::size_t codeS
 }
 
 constexpr std::uint32_t SharedLoad = 0x80080800; // DGET and SHOP
+constexpr std::string_view ExecutablePath = "SLUS_000.01";
+// A made-up executable large enough to hold the copies of SHOP_REL.BIN's tables.
+constexpr std::uint32_t ExecutableBase = 0x80130000;
+constexpr std::size_t ExecutableSize = 0x800;
 constexpr std::uint32_t MovieLoad = 0x80010000;
 constexpr std::uint32_t BattleLoad = 0x80052AE0;
 constexpr std::size_t BattleHeader = 0x4188;
@@ -155,13 +164,80 @@ TEST_CASE("an overlay that does not match its layout, or has none, is partial") 
     CHECK(reportOf(runOn(noHeader), "DGET_REL.BIN").status == FileStatus::Partial);
 }
 
-TEST_CASE("the data of an overlay the decomp does not build is unknown") {
+TEST_CASE("an overlay with a data map has each range noted, and the executable's copies compared") {
+    // A made-up SHOP_REL.BIN that satisfies the US data map: cases at the start of the code, zero pointers, texts
+    // ending with a zero, numbers from a pattern.
+    const auto found = dwe::formats::exe::findOverlayLayout("us", "SHOP_REL.BIN");
+    REQUIRE(found.has_value());
+    const auto layout = found.value_or(dwe::formats::exe::OverlayLayout{});
+    REQUIRE_FALSE(layout.dataRanges.empty());
+    const std::size_t dataBegin = layout.dataRanges.front().begin;
+    const std::size_t dataEnd = layout.dataRanges.back().end;
+    auto file = makeOverlayFile({.leading = {},
+                                 .id = 1,
+                                 .address = SharedLoad,
+                                 .name = "SHOP_REL.BIN",
+                                 .codeSize = dataBegin - dwe::formats::exe::OverlayHeaderSize,
+                                 .data = fixtures::patternBytes(dataEnd - dataBegin, 5)});
+    for (const auto& data : layout.dataRanges) {
+        for (std::size_t at = data.begin; at < data.end; at += 4) {
+            if (data.kind == OverlayDataKind::JumpTable) {
+                putU32(file, at, SharedLoad + dwe::formats::exe::OverlayHeaderSize);
+            } else if (data.kind == OverlayDataKind::Pointers) {
+                putU32(file, at, 0);
+            }
+        }
+        if (data.kind == OverlayDataKind::Text) {
+            file[data.end - 1] = std::byte{0};
+        }
+    }
+
+    // An executable with a copy of every range that has one, all but one byte of the first.
+    ImageBuilder image{ExecutableBase};
+    image.place(ExecutableSize);
+    std::uint32_t first = 0;
+    for (const auto& data : layout.dataRanges) {
+        if (data.executableAddress == 0) {
+            continue;
+        }
+        first = first == 0 ? data.executableAddress : first;
+        for (std::size_t at = data.begin; at < data.end; ++at) {
+            image.u8(static_cast<std::uint32_t>(data.executableAddress + (at - data.begin)),
+                     std::to_integer<std::uint8_t>(file[at]));
+        }
+    }
+    REQUIRE(first != 0);
+    image.u8(first, 0xEE);
+
+    OverlayDisc fixture{{{"SHOP_REL.BIN", file}, {std::string{ExecutablePath}, image.executable()}}, "us"};
+    fixture.info.executablePath = ExecutablePath;
+    const auto run = runOn(fixture);
+    const FileReport& report = reportOf(run, "SHOP_REL.BIN");
+    CHECK(report.status == FileStatus::Extracted);
+    CHECK(report.unknowns.empty());
+    CHECK(mentions(report.notes, "mapped from the code of the jp_rev1 build"));
+    CHECK(mentions(report.notes, "never jumps here"));
+    CHECK(mentions(report.notes, "[0x7860, 0x7888): jump table of openRecycleShop's switch, 10 cases"));
+    CHECK(mentions(report.notes, std::format("1 of its bytes differ from the executable's copy at 0x{:08X}", first)));
+    CHECK(mentions(report.notes, "; same bytes as the executable's copy at"));
+    CHECK(std::ranges::count_if(report.notes, [](const std::string& note) {
+              return note.contains("executable's copy");
+          }) == std::ranges::count_if(layout.dataRanges, [](const auto& data) { return data.executableAddress != 0; }));
+
+    // Without the executable, the ranges it has copies of cannot be compared.
+    const OverlayDisc alone{{{"SHOP_REL.BIN", file}}, "us"};
+    const auto unchecked = reportOf(runOn(alone), "SHOP_REL.BIN");
+    CHECK(unchecked.status == FileStatus::Partial);
+    CHECK(mentions(unchecked.unknowns, "could not be compared with the executable's copy"));
+}
+
+TEST_CASE("an overlay whose data does not match its data map is partial, with the ranges that do not") {
     const OverlayDisc fixture{{{"SHOP_REL.BIN", plainOverlay(SharedLoad, 0x20, 0x10)}}, "us"};
     const auto run = runOn(fixture);
     const FileReport& report = reportOf(run, "SHOP_REL.BIN");
     CHECK(report.status == FileStatus::Partial);
     REQUIRE(report.unknowns.size() == 1);
-    CHECK(report.unknowns[0].starts_with("[0x60, 0x70): data of the code"));
+    CHECK(report.unknowns[0].starts_with("[0x60, 0x70): the data map does not cover the data end to end"));
     CHECK(mentions(report.notes, "code; it is not an asset"));
 }
 

@@ -243,6 +243,7 @@ TEST_CASE("the US layouts cover the sixteen overlays") {
         for (std::size_t i = 1; i < layout.dataRanges.size(); ++i) {
             CHECK(layout.dataRanges[i].begin == layout.dataRanges[i - 1].end);
         }
+        CHECK((layout.build == "us" || !layout.dataRanges.empty()));
     }
     CHECK(us == 16);
     REQUIRE(findOverlayLayout("us", "FISH_REL.BIN").has_value());
@@ -252,7 +253,12 @@ TEST_CASE("the US layouts cover the sixteen overlays") {
     CHECK(fishing.loadAddress == 0x80070000);
     CHECK(fishing.build == "us");
     CHECK(fishing.dataRanges.empty());
-    CHECK(findOverlayLayout("us", "SHOP_REL.BIN").value_or(OverlayLayout{}).build.empty());
+    const OverlayLayout shop = findOverlayLayout("us", "SHOP_REL.BIN").value_or(OverlayLayout{});
+    CHECK(shop.build == "jp_rev1");
+    CHECK_FALSE(shop.note.empty());
+    REQUIRE_FALSE(shop.dataRanges.empty());
+    CHECK(shop.dataRanges.front().begin == 0x7860);
+    CHECK(shop.dataRanges.back().end == 0x7E0C);
     CHECK(findOverlayLayout("us", "STD_REL.BIN").value_or(OverlayLayout{}).embeddedFiles.size() == 5);
     CHECK_FALSE(findOverlayLayout("other", "FISH_REL.BIN").has_value());
     CHECK_FALSE(findOverlayLayout("us", "NONE_REL.BIN").has_value());
