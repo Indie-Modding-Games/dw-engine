@@ -1,3 +1,5 @@
+find_package(lodepng CONFIG REQUIRED)
+
 dwe_add_module(assets
     LAYER systems
     SOURCES
@@ -5,4 +7,7 @@ dwe_add_module(assets
         src/pack_manifest.cpp
         src/file_system.cpp
         src/virtual_file_system.cpp
-    DEPS core)
+        src/image.cpp
+    DEPS core
+    PRIVATE_LIBS lodepng
+    TEST_LIBS lodepng)
