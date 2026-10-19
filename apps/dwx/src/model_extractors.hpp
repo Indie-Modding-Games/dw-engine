@@ -32,27 +32,37 @@ core::Result<Extraction> extractStaticModel(const Disc& disc, const formats::dis
 // model.c: loadMMD builds it.
 core::Result<std::size_t> digimonTypeOfModel(std::string_view path, std::span<const std::string> fileNames);
 
+// The same model drawn with the texels of other scenes.
+struct ModelVariant {
+    std::string name; // the scene's slug, which ends the variant's id
+    std::vector<std::byte> glb;
+};
+
 // A model ready for the pack, what the extractor could not take from it and what else the report should say.
 struct BuiltModel {
     std::vector<std::byte> glb;
     std::vector<std::string> unknowns;
     std::vector<std::string> notes;
+    std::vector<ModelVariant> variants;
+    std::size_t texturedPrimitives = 0;
 };
 
 // Builds a Digimon's model from its MMD file, its texture TIM (uploaded where the TIM says) and its skeleton.
 core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, const formats::image::Tim& texture,
                                            std::span<const formats::exe::SkeletonBone> bones);
 
-// A place the original draws a model in: what it has in VRAM there, and a name for the report.
+// A place the original draws a model in: what it has in VRAM there, a name for the report and a slug for the id of
+// a variant textured from it.
 struct NamedScene {
     std::string name;
+    std::string slug;
     VramScene scene;
 };
 
-// Builds a model without a skeleton from a TMD file: a node per object. It is textured from the first scene that
-// holds all its texels, or the first scene if none does; scenes that draw it with other texels are reported. Without
-// scenes its primitives keep their UVs and the model has no image; unknownTexture says why, for the report.
-core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std::span<const NamedScene> scenes,
-                                          std::string_view unknownTexture);
+// Builds a model without a skeleton from a TMD file: a node per object. Scenes that hold all its texels are grouped
+// by the texels they give: the first group textures the model and every other group gives a variant. Scenes that do
+// not hold all its texels are reported; if none does, the first one textures the model as far as it can. Without
+// scenes its primitives keep their UVs and the model has no image.
+core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std::span<const NamedScene> scenes);
 
 } // namespace dwe::dwx

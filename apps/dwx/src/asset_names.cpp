@@ -53,8 +53,12 @@ core::Result<assets::AssetId> digimonAsset(const GameTables* tables, std::size_t
     return assets::AssetId::parse(std::format("digimon/{}/{}", digimonSlug(tables, type), leaf));
 }
 
-core::Result<assets::AssetId> discModel(std::string_view volumePath) {
-    return assets::AssetId::parse(volumePathId("model", volumePath));
+core::Result<assets::AssetId> discModel(std::string_view volumePath, std::string_view variant) {
+    std::string id = volumePathId("model", volumePath);
+    if (!variant.empty()) {
+        id += "_" + segment(variant);
+    }
+    return assets::AssetId::parse(id);
 }
 
 core::Result<assets::AssetId> cardImage(std::size_t card) {

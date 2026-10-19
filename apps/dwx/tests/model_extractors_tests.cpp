@@ -151,7 +151,10 @@ TEST_CASE("textures come from what was uploaded last, and palettes may come from
     REQUIRE(second.has_value());
     CHECK(second->resolvedPrimitives == 2);
     CHECK(second->texels != first->texels);
-    CHECK(std::ranges::all_of(second->texels, [](Color15 color) { return color == 0x7FFF || color == 0x001F; }));
+    const auto white = dwe::formats::image::toRgba8(0x7FFF);
+    const auto red = dwe::formats::image::toRgba8(0x001F);
+    CHECK(std::ranges::all_of(second->texels,
+                              [&](const dwe::formats::image::Rgba8& color) { return color == white || color == red; }));
 
     // Without the palette at (0, 489) one primitive keeps only its UVs, on its page.
     VramScene partial;
@@ -168,35 +171,59 @@ TEST_CASE("textures come from what was uploaded last, and palettes may come from
     CHECK(third->textures[1].width == 256);
 }
 
-TEST_CASE("a model without a skeleton has a node per object and reports the scenes that draw it differently") {
+TEST_CASE("a model without a skeleton has a node per object and a variant per scene that draws it differently") {
     const auto tmd = fixtures::buildSampleTmd();
-    std::vector<NamedScene> scenes(2);
+    std::vector<NamedScene> scenes(3);
     scenes[0].name = "first";
     scenes[0].scene.addTim(
         texture({.x = 320, .y = 0, .width = 64, .height = 128}, {.x = 0, .y = 400, .width = 16, .height = 1}));
     scenes[1].name = "second";
     scenes[1].scene.addTim(sampleTexture());
+    scenes[2].name = "again";
+    scenes[2].scene.addTim(sampleTexture());
+    // The semi-transparency bit on every opaque colour: the PNG does not keep it, so the model is drawn the same.
+    Tim flagged = sampleTexture();
+    for (Color15& color : flagged.clut) {
+        if (color != 0) {
+            color = static_cast<Color15>(color | 0x8000U);
+        }
+    }
+    scenes.push_back({.name = "flagged", .slug = "flagged", .scene = {}});
+    scenes.back().scene.addTim(flagged);
     Tim other = sampleTexture();
     other.clut.assign(other.clut.size(), 0x1234);
-    NamedScene third{.name = "third", .scene = {}};
+    NamedScene third{.name = "third", .slug = "third_place", .scene = {}};
     third.scene.addTim(other);
     scenes.push_back(std::move(third));
 
-    const auto model = buildStaticModel(tmd, scenes, "unused");
+    const auto model = buildStaticModel(tmd, scenes);
     REQUIRE(model.has_value());
-    // The first scene does not hold the palettes, so the second one textures the model.
-    CHECK(hasUnknown(*model, "third draws it with other texels than second"));
+    // The first scene does not hold the palettes, so the second one textures the model; the third gives a variant.
+    CHECK(model->unknowns.size() == 2); // the first scene and the sample's line primitive
     CHECK(hasUnknown(*model, "first does not hold all its texels"));
+    CHECK(std::ranges::contains(
+        model->notes, std::string{"textured with what second has in VRAM; the same texels in again, flagged"}));
+    CHECK(
+        std::ranges::contains(model->notes, std::string{"variant third_place: textured with what third has in VRAM"}));
     const auto parsed = parse(model->glb);
     CHECK(parsed->nodes_count == 2 + 1);
     CHECK(parsed->skins[0].skeleton == nullptr);
     CHECK(parsed->images_count == 2);
+    REQUIRE(model->variants.size() == 1);
+    CHECK(model->variants[0].name == "third_place");
+    CHECK(parse(model->variants[0].glb)->images_count == 2);
+    CHECK(model->variants[0].glb != model->glb);
 
-    const auto unknown = buildStaticModel(tmd, {}, "no map has it");
-    REQUIRE(unknown.has_value());
-    CHECK(hasUnknown(*unknown, "texture unknown (no map has it): its 2 textured primitives"));
-    const auto reread = parse(unknown->glb);
-    CHECK(reread->images_count == 0);
+    // With no scene that holds every texel, the first one textures what it can and the rest are reported.
+    const auto partial = buildStaticModel(tmd, std::span(scenes).first(1));
+    REQUIRE(partial.has_value());
+    CHECK(hasUnknown(*partial, "first: 1 textured primitive"));
+    CHECK(partial->variants.empty());
 
-    CHECK_FALSE(buildStaticModel(std::vector<std::byte>(8), {}, "broken").has_value());
+    const auto untextured = buildStaticModel(tmd, {});
+    REQUIRE(untextured.has_value());
+    CHECK(untextured->texturedPrimitives == 2);
+    CHECK(parse(untextured->glb)->images_count == 0);
+
+    CHECK_FALSE(buildStaticModel(std::vector<std::byte>(8), {}).has_value());
 }

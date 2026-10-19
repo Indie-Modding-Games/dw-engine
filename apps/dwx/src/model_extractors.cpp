@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "asset_names.hpp"
+#include "script_maps.hpp"
 
 namespace dwe::dwx {
 
@@ -89,13 +90,21 @@ core::Result<Tim> readDigimonTexture(const Disc& disc, std::size_t type) {
     return formats::image::readTim(*bytes);
 }
 
-std::vector<std::string> issuesOf(const formats::model::Tmd& tmd) {
-    std::vector<std::string> issues;
-    issues.reserve(tmd.issues.size());
-    for (const auto& issue : tmd.issues) {
-        issues.push_back(std::format("TMD object {} primitive {}: {}", issue.object, issue.primitive, issue.message));
+std::vector<std::string> describe(std::span<const formats::model::TmdIssue> issues) {
+    std::vector<std::string> lines;
+    lines.reserve(issues.size());
+    for (const auto& issue : issues) {
+        lines.push_back(std::format("TMD object {} primitive {}: {}", issue.object, issue.primitive, issue.message));
     }
-    return issues;
+    return lines;
+}
+
+std::vector<std::string> issuesOf(const formats::model::Tmd& tmd) {
+    return describe(tmd.issues);
+}
+
+std::vector<std::string> notesOf(const formats::model::Tmd& tmd) {
+    return describe(tmd.notes);
 }
 
 // Writes the model; when its textures do not fit, writes it again with UVs only and says why.
@@ -111,17 +120,40 @@ core::Result<std::vector<std::byte>> writeModel(const formats::model::Tmd& tmd,
     return formats::model::writeModelGlb(tmd, skeleton, animations, {});
 }
 
-core::Result<Extraction> singleOutput(core::Result<assets::AssetId> id, core::Result<BuiltModel> model) {
+Extraction extractionOf(BuiltModel& model) {
+    Extraction extraction;
+    extraction.unknowns = std::move(model.unknowns);
+    extraction.notes = std::move(model.notes);
+    return extraction;
+}
+
+core::Result<Extraction> digimonOutput(core::Result<assets::AssetId> id, core::Result<BuiltModel> model) {
     if (!id) {
         return std::unexpected{id.error()};
     }
     if (!model) {
         return std::unexpected{model.error()};
     }
-    Extraction extraction;
+    Extraction extraction = extractionOf(*model);
     extraction.outputs.push_back(OutputFile{.id = *id, .extension = "glb", .bytes = std::move(model->glb)});
-    extraction.unknowns = std::move(model->unknowns);
-    extraction.notes = std::move(model->notes);
+    return extraction;
+}
+
+// The model of a file without a skeleton and its variants, each one named after the file.
+core::Result<Extraction> modelOutputs(std::string_view path, BuiltModel model) {
+    Extraction extraction = extractionOf(model);
+    const auto id = names::discModel(path, {});
+    if (!id) {
+        return std::unexpected{id.error()};
+    }
+    extraction.outputs.push_back(OutputFile{.id = *id, .extension = "glb", .bytes = std::move(model.glb)});
+    for (auto& variant : model.variants) {
+        const auto variantId = names::discModel(path, variant.name);
+        if (!variantId) {
+            return std::unexpected{variantId.error()};
+        }
+        extraction.outputs.push_back(OutputFile{.id = *variantId, .extension = "glb", .bytes = std::move(variant.glb)});
+    }
     return extraction;
 }
 
@@ -179,12 +211,14 @@ std::optional<std::int8_t> doorModelOf(std::string_view path) {
     return static_cast<std::int8_t>(((tens - '0') * 10) + (units - '0'));
 }
 
-// Where the original draws a model: a TIM file uploaded where its images say, or the images of a field map.
+// Where the original draws a model: a TIM file uploaded where its images say, the images of a field map, or the
+// images of every map whose scripts call a CALL_ROUTINE routine (script_interp.c: scriptInstruction64to7E).
 struct SceneSource {
     std::string_view timFile;
     int map = -1;
+    int routine = -1;
 
-    [[nodiscard]] bool used() const { return !timFile.empty() || map >= 0; }
+    [[nodiscard]] bool used() const { return !timFile.empty() || map >= 0 || routine >= 0; }
 };
 
 // The scenes of the models whose texture the decomp shows, by the code that loads and draws them. ETCTIM.BIN stays in
@@ -193,16 +227,18 @@ struct SceneSource {
 struct ModelScenes {
     std::string_view model;
     std::array<SceneSource, 3> scenes;
-    // Found by scanning the scripts for the routine that spawns it, not by code that ties the model to the scene.
-    bool inferred = false;
 };
 
 constexpr SceneSource fromTimFile(std::string_view path) {
-    return {.timFile = path, .map = -1};
+    return {.timFile = path, .map = -1, .routine = -1};
 }
 
 constexpr SceneSource fromMap(int id) {
-    return {.timFile = {}, .map = id};
+    return {.timFile = {}, .map = id, .routine = -1};
+}
+
+constexpr SceneSource fromRoutine(int routine) {
+    return {.timFile = {}, .map = -1, .routine = routine};
 }
 
 constexpr std::string_view EtcTim = "ETCDAT/ETCTIM.BIN";
@@ -210,54 +246,53 @@ constexpr std::string_view StdTim = "STDDAT/STDTIM.BIN";
 
 constexpr std::array KnownScenes = {
     // dooa.c: the egg of the rebirth scene, after ETCDAT/TAMA.TIM.
-    ModelScenes{.model = "ETCDAT/TAMA.TMD", .scenes = {fromTimFile("ETCDAT/TAMA.TIM")}, .inferred = false},
+    ModelScenes{.model = "ETCDAT/TAMA.TMD", .scenes = {fromTimFile("ETCDAT/TAMA.TIM")}},
     // fish.c: FISH_loadSpritesAndSeadramon, FISH_loadFishing; the map's sprite file is FISHING.TIM or FISHING2.TIM.
     ModelScenes{.model = "ETCDAT/SEA.TMD",
-                .scenes = {fromTimFile("ETCDAT/FISHING.TIM"), fromTimFile("ETCDAT/FISHING2.TIM")},
-                .inferred = false},
+                .scenes = {fromTimFile("ETCDAT/FISHING.TIM"), fromTimFile("ETCDAT/FISHING2.TIM")}},
     ModelScenes{.model = "ETCDAT/SAO.TMD",
-                .scenes = {fromTimFile("ETCDAT/FISHING.TIM"), fromTimFile("ETCDAT/FISHING2.TIM")},
-                .inferred = false},
+                .scenes = {fromTimFile("ETCDAT/FISHING.TIM"), fromTimFile("ETCDAT/FISHING2.TIM")}},
     // kar.c: KAR_start, only on map 136.
-    ModelScenes{.model = "ETCDAT/KARRING.TMD", .scenes = {fromMap(136)}, .inferred = false},
+    ModelScenes{.model = "ETCDAT/KARRING.TMD", .scenes = {fromMap(136)}},
     // The battle and arena overlays draw copies of these (buff_model.c, battle_effect.c, std_effect.c).
-    ModelScenes{.model = "ETCDAT/DEFEFF.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    ModelScenes{.model = "ETCDAT/EX.TMD", .scenes = {fromTimFile("ETCDAT/EX.TIM")}, .inferred = false},
-    ModelScenes{.model = "ETCHI/MAHI.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    // eab.c: EAB_startBuildup, spawned by the scripts of maps 225-228 (which upload no images) and 232.
-    ModelScenes{.model = "ETCHI/BOSS_EFE.TMD", .scenes = {fromMap(225)}, .inferred = true},
+    ModelScenes{.model = "ETCDAT/DEFEFF.TMD", .scenes = {fromTimFile(EtcTim)}},
+    ModelScenes{.model = "ETCDAT/EX.TMD", .scenes = {fromTimFile("ETCDAT/EX.TIM")}},
+    ModelScenes{.model = "ETCHI/MAHI.TMD", .scenes = {fromTimFile(EtcTim)}},
+    // eab.c: EAB_startBuildup, routine 0x28.
+    ModelScenes{.model = "ETCHI/BOSS_EFE.TMD", .scenes = {fromRoutine(0x28)}},
     // map_object.c: initializeChest, loadDirtCartModel, initializeMedalModel; partner_impl.c: initializePoop.
-    ModelScenes{.model = "ETCNA/TAKA.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    ModelScenes{.model = "ETCNA/DOSYA.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    ModelScenes{.model = "ETCNA/HAKO.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    ModelScenes{.model = "ETCNA/MEDAL.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
-    ModelScenes{.model = "ETCNA/UNTI.TMD", .scenes = {fromTimFile(EtcTim)}, .inferred = false},
+    ModelScenes{.model = "ETCNA/TAKA.TMD", .scenes = {fromTimFile(EtcTim)}},
+    ModelScenes{.model = "ETCNA/DOSYA.TMD", .scenes = {fromTimFile(EtcTim)}},
+    ModelScenes{.model = "ETCNA/HAKO.TMD", .scenes = {fromTimFile(EtcTim)}},
+    ModelScenes{.model = "ETCNA/MEDAL.TMD", .scenes = {fromTimFile(EtcTim)}},
+    ModelScenes{.model = "ETCNA/UNTI.TMD", .scenes = {fromTimFile(EtcTim)}},
     // map_object.c: spawnBoulder uploads ETCNA/IWA1.TIM right after the model.
-    ModelScenes{.model = "ETCNA/IWA.TMD", .scenes = {fromTimFile("ETCNA/IWA1.TIM")}, .inferred = false},
+    ModelScenes{.model = "ETCNA/IWA.TMD", .scenes = {fromTimFile("ETCNA/IWA1.TIM")}},
     // Never loaded by the original: DOOR/DOOR00.TMD has the same bytes.
-    ModelScenes{.model = "ETCNA/DOOR.TMD", .scenes = {}, .inferred = false},
+    ModelScenes{.model = "ETCNA/DOOR.TMD", .scenes = {}},
     // map.c: loadMap, initializeTrainingPoop on map 165 and loadWarpCrystals on maps 101-103.
-    ModelScenes{.model = "ETCNA/TRY.TMD", .scenes = {fromMap(165)}, .inferred = false},
-    ModelScenes{.model = "ETCNA/WARP.TMD", .scenes = {fromMap(101), fromMap(102), fromMap(103)}, .inferred = false},
-    // map_object.c: loadDirtPileModel, spawnGearbox, spawnToyTownBoxes, spawnAngemonPedestal, called by scripts.
-    ModelScenes{.model = "ETCNA/T_YAMA.TMD", .scenes = {fromMap(28)}, .inferred = true},
-    ModelScenes{.model = "ETCNA/GAND.TMD", .scenes = {fromMap(146)}, .inferred = true},
-    ModelScenes{.model = "ETCNA/BIGBOX.TMD", .scenes = {fromMap(151)}, .inferred = true},
-    ModelScenes{.model = "ETCNA/SMABOX.TMD", .scenes = {fromMap(151)}, .inferred = true},
-    ModelScenes{.model = "ETCNA/ABOX.TMD", .scenes = {fromMap(97)}, .inferred = true},
+    ModelScenes{.model = "ETCNA/TRY.TMD", .scenes = {fromMap(165)}},
+    ModelScenes{.model = "ETCNA/WARP.TMD", .scenes = {fromMap(101), fromMap(102), fromMap(103)}},
+    // map_object.c: loadDirtPileModel (routine 0x1B), spawnGearbox (0x29), spawnToyTownBoxes (0x2B, both boxes) and
+    // spawnAngemonPedestal (0x31). None of them uploads an image, so the model reads the map's.
+    ModelScenes{.model = "ETCNA/T_YAMA.TMD", .scenes = {fromRoutine(0x1B)}},
+    ModelScenes{.model = "ETCNA/GAND.TMD", .scenes = {fromRoutine(0x29)}},
+    ModelScenes{.model = "ETCNA/BIGBOX.TMD", .scenes = {fromRoutine(0x2B)}},
+    ModelScenes{.model = "ETCNA/SMABOX.TMD", .scenes = {fromRoutine(0x2B)}},
+    ModelScenes{.model = "ETCNA/ABOX.TMD", .scenes = {fromRoutine(0x31)}},
     // std_hud.c, vs_hud.c: the arena's titles, after STDTIM.BIN.
-    ModelScenes{.model = "STDDAT/1P2PWIN.TMD", .scenes = {fromTimFile(StdTim)}, .inferred = false},
-    ModelScenes{.model = "STDDAT/CHAMP.TMD", .scenes = {fromTimFile(StdTim)}, .inferred = false},
-    ModelScenes{.model = "STDDAT/DRAW.TMD", .scenes = {fromTimFile(StdTim)}, .inferred = false},
-    ModelScenes{.model = "STDDAT/WIN_LOSE.TMD", .scenes = {fromTimFile(StdTim)}, .inferred = false},
+    ModelScenes{.model = "STDDAT/1P2PWIN.TMD", .scenes = {fromTimFile(StdTim)}},
+    ModelScenes{.model = "STDDAT/CHAMP.TMD", .scenes = {fromTimFile(StdTim)}},
+    ModelScenes{.model = "STDDAT/DRAW.TMD", .scenes = {fromTimFile(StdTim)}},
+    ModelScenes{.model = "STDDAT/WIN_LOSE.TMD", .scenes = {fromTimFile(StdTim)}},
     // std_setup.c: STD_loadArenaAssets, std_hud.c: STD_loadChampionModels, vs_scene.c: VS_loadArenaAssets. E_DAI is
     // never loaded; it has E_TOGI's first object.
-    ModelScenes{.model = "STDDAT/T_TOGI.TMD", .scenes = {fromTimFile("STDDAT/T_TOGI.TIM")}, .inferred = false},
-    ModelScenes{.model = "STDDAT/T_DAI.TMD", .scenes = {fromTimFile("STDDAT/T_TOGI.TIM")}, .inferred = false},
-    ModelScenes{.model = "STDDAT/B_TOGI.TMD", .scenes = {fromTimFile("STDDAT/B_TOGI.TIM")}, .inferred = false},
-    ModelScenes{.model = "STDDAT/B_DAI.TMD", .scenes = {fromTimFile("STDDAT/B_TOGI.TIM")}, .inferred = false},
-    ModelScenes{.model = "STDDAT/E_TOGI.TMD", .scenes = {fromTimFile("STDDAT/E_TOGI.TIM")}, .inferred = false},
-    ModelScenes{.model = "STDDAT/E_DAI.TMD", .scenes = {fromTimFile("STDDAT/E_TOGI.TIM")}, .inferred = false},
+    ModelScenes{.model = "STDDAT/T_TOGI.TMD", .scenes = {fromTimFile("STDDAT/T_TOGI.TIM")}},
+    ModelScenes{.model = "STDDAT/T_DAI.TMD", .scenes = {fromTimFile("STDDAT/T_TOGI.TIM")}},
+    ModelScenes{.model = "STDDAT/B_TOGI.TMD", .scenes = {fromTimFile("STDDAT/B_TOGI.TIM")}},
+    ModelScenes{.model = "STDDAT/B_DAI.TMD", .scenes = {fromTimFile("STDDAT/B_TOGI.TIM")}},
+    ModelScenes{.model = "STDDAT/E_TOGI.TMD", .scenes = {fromTimFile("STDDAT/E_TOGI.TIM")}},
+    ModelScenes{.model = "STDDAT/E_DAI.TMD", .scenes = {fromTimFile("STDDAT/E_TOGI.TIM")}},
 };
 
 // What the original changes in a model's texture while it draws it. The file has neither, so the model does not.
@@ -270,6 +305,8 @@ constexpr std::array RuntimeTextures = {
     RuntimeTexture{.model = "ETCDAT/DEFEFF.TMD",
                    .change = "buff_model.c: morphBuffModel points object 5 at the palettes of rows 491 and 492 by "
                              "turns, one per frame"},
+    RuntimeTexture{.model = "ETCHI/BOSS_EFE.TMD",
+                   .change = "eab.c: EAB_setModelColor sets the colour of its primitives when it starts"},
     RuntimeTexture{.model = "ETCNA/MEDAL.TMD",
                    .change = "map_object.c: activateMedalTexture copies the medal it shows into the texels the "
                              "model reads"},
@@ -293,29 +330,79 @@ core::Result<VramScene> timFileScene(const Disc& disc, std::string_view path) {
     return scene;
 }
 
-// Reads the scenes of a model, by name; the ones that cannot be read go to the unknowns.
-std::vector<NamedScene> readScenes(const Disc& disc, const formats::exe::ExecutableTables& tables,
-                                   std::span<const SceneSource> sources, std::vector<std::string>& unknowns) {
+// What reading a model's scenes leaves for the report.
+struct SceneReport {
+    std::vector<std::string> unknowns;
+    std::vector<std::string> notes;
+};
+
+// The scene of a field map. A map without images uploads none, so a model on it shows whatever the map before it
+// left in VRAM: that is a note, not a scene.
+void addMapScene(const Disc& disc, const GameTables& game, std::size_t mapId, std::vector<NamedScene>& scenes,
+                 SceneReport& report) {
+    if (mapId >= game.tables.mapEntries.size()) {
+        report.unknowns.push_back(std::format("map {} is not in the map table", mapId));
+        return;
+    }
+    const auto& entry = game.tables.mapEntries[mapId];
+    std::string name = std::format("map {} ({})", mapId, entry.filename);
+    if (entry.num8bppImages == 0 && entry.num4bppImages == 0) {
+        report.notes.push_back(std::format("{} uploads no images, so there the model shows what the map before it "
+                                           "left in VRAM",
+                                           name));
+        return;
+    }
+    auto scene = mapScene(disc, entry);
+    if (!scene) {
+        report.unknowns.push_back(std::format("{}: {}", name, scene.error().message));
+        return;
+    }
+    const std::string slug = mapId < game.ids.maps.size() ? game.ids.maps[mapId] : std::format("map{:03}", mapId);
+    scenes.push_back({.name = std::move(name), .slug = slug, .scene = std::move(*scene)});
+}
+
+// Reads the scenes of a model, by name.
+std::vector<NamedScene> readScenes(const Disc& disc, const GameTables& game, std::span<const SceneSource> sources,
+                                   SceneReport& report) {
     std::vector<NamedScene> scenes;
+    std::optional<core::Result<std::vector<ScriptCode>>> scripts;
     for (const SceneSource& source : sources | std::views::filter(&SceneSource::used)) {
-        std::string name{source.timFile};
-        core::Result<VramScene> scene = core::fail("no scene");
         if (source.map >= 0) {
-            if (std::cmp_greater_equal(source.map, tables.mapEntries.size())) {
-                unknowns.push_back(std::format("map {} is not in the map table", source.map));
-                continue;
-            }
-            const auto& entry = tables.mapEntries[static_cast<std::size_t>(source.map)];
-            name = std::format("map {} ({})", source.map, entry.filename);
-            scene = mapScene(disc, entry);
-        } else {
-            scene = timFileScene(disc, source.timFile);
-        }
-        if (!scene) {
-            unknowns.push_back(std::format("{}: {}", name, scene.error().message));
+            addMapScene(disc, game, static_cast<std::size_t>(source.map), scenes, report);
             continue;
         }
-        scenes.push_back({.name = std::move(name), .scene = std::move(*scene)});
+        if (source.routine >= 0) {
+            if (!scripts) {
+                scripts = readScripts(disc);
+            }
+            if (!*scripts) {
+                report.unknowns.push_back(std::format("the scripts could not be read: {}", scripts->error().message));
+                continue;
+            }
+            const RoutineMaps found = findRoutineMaps(**scripts, static_cast<std::uint8_t>(source.routine));
+            if (found.maps.empty() && found.scriptsWithoutMap.empty()) {
+                report.unknowns.push_back(std::format("no script calls routine {:#04x}", source.routine));
+            }
+            for (const std::uint16_t script : found.scriptsWithoutMap) {
+                report.unknowns.push_back(
+                    std::format("script {} calls routine {:#04x}, but no map loads it", script, source.routine));
+            }
+            for (const std::uint16_t mapId : found.maps) {
+                report.notes.push_back(
+                    std::format("map {} runs a script that calls routine {:#04x}", mapId, source.routine));
+                addMapScene(disc, game, mapId, scenes, report);
+            }
+            continue;
+        }
+        auto scene = timFileScene(disc, source.timFile);
+        if (!scene) {
+            report.unknowns.push_back(std::format("{}: {}", source.timFile, scene.error().message));
+            continue;
+        }
+        const std::string_view file = source.timFile.substr(source.timFile.rfind('/') + 1);
+        scenes.push_back({.name = std::string{source.timFile},
+                          .slug = names::segment(file.substr(0, file.find('.'))),
+                          .scene = std::move(*scene)});
     }
     return scenes;
 }
@@ -327,7 +414,7 @@ std::vector<SceneSource> doorMaps(const formats::exe::ExecutableTables& tables, 
         const std::int8_t doors = tables.mapEntries[mapId].doorsId;
         if (doors > 0 && std::cmp_less_equal(doors, tables.doorMapData.size()) &&
             std::ranges::contains(tables.doorMapData[static_cast<std::size_t>(doors - 1)].modelId, door)) {
-            maps.push_back({.timFile = {}, .map = static_cast<int>(mapId)});
+            maps.push_back(fromMap(static_cast<int>(mapId)));
         }
     }
     return maps;
@@ -360,7 +447,7 @@ core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, con
     std::ranges::transform(bones, std::back_inserter(skeleton), [](const formats::exe::SkeletonBone& bone) {
         return formats::model::SkeletonBone{.objIndex = bone.objIndex, .parentIndex = bone.parentIndex};
     });
-    BuiltModel model{.glb = {}, .unknowns = issuesOf(mmd->tmd), .notes = {}};
+    BuiltModel model{.glb = {}, .unknowns = issuesOf(mmd->tmd), .notes = notesOf(mmd->tmd), .variants = {}};
 
     std::vector<formats::model::Animation> animations;
     for (std::size_t id = 0; id < mmd->animations.size(); ++id) {
@@ -392,8 +479,7 @@ core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, con
     return model;
 }
 
-core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std::span<const NamedScene> scenes,
-                                          std::string_view unknownTexture) {
+core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std::span<const NamedScene> scenes) {
     const auto tmd = formats::model::readTmd(bytes);
     if (!tmd) {
         return std::unexpected{tmd.error()};
@@ -406,41 +492,31 @@ core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std:
         }
         drawn.push_back(std::move(*textures));
     }
+    BuiltModel model{.glb = {}, .unknowns = issuesOf(*tmd), .notes = notesOf(*tmd), .variants = {}};
 
-    BuiltModel model{.glb = {}, .unknowns = issuesOf(*tmd), .notes = {}};
-    const VramScene empty;
-    ModelTextures textures;
-    if (drawn.empty()) {
-        auto untextured = textureModel(*tmd, empty);
-        if (!untextured) {
-            return std::unexpected{untextured.error()};
+    // Scenes that hold every texel, grouped by the texels they give: the first group textures the model and each
+    // other one a variant named after its first scene.
+    std::vector<std::vector<std::size_t>> groups;
+    for (std::size_t i = 0; i < drawn.size(); ++i) {
+        if (!drawn[i].unresolved.empty()) {
+            continue;
         }
-        textures = std::move(*untextured);
-        if (textures.texturedPrimitives > 0) {
-            model.unknowns.push_back(std::format("texture unknown ({}): its {} textured primitives keep their UVs on "
-                                                 "their texture page, without an image",
-                                                 unknownTexture, textures.texturedPrimitives));
+        const auto same = std::ranges::find_if(groups, [&](const std::vector<std::size_t>& group) {
+            return drawn[group.front()].texels == drawn[i].texels;
+        });
+        if (same == groups.end()) {
+            groups.push_back({i});
+        } else {
+            same->push_back(i);
         }
-    } else {
-        const auto chosen = std::ranges::find_if(drawn, [](const ModelTextures& t) { return t.unresolved.empty(); });
-        const std::size_t index = chosen == drawn.end() ? 0 : static_cast<std::size_t>(chosen - drawn.begin());
-        for (std::size_t i = 0; i < drawn.size(); ++i) {
-            if (i == index) {
-                continue;
-            }
-            if (!drawn[i].unresolved.empty()) {
-                model.unknowns.push_back(std::format("{} does not hold all its texels", scenes[i].name));
-            } else if (drawn[i].texels != drawn[index].texels) {
-                model.unknowns.push_back(std::format("{} draws it with other texels than {}, which the model has",
-                                                     scenes[i].name, scenes[index].name));
-            }
-        }
-        for (const std::string& unresolved : drawn[index].unresolved) {
-            model.unknowns.push_back(std::format("{}: {}", scenes[index].name, unresolved));
-        }
-        model.notes.push_back(std::format("textured with what {} has in VRAM", scenes[index].name));
-        textures = std::move(drawn[index]);
     }
+    const auto describe = [&](const std::vector<std::size_t>& group) {
+        std::string text = std::format("what {} has in VRAM", scenes[group.front()].name);
+        for (std::size_t i = 1; i < group.size(); ++i) {
+            text += std::format("{}{}", i == 1 ? "; the same texels in " : ", ", scenes[group[i]].name);
+        }
+        return text;
+    };
 
     // A node per object, none the parent of another, so each object stays where the file puts it.
     std::vector<formats::model::SkeletonBone> skeleton;
@@ -448,6 +524,43 @@ core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std:
     for (std::size_t i = 0; i < tmd->objects.size(); ++i) {
         skeleton.push_back({.objIndex = static_cast<std::int8_t>(i), .parentIndex = -1});
     }
+
+    ModelTextures textures;
+    if (groups.empty() && !drawn.empty()) {
+        for (std::size_t i = 1; i < drawn.size(); ++i) {
+            model.unknowns.push_back(std::format("{} does not hold all its texels", scenes[i].name));
+        }
+        for (const std::string& unresolved : drawn.front().unresolved) {
+            model.unknowns.push_back(std::format("{}: {}", scenes.front().name, unresolved));
+        }
+        model.notes.push_back(std::format("textured with what {} has in VRAM", scenes.front().name));
+        textures = std::move(drawn.front());
+    } else if (!groups.empty()) {
+        for (std::size_t i = 0; i < drawn.size(); ++i) {
+            if (!drawn[i].unresolved.empty()) {
+                model.unknowns.push_back(std::format("{} does not hold all its texels", scenes[i].name));
+            }
+        }
+        model.notes.push_back(std::format("textured with {}", describe(groups.front())));
+        for (const auto& group : std::span(groups).subspan(1)) {
+            auto glb = writeModel(*tmd, skeleton, {}, drawn[group.front()], model.unknowns);
+            if (!glb) {
+                return std::unexpected{glb.error()};
+            }
+            const std::string& name = scenes[group.front()].slug;
+            model.notes.push_back(std::format("variant {}: textured with {}", name, describe(group)));
+            model.variants.push_back({.name = name, .glb = std::move(*glb)});
+        }
+        textures = std::move(drawn[groups.front().front()]);
+    } else {
+        auto untextured = textureModel(*tmd, VramScene{});
+        if (!untextured) {
+            return std::unexpected{untextured.error()};
+        }
+        textures = std::move(*untextured);
+    }
+    model.texturedPrimitives = textures.texturedPrimitives;
+
     auto glb = writeModel(*tmd, skeleton, {}, textures, model.unknowns);
     if (!glb) {
         return std::unexpected{glb.error()};
@@ -485,8 +598,8 @@ core::Result<Extraction> extractDigimonModel(const Disc& disc, const IsoFile& fi
     if (!bytes) {
         return std::unexpected{bytes.error()};
     }
-    return singleOutput(names::digimonAsset(*game, *type, "model"),
-                        buildDigimonModel(*bytes, *texture, tables.digimonSkeletons[*type]));
+    return digimonOutput(names::digimonAsset(*game, *type, "model"),
+                         buildDigimonModel(*bytes, *texture, tables.digimonSkeletons[*type]));
 }
 
 bool handlesStaticModel(std::string_view path) {
@@ -498,43 +611,49 @@ core::Result<Extraction> extractStaticModel(const Disc& disc, const IsoFile& fil
     if (!bytes) {
         return std::unexpected{bytes.error()};
     }
-    const auto id = names::discModel(file.path);
     const auto door = doorModelOf(file.path);
     const auto* const known = std::ranges::find(KnownScenes, file.path, &ModelScenes::model);
-    if (!door && known == KnownScenes.end()) {
-        return singleOutput(id, buildStaticModel(*bytes, {}, "the code that draws it is not traced"));
-    }
-    const auto game = tablesOf(disc);
-    if (!game) {
-        return std::unexpected{game.error()};
-    }
-    const formats::exe::ExecutableTables& tables = (*game)->tables;
-    std::vector<std::string> unknowns;
+    SceneReport report;
     std::vector<NamedScene> scenes;
-    std::string_view unknownTexture;
-    if (door) {
-        const auto maps = doorMaps(tables, *door);
-        scenes = readScenes(disc, tables, maps, unknowns);
-        unknownTexture = maps.empty() ? "no map has this door" : "its maps could not be read";
-    } else {
-        scenes = readScenes(disc, tables, known->scenes, unknowns);
-        unknownTexture = std::ranges::none_of(known->scenes, &SceneSource::used) ? "the original never loads it"
-                                                                                 : "its scenes could not be read";
-        if (known->inferred && !scenes.empty()) {
-            unknowns.push_back(std::format("texture inferred: {} is where the scripts spawn it, but no code ties the "
-                                           "model to it",
-                                           scenes.front().name));
+    // Why the model has no scene, and whether that is all there is to know about its texture.
+    std::string_view noScene = "the code that draws it is not traced";
+    bool noSceneUnderstood = false;
+    if (door || known != KnownScenes.end()) {
+        const auto game = tablesOf(disc);
+        if (!game) {
+            return std::unexpected{game.error()};
+        }
+        const std::vector<SceneSource> sources =
+            door ? doorMaps((*game)->tables, *door)
+                 : std::vector<SceneSource>(known->scenes.begin(), known->scenes.end());
+        scenes = readScenes(disc, **game, sources, report);
+        if (std::ranges::none_of(sources, &SceneSource::used)) {
+            noScene = door ? "no map's door data has this door, so the original never draws it"
+                           : "the original never loads it";
+            noSceneUnderstood = true;
+        } else {
+            noScene = "none of the places that draw it uploads an image";
+            noSceneUnderstood = report.unknowns.empty();
         }
     }
-    auto model = buildStaticModel(*bytes, scenes, unknownTexture);
-    if (model) {
-        model->unknowns.insert(model->unknowns.end(), unknowns.begin(), unknowns.end());
-        const auto* const runtime = std::ranges::find(RuntimeTextures, file.path, &RuntimeTexture::model);
-        if (runtime != RuntimeTextures.end()) {
-            model->notes.push_back(std::format("the texture changes as it is drawn: {}", runtime->change));
-        }
+
+    auto model = buildStaticModel(*bytes, scenes);
+    if (!model) {
+        return std::unexpected{model.error()};
     }
-    return singleOutput(id, std::move(model));
+    model->unknowns.insert(model->unknowns.end(), report.unknowns.begin(), report.unknowns.end());
+    model->notes.insert(model->notes.end(), report.notes.begin(), report.notes.end());
+    if (scenes.empty() && model->texturedPrimitives > 0) {
+        (noSceneUnderstood ? model->notes : model->unknowns)
+            .push_back(std::format("no texture: {}; its {} textured primitives keep their UVs on their texture page, "
+                                   "without an image",
+                                   noScene, model->texturedPrimitives));
+    }
+    const auto* const runtime = std::ranges::find(RuntimeTextures, file.path, &RuntimeTexture::model);
+    if (runtime != RuntimeTextures.end()) {
+        model->notes.push_back(std::format("the texture changes as it is drawn: {}", runtime->change));
+    }
+    return modelOutputs(file.path, std::move(*model));
 }
 
 } // namespace dwe::dwx

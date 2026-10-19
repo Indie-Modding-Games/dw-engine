@@ -109,7 +109,7 @@ std::span<const Color15> colorsOf(const VramScene& scene, const PaletteUse& use,
 }
 
 // Appends the colours of the texels inside a primitive's box.
-void sampleTexels(std::vector<Color15>& texels, const VramScene& scene, const Resolved& resolved,
+void sampleTexels(std::vector<formats::image::Rgba8>& texels, const VramScene& scene, const Resolved& resolved,
                   const std::vector<std::uint8_t>& indices, const TmdPrimitive& primitive, const TexelBox& box) {
     const Tim& tim = scene.images()[resolved.image];
     const int width = static_cast<int>(formats::image::timWidth(tim));
@@ -123,10 +123,11 @@ void sampleTexels(std::vector<Color15>& texels, const VramScene& scene, const Re
             const std::size_t at =
                 (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(x);
             if (resolved.palette) {
-                texels.push_back(colors[indices[at]]);
+                texels.push_back(formats::image::toRgba8(colors[indices[at]]));
             } else {
-                texels.push_back(static_cast<Color15>(std::to_integer<unsigned>(tim.data[at * 2]) |
-                                                      (std::to_integer<unsigned>(tim.data[(at * 2) + 1]) << 8U)));
+                texels.push_back(formats::image::toRgba8(
+                    static_cast<Color15>(std::to_integer<unsigned>(tim.data[at * 2]) |
+                                         (std::to_integer<unsigned>(tim.data[(at * 2) + 1]) << 8U))));
             }
         }
     }

@@ -47,9 +47,9 @@ struct ModelTextures {
     std::deque<std::vector<std::byte>> pngs;
     std::size_t texturedPrimitives = 0;
     std::size_t resolvedPrimitives = 0;
-    // The colour of every texel inside the UV box of each resolved primitive, primitive after primitive: two scenes
-    // that give the same texels draw the model the same.
-    std::vector<formats::image::Color15> texels;
+    // The colour of every texel inside the UV box of each resolved primitive, primitive after primitive, as the PNG
+    // keeps it: two scenes that give the same texels draw the model the same.
+    std::vector<formats::image::Rgba8> texels;
     // The primitives whose texels or palette are not in the scene, grouped by page and palette. They keep their UVs
     // on their texture page, without an image.
     std::vector<std::string> unresolved;

@@ -44,6 +44,7 @@ TEST_CASE("the user's disc: every model becomes a GLB that cgltf validates") {
 
     std::size_t digimon = 0;
     std::size_t others = 0;
+    std::size_t variants = 0;
     std::size_t textured = 0;
     std::size_t partial = 0;
     std::size_t totalBytes = 0;
@@ -54,26 +55,30 @@ TEST_CASE("the user's disc: every model becomes a GLB that cgltf validates") {
         }
         const auto extraction = extractor->extract(disc, file);
         REQUIRE_MESSAGE(extraction.has_value(), file.path, ": ", errorOf(extraction));
-        REQUIRE(extraction->outputs.size() == 1);
-        const auto& glb = extraction->outputs.front().bytes;
-        (extractor->name == "digimon_model" ? digimon : others) += 1;
+        const bool isDigimon = extractor->name == "digimon_model";
+        REQUIRE(!extraction->outputs.empty());
+        CHECK((!isDigimon || extraction->outputs.size() == 1));
+        (isDigimon ? digimon : others) += 1;
+        variants += extraction->outputs.size() - 1;
         partial += extraction->unknowns.empty() ? 0 : 1;
-        totalBytes += glb.size();
-
-        const cgltf_options options{};
-        cgltf_data* data = nullptr;
-        REQUIRE_MESSAGE(cgltf_parse(&options, glb.data(), glb.size(), &data) == cgltf_result_success, file.path);
-        const std::unique_ptr<cgltf_data, decltype(&cgltf_free)> parsed(data, &cgltf_free);
-        REQUIRE(cgltf_load_buffers(&options, data, nullptr) == cgltf_result_success);
-        CHECK_MESSAGE(cgltf_validate(data) == cgltf_result_success, file.path);
-        textured += data->images_count > 0 ? 1 : 0;
-        if (extractor->name == "digimon_model") {
-            CHECK_MESSAGE(data->images_count > 0, file.path);
-            CHECK_MESSAGE(data->animations_count > 0, file.path);
+        for (const auto& output : extraction->outputs) {
+            const auto& glb = output.bytes;
+            totalBytes += glb.size();
+            const cgltf_options options{};
+            cgltf_data* data = nullptr;
+            REQUIRE_MESSAGE(cgltf_parse(&options, glb.data(), glb.size(), &data) == cgltf_result_success, file.path);
+            const std::unique_ptr<cgltf_data, decltype(&cgltf_free)> parsed(data, &cgltf_free);
+            REQUIRE(cgltf_load_buffers(&options, data, nullptr) == cgltf_result_success);
+            CHECK_MESSAGE(cgltf_validate(data) == cgltf_result_success, file.path);
+            textured += data->images_count > 0 ? 1 : 0;
+            if (isDigimon) {
+                CHECK_MESSAGE(data->images_count > 0, file.path);
+                CHECK_MESSAGE(data->animations_count > 0, file.path);
+            }
         }
     }
-    MESSAGE(digimon, " Digimon models, ", others, " other models, ", textured, " textured, ", partial,
-            " with unknowns, ", totalBytes, " bytes");
+    MESSAGE(digimon, " Digimon models, ", others, " other models with ", variants, " variants, ", textured,
+            " textured GLB, ", partial, " files with unknowns, ", totalBytes, " bytes");
     CHECK(digimon == 178);
     CHECK(others == 66);
 }

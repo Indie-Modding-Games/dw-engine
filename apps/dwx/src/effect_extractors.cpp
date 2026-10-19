@@ -224,14 +224,19 @@ private:
             texture.imageRect.y = cell.pixelY;
             texture.clutRect.x = cell.clutX;
             texture.clutRect.y = cell.clutY;
-            NamedScene scene{.name = "effect cell 0", .scene = {}};
+            NamedScene scene{.name = "effect cell 0", .slug = "cell0", .scene = {}};
             scene.scene.addTim(texture);
             scenes.push_back(std::move(scene));
         }
-        auto model = buildStaticModel(placed, scenes, "the slot's TIM could not be read");
+        auto model = buildStaticModel(placed, scenes);
         if (!model) {
             unknown(std::format("model not built: {}", model.error().message));
             return;
+        }
+        if (scenes.empty() && model->texturedPrimitives > 0) {
+            unknown(std::format("no texture: the slot's TIM could not be read; its {} textured primitives keep their "
+                                "UVs on their texture page, without an image",
+                                model->texturedPrimitives));
         }
         for (auto& text : model->unknowns) {
             unknown(std::move(text));
