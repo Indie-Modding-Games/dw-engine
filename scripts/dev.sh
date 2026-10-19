@@ -22,6 +22,12 @@ Usage: scripts/dev.sh <command> [args]
   format [--check]    Format the sources with clang-format
   tidy [args]         Run clang-tidy on the sources, passing it args
   run [args]          Run the game on the host
+
+Environment:
+  PRESET              CMake preset (default linux-clang-debug)
+  DWE_CACHE_DIR       Host folder for the vcpkg binary cache (default: the $cache_volume volume)
+  DWE_DISC            Path to the user's disc image (.bin or .cue); its folder is mounted read-only in the container at
+                      the same path, so the tools and the disc tests can read it
 EOF
 }
 
@@ -35,8 +41,21 @@ in_container() {
         -e VCPKG_DOWNLOADS=/cache/vcpkg/downloads \
         -v "$root:$root" -w "$root" \
         -v "$(cache_mount):/cache/vcpkg" \
+        "${disc_flags[@]}" \
         "$image" "$@"
 }
+
+# The disc image is the user's: mount only its folder, read-only, at the same path so DWE_DISC means the same inside.
+disc_flags=()
+if [[ -n "${DWE_DISC:-}" ]]; then
+    if [[ ! -f "$DWE_DISC" ]]; then
+        echo "dev.sh: DWE_DISC is not a file: $DWE_DISC" >&2
+        exit 1
+    fi
+    DWE_DISC="$(cd "$(dirname "$DWE_DISC")" && pwd)/$(basename "$DWE_DISC")"
+    export DWE_DISC
+    disc_flags=(-v "$(dirname "$DWE_DISC"):$(dirname "$DWE_DISC"):ro" -e DWE_DISC)
+fi
 
 cache_mount() {
     if [[ -n "$cache_dir" ]]; then echo "$cache_dir"; else echo "$cache_volume"; fi

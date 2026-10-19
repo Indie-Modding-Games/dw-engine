@@ -31,6 +31,19 @@ scripts/dev.sh test
 El preset por defecto es `linux-clang-debug`, con ASan y UBSan. Para otro: `PRESET=linux-clang-release
 scripts/dev.sh configure`.
 
+### Con tu disco
+
+El contenedor no ve nada fuera del repositorio. Para que las herramientas y los tests del disco lean tu copia, pon en
+`DWE_DISC` la ruta de la imagen (`.bin` o `.cue`):
+
+```bash
+DWE_DISC="$HOME/juegos/Mi disco (USA).bin" scripts/dev.sh test
+```
+
+`dev.sh` monta la carpeta de la imagen **solo lectura** en la misma ruta dentro del contenedor y le pasa `DWE_DISC`.
+Pon la ruta entre comillas si tiene espacios o paréntesis. Sin `DWE_DISC`, los tests que necesitan el disco se saltan
+(la CI nunca lo tiene).
+
 ## 3. Jugar
 
 ```bash
