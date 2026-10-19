@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Font atlas metadata",
+  "description": "font/main_meta.yaml: the glyphs of the font atlas font/main.png, written by dwx extract (formats/src/text/font.cpp).",
+  "type": "object",
+  "required": ["cell_width", "cell_height", "columns", "fallback", "colors", "glyphs"],
+  "additionalProperties": false,
+  "properties": {
+    "cell_width": { "description": "Width of an atlas cell in pixels.", "type": "integer", "minimum": 1 },
+    "cell_height": { "type": "integer", "minimum": 1 },
+    "columns": { "description": "Cells per atlas row.", "type": "integer", "minimum": 1 },
+    "fallback": { "description": "Index of the glyph drawn for characters the font lacks.", "type": "integer", "minimum": 0 },
+    "colors": {
+      "description": "The 15-bit colours of the atlas palette in hex.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[0-9A-F]{4}$" }
+    },
+    "glyphs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["index", "sjis", "character", "ascii", "x", "y", "width"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "sjis": { "description": "The Shift JIS code of the glyph in hex.", "type": "string", "pattern": "^[0-9A-F]{4}$" },
+          "character": { "description": "The glyph as UTF-8, or null when the code has no Unicode character.", "type": ["string", "null"] },
+          "ascii": { "description": "The ASCII character the game text maps to this glyph, or null.", "type": ["string", "null"], "minLength": 1, "maxLength": 1 },
+          "x": { "description": "Left edge of the cell in the atlas.", "type": "integer", "minimum": 0 },
+          "y": { "type": "integer", "minimum": 0 },
+          "width": { "description": "Pixels the glyph advances.", "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

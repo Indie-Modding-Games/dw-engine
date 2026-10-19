@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Battle effect",
+  "description": "effect/<move>/effect.yaml: one slot of the battle effect file, written by dwx extract (apps/dwx/src/effect_extractors.cpp). Offsets in the header count from the slot's payload, as in script.yaml.",
+  "type": "object",
+  "required": ["slot", "move", "header", "uv_anim_count", "loads"],
+  "additionalProperties": false,
+  "properties": {
+    "slot": { "description": "Index of the slot in the file; the move with that index uses it.", "type": "integer", "minimum": 0 },
+    "move": { "description": "Id of the move in data/moves, or null when the extraction had no tables.", "type": ["string", "null"], "pattern": "^[a-z0-9_]+$" },
+    "header": {
+      "type": "object",
+      "required": ["start_script", "init_script", "uv_anims", "uv_anims_end", "sub_effects", "tmd_start", "tmd_end", "tim_start", "tim_end", "data_end", "spawn_count", "sub_effect_count", "effect_id"],
+      "additionalProperties": false,
+      "properties": {
+        "start_script": { "$ref": "#/$defs/offset" },
+        "init_script": { "$ref": "#/$defs/offset" },
+        "uv_anims": { "$ref": "#/$defs/offset" },
+        "uv_anims_end": { "$ref": "#/$defs/offset" },
+        "sub_effects": { "$ref": "#/$defs/offset" },
+        "tmd_start": { "$ref": "#/$defs/offset" },
+        "tmd_end": { "$ref": "#/$defs/offset" },
+        "tim_start": { "$ref": "#/$defs/offset" },
+        "tim_end": { "$ref": "#/$defs/offset" },
+        "data_end": { "$ref": "#/$defs/offset" },
+        "spawn_count": { "type": "integer" },
+        "sub_effect_count": { "type": "integer" },
+        "effect_id": { "description": "The id the slot stores; the original loads the slot only when it is 0x100 plus the slot.", "$ref": "#/$defs/hex" }
+      }
+    },
+    "uv_anim_count": { "type": "integer", "minimum": 0 },
+    "loads": { "description": "Whether the original loads the slot: false when effect_id is not the one it asks for.", "type": "boolean" },
+    "texture": { "description": "The slot's TIM as a PNG in this folder, with its _meta.yaml.", "type": "string", "pattern": "\\.png$", "assetReference": "./{}" },
+    "model": { "description": "The slot's TMD as a GLB in this folder; only slots with a TMD have it.", "type": "string", "pattern": "\\.glb$", "assetReference": "./{}" }
+  },
+  "$defs": {
+    "offset": { "type": "string", "pattern": "^-?0x[0-9a-f]{4,}$" },
+    "hex": { "type": "string", "pattern": "^0x[0-9a-f]+$" }
+  }
+}

@@ -12,6 +12,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -67,6 +68,11 @@ std::vector<std::string> nonFillRanges(std::span<const std::byte> bytes, std::si
     return ranges;
 }
 
+// The name effect.yaml gives a file of its own folder.
+std::string siblingFile(std::string_view id, std::string_view extension) {
+    return std::format("{}.{}", id.substr(id.rfind('/') + 1), extension);
+}
+
 std::string joined(const std::vector<std::string>& parts) {
     std::string text;
     for (const auto& part : parts) {
@@ -90,12 +96,13 @@ public:
             return;
         }
         const std::span<const std::byte> payload = fx::efePayload(bytes, *header);
-        writeEffect(*header);
         writeScripts(payload, *header);
         writeTexture(payload, *header);
         if (header->tmdEnd > header->tmdStart) {
             writeModel(payload, *header);
         }
+        // Last, so that it names only the files the slot did write.
+        writeEffect(*header);
         checkPadding(bytes.subspan(fx::EfeHeaderSize + static_cast<std::size_t>(header->dataEnd)), *header);
     }
 
@@ -135,6 +142,12 @@ private:
                  numberNode((header.uvAnimsEnd - header.uvAnims) / static_cast<std::int32_t>(fx::EfeUvAnimSize)));
         const bool matches = std::cmp_equal(header.effectId, expectedId());
         root.set("loads", YamlNode::scalar(matches ? "true" : "false"));
+        if (texture_) {
+            root.set("texture", quotedNode(*texture_));
+        }
+        if (model_) {
+            root.set("model", quotedNode(*model_));
+        }
         if (!matches) {
             // BTL_setupLoadedEFEFile compares the stored id with the one it asked for and gives up on the slot.
             note(std::format("its effect id is {:#x}, not {:#x}: the original refuses to load it "
@@ -205,7 +218,9 @@ private:
                         TimPlace{.source = source_, .entry = slot_, .offset = fileOffset(header.timStart)});
         if (!added) {
             unknown(std::format("texture not written: {}", added.error().message));
+            return;
         }
+        texture_ = siblingFile(id->str(), "png");
     }
 
     void writeModel(std::span<const std::byte> payload, const fx::EfeHeader& header) {
@@ -266,6 +281,7 @@ private:
             return;
         }
         extraction_->outputs.push_back(OutputFile{.id = *id, .extension = "glb", .bytes = std::move(model->glb)});
+        model_ = siblingFile(id->str(), "glb");
         ++models_;
     }
 
@@ -288,6 +304,8 @@ private:
     std::size_t models_ = 0;
     std::size_t unusedRanges_ = 0;
     std::size_t unusedBytes_ = 0;
+    std::optional<std::string> texture_;
+    std::optional<std::string> model_;
 };
 
 } // namespace

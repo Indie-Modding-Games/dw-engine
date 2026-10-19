@@ -15,9 +15,11 @@
 
 #include "effect_fixtures.hpp"
 #include "model_fixtures.hpp"
+#include "schema_check.hpp"
 
 using namespace dwe::formats::effect;
 using namespace dwe::formats::effect::testing;
+using dwe::formats::test::checkAgainstSchema;
 
 namespace {
 
@@ -468,7 +470,11 @@ TEST_CASE("addresses outside the data area and lists without an end are issues, 
 TEST_CASE("the scripts as YAML: names, labels and arguments") {
     const Decoded decoded = decodeSlot(sampleSlotParts());
     const auto payload = efePayload(decoded.slot, decoded.header);
-    const auto text = dwe::core::emitYaml(efeScriptToYaml(payload, decoded.header, decoded.scripts, decoded.analysis));
+    const dwe::core::YamlNode script = efeScriptToYaml(payload, decoded.header, decoded.scripts, decoded.analysis);
+    for (const std::string& problem : checkAgainstSchema(script, "effect_script")) {
+        FAIL_CHECK(problem);
+    }
+    const auto text = dwe::core::emitYaml(script);
     REQUIRE_MESSAGE(text.has_value(), errorOf(text));
     for (const std::string_view expected :
          {"label: \"start\"", "label: \"init\"", "op: spawn", "sub: set_sub_effect_scripts", "tick_script: \"l_",

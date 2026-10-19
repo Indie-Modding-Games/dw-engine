@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Arena collision grid",
+  "description": "arena/<name>/collision.yaml: the collision grid of an arena overlay, in the same form as a map's collision (map.schema.json), written by dwx extract (map_extractors.cpp: extractArenaCollision, formats/src/map/map_yaml.cpp: collisionToYaml). 100 x 100 cells; bit 0x80 = blocked, other values are trigger ids.",
+  "type": "object",
+  "required": ["width", "height", "encoding", "legend", "rows"],
+  "additionalProperties": false,
+  "properties": {
+    "width": { "const": 100 },
+    "height": { "const": 100 },
+    "encoding": { "description": "legend: one character per cell, looked up in legend; hex: two hex digits per cell.", "enum": ["legend", "hex"] },
+    "legend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["cell", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "cell": { "type": "string", "minLength": 1, "maxLength": 1 },
+          "value": { "type": "integer", "minimum": 0, "maximum": 255 }
+        }
+      }
+    },
+    "rows": { "type": "array", "minItems": 100, "maxItems": 100, "items": { "type": "string", "minLength": 100, "maxLength": 200 } }
+  }
+}

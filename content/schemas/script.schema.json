@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Script listing",
+  "description": "script/maphead.yaml and script/dg/<n>.yaml: the disassembly of a script file, written by dwx extract (formats/src/script/script_yaml.cpp: scriptToYaml). The operands of an instruction depend on its op (formats/src/script/disassembly.cpp) and are not checked here; their numbers are game ids, not asset ids.",
+  "type": "object",
+  "required": ["code_start", "code_end", "sections", "unreachable_instructions", "instructions"],
+  "additionalProperties": false,
+  "properties": {
+    "code_start": { "description": "Byte offset where the code starts.", "type": "integer", "minimum": 0 },
+    "code_end": { "type": "integer", "minimum": 0 },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "at": { "$ref": "#/$defs/label" }
+        }
+      }
+    },
+    "unreachable_instructions": { "type": "integer", "minimum": 0 },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "instructions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "op"],
+        "properties": {
+          "at": { "type": "integer", "minimum": 0 },
+          "label": { "$ref": "#/$defs/label" },
+          "op": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["test"],
+              "properties": { "test": { "type": "string", "pattern": "^[a-z0-9_]+$" } }
+            }
+          },
+          "options": { "type": "array", "items": { "$ref": "#/$defs/label" } },
+          "cases": { "type": "array", "items": { "$ref": "#/$defs/label" } },
+          "text": { "type": "string" },
+          "cancel_marker": { "const": true },
+          "data": { "description": "Bytes the disassembler kept as they are, in hex.", "type": "string", "pattern": "^[0-9a-f]{2}( [0-9a-f]{2})*$" },
+          "pads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["offset", "value"],
+              "additionalProperties": false,
+              "properties": {
+                "offset": { "type": "integer", "minimum": 0 },
+                "value": { "type": "integer", "minimum": 0, "maximum": 255 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "label": { "type": "string", "pattern": "^l_[0-9a-f]{4,}$" }
+  }
+}

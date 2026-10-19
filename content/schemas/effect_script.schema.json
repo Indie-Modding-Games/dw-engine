@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Battle effect script",
+  "description": "effect/<move>/script.yaml: the scripts and the data area of one battle effect slot, written by dwx extract (formats/src/effect/efe_yaml.cpp). Offsets count from the slot's base. Operands are the values the scripts push as they are stored: numbers, variables (base+0x0040, instance+0x0008), addresses (&base+0x0040) or labels; what each one means is in docs/formats/efectos.md and is not checked here.",
+  "type": "object",
+  "required": ["start_script", "init_script", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "start_script": { "type": "array", "items": { "$ref": "#/$defs/instruction" } },
+    "init_script": { "type": "array", "items": { "$ref": "#/$defs/instruction" } },
+    "padding": { "description": "Offsets of the bytes between instructions that no script runs.", "type": "array", "items": { "$ref": "#/$defs/offset" } },
+    "data": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "offset": { "type": "string", "pattern": "^-?0x[0-9a-f]{4,}$" },
+    "hex": { "type": "string", "pattern": "^0x[0-9a-f]+$" },
+    "label": { "type": "string", "pattern": "^(start|init|l_[0-9a-f]{4,})$" },
+    "variable": { "type": "string", "pattern": "^(base|instance)[+-]0x[0-9a-f]{4,}$" },
+    "operand": {
+      "description": "What was pushed: a number, a variable, an address, a label, or null when nothing was.",
+      "type": ["integer", "string", "null"],
+      "pattern": "^(&?(base|instance)[+-]0x[0-9a-f]{4,}|start|init|l_[0-9a-f]{4,})$"
+    },
+    "width": { "type": "integer", "enum": [1, 2, 4] },
+    "value": { "description": "A stored number, or null when its bytes are fill.", "type": ["integer", "null"] },
+    "values": { "type": "array", "items": { "$ref": "#/$defs/value" } },
+    "rows": { "type": "array", "items": { "$ref": "#/$defs/values" } },
+    "bytes": { "type": "string", "pattern": "^([0-9a-f]{2})*$" },
+    "instruction": {
+      "type": "object",
+      "required": ["at", "op"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/label" },
+        "at": { "$ref": "#/$defs/offset" },
+        "op": { "type": "string", "enum": ["load_immediate", "load_variable", "load_random", "load_indexed", "apply_operator", "stop", "stop_6", "branch_if", "stop_8", "jump", "push_immediate", "push_variable", "push_address", "call", "sub", "return", "pop_to_variable", "spawn"] },
+        "value": { "$ref": "#/$defs/operand" },
+        "variable": { "$ref": "#/$defs/variable" },
+        "address": { "$ref": "#/$defs/variable" },
+        "index": { "$ref": "#/$defs/variable" },
+        "table": { "$ref": "#/$defs/variable" },
+        "target": { "$ref": "#/$defs/label" },
+        "width": { "$ref": "#/$defs/width" },
+        "index_width": { "$ref": "#/$defs/width" },
+        "declared_width": { "$ref": "#/$defs/width" },
+        "variant": { "description": "The variant byte of push_address when it is neither a width nor fill.", "$ref": "#/$defs/hex" },
+        "operator": { "type": "string", "enum": ["set", "add", "subtract", "multiply", "divide", "modulo", "shift_left", "shift_right"] },
+        "comparison": { "type": "string", "enum": ["equal", "not_equal", "less", "less_or_equal", "greater", "greater_or_equal"] },
+        "sub": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "args": { "description": "The sub-op's arguments by name.", "type": "object", "additionalProperties": { "$ref": "#/$defs/operand" } },
+        "count": { "type": "integer", "minimum": 0 },
+        "stride": { "type": "integer", "minimum": 0 },
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "variable_flag": { "$ref": "#/$defs/hex" },
+        "address_flag": { "$ref": "#/$defs/hex" },
+        "index_flag": { "$ref": "#/$defs/hex" },
+        "table_flag": { "$ref": "#/$defs/hex" },
+        "target_flag": { "$ref": "#/$defs/hex" },
+        "value_high": { "$ref": "#/$defs/hex" },
+        "stride_high": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "item": {
+      "description": "One element of the data area. Which keys it has depends on kind (docs/formats/efectos.md).",
+      "type": "object",
+      "required": ["at", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "$ref": "#/$defs/offset" },
+        "kind": { "type": "string", "enum": ["instances", "variable", "table", "fill", "unreferenced", "address", "int32", "vector", "color", "bone_offsets", "uv_keyframes", "parent_field", "int32_array", "clut_colors", "clut_row", "tile_map", "tile_offsets", "parallax_sprites", "ribbon_points", "quad_corner"] },
+        "count": { "type": "integer", "minimum": 0 },
+        "stride": { "type": "integer", "minimum": 0 },
+        "free": { "type": "boolean" },
+        "size": { "type": "integer", "minimum": 0 },
+        "width": { "$ref": "#/$defs/width" },
+        "value": { "$ref": "#/$defs/value" },
+        "values": { "$ref": "#/$defs/values" },
+        "bytes": { "$ref": "#/$defs/bytes" },
+        "tail": { "description": "Bytes after the last whole entry of a table.", "$ref": "#/$defs/bytes" },
+        "colors": { "type": "array", "items": { "type": ["array", "string"], "items": { "$ref": "#/$defs/value" }, "pattern": "^0x[0-9a-f]{4}$" } },
+        "tiles": { "type": "array", "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } } },
+        "points": { "$ref": "#/$defs/rows" },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["frames", "du", "dv"],
+            "additionalProperties": false,
+            "properties": { "frames": { "$ref": "#/$defs/value" }, "du": { "$ref": "#/$defs/value" }, "dv": { "$ref": "#/$defs/value" } }
+          }
+        },
+        "entries": {
+          "description": "bone_offsets: digimon, bone, offset; parallax_sprites: size, x, y, depth, u.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "digimon": { "description": "Id in data/digimon, or the stored number when it is not one.", "type": ["string", "integer"], "pattern": "^[a-z0-9_]+$" },
+              "bone": { "$ref": "#/$defs/value" },
+              "offset": { "$ref": "#/$defs/values" },
+              "size": { "$ref": "#/$defs/value" },
+              "x": { "$ref": "#/$defs/value" },
+              "y": { "$ref": "#/$defs/value" },
+              "depth": { "$ref": "#/$defs/value" },
+              "u": { "$ref": "#/$defs/value" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

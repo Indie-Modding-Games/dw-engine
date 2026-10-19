@@ -123,7 +123,7 @@
           "spawn": { "$ref": "#/$defs/vector3" },
           "rotation": { "description": "4096 = a full turn.", "type": "integer" },
           "target_map": { "description": "Raw map id; -1 = unused exit.", "type": "integer" },
-          "target_map_id": { "description": "Id of the target map (maps.yaml), or null.", "type": ["string", "null"] },
+          "target_map_id": { "description": "Id of the target map (maps.yaml), or null. The target map must have its data.", "type": ["string", "null"], "assetReference": "map/{}/data" },
           "target_exit": { "type": "integer" }
         }
       }
@@ -137,7 +137,7 @@
         "additionalProperties": false,
         "properties": {
           "type_id": { "type": "integer" },
-          "digimon": { "description": "Id of the Digimon (digimon.yaml), or null.", "type": ["string", "null"] },
+          "digimon": { "description": "Id of the Digimon (digimon.yaml), or null. The Digimon must have its model.", "type": ["string", "null"], "assetReference": "digimon/{}/model" },
           "follow_mode": { "type": "integer" },
           "position": { "$ref": "#/$defs/vector3" },
           "rotation": { "$ref": "#/$defs/vector3" },

@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "game_tables.hpp"
 
@@ -85,5 +86,14 @@ core::Result<assets::AssetId> fontImage();
 // is the effect of the technique with its number, so the slug is the move's id from the executable's tables, or the
 // slot as a 3-digit number when the tables are not known.
 core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t slot, std::string_view leaf);
+
+// A schema of content/schemas and the patterns of the ids of the documents that follow it (assets::SchemaRule).
+struct DocumentSchema {
+    std::string_view schema;
+    std::vector<std::string_view> ids;
+};
+
+// The schema of every YAML document dwx extract writes, in the order the base pack's manifest lists them.
+const std::vector<DocumentSchema>& documentSchemas();
 
 } // namespace dwe::dwx::names

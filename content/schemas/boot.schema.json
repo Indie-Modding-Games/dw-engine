@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Boot settings",
+  "description": "disc/boot.yaml: the KEY = VALUE lines of SYSTEM.CNF, written by dwx extract (table_extractors.cpp: extractBootConfig). Keys are lowercased into asset id segments; values stay text.",
+  "type": "object",
+  "required": ["boot"],
+  "additionalProperties": { "type": "string" },
+  "properties": {
+    "boot": { "description": "The executable the console starts.", "type": "string", "minLength": 1 }
+  }
+}

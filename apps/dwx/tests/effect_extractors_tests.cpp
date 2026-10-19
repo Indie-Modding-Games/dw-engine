@@ -1,3 +1,4 @@
+#include <dwe/core/yaml.hpp>
 #include <dwe/formats/effect/efe_file.hpp>
 
 #include <cgltf.h>
@@ -6,14 +7,19 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "effect_extractors.hpp"
 #include "effect_fixtures.hpp"
+#include "schema_check.hpp"
 
 using namespace dwe::dwx;
+using dwe::core::parseYaml;
+using dwe::formats::test::checkAgainstSchema;
 namespace fx = dwe::formats::effect;
 namespace fixtures = dwe::formats::effect::testing;
 
@@ -42,6 +48,15 @@ std::vector<std::string> outputPaths(const Extraction& extraction) {
         paths.push_back(outputPath(output));
     }
     return paths;
+}
+
+std::string textOf(const std::vector<std::byte>& bytes) {
+    std::string text;
+    text.reserve(bytes.size());
+    for (const std::byte byte : bytes) {
+        text += static_cast<char>(byte);
+    }
+    return text;
 }
 
 bool mentions(const std::vector<std::string>& texts, std::string_view part) {
@@ -73,6 +88,23 @@ TEST_CASE("every slot in use becomes its effect, script, texture and model") {
     CHECK_FALSE(std::ranges::any_of(paths, [](const std::string& path) { return path.starts_with("effect/001/"); }));
     CHECK(mentions(extraction->notes, "slots that are all fill, which no technique uses: 1"));
     CHECK(mentions(extraction->notes, "slot 2: its effect id is 0x100, not 0x102"));
+
+    const auto effect = std::ranges::find(paths, std::string{"effect/000/effect.yaml"});
+    REQUIRE(effect != paths.end());
+    const std::string effectText = textOf(extraction->outputs[static_cast<std::size_t>(effect - paths.begin())].bytes);
+    CHECK(effectText.contains("texture: \"texture.png\"\n"));
+    CHECK(effectText.contains("model: \"model.glb\"\n"));
+    for (const char* name : {"effect", "script"}) {
+        const auto at = std::ranges::find(paths, std::format("effect/000/{}.yaml", name));
+        REQUIRE(at != paths.end());
+        const auto document =
+            parseYaml(textOf(extraction->outputs[static_cast<std::size_t>(at - paths.begin())].bytes));
+        REQUIRE_MESSAGE(document.has_value(), errorOf(document));
+        const std::string_view schema = std::string_view{name} == "effect" ? "effect" : "effect_script";
+        for (const std::string& problem : checkAgainstSchema(*document, schema)) {
+            FAIL_CHECK(problem);
+        }
+    }
 
     const auto model = std::ranges::find(paths, std::string{"effect/000/model.glb"});
     REQUIRE(model != paths.end());

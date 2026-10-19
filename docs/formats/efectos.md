@@ -244,7 +244,7 @@ tablas):
 
 | Fichero | Contenido |
 |---|---|
-| `effect.yaml` | ranura, técnica, cabecera, número de animaciones de UV y si el original la carga (`loads`) |
+| `effect.yaml` | ranura, técnica, cabecera, número de animaciones de UV, si el original la carga (`loads`) y los ficheros de la carpeta que escribió: `texture` (`texture.png`) y `model` (`model.glb`, solo si tiene TMD) |
 | `script.yaml` | `start_script` e `init_script` instrucción a instrucción, `padding` y `data` |
 | `texture.png` + `texture_meta.yaml` | el TIM, como en [TIM y packs](tim.md) |
 | `model.glb` | el TMD reescrito para la celda 0 y texturizado con el TIM de la ranura en esa celda |

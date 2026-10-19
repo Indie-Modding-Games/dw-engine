@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TIM image metadata",
+  "description": "<image>_meta.yaml: what the PNG of a TIM image leaves out, written by dwx extract (image_extractors.cpp: addTimImage). The PNG is the asset without the _meta suffix; it is missing when the TIM could not be encoded, and then warnings says why.",
+  "type": "object",
+  "required": ["source", "offset", "mode", "width", "height", "image_rect"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "description": "Path of the file on the disc.", "type": "string", "minLength": 1 },
+    "entry": { "description": "Index of the TIM in a file that packs several.", "type": "integer", "minimum": 0 },
+    "offset": { "description": "Byte offset of the TIM in the source file.", "type": "integer", "minimum": 0 },
+    "mode": { "enum": ["indexed4", "indexed8", "direct16", "direct24"] },
+    "width": { "description": "Width in pixels.", "type": "integer", "minimum": 0 },
+    "height": { "type": "integer", "minimum": 0 },
+    "image_rect": { "description": "Where the pixels go in VRAM, in 16-bit VRAM units.", "$ref": "#/$defs/rect" },
+    "clut_rect": { "description": "Where the palettes go in VRAM; only for indexed TIMs.", "$ref": "#/$defs/rect" },
+    "png": { "description": "indexed: the PNG keeps the indices and palette 0; rgba: the colours.", "enum": ["indexed", "rgba"] },
+    "png_palette": { "description": "The palette the indexed PNG carries.", "type": "integer", "minimum": 0 },
+    "palettes": {
+      "description": "Every palette of the CLUT as 15-bit colours in hex, first to last.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[0-9a-f]{4}( [0-9a-f]{4})*$" }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "rect": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 0 },
+        "height": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

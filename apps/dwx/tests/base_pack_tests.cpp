@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "asset_names.hpp"
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
 #include "temp_folder.hpp"
@@ -234,6 +235,10 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
     REQUIRE(manifest.has_value());
     CHECK(manifest->id == "base");
     CHECK(manifest->layer == dwe::assets::Layer::Base);
+    // The manifest says which schema each document of the pack follows.
+    REQUIRE(manifest->schemas.size() == names::documentSchemas().size());
+    CHECK(manifest->schemas.front().schema == "cards");
+    CHECK(manifest->schemas.front().ids == std::vector<std::string>{"data/cards"});
 
     const auto assets = checkBasePack(first, *run);
     REQUIRE(assets.has_value());

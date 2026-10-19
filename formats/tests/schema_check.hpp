@@ -3,6 +3,7 @@
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <array>
 #include <format>
 #include <fstream>
 #include <sstream>
@@ -12,6 +13,9 @@
 
 // Checks that the documents formats emits match content/schemas, with the engine's JSON Schema validator.
 namespace dwe::formats::test {
+
+// The annotation keywords content/schemas use; dwx validate reads them (apps/dwx/src/validate.cpp).
+inline constexpr std::array<std::string_view, 1> AnnotationKeywords = {"assetReference"};
 
 inline std::string readSchemaText(std::string_view name) {
     std::ifstream file{std::format("{}/{}.schema.json", DWE_SCHEMA_DIR, name)};
@@ -27,7 +31,7 @@ inline std::vector<std::string> checkAgainstSchema(const core::YamlNode& documen
     if (!text) {
         return {std::format("schema '{}' could not be read", name)};
     }
-    const auto schema = core::JsonSchema::compile(*text);
+    const auto schema = core::JsonSchema::compile(*text, AnnotationKeywords);
     if (!schema) {
         return {std::format("schema '{}': {}", name, schema.error().message)};
     }

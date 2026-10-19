@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Extraction coverage",
+  "description": "dwx/coverage.yaml: which disc files dwx extract read, what it wrote from each and what it could not decode (base_pack.cpp: coverageYaml). Every output must be in the pack.",
+  "type": "object",
+  "required": ["disc", "summary", "files", "duplicates"],
+  "additionalProperties": false,
+  "properties": {
+    "disc": {
+      "type": "object",
+      "required": ["volume", "executable", "executable_sha1", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "volume": { "type": "string" },
+        "executable": { "type": "string" },
+        "executable_sha1": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["files", "extracted", "partial", "pending", "bytes", "bytes_covered", "outputs", "duplicate_outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "files": { "type": "integer", "minimum": 0 },
+        "extracted": { "type": "integer", "minimum": 0 },
+        "partial": { "type": "integer", "minimum": 0 },
+        "pending": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "bytes_covered": { "type": "integer", "minimum": 0 },
+        "outputs": { "type": "integer", "minimum": 0 },
+        "duplicate_outputs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "size", "sha1", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "description": "Path on the disc.", "type": "string", "minLength": 1 },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha1": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "status": { "enum": ["extracted", "partial", "pending"] },
+          "extractor": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "outputs": { "type": "array", "items": { "$ref": "#/$defs/output" } },
+          "unknowns": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "duplicates": {
+      "description": "Groups of outputs with the same bytes.",
+      "type": "array",
+      "items": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/output" } }
+    }
+  },
+  "$defs": {
+    "output": { "description": "Path of an output file in the pack.", "type": "string", "assetReference": "{}" }
+  }
+}

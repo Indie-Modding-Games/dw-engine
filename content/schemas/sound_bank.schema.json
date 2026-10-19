@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sound bank metadata",
+  "description": "sound/<file>[/<entry>]/bank_meta.yaml and music/<font>/font_meta.yaml: a VAB sound bank turned into a SoundFont, written by dwx extract (audio_extractors.cpp: extractBank). Sound banks list their samples as WAV files; music fonts list their SEQ tracks as MIDI files. File names are siblings of this document.",
+  "type": "object",
+  "required": ["source", "loader", "vab_slots", "soundfont", "vab", "programs", "not_in_soundfont", "sloped_sustain_tones"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "description": "Path of the file on the disc.", "type": "string", "minLength": 1 },
+    "entry": { "description": "Index of the bank in a file that packs several.", "type": "integer", "minimum": 0 },
+    "sectors": { "description": "First sector and sector count of the entry in its file.", "$ref": "#/$defs/pair" },
+    "loader": { "description": "The function of the original that loads the bank.", "type": "string", "minLength": 1 },
+    "vab_slots": { "description": "First and last VAB slot the bank can be loaded into.", "$ref": "#/$defs/pair" },
+    "soundfont": { "description": "The SoundFont file.", "type": "string", "pattern": "^[a-z0-9_]+\\.sf2$", "assetReference": "./{}" },
+    "font": { "description": "The music font number; music fonts only.", "type": "integer", "minimum": 0 },
+    "used_by": {
+      "description": "Who loads the bank: a sentence for single banks, the Digimon types or maps for packed ones.",
+      "type": ["string", "object"],
+      "additionalProperties": false,
+      "properties": {
+        "types": { "type": "array", "items": { "$ref": "#/$defs/digimon_type" } },
+        "fallback": { "type": "string" },
+        "maps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["map"],
+            "additionalProperties": false,
+            "properties": {
+              "map": { "description": "The map index (maps.yaml).", "type": "integer", "minimum": 0 },
+              "id": { "description": "The map id (maps.yaml). Some map entries name files the disc does not have, so the id need not have map data.", "type": "string", "pattern": "^[a-z0-9_]+$" }
+            }
+          }
+        },
+        "loaded_by": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "vab": {
+      "description": "The VAB header.",
+      "type": "object",
+      "required": ["version", "id", "programs", "tones", "samples", "master_volume", "pan", "attr1", "attr2"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "integer" },
+        "id": { "type": "integer" },
+        "programs": { "type": "integer", "minimum": 0 },
+        "tones": { "type": "integer", "minimum": 0 },
+        "samples": { "type": "integer", "minimum": 0 },
+        "master_volume": { "$ref": "#/$defs/byte" },
+        "pan": { "$ref": "#/$defs/byte" },
+        "attr1": { "type": "integer" },
+        "attr2": { "type": "integer" }
+      }
+    },
+    "programs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["program", "master_volume", "pan", "priority", "mode", "attr", "tones"],
+        "additionalProperties": false,
+        "properties": {
+          "program": { "type": "integer", "minimum": 0 },
+          "master_volume": { "$ref": "#/$defs/byte" },
+          "pan": { "$ref": "#/$defs/byte" },
+          "priority": { "$ref": "#/$defs/byte" },
+          "mode": { "$ref": "#/$defs/byte" },
+          "attr": { "type": "integer" },
+          "tones": { "type": "array", "items": { "$ref": "#/$defs/tone" } }
+        }
+      }
+    },
+    "sounds": {
+      "description": "The game values of the sounds and the tones each keys on; sound banks only.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["value", "program", "note", "tones"],
+        "additionalProperties": false,
+        "properties": {
+          "value": { "type": "integer", "minimum": 0 },
+          "program": { "type": "integer", "minimum": 0 },
+          "note": { "type": "integer", "minimum": 0, "maximum": 127 },
+          "tones": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    },
+    "samples": {
+      "description": "The samples as WAV files; sound banks only.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sample", "file", "rate", "frames"],
+        "additionalProperties": false,
+        "properties": {
+          "sample": { "type": "integer", "minimum": 0 },
+          "file": { "type": "string", "pattern": "^[a-z0-9_]+\\.wav$", "assetReference": "./{}" },
+          "rate": { "description": "Sample rate in Hz.", "type": "integer", "minimum": 1 },
+          "frames": { "type": "integer", "minimum": 0 },
+          "loop": { "description": "First and end frame of the loop.", "$ref": "#/$defs/pair" },
+          "played": { "description": "false when no tone plays the sample.", "const": false },
+          "beyond_count": { "description": "true when the sample lies past the count the header gives.", "const": true }
+        }
+      }
+    },
+    "tracks": {
+      "description": "The SEQ tracks as MIDI files; music fonts only.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["track", "file", "plays", "seq"],
+        "additionalProperties": false,
+        "properties": {
+          "track": { "type": "integer", "minimum": 0 },
+          "file": { "type": "string", "pattern": "^[a-z0-9_]+\\.mid$", "assetReference": "./{}" },
+          "plays": { "enum": ["once", "forever"] },
+          "seq": {
+            "type": "object",
+            "required": ["resolution", "tempo", "rhythm", "events", "ticks"],
+            "additionalProperties": false,
+            "properties": {
+              "resolution": { "type": "integer", "minimum": 0 },
+              "tempo": { "type": "integer", "minimum": 0 },
+              "rhythm": { "$ref": "#/$defs/pair" },
+              "events": { "type": "integer", "minimum": 0 },
+              "ticks": { "type": "integer", "minimum": 0 },
+              "loop": {
+                "type": "object",
+                "required": ["start_tick", "end_tick", "count"],
+                "additionalProperties": false,
+                "properties": {
+                  "start_tick": { "type": "integer", "minimum": 0 },
+                  "end_tick": { "type": "integer", "minimum": 0 },
+                  "count": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          },
+          "used_by": {
+            "type": "object",
+            "required": ["jukebox"],
+            "additionalProperties": false,
+            "properties": {
+              "jukebox": { "description": "Ids of the jukebox entries that play the track.", "type": "array", "items": { "type": "string" } },
+              "battle_enemies": { "type": "array", "items": { "$ref": "#/$defs/digimon_type" } },
+              "battle": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "not_in_soundfont": { "description": "VAB fields with values the SoundFont does not carry.", "type": "array", "items": { "type": "string" } },
+    "sloped_sustain_tones": { "description": "Tones whose sustain slope the SoundFont approximates.", "type": "integer", "minimum": 0 }
+  },
+  "$defs": {
+    "pair": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer" } },
+    "byte": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "digimon_type": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "description": "The Digimon type (digimon.yaml).", "type": "integer", "minimum": 0 },
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+      }
+    },
+    "tone": {
+      "type": "object",
+      "required": ["tone", "keys", "center", "shift", "volume", "pan", "priority", "mode", "sample", "pitch_bend", "vibrato", "portamento", "adsr"],
+      "additionalProperties": false,
+      "properties": {
+        "tone": { "type": "integer", "minimum": 0 },
+        "keys": { "description": "Lowest and highest key.", "$ref": "#/$defs/pair" },
+        "center": { "type": "integer" },
+        "shift": { "type": "integer" },
+        "volume": { "$ref": "#/$defs/byte" },
+        "pan": { "$ref": "#/$defs/byte" },
+        "priority": { "$ref": "#/$defs/byte" },
+        "mode": { "$ref": "#/$defs/byte" },
+        "sample": { "description": "The VAG number.", "type": "integer", "minimum": 0 },
+        "pitch_bend": { "$ref": "#/$defs/pair" },
+        "vibrato": { "$ref": "#/$defs/pair" },
+        "portamento": { "$ref": "#/$defs/pair" },
+        "adsr": { "description": "The two ADSR words in hex.", "type": "string", "pattern": "^[0-9a-f]{4} [0-9a-f]{4}$" }
+      }
+    }
+  }
+}

@@ -147,4 +147,39 @@ core::Result<assets::AssetId> effectAsset(const GameTables* tables, std::size_t 
     return assets::AssetId::parse(std::format("effect/{}/{}", named ? tables->ids.moves[slot] : number(slot), leaf));
 }
 
+const std::vector<DocumentSchema>& documentSchemas() {
+    static const std::vector<DocumentSchema> schemas{
+        {.schema = "cards", .ids = {"data/cards"}},
+        {.schema = "digimon", .ids = {"data/digimon"}},
+        {.schema = "evolution", .ids = {"data/evolution"}},
+        {.schema = "fishing", .ids = {"data/fishing"}},
+        {.schema = "items", .ids = {"data/items"}},
+        {.schema = "maps", .ids = {"data/maps"}},
+        {.schema = "medals", .ids = {"data/medals"}},
+        {.schema = "moves", .ids = {"data/moves"}},
+        {.schema = "music", .ids = {"data/music"}},
+        {.schema = "raise", .ids = {"data/raise"}},
+        {.schema = "shops", .ids = {"data/shops"}},
+        {.schema = "skeletons", .ids = {"data/skeletons"}},
+        {.schema = "stadium", .ids = {"data/stadium"}},
+        {.schema = "tournaments", .ids = {"data/tournaments"}},
+        {.schema = "training", .ids = {"data/training"}},
+        {.schema = "versus", .ids = {"data/versus"}},
+        {.schema = "boot", .ids = {"disc/boot"}},
+        {.schema = "map", .ids = {"map/*/data"}},
+        {.schema = "collision", .ids = {"arena/*/collision"}},
+        {.schema = "image",
+         .ids = {"map/*/texture8/*_meta", "map/*/texture4/*_meta", "digimon/*/texture_meta", "card/*_meta",
+                 "effect/*/texture_meta", "texture/**_meta"}},
+        {.schema = "sound_bank", .ids = {"sound/*/bank_meta", "sound/*/*/bank_meta", "music/*/font_meta"}},
+        {.schema = "script", .ids = {"script/maphead", "script/*/*"}},
+        {.schema = "text", .ids = {"text/*/*"}},
+        {.schema = "font", .ids = {"font/main_meta"}},
+        {.schema = "effect", .ids = {"effect/*/effect"}},
+        {.schema = "effect_script", .ids = {"effect/*/script"}},
+        {.schema = "coverage", .ids = {"dwx/coverage"}},
+    };
+    return schemas;
+}
+
 } // namespace dwe::dwx::names

@@ -190,7 +190,7 @@ su mapa.
 
 ```text
 content/base/
-├─ pack.yaml            id base, capa base, versión 0.1.0
+├─ pack.yaml            id base, capa base, versión 0.1.0 y el esquema de cada tipo de documento
 ├─ .dwx-extract         marca de que lo escribió dwx; oculto, el motor no lo ve
 ├─ dwx/coverage.yaml    informe de cobertura (asset dwx/coverage)
 ├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, evolution, raise, cards,
@@ -207,6 +207,29 @@ content/base/
 ├─ texture/<carpetas>/<nombre>.png + <nombre>_meta.yaml
 └─ movie/<nombre>/video.y4m, audio.wav, movie.yaml
 ```
+
+### Esquemas
+
+Cada documento YAML que escribe el extractor tiene su JSON Schema en `content/schemas/`, y el `pack.yaml` de la base
+dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de-los-documentos)):
+
+| Esquema | Documentos |
+|---|---|
+| `cards`, `digimon`, `evolution`, `fishing`, `items`, `maps`, `medals`, `moves`, `music`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
+| `boot` | `disc/boot` |
+| `map` | `map/*/data` |
+| `collision` | `arena/*/collision` |
+| `image` | los `_meta` de las imágenes: `map/*/texture8/*_meta`, `map/*/texture4/*_meta`, `digimon/*/texture_meta`, `card/*_meta`, `effect/*/texture_meta`, `texture/**_meta` |
+| `sound_bank` | `sound/*/bank_meta`, `sound/*/*/bank_meta`, `music/*/font_meta` |
+| `script` | `script/maphead`, `script/*/*` |
+| `text` | `text/*/*` |
+| `font` | `font/main_meta` |
+| `effect` | `effect/*/effect` |
+| `effect_script` | `effect/*/script` |
+| `coverage` | `dwx/coverage` |
+
+Las reglas salen de `names::documentSchemas` (`apps/dwx/src/asset_names.cpp`). Un tipo de documento nuevo necesita
+esquema y regla.
 
 ### Ids de asset
 

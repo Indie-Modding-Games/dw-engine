@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "asset_names.hpp"
 #include "dwx.hpp"
 
 namespace dwe::dwx {
@@ -99,6 +100,15 @@ core::Result<std::string> manifestYaml() {
     manifest.set("layer", YamlNode::scalar("base"));
     manifest.set("name", quoted("Base"));
     manifest.set("description", quoted("Extracted from the user's disc by dwx extract"));
+    YamlNode schemas = YamlNode::mapping();
+    for (const auto& rule : names::documentSchemas()) {
+        YamlNode ids = YamlNode::sequence();
+        for (const std::string_view id : rule.ids) {
+            ids.append(quoted(std::string{id}));
+        }
+        schemas.set(std::string{rule.schema}, std::move(ids));
+    }
+    manifest.set("schemas", std::move(schemas));
     return core::emitYaml(manifest);
 }
 

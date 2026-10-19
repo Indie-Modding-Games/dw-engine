@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Game text",
+  "description": "text/<language>/<source>.yaml: the string blocks of the executable or of an overlay, written by dwx extract (text_extractors.cpp). Each block keeps its slots in order; null is a slot without a string.",
+  "type": "object",
+  "required": ["source", "strings"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "description": "main for the executable, else the overlay file name.", "type": "string", "minLength": 1 },
+    "strings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
