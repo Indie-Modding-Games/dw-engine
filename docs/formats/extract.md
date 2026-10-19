@@ -136,20 +136,32 @@ sobre su página, sin imagen, y van a `unknowns`.
   - Puertas (`DOOR/DOOR<nn>.TMD`): los mapas cuya entrada de `DOOR_MAPDATA` incluye la puerta
     (`map_object.c: loadDoors` las carga después de las imágenes del mapa).
   - Los de `ETCDAT`, `ETCHI`, `ETCNA` y `STDDAT` cuyo código está localizado: una tabla en
-    `apps/dwx/src/model_extractors.cpp` dice con qué TIM o qué mapas los dibuja el original, con la función del
-    decomp que lo hace. `ETCDAT/ETCTIM.BIN` está en VRAM desde el arranque y `STDDAT/STDTIM.BIN` durante los torneos.
+    `apps/dwx/src/model_extractors.cpp` dice con qué TIM, qué mapas o qué rutina de los scripts los dibuja el
+    original, con la función del decomp que lo hace. `ETCDAT/ETCTIM.BIN` está en VRAM desde el arranque y
+    `STDDAT/STDTIM.BIN` durante los torneos.
+  - Los que pone un script (`BOSS_EFE`, `T_YAMA`, `GAND`, `BIGBOX`, `SMABOX` y `ABOX`) los carga una rutina de
+    `CALL_ROUTINE` (`script_interp.c: scriptInstruction64to7E`) que no sube ninguna imagen, así que leen las del
+    mapa. El extractor desensambla los scripts del disco (`apps/dwx/src/script_maps.cpp`) y busca los mapas donde se
+    llama a la rutina: los que `SET_SCRIPT` carga con el script que la llama, o con uno que salta a él con
+    `JUMP_TO_FILE` o `JUMP_TO_FILE_AND_LINK`. Cada mapa es una escena y va a `notes`.
   - Los mapas se abren por nombre, como el original (`file.c: lookupFileTable`), y se suben como lo hace
     `overworld.c`: las imágenes de 8 bits con su CLUT salvo si está en la fila 480 (la del fondo) y la fila `i` de la
     CLUT de la primera imagen de 4 bits en `(16 · i, 486)`.
-  - Si hay varias escenas, la textura sale de la primera que tiene todos los texels; las que dan otros colores van a
-    `unknowns` (el GLB solo lleva una textura). La escena usada va a `notes`.
-  - Sin escena, el modelo sale sin imagen y `unknowns` dice por qué: ningún mapa tiene esa puerta, no se pudo leer
-    el mapa, el original nunca lo carga, o no se ha localizado el código que lo dibuja.
-  - Cuando la escena se dedujo de los scripts que lo colocan y no de código que lo una al modelo, va a `unknowns`
-    como `texture inferred`.
-  - `ETCDAT/DEFEFF.TMD` y `ETCNA/MEDAL.TMD` cambian de textura mientras se dibujan (`buff_model.c: morphBuffModel`
-    alterna la paleta, `map_object.c: activateMedalTexture` copia la medalla). El GLB tiene la textura del fichero y
-    el cambio va a `notes`.
+  - Las escenas que tienen todos los texels se agrupan por los colores que dan, tal como los guarda el PNG (sin el
+    bit de semitransparencia de los colores opacos). El primer grupo texturiza el modelo y cada uno de los demás da
+    una **variante**: el mismo modelo con los texels de esa escena, con el id del modelo y
+    el slug de su primera escena (`model/door/door16_yaka26`, `model/etcdat/sea_fishing2`). Las escenas de cada grupo
+    van a `notes`. Una escena a la que le faltan texels va a `unknowns`.
+  - Un mapa sin imágenes en su entrada no sube ninguna: allí el modelo enseña lo que dejó en VRAM el mapa anterior.
+    No es una escena y va a `notes`.
+  - Sin escena, el modelo sale sin imagen, con las `u v` sobre su página. Va a `notes` si se sabe por qué: ningún
+    mapa tiene esa puerta en sus datos (el original no la dibuja nunca), el original nunca carga el fichero, o
+    ninguno de sus mapas sube imágenes. Va a `unknowns` si no se pudo leer una escena o si no se ha localizado el
+    código que lo dibuja.
+  - `ETCDAT/DEFEFF.TMD`, `ETCNA/MEDAL.TMD` y `ETCHI/BOSS_EFE.TMD` cambian mientras se dibujan
+    (`buff_model.c: morphBuffModel` alterna la paleta, `map_object.c: activateMedalTexture` copia la medalla,
+    `eab.c: EAB_setModelColor` cambia el color de las primitivas). El GLB tiene lo del fichero y el cambio va a
+    `notes`.
 
 ### Relleno
 
@@ -203,6 +215,7 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 |---|---|---|
 | Asset de un Digimon (`names::digimonAsset`) | `digimon/<id>/<hoja>` | la textura de `ALLTIM.TIM`: `digimon/<id>/texture`; el modelo: `digimon/<id>/model` |
 | Otro modelo (`names::discModel`) | `model/<carpetas>/<nombre>` | `DOOR/DOOR05.TMD` → `model/door/door05` |
+| Variante de otro modelo | `model/<carpetas>/<nombre>_<escena>` | `DOOR/DOOR16.TMD` en `YAKA26` → `model/door/door16_yaka26` |
 | Entrada de `CARD.ALL` | `card/<n con 3 cifras>` | `card/065` |
 | Documento de las tablas | `data/<tabla>` | `data/moves` |
 | `SYSTEM.CNF` | `disc/boot` | |
@@ -262,8 +275,8 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 789 extraídos, 25 parciales y 4 pendientes; 197,1 de 331,2 MB
-(59,5 %). Salen 4618 salidas, de las que 403 repiten otra byte a byte:
+Con el disco US (`SLUS_010.32`): 818 ficheros, 813 extraídos, 1 parcial y 4 pendientes; 197,1 de 331,2 MB
+(59,5 %). Salen 4622 salidas, de las que 403 repiten otra byte a byte:
 
 | Tipo | Salidas |
 |---|---|
@@ -276,7 +289,7 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 789 extraídos, 25 parciales y 4 
 | Mapas: TIM de 8 y 4 bits | 413 + 167 PNG, con sus YAML |
 | Colisión de arenas (`arena/`) | 2 YAML |
 | Modelos de Digimon (`digimon/<id>/model`) | 178 GLB |
-| Otros modelos (`model/`) | 66 GLB |
+| Otros modelos (`model/`) | 66 GLB + 4 variantes |
 | Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
@@ -290,15 +303,18 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 789 extraídos, 25 parciales y 4 
 - Tres entradas de `MAP_ENTRIES` nombran ficheros que no están en el disco; van como notas del ejecutable. La 65 y la
   232 tienen el mismo nombre en carpetas distintas: solo existe el de la 232, que se extrae con el id de la 232
   (`<nombre>_232`), el que dan las tablas.
-- Modelos: los 244 GLB pasan `cgltf_validate` y ocupan 112,6 MB; 231 tienen textura (1215 imágenes) y 13 no. Llevan
-  4843 animaciones. Son parciales 24:
-  - `CHDAT/MMD1/TANE.MMD`, que tiene primitivas con normales fuera de su objeto.
-  - Once puertas sin textura: diez no están en ningún mapa (01-04, 08, 19, 27-30) y la 00 solo está en el mapa 65,
-    cuyo fichero no existe en su carpeta (ver abajo).
-  - Las puertas 16-18, que `YAKA26` dibuja con otros colores, `ETCDAT/SEA.TMD` (con `FISHING2.TIM`) y
-    `ETCNA/WARP.TMD` (cada mapa de cristales tiene los suyos).
-  - Seis con la escena deducida (`BOSS_EFE`, `ABOX`, `BIGBOX`, `GAND`, `SMABOX`, `T_YAMA`) y `ETCNA/DOOR.TMD`, que
-    el original no carga nunca (es igual que `DOOR00.TMD`).
+- Modelos: los 248 GLB pasan `cgltf_validate` y ocupan 112,8 MB; 235 tienen textura (1219 imágenes) y 13 no. Llevan
+  4843 animaciones. Los 244 ficheros se extraen enteros:
+  - Variantes: `ETCDAT/SEA.TMD` con `FISHING2.TIM` y las puertas 16-18 en `YAKA26`. `ETCDAT/SAO.TMD` se ve igual
+    con los dos TIM de la pesca, y `ETCNA/WARP.TMD` igual en `ICSA05`, `ICSA06` e `ICSA07`: los dos últimos solo
+    cambian el bit de semitransparencia.
+  - Los seis que pone un script salen de un solo mapa cada uno: `BOSS_EFE` del 225, `T_YAMA` del 28, `GAND` del
+    146, `BIGBOX` y `SMABOX` del 151 y `ABOX` del 97.
+  - Sin textura: diez puertas que no están en los datos de puertas de ningún mapa (01-04, 08, 19, 27-30), la 00, que
+    solo está en el mapa 65, cuya entrada no tiene imágenes (ver arriba), `ETCNA/DOOR.TMD`, que el original no carga
+    nunca (es igual que `DOOR00.TMD`), y `ETCDAT/FEEL_EF.TMD`, que no tiene primitivas con textura.
+  - `CHDAT/MMD1/TANE.MMD` usa normales de otros objetos, como la consola (ver
+    [Normales fuera del objeto](modelos.md#normales-fuera-del-objeto)).
 - Pendientes: los vídeos (4 `.STR`).
 - Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62), los nueve TIM de
   `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43),
@@ -314,5 +330,6 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 789 extraídos, 25 parciales y 4 
 
 En el build `ci` (debug con sanitizers) la extracción del disco US tarda unos 9 s con 12 hilos. Para eso, `sha1.cpp`
 se compila optimizado también en debug, los builds de debug enlazan el lodepng de release (salvo en Windows) y el
-codificador de PNG no copia los píxeles. La salida es la misma byte a byte. Con los modelos tarda entre 21 y 28 s: cada
-modelo de puerta o de mapa lee y sube a su escena los mapas donde aparece.
+codificador de PNG no copia los píxeles. La salida es la misma byte a byte. Con los modelos tardaba entre 21 y 28 s: cada
+modelo de puerta o de mapa lee y sube a su escena los mapas donde aparece. Además, cada uno de los seis modelos que
+pone un script desensambla todos los scripts para buscar sus mapas.
