@@ -49,4 +49,4 @@ sustituido.
 | [0013](0013-juego-nativo-de-pc.md) | Un juego nativo de PC | Propuesta |
 | [0014](0014-mandos-y-entrada.md) | Mandos y entrada por acciones | Propuesta |
 | [0015](0015-desarrollo-en-contenedor.md) | Compilar dentro de un contenedor Docker | Aceptada |
-| [0016](0016-yaml-con-libyaml.md) | YAML con libyaml, envuelto en `core` | Propuesta |
+| [0016](0016-yaml-con-libyaml.md) | YAML con libyaml, envuelto en `core` | Aceptada |

@@ -1,6 +1,6 @@
 # 0016. YAML con libyaml, envuelto en `core`
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-19
 
 ## Contexto
