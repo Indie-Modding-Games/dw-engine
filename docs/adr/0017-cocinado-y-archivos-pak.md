@@ -25,13 +25,19 @@ ninguna y dejar el camino preparado.
     YAML lateral dice `png: indexed` o tiene `clut_rect`, no se convierte: se copia como PNG para no perder los
     índices ni la paleta.
   - **GLB → GLB**: se comprueba la cabecera y se copia.
+  - **WAV → Ogg Opus** a 48 kHz con libopusenc, con ajustes fijos (64 kbps por canal, VBR, complejidad 10, número de
+    serie fijo) y el bucle y la nota del WAV en comentarios ([Opus](../formats/opus.md)). El motor lo decodifica con
+    libopus (`assets::decodeOpus`) y un lector de páginas Ogg propio. SF2 y MIDI se copian tal cual, con las muestras
+    del SF2 sin tocar.
 - **Caché por contenido:** la carpeta de salida guarda en `.dwx-cook` el SHA-1 de la fuente, el nombre, la versión
-  y las opciones del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos assets con los
-  mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella.
+  y las opciones del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos
+  assets con los mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella.
 - **`dwx pack <paquete> -o <fichero.pak>`** escribe un archivo `.pak` propio, versionado y documentado
   ([formato](../formats/pak.md)): cabecera, datos alineados a 16 bytes, y al final la tabla de contenidos ordenada por
-  id de asset (offset, tamaño, SHA-1 y un campo de compresión reservado), los nombres y el `pack.yaml`. Sin
-  compresión en la v1. Es determinista: los mismos ficheros dan los mismos bytes.
+  id de asset (offset, tamaños, SHA-1 y compresión), los nombres y el `pack.yaml`. La versión 2 comprime cada
+  fichero con **zstd** (nivel 9 y ajustes fijos) y lo guarda tal cual si así no ocupa menos; el SHA-1 es del fichero
+  sin comprimir. El lector acepta también la versión 1, que es la 2 sin nada comprimido. Es determinista: los mismos
+  ficheros dan los mismos bytes.
 - **El motor monta `.pak`:** `PakFileSystem` es un `FileSystem` más, y cada paquete se monta con el suyo
   (`PackLocation`), así que una capa puede ser una carpeta o un `.pak`.
 
@@ -43,8 +49,22 @@ ninguna y dejar el camino preparado.
   memoria de GPU. Con la extracción de la versión US, los 1408 PNG pasan de 181 MB a 1453 MB de KTX2, y el paquete
   cocinado entero de 344 MB a 1617 MB. Es correcto y el motor lo puede subir tal cual, pero no es el formato final:
   la supercompresión es la primera de las propuestas de abajo.
-- El `.pak` sin compresión ocupa lo mismo que la carpeta. El campo de compresión de cada entrada permite añadirla en
-  una versión 2 sin cambiar el resto.
+- Con la extracción de la versión US (4619 ficheros), en release:
+
+  | | Antes | Después |
+  |---|---|---|
+  | `.pak` del paquete base (versión 1 → 2 con zstd) | 351,9 MB | 240,7 MB (2,9 s con la relectura) |
+  | Los 642 WAV → Opus | 17,1 MB | 7,0 MB |
+  | `.pak` del paquete cocinado (WAV a Opus, sin KTX2 porque todo PNG es de paleta) | 351,9 MB | 233,9 MB |
+
+  Por tipo, zstd deja los PNG (ya comprimidos con deflate) y los Opus igual, y gana sobre todo en el GLB (114,6 →
+  24,8 MB) y el YAML (15,5 → 2,0 MB); el SF2 baja un 19 %. Dentro del `.pak`, Opus ahorra 6,8 MB frente al WAV ya
+  comprimido con zstd (13,8 → 7,0 MB).
+- Opus es con pérdida: un bucle corto de un instrumento puede notar el salto en el punto de vuelta. Las muestras sin
+  pérdida siguen en el SF2 de cada banco. 62 WAV a muy baja frecuencia salen algo más grandes en Opus (159 KB en
+  total).
+- zstd, opus y libopusenc son dependencias nuevas, fijadas por el baseline de vcpkg; otra versión de zstd o de libopus
+  podría escribir otros bytes (el lector lee igual cualquier frame o paquete válido).
 - Cada lectura de un `.pak` comprueba el SHA-1 de la entrada: detecta archivos dañados a cambio de un poco de CPU.
 - Subir la versión de un cocinero invalida su caché; hay que hacerlo cada vez que cambie su salida.
 
@@ -55,8 +75,11 @@ Cada una necesita una dependencia nueva (todas tienen port en vcpkg en el baseli
 | Propuesta | Dependencia | Qué da |
 |---|---|---|
 | Texturas con supercompresión Basis (UASTC/ETC1S) o BC7 | `ktx` 4.4.2 (KTX-Software, incluye basisu) o `basisu` 2.50 | Texturas varias veces más pequeñas en disco y en GPU; el motor transcodifica a BC7 al cargar |
-| Efectos de sonido (y música remasterizada) a Opus | `opus` 1.6.1, `libogg` 1.3.6 y `libopusenc` 0.3 para escribir; `opusfile` para leer | Audio mucho más pequeño que WAV |
-| Compresión en el `.pak` (versión 2) | `zstd` 1.5.7 o `lz4` 1.10.0 | Paquetes más pequeños; zstd comprime más, lz4 descomprime más rápido |
+
+El usuario aprobó el 2026-10-19 Opus para el audio y zstd para las entradas del `.pak`, y están hechos (arriba). Para
+Opus bastan `opus` 1.6.1 y `libopusenc` 0.3, que trae su propio empaquetador Ogg: el motor lee las páginas Ogg con
+código propio, así que no hacen falta `libogg` ni `opusfile`. Se eligió zstd frente a `lz4` porque comprime más y
+descomprime de sobra rápido para cargar paquetes.
 
 ## Alternativas descartadas
 

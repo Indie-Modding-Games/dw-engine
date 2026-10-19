@@ -91,7 +91,8 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 | PNG | KTX2 RGBA8 sin comprimir, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
 | PNG indexado, o con YAML lateral que dice `png: indexed` o `clut_rect` | El mismo PNG: son datos de paleta | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
-| Cualquier otro (YAML, WAV, MIDI, SF2…) | Copiado tal cual | — |
+| WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
+| Cualquier otro (YAML, MIDI, SF2…) | Copiado tal cual | — |
 
 - Un tipo nuevo es una entrada más en el registro (`apps/dwx/src/cook.cpp`) y la función que cocina. Antes de
   cocinar, el plan del cocinero lee el fichero y su **YAML lateral** (el asset `<id>_meta.yaml`, si existe) y decide
