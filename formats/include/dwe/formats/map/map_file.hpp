@@ -178,11 +178,34 @@ struct MapReadOptions {
     int imageCount8 = 0;  // num8bppImages
     int imageCount4 = 0;  // num4bppImages
     bool hasNpcs = false; // flags & 0x80
+
+    bool operator==(const MapReadOptions&) const = default;
 };
 
 // Reads a .MAP file. Every offset, count and record is checked against the file and against the game's fixed
 // arrays (35 tiles, 188 instances, 8 NPCs, 8 waypoints).
 core::Result<MapFile> readMapFile(std::span<const std::byte> file, const MapReadOptions& options);
+
+// What a .MAP file says about its own layout: the first offset gives the size of the table of offsets and so the
+// number of sections, and each image section starts with a TIM whose mode says 8 or 4 bits (the 8-bit ones come
+// first).
+struct MapFileShape {
+    int imageCount8 = 0;
+    int imageCount4 = 0;
+    std::size_t entitiesSize = 0; // bytes in the entities section
+
+    bool operator==(const MapFileShape&) const = default;
+};
+
+// The entities section of a map without NPC records: six lists of 10 warps and the NPC count, all s16.
+inline constexpr std::size_t EntitiesWithoutNpcs = ((std::size_t{6} * 10) + 1) * 2;
+
+core::Result<MapFileShape> readMapFileShape(std::span<const std::byte> file);
+
+// Works out the options of a .MAP file that no MAP_ENTRIES record names. The image counts come from its shape. Whether
+// the game reads NPC records only shows when the entities section ends after the warps: some maps without the NPC
+// flag keep bytes there that the game never reads, so a longer section cannot be told apart and is an error.
+core::Result<MapReadOptions> inferMapReadOptions(std::span<const std::byte> file);
 
 // Builds the disc path of a map's file (map.c: buildMapPath): \MAP\MAP<mapId / 15 + 1>\<name><extension>.
 std::string mapFilePath(int mapId, std::string_view filename, std::string_view extension);

@@ -103,6 +103,9 @@ TEST_CASE("real data: every map and background of the disc is read") {
     std::size_t flag20 = 0;
     std::size_t singlePaletteWithoutFixedTime = 0;
     std::size_t legendCollision = 0;
+    std::size_t inferredMaps = 0;      // whose options the file alone gives
+    std::size_t unreadEntityBytes = 0; // without the NPC flag but with bytes after the warps
+    std::size_t otherSplit = 0;        // whose record splits the TIMs otherwise than their modes
     std::map<std::size_t, std::size_t> paletteCounts;
     for (std::size_t id = 0; id < tables->mapEntries.size(); ++id) {
         const exe::MapEntry& entry = tables->mapEntries[id];
@@ -124,6 +127,23 @@ TEST_CASE("real data: every map and background of the disc is read") {
                                                       .hasNpcs = (entry.flags & exe::MapEntryFlags::HasNpcs) != 0});
         REQUIRE_MESSAGE(file.has_value(), file.error().message);
         ++maps;
+        // The file's own shape gives the record's number of images. The split by TIM mode matches the record's
+        // except where the game loads a 4-bit TIM with its 8-bit loader; where it matches and the file also settles
+        // the NPC question, the options worked out from it read the same map.
+        const auto shape = map::readMapFileShape(*mapFile);
+        REQUIRE_MESSAGE(shape.has_value(), shape.error().message);
+        CHECK(shape->imageCount8 + shape->imageCount4 == entry.num8bppImages + entry.num4bppImages);
+        const auto inferred = map::inferMapReadOptions(*mapFile);
+        if (shape->imageCount8 != entry.num8bppImages) {
+            ++otherSplit;
+        } else if (inferred) {
+            const auto reread = map::readMapFile(*mapFile, *inferred);
+            REQUIRE_MESSAGE(reread.has_value(), reread.error().message);
+            CHECK(*reread == *file);
+            ++inferredMaps;
+        } else if ((entry.flags & exe::MapEntryFlags::HasNpcs) == 0) {
+            ++unreadEntityBytes;
+        }
         npcMaps += file->entities.npcs.empty() ? 0 : 1;
         const auto document = map::mapToYaml(*file, {.maps = ids.maps, .digimon = ids.digimon});
         CHECK(dwe::formats::test::checkAgainstSchema(document, "map").empty());
@@ -143,9 +163,11 @@ TEST_CASE("real data: every map and background of the disc is read") {
     for (const auto& [palettes, count] : paletteCounts) {
         histogram += std::format(" {}:{}", palettes, count);
     }
-    MESSAGE(std::format("{} entries with a file, {} missing on disc, {} maps read ({} with NPCs, {} with a legend "
-                        "collision), {} background images, palettes per map{}, {} with flag 0x20, {} single-palette "
-                        "maps without the fixed-time flag",
-                        entries, missing, maps, npcMaps, legendCollision, backgrounds, histogram, flag20,
-                        singlePaletteWithoutFixedTime));
+    MESSAGE(std::format(
+        "{} entries with a file, {} missing on disc, {} maps read ({} with NPCs, {} with a legend "
+        "collision), {} background images, palettes per map{}, {} with flag 0x20, {} single-palette "
+        "maps without the fixed-time flag, {} maps whose file alone gives their options, {} without the "
+        "NPC flag but with bytes after the warps, {} whose record splits the TIMs otherwise than their modes",
+        entries, missing, maps, npcMaps, legendCollision, backgrounds, histogram, flag20, singlePaletteWithoutFixedTime,
+        inferredMaps, unreadEntityBytes, otherSplit));
 }

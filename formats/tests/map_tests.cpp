@@ -16,11 +16,14 @@
 using dwe::core::YamlNode;
 using dwe::formats::map::backgroundVariantName;
 using dwe::formats::map::composeBackgrounds;
+using dwe::formats::map::inferMapReadOptions;
 using dwe::formats::map::mapFilePath;
+using dwe::formats::map::MapFileShape;
 using dwe::formats::map::MapReadOptions;
 using dwe::formats::map::mapToYaml;
 using dwe::formats::map::MapYamlIds;
 using dwe::formats::map::readMapFile;
+using dwe::formats::map::readMapFileShape;
 using dwe::formats::map::readTfsFile;
 using dwe::formats::test::checkAgainstSchema;
 using dwe::formats::test::entitiesSection;
@@ -33,6 +36,22 @@ using dwe::formats::test::Writer;
 namespace {
 
 constexpr MapReadOptions FullMap{.imageCount8 = 1, .imageCount4 = 1, .hasNpcs = true};
+
+// The start of a TIM: magic and flags (mode in the low 3 bits), then some bytes the inference does not read.
+std::vector<std::byte> timStart(std::uint32_t flags) {
+    Writer w;
+    w.i32(0x10);
+    w.i32(flags);
+    w.fill(8, 0);
+    return w.bytes();
+}
+
+MapParts partsWithTims(std::uint32_t firstFlags, std::uint32_t secondFlags) {
+    MapParts parts;
+    parts.image8 = timStart(firstFlags);
+    parts.image4 = timStart(secondFlags);
+    return parts;
+}
 
 } // namespace
 
@@ -105,6 +124,54 @@ TEST_CASE("a map without images has no objects section and skips NPC records wit
     CHECK(map->images.empty());
     CHECK(map->entities.digimonCount == 1);
     CHECK(map->entities.npcs.empty());
+}
+
+TEST_CASE("a map file gives its image counts and the size of its entities") {
+    const auto withNpcs = readMapFileShape(makeMap(partsWithTims(0x9, 0x8)));
+    REQUIRE_MESSAGE(withNpcs.has_value(), withNpcs.error().message);
+    CHECK(withNpcs->imageCount8 == 1);
+    CHECK(withNpcs->imageCount4 == 1);
+    CHECK(withNpcs->entitiesSize > dwe::formats::map::EntitiesWithoutNpcs);
+
+    const auto twoEightBit = readMapFileShape(makeMap(partsWithTims(0x1, 0x9)));
+    REQUIRE(twoEightBit.has_value());
+    CHECK(twoEightBit->imageCount8 == 2);
+    CHECK(twoEightBit->imageCount4 == 0);
+}
+
+TEST_CASE("a map without NPC data gets its options from the file and reads the same way") {
+    MapParts quiet = partsWithTims(0x9, 0x8);
+    quiet.npcCount = 0;
+    const auto file = makeMap(quiet);
+    const auto options = inferMapReadOptions(file);
+    REQUIRE_MESSAGE(options.has_value(), options.error().message);
+    CHECK(*options == MapReadOptions{.imageCount8 = 1, .imageCount4 = 1, .hasNpcs = false});
+    const auto inferred = readMapFile(file, *options);
+    const auto given = readMapFile(file, FullMap);
+    REQUIRE(inferred.has_value());
+    REQUIRE(given.has_value());
+    CHECK(*inferred == *given);
+
+    // With bytes after the warps, the file cannot say whether the game reads them as NPCs.
+    const auto unclear = inferMapReadOptions(makeMap(partsWithTims(0x9, 0x8)));
+    REQUIRE_FALSE(unclear.has_value());
+    CHECK(unclear.error().message.contains("past its warps"));
+}
+
+TEST_CASE("files whose options cannot be worked out are errors") {
+    CHECK_FALSE(readMapFileShape(makeMap(partsWithTims(0x8, 0x9))).has_value()); // 8-bit after 4-bit
+    CHECK_FALSE(readMapFileShape(makeMap(partsWithTims(0x9, 0x2))).has_value()); // 16-bit
+    CHECK_FALSE(readMapFileShape(makeMap()).has_value());                        // no TIM magic
+    Writer fourSections;
+    for (const int offset : {16, 16, 16, 16}) {
+        fourSections.i32(offset);
+    }
+    CHECK_FALSE(readMapFileShape(fourSections.bytes()).has_value());
+    Writer odd;
+    odd.i32(6);
+    odd.fill(8, 0);
+    CHECK_FALSE(readMapFileShape(odd.bytes()).has_value());
+    CHECK_FALSE(readMapFileShape({}).has_value());
 }
 
 TEST_CASE("malformed maps are errors") {

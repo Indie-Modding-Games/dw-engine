@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <format>
+#include <ranges>
 #include <utility>
 
 namespace dwe::formats::map {
@@ -19,6 +20,12 @@ constexpr std::size_t MaxNpcs = 8;
 constexpr std::size_t MaxWaypoints = 8;
 constexpr std::size_t CollisionBytes = CollisionSize * CollisionSize;
 constexpr int MaxImagesPerKind = 127; // num8bppImages and num4bppImages are int8
+// The sections every map has: setup, entities and collision.
+constexpr std::size_t FixedSections = 3;
+constexpr std::uint32_t TimMagic = 0x10;
+constexpr std::uint32_t TimModeMask = 0x7;
+constexpr std::uint32_t TimMode4 = 0;
+constexpr std::uint32_t TimMode8 = 1;
 
 template <std::size_t N>
 std::array<std::int16_t, N> readInt16s(ByteCursor& cursor) {
@@ -174,6 +181,62 @@ core::Result<MapEntities> readEntities(std::span<const std::byte> section, bool 
 }
 
 } // namespace
+
+core::Result<MapFileShape> readMapFileShape(std::span<const std::byte> file) {
+    ByteCursor header{file};
+    const std::size_t tableSize = header.u32();
+    if (header.overrun() || tableSize % 4 != 0 || tableSize > file.size()) {
+        return core::fail("the first offset does not end a table of offsets");
+    }
+    const std::size_t sectionCount = tableSize / 4;
+    // Images come with an objects section, so a map has 3 sections or 5 and more.
+    if (sectionCount < FixedSections || sectionCount == FixedSections + 1) {
+        return core::fail(std::format("{} sections cannot be a map", sectionCount));
+    }
+    std::vector<std::size_t> offsets(sectionCount);
+    offsets.front() = tableSize;
+    std::ranges::generate(offsets | std::views::drop(1), [&] { return std::size_t{header.u32()}; });
+    for (std::size_t i = 1; i < offsets.size(); ++i) {
+        if (offsets[i] < offsets[i - 1] || offsets[i] > file.size()) {
+            return core::fail(std::format("section {} starts at 0x{:X}, out of order or past the end", i, offsets[i]));
+        }
+    }
+
+    MapFileShape shape;
+    const std::size_t imageCount = sectionCount == FixedSections ? 0 : sectionCount - FixedSections - 1;
+    for (std::size_t i = 1; i <= imageCount; ++i) {
+        ByteCursor tim{file.subspan(offsets[i])};
+        const std::uint32_t magic = tim.u32();
+        const std::uint32_t mode = tim.u32() & TimModeMask;
+        if (tim.overrun() || magic != TimMagic || (mode != TimMode8 && mode != TimMode4)) {
+            return core::fail(std::format("section {} does not start with an 8-bit or 4-bit TIM", i));
+        }
+        if (mode == TimMode8 && shape.imageCount4 > 0) {
+            return core::fail(std::format("section {} is an 8-bit TIM after a 4-bit one", i));
+        }
+        ++(mode == TimMode8 ? shape.imageCount8 : shape.imageCount4);
+    }
+    if (shape.imageCount8 > MaxImagesPerKind || shape.imageCount4 > MaxImagesPerKind) {
+        return core::fail("more images than a MAP_ENTRIES record can count");
+    }
+    const std::size_t entities = sectionCount - 2;
+    shape.entitiesSize = offsets[entities + 1] - offsets[entities];
+    return shape;
+}
+
+core::Result<MapReadOptions> inferMapReadOptions(std::span<const std::byte> file) {
+    const auto shape = readMapFileShape(file);
+    if (!shape) {
+        return std::unexpected{shape.error()};
+    }
+    if (shape->entitiesSize != EntitiesWithoutNpcs) {
+        return core::fail(std::format("the entities section has {} bytes past its warps; without the record's NPC "
+                                      "flag it is not known whether the game reads them",
+                                      static_cast<std::int64_t>(shape->entitiesSize) -
+                                          static_cast<std::int64_t>(EntitiesWithoutNpcs)));
+    }
+    return MapReadOptions{.imageCount8 = shape->imageCount8, .imageCount4 = shape->imageCount4, .hasNpcs = false};
+}
 
 core::Result<MapFile> readMapFile(std::span<const std::byte> file, const MapReadOptions& options) {
     if (options.imageCount8 < 0 || options.imageCount4 < 0 || options.imageCount8 > MaxImagesPerKind ||

@@ -48,6 +48,10 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     CHECK(summary.files > 500);
     CHECK(summary.extracted + summary.partial >= 50);
     CHECK(summary.pending > 0);
+    const auto has = [&run](std::string_view prefix) {
+        return std::ranges::any_of(run->outputs,
+                                   [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
+    };
     const auto taken = [&run](std::string_view extractor) {
         return std::ranges::count(run->files, extractor, &FileReport::extractor);
     };
@@ -56,9 +60,14 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     CHECK(taken("tim_file") > 10);
     CHECK(taken("executable") == 1);
     CHECK(taken("boot_config") == 1);
-    // Every map file but one has a MAP_ENTRIES record; the one without stays partial.
+    // Every map file but one has a MAP_ENTRIES record; the one without gives its options itself. Background palettes
+    // past the third are never shown, so every map and background is extracted.
     CHECK(taken("map") > 200);
     CHECK(taken("map_background") == taken("map"));
+    CHECK(std::ranges::none_of(run->files, [](const FileReport& report) {
+        return report.extractor.starts_with("map") && report.status != FileStatus::Extracted;
+    }));
+    CHECK(has("map/mgen17/data"));
     CHECK(taken("arena_collision") == 2);
     // The seven sound files, every bank and sequence understood.
     CHECK(taken("sound_bank") == 7);
@@ -75,10 +84,6 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     };
     CHECK(taken("padding") == 1);
     CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
-    const auto has = [&run](std::string_view prefix) {
-        return std::ranges::any_of(run->outputs,
-                                   [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
-    };
     CHECK(has("data/digimon"));
     CHECK(has("data/maps"));
     CHECK(has("map/"));

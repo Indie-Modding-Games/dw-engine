@@ -40,7 +40,7 @@ MapEntry entry(std::string filename, std::uint8_t flags) {
     return record;
 }
 
-// A disc with one complete map, a map file no record names, a record whose file is missing, a map whose sprites read
+// A disc with one complete map, map files no record names, a record whose file is missing, a map whose sprites read
 // an extra palette and two arena collision grids, one too short. Records 0 and 1 name the same file.
 struct MapDisc {
     MapDisc() {
@@ -63,6 +63,12 @@ struct MapDisc {
         parts.spriteClut = 17;
         builder.addFile("MAP/MAP1/GLOW.MAP", dwe::formats::test::makeMap(parts));
         builder.addFile("MAP/MAP1/GLOW.TFS", dwe::formats::test::makeTfs(5, 1));
+        // Files no record names, without NPC data: one gets its options from its bytes, one has a record's id.
+        parts.spriteClut = -1;
+        parts.npcCount = 0;
+        builder.addFile("MAP/MAP2/ALONE.MAP", dwe::formats::test::makeMap(parts));
+        builder.addFile("MAP/MAP2/ALONE.TFS", dwe::formats::test::makeTfs(1, 1));
+        builder.addFile("MAP/MAP2/FIELD.MAP", dwe::formats::test::makeMap(parts));
         std::vector<std::byte> arena(10000, std::byte{0});
         arena[0] = std::byte{0x80};
         arena[9999] = std::byte{7};
@@ -135,6 +141,21 @@ TEST_CASE("a map gives its data and its images") {
     CHECK(lost.status == FileStatus::Partial);
     CHECK(lost.outputs.empty());
     CHECK(mentions(lost.unknowns, "no MAP_ENTRIES record names"));
+    CHECK(mentions(lost.unknowns, "past its warps"));
+
+    const auto& alone = reportOf(*run, "MAP/MAP2/ALONE.MAP");
+    CHECK(alone.status == FileStatus::Extracted);
+    CHECK(alone.outputs == std::vector<std::string>{"map/alone/data.yaml", "map/alone/texture8/000.png",
+                                                    "map/alone/texture8/000_meta.yaml", "map/alone/texture4/000.png",
+                                                    "map/alone/texture4/000_meta.yaml"});
+    CHECK(mentions(alone.notes, "no MAP_ENTRIES record names the file, so the game never loads it"));
+    const auto& aloneBackground = reportOf(*run, "MAP/MAP2/ALONE.TFS");
+    CHECK(aloneBackground.status == FileStatus::Extracted);
+    CHECK(aloneBackground.outputs == std::vector<std::string>{"map/alone/background_day.png"});
+
+    const auto& named = reportOf(*run, "MAP/MAP2/FIELD.MAP");
+    CHECK(named.status == FileStatus::Partial);
+    CHECK(mentions(named.unknowns, "is a record's id"));
 
     const dwe::assets::testing::TempFolder temp;
     REQUIRE(prepareOutputFolder(temp.path() / "base", false).has_value());

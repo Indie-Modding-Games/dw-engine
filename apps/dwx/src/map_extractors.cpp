@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <format>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -41,10 +42,12 @@ constexpr int SpriteRowBase = 468;
 // A bit of MapEntry::flags that no known code reads.
 constexpr std::uint8_t UnreadFlag = 0x20;
 
-// A .MAP file, read with the MAP_ENTRIES record that names it.
+// A .MAP file, read with the MAP_ENTRIES record that names it, or with the options its own bytes give when no
+// record names it.
 struct LoadedMap {
-    std::size_t id = 0;                  // the first record that names the file
+    std::optional<std::size_t> id;       // the first record that names the file
     std::vector<std::size_t> sharedWith; // other records that name it
+    formats::map::MapReadOptions options;
     std::string slug;
     std::vector<std::byte> bytes;
     formats::map::MapFile map;
@@ -93,8 +96,19 @@ bool isMapPath(std::string_view path, std::string_view extension) {
     return path.starts_with(MapFolder) && path.ends_with(extension);
 }
 
+// The slug of a map that no record names: its file name, unless a record's id already has it.
+core::Result<std::string> orphanSlug(const GameTables& tables, std::string_view mapPath) {
+    const std::string_view name = mapPath.substr(mapPath.rfind('/') + 1);
+    std::string slug = names::segment(name.substr(0, name.rfind('.')));
+    if (std::ranges::contains(tables.ids.maps, slug)) {
+        return core::fail(
+            std::format("no MAP_ENTRIES record names {}, and its name {} is a record's id", mapPath, slug));
+    }
+    return slug;
+}
+
 // Reads the .MAP file at mapPath with its MAP_ENTRIES record: the record says how many TIMs the file has and whether
-// it has NPC records.
+// it has NPC records. A file no record names gets them from its own bytes, if they settle them.
 core::Result<LoadedMap> loadMap(const Disc& disc, std::string_view mapPath) {
     const GameTables* tables = disc.tables();
     if (tables == nullptr) {
@@ -108,9 +122,6 @@ core::Result<LoadedMap> loadMap(const Disc& disc, std::string_view mapPath) {
             ids.push_back(i);
         }
     }
-    if (ids.empty()) {
-        return core::fail(std::format("no MAP_ENTRIES record names {}, so its image counts are not known", mapPath));
-    }
     const formats::disc::IsoFile* file = disc.findFile(mapPath);
     if (file == nullptr) {
         return core::fail(std::format("{} is not on the disc", mapPath));
@@ -119,23 +130,46 @@ core::Result<LoadedMap> loadMap(const Disc& disc, std::string_view mapPath) {
     if (!bytes) {
         return std::unexpected{bytes.error()};
     }
-    const MapEntry& entry = entries[ids.front()];
-    auto map = formats::map::readMapFile(*bytes, {.imageCount8 = entry.num8bppImages,
-                                                  .imageCount4 = entry.num4bppImages,
-                                                  .hasNpcs = (entry.flags & MapEntryFlags::HasNpcs) != 0});
+    if (ids.empty()) {
+        auto options = formats::map::inferMapReadOptions(*bytes);
+        if (!options) {
+            return core::fail(
+                std::format("no MAP_ENTRIES record names {}, and the file does not settle its options: {}", mapPath,
+                            options.error().message));
+        }
+        auto slug = orphanSlug(*tables, mapPath);
+        if (!slug) {
+            return std::unexpected{slug.error()};
+        }
+        loaded.options = *options;
+        loaded.slug = std::move(*slug);
+    } else {
+        const MapEntry& entry = entries[ids.front()];
+        loaded.options = {.imageCount8 = entry.num8bppImages,
+                          .imageCount4 = entry.num4bppImages,
+                          .hasNpcs = (entry.flags & MapEntryFlags::HasNpcs) != 0};
+        loaded.id = ids.front();
+        loaded.sharedWith.assign(ids.begin() + 1, ids.end());
+        loaded.slug = tables->ids.maps[ids.front()];
+    }
+    auto map = formats::map::readMapFile(*bytes, loaded.options);
     if (!map) {
         return std::unexpected{map.error()};
     }
-    loaded.id = ids.front();
-    loaded.sharedWith.assign(ids.begin() + 1, ids.end());
-    loaded.slug = tables->ids.maps[loaded.id];
     loaded.bytes = std::move(*bytes);
     loaded.map = std::move(*map);
     return loaded;
 }
 
-// Notes the other records that name the same file; the file is extracted once, under the first record's slug.
-void noteSharedEntries(const Disc& disc, const LoadedMap& loaded, Extraction& extraction) {
+// Notes the other records that name the same file, which is extracted once under the first record's slug, or that no
+// record names it.
+void noteEntries(const Disc& disc, const LoadedMap& loaded, Extraction& extraction) {
+    if (!loaded.id) {
+        extraction.notes.push_back(
+            std::format("no MAP_ENTRIES record names the file, so the game never loads it; it is extracted as {} "
+                        "with the options its bytes give: {} 8-bit and {} 4-bit TIMs by their modes, no NPC records",
+                        loaded.slug, loaded.options.imageCount8, loaded.options.imageCount4));
+    }
     for (const std::size_t id : loaded.sharedWith) {
         extraction.notes.push_back(std::format("MAP_ENTRIES[{}] ({}) names the same file; it is extracted as {}", id,
                                                disc.tables()->ids.maps[id], loaded.slug));
@@ -217,11 +251,11 @@ core::Result<Extraction> extractMapFile(const Disc& disc, const formats::disc::I
             return std::unexpected{added.error()};
         }
     }
-    if ((tables.tables.mapEntries[loaded->id].flags & UnreadFlag) != 0) {
+    if (loaded->id && (tables.tables.mapEntries[*loaded->id].flags & UnreadFlag) != 0) {
         extraction.unknowns.push_back(
-            std::format("MAP_ENTRIES[{}] sets flag 0x{:02x}, which no known code reads", loaded->id, UnreadFlag));
+            std::format("MAP_ENTRIES[{}] sets flag 0x{:02x}, which no known code reads", *loaded->id, UnreadFlag));
     }
-    noteSharedEntries(disc, *loaded, extraction);
+    noteEntries(disc, *loaded, extraction);
     return extraction;
 }
 
@@ -271,14 +305,17 @@ core::Result<Extraction> extractMapBackground(const Disc& disc, const formats::d
             std::format("{} of its {} tiles are not on the map's grid", tfs->tiles.size() - used, tfs->tiles.size()));
     }
     notePalettesPastTheThird(loaded->map, tfs->palettes.size(), extraction);
-    const std::uint8_t flags = disc.tables()->tables.mapEntries[loaded->id].flags;
-    if ((flags & MapEntryFlags::NoTimeOfDay) != 0 && tfs->palettes.size() > 1) {
-        extraction.notes.emplace_back("the map has a fixed time of day: the original only shows the day background");
-    } else if ((flags & MapEntryFlags::NoTimeOfDay) == 0 && tfs->palettes.size() < KnownPalettes) {
-        extraction.notes.push_back(
-            std::format("the map changes with the time of day but has {} palette(s)", tfs->palettes.size()));
+    if (loaded->id) {
+        const std::uint8_t flags = disc.tables()->tables.mapEntries[*loaded->id].flags;
+        if ((flags & MapEntryFlags::NoTimeOfDay) != 0 && tfs->palettes.size() > 1) {
+            extraction.notes.emplace_back(
+                "the map has a fixed time of day: the original only shows the day background");
+        } else if ((flags & MapEntryFlags::NoTimeOfDay) == 0 && tfs->palettes.size() < KnownPalettes) {
+            extraction.notes.push_back(
+                std::format("the map changes with the time of day but has {} palette(s)", tfs->palettes.size()));
+        }
     }
-    noteSharedEntries(disc, *loaded, extraction);
+    noteEntries(disc, *loaded, extraction);
     return extraction;
 }
 

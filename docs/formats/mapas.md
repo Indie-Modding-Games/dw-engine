@@ -44,6 +44,13 @@ El número de secciones depende de la entrada de `MAP_ENTRIES`, así que `readMa
 dos números de imágenes y el bit de NPC. Cada sección va de su offset al siguiente (la última, al final del fichero).
 El lector comprueba que la tabla cabe, que los offsets crecen y que ninguno sale del fichero.
 
+Un `.MAP` que ninguna entrada nombra dice parte de eso él mismo (`readMapFileShape`): el primer offset es el tamaño de
+la tabla, y con él el número de secciones; cada sección de imagen empieza con un TIM cuyo modo dice si es de 8 o de 4
+bits. `inferMapReadOptions` saca de ahí las opciones, pero solo si la sección de entidades acaba justo después de los
+warps y el número de NPC: algunos mapas sin el bit de NPC guardan bytes detrás que el juego no lee, así que una
+sección más larga no se puede decidir. En el US, el número de imágenes cuadra siempre con la entrada; el reparto por
+modo cuadra en todos los mapas menos uno, que el juego carga con un TIM de 4 bits por el cargador de 8.
+
 ### Configuración
 
 Todo `s32` (`map.c: loadMapSetup`):
@@ -147,7 +154,8 @@ disparador, `encoding` pasa de `legend` a `hex` y cada celda son dos cifras hexa
 Con `DWE_EXE_SAMPLE` y `DWE_MAP_DIR` (la carpeta `MAP` del disco US), `formats/tests/real_data_tests.cpp` lee todas las
 entradas con fichero, compone sus fondos y comprueba el YAML contra el esquema. En el US: 244 entradas tienen nombre de
 fichero, 3 de ellas no están en el disco y las otras 241 se leen sin errores (216 con NPC); todas las colisiones caben
-en la leyenda, con como mucho 26 valores distintos. Salen 512 fondos: 108 mapas con 1 paleta, 130 con 3, 1 con 4 y 2
+en la leyenda, con como mucho 26 valores distintos. En 24 mapas las opciones sacadas del fichero leen lo mismo que
+las de su entrada; 1 mapa sin el bit de NPC tiene bytes detrás de los warps. Salen 512 fondos: 108 mapas con 1 paleta, 130 con 3, 1 con 4 y 2
 con 5. Ninguna entrada usa el bit `0x20`.
 
 ## Lo que no se sabe

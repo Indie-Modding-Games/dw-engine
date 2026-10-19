@@ -89,8 +89,10 @@ escapados como los de las tablas (una barra invertida se escribe `\\`). Una lín
 ### Mapas
 
 Cada `.MAP` se lee con la entrada de `MAP_ENTRIES` que lo nombra, porque esa entrada dice cuántos TIM tiene y si
-lleva NPC; la ruta sale del id del mapa como en el original (`map.c: buildMapPath`). Sin entrada, el fichero queda
-parcial. Si dos entradas nombran el mismo fichero, se extrae una vez con el id de la primera y la otra se anota.
+lleva NPC; la ruta sale del id del mapa como en el original (`map.c: buildMapPath`). Si dos entradas nombran el mismo
+fichero, se extrae una vez con el id de la primera y la otra se anota. Un fichero sin entrada no lo carga nunca el
+juego; se extrae con su nombre como id y las opciones que da el propio fichero (`inferMapReadOptions`, ver
+[Mapas](mapas.md)), con una nota. Si el fichero no las decide, o su nombre ya es el id de una entrada, queda parcial.
 
 - `map/<id>/data.yaml`: el documento de `mapToYaml` (cámara, luces, rejilla de tiles, secciones de imagen, sprites,
   warps, NPC y colisión), con los ids de mapas y Digimon de las tablas.
