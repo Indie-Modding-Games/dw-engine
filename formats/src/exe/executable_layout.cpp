@@ -15,8 +15,9 @@ constexpr ExecutableLayout unlocated(std::string_view version, bool inlineNames)
 }
 
 // US addresses: dw_decomp config/us/symbols.txt. Counts: the array declarations (evolution.c, partner.h, model.c,
-// map_object.h, tournament.c) or, where there is none, the symbol's size divided by the struct size. EU and JP are
-// known but not located yet; their readers fail until someone fills them from config/<version>/symbols.txt.
+// map_object.h, tournament.c, sound.c, shop/script_menu.c) or, where there is none, the symbol's size divided by the
+// struct size. EU and JP are known but not located yet; their readers fail until someone fills them from
+// config/<version>/symbols.txt.
 constexpr std::array Layouts = {
     ExecutableLayout{
         .version = "us",
@@ -49,6 +50,10 @@ constexpr std::array Layouts = {
         .doorMapData = {.address = 0x80122E60, .count = 24},
         .toiletData = {.address = 0x80122E10, .count = 10},
         .mapLightUpdateData = {.address = 0x801345C4, .count = 1},
+        .digimonVlallSoundIds = {.address = 0x80127EFC, .count = 66},
+        .digimonVballSoundIds = {.address = 0x80127F40, .count = 180},
+        .mapSoundPara = {.address = 0x80127FF4, .count = 22},
+        .jukeboxTracks = {.address = 0x801303B8, .count = 64},
     },
     unlocated("eu", false),
     unlocated("jp", true),

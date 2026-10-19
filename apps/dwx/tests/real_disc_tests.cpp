@@ -60,6 +60,13 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     CHECK(taken("map") > 200);
     CHECK(taken("map_background") == taken("map"));
     CHECK(taken("arena_collision") == 2);
+    // The seven sound files, every bank and sequence understood.
+    CHECK(taken("sound_bank") == 7);
+    for (const auto& report : run->files) {
+        if (report.extractor == "sound_bank") {
+            CHECK_MESSAGE(report.status == FileStatus::Extracted, report.file.path);
+        }
+    }
     const auto has = [&run](std::string_view prefix) {
         return std::ranges::any_of(run->outputs,
                                    [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });
@@ -67,6 +74,8 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     CHECK(has("data/digimon"));
     CHECK(has("data/maps"));
     CHECK(has("map/"));
+    CHECK(has("music/033/font"));
+    CHECK(has("sound/vball/070/bank"));
     // With the tables, Digimon textures are named, never numbered.
     CHECK(has("digimon/"));
     CHECK_FALSE(has("digimon/0"));

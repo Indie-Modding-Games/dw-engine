@@ -54,6 +54,16 @@ core::Result<assets::AssetId> mapImage(std::string_view slug, int bitsPerPixel, 
 // arena/<name>/collision: the collision grid of a tournament arena, STDDAT/B_TOGI.ATR is arena/b_togi/collision.
 core::Result<assets::AssetId> arenaCollision(std::string_view volumePath);
 
+// sound/<bank>/<leaf> for a bank alone in its file, sound/<bank>/<entry>/<leaf> for an entry of a packed one:
+// SOUND/VHB/SS.VHB gives sound/ss/bank, the fourth entry of VBALL.VHB sound/vball/003/bank. The entry is a 3-digit
+// number.
+core::Result<assets::AssetId> soundAsset(std::string_view bank, std::optional<std::size_t> entry,
+                                         std::string_view leaf);
+
+// music/<font>/<leaf>: an asset of a music font (its SoundFont "font" or a SEQ "track_00"). The font is the
+// original's 1-based number (sound.c: loadMusicFont) as a 3-digit number.
+core::Result<assets::AssetId> musicAsset(std::size_t font, std::string_view leaf);
+
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 

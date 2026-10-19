@@ -303,6 +303,17 @@ core::Result<std::vector<MapLightUpdateData>> readMapLightUpdateData(const Memor
         });
 }
 
+core::Result<std::vector<MapSoundPara>> readMapSoundPara(const MemoryImage& image, const ExecutableLayout& layout) {
+    return readRecords<MapSoundPara>(image, layout.mapSoundPara, "MAP_SOUND_PARA", 4, [](ByteCursor& c) {
+        return MapSoundPara{.sectorId = c.u16(), .sectorCount = c.u16()};
+    });
+}
+
+core::Result<std::vector<JukeboxTrack>> readJukeboxTracks(const MemoryImage& image, const ExecutableLayout& layout) {
+    return readRecords<JukeboxTrack>(image, layout.jukeboxTracks, "MAIN_D_801303B8", 2,
+                                     [](ByteCursor& c) { return JukeboxTrack{.font = c.u8(), .track = c.u8()}; });
+}
+
 core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, const ExecutableLayout& layout) {
     ExecutableTables tables;
     core::Error error;
@@ -343,7 +354,13 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, co
         store(strings(layout.mapNames, "MAP_NAME_PTR"), tables.mapNames, error) &&
         store(readDoorMapData(image, layout), tables.doorMapData, error) &&
         store(readToiletData(image, layout), tables.toiletData, error) &&
-        store(readMapLightUpdateData(image, layout), tables.mapLightUpdateData, error);
+        store(readMapLightUpdateData(image, layout), tables.mapLightUpdateData, error) &&
+        store(readScalars<std::uint8_t>(image, layout.digimonVlallSoundIds, "DIGIMON_VLALL_SOUND_ID"),
+              tables.digimonVlallSoundIds, error) &&
+        store(readScalars<std::uint8_t>(image, layout.digimonVballSoundIds, "DIGIMON_VBALL_SOUND_ID"),
+              tables.digimonVballSoundIds, error) &&
+        store(readMapSoundPara(image, layout), tables.mapSoundPara, error) &&
+        store(readJukeboxTracks(image, layout), tables.jukeboxTracks, error);
     if (!read) {
         return std::unexpected{std::move(error)};
     }

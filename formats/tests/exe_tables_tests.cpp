@@ -9,6 +9,8 @@
 
 using dwe::formats::exe::ExecutableLayout;
 using dwe::formats::exe::findExecutableLayout;
+using dwe::formats::exe::JukeboxTrack;
+using dwe::formats::exe::MapSoundPara;
 using dwe::formats::exe::MemoryImage;
 using dwe::formats::exe::readExecutableTables;
 using dwe::formats::exe::TableLocation;
@@ -133,6 +135,11 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
     CHECK(tables->doorMapData[0].posX[0] == -100);
     CHECK(tables->toiletData[0].posX1 == 10);
     CHECK(tables->mapLightUpdateData[0].trigger == 0xFFFF);
+    CHECK(tables->digimonVlallSoundIds == std::vector<std::uint8_t>{0, 4, 0});
+    CHECK(tables->digimonVballSoundIds == std::vector<std::uint8_t>{0, 0, 9});
+    CHECK(tables->mapSoundPara ==
+          std::vector<MapSoundPara>{{.sectorId = 0, .sectorCount = 0}, {.sectorId = 6, .sectorCount = 10}});
+    CHECK(tables->jukeboxTracks == std::vector<JukeboxTrack>{{.font = 0x1D, .track = 0}, {.font = 0, .track = 2}});
 }
 
 TEST_CASE("tables outside the image, unlocated tables and bad pointers are errors") {
@@ -169,6 +176,8 @@ TEST_CASE("the US layout has the decomp's addresses and counts") {
     CHECK(layout.digimonData.count == 180);
     CHECK(layout.mapEntries.count == 255);
     CHECK(layout.mapLightUpdateData.located());
+    CHECK(layout.mapSoundPara.address == 0x80127FF4);
+    CHECK(layout.jukeboxTracks.count == 64);
     CHECK_FALSE(findExecutableLayout("demo").has_value());
 }
 

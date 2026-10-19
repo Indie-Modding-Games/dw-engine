@@ -100,6 +100,18 @@ core::Result<assets::AssetId> arenaCollision(std::string_view volumePath) {
     return assets::AssetId::parse(std::format("arena/{}/collision", segment(name.substr(0, name.find('.')))));
 }
 
+core::Result<assets::AssetId> soundAsset(std::string_view bank, std::optional<std::size_t> entry,
+                                         std::string_view leaf) {
+    if (entry) {
+        return assets::AssetId::parse(std::format("sound/{}/{}/{}", segment(bank), number(*entry), leaf));
+    }
+    return assets::AssetId::parse(std::format("sound/{}/{}", segment(bank), leaf));
+}
+
+core::Result<assets::AssetId> musicAsset(std::size_t font, std::string_view leaf) {
+    return assets::AssetId::parse(std::format("music/{}/{}", number(font), leaf));
+}
+
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {
     return assets::AssetId::parse(image.str() + "_meta");
 }

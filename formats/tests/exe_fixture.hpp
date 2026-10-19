@@ -214,6 +214,17 @@ inline ExecutableFixture makeExecutableFixture() {
     layout.mapLightUpdateData = {.address = image.place(8), .count = 1};
     image.u16(layout.mapLightUpdateData.address + 6, 0xFFFF);
 
+    layout.digimonVlallSoundIds = {.address = image.place(3), .count = 3};
+    image.u8(layout.digimonVlallSoundIds.address + 1, 4);
+    layout.digimonVballSoundIds = {.address = image.place(3), .count = 3};
+    image.u8(layout.digimonVballSoundIds.address + 2, 9);
+    layout.mapSoundPara = {.address = image.place(8), .count = 2};
+    image.u16(layout.mapSoundPara.address + 4, 6);
+    image.u16(layout.mapSoundPara.address + 6, 10);
+    layout.jukeboxTracks = {.address = image.place(4), .count = 2};
+    image.u8(layout.jukeboxTracks.address, 0x1D);
+    image.u8(layout.jukeboxTracks.address + 3, 2);
+
     return {.file = image.executable(), .layout = layout};
 }
 

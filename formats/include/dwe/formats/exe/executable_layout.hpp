@@ -52,6 +52,10 @@ struct ExecutableLayout {
     TableLocation doorMapData;           // DoorStruct[]
     TableLocation toiletData;            // ToiletData[]
     TableLocation mapLightUpdateData;    // MapLightUpdateData[]
+    TableLocation digimonVlallSoundIds;  // u8[]: DIGIMON_VLALL_SOUND_ID
+    TableLocation digimonVballSoundIds;  // u8[]: DIGIMON_VBALL_SOUND_ID
+    TableLocation mapSoundPara;          // MapSoundPara[]: MAP_SOUND_PARA
+    TableLocation jukeboxTracks;         // u8[2][]: MAIN_D_801303B8
 };
 
 // Returns every version the tools know, located or not.

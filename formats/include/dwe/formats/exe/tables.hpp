@@ -193,6 +193,24 @@ struct MapLightUpdateData {
     bool operator==(const MapLightUpdateData&) const = default;
 };
 
+// sound.h: MapSoundPara, a slice of SOUND/VHB/ESALL.VHB in 1 KB units, indexed by map sound id
+// (MapEntryFlags::SoundIdMask). sound.c: loadMapSounds halves both fields to get sectors.
+struct MapSoundPara {
+    std::uint16_t sectorId = 0;
+    std::uint16_t sectorCount = 0;
+
+    bool operator==(const MapSoundPara&) const = default;
+};
+
+// An entry of the music list of the shop menu (MAIN_D_801303B8, shop/script_menu.c): the music font and SEQ that
+// play for the BGM_TRACK_NAMES entry of the same index.
+struct JukeboxTrack {
+    std::uint8_t font = 0;
+    std::uint8_t track = 0;
+
+    bool operator==(const JukeboxTrack&) const = default;
+};
+
 // Every table of ExecutableLayout, read.
 struct ExecutableTables {
     std::vector<DigimonPara> digimonData;
@@ -223,6 +241,10 @@ struct ExecutableTables {
     std::vector<DoorMapData> doorMapData;
     std::vector<ToiletData> toiletData;
     std::vector<MapLightUpdateData> mapLightUpdateData;
+    std::vector<std::uint8_t> digimonVlallSoundIds; // VLALL entry by partner type (sound.c: loadPartnerSounds)
+    std::vector<std::uint8_t> digimonVballSoundIds; // VBALL entry by type (sound.c: loadDigimonSounds)
+    std::vector<MapSoundPara> mapSoundPara;
+    std::vector<JukeboxTrack> jukeboxTracks;
 };
 
 // Reads a table of char* pointers to NUL-terminated strings. A null pointer reads as an empty string.
@@ -249,6 +271,8 @@ core::Result<std::vector<DoorMapData>> readDoorMapData(const MemoryImage& image,
 core::Result<std::vector<ToiletData>> readToiletData(const MemoryImage& image, const ExecutableLayout& layout);
 core::Result<std::vector<MapLightUpdateData>> readMapLightUpdateData(const MemoryImage& image,
                                                                      const ExecutableLayout& layout);
+core::Result<std::vector<MapSoundPara>> readMapSoundPara(const MemoryImage& image, const ExecutableLayout& layout);
+core::Result<std::vector<JukeboxTrack>> readJukeboxTracks(const MemoryImage& image, const ExecutableLayout& layout);
 
 // Reads every table of the layout. Fails on the first table that is not located or does not fit in the image.
 core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, const ExecutableLayout& layout);

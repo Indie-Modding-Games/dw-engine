@@ -3,6 +3,7 @@ dwe_add_module(dwx
     LAYER apps
     SOURCES
         src/asset_names.cpp
+        src/audio_extractors.cpp
         src/base_pack.cpp
         src/disc_description.cpp
         src/extract.cpp
