@@ -70,10 +70,11 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `overlay` | `<nombre>_REL.BIN` en la raíz | Los documentos de sus tablas de juego (FISH, STD, VS y TRN) |
 | `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
 | `effect` | `ETCHI/EFEDAT.EFE` | Por técnica: `effect.yaml`, `script.yaml`, la textura y, si tiene TMD, un GLB ([Efectos](efectos.md)) |
+| `movie` | `MOVIE/*.STR` (hace falta una imagen en bruto) | `video.y4m`, `audio.wav` y `movie.yaml` (ver [Vídeo](video.md)) |
 
 Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md),
-[Overlays](overlays.md), [Audio](audio.md), [Textos y fuente](textos.md), [Scripts de eventos](scripts.md) y
-[Efectos](efectos.md).
+[Overlays](overlays.md), [Audio](audio.md), [Textos y fuente](textos.md), [Scripts de eventos](scripts.md),
+[Efectos](efectos.md) y [Vídeo](video.md).
 
 ### El ejecutable y `SYSTEM.CNF`
 
@@ -203,7 +204,8 @@ content/base/
 ├─ sound/<banco>/[<entrada>/]bank.sf2, sample_<n>.wav, bank_meta.yaml
 ├─ music/<fuente>/font.sf2, track_<n>.mid, font_meta.yaml
 ├─ effect/<técnica>/effect.yaml, script.yaml, texture.png + texture_meta.yaml, model.glb
-└─ texture/<carpetas>/<nombre>.png + <nombre>_meta.yaml
+├─ texture/<carpetas>/<nombre>.png + <nombre>_meta.yaml
+└─ movie/<nombre>/video.y4m, audio.wav, movie.yaml
 ```
 
 ### Ids de asset
@@ -226,6 +228,7 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Banco de sonidos (`names::soundAsset`) | `sound/<banco>/<hoja>`, o `sound/<banco>/<entrada con 3 cifras>/<hoja>` en un fichero empaquetado | `sound/ss/bank`, `sound/vball/003/sample_001` |
 | Fuente de música (`names::musicAsset`) | `music/<fuente con 3 cifras>/<hoja>` | `music/001/font`, `music/001/track_00` |
 | Efecto de una técnica (`names::effectAsset`) | `effect/<id de la técnica>/<hoja>`, o la ranura con 3 cifras sin tablas | `effect/<id>/script`, `effect/<id>/model` |
+| Película (`names::movieAsset`) | `movie/<nombre>/<hoja>` | `MOVIE/OP1.STR` → `movie/op1/video` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
 
 - El id de un Digimon es el de `makeTableIds`, que sale del nombre de fichero de su modelo
@@ -261,7 +264,8 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 - `files`: por cada fichero del volumen, en orden de ruta, `path`, `size`, `sha1`, `status`, y si un extractor lo
   aceptó, `extractor`, `outputs` (rutas dentro del paquete), `unknowns` y `notes`.
 - `duplicates`: grupos de salidas con la misma extensión y los mismos bytes, en orden de salida. Se escriben todas;
-  el grupo dice cuáles son la misma imagen guardada en varios ficheros del disco.
+  el grupo dice cuáles son la misma imagen guardada en varios ficheros del disco. Las salidas que se escriben por
+  partes (el vídeo de las películas, `OutputFile::stream`) no se comparan.
 
 Los estados:
 
@@ -275,8 +279,8 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 814 extraídos, ninguno parcial y 4 pendientes; 197,1 de 331,2 MB
-(59,5 %). Salen 4622 salidas, de las que 403 repiten otra byte a byte:
+Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y ninguno pendiente; 331,2 de 331,2 MB
+(100 %). Salen 4634 salidas, de las que 403 repiten otra byte a byte:
 
 | Tipo | Salidas |
 |---|---|
@@ -293,6 +297,7 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 814 extraídos, ninguno parcial y
 | Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
+| Películas (`movie/`) | 4 Y4M + 4 WAV + 4 YAML |
 
 - Efectos: `ETCHI/EFEDAT.EFE` queda extraído; sus 40 rangos de datos a los que nada llega (590 bytes en 33 ranuras)
   van como `unused` en cada `script.yaml` y en las notas ([Efectos](efectos.md#datos-sin-uso)).
@@ -316,7 +321,7 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 814 extraídos, ninguno parcial y
     nunca (es igual que `DOOR00.TMD`), y `ETCDAT/FEEL_EF.TMD`, que no tiene primitivas con textura.
   - `CHDAT/MMD1/TANE.MMD` usa normales de otros objetos, como la consola (ver
     [Normales fuera del objeto](modelos.md#normales-fuera-del-objeto)).
-- Pendientes: los vídeos (4 `.STR`).
+- Pendientes: ninguno.
 - Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62), los nueve TIM de
   `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43),
   pistas repetidas entre fuentes de música (6) y texturas, modelos y un script que comparten varias técnicas (47).
@@ -334,3 +339,7 @@ se compila optimizado también en debug, los builds de debug enlazan el lodepng 
 codificador de PNG no copia los píxeles. La salida es la misma byte a byte. Con los modelos tardaba entre 21 y 28 s: cada
 modelo de puerta o de mapa lee y sube a su escena los mapas donde aparece. Además, cada uno de los seis modelos que
 pone un script desensambla todos los scripts para buscar sus mapas.
+
+Con las películas tarda unos 3,5 min en `ci`: se decodifican los 13 089 frames dos veces (al extraer, para comprobar
+cada bitstream, y al escribir el Y4M) y se escriben 1,1 GB. `formats/src/video/mdec.cpp` se compila optimizado también
+en debug, como `sha1.cpp`; sin eso eran casi 9 min.

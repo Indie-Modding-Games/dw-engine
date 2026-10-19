@@ -17,6 +17,7 @@ Ninguna página contiene datos del juego: solo estructuras, nombres de fichero y
 | [Mapas](mapas.md) | `MAP_ENTRIES` y tablas de mapa, `.MAP`, `.TFS`, composición del fondo por paleta, YAML del mapa y colisión | `formats/map`, `content/schemas/map.schema.json` |
 | [Efectos](efectos.md) | `ETCHI/EFEDAT.EFE`: ranuras por técnica, cabecera, scripts y sus 97 subopcodes, área de datos, texturas en VRAM y modelos | `formats/effect` |
 | [Audio](audio.md) | VHB, VAB, ADPCM, SEQ, bancos empaquetados y escritura en SF2, WAV y MIDI | `formats/audio` |
+| [Vídeo](video.md) | STR (`StHEADER` y XA), bitstream MDEC v2/v3, IDCT del MDEC, ADPCM XA, `MOV_MOVIES`, salida Y4M + WAV | `formats/video`, `content/schemas/movie.schema.json` |
 | [`dwx extract`](extract.md) | Paquete base, ids de asset, extractores e informe de cobertura | `apps/dwx` |
 | [Textos y fuente](textos.md) | Juego de caracteres, cadenas de bytes y texto de script a UTF-8 con etiquetas, fuente a atlas PNG y manifiesto de cadenas | `formats/text` |
 | [Scripts de eventos](scripts.md) | `MAPHEAD.SCN`, `DG.SCN`, cabecera, desensamblador, barrido y listado YAML | `formats/script` |

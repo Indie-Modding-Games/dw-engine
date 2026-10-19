@@ -195,8 +195,26 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 ## Vídeo
 
-- `MOVIE\OP1/OP2/ED2/EDR.STR`: STR estándar (MDEC, `StHEADER`) con audio XA intercalado. La tabla `MOV_MOVIES[4]`
-  (`mov.c`) da el primer frame y cuántos hay. Salida: AV1/WebM.
+- `MOVIE\OP1/OP2/ED2/EDR.STR`: STR estándar (MDEC v3, `StHEADER`) con audio XA intercalado, 320 × 176 a 30 fps y
+  estéreo a 37,8 kHz. La tabla `MOV_MOVIES[4]` (`mov.c`) da el primer frame y cuántos se ven. Detalle en
+  [Vídeo](../formats/video.md).
+- **Salida (provisional): YUV4MPEG2 + WAV + YAML**, sin dependencias nuevas. `formats/video` decodifica el vídeo y el
+  audio enteros y de forma exacta (la IDCT entera del MDEC); el Y4M lleva los planos tal como salen del MDEC y el WAV
+  el PCM del XA. Ocupa unos 1,1 GB para las cuatro películas, pero no pierde nada y cualquier herramienta lo lee.
+- **Pendiente: el formato que se distribuye.** Opciones y su coste en dependencias (vcpkg):
+
+  | Opción | Dependencias nuevas | Tamaño / coste | Notas |
+  |---|---|---|---|
+  | A. Bitstream separado + WAV; el motor decodifica | ninguna | ≈ el original (~150 MB) | Exacto, sin recodificar; el motor necesita el decodificador para reproducir de todas formas |
+  | B. Frames PNG + WAV | ninguna (ya hay escritor PNG) | ~13 000 PNG, más de 1 GB | Fácil de comprobar; malo para distribuir |
+  | C. Y4M + WAV (**la actual**) | ninguna | ~1,1 GB | El usuario puede recodificar con su ffmpeg |
+  | D. APNG | `libpng[apng]` | grande, sin audio | No compensa |
+  | E. WebM VP9 + Opus | `libvpx` (nasm/yasm, compilación media), `libwebm`, `opus` | ~20–40 MB | El motor necesita `libvpx` para reproducir |
+  | F. WebM/MKV AV1 + Opus | `aom` (grande y lenta, nasm) o `svt-av1`, `libwebm`, `opus`; `dav1d` para reproducir | el menor | La cadena más pesada |
+  | G. Port de `ffmpeg` | `ffmpeg[avcodec,avformat,swscale,vpx/aom,opus]` | — | Compilación enorme, cuidado con LGPL/GPL |
+
+  Con el decodificador ya hecho, A es la candidata para el motor (y C queda como salida de depuración); E o F solo si
+  hay que distribuir vídeo recodificado.
 
 ## El ejecutable y los overlays
 
