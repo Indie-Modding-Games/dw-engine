@@ -16,6 +16,9 @@ dwe_add_module(formats
         src/disc/known_releases.cpp
         src/disc/sector.cpp
         src/exe/psx_exe.cpp
+        src/exe/executable_layout.cpp
+        src/exe/memory_image.cpp
+        src/exe/tables.cpp
         src/image/png.cpp
         src/image/tim.cpp
         src/image/tim_packs.cpp
