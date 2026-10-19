@@ -232,7 +232,6 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 ## Lo que no se sabe
 
 - 652 bytes del área de datos de 33 ranuras de los EFE que ningún script direcciona ([detalle](../formats/efectos.md)).
-- Los datos de `SHOP_REL.BIN`, que el decomp no compila.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
 

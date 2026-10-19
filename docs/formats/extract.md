@@ -163,13 +163,15 @@ Cada `*_REL.BIN` se corta con el layout de su versión (ver [Overlays](overlays.
 rango de bytes: los ficheros incrustados de BTL, STD y VS (comparados con el fichero suelto: `same bytes as
 ETCDAT/EX.TIM`; el asset sale de ese fichero), la cabecera, el código (no es un asset), los datos (constantes del
 código con nombre en los símbolos del decomp), la memoria guardada (restos del build; en MOV, los buffers del
-decodificador) y la palabra final. Las tablas de juego salen a `data/fishing`, `data/stadium`, `data/versus` y
+decodificador) y la palabra final. Los datos de SHOP, que el decomp no compila para el US, van rango a rango con el
+mapa de su layout (tablas de saltos, textos, punteros y tablas), y los que el ejecutable también tiene se comparan con
+su copia. Las tablas de juego salen a `data/fishing`, `data/stadium`, `data/versus` y
 `data/training`; el número de objetos y TIM de las arenas se lee del ejecutable. TRN2 tiene las mismas tablas que TRN:
 se comparan y se anota.
 
 Queda parcial un overlay sin layout para la versión, uno que no cuadra con su layout, uno cuyo fichero incrustado no
-es igual al suelto, uno cuyas tablas no se pueden leer (o sin las tablas del ejecutable) y SHOP, cuyos datos no nombra
-nada en el decomp.
+es igual al suelto, uno cuyas tablas no se pueden leer (o sin las tablas del ejecutable) y uno cuyos datos no cuadran con
+su mapa.
 
 ## El paquete base
 
@@ -260,7 +262,7 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 788 extraídos, 26 parciales y 4 pendientes; 197,1 de 331,2 MB
+Con el disco US (`SLUS_010.32`): 818 ficheros, 789 extraídos, 25 parciales y 4 pendientes; 197,1 de 331,2 MB
 (59,5 %). Salen 4618 salidas, de las que 403 repiten otra byte a byte:
 
 | Tipo | Salidas |
@@ -280,7 +282,8 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 788 extraídos, 26 parciales y 4 
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
 
 - Efectos: `ETCHI/EFEDAT.EFE` es parcial por 40 rangos de datos que ningún script direcciona ([Efectos](efectos.md)).
-- Overlays: 15 extraídos; es parcial `SHOP_REL.BIN`, cuyos datos (`[0x7860, 0x7E0C)`) no nombra nada en el decomp.
+- Overlays: los 16 extraídos. `SHOP_REL.BIN` es el build `jp_rev1`, byte a byte; sus datos van rango a rango con el
+  mapa de [Overlays](overlays.md#los-datos-de-shop).
 - `MAP/MAP16/MGEN17.MAP`, que ninguna entrada de `MAP_ENTRIES` nombra, se extrae como `map/mgen17` con las opciones
   que da el propio fichero.
 - Las paletas de `.TFS` después de la tercera (tres mapas) nunca se ven: ningún sprite lee su fila de VRAM.
