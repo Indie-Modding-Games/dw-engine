@@ -4,7 +4,7 @@ Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da 
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Base | S | En curso: el código base compila y funciona en Linux |
+| 0 | Base | S | Casi cerrada: todo hecho en Linux; falta que la CI corra en GitHub (Windows sin verificar) y la limpieza de repositorios |
 | 1 | Tubería de assets | M | Pendiente |
 | 2 | Prueba vertical | M | Pendiente |
 | 3 | Núcleo jugable | L | Pendiente |
@@ -34,16 +34,16 @@ CI pasa.
 | Punto | Estado |
 |---|---|
 | Documentación, ADR, plan y convenciones | Hecho |
-| CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests y formato en verde en local. La CI aún no ha corrido en GitHub |
-| CI de Windows | Pendiente |
-| clang-tidy limpio | Pendiente: quedan avisos de estilo; la CI todavía no lo pasa |
+| CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests, formato y clang-tidy en verde en local. La CI aún no ha corrido en GitHub |
+| CI de Windows | Escrito, sin verificar hasta el primer push: presets `windows-clang-*` (clang-cl, STL de MSVC, CRT estático) y job `windows` en la CI |
+| clang-tidy limpio | Hecho: cero avisos; la CI lo pasa con los avisos como errores |
 | Ventana y dispositivo Vulkan | Hecho: swapchain que se rehace al cambiar de tamaño, sin errores de validación |
 | Entrada por acciones, conexión en caliente | Hecho con teclado; mandos sin probar en una máquina real |
 | Lógica a paso fijo y render desacoplado | Hecho |
 | VM de Lua aislada con recarga en caliente | Hecho |
 | Log y consola ImGui | Hecho |
-| Comprobación del disco por SHA-1 | Pendiente |
-| Limpieza de los repositorios actuales | Pendiente: decisión del equipo |
+| Comprobación del disco por SHA-1 | Hecho a medias: `dwx verify` reconoce los ejecutables de cada versión; faltan los hashes de las imágenes completas (Redump) |
+| Limpieza de los repositorios actuales | Pendiente de una decisión del equipo |
 
 ## Fase 1 — Tubería de assets
 

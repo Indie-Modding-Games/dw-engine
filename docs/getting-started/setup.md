@@ -75,7 +75,8 @@ no llevan sanitizers.
 |---|---|
 | `scripts/dev.sh shell` | Abre una terminal dentro del contenedor |
 | `scripts/dev.sh format` | Formatea el código con clang-format (`--check` solo comprueba) |
-| `scripts/dev.sh tidy` | Pasa clang-tidy (necesita un `configure` previo) |
+| `scripts/dev.sh tidy` | Pasa clang-tidy (necesita un `build` previo) |
+| `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 
 ## Editor
 
