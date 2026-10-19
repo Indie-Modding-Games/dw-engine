@@ -10,3 +10,5 @@ Lectores de los formatos del original. Solo lo usa `apps/dwx`; el runtime nunca 
 - `image`: TIM (`readTim`, `decodeTim`), TIM apilados (`readStackedTims`), packs de paso fijo (`knownPacks`,
   `splitPack`) y PNG deterministas (`encodePngRgba`, `encodePngIndexed`)
   ([TIM y packs](../docs/formats/tim.md)).
+- `model`: modelos TMD, paquetes MMD, esqueletos, simulación de animaciones y escritura en glTF binario (`.glb`)
+  ([Modelos y animaciones](../docs/formats/modelos.md)).

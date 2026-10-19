@@ -93,22 +93,26 @@ ni compresión. El paso está en el código del original, no en el fichero, así
 ## Modelos y animaciones
 
 - **TMD:** estándar de PsyQ (`TMDModel {id, flags, nobj, obj[]}`, `include/dw/model.h`). El original reescribe la
-  página de textura y la CLUT de cada primitiva tras cargarlo (`updateTMDTextureData`); el extractor aplica esa
-  corrección para que las UV apunten a la textura correcta.
+  página de textura y la CLUT de cada primitiva al cargar un MMD (`updateTMDTextureData`) porque sube su textura a
+  otro sitio de la VRAM. Los ficheros ya apuntan a la posición propia del TIM en `ALLTIM.TIM`, así que el extractor no
+  corrige nada: las UV son coordenadas del TIM y la fila de paleta sale de la CBA de cada primitiva
+  ([Modelos](../formats/modelos.md#mmd)).
 - **MMD** (`CHDAT\MMDn\XXXX.MMD`, 180): `u32 offsetTmd; u32 offsetAnimaciones;` + TMD + tabla de animaciones. La
   carpeta es `tipo / 30` y el nombre de 4 letras sale de `PTR_DIGIMON_FILE_NAMES[180]` (`model.c: loadMMD`).
 - **Animaciones** (`anim.c: startAnimation, tickAnimation`): tabla `u32[]` de offsets (0 = sin animación). Cada una:
-  `s16 frames` (bit `0x8000` = hay escala por hueso), la pose inicial por hueso (escala opcional, rotación y traslación,
-  3 × s16 cada una) y un flujo de instrucciones `s16` con el tipo en el nibble alto y el frame en los 12 bits bajos:
+  `s16 frames` (bit `0x8000` = hay escala por hueso), la pose inicial de cada hueso salvo el 0 (escala opcional,
+  rotación y traslación, 3 × s16 cada una) y un flujo de instrucciones `s16` con el tipo en el nibble alto y el frame
+  en los 12 bits bajos:
 
   | Tipo | Qué hace |
   |---|---|
-  | `0x0` | Keyframe: hueso, divisor y hasta 9 canales; encadena mientras está el bit `0x8000` |
+  | `0x0` | Keyframe: hueso, divisor y hasta 9 canales, que son velocidades por tick y no posiciones; encadena mientras está el bit `0x8000` |
   | `0x1` / `0x2` | Inicio / fin de bucle |
   | `0x3` | Mueve un rectángulo de VRAM (animación de textura) |
   | `0x4` | Reproduce un sonido (banco, id) |
 
-  Los eventos de sonido y de textura se exportan como marcadores de la animación en glTF.
+  Los eventos de sonido y de textura se exportan como marcadores de la animación en glTF. Detalle en
+  [Modelos y animaciones](../formats/modelos.md).
 - **Esqueletos:** `DIGIMON_SKELETONS` → listas de `{s8 objeto, s8 padre}`. El número de huesos está en
   `DIGIMON_DATA[tipo].boneCount`.
 
