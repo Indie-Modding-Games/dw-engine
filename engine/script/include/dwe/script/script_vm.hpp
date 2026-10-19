@@ -11,7 +11,7 @@
 #include <string_view>
 
 namespace sol {
-class state;
+class state; // NOLINT(readability-identifier-naming): a third-party type, named by its library.
 }
 
 namespace dwe::input {
@@ -35,6 +35,8 @@ public:
 
     ScriptVm(const ScriptVm&) = delete;
     ScriptVm& operator=(const ScriptVm&) = delete;
+    ScriptVm(ScriptVm&&) = delete;
+    ScriptVm& operator=(ScriptVm&&) = delete;
     ~ScriptVm();
 
     // Runs a script file and remembers it, so reloadChanged() can run it again when it is edited.

@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <format>
 #include <fstream>
+#include <initializer_list>
 #include <optional>
 #include <span>
 #include <sstream>
@@ -37,18 +38,30 @@ void* allocate(void* userData, void* block, std::size_t oldSize, std::size_t new
     // When block is null, oldSize holds the kind of object being created, not a size.
     const std::size_t previous = block != nullptr ? oldSize : 0;
     if (newSize == 0) {
-        std::free(block);
+        std::free(block); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory): Lua's contract.
         memory->used -= previous;
         return nullptr;
     }
     if (newSize > previous && memory->used - previous + newSize > memory->limit) {
         return nullptr;
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory): lua_Alloc must behave as realloc.
     void* resized = std::realloc(block, newSize);
     if (resized != nullptr) {
         memory->used = memory->used - previous + newSize;
     }
     return resized;
+}
+
+// luaL_error without its C varargs: raises the parts joined, after the script position as luaL_error does. Only
+// trivially destructible values may be alive here, because lua_error unwinds with longjmp.
+int raiseError(lua_State* state, std::initializer_list<std::string_view> parts) {
+    luaL_where(state, 1);
+    for (const std::string_view part : parts) {
+        lua_pushlstring(state, part.data(), part.size());
+    }
+    lua_concat(state, static_cast<int>(parts.size()) + 1);
+    return lua_error(state);
 }
 
 // The instructions the running call may still execute, checked by a Lua hook every InstructionCheckInterval
@@ -68,7 +81,7 @@ void checkBudget(lua_State* state, lua_Debug* /*debug*/) {
         // From now on every instruction fails, so a script that catches the error with pcall cannot keep running:
         // the first instruction it runs outside the pcall fails too.
         lua_sethook(state, checkBudget, LUA_MASKCOUNT, 1);
-        luaL_error(state, "the script ran too long and was stopped");
+        raiseError(state, {"the script ran too long and was stopped"});
     }
 }
 
@@ -82,11 +95,13 @@ void Budget::reset() {
 int countGarbage(lua_State* state) {
     const char* option = luaL_optstring(state, 1, "count");
     if (std::string_view{option} != "count") {
-        return luaL_error(state, "collectgarbage('%s') is not available to scripts", option);
+        return raiseError(state, {"collectgarbage('", option, "') is not available to scripts"});
     }
     constexpr double BytesPerKilobyte = 1024.0;
-    const double kilobytes = lua_gc(state, LUA_GCCOUNT) + (lua_gc(state, LUA_GCCOUNTB) / BytesPerKilobyte);
-    lua_pushnumber(state, kilobytes);
+    // The allocator counts every byte Lua holds, which is what LUA_GCCOUNT reports.
+    void* memory = nullptr;
+    lua_getallocf(state, &memory);
+    lua_pushnumber(state, static_cast<double>(static_cast<const Memory*>(memory)->used) / BytesPerKilobyte);
     return 1;
 }
 
@@ -121,7 +136,7 @@ int boundedTableMove(lua_State* state) {
     const lua_Integer first = luaL_checkinteger(state, 2);
     const lua_Integer last = luaL_checkinteger(state, 3);
     if (last >= first && (first <= 0 ? last >= MaxMovedElements + first : last - first >= MaxMovedElements)) {
-        return luaL_error(state, "table.move: the range is too large");
+        return raiseError(state, {"table.move: the range is too large"});
     }
     lua_pushvalue(state, lua_upvalueindex(1));
     lua_insert(state, 1);
