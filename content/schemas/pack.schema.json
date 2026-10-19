@@ -33,6 +33,15 @@
           "min_version": { "$ref": "#/$defs/version" }
         }
       }
+    },
+    "schemas": {
+      "description": "Which JSON Schema of content/schemas the pack's YAML documents follow: each key is a schema name (1 to 64 of a-z, 0-9 and _), each value the asset id patterns of its documents. * stands for any text inside one segment, ** for any text, slashes included. The rules of every mounted pack apply to every pack.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "string", "pattern": "^[a-z0-9_*]+(/[a-z0-9_*]+)*$", "maxLength": 200 }
+      }
     }
   },
   "$defs": {

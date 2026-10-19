@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 using dwe::assets::formatVersion;
 using dwe::assets::Layer;
@@ -90,4 +91,24 @@ TEST_CASE("manifest errors say what is wrong and where") {
     CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\ndependencies:\n- {id: b, min_version: 1.0.0, max: 2}\n") ==
           "line 5, column 36: unknown dependency key 'max'");
     CHECK(errorOf("id: [unclosed\n").starts_with("line 2, column 1:"));
+}
+
+TEST_CASE("a manifest maps schemas to the ids of the documents that follow them") {
+    const auto manifest = parsePackManifest("id: base\nversion: 0.1.0\nlayer: base\n"
+                                            "schemas:\n"
+                                            "  digimon: [data/digimon]\n"
+                                            "  image: [\"card/*_meta\", \"texture/**_meta\"]\n");
+    REQUIRE(manifest.has_value());
+    REQUIRE(manifest->schemas.size() == 2);
+    CHECK(manifest->schemas[0].schema == "digimon");
+    CHECK(manifest->schemas[0].ids == std::vector<std::string>{"data/digimon"});
+    CHECK(manifest->schemas[1].ids == std::vector<std::string>{"card/*_meta", "texture/**_meta"});
+    CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\nschemas: [a]\n") ==
+          "line 4, column 10: 'schemas' must be a mapping from schema names to lists of id patterns");
+    CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\nschemas:\n  Map: [a]\n") ==
+          "line 5, column 8: schema name 'Map' must have 1 to 64 characters of a-z, 0-9 and '_'");
+    CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\nschemas:\n  map: []\n") ==
+          "line 5, column 8: schema 'map' needs a list of id patterns");
+    CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\nschemas:\n  map: [a/b.yaml]\n") ==
+          "line 5, column 9: id pattern 'a/b.yaml' may only use a-z, 0-9, '_', '/' and '*'");
 }

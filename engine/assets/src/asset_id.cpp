@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -48,6 +49,46 @@ core::Result<AssetId> assetIdOfFile(std::string_view relativePath) {
         return core::fail(std::format("file '{}': {}", relativePath, id.error().message));
     }
     return id;
+}
+
+core::Result<void> checkIdPattern(std::string_view pattern) {
+    if (pattern.empty() || pattern.size() > AssetId::MaxLength) {
+        return core::fail(std::format("id pattern '{}' must have 1 to {} characters", pattern, AssetId::MaxLength));
+    }
+    if (pattern.front() == '/' || pattern.back() == '/' || pattern.contains("//")) {
+        return core::fail(std::format("id pattern '{}' has an empty segment", pattern));
+    }
+    if (pattern.contains("***")) {
+        return core::fail(std::format("id pattern '{}' has more than two '*' in a row", pattern));
+    }
+    if (!std::ranges::all_of(pattern, [](char c) { return c == '/' || c == '*' || isIdCharacter(c); })) {
+        return core::fail(std::format("id pattern '{}' may only use a-z, 0-9, '_', '/' and '*'", pattern));
+    }
+    return {};
+}
+
+bool matchesIdPattern(std::string_view pattern, const AssetId& id) {
+    // matched[j]: whether the pattern read so far matches the first j characters of the id. One pass per pattern
+    // element keeps the time at length × length, whatever the stars.
+    const std::string_view text = id.str();
+    std::vector<bool> matched(text.size() + 1, false);
+    matched[0] = true;
+    for (std::size_t i = 0; i < pattern.size(); ++i) {
+        std::vector<bool> next(text.size() + 1, false);
+        if (pattern[i] == '*') {
+            const bool crossesSegments = i + 1 < pattern.size() && pattern[i + 1] == '*';
+            for (std::size_t j = 0; j <= text.size(); ++j) {
+                next[j] = matched[j] || (j > 0 && next[j - 1] && (crossesSegments || text[j - 1] != '/'));
+            }
+            i += crossesSegments ? 1 : 0;
+        } else {
+            for (std::size_t j = 1; j <= text.size(); ++j) {
+                next[j] = matched[j - 1] && text[j - 1] == pattern[i];
+            }
+        }
+        matched = std::move(next);
+    }
+    return matched[text.size()];
 }
 
 } // namespace dwe::assets

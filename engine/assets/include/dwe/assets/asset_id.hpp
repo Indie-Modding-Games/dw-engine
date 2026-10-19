@@ -34,4 +34,11 @@ private:
 // lowercase extension.
 core::Result<AssetId> assetIdOfFile(std::string_view relativePath);
 
+// Checks a pattern of asset ids: an id where `*` stands for any text inside one segment and `**` for any text,
+// slashes included. `map/*/data` matches `map/town/data`; `texture/**_meta` matches `texture/etc/a/001_meta`.
+core::Result<void> checkIdPattern(std::string_view pattern);
+
+// Whether an id matches a pattern that checkIdPattern accepts.
+bool matchesIdPattern(std::string_view pattern, const AssetId& id);
+
 } // namespace dwe::assets

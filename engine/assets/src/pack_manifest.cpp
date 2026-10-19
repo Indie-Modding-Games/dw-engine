@@ -1,3 +1,4 @@
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/pack_manifest.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -126,7 +127,44 @@ core::Result<std::vector<PackDependency>> readDependencies(const YamlNode& node,
     return dependencies;
 }
 
+// `schemas`: a mapping from schema names to lists of id patterns.
+core::Result<std::vector<SchemaRule>> readSchemaRules(const YamlNode& node) {
+    if (!node.isMapping()) {
+        return failAt(node, "'schemas' must be a mapping from schema names to lists of id patterns");
+    }
+    std::vector<SchemaRule> rules;
+    for (const core::YamlEntry& entry : node.entries()) {
+        if (auto name = checkSchemaName(entry.key); !name) {
+            return failAt(entry.value, name.error().message);
+        }
+        if (!entry.value.isSequence() || entry.value.items().empty()) {
+            return failAt(entry.value, std::format("schema '{}' needs a list of id patterns", entry.key));
+        }
+        SchemaRule rule{.schema = entry.key, .ids = {}};
+        for (const YamlNode& item : entry.value.items()) {
+            if (!item.isScalar()) {
+                return failAt(item, "an id pattern must be a single value");
+            }
+            if (auto pattern = checkIdPattern(item.text()); !pattern) {
+                return failAt(item, pattern.error().message);
+            }
+            rule.ids.push_back(item.text());
+        }
+        rules.push_back(std::move(rule));
+    }
+    return rules;
+}
+
 } // namespace
+
+core::Result<void> checkSchemaName(std::string_view name) {
+    const auto isNameCharacter = [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'; };
+    if (name.empty() || name.size() > MaxPackIdLength || !std::ranges::all_of(name, isNameCharacter)) {
+        return core::fail(
+            std::format("schema name '{}' must have 1 to {} characters of a-z, 0-9 and '_'", name, MaxPackIdLength));
+    }
+    return {};
+}
 
 core::Result<Version> parseVersion(std::string_view text) {
     const std::size_t firstDot = text.find('.');
@@ -241,6 +279,12 @@ core::Result<PackManifest> parsePackManifest(std::string_view text) {
             manifest.description = std::move(*description);
         } else if (entry.key == "dependencies") {
             dependencies = &value;
+        } else if (entry.key == "schemas") {
+            auto rules = readSchemaRules(value);
+            if (!rules) {
+                return std::unexpected{rules.error()};
+            }
+            manifest.schemas = std::move(*rules);
         } else {
             return failAt(value, std::format("unknown key '{}'", entry.key));
         }

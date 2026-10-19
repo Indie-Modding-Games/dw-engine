@@ -38,10 +38,21 @@ std::string_view layerName(Layer layer);
 // Checks a pack id: 1 to 64 lowercase letters, digits and underscores.
 core::Result<void> checkPackId(std::string_view id);
 
+// Checks the name of a schema: 1 to 64 lowercase letters, digits and underscores.
+core::Result<void> checkSchemaName(std::string_view name);
+
 // A pack this pack needs, at least at the given version.
 struct PackDependency {
     std::string id;
     Version minVersion;
+};
+
+// The YAML documents of a pack whose ids match one of the patterns (see matchesIdPattern) follow the JSON Schema
+// content/schemas/<schema>.schema.json. The rules of every mounted pack apply to every pack, so an asset that
+// overrides another one still follows its schema.
+struct SchemaRule {
+    std::string schema;
+    std::vector<std::string> ids;
 };
 
 // The manifest of a pack, read from `pack.yaml` at its root.
@@ -54,6 +65,7 @@ struct PackManifest {
     std::string name;
     std::string description;
     std::vector<PackDependency> dependencies;
+    std::vector<SchemaRule> schemas;
 };
 
 // Parses and checks the text of a manifest. Unknown keys are errors, so a misspelt key never goes unnoticed.

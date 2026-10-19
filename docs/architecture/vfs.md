@@ -37,9 +37,28 @@ dependencies:
 | `priority` | No (0) | Número entero. Ordena los paquetes de una misma capa: gana el más alto |
 | `name`, `description` | No | Texto para las personas |
 | `dependencies` | No | Lista de `id` y `min_version` |
+| `schemas` | No | Qué esquema sigue cada documento YAML del paquete (ver abajo) |
 
 Una clave desconocida es un error, para que una errata no pase desapercibida. El formato también está como JSON
 Schema en [`content/schemas/pack.schema.json`](../../content/schemas/pack.schema.json), para editores y herramientas.
+
+### Esquemas de los documentos
+
+`schemas` dice qué JSON Schema de `content/schemas/` sigue cada documento YAML. Cada clave es el nombre de un esquema
+(`map` es `content/schemas/map.schema.json`) y su valor, la lista de **patrones de ID** de los documentos que lo
+siguen. En un patrón, `*` es cualquier texto dentro de un segmento y `**`, cualquier texto aunque cruce `/`:
+
+```yaml
+schemas:
+  digimon: [data/digimon]
+  map: [map/*/data]
+  image: ["map/*/texture*/*_meta", "texture/**_meta"]
+```
+
+Las reglas de todos los paquetes montados valen para todos: un mod que sobrescribe `data/digimon` no necesita
+repetirla, y su documento se comprueba con el mismo esquema que el de la base. Se declara el esquema en el manifiesto
+y no se adivina por la ruta, para que un tipo de documento nuevo nunca pase sin comprobar: `dwx validate` da error si
+un documento no encaja en ninguna regla o encaja en reglas de dos esquemas distintos.
 
 ## IDs de asset
 

@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <string>
+#include <string_view>
 
 using dwe::assets::AssetId;
 
@@ -39,4 +40,34 @@ TEST_CASE("a file's asset id is its path without the extension") {
           "file 'a/model.lod1.gltf' must be named <name>.<extension>, with a single dot");
     CHECK(dwe::assets::assetIdOfFile("A/model.png").error().message ==
           "file 'A/model.png': asset id 'A/model' may only use a-z, 0-9, '_' and '/'");
+}
+
+TEST_CASE("id patterns match one segment with * and any text with **") {
+    const auto matches = [](std::string_view pattern, std::string_view text) {
+        REQUIRE(dwe::assets::checkIdPattern(pattern).has_value());
+        const auto id = AssetId::parse(text);
+        REQUIRE(id.has_value());
+        return dwe::assets::matchesIdPattern(pattern, *id);
+    };
+    CHECK(matches("data/digimon", "data/digimon"));
+    CHECK_FALSE(matches("data/digimon", "data/digimon_2"));
+    CHECK(matches("map/*/data", "map/town/data"));
+    CHECK_FALSE(matches("map/*/data", "map/a/b/data"));
+    CHECK(matches("map/*/texture*/*_meta", "map/town/texture8/003_meta"));
+    CHECK_FALSE(matches("map/*/texture*/*_meta", "map/town/texture8/003"));
+    CHECK(matches("texture/**_meta", "texture/etcdat/etctim/001_meta"));
+    CHECK(matches("script/**", "script/maphead"));
+    CHECK(matches("script/**", "script/dg/012"));
+    CHECK_FALSE(matches("script/**", "scripts"));
+    CHECK(matches("*", "a"));
+    CHECK_FALSE(matches("*", "a/b"));
+    CHECK(matches("**", "a/b"));
+    CHECK(matches("a*b*c", "abc"));
+    CHECK(matches("a*b*c", "axxbyyc"));
+}
+
+TEST_CASE("id patterns refuse empty segments, other characters and three stars") {
+    for (const char* text : {"", "/a", "a/", "a//b", "A/*", "a/*.png", "a/***", "a-*"}) {
+        CHECK_FALSE_MESSAGE(dwe::assets::checkIdPattern(text).has_value(), text);
+    }
 }
