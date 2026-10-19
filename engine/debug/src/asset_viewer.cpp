@@ -8,9 +8,11 @@
 #include <imgui_impl_vulkan.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdint>
 #include <format>
+#include <span>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -130,8 +132,11 @@ void AssetViewer::select(const assets::VirtualFileSystem& vfs, const assets::Ass
         previewError_ = image.error().message;
         return;
     }
-    auto texture =
-        rhi::Texture::create(*device_, {.width = image->width, .height = image->height, .pixels = image->pixels});
+    // UNORM, like the swapchain: the pixels already hold sRGB values and the debug UI draws them as they are.
+    const std::array levels{std::span<const std::byte>{image->pixels}};
+    auto texture = rhi::Texture::create(
+        *device_,
+        {.format = rhi::TextureFormat::Rgba8Unorm, .width = image->width, .height = image->height, .levels = levels});
     if (!texture) {
         previewError_ = texture.error().message;
         return;

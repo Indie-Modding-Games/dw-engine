@@ -11,11 +11,21 @@
 
 namespace dwe::rhi {
 
+// How a texture stores its texels.
+enum class TextureFormat : std::uint8_t {
+    Rgba8Unorm, // 4 bytes per texel
+    Rgba8Srgb,
+    Bc7Unorm, // 16 bytes per block of 4x4 texels; Device::supportsBc7 says whether the GPU samples it
+    Bc7Srgb,
+};
+
 struct TextureDesc {
+    TextureFormat format = TextureFormat::Rgba8Unorm;
     std::uint32_t width = 0;
     std::uint32_t height = 0;
-    // 8-bit RGBA, row by row from the top left: width * height * 4 bytes.
-    std::span<const std::byte> pixels;
+    // The mip levels, largest first: level i measures max(width >> i, 1) by max(height >> i, 1). Each one holds its
+    // rows from the top left; in BC7, rows of blocks, with whole blocks at the right and bottom edges.
+    std::span<const std::span<const std::byte>> levels;
 };
 
 // A 2D image that shaders sample, in VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL. It has no sampler of its own: the
@@ -23,7 +33,7 @@ struct TextureDesc {
 // objects go through Device::destroyLater, but it must not outlive the device.
 class Texture {
 public:
-    // Uploads the pixels and waits for the copy to finish.
+    // Uploads the levels and waits for the copy to finish.
     static core::Result<Texture> create(Device& device, const TextureDesc& desc);
 
     Texture(const Texture&) = delete;

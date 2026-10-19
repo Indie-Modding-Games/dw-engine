@@ -71,7 +71,7 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
     barrier.image = image;
     barrier.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                                 .baseMipLevel = 0,
-                                .levelCount = 1,
+                                .levelCount = VK_REMAINING_MIP_LEVELS,
                                 .baseArrayLayer = 0,
                                 .layerCount = 1};
 
@@ -438,6 +438,17 @@ void Device::destroyLater(std::function<void()> destroy) {
 void Device::waitIdle() {
     vkDeviceWaitIdle(impl_->device);
     impl_->destroyRetired(impl_->submittedFrames + 1);
+}
+
+bool Device::supportsBc7() const {
+    for (const VkFormat format : {VK_FORMAT_BC7_UNORM_BLOCK, VK_FORMAT_BC7_SRGB_BLOCK}) {
+        VkFormatProperties properties{};
+        vkGetPhysicalDeviceFormatProperties(impl_->physicalDevice, format, &properties);
+        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 NativeHandles Device::nativeHandles() const {

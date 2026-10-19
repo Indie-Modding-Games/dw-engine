@@ -1,18 +1,51 @@
 #include <dwe/rhi/texture.hpp>
 
+#include <algorithm>
+#include <bit>
 #include <cstring>
 #include <format>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "transition.hpp"
 
 namespace dwe::rhi {
 namespace {
 
-// UNORM, like the swapchain: the pixels already hold sRGB values and the debug UI draws them as they are.
-constexpr VkFormat TextureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-constexpr VkDeviceSize BytesPerPixel = 4;
+constexpr VkDeviceSize BytesPerTexel = 4;
+constexpr std::uint32_t BlockSide = 4;
+constexpr VkDeviceSize BytesPerBlock = 16;
+
+VkFormat vulkanFormat(TextureFormat format) {
+    switch (format) {
+    case TextureFormat::Rgba8Unorm:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case TextureFormat::Rgba8Srgb:
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    case TextureFormat::Bc7Unorm:
+        return VK_FORMAT_BC7_UNORM_BLOCK;
+    case TextureFormat::Bc7Srgb:
+        return VK_FORMAT_BC7_SRGB_BLOCK;
+    }
+    return VK_FORMAT_UNDEFINED;
+}
+
+bool isBc7(TextureFormat format) {
+    return format == TextureFormat::Bc7Unorm || format == TextureFormat::Bc7Srgb;
+}
+
+VkDeviceSize levelBytes(TextureFormat format, VkExtent3D extent) {
+    if (isBc7(format)) {
+        return VkDeviceSize{(extent.width + BlockSide - 1) / BlockSide} *
+               ((extent.height + BlockSide - 1) / BlockSide) * BytesPerBlock;
+    }
+    return VkDeviceSize{extent.width} * extent.height * BytesPerTexel;
+}
+
+VkExtent3D levelExtent(std::uint32_t width, std::uint32_t height, std::uint32_t level) {
+    return {.width = std::max(width >> level, 1U), .height = std::max(height >> level, 1U), .depth = 1};
+}
 
 std::optional<std::uint32_t> findMemoryType(VkPhysicalDevice physicalDevice, std::uint32_t allowedTypes,
                                             VkMemoryPropertyFlags properties) {
@@ -65,10 +98,23 @@ struct Upload {
     }
 };
 
-core::Result<void> fill(Upload& upload, const NativeHandles& gpu, std::span<const std::byte> pixels) {
+// Where each level starts in the staging buffer: copies from a buffer start at multiples of the texel block size.
+std::vector<VkDeviceSize> levelOffsets(std::span<const std::span<const std::byte>> levels) {
+    std::vector<VkDeviceSize> offsets;
+    VkDeviceSize offset = 0;
+    for (const auto level : levels) {
+        offsets.push_back(offset);
+        offset += (level.size() + BytesPerBlock - 1) / BytesPerBlock * BytesPerBlock;
+    }
+    offsets.push_back(offset);
+    return offsets;
+}
+
+core::Result<void> fill(Upload& upload, const NativeHandles& gpu, std::span<const std::span<const std::byte>> levels,
+                        std::span<const VkDeviceSize> offsets) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = pixels.size();
+    bufferInfo.size = offsets.back();
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     if (vkCreateBuffer(gpu.device, &bufferInfo, nullptr, &upload.buffer) != VK_SUCCESS) {
@@ -88,16 +134,18 @@ core::Result<void> fill(Upload& upload, const NativeHandles& gpu, std::span<cons
     if (vkMapMemory(gpu.device, upload.memory, 0, VK_WHOLE_SIZE, 0, &mapped) != VK_SUCCESS) {
         return core::fail("could not map the staging buffer of a texture");
     }
-    std::memcpy(mapped, pixels.data(), pixels.size());
+    for (std::size_t level = 0; level < levels.size(); ++level) {
+        std::memcpy(static_cast<std::byte*>(mapped) + offsets[level], levels[level].data(), levels[level].size());
+    }
     vkUnmapMemory(gpu.device, upload.memory);
     return {};
 }
 
-core::Result<void> copyToImage(const NativeHandles& gpu, std::span<const std::byte> pixels, VkImage image,
-                               VkExtent3D extent) {
+core::Result<void> copyToImage(const NativeHandles& gpu, const TextureDesc& desc, VkImage image) {
+    const auto offsets = levelOffsets(desc.levels);
     Upload upload;
     upload.device = gpu.device;
-    if (auto filled = fill(upload, gpu, pixels); !filled) {
+    if (auto filled = fill(upload, gpu, desc.levels, offsets); !filled) {
         return filled;
     }
 
@@ -125,18 +173,21 @@ core::Result<void> copyToImage(const NativeHandles& gpu, std::span<const std::by
     transitionImage(commands, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COPY_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT);
-    const VkBufferImageCopy region{
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                             .mipLevel = 0,
-                             .baseArrayLayer = 0,
-                             .layerCount = 1},
-        .imageOffset = {.x = 0, .y = 0, .z = 0},
-        .imageExtent = extent,
-    };
-    vkCmdCopyBufferToImage(commands, upload.buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    std::vector<VkBufferImageCopy> regions;
+    regions.reserve(desc.levels.size());
+    for (std::uint32_t level = 0; level < desc.levels.size(); ++level) {
+        regions.push_back(VkBufferImageCopy{
+            .bufferOffset = offsets[level],
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource =
+                {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = level, .baseArrayLayer = 0, .layerCount = 1},
+            .imageOffset = {.x = 0, .y = 0, .z = 0},
+            .imageExtent = levelExtent(desc.width, desc.height, level),
+        });
+    }
+    vkCmdCopyBufferToImage(commands, upload.buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           static_cast<std::uint32_t>(regions.size()), regions.data());
     // Later submissions come after this barrier in submission order, so the frames that sample the image see the copy.
     transitionImage(commands, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
@@ -172,23 +223,31 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
         return core::fail(
             std::format("a texture has 1 to {} pixels on a side; this one is {}x{}", maxSide, desc.width, desc.height));
     }
-    if (const VkDeviceSize expected = VkDeviceSize{desc.width} * desc.height * BytesPerPixel;
-        desc.pixels.size() != expected) {
-        return core::fail(std::format("a {}x{} texture needs {} bytes of RGBA, not {}", desc.width, desc.height,
-                                      expected, desc.pixels.size()));
+    const auto maxLevels = static_cast<std::size_t>(std::bit_width(std::max(desc.width, desc.height)));
+    if (desc.levels.empty() || desc.levels.size() > maxLevels) {
+        return core::fail(std::format("a {}x{} texture has 1 to {} mip levels, not {}", desc.width, desc.height,
+                                      maxLevels, desc.levels.size()));
+    }
+    for (std::uint32_t level = 0; level < desc.levels.size(); ++level) {
+        const VkExtent3D extent = levelExtent(desc.width, desc.height, level);
+        if (const VkDeviceSize expected = levelBytes(desc.format, extent); desc.levels[level].size() != expected) {
+            return core::fail(std::format("mip level {} of a texture is {}x{} and needs {} bytes, not {}", level,
+                                          extent.width, extent.height, expected, desc.levels[level].size()));
+        }
     }
 
     // Whatever this holds goes back to the device if a later step fails.
     Texture texture{device, desc.width, desc.height};
-    const VkExtent3D extent{.width = desc.width, .height = desc.height, .depth = 1};
+    const VkFormat format = vulkanFormat(desc.format);
+    const auto levelCount = static_cast<std::uint32_t>(desc.levels.size());
 
     const VkImageCreateInfo imageInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                       .pNext = nullptr,
                                       .flags = 0,
                                       .imageType = VK_IMAGE_TYPE_2D,
-                                      .format = TextureFormat,
-                                      .extent = extent,
-                                      .mipLevels = 1,
+                                      .format = format,
+                                      .extent = levelExtent(desc.width, desc.height, 0),
+                                      .mipLevels = levelCount,
                                       .arrayLayers = 1,
                                       .samples = VK_SAMPLE_COUNT_1_BIT,
                                       .tiling = VK_IMAGE_TILING_OPTIMAL,
@@ -209,7 +268,7 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
     texture.memory_ = *memory;
     vkBindImageMemory(gpu.device, texture.image_, texture.memory_, 0);
 
-    if (auto copied = copyToImage(gpu, desc.pixels, texture.image_, extent); !copied) {
+    if (auto copied = copyToImage(gpu, desc, texture.image_); !copied) {
         return std::unexpected{copied.error()};
     }
 
@@ -217,10 +276,10 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = texture.image_;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = TextureFormat;
+    viewInfo.format = format;
     viewInfo.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                                  .baseMipLevel = 0,
-                                 .levelCount = 1,
+                                 .levelCount = levelCount,
                                  .baseArrayLayer = 0,
                                  .layerCount = 1};
     if (vkCreateImageView(gpu.device, &viewInfo, nullptr, &texture.view_) != VK_SUCCESS) {

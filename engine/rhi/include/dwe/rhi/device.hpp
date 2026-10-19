@@ -78,6 +78,10 @@ public:
     // between frames, never while one is being recorded.
     void waitIdle();
 
+    // Returns true if the GPU samples BC7 textures, in both their UNORM and sRGB formats. Every desktop GPU does;
+    // without it, textures are uploaded as RGBA8.
+    [[nodiscard]] bool supportsBc7() const;
+
     [[nodiscard]] NativeHandles nativeHandles() const;
 
 private:
