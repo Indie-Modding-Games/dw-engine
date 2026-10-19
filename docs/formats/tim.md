@@ -62,6 +62,14 @@ La regla de alfa (`toRgba8`):
 - Cada TIM se lee con el lector normal desde su offset hasta el final del fichero, así que sus datos salen igual que
   los sube el original. Si un TIM está mal formado o el paso se sale del fichero, es un error.
 
+## Ficheros con varios TIM
+
+Un `.TIM` suelto puede tener más de un TIM: `STDDAT\T_TOGI.TIM` tiene cuatro, las texturas de una arena que el
+original sube de una vez con un número fijo de TIM (`std_setup.c: STD_loadArenaTIMToVRAM`). `readTimSequence` lee
+estos ficheros, y también los de un solo TIM: cada TIM empieza donde acaban las longitudes de bloque del anterior, y
+la lista termina en la primera palabra que no es `0x10`. A diferencia de los TIM apilados no se usa la cuenta de
+ancho × alto, porque los TIM sueltos se leen con sus longitudes y uno de ancho × alto impar acabaría 2 bytes antes.
+
 ## Packs de paso fijo
 
 Algunos ficheros son entradas concatenadas a un paso fijo de sectores (2048 bytes), sin cabecera. El paso y el número
@@ -95,7 +103,8 @@ apagada.
 - **Indexado:** PNG con paleta de 8 bits; la paleta va en `PLTE` y, si algún color no es opaco, su alfa en `tRNS`.
   Los TIM de 4 bits también se escriben a 8 bits por píxel.
 
-**Qué usará el extractor por defecto:** los TIM de 4 y 8 bits con CLUT se escribirán como PNG indexado con la paleta 0,
+**Qué usa el extractor por defecto:** los TIM de 4 y 8 bits con CLUT se escriben como PNG indexado con la paleta 0,
 porque así no se pierde nada: los índices y la paleta siguen en el fichero, el RGBA se puede sacar de ellos (al revés
 no, porque una paleta suele repetir colores) y cualquier editor de imágenes lo abre. Las demás paletas de un TIM con
-varias irán como metadato, igual que la CLUT en bruto con su bit STP. Los TIM de 16 y 24 bits irán en RGBA.
+varias van en su YAML de metadatos, con el bit STP de cada color. Los TIM de 16 y 24 bits van en RGBA
+([`dwx extract`](extract.md)).

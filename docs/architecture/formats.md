@@ -214,13 +214,13 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 | Comando | Entrada → salida | Qué comprueba |
 |---|---|---|
 | `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
-| `dwx extract <imagen> [--out content/base]` | Disco → fuente | SHA-1 de la imagen y versión; cada fichero de la tabla tiene un extractor; informe de cobertura |
+| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión por el ejecutable; un extractor por tipo de fichero; informe de cobertura; el motor monta el resultado ([detalle](../formats/extract.md)) |
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) |
 | `dwx cook <paquete>` | Fuente → cocinado | Que todo lo cocinado se puede volver a leer |
 | `dwx pack <paquete>` | Cocinado → `.pak` + manifiesto | Id, versión, dependencias y prioridad del manifiesto |
 
-- **Informe de cobertura:** por cada fichero del disco, qué extractor lo leyó, qué produjo y qué partes no entendió.
-  La fase 1 se cierra con cero pendientes.
+- **Informe de cobertura:** por cada fichero del disco, qué extractor lo leyó, qué produjo y qué partes no entendió
+  (`coverage.yaml`, [detalle](../formats/extract.md)). La fase 1 se cierra con cero pendientes.
 - **Determinista:** la misma entrada da la misma salida byte a byte, para poder comparar extracciones en la CI con un
   disco que el equipo tenga en local.
 - **Tests:** cada lector se prueba con fixtures sintéticos generados por los propios tests (un TIM de 2 × 2, un MAP
