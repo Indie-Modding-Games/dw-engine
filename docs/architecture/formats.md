@@ -141,22 +141,39 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 ## Textos
 
-- Codificación Shift-JIS (cp932). El US también acepta ASCII de un byte y lo convierte al vuelo (`sjis.c`).
-- La fuente está en el ejecutable: `CHAR_TO_GLYPH_TABLE` y `GLYPH_DATA` (11 filas de 16 bits y un ancho) (`font.c`).
-- Códigos de control (`script_textbox.c: drawString2`): `00` fin, `01` color, `04` número, `05`/`06` hablantes,
-  `07` Digimon, `08` técnica, `09` objeto, `0A` dinero, `0B` méritos, `0C`/`0E` tabulaciones, `0D` salto de línea
-  (`0D 00` = fin de página), `0F` espacio de 6 px, `10`/`13`–`15` variables numéricas, `11` música, `12` torneo,
-  `16`–`1C` columnas fijas del US. `02` y `03` llevan argumentos cuyo efecto falta por confirmar.
-- Salida: UTF-8 con los códigos de control como etiquetas legibles (`{color:2}`, `{item:5}`), un fichero por idioma.
+- Dos codificaciones. Las cadenas del ejecutable y los overlays son ASCII de un byte, y desde `0x80` un código
+  Shift-JIS de dos bytes (`font.c: drawString`, `sjis.c`). El texto de los scripts (`SCN`) es todo Shift-JIS de ancho
+  completo en celdas de dos bytes: `showTextbox` copia pares, así que ahí no cabe ASCII de un byte.
+- Juego de caracteres: las filas `0x81`–`0x84` de cp932 con dos glifos propios del US, `0x8175` = `'` y
+  `0x8176` = `"` (cp932 los lee como `「」`). Los kanji (solo en el japonés) salen como etiqueta.
+- La fuente está en el ejecutable (`font.c`): `CHAR_TO_GLYPH_TABLE` (un código por glifo; 79 en el US), `GLYPH_DATA`
+  (24 bytes por glifo: 11 filas `u16`, bits 15–4 = columnas con 0 = tinta, y un ancho) y `FONT_CLUT`. El último glifo
+  (el 78 del US) es el de reserva.
+- Códigos de control del texto de script: cada uno ocupa **2 bytes** (código y parámetro), y el `03` ocupa 4.
+  `script_textbox.c: showTextbox` expande `04` número, `05`/`06` nombres de domador y compañero, `07` Digimon,
+  `08` técnica, `09` objeto, `0A` dinero, `0B` méritos, `10`/`13`–`15` variables numéricas, `11` música y
+  `12` torneo; en `04`, `07`–`09`, `11` y `12` el parámetro es el **índice de una variable de script** cuyo valor se
+  usa. `drawString2` dibuja `00`–`03`, `0C`/`0E` tabulaciones, `0F` medio espacio y `16`–`1C` columnas fijas del US.
+  `0D xx` es un salto de línea, y el texto acaba en la primera celda `0D` seguida de un byte `00` (`0D 00 00 00`).
+  Que siga otra página depende de si la instrucción siguiente es otro `0x1A` (`pageReady`), no del texto.
+- `02` y `03` no tienen consumidor en el US, no aparecen en sus datos y `drawString2` los salta: se guardan tal cual
+  (`{raw02:XX}`, `{raw03:XXXXXX}`).
+- Salida: UTF-8 con los códigos de control como etiquetas legibles (`{color:2}`, `{item:pstat=5}`), sin pérdida en los
+  dos sentidos; las cadenas del ejecutable y los overlays en `text/<idioma>/<fuente>.yaml` y el texto de los scripts en
+  su listado. Detalle en [Textos y fuente](../formats/textos.md).
 
 ## Scripts de eventos
 
-- `SCN\MAPHEAD.SCN` es el script global (0). `SCN\DG.SCN` empieza con una tabla de 0x2000 bytes de offsets `u32` por
-  id de script, alineados a sector.
-- Cada script: un `u16` y luego pares `(u16 sección, u16 offset)` hasta `0xFFFF` (`getScriptSection`).
+- `SCN\MAPHEAD.SCN` es el script global (0) y se queda residente. `SCN\DG.SCN` empieza con una tabla de offsets
+  `u32` en bytes por id de script (se leen 0x2000 bytes; la tabla acaba en la entrada que vale el tamaño del fichero).
+  Cada script ocupa sectores enteros, y lo que sigue a su código es relleno que nadie lee. El script 0 de `DG.SCN` es
+  una copia de `MAPHEAD.SCN` que no se carga.
+- Cada script: `u16` con el offset del código y pares `(u16 sección, u16 offset)` hasta `0xFFFF` (`getScriptSection`).
+  Los saltos son offsets absolutos desde el principio del script.
 - Los opcodes (0x10–0x7E y 0xFB–0xFF) y sus argumentos están en `include/dw/script.h`; el intérprete es
-  `script_interp.c: tickScript`. `formats/script` los decodifica a una lista de instrucciones; la traducción a Lua es
-  trabajo de `dwx extract` y se valida con un informe de opcodes no traducidos.
+  `script_interp.c: tickScript`. `formats/script` los desensambla a una lista de instrucciones con argumentos tipados
+  y `dwx extract` escribe un listado YAML por script (detalle en [Scripts de eventos](../formats/scripts.md)). La
+  traducción a Lua es trabajo de la fase 4 y se validará con un informe de opcodes no traducidos.
 - **EFE** (`ETCHI\EFEDAT.EFE`): scripts de efectos de batalla. Cabecera `EfeFileHeader` de 0x34 bytes con los offsets de
   sus partes; el intérprete (`battle_effect.c: BTL_runEFEScript`) tiene 97 subopcodes. El interior **está a medio
   estudiar**.
@@ -213,7 +230,6 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 - `MMM.DAT` (26 MB): está en la tabla de ficheros pero no se ha encontrado código que lo lea.
 - Para qué son las paletas de `.TFS` después de la tercera y el interior de los EFE.
-- Los códigos de texto `02` y `03`.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.
 

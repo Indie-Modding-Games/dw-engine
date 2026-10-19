@@ -58,7 +58,7 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `tim_pack` | Los packs de paso fijo conocidos: `CHDAT/ALLTIM.TIM` y `CARD/CARD.ALL` | Un PNG y un YAML por entrada |
 | `stacked_tim` | Los TIM apilados: `ETCDAT/ETCTIM.BIN` y `STDDAT/STDTIM.BIN` | Un PNG y un YAML por TIM |
 | `tim_file` | Cualquier otro `.TIM`: un TIM, o varios seguidos | Un PNG y un YAML por TIM |
-| `executable` | El ejecutable que arranca `SYSTEM.CNF` (`SLUS_010.32` en el US) | Los 12 documentos de sus tablas |
+| `executable` | El ejecutable que arranca `SYSTEM.CNF` (`SLUS_010.32` en el US) | Los 12 documentos de sus tablas, las cadenas suyas y de los overlays y la fuente |
 | `boot_config` | `SYSTEM.CNF` | `disc/boot.yaml` |
 | `map` | `MAP/MAP<n>/<nombre>.MAP` | `data.yaml` del mapa y sus TIM de 8 y 4 bits |
 | `map_background` | `MAP/MAP<n>/<nombre>.TFS` | Un PNG del fondo por paleta |
@@ -66,9 +66,10 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `digimon_model` | `CHDAT/MMD<n>/<nombre>.MMD` | Un GLB con esqueleto, animaciones y textura |
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
 | `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
+| `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script |
 
-Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md) y
-[Audio](audio.md).
+Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md),
+[Audio](audio.md), [Textos y fuente](textos.md) y [Scripts de eventos](scripts.md).
 
 ### El ejecutable y `SYSTEM.CNF`
 
@@ -76,6 +77,10 @@ Del ejecutable solo se toman las tablas de datos: el código y el resto de datos
 `extracted` con notas que lo dicen, la lista de tablas tomadas, las notas de `tablesToYaml` (textos con bytes
 escapados, referencias fuera de su tabla) y las entradas de `MAP_ENTRIES` cuyo fichero no está en el disco (el
 original nunca carga esos mapas). Si la versión no se conoce, el ejecutable queda parcial.
+
+El mismo extractor escribe las cadenas del ejecutable y de los overlays que lista el manifiesto de la versión
+(`text/en/<fuente>.yaml`) y la fuente (`font/main.png` y `font/main_meta.yaml`); los overlays solo se leen para eso y
+siguen teniendo su propia cobertura. Si la versión no tiene manifiesto ni fuente localizada, una nota lo dice.
 
 `SYSTEM.CNF` pasa a un mapping de claves en minúsculas (`boot`, `tcb`, `event`, `stack`) con los valores como texto,
 escapados como los de las tablas (una barra invertida se escribe `\\`). Una línea sin `=` es un `unknown`.
