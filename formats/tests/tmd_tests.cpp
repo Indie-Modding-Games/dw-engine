@@ -67,12 +67,24 @@ TEST_CASE("a primitive may use normals past its object's count while they are in
         .normals = {0, 0, 4096},
         .primitives = {{primitiveHeader(0x30, 0, 4), colorWord(1, 1, 1), pair(0, 0), pair(0, 1), pair(1, 2)}},
     };
-    // The packet words that follow the normals are read as the second normal, as the console would.
+    // The packet words that follow the normals are read as the second normal, as the console would, but they are
+    // not a normal.
     const auto bytes = buildTmd({object});
     const auto tmd = readTmd(bytes);
     REQUIRE(tmd.has_value());
     CHECK(tmd->objects[0].normals.size() == 2);
-    CHECK(tmd->issues.size() == 1);
+    REQUIRE(tmd->issues.size() == 1);
+    CHECK(tmd->issues[0].message.contains("not normals"));
+    CHECK(tmd->notes.empty());
+
+    // With the normals of every object together, the extra normals of the first object are the next object's.
+    const TestObject next{.vertices = {0, 0, 0}, .normals = {0, 4096, 0, 4096, 0, 0}, .primitives = {}};
+    const auto shared = readTmd(buildTmd({object, next}, TmdLayout::ByKind));
+    REQUIRE(shared.has_value());
+    CHECK(shared->issues.empty());
+    REQUIRE(shared->notes.size() == 1);
+    CHECK(shared->notes[0].message.contains("normals of object 1"));
+    CHECK(shared->objects[0].normals[1] == TmdVector{0, 4096, 0});
 
     object.primitives[0][4] = pair(4000, 1);
     CHECK_FALSE(readTmd(buildTmd({object})).has_value());

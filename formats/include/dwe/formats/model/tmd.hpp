@@ -79,13 +79,13 @@ inline constexpr std::uint8_t TmdDirectColorDepth = 2;
 
 struct TmdObject {
     std::vector<TmdVector> vertices;
-    // The object's normals, plus any past its count that a primitive uses (see Tmd::issues).
+    // The object's normals, plus any past its count that a primitive uses (see Tmd::notes and Tmd::issues).
     std::vector<TmdVector> normals;
     std::vector<TmdPrimitive> primitives;
     std::int32_t scale = 0; // stored, but the original's renderer ignores it
 };
 
-// Something in the file the reader could not take as it is: a primitive it skipped or data it read in an unusual way.
+// Something unusual in the file, by object and primitive.
 struct TmdIssue {
     std::uint32_t object = 0;
     std::uint32_t primitive = 0;
@@ -96,7 +96,11 @@ struct TmdIssue {
 struct Tmd {
     std::uint32_t flags = 0;
     std::vector<TmdObject> objects;
+    // What the reader could not take as it is: a primitive it skipped, or normals past an object's count that are not
+    // the normals of another object.
     std::vector<TmdIssue> issues;
+    // Unusual data the reader takes as the console does: normals past an object's count that are other objects'.
+    std::vector<TmdIssue> notes;
 };
 
 // Reads a TMD whose offsets are relative to its object table, as every TMD of the original is.

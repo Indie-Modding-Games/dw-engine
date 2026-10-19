@@ -3,6 +3,10 @@
 
 #include <algorithm>
 #include <format>
+#include <optional>
+#include <span>
+#include <string>
+#include <vector>
 
 namespace dwe::formats::model {
 
@@ -129,8 +133,33 @@ struct ObjectHeader {
     std::int32_t scale = 0;
 };
 
-core::Result<TmdObject> readObject(const ByteReader& table, const ObjectHeader& header, std::uint32_t index,
-                                   std::vector<TmdIssue>& issues) {
+// The objects whose normals hold the normals of an object from `first` to `end`, if every one of them is the
+// whole normal of another object.
+std::optional<std::vector<std::uint32_t>> normalOwners(std::span<const ObjectHeader> headers, std::uint32_t index,
+                                                       std::size_t first, std::size_t end) {
+    std::vector<std::uint32_t> owners;
+    for (std::size_t normal = first; normal < end; ++normal) {
+        const std::size_t at = headers[index].normalTop + (normal * VectorSize);
+        const auto owner = std::ranges::find_if(headers, [&](const ObjectHeader& other) {
+            return &other != &headers[index] && at >= other.normalTop &&
+                   at + VectorSize <= other.normalTop + (std::size_t{other.nNormal} * VectorSize) &&
+                   (at - other.normalTop) % VectorSize == 0;
+        });
+        if (owner == headers.end()) {
+            return std::nullopt;
+        }
+        const auto ownerIndex = static_cast<std::uint32_t>(owner - headers.begin());
+        if (!std::ranges::contains(owners, ownerIndex)) {
+            owners.push_back(ownerIndex);
+        }
+    }
+    std::ranges::sort(owners);
+    return owners;
+}
+
+core::Result<TmdObject> readObject(const ByteReader& table, std::span<const ObjectHeader> headers, std::uint32_t index,
+                                   Tmd& tmd) {
+    const ObjectHeader& header = headers[index];
     if (!table.contains(header.vertTop, std::size_t{header.nVert} * VectorSize)) {
         return core::fail(
             std::format("object {}: {} vertices at {:#x} go past the end", index, header.nVert, header.vertTop));
@@ -163,10 +192,10 @@ core::Result<TmdObject> readObject(const ByteReader& table, const ObjectHeader& 
 
         const PolygonLayout layout = polygonLayout(mode, flag);
         if ((mode >> TmdModeKindShift) != TmdKindPolygon || layout.words() != ilen) {
-            issues.push_back({.object = index,
-                              .primitive = p,
-                              .message = std::format("skipped primitive with mode {:#04x}, flag {:#04x}, {} words",
-                                                     mode, flag, ilen)});
+            tmd.issues.push_back({.object = index,
+                                  .primitive = p,
+                                  .message = std::format("skipped primitive with mode {:#04x}, flag {:#04x}, {} words",
+                                                         mode, flag, ilen)});
             continue;
         }
 
@@ -183,18 +212,36 @@ core::Result<TmdObject> readObject(const ByteReader& table, const ObjectHeader& 
         object.primitives.push_back(primitive);
     }
 
-    // The console indexes normals without checking the count, so a primitive may use the bytes after the object's
-    // normals. One model of the original does; the normals are read from there as long as they are in the file.
+    // The console indexes normals without checking the count (libgs GsTMDfast*, through GsSortObject4J), so a
+    // primitive may use the bytes after the object's normals. One model of the original does, and they are the
+    // normals of the objects that follow; the reader reads them from there as long as they are in the file.
     if (normalsUsed > header.nNormal) {
         if (!table.contains(header.normalTop, normalsUsed * VectorSize)) {
             return core::fail(
                 std::format("object {}: a primitive uses normal {}, past the end of the file", index, normalsUsed - 1));
         }
-        issues.push_back({.object = index,
-                          .primitive = 0,
-                          .message = std::format("primitives use {} normals but the object has {}; the extra ones "
-                                                 "are read from the bytes that follow",
-                                                 normalsUsed, header.nNormal)});
+        const auto owners = normalOwners(headers, index, header.nNormal, normalsUsed);
+        if (owners) {
+            std::string list;
+            for (std::size_t i = 0; i < owners->size(); ++i) {
+                if (i > 0) {
+                    list += i + 1 == owners->size() ? " and " : ", ";
+                }
+                list += std::to_string((*owners)[i]);
+            }
+            tmd.notes.push_back(
+                {.object = index,
+                 .primitive = 0,
+                 .message = std::format("primitives use {} normals but the object has {}; the extra "
+                                        "ones are normals of object{} {}, as the console reads them",
+                                        normalsUsed, header.nNormal, owners->size() == 1 ? "" : "s", list)});
+        } else {
+            tmd.issues.push_back({.object = index,
+                                  .primitive = 0,
+                                  .message = std::format("primitives use {} normals but the object has {}; the extra "
+                                                         "ones are read from bytes that are not normals",
+                                                         normalsUsed, header.nNormal)});
+        }
     }
     object.normals = readVectors(table, header.normalTop, normalsUsed);
     return object;
@@ -216,24 +263,28 @@ core::Result<Tmd> readTmd(std::span<const std::byte> bytes) {
     if ((*flags & TmdFlagAbsoluteOffsets) != 0) {
         return core::fail("TMD uses absolute addresses; only relative offsets can be read from a file");
     }
-    Tmd tmd{.flags = *flags, .objects = {}, .issues = {}};
+    Tmd tmd{.flags = *flags, .objects = {}, .issues = {}, .notes = {}};
     const ByteReader table{bytes.subspan(HeaderSize)};
     if (!table.contains(0, std::size_t{*objectCount} * ObjectHeaderSize)) {
         return core::fail(std::format("TMD object table of {} objects goes past the end", *objectCount));
     }
 
+    std::vector<ObjectHeader> headers;
+    headers.reserve(*objectCount);
     for (std::uint32_t i = 0; i < *objectCount; ++i) {
         // The table's range is checked above.
         const std::size_t at = std::size_t{i} * ObjectHeaderSize;
         const auto field = [&](std::size_t offset) { return table.u32(at + offset).value_or(0); };
-        const ObjectHeader header{.vertTop = field(0),
-                                  .nVert = field(4),
-                                  .normalTop = field(8),
-                                  .nNormal = field(12),
-                                  .primitiveTop = field(16),
-                                  .nPrimitive = field(20),
-                                  .scale = static_cast<std::int32_t>(field(24))};
-        auto object = readObject(table, header, i, tmd.issues);
+        headers.push_back({.vertTop = field(0),
+                           .nVert = field(4),
+                           .normalTop = field(8),
+                           .nNormal = field(12),
+                           .primitiveTop = field(16),
+                           .nPrimitive = field(20),
+                           .scale = static_cast<std::int32_t>(field(24))});
+    }
+    for (std::uint32_t i = 0; i < *objectCount; ++i) {
+        auto object = readObject(table, headers, i, tmd);
         if (!object) {
             return core::fail(std::format("TMD {}", object.error().message));
         }

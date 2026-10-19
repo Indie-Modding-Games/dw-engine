@@ -63,26 +63,65 @@ struct TestObject {
     std::vector<std::vector<std::uint32_t>> primitives; // header word, then the packet
 };
 
-// Builds a TMD with relative offsets: header, object table, then each object's vertices, normals and primitives.
-inline std::vector<std::byte> buildTmd(const std::vector<TestObject>& objects) {
+// How buildTmd lays out the objects' data.
+enum class TmdLayout : std::uint8_t {
+    ByObject, // each object's vertices, normals and primitives, object after object
+    ByKind,   // every object's primitives, then every object's vertices, then every object's normals
+};
+
+// Builds a TMD with relative offsets: header, object table, then the objects' data.
+inline std::vector<std::byte> buildTmd(const std::vector<TestObject>& objects, TmdLayout layout = TmdLayout::ByObject) {
     ByteWriter table;
     ByteWriter data;
     const std::size_t dataStart = objects.size() * 28;
-    for (const TestObject& object : objects) {
-        const auto vertTop = static_cast<std::uint32_t>(dataStart + data.size());
-        for (std::size_t i = 0; i < object.vertices.size(); i += 3) {
-            data.words({object.vertices[i], object.vertices[i + 1], object.vertices[i + 2], 0});
+    struct Tops {
+        std::uint32_t vertices = 0;
+        std::uint32_t normals = 0;
+        std::uint32_t primitives = 0;
+    };
+    std::vector<Tops> tops(objects.size());
+    const auto writeVertices = [&](std::size_t o) {
+        tops[o].vertices = static_cast<std::uint32_t>(dataStart + data.size());
+        const auto& vertices = objects[o].vertices;
+        for (std::size_t i = 0; i < vertices.size(); i += 3) {
+            data.words({vertices[i], vertices[i + 1], vertices[i + 2], 0});
         }
-        const auto normalTop = static_cast<std::uint32_t>(dataStart + data.size());
-        for (std::size_t i = 0; i < object.normals.size(); i += 3) {
-            data.words({object.normals[i], object.normals[i + 1], object.normals[i + 2], 0});
+    };
+    const auto writeNormals = [&](std::size_t o) {
+        tops[o].normals = static_cast<std::uint32_t>(dataStart + data.size());
+        const auto& normals = objects[o].normals;
+        for (std::size_t i = 0; i < normals.size(); i += 3) {
+            data.words({normals[i], normals[i + 1], normals[i + 2], 0});
         }
-        const auto primitiveTop = static_cast<std::uint32_t>(dataStart + data.size());
-        for (const auto& primitive : object.primitives) {
+    };
+    const auto writePrimitives = [&](std::size_t o) {
+        tops[o].primitives = static_cast<std::uint32_t>(dataStart + data.size());
+        for (const auto& primitive : objects[o].primitives) {
             for (const std::uint32_t word : primitive) {
                 data.u32(word);
             }
         }
+    };
+    if (layout == TmdLayout::ByObject) {
+        for (std::size_t o = 0; o < objects.size(); ++o) {
+            writeVertices(o);
+            writeNormals(o);
+            writePrimitives(o);
+        }
+    } else {
+        for (std::size_t o = 0; o < objects.size(); ++o) {
+            writePrimitives(o);
+        }
+        for (std::size_t o = 0; o < objects.size(); ++o) {
+            writeVertices(o);
+        }
+        for (std::size_t o = 0; o < objects.size(); ++o) {
+            writeNormals(o);
+        }
+    }
+    for (std::size_t o = 0; o < objects.size(); ++o) {
+        const TestObject& object = objects[o];
+        const auto [vertTop, normalTop, primitiveTop] = tops[o];
         table.u32(vertTop);
         table.u32(static_cast<std::uint32_t>(object.vertices.size() / 3));
         table.u32(normalTop);

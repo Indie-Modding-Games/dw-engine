@@ -49,9 +49,24 @@ bits 7-8).
 
 ### Normales fuera del objeto
 
-libgs indexa las normales sin mirar `n_normal`, y un modelo del original tiene primitivas que usan normales más allá
-de la cuenta de su objeto. El lector las lee de los bytes que siguen, como la consola, siempre que estén dentro del
-fichero, y lo apunta en `Tmd::issues`. Un índice de vértice fuera de `n_vert` sí es un error.
+libgs indexa las normales sin mirar `n_normal`: `GsSortObject4J` pasa cada primitiva a su función `GsTMDfast*`
+(`graphics.c` las registra en `GsFCALL4`, por ejemplo `GsTMDfastTG3L` para los triángulos con textura, gouraud y luz),
+y esa función lee la normal en `normal_top + 8 · índice`. Un índice de vértice fuera de `n_vert` sí es un error.
+
+Un modelo del original, `CHDAT/MMD1/TANE.MMD`, tiene triángulos con luz (modo `0x34`, flag 0, así que la consola sí
+lee sus normales) que usan más normales de las que dice su objeto: el objeto 0 dice 22 y usa 49, y el 1 dice 22 y usa
+29. El fichero guarda las normales de todos los objetos seguidas, así que las que sobran son normales de los objetos 1
+y 2: vectores unitarios bien formados, pero de otras caras. Comparadas con la normal de la cara que las usa, las
+propias apuntan casi igual y las prestadas no tienen relación con ella. Es un fallo del modelo original, y la consola
+lo dibuja con esa luz.
+
+El lector hace lo mismo que la consola: lee las normales de más desde donde caen, siempre que estén dentro del
+fichero.
+
+- Si cada una es una normal entera de otro objeto, lo apunta en `Tmd::notes` (el extractor lo pasa a `notes`): el
+  modelo se entiende y se convierte entero, con la luz del original.
+- Si alguna cae en bytes que no son normales de ningún objeto, lo apunta en `Tmd::issues` (y el fichero queda
+  parcial).
 
 ### Cara delantera
 
