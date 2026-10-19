@@ -25,6 +25,9 @@ std::string digimonSlug(const GameTables* tables, std::size_t type);
 // model ("model"). Every extractor names Digimon assets with this function.
 core::Result<assets::AssetId> digimonAsset(const GameTables* tables, std::size_t type, std::string_view leaf);
 
+// model/<folders>/<name>: a model file without a skeleton. DOOR/DOOR05.TMD is model/door/door05.
+core::Result<assets::AssetId> discModel(std::string_view volumePath);
+
 // card/<id>: the picture of a card, from CARD/CARD.ALL. The id is a 3-digit number.
 core::Result<assets::AssetId> cardImage(std::size_t card);
 

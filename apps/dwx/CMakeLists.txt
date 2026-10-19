@@ -12,8 +12,11 @@ dwe_add_module(dwx
         src/image_extractors.cpp
         src/map_extractors.cpp
         src/table_extractors.cpp
+        src/model_extractors.cpp
+        src/model_textures.cpp
         src/verify.cpp
-    DEPS core formats assets)
+    DEPS core formats assets
+    TEST_LIBS dwe_cgltf)
 
 if(BUILD_TESTING)
     # The tests build synthetic discs and TIMs with the fixtures of the formats tests and use the temporary folder of

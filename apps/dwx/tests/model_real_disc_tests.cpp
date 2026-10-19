@@ -1,0 +1,79 @@
+// Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has one.
+
+#include <dwe/formats/disc/disc_image.hpp>
+#include <dwe/formats/disc/iso9660.hpp>
+
+#include <cgltf.h>
+#include <doctest/doctest.h>
+
+#include <cstddef>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <string_view>
+
+#include "disc_description.hpp"
+#include "extractor.hpp"
+
+using namespace dwe::dwx;
+
+namespace {
+
+template <typename T>
+std::string errorOf(const dwe::core::Result<T>& result) {
+    return result ? std::string{} : result.error().message;
+}
+
+} // namespace
+
+TEST_CASE("the user's disc: every model becomes a GLB that cgltf validates") {
+    const char* path = std::getenv("DWE_DISC");
+    if (path == nullptr || std::string_view{path}.empty()) {
+        MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
+        return;
+    }
+    auto image = dwe::formats::disc::DiscImage::open(path);
+    REQUIRE_MESSAGE(image.has_value(), errorOf(image));
+    const auto volume = dwe::formats::disc::readIsoVolume(*image);
+    REQUIRE_MESSAGE(volume.has_value(), errorOf(volume));
+    // The model extractors read the executable's tables.
+    const DiscDescription description = describeDisc(*image, *volume);
+    const GameTables* tables = description.tables ? &*description.tables : nullptr;
+    REQUIRE(tables != nullptr);
+    const Disc disc{*image, *volume, description.info, tables};
+
+    std::size_t digimon = 0;
+    std::size_t others = 0;
+    std::size_t textured = 0;
+    std::size_t partial = 0;
+    std::size_t totalBytes = 0;
+    for (const auto& file : volume->files) {
+        const Extractor* extractor = findExtractor(extractors(), file.path);
+        if (extractor == nullptr || (extractor->name != "digimon_model" && extractor->name != "static_model")) {
+            continue;
+        }
+        const auto extraction = extractor->extract(disc, file);
+        REQUIRE_MESSAGE(extraction.has_value(), file.path, ": ", errorOf(extraction));
+        REQUIRE(extraction->outputs.size() == 1);
+        const auto& glb = extraction->outputs.front().bytes;
+        (extractor->name == "digimon_model" ? digimon : others) += 1;
+        partial += extraction->unknowns.empty() ? 0 : 1;
+        totalBytes += glb.size();
+
+        const cgltf_options options{};
+        cgltf_data* data = nullptr;
+        REQUIRE_MESSAGE(cgltf_parse(&options, glb.data(), glb.size(), &data) == cgltf_result_success, file.path);
+        const std::unique_ptr<cgltf_data, decltype(&cgltf_free)> parsed(data, &cgltf_free);
+        REQUIRE(cgltf_load_buffers(&options, data, nullptr) == cgltf_result_success);
+        CHECK_MESSAGE(cgltf_validate(data) == cgltf_result_success, file.path);
+        textured += data->images_count > 0 ? 1 : 0;
+        if (extractor->name == "digimon_model") {
+            CHECK_MESSAGE(data->images_count > 0, file.path);
+            CHECK_MESSAGE(data->animations_count > 0, file.path);
+        }
+    }
+    MESSAGE(digimon, " Digimon models, ", others, " other models, ", textured, " textured, ", partial,
+            " with unknowns, ", totalBytes, " bytes");
+    CHECK(digimon == 178);
+    CHECK(others == 66);
+}

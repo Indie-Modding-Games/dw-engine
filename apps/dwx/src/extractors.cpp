@@ -3,6 +3,7 @@
 #include "extractor.hpp"
 #include "image_extractors.hpp"
 #include "map_extractors.hpp"
+#include "model_extractors.hpp"
 #include "table_extractors.hpp"
 
 namespace dwe::dwx {
@@ -19,6 +20,8 @@ constexpr std::array Registry = {
     Extractor{.name = "map", .handles = handlesMapFile, .extract = extractMapFile},
     Extractor{.name = "map_background", .handles = handlesMapBackground, .extract = extractMapBackground},
     Extractor{.name = "arena_collision", .handles = handlesArenaCollision, .extract = extractArenaCollision},
+    Extractor{.name = "digimon_model", .handles = handlesDigimonModel, .extract = extractDigimonModel},
+    Extractor{.name = "static_model", .handles = handlesStaticModel, .extract = extractStaticModel},
 };
 
 } // namespace

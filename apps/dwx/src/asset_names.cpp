@@ -13,6 +13,18 @@ std::string number(std::size_t value) {
     return std::format("{:03}", value);
 }
 
+// "<prefix>/<folders>/<name>" for a volume path, without the file's extension.
+std::string volumePathId(std::string_view prefix, std::string_view volumePath) {
+    std::string id{prefix};
+    std::string_view rest = volumePath;
+    for (std::size_t slash = rest.find('/'); slash != std::string_view::npos; slash = rest.find('/')) {
+        id += "/" + segment(rest.substr(0, slash));
+        rest.remove_prefix(slash + 1);
+    }
+    id += "/" + segment(rest.substr(0, rest.find('.')));
+    return id;
+}
+
 } // namespace
 
 std::string segment(std::string_view discName) {
@@ -41,19 +53,16 @@ core::Result<assets::AssetId> digimonAsset(const GameTables* tables, std::size_t
     return assets::AssetId::parse(std::format("digimon/{}/{}", digimonSlug(tables, type), leaf));
 }
 
+core::Result<assets::AssetId> discModel(std::string_view volumePath) {
+    return assets::AssetId::parse(volumePathId("model", volumePath));
+}
+
 core::Result<assets::AssetId> cardImage(std::size_t card) {
     return assets::AssetId::parse(std::format("card/{}", number(card)));
 }
 
 core::Result<assets::AssetId> discImage(std::string_view volumePath, std::optional<std::size_t> index) {
-    std::string id = "texture";
-    std::string_view rest = volumePath;
-    for (std::size_t slash = rest.find('/'); slash != std::string_view::npos; slash = rest.find('/')) {
-        id += "/" + segment(rest.substr(0, slash));
-        rest.remove_prefix(slash + 1);
-    }
-    // The file name without its extension.
-    id += "/" + segment(rest.substr(0, rest.find('.')));
+    std::string id = volumePathId("texture", volumePath);
     if (index) {
         id += "/" + number(*index);
     }
