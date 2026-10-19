@@ -18,6 +18,7 @@ constexpr std::array Registry = {
     Extractor{.name = "boot_config", .handles = handlesBootConfig, .extract = extractBootConfig},
     Extractor{.name = "map", .handles = handlesMapFile, .extract = extractMapFile},
     Extractor{.name = "map_background", .handles = handlesMapBackground, .extract = extractMapBackground},
+    Extractor{.name = "arena_collision", .handles = handlesArenaCollision, .extract = extractArenaCollision},
 };
 
 } // namespace

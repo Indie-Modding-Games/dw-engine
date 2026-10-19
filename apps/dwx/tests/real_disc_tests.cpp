@@ -59,6 +59,7 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
     // Every map file but one has a MAP_ENTRIES record; the one without stays partial.
     CHECK(taken("map") > 200);
     CHECK(taken("map_background") == taken("map"));
+    CHECK(taken("arena_collision") == 2);
     const auto has = [&run](std::string_view prefix) {
         return std::ranges::any_of(run->outputs,
                                    [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });

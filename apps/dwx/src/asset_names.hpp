@@ -48,6 +48,9 @@ core::Result<assets::AssetId> mapAsset(std::string_view slug, std::string_view l
 // map/<slug>/texture<bits>/<index>: one of the 8-bit or 4-bit TIMs of a map, numbered from 0 in each kind.
 core::Result<assets::AssetId> mapImage(std::string_view slug, int bitsPerPixel, std::size_t index);
 
+// arena/<name>/collision: the collision grid of a tournament arena, STDDAT/B_TOGI.ATR is arena/b_togi/collision.
+core::Result<assets::AssetId> arenaCollision(std::string_view volumePath);
+
 // <image>_meta: the metadata that goes next to an image.
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 

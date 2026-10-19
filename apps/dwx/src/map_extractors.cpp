@@ -29,6 +29,8 @@ using formats::exe::MapEntryFlags;
 constexpr std::string_view MapFolder = "MAP/MAP";
 constexpr std::string_view MapExtension = ".MAP";
 constexpr std::string_view BackgroundExtension = ".TFS";
+constexpr std::string_view ArenaFolder = "STDDAT/";
+constexpr std::string_view ArenaCollisionExtension = ".ATR";
 // The palettes whose use is known: day, dusk and night (map.c: updateTimeOfDay).
 constexpr std::size_t KnownPalettes = 3;
 // A bit of MapEntry::flags that no known code reads.
@@ -243,6 +245,30 @@ core::Result<Extraction> extractMapBackground(const Disc& disc, const formats::d
             std::format("the map changes with the time of day but has {} palette(s)", tfs->palettes.size()));
     }
     noteSharedEntries(disc, *loaded, extraction);
+    return extraction;
+}
+
+bool handlesArenaCollision(std::string_view path) {
+    return path.starts_with(ArenaFolder) && path.ends_with(ArenaCollisionExtension);
+}
+
+core::Result<Extraction> extractArenaCollision(const Disc& disc, const formats::disc::IsoFile& file) {
+    const auto bytes = formats::disc::readIsoFile(disc.source(), file);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    constexpr std::size_t GridSize = formats::map::CollisionSize * formats::map::CollisionSize;
+    if (bytes->size() != GridSize) {
+        return core::fail(std::format("a collision grid has {} bytes, this file {}", GridSize, bytes->size()));
+    }
+    std::vector<std::uint8_t> cells(GridSize);
+    std::ranges::transform(*bytes, cells.begin(), [](std::byte value) { return std::to_integer<std::uint8_t>(value); });
+    auto output = yamlOutput(names::arenaCollision(file.path), formats::map::collisionToYaml(cells));
+    if (!output) {
+        return std::unexpected{output.error()};
+    }
+    Extraction extraction;
+    extraction.outputs.push_back(std::move(*output));
     return extraction;
 }
 

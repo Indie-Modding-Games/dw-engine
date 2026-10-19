@@ -176,8 +176,9 @@ YamlNode npcs(const std::vector<MapNpc>& npcs, const MapYamlIds& ids) {
     return list;
 }
 
-// One character per cell when the values fit the symbols; otherwise two hex digits per cell.
-YamlNode collision(const std::vector<std::uint8_t>& cells) {
+} // namespace
+
+YamlNode collisionToYaml(std::span<const std::uint8_t> cells) {
     std::array<char, 256> symbols{};
     const std::set<std::uint8_t> values(cells.begin(), cells.end());
     std::size_t nextTrigger = 0;
@@ -220,8 +221,6 @@ YamlNode collision(const std::vector<std::uint8_t>& cells) {
     return node;
 }
 
-} // namespace
-
 core::YamlNode mapToYaml(const MapFile& map, const MapYamlIds& ids) {
     const MapSetup& setup = map.setup;
     YamlNode root = YamlNode::mapping();
@@ -238,7 +237,7 @@ core::YamlNode mapToYaml(const MapFile& map, const MapYamlIds& ids) {
     root.set("warps", warps(map.entities.warps, ids));
     root.set("digimon_count", number(map.entities.digimonCount));
     root.set("npcs", npcs(map.entities.npcs, ids));
-    root.set("collision", collision(map.collision));
+    root.set("collision", collisionToYaml(map.collision));
     return root;
 }
 

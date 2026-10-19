@@ -86,6 +86,11 @@ core::Result<assets::AssetId> mapImage(std::string_view slug, int bitsPerPixel, 
     return assets::AssetId::parse(std::format("map/{}/texture{}/{}", slug, bitsPerPixel, number(index)));
 }
 
+core::Result<assets::AssetId> arenaCollision(std::string_view volumePath) {
+    const std::string_view name = volumePath.substr(volumePath.rfind('/') + 1);
+    return assets::AssetId::parse(std::format("arena/{}/collision", segment(name.substr(0, name.find('.')))));
+}
+
 core::Result<assets::AssetId> metadataOf(const assets::AssetId& image) {
     return assets::AssetId::parse(image.str() + "_meta");
 }

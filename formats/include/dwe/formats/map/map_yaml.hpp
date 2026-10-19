@@ -20,4 +20,9 @@ struct MapYamlIds {
 // with a legend: '.' = free, '#' = blocked and a letter or digit per trigger value.
 core::YamlNode mapToYaml(const MapFile& map, const MapYamlIds& ids = {});
 
+// Converts a collision grid, CollisionSize rows of CollisionSize cells, to the collision node of mapToYaml: one
+// character per cell when the values fit the legend's symbols, otherwise two hex digits per cell. The tournament
+// arenas store the same grid in their .ATR files.
+core::YamlNode collisionToYaml(std::span<const std::uint8_t> cells);
+
 } // namespace dwe::formats::map

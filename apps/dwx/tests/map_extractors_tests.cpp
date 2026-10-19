@@ -40,8 +40,8 @@ MapEntry entry(std::string filename, std::uint8_t flags) {
     return record;
 }
 
-// A disc with one complete map, a map file no record names and a record whose file is missing. Records 0 and 1 name
-// the same file.
+// A disc with one complete map, a map file no record names, a record whose file is missing and two arena collision
+// grids, one too short. Records 0 and 1 name the same file.
 struct MapDisc {
     MapDisc() {
         tables.tables.mapEntries = {entry("FIELD", HasNpcs | UnreadFlag), entry("FIELD", HasNpcs),
@@ -59,6 +59,11 @@ struct MapDisc {
         builder.addFile("MAP/MAP1/FIELD.MAP", dwe::formats::test::makeMap(parts));
         builder.addFile("MAP/MAP1/FIELD.TFS", dwe::formats::test::makeTfs(5, 1));
         builder.addFile("MAP/MAP2/LOST.MAP", dwe::formats::test::makeMap(parts));
+        std::vector<std::byte> arena(10000, std::byte{0});
+        arena[0] = std::byte{0x80};
+        arena[9999] = std::byte{7};
+        builder.addFile("STDDAT/B_TOGI.ATR", std::move(arena));
+        builder.addFile("STDDAT/SHORT.ATR", std::vector<std::byte>(10, std::byte{0}));
         image = builder.build();
         source =
             std::make_unique<dwe::formats::disc::MemorySectorSource>(image, dwe::formats::disc::SectorLayout::Cooked);
@@ -137,4 +142,27 @@ TEST_CASE("maps need the executable's tables") {
         CHECK(report.status == FileStatus::Partial);
         CHECK(mentions(report.unknowns, "tables are not known"));
     }
+}
+
+TEST_CASE("an arena collision grid becomes YAML") {
+    const MapDisc fixture;
+    const Disc disc{*fixture.source, fixture.volume, fixture.info};
+    const auto run = runExtractors(disc, extractors());
+    REQUIRE(run.has_value());
+
+    const auto& arena = reportOf(*run, "STDDAT/B_TOGI.ATR");
+    CHECK(arena.extractor == "arena_collision");
+    CHECK(arena.status == FileStatus::Extracted);
+    CHECK(arena.outputs == std::vector<std::string>{"arena/b_togi/collision.yaml"});
+    const auto output = std::ranges::find(run->outputs, "arena/b_togi/collision.yaml", outputPath);
+    REQUIRE(output != run->outputs.end());
+    const auto yaml =
+        dwe::core::parseYaml(std::string(reinterpret_cast<const char*>(output->bytes.data()), output->bytes.size()));
+    REQUIRE(yaml.has_value());
+    const auto& rows = yaml->find("rows")->items();
+    REQUIRE(rows.size() == 100);
+    CHECK(rows[0].text().starts_with("#."));
+    CHECK(rows[99].text().ends_with("A"));
+
+    CHECK(reportOf(*run, "STDDAT/SHORT.ATR").status == FileStatus::Partial);
 }
