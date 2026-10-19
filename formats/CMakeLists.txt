@@ -27,6 +27,7 @@ dwe_add_module(formats
         src/exe/psx_exe.cpp
         src/exe/executable_layout.cpp
         src/exe/memory_image.cpp
+        src/exe/overlay.cpp
         src/exe/tables.cpp
         src/exe/tables_yaml.cpp
         src/image/png.cpp
