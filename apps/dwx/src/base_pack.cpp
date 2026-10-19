@@ -7,11 +7,15 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <format>
 #include <fstream>
 #include <map>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -82,12 +86,84 @@ core::Result<std::string> manifestYaml() {
     return core::emitYaml(manifest);
 }
 
+// The most threads an extraction uses. Files are independent, so they are hashed and extracted in parallel; the
+// results are put together in path order, so the output does not depend on the number of threads.
+constexpr unsigned MaxThreads = 16;
+
+// Lets several threads read one sector source: reads take turns, and each thread gets its own copy of the user
+// data, valid until that thread's next read.
+class SharedSectorSource final : public formats::disc::SectorSource {
+public:
+    explicit SharedSectorSource(formats::disc::SectorSource& source) : source_(&source) {}
+
+    [[nodiscard]] std::uint32_t sectorCount() const override { return source_->sectorCount(); }
+
+    core::Result<formats::disc::SectorData> readSector(std::uint32_t lba) override {
+        thread_local std::vector<std::byte> copy;
+        const std::scoped_lock lock{mutex_};
+        auto sector = source_->readSector(lba);
+        if (!sector) {
+            return sector;
+        }
+        copy.assign(sector->userData.begin(), sector->userData.end());
+        return formats::disc::SectorData{.form = sector->form, .userData = copy};
+    }
+
+private:
+    formats::disc::SectorSource* source_;
+    std::mutex mutex_;
+};
+
+// What a worker made of one file.
+struct FileWork {
+    std::optional<core::Result<core::Sha1Digest>> digest;
+    const Extractor* extractor = nullptr;
+    std::optional<core::Result<Extraction>> extraction;
+    std::vector<core::Sha1Digest> outputDigests; // of each output's bytes, to find duplicates
+};
+
+// Hashes every file and runs the extractor that takes it, on several threads.
+std::vector<FileWork> extractFiles(const Disc& disc, std::span<const Extractor> registry) {
+    SharedSectorSource shared{disc.source()};
+    const Disc view{shared, disc.volume(), disc.info(), disc.tables()};
+    const auto& files = disc.volume().files;
+    std::vector<FileWork> work(files.size());
+    std::atomic<std::size_t> next{0};
+    const auto worker = [&] {
+        for (std::size_t i = next++; i < files.size(); i = next++) {
+            FileWork& item = work[i];
+            item.digest = formats::disc::hashIsoFile(shared, files[i]);
+            item.extractor = findExtractor(registry, files[i].path);
+            if (*item.digest && item.extractor != nullptr) {
+                item.extraction = item.extractor->extract(view, files[i]);
+                if (*item.extraction) {
+                    for (const auto& output : (*item.extraction)->outputs) {
+                        item.outputDigests.push_back(core::sha1(output.bytes));
+                    }
+                }
+            }
+        }
+    };
+    const unsigned count = std::clamp(std::thread::hardware_concurrency(), 1U, MaxThreads);
+    std::vector<std::thread> threads;
+    for (unsigned i = 1; i < count; ++i) {
+        threads.emplace_back(worker);
+    }
+    worker();
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return work;
+}
+
 // Groups the outputs with the same extension and bytes, in the order of their first output.
-std::vector<std::vector<std::string>> findDuplicates(const std::vector<OutputFile>& outputs) {
+std::vector<std::vector<std::string>> findDuplicates(const std::vector<OutputFile>& outputs,
+                                                     const std::vector<core::Sha1Digest>& digests) {
     std::map<std::string, std::vector<std::string>> byContent;
     std::vector<std::string> order;
-    for (const auto& output : outputs) {
-        const std::string key = std::format("{}:{}", output.extension, core::toHex(core::sha1(output.bytes)));
+    for (std::size_t i = 0; i < outputs.size(); ++i) {
+        const OutputFile& output = outputs[i];
+        const std::string key = std::format("{}:{}", output.extension, core::toHex(digests[i]));
         auto& paths = byContent[key];
         if (paths.empty()) {
             order.push_back(key);
@@ -120,8 +196,15 @@ std::string_view fileStatusName(FileStatus status) {
 core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry) {
     ExtractionRun run;
     std::set<std::string, std::less<>> ids{std::string{ManifestId}};
-    for (const auto& file : disc.volume().files) {
-        const auto digest = formats::disc::hashIsoFile(disc.source(), file);
+    auto work = extractFiles(disc, registry);
+    std::vector<core::Sha1Digest> outputDigests;
+    for (std::size_t i = 0; i < work.size(); ++i) {
+        const auto& file = disc.volume().files[i];
+        FileWork& item = work[i];
+        if (!item.digest) {
+            return core::fail(std::format("{}: the file was not read", file.path));
+        }
+        const auto& digest = *item.digest;
         if (!digest) {
             return core::fail(std::format("{}: {}", file.path, digest.error().message));
         }
@@ -132,9 +215,12 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
                           .outputs = {},
                           .unknowns = {},
                           .notes = {}};
-        if (const Extractor* extractor = findExtractor(registry, file.path); extractor != nullptr) {
+        if (const Extractor* extractor = item.extractor; extractor != nullptr) {
             report.extractor = extractor->name;
-            auto extraction = extractor->extract(disc, file);
+            if (!item.extraction) {
+                return core::fail(std::format("{}: extractor {} did not run", file.path, extractor->name));
+            }
+            auto& extraction = *item.extraction;
             if (!extraction) {
                 report.unknowns.push_back(std::format("not extracted: {}", extraction.error().message));
             } else {
@@ -151,6 +237,7 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
                     report.outputs.push_back(outputPath(output));
                     run.outputs.push_back(std::move(output));
                 }
+                outputDigests.insert(outputDigests.end(), item.outputDigests.begin(), item.outputDigests.end());
                 report.unknowns = std::move(extraction->unknowns);
                 report.notes = std::move(extraction->notes);
             }
@@ -158,7 +245,7 @@ core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extr
         }
         run.files.push_back(std::move(report));
     }
-    run.duplicates = findDuplicates(run.outputs);
+    run.duplicates = findDuplicates(run.outputs, outputDigests);
     return run;
 }
 

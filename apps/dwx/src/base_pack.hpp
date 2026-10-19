@@ -57,7 +57,8 @@ struct CoverageSummary {
     std::size_t duplicates = 0; // outputs that repeat an earlier one
 };
 
-// Hashes every file of the volume and runs the extractor that takes it. An extractor that fails leaves its file
+// Hashes every file of the volume and runs the extractor that takes it, on several threads; the run is the same
+// whatever the number of threads. An extractor that fails leaves its file
 // partial, with the error as an unknown; two outputs with the same asset id, or one in the tool's own folder (dwx/),
 // are an error of the tool.
 core::Result<ExtractionRun> runExtractors(const Disc& disc, std::span<const Extractor> registry);

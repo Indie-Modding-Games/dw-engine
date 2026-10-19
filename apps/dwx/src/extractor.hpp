@@ -74,7 +74,8 @@ private:
 };
 
 // Turns disc files into source assets. A new kind of file is one more entry in the registry (extractors.cpp) and
-// the two functions it names.
+// the two functions it names. Several files are extracted at once on different threads, so an extractor keeps no
+// state between calls and reads the disc only through the Disc it is given.
 struct Extractor {
     std::string_view name;
     // Whether it takes this file, by its path on the volume ("CHDAT/ALLTIM.TIM").
