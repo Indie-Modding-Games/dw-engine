@@ -15,3 +15,9 @@ dwe_add_module(assets
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng)
+
+# The content check decodes every image of a pack; as in formats, debug builds link lodepng's release build, three
+# times faster. Not on Windows, where debug and release code use different C runtimes.
+if(NOT WIN32)
+    set_target_properties(lodepng PROPERTIES MAP_IMPORTED_CONFIG_DEBUG Release)
+endif()

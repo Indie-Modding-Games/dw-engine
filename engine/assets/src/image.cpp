@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <format>
+#include <span>
 
 namespace dwe::assets {
 
@@ -23,7 +24,8 @@ core::Result<Image> decodePng(std::span<const std::byte> png) {
         return core::fail(std::format("cannot decode the PNG: {}", lodepng_error_text(error)));
     }
     Image image{.width = width, .height = height, .pixels = std::vector<std::byte>(rgba.size())};
-    std::ranges::transform(rgba, image.pixels.begin(), [](unsigned char value) { return std::byte{value}; });
+    // A copy of bytes to bytes is one memmove, even in debug builds, where a loop per byte is slow.
+    std::ranges::copy(std::as_bytes(std::span{rgba}), image.pixels.begin());
     return image;
 }
 
