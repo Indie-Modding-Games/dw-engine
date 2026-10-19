@@ -5,6 +5,7 @@
 #include "image_extractors.hpp"
 #include "map_extractors.hpp"
 #include "model_extractors.hpp"
+#include "padding_extractor.hpp"
 #include "script_extractors.hpp"
 #include "table_extractors.hpp"
 
@@ -26,6 +27,7 @@ constexpr std::array Registry = {
     Extractor{.name = "static_model", .handles = handlesStaticModel, .extract = extractStaticModel},
     Extractor{.name = "sound_bank", .handles = handlesSoundFile, .extract = extractSoundFile},
     Extractor{.name = "event_script", .handles = handlesScriptFile, .extract = extractScriptFile},
+    Extractor{.name = "padding", .handles = handlesPadding, .extract = extractPadding},
 };
 
 } // namespace

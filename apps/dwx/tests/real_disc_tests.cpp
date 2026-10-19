@@ -67,6 +67,14 @@ TEST_CASE("the user's disc: the tables and images are extracted into a base pack
             CHECK_MESSAGE(report.status == FileStatus::Extracted, report.file.path);
         }
     }
+    const auto statusOf = [&run](std::string_view path) {
+        const auto found =
+            std::ranges::find(run->files, path, [](const FileReport& report) { return report.file.path; });
+        REQUIRE(found != run->files.end());
+        return found->status;
+    };
+    CHECK(taken("padding") == 1);
+    CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
     const auto has = [&run](std::string_view prefix) {
         return std::ranges::any_of(run->outputs,
                                    [prefix](const OutputFile& output) { return output.id.str().starts_with(prefix); });

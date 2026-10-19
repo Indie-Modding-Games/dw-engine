@@ -67,6 +67,7 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
 | `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
 | `event_script` | `SCN/MAPHEAD.SCN` y `SCN/DG.SCN` | Un listado YAML por script |
+| `padding` | `MMM.DAT` | Nada: comprueba que es todo ceros |
 
 Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md),
 [Audio](audio.md), [Textos y fuente](textos.md) y [Scripts de eventos](scripts.md).
@@ -142,6 +143,12 @@ sobre su página, sin imagen, y van a `unknowns`.
   - `ETCDAT/DEFEFF.TMD` y `ETCNA/MEDAL.TMD` cambian de textura mientras se dibujan (`buff_model.c: morphBuffModel`
     alterna la paleta, `map_object.c: activateMedalTexture` copia la medalla). El GLB tiene la textura del fichero y
     el cambio va a `notes`.
+
+### Relleno
+
+`MMM.DAT` (27,6 MB) solo aparece en la tabla de ficheros del ejecutable; ningún código lo abre. El extractor `padding`
+comprueba que todos sus bytes son cero: si lo son, queda `extracted` sin salidas y con una nota; si no, queda parcial y
+el `unknown` lista los rangos que no son cero.
 
 ## El paquete base
 

@@ -228,7 +228,6 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 ## Lo que no se sabe
 
-- `MMM.DAT` (26 MB): está en la tabla de ficheros pero no se ha encontrado código que lo lea.
 - Para qué son las paletas de `.TFS` después de la tercera y el interior de los EFE.
 
 Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **cada** fichero.

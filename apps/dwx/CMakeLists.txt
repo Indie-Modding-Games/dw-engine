@@ -12,6 +12,7 @@ dwe_add_module(dwx
         src/game_tables.cpp
         src/image_extractors.cpp
         src/map_extractors.cpp
+        src/padding_extractor.cpp
         src/script_extractors.cpp
         src/table_extractors.cpp
         src/model_extractors.cpp
