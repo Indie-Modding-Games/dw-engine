@@ -59,10 +59,11 @@ Principios:
 |---|---|---|
 | Imagen | BIN/CUE con sectores de 2352 bytes (modo 2) o ISO de 2048 | — |
 | Sistema de ficheros | ISO9660 estándar. Carpetas `CARD`, `CHDAT`, `DOOR`, `ETCDAT`, `ETCHI`, `ETCNA`, `MAP/MAP1..17`, `MOVIE`, `SCN`, `SOUND/VHB`, `STDDAT`, y en la raíz los overlays `*_REL.BIN`, `MMM.DAT` y el ejecutable | — |
-| Tabla de ficheros | `FILE_OFFSET_TABLE[819]` en el ejecutable: `{s32 sector LBA, s32 tamaño, char* nombre}` en orden de disco; termina en tamaño 0. Se busca por el nombre sin carpeta | `src/main/file.c: lookupFileTable, readFile, readFileSectors` |
-| Ficheros fuera de la tabla | `SCN\DG.SCN`, `ETCHI\EFEDAT.EFE`, `FEEL_EF.TMD`, `EX.TIM`, `EX.TMD` y los STR se buscan con `CdSearchFile` | `script_interp.c`, `efe.c`, `efe_table.c`, `mov.c` |
+| Tabla de ficheros | `FILE_OFFSET_TABLE[819]` en el ejecutable (US: 818 ficheros y la entrada final): `{s32 sector LBA, s32 tamaño, char* nombre}` en orden de disco; termina en tamaño 0. Se busca por el nombre sin carpeta. Los STR cuentan 2336 bytes por sector y `PSX.EXE` es otro nombre del ejecutable | `src/main/file.c: lookupFileTable, readFile, readFileSectors` |
+| Ficheros que se abren por ruta | `SCN\DG.SCN`, `ETCHI\EFEDAT.EFE`, `ETCDAT\FEEL_EF.TMD`, `ETCDAT\EX.TIM`, `ETCDAT\EX.TMD` y los STR se buscan con `CdSearchFile`; en el US también están en la tabla | `script_interp.c`, `efe.c`, `efe_table.c`, `mov.c` |
 
-`formats/disc` lee el ISO9660 y además valida que la tabla del ejecutable coincide con él. Los vídeos STR se leen en
+`formats/disc` lee el ISO9660 y además valida que la tabla del ejecutable coincide con él (detalle en
+[Disco](../formats/disco.md)). Los vídeos STR se leen en
 modo 2 forma 2 (2336 bytes por sector), así que la imagen tiene que ser BIN, no ISO.
 
 **Packs sin índice.** Muchos ficheros son una concatenación de entradas a un **paso fijo de sectores**, sin cabecera

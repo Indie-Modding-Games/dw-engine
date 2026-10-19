@@ -90,6 +90,7 @@ no llevan sanitizers.
 | `scripts/dev.sh format` | Formatea el código con clang-format (`--check` solo comprueba) |
 | `scripts/dev.sh tidy` | Pasa clang-tidy (necesita un `build` previo) |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
+| `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
 
 ## Editor
 

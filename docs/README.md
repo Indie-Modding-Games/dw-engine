@@ -24,7 +24,7 @@ Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos s
 |---|---|---|
 | Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
 | Guía práctica | Hacer una tarea concreta | `guides/` (llega con cada sistema) |
-| Referencia | Consultar un detalle exacto | [`reference/`](reference/README.md) (el original), `formats/`, `modding/` (llegan en las fases 1 y 4) |
+| Referencia | Consultar un detalle exacto | [`reference/`](reference/README.md) (el original), [`formats/`](formats/README.md) (los formatos del disco, fase 1), `modding/` (fase 4) |
 | Explicación | Entender por qué es así | [`architecture/`](architecture/), [`adr/`](adr/README.md) |
 
 Además: [`conventions/`](conventions/) (normas del equipo), [`legal/`](legal/) (qué se puede publicar),
