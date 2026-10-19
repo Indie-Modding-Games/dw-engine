@@ -70,7 +70,7 @@ cero pendientes.
 | Mapas y tablas del ejecutable → PNG + YAML, esquemas | Lectores, YAML y esquemas hechos; falta conectarlos a `dwx extract` |
 | Textos, VHB/SEQ, STR, scripts SCN | Pendiente |
 | `dwx validate`, `cook` y `pack` | Pendiente |
-| Visor ImGui | En curso (texturas; las mallas necesitan el render de la fase 2) |
+| Visor ImGui | Texturas hechas: el [visor de assets](guides/visor-de-assets.md) del overlay lista los IDs de los paquetes y enseña los PNG. Modelos y mapas, con el render 3D de la fase 2 |
 | Fichas de referencia: cuidado, evolución y batalla | Hecho, con los puntos dudosos marcados |
 
 ## Fase 2 — Prueba vertical

@@ -55,6 +55,8 @@ El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las val
 - Muévete con WASD, las flechas, la cruceta o el stick izquierdo de cualquier mando.
 - `º`/`` ` `` o `F1` abre la consola de desarrollo. Ahí puedes escribir Lua: `marker.x = 100`.
 - Edita `apps/game/scripts/main.lua` con el juego abierto: se recarga al guardar.
+- En la ventana Frame del overlay, **asset viewer** abre el [visor de assets](../guides/visor-de-assets.md). Monta
+  `content/base`, o la carpeta que pases con `scripts/dev.sh run --content <carpeta>`.
 - Si tu mando no se reconoce, deja un `gamecontrollerdb.txt` de SDL en la carpeta desde la que lanzas el juego.
 
 ## Windows

@@ -91,6 +91,9 @@ encima.
 | `sources(id)` | Todos los paquetes que tienen ese ID, de abajo arriba |
 | `overriddenIds()` | Los IDs que tiene más de un paquete, para depurar qué sobrescribe a qué |
 
+Para saber qué montar, `findPacks(carpeta)` devuelve la propia carpeta si tiene `pack.yaml`, y si no, cada subcarpeta
+inmediata que lo tenga. Así se puede montar `content/base` o todo `content/`.
+
 ## Errores
 
 Montar falla, con un mensaje que dice el paquete o el fichero, si:
