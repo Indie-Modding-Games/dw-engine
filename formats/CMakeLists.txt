@@ -3,6 +3,7 @@ dwe_add_module(formats
     SOURCES
         src/disc/cue_sheet.cpp
         src/disc/disc_image.cpp
+        src/disc/iso9660.cpp
         src/disc/known_releases.cpp
         src/disc/sector.cpp
     DEPS core)
