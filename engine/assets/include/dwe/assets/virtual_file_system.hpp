@@ -13,10 +13,24 @@
 
 namespace dwe::assets {
 
+// Where a pack is: its root folder in a file system. On disk that is the pack's folder; in a .pak archive opened with
+// PakFileSystem it is the archive's path.
+struct PackLocation {
+    const FileSystem* fileSystem = nullptr;
+    std::filesystem::path root;
+};
+
 // A pack in the stack of the virtual file system.
 struct MountedPack {
     PackManifest manifest;
     std::filesystem::path root;
+    const FileSystem* fileSystem = nullptr;
+};
+
+// A file of a pack and the asset id it gives.
+struct PackFile {
+    AssetId id;
+    std::string path; // relative to the pack's root, with '/' between folders
 };
 
 // A file that provides an asset, and the pack it belongs to.
@@ -33,6 +47,10 @@ public:
     // them. The file system must outlive the result.
     static core::Result<VirtualFileSystem> mount(const FileSystem& fileSystem,
                                                  std::span<const std::filesystem::path> packRoots);
+
+    // The same for packs that may each be in a different file system, such as folders on disk and .pak archives.
+    // Every file system must outlive the result.
+    static core::Result<VirtualFileSystem> mount(std::span<const PackLocation> locations);
 
     // The packs, from the bottom of the stack to the top.
     [[nodiscard]] std::span<const MountedPack> packs() const { return packs_; }
@@ -53,15 +71,17 @@ public:
     [[nodiscard]] std::vector<AssetId> overriddenIds() const;
 
 private:
-    VirtualFileSystem(const FileSystem& fileSystem, std::vector<MountedPack> packs)
-        : fileSystem_(&fileSystem), packs_(std::move(packs)) {}
+    explicit VirtualFileSystem(std::vector<MountedPack> packs) : packs_(std::move(packs)) {}
 
     core::Result<void> indexPack(const MountedPack& pack);
 
-    const FileSystem* fileSystem_;
     std::vector<MountedPack> packs_;
     std::map<AssetId, std::vector<AssetSource>> assets_;
 };
+
+// Lists the asset files of a pack, sorted by id, leaving out its pack.yaml. Every file must give a valid asset id and
+// no two files may give the same one.
+core::Result<std::vector<PackFile>> listPackFiles(const FileSystem& fileSystem, const std::filesystem::path& root);
 
 // The packs in a content folder, sorted: the folder itself when it has a pack.yaml, otherwise each folder right
 // under it that has one. A folder without packs gives none; one that cannot be listed is an error.

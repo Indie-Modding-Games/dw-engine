@@ -7,6 +7,7 @@ dwe_add_module(assets
         src/pack_manifest.cpp
         src/file_system.cpp
         src/virtual_file_system.cpp
+        src/pak.cpp
         src/image.cpp
     DEPS core
     PRIVATE_LIBS lodepng

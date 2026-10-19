@@ -13,9 +13,9 @@ namespace {
 
 constexpr std::string_view ManifestName = "pack.yaml";
 
-core::Result<MountedPack> readPack(const FileSystem& fileSystem, const std::filesystem::path& root) {
-    const std::filesystem::path manifestPath = root / ManifestName;
-    const auto bytes = fileSystem.readFile(manifestPath);
+core::Result<MountedPack> readPack(const PackLocation& location) {
+    const std::filesystem::path manifestPath = location.root / ManifestName;
+    const auto bytes = location.fileSystem->readFile(manifestPath);
     if (!bytes) {
         return std::unexpected{bytes.error()};
     }
@@ -24,7 +24,7 @@ core::Result<MountedPack> readPack(const FileSystem& fileSystem, const std::file
     if (!manifest) {
         return core::fail(std::format("{}: {}", pathText(manifestPath), manifest.error().message));
     }
-    return MountedPack{.manifest = std::move(*manifest), .root = root};
+    return MountedPack{.manifest = std::move(*manifest), .root = location.root, .fileSystem = location.fileSystem};
 }
 
 std::size_t indexOf(std::span<const MountedPack> packs, std::string_view id) {
@@ -140,9 +140,18 @@ std::vector<MountedPack> stack(std::vector<MountedPack> packs) {
 
 core::Result<VirtualFileSystem> VirtualFileSystem::mount(const FileSystem& fileSystem,
                                                          std::span<const std::filesystem::path> packRoots) {
-    std::vector<MountedPack> packs;
+    std::vector<PackLocation> locations;
+    locations.reserve(packRoots.size());
     for (const std::filesystem::path& root : packRoots) {
-        auto pack = readPack(fileSystem, root);
+        locations.push_back(PackLocation{.fileSystem = &fileSystem, .root = root});
+    }
+    return mount(locations);
+}
+
+core::Result<VirtualFileSystem> VirtualFileSystem::mount(std::span<const PackLocation> locations) {
+    std::vector<MountedPack> packs;
+    for (const PackLocation& location : locations) {
+        auto pack = readPack(location);
         if (!pack) {
             return std::unexpected{pack.error()};
         }
@@ -162,7 +171,7 @@ core::Result<VirtualFileSystem> VirtualFileSystem::mount(const FileSystem& fileS
         return std::unexpected{checked.error()};
     }
 
-    VirtualFileSystem vfs{fileSystem, stack(std::move(packs))};
+    VirtualFileSystem vfs{stack(std::move(packs))};
     for (const MountedPack& pack : vfs.packs_) {
         if (auto indexed = vfs.indexPack(pack); !indexed) {
             return std::unexpected{indexed.error()};
@@ -172,26 +181,12 @@ core::Result<VirtualFileSystem> VirtualFileSystem::mount(const FileSystem& fileS
 }
 
 core::Result<void> VirtualFileSystem::indexPack(const MountedPack& pack) {
-    auto files = fileSystem_->listFiles(pack.root);
+    auto files = listPackFiles(*pack.fileSystem, pack.root);
     if (!files) {
-        return std::unexpected{files.error()};
+        return core::fail(std::format("pack '{}': {}", pack.manifest.id, files.error().message));
     }
-    std::ranges::sort(*files);
-    std::map<AssetId, std::string_view> packFiles;
-    for (const std::string& file : *files) {
-        if (file == ManifestName) {
-            continue;
-        }
-        auto id = assetIdOfFile(file);
-        if (!id) {
-            return core::fail(std::format("pack '{}': {}", pack.manifest.id, id.error().message));
-        }
-        const auto [other, added] = packFiles.emplace(*id, file);
-        if (!added) {
-            return core::fail(std::format("pack '{}': '{}' and '{}' both give the asset id '{}'", pack.manifest.id,
-                                          other->second, file, id->str()));
-        }
-        assets_[*id].push_back(AssetSource{.packId = pack.manifest.id, .file = pack.root / file});
+    for (PackFile& file : *files) {
+        assets_[std::move(file.id)].push_back(AssetSource{.packId = pack.manifest.id, .file = pack.root / file.path});
     }
     return {};
 }
@@ -206,7 +201,7 @@ core::Result<std::vector<std::byte>> VirtualFileSystem::read(const AssetId& id) 
     if (source == nullptr) {
         return core::fail(std::format("no pack has the asset '{}'", id.str()));
     }
-    return fileSystem_->readFile(source->file);
+    return packs_[indexOf(packs_, source->packId)].fileSystem->readFile(source->file);
 }
 
 std::vector<AssetId> VirtualFileSystem::ids() const {
@@ -221,6 +216,34 @@ std::vector<AssetId> VirtualFileSystem::ids() const {
 std::span<const AssetSource> VirtualFileSystem::sources(const AssetId& id) const {
     const auto found = assets_.find(id);
     return found == assets_.end() ? std::span<const AssetSource>{} : std::span{found->second};
+}
+
+core::Result<std::vector<PackFile>> listPackFiles(const FileSystem& fileSystem, const std::filesystem::path& root) {
+    auto files = fileSystem.listFiles(root);
+    if (!files) {
+        return std::unexpected{files.error()};
+    }
+    std::ranges::sort(*files);
+    std::map<AssetId, std::string> packFiles;
+    for (std::string& file : *files) {
+        if (file == ManifestName) {
+            continue;
+        }
+        auto id = assetIdOfFile(file);
+        if (!id) {
+            return std::unexpected{id.error()};
+        }
+        if (const auto other = packFiles.find(*id); other != packFiles.end()) {
+            return core::fail(std::format("'{}' and '{}' both give the asset id '{}'", other->second, file, id->str()));
+        }
+        packFiles.emplace(std::move(*id), std::move(file));
+    }
+    std::vector<PackFile> sorted;
+    sorted.reserve(packFiles.size());
+    for (auto& [id, file] : packFiles) {
+        sorted.push_back(PackFile{.id = id, .path = std::move(file)});
+    }
+    return sorted;
 }
 
 core::Result<std::vector<std::filesystem::path>> findPacks(const FileSystem& fileSystem,
