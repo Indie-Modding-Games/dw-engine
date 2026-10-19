@@ -24,6 +24,7 @@
     "lodepng",
     "zstd",
     "opus",
-    "libopusenc"
+    "libopusenc",
+    "ktx"
   ]
 }
