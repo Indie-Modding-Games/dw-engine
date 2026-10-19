@@ -8,6 +8,9 @@ target_include_directories(dwe_cgltf SYSTEM INTERFACE ${CGLTF_INCLUDE_DIR})
 dwe_add_module(formats
     LAYER base
     SOURCES
+        src/audio/adpcm.cpp
+        src/audio/vab.cpp
+        src/audio/vhb.cpp
         src/disc/boot.cpp
         src/disc/cue_sheet.cpp
         src/disc/disc_image.cpp
