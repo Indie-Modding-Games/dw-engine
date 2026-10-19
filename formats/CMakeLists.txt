@@ -9,4 +9,5 @@ dwe_add_module(formats
         src/disc/known_releases.cpp
         src/disc/sector.cpp
         src/exe/psx_exe.cpp
+        src/image/tim.cpp
     DEPS core)
