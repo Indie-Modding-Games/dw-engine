@@ -223,6 +223,26 @@ std::span<const AssetSource> VirtualFileSystem::sources(const AssetId& id) const
     return found == assets_.end() ? std::span<const AssetSource>{} : std::span{found->second};
 }
 
+core::Result<std::vector<std::filesystem::path>> findPacks(const FileSystem& fileSystem,
+                                                           const std::filesystem::path& folder) {
+    const auto files = fileSystem.listFiles(folder);
+    if (!files) {
+        return std::unexpected{files.error()};
+    }
+    std::vector<std::filesystem::path> packs;
+    for (const std::string& file : *files) {
+        if (file == ManifestName) {
+            return std::vector{folder};
+        }
+        const std::size_t slash = file.find('/');
+        if (slash != std::string::npos && std::string_view{file}.substr(slash + 1) == ManifestName) {
+            packs.push_back(folder / file.substr(0, slash));
+        }
+    }
+    std::ranges::sort(packs);
+    return packs;
+}
+
 std::vector<AssetId> VirtualFileSystem::overriddenIds() const {
     std::vector<AssetId> overridden;
     for (const auto& [id, sources] : assets_) {

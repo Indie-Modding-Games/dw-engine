@@ -196,3 +196,25 @@ TEST_CASE("packs mount from disk") {
     CHECK(textOf(*vfs->read(idOf("map/start/collision"))) == "cells: []\n");
     CHECK(vfs->resolve(idOf("map/start/collision"))->file == folder.path() / "base" / "map/start/collision.yaml");
 }
+
+TEST_CASE("packs are found in a content folder or as the folder itself") {
+    MemoryFileSystem memory;
+    addPack(memory, "base", "base");
+    addPack(memory, "hd", "remaster");
+    memory.addFile("packs/notes/readme.txt", "not a pack");
+    memory.addFile("packs/deep/inside/pack.yaml", "too deep to count");
+
+    const auto content = dwe::assets::findPacks(memory, "packs");
+    REQUIRE(content.has_value());
+    CHECK(*content == std::vector<std::filesystem::path>{"packs/base", "packs/hd"});
+
+    const auto single = dwe::assets::findPacks(memory, "packs/base");
+    REQUIRE(single.has_value());
+    CHECK(*single == std::vector<std::filesystem::path>{"packs/base"});
+
+    const auto none = dwe::assets::findPacks(memory, "packs/notes");
+    REQUIRE(none.has_value());
+    CHECK(none->empty());
+
+    CHECK_FALSE(dwe::assets::findPacks(memory, "missing").has_value());
+}

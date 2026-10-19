@@ -63,4 +63,9 @@ private:
     std::map<AssetId, std::vector<AssetSource>> assets_;
 };
 
+// The packs in a content folder, sorted: the folder itself when it has a pack.yaml, otherwise each folder right
+// under it that has one. A folder without packs gives none; one that cannot be listed is an error.
+core::Result<std::vector<std::filesystem::path>> findPacks(const FileSystem& fileSystem,
+                                                           const std::filesystem::path& folder);
+
 } // namespace dwe::assets
