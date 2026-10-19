@@ -19,6 +19,7 @@
     "sol2",
     "libyaml",
     { "name": "imgui", "features": ["sdl3-binding", "vulkan-binding", "docking-experimental"] },
-    "doctest"
+    "doctest",
+    "lodepng"
   ]
 }

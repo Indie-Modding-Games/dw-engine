@@ -1,3 +1,5 @@
+find_package(lodepng CONFIG REQUIRED)
+
 dwe_add_module(formats
     LAYER base
     SOURCES
@@ -9,6 +11,9 @@ dwe_add_module(formats
         src/disc/known_releases.cpp
         src/disc/sector.cpp
         src/exe/psx_exe.cpp
+        src/image/png.cpp
         src/image/tim.cpp
         src/image/tim_packs.cpp
-    DEPS core)
+    DEPS core
+    PRIVATE_LIBS lodepng
+    TEST_LIBS lodepng)
