@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evolution",
+  "description": "evolution.yaml: EVOLUTION_REQS, EVOLUTION_STATS_GAINS and EVOLUTION_PATHS of the executable (evl.h). Digimon references are ids of digimon.yaml.",
+  "type": "object",
+  "required": ["requirements", "stats_gains", "paths"],
+  "additionalProperties": false,
+  "properties": {
+    "requirements": {
+      "description": "What a Digimon needs to evolve into the target, indexed by the target type. -1 = no requirement.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target", "index", "digimon", "hp", "mp", "offense", "defense", "speed", "brain", "care", "weight", "discipline", "happiness", "battles", "techs", "flags"],
+        "additionalProperties": false,
+        "properties": {
+          "target": { "$ref": "#/$defs/reference" },
+          "index": { "type": "integer", "minimum": 0 },
+          "digimon": { "$ref": "#/$defs/reference" },
+          "hp": { "type": "integer" },
+          "mp": { "type": "integer" },
+          "offense": { "type": "integer" },
+          "defense": { "type": "integer" },
+          "speed": { "type": "integer" },
+          "brain": { "type": "integer" },
+          "care": { "type": "integer" },
+          "weight": { "type": "integer" },
+          "discipline": { "type": "integer" },
+          "happiness": { "type": "integer" },
+          "battles": { "type": "integer" },
+          "techs": { "type": "integer" },
+          "flags": { "description": "0x01 = battles is a maximum, 0x10 = care is a maximum.", "type": "integer" }
+        }
+      }
+    },
+    "stats_gains": {
+      "description": "Stats added when evolving into the target, indexed by the target type.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target", "index", "hp", "mp", "offense", "defense", "speed", "brains", "target_digimon"],
+        "additionalProperties": false,
+        "properties": {
+          "target": { "$ref": "#/$defs/reference" },
+          "index": { "type": "integer", "minimum": 0 },
+          "hp": { "type": "integer" },
+          "mp": { "type": "integer" },
+          "offense": { "type": "integer" },
+          "defense": { "type": "integer" },
+          "speed": { "type": "integer" },
+          "brains": { "type": "integer" },
+          "target_digimon": { "$ref": "#/$defs/reference" }
+        }
+      }
+    },
+    "paths": {
+      "description": "The evolution chart: entry i belongs to Digimon type i + 1.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["digimon", "index", "from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": { "$ref": "#/$defs/reference" },
+          "index": { "type": "integer", "minimum": 0 },
+          "from": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/reference" } },
+          "to": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "$ref": "#/$defs/reference" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "description": "A Digimon id, null for none (-1), or the raw number when it is outside DIGIMON_DATA.",
+      "type": ["string", "integer", "null"]
+    }
+  }
+}

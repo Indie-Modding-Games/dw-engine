@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Digimon parameters",
+  "description": "digimon.yaml: DIGIMON_DATA of the executable, one record per Digimon type (params.h: DigimonPara). formats/src/exe/tables_yaml.cpp writes it.",
+  "type": "object",
+  "required": ["digimon"],
+  "additionalProperties": false,
+  "properties": {
+    "digimon": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name", "file_name", "bone_count", "radius", "height", "type", "level", "special", "drop_item", "drop_chance", "moves"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "index": { "description": "The Digimon type: the index in DIGIMON_DATA.", "type": "integer", "minimum": 0 },
+          "name": { "$ref": "#/$defs/text" },
+          "file_name": { "description": "Base name of CHDAT\\MMDn\\<name>.MMD (PTR_DIGIMON_FILE_NAMES).", "type": ["string", "null"] },
+          "bone_count": { "type": "integer" },
+          "radius": { "type": "integer" },
+          "height": { "type": "integer" },
+          "type": { "type": "integer" },
+          "level": { "type": "integer" },
+          "special": {
+            "description": "Three element types; null = none (0xFF).",
+            "type": "array", "minItems": 3, "maxItems": 3,
+            "items": { "type": ["integer", "null"] }
+          },
+          "drop_item": { "$ref": "#/$defs/reference" },
+          "drop_chance": { "type": "integer" },
+          "moves": {
+            "description": "16 move slots; slot i is the move of animation 0x2E + i. null = empty slot (0xFF).",
+            "type": "array", "minItems": 16, "maxItems": 16,
+            "items": { "$ref": "#/$defs/reference" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "The string id other files use: the model file name in lowercase.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "text": {
+      "description": "A text of the executable. Printable ASCII is kept; a backslash is written \\\\ and any other byte \\xNN.",
+      "type": "string"
+    },
+    "reference": {
+      "description": "The id of the referenced record, null for none, or the raw number when it is outside its table.",
+      "type": ["string", "integer", "null"]
+    }
+  }
+}

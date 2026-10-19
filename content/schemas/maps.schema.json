@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Map table",
+  "description": "maps.yaml: MAP_ENTRIES, DOOR_MAPDATA, TOILET_DATA, MAP_NAME_PTR and MAP_LIGHT_UPDATE_DATA of the executable (map.h, map_object.h). Each map's own data is in map.schema.json.",
+  "type": "object",
+  "required": ["maps", "doors", "toilets", "map_names", "light_updates"],
+  "additionalProperties": false,
+  "properties": {
+    "maps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "filename", "images_8bpp", "images_4bpp", "flags", "sound_id", "fixed_time_of_day", "has_npcs", "doors", "toilet", "loading_name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The file name in lowercase, or map_<index> for entries without one.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "description": "The map id.", "type": "integer", "minimum": 0 },
+          "filename": { "description": "Base name of \\MAP\\MAP<index / 15 + 1>\\<filename>.MAP and .TFS.", "type": "string" },
+          "images_8bpp": { "type": "integer" },
+          "images_4bpp": { "type": "integer" },
+          "flags": { "description": "The raw flags: 0x1F sound id, 0x40 fixed time of day, 0x80 has NPCs; 0x20 unknown.", "type": "integer" },
+          "sound_id": { "type": "integer" },
+          "fixed_time_of_day": { "description": "The background always uses its first palette.", "type": "boolean" },
+          "has_npcs": { "type": "boolean" },
+          "doors": { "description": "Index into doors, or null.", "type": ["integer", "null"] },
+          "toilet": { "description": "Index into toilets, or null.", "type": ["integer", "null"] },
+          "loading_name": { "description": "Index into map_names.", "type": "integer" }
+        }
+      }
+    },
+    "doors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "doors"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "doors": {
+            "type": "array", "minItems": 6, "maxItems": 6,
+            "items": {
+              "type": "object",
+              "required": ["model_id", "position", "rotation"],
+              "additionalProperties": false,
+              "properties": {
+                "model_id": { "description": "DOOR\\DOORnn.TMD, or null for an unused slot.", "type": ["integer", "null"] },
+                "position": { "$ref": "#/$defs/vector3" },
+                "rotation": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "toilets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "x1", "z1", "x2", "z2"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "x1": { "type": "integer" },
+          "z1": { "type": "integer" },
+          "x2": { "type": "integer" },
+          "z2": { "type": "integer" }
+        }
+      }
+    },
+    "map_names": { "type": "array", "items": { "type": "string" } },
+    "light_updates": {
+      "description": "Object instances shown or hidden by the hour (utils2.c: updateMapLightState).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["map", "mode", "start_id", "count", "trigger"],
+        "additionalProperties": false,
+        "properties": {
+          "map": { "type": ["string", "integer"] },
+          "mode": { "description": "0 = shown by day, 1 = shown by night.", "type": "integer" },
+          "start_id": { "type": "integer" },
+          "count": { "type": "integer" },
+          "trigger": { "description": "The trigger that enables it, or null for always.", "type": ["integer", "null"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vector3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } }
+    }
+  }
+}

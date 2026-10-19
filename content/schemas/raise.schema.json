@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Raising data",
+  "description": "raise.yaml: RAISE_DATA of the executable, the care parameters of each partner Digimon type (partner.h: RaiseData).",
+  "type": "object",
+  "required": ["raise"],
+  "additionalProperties": false,
+  "properties": {
+    "raise": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["digimon", "index", "hunger_times", "energy_cap", "energy_threshold", "energy_usage", "poop_timer", "unknown_0e", "poop_size", "favorite_food", "sleep_cycle", "favored_region", "training_type", "default_weight", "view"],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": { "description": "Id of the Digimon (digimon.yaml).", "type": ["string", "integer", "null"] },
+          "index": { "type": "integer", "minimum": 0 },
+          "hunger_times": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer" } },
+          "energy_cap": { "type": "integer" },
+          "energy_threshold": { "type": "integer" },
+          "energy_usage": { "type": "integer" },
+          "poop_timer": { "type": "integer" },
+          "unknown_0e": { "type": "integer" },
+          "poop_size": { "type": "integer" },
+          "favorite_food": { "description": "Id of the item (items.yaml).", "type": ["string", "integer", "null"] },
+          "sleep_cycle": { "type": "integer" },
+          "favored_region": { "description": "Compared with the regions of each map.", "type": "integer" },
+          "training_type": { "type": "integer" },
+          "default_weight": { "type": "integer" },
+          "view": {
+            "type": "object",
+            "required": ["x", "y", "z"],
+            "additionalProperties": false,
+            "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } }
+          }
+        }
+      }
+    }
+  }
+}

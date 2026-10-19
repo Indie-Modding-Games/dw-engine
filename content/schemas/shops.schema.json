@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shops",
+  "description": "shops.yaml: SHOP_MAPS and SHOPKEEP_DIGIMON_TYPES of the executable. There is no stock table: item i is sold while trigger 0x180 + i is set.",
+  "type": "object",
+  "required": ["shop_maps", "shopkeeper_digimon"],
+  "additionalProperties": false,
+  "properties": {
+    "shop_maps": { "description": "Ids of the maps that load the shop code (maps.yaml).", "type": "array", "items": { "type": ["string", "integer"] } },
+    "shopkeeper_digimon": { "description": "Ids of the Digimon that run shops (digimon.yaml).", "type": "array", "items": { "type": ["string", "integer"] } }
+  }
+}

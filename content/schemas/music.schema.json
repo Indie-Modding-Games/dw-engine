@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Music",
+  "description": "music.yaml: BGM_TRACK_NAMES (the music menu) and ENEMY_MUSIC_MAPPING of the executable.",
+  "type": "object",
+  "required": ["bgm_tracks", "enemy_music_mapping"],
+  "additionalProperties": false,
+  "properties": {
+    "bgm_tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "type": "integer", "minimum": 0 },
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "enemy_music_mapping": { "type": "array", "items": { "type": "integer" } }
+  }
+}

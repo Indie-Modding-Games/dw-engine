@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cards",
+  "description": "cards.yaml: CARD_PRICES and CARD_DATA of the executable (script.h: CardData).",
+  "type": "object",
+  "required": ["prices", "cards"],
+  "additionalProperties": false,
+  "properties": {
+    "prices": { "type": "array", "items": { "type": "integer" } },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "digimon", "sprite_id", "merit_value"],
+        "additionalProperties": false,
+        "properties": {
+          "index": { "description": "The card id.", "type": "integer", "minimum": 0 },
+          "digimon": { "description": "Id of the Digimon (digimon.yaml).", "type": ["string", "integer", "null"] },
+          "sprite_id": { "type": "integer" },
+          "merit_value": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

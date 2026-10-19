@@ -19,6 +19,7 @@ dwe_add_module(formats
         src/exe/executable_layout.cpp
         src/exe/memory_image.cpp
         src/exe/tables.cpp
+        src/exe/tables_yaml.cpp
         src/image/png.cpp
         src/image/tim.cpp
         src/image/tim_packs.cpp
@@ -31,3 +32,8 @@ dwe_add_module(formats
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf
     TEST_LIBS lodepng dwe_cgltf)
+
+# The tests check the YAML documents against the JSON Schemas of content/schemas.
+if(TARGET dwe_formats_tests)
+    target_compile_definitions(dwe_formats_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
+endif()

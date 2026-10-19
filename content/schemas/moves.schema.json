@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Moves",
+  "description": "moves.yaml: MOVE_DATA and MOVE_NAMES of the executable (move.h: Move).",
+  "type": "object",
+  "required": ["moves"],
+  "additionalProperties": false,
+  "properties": {
+    "moves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name", "distance", "power", "mp_cost", "iframes", "range", "special", "status", "accuracy", "status_chance", "unknown_0d", "unknown_0e", "unknown_0f"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The move's name in lowercase.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "type": "integer", "minimum": 0 },
+          "name": { "description": "Escaped text: \\\\ and \\xNN for bytes that are not printable ASCII.", "type": ["string", "null"] },
+          "distance": { "type": "integer" },
+          "power": { "type": "integer" },
+          "mp_cost": { "type": "integer" },
+          "iframes": { "type": "integer" },
+          "range": { "type": "integer" },
+          "special": { "type": "integer" },
+          "status": { "type": "integer" },
+          "accuracy": { "type": "integer" },
+          "status_chance": { "type": "integer" },
+          "unknown_0d": { "type": "integer" },
+          "unknown_0e": { "type": "integer" },
+          "unknown_0f": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

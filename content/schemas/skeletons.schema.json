@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Digimon skeletons",
+  "description": "skeletons.yaml: DIGIMON_SKELETONS of the executable, the bone list of each Digimon type (model.h: SkeletonBone). The bone count is DIGIMON_DATA's.",
+  "type": "object",
+  "required": ["skeletons"],
+  "additionalProperties": false,
+  "properties": {
+    "skeletons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["digimon", "index", "bones"],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": { "description": "Id of the Digimon (digimon.yaml).", "type": "string" },
+          "index": { "type": "integer", "minimum": 0 },
+          "bones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["object", "parent"],
+              "additionalProperties": false,
+              "properties": {
+                "object": { "description": "Object of the TMD drawn by this bone; -1 = none.", "type": "integer" },
+                "parent": { "description": "Index of the parent bone; -1 = root.", "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

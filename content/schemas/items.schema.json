@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Items",
+  "description": "items.yaml: ITEM_PARA and ITEM_DESCS of the executable (item.h: Item).",
+  "type": "object",
+  "required": ["items"],
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name", "description", "value", "merit_value", "sorting_value", "item_color", "droppable", "unknown_1e"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The item's name in lowercase.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "type": "integer", "minimum": 0 },
+          "name": { "description": "Escaped text: \\\\ and \\xNN for bytes that are not printable ASCII.", "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "value": { "description": "Price.", "type": "integer" },
+          "merit_value": { "type": "integer" },
+          "sorting_value": { "type": "integer" },
+          "item_color": { "type": "integer" },
+          "droppable": { "type": "integer" },
+          "unknown_1e": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

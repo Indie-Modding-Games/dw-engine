@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Medals",
+  "description": "medals.yaml: MEDAL_NAMES and MEDAL_DESCRIPTIONS (three lines per medal) of the executable.",
+  "type": "object",
+  "required": ["medals"],
+  "additionalProperties": false,
+  "properties": {
+    "medals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "type": "integer", "minimum": 0 },
+          "name": { "type": "string" },
+          "description": { "type": "array", "maxItems": 3, "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

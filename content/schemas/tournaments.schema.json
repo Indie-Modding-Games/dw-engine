@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tournaments",
+  "description": "tournaments.yaml: TOURNAMENT_NAMES, TOURNAMENT_GRADES, TOURNAMENT_SCHEDULE and TOURNAMENT_MEDAL_IDS of the executable. The entrants are not here: they come from the map scripts.",
+  "type": "object",
+  "required": ["tournaments", "schedule", "medal_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "tournaments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "index", "name", "grade"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "description": "The tournament's name in lowercase.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "type": "integer", "minimum": 0 },
+          "name": { "type": "string" },
+          "grade": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "schedule": {
+      "description": "The tournaments held each day of a 30-day cycle (dget.c).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["day", "tournaments"],
+        "additionalProperties": false,
+        "properties": {
+          "day": { "type": "integer", "minimum": 0 },
+          "tournaments": { "type": "array", "maxItems": 6, "items": { "type": ["string", "integer"] } }
+        }
+      }
+    },
+    "medal_ids": { "type": "array", "items": { "type": "integer" } }
+  }
+}
