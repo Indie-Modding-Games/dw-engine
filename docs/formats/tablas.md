@@ -66,6 +66,7 @@ tiene el nombre `char name[20]` al principio de `DigimonPara` ni de `Item` (`inl
 | `SHOP_MAPS` | 8 `s16` | mapas que cargan la tienda (`checkShopMap`) | |
 | `SHOPKEEP_DIGIMON_TYPES` | 11 `u8` | `0xFF` termina | |
 | `MAP_ENTRIES`, `MAP_NAME_PTR`, `DOOR_MAPDATA`, `TOILET_DATA`, `MAP_LIGHT_UPDATE_DATA` | | ver [Mapas](mapas.md) | |
+| `DIGIMON_VLALL_SOUND_ID`, `DIGIMON_VBALL_SOUND_ID`, `MAP_SOUND_PARA`, `MAIN_D_801303B8` | | ver [Audio](audio.md) | |
 
 Notas:
 

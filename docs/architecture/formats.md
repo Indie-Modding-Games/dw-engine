@@ -163,11 +163,17 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
 
 ## Audio
 
-- **VHB** (`SOUND\VHB\*.VHB`): `{u32 offsetVh; u32 offsetVb}` + VH (instrumentos) + VB (muestras ADPCM)
-  (`sound.c: readVHBFile`).
-- **Música:** cada bloque de `FAALL` lleva además el inicio y fin de un banco de SEQ: `u32 offsets[]` (cuántos =
-  `offsets[0] / 4`) a datos SEQ estándar (`loadMusicFont`, `playMusic`). No se usa SEP.
-- Salida: SF2 por banco + MIDI por secuencia; efectos a WAV/FLAC.
+- **VHB** (`SOUND\VHB\*.VHB`): cabecera de `u32` + VH (instrumentos) + VB (muestras ADPCM). Un banco de sonidos
+  lleva `{u32 vh = 12; u32 vb; u32 vbEnd}` (`sound.c: readVHBFile`); una fuente de música, `{u32 vh = 16; u32 vb;
+  u32 seq; u32 seqEnd}` (`loadMusicFont`).
+- **Bancos empaquetados:** `FAALL` son 33 fuentes de 0x27 sectores, `VLALL` 16 entradas de 15 sectores y `VBALL` 71
+  de 7 (`readVHBFileSectors`); `ESALL` se parte con `MAP_SOUND_PARA`, en unidades de 1 KB (`loadMapSounds`).
+- **VH:** el bloque `k` de tonos es del `k`-ésimo programa no vacío. La frecuencia de una muestra de efecto sale del
+  `center` y el `shift` del tono que la toca.
+- **Música:** el banco de SEQ de cada fuente es `u32 offsets[]` (cuántos = `offsets[0] / 4`) a datos SEQ
+  (`playMusic`). No se usa SEP. El meta de tempo va **sin** byte de longitud (`FF 51 tt tt tt`) y el bucle va en NRPN
+  (`CC99 = 20` / `CC6 = vueltas` al inicio, `CC99 = 30` al final).
+- Salida: SF2 por banco, MIDI por secuencia y WAV por muestra de efecto ([detalle](../formats/audio.md)).
 
 ## Vídeo
 
@@ -216,7 +222,7 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 | Comando | Entrada → salida | Qué comprueba |
 |---|---|---|
 | `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
-| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
+| `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas, audio); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
 | `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) |
 | `dwx cook <paquete>` | Fuente → cocinado | Que todo lo cocinado se puede volver a leer |
 | `dwx pack <paquete>` | Cocinado → `.pak` + manifiesto | Id, versión, dependencias y prioridad del manifiesto |

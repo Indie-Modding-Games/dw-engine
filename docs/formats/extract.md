@@ -65,8 +65,10 @@ llamadas y solo lee el disco a través del `Disc` que recibe.
 | `arena_collision` | `STDDAT/<nombre>.ATR` | La rejilla de colisión de la arena |
 | `digimon_model` | `CHDAT/MMD<n>/<nombre>.MMD` | Un GLB con esqueleto, animaciones y textura |
 | `static_model` | Cualquier `.TMD` | Un GLB con un nodo por objeto, con textura si se sabe cuál |
+| `sound_bank` | Los siete `SOUND/VHB/*.VHB` | Un SoundFont y un YAML por banco, un WAV por muestra de efecto y un MIDI por pista de música |
 
-Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md) y [Mapas](mapas.md).
+Los formatos están en [TIM y packs](tim.md), [Tablas del ejecutable](tablas.md), [Mapas](mapas.md) y
+[Audio](audio.md).
 
 ### El ejecutable y `SYSTEM.CNF`
 
@@ -151,6 +153,8 @@ content/base/
 ├─ map/<id>/data.yaml, background_<variante>.png, texture8/<n>.png, texture4/<n>.png (+ _meta.yaml)
 ├─ arena/<nombre>/collision.yaml
 ├─ model/<carpetas>/<nombre>.glb
+├─ sound/<banco>/[<entrada>/]bank.sf2, sample_<n>.wav, bank_meta.yaml
+├─ music/<fuente>/font.sf2, track_<n>.mid, font_meta.yaml
 └─ texture/<carpetas>/<nombre>.png + <nombre>_meta.yaml
 ```
 
@@ -170,6 +174,8 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Colisión de arena | `arena/<nombre>/collision` | `STDDAT/B_TOGI.ATR` → `arena/b_togi/collision` |
 | Fichero con un TIM | `texture/<carpetas>/<nombre>` | `STDDAT/GRADE/AN.TIM` → `texture/stddat/grade/an` |
 | Fichero con varios TIM | `texture/<carpetas>/<nombre>/<n con 3 cifras>` | el tercero de `STDDAT/T_TOGI.TIM` → `texture/stddat/t_togi/002` |
+| Banco de sonidos (`names::soundAsset`) | `sound/<banco>/<hoja>`, o `sound/<banco>/<entrada con 3 cifras>/<hoja>` en un fichero empaquetado | `sound/ss/bank`, `sound/vball/003/sample_001` |
+| Fuente de música (`names::musicAsset`) | `music/<fuente con 3 cifras>/<hoja>` | `music/001/font`, `music/001/track_00` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
 
 - El id de un Digimon es el de `makeTableIds`, que sale del nombre de fichero de su modelo
@@ -219,8 +225,8 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 758 extraídos, 29 parciales y 31 pendientes; 156,6 de 331,2 MB
-(47,3 %). Salen 2802 salidas, de las que 270 repiten otra byte a byte:
+Con el disco US (`SLUS_010.32`): 818 ficheros, 765 extraídos, 29 parciales y 24 pendientes; 164,8 de 331,2 MB
+(49,8 %). Salen 3808 salidas, de las que 356 repiten otra byte a byte:
 
 | Tipo | Salidas |
 |---|---|
@@ -234,6 +240,8 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 758 extraídos, 29 parciales y 31
 | Colisión de arenas (`arena/`) | 2 YAML |
 | Modelos de Digimon (`digimon/<id>/model`) | 178 GLB |
 | Otros modelos (`model/`) | 66 GLB |
+| Sonidos (`sound/`): 112 bancos | 112 SF2 + 642 WAV + 112 YAML |
+| Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 
 - Parciales: los `.TFS` de los tres mapas con más de tres paletas, y `MAP/MAP16/MGEN17.MAP` y su `.TFS`, que ninguna
   entrada de `MAP_ENTRIES` nombra (sin ella no se sabe cuántos TIM tiene el `.MAP`).
@@ -249,10 +257,15 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 758 extraídos, 29 parciales y 31
     `ETCNA/WARP.TMD` (cada mapa de cristales tiene los suyos).
   - Seis con la escena deducida (`BOSS_EFE`, `ABOX`, `BIGBOX`, `GAND`, `SMABOX`, `T_YAMA`) y `ETCNA/DOOR.TMD`, que
     el original no carga nunca (es igual que `DOOR00.TMD`).
-- Pendientes: el audio (`.VHB`), los vídeos (`.STR`), los scripts (`.SCN`), los efectos
-  (`.EFE`), los overlays (`*_REL.BIN` y otros `.BIN`) y `MMM.DAT`.
-- Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62) y los nueve TIM de
-  `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`.
+- Pendientes: los vídeos (`.STR`), los scripts (`.SCN`), los efectos (`.EFE`), los overlays (`*_REL.BIN` y otros
+  `.BIN`) y `MMM.DAT`.
+- Duplicados: texturas de Digimon que comparten imagen (48 grupos), TIM repetidos entre mapas (62), los nueve TIM de
+  `ETCDAT/ETCTIM.BIN`, que también están sueltos en `ETCDAT`, muestras repetidas entre bancos de sonidos (43) y
+  pistas repetidas entre fuentes de música (6).
+- Audio: los siete `.VHB` se extraen enteros. Los 112 bancos de sonidos tienen 642 muestras (19 con bucle, 13 más
+  allá de `vs` en `VBALL`, 16 que ningún tono toca) y 661 valores de sonido; las 33 fuentes, 205 muestras y 74
+  pistas (14 suenan una vez, 60 en bucle; 63 están en la lista de música de la tienda). 102 tonos tienen un
+  sostenimiento con pendiente, aproximado en el SF2. La entrada 13 de `VLALL` no la usa ningún tipo.
 - `STDDAT/T_TOGI.TIM` tiene cuatro TIM seguidos: el original lee las texturas de las arenas con un número de TIM
   fijo (`std_setup.c: STD_loadArenaTIMToVRAM`). Por eso `tim_file` lee siempre una lista.
 
