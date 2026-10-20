@@ -139,18 +139,20 @@ lecturas vacías, así que la película que se ve puede acabar antes que el fich
   que la muestra está en el centro del cuadro: `C420jpeg`. Los planos son de rango completo (0..255 sin escalar).
 - **Escritura por partes.** `OutputFile::stream` (extractor.hpp) es una salida que el paquete base pide por trozos:
   el extractor guarda solo los bitstreams (unos 35 MB por película) y el vídeo se decodifica frame a frame al
-  escribirlo, así que nunca está entero en memoria (unos 300 MB por película). Las salidas por partes no entran en la
-  búsqueda de duplicados.
+  escribirlo, así que nunca está entero en memoria (unos 300 MB por película). Los bitstreams y los WAV de las cuatro
+  películas (unos 200 MB) sí se quedan en memoria hasta que se escribe el paquete. Las salidas por partes no entran en
+  la búsqueda de duplicados.
 - **Cobertura.** Un STR está `extracted` cuando cada sector es vídeo de un frame que decodifica, audio del flujo de
-  la película o relleno. Todo lo demás (un sector que no se reconoce, un frame que no decodifica o al que le faltan
-  sectores, audio de otro canal, un parámetro XA distinto de su copia, `MOV_MOVIES` ilegible) va a `unknowns`; si
+  la película o relleno. Todo lo demás (un sector que no se reconoce, un frame que no decodifica, cuyo tamaño no es de
+  macrobloques de 16 × 16 o al que le faltan sectores, audio de otro canal, un parámetro XA distinto de su copia, `MOV_MOVIES` ilegible) va a `unknowns`; si
   hay más de 32 problemas, el resto se cuenta en uno.
 
 Para verlo o recodificarlo: `ffmpeg -i video.y4m -i audio.wav ...` (fuera del proyecto).
 
-`formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso,
-decodificar los 13 089 frames dos veces en `ci` (debug con sanitizers) llevaba casi 9 minutos; ahora la extracción
-entera tarda unos 3,5.
+`formats/src/video/mdec.cpp` se compila optimizado también en los builds de debug (como `sha1.cpp`): sin eso, la
+extracción en `ci` (debug con sanitizers) llevaba casi 9 minutos; ahora tarda unos 3,5. Al extraer, cada frame solo
+pasa por la etapa VLC (`decodeBitstream`, que comprueba su bitstream y su tamaño); la IDCT corre una sola vez, al
+escribir el Y4M.
 
 ## Pruebas
 

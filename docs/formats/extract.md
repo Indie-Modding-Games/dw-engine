@@ -340,6 +340,7 @@ codificador de PNG no copia los píxeles. La salida es la misma byte a byte. Con
 modelo de puerta o de mapa lee y sube a su escena los mapas donde aparece. Además, cada uno de los seis modelos que
 pone un script desensambla todos los scripts para buscar sus mapas.
 
-Con las películas tarda unos 3,5 min en `ci`: se decodifican los 13 089 frames dos veces (al extraer, para comprobar
-cada bitstream, y al escribir el Y4M) y se escriben 1,1 GB. `formats/src/video/mdec.cpp` se compila optimizado también
-en debug, como `sha1.cpp`; sin eso eran casi 9 min.
+Con las películas tarda unos 3,5 min en `ci`: al extraer, cada uno de los 13 089 frames solo pasa por la etapa VLC
+(`decodeBitstream`, para comprobar su bitstream); la IDCT corre una sola vez, al escribir el Y4M, y se escriben 1,1 GB.
+Los bitstreams de las películas y sus WAV (unos 200 MB) se quedan en memoria hasta que se escribe el paquete.
+`formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.

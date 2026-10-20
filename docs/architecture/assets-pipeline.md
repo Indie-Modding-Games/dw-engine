@@ -38,7 +38,7 @@ cobertura que lista lo que falte.
 | Eventos e historia | Bytecode de scripts | Lua | Bytecode de Lua |
 | Música | VAB + SEQ | SF2 + MIDI | Igual, u Opus si es un remaster |
 | Efectos de sonido | VAB | WAV/FLAC | Opus |
-| Vídeos | STR (MDEC) | AV1/WebM | Igual |
+| Vídeos | STR (MDEC + XA) | Y4M + WAV + YAML (lo que escribe la extracción hoy) | **Pendiente** de decisión del usuario (propuesta: AV1/WebM; opciones en [Formatos](formats.md#vídeo)); no implementado |
 | Fuentes tipográficas | Bitmap | PNG + métricas, o TTF para idiomas nuevos | Atlas de glifos |
 
 ## Capas de contenido

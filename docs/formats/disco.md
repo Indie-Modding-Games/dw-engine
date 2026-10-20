@@ -49,7 +49,7 @@ Un sector en bruto mide 2352 bytes:
 - **Modo 1:** 2048 bytes de datos en el offset 16.
 - **Modo 2 forma 1:** 2048 bytes en el offset 24. Es lo que usan los ficheros normales.
 - **Modo 2 forma 2:** 2324 bytes en el offset 24, sin corrección de errores. El bit `0x20` del submodo marca la forma 2.
-  La usan el vídeo y el audio XA intercalado.
+  La usa el audio XA intercalado; los sectores de vídeo de los STR son de forma 1.
 
 Un sector sin patrón de sincronización o con otro modo es un error. En una ISO de 2048 bytes todos los sectores son de
 forma 1.
