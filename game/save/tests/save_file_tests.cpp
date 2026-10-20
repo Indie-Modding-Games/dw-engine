@@ -38,7 +38,8 @@ SaveFile sampleFile() {
                    .created = sys_days{2026y / October / 1} + 8h,
                    .updated = sys_days{2026y / October / 2} + 21h + 30min + 15s,
                    .playSeconds = 5400,
-                   .label = "File City"};
+                   .label = "File City",
+                   .autosaveReasons = {}};
     return file;
 }
 
@@ -52,7 +53,7 @@ TEST_CASE("a save file is written and read back byte-identical") {
     file.sections.emplace("partner", SavedSection{.version = 3, .state = state});
     const auto text = writeSaveFile(file);
     REQUIRE(text);
-    CHECK(text->starts_with("format: dwe-save\nformat_version: 1\n"));
+    CHECK(text->starts_with("format: dwe-save\nformat_version: 2\n"));
     CHECK(text->ends_with("complete: true\n"));
 
     const auto read = parseSaveFile(*text);
@@ -175,18 +176,44 @@ TEST_CASE("a missing section is an error unless its system starts fresh") {
 }
 
 TEST_CASE("the header is migrated by the format's chain") {
-    // A made-up format 1 that called the label `title`; format 2 is the current layout.
+    // A made-up format 1 that called the label `title` and had no autosave reasons; format 2 is the current layout.
     MigrationChain format;
-    format.add([](const YamlNode& root) -> dwe::core::Result<YamlNode> { return renamedKey(root, "title", "label"); });
-    const std::string old = replaced(readFixture("partner_v1.yaml"), "label:", "title:");
+    format.add([](const YamlNode& root) -> dwe::core::Result<YamlNode> {
+        YamlNode renamed = renamedKey(root, "title", "label");
+        renamed.set("autosave_reasons", YamlNode::sequence());
+        return renamed;
+    });
+    const std::string old = replaced(readFixture("format_v1.yaml"), "label:", "title:");
     CHECK_FALSE(parseSaveFile(old));
     const auto read = parseSaveFile(old, format);
     REQUIRE_MESSAGE(read, errorOf(read));
     CHECK(read->header.label == "File City");
 
     const auto newer =
-        parseSaveFile(replaced(readFixture("partner_v1.yaml"), "format_version: 1", "format_version: 2"));
-    CHECK(errorOf(newer).contains("the save format is version 2, newer than this game reads (1)"));
+        parseSaveFile(replaced(readFixture("partner_v1.yaml"), "format_version: 2", "format_version: 3"));
+    CHECK(errorOf(newer).contains("the save format is version 3, newer than this game reads (2)"));
+}
+
+TEST_CASE("format 1 saves load with no autosave reasons, and autosaves list theirs") {
+    // format_v1.yaml is partner_v1.yaml as format 1 wrote it.
+    const auto old = parseSaveFile(readFixture("format_v1.yaml"));
+    REQUIRE_MESSAGE(old, errorOf(old));
+    CHECK(old->header.autosaveReasons.empty());
+    CHECK(writeSaveFile(*old).value() == readFixture("partner_v1.yaml"));
+
+    SaveFile autosaved = sampleFile();
+    autosaved.header.autosaveReasons = {"partner_sleep", "new_day", "from_a_newer_game"};
+    const auto text = writeSaveFile(autosaved);
+    REQUIRE(text);
+    CHECK(text->contains("autosave_reasons:\n- partner_sleep\n- new_day\n- from_a_newer_game\n"));
+    const auto read = parseSaveFile(*text);
+    REQUIRE_MESSAGE(read, errorOf(read));
+    CHECK(read->header == autosaved.header);
+
+    CHECK(errorOf(parseSaveFile(replaced(*text, "- new_day", "- New Day"))).contains("'New Day' is not an autosave"));
+    CHECK(errorOf(parseSaveFile(replaced(*text, "- new_day\n", "- [new_day]\n"))).starts_with("save file: "));
+    autosaved.header.autosaveReasons = {"Bad Name"};
+    CHECK(errorOf(writeSaveFile(autosaved)).contains("'Bad Name' is not an autosave reason"));
 }
 
 TEST_CASE("corrupt and truncated files are errors") {

@@ -24,6 +24,8 @@ inline constexpr std::string_view NegativePlayTime = "the play time cannot be ne
 inline constexpr std::string_view SectionsNotMapping = "sections must be a mapping of section names";
 inline constexpr std::string_view BadSectionName = "'{}' is not a section name (a-z, 0-9 and _)";
 inline constexpr std::string_view BadSectionVersion = "a section version is 1 or more";
+inline constexpr std::string_view AutosaveReasonsWhat = "autosave_reasons";
+inline constexpr std::string_view BadAutosaveReason = "'{}' is not an autosave reason name (a-z, 0-9 and _)";
 
 // Sections.
 inline constexpr std::string_view SectionRegisteredTwice = "section '{}' is registered twice";
@@ -47,6 +49,8 @@ inline constexpr std::string_view AutosaveWhat = "autosave";
 inline constexpr std::string_view SaveSectionWhat = "the save section";
 inline constexpr std::string_view ManualSlotsRange = "manual_slots must be 1 to {}";
 inline constexpr std::string_view AutosaveSlotsRange = "autosave_slots must be 0 to {}";
+inline constexpr std::string_view CoalesceTooShort =
+    "coalesce_seconds must be {} or more: autosave slots rotate by their time in whole seconds";
 
 // Slots.
 inline constexpr std::string_view InFile = "{}: {}";

@@ -96,7 +96,7 @@ partner (`routePartnerEvent`). Hasta que `game/battle` tenga el suyo, `finishBat
 | Un minuto de juego por segundo | `clock.c: tickGameClock` | sección `clock` | `on the field the game clock keeps ...` | Igual |
 | Los efectos del área vuelven a empezar en cada mapa | `partner.c: setupPartnerOnWarp` | `followMap` → `Partner::enterMap` | `a map change autosaves, ...` | Igual |
 | Autoguardado al dormir, al cambiar de mapa y al acabar una batalla | El original no autoguarda | sección `save` | `the partner going to sleep autosaves`, `a map change autosaves, ...` | Desviación aprobada (2026-10-20) |
-| Autoguardado al empezar un día | El original no autoguarda | `save.autosave.on_new_day: false` | `a new day autosaves only when ...` | Pendiente de diseño (apagado) |
+| Autoguardado al empezar un día | El original no autoguarda | `save.autosave.on_new_day: true` | `a new day autosaves only when ...` | Desviación aprobada (2026-10-20) |
 | Al morir, renace enseguida como bebé | `partner.c` (muerte y renacer tras la escena de muerte) | `routePartnerEvent` → `Partner::rebirth` | `a partner that dies is reborn as a baby` | **Hueco**: sin la escena ni la espera |
 | Respuesta del partner al área (le gusta, no le gusta) | `map.c: MAP_TILE_DATA.partnerAreaResponse` | `CareContext::area = Neutral` | — | **Hueco** |
 | Montones de caca en el suelo | `partner.c` | `PoopedOnGround` no se reparte | — | **Hueco** |

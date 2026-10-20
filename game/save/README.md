@@ -33,9 +33,11 @@ current.header.updated = now;                // y label, playSeconds...
 sections.write(current);
 slots.save({.kind = save::SlotKind::Manual, .index = 1}, current);
 
-// Autoguardado: los sistemas piden, la configuración decide.
+// Autoguardado: los sistemas piden, el ruleset decide y las peticiones cercanas dan un solo guardado.
 autosaves.requestAutosave(save::AutosaveReason::MapChange);
-if (auto reason = autosaves.takeRequest()) {
+autosaves.advance(tickSeconds);              // segundos reales de cada tick
+if (auto reasons = autosaves.takeRequest()) {
+    current.header.autosaveReasons = save::autosaveReasonNames(*reasons);
     sections.write(current);
     slots.autosave(current);
 }
@@ -49,7 +51,10 @@ if (auto reason = autosaves.takeRequest()) {
 - **`SaveSlots`**: lista las ranuras (vacía, guardada o dañada, y si tiene copia), guarda, carga, carga la copia y
   hace el autoguardado por turnos.
 - **`AutosaveRules`** y **`AutosaveRequests`**: qué motivos (`AutosaveReason`) autoguardan según la sección `save` del
-  ruleset (`readAutosaveRules`, `saveSectionCheck` para el `RulesetStore`), y las peticiones pendientes.
+  ruleset (`readAutosaveRules`, `saveSectionCheck` para el `RulesetStore`), y las peticiones pendientes, agrupadas en
+  una ventana de `coalesce_seconds`. Qué evento de qué sistema pide cada motivo está en
+  [save.md](../../docs/architecture/save.md#cuándo-autoguarda).
+- **`text_key`** (`text_keys.hpp`): las claves de localización de los avisos de guardado y de los motivos.
 - **`SaveSettings`**: `loadSaveSettings` y `parseSaveSettings` leen `save/settings`.
 - **`SaveStorage`**: `DiskSaveStorage` (una carpeta) y `MemorySaveStorage` (tests, con `failNextWrite`).
 
@@ -66,4 +71,5 @@ if (auto reason = autosaves.takeRequest()) {
 `partner_v2.yaml`, secciones desconocidas conservadas, versiones más nuevas o demasiado viejas, secciones que faltan,
 migración del formato y ficheros corruptos o cortados por cualquier byte. `slots_tests.cpp`: escritura atómica y copia
 en disco, ajustes (también los del paquete `game`), ranuras, guardado fallido y rotación del autoguardado.
-`autosave_tests.cpp`: la sección `save` (también la de `original`) y las peticiones de autoguardado.
+`autosave_tests.cpp`: la sección `save` (también la de `original`), las peticiones de autoguardado, su agrupación, los
+motivos en la cabecera y la rotación de las tres ranuras.

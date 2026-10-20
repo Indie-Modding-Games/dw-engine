@@ -282,6 +282,7 @@ void GameSession::tick(double realSeconds) {
     followMap();
     advanceGameTime(realSeconds);
     routePartnerEvents();
+    advanceAutosaveWindow(realSeconds);
     writeRequestedAutosave();
 }
 
@@ -379,7 +380,9 @@ void GameSession::changeTamerLevel(std::int32_t change) {
 void GameSession::rebirthPartner() {
     if (auto reborn = state_->partner.rebirth(state_->clock, state_->tamer.level); !reborn) {
         core::logError("{}", formatMessage(messages::RebirthFailed, reborn.error().message));
+        return;
     }
+    requestAutosave(AutosaveReason::PartnerReborn);
 }
 
 void GameSession::afterCommand() {
@@ -397,12 +400,18 @@ std::optional<Autosave> GameSession::takeAutosaved() {
     return std::exchange(autosaved_, std::nullopt);
 }
 
+void GameSession::advanceAutosaveWindow(double realSeconds) {
+    if (autosave_) {
+        autosave_->advance(static_cast<float>(realSeconds));
+    }
+}
+
 void GameSession::writeRequestedAutosave() {
     if (!autosave_) {
         return;
     }
-    const std::optional<AutosaveReason> reason = autosave_->takeRequest();
-    if (!reason || !slots_ || !state_->playing) {
+    std::optional<std::vector<AutosaveReason>> reasons = autosave_->takeRequest();
+    if (!reasons || !slots_ || !state_->playing) {
         return;
     }
     auto file = saveFile();
@@ -410,13 +419,14 @@ void GameSession::writeRequestedAutosave() {
         core::logError("{}", formatMessage(messages::AutosaveFailed, file.error().message));
         return;
     }
+    file->header.autosaveReasons = game::save::autosaveReasonNames(*reasons);
     auto written = slots_->autosave(*file);
     if (!written) {
         core::logError("{}", formatMessage(messages::AutosaveFailed, written.error().message));
         return;
     }
     file_ = std::move(*file);
-    autosaved_ = Autosave{.slot = *written, .reason = *reason};
+    autosaved_ = Autosave{.slot = *written, .reasons = std::move(*reasons)};
     core::logInfo("{}", formatMessage(messages::Autosaved, game::save::slotFileName(*written)));
 }
 
@@ -431,7 +441,8 @@ game::save::SaveHeader GameSession::headerNow() const {
             .created = file_.header.created,
             .updated = now(),
             .playSeconds = static_cast<std::int64_t>(std::floor(playSeconds_)),
-            .label = std::move(label)};
+            .label = std::move(label),
+            .autosaveReasons = {}};
 }
 
 std::chrono::sys_seconds GameSession::now() const {

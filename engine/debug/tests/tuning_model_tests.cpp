@@ -263,21 +263,24 @@ TEST_CASE("the game's save section shows its autosave triggers as flags, edited 
     TuningModel model{packs.target()};
     const TuningNode& root = sectionNamed(model, "save").root;
     for (const std::string_view trigger :
-         {"autosave.on_map_change", "autosave.on_battle_end", "autosave.on_partner_sleep", "autosave.on_new_day"}) {
+         {"autosave.on_map_change", "autosave.on_battle_end", "autosave.on_partner_sleep", "autosave.on_new_day",
+          "autosave.on_evolution", "autosave.on_tournament_result", "autosave.on_recruit_join", "autosave.on_key_item",
+          "autosave.on_dangerous_area", "autosave.on_story_progress", "autosave.on_partner_reborn"}) {
         CAPTURE(trigger);
         CHECK(nodeAt(root, trigger).kind == TuningValueKind::Flag);
     }
+    CHECK(nodeAt(root, "autosave.coalesce_seconds").kind == TuningValueKind::Number);
     const std::uint64_t revision = model.revision();
-    REQUIRE(model.edit("save", nodeAt(root, "autosave.on_new_day"), std::string{FlagOnText}));
+    REQUIRE(model.edit("save", nodeAt(root, "autosave.on_new_day"), std::string{FlagOffText}));
     CHECK(model.revision() == revision + 1);
-    CHECK(nodeAt(sectionNamed(model, "save").root, "autosave.on_new_day").text == FlagOnText);
+    CHECK(nodeAt(sectionNamed(model, "save").root, "autosave.on_new_day").text == FlagOffText);
     REQUIRE_MESSAGE(model.save("save"), model.error());
 
     std::string expected = gamePackText(GameSaveSection);
-    const std::string_view before = "on_new_day: false";
+    const std::string_view before = "on_new_day: true";
     const std::size_t at = expected.find(before);
     REQUIRE(at != std::string::npos);
-    expected.replace(at, before.size(), "on_new_day: true");
+    expected.replace(at, before.size(), "on_new_day: false");
     CHECK(packs.fileText("rules/small/save.yaml") == expected);
 }
 

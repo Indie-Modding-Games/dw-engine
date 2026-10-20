@@ -92,8 +92,31 @@ std::vector<Autosave> play(GameSession& session, double realSeconds) {
     return autosaves;
 }
 
+// Ticks until the session writes its pending autosave, for at most a few seconds past the coalescing window.
+std::optional<Autosave> waitForAutosave(GameSession& session) {
+    constexpr double MaxWaitSeconds = 3.0;
+    const auto ticks = static_cast<std::int64_t>(MaxWaitSeconds / Tick);
+    for (std::int64_t step = 0; step < ticks; ++step) {
+        session.tick(Tick);
+        if (std::optional<Autosave> autosave = session.takeAutosaved()) {
+            return autosave;
+        }
+    }
+    return std::nullopt;
+}
+
+// Leaves the partner almost no life left, starving and unrelieved, so that it dies soon.
+void makePartnerDie(GameSession& session) {
+    PartnerState dying = session.partner().state();
+    dying.life.remainingLifetime = 1;
+    dying.hunger.foodLevel = 1'000'000;
+    dying.toilet.poopLevel = 1'000'000;
+    REQUIRE(session.partner().restore(dying).has_value());
+}
+
 bool savedFor(const std::vector<Autosave>& autosaves, AutosaveReason reason) {
-    return std::ranges::any_of(autosaves, [&](const Autosave& autosave) { return autosave.reason == reason; });
+    return std::ranges::any_of(
+        autosaves, [&](const Autosave& autosave) { return std::ranges::contains(autosave.reasons, reason); });
 }
 
 bool has(const std::vector<PartnerEvent>& events, EventKind kind) {
@@ -201,14 +224,14 @@ TEST_CASE("the partner going to sleep autosaves") {
     const auto slept = session->sleep({});
     REQUIRE_MESSAGE(slept.has_value(), errorOf(slept));
     CHECK(has(session->takePartnerEvents(), EventKind::Slept));
-    const std::optional<Autosave> autosave = session->takeAutosaved();
+    // The autosave waits out the coalescing window, so that the new day the sleep brings joins it.
+    const std::optional<Autosave> autosave = waitForAutosave(*session);
     if (!autosave) {
         FAIL("no autosave");
         return;
     }
-    CHECK(autosave->reason == AutosaveReason::PartnerSleep);
-    CHECK(autosave->slot == SlotId{.kind = SlotKind::Autosave, .index = 1});
-    CHECK_FALSE(session->takeAutosaved().has_value());
+    CHECK(std::ranges::contains(autosave->reasons, AutosaveReason::PartnerSleep));
+    CHECK(autosave->slot.kind == SlotKind::Autosave);
 
     // The autosave is a save like any other.
     const auto loaded = newGame(packs, &storage, 5);
@@ -219,17 +242,17 @@ TEST_CASE("the partner going to sleep autosaves") {
 
 TEST_CASE("a new day autosaves only when the ruleset says so") {
     const TestPacks packs;
-    // The original ruleset leaves it off (save.yaml: autosave.on_new_day).
-    MemorySaveStorage offStorage;
-    const auto off = newGame(packs, &offStorage);
-    off->clock().setSpeed(HourPerSecond);
-    CHECK_FALSE(savedFor(play(*off, SecondsPerGameDay), AutosaveReason::NewDay));
-
+    // The original ruleset turns it on (save.yaml: autosave.on_new_day).
     MemorySaveStorage onStorage;
     const auto on = newGame(packs, &onStorage);
-    REQUIRE(on->rules().setValue("save", "autosave.on_new_day", "true").has_value());
     on->clock().setSpeed(HourPerSecond);
     CHECK(savedFor(play(*on, SecondsPerGameDay), AutosaveReason::NewDay));
+
+    MemorySaveStorage offStorage;
+    const auto off = newGame(packs, &offStorage);
+    REQUIRE(off->rules().setValue("save", "autosave.on_new_day", "false").has_value());
+    off->clock().setSpeed(HourPerSecond);
+    CHECK_FALSE(savedFor(play(*off, SecondsPerGameDay), AutosaveReason::NewDay));
 }
 
 TEST_CASE("a tuned value reaches the running session") {
@@ -247,11 +270,7 @@ TEST_CASE("a tuned value reaches the running session") {
 TEST_CASE("a partner that dies is reborn as a baby") {
     const TestPacks packs;
     const auto session = newGame(packs, nullptr);
-    PartnerState dying = session->partner().state();
-    dying.life.remainingLifetime = 1;
-    dying.hunger.foodLevel = 1'000'000;
-    dying.toilet.poopLevel = 1'000'000;
-    REQUIRE(session->partner().restore(dying).has_value());
+    makePartnerDie(*session);
     session->clock().setSpeed(HourPerSecond);
     std::vector<PartnerEvent> events;
     for (std::int32_t step = 0; step < 120 && !has(events, EventKind::Reborn); ++step) {
@@ -264,6 +283,16 @@ TEST_CASE("a partner that dies is reborn as a baby") {
     CHECK(session->partner().alive());
     constexpr std::array<std::string_view, 4> Babies{"bota", "puni", "poyo", "yura"};
     CHECK(std::ranges::find(Babies, session->partner().state().species) != Babies.end());
+}
+
+TEST_CASE("a partner reborn after dying autosaves") {
+    const TestPacks packs;
+    MemorySaveStorage storage;
+    const auto session = newGame(packs, &storage);
+    makePartnerDie(*session);
+    session->clock().setSpeed(HourPerSecond);
+    constexpr double DeathAndCoalesceSeconds = 30.0;
+    CHECK(savedFor(play(*session, DeathAndCoalesceSeconds), AutosaveReason::PartnerReborn));
 }
 
 TEST_CASE("the partner view shows the partner's state within the care limits") {

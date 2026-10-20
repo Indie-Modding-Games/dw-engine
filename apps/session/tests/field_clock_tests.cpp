@@ -183,7 +183,7 @@ TEST_CASE("a map change autosaves, and the save keeps where the player is") {
         CHECK(loop.run(1).autosaves.empty());
         const LoopRun walked = loop.walkIntoHouse();
         REQUIRE(walked.autosaves.size() == 1);
-        CHECK(walked.autosaves.front().reason == AutosaveReason::MapChange);
+        CHECK(walked.autosaves.front().reasons == std::vector{AutosaveReason::MapChange});
     }
     const std::optional<dwe::session::FieldPlace> place = session->savedPlace();
     if (!place) {

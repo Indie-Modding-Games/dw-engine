@@ -42,10 +42,10 @@ struct FieldPlace {
     assets::SpawnPoint spawn;
 };
 
-// An autosave the session wrote, and why.
+// An autosave the session wrote, and why: its reasons in the order they were first asked.
 struct Autosave {
     game::save::SlotId slot;
-    game::save::AutosaveReason reason = game::save::AutosaveReason::MapChange;
+    std::vector<game::save::AutosaveReason> reasons;
 
     friend bool operator==(const Autosave&, const Autosave&) = default;
 };
@@ -171,6 +171,7 @@ private:
     void routePartnerEvent(const game::partner::PartnerEvent& event);
     void changeTamerLevel(std::int32_t change);
     void rebirthPartner();
+    void advanceAutosaveWindow(double realSeconds);
     void writeRequestedAutosave();
     // What every command of the player does after it: route the partner's events and write a requested autosave.
     void afterCommand();

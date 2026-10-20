@@ -8,13 +8,38 @@
   "properties": {
     "autosave": {
       "type": "object",
-      "required": ["on_map_change", "on_battle_end", "on_partner_sleep", "on_new_day"],
+      "required": [
+        "on_map_change",
+        "on_battle_end",
+        "on_partner_sleep",
+        "on_new_day",
+        "on_evolution",
+        "on_tournament_result",
+        "on_recruit_join",
+        "on_key_item",
+        "on_dangerous_area",
+        "on_story_progress",
+        "on_partner_reborn",
+        "coalesce_seconds"
+      ],
       "additionalProperties": false,
       "properties": {
         "on_map_change": { "description": "Autosave on every map change.", "type": "boolean" },
         "on_battle_end": { "description": "Autosave after every battle, won or lost.", "type": "boolean" },
         "on_partner_sleep": { "description": "Autosave when the partner goes to sleep.", "type": "boolean" },
-        "on_new_day": { "description": "Autosave on every new day of the game clock.", "type": "boolean" }
+        "on_new_day": { "description": "Autosave on every new day of the game clock.", "type": "boolean" },
+        "on_evolution": { "description": "Autosave after the partner evolves.", "type": "boolean" },
+        "on_tournament_result": { "description": "Autosave after a tournament or arena result.", "type": "boolean" },
+        "on_recruit_join": { "description": "Autosave when a recruit joins the city.", "type": "boolean" },
+        "on_key_item": { "description": "Autosave after buying or using a key item.", "type": "boolean" },
+        "on_dangerous_area": { "description": "Autosave before entering a known dangerous area.", "type": "boolean" },
+        "on_story_progress": { "description": "Autosave when the story moves on (a story trigger is set).", "type": "boolean" },
+        "on_partner_reborn": { "description": "Autosave when the partner is reborn from its egg after dying.", "type": "boolean" },
+        "coalesce_seconds": {
+          "description": "Requests within this many real seconds of the first make one autosave. At least 1: autosave slots rotate by their time in whole seconds.",
+          "type": "number",
+          "minimum": 1
+        }
       }
     }
   }

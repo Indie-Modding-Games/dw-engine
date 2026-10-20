@@ -7,6 +7,7 @@ dwe_add_module(save
         src/storage.cpp
         src/settings.cpp
         src/autosave.cpp
+        src/text_keys.cpp
         src/slots.cpp
     DEPS core assets ruleset)
 

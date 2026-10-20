@@ -33,7 +33,8 @@ SaveFile fileLabelled(std::string label, std::chrono::sys_seconds updated) {
                    .created = updated,
                    .updated = updated,
                    .playSeconds = 60,
-                   .label = std::move(label)};
+                   .label = std::move(label),
+                   .autosaveReasons = {}};
     return file;
 }
 

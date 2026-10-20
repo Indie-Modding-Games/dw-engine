@@ -92,13 +92,26 @@ std::chrono::sys_seconds readTime(YamlReader& reader, const YamlNode& node) {
     return time.value_or(std::chrono::sys_seconds{});
 }
 
+std::vector<std::string> readAutosaveReasons(YamlReader& reader, const YamlNode& node) {
+    std::vector<std::string> names;
+    for (const YamlNode& item : reader.sequence(node, messages::AutosaveReasonsWhat)) {
+        std::string name = reader.text(item);
+        if (reader.ok() && !isValidName(name)) {
+            reader.fail(item, std::format(messages::BadAutosaveReason, name));
+        }
+        names.push_back(std::move(name));
+    }
+    return names;
+}
+
 SaveHeader readHeader(YamlReader& reader, const YamlNode& root) {
     SaveHeader header{.gameVersion = reader.text(reader.field(root, save_key::GameVersion)),
                       .rulesetId = reader.text(reader.field(root, save_key::Ruleset)),
                       .created = readTime(reader, reader.field(root, save_key::Created)),
                       .updated = readTime(reader, reader.field(root, save_key::Updated)),
                       .playSeconds = reader.integer<std::int64_t>(reader.field(root, save_key::PlaySeconds)),
-                      .label = reader.text(reader.field(root, save_key::Label))};
+                      .label = reader.text(reader.field(root, save_key::Label)),
+                      .autosaveReasons = readAutosaveReasons(reader, reader.field(root, save_key::AutosaveReasons))};
     if (reader.ok() && header.playSeconds < 0) {
         reader.fail(reader.field(root, save_key::PlaySeconds), messages::NegativePlayTime);
     }
@@ -148,6 +161,20 @@ bool isSave(const YamlNode& tree) {
     return format != nullptr && format->isScalar() && format->text() == FormatName;
 }
 
+YamlNode writeAutosaveReasons(const SaveHeader& header) {
+    YamlNode names = YamlNode::sequence();
+    for (const std::string& name : header.autosaveReasons) {
+        names.append(plain(name));
+    }
+    return names;
+}
+
+// Format 2 adds the header's autosave_reasons; a format 1 save was never an autosave with reasons.
+core::Result<YamlNode> addAutosaveReasons(YamlNode root) {
+    root.set(std::string{save_key::AutosaveReasons}, YamlNode::sequence());
+    return root;
+}
+
 YamlNode writeSections(const SaveFile& file) {
     YamlNode sections = YamlNode::mapping();
     for (const auto& [name, section] : file.sections) {
@@ -167,8 +194,12 @@ bool isValidName(std::string_view name) {
 }
 
 const MigrationChain& formatMigrations() {
-    // Format 1 is the first: no steps yet. A change of the header or of how sections are stored adds a step here.
-    static const MigrationChain chain{};
+    // A change of the header or of how sections are stored adds a step here.
+    static const MigrationChain chain = [] {
+        MigrationChain steps;
+        steps.add(addAutosaveReasons); // 1 -> 2
+        return steps;
+    }();
     return chain;
 }
 
@@ -196,7 +227,7 @@ core::Result<SaveFile> parseSaveFile(std::string_view text, const MigrationChain
     if (!reader.expectKeys(*root, messages::SaveWhat,
                            {save_key::Format, save_key::FormatVersion, save_key::GameVersion, save_key::Ruleset,
                             save_key::Label, save_key::Created, save_key::Updated, save_key::PlaySeconds,
-                            save_key::Sections, save_key::Complete})) {
+                            save_key::AutosaveReasons, save_key::Sections, save_key::Complete})) {
         return std::unexpected{reader.error(messages::SaveFileContext)};
     }
     checkComplete(reader, *root);
@@ -208,6 +239,11 @@ core::Result<SaveFile> parseSaveFile(std::string_view text, const MigrationChain
 }
 
 core::Result<std::string> writeSaveFile(const SaveFile& file) {
+    for (const std::string& name : file.header.autosaveReasons) {
+        if (!isValidName(name)) {
+            return core::fail(std::format(messages::InSaveFile, std::format(messages::BadAutosaveReason, name)));
+        }
+    }
     for (const auto& [name, section] : file.sections) {
         if (!isValidName(name)) {
             return core::fail(std::format(messages::InSaveFile, std::format(messages::BadSectionName, name)));
@@ -222,6 +258,7 @@ core::Result<std::string> writeSaveFile(const SaveFile& file) {
     root.set(std::string{save_key::Created}, quoted(formatTime(file.header.created)));
     root.set(std::string{save_key::Updated}, quoted(formatTime(file.header.updated)));
     root.set(std::string{save_key::PlaySeconds}, plain(std::to_string(file.header.playSeconds)));
+    root.set(std::string{save_key::AutosaveReasons}, writeAutosaveReasons(file.header));
     root.set(std::string{save_key::Sections}, writeSections(file));
     root.set(std::string{save_key::Complete}, plain(std::string{True}));
     auto text = core::emitYaml(root);

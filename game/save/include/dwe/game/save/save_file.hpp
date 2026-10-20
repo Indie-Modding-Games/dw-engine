@@ -11,12 +11,13 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::game::save {
 
 // The version of the file layout (the header keys and how sections are stored), written as `format_version`. Each
 // section has its own version on top of this one (docs/architecture/save.md).
-inline constexpr std::int32_t FormatVersion = 1;
+inline constexpr std::int32_t FormatVersion = 2;
 
 // The value of the `format` key, which tells a save apart from any other YAML document.
 inline constexpr std::string_view FormatName = "dwe-save";
@@ -38,6 +39,9 @@ struct SaveHeader {
     std::int64_t playSeconds = 0;
     // A text for the slot list, such as the map and the partner's name.
     std::string label;
+    // Why an autosave was written, by reason name (autosaveReasonNames); empty for a save the player asked for. Kept
+    // as names so that a reason from a newer game still lists.
+    std::vector<std::string> autosaveReasons;
 
     friend bool operator==(const SaveHeader&, const SaveHeader&) = default;
 };

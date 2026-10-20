@@ -1,13 +1,32 @@
 # El guardado (game/save, docs/architecture/save.md). El original solo guardaba cuando el jugador lo pedía: al dormir
 # (partner.c: partnerTickSleep), en la máquina de guardado (main_menu.c: openSaveMachine) y al acabar el juego
-# (main_menu.c: gameClearSave).
+# (main_menu.c: gameClearSave). Todo el autoguardado es nuevo: cada motivo a false es el original.
 autosave:
-  # Desviación aprobada (2026-10-20): autoguardado en cada cambio de mapa, para no perder progreso. false es el
-  # original.
+  # Desviación aprobada (2026-10-20): autoguardado en cada cambio de mapa, para no perder progreso.
   on_map_change: true
-  # Desviación aprobada (2026-10-20): autoguardado al terminar cada batalla, ganada o perdida. false es el original.
+  # Desviación aprobada (2026-10-20): autoguardado al terminar cada batalla, ganada o perdida.
   on_battle_end: true
-  # Desviación aprobada (2026-10-20): autoguardado cuando el partner se duerme. false es el original.
+  # Desviación aprobada (2026-10-20): autoguardado cuando el partner se duerme.
   on_partner_sleep: true
-  # Cada día nuevo del reloj del juego: apagado mientras el responsable de diseño elige entre esto y el sueño.
-  on_new_day: false
+  # Desviación aprobada (2026-10-20): autoguardado en cada día nuevo del reloj del juego.
+  on_new_day: true
+  # Desviación aprobada (2026-10-20): autoguardado tras cada evolución.
+  on_evolution: true
+  # Desviación aprobada (2026-10-20): autoguardado tras el resultado de un torneo o de la arena.
+  on_tournament_result: true
+  # Desviación aprobada (2026-10-20): autoguardado cuando un recluta se une a la ciudad.
+  on_recruit_join: true
+  # Desviación aprobada (2026-10-20): autoguardado al comprar o usar un objeto clave.
+  on_key_item: true
+  # Desviación aprobada (2026-10-20): autoguardado antes de entrar en una zona peligrosa conocida (los datos de qué
+  # mapas lo son llegan con el campo).
+  on_dangerous_area: true
+  # Desviación aprobada (2026-10-20): autoguardado cuando avanza la historia (un disparador de historia).
+  on_story_progress: true
+  # Desviación aprobada (2026-10-20): autoguardado cuando el partner renace de su huevo tras morir.
+  on_partner_reborn: true
+  # Desviación aprobada (2026-10-20): las peticiones a menos de estos segundos reales de la primera dan un solo
+  # autoguardado (dormir y el día nuevo, varios motivos en el mismo fotograma). Segundos reales y no del reloj del
+  # juego: al dormir el reloj salta horas de golpe, y en los menús y las batallas se para. Mínimo 1: las ranuras de
+  # autoguardado se turnan por su hora en segundos enteros.
+  coalesce_seconds: 2

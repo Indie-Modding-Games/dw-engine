@@ -11,13 +11,16 @@ un fichero leído y escrito otra vez sale idéntico byte a byte.
 
 ```yaml
 format: dwe-save
-format_version: 1
+format_version: 2
 game_version: "0.1.0"
 ruleset: "original"
 label: "File City"
 created: "2026-10-01T08:00:00Z"
 updated: "2026-10-02T21:30:15Z"
 play_seconds: 5400
+autosave_reasons:
+- partner_sleep
+- new_day
 sections:
   inventory:
     version: 1
@@ -39,6 +42,7 @@ complete: true
 | `label` | El texto de la lista de ranuras (el mapa, el nombre del partner...) |
 | `created`, `updated` | Cuándo empezó la partida y cuándo se guardó por última vez, en UTC (`YYYY-MM-DDTHH:MM:SSZ`) |
 | `play_seconds` | Tiempo de juego en segundos |
+| `autosave_reasons` | Por qué se autoguardó, con el nombre de cada motivo en el orden en que se pidió (ver [abajo](#cuándo-autoguarda)); `[]` si la pidió el jugador. Son nombres y no números, así que un motivo de un juego más nuevo se lista igual |
 | `sections` | El estado guardado de cada sistema, ordenados por nombre, cada uno con su `version` y su `state` |
 | `complete` | Siempre `true` y siempre la última clave: un fichero cortado por cualquier sitio da error en vez de perder sus últimas secciones |
 
@@ -52,7 +56,8 @@ Hay dos niveles de versión, y cada uno tiene su **cadena de migraciones** (`Mig
 se puede subir una versión sin escribir su paso.
 
 - **El formato** (`format_version`): sus pasos están en `formatMigrations()` en `game/save` y se aplican al leer el
-  fichero, sobre el documento entero. Hoy es la versión 1, sin pasos.
+  fichero, sobre el documento entero. Hoy es la versión 2; el paso 1 → 2 añade `autosave_reasons: []` (una partida de
+  la versión 1 nunca fue un autoguardado con motivos).
 - **Cada sección** (`sections.<nombre>.version`): la cadena la registra el sistema dueño de la sección y se aplica al
   cargar, sobre el `state` de la sección. Cada sistema versiona lo suyo sin tocar a los demás.
 
@@ -131,24 +136,72 @@ preferencia del juego y no cambian las reglas; el autoguardado sí es una regla,
 manual_slots: 15
 autosave_slots: 3
 
-# content/packs/game/rules/original/save.yaml
+# content/packs/game/rules/original/save.yaml (resumido)
 autosave:
   on_map_change: true
   on_battle_end: true
-  on_partner_sleep: true
-  on_new_day: false
+  # ... un `on_<motivo>` por cada motivo de la tabla de abajo, todos obligatorios
+  coalesce_seconds: 2
 ```
 
 - **Ranuras manuales**: `slot_01.yaml` a `slot_NN.yaml`. El original guardaba un fichero por ranura, hasta 15 por
   tarjeta de memoria (`main_menu.c: SAVEGAME_SLOT_INFO`).
-- **Autoguardado**: `autosave_01.yaml`... Se escribe por turnos: la primera ranura vacía, si no una dañada, si no la
-  guardada hace más tiempo (por `updated`). `autosave_slots: 0` lo apaga.
-- **Cuándo**: el juego llama a `AutosaveRequests::requestAutosave(motivo)` en sus eventos, con un `AutosaveReason`:
-  `MapChange` (cada cambio de mapa), `BattleEnd` (al terminar cada batalla, ganada o perdida), `PartnerSleep` (cuando
-  el partner se duerme) y `NewDay` (cada día nuevo del reloj del juego). Solo cuentan los que el ruleset tiene a
-  `true` (`AutosaveRules`, que se lee con `readAutosaveRules` y se comprueba con `saveSectionCheck`). Luego el bucle
-  del juego recoge la petición con `takeRequest`, construye el `SaveFile` y llama a `SaveSlots::autosave`. Un ruleset
-  sin sección `save` nunca autoguarda, como el original.
+- **Autoguardado**: `autosave_01.yaml`... Cuántas hay es dato (`autosave_slots`, 3 en el paquete `game`). Se escribe
+  por turnos: la primera ranura vacía, si no una dañada, si no la guardada hace más tiempo (por `updated`), así que
+  tras la tercera vuelve a la primera. `autosave_slots: 0` lo apaga.
+
+### Cuándo autoguarda
+
+Los sistemas del juego solo **emiten sus eventos**; el trabajo de la sesión (la app) los une a
+`AutosaveRequests::requestAutosave(motivo)`. Cada `AutosaveReason` tiene su bandera en el ruleset y su nombre en la
+cabecera de la partida:
+
+| `AutosaveReason` | Bandera | Nombre | Evento del sistema que lo pide |
+|---|---|---|---|
+| `MapChange` | `on_map_change` | `map_change` | Campo (`game/field`): el cambio de mapa, al terminar de entrar en el mapa nuevo |
+| `BattleEnd` | `on_battle_end` | `battle_end` | Batalla: el resultado de cada batalla, ganada o perdida |
+| `PartnerSleep` | `on_partner_sleep` | `partner_sleep` | Partner: el evento `Slept` (se duerme) |
+| `NewDay` | `on_new_day` | `new_day` | Partner / reloj: el evento `NewDay` (el día del reloj del juego cambia) |
+| `Evolution` | `on_evolution` | `evolution` | Evolución: el resultado de una evolución, cuando el partner ya es la especie nueva |
+| `TournamentResult` | `on_tournament_result` | `tournament_result` | Batalla: el resultado de un torneo o de un combate de la arena |
+| `RecruitJoin` | `on_recruit_join` | `recruit_join` | Batalla / historia: un recluta se une a la ciudad (tras su batalla o su evento) |
+| `KeyItem` | `on_key_item` | `key_item` | Inventario: se compra o se usa un objeto clave |
+| `DangerousArea` | `on_dangerous_area` | `dangerous_area` | Campo: al empezar el fundido de salida hacia un mapa marcado como peligroso (decisión 2026-10-20; un guardado inmediato solo si las pruebas lo piden). **Pendiente**: los datos de qué mapas son peligrosos llegan más adelante con los datos del campo y del mapa; hasta entonces nadie lo pide |
+| `StoryProgress` | `on_story_progress` | `story_progress` | Script / historia: se activa un disparador de historia |
+| `PartnerReborn` | `on_partner_reborn` | `partner_reborn` | Partner: el partner renace de su huevo tras morir |
+
+Solo cuentan los motivos que el ruleset tiene a `true` (`AutosaveRules`, que se lee con `readAutosaveRules` y se
+comprueba con `saveSectionCheck`), y solo si hay ranuras de autoguardado. Un ruleset sin sección `save` nunca
+autoguarda, como el original. Las banderas no tienen valor por defecto: cada ruleset las declara todas.
+
+**Agrupación.** Varias peticiones seguidas dan **un** autoguardado: la primera abre una ventana de
+`coalesce_seconds` y las que llegan dentro se suman a ella. Los motivos se juntan sin repetir, en el orden en que se
+pidieron, y van a `autosave_reasons` de la cabecera (útil para la interfaz y para depurar). Así, dormirse y el día
+nuevo, o varios eventos en el mismo fotograma, guardan una vez. La ventana:
+
+- Cuenta en **segundos reales** del bucle del juego (`AutosaveRequests::advance(segundos)` en cada tick), no en el
+  reloj del juego: al dormir el reloj salta horas de golpe (dormirse y el día nuevo estarían a horas de juego) y en los
+  menús y las batallas el reloj se para. El módulo no lee ningún reloj: la app le pasa el tiempo de cada tick.
+- Cuenta desde la **primera** petición, no desde la última: una racha de eventos no retrasa el guardado para siempre.
+  Peticiones más separadas que la ventana dan dos autoguardados.
+- Es de 1 segundo o más: las ranuras de autoguardado se turnan por `updated`, que tiene segundos enteros, y dos
+  autoguardados en el mismo segundo empatarían.
+
+El bucle del juego, en cada tick y en un punto seguro (fuera de una batalla o de un cambio de mapa a medias):
+
+```cpp
+autosaves.advance(tickSeconds);
+if (auto reasons = autosaves.takeRequest()) {
+    current.header.autosaveReasons = save::autosaveReasonNames(*reasons);
+    sections.write(current);
+    slots.autosave(current);                  // y el aviso: save::text_key::Autosaved
+}
+```
+
+Los textos que ve el jugador (el aviso de «guardado», el nombre de cada motivo) son claves de localización de
+`dwe/game/save/text_keys.hpp` (`save.autosaved`, `save.autosave_failed`, `save.autosave_reason.<nombre>`); los textos
+los añaden la interfaz y la localización.
+
 - **Escritura atómica**: se escribe `<fichero>.tmp`, se copia el fichero anterior a `<fichero>.bak` y se renombra el
   temporal sobre el fichero, que el sistema de ficheros hace en un paso. Si el juego se corta, la ranura tiene la
   partida anterior o la nueva, nunca media. La copia, y no un renombrado, hace que la partida nunca falte del disco.
@@ -157,9 +210,10 @@ autosave:
 
 **El autoguardado es una diferencia deliberada con el original**, que solo guardaba cuando el jugador lo pedía: al
 dormir (`partner.c: partnerTickSleep`, «Save and go to sleep») o en la máquina de guardado de algunos mapas
-(`main_menu.c: openSaveMachine`), y tras acabar el juego (`main_menu.c: gameClearSave`). Lo aprobó el responsable de
-diseño el 2026-10-20 con los tres motivos de arriba, que `save.yaml` de `original` marca como «Desviación aprobada».
-Un ruleset fiel al original las pone todas a `false`.
+(`main_menu.c: openSaveMachine`), y tras acabar el juego (`main_menu.c: gameClearSave`). El responsable de diseño lo
+aprobó el 2026-10-20 con todos los motivos de la tabla y la agrupación («cuantas más opciones de autoguardado,
+mejor»), y `save.yaml` de `original` los marca como «Desviación aprobada». Un ruleset fiel al original los pone todos a
+`false`.
 
 ## Dónde están los ficheros
 
