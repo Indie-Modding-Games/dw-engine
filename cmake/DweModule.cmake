@@ -9,6 +9,13 @@ if(MSVC)
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
+# CMake has no system include flag for clang-cl, so the headers of the dependencies come in with -I and their
+# warnings fail the build. -imsvc makes them system headers, as -isystem does on Linux.
+if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_INCLUDE_SYSTEM_FLAG_CXX)
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-imsvc ")
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-imsvc ")
+endif()
+
 option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 
