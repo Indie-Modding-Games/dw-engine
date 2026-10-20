@@ -20,8 +20,8 @@ namespace dwe::dwx {
 
 // The Digimon models, CHDAT/MMD<n>/<name>.MMD: the skeleton of their type from the executable, every animation and
 // the type's texture from CHDAT/ALLTIM.TIM. Next to each model goes its contract (content/schemas/
-// model_contract.schema.json): the skeleton and the animations of the original, which dwx validate checks the model
-// against.
+// model_contract.schema.json): the skeleton and the animations of the original the model has, which dwx validate
+// checks the model against, and those that could not be converted.
 bool handlesDigimonModel(std::string_view path);
 core::Result<Extraction> extractDigimonModel(const Disc& disc, const formats::disc::IsoFile& file);
 
@@ -47,13 +47,21 @@ struct BuiltModel {
     std::vector<std::string> notes;
     std::vector<ModelVariant> variants;
     std::size_t texturedPrimitives = 0;
-    // The glTF names of every animation the original model has, including any that could not be converted.
+    // The glTF names of the original's animations the model has.
     std::vector<std::string> animations;
+    // The names the original's animations that could not be converted would have; the model lacks them.
+    std::vector<std::string> unconvertedAnimations;
 };
 
 // Builds a Digimon's model from its MMD file, its texture TIM (uploaded where the TIM says) and its skeleton.
 core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, const formats::image::Tim& texture,
                                            std::span<const formats::exe::SkeletonBone> bones);
+
+// The contract of a Digimon model (model_contract.schema.json) for a model.glb next to it: the Digimon whose skeleton
+// it has, the parent of each bone, the animations of the original the model has and, apart, those it lacks because
+// they could not be converted.
+core::Result<std::string> digimonContract(std::string_view skeleton, std::span<const formats::exe::SkeletonBone> bones,
+                                          const BuiltModel& model);
 
 // A place the original draws a model in: what it has in VRAM there, a name for the report and a slug for the id of
 // a variant textured from it.

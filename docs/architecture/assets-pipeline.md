@@ -146,7 +146,8 @@ Qué comprueba:
    tiene que tener una piel con un hueso por cada entrada de `joint_parents`, con esos padres y en ese orden, y una
    animación con cada nombre de `animations` (puede tener más). El extractor escribe el contrato con el esqueleto del
    tipo en el ejecutable y las animaciones del MMD original ([esquema](../../content/schemas/model_contract.schema.json)),
-   así que un modelo HD que lo cumple se puede animar como el original.
+   así que un modelo HD que lo cumple se puede animar como el original. Las animaciones del MMD que el extractor no
+   pudo convertir van en `unconverted_animations`, que no se comprueba.
 7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
    `dwe-game --check-content`: PNG, glTF/GLB, YAML, WAV, SF2, MIDI e Y4M.
 

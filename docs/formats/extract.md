@@ -133,9 +133,12 @@ sobre su página, sin imagen, y van a `unknowns`.
   leer el pack entero (9 sectores por tipo, `model.c: loadDigimonTexture`). Una animación que no se puede reproducir
   va a `unknowns` y el resto del modelo se escribe igual.
 - Junto a cada modelo de Digimon va su **contrato**, `contract.yaml`: el fichero del modelo, el Digimon cuyo esqueleto
-  tiene, el padre de cada hueso (de `DIGIMON_SKELETONS`) y el nombre (`anim_<nn>`) de cada animación del MMD,
-  también de las que no se pudieron reproducir. [`dwx validate`](../architecture/assets-pipeline.md#dwx-validate)
-  comprueba que el modelo, el original o el de un mod, lo cumple.
+  tiene, el padre de cada hueso (de `DIGIMON_SKELETONS`) y en `animations` el nombre (`anim_<nn>`) de cada animación
+  del MMD que está en el modelo. Las que no se pudieron reproducir no están en el `.glb`, así que van aparte, en
+  `unconverted_animations` (solo si hay alguna), además de a `unknowns`: el contrato sigue diciendo que el juego las
+  tiene sin que el modelo extraído lo incumpla. [`dwx validate`](../architecture/assets-pipeline.md#dwx-validate)
+  comprueba que el modelo, el original o el de un mod, cumple `animations` y no pide las de
+  `unconverted_animations`.
 - **Otros modelos** (`static_model`): un nodo por objeto, todos en la raíz, sin animaciones. La escena depende del
   modelo:
   - Puertas (`DOOR/DOOR<nn>.TMD`): los mapas cuya entrada de `DOOR_MAPDATA` incluye la puerta

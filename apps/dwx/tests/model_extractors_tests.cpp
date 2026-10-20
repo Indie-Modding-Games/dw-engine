@@ -1,3 +1,4 @@
+#include <dwe/assets/file_system.hpp>
 #include <dwe/formats/exe/tables.hpp>
 #include <dwe/formats/image/tim.hpp>
 #include <dwe/formats/model/tmd.hpp>
@@ -17,7 +18,9 @@
 #include "model_extractors.hpp"
 #include "model_fixtures.hpp"
 #include "model_textures.hpp"
+#include "temp_folder.hpp"
 #include "tim_builder.hpp"
+#include "validate.hpp"
 
 using namespace dwe::dwx;
 using dwe::formats::image::Color15;
@@ -126,6 +129,39 @@ TEST_CASE("a Digimon model gets its skeleton, its animations and an image per pa
     auto wrongObject = skeleton;
     wrongObject[3].objIndex = 2;
     CHECK_FALSE(buildDigimonModel(mmd, sampleTexture(), wrongObject).has_value());
+}
+
+TEST_CASE("an animation that cannot be converted is left out of the model and set apart in its contract") {
+    // The last stream stops after its header, so its first pose reads past the end of the file.
+    const auto mmd = fixtures::buildMmd(fixtures::buildSampleTmd(),
+                                        {fixtures::buildSampleAnimationForever(), {std::byte{100}, std::byte{0}}});
+    const std::vector<dwe::formats::exe::SkeletonBone> skeleton{{.objIndex = -1, .parentIndex = -1},
+                                                                {.objIndex = -1, .parentIndex = 0},
+                                                                {.objIndex = 0, .parentIndex = 1},
+                                                                {.objIndex = 1, .parentIndex = 2}};
+    const auto model = buildDigimonModel(mmd, sampleTexture(), skeleton);
+    REQUIRE(model.has_value());
+    CHECK(hasUnknown(*model, "animation 1:"));
+    CHECK(parse(model->glb)->animations_count == 1);
+    CHECK(model->animations == std::vector<std::string>{"anim_00"});
+    CHECK(model->unconvertedAnimations == std::vector<std::string>{"anim_01"});
+
+    // dwx validate holds the extracted model to the contract written with it.
+    const auto contract = digimonContract("agumon", skeleton, *model);
+    REQUIRE(contract.has_value());
+    CHECK(contract->contains("unconverted_animations"));
+    const dwe::assets::testing::TempFolder temp;
+    temp.write("base/pack.yaml",
+               "id: base\nversion: 1.0.0\nlayer: base\nschemas:\n  model_contract: [digimon/*/contract]\n");
+    temp.write("base/digimon/agumon/model.glb",
+               std::string_view{reinterpret_cast<const char*>(model->glb.data()), model->glb.size()});
+    temp.write("base/digimon/agumon/contract.yaml", *contract);
+    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, temp.path() / "base", DWE_SCHEMA_DIR);
+    REQUIRE(report.has_value());
+    CHECK(report->contracts == 1);
+    for (const ValidationProblem& problem : report->problems) {
+        FAIL_CHECK(problem.file << ": " << problem.message);
+    }
 }
 
 TEST_CASE("textures come from what was uploaded last, and palettes may come from anywhere") {

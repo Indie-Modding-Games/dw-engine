@@ -162,31 +162,13 @@ core::Result<Extraction> modelOutputs(std::string_view path, BuiltModel model) {
     return extraction;
 }
 
-// The contract of a Digimon model (model_contract.schema.json): its file, the skeleton of its type with the parent of
-// each bone, and the animations the original has.
+// The contract of a Digimon model as an output of the pack.
 core::Result<OutputFile> contractOutput(const core::Result<assets::AssetId>& id, std::string_view skeleton,
-                                        std::span<const formats::exe::SkeletonBone> bones,
-                                        std::span<const std::string> animations) {
+                                        std::span<const formats::exe::SkeletonBone> bones, const BuiltModel& model) {
     if (!id) {
         return std::unexpected{id.error()};
     }
-    const auto quoted = [](std::string_view text) {
-        return core::YamlNode::scalar(std::string{text}, core::YamlNode::ScalarStyle::Quoted);
-    };
-    core::YamlNode parents = core::YamlNode::sequence();
-    for (const auto& bone : bones) {
-        parents.append(core::YamlNode::scalar(std::to_string(bone.parentIndex)));
-    }
-    core::YamlNode names = core::YamlNode::sequence();
-    for (const auto& animation : animations) {
-        names.append(quoted(animation));
-    }
-    core::YamlNode contract = core::YamlNode::mapping();
-    contract.set("model", quoted(std::format("{}.glb", ModelLeaf)));
-    contract.set("skeleton", quoted(skeleton));
-    contract.set("joint_parents", std::move(parents));
-    contract.set("animations", std::move(names));
-    const auto text = core::emitYaml(contract);
+    const auto text = digimonContract(skeleton, bones, model);
     if (!text) {
         return std::unexpected{text.error()};
     }
@@ -459,6 +441,33 @@ std::vector<SceneSource> doorMaps(const formats::exe::ExecutableTables& tables, 
 
 } // namespace
 
+core::Result<std::string> digimonContract(std::string_view skeleton, std::span<const formats::exe::SkeletonBone> bones,
+                                          const BuiltModel& model) {
+    const auto quoted = [](std::string_view text) {
+        return core::YamlNode::scalar(std::string{text}, core::YamlNode::ScalarStyle::Quoted);
+    };
+    core::YamlNode parents = core::YamlNode::sequence();
+    for (const auto& bone : bones) {
+        parents.append(core::YamlNode::scalar(std::to_string(bone.parentIndex)));
+    }
+    const auto namesOf = [&](std::span<const std::string> animations) {
+        core::YamlNode names = core::YamlNode::sequence();
+        for (const auto& animation : animations) {
+            names.append(quoted(animation));
+        }
+        return names;
+    };
+    core::YamlNode contract = core::YamlNode::mapping();
+    contract.set("model", quoted(std::format("{}.glb", ModelLeaf)));
+    contract.set("skeleton", quoted(skeleton));
+    contract.set("joint_parents", std::move(parents));
+    contract.set("animations", namesOf(model.animations));
+    if (!model.unconvertedAnimations.empty()) {
+        contract.set("unconverted_animations", namesOf(model.unconvertedAnimations));
+    }
+    return core::emitYaml(contract);
+}
+
 core::Result<std::size_t> digimonTypeOfModel(std::string_view path, std::span<const std::string> fileNames) {
     if (!handlesDigimonModel(path)) {
         return core::fail(std::format("{} is not a Digimon model", path));
@@ -484,8 +493,12 @@ core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, con
     std::ranges::transform(bones, std::back_inserter(skeleton), [](const formats::exe::SkeletonBone& bone) {
         return formats::model::SkeletonBone{.objIndex = bone.objIndex, .parentIndex = bone.parentIndex};
     });
-    BuiltModel model{
-        .glb = {}, .unknowns = issuesOf(mmd->tmd), .notes = notesOf(mmd->tmd), .variants = {}, .animations = {}};
+    BuiltModel model{.glb = {},
+                     .unknowns = issuesOf(mmd->tmd),
+                     .notes = notesOf(mmd->tmd),
+                     .variants = {},
+                     .animations = {},
+                     .unconvertedAnimations = {}};
 
     std::vector<formats::model::Animation> animations;
     for (std::size_t id = 0; id < mmd->animations.size(); ++id) {
@@ -493,13 +506,14 @@ core::Result<BuiltModel> buildDigimonModel(std::span<const std::byte> bytes, con
         if (!offset) {
             continue;
         }
-        model.animations.push_back(formats::model::animationName(id));
         auto animation =
             formats::model::simulateAnimation(bytes.subspan(*offset), static_cast<std::uint8_t>(id), skeleton.size());
         if (!animation) {
             model.unknowns.push_back(std::format("animation {}: {}", id, animation.error().message));
+            model.unconvertedAnimations.push_back(formats::model::animationName(id));
             continue;
         }
+        model.animations.push_back(formats::model::animationName(id));
         animations.push_back(std::move(*animation));
     }
 
@@ -531,7 +545,12 @@ core::Result<BuiltModel> buildStaticModel(std::span<const std::byte> bytes, std:
         }
         drawn.push_back(std::move(*textures));
     }
-    BuiltModel model{.glb = {}, .unknowns = issuesOf(*tmd), .notes = notesOf(*tmd), .variants = {}, .animations = {}};
+    BuiltModel model{.glb = {},
+                     .unknowns = issuesOf(*tmd),
+                     .notes = notesOf(*tmd),
+                     .variants = {},
+                     .animations = {},
+                     .unconvertedAnimations = {}};
 
     // Scenes that hold every texel, grouped by the texels they give: the first group textures the model and each
     // other one a variant named after its first scene.
@@ -642,15 +661,13 @@ core::Result<Extraction> extractDigimonModel(const Disc& disc, const IsoFile& fi
     if (!model) {
         return std::unexpected{model.error()};
     }
-    const std::vector<std::string> animations = model->animations;
+    auto contract = contractOutput(names::modelContract(*game, *type), names::digimonSlug(*game, *type), bones, *model);
+    if (!contract) {
+        return std::unexpected{contract.error()};
+    }
     auto extraction = digimonOutput(names::digimonAsset(*game, *type, ModelLeaf), std::move(model));
     if (!extraction) {
         return extraction;
-    }
-    auto contract =
-        contractOutput(names::modelContract(*game, *type), names::digimonSlug(*game, *type), bones, animations);
-    if (!contract) {
-        return std::unexpected{contract.error()};
     }
     extraction->outputs.push_back(std::move(*contract));
     return extraction;
