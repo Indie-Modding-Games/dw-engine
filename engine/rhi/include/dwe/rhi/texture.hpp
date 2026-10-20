@@ -33,7 +33,8 @@ struct TextureDesc {
 // objects go through Device::destroyLater, but it must not outlive the device.
 class Texture {
 public:
-    // Uploads the levels and waits for the copy to finish.
+    // Uploads the levels and waits for the copy to finish. Fails on a BC7 format the device does not sample
+    // (Device::supportsBc7).
     static core::Result<Texture> create(Device& device, const TextureDesc& desc);
 
     Texture(const Texture&) = delete;

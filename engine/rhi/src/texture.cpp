@@ -228,6 +228,9 @@ core::Result<Texture> Texture::create(Device& device, const TextureDesc& desc) {
         return core::fail(std::format("a {}x{} texture has 1 to {} mip levels, not {}", desc.width, desc.height,
                                       maxLevels, desc.levels.size()));
     }
+    if (isBc7(desc.format) && !device.supportsBc7()) {
+        return core::fail("the GPU does not sample BC7 textures; transcode them to RGBA8 instead");
+    }
     for (std::uint32_t level = 0; level < desc.levels.size(); ++level) {
         const VkExtent3D extent = levelExtent(desc.width, desc.height, level);
         if (const VkDeviceSize expected = levelBytes(desc.format, extent); desc.levels[level].size() != expected) {
