@@ -61,6 +61,9 @@ function(dwe_apply_options target)
         # Without exceptions at() cannot report anything, so the STL checks indexing instead: debug builds already
         # do with _ITERATOR_DEBUG_LEVEL=2, and hardening adds the cheap checks to the others.
         target_compile_definitions(${target} PRIVATE _HAS_EXCEPTIONS=0 _MSVC_STL_HARDENING=1)
+        # The CRT marks standard functions such as getenv as deprecated in favour of its own _s variants, which the
+        # code does not use: it stays standard C++.
+        target_compile_definitions(${target} PRIVATE _CRT_SECURE_NO_WARNINGS)
         if(DWE_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE /WX)
         endif()
