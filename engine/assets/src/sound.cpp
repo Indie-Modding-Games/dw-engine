@@ -169,7 +169,9 @@ core::Result<Sound> decodeOpus(std::span<const std::byte> file) {
     }
     if (head->gain != 0) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg): Opus's ctl interface is variadic.
-        opus_decoder_ctl(decoder.get(), OPUS_SET_GAIN(head->gain));
+        if (const int set = opus_decoder_ctl(decoder.get(), OPUS_SET_GAIN(head->gain)); set != OPUS_OK) {
+            return core::fail(std::format("cannot apply its output gain of {}: {}", head->gain, opus_strerror(set)));
+        }
     }
     Sound sound{.sampleRate = OpusSampleRate,
                 .channels = head->channels,

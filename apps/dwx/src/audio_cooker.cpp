@@ -7,8 +7,10 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace dwe::dwx {
 
@@ -50,6 +52,9 @@ core::Result<std::vector<std::byte>> cookAudio(std::span<const std::byte> source
     const std::size_t frames = wav->pcm.size() / wav->channels;
     if (frames == 0) {
         return core::fail("the WAV has no samples");
+    }
+    if (std::cmp_greater(frames, std::numeric_limits<int>::max())) {
+        return core::fail(std::format("the WAV has {} frames, more than libopusenc takes at once", frames));
     }
 
     const std::unique_ptr<OggOpusComments, FreeComments> comments{ope_comments_create()};
