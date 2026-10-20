@@ -6,6 +6,9 @@
 
 #include <filesystem>
 #include <format>
+#include <fstream>
+#include <iterator>
+#include <map>
 #include <string>
 
 #include "base_pack.hpp"
@@ -34,6 +37,19 @@ inline std::string problemsOfWrittenPack(const ExtractionRun& run, const DiscInf
                         problem.message);
     }
     return problems;
+}
+
+// Every file under a folder, by its path relative to the folder, with its bytes.
+inline std::map<std::string, std::string> readTree(const std::filesystem::path& root) {
+    std::map<std::string, std::string> files;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator{root}) {
+        if (entry.is_regular_file()) {
+            std::ifstream stream{entry.path(), std::ios::binary};
+            files[entry.path().lexically_relative(root).generic_string()] =
+                std::string{std::istreambuf_iterator<char>{stream}, {}};
+        }
+    }
+    return files;
 }
 
 } // namespace dwe::dwx::testing

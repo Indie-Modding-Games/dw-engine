@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -211,4 +212,25 @@ TEST_CASE("the metadata keeps the video memory rectangles and every palette") {
     REQUIRE(yaml->find("palettes")->items().size() == 2);
     CHECK(yaml->find("palettes")->items()[1].text().starts_with("7fff 7fff"));
     CHECK(yaml->find("warnings") == nullptr);
+}
+
+TEST_CASE("two extractions of the same disc write the same bytes") {
+    // The image files go through several extractors, leave partial and pending files and repeat outputs, and the
+    // run spreads them over several threads as dwx extract does: the pack must not depend on how the threads went.
+    const ImageDisc fixture;
+    const Disc disc{*fixture.source, fixture.volume, fixture.info};
+    const TempFolder temp;
+    std::vector<std::map<std::string, std::string>> packs;
+    for (const auto* name : {"first", "second"}) {
+        const auto run = runExtractors(disc, extractors());
+        REQUIRE(run.has_value());
+        const auto folder = temp.path() / name;
+        REQUIRE(prepareOutputFolder(folder, false).has_value());
+        REQUIRE(writeBasePack(folder, *run, fixture.info).has_value());
+        packs.push_back(dwe::dwx::testing::readTree(folder));
+    }
+    CHECK(packs[0].size() > 400);
+    CHECK(packs[0].contains("dwx/coverage.yaml"));
+    CHECK(packs[0].contains("pack.yaml"));
+    CHECK(packs[0] == packs[1]);
 }

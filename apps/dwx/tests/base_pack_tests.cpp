@@ -13,8 +13,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <iterator>
 #include <map>
 #include <memory>
 #include <span>
@@ -25,6 +23,7 @@
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
 #include "temp_folder.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::AssetId;
@@ -143,19 +142,9 @@ struct TestDisc {
     DiscInfo info{.volumeId = "FIXTURE", .executablePath = "", .executableSha1 = "", .version = ""};
 };
 
-std::map<std::string, std::string> readTree(const std::filesystem::path& root) {
-    std::map<std::string, std::string> files;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator{root}) {
-        if (entry.is_regular_file()) {
-            std::ifstream stream{entry.path(), std::ios::binary};
-            files[entry.path().lexically_relative(root).generic_string()] =
-                std::string{std::istreambuf_iterator<char>{stream}, {}};
-        }
-    }
-    return files;
-}
-
 } // namespace
+
+using dwe::dwx::testing::readTree;
 
 TEST_CASE("files get the status of their extraction") {
     const TestDisc fixture;
