@@ -41,6 +41,28 @@
       "cacheVariables": { "DWE_WARNINGS_AS_ERRORS": "ON" }
     },
     {
+      "name": "windows-cross",
+      "displayName": "Windows from Linux: clang-cl, debug, warnings as errors, like windows-ci",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/windows-cross-clang-cl.cmake",
+        "CMAKE_C_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-cross",
+        "VCPKG_HOST_TRIPLET": "x64-linux-libcxx",
+        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
+        "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/build/${presetName}/vcpkg_buildtrees",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DWE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
       "name": "windows-clang",
       "hidden": true,
       "generator": "Ninja",
@@ -81,6 +103,7 @@
     { "name": "linux-clang-debug", "configurePreset": "linux-clang-debug" },
     { "name": "linux-clang-release", "configurePreset": "linux-clang-release" },
     { "name": "ci", "configurePreset": "ci" },
+    { "name": "windows-cross", "configurePreset": "windows-cross" },
     { "name": "windows-clang-debug", "configurePreset": "windows-clang-debug" },
     { "name": "windows-clang-release", "configurePreset": "windows-clang-release" },
     { "name": "windows-ci", "configurePreset": "windows-ci" }

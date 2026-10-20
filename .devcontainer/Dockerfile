@@ -71,3 +71,14 @@ ENV PATH=${VCPKG_ROOT}:${PATH}
 RUN apt-get update && apt-get install -y --no-install-recommends ccache \
     && rm -rf /var/lib/apt/lists/*
 ENV DWE_COMPILER_LAUNCHER=ccache
+
+# The Windows build from Linux (PRESET=windows-cross): LLVM's MSVC-style tools, and xwin, which fetches the MSVC CRT
+# and STL and the Windows SDK into a volume (scripts/dev.sh windows-sdk). The image has only the tool: the files
+# themselves come with Microsoft's license, which whoever runs windows-sdk accepts.
+ARG XWIN_VERSION=0.6.5
+RUN for tool in clang-cl lld-link llvm-lib llvm-rc llvm-mt; do \
+           ln -sf /usr/bin/${tool}-${LLVM_VERSION} /usr/local/bin/${tool}; \
+       done \
+    && curl -fsSL "https://github.com/Jake-Shadle/xwin/releases/download/${XWIN_VERSION}/xwin-${XWIN_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+        | tar -xz -C /usr/local/bin --strip-components=1 "xwin-${XWIN_VERSION}-x86_64-unknown-linux-musl/xwin" \
+    && xwin --version

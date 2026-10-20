@@ -56,6 +56,10 @@ instalarlas a mano ensucia la máquina de cada desarrollador y da builds que sol
   es Ubuntu 24.04 aunque 26.04 ya trae LLVM 22 en sus repositorios.
 - En Windows el contenedor solo sirve para compilar para Linux; el build nativo de Windows llegará con su propio
   preset.
+- Desde Linux, el preset `windows-cross` compila y enlaza en el contenedor lo mismo que `windows-ci`, con el
+  `clang-cl` y el `lld-link` de la imagen y las librerías de Microsoft que descarga xwin (`dev.sh windows-sdk`) a un
+  volumen. Esas librerías exigen aceptar la licencia de Microsoft a quien las descarga, y nunca entran en el
+  repositorio ([Preparar el entorno](../getting-started/setup.md#el-build-de-windows-desde-linux)).
 - Antes, la comprobación de una rama (formato; build y tests de `linux-clang-debug` y de `ci`; clang-tidy en serie)
   tardaba unos 26 minutos en una máquina de 12 núcleos. `check-full` tarda unos 7 minutos y medio con la caché de
   ccache vacía y unos 5 y medio con ella llena; casi todo es el caso más largo del disco. El build de

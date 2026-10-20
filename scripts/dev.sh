@@ -12,6 +12,9 @@ cache_volume="dwe-vcpkg-cache"
 cache_dir="${DWE_CACHE_DIR:-}"
 ccache_volume="dwe-ccache"
 ccache_dir="${DWE_CCACHE_DIR:-}"
+# The MSVC libraries and the Windows SDK of the Windows cross build, fetched by windows-sdk.
+xwin_volume="dwe-xwin"
+xwin_dir="${DWE_XWIN_DIR:-}"
 preset="${PRESET:-linux-clang-debug}"
 jobs="${DWE_JOBS:-$(nproc)}"
 log_dir="${DWE_LOG_DIR:-$root/build/logs}"
@@ -29,6 +32,8 @@ Usage: scripts/dev.sh <command> [args]
   tidy [args]         Run clang-tidy on the sources in parallel, passing it args (needs a configure, not a build)
   check-commit [args] The check of every commit: configure (with args), build and the tests but the slow ones
   check-full [args]   The check of the tip: format, configure (with args), build, every test and clang-tidy
+  windows-sdk [args]  Fetch the MSVC libraries and the Windows SDK for PRESET=windows-cross with xwin, which first
+                      asks you to accept Microsoft's license (--accept-license if you already have)
   run [args]          Run the game on the host
 
 Environment:
@@ -38,6 +43,7 @@ Environment:
   DWE_CACHE_DIR       Host folder for the vcpkg binary cache (default: the $cache_volume volume)
   DWE_CCACHE_DIR      Host folder for the compiler cache (default: the $ccache_volume volume)
   DWE_CCACHE_SIZE     Size limit of the compiler cache (default 10G)
+  DWE_XWIN_DIR        Host folder for the files of windows-sdk (default: the $xwin_volume volume)
   DWE_LOG_DIR         Folder for the logs of the checks (default build/logs)
   DWE_DISC            Path to the user's disc image (.bin or .cue); its folder is mounted read-only in the container at
                       the same path, so the tools and the disc tests can read it
@@ -61,6 +67,7 @@ in_container() {
         -v "$root:$root" -w "$root" \
         -v "$(mount_of "$cache_dir" "$cache_volume"):/cache/vcpkg" \
         -v "$(mount_of "$ccache_dir" "$ccache_volume"):/cache/ccache" \
+        -v "$(mount_of "$xwin_dir" "$xwin_volume"):/opt/xwin" \
         "${disc_flags[@]}" \
         "$image" "$@"
 }
@@ -108,6 +115,7 @@ ensure_cache() {
 ensure_caches() {
     ensure_cache "$cache_dir" "$cache_volume"
     ensure_cache "$ccache_dir" "$ccache_volume"
+    ensure_cache "$xwin_dir" "$xwin_volume"
 }
 
 sources() {
@@ -218,6 +226,18 @@ case "$command" in
         sources | grep '\.cpp$' |
             in_container nice -n "${DWE_NICE:-0}" xargs -r -P "$jobs" -n 1 bash -c "$tidy_one" tidy \
                 -p "build/$preset" --quiet "$@"
+        ;;
+    windows-sdk)
+        # xwin unpacks next to the result and moves the files into place, which only works on the same filesystem,
+        # so it unpacks inside the volume and the unpacked copies are deleted afterwards: the volume keeps only the
+        # layout of a Visual Studio installation. xwin names the SDK's folders in lower case, and /winsysroot looks for
+        # Include and Lib.
+        ensure_caches
+        in_container bash -c 'rm -rf /opt/xwin/sysroot && xwin --cache-dir /opt/xwin/unpack "$@" splat --include-debug-libs \
+            --use-winsysroot-style --preserve-ms-arch-notation --output /opt/xwin/sysroot \
+            && rm -rf /opt/xwin/unpack \
+            && ln -sfn include "/opt/xwin/sysroot/Windows Kits/10/Include" \
+            && ln -sfn lib "/opt/xwin/sysroot/Windows Kits/10/Lib"' xwin "$@"
         ;;
     check-commit)
         check commit "$@"

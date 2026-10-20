@@ -106,6 +106,30 @@ copia junto al ejecutable. Para activar las validation layers en debug:
 `$env:VK_LAYER_PATH = "build\windows-clang-debug\vcpkg_installed\x64-windows-static\bin"`. Los builds de Windows
 no llevan sanitizers.
 
+### El build de Windows desde Linux
+
+El preset `windows-cross` compila y enlaza desde el contenedor lo mismo que `windows-ci` (clang-cl, debug, CRT
+estático, warnings como errores), así que los errores de la biblioteca estándar de MSVC salen en local y no solo en la
+CI. Usa el `clang-cl` y el `lld-link` de la imagen contra el CRT, la STL de MSVC y el Windows SDK que descarga
+[xwin](https://github.com/Jake-Shadle/xwin):
+
+```bash
+scripts/dev.sh windows-sdk                       # una vez: descarga las librerías al volumen dwe-xwin
+PRESET=windows-cross scripts/dev.sh configure
+PRESET=windows-cross scripts/dev.sh build
+```
+
+- **Licencia:** las cabeceras y librerías de Microsoft van con la licencia de Visual Studio y del Windows SDK.
+  `windows-sdk` la muestra y pide aceptarla a quien lo ejecuta; `--accept-license` la da por aceptada, solo si ya la
+  has leído. Esos ficheros viven en el volumen `dwe-xwin` (o en `DWE_XWIN_DIR`) y **nunca** se suben al repositorio.
+- Las dependencias se compilan con el triplet `x64-windows-static-cross`: el `x64-windows-static` de siempre, pero con
+  clang-cl en lugar del `cl` de Visual Studio.
+- Los tests no se ejecutan: son ejecutables de Windows.
+- xwin trae las librerías de Visual Studio 2022 (MSVC 14.44); la CI de Windows usa las de Visual Studio 2026 (14.51).
+  Los errores de portabilidad salen igual, pero un aviso nuevo de 14.51 solo saldría en la CI.
+- La primera vez vcpkg compila las dependencias para Windows (unos 4 minutos); después el build en frío tarda minuto
+  y medio y, con la caché de ccache llena, segundos.
+
 ## Otros comandos
 
 | Comando | Qué hace |
