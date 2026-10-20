@@ -1,6 +1,6 @@
-# 0017. Cocinado sin dependencias nuevas y archivos `.pak` propios
+# 0017. Cocinado a KTX2 UASTC y Opus, y archivos `.pak` propios con zstd
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-19
 
 ## Contexto
@@ -9,29 +9,44 @@ La [tubería de assets](../architecture/assets-pipeline.md) ([ADR 0005](0005-tub
 estado, el **cocinado**: lo que el juego carga rápido, y un paquete distribuible en un solo fichero. Hasta ahora solo
 existía `dwx extract`, que escribe la base en formato fuente (PNG, glTF binario, YAML, WAV, MIDI, SF2).
 
-Lo ideal para las texturas es KTX2 con supercompresión Basis o BC7, y para el audio, Opus. Las dos cosas necesitan
-librerías nuevas, y añadir una dependencia es decisión del equipo. Esta primera versión tiene que funcionar sin
-ninguna y dejar el camino preparado.
+Una primera versión sin dependencias nuevas cocinaba los PNG a KTX2 RGBA8 sin comprimir, con un escritor propio, y
+guardaba el `.pak` sin comprimir. Funcionaba, pero el paquete cocinado ocupaba mucho más que la extracción
+(1,6 GB frente a unos 350 MB) y no ahorraba memoria de GPU. El usuario decidió el 2026-10-19 los formatos finales y las
+dependencias que hacen falta para ellos.
 
 ## Decisión
 
 - **`dwx cook <paquete> -o <carpeta>`** pasa cada fichero por el **cocinero de su extensión**, en un registro como el
-  de los extractores. Lo que no tiene cocinero se copia tal cual. Los cocineros de la v1:
-  - **PNG → KTX2** RGBA8 sin comprimir, con la cadena de mipmaps completa, en sRGB para el color y lineal para los
-    datos. El contenedor KTX2 se escribe a mano según la especificación de Khronos ([KTX2](../formats/ktx2.md)).
-    Lo deciden los metadatos, no el nombre: el espacio de color sale de la clave `color_space` del YAML lateral
-    (`<id>_meta.yaml`; sRGB si no la tiene), y los PNG con datos de paleta se copian tal cual (ver abajo).
-  - **Datos de paleta, tal cual:** hasta que se decida cómo dibuja el motor las paletas, un PNG indexado, o uno cuyo
-    YAML lateral dice `png: indexed` o tiene `clut_rect`, no se convierte: se copia como PNG para no perder los
-    índices ni la paleta.
+  de los extractores. Lo que no tiene cocinero se copia tal cual. Los cocineros:
+  - **PNG → KTX2 con Basis Universal UASTC y supercompresión zstd** ([KTX2](../formats/ktx2.md)), con la cadena de
+    mipmaps completa, en sRGB para el color y lineal para los datos. UASTC nivel 2, sin RDO, un hilo por textura,
+    zstd nivel 18 y metadatos fijos, escrito con libktx. El motor lo **transcodifica al cargarlo a BC7**, o a RGBA8
+    si la GPU no muestrea BC7 (`assets::decodeKtx2`, `rhi::Device::supportsBc7`). Lo deciden los metadatos, no el
+    nombre: el espacio de color sale de la clave `color_space` del YAML lateral (`<id>_meta.yaml`; sRGB si no la
+    tiene), y los PNG cuya paleta se elige al jugar se copian tal cual (abajo).
   - **GLB → GLB**: se comprueba la cabecera y se copia.
   - **WAV → Ogg Opus** a 48 kHz con libopusenc, con ajustes fijos (64 kbps por canal, VBR, complejidad 10, número de
     serie fijo) y el bucle y la nota del WAV en comentarios ([Opus](../formats/opus.md)). El motor lo decodifica con
     libopus (`assets::decodeOpus`) y un lector de páginas Ogg propio. SF2 y MIDI se copian tal cual, con las muestras
     del SF2 sin tocar.
+- **Paletas que se eligen al jugar, tal cual.** Un PNG indexado se copia como PNG, con sus índices y su paleta,
+  solo si su YAML lateral muestra que el juego dibuja los mismos píxeles con más de una fila de CLUT:
+  - lista **más de una paleta** (`palettes`): las texturas de los Digimon, cuyas primitivas eligen cada una su fila;
+    las de los efectos; los TIM de varias paletas; o
+  - es un **TIM de mapa con CLUT** (`source` acaba en `.MAP`): cada sprite del mapa elige su fila (`clut` en
+    `data.yaml`); −1 es la fila 480, la de la hora del día, así que el mismo TIM se ve con la paleta de día, de
+    atardecer o de noche.
+
+  Todo lo demás, también los PNG indexados de una sola paleta (cartas, texturas sueltas, la fuente) y los fondos de
+  mapa (ya compuestos uno por paleta, sin YAML lateral), se convierte a UASTC. **Esta regla es la interpretación del
+  responsable de la integración**, no una decisión del usuario: el usuario decidió que las texturas cocinadas son
+  UASTC, y qué imagen es una textura y cuál guarda una paleta que se elige al jugar lo decidió el responsable a
+  partir de los metadatos. El usuario la puede revisar; si el motor llega a dibujar las paletas de otra forma (por
+  ejemplo, componiendo cada variante al cocinar), cambia la regla y no el formato.
 - **Caché por contenido:** la carpeta de salida guarda en `.dwx-cook` el SHA-1 de la fuente, el nombre, la versión
   y las opciones del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos
-  assets con los mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella.
+  assets con los mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella. El cocinero de
+  texturas pasa a la versión 3 con UASTC.
 - **`dwx pack <paquete> -o <fichero.pak>`** escribe un archivo `.pak` propio, versionado y documentado
   ([formato](../formats/pak.md)): cabecera, datos alineados a 16 bytes, y al final la tabla de contenidos ordenada por
   id de asset (offset, tamaños, SHA-1 y compresión), los nombres y el `pack.yaml`. La versión 2 comprime cada
@@ -40,53 +55,86 @@ ninguna y dejar el camino preparado.
   ficheros dan los mismos bytes.
 - **El motor monta `.pak`:** `PakFileSystem` es un `FileSystem` más, y cada paquete se monta con el suyo
   (`PackLocation`), así que una capa puede ser una carpeta o un `.pak`.
+- **Dependencias** (fijadas por el baseline de vcpkg): `ktx` 4.4.2 (KTX-Software, Apache-2.0, con Basis Universal
+  dentro) para escribir y leer KTX2; `zstd` 1.5.7; `opus` 1.6.1 y `libopusenc` 0.3, que trae su propio empaquetador
+  Ogg (no hacen falta `libogg` ni `opusfile`). El port de `ktx` exporta solo `KTX::ktx` (no la variante de solo
+  lectura `ktx_read`), así que el motor enlaza la librería entera.
+
+## Determinismo
+
+Cocinar y empaquetar dan los mismos bytes con las mismas entradas, dentro de este alcance:
+
+- las versiones fijadas por el baseline de vcpkg (libktx con su Basis Universal, zstd, libopus y libopusenc);
+- el mismo camino de CPU: Basis Universal, y libopus si se compila con detección en tiempo de ejecución, eligen al
+  arrancar código SIMD (SSE 4.1, AVX...) si la CPU lo tiene, y los caminos no prometen los mismos bytes; otra
+  arquitectura tampoco;
+- el mismo compilador y la misma librería estándar para los mipmaps (`pow`).
+
+Fuera de ese alcance la salida puede cambiar, pero sigue siendo válida y el motor la lee igual. La caché de
+`dwx cook` guarda cada salida por el SHA-1 de la fuente y el nombre, la versión y las opciones del cocinero, así que
+subir una dependencia exige subir la versión del cocinero para no mezclar salidas viejas y nuevas. Los tests
+comprueban que cocinar la misma textura dos veces, también en varios hilos a la vez, da los mismos bytes.
+
+## Medidas
+
+Con la extracción de la versión US (4623 assets, 1530 PNG), `dwx` del 2026-10-19:
+
+| | Antes | Después |
+|---|---|---|
+| Paquete base extraído → cocinado (carpeta) | 351,6 MB | 421,5 MB (el cocinado RGBA8 sin comprimir ocupaba 1617 MB) |
+| `.pak` del paquete base → del cocinado (versión 2, zstd) | 240,8 MB | 313,2 MB |
+| Los 645 PNG que pasan a KTX2 UASTC | 167,5 MB | 246,7 MB (en KTX2 RGBA8 sin comprimir, 1190,7 MB) |
+| — de ellos, los 513 fondos de mapa | 166,1 MB | 244,1 MB |
+| Los 642 WAV → Opus | 17,1 MB | 7,0 MB |
+
+- **Qué pasa tal cual:** 885 PNG indexados se quedan como PNG (14,2 MB): 580 TIM de mapa, 179 texturas de Digimon,
+  93 de efectos y 33 texturas sueltas de varias paletas. Se convierten 645: los 513 fondos de mapa, 66 cartas,
+  36 texturas sueltas, 28 de efectos, una de Digimon y la fuente. `dwx cook` cuenta 611 copias de PNG porque los
+  ficheros repetidos byte a byte se cuentan aparte (403 assets compartidos en total).
+- **Tamaño:** UASTC guarda 8 bits por texel más un tercio por los mipmaps, y zstd lo baja poco; un PNG indexado de
+  un fondo prerenderizado guarda 8 bits por texel y deflate lo comprime mejor. Por eso las texturas convertidas
+  ocupan 1,47 veces su PNG en disco (los fondos, 1,47; el resto, 1,86), aunque 4,8 veces menos que en KTX2 RGBA8.
+  En la GPU, BC7 ocupa la cuarta parte que RGBA8, y el PNG indexado no se puede subir sin decodificar.
+- **Tiempo de `dwx cook`** del paquete entero, sin caché, con 12 hilos (compartidos con otras
+  compilaciones): 222 s en release, 1337 s con la compilación de depuración con sanitizers (`ci`, con libktx de
+  depuración). Las dos dan los mismos bytes en los 4623 ficheros. `dwx pack` tarda 21,5 s con `ci`, relectura
+  incluida. La extracción, 30 s.
+- El juego monta el `.pak` cocinado (`dwe-game --content` con la carpeta del `.pak`) sin avisos.
 
 ## Consecuencias
 
-- Cocinar y empaquetar funcionan hoy, sin dependencias, sobre la extracción real, y el motor ya carga paquetes en un
-  solo fichero.
-- El KTX2 sin comprimir ocupa mucho más que el PNG (RGBA8 completo más un tercio por los mipmaps) y no ahorra
-  memoria de GPU. Con la extracción de la versión US, los 1408 PNG pasan de 181 MB a 1453 MB de KTX2, y el paquete
-  cocinado entero de 344 MB a 1617 MB. Es correcto y el motor lo puede subir tal cual, pero no es el formato final:
-  la supercompresión es la primera de las propuestas de abajo.
-- Con la extracción de la versión US (4619 ficheros), en release:
-
-  | | Antes | Después |
-  |---|---|---|
-  | `.pak` del paquete base (versión 1 → 2 con zstd) | 351,9 MB | 240,7 MB (2,9 s con la relectura) |
-  | Los 642 WAV → Opus | 17,1 MB | 7,0 MB |
-  | `.pak` del paquete cocinado (WAV a Opus, sin KTX2 porque todo PNG es de paleta) | 351,9 MB | 233,9 MB |
-
-  Por tipo, zstd deja los PNG (ya comprimidos con deflate) y los Opus igual, y gana sobre todo en el GLB (114,6 →
-  24,8 MB) y el YAML (15,5 → 2,0 MB); el SF2 baja un 19 %. Dentro del `.pak`, Opus ahorra 6,8 MB frente al WAV ya
-  comprimido con zstd (13,8 → 7,0 MB).
+- Las texturas ocupan en disco 4,8 veces menos que el KTX2 sin comprimir pero 1,47 veces más que los PNG indexados de
+  los que salen, y en la GPU una cuarta parte de RGBA8. UASTC es casi sin pérdida, y transcodificar a BC7 al cargar
+  es rápido. Si el tamaño en disco llega a importar, UASTC tiene un modo RDO que prepara los bloques para que zstd
+  los comprima mejor a cambio de algo de calidad; esta decisión lo deja apagado.
+- Cocinar es mucho más lento que antes (222 s en release para el paquete entero), casi todo por codificar UASTC. La
+  caché hace que solo se pague una vez por textura.
+- Las paletas que se eligen al jugar siguen como PNG: el motor tendrá que dibujarlas con su paleta (un shader de
+  búsqueda o variantes compuestas) cuando llegue el render de modelos y mapas.
 - Opus es con pérdida: un bucle corto de un instrumento puede notar el salto en el punto de vuelta. Las muestras sin
-  pérdida siguen en el SF2 de cada banco. 62 WAV a muy baja frecuencia salen algo más grandes en Opus (159 KB en
-  total).
-- zstd, opus y libopusenc son dependencias nuevas, fijadas por el baseline de vcpkg; otra versión de zstd o de libopus
-  podría escribir otros bytes (el lector lee igual cualquier frame o paquete válido).
-- Cada lectura de un `.pak` comprueba el SHA-1 de la entrada: detecta archivos dañados a cambio de un poco de CPU.
+  pérdida siguen en el SF2 de cada banco. Unos pocos WAV a muy baja frecuencia salen algo más grandes en Opus.
+- El port de `ktx` compila Basis Universal con `-msse4.1` en x86-64, así que `dwx` y el motor necesitan una CPU con
+  SSE 4.1 (todas las x86-64 desde 2008).
+- Cada lectura de un `.pak` comprueba el SHA-1 de la entrada: detecta archivos dañados a cambio de un poco de CPU. Al
+  descomprimir, la memoria crece con lo que el frame produce de verdad, no con el tamaño que dice la tabla, así que
+  un archivo falsificado no hace reservar 2 GiB.
 - Subir la versión de un cocinero invalida su caché; hay que hacerlo cada vez que cambie su salida.
-
-### Propuestas para decidir
-
-Cada una necesita una dependencia nueva (todas tienen port en vcpkg en el baseline actual):
-
-| Propuesta | Dependencia | Qué da |
-|---|---|---|
-| Texturas con supercompresión Basis (UASTC/ETC1S) o BC7 | `ktx` 4.4.2 (KTX-Software, incluye basisu) o `basisu` 2.50 | Texturas varias veces más pequeñas en disco y en GPU; el motor transcodifica a BC7 al cargar |
-
-El usuario aprobó el 2026-10-19 Opus para el audio y zstd para las entradas del `.pak`, y están hechos (arriba). Para
-Opus bastan `opus` 1.6.1 y `libopusenc` 0.3, que trae su propio empaquetador Ogg: el motor lee las páginas Ogg con
-código propio, así que no hacen falta `libogg` ni `opusfile`. Se eligió zstd frente a `lz4` porque comprime más y
-descomprime de sobra rápido para cargar paquetes.
 
 ## Alternativas descartadas
 
+- **KTX2 RGBA8 sin comprimir con un escritor propio** (la primera versión): sin dependencias, pero el paquete
+  cocinado pasaba de 344 MB a 1,6 GB y no ahorraba memoria de GPU.
+- **Basis Universal ETC1S:** más pequeño en disco, pero con mucha más pérdida, que en texturas de pocos colores y
+  bordes duros se notaría. UASTC transcodifica a BC7 casi sin pérdida.
+- **BC7 directo en el KTX2:** sin transcodificar al cargar, pero sin camino para las GPU sin BC7 y más grande en disco
+  que UASTC con zstd.
+- **El port `basisu` en vez de `ktx`:** trae el mismo códec, pero deja el contenedor KTX2 a nuestro cargo en los dos
+  lados.
+- **`lz4` en el `.pak`:** descomprime aún más rápido, pero comprime menos; zstd descomprime de sobra rápido para
+  cargar paquetes.
 - **zip:** leerlo y escribirlo sin una librería es casi tan largo como el formato propio, no garantiza la alineación
   de los datos y su índice no está ordenado por id.
 - **tar:** no tiene índice; hay que recorrerlo entero para encontrar un fichero.
-- **KTX2 con libktx desde ya:** es la dependencia que este ADR deja para decidir.
 - **DDS o KTX 1:** KTX2 es el contenedor estándar para Vulkan y el que admite supercompresión Basis.
 - **Ver los `.pak` como carpetas dentro de `DiskFileSystem`:** escondería de dónde sale cada fichero; un sistema de
   ficheros por paquete es más claro y no cambia nada de lo que ya montaba carpetas.

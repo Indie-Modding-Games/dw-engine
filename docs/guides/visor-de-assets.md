@@ -1,7 +1,7 @@
 # Visor de assets
 
 El overlay de depuración tiene un visor para ver lo que hay en los paquetes sin escribir código: qué IDs existen, qué
-paquete da cada uno, qué sobrescribe y, si es una textura PNG, cómo se ve. El código está en
+paquete da cada uno, qué sobrescribe y, si es una textura PNG o KTX2, cómo se ve. El código está en
 `engine/debug/src/asset_viewer.cpp`.
 
 ## Abrirlo
@@ -35,15 +35,17 @@ también para recargar después de volver a extraer.
   carpeta van en el grupo `(top level)`.
 - A la derecha, el ID elegido, el paquete y el fichero que lo dan y, si lo tienen otros paquetes más abajo en la pila,
   cuáles sobrescribe.
-- Si el fichero que gana es un PNG, la textura con su tamaño en píxeles y en bytes, y un zoom de 1x a 16x con filtrado
-  *nearest*, para ver cada píxel tal cual. Un PNG roto muestra el error en rojo.
+- Si el fichero que gana es un PNG o un KTX2 cocinado, la textura con su tamaño en píxeles y en bytes, cómo la guarda
+  el fichero y un zoom de 1x a 16x con filtrado *nearest*, para ver cada píxel tal cual. Un KTX2 se transcodifica a
+  BC7 si la GPU lo muestrea, y si no a RGBA8 (`assets::decodeKtx2`, ver [KTX2](../formats/ktx2.md)). Un fichero roto
+  muestra el error en rojo.
 
 Si la carpeta no existe o no tiene paquetes, la ventana lo dice y explica cómo crear el paquete base. Un paquete con
 errores (un `pack.yaml` mal escrito, una dependencia que falta) sale con el mensaje del sistema de ficheros virtual.
 
 ## Límites
 
-- **Solo texturas PNG.** Los modelos (`.glb`) y los mapas necesitan el camino de render 3D, que llega en la fase 2
+- **Solo texturas PNG y KTX2.** Los modelos (`.glb`) y los mapas necesitan el camino de render 3D, que llega en la fase 2
   ([plan](../roadmap.md)). Hasta entonces el visor los lista y dice qué paquete los da, sin vista previa.
 - El motor decodifica los PNG con su propio código (`assets::decodePng`), no con `formats/`, que solo usa `dwx`
   ([reglas de dependencias](../architecture/dependency-rules.md)). No acepta imágenes de más de 16384 píxeles de lado.

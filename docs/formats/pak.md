@@ -59,8 +59,7 @@ rompa, y así se detecta.
   exactamente el tamaño del fichero, sin nada detrás; el frame lleva ese tamaño en su cabecera. Con 0, los bytes se
   guardan tal cual y los dos tamaños son iguales. `dwx pack` comprime cada fichero y lo guarda tal cual cuando
   comprimido no ocupa menos (los PNG, que ya van comprimidos, suelen quedarse así).
-- Un fichero comprimido no puede pasar de 2 GiB sin comprimir (`PakMaxEntrySize`), para que un tamaño falsificado no
-  pida más memoria que eso.
+- Un fichero comprimido no puede pasar de 2 GiB sin comprimir (`PakMaxEntrySize`).
 - El **SHA-1** sirve para comprobar cada fichero al leerlo y como clave de contenido; no es una medida de seguridad.
 
 ## Determinismo
@@ -108,7 +107,9 @@ no cuesta nada. Una entrada comprimida en un archivo de versión 1 se rechaza.
 - un nombre no da un id válido, es `pack.yaml`, o las entradas no están en orden estricto de id (lo que también
   rechaza ids repetidos).
 
-Al leer una entrada comprimida se comprueba que sea un solo frame de zstd de su tamaño y se descomprime; después,
+Al leer una entrada comprimida se comprueba que sea un solo frame de zstd de su tamaño y se descomprime en un búfer
+que empieza en 1 MiB y dobla a medida que el frame produce bytes, así que un tamaño falsificado no hace reservar la
+memoria que dice: falla al acabarse el frame. zstd limita además su ventana a 128 MiB (su límite por defecto). Después,
 con o sin compresión, se comprueba su SHA-1. Si algo falla, la lectura falla y dice que el archivo está dañado.
 
 ## Cómo se monta

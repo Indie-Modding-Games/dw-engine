@@ -30,7 +30,7 @@ cobertura que lista lo que falte.
 | Tipo | Original | Fuente | Cocinado |
 |---|---|---|---|
 | Modelos y animaciones | TMD/MMD | glTF 2.0 (malla, esqueleto y animaciones) | Malla binaria + paquete de animaciones |
-| Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 (hoy RGBA8 sin comprimir; BC7 o Basis cuando se apruebe) |
+| Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 UASTC con zstd, transcodificado a BC7 al cargar; PNG si la paleta se elige al jugar |
 | Fondos de mapa | Imagen prerenderizada de día, atardecer y noche | PNG por capa + máscara de profundidad | KTX2 |
 | Datos de mapa | Colisión, warps, NPCs, cámara | YAML | Binario |
 | Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | Binario |
@@ -88,8 +88,8 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 
 | Fuente | Cocinado | Cocinero |
 |---|---|---|
-| PNG | KTX2 RGBA8 sin comprimir, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
-| PNG indexado, o con YAML lateral que dice `png: indexed` o `clut_rect` | El mismo PNG: son datos de paleta | `texture` lo deja pasar |
+| PNG | KTX2 con Basis Universal UASTC y supercompresión zstd, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
+| PNG indexado cuyo YAML lateral lista más de una paleta, o TIM de mapa con CLUT | El mismo PNG: la paleta se elige al jugar | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
 | WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
 | Cualquier otro (YAML, MIDI, SF2…) | Copiado tal cual | — |
@@ -106,8 +106,8 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 - **Determinista:** el mismo paquete da los mismos bytes, con caché o sin ella.
 - Se niega a escribir en una carpeta con ficheros que no escribió `dwx cook`, y en una que esté dentro del paquete o
   lo contenga.
-- Lo que falta, porque necesita dependencias que el equipo tiene que aprobar: supercompresión Basis o BC7 para las
-  texturas y Opus para el audio. Están en las propuestas del ADR 0017.
+- Las dependencias de los cocineros (libktx con Basis Universal, zstd, libopus y libopusenc) y el alcance del
+  determinismo están en el ADR 0017.
 
 ## Empaquetar
 

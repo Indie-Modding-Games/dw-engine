@@ -1,82 +1,76 @@
 # Texturas KTX2 de `dwx cook`
 
-`dwx cook` convierte cada PNG de un paquete en una textura [KTX 2.0](https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html)
-con el mismo id (`map/start/background.png` → `map/start/background.ktx2`). Es el formato estándar de Khronos para
-Vulkan. El contenedor se escribe a mano, sin librerías (`apps/dwx/src/ktx2.cpp`), y esta página dice qué campos
-rellena. La decisión está en el [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+`dwx cook` convierte los PNG de un paquete en texturas [KTX 2.0](https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html)
+con el mismo id (`map/start/background.png` → `map/start/background.ktx2`): **Basis Universal UASTC con
+supercompresión zstd**, que el motor transcodifica al cargarlas a **BC7**, o a RGBA8 si la GPU no muestrea BC7. KTX2
+es el contenedor estándar de Khronos para Vulkan y el que admite Basis Universal. El fichero lo escribe y lo lee
+libktx (KTX-Software 4.4.2, por vcpkg), que trae el codificador y el transcodificador de Basis Universal. La
+decisión está en el [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
+
+## Qué PNG se convierten
+
+Un PNG se convierte salvo que su paleta la elija el juego mientras corre: entonces una textura de colores RGBA
+perdería los índices y el motor ya no podría dibujarla con otra paleta. Lo decide el YAML lateral (`<id>_meta.yaml`,
+el que escribe `dwx extract` para cada TIM), nunca el nombre. Un PNG **indexado** (tipo de color 3) se copia tal
+cual, como PNG, si su YAML lateral:
+
+- lista **más de una paleta** en `palettes`, es decir, la CLUT tiene varias filas para los mismos píxeles: las
+  texturas de los Digimon (cada primitiva del modelo elige su fila), las de los efectos y los TIM de varias paletas;
+  o
+- es un **TIM de mapa con CLUT** (`source` acaba en `.MAP` y tiene `clut_rect`): cada sprite del mapa elige su fila
+  (`clut` en `data.yaml`; −1 es la fila 480, que cambia con la hora del día), así que aunque la CLUT del TIM tenga
+  una sola fila se puede dibujar con otra.
+
+Todo lo demás se convierte: los PNG RGBA, los indexados con una sola paleta (cartas, la mayoría de las texturas
+sueltas), los fondos de mapa (`background_day`, `_dusk`, `_night`... ya compuestos uno por paleta, sin YAML lateral)
+y el atlas de la fuente. Es la interpretación del responsable de la integración y se puede revisar (ver el ADR).
+
+## Color o datos
+
+Lo dice la clave `color_space` del YAML lateral: `srgb` (color) o `linear` (profundidad, máscaras, normales). Sin la
+clave, o sin YAML lateral, es color. Otro valor es un error. El extractor no escribe la clave porque todo lo que
+extrae es color. El espacio de color va en el `transferFunction` del descriptor de formato (2 = sRGB, 1 = lineal) y
+el motor lo usa para elegir el formato de Vulkan (`BC7_SRGB` o `BC7_UNORM`, `R8G8B8A8_SRGB` o `_UNORM`).
 
 ## Qué escribe
 
-- Una textura 2D, sin array ni cubo, con la **cadena de mipmaps completa** hasta 1×1.
-- Texels **RGBA8 sin comprimir** y sin supercompresión: `VK_FORMAT_R8G8B8A8_SRGB` (43) para el color y
-  `VK_FORMAT_R8G8B8A8_UNORM` (37) para los datos.
-- **Color o datos:** lo dice el YAML lateral de la imagen (`<id>_meta.yaml`, el que escribe `dwx extract` para cada
-  TIM) con la clave `color_space`: `srgb` (color) o `linear` (profundidad, máscaras, normales). Sin la clave, o sin
-  YAML lateral, es color. Otro valor es un error. El extractor no escribe la clave porque todo lo que extrae es color;
-  está para las máscaras y mapas de normales que vengan. El nombre del id ya no cuenta.
-- **No todo PNG se convierte.** Un PNG que guarda datos de búsqueda (índices y paleta) se copia tal cual, como PNG,
-  porque un KTX2 de colores RGBA perdería los índices y el motor ya no podría cambiar de paleta. Se copia si:
-  - el propio PNG es indexado (tipo de color 3 en su cabecera `IHDR`): `dwx extract` escribe indexado todo lo que
-    tiene CLUT, como los TIM de 4 y 8 bits, los fondos de mapa (`background_day`, `_dusk`, `_night` y
-    `background_paletteN`, que son el mismo fondo dibujado con otra paleta) y el atlas de la fuente; o
-  - su YAML lateral dice `png: indexed` o tiene `clut_rect`, es decir, viene de un TIM con CLUT.
+1. Calcula la **cadena de mipmaps completa** hasta 1×1 (abajo).
+2. Crea una textura 2D `VK_FORMAT_R8G8B8A8_SRGB` (43) o `_UNORM` (37), sin array ni cubo, con esos niveles.
+3. La codifica a **UASTC** con `ktxTexture2_CompressBasisEx`: nivel 2 (`KTX_PACK_UASTC_LEVEL_DEFAULT`), sin RDO, un
+   solo hilo por textura (`dwx cook` ya cocina varias a la vez).
+4. La supercomprime con **zstd nivel 18** (`ktxTexture2_DeflateZstd`).
+5. La escribe con dos metadatos fijos: `KTXorientation` = `rd` (filas de arriba abajo, como el PNG) y `KTXwriter` =
+   `dwx cook / libktx v4.4.2…` (libktx añade su versión).
 
-  Es provisional, hasta decidir cómo dibuja el motor las paletas. Se mira el contenido y los metadatos, nunca el
-  nombre: los fondos de mapa no tienen YAML lateral, pero su PNG es indexado, y eso basta.
-
-Todos los enteros son little-endian.
-
-### Cabecera (80 bytes)
-
-| Offset | Campo | Valor |
-|---|---|---|
-| 0 | `identifier` | `AB 4B 54 58 20 32 30 BB 0D 0A 1A 0A` (`«KTX 20»\r\n\x1A\n`) |
-| 12 | `vkFormat` | 43 o 37 |
-| 16 | `typeSize` | 1 (bytes por componente) |
-| 20 | `pixelWidth`, `pixelHeight` | Medidas del PNG |
-| 28 | `pixelDepth` | 0 (2D) |
-| 32 | `layerCount` | 0 (no es un array) |
-| 36 | `faceCount` | 1 (no es un cubo) |
-| 40 | `levelCount` | `floor(log2(max(ancho, alto))) + 1` |
-| 44 | `supercompressionScheme` | 0 (ninguna) |
-| 48 | `dfdByteOffset`, `dfdByteLength` | Justo después del índice de niveles; 92 bytes |
-| 56 | `kvdByteOffset`, `kvdByteLength` | Justo después del DFD |
-| 64 | `sgdByteOffset`, `sgdByteLength` | 0 y 0 (sin datos globales de supercompresión) |
-
-### Índice de niveles
-
-Un registro de 24 bytes por nivel, del 0 (el más grande) al último: `byteOffset`, `byteLength` y
-`uncompressedByteLength` (`u64`), los dos tamaños iguales porque no hay supercompresión.
-
-### Descriptor de formato (DFD)
-
-`dfdTotalSize` (92) y un bloque básico de la Khronos Data Format Specification 1.3 con cuatro muestras:
+El resultado, en los campos del contenedor:
 
 | Campo | Valor |
 |---|---|
-| `vendorId`, `descriptorType` | 0, 0 (Khronos, básico) |
-| `versionNumber`, `descriptorBlockSize` | 2 (KDFS 1.3), 88 |
-| `colorModel` | 1 (RGBSDA) |
-| `colorPrimaries` | 1 (BT.709) |
-| `transferFunction` | 2 (sRGB) o 1 (lineal) |
-| `flags` | 0 (alfa sin premultiplicar) |
-| `texelBlockDimension0..3` | 0 (bloques de 1×1×1×1) |
-| `bytesPlane0..7` | 4, y el resto 0 |
-| Muestras | R, G, B y A: bits 0, 8, 16 y 24, 8 bits cada una, `sampleLower` 0, `sampleUpper` 255 |
+| `vkFormat` | 0 (`VK_FORMAT_UNDEFINED`: datos de Basis Universal, hay que transcodificarlos) |
+| `typeSize` | 1 |
+| `pixelWidth`, `pixelHeight` | Medidas del PNG, sin redondear a múltiplos de 4 |
+| `pixelDepth`, `layerCount`, `faceCount` | 0, 0, 1 |
+| `levelCount` | `floor(log2(max(ancho, alto))) + 1` |
+| `supercompressionScheme` | 2 (zstd) |
+| DFD | Bloque básico con `colorModel` 166 (UASTC), bloques de 4×4, 16 bytes por bloque, `transferFunction` 2 o 1 |
+| Índice de niveles | Por nivel, el tamaño comprimido con zstd y el de los bloques UASTC (16 bytes por bloque de 4×4) |
+| Datos | Un frame de zstd por nivel, del más pequeño al más grande |
 
-En el formato sRGB la muestra de alfa lleva el flag `LINEAR` (canal `0x1F`): el alfa nunca va codificado en sRGB.
+Una imagen cuyo lado no es múltiplo de 4 se codifica en bloques enteros de 4×4; al transcodificar salen los bloques
+enteros (BC7) o solo los texels de la imagen (RGBA8).
 
-### Pares clave/valor
+## Cómo se carga
 
-Ordenados por clave, cada uno con su longitud (`u32`), la clave y el valor terminados en NUL y relleno hasta 4 bytes:
+`assets::decodeKtx2` lee el fichero con libktx, comprueba que sea una textura 2D con datos de Basis Universal, de 1 a
+16384 texels de lado y con un número de niveles posible, y transcodifica todos los niveles a la vez:
 
-- `KTXorientation` = `rd`: las filas van de arriba abajo, como en el PNG.
-- `KTXwriter` = `dwx`.
+- a **BC7** (`KTX_TTF_BC7_RGBA`), 16 bytes por bloque de 4×4, si `rhi::Device::supportsBc7()` dice que la GPU lo
+  muestrea en UNORM y en sRGB (todas las de escritorio);
+- si no, a **RGBA8** (`KTX_TTF_RGBA32`), 4 bytes por texel.
 
-### Datos
-
-Empiezan alineados a 4 bytes y van **del nivel más pequeño al más grande**, como pide la especificación. Cada nivel
-son sus filas de arriba abajo, 4 bytes por texel, sin relleno.
+Devuelve los niveles del más grande al más pequeño y si el color es sRGB. `rhi::Texture::create` sube BC7 solo si
+el dispositivo lo admite; si no, lo rechaza. El visor de assets del overlay de depuración abre así los `.ktx2`.
+UASTC a BC7 es casi sin pérdida (UASTC está pensado para eso), y a RGBA8 da los colores que guardó UASTC.
 
 ## Cómo se calculan los mipmaps
 
@@ -89,5 +83,17 @@ son sus filas de arriba abajo, 4 bytes por texel, sin relleno.
   vecinos. El alfa se promedia tal cual.
 - Cada nivel sale del anterior, en coma flotante, y se redondea a 8 bits al final. El nivel 0 es el PNG sin tocar.
 
-La misma imagen da siempre los mismos bytes con el mismo compilador y la misma librería estándar; entre plataformas,
-`pow` podría diferir en el último bit y cambiar algún texel de los mipmaps en una unidad.
+## Determinismo
+
+La misma imagen con las mismas opciones da siempre los mismos bytes (hay un test que lo comprueba, también con
+varios hilos), dentro de este alcance:
+
+- las versiones fijadas por el baseline de vcpkg: libktx 4.4.2 (con su Basis Universal) y zstd 1.5.7;
+- el mismo camino de CPU: el port de vcpkg compila Basis Universal con SSE 4.1 en x86-64 y lo usa si la CPU lo
+  tiene; el camino con SSE y el escalar (u otra arquitectura) no prometen los mismos bloques;
+- el mismo compilador y la misma librería estándar para los mipmaps: entre plataformas, `pow` podría diferir en el
+  último bit y cambiar algún texel en una unidad.
+
+Fuera de ese alcance el fichero puede cambiar, pero sigue siendo válido y el motor lo lee igual. La caché de
+`dwx cook` guarda cada salida por el SHA-1 de la fuente y la versión del cocinero, así que una caché no mezcla
+salidas de cocineros distintos.

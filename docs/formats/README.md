@@ -27,5 +27,5 @@ Los formatos propios del motor, los que escribe `dwx` para el estado cocinado:
 | Página | Qué cubre | Código |
 |---|---|---|
 | [Archivo `.pak`](pak.md) | Un paquete en un solo fichero: cabecera, tabla de contenidos, SHA-1 por entrada, cómo se monta | `engine/assets` |
-| [Texturas KTX2](ktx2.md) | Los campos de KTX2 que escribe `dwx cook` y cómo calcula los mipmaps | `apps/dwx` |
+| [Texturas KTX2](ktx2.md) | Las texturas UASTC con zstd que escribe `dwx cook`, qué PNG se convierten, los mipmaps y la transcodificación al cargar | `apps/dwx`, `engine/assets` |
 | [Sonido Ogg Opus](opus.md) | El Ogg Opus que escribe `dwx cook` a partir de cada WAV, sus comentarios de bucle y lo que comprueba el lector | `apps/dwx`, `engine/assets` |
