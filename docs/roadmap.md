@@ -4,9 +4,9 @@ Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da 
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Base | S | Casi cerrada: todo hecho en Linux; falta que la CI corra en GitHub (Windows sin verificar) y la limpieza de repositorios |
-| 1 | Tubería de assets | M | En curso |
-| 2 | Prueba vertical | M | Pendiente |
+| 0 | Base | S | Casi cerrada: todo hecho en Linux; la CI corre en GitHub desde el primer push (Windows en verificación); falta la limpieza de repositorios |
+| 1 | Tubería de assets | M | En cierre: el disco US se extrae entero (0 pendientes); falta integrar la compresión del cocinado |
+| 2 | Prueba vertical | M | En curso |
 | 3 | Núcleo jugable | L | Pendiente |
 | 4 | Contenido y modos | XL, continuo | Pendiente |
 
@@ -34,8 +34,8 @@ CI pasa.
 | Punto | Estado |
 |---|---|
 | Documentación, ADR, plan y convenciones | Hecho |
-| CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests, formato y clang-tidy en verde en local. La CI aún no ha corrido en GitHub |
-| CI de Windows | Escrito, sin verificar hasta el primer push: presets `windows-clang-*` (clang-cl, STL de MSVC, CRT estático) y job `windows` en la CI |
+| CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests, formato y clang-tidy en verde en local. La CI corre en GitHub desde el primer push |
+| CI de Windows | Escrito; se verifica con la primera ejecución en GitHub: presets `windows-clang-*` (clang-cl, STL de MSVC, CRT estático) y job `windows` en la CI |
 | clang-tidy limpio | Hecho: cero avisos; la CI lo pasa con los avisos como errores |
 | Ventana y dispositivo Vulkan | Hecho: swapchain que se rehace al cambiar de tamaño, sin errores de validación |
 | Entrada por acciones, conexión en caliente | Hecho con teclado; mandos sin probar en una máquina real |
@@ -58,18 +58,18 @@ CI pasa.
 **Hecho cuando:** cada fichero del disco US se extrae y el motor carga el resultado. El informe de cobertura está a
 cero pendientes.
 
-**Estado:**
+**Estado (2026-10-19):**
 
 | Punto | Estado |
 |---|---|
 | Disco: CUE, sectores, ISO9660 y tabla de ficheros del ejecutable | Hecho. `dwx extract --list` lista los 818 ficheros del disco US con su SHA-1; la tabla del ejecutable coincide con el volumen |
 | Sistema de ficheros virtual con capas y manifiestos | Hecho: módulo `assets` (IDs por nombre, `pack.yaml`, capas, override por ID) y YAML en `core` ([ADR 0016](adr/0016-yaml-con-libyaml.md)) |
 | TIM y packs → PNG | Hecho: TIM sueltos, apilados, ALLTIM y CARD.ALL (315 PNG con su paleta en YAML) |
-| `dwx extract` a `content/base/` con informe de cobertura | Hecho: paquete base que monta el VFS, salida determinista y `coverage.yaml`. Disco US: 55 de 818 ficheros extraídos; el resto, pendiente |
-| TMD/MMD y animaciones → glTF | Lectores y escritor `.glb` hechos; falta conectarlos a `dwx extract` |
-| Mapas y tablas del ejecutable → PNG + YAML, esquemas | Lectores, YAML y esquemas hechos; falta conectarlos a `dwx extract` |
-| Textos, VHB/SEQ, STR, scripts SCN | Pendiente |
-| `dwx validate`, `cook` y `pack` | Pendiente |
+| `dwx extract` a `content/base/` con informe de cobertura | Hecho: paquete base que monta el VFS, salida determinista y `coverage.yaml`. Disco US: 818 de 818 ficheros extraídos, 0 parciales, 0 pendientes, 100 % de los bytes (unos 4600 ficheros, 1,5 GB, en unos 2,5 minutos) |
+| TMD/MMD y animaciones → glTF | Hecho: 337 modelos `.glb` con texturas y animaciones, con variantes por escena |
+| Mapas y tablas del ejecutable → PNG + YAML, esquemas | Hecho, conectado a `dwx extract` |
+| Textos, VHB/SEQ, STR, scripts SCN | Hecho: textos y fuente, scripts de eventos desensamblados, música (MIDI + SF2), sonidos (WAV) y vídeos (Y4M + WAV + `movie.yaml`) |
+| `dwx validate`, `cook` y `pack` | `cook` y `pack` hechos; en integración: texturas KTX2 con Basis UASTC (BC7 en GPU), audio Opus y `.pak` con zstd ([ADR 0017](adr/0017-cocinado-y-archivos-pak.md)), y correcciones de `validate`. Formato cocinado de los vídeos sin decidir |
 | Visor ImGui | Texturas hechas: el [visor de assets](guides/visor-de-assets.md) del overlay lista los IDs de los paquetes y enseña los PNG. Modelos y mapas, con el render 3D de la fase 2 |
 | Fichas de referencia: cuidado, evolución y batalla | Hecho, con los puntos dudosos marcados |
 
@@ -82,6 +82,15 @@ cero pendientes.
 
 **Hecho cuando:** se puede caminar de File City a la casa de Jijimon y volver, con minimapa, en cualquier resolución y
 con cualquier dispositivo de entrada.
+
+**Estado (2026-10-19):** en curso, en cuatro líneas en paralelo que entran en `main` cuando cierre la fase 1.
+
+| Línea | Qué incluye | Estado |
+|---|---|---|
+| Render del mapa | Fondo prerenderizado con capas de profundidad y la cámara de cada mapa | En curso |
+| Modelos | Skinning y animaciones del jugador y del partner a partir de los `.glb` extraídos | En curso |
+| Campo | Movimiento, colisión, warps y el partner siguiendo al jugador | En curso |
+| Interfaz | RmlUi, un primer menú nuevo con ratón y mando, y el minimapa | En curso |
 
 ## Fase 3 — Núcleo jugable
 
