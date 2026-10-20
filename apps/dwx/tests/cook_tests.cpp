@@ -235,3 +235,23 @@ TEST_CASE("a WAV in a pack cooks to Ogg Opus with the same id") {
     const auto opened = dwe::assets::openAsset("opus", readOrEmpty(out / "sound/x/sample_001.opus"));
     CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
 }
+
+TEST_CASE("movies are copied as extracted, their sound too") {
+    const TempFolder folder;
+    writeSourcePack(folder);
+    const std::vector<std::int16_t> pcm(3780, 1000);
+    const auto wav = dwe::formats::audio::writeWav(
+        dwe::formats::audio::WavSound{.pcm = pcm, .sampleRate = 37800, .loop = {}, .unityNote = 60});
+    folder.write("src/movie/op1/audio.wav", std::string{reinterpret_cast<const char*>(wav.data()), wav.size()});
+    folder.write("src/movie/op1/video.y4m", "YUV4MPEG2 W2 H2 F30:1 Ip A1:1 C420jpeg\n");
+    folder.write("src/movie/op1/movie.yaml", "source: MOVIE/OP1.STR\n");
+    const CookSummary summary = cooked(folder);
+    CHECK(summary.assets == 6);
+    CHECK(summary.cooked == 2);
+    CHECK(summary.copied == 4);
+    const std::filesystem::path out = folder.path() / "out";
+    for (const std::string_view file : {"movie/op1/audio.wav", "movie/op1/video.y4m", "movie/op1/movie.yaml"}) {
+        CHECK_MESSAGE(readOrEmpty(out / file) == readOrEmpty(folder.path() / "src" / file), file);
+    }
+    CHECK_FALSE(std::filesystem::exists(out / "movie/op1/audio.opus"));
+}

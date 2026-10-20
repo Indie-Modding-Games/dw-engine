@@ -29,6 +29,12 @@ dependencias que hacen falta para ellos.
     serie fijo) y el bucle y la nota del WAV en comentarios ([Opus](../formats/opus.md)). El motor lo decodifica con
     libopus (`assets::decodeOpus`) y un lector de páginas Ogg propio. SF2 y MIDI se copian tal cual, con las muestras
     del SF2 sin tocar.
+  - **Películas (`movie/`): pendiente.** El formato cocinado del vídeo **no está decidido**, así que `dwx cook` copia
+    cada película tal como la escribe `dwx extract`: `video.y4m`, `audio.wav` y `movie.yaml`. El WAV de una película
+    tampoco pasa a Opus: es la pista que va con los frames del vídeo, `movie.yaml` la describe tal como se extrajo
+    (frecuencia, canales, muestras) y el motor no la reproduce como los demás sonidos, así que cocinarla aparte
+    adelantaría parte de esa decisión. Las películas son la mayor parte del tamaño del paquete (ver Medidas); cuando
+    se decida el formato, será un cocinero más y una nueva versión de este ADR.
 - **Paletas que se eligen al jugar, tal cual.** Un PNG indexado se copia como PNG, con sus índices y su paleta,
   solo si su YAML lateral muestra que el juego dibuja los mismos píxeles con más de una fila de CLUT:
   - lista **más de una paleta** (`palettes`): las texturas de los Digimon, cuyas primitivas eligen cada una su fila;

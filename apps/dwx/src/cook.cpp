@@ -85,6 +85,11 @@ constexpr std::array Registry = {
            .cook = cookAudio},
 };
 
+// The folder of the movies, which are copied as dwx extract writes them (Y4M video and WAV sound) while the cooked
+// video format is not decided. Their sound goes with the video frames and movie.yaml describes it as extracted, so it
+// is not cooked like the sounds the game plays on their own.
+constexpr std::string_view MovieFolder = "movie/";
+
 // The id suffix and type of the YAML file that describes an asset, as dwx extract writes it (asset_names: metadataOf).
 constexpr std::string_view SidecarSuffix = "_meta";
 constexpr std::string_view SidecarExtension = ".yaml";
@@ -374,7 +379,9 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry, const std::
     runInParallel(jobs.size(), [&](std::size_t index) {
         Job& job = jobs[index];
         job.file = &(*files)[index];
-        job.cooker = findCooker(registry, job.file->path.substr(job.file->path.rfind('.') + 1));
+        job.cooker = job.file->path.starts_with(MovieFolder)
+                         ? nullptr
+                         : findCooker(registry, job.file->path.substr(job.file->path.rfind('.') + 1));
         const auto source = disk.readFile(pack / job.file->path);
         if (!source) {
             job.result = std::unexpected{source.error()};
