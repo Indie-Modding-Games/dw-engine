@@ -63,6 +63,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
         options.checkContent = options.checkContent || argument == "--check-content";
         return true;
     }
+    if (argument == "--saves") {
+        options.saves = std::filesystem::path{value};
+        return true;
+    }
     if (argument == "--mods") {
         options.mods.emplace_back(value);
         return true;
@@ -137,6 +141,8 @@ bool readFlag(Options& options, std::string_view argument) {
         options.fullscreen = true;
     } else if (argument == "--no-vsync") {
         options.vsync = false;
+    } else if (argument == "--list-saves") {
+        options.listSaves = true;
     } else {
         return false;
     }

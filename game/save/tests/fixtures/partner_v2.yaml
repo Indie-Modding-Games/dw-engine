@@ -1,0 +1,23 @@
+format: dwe-save
+format_version: 1
+game_version: "0.1.0"
+ruleset: "original"
+label: "File City"
+created: "2026-10-01T08:00:00Z"
+updated: "2026-10-02T21:30:15Z"
+play_seconds: 5400
+sections:
+  mod_fishing:
+    version: 4
+    state:
+      best_catch: 37
+      spots:
+      - "river"
+      - lake
+  partner:
+    version: 2
+    state:
+      nickname: "Pal"
+      hp: 950
+      max_hp: 950
+complete: true

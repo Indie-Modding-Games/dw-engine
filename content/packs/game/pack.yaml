@@ -3,7 +3,7 @@ version: 0.1.0
 layer: base
 priority: 1
 name: "Datos del juego"
-description: "Datos y UI del motor hechos por el equipo: reglas del campo, rulesets, menús y minimapa. Usa los IDs del paquete base."
+description: "Datos y UI del motor hechos por el equipo: reglas del campo, rulesets, menús, minimapa y guardado. Usa los IDs del paquete base."
 dependencies:
   - id: base
     min_version: 0.1.0
@@ -20,5 +20,9 @@ schemas:
     - rules/*/care
   ruleset_clock:
     - rules/*/clock
+  ruleset_save:
+    - rules/*/save
+  save_settings:
+    - save/settings
   ui_prompts:
     - ui/common/prompts

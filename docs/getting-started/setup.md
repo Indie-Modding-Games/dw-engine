@@ -80,6 +80,9 @@ instaladas (un build sin la feature `validation`), avisa en el registro (`valida
 - `scripts/dev.sh run --check-content content/base` no abre ventana: monta los paquetes de la carpeta (carpetas y
   archivos `.pak`), abre cada asset con los lectores del motor (PNG, KTX2, glTF, YAML, Ogg Opus, WAV, SF2, MIDI,
   Y4M), lista los que fallan y termina con error si hay alguno.
+- `scripts/dev.sh run --content <contenido extraído> --list-saves` no abre ventana: escribe en el log cada ranura de
+  guardado (vacía, su cabecera o por qué no se lee). `--saves <carpeta>` usa otra carpeta de partidas en vez de la
+  de los datos del usuario ([partidas guardadas](../architecture/save.md#dónde-están-los-ficheros)).
 
 ## Windows
 

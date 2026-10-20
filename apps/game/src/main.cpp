@@ -4,6 +4,7 @@
 #include "dev_views.hpp"
 #include "game.hpp"
 #include "options.hpp"
+#include "saves.hpp"
 #include "ui_demo.hpp"
 
 int main(int argc, char** argv) {
@@ -11,6 +12,9 @@ int main(int argc, char** argv) {
     const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
     if (!options) {
         return EXIT_FAILURE;
+    }
+    if (options->listSaves) {
+        return listSaves(*options);
     }
     if (options->checkContent) {
         return checkContentFolder(options->content);

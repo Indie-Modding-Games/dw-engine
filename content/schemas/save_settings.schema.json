@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Save settings",
+  "description": "save/settings.yaml of the game pack: how many save slots there are (game/save, docs/architecture/save.md). When the game autosaves is the ruleset's save section.",
+  "type": "object",
+  "required": ["manual_slots", "autosave_slots"],
+  "additionalProperties": false,
+  "properties": {
+    "manual_slots": {
+      "description": "Slots the player saves to from the save menu. The original had up to 15 per memory card.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "autosave_slots": {
+      "description": "Slots the autosave writes in turn, overwriting the oldest; 0 turns the autosave off.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    }
+  }
+}

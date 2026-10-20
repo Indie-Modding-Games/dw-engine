@@ -13,9 +13,10 @@ dwe_add_app(game
         src/map_preview.cpp
         src/model_viewer.cpp
         src/options.cpp
+        src/saves.cpp
         src/test_scene.cpp
         src/ui_demo.cpp
-    DEPS core platform rhi assets animation render input script ui debug scene ruleset field
+    DEPS core platform rhi assets animation render input script ui debug scene ruleset field save
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang)

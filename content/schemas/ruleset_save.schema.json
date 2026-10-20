@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: save",
+  "description": "rules/<id>/save.yaml: when the game saves by itself (game/save: AutosaveRules, docs/architecture/save.md). The original never autosaved: every flag false is its behaviour.",
+  "type": "object",
+  "required": ["autosave"],
+  "additionalProperties": false,
+  "properties": {
+    "autosave": {
+      "type": "object",
+      "required": ["on_map_change", "on_battle_end", "on_partner_sleep", "on_new_day"],
+      "additionalProperties": false,
+      "properties": {
+        "on_map_change": { "description": "Autosave on every map change.", "type": "boolean" },
+        "on_battle_end": { "description": "Autosave after every battle, won or lost.", "type": "boolean" },
+        "on_partner_sleep": { "description": "Autosave when the partner goes to sleep.", "type": "boolean" },
+        "on_new_day": { "description": "Autosave on every new day of the game clock.", "type": "boolean" }
+      }
+    }
+  }
+}

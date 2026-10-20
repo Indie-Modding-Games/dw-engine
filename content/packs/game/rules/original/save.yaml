@@ -1,0 +1,13 @@
+# El guardado (game/save, docs/architecture/save.md). El original solo guardaba cuando el jugador lo pedía: al dormir
+# (partner.c: partnerTickSleep), en la máquina de guardado (main_menu.c: openSaveMachine) y al acabar el juego
+# (main_menu.c: gameClearSave).
+autosave:
+  # Desviación aprobada (2026-10-20): autoguardado en cada cambio de mapa, para no perder progreso. false es el
+  # original.
+  on_map_change: true
+  # Desviación aprobada (2026-10-20): autoguardado al terminar cada batalla, ganada o perdida. false es el original.
+  on_battle_end: true
+  # Desviación aprobada (2026-10-20): autoguardado cuando el partner se duerme. false es el original.
+  on_partner_sleep: true
+  # Cada día nuevo del reloj del juego: apagado mientras el responsable de diseño elige entre esto y el sueño.
+  on_new_day: false

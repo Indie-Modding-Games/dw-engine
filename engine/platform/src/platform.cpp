@@ -10,7 +10,10 @@
 #include <format>
 #include <limits>
 #include <optional>
+#include <string>
 #include <utility>
+
+#include "messages.hpp"
 
 namespace dwe::platform {
 namespace {
@@ -355,6 +358,17 @@ void Platform::setVirtualGamepadAxis(GamepadId gamepad, GamepadAxis axis, float 
 double Platform::nowSeconds() const {
     DWE_ASSERT(active_);
     return static_cast<double>(SDL_GetTicksNS()) / static_cast<double>(SDL_NS_PER_SECOND);
+}
+
+core::Result<std::filesystem::path> userDataFolder(std::string_view organization, std::string_view application) {
+    char* folder = SDL_GetPrefPath(std::string{organization}.c_str(), std::string{application}.c_str());
+    if (folder == nullptr) {
+        return core::fail(std::format(messages::NoUserDataFolder, SDL_GetError()));
+    }
+    // SDL gives UTF-8, which a path only reads as such from char8_t (on Windows a char path is the ANSI code page).
+    const std::u8string text{reinterpret_cast<const char8_t*>(folder)};
+    SDL_free(folder);
+    return std::filesystem::path{text};
 }
 
 } // namespace dwe::platform

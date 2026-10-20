@@ -5,7 +5,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -64,5 +66,10 @@ private:
     std::unordered_map<GamepadId, SDL_Gamepad*> gamepads_;
     std::unordered_map<GamepadId, SDL_Joystick*> virtualGamepads_;
 };
+
+// The folder where the program keeps the user's own files, such as saves, created if it does not exist: the system's
+// place for application data ($XDG_DATA_HOME/<organization>/<application>/ on Linux, %APPDATA% on Windows). It does
+// not need a Platform.
+core::Result<std::filesystem::path> userDataFolder(std::string_view organization, std::string_view application);
 
 } // namespace dwe::platform

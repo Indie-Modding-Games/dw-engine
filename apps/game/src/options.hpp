@@ -22,6 +22,10 @@ struct Options {
     std::vector<std::filesystem::path> mods;
     // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
     std::string ruleset{dwe::ruleset::OriginalRuleset};
+    // The folder of the save files (--saves); the user's data folder when not given.
+    std::optional<std::filesystem::path> saves;
+    // Set by --list-saves: log the save slots and quit, without a window.
+    bool listSaves = false;
     // Set by --check-content: open every asset of the folder's packs and quit, without a window.
     bool checkContent = false;
     int width = 1280;
@@ -58,12 +62,11 @@ struct Options {
 };
 
 inline constexpr std::string_view Usage =
-    "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--size <width>x<height>] [--fullscreen] "
-    "[--no-vsync] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> [--shots <folder>] "
-    "[--skip-steps "
-    "<kind>[,<kind>...]]] | "
-    "--check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] [--focus <x>,<z>] | "
-    "--ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
+    "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
+    "[--fullscreen] [--no-vsync] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> "
+    "[--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
+    "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
+    "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 

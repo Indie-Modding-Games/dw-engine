@@ -30,7 +30,7 @@ engine/
 │  ├─ world/                mapas, NPCs, progreso de la ciudad
 │  ├─ story/                eventos, diálogos, flags, misiones
 │  ├─ inventory/
-│  ├─ save/
+│  ├─ save/                 partidas guardadas: ranuras, autoguardado y migraciones
 │  └─ modes/                framework de modos de juego
 ├─ formats/                 lectores de PS1: TIM, TMD/MMD, mapas, VAB/SEQ, STR, scripts
 ├─ apps/

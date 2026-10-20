@@ -1,0 +1,6 @@
+# Ranuras de guardado (game/save, docs/architecture/save.md). Cuándo se autoguarda lo dice la sección `save` del
+# ruleset.
+# main_menu.c: SAVEGAME_SLOT_INFO: el original guardaba un fichero por ranura, hasta 15 por tarjeta de memoria.
+manual_slots: 15
+# El autoguardado es nuevo: ranuras que se usan por turnos, sobrescribiendo la más antigua; 0 lo apaga.
+autosave_slots: 3

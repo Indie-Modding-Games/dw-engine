@@ -5,6 +5,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/save/autosave.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/platform/platform.hpp>
@@ -323,7 +324,8 @@ int runGame(const Options& options) {
     }
     const assets::VirtualFileSystem& files = (*content)->files();
     // The game systems will read their sections from it and give it their checks (docs/architecture/rulesets.md).
-    auto rules = ruleset::RulesetStore::load(files, options.ruleset);
+    const ruleset::SectionChecks checks{{std::string{game::save::SaveSectionName}, game::save::saveSectionCheck()}};
+    auto rules = ruleset::RulesetStore::load(files, options.ruleset, checks);
     if (!rules) {
         core::logError("{}", core::formatMessage(messages::RulesetFailed, options.ruleset, rules.error().message));
         return EXIT_FAILURE;
