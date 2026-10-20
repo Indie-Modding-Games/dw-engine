@@ -1,6 +1,31 @@
 # Written by scripts/translation.sh lock; do not edit by hand.
 # sources: the hex SHA-1 of the en text each translation was written from.
-sources: {}
+sources:
+  "btl.battle_effect_messages.0000": "7d12e06478047e0b01c804ad0e934a3d93a597bc"
+  "btl.battle_effect_messages.0001": "fb72fa7b4137d07b02cd6d5f45240a75f3e07136"
+  "btl.battle_effect_messages.0002": "d101ee7564e33c8b56362b5bbdc30631eda4bccb"
+  "btl.battle_effect_messages.0003": "c67b9d908f54eb31263dc2786d03d9808f23959a"
+  "btl.battle_effect_messages.0004": "1a9dd72225e5e1f4276cfc34888115ec1c838d01"
+  "btl.battle_effect_messages.0005": "bbf07b85adeed84fb873fb3ab6622e01182e6183"
+  "btl.battle_effect_messages.0006": "55b34909933bbed8f2b9caa363353f1e220a1f66"
+  "btl.battle_effect_messages.0007": "d8386771a111a8ef67765a2b1588165e84c85e9f"
+  "btl.battle_effect_messages.0008": "898615781e079e9947a7c0b4489898d92cd3496d"
+  "btl.battle_effect_messages.0009": "4b14c23c29549eacb600f1b0f4ff34385fd63864"
+  "btl.battle_effect_messages.0010": "7b4354813fe004b54843f093a7240688d829dcaf"
+  "btl.command_names.0000": "b1b392607deaf29a7e81453e069b7c07a32a6b18"
+  "btl.command_names.0001": "1b81f28b5afbfcaaf5253d26b7dba4028a92a860"
+  "btl.command_names.0002": "1eb0146e9d6b4bb2c6559bd64b3ad43a70aebeb3"
+  "btl.command_names.0003": "ea8b09c2354b17c2a83673437d6380be0e7b8c73"
+  "btl.command_names.0004": "423208095dd7fc394399b8c356f8f00cd260869b"
+  "btl.command_names.0005": "1c59d3d634d7c1fc59947d34dda9ed08eec6b684"
+  "btl.command_names.0006": "64fbd995d3b6b156ee26ae3c03e6516434c34c12"
+  "btl.shouts.0000": "b78ee8edd0f9e5d3395edc60301cda518e0c5642"
+  "btl.shouts.0001": "c6701aa196180f222d9f43438884c850cc2fd118"
+  "btl.shouts.0002": "fe2b3b26c868f9fec8dd03106aecca8053826a92"
+  "btl.shouts.0003": "4dde9eee8e5e762346cdbf8236e2c03e8dd03ca7"
+  "btl.shouts.0004": "290aa6ac224e694d9414aee070093093574b3dda"
+  "btl.shouts.0005": "8105443a422d20508b15d65e6eb9a5cdaaee80f9"
+  "btl.shouts.0006": "7404552d44a4244ab2330bcbabcbd37289f9c49e"
 kept_english:
   - "main.digimon_names.0000"
   - "main.digimon_names.0001"
