@@ -44,9 +44,12 @@ Los tests de `map_content_tests.cpp` leen todos los mapas del contenido extraíd
 
 Junto a `DigimonTable` y `RaiseTable`, dos tablas más que `dwx` extrae del disco del usuario al paquete `base`, con el
 mismo lector estricto (cada fila con exactamente sus claves, cada id una sola vez); sus esquemas están en
-`content/schemas` y las lee [`game/evolution`](../../game/evolution/README.md):
+`content/schemas` y las leen [`game/evolution`](../../game/evolution/README.md) y la batalla:
 
-- `MoveTable` (`<dwe/assets/move_table.hpp>`, `data/moves`): cada técnica con su índice, potencia, coste y demás campos.
+- `MoveTable` (`<dwe/assets/move_table.hpp>`, `data/moves`): cada técnica con su índice, potencia, coste y demás campos;
+  `unknown_0d` se lee como `flags` (bit 0: necesita objetivo; bit 1: comparte enfriamiento) y, si están,
+  `learn_chances` (la probabilidad de aprenderla en combate por ranura de especialidad). Un índice repetido también es
+  un error.
 - `EvolutionTable` (`<dwe/assets/evolution_table.hpp>`, `data/evolution`): requisitos, filas de stats de referencia,
   cartas de evolución y, si están, destinos de objetos de evolución escritos a mano (`item_targets`, que `dwx` no
   escribe: los extrae en `evolves_to` de `data/item_effects`, y `item_targets` los sustituye objeto a objeto).

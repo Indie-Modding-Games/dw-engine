@@ -219,6 +219,7 @@ struct ExecutableTables {
     std::vector<std::vector<SkeletonBone>> digimonSkeletons;
     std::vector<Move> moveData;
     std::vector<std::string> moveNames;
+    std::vector<std::array<std::uint8_t, 3>> moveLearnChances; // by learner special slot (battle_ui.c)
     std::vector<Item> itemPara;
     std::vector<std::string> itemDescriptions;
     std::vector<EvoRequirements> evolutionRequirements;

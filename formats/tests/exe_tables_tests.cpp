@@ -93,6 +93,8 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
     CHECK(tables->moveData[0].power == 120);
     CHECK(tables->moveData[0].mpCost == 30);
     CHECK(tables->moveData[0].unknown0F == 7);
+    REQUIRE(tables->moveLearnChances.size() == 1);
+    CHECK(tables->moveLearnChances[0] == std::array<std::uint8_t, 3>{25, 16, 11});
 
     REQUIRE(tables->itemPara.size() == 2);
     CHECK(tables->itemPara[0].name == "Meat");
@@ -184,6 +186,8 @@ TEST_CASE("the US layout has the decomp's addresses and counts") {
     CHECK(layout.mapLightUpdateData.located());
     CHECK(layout.mapSoundPara.address == 0x80127FF4);
     CHECK(layout.jukeboxTracks.count == 64);
+    CHECK(layout.moveLearnChances.address == 0x80125FA4);
+    CHECK(layout.moveLearnChances.count == 58);
     CHECK_FALSE(findExecutableLayout("demo").has_value());
 }
 

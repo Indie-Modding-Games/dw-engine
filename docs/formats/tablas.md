@@ -48,6 +48,7 @@ tiene el nombre `char name[20]` al principio de `DigimonPara` ni de `Item` (`inl
 | `DIGIMON_SKELETONS` | 180 punteros | `SkeletonBone {s8 objIndex, s8 parentIndex}` × `boneCount` | tipo |
 | `MOVE_DATA` | 122 × 16 | `Move` (`move.h`) | técnica |
 | `MOVE_NAMES` | 122 `char*` | | técnica |
+| `MOVE_LEARN_CHANCES` | 58 × 3 | `u8` por ranura de especialidad del que aprende (`battle_ui.c`) | técnica aprendible |
 | `ITEM_PARA` | 128 × 32 | `Item` (`item.h`) | objeto |
 | `ITEM_DESCS` | 128 `char*` | | objeto |
 | `ITEM_FUNCTIONS` | 128 punteros | función que aplica el objeto, o nulo (`item.c`) | objeto |
@@ -120,7 +121,7 @@ escapado se anota en las notas de la conversión.
 |---|---|
 | `digimon` | `DIGIMON_DATA` con el nombre de fichero del modelo |
 | `skeletons` | los huesos de cada tipo |
-| `moves` | `MOVE_DATA` con su nombre |
+| `moves` | `MOVE_DATA` con su nombre, y `learn_chances` (`MOVE_LEARN_CHANCES`) en las técnicas que se aprenden |
 | `items` | `ITEM_PARA` con su descripción |
 | `item_effects` | qué hace cada objeto: su función, lo que cura, a qué evoluciona y los valores de su caso de comida o chip |
 | `evolution` | requisitos, ganancias y el árbol de evolución |

@@ -27,7 +27,11 @@
           "status_chance": { "type": "integer" },
           "unknown_0d": { "type": "integer" },
           "unknown_0e": { "type": "integer" },
-          "unknown_0f": { "type": "integer" }
+          "unknown_0f": { "type": "integer" },
+          "learn_chances": {
+            "description": "MOVE_LEARN_CHANCES: the chance (%) of learning the move in battle, by the special slot of the learner that matches its special (battle_ui.c: battleMoveLearning). Only the moves that can be learned have it.",
+            "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 100 }, "minItems": 3, "maxItems": 3
+          }
         }
       }
     }

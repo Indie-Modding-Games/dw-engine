@@ -50,6 +50,7 @@ constexpr std::array Layouts = {
         .digimonSkeletons = {.address = 0x8011CE60, .count = 180},
         .moveData = {.address = 0x8012623C, .count = 122},
         .moveNames = {.address = 0x80126054, .count = 122},
+        .moveLearnChances = {.address = 0x80125FA4, .count = 58},
         .itemPara = {.address = 0x801269DC, .count = 128},
         .itemDescriptions = {.address = 0x801279DC, .count = 128},
         .evolutionRequirements = {.address = 0x8012ABEC, .count = 63},

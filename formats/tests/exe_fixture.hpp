@@ -152,6 +152,10 @@ inline ExecutableFixture makeExecutableFixture() {
     image.u8(layout.moveData.address + 6, 30);
     image.u8(layout.moveData.address + 0xF, 7);
     layout.moveNames = {.address = image.stringTable({"Spit Fire", "Spit Fire"}), .count = 2};
+    layout.moveLearnChances = {.address = image.place(3), .count = 1};
+    image.u8(layout.moveLearnChances.address, 25);
+    image.u8(layout.moveLearnChances.address + 1, 16);
+    image.u8(layout.moveLearnChances.address + 2, 11);
 
     layout.itemPara = {.address = image.place(64), .count = 2};
     image.bytes(layout.itemPara.address, "Meat");

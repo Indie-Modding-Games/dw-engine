@@ -227,6 +227,7 @@ Salida: un PNG del fondo por paleta, YAML con cámara, luces, warps, NPC y colis
   |---|---|---|
   | `DIGIMON_DATA` | 180 × 0x34 | `DigimonPara`: nombre, huesos, radio, altura, tipo, nivel, especiales, objeto que suelta, técnicas |
   | `MOVE_DATA` | 122 × 16 | `Move` |
+  | `MOVE_LEARN_CHANCES` | 58 × 3 | probabilidad de aprender cada técnica en combate, por ranura de especialidad |
   | `ITEM_PARA` | 128 × 32 | `Item`: nombre, precio, méritos, orden, color, si se puede tirar |
   | `EVOLUTION_REQS` | 63 × 28 | requisitos |
   | `EVOLUTION_STATS_GAINS` | 66 × 14 | ganancias |

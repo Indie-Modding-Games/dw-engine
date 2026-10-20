@@ -55,6 +55,7 @@ struct ExecutableLayout {
     TableLocation digimonSkeletons;      // SkeletonBone*[], bone count from DigimonPara
     TableLocation moveData;              // Move[]
     TableLocation moveNames;             // char*[]
+    TableLocation moveLearnChances;      // u8[3] per learnable move: MOVE_LEARN_CHANCES
     TableLocation itemPara;              // Item[]
     TableLocation itemDescriptions;      // char*[]: ITEM_DESCS
     TableLocation evolutionRequirements; // EvoRequirements[]

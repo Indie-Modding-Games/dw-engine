@@ -4,6 +4,7 @@
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
+#include <span>
 #include <utility>
 
 #include "game_table_document.hpp"
@@ -14,10 +15,26 @@ namespace {
 
 using core::YamlNode;
 
+constexpr std::string_view LearnChancesKey = "learn_chances";
+
+std::optional<LearnChances> readLearnChances(YamlReader& reader, const YamlNode& move) {
+    const YamlNode* node = move.find(LearnChancesKey);
+    if (node == nullptr) {
+        return std::nullopt;
+    }
+    LearnChances chances{};
+    const std::span<const YamlNode> items = reader.sequence(*node, messages::LearnChancesText, chances.size());
+    for (std::size_t slot = 0; slot < items.size(); ++slot) {
+        chances.at(slot) = reader.integer<std::int32_t>(items[slot]);
+    }
+    return chances;
+}
+
 MoveEntry readMove(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::MoveText,
                            {"id", "index", "name", "distance", "power", "mp_cost", "iframes", "range", "special",
-                            "status", "accuracy", "status_chance", "unknown_0d", "unknown_0e", "unknown_0f"})) {
+                            "status", "accuracy", "status_chance", "unknown_0d", "unknown_0e", "unknown_0f"},
+                           {LearnChancesKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
@@ -33,9 +50,10 @@ MoveEntry readMove(YamlReader& reader, const YamlNode& node) {
             .status = integer("status"),
             .accuracy = integer("accuracy"),
             .statusChance = integer("status_chance"),
-            .unknown0d = integer("unknown_0d"),
+            .flags = integer("unknown_0d"),
             .unknown0e = integer("unknown_0e"),
-            .unknown0f = integer("unknown_0f")};
+            .unknown0f = integer("unknown_0f"),
+            .learnChances = readLearnChances(reader, node)};
 }
 
 core::Result<MoveTable> readMoveTable(const YamlNode& root) {
@@ -49,6 +67,9 @@ core::Result<MoveTable> readMoveTable(const YamlNode& root) {
         const MoveEntry& added = table.moves.back();
         if (reader.ok() && table.find(added.id) != &added) {
             reader.fail(item, messages::formatMessage(messages::RepeatedEntry, messages::MoveText, added.id));
+        } else if (reader.ok() && table.findByIndex(added.index) != &added) {
+            reader.fail(item,
+                        messages::formatMessage(messages::RepeatedIndex, messages::MoveText, added.id, added.index));
         }
     }
     return reader.finish(std::move(table), messages::MoveTableText);

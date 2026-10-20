@@ -326,6 +326,10 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, co
         store(readDigimonSkeletons(image, layout, tables.digimonData), tables.digimonSkeletons, error) &&
         store(readMoveData(image, layout), tables.moveData, error) &&
         store(strings(layout.moveNames, "MOVE_NAMES"), tables.moveNames, error) &&
+        store(readRecords<std::array<std::uint8_t, 3>>(
+                  image, layout.moveLearnChances, "MOVE_LEARN_CHANCES", 3,
+                  [](ByteCursor& c) { return readArray<std::uint8_t, 3>([&] { return c.u8(); }); }),
+              tables.moveLearnChances, error) &&
         store(readItemPara(image, layout), tables.itemPara, error) &&
         store(strings(layout.itemDescriptions, "ITEM_DESCS"), tables.itemDescriptions, error) &&
         store(readEvolutionRequirements(image, layout), tables.evolutionRequirements, error) &&

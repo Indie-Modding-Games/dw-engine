@@ -175,6 +175,13 @@ private:
             node.set("unknown_0d", number(move.unknown0D));
             node.set("unknown_0e", number(move.unknown0E));
             node.set("unknown_0f", number(move.unknown0F));
+            if (i < tables_->moveLearnChances.size()) {
+                YamlNode chances = YamlNode::sequence();
+                for (const std::uint8_t chance : tables_->moveLearnChances[i]) {
+                    chances.append(number(chance));
+                }
+                node.set("learn_chances", std::move(chances));
+            }
             list.append(std::move(node));
         }
         YamlNode root = YamlNode::mapping();
