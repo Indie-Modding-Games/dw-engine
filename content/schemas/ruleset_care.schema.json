@@ -1,40 +1,851 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: care",
-  "description": "rules/<id>/care.yaml: the partner's care (docs/reference/care.md). Times in game minutes. A first version with a few constants; the partner system completes it.",
+  "description": "rules/<id>/care.yaml: the partner's care (game/partner, docs/reference/care.md). The units are in the names: frames of the original's loop, game minutes and hours, percents. The quirks reproduce the original's oddities when true.",
   "type": "object",
-  "required": ["hunger", "sleep", "quirks"],
+  "required": [
+    "limits",
+    "start",
+    "hunger",
+    "refusal",
+    "sleep",
+    "toilet",
+    "sickness",
+    "mood",
+    "tiredness",
+    "battle",
+    "year",
+    "strategies",
+    "quirks"
+  ],
   "additionalProperties": false,
   "properties": {
-    "hunger": {
+    "limits": {
       "type": "object",
-      "required": ["baby_interval_hours", "in_training_interval_hours", "window_minutes", "starving_weight_loss_minutes"],
+      "required": [
+        "happiness_min",
+        "happiness_max",
+        "discipline_max",
+        "tiredness_max",
+        "weight_min",
+        "weight_max",
+        "hp_mp_max",
+        "stat_max",
+        "stat_min"
+      ],
       "additionalProperties": false,
       "properties": {
-        "baby_interval_hours": { "description": "A baby is hungry every this many hours.", "type": "integer", "minimum": 1, "maximum": 24 },
-        "in_training_interval_hours": { "description": "An in-training partner is hungry every this many hours.", "type": "integer", "minimum": 1, "maximum": 24 },
-        "window_minutes": { "description": "How long the partner asks for food; unfed by then is a care mistake.", "type": "integer", "minimum": 1 },
-        "starving_weight_loss_minutes": { "description": "With no energy left, the weight goes down 1 every this many minutes.", "type": "integer", "minimum": 1 }
+        "happiness_min": {
+          "type": "integer"
+        },
+        "happiness_max": {
+          "type": "integer"
+        },
+        "discipline_max": {
+          "type": "integer"
+        },
+        "tiredness_max": {
+          "type": "integer"
+        },
+        "weight_min": {
+          "type": "integer"
+        },
+        "weight_max": {
+          "type": "integer"
+        },
+        "hp_mp_max": {
+          "type": "integer"
+        },
+        "stat_max": {
+          "type": "integer"
+        },
+        "stat_min": {
+          "type": "integer"
+        }
+      }
+    },
+    "start": {
+      "type": "object",
+      "required": [
+        "discipline",
+        "happiness"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "discipline": {
+          "type": "integer"
+        },
+        "happiness": {
+          "type": "integer"
+        }
+      }
+    },
+    "hunger": {
+      "type": "object",
+      "required": [
+        "baby_interval_hours",
+        "in_training_interval_hours",
+        "window_minutes",
+        "window_step_frames",
+        "starving_weight_loss_minutes",
+        "tired_hunger_tiredness",
+        "tired_hunger_frames",
+        "tired_hunger_minutes",
+        "fed_happiness",
+        "fed_discipline",
+        "overfed_happiness",
+        "overfed_discipline",
+        "favorite_energy_percent",
+        "favorite_happiness"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "baby_interval_hours": {
+          "type": "integer"
+        },
+        "in_training_interval_hours": {
+          "type": "integer"
+        },
+        "window_minutes": {
+          "type": "integer"
+        },
+        "window_step_frames": {
+          "type": "integer"
+        },
+        "starving_weight_loss_minutes": {
+          "type": "integer"
+        },
+        "tired_hunger_tiredness": {
+          "type": "integer"
+        },
+        "tired_hunger_frames": {
+          "type": "integer"
+        },
+        "tired_hunger_minutes": {
+          "type": "integer"
+        },
+        "fed_happiness": {
+          "type": "integer"
+        },
+        "fed_discipline": {
+          "type": "integer"
+        },
+        "overfed_happiness": {
+          "type": "integer"
+        },
+        "overfed_discipline": {
+          "type": "integer"
+        },
+        "favorite_energy_percent": {
+          "type": "integer"
+        },
+        "favorite_happiness": {
+          "type": "integer"
+        }
+      }
+    },
+    "refusal": {
+      "type": "object",
+      "required": [
+        "discipline_base",
+        "discipline_bonus_min",
+        "discipline_bonus_range",
+        "favorite_refusal_percent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "discipline_base": {
+          "type": "integer"
+        },
+        "discipline_bonus_min": {
+          "type": "integer"
+        },
+        "discipline_bonus_range": {
+          "type": "integer"
+        },
+        "favorite_refusal_percent": {
+          "type": "integer"
+        }
       }
     },
     "sleep": {
       "type": "object",
-      "required": ["tiredness_percent_per_minute", "tiredness_threshold", "awake_cut_minutes"],
+      "required": [
+        "tiredness_percent_per_minute",
+        "tiredness_threshold",
+        "awake_cut_minutes",
+        "baby_awake_hours",
+        "in_training_awake_hours",
+        "young_awake_variation_hours",
+        "patterns",
+        "baby_sleepy_penalty",
+        "in_training_sleepy_penalty",
+        "adult_sleepy_penalty",
+        "missed_sleep_tamer_level_percent",
+        "regeneration",
+        "sick_penalty",
+        "injured_penalty",
+        "hungry_weight_loss"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tiredness_percent_per_minute": { "description": "Each minute this percent of the tiredness adds to the sleep counter.", "type": "integer", "minimum": 0 },
-        "tiredness_threshold": { "description": "With the sleep counter at this, the time awake is cut and the counter starts again.", "type": "integer", "minimum": 1 },
-        "awake_cut_minutes": { "description": "How much time awake each cut takes away.", "type": "integer", "minimum": 1 }
+        "tiredness_percent_per_minute": {
+          "type": "integer"
+        },
+        "tiredness_threshold": {
+          "type": "integer"
+        },
+        "awake_cut_minutes": {
+          "type": "integer"
+        },
+        "baby_awake_hours": {
+          "type": "integer"
+        },
+        "in_training_awake_hours": {
+          "type": "integer"
+        },
+        "young_awake_variation_hours": {
+          "type": "integer"
+        },
+        "patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "sleepy_hour",
+              "sleepy_minute",
+              "wake_hour",
+              "wake_minute",
+              "awake_hours",
+              "asleep_hours"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "sleepy_hour": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 23
+              },
+              "sleepy_minute": {
+                "type": "integer"
+              },
+              "wake_hour": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 23
+              },
+              "wake_minute": {
+                "type": "integer"
+              },
+              "awake_hours": {
+                "type": "integer"
+              },
+              "asleep_hours": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "baby_sleepy_penalty": {
+          "type": "object",
+          "required": [
+            "every_frames",
+            "happiness",
+            "discipline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "every_frames": {
+              "type": "integer"
+            },
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            }
+          }
+        },
+        "in_training_sleepy_penalty": {
+          "type": "object",
+          "required": [
+            "every_frames",
+            "happiness",
+            "discipline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "every_frames": {
+              "type": "integer"
+            },
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            }
+          }
+        },
+        "adult_sleepy_penalty": {
+          "type": "object",
+          "required": [
+            "every_frames",
+            "happiness",
+            "discipline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "every_frames": {
+              "type": "integer"
+            },
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            }
+          }
+        },
+        "missed_sleep_tamer_level_percent": {
+          "type": "integer"
+        },
+        "regeneration": {
+          "type": "object",
+          "required": [
+            "hp_mp_percent",
+            "hp_mp_percent_range",
+            "tiredness_percent",
+            "tiredness_percent_range",
+            "weight_divisor",
+            "pillow_percent",
+            "liked_area_percent",
+            "disliked_area_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp_mp_percent": {
+              "type": "integer"
+            },
+            "hp_mp_percent_range": {
+              "type": "integer"
+            },
+            "tiredness_percent": {
+              "type": "integer"
+            },
+            "tiredness_percent_range": {
+              "type": "integer"
+            },
+            "weight_divisor": {
+              "type": "integer"
+            },
+            "pillow_percent": {
+              "type": "integer"
+            },
+            "liked_area_percent": {
+              "type": "integer"
+            },
+            "disliked_area_percent": {
+              "type": "integer"
+            }
+          }
+        },
+        "sick_penalty": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "injured_penalty": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "hungry_weight_loss": {
+          "type": "integer"
+        }
+      }
+    },
+    "toilet": {
+      "type": "object",
+      "required": [
+        "poop_step_minutes",
+        "urge_discipline_offset",
+        "urge_frames_per_hundred",
+        "toilet_happiness",
+        "toilet_discipline",
+        "wild_happiness",
+        "wild_discipline",
+        "wild_tamer_level_percent",
+        "weight_loss_roll",
+        "weight_loss_divisor",
+        "virus_bar_limit",
+        "virus_form",
+        "poop_eaters",
+        "eating",
+        "eating_largest",
+        "piles_per_map",
+        "piles_total"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "poop_step_minutes": {
+          "type": "integer"
+        },
+        "urge_discipline_offset": {
+          "type": "integer"
+        },
+        "urge_frames_per_hundred": {
+          "type": "integer"
+        },
+        "toilet_happiness": {
+          "type": "integer"
+        },
+        "toilet_discipline": {
+          "type": "integer"
+        },
+        "wild_happiness": {
+          "type": "integer"
+        },
+        "wild_discipline": {
+          "type": "integer"
+        },
+        "wild_tamer_level_percent": {
+          "type": "integer"
+        },
+        "weight_loss_roll": {
+          "type": "integer"
+        },
+        "weight_loss_divisor": {
+          "type": "integer"
+        },
+        "virus_bar_limit": {
+          "type": "integer"
+        },
+        "virus_form": {
+          "type": "string",
+          "minLength": 1
+        },
+        "poop_eaters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "eating": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "below_size",
+              "hp_divisor",
+              "mp_divisor",
+              "weight",
+              "cure_percent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "below_size": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hp_divisor": {
+                "type": "integer"
+              },
+              "mp_divisor": {
+                "type": "integer"
+              },
+              "weight": {
+                "type": "integer"
+              },
+              "cure_percent": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "eating_largest": {
+          "type": "object",
+          "required": [
+            "hp_divisor",
+            "mp_divisor",
+            "weight",
+            "cure_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp_divisor": {
+              "type": "integer"
+            },
+            "mp_divisor": {
+              "type": "integer"
+            },
+            "weight": {
+              "type": "integer"
+            },
+            "cure_percent": {
+              "type": "integer"
+            }
+          }
+        },
+        "piles_per_map": {
+          "type": "integer"
+        },
+        "piles_total": {
+          "type": "integer"
+        }
+      }
+    },
+    "sickness": {
+      "type": "object",
+      "required": [
+        "missed_sleep_hours",
+        "tries_offset",
+        "tries_percent",
+        "tiredness_offset",
+        "disliked_area_hours",
+        "injury_hours",
+        "untreated_hours",
+        "on_sick_happiness",
+        "hourly_penalty"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "missed_sleep_hours": {
+          "type": "integer"
+        },
+        "tries_offset": {
+          "type": "integer"
+        },
+        "tries_percent": {
+          "type": "integer"
+        },
+        "tiredness_offset": {
+          "type": "integer"
+        },
+        "disliked_area_hours": {
+          "type": "integer"
+        },
+        "injury_hours": {
+          "type": "integer"
+        },
+        "untreated_hours": {
+          "type": "integer"
+        },
+        "on_sick_happiness": {
+          "type": "integer"
+        },
+        "hourly_penalty": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "mood": {
+      "type": "object",
+      "required": [
+        "scold_discipline",
+        "scold_happiness",
+        "boosted_scold_discipline",
+        "boosted_scold_happiness",
+        "praise_discipline",
+        "praise_happiness",
+        "praise_discipline_divisor",
+        "sulk_check_frames",
+        "sulk_recovery_frames",
+        "sulk_stat_loss_frames",
+        "sulk_stat_loss_percent",
+        "area_effect_frames",
+        "liked_area",
+        "disliked_area",
+        "area_timer_limit_frames"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "scold_discipline": {
+          "type": "integer"
+        },
+        "scold_happiness": {
+          "type": "integer"
+        },
+        "boosted_scold_discipline": {
+          "type": "integer"
+        },
+        "boosted_scold_happiness": {
+          "type": "integer"
+        },
+        "praise_discipline": {
+          "type": "integer"
+        },
+        "praise_happiness": {
+          "type": "integer"
+        },
+        "praise_discipline_divisor": {
+          "type": "integer"
+        },
+        "sulk_check_frames": {
+          "type": "integer"
+        },
+        "sulk_recovery_frames": {
+          "type": "integer"
+        },
+        "sulk_stat_loss_frames": {
+          "type": "integer"
+        },
+        "sulk_stat_loss_percent": {
+          "type": "integer"
+        },
+        "area_effect_frames": {
+          "type": "integer"
+        },
+        "liked_area": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "disliked_area": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "area_timer_limit_frames": {
+          "type": "integer"
+        }
+      }
+    },
+    "tiredness": {
+      "type": "object",
+      "required": [
+        "tired_threshold",
+        "tired_happiness",
+        "tired_happiness_frames",
+        "sub_tiredness_threshold"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tired_threshold": {
+          "type": "integer"
+        },
+        "tired_happiness": {
+          "type": "integer"
+        },
+        "tired_happiness_frames": {
+          "type": "integer"
+        },
+        "sub_tiredness_threshold": {
+          "type": "integer"
+        }
+      }
+    },
+    "battle": {
+      "type": "object",
+      "required": [
+        "won_happiness",
+        "fled",
+        "lost",
+        "tiredness",
+        "low_mp_percent",
+        "low_mp_tiredness",
+        "food_minutes",
+        "duration_minutes",
+        "poop_steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "won_happiness": {
+          "type": "integer"
+        },
+        "fled": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "lost": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            }
+          }
+        },
+        "tiredness": {
+          "type": "integer"
+        },
+        "low_mp_percent": {
+          "type": "integer"
+        },
+        "low_mp_tiredness": {
+          "type": "integer"
+        },
+        "food_minutes": {
+          "type": "integer"
+        },
+        "duration_minutes": {
+          "type": "integer"
+        },
+        "poop_steps": {
+          "type": "integer"
+        }
+      }
+    },
+    "year": {
+      "type": "object",
+      "required": [
+        "happy_happiness",
+        "happy_tamer_level_percent",
+        "unhappy_tamer_level_percent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "happy_happiness": {
+          "type": "integer"
+        },
+        "happy_tamer_level_percent": {
+          "type": "integer"
+        },
+        "unhappy_tamer_level_percent": {
+          "type": "integer"
+        }
+      }
+    },
+    "strategies": {
+      "type": "object",
+      "required": [
+        "care_mistakes",
+        "sickness_roll",
+        "item_refusal"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "care_mistakes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sickness_roll": {
+          "type": "string",
+          "minLength": 1
+        },
+        "item_refusal": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "quirks": {
-      "description": "The original's oddities: true reproduces the original, false fixes it.",
       "type": "object",
-      "required": ["sleeping_hungry_keeps_weight", "sleep_adds_default_hours_to_evolution"],
+      "required": [
+        "sleeping_hungry_keeps_weight",
+        "sleep_adds_default_hours_to_evolution",
+        "sickness_chance_wraps",
+        "young_sleep_without_variation",
+        "battle_midnight_skips_age",
+        "toilet_doubles_poop_interval",
+        "post_battle_mp_tiredness_truncated",
+        "food_clears_training_boost",
+        "skipped_hunger_window_counts_twice",
+        "skipped_hours_add_sickness_tries"
+      ],
       "additionalProperties": false,
       "properties": {
-        "sleeping_hungry_keeps_weight": { "description": "Falling asleep hungry never costs weight: the hunger is cleared before it is checked.", "type": "boolean" },
-        "sleep_adds_default_hours_to_evolution": { "description": "Sleeping adds the default sleep hours to the evolution counter, however long the partner slept.", "type": "boolean" }
+        "sleeping_hungry_keeps_weight": {
+          "type": "boolean"
+        },
+        "sleep_adds_default_hours_to_evolution": {
+          "type": "boolean"
+        },
+        "sickness_chance_wraps": {
+          "type": "boolean"
+        },
+        "young_sleep_without_variation": {
+          "type": "boolean"
+        },
+        "battle_midnight_skips_age": {
+          "type": "boolean"
+        },
+        "toilet_doubles_poop_interval": {
+          "type": "boolean"
+        },
+        "post_battle_mp_tiredness_truncated": {
+          "type": "boolean"
+        },
+        "food_clears_training_boost": {
+          "type": "boolean"
+        },
+        "skipped_hunger_window_counts_twice": {
+          "type": "boolean"
+        },
+        "skipped_hours_add_sickness_tries": {
+          "type": "boolean"
+        }
       }
     }
   }

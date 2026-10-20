@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: life",
+  "description": "rules/<id>/life.yaml: the partner's lifetime, lives, death and rebirth (game/partner, docs/reference/care.md).",
+  "type": "object",
+  "required": [
+    "lifetime_hours",
+    "lives",
+    "unhappy_lifetime",
+    "rebirth"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "lifetime_hours": {
+      "type": "integer"
+    },
+    "lives": {
+      "type": "integer"
+    },
+    "unhappy_lifetime": {
+      "type": "object",
+      "required": [
+        "every_hours",
+        "happiness_below",
+        "happiness_divisor",
+        "extra_hours"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "every_hours": {
+          "type": "integer"
+        },
+        "happiness_below": {
+          "type": "integer"
+        },
+        "happiness_divisor": {
+          "type": "integer"
+        },
+        "extra_hours": {
+          "type": "integer"
+        }
+      }
+    },
+    "rebirth": {
+      "type": "object",
+      "required": [
+        "baby_choice",
+        "babies",
+        "inherit_percent_per_tamer_level"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "baby_choice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "babies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "digimon",
+              "hp",
+              "mp",
+              "offense",
+              "defense",
+              "speed",
+              "brain"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "digimon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hp": {
+                "type": "integer"
+              },
+              "mp": {
+                "type": "integer"
+              },
+              "offense": {
+                "type": "integer"
+              },
+              "defense": {
+                "type": "integer"
+              },
+              "speed": {
+                "type": "integer"
+              },
+              "brain": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "inherit_percent_per_tamer_level": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

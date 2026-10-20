@@ -1,0 +1,94 @@
+# Entrenamiento en el gimnasio (docs/reference/care.md, "Entrenamiento"). Lo lee game/partner. La ganancia de cada
+# stat es base × multiplicador; el multiplicador se cuenta en décimas como en el original (10 = × 1).
+# src/trn/trn_reward.c: TRN_calculateTrainingMultiplier y src/trn2/trn2_hud.c: TRN2_calculateTrainingMultiplier:
+# aptitud de la especie (training_type de RAISE_DATA) para cada stat, en décimas: tipos 0, 1, 2 y 3, y el resto.
+aptitude_tenths:
+  hp: [10, 10, 9, 11, 8]
+  mp: [10, 9, 11, 10, 8]
+  offense: [10, 11, 10, 9, 8]
+  defense: [10, 10, 9, 11, 8]
+  speed: [10, 11, 10, 9, 8]
+  brain: [10, 9, 11, 10, 8]
+# Las mismas funciones: por nivel 1 a 5, en décimas (bebé y entrenamiento × 0,9 ... definitivo × 1,2).
+level_tenths: [9, 9, 10, 11, 12]
+# TRN_calculateTrainingMultiplier: gimnasio mejorado (isTriggerSet(0xdb) para HP, defensa y velocidad; 0xfb para
+# ataque, MP e inteligencia): × 6 / 5.
+upgrade_bonus: { multiplier: 6, divisor: 5 }
+upgrade_flags: { hp: 219, mp: 251, offense: 251, defense: 219, speed: 219, brain: 251 }
+# TRN_calculateTrainingMultiplier: 10 o más sesiones de ese stat de bebé o de entrenamiento: × 6 / 5. Los TRN_setup*
+# cuentan la sesión si el nivel es menor que 3.
+practice_bonus: { multiplier: 6, divisor: 5 }
+practice_sessions: 10
+practice_level_below: 3
+# TRN_calculateTrainingMultiplier: el manual de entrenamiento (getItemCount(0x21)): × 11 / 10.
+manual_bonus: { multiplier: 11, divisor: 10 }
+# TRN_award*TrainingGains: con el bonus de una comida, base × (multiplicador × valor) / 100; sin él, base ×
+# multiplicador / 10; luego × la ruleta en décimas / 10. Con cansancio 100 cada ganancia es 1. Una ganancia de 1000
+# o más se queda en 999.
+tired_out_tiredness: 100
+tired_out_gain: 1
+gain_cap: 999
+# trn_slots.c: sin la ruleta, el resultado es 10 (× 1).
+slot_default_tenths: 10
+# TRN_advanceTrainingTime: con cansancio 70 o más tras la sesión, felicidad -3 y disciplina -3.
+overwork_tiredness: 70
+overwork_happiness: -3
+overwork_discipline: -3
+gain_formula: original
+# Los dos módulos de entrenamiento del original. Cada sesión adelanta una hora con sus propias cuentas:
+# TRN_advanceTrainingTime baja la ventana de hambre 120 pasos (60 minutos) y la comida 60 minutos; la de TRN2 baja la
+# ventana 12 pasos (6 minutos) y la comida 61 minutos. Los dos bajan el baño 6 pasos y las ganas 1200 fotogramas.
+places:
+  - id: trn
+    hunger_window_minutes: 60
+    food_minutes: 60
+    poop_steps: 6
+    urge_frames: 1200
+    counts_practice: true
+    # trn_reward.c: TRN_award*TrainingGains: lo que da cada sesión (la base, el stat y el bonus de comida que la
+    # multiplica) y lo que cuesta (cansancio, energía, felicidad). trn_off.c y trn_speed.c usan la variante 6 en el
+    # segundo punto de entrenamiento, sin los bonus de mejora ni de práctica.
+    courses:
+      - { id: hp, aptitude: hp, practice_bonuses: true, tiredness: 10, energy: 1, happiness: 1,
+          gains: [{ stat: hp, base: 80, boosted_by: hp }, { stat: offense, base: 2, boosted_by: offense }] }
+      - { id: mp, aptitude: mp, practice_bonuses: true, tiredness: 7, energy: 1, happiness: 1,
+          gains: [{ stat: mp, base: 80, boosted_by: mp }, { stat: defense, base: 2, boosted_by: defense }] }
+      - { id: offense, aptitude: offense, practice_bonuses: true, tiredness: 9, energy: 1, happiness: 1,
+          gains: [{ stat: offense, base: 8, boosted_by: offense }, { stat: speed, base: 2, boosted_by: speed }] }
+      - { id: offense_alt, aptitude: offense, practice_bonuses: false, tiredness: 9, energy: 1, happiness: 1,
+          gains: [{ stat: hp, base: 10, boosted_by: hp }, { stat: offense, base: 8, boosted_by: offense }] }
+      - { id: defense, aptitude: defense, practice_bonuses: true, tiredness: 9, energy: 1, happiness: 1,
+          gains: [{ stat: defense, base: 8, boosted_by: defense }, { stat: brain, base: 2, boosted_by: brain }] }
+      - { id: speed, aptitude: speed, practice_bonuses: true, tiredness: 8, energy: 1, happiness: 1,
+          gains: [{ stat: hp, base: 10, boosted_by: hp }, { stat: speed, base: 8, boosted_by: speed }] }
+      - { id: speed_alt, aptitude: speed, practice_bonuses: false, tiredness: 8, energy: 1, happiness: 1,
+          gains: [{ stat: hp, base: 10, boosted_by: hp }, { stat: speed, base: 8, boosted_by: speed }] }
+      - { id: brain, aptitude: brain, practice_bonuses: true, tiredness: 6, energy: 1, happiness: 1,
+          gains: [{ stat: mp, base: 10, boosted_by: mp }, { stat: brain, base: 8, boosted_by: brain }] }
+  - id: trn2
+    hunger_window_minutes: 6
+    food_minutes: 61
+    poop_steps: 6
+    urge_frames: 1200
+    counts_practice: false
+    # trn2_reward.c: TRN2_award*TrainingGains. Rareza: en hp_b la defensa la multiplica el bonus de HP y en defense_b
+    # la velocidad, el de defensa.
+    courses:
+      - { id: hp_a, aptitude: hp, practice_bonuses: false, tiredness: 10, energy: 2, happiness: 1,
+          gains: [{ stat: hp, base: 120, boosted_by: hp }] }
+      - { id: hp_b, aptitude: hp, practice_bonuses: false, tiredness: 10, energy: 2, happiness: 2,
+          gains: [{ stat: hp, base: 120, boosted_by: hp }, { stat: defense, base: 2, boosted_by: hp }] }
+      - { id: mp, aptitude: mp, practice_bonuses: false, tiredness: 7, energy: 1, happiness: 4,
+          gains: [{ stat: mp, base: 150, boosted_by: mp }] }
+      - { id: offense, aptitude: offense, practice_bonuses: false, tiredness: 9, energy: 2, happiness: 1,
+          gains: [{ stat: offense, base: 12, boosted_by: offense }] }
+      - { id: speed, aptitude: speed, practice_bonuses: false, tiredness: 8, energy: 2, happiness: 1,
+          gains: [{ stat: speed, base: 12, boosted_by: speed }] }
+      - { id: defense_a, aptitude: defense, practice_bonuses: false, tiredness: 9, energy: 2, happiness: 1,
+          gains: [{ stat: defense, base: 12, boosted_by: defense }] }
+      - { id: defense_b, aptitude: defense, practice_bonuses: false, tiredness: 9, energy: 2, happiness: 2,
+          gains: [{ stat: defense, base: 12, boosted_by: defense }, { stat: speed, base: 2, boosted_by: defense }] }
+quirks:
+  # trn_brain.c / trn_reward.c: TRN_awardBrainsTrainingGains pide el multiplicador del MP (modo 1): la aptitud, la
+  # mejora del gimnasio y las sesiones de práctica son las del MP.
+  brain_training_uses_mp_aptitude: true

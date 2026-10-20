@@ -36,7 +36,9 @@ se acaba, muere y renace como bebé con parte de sus stats.
 - **Cansancio y hambre:** con el cansancio alto durante un tiempo, el hambre llega antes (3 minutos más por hora)
   **(comprobado)**.
 - **Comer** (`partnerHandleFoodFeed`, `handleFood` en `item.c`):
-  - Si tenía hambre y la energía llega al umbral: felicidad +5, disciplina +1 y se quita el hambre.
+  - Si tenía hambre y la energía llega al umbral: felicidad +5, disciplina +1 y se quita el hambre. La siguiente hora
+    de comida se busca a partir de la última que se fijó, no de la hora actual (`setFoodTimer` de la versión
+    americana) **(comprobado)**.
   - Si no tenía hambre (sobrealimentar): felicidad −3, disciplina −2.
   - La comida favorita de la especie da un 40 % más de energía y +2 de felicidad.
   - La energía tiene un tope por especie.
@@ -46,6 +48,8 @@ se acaba, muere y renace como bebé con parte de sus stats.
     + 10..19).
   - Si no tiene hambre, rechaza su comida favorita un 20 % de las veces.
   - Después de un rechazo, regañar da más disciplina (ver felicidad y disciplina).
+  - Solo cuentan para el hambre las comidas; los demás objetos que pasan por `handleFood` cambian stats y necesidades
+    pero no quitan el hambre ni cuentan como sobrealimentar (`partnerHandleFoodFeed`) **(comprobado)**.
 
 ### Sueño
 
@@ -64,7 +68,8 @@ se acaba, muere y renace como bebé con parte de sus stats.
 - **Dormir** (`partnerTickSleep`, `handleSleeping`, `sleepRegen`) **(comprobado)**:
   - El reloj salta a la hora de despertar. La vida restante baja las horas dormidas y el contador de evolución sube
     las horas de sueño por defecto.
-  - Se quita el hambre y, si tenía ganas de ir al baño, deja una caca.
+  - Se quita el hambre y, si tenía ganas de ir al baño, deja una caca. Esa caca **no** cuenta como error de cuidado
+    (`handleSleeping`) **(comprobado)**.
   - Si estaba enfermo: felicidad −20, disciplina −10, cansancio +10. Si estaba lesionado: −10, −5, +5.
   - Recuperación según la fracción de sueño completada: HP y MP entre el 70 y el 79 % del máximo, el cansancio baja
     entre el 80 y el 99 %, y el peso baja una décima parte del peso por defecto.
@@ -88,7 +93,8 @@ se acaba, muere y renace como bebé con parte de sus stats.
   - Se guarda la caca en el mapa: hasta 16 por mapa y 100 en total.
 - **En el baño** (`handleToilet`) **(comprobado)**: felicidad +2, disciplina +2 y una pequeña baja de peso según el
   tamaño de la caca. En la versión americana el siguiente aviso tarda el doble. El orinal portátil (un objeto) vacía
-  sin dar felicidad ni disciplina.
+  sin dar felicidad ni disciplina, y el siguiente aviso tarda el intervalo normal, sin doblar (`handlePortaPotty` en
+  `item.c`) **(comprobado)**.
 - **Comer caca:** dos especies concretas comen las cacas cercanas, ganan HP, MP y peso según el tamaño, y tienen una
   pequeña probabilidad de curarse (`handleEatingPoop`) **(comprobado)**.
 
@@ -105,21 +111,27 @@ se acaba, muere y renace como bebé con parte de sus stats.
   menos (ver la [ficha de batalla](battle.md)).
 - **Sin tratar:** a las 12 horas de enfermedad pierde **una vida** (empieza con 3) y se lanza un evento de guion
   **(comprobado)**. Qué muestra ese evento es **(suposición)**.
-- **Heridas:** salen de los combates, con probabilidad = cansancio − % de HP restante (`handleBattleInjury` en
-  `battle_ui.c`) **(comprobado)**.
+- **Heridas:** salen de los combates ganados en los que recibió daño, con probabilidad = cansancio − % de HP
+  restante (`handleBattleInjury` en `battle_ui.c`). La tirada va en la pantalla de resultados, antes de las cuentas
+  del tamer tras el combate (felicidad, cansancio, tiempo) **(comprobado)**.
 - **Curas** (`handleStatusItems` en `item.c`) **(comprobado)**: la venda cura la herida siempre y la enfermedad un
-  20 % de las veces; la medicina cura las dos. No hay lógica de médico en el código C **(suposición: estará en
+  20 % de las veces; la medicina cura las dos. Con el partner desmayado (HP 0) no hacen nada
+  (`handleMedicineHealing`) **(comprobado)**. No hay lógica de médico en el código C **(suposición: estará en
   scripts)**.
+- **Sin vidas:** si la enfermedad sin tratar quita la última vida, la vida restante pasa a 0 y el partner muere sin
+  heredar stats **(comprobado)**.
 
 ### Felicidad y disciplina
 
 - **Rangos** (`tickConditionBoundaries`): felicidad de −100 a 100; disciplina, cansancio de 0 a 100; peso de 1 a 99
   **(comprobado)**.
 - **Regañar** (`handlePraiseScold`): disciplina +2, felicidad −10. Justo después de un rechazo o de una caca en el
-  suelo, disciplina +8 sin perder felicidad **(comprobado)**.
+  suelo, disciplina +8 sin perder felicidad **(comprobado)**. Esa bonificación se gasta: la siguiente vez que se le
+  ofrece un objeto se reinicia y lo acepta (`partnerWillRefuseItem`) **(comprobado)**.
 - **Elogiar:** disciplina −5, felicidad + (disciplina / 10 + 2) **(comprobado)**.
 - **Batallas** (`startBattle` en `tamer.c`): ganar, felicidad +2; huir, felicidad −10 y disciplina −6; perder,
-  felicidad −30 y disciplina −20 **(comprobado)**.
+  felicidad −30 y disciplina −20 **(comprobado)**. Ganar y huir suman además el cansancio de después del combate
+  (+5, y huir +2 más); perder no lo suma, pero quita una vida (`handlePostBattleTiredness`) **(comprobado)**.
 - **Zona:** cada hora, +1 de felicidad en una zona que le gusta y −1 en una que no (`tickTirednessMechanics`)
   **(comprobado)**.
 - **Enfado** (`tickUnhappinessMechanics`) **(comprobado)**:
@@ -153,6 +165,9 @@ se acaba, muere y renace como bebé con parte de sus stats.
 - Sube: al evolucionar a definitivo sin objeto (+96 horas) y con algunas comidas **(comprobado)**.
 - **Edad:** días vividos; sube a medianoche, también si se llega a ella saltando horas o entrenando
   **(comprobado)**.
+- **Descansar o saltar horas** (`skipHours`, lo usan los guiones): suma las horas al contador de evolución, las
+  resta de la vida, adelanta comida, baño y ventana de hambre, y baja la energía **una sola vez** por el gasto de la
+  especie, sin mover el reloj **(comprobado)**.
 
 ### Muerte y renacer
 
@@ -179,11 +194,18 @@ Es parte del cuidado porque gasta tiempo, cansa y baja la felicidad (`src/trn/`)
   - aptitud de la especie para ese stat: ×0,8 a ×1,1 (`trainingType` en `RAISE_DATA`);
   - nivel: ×0,9 (bebé y entrenamiento), ×1,0 (novato), ×1,1 (campeón), ×1,2 (definitivo);
   - gimnasio mejorado: ×1,2;
-  - 10 o más mejoras de ese stat: ×1,2;
+  - 10 o más sesiones de ese stat entrenadas como bebé o en entrenamiento (en el primer gimnasio; los `TRN_setup*`
+    las cuentan con nivel menor que 3): ×1,2 **(comprobado)**;
   - el manual de entrenamiento (un objeto): ×1,1.
 - **Ruleta de bonus** (`trn_slots.c`): multiplica el resultado entre ×0,5 y ×10 **(comprobado)**.
 - **Comidas de entrenamiento:** activan durante un tiempo un bonus para uno o varios stats (`setTrainingBoost` en
-  `item.c`) **(comprobado)**.
+  `item.c`) **(comprobado)**. Toda comida llama a `setTrainingBoost`, así que una sin bonus borra el que hubiera
+  (ver rarezas) **(comprobado)**.
+- **Inteligencia:** su sesión pide el multiplicador del MP (modo 1), no el de inteligencia
+  (`TRN_awardBrainTrainingGains`) **(comprobado)**. Con las tablas del original las dos aptitudes coinciden, así que
+  no se nota.
+- **Tope:** una ganancia de 1000 o más se queda en 999; en el original solo se limita la primera ganancia de cada
+  sesión (`TRN_award*`) **(comprobado)**.
 - Cada sesión suma 1 al contador de evolución **(comprobado)**.
 
 ### Comida y objetos de cuidado
@@ -237,14 +259,24 @@ Las vidas no están aquí, sino en la entidad del partner. Las estructuras de `R
   esa baja nunca ocurre **(comprobado)**.
 - **Sin variación en el bebé.** El horario del bebé llama a un aleatorio con límite 1, que siempre da 0
   **(comprobado)**.
-- **Contador muerto.** `subTiredness` se lee y se reinicia, pero nada lo sube **(suposición, también revisado en el
-  ensamblador)**.
+- **Contador muerto.** `subTiredness` se lee y se reinicia, pero nada lo sube **(comprobado: ninguna función del
+  decomp lo escribe salvo para ponerlo a 0)**.
 - **Medianoche en combate.** Si un combate cruza la medianoche, no suma edad ni evolución **(comprobado)**.
 - **Años distintos.** El entrenamiento trata un año como 31 días y el reloj como 30 **(comprobado)**.
 - **Sueño fijo para la evolución.** Dormir suma las horas de sueño por defecto al contador de evolución, aunque
   durmiera menos **(comprobado)**.
 - **Baño en la versión americana.** Solo ahí el baño dobla el tiempo hasta el siguiente aviso **(comprobado)**.
-- **Cansancio por MP roto.** Ver la [ficha de batalla](battle.md).
+- **Cansancio por MP roto.** Ver la [ficha de batalla](battle.md). `handlePostBattleTiredness` divide antes de
+  multiplicar: solo un combate que gastó todo el MP suma los 10 de cansancio **(comprobado)**.
+- **La comida borra el bonus.** Cualquier comida reinicia el bonus de entrenamiento, aunque no dé ninguno
+  (`handleFood`) **(comprobado)**.
+- **Error de cuidado doble al saltar horas.** `skipHours`, el combate y el entrenamiento bajan la ventana de hambre
+  y cuentan el error si se agota, pero no la cierran; luego `tickHungerMechanics` la cierra y lo cuenta otra vez
+  **(comprobado)**.
+- **Intentos de enfermedad al saltar horas.** Con el partner enfermo, saltar horas suma intentos de la tirada de
+  enfermedad **(comprobado)**.
+- **Infelicidad al saltar horas.** `skipHours` comprueba `(HORA + horas % 4) == 0` en vez de cruzar un múltiplo de 4:
+  solo resta vida por infelicidad a medianoche con grupos de 4 horas **(comprobado)**.
 
 ## Dónde está en el decomp
 

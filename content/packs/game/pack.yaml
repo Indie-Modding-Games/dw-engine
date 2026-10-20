@@ -24,5 +24,9 @@ schemas:
     - rules/*/save
   save_settings:
     - save/settings
+  ruleset_life:
+    - rules/*/life
+  ruleset_training:
+    - rules/*/training
   ui_prompts:
     - ui/common/prompts

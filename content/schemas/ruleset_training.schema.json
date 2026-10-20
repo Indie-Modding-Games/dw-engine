@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: training",
+  "description": "rules/<id>/training.yaml: the stat gains and costs of the training places (game/partner, docs/reference/care.md).",
+  "type": "object",
+  "required": [
+    "aptitude_tenths",
+    "level_tenths",
+    "upgrade_bonus",
+    "upgrade_flags",
+    "practice_bonus",
+    "practice_sessions",
+    "practice_level_below",
+    "manual_bonus",
+    "tired_out_tiredness",
+    "tired_out_gain",
+    "gain_cap",
+    "slot_default_tenths",
+    "overwork_tiredness",
+    "overwork_happiness",
+    "overwork_discipline",
+    "gain_formula",
+    "places",
+    "quirks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "aptitude_tenths": {
+      "type": "object",
+      "required": [
+        "hp",
+        "mp",
+        "offense",
+        "defense",
+        "speed",
+        "brain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "hp": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "mp": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "offense": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "defense": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "speed": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "brain": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 5,
+          "maxItems": 5
+        }
+      }
+    },
+    "level_tenths": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "upgrade_bonus": {
+      "type": "object",
+      "required": [
+        "multiplier",
+        "divisor"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": {
+          "type": "integer"
+        },
+        "divisor": {
+          "type": "integer"
+        }
+      }
+    },
+    "upgrade_flags": {
+      "type": "object",
+      "required": [
+        "hp",
+        "mp",
+        "offense",
+        "defense",
+        "speed",
+        "brain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "hp": {
+          "type": "integer"
+        },
+        "mp": {
+          "type": "integer"
+        },
+        "offense": {
+          "type": "integer"
+        },
+        "defense": {
+          "type": "integer"
+        },
+        "speed": {
+          "type": "integer"
+        },
+        "brain": {
+          "type": "integer"
+        }
+      }
+    },
+    "practice_bonus": {
+      "type": "object",
+      "required": [
+        "multiplier",
+        "divisor"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": {
+          "type": "integer"
+        },
+        "divisor": {
+          "type": "integer"
+        }
+      }
+    },
+    "practice_sessions": {
+      "type": "integer"
+    },
+    "practice_level_below": {
+      "type": "integer"
+    },
+    "manual_bonus": {
+      "type": "object",
+      "required": [
+        "multiplier",
+        "divisor"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "multiplier": {
+          "type": "integer"
+        },
+        "divisor": {
+          "type": "integer"
+        }
+      }
+    },
+    "tired_out_tiredness": {
+      "type": "integer"
+    },
+    "tired_out_gain": {
+      "type": "integer"
+    },
+    "gain_cap": {
+      "type": "integer"
+    },
+    "slot_default_tenths": {
+      "type": "integer"
+    },
+    "overwork_tiredness": {
+      "type": "integer"
+    },
+    "overwork_happiness": {
+      "type": "integer"
+    },
+    "overwork_discipline": {
+      "type": "integer"
+    },
+    "gain_formula": {
+      "type": "string",
+      "minLength": 1
+    },
+    "places": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "hunger_window_minutes",
+          "food_minutes",
+          "poop_steps",
+          "urge_frames",
+          "counts_practice",
+          "courses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hunger_window_minutes": {
+            "type": "integer"
+          },
+          "food_minutes": {
+            "type": "integer"
+          },
+          "poop_steps": {
+            "type": "integer"
+          },
+          "urge_frames": {
+            "type": "integer"
+          },
+          "counts_practice": {
+            "type": "boolean"
+          },
+          "courses": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "aptitude",
+                "practice_bonuses",
+                "tiredness",
+                "energy",
+                "happiness",
+                "gains"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "aptitude": {
+                  "enum": [
+                    "hp",
+                    "mp",
+                    "offense",
+                    "defense",
+                    "speed",
+                    "brain"
+                  ]
+                },
+                "practice_bonuses": {
+                  "type": "boolean"
+                },
+                "tiredness": {
+                  "type": "integer"
+                },
+                "energy": {
+                  "type": "integer"
+                },
+                "happiness": {
+                  "type": "integer"
+                },
+                "gains": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "stat",
+                      "base",
+                      "boosted_by"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "stat": {
+                        "enum": [
+                          "hp",
+                          "mp",
+                          "offense",
+                          "defense",
+                          "speed",
+                          "brain"
+                        ]
+                      },
+                      "base": {
+                        "type": "integer"
+                      },
+                      "boosted_by": {
+                        "enum": [
+                          "hp",
+                          "mp",
+                          "offense",
+                          "defense",
+                          "speed",
+                          "brain"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quirks": {
+      "type": "object",
+      "required": [
+        "brain_training_uses_mp_aptitude"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "brain_training_uses_mp_aptitude": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,14 @@ sprites e instancias, warps, NPC y la rejilla de colisión de 100 × 100 (`MapCo
 su id, su índice en el original (el que usan los warps), el fichero, los flags (hora fija, NPC), las puertas, el baño y
 el nombre que se ve al cargarlo (`displayName`, sin el relleno de espacios).
 
+`DigimonTable` (`<dwe/assets/digimon_table.hpp>`) es `data/digimon`
+([esquema](../../content/schemas/digimon.schema.json)): por especie, su id, nombre, modelo, nivel, especiales, objeto
+que suelta y técnicas. `RaiseTable` (`<dwe/assets/raise_table.hpp>`) es `data/raise`
+([esquema](../../content/schemas/raise.schema.json)): los datos de cuidado de cada partner (horario de comida, energía,
+baño, comida favorita, patrón de sueño, aptitud de entrenamiento y peso). Los dos se leen con un lector estricto (una
+clave de más o de menos es un error) y los lee [`game/partner`](../../game/partner/README.md) por el rol de tabla del
+ruleset.
+
 Las conversiones al [espacio del mundo](../../docs/architecture/world-space.md) están en el mismo header y solo ahí:
 celda de colisión ↔ posición (`collisionCellAt`, `collisionCellCenter`), posición y giro de un warp (`warpSpawn`) y
 giro del original ↔ yaw en radianes (`yawFromOriginal`, `forwardOfYaw`).

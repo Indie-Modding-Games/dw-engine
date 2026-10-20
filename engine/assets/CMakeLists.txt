@@ -22,6 +22,8 @@ dwe_add_module(assets
         src/yaml_reader.cpp
         src/map_document.cpp
         src/map_table.cpp
+        src/digimon_table.cpp
+        src/raise_table.cpp
         src/indexed_image.cpp
         src/map_images.cpp
         src/character_model.cpp

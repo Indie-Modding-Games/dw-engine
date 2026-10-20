@@ -1,0 +1,26 @@
+# Vida, muerte y renacer del partner (docs/reference/care.md, "Vida y edad" y "Muerte y renacer"). Lo lee
+# game/partner. Las horas son horas de juego. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
+# initializePartner, initializeReincarnatedPartner: la vida empieza en 360 horas (15 días).
+lifetime_hours: 360
+# initializePartner, evolution.c: reincarnatePartner: el partner empieza con 3 vidas.
+lives: 3
+# tickConditions: cada 4 horas (CURRENT_FRAME % 4800) con felicidad menor que 80, la vida baja
+# (felicidad - 80) / -50 + 1 horas, con división entera.
+unhappy_lifetime:
+  every_hours: 4
+  happiness_below: 80
+  happiness_divisor: 50
+  extra_hours: 1
+rebirth:
+  # dooa.c: el huevo se elige con rand() % 4 entre REINCARNATE_BABY_TYPE: original = uno al azar con la misma
+  # probabilidad.
+  baby_choice: original
+  # dooa.c: REINCARNATE_BABY_TYPE y initializeReincarnatedPartner: setReincarnateStats de cada bebé.
+  babies:
+    - { digimon: "bota", hp: 90, mp: 110, offense: 10, defense: 11, speed: 9, brain: 10 }
+    - { digimon: "puni", hp: 120, mp: 100, offense: 16, defense: 8, speed: 8, brain: 6 }
+    - { digimon: "poyo", hp: 100, mp: 140, offense: 12, defense: 6, speed: 6, brain: 8 }
+    - { digimon: "yura", hp: 100, mp: 120, offense: 8, defense: 8, speed: 8, brain: 8 }
+  # setReincarnateStats: tras una muerte natural hereda un % de cada stat del partner muerto igual al nivel del
+  # tamer; si no, nada.
+  inherit_percent_per_tamer_level: 1
