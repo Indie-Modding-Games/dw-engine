@@ -54,7 +54,7 @@ Las dos herramientas se verifican contra la salida de `dwx extract`:
 
 | Fecha | Cambio | Qué tienen que hacer las herramientas |
 |---|---|---|
-| — | Todavía ninguno | — |
+| 2026-10-19 | Aditivo: una carpeta de contenido también monta los archivos `.pak` que tiene directamente dentro (`findPacks`), y si hay una carpeta y un `.pak` con el mismo nombre (`base/` y `base.pak`) gana la carpeta y el archivo se deja fuera. Un paquete en carpeta se monta igual que antes | Nada. Para probar un mod empaquetado, dejar su `.pak` junto a `base/` |
 
 ## Lo que aún no está probado
 
