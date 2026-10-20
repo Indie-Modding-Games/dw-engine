@@ -11,17 +11,18 @@
 
 namespace dwe::app {
 
+// SDL takes the file name as UTF-8 chars, which path::c_str() is not on Windows (wchar_t).
 void loadUserGamepadMappings() {
-    const std::filesystem::path path = "gamecontrollerdb.txt";
+    constexpr const char* FileName = "gamecontrollerdb.txt";
     std::error_code error;
-    if (!std::filesystem::exists(path, error)) {
+    if (!std::filesystem::exists(FileName, error)) {
         return;
     }
-    const int added = SDL_AddGamepadMappingsFromFile(path.c_str());
+    const int added = SDL_AddGamepadMappingsFromFile(FileName);
     if (added < 0) {
-        core::logWarning("could not read {}: {}", path.string(), SDL_GetError());
+        core::logWarning("could not read {}: {}", FileName, SDL_GetError());
     } else {
-        core::logInfo("loaded {} gamepad mappings from {}", added, path.string());
+        core::logInfo("loaded {} gamepad mappings from {}", added, FileName);
     }
 }
 

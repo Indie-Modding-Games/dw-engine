@@ -194,13 +194,14 @@ int lookUpNumber(lua_State* state) {
     }
 }
 
-// The message of a failed protected call, without converting the error object: a conversion could run Lua code.
-std::string_view errorMessage(lua_State* state) {
-    if (lua_type(state, -1) != LUA_TSTRING) {
+// The message of a failed protected call, at index on the stack, without converting the error object: a conversion
+// could run Lua code.
+std::string_view errorMessage(lua_State* state, int index = -1) {
+    if (lua_type(state, index) != LUA_TSTRING) {
         return "the error is not a string";
     }
     std::size_t length = 0;
-    const char* text = lua_tolstring(state, -1, &length);
+    const char* text = lua_tolstring(state, index, &length);
     return {text, length};
 }
 
@@ -235,9 +236,10 @@ struct ScriptVm::Impl {
         // Text only: precompiled bytecode is not checked by Lua and could break out of the sandbox.
         sol::protected_function_result result =
             lua.safe_script(source, sol::script_pass_on_error, std::string{name}, sol::load_mode::text);
+        // Not through sol::error: without exceptions, the MSVC library's std::runtime_error keeps only a pointer to
+        // the text it was built from, which is gone by the time what() reads it.
         if (!result.valid()) {
-            sol::error error = result;
-            return core::fail(error.what());
+            return core::fail(std::string{errorMessage(lua.lua_state(), result.stack_index())});
         }
         return {};
     }
