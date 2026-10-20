@@ -51,3 +51,5 @@ sustituido.
 | [0015](0015-desarrollo-en-contenedor.md) | Compilar dentro de un contenedor Docker | Aceptada |
 | [0016](0016-yaml-con-libyaml.md) | YAML con libyaml, envuelto en `core` | Aceptada |
 | [0017](0017-cocinado-y-archivos-pak.md) | Cocinado a KTX2 UASTC y Opus, y archivos `.pak` propios con zstd | Aceptada |
+| [0018](0018-shaders-slang-con-vcpkg.md) | Shaders en Slang compilados en el build con `slangc` de vcpkg | Aceptada |
+| [0019](0019-descriptores-bindless.md) | Un único set de descriptores bindless y datos por frame por dirección de buffer | Aceptada |

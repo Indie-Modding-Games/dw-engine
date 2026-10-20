@@ -9,6 +9,7 @@
 #include <dwe/input/input_state.hpp>
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
+#include <dwe/render/renderer.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/script/script_vm.hpp>
 
@@ -25,6 +26,8 @@
 #include <string_view>
 #include <variant>
 #include <vector>
+
+#include "test_scene.hpp"
 
 namespace {
 
@@ -46,9 +49,11 @@ struct Options {
     std::filesystem::path content = "content/base";
     // Set by --check-content: open every asset of the folder's packs and quit, without a window.
     bool checkContent = false;
+    // Development check: make and destroy a texture every frame (render.md).
+    bool textureChurn = false;
 };
 
-// Reads `dwe-game [--content <folder>] [--check-content <folder>]`.
+// Reads `dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn]`.
 std::optional<Options> parseOptions(std::span<char* const> arguments) {
     Options options;
     for (std::size_t index = 1; index < arguments.size(); ++index) {
@@ -56,8 +61,11 @@ std::optional<Options> parseOptions(std::span<char* const> arguments) {
         if ((argument == "--content" || argument == "--check-content") && index + 1 < arguments.size()) {
             options.content = arguments[++index];
             options.checkContent = options.checkContent || argument == "--check-content";
+        } else if (argument == "--texture-churn") {
+            options.textureChurn = true;
         } else {
-            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>] [--check-content <folder>]",
+            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>] [--check-content <folder>] "
+                           "[--texture-churn]",
                            argument);
             return std::nullopt;
         }
@@ -155,6 +163,17 @@ int run(const Options& options) {
         return EXIT_FAILURE;
     }
     (*debugUi)->mountContent(options.content);
+    auto renderer = render::Renderer::create(**device);
+    if (!renderer) {
+        core::logError("{}", renderer.error().message);
+        return EXIT_FAILURE;
+    }
+    // Until the field scene exists, the frame shows the render foundation's test scene.
+    auto testScene = app::TestScene::create(**renderer, options.textureChurn);
+    if (!testScene) {
+        core::logError("{}", testScene.error().message);
+        return EXIT_FAILURE;
+    }
     loadUserGamepadMappings();
 
     input::InputState input{input::defaultActionMap()};
@@ -171,7 +190,8 @@ int run(const Options& options) {
     core::FixedStep step{TickSeconds, MaxFrameSeconds};
     FpsCounter fps;
     std::vector<platform::Event> events;
-    double previous = platform->nowSeconds();
+    const double start = platform->nowSeconds();
+    double previous = start;
     bool running = true;
 
     while (running) {
@@ -214,15 +234,9 @@ int run(const Options& options) {
         }
         (*scripts)->reloadChanged();
 
-        // No frame means nothing to draw into, as with a window minimized to zero size. Sleep until something
-        // happens instead of spinning. A minimized window is not skipped up front: some drivers only finish the
-        // frames already presented when the next one is, and waiting on those first would never return.
-        auto frame = (*device)->beginFrame();
-        if (!frame) {
-            platform->waitForEvents(IdleWait);
-            continue;
-        }
-        (*device)->beginRendering(*frame, {.red = 0.08F, .green = 0.10F, .blue = 0.14F, .alpha = 1.0F});
+        (*testScene)->update(now - start);
+        const std::array<render::Drawer*, 1> sceneDrawers{&(*testScene)->sceneDrawer()};
+        const std::array<render::Drawer*, 1> uiDrawers{&(*testScene)->uiDrawer()};
         const debug::FrameStats stats{
             .framesPerSecond = fps.framesPerSecond,
             .frameMilliseconds = frameSeconds * 1000.0,
@@ -233,9 +247,18 @@ int run(const Options& options) {
             .y = static_cast<float>((*scripts)->number("marker.y").value_or(0.0)),
             .radius = static_cast<float>((*scripts)->number("marker.radius").value_or(0.0)),
         };
-        (*debugUi)->draw(*frame, stats, input, **scripts, marker);
-        (*device)->endRendering(*frame);
-        (*device)->endFrame(*frame);
+        const bool drawn = (*renderer)->renderFrame({
+            .clearColor = {0.08F, 0.10F, 0.14F, 1.0F},
+            .scene = sceneDrawers,
+            .ui = uiDrawers,
+            .overlay = [&](const rhi::Frame& frame) { (*debugUi)->draw(frame, stats, input, **scripts, marker); },
+        });
+        // No frame means nothing to draw into, as with a window minimized to zero size. Sleep until something
+        // happens instead of spinning. A minimized window is not skipped up front: some drivers only finish the
+        // frames already presented when the next one is, and waiting on those first would never return.
+        if (!drawn) {
+            platform->waitForEvents(IdleWait);
+        }
     }
     (*device)->waitIdle();
     return EXIT_SUCCESS;

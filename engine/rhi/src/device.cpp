@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
+#include <vk_mem_alloc.h>
 
 #include <array>
 #include <cstdint>
@@ -17,9 +18,6 @@
 
 namespace dwe::rhi {
 namespace {
-
-// Two frames in flight: the CPU records one while the GPU draws the other.
-constexpr std::size_t FramesInFlight = 2;
 
 // UNORM rather than SRGB, because the debug UI writes colors that are already in sRGB.
 constexpr VkSurfaceFormatKHR SwapchainFormat{.format = VK_FORMAT_B8G8R8A8_UNORM,
@@ -92,6 +90,7 @@ struct Device::Impl {
     vkb::Device device;
     VkQueue queue = VK_NULL_HANDLE;
     std::uint32_t queueFamily = 0;
+    VmaAllocator allocator = VK_NULL_HANDLE;
 
     vkb::Swapchain swapchain;
     std::vector<VkImage> images;
@@ -128,7 +127,10 @@ core::Result<void> Device::Impl::createSwapchain() {
     const platform::PixelSize size = window->pixelSize();
     vkb::SwapchainBuilder builder{device, surface};
     auto built =
-        builder.set_desired_format(SwapchainFormat)
+        builder
+            .set_desired_format(SwapchainFormat)
+            // Some drivers offer no BGRA format; the renderer handles both.
+            .add_fallback_format({.format = VK_FORMAT_R8G8B8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
             .set_desired_present_mode(vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR)
             .add_fallback_present_mode(VK_PRESENT_MODE_FIFO_KHR)
             .set_desired_extent(static_cast<std::uint32_t>(size.width), static_cast<std::uint32_t>(size.height))
@@ -206,6 +208,7 @@ Device::Impl::~Impl() {
     if (device.device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(device);
         destroyRetired(submittedFrames + 1);
+        vmaDestroyAllocator(allocator);
         for (FrameSlot& frame : frames) {
             vkDestroyFence(device, frame.finished, nullptr);
             vkDestroySemaphore(device, frame.imageAcquired, nullptr);
@@ -260,9 +263,29 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     features13.dynamicRendering = VK_TRUE;
     features13.synchronization2 = VK_TRUE;
 
+    // Descriptor indexing for the bindless texture table and buffer device addresses for per-frame data
+    // (docs/architecture/render.md).
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.descriptorIndexing = VK_TRUE;
+    features12.runtimeDescriptorArray = VK_TRUE;
+    features12.descriptorBindingPartiallyBound = VK_TRUE;
+    features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    features12.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features12.bufferDeviceAddress = VK_TRUE;
+    // Depth-only attachment layouts for the depth target.
+    features12.separateDepthStencilLayouts = VK_TRUE;
+    VkPhysicalDeviceFeatures features{};
+    features.samplerAnisotropy = VK_TRUE;
+
     vkb::PhysicalDeviceSelector selector{impl->instance};
-    auto physicalDevice =
-        selector.set_minimum_version(1, 3).set_required_features_13(features13).set_surface(impl->surface).select();
+    auto physicalDevice = selector.set_minimum_version(1, 3)
+                              .set_required_features(features)
+                              .set_required_features_12(features12)
+                              .set_required_features_13(features13)
+                              .set_surface(impl->surface)
+                              .select();
     if (!physicalDevice) {
         return core::fail(
             std::format("no GPU supports Vulkan 1.3 with this window: {}", physicalDevice.error().message()));
@@ -288,6 +311,16 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
     vkGetPhysicalDeviceSurfaceSupportKHR(impl->physicalDevice, impl->queueFamily, impl->surface, &canPresent);
     if (canPresent == VK_FALSE) {
         return core::fail("the graphics queue cannot present to the window");
+    }
+
+    VmaAllocatorCreateInfo allocatorInfo{};
+    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    allocatorInfo.instance = impl->instance;
+    allocatorInfo.physicalDevice = impl->physicalDevice;
+    allocatorInfo.device = impl->device;
+    if (vmaCreateAllocator(&allocatorInfo, &impl->allocator) != VK_SUCCESS) {
+        return core::fail("could not create the GPU memory allocator");
     }
 
     if (auto created = impl->createSwapchain(); !created) {
@@ -347,7 +380,8 @@ std::optional<Frame> Device::beginFrame() {
                 .image = impl.images[imageIndex],
                 .view = impl.views[imageIndex],
                 .extent = impl.swapchain.extent,
-                .imageIndex = imageIndex};
+                .imageIndex = imageIndex,
+                .slot = static_cast<std::uint32_t>(impl.frameIndex)};
     transitionImage(frame.commands, frame.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_NONE,
                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -451,6 +485,10 @@ bool Device::supportsBc7() const {
     return true;
 }
 
+VmaAllocator Device::allocator() const {
+    return impl_->allocator;
+}
+
 NativeHandles Device::nativeHandles() const {
     const Impl& impl = *impl_;
     return NativeHandles{
@@ -466,3 +504,17 @@ NativeHandles Device::nativeHandles() const {
 }
 
 } // namespace dwe::rhi
+
+#ifdef __has_feature
+#if __has_feature(address_sanitizer)
+// vk-bootstrap is a C++ library from vcpkg built without AddressSanitizer. Its copies of libc++ templates, such as
+// std::vector<std::string> growth, can win over the project's instrumented ones at link time; mixing the two leaves
+// the container annotations out of step and AddressSanitizer reports container overflows that are not there.
+// Container-overflow detection is therefore off in executables that link the device, which are the only ones that link
+// vk-bootstrap; everything else keeps it (docs/architecture/render.md). ASAN_OPTIONS still overrides this.
+// NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming,misc-use-internal-linkage)
+extern "C" const char* __asan_default_options() {
+    return "detect_container_overflow=0";
+}
+#endif
+#endif

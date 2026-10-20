@@ -9,6 +9,7 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(CTest)
 include(cmake/DweModule.cmake)
+include(cmake/DweShaders.cmake)
 
 if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)

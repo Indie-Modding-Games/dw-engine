@@ -14,6 +14,8 @@
       ]
     },
     "vk-bootstrap",
+    "vulkan-memory-allocator",
+    { "name": "shader-slang", "host": true },
     "lua",
     "sol2",
     "libyaml",

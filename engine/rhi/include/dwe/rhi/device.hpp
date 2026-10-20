@@ -5,12 +5,19 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 
+// VMA's allocator handle, declared as vk_mem_alloc.h does, so users of this header need not include VMA.
+VK_DEFINE_HANDLE(VmaAllocator)
+
 namespace dwe::rhi {
+
+// Two frames in flight: the CPU records one while the GPU draws the other.
+inline constexpr std::size_t FramesInFlight = 2;
 
 struct DeviceDesc {
     // Enables the Khronos validation layer when it is installed, and logs what it reports.
@@ -26,6 +33,9 @@ struct Frame {
     VkImageView view;
     VkExtent2D extent;
     std::uint32_t imageIndex;
+    // Which of the FramesInFlight slots records this frame. The GPU has finished the previous frame of the same slot,
+    // so per-frame resources indexed by it (such as the upload ring) are free to reuse.
+    std::uint32_t slot;
 };
 
 struct ClearColor {
@@ -83,6 +93,9 @@ public:
     [[nodiscard]] bool supportsBc7() const;
 
     [[nodiscard]] NativeHandles nativeHandles() const;
+
+    // The memory allocator (VMA) of the device's buffers and images.
+    [[nodiscard]] VmaAllocator allocator() const;
 
 private:
     struct Impl;

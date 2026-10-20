@@ -96,7 +96,7 @@ flowchart TB
 | Área | Elección | ADR |
 |---|---|---|
 | Lenguaje y build | C++26, CMake con presets, vcpkg | [0002](../adr/0002-cpp26.md) |
-| Render y plataforma | Vulkan 1.3 (vk-bootstrap; VMA desde la fase 2), shaders en Slang; SDL3 | [0003](../adr/0003-vulkan-y-sdl3.md) |
+| Render y plataforma | Vulkan 1.3 (vk-bootstrap, VMA, descriptores bindless), shaders en Slang compilados en el build con `slangc` de vcpkg; SDL3 | [0003](../adr/0003-vulkan-y-sdl3.md), [0018](../adr/0018-shaders-slang-con-vcpkg.md), [0019](../adr/0019-descriptores-bindless.md) |
 | Scripting | Lua 5.5 + sol2 | [0004](../adr/0004-lua-y-sol2.md) |
 | Entrada | SDL3 (teclado, ratón y mandos), con acciones y perfiles | [0014](../adr/0014-mandos-y-entrada.md) |
 | Entidades | EnTT | [0012](../adr/0012-ecs-con-entt.md) |

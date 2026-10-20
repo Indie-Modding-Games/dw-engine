@@ -6,7 +6,7 @@ engine/
 ├─ .github/
 │  ├─ workflows/            ci.yml (build, tests, formato, docs), release.yml
 │  └─ CODEOWNERS
-├─ cmake/                   funciones propias: dwe_add_module, warnings, sanitizers
+├─ cmake/                   funciones propias: dwe_add_module, dwe_add_shaders, warnings, sanitizers
 │  └─ toolchains/           compilador y biblioteca estándar de cada plataforma
 ├─ docs/                    esta documentación
 ├─ engine/                  módulos del motor
@@ -35,7 +35,7 @@ engine/
 │  ├─ game/                 el ejecutable del juego + launcher
 │  ├─ editor/               editor (Dear ImGui)
 │  └─ dwx/                  extract · validate · cook · pack
-├─ shaders/                 Slang → SPIR-V
+├─ shaders/                 módulos de Slang compartidos (cada módulo compila los suyos a SPIR-V)
 ├─ content/
 │  ├─ schemas/              JSON Schema de cada tipo (digimon, map, item, pack…)
 │  ├─ packs/                paquetes en texto creados por el equipo: datos, rulesets y Lua
@@ -63,7 +63,7 @@ Todos los módulos, del motor y del juego, tienen la misma forma:
 
 ```
 engine/render/
-├─ CMakeLists.txt           dwe_add_module(render DEPS core rhi assets)
+├─ CMakeLists.txt           dwe_add_module(render LAYER systems DEPS core rhi)
 ├─ README.md                qué hace el módulo y enlace a su página de documentación
 ├─ include/dwe/render/      API pública: lo único que ven los demás módulos
 ├─ src/                     implementación y headers privados
