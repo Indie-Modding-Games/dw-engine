@@ -683,7 +683,7 @@ core::Result<Extraction> extractStaticModel(const Disc& disc, const IsoFile& fil
         return std::unexpected{bytes.error()};
     }
     const auto door = doorModelOf(file.path);
-    const auto* const known = std::ranges::find(KnownScenes, file.path, &ModelScenes::model);
+    const auto known = std::ranges::find(KnownScenes, file.path, &ModelScenes::model);
     SceneReport report;
     std::vector<NamedScene> scenes;
     // Why the model has no scene, and whether that is all there is to know about its texture.
@@ -720,7 +720,7 @@ core::Result<Extraction> extractStaticModel(const Disc& disc, const IsoFile& fil
                                    "without an image",
                                    noScene, model->texturedPrimitives));
     }
-    const auto* const runtime = std::ranges::find(RuntimeTextures, file.path, &RuntimeTexture::model);
+    const auto runtime = std::ranges::find(RuntimeTextures, file.path, &RuntimeTexture::model);
     if (runtime != RuntimeTextures.end()) {
         model->notes.push_back(std::format("the texture changes as it is drawn: {}", runtime->change));
     }

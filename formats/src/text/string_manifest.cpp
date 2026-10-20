@@ -220,7 +220,7 @@ core::Result<std::optional<std::string>> readEntry(const StringBlock& block, std
 } // namespace
 
 std::optional<StringManifest> findStringManifest(std::string_view version) {
-    const auto* found = std::ranges::find(Manifests, version, &StringManifest::version);
+    const auto found = std::ranges::find(Manifests, version, &StringManifest::version);
     return found == Manifests.end() ? std::nullopt : std::optional{*found};
 }
 

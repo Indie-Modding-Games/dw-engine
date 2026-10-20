@@ -270,7 +270,7 @@ core::Result<ScriptText> decodeScriptText(std::span<const std::byte> bytes) {
             continue;
         }
         if (first < FirstGlyphByte) {
-            const auto* tag = std::ranges::find(ControlTags, first, &ControlTag::code);
+            const auto tag = std::ranges::find(ControlTags, first, &ControlTag::code);
             if (tag == ControlTags.end()) {
                 text += std::format("{{cell:{:02X}{:02X}}}", first, second);
             } else if (tag->parameter == Value) {
@@ -355,7 +355,7 @@ core::Result<std::vector<std::byte>> encodeScriptText(std::string_view text) {
             }
             appendCell(bytes, *value >> 8U, *value & 0xFFU);
         } else {
-            const auto* tag = std::ranges::find(ControlTags, token.name, &ControlTag::name);
+            const auto tag = std::ranges::find(ControlTags, token.name, &ControlTag::name);
             if (tag == ControlTags.end()) {
                 return core::fail(std::format("{{{}}} is not a tag of script text", token.name));
             }

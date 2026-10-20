@@ -43,7 +43,7 @@ std::string_view filenameOf(std::string_view path) {
 } // namespace
 
 std::optional<FileTableLocation> findFileTableLocation(std::string_view version) {
-    const auto* const found = std::ranges::find(FileTableLocations, version, &FileTableLocation::version);
+    const auto found = std::ranges::find(FileTableLocations, version, &FileTableLocation::version);
     if (found == FileTableLocations.end()) {
         return std::nullopt;
     }

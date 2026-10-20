@@ -201,7 +201,7 @@ constexpr std::uint8_t EndScript = 0xFF;
 constexpr std::uint8_t DataEnd = 0xFF;
 
 const OpcodeInfo* findOpcode(std::uint8_t code) {
-    const auto* found = std::ranges::find(Opcodes, code, &OpcodeInfo::code);
+    const auto found = std::ranges::find(Opcodes, code, &OpcodeInfo::code);
     return found == Opcodes.end() ? nullptr : &*found;
 }
 

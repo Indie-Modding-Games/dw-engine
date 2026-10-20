@@ -50,7 +50,7 @@ std::optional<std::uint32_t> fieldOf(const YamlNode& node, std::string_view key,
 } // namespace
 
 std::optional<FontLocation> findFontLocation(std::string_view version) {
-    const auto* found = std::ranges::find(FontLocations, version, &FontLocation::version);
+    const auto found = std::ranges::find(FontLocations, version, &FontLocation::version);
     return found == FontLocations.end() ? std::nullopt : std::optional{*found};
 }
 
