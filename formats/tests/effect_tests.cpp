@@ -345,13 +345,107 @@ TEST_CASE("the analysis binds every argument and types the whole data area") {
                                [](const EfeDataItem& item) { return item.kind == EfeDataKind::Unreferenced; }));
 }
 
-TEST_CASE("data no instruction addresses is reported, fill is not") {
+TEST_CASE("data nothing reaches is unused, not an issue; fill is fill") {
     SlotParts parts = sampleSlotParts();
     parts.data[static_cast<std::size_t>(layout::Fill)] = std::byte{0x42};
     const Decoded decoded = decodeSlot(parts);
-    REQUIRE(decoded.analysis.issues.size() == 1);
-    CHECK(decoded.analysis.issues.front().find("0x016b-0x016c") != std::string::npos);
-    CHECK(findItem(decoded.analysis, layout::Fill, EfeDataKind::Unreferenced) != nullptr);
+    CHECK(decoded.analysis.issues.empty());
+    const EfeDataItem* unused = findItem(decoded.analysis, layout::Fill, EfeDataKind::Unused);
+    REQUIRE(unused != nullptr);
+    CHECK(unused->size == 1);
+
+    const auto payload = efePayload(decoded.slot, decoded.header);
+    const auto text = dwe::core::emitYaml(efeScriptToYaml(payload, decoded.header, decoded.scripts, decoded.analysis));
+    REQUIRE_MESSAGE(text.has_value(), errorOf(text));
+    CHECK(text->find("kind: unused") != std::string::npos);
+    CHECK(text->find("bytes: \"42\"") != std::string::npos);
+    CHECK(text->find("reason: ") != std::string::npos);
+}
+
+namespace {
+
+// A slot whose only sub-op loads a CLUT row from Row at a colour index read from Index, which `computeIndex` writes;
+// the 6 bytes after the colours the index can reach are not fill.
+namespace clut {
+constexpr std::int16_t Index = 0x00;
+constexpr std::int16_t Row = 0x04;
+constexpr std::int16_t End = 0x30;
+} // namespace clut
+
+template <typename Write>
+Decoded decodeClutRowSlot(const Write& computeIndex) {
+    SlotParts parts = sampleSlotParts();
+    parts.data.assign(static_cast<std::size_t>(clut::End), std::byte{0x11});
+    std::fill_n(parts.data.begin(), 4, std::byte{0xCD});
+    ScriptWriter w{static_cast<std::uint32_t>(clut::End)};
+    computeIndex(w);
+    w.pushImmediate(10000);
+    w.pushImmediate(2);
+    w.pushAddress(base(clut::Row));
+    w.pushVariable(base(clut::Index), 4);
+    w.sub(80);
+    w.ret();
+    parts.startScript = w.words();
+    ScriptWriter init{static_cast<std::uint32_t>(clut::End + (parts.startScript.size() * 2))};
+    init.ret();
+    parts.initScript = init.words();
+    parts.subEffectCount = 0;
+    parts.spawnCount = 0;
+    return decodeSlot(parts);
+}
+
+constexpr unsigned Int32Row = 4;
+constexpr unsigned SetOperation = 0;
+constexpr unsigned ModuloOperation = 5;
+
+} // namespace
+
+TEST_CASE("a CLUT row at an index the scripts take modulo n spans the n rows it can start at") {
+    const Decoded decoded = decodeClutRowSlot([](ScriptWriter& w) {
+        w.loadVariable(instance(0), 4);
+        w.applyOperator(Int32Row, SetOperation, base(clut::Index));
+        w.loadImmediate(4);
+        w.applyOperator(Int32Row, ModuloOperation, base(clut::Index));
+    });
+    CHECK(decoded.analysis.issues.empty());
+    const EfeDataItem* row = findArgument(decoded.analysis, clut::Row, EfeArgKind::ClutRow);
+    REQUIRE(row != nullptr);
+    CHECK(row->size == 32 + (3 * 2));
+    CHECK(row->count == 4);
+    CHECK(row->bounded);
+    const EfeDataItem* rest =
+        findItem(decoded.analysis, static_cast<std::int16_t>(clut::Row + 38), EfeDataKind::Unused);
+    REQUIRE(rest != nullptr);
+    CHECK(rest->size == 6);
+
+    const auto payload = efePayload(decoded.slot, decoded.header);
+    const auto text = dwe::core::emitYaml(efeScriptToYaml(payload, decoded.header, decoded.scripts, decoded.analysis));
+    REQUIRE_MESSAGE(text.has_value(), errorOf(text));
+    CHECK(text->find("row_starts: 4") != std::string::npos);
+}
+
+TEST_CASE("a CLUT row at an index the scripts do not bound leaves the data after it unreferenced") {
+    // A write after the modulo, or a label between it and the push, loses the bound.
+    const auto check = [](const Decoded& decoded) {
+        const EfeDataItem* row = findArgument(decoded.analysis, clut::Row, EfeArgKind::ClutRow);
+        REQUIRE(row != nullptr);
+        CHECK(row->size == 0);
+        CHECK_FALSE(row->bounded);
+        CHECK(findItem(decoded.analysis, clut::Row, EfeDataKind::Unreferenced) != nullptr);
+        REQUIRE(decoded.analysis.issues.size() == 1);
+        CHECK(decoded.analysis.issues.front().find("no known end") != std::string::npos);
+    };
+    check(decodeClutRowSlot([](ScriptWriter& w) {
+        w.loadImmediate(4);
+        w.applyOperator(Int32Row, ModuloOperation, base(clut::Index));
+        w.loadImmediate(1);
+        w.applyOperator(Int32Row, 1, base(clut::Index));
+    }));
+    check(decodeClutRowSlot([](ScriptWriter& w) {
+        w.loadImmediate(4);
+        w.applyOperator(Int32Row, ModuloOperation, base(clut::Index));
+        w.jump(w.here() + 6);
+    }));
 }
 
 TEST_CASE("addresses outside the data area and lists without an end are issues, not crashes") {

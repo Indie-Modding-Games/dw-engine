@@ -162,6 +162,34 @@ private:
         return scripts_->instructions[*push].value;
     }
 
+    // How many values an index pushed from a variable can take, when the block that pushes it last wrote it with a
+    // modulo by an immediate (`load_immediate n` then `apply_operator variable modulo`): n, the indices 0 to n - 1.
+    // The dividend is taken as not negative; on the disc it is the instance's frame counter.
+    [[nodiscard]] std::optional<std::int32_t> moduloRange(std::optional<std::size_t> push) const {
+        const auto& instructions = scripts_->instructions;
+        if (!push || instructions[*push].opcode != EfeOpcode::PushVariable) {
+            return std::nullopt;
+        }
+        const EfeInstruction& pushed = instructions[*push];
+        for (std::size_t i = *push; i > 0 && !labels_.contains(instructions[i].offset); --i) {
+            const EfeInstruction& in = instructions[i - 1];
+            const bool writes = (in.opcode == EfeOpcode::ApplyOperator || in.opcode == EfeOpcode::PopToVariable ||
+                                 in.opcode == EfeOpcode::PushAddress) &&
+                                in.variable == pushed.variable;
+            if (in.opcode == EfeOpcode::Call || (writes && in.opcode != EfeOpcode::ApplyOperator)) {
+                return std::nullopt;
+            }
+            if (!writes) {
+                continue;
+            }
+            const bool modulo = in.op == EfeOperator::Modulo && in.width == pushed.width && i >= 2 &&
+                                !labels_.contains(in.offset) &&
+                                instructions[i - 2].opcode == EfeOpcode::LoadImmediate && instructions[i - 2].value > 0;
+            return modulo ? std::optional<std::int32_t>{instructions[i - 2].value} : std::nullopt;
+        }
+        return std::nullopt;
+    }
+
     void addItem(std::uint32_t from, std::int32_t offset, EfeDataItem item) {
         if (offset < 0 || static_cast<std::uint32_t>(offset) + item.size > dataEnd_ ||
             std::cmp_greater_equal(offset, dataEnd_)) {
@@ -226,6 +254,7 @@ private:
         }
         case ParentField: {
             const auto size = related();
+            item.bounded = size.has_value();
             if (size && std::ranges::contains(ParentFieldSizes, *size)) {
                 item.size = static_cast<std::uint32_t>(*size);
             }
@@ -233,6 +262,7 @@ private:
         }
         case Int32Array: {
             const auto count = related();
+            item.bounded = count.has_value();
             if (count && *count > 0) {
                 item.size = static_cast<std::uint32_t>(*count) * Int32Size;
             }
@@ -240,16 +270,22 @@ private:
         }
         case ClutColors: {
             const auto count = related();
+            item.bounded = count.has_value();
             if (count && *count >= 1 && *count <= MaxClutColors) {
                 item.size = static_cast<std::uint32_t>(*count) * ClutColorSize;
             }
             break;
         }
         case ClutRow: {
-            const auto index = related();
-            if (index) {
+            // BTL_addClutLoadPrim copies 32 bytes from the colours plus twice the index.
+            if (const auto index = related()) {
                 offset += *index * 2;
                 item.size = ClutRowSize;
+            } else if (const auto indices = moduloRange(args[arg.related])) {
+                item.size = ClutRowSize + (static_cast<std::uint32_t>(*indices - 1) * 2);
+                item.count = static_cast<std::int16_t>(*indices);
+            } else {
+                item.bounded = false;
             }
             break;
         }
@@ -260,6 +296,7 @@ private:
             const auto map = baseAddress(args[arg.related]);
             const auto tiles =
                 map && *map >= 0 ? reader_.bytes(static_cast<std::uint32_t>(*map), TileMapSize) : std::nullopt;
+            item.bounded = tiles.has_value();
             if (tiles) {
                 const auto highest = std::ranges::max(
                     *tiles | std::views::transform([](std::byte b) { return std::to_integer<std::uint32_t>(b); }));
@@ -272,6 +309,7 @@ private:
             break;
         case QuadCorner: {
             const auto semiTransparency = related();
+            item.bounded = semiTransparency.has_value();
             if (semiTransparency && *semiTransparency < 0) {
                 item.size = CornerSize;
             }
@@ -361,10 +399,16 @@ private:
         }
     }
 
+    // Bytes no item covers are unused: nothing else in the interpreter forms a data address. A read with no known end
+    // may run into the gaps after it, which stay unreferenced.
     void addGaps() {
         std::vector<bool> covered(dataEnd_, false);
+        std::optional<std::uint32_t> open;
         for (const EfeDataItem& item : items_) {
             std::fill_n(covered.begin() + item.offset, std::min(item.size, dataEnd_ - item.offset), true);
+            if (!item.bounded && (!open || item.offset < *open)) {
+                open = item.offset;
+            }
         }
         analysis_.data = items_;
         for (std::uint32_t at = 0; at < dataEnd_;) {
@@ -378,10 +422,18 @@ private:
                 fill = fill && reader_.u8(end) == std::to_integer<std::uint8_t>(EfeFill);
                 ++end;
             }
-            const auto kind = fill ? EfeDataKind::Fill : EfeDataKind::Unreferenced;
+            const bool reachable = !fill && open && *open <= at;
+            EfeDataKind kind = EfeDataKind::Unused;
+            if (fill) {
+                kind = EfeDataKind::Fill;
+            } else if (reachable) {
+                kind = EfeDataKind::Unreferenced;
+            }
             analysis_.data.push_back({.offset = at, .size = end - at, .kind = kind});
-            if (!fill) {
-                analysis_.issues.push_back(std::format("{:#06x}-{:#06x}: data that no instruction addresses", at, end));
+            if (reachable) {
+                analysis_.issues.push_back(std::format(
+                    "{:#06x}-{:#06x}: data that no instruction addresses, after a read at {:#06x} with no known end",
+                    at, end, *open));
             }
             at = end;
         }

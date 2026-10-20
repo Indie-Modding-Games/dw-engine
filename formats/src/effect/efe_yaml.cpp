@@ -19,7 +19,6 @@ using yaml::quoted;
 
 constexpr std::size_t TileMapColumns = 11;
 constexpr std::size_t TileMapRows = 9;
-constexpr std::size_t ClutRowColors = 16;
 constexpr std::size_t RibbonPointCount = 10;
 constexpr std::uint32_t ListEntrySize = 10;
 constexpr std::uint8_t FillByte = 0xCD;
@@ -370,10 +369,14 @@ private:
             break;
         case ClutRow: {
             if (item.size == 0) {
-                break; // the colour index is not a number the scripts push, so the row is not known
+                break; // the colour index is not a number the scripts push or bound, so the row is not known
+            }
+            if (item.count > 0) {
+                // The index is computed: the row starts at any of these colours, so all the rows span is listed.
+                node.set("row_starts", number(item.count));
             }
             YamlNode colors = YamlNode::sequence();
-            for (std::size_t i = 0; i < ClutRowColors; ++i) {
+            for (std::size_t i = 0; i < item.size / 2; ++i) {
                 colors.append(quoted(std::format("{:#06x}", halfAt(at + (static_cast<std::uint32_t>(i) * 2)))));
             }
             node.set("colors", std::move(colors));
@@ -447,6 +450,12 @@ private:
         case EfeDataKind::Fill:
             node.set("kind", YamlNode::scalar("fill"));
             node.set("size", number(item.size));
+            break;
+        case EfeDataKind::Unused:
+            node.set("kind", YamlNode::scalar("unused"));
+            node.set("size", number(item.size));
+            node.set("bytes", bytesText(item.offset, item.size));
+            node.set("reason", quoted(std::string{EfeUnusedReason}));
             break;
         case EfeDataKind::Unreferenced:
             node.set("kind", YamlNode::scalar("unreferenced"));
