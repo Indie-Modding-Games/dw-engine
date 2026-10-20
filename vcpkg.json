@@ -28,7 +28,8 @@
     "opus",
     "libopusenc",
     "ktx",
-    "entt"
+    "entt",
+    { "name": "rmlui", "default-features": false, "features": ["freetype"] }
   ],
   "default-features": ["validation"],
   "features": {

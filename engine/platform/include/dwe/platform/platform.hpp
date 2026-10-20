@@ -11,6 +11,7 @@
 
 union SDL_Event;
 struct SDL_Gamepad;
+struct SDL_Joystick;
 
 namespace dwe::platform {
 
@@ -43,11 +44,25 @@ public:
     // Seconds since the platform started, from a monotonic clock.
     [[nodiscard]] double nowSeconds() const;
 
+    // Plugs in a software gamepad of the given family, for tests and scripted runs without a physical one. It goes
+    // through the same path as a real gamepad: pollEvents reports it connected and reports its buttons and axes.
+    core::Result<GamepadId> attachVirtualGamepad(GamepadFamily family);
+
+    // Unplugs a gamepad made by attachVirtualGamepad.
+    void detachVirtualGamepad(GamepadId gamepad);
+
+    // Presses or releases a button of a virtual gamepad.
+    void setVirtualGamepadButton(GamepadId gamepad, GamepadButton button, bool down);
+
+    // Moves an axis of a virtual gamepad: -1 to 1 for sticks, 0 to 1 for triggers.
+    void setVirtualGamepadAxis(GamepadId gamepad, GamepadAxis axis, float value);
+
 private:
     Platform() = default;
 
     bool active_ = false;
     std::unordered_map<GamepadId, SDL_Gamepad*> gamepads_;
+    std::unordered_map<GamepadId, SDL_Joystick*> virtualGamepads_;
 };
 
 } // namespace dwe::platform

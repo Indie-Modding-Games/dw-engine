@@ -68,7 +68,15 @@ void InputState::handle(const Event& event) {
             state.buttons.fill(false);
             state.axes.fill(0.0F);
         }
-    } else if (std::holds_alternative<MouseMoved>(event)) {
+    } else if (const auto* moved = std::get_if<MouseMoved>(&event)) {
+        // Windows report the pointer again when they gain the focus, without the player touching the mouse: only
+        // a move away from the last position switches the prompts to the keyboard and mouse.
+        constexpr float MinTravel = 2.0F;
+        if (lastPointer_ && std::hypot(moved->x - lastPointer_->x, moved->y - lastPointer_->y) >= MinTravel) {
+            lastDevice_ = DeviceKind::KeyboardMouse;
+        }
+        lastPointer_ = *moved;
+    } else if (std::holds_alternative<MouseWheelMoved>(event)) {
         lastDevice_ = DeviceKind::KeyboardMouse;
     } else if (const auto* connected = std::get_if<GamepadConnected>(&event)) {
         if (findGamepad(connected->id) == nullptr) {

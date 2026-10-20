@@ -60,6 +60,10 @@ public:
     // The underlying state, for modules that register their own API.
     sol::state& lua();
 
+    // Gives the next call into Lua a full instruction budget. Modules that call Lua functions through lua() call it
+    // before each call, as call() does; otherwise their calls share what is left of the previous one's budget.
+    void startCall();
+
 private:
     struct Impl;
 

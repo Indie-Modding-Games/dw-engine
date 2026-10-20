@@ -338,4 +338,8 @@ sol::state& ScriptVm::lua() {
     return impl_->lua;
 }
 
+void ScriptVm::startCall() {
+    impl_->budget.reset();
+}
+
 } // namespace dwe::script

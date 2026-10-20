@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -85,6 +86,8 @@ private:
 
     std::unordered_set<std::string> pressedThisTick_;
     DeviceKind lastDevice_ = DeviceKind::KeyboardMouse;
+    // Where the pointer was last reported, to tell a real move from a report of where it already was.
+    std::optional<platform::MouseMoved> lastPointer_;
     platform::GamepadFamily lastGamepadFamily_ = platform::GamepadFamily::Generic;
     bool gamepadLost_ = false;
 };

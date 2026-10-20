@@ -45,6 +45,8 @@ public:
     // Adds a file, or replaces it if it exists. Folders exist as long as they hold a file.
     void addFile(const std::filesystem::path& file, std::span<const std::byte> bytes);
     void addFile(const std::filesystem::path& file, std::string_view text);
+    // Removes a file, if it exists.
+    void removeFile(const std::filesystem::path& file);
 
     [[nodiscard]] core::Result<std::vector<std::string>> listFiles(const std::filesystem::path& folder) const override;
     [[nodiscard]] core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override;

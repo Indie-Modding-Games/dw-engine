@@ -1,0 +1,61 @@
+/* The HUD: always shown over the game and never in the way of the pointer. */
+
+body {
+	pointer-events: none;
+}
+
+#minimap {
+	position: absolute;
+	right: 20dp;
+	top: 20dp;
+	padding: 10dp;
+	border-radius: 12dp;
+	background-color: #0d121ab8;
+	border: 1dp #2e3a4a;
+}
+
+#minimap-map {
+	position: relative;
+}
+
+.size-small #minimap-map { width: 140dp; height: 140dp; }
+.size-medium #minimap-map { width: 200dp; height: 200dp; }
+.size-large #minimap-map { width: 280dp; height: 280dp; }
+
+/* The game sets the frame's size and position so the map keeps its proportions inside the square. */
+#minimap-frame {
+	position: absolute;
+}
+
+#minimap-image {
+	width: 100%;
+	height: 100%;
+}
+
+.marker {
+	position: absolute;
+	width: 16dp;
+	height: 16dp;
+	margin-left: -8dp;
+	margin-top: -8dp;
+}
+
+#minimap-player {
+	image-color: #f0a73a;
+}
+
+#minimap-partner {
+	width: 12dp;
+	height: 12dp;
+	margin-left: -6dp;
+	margin-top: -6dp;
+	image-color: #5cc8ff;
+}
+
+#minimap-name {
+	margin-top: 6dp;
+	font-size: 14dp;
+	font-weight: bold;
+	text-align: center;
+	color: #c9d3de;
+}

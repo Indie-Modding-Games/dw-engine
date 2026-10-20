@@ -1,0 +1,64 @@
+/* The pause menu: a panel centred over the dimmed game. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #05080ca8;
+	/* Centres the panel without transforms, so the pointer hits where the layout says. */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#panel {
+	width: 440dp;
+	padding: 22dp 24dp 16dp 24dp;
+	border-radius: 14dp;
+	background-color: #151b24f0;
+	border: 1dp #2e3a4a;
+}
+
+#title {
+	font-size: 30dp;
+	font-weight: bold;
+	color: #f0a73a;
+	margin: 0 0 14dp 18dp;
+}
+
+.option .label {
+	display: inline;
+}
+
+.option .value {
+	float: right;
+	font-weight: bold;
+}
+
+.back {
+	margin-top: 12dp;
+	color: #9aa7b6;
+}
+
+#prompts {
+	margin-top: 18dp;
+	padding-top: 12dp;
+	border-top: 1dp #2e3a4a;
+	font-size: 15dp;
+	color: #9aa7b6;
+	text-align: right;
+}
+
+.prompt {
+	margin-left: 18dp;
+}
+
+/* Each page's list wraps around: up from the first entry goes to the last and down from the last to the first. */
+#continue { nav-up: #quit; }
+#quit { nav-down: #continue; }
+#minimap-visible { nav-up: #minimap-back; }
+#minimap-back { nav-down: #minimap-visible; }
+#display-mode { nav-up: #options-back; }
+#options-back { nav-down: #display-mode; }

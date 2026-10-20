@@ -42,7 +42,7 @@ sustituido.
 | [0006](0006-tres-repositorios.md) | Tres repositorios: código, diseño y arte | Propuesta |
 | [0007](0007-sin-excepciones.md) | Sin excepciones, con `std::expected` | Propuesta |
 | [0008](0008-headers-antes-que-modulos.md) | Headers ahora, módulos de C++ más adelante | Propuesta |
-| [0009](0009-rmlui.md) | RmlUi para la UI del juego | Propuesta |
+| [0009](0009-rmlui.md) | RmlUi para la UI del juego | Aceptada |
 | [0010](0010-reglas-propias-con-rulesets.md) | Reglas propias, organizadas en rulesets | Aceptada |
 | [0011](0011-politica-legal-de-assets.md) | "Trae tus propios datos" y política legal de assets | Propuesta |
 | [0012](0012-ecs-con-entt.md) | Entidades con EnTT | Aceptada |

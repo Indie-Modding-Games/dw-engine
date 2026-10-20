@@ -63,7 +63,16 @@ struct KeyChanged {
     bool repeat;
 };
 
+// The pointer's position over the window, in pixels of the drawable area (the same pixels as
+// Window::pixelSize()), from the top left.
 struct MouseMoved {
+    float x;
+    float y;
+};
+
+// The wheel turned: positive y is away from the player (scrolling up), positive x is to the right. In notches, which
+// may be fractional on precise touchpads.
+struct MouseWheelMoved {
     float x;
     float y;
 };
@@ -95,7 +104,8 @@ struct GamepadAxisMoved {
     float value;
 };
 
-using Event = std::variant<QuitRequested, FocusLost, WindowResized, KeyChanged, MouseMoved, MouseButtonChanged,
-                           GamepadConnected, GamepadDisconnected, GamepadButtonChanged, GamepadAxisMoved>;
+using Event =
+    std::variant<QuitRequested, FocusLost, WindowResized, KeyChanged, MouseMoved, MouseWheelMoved, MouseButtonChanged,
+                 GamepadConnected, GamepadDisconnected, GamepadButtonChanged, GamepadAxisMoved>;
 
 } // namespace dwe::platform

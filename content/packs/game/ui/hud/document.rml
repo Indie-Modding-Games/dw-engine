@@ -1,0 +1,20 @@
+<rml>
+<head>
+	<title>HUD</title>
+	<link type="text/rcss" href="../common/theme.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="minimap" class="size-medium">
+		<div id="minimap-map">
+			<div id="minimap-frame">
+				<img id="minimap-image"/>
+				<img id="minimap-partner" class="marker" src="generated:minimap_marker"/>
+				<img id="minimap-player" class="marker" src="generated:minimap_marker"/>
+			</div>
+		</div>
+		<div id="minimap-name"></div>
+	</div>
+</body>
+</rml>

@@ -54,6 +54,17 @@ TEST_CASE("gamepad buttons drive actions and switch the prompts to that gamepad"
     CHECK(input.lastGamepadFamily() == GamepadFamily::PlayStation);
 }
 
+TEST_CASE("only a real pointer move switches back to the keyboard and mouse") {
+    InputState input = withGamepad();
+    input.handle(MouseMoved{.x = 100.0F, .y = 50.0F});
+    input.handle(GamepadButtonChanged{.id = Pad, .button = GamepadButton::South, .down = true});
+    // The window reports the pointer where it was, as when it gains the focus.
+    input.handle(MouseMoved{.x = 100.0F, .y = 50.0F});
+    CHECK(input.lastDevice() == DeviceKind::Gamepad);
+    input.handle(MouseMoved{.x = 140.0F, .y = 50.0F});
+    CHECK(input.lastDevice() == DeviceKind::KeyboardMouse);
+}
+
 TEST_CASE("events of an unknown gamepad are ignored") {
     InputState input{defaultActionMap()};
     input.handle(GamepadButtonChanged{.id = Pad, .button = GamepadButton::South, .down = true});

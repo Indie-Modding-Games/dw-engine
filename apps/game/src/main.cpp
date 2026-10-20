@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -24,10 +25,12 @@
 #include <print>
 #include <span>
 #include <string_view>
+#include <system_error>
 #include <variant>
 #include <vector>
 
 #include "test_scene.hpp"
+#include "ui_demo.hpp"
 
 namespace {
 
@@ -51,25 +54,52 @@ struct Options {
     bool checkContent = false;
     // Development check: make and destroy a texture every frame (render.md).
     bool textureChurn = false;
+    // Runs the UI demo instead of the game, with these options.
+    bool uiDemo = false;
+    app::UiDemoOptions demo;
 };
 
-// Reads `dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn]`.
+constexpr std::string_view Usage = "dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn] "
+                                   "[--ui-demo [--map <id>] [--size <width>x<height>] [--virtual-gamepad <file>]]";
+
+// Reads `<width>x<height>`.
+bool parseSize(std::string_view text, app::UiDemoOptions& demo) {
+    const std::size_t separator = text.find('x');
+    if (separator == std::string_view::npos) {
+        return false;
+    }
+    const auto number = [](std::string_view digits, int& value) {
+        const auto [end, error] = std::from_chars(digits.data(), digits.data() + digits.size(), value);
+        return error == std::errc{} && end == digits.data() + digits.size() && value > 0;
+    };
+    return number(text.substr(0, separator), demo.width) && number(text.substr(separator + 1), demo.height);
+}
+
+// Reads the command line (Usage).
 std::optional<Options> parseOptions(std::span<char* const> arguments) {
     Options options;
     for (std::size_t index = 1; index < arguments.size(); ++index) {
         const std::string_view argument = arguments[index];
-        if ((argument == "--content" || argument == "--check-content") && index + 1 < arguments.size()) {
+        const bool hasValue = index + 1 < arguments.size();
+        if ((argument == "--content" || argument == "--check-content") && hasValue) {
             options.content = arguments[++index];
             options.checkContent = options.checkContent || argument == "--check-content";
         } else if (argument == "--texture-churn") {
             options.textureChurn = true;
+        } else if (argument == "--ui-demo") {
+            options.uiDemo = true;
+        } else if (argument == "--map" && hasValue) {
+            options.demo.map = arguments[++index];
+        } else if (argument == "--size" && hasValue && parseSize(arguments[index + 1], options.demo)) {
+            ++index;
+        } else if (argument == "--virtual-gamepad" && hasValue) {
+            options.demo.virtualGamepad = arguments[++index];
         } else {
-            core::logError("unknown argument '{}'; usage: dwe-game [--content <folder>] [--check-content <folder>] "
-                           "[--texture-churn]",
-                           argument);
+            core::logError("unknown argument '{}'; usage: {}", argument, Usage);
             return std::nullopt;
         }
     }
+    options.demo.content = options.content;
     return options;
 }
 
@@ -270,6 +300,9 @@ int main(int argc, char** argv) {
     const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
     if (!options) {
         return EXIT_FAILURE;
+    }
+    if (options->uiDemo) {
+        return app::runUiDemo(options->demo);
     }
     return options->checkContent ? checkContentFolder(options->content) : run(*options);
 }

@@ -33,6 +33,11 @@ public:
     // The size of the drawable area in pixels, which differs from the window size on high-density displays.
     [[nodiscard]] PixelSize pixelSize() const;
 
+    // Switches between the window and borderless fullscreen on its display. The new size arrives as a
+    // WindowResized event.
+    core::Result<void> setFullscreen(bool fullscreen);
+    [[nodiscard]] bool isFullscreen() const;
+
     [[nodiscard]] SDL_Window* sdlWindow() const { return window_; }
 
 private:

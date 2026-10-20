@@ -5,6 +5,8 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <format>
 #include <limits>
 #include <optional>
@@ -111,6 +113,54 @@ std::optional<MouseButton> mouseButtonOf(Uint8 button) {
     }
 }
 
+// The inverse of buttonOf: a virtual gamepad has SDL's buttons in SDL's order.
+int sdlButtonOf(GamepadButton button) {
+    constexpr std::array<SDL_GamepadButton, GamepadButtonCount> Buttons{
+        SDL_GAMEPAD_BUTTON_SOUTH,         SDL_GAMEPAD_BUTTON_EAST,           SDL_GAMEPAD_BUTTON_WEST,
+        SDL_GAMEPAD_BUTTON_NORTH,         SDL_GAMEPAD_BUTTON_BACK,           SDL_GAMEPAD_BUTTON_GUIDE,
+        SDL_GAMEPAD_BUTTON_START,         SDL_GAMEPAD_BUTTON_LEFT_STICK,     SDL_GAMEPAD_BUTTON_RIGHT_STICK,
+        SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_DPAD_UP,
+        SDL_GAMEPAD_BUTTON_DPAD_DOWN,     SDL_GAMEPAD_BUTTON_DPAD_LEFT,      SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
+    };
+    return Buttons.at(static_cast<std::size_t>(button));
+}
+
+int sdlAxisOf(GamepadAxis axis) {
+    constexpr std::array<SDL_GamepadAxis, GamepadAxisCount> Axes{
+        SDL_GAMEPAD_AXIS_LEFTX,  SDL_GAMEPAD_AXIS_LEFTY,        SDL_GAMEPAD_AXIS_RIGHTX,
+        SDL_GAMEPAD_AXIS_RIGHTY, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
+    };
+    return Axes.at(static_cast<std::size_t>(axis));
+}
+
+struct UsbIds {
+    Uint16 vendor;
+    Uint16 product;
+};
+
+UsbIds virtualGamepadIds(GamepadFamily family) {
+    switch (family) {
+    case GamepadFamily::Xbox:
+        return {.vendor = 0x045E, .product = 0x0B12}; // Xbox Series controller
+    case GamepadFamily::PlayStation:
+        return {.vendor = 0x054C, .product = 0x0CE6}; // DualSense
+    case GamepadFamily::Nintendo:
+        return {.vendor = 0x057E, .product = 0x2009}; // Switch Pro Controller
+    case GamepadFamily::Steam:
+        return {.vendor = ValveVendorId, .product = 0x1205}; // Steam Deck
+    case GamepadFamily::Generic:
+        break;
+    }
+    return {.vendor = 0, .product = 0};
+}
+
+// How many drawable pixels one window coordinate covers in a window; 1 when the window is unknown.
+float pixelDensity(SDL_WindowID id) {
+    SDL_Window* window = SDL_GetWindowFromID(id);
+    const float density = window != nullptr ? SDL_GetWindowPixelDensity(window) : 0.0F;
+    return density > 0.0F ? density : 1.0F;
+}
+
 // SDL reports axes as 16-bit integers; the engine uses -1 to 1 for sticks and 0 to 1 for triggers.
 float normalizedAxis(Sint16 value) {
     return std::max(static_cast<float>(value) / static_cast<float>(SDL_JOYSTICK_AXIS_MAX), -1.0F);
@@ -133,11 +183,13 @@ core::Result<Platform> Platform::create() {
 }
 
 Platform::Platform(Platform&& other) noexcept
-    : active_{std::exchange(other.active_, false)}, gamepads_{std::move(other.gamepads_)} {}
+    : active_{std::exchange(other.active_, false)}, gamepads_{std::move(other.gamepads_)},
+      virtualGamepads_{std::move(other.virtualGamepads_)} {}
 
 Platform& Platform::operator=(Platform&& other) noexcept {
     std::swap(active_, other.active_);
     std::swap(gamepads_, other.gamepads_);
+    std::swap(virtualGamepads_, other.virtualGamepads_);
     return *this;
 }
 
@@ -147,6 +199,10 @@ Platform::~Platform() {
     }
     for (const auto& [id, gamepad] : gamepads_) {
         SDL_CloseGamepad(gamepad);
+    }
+    for (const auto& [id, joystick] : virtualGamepads_) {
+        SDL_CloseJoystick(joystick);
+        SDL_DetachVirtualJoystick(id);
     }
     SDL_Quit();
 }
@@ -177,9 +233,17 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
             events.emplace_back(KeyChanged{
                 .key = static_cast<KeyCode>(event.key.scancode), .down = event.key.down, .repeat = event.key.repeat});
             break;
-        case SDL_EVENT_MOUSE_MOTION:
-            events.emplace_back(MouseMoved{.x = event.motion.x, .y = event.motion.y});
+        case SDL_EVENT_MOUSE_MOTION: {
+            // SDL reports the pointer in window coordinates, which are not pixels on high-density displays.
+            const float density = pixelDensity(event.motion.windowID);
+            events.emplace_back(MouseMoved{.x = event.motion.x * density, .y = event.motion.y * density});
             break;
+        }
+        case SDL_EVENT_MOUSE_WHEEL: {
+            const float sign = event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -1.0F : 1.0F;
+            events.emplace_back(MouseWheelMoved{.x = event.wheel.x * sign, .y = event.wheel.y * sign});
+            break;
+        }
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
             if (auto button = mouseButtonOf(event.button.button)) {
@@ -237,6 +301,55 @@ void Platform::rumble(GamepadId gamepad, float low, float high, std::chrono::mil
                                    static_cast<float>(std::numeric_limits<Uint16>::max()));
     };
     SDL_RumbleGamepad(found->second, strength(low), strength(high), static_cast<Uint32>(duration.count()));
+}
+
+core::Result<GamepadId> Platform::attachVirtualGamepad(GamepadFamily family) {
+    DWE_ASSERT(active_);
+    SDL_VirtualJoystickDesc desc;
+    SDL_INIT_INTERFACE(&desc);
+    desc.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+    desc.naxes = SDL_GAMEPAD_AXIS_COUNT;
+    desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT;
+    // SDL tells the families apart by USB ids, so the virtual gamepad borrows those of a common model of each.
+    const auto [vendor, product] = virtualGamepadIds(family);
+    desc.vendor_id = vendor;
+    desc.product_id = product;
+    desc.name = "dwe virtual gamepad";
+    const SDL_JoystickID id = SDL_AttachVirtualJoystick(&desc);
+    if (id == 0) {
+        return core::fail(std::format("could not attach a virtual gamepad: {}", SDL_GetError()));
+    }
+    SDL_Joystick* joystick = SDL_OpenJoystick(id);
+    if (joystick == nullptr) {
+        SDL_DetachVirtualJoystick(id);
+        return core::fail(std::format("could not open the virtual gamepad: {}", SDL_GetError()));
+    }
+    virtualGamepads_[id] = joystick;
+    return id;
+}
+
+void Platform::detachVirtualGamepad(GamepadId gamepad) {
+    auto found = virtualGamepads_.find(gamepad);
+    if (found == virtualGamepads_.end()) {
+        return;
+    }
+    SDL_CloseJoystick(found->second);
+    SDL_DetachVirtualJoystick(gamepad);
+    virtualGamepads_.erase(found);
+}
+
+void Platform::setVirtualGamepadButton(GamepadId gamepad, GamepadButton button, bool down) {
+    if (auto found = virtualGamepads_.find(gamepad); found != virtualGamepads_.end()) {
+        SDL_SetJoystickVirtualButton(found->second, sdlButtonOf(button), down);
+    }
+}
+
+void Platform::setVirtualGamepadAxis(GamepadId gamepad, GamepadAxis axis, float value) {
+    if (auto found = virtualGamepads_.find(gamepad); found != virtualGamepads_.end()) {
+        const float limited = std::clamp(value, -1.0F, 1.0F);
+        SDL_SetJoystickVirtualAxis(found->second, sdlAxisOf(axis),
+                                   static_cast<Sint16>(limited * static_cast<float>(SDL_JOYSTICK_AXIS_MAX)));
+    }
 }
 
 double Platform::nowSeconds() const {

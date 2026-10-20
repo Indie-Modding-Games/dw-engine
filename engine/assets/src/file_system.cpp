@@ -86,6 +86,10 @@ void MemoryFileSystem::addFile(const std::filesystem::path& file, std::string_vi
     addFile(file, std::as_bytes(std::span{text}));
 }
 
+void MemoryFileSystem::removeFile(const std::filesystem::path& file) {
+    files_.erase(keyOf(file));
+}
+
 core::Result<std::vector<std::string>> MemoryFileSystem::listFiles(const std::filesystem::path& folder) const {
     const std::string prefix = keyOf(folder) + '/';
     std::vector<std::string> files;

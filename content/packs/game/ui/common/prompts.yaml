@@ -1,0 +1,104 @@
+# Nombres de los controles en los avisos de botones (docs/architecture/ui.md). El motor solo nombra el control
+# (`key:enter`, `gamepad:south`); el texto que ve el jugador está aquí, como el de los menús. Las letras, las cifras y
+# las teclas F1 a F12 sin nombre aquí se muestran tal cual ("A", "7", "F5").
+keys:
+  enter: Intro
+  keypad_enter: Intro
+  escape: Esc
+  backspace: Retroceso
+  tab: Tab
+  space: Espacio
+  minus: "-"
+  equals: "="
+  left_bracket: "["
+  right_bracket: "]"
+  backslash: "\\"
+  semicolon: ";"
+  apostrophe: "'"
+  grave: "`"
+  comma: ","
+  period: "."
+  slash: "/"
+  caps_lock: Bloq Mayús
+  insert: Insert
+  home: Inicio
+  page_up: Re Pág
+  delete: Supr
+  end: Fin
+  page_down: Av Pág
+  up: Arriba
+  down: Abajo
+  left: Izquierda
+  right: Derecha
+  left_ctrl: Ctrl izq.
+  right_ctrl: Ctrl der.
+  left_shift: Mayús izq.
+  right_shift: Mayús der.
+  left_alt: Alt
+  right_alt: Alt Gr
+mouse:
+  left: Clic izquierdo
+  middle: Clic central
+  right: Clic derecho
+  back: Ratón atrás
+  forward: Ratón adelante
+# Los botones que se llaman igual en todos los mandos. Los demás (caras, Start, Back, bumpers) los nombra cada familia.
+gamepad:
+  guide: Inicio
+  dpad_up: Cruceta arriba
+  dpad_down: Cruceta abajo
+  dpad_left: Cruceta izquierda
+  dpad_right: Cruceta derecha
+  left_stick: Stick izquierdo
+  right_stick: Stick derecho
+  left_stick_click: Pulsar stick izquierdo
+  right_stick_click: Pulsar stick derecho
+  left_trigger: Gatillo izquierdo
+  right_trigger: Gatillo derecho
+# Por posición: south es el botón de abajo, east el de la derecha. En los mandos de Nintendo el de abajo se llama B.
+families:
+  generic:
+    south: A
+    east: B
+    west: X
+    north: Y
+    start: Start
+    back: Select
+    left_shoulder: LB
+    right_shoulder: RB
+  xbox:
+    south: A
+    east: B
+    west: X
+    north: Y
+    start: Menú
+    back: Vista
+    left_shoulder: LB
+    right_shoulder: RB
+  steam:
+    south: A
+    east: B
+    west: X
+    north: Y
+    start: Menú
+    back: Vista
+    left_shoulder: LB
+    right_shoulder: RB
+  playstation:
+    south: Cruz
+    east: Círculo
+    west: Cuadrado
+    north: Triángulo
+    start: Options
+    back: Create
+    left_shoulder: L1
+    right_shoulder: R1
+  nintendo:
+    south: B
+    east: A
+    west: "Y"
+    north: X
+    start: "+"
+    back: "-"
+    left_shoulder: L
+    right_shoulder: R

@@ -35,4 +35,15 @@ PixelSize Window::pixelSize() const {
     return size;
 }
 
+core::Result<void> Window::setFullscreen(bool fullscreen) {
+    if (!SDL_SetWindowFullscreen(window_, fullscreen)) {
+        return core::fail(std::format("could not change the window mode: {}", SDL_GetError()));
+    }
+    return {};
+}
+
+bool Window::isFullscreen() const {
+    return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
+}
+
 } // namespace dwe::platform
