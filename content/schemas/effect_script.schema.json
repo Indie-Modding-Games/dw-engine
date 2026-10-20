@@ -67,7 +67,7 @@
       "additionalProperties": false,
       "properties": {
         "at": { "$ref": "#/$defs/offset" },
-        "kind": { "type": "string", "enum": ["instances", "variable", "table", "fill", "unreferenced", "address", "int32", "vector", "color", "bone_offsets", "uv_keyframes", "parent_field", "int32_array", "clut_colors", "clut_row", "tile_map", "tile_offsets", "parallax_sprites", "ribbon_points", "quad_corner"] },
+        "kind": { "type": "string", "enum": ["instances", "variable", "table", "fill", "unused", "unreferenced", "address", "int32", "vector", "color", "bone_offsets", "uv_keyframes", "parent_field", "int32_array", "clut_colors", "clut_row", "tile_map", "tile_offsets", "parallax_sprites", "ribbon_points", "quad_corner"] },
         "count": { "type": "integer", "minimum": 0 },
         "stride": { "type": "integer", "minimum": 0 },
         "free": { "type": "boolean" },
@@ -77,6 +77,8 @@
         "values": { "$ref": "#/$defs/values" },
         "bytes": { "$ref": "#/$defs/bytes" },
         "tail": { "description": "Bytes after the last whole entry of a table.", "$ref": "#/$defs/bytes" },
+        "reason": { "description": "unused: why nothing reaches these bytes (docs/formats/efectos.md).", "type": "string", "minLength": 1 },
+        "row_starts": { "description": "clut_row with a computed colour index: how many colours the row can start at; colors lists every colour those rows span.", "type": "integer", "minimum": 1 },
         "colors": { "type": "array", "items": { "type": ["array", "string"], "items": { "$ref": "#/$defs/value" }, "pattern": "^0x[0-9a-f]{4}$" } },
         "tiles": { "type": "array", "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } } },
         "points": { "$ref": "#/$defs/rows" },
