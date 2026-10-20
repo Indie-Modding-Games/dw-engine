@@ -13,6 +13,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -151,8 +152,10 @@ void noteDataRanges(const Disc& disc, std::span<const std::byte> file, const Ove
                 continue;
             }
             const auto bytes = file.subspan(part.begin, part.size());
-            const auto differ = std::ranges::count_if(std::views::iota(std::size_t{0}, part.size()),
-                                                      [&](std::size_t i) { return bytes[i] != (*copy)[i]; });
+            // Counted over the two byte spans: the MSVC STL counts an iota of std::size_t in a 128-bit integer that
+            // std::format cannot print.
+            const auto differ = std::ranges::count_if(
+                std::views::zip(bytes, *copy), [](const auto& pair) { return std::get<0>(pair) != std::get<1>(pair); });
             note += differ == 0
                         ? std::format("; same bytes as the executable's copy at 0x{:08X}", data.executableAddress)
                         : std::format("; {} of its bytes differ from the executable's copy at 0x{:08X}", differ,
