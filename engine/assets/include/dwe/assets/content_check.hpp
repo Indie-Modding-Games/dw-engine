@@ -24,7 +24,8 @@ struct ContentProblem {
     std::string message;
 };
 
-// Reads the file that wins for every asset of the stack and opens it with openAsset. Returns the problems, by id.
+// Reads the file that wins for every asset of the stack and opens it with openAsset, several assets at a time, so the
+// file systems of the packs are read from several threads. Returns the problems, by id.
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem);
 
 } // namespace dwe::assets

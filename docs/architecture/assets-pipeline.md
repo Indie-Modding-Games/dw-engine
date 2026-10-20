@@ -162,8 +162,9 @@ con 0 si no hay problemas, 1 si los hay y 2 si no se puede comprobar (no hay paq
 
 Con el disco US, recién extraído: 1 paquete, 4801 assets, 2074 documentos, 9259 referencias, 178 contratos y ningún
 problema. El test del disco (`DWE_DISC`, en `apps/dwx/tests/real_disc_tests.cpp`) extrae, valida y abre el paquete
-base con el mismo resultado; sin disco se salta. En el build `ci` tarda alrededor de dos minutos, casi todo en
-descomprimir los 1530 PNG.
+base con el mismo resultado; sin disco se salta. En el build `ci`, `dwx validate` sobre ese paquete tarda alrededor de
+un minuto: abrir los assets (`checkContent`, que los reparte entre hilos, como mucho 16) son unos 10 s y el resto es
+comprobar los documentos contra sus esquemas, en un hilo.
 
 Sin disco, en CI, los tests de los extractores que montan un disco sintético (imágenes, mapas, tablas, sonido y
 scripts) escriben el paquete base de lo extraído y lo pasan por `validatePacks` con los esquemas de `content/schemas`

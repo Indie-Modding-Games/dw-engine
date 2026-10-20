@@ -4,8 +4,12 @@
 #include <dwe/assets/model.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <algorithm>
 #include <array>
+#include <atomic>
 #include <format>
+#include <optional>
+#include <thread>
 #include <utility>
 
 namespace dwe::assets {
@@ -13,6 +17,9 @@ namespace dwe::assets {
 namespace {
 
 using Opener = core::Result<void> (*)(std::span<const std::byte>);
+
+// The most threads the check uses. Assets are independent, so they are opened in parallel.
+constexpr unsigned MaxThreads = 16;
 
 // Turns the result of a reader into success or its error, dropping what it read.
 template <auto Reader>
@@ -54,18 +61,39 @@ core::Result<void> openAsset(std::string_view extension, std::span<const std::by
 }
 
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
-    std::vector<ContentProblem> problems;
-    for (const AssetId& id : fileSystem.ids()) {
-        const AssetSource* source = fileSystem.resolve(id);
-        const std::string file = pathText(source->file);
-        auto bytes = fileSystem.read(id);
-        if (!bytes) {
-            problems.push_back({.id = id, .file = file, .message = bytes.error().message});
-            continue;
+    const std::vector<AssetId> ids = fileSystem.ids();
+    std::vector<std::optional<ContentProblem>> found(ids.size());
+    std::atomic<std::size_t> next{0};
+    const auto worker = [&] {
+        for (std::size_t i = next++; i < ids.size(); i = next++) {
+            const AssetSource* source = fileSystem.resolve(ids[i]);
+            auto bytes = fileSystem.read(ids[i]);
+            if (!bytes) {
+                found[i] =
+                    ContentProblem{.id = ids[i], .file = pathText(source->file), .message = bytes.error().message};
+                continue;
+            }
+            const std::string extension = source->file.extension().string();
+            const auto opened = openAsset(std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
+            if (!opened) {
+                found[i] =
+                    ContentProblem{.id = ids[i], .file = pathText(source->file), .message = opened.error().message};
+            }
         }
-        const std::string extension = source->file.extension().string();
-        if (auto opened = openAsset(std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes); !opened) {
-            problems.push_back({.id = id, .file = file, .message = opened.error().message});
+    };
+    const unsigned count = std::clamp(std::thread::hardware_concurrency(), 1U, MaxThreads);
+    std::vector<std::thread> threads;
+    for (unsigned i = 1; i < count; ++i) {
+        threads.emplace_back(worker);
+    }
+    worker();
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    std::vector<ContentProblem> problems;
+    for (auto& problem : found) {
+        if (problem) {
+            problems.push_back(std::move(*problem));
         }
     }
     return problems;
