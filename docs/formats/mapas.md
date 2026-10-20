@@ -178,6 +178,90 @@ disparadores (`tamer.c: checkMapInteraction`): 51–79 llaman a un script al pis
 script si el compañero tiene el bit 8 de `condition` (probablemente, que necesita el baño).
 En el US solo aparecen 0, 51–86, 110–116, 120 y 128.
 
+## Cómo se dibuja
+
+Lo que hace el original para dibujar un mapa de campo, que es la especificación del render de mapas del motor
+([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [`engine/render`](../../engine/render/README.md)).
+`W` y `H` son el ancho y el alto del fondo en tiles de 128 píxeles.
+
+### Cámara
+
+- La cámara de un mapa **no se mueve**. `map.c: loadMapSetup` llena `GS_VIEWPOINT` con el punto de vista y el de
+  referencia del fichero **multiplicados por 2** (`<< 1`), y llama a `GsSetProjection` con la distancia de proyección
+  tal cual. `rz` y `super` valen 0 y el plano cercano es 100 (`main.c: view_init`). El bucle del juego vuelve a aplicar
+  la misma vista cada fotograma; solo el modo versus mueve la cámara.
+- La vista de `GsSetRefView2` mira de `vp` a `vr` sin giro sobre su eje: es un *look-at* con la Y del original
+  (hacia abajo) como "abajo" de la pantalla. En el mundo del motor es el *look-at* de siempre con +Y arriba.
+- La pantalla es de 320 × 240 sin entrelazar (`GsInitGraph(320, 240, ...)`), con píxeles cuadrados para el cálculo:
+  la misma `H` vale en los dos ejes. La GTE proyecta con desplazamiento 0 (`sx = H · Xv / Zv`, `sy = H · Yv / Zv`)
+  y el centro de la pantalla lo pone el desplazamiento de dibujo de la GPU (`GsSetOrign`).
+
+### Fondo y desplazamiento
+
+- Los tiles del `.TFS` se dibujan como `POLY_FT4` de 128 × 128 en la última posición de la tabla de orden (`0xFFF`):
+  detrás de todo (`map.c: renderMap`, `setPosDataMapTile`). Una celda vacía (−1) sale negra.
+- `map.c: setupMap`, `initializeDrawingOffsets`, `tickCameraFollowPlayer` y `updateDrawingOffsets` mueven a la vez
+  la esquina visible del fondo (`cameraX`, `cameraY`) y el desplazamiento de dibujo, y siempre mantienen
+  `cameraX + DRAW_X = W · 64` y `cameraY + DRAW_Y = H · 64`. De ahí sale la relación exacta entre el mundo y el fondo:
+
+  ```
+  píxel del fondo = (sx + W · 64, sy + H · 64)
+  ```
+
+  Es decir: el punto de referencia `vr` cae en el centro del fondo, y el fondo entero es la imagen de **una sola
+  cámara fija** con su centro óptico en el centro del fondo. La pantalla es una ventana de 320 × 240 sobre esa imagen;
+  moverla desplaza igual el fondo, los sprites y los modelos (para los modelos es un desplazamiento del centro óptico,
+  no un giro de la cámara).
+- La ventana sigue al jugador sin zona muerta ni suavizado:
+  `cameraX = clamp(W · 64 + sx(jugador) − 160, 0, W · 128 − 320)`, y lo mismo en Y con 120 y 240. Solo se mueve
+  mientras el jugador anda con la cruceta; los scripts la mueven con `moveCameraByDiff` y `createCameraMovement`.
+  El original aplica el desplazamiento un fotograma tarde, sin que se desalineen fondo y modelos.
+
+### Capas de profundidad
+
+- Los sprites del mapa (`LOCAL_MAP_OBJECTS`) son recortes del fondo que se vuelven a dibujar **por delante** de los
+  modelos que pasan por detrás. `someX`, `someY` y `someZ` son un punto del mundo (en las unidades del fichero, sin
+  doblar) que solo sirve para su profundidad.
+- `overworld.c: calcMapObjectOrder` calcula una vez, al cargar el mapa, la posición de cada instancia en la tabla de
+  orden: proyecta el punto del primer sprite válido de sus fotogramas y toma `orderValue = SZ >> 4`, entre `0x23` y
+  `0xFF6` (`0x1000` o más da `0xFF6`); si `someY` es 10 000 da `0xFFE` (justo delante del fondo), y las instancias con
+  el bit `0x80` dan `0x1E`.
+- Los modelos se ordenan por polígono (`GsSortObject4J` con desplazamiento 2 y `ZSF4 = 0x100`): su posición es
+  `SZ medio >> 4`. Un índice mayor se dibuja antes. Un sprite tapa un polígono cuando
+  `SZ medio >> 4 > orderValue`: el sprite equivale a un plano a la distancia `orderValue · 16` de la cámara.
+- `overworld.c: renderMapOverlays` dibuja cada instancia visible (`flag` distinto de 1) en `inst.x − cameraX`,
+  `inst.y − cameraY`, con el tamaño del sprite, y avanza su animación una vez por fotograma del juego (el campo va a
+  20 fotogramas por segundo: `VSync(3)` en `main.c: gameLoop`). Un fotograma −2 no dibuja nada pero cuenta su tiempo.
+  Las instancias ocultas también avanzan. El bit `0x80` (nieve, en unos pocos mapas) dibuja en coordenadas de
+  pantalla con posiciones aleatorias.
+- Textura (`overworld.c: buildMapOverlayPrim`): la página es `384 + (texX / 256) · 128` en VRAM para 8 bits y
+  `384 + (texX / 256) · 64` para 4 bits, con `u = texX % 256`, `v = texY`. La paleta:
+  - `clut` −1: la fila 480, es decir, la paleta del fondo que toca por la hora;
+  - `clut` 0–15: la fila `clut` de la CLUT del **primer** TIM de 4 bits, que `loadMapImage2` sube por filas a
+    `(fila · 16, 486)`; las CLUT de los demás TIM de 4 bits no se suben;
+  - `clut` 16 o más: la fila `clut + 468` de VRAM. Ahí está la CLUT de un TIM de 8 bits que vaya a esa fila
+    (`loadMapImage1` sube todas menos las de la fila 480, que manda el `.TFS`) o, si no, la paleta `clut − 13` del
+    `.TFS` (la fila `481 + i`).
+- `transparency` 4 es opaco; 0–3 son los modos semitransparentes de la consola (media, suma, resta, suma de un
+  cuarto), que solo afectan a los colores con el bit STP (`renderMapOverlays` marca la primitiva semitransparente
+  cuando no es 4). El color `0x0000` no se dibuja nunca. En los `.TFS` del US 71 de 242 tienen colores con STP (en
+  `twna01`, 506 de los 768 de sus tres paletas; en `room08`, ninguno). El truco habitual es el negro `0x8000` (negro
+  con STP) alrededor del recorte en modo suma: sumar negro no cambia nada, así que el recorte no tiene borde.
+- El motor guarda el STP en el alfa (`colorFromOriginal`: 128 con STP, 255 sin él, 0 para `0x0000`) y dibuja un
+  sprite semitransparente en dos pasadas, sus texels sin STP opacos y los que lo tienen con su mezcla. Las paletas
+  del `.TFS` llegan como PNG, que no guarda el STP; el único color que se puede recuperar es el negro opaco, que solo
+  puede ser `0x8000` (`paletteFromPng`). Con eso los sprites con `clut` −1 salen exactos en 97 de los 100 mapas del
+  US que los tienen semitransparentes; en `fact11a`, `gias06b` y `miha01` las paletas tienen además otros colores con
+  STP que hoy se dibujan opacos, hasta que `dwx` guarde las paletas del `.TFS` con su bit STP.
+
+### Hora del día
+
+`map.c: updateTimeOfDay`: de 6:00 a 15:59 la paleta 0 (día), de 16:00 a 19:59 la 1 (atardecer) y el resto la 2
+(noche); al atardecer las luces pierden un 30 % de verde y azul y de noche la mitad de todo. Los mapas de hora fija
+(`0x40`) usan siempre la 0 y no tocan las luces. El cambio de paleta es un fundido de 25 fotogramas
+(`map.c: tickDaytimeTransition`); las luces cambian de golpe al final. `light_updates` en `data/maps` dice qué
+instancias se ven solo de día o solo de noche (`utils2.c: updateMapLightState`).
+
 ## Comprobación con el disco
 
 Con `DWE_EXE_SAMPLE` y `DWE_MAP_DIR` (la carpeta `MAP` del disco US), `formats/tests/real_data_tests.cpp` lee todas las

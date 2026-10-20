@@ -2,6 +2,7 @@ dwe_add_app(game
     LAYER apps
     SOURCES
         src/main.cpp
+        src/map_preview.cpp
         src/test_scene.cpp
         src/ui_demo.cpp
     DEPS core platform rhi render input assets script ui debug

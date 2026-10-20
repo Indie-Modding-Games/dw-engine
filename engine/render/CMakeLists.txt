@@ -7,9 +7,13 @@ dwe_add_module(render
         src/camera.cpp
         src/quad_batch.cpp
         src/renderer.cpp
-    DEPS core rhi
+        src/map_camera.cpp
+        src/map_layers.cpp
+        src/map_scene.cpp
+        src/map_renderer.cpp
+    DEPS core rhi assets
     # tests/link_test.cpp: vk-bootstrap is loaded before assets, the link order that once made AddressSanitizer report
     # false container overflows.
     TEST_LIBS dwe::rhi vk-bootstrap::vk-bootstrap dwe::assets)
 
-dwe_add_shaders(dwe_render FILES shaders/quad.slang)
+dwe_add_shaders(dwe_render FILES shaders/quad.slang shaders/map.slang)

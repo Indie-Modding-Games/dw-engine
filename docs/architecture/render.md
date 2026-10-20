@@ -154,6 +154,9 @@ pulling: un binding basta mientras la animación es por CPU y deja que `rhi::val
   clip space de Vulkan. El mundo es el de [world-space.md](world-space.md) (+Y arriba).
 - `render::pixelProjection(extent)`: píxeles con origen arriba a la izquierda → clip space, para 2D.
 - `render::QuadBatch`: rectángulos texturizados en píxeles, en un único draw, en cualquiera de los dos pases.
+- `render::MapCamera` y `render::MapRenderer`: la cámara fija de un mapa de campo, con proyección descentrada sobre
+  su fondo, y el dibujo del fondo y sus capas de profundidad
+  ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [README](../../engine/render/README.md)).
 
 ## Samplers
 

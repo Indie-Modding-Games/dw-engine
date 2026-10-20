@@ -13,3 +13,44 @@ El render del juego, encima de `rhi`. Ver [render.md](../../docs/architecture/re
 - `QuadBatch`: rectángulos texturizados en píxeles en un solo draw (sprites, minimapa, imágenes de depuración).
 
 Sus shaders están en `shaders/` y se compilan con `dwe_add_shaders` ([ADR 0018](../../docs/adr/0018-shaders-slang-con-vcpkg.md)).
+
+## Mapas de campo
+
+Cómo dibuja el original un mapa está en [Mapas: cómo se dibuja](../../docs/formats/mapas.md#cómo-se-dibuja); la
+política para cualquier resolución, en el [ADR 0020](../../docs/adr/0020-camara-de-mapa-y-capas-de-profundidad.md).
+
+- `MapCamera` (`<dwe/render/map_camera.hpp>`, solo CPU): la cámara fija del mapa y una proyección perspectiva
+  descentrada con la distancia focal `H` en píxeles del fondo y el centro óptico en el centro del fondo. Con
+  `setViewport` y `follow` da la vista, la proyección (profundidad de Vulkan, 0 en el plano cercano de 100 y 1 a
+  65 536) y la ventana del fondo que se ve: escala `min(ancho / 320, alto / 240)`, centrada en el jugador y sujeta a
+  los bordes, con bandas si el fondo es más pequeño que la ventana (`backgroundRect`). Los helpers pasan del mundo al
+  fondo y a la ventana (`projectToBackground`, `worldToWindow`), de la ventana al suelo (`pickGround`, para el clic
+  para moverse) y de un píxel del fondo con una profundidad a clip (`backgroundToClip`, para el fondo y las capas de
+  profundidad). `mapCameraDesc` convierte la cámara cruda del mapa (doblando punto de vista y referencia, como
+  `loadMapSetup`).
+- Los tests comparan las proyecciones con el cálculo en coma fija del original (rotación 4.12, RTPS, división por
+  `SZ` y `cameraX` sujeto a los bordes) en mapas reales: coinciden a un píxel y cuarto en el fondo.
+- `loadMapSceneData` (`<dwe/render/map_scene.hpp>`) lee un mapa por su id a través del VFS: el `MapDocument`, su
+  cámara y sus imágenes (`assets::loadMapImages`: el fondo como índices con una paleta por variante y la hoja de
+  sprites ya resuelta). Las reglas de VRAM del original (páginas, filas de CLUT, límites del orden) viven en `assets`,
+  no aquí ([ADR 0020](../../docs/adr/0020-camara-de-mapa-y-capas-de-profundidad.md)). `timeOfDayAt` y
+  `backgroundVariant` eligen la variante como `updateTimeOfDay`.
+- `MapDepthLayers` (`<dwe/render/map_layers.hpp>`): las capas de profundidad. Cada instancia de sprite toma su
+  entrada de la tabla de orden (`assets::mapSpriteOrderValue` con la profundidad de la cámara) y se dibuja como un
+  plano a `orderValue · 16` de distancia; sus animaciones van a 20 fotogramas por segundo, como el campo del
+  original. El orden de dibujo se calcula una vez al cargar; `quads()` solo rellena un búfer que guarda.
+- `MapRenderer` (`<dwe/render/map_renderer.hpp>`): dibuja un mapa con todo lo anterior en el pase de escena. Encola
+  (`queueTexture`, sin esperar a la GPU) el fondo como índices a su resolución nativa, una textura de paletas con una
+  fila por variante y otra para congelar un fundido interrumpido, y una textura por textura de la hoja de sprites,
+  compartida por todas las horas: los sprites de `clut` −1 también son índices y miran la paleta de la hora en el
+  shader. `update` avanza las animaciones y el fundido de la hora (`setVariant`, 25 fotogramas del original; un
+  cambio a mitad de fundido sigue desde los colores que se ven) y guarda el foco; el `Drawer` del fondo ajusta la
+  cámara al tamaño del fotograma en `prepare`. Da dos `Drawer`: el fondo (sin profundidad, primero) y las capas (los
+  sprites de lejos a cerca con prueba de profundidad `LessOrEqual` y su mezcla, y las bandas negras al final). Lo que
+  haya entre los dos (los modelos) usa `camera().view()` y `camera().projection()` y queda tapado por las capas que
+  tiene delante. `setMarkers` dibuja rectángulos de prueba de pie en el suelo. Dibujar no reserva memoria: los
+  búferes de cada fotograma se reutilizan.
+- `dwe-game --map <id>[,<id>...]` lo enseña sin la escena de campo: `--time day|dusk|night`, `--focus x,z` y
+  `--size AnchoxAlto`; las flechas mueven un marcador relativo a la cámara, el clic lo manda al punto del suelo, las
+  acciones `debug_time_day`, `debug_time_dusk` y `debug_time_night` (1, 2 y 3) cambian la hora y `debug_next_map` (N)
+  pasa al siguiente mapa de la lista y registra cuánto tardó el cambio.

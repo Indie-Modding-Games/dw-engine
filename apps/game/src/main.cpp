@@ -21,14 +21,18 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <print>
+#include <ranges>
 #include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <variant>
 #include <vector>
 
+#include "map_preview.hpp"
 #include "test_scene.hpp"
 #include "ui_demo.hpp"
 
@@ -37,6 +41,9 @@ namespace {
 using namespace dwe;
 
 constexpr double TickSeconds = 1.0 / 60.0;
+constexpr std::array TestClearColor{0.08F, 0.10F, 0.14F, 1.0F};
+// Black, like the bars around a map that is smaller than the window.
+constexpr std::array MapClearColor{0.0F, 0.0F, 0.0F, 1.0F};
 constexpr double MaxFrameSeconds = 0.25;
 // How long to sleep per loop while there is nothing to draw, about one display refresh.
 constexpr std::chrono::milliseconds IdleWait{16};
@@ -47,59 +54,121 @@ constexpr bool Validation = false;
 constexpr bool Validation = true;
 #endif
 
+constexpr std::string_view Usage =
+    "dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn] "
+    "[--size <width>x<height>] [--map <id>[,<id>...] [--time day|dusk|night] [--focus <x>,<z>]] "
+    "[--ui-demo [--virtual-gamepad <file>]]";
+
 struct Options {
-    // Where the debug overlay's asset viewer looks for packs.
+    // Where the debug overlay's asset viewer and the map preview look for packs.
     std::filesystem::path content = "content/base";
     // Set by --check-content: open every asset of the folder's packs and quit, without a window.
     bool checkContent = false;
     // Development check: make and destroy a texture every frame (render.md).
     bool textureChurn = false;
-    // Runs the UI demo instead of the game, with these options.
+    int width = 1280;
+    int height = 720;
+    // Maps to show instead of the test scene (app::MapPreview), until the field scene exists: the first, and the
+    // others in turn with debug_next_map.
+    std::vector<std::string> maps;
+    render::TimeOfDay time = render::TimeOfDay::Day;
+    std::optional<glm::vec2> focus;
+    // Runs the UI demo instead of the game (--ui-demo), with --content, --map and --size, and this file of virtual
+    // gamepad commands.
     bool uiDemo = false;
-    app::UiDemoOptions demo;
+    std::optional<std::filesystem::path> virtualGamepad;
 };
 
-constexpr std::string_view Usage = "dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn] "
-                                   "[--ui-demo [--map <id>] [--size <width>x<height>] [--virtual-gamepad <file>]]";
-
-// Reads `<width>x<height>`.
-bool parseSize(std::string_view text, app::UiDemoOptions& demo) {
-    const std::size_t separator = text.find('x');
-    if (separator == std::string_view::npos) {
-        return false;
+// Reads two numbers separated by `separator`, such as 1280x720.
+std::optional<std::array<int, 2>> parsePair(std::string_view text, char separator) {
+    std::array<int, 2> values{};
+    const char* begin = std::to_address(text.begin());
+    const char* end = std::to_address(text.end());
+    auto first = std::from_chars(begin, end, values[0]);
+    if (first.ec != std::errc{} || first.ptr == end || *first.ptr != separator) {
+        return std::nullopt;
     }
-    const auto number = [](std::string_view digits, int& value) {
-        const auto [end, error] = std::from_chars(digits.data(), digits.data() + digits.size(), value);
-        return error == std::errc{} && end == digits.data() + digits.size() && value > 0;
-    };
-    return number(text.substr(0, separator), demo.width) && number(text.substr(separator + 1), demo.height);
+    auto second = std::from_chars(first.ptr + 1, end, values[1]);
+    if (second.ec != std::errc{} || second.ptr != end) {
+        return std::nullopt;
+    }
+    return values;
 }
 
-// Reads the command line (Usage).
+std::optional<render::TimeOfDay> parseTime(std::string_view text) {
+    if (text == "day") {
+        return render::TimeOfDay::Day;
+    }
+    if (text == "dusk") {
+        return render::TimeOfDay::Dusk;
+    }
+    if (text == "night") {
+        return render::TimeOfDay::Night;
+    }
+    return std::nullopt;
+}
+
+// Reads one option that takes a value; false if the value is not valid for it or the option is unknown.
+bool readOption(Options& options, std::string_view argument, std::string_view value) {
+    if (argument == "--content" || argument == "--check-content") {
+        options.content = value;
+        options.checkContent = options.checkContent || argument == "--check-content";
+        return true;
+    }
+    if (argument == "--virtual-gamepad") {
+        options.virtualGamepad = value;
+        return true;
+    }
+    if (argument == "--map") {
+        options.maps.clear();
+        for (const auto part : std::views::split(value, ',')) {
+            options.maps.emplace_back(std::string_view{part});
+        }
+        return std::ranges::none_of(options.maps, &std::string::empty);
+    }
+    if (argument == "--size") {
+        const auto size = parsePair(value, 'x');
+        if (!size || (*size)[0] <= 0 || (*size)[1] <= 0) {
+            return false;
+        }
+        options.width = (*size)[0];
+        options.height = (*size)[1];
+        return true;
+    }
+    if (argument == "--time") {
+        const auto time = parseTime(value);
+        options.time = time.value_or(render::TimeOfDay::Day);
+        return time.has_value();
+    }
+    if (argument == "--focus") {
+        const auto focus = parsePair(value, ',');
+        if (!focus) {
+            return false;
+        }
+        options.focus = glm::vec2{static_cast<float>((*focus)[0]), static_cast<float>((*focus)[1])};
+        return true;
+    }
+    return false;
+}
+
+// Reads the command line (see Usage).
 std::optional<Options> parseOptions(std::span<char* const> arguments) {
     Options options;
-    for (std::size_t index = 1; index < arguments.size(); ++index) {
+    std::size_t index = 1;
+    while (index < arguments.size()) {
         const std::string_view argument = arguments[index];
-        const bool hasValue = index + 1 < arguments.size();
-        if ((argument == "--content" || argument == "--check-content") && hasValue) {
-            options.content = arguments[++index];
-            options.checkContent = options.checkContent || argument == "--check-content";
-        } else if (argument == "--texture-churn") {
-            options.textureChurn = true;
-        } else if (argument == "--ui-demo") {
-            options.uiDemo = true;
-        } else if (argument == "--map" && hasValue) {
-            options.demo.map = arguments[++index];
-        } else if (argument == "--size" && hasValue && parseSize(arguments[index + 1], options.demo)) {
+        if (argument == "--texture-churn" || argument == "--ui-demo") {
+            options.textureChurn = options.textureChurn || argument == "--texture-churn";
+            options.uiDemo = options.uiDemo || argument == "--ui-demo";
             ++index;
-        } else if (argument == "--virtual-gamepad" && hasValue) {
-            options.demo.virtualGamepad = arguments[++index];
-        } else {
-            core::logError("unknown argument '{}'; usage: {}", argument, Usage);
+            continue;
+        }
+        if (index + 1 >= arguments.size() || !readOption(options, argument, arguments[index + 1])) {
+            core::logError("bad argument '{}'; usage: {}", argument, Usage);
             return std::nullopt;
         }
+        index += 2;
     }
-    options.demo.content = options.content;
     return options;
 }
 
@@ -177,7 +246,7 @@ int run(const Options& options) {
         core::logError("{}", platform.error().message);
         return EXIT_FAILURE;
     }
-    auto window = platform::Window::create({.title = "dwe", .width = 1280, .height = 720});
+    auto window = platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
     if (!window) {
         core::logError("{}", window.error().message);
         return EXIT_FAILURE;
@@ -198,11 +267,22 @@ int run(const Options& options) {
         core::logError("{}", renderer.error().message);
         return EXIT_FAILURE;
     }
-    // Until the field scene exists, the frame shows the render foundation's test scene.
+    // Until the field scene exists, the frame shows the render foundation's test scene, or a map with --map.
     auto testScene = app::TestScene::create(**renderer, options.textureChurn);
     if (!testScene) {
         core::logError("{}", testScene.error().message);
         return EXIT_FAILURE;
+    }
+    std::unique_ptr<app::MapPreview> mapPreview;
+    if (!options.maps.empty()) {
+        auto preview = app::MapPreview::create(
+            **renderer,
+            {.content = options.content, .mapIds = options.maps, .time = options.time, .focus = options.focus});
+        if (!preview) {
+            core::logError("{}", preview.error().message);
+            return EXIT_FAILURE;
+        }
+        mapPreview = std::move(*preview);
     }
     loadUserGamepadMappings();
 
@@ -244,6 +324,9 @@ int run(const Options& options) {
                 continue;
             }
             input.handle(event);
+            if (mapPreview && !(*debugUi)->capturesKeyboard()) {
+                mapPreview->handle(event);
+            }
         }
 
         const double now = platform->nowSeconds();
@@ -260,13 +343,26 @@ int run(const Options& options) {
             if (auto result = (*scripts)->call("tick", arguments); !result) {
                 core::logError("{}", result.error().message);
             }
+            if (mapPreview) {
+                mapPreview->tick(input, TickSeconds);
+            }
             input.endTick();
         }
         (*scripts)->reloadChanged();
 
-        (*testScene)->update(now - start);
-        const std::array<render::Drawer*, 1> sceneDrawers{&(*testScene)->sceneDrawer()};
-        const std::array<render::Drawer*, 1> uiDrawers{&(*testScene)->uiDrawer()};
+        std::array<render::Drawer*, 2> drawers{};
+        std::span<render::Drawer* const> sceneDrawers;
+        std::span<render::Drawer* const> uiDrawers;
+        if (mapPreview) {
+            mapPreview->update(frameSeconds);
+            drawers = {&mapPreview->backgroundDrawer(), &mapPreview->layerDrawer()};
+            sceneDrawers = drawers;
+        } else {
+            (*testScene)->update(now - start);
+            drawers = {&(*testScene)->sceneDrawer(), &(*testScene)->uiDrawer()};
+            sceneDrawers = std::span{drawers}.first(1);
+            uiDrawers = std::span{drawers}.last(1);
+        }
         const debug::FrameStats stats{
             .framesPerSecond = fps.framesPerSecond,
             .frameMilliseconds = frameSeconds * 1000.0,
@@ -275,10 +371,11 @@ int run(const Options& options) {
         const debug::Marker marker{
             .x = static_cast<float>((*scripts)->number("marker.x").value_or(0.0)),
             .y = static_cast<float>((*scripts)->number("marker.y").value_or(0.0)),
-            .radius = static_cast<float>((*scripts)->number("marker.radius").value_or(0.0)),
+            // The map preview draws its own marker in the world.
+            .radius = mapPreview ? 0.0F : static_cast<float>((*scripts)->number("marker.radius").value_or(0.0)),
         };
         const bool drawn = (*renderer)->renderFrame({
-            .clearColor = {0.08F, 0.10F, 0.14F, 1.0F},
+            .clearColor = mapPreview ? MapClearColor : TestClearColor,
             .scene = sceneDrawers,
             .ui = uiDrawers,
             .overlay = [&](const rhi::Frame& frame) { (*debugUi)->draw(frame, stats, input, **scripts, marker); },
@@ -302,7 +399,14 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
     if (options->uiDemo) {
-        return app::runUiDemo(options->demo);
+        app::UiDemoOptions demo{.content = options->content,
+                                .width = options->width,
+                                .height = options->height,
+                                .virtualGamepad = options->virtualGamepad};
+        if (!options->maps.empty()) {
+            demo.map = options->maps.front();
+        }
+        return app::runUiDemo(demo);
     }
     return options->checkContent ? checkContentFolder(options->content) : run(*options);
 }

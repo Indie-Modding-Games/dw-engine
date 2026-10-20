@@ -68,6 +68,12 @@ ActionMap defaultActionMap() {
     map.bind("debug_console", KeyBinding{keys::Grave});
     map.bind("debug_console", KeyBinding{keys::F1});
 
+    // Development views (dwe-game --map): fade to a time of day, show the next map.
+    map.bind("debug_time_day", KeyBinding{keys::Digit1});
+    map.bind("debug_time_dusk", KeyBinding{keys::Digit2});
+    map.bind("debug_time_night", KeyBinding{keys::Digit3});
+    map.bind("debug_next_map", KeyBinding{keys::N});
+
     return map;
 }
 
