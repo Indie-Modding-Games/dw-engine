@@ -25,7 +25,8 @@
     "zstd",
     "opus",
     "libopusenc",
-    "ktx"
+    "ktx",
+    "entt"
   ],
   "default-features": ["validation"],
   "features": {

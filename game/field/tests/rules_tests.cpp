@@ -1,0 +1,123 @@
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/field/rules.hpp>
+
+#include <doctest/doctest.h>
+
+#include <filesystem>
+#include <string>
+#include <vector>
+
+namespace {
+
+template <typename T>
+std::string errorOf(const dwe::core::Result<T>& result) {
+    return result ? std::string{} : result.error().message;
+}
+
+constexpr std::string_view Rules = R"(player:
+  model: digimon/boys/model
+  radius: 100
+  walk_speed: 400
+  run_speed: 1000
+  turn_speed: 0
+partner:
+  model: digimon/agum/model
+  radius: 120
+  walk_speed: 452.5
+  run_speed: 870
+  turn_speed: 12.5
+  run_distance: 3.5
+  walk_distance: 2.5
+  spawn_distance: 200
+  trail_length: 30
+  sight_half_width: 200
+  stuck_seconds: 1.5
+  teleport_distance: 2000
+input:
+  dead_zone: 0.2
+  arrive_distance: 25
+)";
+
+std::string replaced(std::string_view text, std::string_view from, std::string_view to) {
+    std::string result{text};
+    result.replace(result.find(from), from.size(), to);
+    return result;
+}
+
+} // namespace
+
+TEST_CASE("field rules read every tunable") {
+    const auto rules = dwe::game::field::parseFieldRules(Rules);
+    REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+    CHECK(rules->player.model == "digimon/boys/model");
+    CHECK(rules->player.runSpeed == doctest::Approx(1000.0F));
+    CHECK(rules->player.turnSpeed == doctest::Approx(0.0F));
+    CHECK(rules->partner.mover.walkSpeed == doctest::Approx(452.5F));
+    CHECK(rules->partner.mover.turnSpeed == doctest::Approx(12.5F));
+    CHECK(rules->partner.trailLength == 30);
+    CHECK(rules->partner.stuckSeconds == doctest::Approx(1.5F));
+    CHECK(rules->input.deadZone == doctest::Approx(0.2F));
+}
+
+TEST_CASE("broken field rules are refused") {
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "radius: 100", "radius: 0")).has_value());
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "run_speed: 1000", "run_speed: 300")).has_value());
+    CHECK_FALSE(
+        dwe::game::field::parseFieldRules(replaced(Rules, "walk_distance: 2.5", "walk_distance: 4")).has_value());
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "dead_zone: 0.2", "dead_zone: 1")).has_value());
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "turn_speed: 0", "turn_speed: -1")).has_value());
+    const auto unknown =
+        dwe::game::field::parseFieldRules(replaced(Rules, "  radius: 120", "  radius: 120\n  size: 2"));
+    REQUIRE_FALSE(unknown.has_value());
+    CHECK(unknown.error().message.find("'size'") != std::string::npos);
+    const auto missing = dwe::game::field::parseFieldRules(replaced(Rules, "  trail_length: 30\n", ""));
+    REQUIRE_FALSE(missing.has_value());
+    CHECK(missing.error().message.find("trail_length") != std::string::npos);
+}
+
+TEST_CASE("field warps read the start and the scripted warps") {
+    const auto warps = dwe::game::field::parseFieldWarps(R"(start:
+  map: twna01
+  exit: 1
+scripted_warps:
+- map: room08
+  trigger: 51
+  target_map: twna01
+  target_exit: 2
+  evidence: "script 178"
+)");
+    REQUIRE_MESSAGE(warps.has_value(), errorOf(warps));
+    CHECK(warps->startMap == "twna01");
+    CHECK(warps->startExit == 1);
+    REQUIRE(warps->scriptedWarps.size() == 1);
+    CHECK(warps->scriptedWarps[0].trigger == 51);
+    CHECK(warps->scriptedWarps[0].targetExit == 2);
+    CHECK_FALSE(dwe::game::field::parseFieldWarps("start:\n  map: a\n  exit: 0\nscripted_warps:\n- map: a\n  trigger: "
+                                                  "128\n  target_map: b\n  target_exit: 0\n  evidence: x\n")
+                    .has_value());
+}
+
+TEST_CASE("the game pack's field data is valid") {
+    const dwe::assets::DiskFileSystem disk;
+    // The game pack depends on base; a stand-in manifest lets it mount alone.
+    dwe::assets::MemoryFileSystem memory;
+    const auto files = dwe::assets::listPackFiles(disk, DWE_GAME_PACK);
+    REQUIRE_MESSAGE(files.has_value(), errorOf(files));
+    memory.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\n");
+    const auto manifest = disk.readFile(std::filesystem::path{DWE_GAME_PACK} / "pack.yaml");
+    REQUIRE(manifest.has_value());
+    memory.addFile("game/pack.yaml", *manifest);
+    for (const auto& file : *files) {
+        const auto bytes = disk.readFile(std::filesystem::path{DWE_GAME_PACK} / file.path);
+        REQUIRE(bytes.has_value());
+        memory.addFile("game/" + file.path, *bytes);
+    }
+    const std::vector<std::filesystem::path> packs{"base", "game"};
+    const auto vfs = dwe::assets::VirtualFileSystem::mount(memory, packs);
+    REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+    const auto rules = dwe::game::field::loadFieldRules(*vfs);
+    CHECK_MESSAGE(rules.has_value(), errorOf(rules));
+    const auto warps = dwe::game::field::loadFieldWarps(*vfs);
+    CHECK_MESSAGE(warps.has_value(), errorOf(warps));
+}

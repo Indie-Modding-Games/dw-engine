@@ -1,0 +1,12 @@
+dwe_add_module(field
+    LAYER game
+    SOURCES
+        src/rules.cpp
+        src/grid.cpp
+        src/field.cpp
+    DEPS core assets scene)
+
+# The tests read the game pack from the source tree.
+if(TARGET dwe_field_tests)
+    target_compile_definitions(dwe_field_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
+endif()

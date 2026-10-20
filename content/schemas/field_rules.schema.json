@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field rules",
+  "description": "field/rules.yaml of the game pack: player movement and partner following (game/field, docs/reference/campo.md). Distances in world units (100 = one collision cell), speeds per second, turn speeds in radians per second.",
+  "type": "object",
+  "required": ["player", "partner", "input"],
+  "additionalProperties": false,
+  "properties": {
+    "player": { "$ref": "#/$defs/mover" },
+    "partner": {
+      "allOf": [{ "$ref": "#/$defs/moverFields" }],
+      "type": "object",
+      "required": ["model", "radius", "walk_speed", "run_speed", "turn_speed", "run_distance", "walk_distance", "spawn_distance", "trail_length", "sight_half_width", "stuck_seconds", "teleport_distance"],
+      "properties": {
+        "model": true, "radius": true, "walk_speed": true, "run_speed": true, "turn_speed": true,
+        "run_distance": { "description": "In partner radii: beyond it runs.", "type": "number", "exclusiveMinimum": 0 },
+        "walk_distance": { "description": "In partner radii: beyond it walks, closer it stops.", "type": "number", "exclusiveMinimum": 0 },
+        "spawn_distance": { "description": "Distance from the player when entering a map.", "type": "number", "minimum": 0 },
+        "trail_length": { "description": "Most player cells remembered while the partner cannot see the player.", "type": "integer", "minimum": 1 },
+        "sight_half_width": { "description": "Half width of the corridor that must be free to see the player.", "type": "number", "minimum": 0 },
+        "stuck_seconds": { "description": "Time without progress before the partner is placed behind the player.", "type": "number", "exclusiveMinimum": 0 },
+        "teleport_distance": { "description": "Farther than this, the partner is placed behind the player.", "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "input": {
+      "type": "object",
+      "required": ["dead_zone", "arrive_distance"],
+      "additionalProperties": false,
+      "properties": {
+        "dead_zone": { "description": "Stick vectors shorter than this are no movement.", "type": "number", "minimum": 0, "exclusiveMaximum": 1 },
+        "arrive_distance": { "description": "Click-to-move: stopped by a wall this close to the clicked point counts as arrived.", "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "moverFields": {
+      "type": "object",
+      "properties": {
+        "model": { "description": "Asset id of the .glb drawn for it.", "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$" },
+        "radius": { "description": "Collision size: the probe reaches radius ahead and radius / 2 to the sides.", "type": "number", "exclusiveMinimum": 0 },
+        "walk_speed": { "type": "number", "exclusiveMinimum": 0 },
+        "run_speed": { "type": "number", "exclusiveMinimum": 0 },
+        "turn_speed": { "description": "How fast the facing turns; 0 = at once.", "type": "number", "minimum": 0 }
+      }
+    },
+    "mover": {
+      "allOf": [{ "$ref": "#/$defs/moverFields" }],
+      "type": "object",
+      "required": ["model", "radius", "walk_speed", "run_speed", "turn_speed"],
+      "properties": { "model": true, "radius": true, "walk_speed": true, "run_speed": true, "turn_speed": true },
+      "additionalProperties": false
+    }
+  }
+}

@@ -18,6 +18,9 @@ dwe_add_module(assets
         src/ogg.cpp
         src/sound.cpp
         src/texture.cpp
+        src/yaml_reader.cpp
+        src/map_document.cpp
+        src/map_table.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd Opus::opus KTX::ktx
     TEST_LIBS lodepng Opus::opus KTX::ktx)

@@ -45,7 +45,7 @@ sustituido.
 | [0009](0009-rmlui.md) | RmlUi para la UI del juego | Propuesta |
 | [0010](0010-reglas-propias-con-rulesets.md) | Reglas propias, organizadas en rulesets | Aceptada |
 | [0011](0011-politica-legal-de-assets.md) | "Trae tus propios datos" y política legal de assets | Propuesta |
-| [0012](0012-ecs-con-entt.md) | Entidades con EnTT | Propuesta |
+| [0012](0012-ecs-con-entt.md) | Entidades con EnTT | Aceptada |
 | [0013](0013-juego-nativo-de-pc.md) | Un juego nativo de PC | Propuesta |
 | [0014](0014-mandos-y-entrada.md) | Mandos y entrada por acciones | Propuesta |
 | [0015](0015-desarrollo-en-contenedor.md) | Compilar dentro de un contenedor Docker | Aceptada |

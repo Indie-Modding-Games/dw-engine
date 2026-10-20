@@ -149,6 +149,35 @@ La colisión se escribe como 100 cadenas de 100 caracteres con una leyenda: `.` 
 por cada valor de disparador, en orden de valor (`A`–`Z`, `a`–`z`, `0`–`9`). Si un mapa tuviera más de 62 valores de
 disparador, `encoding` pasa de `legend` a `hex` y cada celda son dos cifras hexadecimales.
 
+## En el motor
+
+El motor no lee el `.MAP` ni el `.TFS`: lee lo que deja `dwx` por el VFS. `assets::MapDocument` es `map/<id>/data`
+y `assets::MapTable` es `data/maps` (ver el [README de `assets`](../../engine/assets/README.md#mapas)). Guardan los
+números como están; las conversiones al [espacio del mundo](../architecture/world-space.md) se hacen en
+`map_document.hpp` y en ningún otro sitio:
+
+| Dato | Original | Mundo |
+|---|---|---|
+| Posición (`spawn`, NPC, puertas) | `(x, y, z)`, Y hacia abajo | `(x, -y, -z)` (`toWorldPosition`) |
+| Celda de colisión | columna `x / 100 + 50`, fila `50 - z / 100` (`map_collision.c: getTileTrigger`, `getModelTile`) | columna `floor(x / 100) + 50`, fila `floor(z / 100) + 50` (`collisionCellAt`) |
+| Giro en Y | 4096 por vuelta; 0 mira a −Z, 1024 a −X, 2048 a +Z | `yaw = -giro * 2π / 4096`; un personaje con yaw 0 mira a +Z y `forwardOfYaw` da `(sin yaw, 0, cos yaw)` |
+
+La celda: el original divide truncando y luego corrige los negativos, así que en las rectas exactas `x = -100 k` y
+`z = 100 k` (en sus ejes) toma la celda vecina. El motor usa `floor` en todos los casos; la diferencia es de un punto
+sin grosor.
+
+El sentido del giro sale de `tamer.c: tamerTickWalkingState`: arriba en el mando da `getMapRotation() + 0x800`, y
+`getMapRotation` es `_atan` del vector de la referencia al punto de vista de la cámara; en un mapa con la cámara
+mirando a +Z (en el original), arriba da 2048 y el jugador se aleja de la cámara. Lo confirman los warps: en `twna01`,
+la salida 1 (`rotation` 3072) aparece junto a sus celdas de warp, al oeste, y con 3072 mira al este, hacia dentro del
+mapa.
+
+La colisión: 0 es libre, cualquier valor con el bit `0x80` bloquea (`checkMapCollisionX/Z`) y el resto son
+disparadores (`tamer.c: checkMapInteraction`): 51–79 llaman a un script al pisarlos, 80–109 al pulsar confirmar,
+110–119 son los warps (el 110 + i lleva por la salida i de este mapa a `target_map` / `target_exit`) y 120 llama a un
+script si el compañero tiene el bit 8 de `condition` (probablemente, que necesita el baño).
+En el US solo aparecen 0, 51–86, 110–116, 120 y 128.
+
 ## Comprobación con el disco
 
 Con `DWE_EXE_SAMPLE` y `DWE_MAP_DIR` (la carpeta `MAP` del disco US), `formats/tests/real_data_tests.cpp` lee todas las

@@ -1,0 +1,35 @@
+# Reglas del campo: movimiento del jugador y seguimiento del partner (docs/reference/campo.md).
+# Distancias en unidades del mundo (100 = una celda de colisión), velocidades por segundo, giros en radianes por
+# segundo. Los valores por defecto son los del original, medidos en el decomp a 20 imágenes por segundo.
+player:
+  model: digimon/boys/model
+  # DIGIMON_DATA[0].radius.
+  radius: 100
+  # Raíz de las animaciones 2 (andar, con el botón) y 3 (correr, sin él): 20 y 50 unidades por imagen.
+  walk_speed: 400
+  run_speed: 1000
+  # El original gira de golpe (0); el motor suaviza la cara, no el movimiento.
+  turn_speed: 20
+partner:
+  model: digimon/agum/model
+  radius: 120
+  # Media de la raíz de las animaciones 2 (andar) y 4 (correr) del partner inicial: 22,6 y 43,5 por imagen.
+  walk_speed: 452
+  run_speed: 870
+  turn_speed: 20
+  # En radios del partner (partner.c: getPartnerTamerCloseness): más lejos que 3,5 corre, entre 2,5 y 3,5 anda y
+  # más cerca se para.
+  run_distance: 3.5
+  walk_distance: 2.5
+  # tamer.c: loadMapEntities.
+  spawn_distance: 200
+  # map.c: el rastro del partner tiene 30 celdas.
+  trail_length: 30
+  # map.c: isFiveTileWidePathBlocked mira cinco líneas de celdas, dos a cada lado.
+  sight_half_width: 200
+  # Propios del motor: el original no tiene este rescate.
+  stuck_seconds: 1.0
+  teleport_distance: 2000
+input:
+  dead_zone: 0.25
+  arrive_distance: 25

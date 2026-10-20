@@ -1,0 +1,156 @@
+#pragma once
+
+#include <dwe/assets/map_document.hpp>
+#include <dwe/core/error.hpp>
+#include <dwe/core/math.hpp>
+#include <dwe/game/field/rules.hpp>
+#include <dwe/scene/components.hpp>
+#include <dwe/scene/world.hpp>
+
+#include <cstdint>
+#include <deque>
+#include <optional>
+#include <span>
+#include <string>
+#include <vector>
+
+namespace dwe::game::field {
+
+// What the player wants this tick, as plain values: the app turns keys, sticks and clicks into this.
+struct FieldInput {
+    // A direction relative to the map's camera: x to the right of the screen, y away from the camera (up on the
+    // stick or the W key). Length 0 to 1; shorter than the dead zone is no movement. It cancels a move target.
+    glm::vec2 stick{};
+    // Run instead of walk.
+    bool run = false;
+    // Click-to-move: a ground point (from picking on the map) to walk to around walls. It replaces the previous one;
+    // it stays until reached, until the stick is used or until cancelTarget.
+    std::optional<glm::vec3> moveTarget = std::nullopt;
+    bool cancelTarget = false;
+};
+
+// The player stepped on a warp: the app loads `map` and calls Field::enterMap with `exit`.
+struct MapChange {
+    std::string map;
+    std::int32_t exit = 0;
+    // The collision value that fired it (110 + exit of the old map, or a scripted warp's trigger).
+    std::int32_t trigger = 0;
+};
+
+// The player stepped onto a trigger cell that is not a warp (scripts, the toilet): for later systems.
+struct TriggerStep {
+    std::int32_t trigger = 0;
+    assets::CollisionCell cell;
+};
+
+// A character as the minimap and the debug views see it.
+struct CharacterState {
+    glm::vec3 position{};
+    float yaw = 0.0F;
+    scene::Motion motion = scene::Motion::Idle;
+};
+
+// The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents with the original's
+// grid collision, steps on triggers and warps, and the partner follows. Player and partner are entities of the scene
+// world, with the shared components the app draws (Transform, ModelRef, AnimationIntent, PlayerTag, PartnerTag). No
+// rendering, input devices or file access: the app feeds input and map documents, and reads state and changes.
+class Field {
+public:
+    // Creates the player and the partner in the world. The world must outlive the field.
+    Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps = {});
+
+    // Enters a map through one of its exits: the player appears at the exit's spawn and the partner next to it
+    // (tamer.c: loadMapEntities). Fails if the map has no such exit.
+    core::Result<void> enterMap(const assets::MapDocument& map, std::int32_t exit);
+
+    // Enters a map at a given place, for tests and debug tools.
+    void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn);
+
+    // Sets the intent for the next ticks.
+    void setInput(const FieldInput& input);
+
+    // Advances the logic by `seconds` (the app's fixed tick). Nothing moves while a map change is pending.
+    void tick(float seconds);
+
+    // The warp the player stepped on, once: after taking it the app loads the map and calls enterMap.
+    std::optional<MapChange> takeMapChange();
+
+    // Whether a map change is waiting to be taken or executed.
+    [[nodiscard]] bool mapChangePending() const { return pendingChange_.has_value() || waitingForMap_; }
+
+    // The trigger cells the player stepped onto during the last tick.
+    [[nodiscard]] std::span<const TriggerStep> triggerSteps() const { return triggerSteps_; }
+
+    // The id of the current map; empty before the first enterMap.
+    [[nodiscard]] const std::string& mapId() const { return mapId_; }
+
+    // The current map's collision grid, for the minimap.
+    [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
+
+    [[nodiscard]] CharacterState player() const;
+    [[nodiscard]] CharacterState partner() const;
+    [[nodiscard]] scene::Entity playerEntity() const { return player_; }
+    [[nodiscard]] scene::Entity partnerEntity() const { return partner_; }
+
+    // The ground waypoints left of the click-to-move path, for debug drawing.
+    [[nodiscard]] std::span<const glm::vec3> path() const { return path_; }
+
+    // Whether a click-to-move target is being followed.
+    [[nodiscard]] bool hasMoveTarget() const { return moveTarget_.has_value(); }
+
+    // The ground direction away from the camera, from the map's camera: where "up" on the stick goes.
+    [[nodiscard]] glm::vec3 cameraForward() const { return cameraForward_; }
+
+    // How many times the partner was placed next to the player because it was stuck or too far.
+    [[nodiscard]] std::int32_t partnerTeleports() const { return partnerTeleports_; }
+
+    // The rules in use.
+    [[nodiscard]] const FieldRules& rules() const { return rules_; }
+
+private:
+    struct Step {
+        glm::vec2 direction{};
+        bool run = false;
+        // Follow the click-to-move path instead of a direction.
+        bool followPath = false;
+    };
+
+    Step playerStep();
+    void planPath(glm::vec3 target);
+    void movePlayer(float seconds);
+    glm::vec2 followPath(glm::vec3& position, float distance);
+    void checkTriggers();
+    void updateTrail();
+    void movePartner(float seconds);
+    void placePartnerNearPlayer();
+    [[nodiscard]] bool isWarpTrigger(std::int32_t value) const;
+
+    scene::World* world_;
+    FieldRules rules_;
+    std::vector<ScriptedWarp> scriptedWarps_;
+    scene::Entity player_;
+    scene::Entity partner_;
+
+    std::string mapId_;
+    assets::MapCollision collision_;
+    std::vector<assets::MapWarp> warps_;
+    glm::vec3 cameraForward_{0.0F, 0.0F, -1.0F};
+
+    FieldInput input_;
+    std::optional<glm::vec3> moveTarget_;
+    std::vector<glm::vec3> path_;
+    float pathStallSeconds_ = 0.0F;
+
+    std::int32_t lastTrigger_ = 0;
+    std::optional<MapChange> pendingChange_;
+    bool waitingForMap_ = false;
+    std::vector<TriggerStep> triggerSteps_;
+
+    assets::CollisionCell lastPlayerCell_;
+    std::deque<assets::CollisionCell> trail_;
+    scene::Motion partnerMotion_ = scene::Motion::Idle;
+    float partnerStuckSeconds_ = 0.0F;
+    std::int32_t partnerTeleports_ = 0;
+};
+
+} // namespace dwe::game::field

@@ -24,7 +24,7 @@ engine/
 ├─ game/                    reglas del juego
 │  ├─ partner/              cuidado, vida, evolución
 │  ├─ battle/
-│  ├─ field/                movimiento, colisión, warps, cámara
+│  ├─ field/                movimiento, colisión, warps, seguimiento del partner
 │  ├─ world/                mapas, NPCs, progreso de la ciudad
 │  ├─ story/                eventos, diálogos, flags, misiones
 │  ├─ inventory/
