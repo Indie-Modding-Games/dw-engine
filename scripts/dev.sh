@@ -41,6 +41,8 @@ Environment:
   DWE_LOG_DIR         Folder for the logs of the checks (default build/logs)
   DWE_DISC            Path to the user's disc image (.bin or .cue); its folder is mounted read-only in the container at
                       the same path, so the tools and the disc tests can read it
+  DWE_CONTENT         Path to a content folder extracted with dwx (packs such as base/); it is mounted read-only in the
+                      container at the same path, so the tests that need real content can read it
 EOF
 }
 
@@ -73,6 +75,17 @@ if [[ -n "${DWE_DISC:-}" ]]; then
     DWE_DISC="$(cd "$(dirname "$DWE_DISC")" && pwd)/$(basename "$DWE_DISC")"
     export DWE_DISC
     disc_flags=(-v "$(dirname "$DWE_DISC"):$(dirname "$DWE_DISC"):ro" -e DWE_DISC)
+fi
+
+# Content extracted from the user's disc, for the tests that need real data: read-only, at the same path.
+if [[ -n "${DWE_CONTENT:-}" ]]; then
+    if [[ ! -d "$DWE_CONTENT" ]]; then
+        echo "dev.sh: DWE_CONTENT is not a folder: $DWE_CONTENT" >&2
+        exit 1
+    fi
+    DWE_CONTENT="$(cd "$DWE_CONTENT" && pwd)"
+    export DWE_CONTENT
+    disc_flags+=(-v "$DWE_CONTENT:$DWE_CONTENT:ro" -e DWE_CONTENT)
 fi
 
 # The host folder when one is given, otherwise the named volume.

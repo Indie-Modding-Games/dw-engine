@@ -32,9 +32,10 @@ instalarlas a mano ensucia la máquina de cada desarrollador y da builds que sol
 
   Cada paso deja su log en `build/logs/` (o en `DWE_LOG_DIR`) y falla también si el log del build trae un warning (los
   del enlazador no los cubre `-Werror`) o el de clang-tidy un diagnóstico.
-- Los tests **lentos** son los casos que leen el disco del usuario ("the user's disc: ..."). Cada uno es un test de
-  ctest propio con la etiqueta `slow`, así que corren en paralelo entre sí; un caso nuevo que el `configure` aún no ha
-  visto corre en `<módulo>.disc`, así que nunca se salta.
+- Los tests **lentos** son los casos que leen el disco del usuario ("the user's disc: ...") o el contenido extraído de
+  él con `DWE_CONTENT` ("the user's disc, extracted: ..."). Cada uno es un test de ctest propio con la etiqueta
+  `slow`, así que corren en paralelo entre sí; un caso nuevo que el `configure` aún no ha visto corre en
+  `<módulo>.disc`, así que nunca se salta.
 - Todo usa los núcleos de la máquina (`DWE_JOBS` lo limita): ninja, ctest, clang-format y clang-tidy, que pasa un
   proceso por fichero e imprime la salida de cada uno de una vez. En `check-full`, clang-tidy corre con menos
   prioridad a la vez que los tests, que son casi todo un único caso largo del disco.

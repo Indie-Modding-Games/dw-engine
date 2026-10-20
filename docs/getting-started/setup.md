@@ -43,8 +43,9 @@ scripts/dev.sh check-full     # lo de la punta de la rama, como la CI: además f
 ```
 
 Las dos usan el preset `ci`, guardan el log de cada paso en `build/logs/` (o en `DWE_LOG_DIR`) y terminan con error
-si falla algo. Los tests lentos son los que leen el disco del usuario (la etiqueta `slow` de ctest): sin `DWE_DISC`
-pasan al momento. Detalle en el [ADR 0015](../adr/0015-desarrollo-en-contenedor.md).
+si falla algo. Los tests lentos son los que leen el disco del usuario o el contenido extraído de él (la etiqueta
+`slow` de ctest): sin `DWE_DISC` ni `DWE_CONTENT` pasan al momento. Detalle en el
+[ADR 0015](../adr/0015-desarrollo-en-contenedor.md).
 
 ### Con tu disco
 
@@ -109,7 +110,7 @@ no llevan sanitizers.
 | `scripts/dev.sh shell` | Abre una terminal dentro del contenedor |
 | `scripts/dev.sh format` | Formatea el código con clang-format (`--check` solo comprueba) |
 | `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
-| `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco |
+| `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco o el contenido extraído |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
 | `build/<preset>/apps/dwx/dwx validate content/base` | Comprueba un paquete o una carpeta de paquetes: esquemas, referencias, contratos de los modelos y que cada asset se abre ([detalle](../architecture/assets-pipeline.md#dwx-validate)) |
