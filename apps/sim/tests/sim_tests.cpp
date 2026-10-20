@@ -14,6 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -245,7 +246,54 @@ TEST_CASE("--set changes the ruleset the scenarios see, without editing its file
 TEST_CASE("an unknown scenario names the known ones") {
     const auto report = simulate(standInFiles(), builtInScenarios(), optionsFor("battles"));
     REQUIRE_FALSE(report.has_value());
-    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: clock, ruleset-diff"));
+    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: care, clock, ruleset-diff"));
+}
+
+TEST_CASE("the care scenario raises a partner and reports how the raisings went") {
+    SimOptions options = optionsFor("care");
+    options.days = 20;
+    const auto report = simulate(standInFiles(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    for (const std::string_view metric :
+         {"lifespan_days", "deaths", "care_mistakes", "sicknesses", "weight", "final_hp", "final_mp", "final_offense",
+          "final_defense", "final_speed", "final_brain"}) {
+        CHECK_MESSAGE(report->markdown.contains(std::format("| {} | 8 |", metric)), metric);
+    }
+    // Twenty days are past the 15 days of a partner's life: every raising sees a death.
+    CHECK_FALSE(report->markdown.contains("| deaths | 8 | 0 |"));
+
+    // The same seed gives the same raisings on any number of threads.
+    options.threads = 1;
+    const auto single = simulate(standInFiles(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(single.has_value(), errorOf(single));
+    CHECK(single->runsCsv == report->runsCsv);
+}
+
+TEST_CASE("the care scenario's policy changes the raisings") {
+    SimOptions options = optionsFor("care");
+    options.days = 3;
+    const auto trained = simulate(standInFiles(), builtInScenarios(), options);
+    options.parameters = {{"train_sessions", "0"}, {"feed", "false"}};
+    const auto neglected = simulate(standInFiles(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(trained.has_value(), errorOf(trained));
+    REQUIRE_MESSAGE(neglected.has_value(), errorOf(neglected));
+    // Without training the HP stays at the start's 100; unfed, the meals' windows close as care mistakes.
+    CHECK(neglected->markdown.contains("| final_hp | 8 | 100 | 0 |"));
+    CHECK_FALSE(trained->markdown.contains("| final_hp | 8 | 100 | 0 |"));
+    CHECK_FALSE(neglected->markdown.contains("| care_mistakes | 8 | 0 | 0 |"));
+}
+
+TEST_CASE("the care scenario refuses a parameter it does not know or cannot use") {
+    SimOptions options = optionsFor("care");
+    options.parameters = {{"fed", "true"}};
+    CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("unknown parameter 'fed'"));
+    options.parameters = {{"train_hour", "25"}};
+    CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("from 0 to 23, not '25'"));
+    options.parameters = {{"species", "nobody"}};
+    CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("species 'nobody'"));
+    options.parameters = {};
+    options.speed = 0.0;
+    CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("--speed above 0"));
 }
 
 TEST_CASE("a headless session plays a new game on the scenario's ruleset, the same for the same seed") {

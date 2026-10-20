@@ -72,7 +72,8 @@ struct TrainingGainInputs {
     std::reference_wrapper<const TrainingRequest> request;
 };
 
-// The stats a training session raises (TRN_calculateTrainingMultiplier, TRN_award*TrainingGains).
+// The stats a training session raises (TRN_calculateTrainingMultiplier, TRN_award*TrainingGains), before the cap
+// of every gain (care.limits.stat_gain_max) that the partner applies.
 class TrainingGainFormula : public PartnerStrategy {
 public:
     [[nodiscard]] virtual StatBlock gains(const TrainingGainInputs& inputs) const = 0;

@@ -38,6 +38,44 @@ hilos: el informe de una semilla es el mismo en cualquier máquina, así que dos
 |---|---|
 | `clock` | Juega el reloj `--days` días a `--speed` en fotogramas de duración desigual, como un bucle de juego, y comprueba que cruza los mismos minutos, horas y días que avanzar esos fotogramas de golpe (`mismatch` es 0). Es lo que necesitan las reglas que van cada hora o cada día: el avance rápido da lo mismo que jugar |
 | `ruleset-diff` | Lista cada valor en que el ruleset (con sus `--set`) difiere de `--param against=<id>` (por defecto `original`) |
+| `care` | Cría un partner `--days` días con un cuidador de guion y da la vida del primer partner (`lifespan_days`), las muertes, los errores de cuidado, las enfermedades, el peso y los stats del final (`final_*`) |
+
+### `care`
+
+Cría un partner con las reglas de `game/partner` y el reloj del ruleset. Cada minuto de juego, a cualquier `--speed`, el
+cuidador mira al partner y hace una sola cosa: le da de comer si tiene hambre (la carne del original: energía 12 y peso
++1, si no la rechaza), lo lleva al baño si lo necesita, lo acuesta si tiene sueño o, a su hora del día, lo entrena. Si
+muere, renace con el nivel del tamer que llevan los eventos. Aún no hay evolución: el partner sigue en su especie toda
+su vida, así que la vida de un novato es la suya entera (15 días). Los stats del principio son de sustitución (HP y MP
+100, el resto 10); los de verdad los dará la sesión.
+
+| `--param` | Qué cambia | Por defecto |
+|---|---|---|
+| `species` | La especie del principio (id de las tablas `digimon` y `raise`) | `agum` |
+| `feed`, `toilet`, `sleep` | Si el cuidador da de comer, lleva al baño y acuesta (`true` o `false`) | `true` |
+| `train_sessions` | Sesiones seguidas cada día; 0 no entrena | 2 |
+| `train_hour` | La hora del día a la que entrena | 10 |
+| `train_place`, `train_course` | El lugar y el curso (`training.yaml: places`) | `trn`, `hp` |
+| `tamer_level` | El nivel del tamer al empezar | 1 |
+
+Un parámetro que no conoce o un valor que no puede usar detiene la simulación con el motivo.
+
+Ejemplo con el disco del usuario extraído, `dwe-sim --content <contenido> --scenario care --runs 100 --days 30
+--seed 7 --param sleep=false --param toilet=false` (resumido): sin acostarlo ni llevarlo al baño, cada partner muere a
+los 2 días de enfermedades sin tratar y errores, y se suceden 10 muertes en 30 días.
+
+| metric | runs | mean | deviation | min | p5 | p25 | p50 | p75 | p95 | max |
+|---|---|---|---|---|---|---|---|---|---|---|
+| lifespan_days | 100 | 2 | 0 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| deaths | 100 | 10 | 0 | 10 | 10 | 10 | 10 | 10 | 10 | 10 |
+| care_mistakes | 100 | 255 | 0 | 255 | 255 | 255 | 255 | 255 | 255 | 255 |
+| sicknesses | 100 | 11 | 0 | 11 | 11 | 11 | 11 | 11 | 11 | 11 |
+| weight | 100 | 29.27 | 1.58022 | 26 | 27 | 28 | 29 | 30 | 32 | 33 |
+| final_hp | 100 | 425.28 | 29.6183 | 388 | 388 | 410 | 420 | 472 | 472 | 472 |
+| final_offense | 100 | 19.12 | 3.92245 | 12 | 12 | 18 | 20 | 24 | 24 | 24 |
+
+Con el cuidador completo (`--days 14`, sin `--param`), las 100 crianzas acaban igual: 0 errores, 0 enfermedades, 0
+muertes, peso 15 y HP 2340 (100 + 28 sesiones de 80). La vida no varía porque sin evolución no hay nada que la cambie.
 
 ## Añadir un escenario
 

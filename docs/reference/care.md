@@ -205,7 +205,10 @@ Es parte del cuidado porque gasta tiempo, cansa y baja la felicidad (`src/trn/`)
   (`TRN_awardBrainTrainingGains`) **(comprobado)**. Con las tablas del original las dos aptitudes coinciden, así que
   no se nota.
 - **Tope:** una ganancia de 1000 o más se queda en 999; en el original solo se limita la primera ganancia de cada
-  sesión (`TRN_award*`) **(comprobado)**.
+  sesión (`TRN_award*`) **(comprobado)**. Los objetos (`handleFood`), la evolución (`EVL_applyEvolution`) y la
+  herencia al renacer (`setReincarnateStats`) no limitan cada ganancia, solo el stat (9999 y 999) **(comprobado)**.
+  Desviación aprobada (2026-10-20): en el ruleset `original` toda ganancia de un stat se queda en 999
+  (`care.limits.stat_gain_max`), así que un chip de +1000 HP da 999.
 - Cada sesión suma 1 al contador de evolución **(comprobado)**.
 
 ### Comida y objetos de cuidado
@@ -262,7 +265,10 @@ Las vidas no están aquí, sino en la entidad del partner. Las estructuras de `R
 - **Contador muerto.** `subTiredness` se lee y se reinicia, pero nada lo sube **(comprobado: ninguna función del
   decomp lo escribe salvo para ponerlo a 0)**.
 - **Medianoche en combate.** Si un combate cruza la medianoche, no suma edad ni evolución **(comprobado)**.
-- **Años distintos.** El entrenamiento trata un año como 31 días y el reloj como 30 **(comprobado)**.
+- **Años distintos.** El entrenamiento trata un año como 31 días y el reloj como 30 **(comprobado)**:
+  `TRN_advanceTrainingTime` (`src/trn/trn_reward.c`) vuelve el día a 0 al llegar a 31, y `tickGameClock`
+  (`clock.c`), a 30. Hueco conocido: el motor usa el reloj, de 30 días, también al entrenar, y no hay bandera
+  (decisión del responsable de diseño, 2026-10-20).
 - **Sueño fijo para la evolución.** Dormir suma las horas de sueño por defecto al contador de evolución, aunque
   durmiera menos **(comprobado)**.
 - **Baño en la versión americana.** Solo ahí el baño dobla el tiempo hasta el siguiente aviso **(comprobado)**.
@@ -276,7 +282,10 @@ Las vidas no están aquí, sino en la entidad del partner. Las estructuras de `R
 - **Intentos de enfermedad al saltar horas.** Con el partner enfermo, saltar horas suma intentos de la tirada de
   enfermedad **(comprobado)**.
 - **Infelicidad al saltar horas.** `skipHours` comprueba `(HORA + horas % 4) == 0` en vez de cruzar un múltiplo de 4:
-  solo resta vida por infelicidad a medianoche con grupos de 4 horas **(comprobado)**.
+  solo resta vida por infelicidad a medianoche con grupos de 4 horas **(comprobado)**. El ruleset `original` lo
+  reproduce (`care.quirks.skipped_hours_unhappiness_only_at_midnight: true`); con `false`, la resta una vez por cada
+  múltiplo de 4 horas que crucen las horas saltadas, como si se jugaran (decisión del responsable de diseño,
+  2026-10-20).
 
 ## Dónde está en el decomp
 

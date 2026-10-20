@@ -29,6 +29,14 @@ inline constexpr std::string_view NoScenarioContext = "a headless session needs 
 inline constexpr std::string_view ScenarioLine = "{}: {}\n";
 inline constexpr std::string_view NameSeparator = ", ";
 
+// The scenarios' parameters and set-up.
+inline constexpr std::string_view UnknownParameter = "unknown parameter '{}'; known: {}";
+inline constexpr std::string_view BadWholeParameter = "--param {} must be a whole number from {} to {}, not '{}'";
+inline constexpr std::string_view BadSwitchParameter = "--param {} must be true or false, not '{}'";
+inline constexpr std::string_view StoppedClock = "the {} scenario needs a --speed above 0";
+inline constexpr std::string_view UnknownSpecies = "species '{}' is not in the ruleset's digimon and raise tables";
+inline constexpr std::string_view UnknownTraining = "no training course '{}' at '{}' in the training section";
+
 // The run.
 inline constexpr std::string_view RulesetFailed = "ruleset {}: {}";
 inline constexpr std::string_view WriteFailed = "could not write {}";

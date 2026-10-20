@@ -1,0 +1,77 @@
+# Made-up care parameters for the dwe-sim tests, in the shape of data/raise: not the original's data.
+raise:
+- digimon: "agum"
+  index: 3
+  hunger_times: [7, 12, 18, -1, -1, -1, -1, -1]
+  energy_cap: 40
+  energy_threshold: 10
+  energy_usage: 1
+  poop_timer: 18
+  unknown_0e: 0
+  poop_size: 8
+  favorite_food: "meat"
+  sleep_cycle: 2
+  favored_region: 1
+  training_type: 1
+  default_weight: 20
+  view: { x: 0, y: 0, z: 0 }
+- digimon: "bota"
+  index: 1
+  hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
+  energy_cap: 20
+  energy_threshold: 5
+  energy_usage: 1
+  poop_timer: 6
+  unknown_0e: 0
+  poop_size: 4
+  favorite_food: "meat"
+  sleep_cycle: 6
+  favored_region: 1
+  training_type: 0
+  default_weight: 5
+  view: { x: 0, y: 0, z: 0 }
+- digimon: "puni"
+  index: 15
+  hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
+  energy_cap: 20
+  energy_threshold: 5
+  energy_usage: 1
+  poop_timer: 6
+  unknown_0e: 0
+  poop_size: 4
+  favorite_food: "meat"
+  sleep_cycle: 6
+  favored_region: 1
+  training_type: 0
+  default_weight: 5
+  view: { x: 0, y: 0, z: 0 }
+- digimon: "poyo"
+  index: 29
+  hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
+  energy_cap: 20
+  energy_threshold: 5
+  energy_usage: 1
+  poop_timer: 6
+  unknown_0e: 0
+  poop_size: 4
+  favorite_food: "meat"
+  sleep_cycle: 6
+  favored_region: 1
+  training_type: 0
+  default_weight: 5
+  view: { x: 0, y: 0, z: 0 }
+- digimon: "yura"
+  index: 43
+  hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
+  energy_cap: 20
+  energy_threshold: 5
+  energy_usage: 1
+  poop_timer: 6
+  unknown_0e: 0
+  poop_size: 4
+  favorite_food: "meat"
+  sleep_cycle: 6
+  favored_region: 1
+  training_type: 0
+  default_weight: 5
+  view: { x: 0, y: 0, z: 0 }

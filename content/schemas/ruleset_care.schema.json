@@ -31,6 +31,7 @@
         "weight_max",
         "hp_mp_max",
         "stat_max",
+        "stat_gain_max",
         "stat_min"
       ],
       "additionalProperties": false,
@@ -57,6 +58,9 @@
           "type": "integer"
         },
         "stat_max": {
+          "type": "integer"
+        },
+        "stat_gain_max": {
           "type": "integer"
         },
         "stat_min": {
@@ -812,7 +816,8 @@
         "post_battle_mp_tiredness_truncated",
         "food_clears_training_boost",
         "skipped_hunger_window_counts_twice",
-        "skipped_hours_add_sickness_tries"
+        "skipped_hours_add_sickness_tries",
+        "skipped_hours_unhappiness_only_at_midnight"
       ],
       "additionalProperties": false,
       "properties": {
@@ -844,6 +849,9 @@
           "type": "boolean"
         },
         "skipped_hours_add_sickness_tries": {
+          "type": "boolean"
+        },
+        "skipped_hours_unhappiness_only_at_midnight": {
           "type": "boolean"
         }
       }

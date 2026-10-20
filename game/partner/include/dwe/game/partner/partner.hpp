@@ -103,8 +103,12 @@ public:
     // evolution system sets the stats and the counters it owns.
     core::Result<void> changeSpecies(std::string_view species, const ruleset::GameClock& clock);
 
-    // The stats after a battle, an evolution or an item.
+    // Sets the stats as given, with no cap (a battle's HP and MP); raises go through addStatGains.
     void setStats(const PartnerStats& stats) { state_.stats = stats; }
+
+    // Raises the stats by these gains (an evolution's, a battle's): each gain stops at care.limits.stat_gain_max and
+    // each stat at its limit. Gives the gains after their cap. Training, food and rebirth raise through it too.
+    StatBlock addStatGains(const StatBlock& gains);
 
     // Changes the remaining lifetime (item.c: modifyLifetime; +96 hours on reaching ultimate without an item).
     void addLifetime(std::int32_t hours);
@@ -203,8 +207,9 @@ private:
     void rollBattleInjury();
     void passBattleTime(ruleset::GameClock& clock);
     void passHungerWindow(std::int32_t steps);
+    // How many times a skip of hours from this hour checks the unhappiness (skipHours).
+    [[nodiscard]] std::int32_t unhappyChecksWhileSkipping(std::int32_t hour, std::int32_t hours) const;
     void passTrainingHour(const TrainingPlace& place, const TrainingCourse& course, ruleset::GameClock& clock);
-    void addTrainingGains(const StatBlock& gains);
     void addDays(std::int64_t days, bool ages);
 
     // Starts the care of a species (initializePartner, initializeEvolvedPartner, initializeReincarnatedPartner).

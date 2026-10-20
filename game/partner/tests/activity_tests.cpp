@@ -178,4 +178,41 @@ TEST_CASE("care.md rest: a sick partner's skipped hours add sickness rolls in th
     CHECK(fixed.state().health.sicknessTries == 0);
 }
 
+TEST_CASE("care.md rest: in the original, skipped hours check the unhappiness only at midnight") {
+    // Happiness 30 loses (30 - 80) / -50 + 1 = 2 hours of life at each check.
+    const auto unhappy = [](PartnerState& state) { state.mood.happiness = 30; };
+    OriginalRuleset original;
+    Raising raising(original.rules());
+    raising.quiet();
+    raising.edit(unhappy);
+    // From 8:00, nine hours cross 12:00 and 16:00, but (8 + 9 % 4) is not 0.
+    std::int32_t before = raising.state().life.remainingLifetime;
+    raising.partner().skipHours(9, raising.clock());
+    CHECK(raising.state().life.remainingLifetime == before - 9);
+    // From midnight, eight hours: one check, although they cross two multiples of four.
+    raising.skipTo(0, 0);
+    before = raising.state().life.remainingLifetime;
+    raising.partner().skipHours(8, raising.clock());
+    CHECK(raising.state().life.remainingLifetime == before - 8 - 2);
+
+    original.set("care", "quirks.skipped_hours_unhappiness_only_at_midnight", "false");
+    Raising fixed(original.rules());
+    fixed.quiet();
+    fixed.edit(unhappy);
+    // From 8:00, nine hours cross 12:00 and 16:00: two checks.
+    before = fixed.state().life.remainingLifetime;
+    fixed.partner().skipHours(9, fixed.clock());
+    CHECK(fixed.state().life.remainingLifetime == before - 9 - 4);
+    // From midnight, three hours cross none.
+    fixed.skipTo(0, 0);
+    before = fixed.state().life.remainingLifetime;
+    fixed.partner().skipHours(3, fixed.clock());
+    CHECK(fixed.state().life.remainingLifetime == before - 3);
+    // From 3:00, one hour crosses 4:00.
+    fixed.skipTo(3, 0);
+    before = fixed.state().life.remainingLifetime;
+    fixed.partner().skipHours(1, fixed.clock());
+    CHECK(fixed.state().life.remainingLifetime == before - 1 - 2);
+}
+
 } // namespace dwe::game::partner

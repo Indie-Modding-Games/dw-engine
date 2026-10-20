@@ -47,11 +47,8 @@ void Partner::applyFood(const FoodEffect& food) {
     }
     rollFoodSickness(food.sicknessPercent);
     state_.life.remainingLifetime += food.lifetimeHours;
+    addStatGains(food.permanentGain);
     PartnerStats& stats = state_.stats;
-    for (const Stat stat : AllStats) {
-        const std::int32_t cap = stat == Stat::Hp || stat == Stat::Mp ? limits.hpMpMax : limits.statMax;
-        stats.base[stat] = std::min(stats.base[stat] + food.permanentGain[stat], cap);
-    }
     stats.currentHp = std::min(stats.currentHp + food.hpHeal, stats.base[Stat::Hp]);
     stats.currentMp = std::min(stats.currentMp + food.mpHeal, stats.base[Stat::Mp]);
 }

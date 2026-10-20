@@ -41,6 +41,7 @@ constexpr std::string_view WeightMaxKey = "weight_max";
 constexpr std::string_view HpMpMaxKey = "hp_mp_max";
 constexpr std::string_view StatMaxKey = "stat_max";
 constexpr std::string_view StatMinKey = "stat_min";
+constexpr std::string_view StatGainMaxKey = "stat_gain_max";
 
 // hunger
 constexpr std::string_view BabyIntervalKey = "baby_interval_hours";
@@ -186,12 +187,13 @@ constexpr std::string_view PostBattleMpTruncated = "post_battle_mp_tiredness_tru
 constexpr std::string_view FoodClearsTrainingBoost = "food_clears_training_boost";
 constexpr std::string_view SkippedHungerCountsTwice = "skipped_hunger_window_counts_twice";
 constexpr std::string_view SkippedHoursAddTries = "skipped_hours_add_sickness_tries";
+constexpr std::string_view SkippedHoursUnhappyAtMidnight = "skipped_hours_unhappiness_only_at_midnight";
 
 CareLimits readLimits(YamlReader& reader, const YamlNode& root) {
     const YamlNode* node = nullptr;
     if (!group(reader, root, LimitsKey,
                {HappinessMinKey, HappinessMaxKey, DisciplineMaxKey, TirednessMaxKey, WeightMinKey, WeightMaxKey,
-                HpMpMaxKey, StatMaxKey, StatMinKey},
+                HpMpMaxKey, StatMaxKey, StatMinKey, StatGainMaxKey},
                node)) {
         return {};
     }
@@ -203,7 +205,8 @@ CareLimits readLimits(YamlReader& reader, const YamlNode& root) {
                       .weightMax = positive(reader, *node, WeightMaxKey),
                       .hpMpMax = positive(reader, *node, HpMpMaxKey),
                       .statMax = positive(reader, *node, StatMaxKey),
-                      .statMin = positive(reader, *node, StatMinKey)};
+                      .statMin = positive(reader, *node, StatMinKey),
+                      .statGainMax = positive(reader, *node, StatGainMaxKey)};
     if (reader.ok() && limits.happinessMin > limits.happinessMax) {
         reader.fail(*node, formatMessage(messages::MinAboveMax, HappinessMinKey, HappinessMaxKey));
     }
@@ -520,7 +523,7 @@ CareQuirks readCareQuirks(YamlReader& reader, const YamlNode& root) {
         reader, node,
         {SleepingHungryKeepsWeight, SleepAddsDefaultHours, SicknessChanceWraps, YoungSleepWithoutVariation,
          BattleMidnightSkipsAge, ToiletDoublesPoopInterval, PostBattleMpTruncated, FoodClearsTrainingBoost,
-         SkippedHungerCountsTwice, SkippedHoursAddTries});
+         SkippedHungerCountsTwice, SkippedHoursAddTries, SkippedHoursUnhappyAtMidnight});
     return {.sleepingHungryKeepsWeight = quirks.on(SleepingHungryKeepsWeight),
             .sleepAddsDefaultHoursToEvolution = quirks.on(SleepAddsDefaultHours),
             .sicknessChanceWraps = quirks.on(SicknessChanceWraps),
@@ -530,7 +533,8 @@ CareQuirks readCareQuirks(YamlReader& reader, const YamlNode& root) {
             .postBattleMpTirednessTruncated = quirks.on(PostBattleMpTruncated),
             .foodClearsTrainingBoost = quirks.on(FoodClearsTrainingBoost),
             .skippedHungerWindowCountsTwice = quirks.on(SkippedHungerCountsTwice),
-            .skippedHoursAddSicknessTries = quirks.on(SkippedHoursAddTries)};
+            .skippedHoursAddSicknessTries = quirks.on(SkippedHoursAddTries),
+            .skippedHoursUnhappinessOnlyAtMidnight = quirks.on(SkippedHoursUnhappyAtMidnight)};
 }
 
 } // namespace

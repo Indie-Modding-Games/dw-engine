@@ -75,7 +75,6 @@ struct TrainingRules {
     Ratio manualBonus;
     std::int32_t tiredOutTiredness = 0;
     std::int32_t tiredOutGain = 0;
-    std::int32_t gainCap = 0;
     std::int32_t slotDefaultTenths = 0;
     std::int32_t overworkTiredness = 0;
     std::int32_t overworkHappiness = 0;

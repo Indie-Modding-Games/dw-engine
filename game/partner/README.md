@@ -37,6 +37,7 @@ partner.cure({.injuryPercent = 100, .sicknessPercent = 20});    // venda
 partner.skipHours(hours, clock);                                 // descansar; la sesión mueve el reloj después
 partner.finishBattle({.result = BattleResult::Won, .tookDamage = hit}, clock);   // +20 minutos
 auto gains = partner.train({.place = "trn", .course = "hp"}, clock);           // +1 hora
+partner.addStatGains(evolutionGains);                                           // cada ganancia, 999 como mucho
 ```
 
 - **Tiempo.** `tick` recorre los fotogramas que cruzó el reloj y aplica cada regla en el fotograma del día en que la
@@ -46,11 +47,16 @@ auto gains = partner.train({.place = "trn", .course = "hp"}, clock);           /
 - **Órdenes.** Comer (`FoodEffect`), curar (`CureEffect`), regañar, elogiar, dormir, baño y orinal portátil, comer
   caca (`eatPoop`, para las especies que lo hacen), descansar (`skipHours`), combate (`BattleOutcome`) y
   entrenamiento (`TrainingRequest`). El inventario es dueño de la tabla de objetos; la sesión traduce un objeto a su
-  efecto. Los chips y demás stats permanentes van por `setStats` y `addLifetime`.
+  efecto. Las ganancias de stats que vienen de fuera (evolución, combate) van por `addStatGains`, que aplica el tope de
+  cada ganancia (`care.limits.stat_gain_max`) y el de cada stat; `setStats` pone los stats tal cual, sin tope (el HP
+  y el MP tras un combate). La vida que dan o quitan los objetos va por `addLifetime`.
 - **Eventos** (`EventKind`): necesidades que empiezan, ventana de hambre cerrada, error de cuidado (con su causa),
   caca en el suelo (con su tamaño, para `PoopPiles`), rechazo, `Slept` (al despertar) y `NewDay` (cada medianoche
   cruzada jugando, durmiendo, combatiendo o entrenando), entrenado, vida perdida, muerte, renacer, cambio del nivel
   del tamer (ya tirado; la sesión lo limita a 0..10), barra de virus llena y regañina en el peor momento.
+- **Tope de las ganancias.** Toda ganancia de un stat se queda en 999 como mucho (desviación aprobada,
+  2026-10-20): el entrenamiento, las comidas y chips (`FoodEffect::permanentGain`), la herencia al renacer y
+  `addStatGains` pasan por la misma función. HP y MP siguen llegando hasta 9999 sumando ganancias.
 - **Muerte y renacer.** El partner emite `Died` (valor 1 si fue natural); la sesión juega la muerte y llama a
   `rebirth(clock, nivelDelTamer)`.
 - **Evolución.** El partner lleva los contadores (`EvolutionCounters`) y avisa de la barra de virus; el módulo de
@@ -108,10 +114,12 @@ Cada rareza de la ficha que el juego nota va detrás de una bandera de `quirks:`
 | `food_clears_training_boost` | Cualquier comida borra el bonus de entrenamiento |
 | `skipped_hunger_window_counts_twice` | Saltar horas cuenta el error de la ventana de hambre dos veces |
 | `skipped_hours_add_sickness_tries` | Saltar horas enfermo suma intentos de enfermar |
+| `skipped_hours_unhappiness_only_at_midnight` | Saltar horas solo resta vida por infelicidad a medianoche y con grupos de 4 horas; `false` la resta por cada múltiplo de 4 horas cruzado |
 | `training.quirks.brain_training_uses_mp_aptitude` | La inteligencia usa el multiplicador del MP |
 
-Dos rarezas no tienen bandera porque no hay nada que cambiar: el contador muerto `subTiredness` (nada lo sube) y el
-año de 31 días del entrenamiento (ver la tabla).
+Dos rarezas no tienen bandera: el contador muerto `subTiredness`, porque nada lo sube, y el año de 31 días del
+entrenamiento, que se queda como hueco conocido sin bandera (decisión del responsable de diseño, 2026-10-20; ver la
+tabla).
 
 ## Paridad con el original
 
@@ -154,19 +162,24 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Combate: ánimo, cansancio, tiempo | `tamer.c: startBattle`, `advanceBattleTime`; `partner_impl.c: handlePostBattleTiredness` | `finishBattle`, `passBattleTime` | `activity_tests` | Igual |
 | Herida en combate | `battle_ui.c: handleBattleInjury` | `rollBattleInjury` | `activity_tests`: hurt partner | Igual |
 | Saltar horas | `partner_impl.c: skipHours` | `skipHours` | `activity_tests`: rest | Igual |
+| Infelicidad al saltar horas | `partner_impl.c: skipHours` | `unhappyChecksWhileSkipping`, `care.quirks.skipped_hours_unhappiness_only_at_midnight` | `activity_tests`: rest, only at midnight | Igual (2026-10-20): la rareza queda por defecto; `false` resta por cada múltiplo de 4 horas cruzado |
 | Multiplicador de entrenamiento | `trn_reward.c: TRN_calculateTrainingMultiplier` | `OriginalGainFormula` | `training_tests` | Igual |
 | Ganancias y cansado del todo | `trn_reward.c: TRN_award*TrainingGains` | `OriginalGainFormula` | `training_tests` | Igual |
-| Tope de 999 | `trn_reward.c: TRN_award*TrainingGains` (solo la primera ganancia) | `OriginalGainFormula` (todas) | `training_tests`: stop at 9999 | Desviación aprobada (pendiente de confirmar): con los datos del original solo la primera puede pasar de 999 |
+| Tope de cada ganancia: 999 | `trn_reward.c: TRN_award*TrainingGains` (solo la primera ganancia de la sesión); sin tope por ganancia en `item.c: handleFood`, `evl.c: EVL_applyEvolution` y `partner_impl.c: setReincarnateStats` | `addStatGains`, `care.limits.stat_gain_max` | `stat_gain_tests` | Desviación aprobada (2026-10-20): toda ganancia se queda en 999, también la de un objeto (un chip de +1000 HP da 999), la de la evolución y la herencia |
+| Tope de cada stat: 9999 y 999 | `item.c: addWithLimit`; `evl.c: EVL_clampBaseStats` | `addStatGains`, `care.limits` | `training_tests`: stop at 9999 | Igual |
 | Hora de entrenamiento | `trn_reward.c: TRN_advanceTrainingTime` | `passTrainingHour` | `training_tests`: takes an hour | Igual |
-| Año de 31 días al entrenar | `trn_reward.c: TRN_advanceTrainingTime` | — (usa el reloj, 30) | — | Hueco |
+| Año de 31 días al entrenar | `trn_reward.c: TRN_advanceTrainingTime` (el día vuelve a 0 en 31; el reloj, en 30) | — (usa el reloj, 30) | — | Hueco conocido (2026-10-20): se queda así, sin bandera |
+| Patrones de sueño | `partner_impl.c: SLEEP_PATTERN` | `care.sleep.patterns`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
+| Stats fijos de los bebés del renacer | `partner_impl.c: initializeReincarnatedPartner`; `dooa.c: REINCARNATE_BABY_TYPE` | `life.rebirth.babies`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |
 | Evoluciones al despertar | `partner_impl.c: handleSleeping` | — (módulo de evolución) | — | Hueco (fuera de este módulo) |
 | Técnicas tras renacer | `evolution.c: initializeReincarnatedPartner` | — (batalla) | — | Hueco (fuera de este módulo) |
 
 ## Tests
 
 Un test por regla de la ficha, en `hunger_tests.cpp`, `sleep_tests.cpp`, `toilet_tests.cpp`, `health_tests.cpp`,
-`mood_tests.cpp`, `life_tests.cpp`, `activity_tests.cpp` y `training_tests.cpp`, con especies de prueba inventadas
-(`partner_fixture.hpp`) sobre el ruleset `original` del paquete `game`. Además:
+`mood_tests.cpp`, `life_tests.cpp`, `activity_tests.cpp`, `training_tests.cpp` y `stat_gain_tests.cpp` (el tope de
+cada ganancia, por cada camino que sube un stat), con especies de prueba inventadas (`partner_fixture.hpp`) sobre el
+ruleset `original` del paquete `game`. Además:
 
 - `rules_tests.cpp`: los números del original, los esquemas, valores que las comprobaciones rechazan, un valor del
   ruleset cambiado (la ventana de hambre) y una estrategia cambiada (sin errores de cuidado).

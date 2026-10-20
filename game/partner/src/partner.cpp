@@ -112,17 +112,20 @@ core::Result<void> Partner::rebirth(const ruleset::GameClock& clock, std::int32_
         return std::unexpected{found.error()};
     }
     useClock(clock);
-    // evolution.c: initializeReincarnatedPartner. Only a natural death passes stats on.
-    StatBlock base = baby.stats;
+    // partner_impl.c: initializeReincarnatedPartner, setReincarnateStats. Only a natural death passes stats on.
+    StatBlock inherited;
     if (state_.life.phase == LifePhase::DiedNaturally) {
         for (const Stat stat : AllStats) {
-            base[stat] +=
+            inherited[stat] =
                 state_.stats.base[stat] * tamerLevel * life().rebirth.inheritPercentPerTamerLevel / constants::Percent;
         }
     }
     species_ = *found;
     state_.species = species_->id;
-    state_.stats = {.base = base, .currentHp = base[Stat::Hp], .currentMp = base[Stat::Mp]};
+    state_.stats = {.base = baby.stats};
+    addStatGains(inherited);
+    state_.stats.currentHp = state_.stats.base[Stat::Hp];
+    state_.stats.currentMp = state_.stats.base[Stat::Mp];
     const ruleset::GameTime now = clock.time();
     startCare(now.hour, now.minute);
     state_.evolution.careMistakes = 0;
@@ -213,6 +216,18 @@ void Partner::die(LifePhase phase) {
 void Partner::addLifetime(std::int32_t hours) {
     // item.c: modifyLifetime.
     state_.life.remainingLifetime = std::max(state_.life.remainingLifetime + hours, 0);
+}
+
+StatBlock Partner::addStatGains(const StatBlock& gains) {
+    // The approved cap of every gain, then each stat's limit (item.c: addWithLimit; evl.c: EVL_clampBaseStats).
+    const CareLimits& limits = care().limits;
+    StatBlock capped;
+    for (const Stat stat : AllStats) {
+        capped[stat] = std::min(gains[stat], limits.statGainMax);
+        const std::int32_t limit = stat == Stat::Hp || stat == Stat::Mp ? limits.hpMpMax : limits.statMax;
+        state_.stats.base[stat] = std::min(state_.stats.base[stat] + capped[stat], limit);
+    }
+    return capped;
 }
 
 void Partner::spendLifetime(std::int32_t hours) {

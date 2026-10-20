@@ -12,7 +12,7 @@ informe en Markdown y CSV con la distribución de cada métrica. Uso, opciones y
 | `sim_options.hpp` | La línea de órdenes, los `--set` (`parseValueOverride`, `applyOverrides`) |
 | `simulation.hpp` | `simulate`: carga el ruleset, aplica los `--set`, prepara el escenario y lo juega; `writeReport` |
 | `headless_session.hpp` | `HeadlessSessions`: partidas sin ventana (`session::GameSession`) para las partidas de un escenario, con el ruleset y los `--set` del contexto; `prepare` en `setup`, `start(seed)` en `run` |
-| `scenarios/*.cpp` | Un escenario por fichero, que se registra solo: `clock` y `ruleset-diff` |
+| `scenarios/*.cpp` | Un escenario por fichero, que se registra solo: `care`, `clock` y `ruleset-diff` |
 
 El módulo puede usar todos los módulos de `game/` (CMake los recoge con la propiedad `DWE_GAME_MODULES`), así que un
 escenario nuevo es un fichero nuevo. Los paquetes se montan con `apps/content`, igual que en el juego.
@@ -20,7 +20,10 @@ escenario nuevo es un fichero nuevo. Los paquetes se montan con `apps/content`, 
 ## Tests
 
 `tests/sim_tests.cpp`: el registro, que las partidas son las mismas con cualquier número de hilos, el informe
-(percentiles, histograma, Markdown y CSV), la línea de órdenes, el reloj a varias velocidades, que `--set` cambia lo
-que ve el escenario, que una partida sin ventana es la misma con la misma semilla y que un valor que el ruleset no acepta detiene la simulación. Usan un paquete base de sustitución
-con las tablas vacías que CMake escribe en la carpeta del build, y el paquete `game` del árbol de fuentes. `sim.smoke`
-ejecuta `dwe-sim --scenario clock --runs 10` y pide que ninguna partida se desvíe.
+(percentiles, histograma, Markdown y CSV), la línea de órdenes, el reloj a varias velocidades, que `--set` cambia lo que
+ve el escenario, que una partida sin ventana es la misma con la misma semilla, que un valor que el ruleset no acepta
+detiene la simulación, y el escenario `care` (sus métricas, que la política del cuidador cambia las crianzas y los
+parámetros que rechaza). Usan un paquete base de sustitución que CMake escribe en la carpeta del build: tablas vacías,
+salvo `digimon` y `raise`, con unas especies inventadas (`tests/stand-in/`) para `care`; y el paquete `game` del árbol
+de fuentes. `sim.smoke` ejecuta `dwe-sim --scenario clock --runs 10` y pide que ninguna partida se desvíe;
+`sim.care.smoke`, cuatro crianzas de una semana con `care`.

@@ -14,7 +14,6 @@
     "manual_bonus",
     "tired_out_tiredness",
     "tired_out_gain",
-    "gain_cap",
     "slot_default_tenths",
     "overwork_tiredness",
     "overwork_happiness",
@@ -192,9 +191,6 @@
       "type": "integer"
     },
     "tired_out_gain": {
-      "type": "integer"
-    },
-    "gain_cap": {
       "type": "integer"
     },
     "slot_default_tenths": {

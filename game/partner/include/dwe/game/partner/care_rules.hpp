@@ -24,6 +24,8 @@ struct CareLimits {
     std::int32_t hpMpMax = 0;
     std::int32_t statMax = 0;
     std::int32_t statMin = 0;
+    // The most a single gain may raise a stat, whatever raises it.
+    std::int32_t statGainMax = 0;
 };
 
 struct CareStart {
@@ -199,6 +201,7 @@ struct CareQuirks {
     bool foodClearsTrainingBoost = true;
     bool skippedHungerWindowCountsTwice = true;
     bool skippedHoursAddSicknessTries = true;
+    bool skippedHoursUnhappinessOnlyAtMidnight = true;
 };
 
 // The names of the strategies the section picks.

@@ -123,7 +123,7 @@ public:
             if (inputs.state.get().mood.tiredness >= inputs.rules.get().tiredOutTiredness) {
                 value = inputs.rules.get().tiredOutGain;
             }
-            gains[gain.stat] += std::min(value, inputs.rules.get().gainCap);
+            gains[gain.stat] += value;
         }
         return gains;
     }

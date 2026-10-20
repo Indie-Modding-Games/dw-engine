@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -55,12 +56,22 @@ TEST_CASE("the original ruleset gives the partner the original's numbers") {
     CHECK(rules.life.lifetimeHours == 360);
     CHECK(rules.life.lives == 3);
     CHECK(rules.life.rebirth.babies.size() == 4);
+    // SLEEP_PATTERN: the baby and in-training patterns, by their hours awake and asleep.
+    CHECK(rules.care.sleep.patterns[6].awakeHours == 4);
+    CHECK(rules.care.sleep.patterns[6].asleepHours == 1);
+    CHECK(rules.care.sleep.patterns[7].awakeHours == 8);
+    CHECK(rules.care.sleep.patterns[7].asleepHours == 3);
+    // partner_impl.c: initializeReincarnatedPartner, the first baby's setReincarnateStats.
+    CHECK(rules.life.rebirth.babies[0].stats.values == std::array<std::int32_t, StatCount>{90, 110, 10, 11, 9, 10});
+    // The approved cap of every stat gain (2026-10-20).
+    CHECK(rules.care.limits.statGainMax == 999);
     CHECK(rules.training.levelTenths == std::array<std::int32_t, LevelCount>{9, 9, 10, 11, 12});
     CHECK(rules.training.findPlace("trn") != nullptr);
     CHECK(rules.training.findPlace("trn2") != nullptr);
     // Every quirk reproduces the original.
     CHECK(rules.care.quirks.sicknessChanceWraps);
     CHECK(rules.care.quirks.toiletDoublesPoopInterval);
+    CHECK(rules.care.quirks.skippedHoursUnhappinessOnlyAtMidnight);
     CHECK(rules.training.quirks.brainTrainingUsesMpAptitude);
 }
 

@@ -1,0 +1,68 @@
+# Made-up Digimon for the dwe-sim tests, in the shape of data/digimon: not the original's data. The rookie and the
+# four babies of the original ruleset's rebirth, so the care scenario can raise and rebirth a partner.
+digimon:
+- id: "agum"
+  index: 3
+  name: "Test agum"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 3
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "bota"
+  index: 1
+  name: "Test bota"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 1
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "puni"
+  index: 15
+  name: "Test puni"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 1
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "poyo"
+  index: 29
+  name: "Test poyo"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 1
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "yura"
+  index: 43
+  name: "Test yura"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 1
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]

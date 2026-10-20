@@ -121,8 +121,7 @@ void Partner::skipHours(std::int32_t hours, const ruleset::GameClock& clock) {
     state_.evolution.hours += hours;
     state_.life.remainingLifetime -= hours;
     addDays((hour + hours) / constants::HoursPerDay, true);
-    // The original checks (HOUR + hours % 4) == 0, true only at midnight with whole sets of four hours.
-    if (hour + (hours % life().unhappyLifetime.everyHours) == 0) {
+    for (std::int32_t check = unhappyChecksWhileSkipping(hour, hours); check > 0; --check) {
         loseUnhappyLifetime();
     }
     state_.life.remainingLifetime = std::max(state_.life.remainingLifetime, 0);
@@ -148,6 +147,16 @@ void Partner::skipHours(std::int32_t hours, const ruleset::GameClock& clock) {
     state_.health.sickHours += state_.conditions.has(Condition::Sick) ? hours : 0;
 }
 
+std::int32_t Partner::unhappyChecksWhileSkipping(std::int32_t hour, std::int32_t hours) const {
+    const std::int32_t every = life().unhappyLifetime.everyHours;
+    if (care().quirks.skippedHoursUnhappinessOnlyAtMidnight) {
+        // The original checks (HOUR + hours % 4) == 0, true only at midnight with whole sets of four hours.
+        return hour + (hours % every) == 0 ? 1 : 0;
+    }
+    // Once for each multiple of the interval the skipped hours cross, as playing them would.
+    return ((hour + hours) / every) - (hour / every);
+}
+
 core::Result<TrainingResult> Partner::train(const TrainingRequest& request, ruleset::GameClock& clock) {
     const TrainingRules& rules = rules_->training;
     const TrainingPlace* place = rules.findPlace(request.place);
@@ -166,20 +175,11 @@ core::Result<TrainingResult> Partner::train(const TrainingRequest& request, rule
     if (place->countsPractice && static_cast<std::int32_t>(species_->level) < rules.practiceLevelBelow) {
         ++state_.training.youngSessions[course->aptitude];
     }
-    const StatBlock gains = strategies().gainFormula->gains(
-        {.rules = rules, .course = *course, .state = state_, .species = *species_, .request = request});
-    addTrainingGains(gains);
+    const StatBlock gains = addStatGains(strategies().gainFormula->gains(
+        {.rules = rules, .course = *course, .state = state_, .species = *species_, .request = request}));
     passTrainingHour(*place, *course, clock);
     emit(EventKind::Trained, 1);
     return TrainingResult{.gains = gains};
-}
-
-void Partner::addTrainingGains(const StatBlock& gains) {
-    const CareLimits& limits = care().limits;
-    for (const Stat stat : AllStats) {
-        const std::int32_t cap = stat == Stat::Hp || stat == Stat::Mp ? limits.hpMpMax : limits.statMax;
-        state_.stats.base[stat] = std::min(state_.stats.base[stat] + gains[stat], cap);
-    }
 }
 
 void Partner::passTrainingHour(const TrainingPlace& place, const TrainingCourse& course, ruleset::GameClock& clock) {

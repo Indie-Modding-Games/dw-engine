@@ -12,10 +12,11 @@ unhappy_lifetime:
   happiness_divisor: 50
   extra_hours: 1
 rebirth:
-  # dooa.c: el huevo se elige con rand() % 4 entre REINCARNATE_BABY_TYPE: original = uno al azar con la misma
+  # dooa/dooa.c: el huevo se elige con rand() % 4 entre REINCARNATE_BABY_TYPE: original = uno al azar con la misma
   # probabilidad.
   baby_choice: original
-  # dooa.c: REINCARNATE_BABY_TYPE y initializeReincarnatedPartner: setReincarnateStats de cada bebé.
+  # dooa/dooa.c: REINCARNATE_BABY_TYPE, los cuatro bebés; partner_impl.c: initializeReincarnatedPartner, los stats
+  # fijos de cada uno (setReincarnateStats). Constantes del código, no una tabla del disco.
   babies:
     - { digimon: "bota", hp: 90, mp: 110, offense: 10, defense: 11, speed: 9, brain: 10 }
     - { digimon: "puni", hp: 120, mp: 100, offense: 16, defense: 8, speed: 8, brain: 6 }

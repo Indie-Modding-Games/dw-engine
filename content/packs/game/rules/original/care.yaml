@@ -15,6 +15,11 @@ limits:
   # velocidad e inteligencia hasta 999.
   hp_mp_max: 9999
   stat_max: 999
+  # Desviación aprobada (2026-10-20): cada ganancia de un stat se queda en 999 como mucho, venga del entrenamiento,
+  # de un objeto, de la evolución o de la herencia al renacer. En el original solo la tiene la primera ganancia de
+  # cada sesión de entrenamiento (trn/trn_reward.c: TRN_award*TrainingGains); los objetos y la evolución solo paran
+  # en los topes de arriba (item.c: handleFood; evl/evl.c: EVL_clampBaseStats), así que un chip de +1000 HP da 999.
+  stat_gain_max: 999
   # tickUnhappinessMechanics: un stat que baja nunca queda por debajo de 1.
   stat_min: 1
 start:
@@ -64,8 +69,8 @@ sleep:
   baby_awake_hours: 3
   in_training_awake_hours: 7
   young_awake_variation_hours: 1
-  # SLEEP_PATTERN: los horarios de sueño; RAISE_DATA elige uno por especie (sleep_cycle). Los bebés y los de
-  # entrenamiento solo usan sus horas dormido.
+  # partner_impl.c: SLEEP_PATTERN, los horarios de sueño (una tabla del código, no del disco); RAISE_DATA elige uno
+  # por especie (sleep_cycle). Los bebés y los de entrenamiento solo usan sus horas dormido.
   patterns:
     - { sleepy_hour: 16, sleepy_minute: 0, wake_hour: 1, wake_minute: 0, awake_hours: 15, asleep_hours: 9 }
     - { sleepy_hour: 19, sleepy_minute: 0, wake_hour: 4, wake_minute: 0, awake_hours: 15, asleep_hours: 9 }
@@ -237,3 +242,7 @@ quirks:
   skipped_hunger_window_counts_twice: true
   # tamer.c: advanceBattleTime y skipHours suman a sicknessTries, no a las horas de enfermedad, cada hora enfermo.
   skipped_hours_add_sickness_tries: true
+  # skipHours mira (HOUR + horas % 4) == 0 y no si las horas saltadas cruzan un múltiplo de 4: solo resta vida por
+  # infelicidad a medianoche y con grupos de 4 horas. false: la resta una vez por cada múltiplo de 4 horas cruzado,
+  # como si se jugaran esas horas.
+  skipped_hours_unhappiness_only_at_midnight: true
