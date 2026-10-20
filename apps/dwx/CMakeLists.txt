@@ -1,4 +1,5 @@
 find_package(Opus CONFIG REQUIRED)
+find_package(Ktx CONFIG REQUIRED)
 # libopusenc ships no CMake package: its library and header, from the vcpkg tree.
 find_library(DWE_OPUSENC_LIBRARY NAMES opusenc REQUIRED)
 find_path(DWE_OPUSENC_INCLUDE_DIR opusenc.h PATH_SUFFIXES opus REQUIRED)
@@ -21,7 +22,6 @@ dwe_add_module(dwx
         src/extract_disc.cpp
         src/extractors.cpp
         src/game_tables.cpp
-        src/ktx2.cpp
         src/image_extractors.cpp
         src/map_extractors.cpp
         src/overlay_extractor.cpp
@@ -38,7 +38,7 @@ dwe_add_module(dwx
         src/verify.cpp
         src/video_extractors.cpp
     DEPS core formats assets
-    PRIVATE_LIBS dwe_opusenc
+    PRIVATE_LIBS dwe_opusenc KTX::ktx
     TEST_LIBS dwe_cgltf)
 
 if(BUILD_TESTING)

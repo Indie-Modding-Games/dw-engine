@@ -66,7 +66,7 @@ core::Result<std::vector<std::byte>> checkGlb(std::span<const std::byte> source,
 
 constexpr std::array Registry = {
     Cooker{.name = "texture",
-           .version = 2,
+           .version = 3,
            .sourceExtension = "png",
            .outputExtension = "ktx2",
            .plan = planTexture,

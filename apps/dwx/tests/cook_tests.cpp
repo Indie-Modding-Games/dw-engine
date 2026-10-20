@@ -1,6 +1,7 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/sound.hpp>
+#include <dwe/assets/texture.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/formats/audio/wav.hpp>
 #include <dwe/formats/image/png.hpp>
@@ -30,6 +31,13 @@ std::uint32_t u32At(const std::vector<std::byte>& bytes, std::size_t offset) {
     return value;
 }
 
+// Whether a cooked texture holds sRGB colour, as the engine reads it.
+bool srgbOf(const std::vector<std::byte>& ktx2) {
+    const auto texture = dwe::assets::decodeKtx2(ktx2, dwe::assets::TexelEncoding::Rgba8);
+    REQUIRE(texture.has_value());
+    return texture->srgb;
+}
+
 std::string pngText(std::uint8_t red) {
     dwe::formats::image::RgbaImage image{.width = 2, .height = 2, .pixels = {}};
     image.pixels.assign(4, {.r = red, .g = 20, .b = 30, .a = 255});
@@ -38,8 +46,8 @@ std::string pngText(std::uint8_t red) {
     return {reinterpret_cast<const char*>(png->data()), png->size()};
 }
 
-std::string indexedPngText() {
-    const std::vector<std::uint8_t> indices{0, 1, 2, 1};
+std::string indexedPngText(std::uint8_t last = 1) {
+    const std::vector<std::uint8_t> indices{0, 1, 2, last};
     const std::vector<dwe::formats::image::Rgba8> palette{
         {.r = 0, .g = 0, .b = 0, .a = 0}, {.r = 255, .g = 0, .b = 0, .a = 255}, {.r = 0, .g = 0, .b = 255, .a = 255}};
     const auto png = dwe::formats::image::encodePngIndexed(2, 2, indices, palette);
@@ -93,8 +101,11 @@ TEST_CASE("cooking a pack keeps its ids and runs each file through its cooker") 
     CHECK(readOrEmpty(out / "digimon/x/model.glb") == readOrEmpty(folder.path() / "src/digimon/x/model.glb"));
     const auto texture = readOrEmpty(out / "map/start/background.ktx2");
     REQUIRE(texture.size() > 80);
-    CHECK(u32At(texture, 12) == 43);
+    CHECK(u32At(texture, 12) == 0); // Basis Universal, transcoded when loaded
     CHECK(u32At(texture, 40) == 2);
+    CHECK(srgbOf(texture));
+    const auto opened = dwe::assets::openAsset("ktx2", texture);
+    CHECK_MESSAGE(opened.has_value(), (opened ? std::string{} : opened.error().message));
     CHECK_FALSE(std::filesystem::exists(out / "map/start/background.png"));
 
     const auto files = dwe::assets::listPackFiles(DiskFileSystem{}, out);
@@ -159,42 +170,46 @@ TEST_CASE("cooking refuses folders it does not own and files that do not cook") 
     CHECK(cookError(folder).contains("background.png: not a PNG"));
 }
 
-TEST_CASE("lookup images pass through the cook as PNG and sidecars set the colour space") {
+TEST_CASE("images whose palette is chosen at runtime pass through as PNG and sidecars set the colour space") {
     const TempFolder folder;
     writeSourcePack(folder);
-    // Indexed, with no sidecar, like a map background drawn with one of its palettes.
+    // Indexed, with no sidecar, like a map background drawn with one of its palettes: it cooks.
     folder.write("src/map/start/background_palette3.png", indexedPngText());
-    // RGBA, but its sidecar says it has a CLUT.
-    folder.write("src/card/001.png", pngText(40));
-    folder.write("src/card/001_meta.yaml", "mode: direct16\nclut_rect: {x: 0, y: 480, width: 16, height: 1}\n"
-                                           "png: rgba\n");
+    // Indexed, and its CLUT has several rows for the same pixels.
+    folder.write("src/card/001.png", indexedPngText());
+    folder.write("src/card/001_meta.yaml", "mode: indexed4\nclut_rect: {x: 0, y: 480, width: 16, height: 2}\n"
+                                           "png: indexed\npalettes:\n- \"0000 7fff\"\n- \"0000 001f\"\n");
+    // Indexed, from a map: its sprites choose the row.
+    folder.write("src/map/start/texture8/000.png", indexedPngText(2));
+    folder.write("src/map/start/texture8/000_meta.yaml",
+                 "source: \"MAP/MAP1/START.MAP\"\nclut_rect: {x: 0, y: 480, width: 256, height: 1}\n"
+                 "palettes:\n- \"0000 7fff\"\n");
     folder.write("src/ui/mask.png", pngText(50));
     folder.write("src/ui/mask_meta.yaml", "color_space: linear\n");
 
     CookSummary summary = cooked(folder);
-    CHECK(summary.assets == 8);
-    CHECK(summary.cooked == 3);
+    CHECK(summary.assets == 10);
+    CHECK(summary.cooked == 4);
     CHECK(summary.passed == 2);
-    CHECK(summary.copied == 3);
+    CHECK(summary.copied == 4);
     const std::filesystem::path out = folder.path() / "out";
-    CHECK(readOrEmpty(out / "map/start/background_palette3.png") ==
-          readOrEmpty(folder.path() / "src/map/start/background_palette3.png"));
+    CHECK(std::filesystem::exists(out / "map/start/background_palette3.ktx2"));
     CHECK(readOrEmpty(out / "card/001.png") == readOrEmpty(folder.path() / "src/card/001.png"));
     CHECK_FALSE(std::filesystem::exists(out / "card/001.ktx2"));
-    const auto mask = readOrEmpty(out / "ui/mask.ktx2");
-    REQUIRE(mask.size() > 16);
-    CHECK(u32At(mask, 12) == 37);
-    CHECK(u32At(readOrEmpty(out / "map/start/background.ktx2"), 12) == 43);
+    CHECK(readOrEmpty(out / "map/start/texture8/000.png") ==
+          readOrEmpty(folder.path() / "src/map/start/texture8/000.png"));
+    CHECK_FALSE(srgbOf(readOrEmpty(out / "ui/mask.ktx2")));
+    CHECK(srgbOf(readOrEmpty(out / "map/start/background.ktx2")));
 
     // A sidecar that changes how its image cooks makes it cook again, though the image is the same.
-    folder.write("src/card/001_meta.yaml", "mode: direct16\npng: rgba\n");
+    folder.write("src/card/001_meta.yaml", "mode: indexed4\npng: indexed\npalettes:\n- \"0000 7fff\"\n");
     folder.write("src/ui/mask_meta.yaml", "color_space: srgb\n");
     summary = cooked(folder);
     CHECK(summary.cooked == 2);
     CHECK(summary.removed == 1);
     CHECK_FALSE(std::filesystem::exists(out / "card/001.png"));
-    CHECK(u32At(readOrEmpty(out / "card/001.ktx2"), 12) == 43);
-    CHECK(u32At(readOrEmpty(out / "ui/mask.ktx2"), 12) == 43);
+    CHECK(srgbOf(readOrEmpty(out / "card/001.ktx2")));
+    CHECK(srgbOf(readOrEmpty(out / "ui/mask.ktx2")));
 
     folder.write("src/ui/mask_meta.yaml", "color_space: [");
     CHECK(cookError(folder).contains("mask_meta.yaml"));

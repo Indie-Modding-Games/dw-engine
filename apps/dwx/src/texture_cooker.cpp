@@ -1,12 +1,16 @@
 #include "texture_cooker.hpp"
 
+#include <ktx.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <format>
+#include <memory>
+#include <mutex>
 #include <string_view>
-
-#include "ktx2.hpp"
 
 namespace dwe::dwx {
 
@@ -15,6 +19,14 @@ namespace {
 constexpr std::size_t Channels = 4;
 constexpr std::size_t Alpha = 3;
 constexpr float MaxByte = 255.0F;
+
+// The Vulkan formats of the RGBA8 levels handed to the encoder (VK_FORMAT_R8G8B8A8_UNORM and _SRGB).
+constexpr ktx_uint32_t VkFormatRgba8Unorm = 37;
+constexpr ktx_uint32_t VkFormatRgba8Srgb = 43;
+// Fixed, so the same image always cooks to the same bytes; libktx appends its own version to the writer.
+constexpr std::string_view Writer = "dwx cook";
+constexpr std::string_view Orientation = "rd"; // rows from the top, columns from the left
+constexpr ktx_uint32_t ZstdLevel = 18;
 
 // An image in linear light with colour premultiplied by alpha: what box filtering averages.
 struct LinearImage {
@@ -121,6 +133,125 @@ LinearImage halve(const LinearImage& source) {
     return halved;
 }
 
+struct KtxTextureDeleter {
+    void operator()(ktxTexture2* texture) const { ktxTexture2_Destroy(texture); }
+};
+
+struct KtxBytesDeleter {
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory): libktx allocates it with malloc.
+    void operator()(ktx_uint8_t* bytes) const { std::free(bytes); }
+};
+
+core::Result<void> check(KTX_error_code result, std::string_view what) {
+    if (result != KTX_SUCCESS) {
+        return core::fail(std::format("libktx cannot {}: {}", what, ktxErrorString(result)));
+    }
+    return {};
+}
+
+core::Result<void> addMetadata(ktxTexture2* texture, std::string_view key, std::string_view value) {
+    // The values are NUL-terminated strings, as the KTX2 specification asks for these keys.
+    const std::string text{value};
+    return check(ktxHashList_AddKVPair(&texture->kvDataHead, std::string{key}.c_str(),
+                                       static_cast<ktx_uint32_t>(text.size() + 1), text.c_str()),
+                 "add the metadata");
+}
+
+// Encodes the levels to UASTC, supercompresses them with zstd and writes the KTX2 file. Single-threaded, so the
+// bytes depend only on the levels, the colour space and the pinned libktx and zstd.
+core::Result<std::vector<std::byte>> encodeUastc(std::span<const assets::Image> levels, bool srgb) {
+    ktxTextureCreateInfo info{};
+    info.vkFormat = srgb ? VkFormatRgba8Srgb : VkFormatRgba8Unorm;
+    info.baseWidth = levels.front().width;
+    info.baseHeight = levels.front().height;
+    info.baseDepth = 1;
+    info.numDimensions = 2;
+    info.numLevels = static_cast<ktx_uint32_t>(levels.size());
+    info.numLayers = 1;
+    info.numFaces = 1;
+    info.isArray = KTX_FALSE;
+    info.generateMipmaps = KTX_FALSE;
+    ktxTexture2* created = nullptr;
+    if (auto made = check(ktxTexture2_Create(&info, KTX_TEXTURE_CREATE_ALLOC_STORAGE, &created), "create a texture");
+        !made) {
+        return std::unexpected{made.error()};
+    }
+    const std::unique_ptr<ktxTexture2, KtxTextureDeleter> texture{created};
+    for (std::size_t level = 0; level < levels.size(); ++level) {
+        const auto& pixels = levels[level].pixels;
+        if (auto set =
+                check(ktxTexture_SetImageFromMemory(ktxTexture(texture.get()), static_cast<ktx_uint32_t>(level), 0, 0,
+                                                    reinterpret_cast<const ktx_uint8_t*>(pixels.data()), pixels.size()),
+                      "set a mip level");
+            !set) {
+            return std::unexpected{set.error()};
+        }
+    }
+    for (const auto& [key, value] : {std::pair{std::string_view{KTX_ORIENTATION_KEY}, Orientation},
+                                     std::pair{std::string_view{KTX_WRITER_KEY}, Writer}}) {
+        if (auto added = addMetadata(texture.get(), key, value); !added) {
+            return std::unexpected{added.error()};
+        }
+    }
+
+    ktxBasisParams params{};
+    params.structSize = sizeof(params);
+    params.uastc = KTX_TRUE;
+    params.threadCount = 1; // dwx cook runs several textures at once instead
+    params.uastcFlags = KTX_PACK_UASTC_LEVEL_DEFAULT;
+    params.uastcRDO = KTX_FALSE;
+    if (auto encoded = check(ktxTexture2_CompressBasisEx(texture.get(), &params), "encode UASTC"); !encoded) {
+        return std::unexpected{encoded.error()};
+    }
+    if (auto deflated = check(ktxTexture2_DeflateZstd(texture.get(), ZstdLevel), "supercompress with zstd");
+        !deflated) {
+        return std::unexpected{deflated.error()};
+    }
+    // Writing appends libktx's version to the writer: it unlinks the entry added above and adds another, but does not
+    // free the old one (libktx 4.4.2), so it is freed here once it is no longer in the list.
+    ktxHashListEntry* writer = nullptr;
+    ktxHashList_FindEntry(&texture->kvDataHead, KTX_WRITER_KEY, &writer);
+    ktx_uint8_t* written = nullptr;
+    ktx_size_t size = 0;
+    const KTX_error_code result = ktxTexture2_WriteToMemory(texture.get(), &written, &size);
+    if (ktxHashListEntry* current = nullptr;
+        writer != nullptr &&
+        (ktxHashList_FindEntry(&texture->kvDataHead, KTX_WRITER_KEY, &current) != KTX_SUCCESS || current != writer)) {
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory): libktx allocates it with malloc.
+        std::free(writer);
+    }
+    if (auto wrote = check(result, "write the KTX2 file"); !wrote) {
+        return std::unexpected{wrote.error()};
+    }
+    const std::unique_ptr<ktx_uint8_t, KtxBytesDeleter> owned{written};
+    const auto bytes = std::as_bytes(std::span{owned.get(), size});
+    return std::vector<std::byte>{bytes.begin(), bytes.end()};
+}
+
+// libktx sets up the Basis Universal encoder on its first use without a lock, so that first use runs alone, on a
+// 1x1 texture.
+void initializeEncoder() {
+    static std::once_flag once;
+    std::call_once(once, [] {
+        const assets::Image texel{.width = 1, .height = 1, .pixels = std::vector<std::byte>(Channels)};
+        [[maybe_unused]] const auto warmUp = encodeUastc(std::span{&texel, 1}, true);
+    });
+}
+
+// An image's palette is chosen while the game runs when the same pixels are drawn with more than one CLUT row: the
+// sidecar lists several palettes (creature textures, whose primitives each pick a row; effects; multi-palette TIMs),
+// or the image is a map TIM with a CLUT, whose sprites each pick a row (data.yaml: clut; -1 is row 480, which the
+// time of day rewrites).
+bool paletteChosenAtRuntime(const core::YamlNode& sidecar) {
+    if (const core::YamlNode* palettes = sidecar.find("palettes");
+        palettes != nullptr && palettes->isSequence() && palettes->items().size() > 1) {
+        return true;
+    }
+    const core::YamlNode* source = sidecar.find("source");
+    return sidecar.find("clut_rect") != nullptr && source != nullptr && source->isScalar() &&
+           (source->text().ends_with(".MAP") || source->text().ends_with(".map"));
+}
+
 } // namespace
 
 std::vector<assets::Image> buildMipChain(const assets::Image& image, bool srgb) {
@@ -138,17 +269,15 @@ core::Result<CookOptions> planTexture(std::span<const std::byte> png, const core
     if (!header) {
         return std::unexpected{header.error()};
     }
-    CookOptions options{.passThrough = header->indexed, .colorSpace = ColorSpace::Srgb};
+    CookOptions options{.passThrough = false, .colorSpace = ColorSpace::Srgb};
     if (sidecar == nullptr) {
         return options;
     }
     if (!sidecar->isMapping()) {
         return core::fail("its sidecar is not a mapping");
     }
-    const core::YamlNode* kind = sidecar->find("png");
-    if ((kind != nullptr && kind->isScalar() && kind->text() == "indexed") || sidecar->find("clut_rect") != nullptr) {
-        options.passThrough = true;
-    }
+    // Only an indexed PNG keeps a palette to choose; any other is cooked as the colours it shows.
+    options.passThrough = header->indexed && paletteChosenAtRuntime(*sidecar);
     if (const core::YamlNode* space = sidecar->find("color_space")) {
         if (space->isScalar() && space->text() == "linear") {
             options.colorSpace = ColorSpace::Linear;
@@ -164,8 +293,9 @@ core::Result<std::vector<std::byte>> cookTexture(std::span<const std::byte> png,
     if (!image) {
         return std::unexpected{image.error()};
     }
+    initializeEncoder();
     const bool srgb = options.colorSpace == ColorSpace::Srgb;
-    return writeKtx2(srgb ? Ktx2Format::Rgba8Srgb : Ktx2Format::Rgba8Unorm, buildMipChain(*image, srgb));
+    return encodeUastc(buildMipChain(*image, srgb), srgb);
 }
 
 } // namespace dwe::dwx
