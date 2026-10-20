@@ -7,6 +7,7 @@
 #include <vk_mem_alloc.h>
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <format>
@@ -23,12 +24,32 @@ namespace {
 constexpr VkSurfaceFormatKHR SwapchainFormat{.format = VK_FORMAT_B8G8R8A8_UNORM,
                                              .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
 
+// The warnings and errors the validation layer reported, for every device of the process (the callback has no
+// device): scripted runs fail when it is not zero.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): the layer's callback has no user data to reach.
+std::atomic<std::uint64_t> validationMessages{0};
+
+const char* presentModeName(VkPresentModeKHR mode) {
+    switch (mode) {
+    case VK_PRESENT_MODE_FIFO_KHR:
+        return "fifo (vsync)";
+    case VK_PRESENT_MODE_MAILBOX_KHR:
+        return "mailbox";
+    case VK_PRESENT_MODE_IMMEDIATE_KHR:
+        return "immediate";
+    default:
+        return "other present mode";
+    }
+}
+
 VkBool32 VKAPI_PTR logValidationMessage(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                         VkDebugUtilsMessageTypeFlagsEXT /*types*/,
                                         const VkDebugUtilsMessengerCallbackDataEXT* data, void* /*user*/) {
     if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0) {
+        validationMessages.fetch_add(1, std::memory_order_relaxed);
         core::logError("vulkan: {}", data->pMessage);
     } else if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0) {
+        validationMessages.fetch_add(1, std::memory_order_relaxed);
         core::logWarning("vulkan: {}", data->pMessage);
     } else {
         core::logDebug("vulkan: {}", data->pMessage);
@@ -83,6 +104,8 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
 struct Device::Impl {
     const platform::Window* window = nullptr;
     bool vsync = true;
+    // The validation layer was requested and is installed.
+    bool validation = false;
 
     vkb::Instance instance;
     VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -98,6 +121,8 @@ struct Device::Impl {
     // One per swapchain image: presentation waits on the semaphore of the image it presents.
     std::vector<VkSemaphore> renderFinished;
     bool swapchainStale = false;
+    // Whether the swapchain images can be copied from (FrameCapture).
+    bool swapchainCopyable = false;
     // The window size the swapchain was made for. The swapchain's own extent can differ (the surface may clamp it),
     // so comparing against it could rebuild the swapchain on every frame.
     platform::PixelSize swapchainWindowSize{.width = 0, .height = 0};
@@ -125,6 +150,15 @@ struct Device::Impl {
 
 core::Result<void> Device::Impl::createSwapchain() {
     const platform::PixelSize size = window->pixelSize();
+    // NOLINTNEXTLINE(bugprone-invalid-enum-default-initialization): Vulkan fills it in.
+    VkSurfaceCapabilitiesKHR capabilities{};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+    // Screenshots of scripted runs copy the presented image; every desktop driver allows it, but it is optional.
+    swapchainCopyable = (capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if (swapchainCopyable) {
+        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
     vkb::SwapchainBuilder builder{device, surface};
     auto built =
         builder
@@ -132,9 +166,11 @@ core::Result<void> Device::Impl::createSwapchain() {
             // Some drivers offer no BGRA format; the renderer handles both.
             .add_fallback_format({.format = VK_FORMAT_R8G8B8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
             .set_desired_present_mode(vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR)
+            // Without vsync, a driver without mailbox (common on X11) presents at once, tearing, rather than waiting.
+            .add_fallback_present_mode(vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR)
             .add_fallback_present_mode(VK_PRESENT_MODE_FIFO_KHR)
             .set_desired_extent(static_cast<std::uint32_t>(size.width), static_cast<std::uint32_t>(size.height))
-            .set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+            .set_image_usage_flags(usage)
             .set_old_swapchain(swapchain)
             .build();
     if (!built) {
@@ -157,7 +193,8 @@ core::Result<void> Device::Impl::createSwapchain() {
     }
     swapchainStale = false;
     swapchainWindowSize = size;
-    core::logInfo("swapchain {}x{}, {} images", swapchain.extent.width, swapchain.extent.height, images.size());
+    core::logInfo("swapchain {}x{}, {} images, {}", swapchain.extent.width, swapchain.extent.height, images.size(),
+                  presentModeName(swapchain.present_mode));
     return {};
 }
 
@@ -246,7 +283,14 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
         instanceBuilder.enable_extension(extensions[i]);
     }
     if (desc.validation) {
-        instanceBuilder.request_validation_layers(true).set_debug_callback(logValidationMessage);
+        // Builds without the validation feature, and players' machines, may lack the layer: run without it.
+        const auto system = vkb::SystemInfo::get_system_info();
+        impl->validation = system && system->validation_layers_available;
+        if (impl->validation) {
+            instanceBuilder.enable_validation_layers(true).set_debug_callback(logValidationMessage);
+        } else {
+            core::logWarning("vulkan: validation layer requested but not installed, running without it");
+        }
     }
     auto instance = instanceBuilder.build();
     if (!instance) {
@@ -483,6 +527,18 @@ bool Device::supportsBc7() const {
         }
     }
     return true;
+}
+
+bool Device::validationEnabled() const {
+    return impl_->validation && impl_->instance.debug_messenger != VK_NULL_HANDLE;
+}
+
+std::uint64_t Device::validationMessageCount() {
+    return validationMessages.load(std::memory_order_relaxed);
+}
+
+bool Device::canCaptureFrames() const {
+    return impl_->swapchainCopyable;
 }
 
 VmaAllocator Device::allocator() const {

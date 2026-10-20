@@ -34,6 +34,8 @@
 #include <variant>
 #include <vector>
 
+#include "device_names.hpp"
+
 namespace dwe::app {
 namespace {
 
@@ -209,71 +211,6 @@ private:
     std::deque<glm::vec2> trail_{glm::vec2{0.0F}};
 };
 
-std::optional<platform::GamepadButton> buttonNamed(std::string_view name) {
-    using enum platform::GamepadButton;
-    constexpr std::array<std::pair<std::string_view, platform::GamepadButton>, 15> Names{{
-        {"south", South},
-        {"east", East},
-        {"west", West},
-        {"north", North},
-        {"back", Back},
-        {"guide", Guide},
-        {"start", Start},
-        {"left_stick", LeftStick},
-        {"right_stick", RightStick},
-        {"left_shoulder", LeftShoulder},
-        {"right_shoulder", RightShoulder},
-        {"dpad_up", DpadUp},
-        {"dpad_down", DpadDown},
-        {"dpad_left", DpadLeft},
-        {"dpad_right", DpadRight},
-    }};
-    for (const auto& [known, button] : Names) {
-        if (known == name) {
-            return button;
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<platform::GamepadAxis> axisNamed(std::string_view name) {
-    using enum platform::GamepadAxis;
-    constexpr std::array<std::pair<std::string_view, platform::GamepadAxis>, 6> Names{{
-        {"left_x", LeftX},
-        {"left_y", LeftY},
-        {"right_x", RightX},
-        {"right_y", RightY},
-        {"left_trigger", LeftTrigger},
-        {"right_trigger", RightTrigger},
-    }};
-    for (const auto& [known, axis] : Names) {
-        if (known == name) {
-            return axis;
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<platform::GamepadFamily> familyNamed(std::string_view name) {
-    using enum platform::GamepadFamily;
-    if (name == "xbox") {
-        return Xbox;
-    }
-    if (name == "playstation") {
-        return PlayStation;
-    }
-    if (name == "nintendo") {
-        return Nintendo;
-    }
-    if (name == "steam") {
-        return Steam;
-    }
-    if (name == "generic") {
-        return Generic;
-    }
-    return std::nullopt;
-}
-
 // Drives a virtual gamepad from the lines appended to a file:
 //   attach <xbox|playstation|nintendo|steam|generic>   plugs a gamepad of that family (replacing the last one)
 //   tap <button>                                        presses a button for a few frames
@@ -314,7 +251,7 @@ public:
             if (!gamepad_) {
                 return;
             }
-            const auto button = buttonNamed(name);
+            const auto button = gamepadButtonNamed(name);
             if ((verb == "tap" || verb == "press") && button) {
                 platform_->setVirtualGamepadButton(*gamepad_, *button, true);
                 if (verb == "tap") {
@@ -322,7 +259,7 @@ public:
                 }
             } else if (verb == "release" && button) {
                 platform_->setVirtualGamepadButton(*gamepad_, *button, false);
-            } else if (const auto axis = axisNamed(name); verb == "axis" && axis) {
+            } else if (const auto axis = gamepadAxisNamed(name); verb == "axis" && axis) {
                 float value = 0.0F;
                 words >> value;
                 platform_->setVirtualGamepadAxis(*gamepad_, *axis, value);
@@ -334,7 +271,7 @@ public:
 
 private:
     void attach(std::string_view name) {
-        const auto family = familyNamed(name);
+        const auto family = gamepadFamilyNamed(name);
         if (!family) {
             core::logWarning("ui demo: unknown gamepad family '{}'", name);
             return;

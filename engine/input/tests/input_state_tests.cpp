@@ -138,3 +138,17 @@ TEST_CASE("losing focus releases everything that was held") {
     CHECK_FALSE(input.isDown("move_right"));
     CHECK(input.value("move_right") == doctest::Approx(0.0F));
 }
+
+TEST_CASE("walk is held with either shift key or the gamepad's west button") {
+    InputState input = withGamepad();
+    CHECK_FALSE(input.isDown("walk"));
+    input.handle(KeyChanged{.key = keys::LeftShift, .down = true, .repeat = false});
+    CHECK(input.isDown("walk"));
+    input.handle(KeyChanged{.key = keys::LeftShift, .down = false, .repeat = false});
+    input.handle(KeyChanged{.key = keys::RightShift, .down = true, .repeat = false});
+    CHECK(input.isDown("walk"));
+    input.handle(KeyChanged{.key = keys::RightShift, .down = false, .repeat = false});
+    input.handle(GamepadButtonChanged{.id = Pad, .button = GamepadButton::West, .down = true});
+    CHECK(input.isDown("walk"));
+    CHECK(input.lastDevice() == DeviceKind::Gamepad);
+}

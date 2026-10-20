@@ -59,3 +59,35 @@ body {
 	text-align: center;
 	color: #c9d3de;
 }
+
+/* Opens the pause menu with the pointer; the prompt names the key or button that also opens it. */
+#menu-button {
+	pointer-events: auto;
+	position: absolute;
+	left: 20dp;
+	top: 20dp;
+	margin: 0;
+	padding: 6dp 14dp 6dp 8dp;
+	font-size: 15dp;
+	background-color: #0d121ab8;
+	border: 1dp #2e3a4a;
+}
+
+#menu-button:hover {
+	background-color: #1c2633;
+}
+
+/* The map change's fade to black, over the whole HUD. */
+#screen-fade {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #000000;
+	display: none;
+}
+
+#screen-fade.shown {
+	display: block;
+}

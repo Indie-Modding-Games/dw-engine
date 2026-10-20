@@ -33,4 +33,7 @@ core::Result<PngHeader> inspectPng(std::span<const std::byte> png);
 // Decodes a PNG of any colour type and bit depth to 8-bit RGBA.
 core::Result<Image> decodePng(std::span<const std::byte> png);
 
+// Encodes an image as an 8-bit RGBA PNG, for screenshots and tools. Fails when the pixels do not match the size.
+core::Result<std::vector<std::byte>> encodePng(const Image& image);
+
 } // namespace dwe::assets

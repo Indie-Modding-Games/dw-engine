@@ -5,6 +5,7 @@
 #include <dwe/rhi/bindless.hpp>
 #include <dwe/rhi/command_list.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/frame_capture.hpp>
 #include <dwe/rhi/image.hpp>
 #include <dwe/rhi/pipeline.hpp>
 #include <dwe/rhi/types.hpp>
@@ -17,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace dwe::render {
@@ -103,6 +105,13 @@ public:
     // The size of the targets of the last frame drawn (the window's size in pixels).
     [[nodiscard]] rhi::Extent targetExtent() const { return extent_; }
 
+    // Reads the next frame drawn back to the CPU, as it is presented, and calls `done` with it once the GPU has
+    // finished it (renderFrame waits). For the screenshots of scripted runs, not for every frame. A new request
+    // replaces one still waiting, which is then never called.
+    void captureNextFrame(std::function<void(core::Result<rhi::CapturedImage>)> done) {
+        captureDone_ = std::move(done);
+    }
+
 private:
     Renderer(rhi::Device& device, std::unique_ptr<rhi::BindlessTable> bindless, rhi::UploadRing upload);
 
@@ -135,6 +144,7 @@ private:
     std::vector<std::optional<rhi::Image>> textures_;
     TextureId white_;
     std::vector<PendingWrite> pending_;
+    std::function<void(core::Result<rhi::CapturedImage>)> captureDone_;
 };
 
 } // namespace dwe::render

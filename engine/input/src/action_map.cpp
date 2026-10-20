@@ -65,6 +65,12 @@ ActionMap defaultActionMap() {
     map.bind("move_down", GamepadButtonBinding{GamepadButton::DpadDown});
     map.bind("move_down", GamepadAxisBinding{.axis = GamepadAxis::LeftY, .direction = 1.0F});
 
+    // Held while moving: walk instead of running. Running is the default, as in the original, where R1 walked.
+    map.bind("walk", KeyBinding{keys::LeftShift});
+    map.bind("walk", KeyBinding{keys::RightShift});
+    map.bind("walk", GamepadButtonBinding{GamepadButton::West});
+    map.bind("walk", GamepadButtonBinding{GamepadButton::RightShoulder});
+
     map.bind("debug_console", KeyBinding{keys::Grave});
     map.bind("debug_console", KeyBinding{keys::F1});
 

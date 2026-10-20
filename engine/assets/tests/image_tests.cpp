@@ -10,6 +10,8 @@
 #include <vector>
 
 using dwe::assets::decodePng;
+using dwe::assets::encodePng;
+using dwe::assets::Image;
 using dwe::assets::inspectPng;
 using dwe::assets::MaxImageSide;
 
@@ -116,4 +118,23 @@ TEST_CASE("a PNG wider than the limit is an error before it is decoded") {
     const auto image = decodePng(toBytes(png));
     REQUIRE_FALSE(image.has_value());
     CHECK(image.error().message.find("larger than") != std::string::npos);
+}
+
+TEST_CASE("an encoded image decodes to the same pixels") {
+    const Image image{.width = 2,
+                      .height = 1,
+                      .pixels = {std::byte{1}, std::byte{2}, std::byte{3}, std::byte{255}, std::byte{4}, std::byte{5},
+                                 std::byte{6}, std::byte{128}}};
+    const auto png = encodePng(image);
+    REQUIRE(png.has_value());
+    const auto decoded = decodePng(*png);
+    REQUIRE(decoded.has_value());
+    CHECK(decoded->width == 2);
+    CHECK(decoded->height == 1);
+    CHECK(decoded->pixels == image.pixels);
+}
+
+TEST_CASE("an image whose pixels do not match its size is not encoded") {
+    CHECK_FALSE(encodePng(Image{.width = 2, .height = 2, .pixels = std::vector<std::byte>(4)}).has_value());
+    CHECK_FALSE(encodePng(Image{}).has_value());
 }

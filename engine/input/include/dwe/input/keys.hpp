@@ -29,5 +29,7 @@ constexpr KeyCode Right = 79;
 constexpr KeyCode Left = 80;
 constexpr KeyCode Down = 81;
 constexpr KeyCode Up = 82;
+constexpr KeyCode LeftShift = 225;
+constexpr KeyCode RightShift = 229;
 
 } // namespace dwe::input::keys

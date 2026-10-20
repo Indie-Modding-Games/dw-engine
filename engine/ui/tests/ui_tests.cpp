@@ -413,6 +413,22 @@ TEST_CASE("the pause menu works with the mouse alone") {
     CHECK_FALSE(ui->handleEvent(platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
 }
 
+TEST_CASE("the HUD's menu button asks the game to open the menu and names the key that does it") {
+    Content content;
+    auto ui = createUi(content.mount());
+    input::InputState input{input::defaultActionMap()};
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->update();
+    CHECK(ui->elementText("hud", "prompt-menu") == "Tab");
+    CHECK(click(*ui, input, "hud", "menu-button"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"open_menu"});
+    // A gamepad names its own button.
+    input.handle(platform::GamepadConnected{.id = Pad, .family = platform::GamepadFamily::Xbox, .name = "pad"});
+    press(*ui, input, GamepadButton::South);
+    CHECK(ui->elementText("hud", "prompt-menu") != "Tab");
+}
+
 TEST_CASE("the HUD shows the minimap of the current map and its markers") {
     Content content;
     auto ui = createUi(content.mount());

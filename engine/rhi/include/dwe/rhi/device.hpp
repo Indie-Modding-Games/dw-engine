@@ -94,6 +94,15 @@ public:
 
     [[nodiscard]] NativeHandles nativeHandles() const;
 
+    // Whether the validation layer is on: requested in DeviceDesc and installed.
+    [[nodiscard]] bool validationEnabled() const;
+
+    // How many warnings and errors the validation layer has reported since the program started, by every device.
+    [[nodiscard]] static std::uint64_t validationMessageCount();
+
+    // Whether the swapchain images may be copied to the CPU (FrameCapture).
+    [[nodiscard]] bool canCaptureFrames() const;
+
     // The memory allocator (VMA) of the device's buffers and images.
     [[nodiscard]] VmaAllocator allocator() const;
 

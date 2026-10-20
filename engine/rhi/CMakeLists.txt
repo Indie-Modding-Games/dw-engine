@@ -9,6 +9,7 @@ dwe_add_module(rhi
         src/buffer.cpp
         src/command_list.cpp
         src/device.cpp
+        src/frame_capture.cpp
         src/image.cpp
         src/pipeline.cpp
         src/texture.cpp

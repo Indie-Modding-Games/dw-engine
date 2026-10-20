@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 
+#include <optional>
 #include <string>
 
 struct SDL_Window;
@@ -32,6 +33,17 @@ public:
 
     // The size of the drawable area in pixels, which differs from the window size on high-density displays.
     [[nodiscard]] PixelSize pixelSize() const;
+
+    // The size of the window in window units, the units setSize takes.
+    [[nodiscard]] PixelSize windowSize() const;
+
+    // Asks for a new size of the window (not fullscreen), in window units. The window manager may change or ignore
+    // it; the size it gets arrives as a WindowResized event.
+    core::Result<void> setSize(int width, int height);
+
+    // The part of the window's display that windows may use (without panels and docks), in window units; nothing if
+    // the system does not say.
+    [[nodiscard]] std::optional<PixelSize> usableDisplaySize() const;
 
     // Switches between the window and borderless fullscreen on its display. The new size arrives as a
     // WindowResized event.

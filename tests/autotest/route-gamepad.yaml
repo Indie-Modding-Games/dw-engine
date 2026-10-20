@@ -1,0 +1,48 @@
+# The vertical slice's route with a gamepad (a virtual one of the platform): File City to the elder's house and
+# back, the menu and the minimap, and the window at each size. How to run it: docs/guides/prueba-vertical.md.
+name: gamepad
+device: gamepad
+gamepad: xbox
+timeout: 600
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: twna01-start
+  # The menu with a gamepad (a virtual one of the platform): hide the minimap, then show it again.
+  - menu: open
+  - screenshot: menu-open
+  - menu_select: open-minimap
+  - menu_select: minimap-visible
+  - expect_setting: {minimap_visible: false}
+  - screenshot: menu-minimap-hidden
+  - menu_select: minimap-visible
+  - expect_setting: {minimap_visible: true}
+  - menu: close
+  - wait: {menu_open: false}
+  # Behind the awning of the house by the water: the player under a depth layer.
+  - walk_to: {point: [600, 300], radius: 40}
+  # The partner has followed the walk across the map (on arrival it is always close: it spawns next to the player).
+  - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
+  - screenshot: twna01-behind-layer
+  # A stretch walking instead of running.
+  - walk_to: {point: [700, 900], radius: 80, walk: true}
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, partner_within: 400, seconds: 0.5}
+  - screenshot: room08
+  - resize: [800, 600]
+  - screenshot: room08
+  # Across the room and back to the door, with the partner following.
+  - walk_to: {point: [-95, -900], radius: 80}
+  - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
+  - walk_to: {trigger: 51}
+  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
+  - screenshot: twna01-back
+  - resize: [1920, 1080]
+  - screenshot: twna01
+  - resize: [2560, 1080]
+  - screenshot: twna01
+  - fullscreen: true
+  - screenshot: twna01-fullscreen
+  - fullscreen: false
+  - resize: [1280, 720]
+  - wait: {map: twna01, seconds: 0.5}

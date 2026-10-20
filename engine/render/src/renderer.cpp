@@ -2,6 +2,7 @@
 #include <dwe/render/camera.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/rhi/command_list.hpp>
+#include <dwe/rhi/frame_capture.hpp>
 
 #include <array>
 #include <format>
@@ -126,8 +127,20 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
     }
     commands.endRendering();
 
+    std::optional<core::Result<rhi::FrameCapture>> capture;
+    if (captureDone_) {
+        capture = rhi::FrameCapture::record(*device_, *begun);
+    }
     upload_.endFrame();
     device_->endFrame(*begun);
+    if (capture) {
+        auto done = std::exchange(captureDone_, nullptr);
+        if (*capture) {
+            done((*capture)->read());
+        } else {
+            done(std::unexpected{capture->error()});
+        }
+    }
     return true;
 }
 

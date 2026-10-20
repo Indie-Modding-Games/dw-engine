@@ -41,4 +41,19 @@ core::Result<Image> decodePng(std::span<const std::byte> png) {
     return image;
 }
 
+core::Result<std::vector<std::byte>> encodePng(const Image& image) {
+    if (image.width == 0 || image.height == 0 || image.pixels.size() != std::size_t{image.width} * image.height * 4) {
+        return core::fail(
+            std::format("cannot encode a {}x{} image from {} bytes", image.width, image.height, image.pixels.size()));
+    }
+    std::vector<unsigned char> png;
+    const auto* pixels = reinterpret_cast<const unsigned char*>(image.pixels.data());
+    if (const unsigned error = lodepng::encode(png, pixels, image.width, image.height, LCT_RGBA, 8); error != 0) {
+        return core::fail(std::format("cannot encode the PNG: {}", lodepng_error_text(error)));
+    }
+    std::vector<std::byte> bytes(png.size());
+    std::ranges::copy(std::as_bytes(std::span{png}), bytes.begin());
+    return bytes;
+}
+
 } // namespace dwe::assets

@@ -35,6 +35,31 @@ PixelSize Window::pixelSize() const {
     return size;
 }
 
+PixelSize Window::windowSize() const {
+    PixelSize size{.width = 0, .height = 0};
+    SDL_GetWindowSize(window_, &size.width, &size.height);
+    return size;
+}
+
+core::Result<void> Window::setSize(int width, int height) {
+    if (width <= 0 || height <= 0) {
+        return core::fail(std::format("bad window size {}x{}", width, height));
+    }
+    if (!SDL_SetWindowSize(window_, width, height)) {
+        return core::fail(std::format("could not resize the window: {}", SDL_GetError()));
+    }
+    return {};
+}
+
+std::optional<PixelSize> Window::usableDisplaySize() const {
+    const SDL_DisplayID display = SDL_GetDisplayForWindow(window_);
+    SDL_Rect bounds{};
+    if (display == 0 || !SDL_GetDisplayUsableBounds(display, &bounds)) {
+        return std::nullopt;
+    }
+    return PixelSize{.width = bounds.w, .height = bounds.h};
+}
+
 core::Result<void> Window::setFullscreen(bool fullscreen) {
     if (!SDL_SetWindowFullscreen(window_, fullscreen)) {
         return core::fail(std::format("could not change the window mode: {}", SDL_GetError()));
