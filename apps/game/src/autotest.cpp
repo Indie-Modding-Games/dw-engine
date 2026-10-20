@@ -581,6 +581,11 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     // Arrived: through the warp, or at the point.
     bool arrived = host.scene->mapSerial() != progress.mapSerial;
     if (!step.trigger && step.point) {
+        // A walk to a point stays on its map: the same point on the map behind an exit is not it.
+        if (arrived) {
+            failStep(std::format("left the map on the way to the point; {}", where(*host.scene)));
+            return false;
+        }
         arrived = std::hypot(position.x - step.point->x, position.z - step.point->y) <= step.radius;
     }
     if (arrived) {

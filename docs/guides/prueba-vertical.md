@@ -61,7 +61,9 @@ otro segundo ([ficha del campo](../reference/campo.md)).
 
 Un autotest recorre una ruta escrita en YAML con los mismos eventos que un jugador: las teclas y el ratón entran
 como eventos de la plataforma y el mando es un mando virtual de SDL, así que pasan por el mapa de acciones, la UI y
-el campo de verdad. Las tres rutas de la prueba están en `tests/autotest/`:
+el campo de verdad. Mientras corre, el juego descarta el ratón y el teclado reales del escritorio (el puntero de quien
+use el ordenador, o el que descansa sobre la ventana, movería el puntero bajo un clic o una pulsación sostenida), así
+que se puede seguir usando el escritorio; un mando real sí llega. Las tres rutas de la prueba están en `tests/autotest/`:
 
 - `route-keyboard.yaml`, `route-gamepad.yaml` y `route-mouse.yaml`: File City → casa del anciano → File City con
   cada dispositivo; abren el menú con ese dispositivo, ocultan y vuelven a mostrar el minimapa, se paran detrás de

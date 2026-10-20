@@ -17,8 +17,10 @@
 
 #include <SDL3/SDL_events.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <format>
@@ -122,12 +124,14 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
 // screen that no click can point at.
 class MouseSteering {
 public:
-    // Takes the events the UI did not.
+    // Every move of the pointer, also those the UI takes: the UI keeps the first move after a resize for itself, and a
+    // click there must still land where the pointer is, not where it was before.
+    void pointerMoved(const platform::MouseMoved& moved) { pointer_ = {moved.x, moved.y}; }
+
+    // Takes the button events the UI did not.
     void handle(const platform::Event& event, const FieldScene& scene) {
-        if (const auto* moved = std::get_if<platform::MouseMoved>(&event)) {
-            pointer_ = {moved->x, moved->y};
-        } else if (const auto* button = std::get_if<platform::MouseButtonChanged>(&event);
-                   button != nullptr && button->button == platform::MouseButton::Left) {
+        if (const auto* button = std::get_if<platform::MouseButtonChanged>(&event);
+            button != nullptr && button->button == platform::MouseButton::Left) {
             held_ = button->down;
             heldTicks_ = 0;
             if (held_) {
@@ -188,6 +192,28 @@ private:
     int heldTicks_ = 0;
     std::optional<glm::vec3> target_;
 };
+
+// The desktop's own pointer and keyboard; the gamepad is not among them, as an autotest's is a virtual one.
+bool isPointerOrKeyEvent(const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP:
+    case SDL_EVENT_TEXT_INPUT:
+    case SDL_EVENT_MOUSE_MOTION:
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+    case SDL_EVENT_MOUSE_WHEEL:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool isPointerOrKey(const platform::Event& event) {
+    return std::holds_alternative<platform::KeyChanged>(event) || std::holds_alternative<platform::MouseMoved>(event) ||
+           std::holds_alternative<platform::MouseButtonChanged>(event) ||
+           std::holds_alternative<platform::MouseWheelMoved>(event);
+}
 
 } // namespace
 
@@ -329,8 +355,23 @@ int runGame(const Options& options) {
                 break;
             }
         }
-        platform->pollEvents(events, [&](const SDL_Event& raw) { (*debugUi)->handleRawEvent(raw); });
+        // During an autotest the route is the only player: the desktop's own mouse and keyboard (someone using the
+        // computer, the pointer resting over the window) would move the pointer under a click or a hold.
+        const std::size_t injected = events.size();
+        platform->pollEvents(events, [&](const SDL_Event& raw) {
+            if (!autotest || !isPointerOrKeyEvent(raw)) {
+                (*debugUi)->handleRawEvent(raw);
+            }
+        });
+        if (autotest) {
+            const auto real = std::ranges::remove_if(events.begin() + static_cast<std::ptrdiff_t>(injected),
+                                                     events.end(), isPointerOrKey);
+            events.erase(real.begin(), real.end());
+        }
         for (const platform::Event& event : events) {
+            if (const auto* moved = std::get_if<platform::MouseMoved>(&event)) {
+                mouse.pointerMoved(*moved);
+            }
             if (std::holds_alternative<platform::QuitRequested>(event)) {
                 running = false;
                 if (autotest) {
