@@ -33,6 +33,7 @@ using assets::VirtualFileSystem;
 using core::YamlNode;
 
 constexpr std::array<std::string_view, 1> AnnotationKeywords = {AssetReferenceKeyword};
+constexpr std::string_view ManifestFile = "pack.yaml";
 constexpr std::string_view MetaSuffix = "_meta";
 constexpr std::string_view Placeholder = "{}";
 constexpr std::string_view SiblingPrefix = "./";
@@ -190,20 +191,26 @@ private:
     // Each pack.yaml against pack.schema.json; the rules of every pack apply to the whole stack.
     void checkManifests() {
         for (const assets::MountedPack& pack : stack_->packs()) {
-            const std::string manifest = assets::pathText(pack.root / "pack.yaml");
+            const std::string manifest = assets::pathText(pack.root / ManifestFile);
             for (const assets::SchemaRule& rule : pack.manifest.schemas) {
                 for (const std::string& pattern : rule.ids) {
                     rules_.push_back({.schema = rule.schema, .pattern = pattern, .manifest = manifest});
                 }
             }
             const core::JsonSchema* manifestSchema = schema(ManifestSchema, manifest);
-            const auto bytes = fileSystem_->readFile(pack.root / "pack.yaml");
-            if (manifestSchema == nullptr || !bytes) {
+            if (manifestSchema == nullptr) {
+                continue;
+            }
+            // The pack's own file system, which may be an archive rather than the disk.
+            const auto bytes = pack.fileSystem->readFile(pack.root / ManifestFile);
+            if (!bytes) {
+                add(manifest, 0, 0, std::format("cannot be read: {}", bytes.error().message));
                 continue;
             }
             const auto document = core::parseYaml(textOf(*bytes));
             if (!document) {
-                continue; // mount() read it, so this does not happen
+                add(manifest, 0, 0, document.error().message);
+                continue;
             }
             ++report_.documents;
             for (const core::SchemaProblem& problem : manifestSchema->check(*document).problems) {

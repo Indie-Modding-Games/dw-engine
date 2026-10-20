@@ -5,8 +5,10 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <filesystem>
 #include <format>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -96,6 +98,28 @@ std::string readText(const std::string& path) {
     return text.str();
 }
 
+// Memory files whose pack.yaml files can be read only once, as if they were gone after the stack was mounted.
+class ManifestOnceFileSystem final : public dwe::assets::FileSystem {
+public:
+    explicit ManifestOnceFileSystem(const MemoryFileSystem& files) : files_(&files) {}
+
+    [[nodiscard]] dwe::core::Result<std::vector<std::string>>
+    listFiles(const std::filesystem::path& folder) const override {
+        return files_->listFiles(folder);
+    }
+
+    [[nodiscard]] dwe::core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override {
+        if (file.filename() == "pack.yaml" && !manifestsRead_.insert(file).second) {
+            return dwe::core::fail("it is gone");
+        }
+        return files_->readFile(file);
+    }
+
+private:
+    const MemoryFileSystem* files_;
+    mutable std::set<std::filesystem::path> manifestsRead_;
+};
+
 } // namespace
 
 TEST_CASE("a pack whose documents follow their schemas and whose references resolve has no problems") {
@@ -152,6 +176,17 @@ content/broken/sound/odd/bank_meta.yaml:2:6: $.map: 'nowhere' names map/nowhere/
 content/broken/sound/odd/bank_meta.yaml:3:8: $.count: expected integer, found string
 )";
     CHECK(textOf(*report) == expected);
+}
+
+TEST_CASE("a manifest that cannot be read for its schema is a problem") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    const ManifestOnceFileSystem once{files};
+    const auto report = validatePacks(once, "content/base", "content/schemas");
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(textOf(*report) == "content/base/pack.yaml: cannot be read: it is gone\n");
+    CHECK(report->documents == 3);
 }
 
 TEST_CASE("dwx validate cannot check a folder without packs") {
