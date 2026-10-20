@@ -146,7 +146,10 @@ Qué comprueba:
 3. **Referencias:** cada texto que el esquema marca con `assetReference` tiene que llevar a un asset de la pila
    ([cómo se escribe](json-schema.md#referencias-a-assets)). Hoy lo marcan el SoundFont, las muestras y las pistas de
    los bancos de sonido y de música, el destino de cada warp y el Digimon de cada NPC de un mapa, la textura y el
-   modelo de cada efecto, el modelo de cada contrato y las salidas del informe de cobertura.
+   modelo de cada efecto, el modelo de cada contrato y las salidas del informe de cobertura. Si la referencia nombra
+   un fichero, su tipo tiene que coincidir, o ser el tipo del que `dwx cook` hizo el fichero: un paquete cocinado
+   conserva los documentos tal como se extrajeron, así que siguen nombrando `sample_001.wav` o `background.png`
+   aunque el fichero sea `.opus` o `.ktx2`.
 4. **Metadatos:** cada `<nombre>_meta` describe un asset `<nombre>` que tiene que existir.
 5. **Modelos glTF:** las imágenes y los buffers que un modelo lee de fuera de su fichero tienen que estar junto a él.
 6. **Contratos:** cada `digimon/<id>/model` necesita su `digimon/<id>/contract`, y el modelo que nombra un contrato

@@ -46,7 +46,8 @@ struct ValidationReport {
 // Checks the packs at a folder, which findPacks takes: a pack or a folder of packs, folders and .pak archives. Every
 // pack.yaml must follow pack.schema.json and every YAML document the schema its id matches in the schemas rules of the
 // mounted manifests, exactly one, from schemaFolder. The references the schemas mark, the files glTF models use and the
-// asset that each <name>_meta describes must be in the stack. Each model of names::ContractedModels needs a contract,
+// asset that each <name>_meta describes must be in the stack; a reference that names a file may name the type the
+// file was cooked from (.wav for .opus, .png for .ktx2). Each model of names::ContractedModels needs a contract,
 // and the model a contract names has its skeleton and its animations. Every asset must open with the engine's readers.
 // Fails only when there are no packs or they cannot be mounted; anything else is a problem of the report.
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,

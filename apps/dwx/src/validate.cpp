@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "asset_names.hpp"
+#include "cook.hpp"
 #include "dwx.hpp"
 
 namespace dwe::dwx {
@@ -47,6 +48,17 @@ std::string_view textOf(std::span<const std::byte> bytes) {
 std::string folderOf(const AssetId& id) {
     const std::size_t slash = id.str().rfind('/');
     return slash == std::string::npos ? std::string{} : id.str().substr(0, slash + 1);
+}
+
+// Whether a file with that extension is the file a reference names with another: the same type, or what dwx cook
+// turns that type into. A cooked pack keeps the documents and models as extracted, so they still name a sample as
+// .wav and a texture as .png while the files are .opus and .ktx2; the engine finds them by id.
+bool isFileOfType(std::string_view extension, std::string_view named) {
+    if (extension == named) {
+        return true;
+    }
+    const Cooker* cooker = findCooker(cookers(), named);
+    return cooker != nullptr && cooker->outputExtension == extension;
 }
 
 // An asset a document or a model names: its id and, when it names a file, the file's extension.
@@ -281,7 +293,7 @@ private:
         if (target == nullptr) {
             return std::format("names {}, which no pack has", reference.id.str());
         }
-        if (!reference.extension.empty() && extensionOf(*target) != reference.extension) {
+        if (!reference.extension.empty() && !isFileOfType(extensionOf(*target), reference.extension)) {
             return std::format("names a .{} file, but {} is {}", reference.extension, reference.id.str(),
                                assets::pathText(target->file));
         }

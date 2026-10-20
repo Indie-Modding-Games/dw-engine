@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "asset_names.hpp"
+#include "audio_cooker.hpp"
 #include "media_fixtures.hpp"
 #include "temp_folder.hpp"
 #include "validate.hpp"
@@ -207,6 +208,23 @@ TEST_CASE("a pack in a .pak archive is checked like a folder") {
     CHECK(report->documents == 4);
     CHECK(report->references == 4);
     CHECK(report->contracts == 1);
+}
+
+TEST_CASE("a reference may name the type that a cooked file was made from") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    const auto opus = cookAudio(dwe::assets::testing::wavFile(4800), {});
+    REQUIRE_MESSAGE(opus.has_value(), errorOf(opus));
+    files.addFile("content/base/sound/cooked/bank_meta.yaml", "bank: bank.wav\nmap: town\ncount: 1\n");
+    files.addFile("content/base/sound/cooked/bank.opus", *opus);
+    files.addFile("content/base/sound/odd/bank_meta.yaml", "bank: bank.png\nmap: town\ncount: 1\n");
+    files.addFile("content/base/sound/odd/bank.opus", *opus);
+    const auto report = validatePacks(files, "content/base", "content/schemas");
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    // dwx cook makes .opus from .wav, never from .png.
+    CHECK(textOf(*report) == "content/base/sound/odd/bank_meta.yaml:1:7: $.bank: 'bank.png' names a .png file, but "
+                             "sound/odd/bank is content/base/sound/odd/bank.opus\n");
 }
 
 TEST_CASE("a manifest that cannot be read for its schema is a problem") {
