@@ -16,6 +16,7 @@ dwe_add_module(assets
         src/model_data.cpp
         src/media_headers.cpp
         src/content_check.cpp
+        src/text_table.cpp
         src/ogg.cpp
         src/sound.cpp
         src/texture.cpp

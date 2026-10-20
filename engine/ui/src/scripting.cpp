@@ -12,13 +12,16 @@
 #include <RmlUi/Core/ObserverPtr.h>
 #include <RmlUi/Core/StringUtilities.h>
 
+#include <array>
 #include <format>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace dwe::ui {
 namespace {
@@ -43,6 +46,61 @@ void checkText(lua_State* state, std::string_view text) {
     if (text.size() > MaxScriptText) {
         raise(state, "the text is too long");
     }
+}
+
+// A placeholder value of t() as Lua holds it: a view into one of Lua's strings, or a number.
+struct LuaTextArgument {
+    std::string_view name;
+    std::string_view text;
+    double number = 0.0;
+    bool isNumber = false;
+};
+
+using LuaTextArguments = std::array<LuaTextArgument, MaxTextArguments>;
+
+// Reads the table of placeholder values at a stack index: its entries with a string key and a string or number value.
+// Only plain values are alive here, because the checks raise Lua errors.
+std::size_t readTextArguments(lua_State* state, int index, LuaTextArguments& arguments) {
+    if (lua_type(state, index) != LUA_TTABLE) {
+        return 0;
+    }
+    luaL_checkstack(state, 2, "too many nested calls");
+    std::size_t count = 0;
+    lua_pushnil(state);
+    while (lua_next(state, index) != 0) {
+        const int value = lua_type(state, -1);
+        if (lua_type(state, -2) == LUA_TSTRING && (value == LUA_TSTRING || value == LUA_TNUMBER)) {
+            if (count == arguments.size()) {
+                raise(state, "too many placeholder values");
+            }
+            LuaTextArgument& argument = arguments.at(count++);
+            std::size_t length = 0;
+            const char* name = lua_tolstring(state, -2, &length);
+            argument.name = {name, length};
+            checkName(state, argument.name);
+            argument.isNumber = value == LUA_TNUMBER;
+            if (argument.isNumber) {
+                argument.number = lua_tonumber(state, -1);
+            } else {
+                const char* text = lua_tolstring(state, -1, &length);
+                argument.text = {text, length};
+                checkText(state, argument.text);
+            }
+        }
+        lua_pop(state, 1);
+    }
+    return count;
+}
+
+std::vector<localization::TextArgument> textArgumentsOf(std::span<const LuaTextArgument> read) {
+    std::vector<localization::TextArgument> arguments;
+    arguments.reserve(read.size());
+    for (const LuaTextArgument& argument : read) {
+        arguments.push_back(
+            {.name = argument.name,
+             .value = argument.isNumber ? localization::numberText(argument.number) : std::string{argument.text}});
+    }
+    return arguments;
 }
 
 UiValue toUiValue(const sol::stack_object& value) {
@@ -93,6 +151,14 @@ void pushOne(lua_State* state, const UiValue& value) {
             }
         },
         value);
+}
+
+void pushOne(lua_State* state, const std::vector<std::string>& texts) {
+    lua_createtable(state, static_cast<int>(texts.size()), 0);
+    for (std::size_t i = 0; i < texts.size(); ++i) {
+        pushOne(state, texts[i]);
+        lua_rawseti(state, -2, static_cast<lua_Integer>(i) + 1);
+    }
 }
 
 template <typename Value>
@@ -469,6 +535,15 @@ void Scripting::registerApi() {
     api["prompt"] = [this](std::string_view action, sol::this_state lua) {
         checkName(lua, action);
         return result(lua, [&] { return host_.prompt(action); });
+    };
+    api["languages"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.languages(); }); };
+    // The key is argument 1 and the table of placeholder values, if any, argument 2.
+    state[std::string{TextFunction}] = [this](std::string_view key, sol::this_state lua) {
+        checkName(lua, key);
+        LuaTextArguments read{};
+        const std::size_t count = readTextArguments(lua, 2, read);
+        return result(
+            lua, [&] { return host_.text(key, textArgumentsOf(std::span<const LuaTextArgument>{read}.first(count))); });
     };
     api["device"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.device(); }); };
     api["gamepad_family"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.gamepadFamily(); }); };

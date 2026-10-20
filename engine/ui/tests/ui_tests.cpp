@@ -3,6 +3,7 @@
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <doctest/doctest.h>
@@ -263,15 +264,15 @@ TEST_CASE("the pause menu works with the keyboard alone") {
     press(*ui, input, input::keys::Tab);
     REQUIRE(ui->isVisible("pause_menu"));
     CHECK(ui->focusedElementId("pause_menu") == "continue");
-    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Intro");
+    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
     CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Esc");
 
     press(*ui, input, input::keys::Down);
     CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
     press(*ui, input, input::keys::Return);
-    CHECK(ui->elementText("pause_menu", "title") == "Minimapa");
+    CHECK(ui->elementText("pause_menu", "title") == "Minimap");
     CHECK(ui->focusedElementId("pause_menu") == "minimap-visible");
-    CHECK(ui->elementText("pause_menu", "minimap-visible-value") == "Sí");
+    CHECK(ui->elementText("pause_menu", "minimap-visible-value") == "Yes");
 
     press(*ui, input, input::keys::Return);
     auto commands = ui->takeCommands();
@@ -292,7 +293,7 @@ TEST_CASE("the pause menu works with the keyboard alone") {
 
     // Cancel goes back to the entry that opened the page, then closes the menu.
     press(*ui, input, input::keys::Escape);
-    CHECK(ui->elementText("pause_menu", "title") == "Pausa");
+    CHECK(ui->elementText("pause_menu", "title") == "Pause");
     CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
     press(*ui, input, input::keys::Escape);
     CHECK_FALSE(ui->isVisible("pause_menu"));
@@ -319,8 +320,8 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
 
     press(*ui, input, GamepadButton::Start);
     REQUIRE(ui->isVisible("pause_menu"));
-    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Cruz");
-    CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Círculo");
+    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Cross");
+    CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Circle");
 
     press(*ui, input, GamepadButton::DpadDown);
     press(*ui, input, GamepadButton::DpadDown);
@@ -343,7 +344,7 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
     // Touching the keyboard switches the prompts back.
     input.handle(platform::KeyChanged{.key = input::keys::Q, .down = true, .repeat = false});
     frame(*ui, input);
-    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Intro");
+    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
 
     press(*ui, input, GamepadButton::East);
     press(*ui, input, GamepadButton::East);
@@ -361,7 +362,7 @@ TEST_CASE("the pause menu works with the mouse alone") {
     ui->show("pause_menu", true);
     ui->update();
     CHECK(click(*ui, input, "pause_menu", "open-options"));
-    CHECK(ui->elementText("pause_menu", "title") == "Opciones");
+    CHECK(ui->elementText("pause_menu", "title") == "Options");
     CHECK(click(*ui, input, "pause_menu", "display-mode"));
     auto commands = ui->takeCommands();
     REQUIRE(commands.size() == 1);
@@ -378,7 +379,7 @@ TEST_CASE("the pause menu works with the mouse alone") {
     CHECK(ui->focusedElementId("pause_menu") == "vsync");
 
     CHECK(click(*ui, input, "pause_menu", "options-back"));
-    CHECK(ui->elementText("pause_menu", "title") == "Pausa");
+    CHECK(ui->elementText("pause_menu", "title") == "Pause");
     // A click on the background keeps the focus on an entry, so the keyboard goes on from it.
     const std::string before = ui->focusedElementId("pause_menu");
     ui->handleEvent(platform::MouseMoved{.x = 4.0F, .y = 4.0F});
@@ -386,7 +387,7 @@ TEST_CASE("the pause menu works with the mouse alone") {
     CHECK(ui->handleEvent(platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
     frame(*ui, input);
     CHECK(ui->focusedElementId("pause_menu") == before);
-    CHECK(ui->elementText("pause_menu", "title") == "Pausa");
+    CHECK(ui->elementText("pause_menu", "title") == "Pause");
     // Nor does the pointer position the window reports after a resize, which the player did not move.
     const auto quit = ui->elementCenter("pause_menu", "quit");
     REQUIRE(quit.has_value());
@@ -480,16 +481,92 @@ TEST_CASE("the HUD shows the minimap of the current map and its markers") {
     CHECK(ui->elementText("hud", "minimap-name") == "Casa");
 }
 
-TEST_CASE("the HUD shows the map change's map name in the middle of the screen") {
+// A UI that shows the texts of a catalog, as the game creates it.
+std::unique_ptr<Ui> createUi(const VirtualFileSystem& files, const localization::Catalog& texts) {
+    auto ui =
+        Ui::create(UiDesc{.files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}});
+    REQUIRE_MESSAGE(ui.has_value(), ui.error().message);
+    return std::move(*ui);
+}
+
+localization::Catalog catalogIn(const VirtualFileSystem& files, std::string_view language) {
+    auto catalog = localization::Catalog::load(files, language);
+    REQUIRE_MESSAGE(catalog.has_value(), catalog.error().message);
+    return std::move(*catalog);
+}
+
+TEST_CASE("documents show the texts of the player's language and follow a change at run time") {
     Content content;
-    auto ui = createUi(content.mount());
+    content.add("text/en/main.yaml", "map_names.0001: \"File City <A>\"\n");
+    content.add("text/es/main.yaml", "map_names.0001: Ciudad Archivo\n");
+    content.add("ui/said/document.rml", R"rml(<rml><head><script>
+function on_show(document) document:get("said"):set_text(t("pause_menu.ui_scale.value", {percent = 150})) end
+function on_language(document)
+	on_show(document)
+	ui.send("languages", table.concat(ui.languages(), ","))
+end
+function unknown() ui.send(t("nobody.has.this")) end
+</script></head><body><p id="label" text-key="common.yes"></p><p id="said"></p></body></rml>)rml");
+    VirtualFileSystem& files = content.mount();
+    localization::Catalog texts = catalogIn(files, "es");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("said", idOf("ui/said/document")));
     REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
-    ui->setSetting("map_title", std::string{});
+    REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
+    REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+    ui->setSetting("ui_scale", 1.0);
+    ui->show("main_menu");
+    ui->show("said");
+    ui->show("hud");
+    ui->show("pause_menu", true);
+    MinimapGrid grid{.columns = 2, .rows = 2, .cells = {}, .cellSize = 100.0F, .originX = 0.0F, .originZ = 0.0F};
+    grid.cells.assign(4, MinimapCell::Walkable);
+    ui->setMinimap(grid, "main.map_names.0001");
+    ui->update();
+    CHECK(ui->elementText("said", "label") == "Sí");
+    CHECK(ui->elementText("said", "said") == "150 %");
+    CHECK(ui->elementText("hud", "minimap-name") == "Ciudad Archivo");
+    CHECK(ui->elementText("pause_menu", "title") == "Pausa");
+    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Intro");
+
+    REQUIRE(texts.setLanguage("en"));
+    ui->refreshTexts();
+    ui->update();
+    CHECK(ui->elementText("said", "label") == "Yes");
+    CHECK(ui->elementText("said", "said") == "150%");
+    CHECK(ui->elementText("hud", "minimap-name") == "File City &lt;A&gt;");
+    CHECK(ui->elementText("pause_menu", "title") == "Pause");
+    CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Enter");
+    CHECK(ui->elementText("main_menu", "prompt-confirm") == "Enter");
+    CHECK(ui->elementText("main_menu", "language-value") == "English");
+    const auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].name == "languages");
+    CHECK(commands[0].value == UiValue{std::string{"en,es"}});
+
+    // A key no table has shows as itself, so the missing text is easy to spot.
+    REQUIRE(ui->callScript("said", "unknown"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"nobody.has.this"});
+    // A map without a name shows none.
+    ui->setMinimap(grid, "");
+    ui->update();
+    CHECK(ui->elementText("hud", "minimap-name").empty());
+}
+
+TEST_CASE("the HUD shows the map change's map name in the middle of the screen, in the player's language") {
+    Content content;
+    content.add("text/en/main.yaml", "map_names.0002: Native Forest\n");
+    content.add("text/es/main.yaml", "map_names.0002: Bosque Nativo\n");
+    VirtualFileSystem& files = content.mount();
+    localization::Catalog texts = catalogIn(files, "en");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->setSetting("map_title_key", std::string{});
     ui->show("hud");
     ui->update();
     CHECK(ui->elementText("hud", "map-title").empty());
 
-    ui->setSetting("map_title", std::string{"Native Forest"});
+    ui->setSetting("map_title_key", std::string{"main.map_names.0002"});
     ui->setSetting("screen_fade", 0.75);
     ui->update();
     CHECK(ui->elementText("hud", "map-title") == "Native Forest");
@@ -499,9 +576,63 @@ TEST_CASE("the HUD shows the map change's map name in the middle of the screen")
     CHECK(titleAt.x == doctest::Approx(640.0).epsilon(0.01));
     CHECK(titleAt.y == doctest::Approx(360.0).epsilon(0.01));
 
-    ui->setSetting("map_title", std::string{});
+    REQUIRE(texts.setLanguage("es"));
+    ui->refreshTexts();
+    ui->update();
+    CHECK(ui->elementText("hud", "map-title") == "Bosque Nativo");
+
+    ui->setSetting("map_title_key", std::string{});
     ui->update();
     CHECK(ui->elementText("hud", "map-title").empty());
+}
+
+TEST_CASE("the main menu changes the language with the keyboard and starts the game") {
+    Content content;
+    VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "es");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+    ui->setSetting("language", std::string{"es"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("main_menu", true);
+    frame(*ui, input);
+    CHECK(ui->focusedElementId("main_menu") == "play");
+    CHECK(ui->elementText("main_menu", "play") == "Jugar");
+    CHECK(ui->elementText("main_menu", "language-value") == "Español");
+
+    press(*ui, input, input::keys::Down);
+    REQUIRE(ui->focusedElementId("main_menu") == "language");
+    press(*ui, input, input::keys::Right);
+    auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].name == "language");
+    CHECK(commands[0].value == UiValue{std::string{"en"}});
+    // Cancel does not leave the main menu.
+    press(*ui, input, input::keys::Escape);
+    CHECK(ui->isVisible("main_menu"));
+
+    press(*ui, input, input::keys::Up);
+    press(*ui, input, input::keys::Return);
+    CHECK_FALSE(ui->isVisible("main_menu"));
+}
+
+TEST_CASE("the main menu works with the mouse alone") {
+    Content content;
+    VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "en");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+    ui->setSetting("language", std::string{"en"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("main_menu", true);
+    frame(*ui, input);
+    CHECK(ui->elementText("main_menu", "language-value") == "English");
+    CHECK(click(*ui, input, "main_menu", "language"));
+    auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].value == UiValue{std::string{"es"}});
+    CHECK(click(*ui, input, "main_menu", "play"));
+    CHECK_FALSE(ui->isVisible("main_menu"));
 }
 
 TEST_CASE("hot reload picks up an edited document") {
@@ -606,6 +737,9 @@ function fill()
 	exhaust(function() return root:get(id) end)
 	exhaust(function() return ui.prompt("confirm") end)
 	exhaust(function() return ui.setting("long") end)
+	exhaust(function() return t(id) end)
+	exhaust(function() return t("pause_menu.ui_scale.value", {percent = id}) end)
+	exhaust(function() return ui.languages() end)
 end
 </script></head><body><p id="label-with-a-long-id-that-does-not-fit-in-a-short-string" title="a title long enough to live on the heap, not in the string">a text long enough to live on the heap, not inside the string</p></body></rml>)rml");
     auto ui = createUi(

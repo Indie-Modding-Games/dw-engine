@@ -4,6 +4,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/scene/components.hpp>
 
 #include <chrono>
@@ -188,7 +189,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     }
     const assets::MapEntry* entry = mapTable_ ? mapTable_->find(mapId) : nullptr;
     const bool fixedTime = entry != nullptr && entry->fixedTimeOfDay;
-    std::string name = displayName(mapId);
+    std::string nameKey = nameKeyOf(mapId);
     // map.c: setupMap shows the palette and the lights of the clock's time of day (updateTimeOfDay).
     clockHour_ = field_->clockMinutes() / MinutesPerHour;
     time_ = render::timeOfDayAt(clockHour_, schedule_);
@@ -211,26 +212,27 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     const glm::vec3 spawn = field_->player().position;
     core::logInfo("field: entered {} ({}) at exit {} ({:.0f}, {:.0f}) from {}; data from pack {}; loaded in {:.2f} ms, "
                   "ready in {:.2f} ms",
-                  mapId, name, exit, spawn.x, spawn.z, timing.from.empty() ? "-" : timing.from,
-                  source != nullptr ? source->packId : "?", timing.loadMilliseconds, timing.totalMilliseconds);
+                  mapId, nameKey.empty() ? mapId : localization::tr(nameKey), exit, spawn.x, spawn.z,
+                  timing.from.empty() ? "-" : timing.from, source != nullptr ? source->packId : "?",
+                  timing.loadMilliseconds, timing.totalMilliseconds);
     if (!timing.from.empty()) {
         lastChange_ = std::move(timing);
     }
     map_ = std::move(*scene);
-    mapName_ = std::move(name);
+    mapNameKey_ = std::move(nameKey);
     ++mapSerial_;
     return {};
 }
 
-std::string FieldScene::displayName(std::string_view mapId) const {
-    if (mapTable_) {
-        if (const assets::MapEntry* entry = mapTable_->find(mapId)) {
-            if (const std::string_view shown = mapTable_->displayName(*entry); !shown.empty()) {
-                return std::string{shown};
-            }
-        }
+std::string FieldScene::nameKeyOf(std::string_view mapId) const {
+    if (!mapTable_) {
+        return {};
     }
-    return std::string{mapId};
+    const assets::MapEntry* entry = mapTable_->find(mapId);
+    if (entry == nullptr || mapTable_->displayName(*entry).empty()) {
+        return {};
+    }
+    return localization::mapNameKey(entry->loadingName);
 }
 
 void FieldScene::tick(const game::field::FieldInput& input, float seconds) {

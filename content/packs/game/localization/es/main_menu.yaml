@@ -1,0 +1,5 @@
+# El menú que se muestra al arrancar el juego.
+title: "Menú principal"
+play: "Jugar"
+language: "Idioma"
+quit: "Salir del juego"

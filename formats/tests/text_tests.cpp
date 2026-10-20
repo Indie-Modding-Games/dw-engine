@@ -6,6 +6,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -138,9 +139,20 @@ TEST_CASE("a byte string decodes to tagged UTF-8 and encodes back") {
     CHECK(decodeByteString({}).empty());
 }
 
+TEST_CASE("the codes inside byte strings decode to tags and encode back") {
+    const std::string_view battle = "#R#C1dropped #C7!#W%d m %d cm #x 100%";
+    const auto raw = std::as_bytes(std::span{battle});
+    const std::string text = decodeByteString(raw);
+    CHECK(text == "{br}{color:1}dropped {color:7}!{wait}{0} m {1} cm #x 100%");
+    const auto encoded = encodeByteString(text);
+    REQUIRE_MESSAGE(encoded.has_value(), errorOf(encoded));
+    CHECK(std::ranges::equal(*encoded, raw));
+}
+
 TEST_CASE("byte string text that has no bytes is refused") {
-    for (const std::string_view bad : {"{byte:00}", "{byte:81}x", "{byte:1}", "{sjis:4142}", "{sjis:8100}", "{sjis:81}",
-                                       "{color:1}", "}", "{byte:01", "\xFF", "漢"}) {
+    for (const std::string_view bad :
+         {"{byte:00}", "{byte:81}x", "{byte:1}", "{sjis:4142}", "{sjis:8100}", "{sjis:81}", "{color:12}", "{color:x}",
+          "{br:1}", "{1}", "{0}{0}", "}", "{byte:01", "\xFF", "漢"}) {
         CHECK_FALSE_MESSAGE(encodeByteString(bad).has_value(), bad);
     }
 }

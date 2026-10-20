@@ -6,7 +6,8 @@ dwe_add_module(script
     SOURCES
         src/script_vm.cpp
         src/input_bindings.cpp
-    DEPS core input
+        src/text_bindings.cpp
+    DEPS core input localization
     PRIVATE_LIBS sol2::sol2 ${LUA_LIBRARIES})
 
 target_include_directories(dwe_script SYSTEM PRIVATE ${LUA_INCLUDE_DIR})

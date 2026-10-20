@@ -42,9 +42,13 @@ propio del documento, en el sandbox de la UI (sin ficheros, ni `os`, ni cargar c
 Lua y ven `event`, `element` y `document`:
 
 ```xml
-<button id="quit" onclick="ui.send('quit')">Salir del juego</button>
-<button id="open-options" onclick="open_page(document, 'options')">Opciones</button>
+<button id="quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
+<button id="open-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
 ```
+
+Un documento no lleva texto escrito: el atributo `text-key` pone el texto de esa clave en el idioma del juego, al
+cargar y al cambiar de idioma. Las claves están en `content/packs/game/localization/<idioma>/` y cada una tiene que
+estar en inglés y en español ([localización](../architecture/localizacion.md#añadir-un-texto)).
 
 El documento puede definir estas funciones, que la UI llama con el documento como primer argumento:
 
@@ -55,6 +59,7 @@ El documento puede definir estas funciones, que la UI llama con el documento com
 | `on_action(document, acción)` | Por cada paso de navegación mientras es el documento modal de arriba: `up`, `down`, `left`, `right`, `confirm`, `cancel`, `menu`. Si devuelve `true`, la UI no hace lo de por defecto |
 | `on_setting(document, nombre)` | Cuando la app cambia un ajuste |
 | `on_device(document)` | Cuando el jugador cambia de dispositivo (para los avisos de botones) |
+| `on_language(document)` | Cuando cambia el idioma: los `text-key` ya están en el nuevo; aquí se reescribe lo que el script puso con `t()` y los avisos de botones |
 | `on_tick(document, segundos)` | En cada tick lógico mientras está visible |
 
 API disponible:
@@ -63,7 +68,9 @@ API disponible:
 |---|---|
 | `ui.send(nombre, valor)` | Envía un comando a la app (ver la tabla de comandos en [ui.md](../architecture/ui.md)) |
 | `ui.setting(nombre)` | El valor actual de un ajuste que publica la app, o `nil` |
-| `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Intro"`, `"A"`, `"Cruz"`); los textos están en `ui/common/prompts.yaml` |
+| `t(clave[, valores])` | El texto de una clave en el idioma del juego, con sus marcadores rellenos: `t("pause_menu.ui_scale.value", {percent = 150})` |
+| `ui.languages()` | Los idiomas que tienen los paquetes (`{"en", "es"}`) |
+| `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Enter"`, `"A"`, `"Cross"`), en el idioma del juego; los textos están en `localization/<idioma>/prompt.yaml` |
 | `ui.device()`, `ui.gamepad_family()` | `"keyboard_mouse"` o `"gamepad"`; `"xbox"`, `"playstation"`, `"nintendo"`, `"steam"` o `"generic"` |
 | `ui.show(nombre)`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado |
 | `document_name` | El nombre del propio documento |

@@ -58,6 +58,13 @@ constexpr int PartialExitCode = 2;
 constexpr int StableFrames = 5;
 
 constexpr std::string_view MenuDocument = "pause_menu";
+// The menu the game shows at start; menu_select picks its entries while it is open.
+constexpr std::string_view MainMenuDocument = "main_menu";
+
+// The menu menu_select picks from: the main menu while it is open, else the pause menu.
+std::string_view shownMenu(const ui::Ui& ui) {
+    return ui.isVisible(MainMenuDocument) ? MainMenuDocument : MenuDocument;
+}
 
 std::optional<AutotestDevice> deviceNamed(std::string_view name) {
     if (name == "keyboard") {
@@ -339,7 +346,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     }
     assets::YamlReader reader;
     AutotestRoute route;
-    reader.expectKeys(*document, "route", {"name", "device", "steps"}, {"gamepad", "timeout"});
+    reader.expectKeys(*document, "route", {"name", "device", "steps"}, {"gamepad", "timeout", "main_menu"});
     route.name = reader.text(reader.field(*document, "name"));
     const core::YamlNode& device = reader.field(*document, "device");
     if (const auto known = deviceNamed(reader.text(device))) {
@@ -353,6 +360,9 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
         } else {
             reader.fail(*gamepad, "unknown gamepad family");
         }
+    }
+    if (const core::YamlNode* mainMenu = document->find("main_menu")) {
+        route.mainMenu = reader.boolean(*mainMenu);
     }
     if (const core::YamlNode* timeout = document->find("timeout")) {
         route.timeout = reader.number(*timeout);
@@ -813,13 +823,14 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     if (progress.phase == 1) {
         return true;
     }
-    if (!host.ui->isVisible(MenuDocument)) {
+    const std::string_view menu = shownMenu(*host.ui);
+    if (!host.ui->isVisible(menu)) {
         failStep("the menu is not open");
         return false;
     }
     const AutotestDevice device = deviceOf(step);
     if (device == AutotestDevice::Mouse) {
-        const auto center = host.ui->elementCenter(MenuDocument, step.text);
+        const auto center = host.ui->elementCenter(menu, step.text);
         if (!center) {
             failStep("the menu has no such entry");
             return false;
@@ -834,7 +845,7 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     if (device == AutotestDevice::Gamepad && !ensureGamepad(host)) {
         return false;
     }
-    if (host.ui->focusedElementId(MenuDocument) == step.text) {
+    if (host.ui->focusedElementId(menu) == step.text) {
         tapAction(device, "confirm");
         progress.phase = 1;
         return false;
@@ -843,7 +854,7 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
     constexpr int DownTries = 8;
     constexpr int MaxTries = 16;
     if (progress.attempts >= MaxTries) {
-        failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(MenuDocument)));
+        failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(menu)));
         return false;
     }
     tapAction(device, progress.attempts < DownTries ? "down" : "up");

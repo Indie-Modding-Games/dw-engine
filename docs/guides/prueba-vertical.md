@@ -33,6 +33,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--time day\|dusk\|night` | Pone el reloj del juego a las 8:00, 16:00 o 20:00 (por defecto, la hora de inicio de `field/rules`) |
 | `--autotest <ruta.yaml>` | Recorre una ruta y sale con 0 si pasa (ver abajo) |
 | `--shots <carpeta>` | Dónde guarda las capturas de un autotest |
+| `--lang en\|es` | El idioma de esta ejecución, para autotests; no se guarda. Sin él, el juego usa el que se eligió en el menú principal o, la primera vez, el del sistema ([localización](../architecture/localizacion.md)) |
 | `--skip-steps <tipo>[,<tipo>...]` | Salta los pasos de esos tipos (`fullscreen` en un X sin gestor de ventanas); el informe lo dice, y saltar `walk_to` o `wait` deja la ejecución en parcial (sale con 2) |
 
 Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--model-viewer`, `--ui-demo` y
@@ -72,7 +73,20 @@ que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de 
   una capa de profundidad de File City, cambian la ventana a 800x600, 1280x720, 1920x1080, 2560x1080 y pantalla
   completa, y hacen capturas.
 - `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
-  del mapa a la vista, y otra al acabar.
+  del mapa a la vista en el idioma del juego (`--lang`), y otra al acabar.
+- `route-language.yaml`: empieza en el menú principal (`main_menu: true`), cambia el idioma desde él y lo devuelve,
+  entra al campo y abre el menú de pausa, con capturas de cada pantalla. Se corre una vez por idioma, cada una con
+  su carpeta de capturas:
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <carpeta> --lang $lang --autotest tests/autotest/route-language.yaml \
+        --shots <capturas>/$lang
+done
+```
+
+Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
+los ajustes del usuario.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --autotest tests/autotest/route-keyboard.yaml --shots <carpeta de capturas>
@@ -108,6 +122,7 @@ name: keyboard            # prefijo de las capturas
 device: keyboard          # keyboard | gamepad | mouse: el de los pasos que no digan otro
 gamepad: xbox             # familia del mando virtual (xbox, playstation, nintendo...)
 timeout: 600              # segundos para toda la ruta
+main_menu: false          # true: empieza en el menú principal en vez de en el campo
 steps:
   - wait: {map: twna01, seconds: 1}
   - walk_to: {trigger: 112}
@@ -119,7 +134,7 @@ steps:
 | `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás |
 | `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
-| `menu_select: <id>` | Enfoca y pulsa una entrada del menú (`open-minimap`, `minimap-visible`...) |
+| `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-visible`...) |
 | `expect_setting: {<nombre>: <valor>}` | Comprueba un ajuste publicado a la UI (`minimap_visible: false`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |

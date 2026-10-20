@@ -8,41 +8,41 @@
 <body>
 	<div id="scrim">
 		<div id="panel">
-			<h1 id="title">Pausa</h1>
+			<h1 id="title"></h1>
 
 			<div id="page-main" class="page">
-				<button id="continue" autofocus="autofocus" onclick="resume()">Continuar</button>
-				<button id="open-minimap" onclick="open_page(document, 'minimap')">Minimapa</button>
-				<button id="open-options" onclick="open_page(document, 'options')">Opciones</button>
-				<button id="quit" onclick="ui.send('quit')">Salir del juego</button>
+				<button id="continue" autofocus="autofocus" onclick="resume()" text-key="pause_menu.continue"></button>
+				<button id="open-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
+				<button id="open-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
+				<button id="quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
 			</div>
 
 			<div id="page-minimap" class="page hidden">
 				<button id="minimap-visible" class="option" onclick="adjust(document, 'minimap-visible', 1)">
-					<span class="label">Mostrar minimapa</span><span class="value" id="minimap-visible-value"></span>
+					<span class="label" text-key="pause_menu.minimap_visible"></span><span class="value" id="minimap-visible-value"></span>
 				</button>
 				<button id="minimap-size" class="option" onclick="adjust(document, 'minimap-size', 1)">
-					<span class="label">Tamaño</span><span class="value" id="minimap-size-value"></span>
+					<span class="label" text-key="pause_menu.minimap_size"></span><span class="value" id="minimap-size-value"></span>
 				</button>
-				<button id="minimap-back" class="back" onclick="back(document)">Volver</button>
+				<button id="minimap-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
 			<div id="page-options" class="page hidden">
 				<button id="display-mode" class="option" onclick="adjust(document, 'display-mode', 1)">
-					<span class="label">Pantalla</span><span class="value" id="display-mode-value"></span>
+					<span class="label" text-key="pause_menu.display_mode"></span><span class="value" id="display-mode-value"></span>
 				</button>
 				<button id="ui-scale" class="option" onclick="adjust(document, 'ui-scale', 1)">
-					<span class="label">Escala de la interfaz</span><span class="value" id="ui-scale-value"></span>
+					<span class="label" text-key="pause_menu.ui_scale"></span><span class="value" id="ui-scale-value"></span>
 				</button>
 				<button id="vsync" class="option" onclick="adjust(document, 'vsync', 1)">
-					<span class="label">Sincronización vertical</span><span class="value" id="vsync-value"></span>
+					<span class="label" text-key="pause_menu.vsync"></span><span class="value" id="vsync-value"></span>
 				</button>
-				<button id="options-back" class="back" onclick="back(document)">Volver</button>
+				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
 			<div id="prompts">
-				<span class="prompt"><span class="key" id="prompt-confirm">Enter</span>Aceptar</span>
-				<span class="prompt"><span class="key" id="prompt-cancel">Esc</span>Volver</span>
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
 			</div>
 		</div>
 	</div>

@@ -1,6 +1,7 @@
 // Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has one.
 
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/text_table.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
@@ -120,6 +121,19 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
         REQUIRE_MESSAGE(parsed.has_value(), id);
         CHECK_MESSAGE(dwe::formats::test::checkAgainstSchema(*parsed, id.substr(5)).empty(), id);
     }
+    // The original's text is a flat table of "<block>.<slot>" keys (docs/formats/textos.md).
+    const auto mainText =
+        std::ranges::find(run->outputs, "text/en/main", [](const OutputFile& output) { return output.id.str(); });
+    REQUIRE(mainText != run->outputs.end());
+    const std::string_view mainYaml{reinterpret_cast<const char*>(mainText->bytes.data()), mainText->bytes.size()};
+    const auto parsedText = dwe::core::parseYaml(mainYaml);
+    REQUIRE(parsedText.has_value());
+    CHECK(parsedText->find("strings") == nullptr);
+    const auto mainTable = dwe::assets::parseTextTable(
+        {.kind = dwe::assets::TextTableKind::Game, .language = "en", .name = "main"}, mainYaml);
+    REQUIRE_MESSAGE(mainTable.has_value(), errorOf(mainTable));
+    CHECK(mainTable->contains("main.map_names.0001"));
+    CHECK(mainTable->contains("main.move_names.0000"));
     CHECK(has("data/digimon"));
     CHECK(has("data/maps"));
     CHECK(has("map/"));

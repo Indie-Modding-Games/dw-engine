@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Engine texts",
+  "description": "localization/<language>/<area>.yaml: the engine's own player-facing texts in one language, as a flat mapping of keys to texts. The full key is <area>.<key>. Placeholders are {name}; {{ and }} are literal braces (docs/architecture/localizacion.md).",
+  "type": "object",
+  "propertyNames": { "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$" },
+  "additionalProperties": { "type": "string" }
+}

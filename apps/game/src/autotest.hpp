@@ -84,6 +84,8 @@ struct AutotestRoute {
     // The family of the virtual gamepad, for gamepad routes.
     platform::GamepadFamily gamepadFamily = platform::GamepadFamily::Xbox;
     double timeout = 600.0;
+    // Whether the route starts at the main menu; without it the game goes straight to the field.
+    bool mainMenu = false;
     std::vector<AutotestStep> steps;
 };
 
@@ -124,6 +126,9 @@ public:
     void mapChanged(const MapChangeTiming& timing);
 
     [[nodiscard]] bool finished() const { return result_.has_value(); }
+
+    // Whether the route starts at the main menu (AutotestRoute::mainMenu).
+    [[nodiscard]] bool startsAtMainMenu() const { return route_.mainMenu; }
 
     // Logs what the run measured (steps, map changes, frame times), while the game is still up.
     void summarize(const AutotestHost& host) const;

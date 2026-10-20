@@ -1,0 +1,25 @@
+<rml>
+<head>
+	<title>Main menu</title>
+	<link type="text/rcss" href="../common/theme.rcss"/>
+	<link type="text/rcss" href="../pause_menu/style.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="main_menu.title"></h1>
+			<button id="play" autofocus="autofocus" onclick="play()" text-key="main_menu.play"></button>
+			<button id="language" class="option" onclick="change_language(1)">
+				<span class="label" text-key="main_menu.language"></span><span class="value" id="language-value"></span>
+			</button>
+			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

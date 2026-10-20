@@ -1,5 +1,6 @@
 #include "text_extractors.hpp"
 
+#include <dwe/assets/text_table.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/exe/memory_image.hpp>
 #include <dwe/formats/image/png.hpp>
@@ -9,6 +10,7 @@
 #include <dwe/formats/text/string_manifest.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <iterator>
 #include <span>
@@ -57,11 +59,11 @@ std::string sourceName(std::string_view file) {
     return names::segment(file.ends_with(OverlaySuffix) ? file.substr(0, file.size() - OverlaySuffix.size()) : file);
 }
 
-// Reads the strings of the blocks of one source into a mapping {block: [string or null]}. A block that does not
-// read is an unknown and is left out.
+// Reads the strings of the blocks of one source into a flat table {"<block>.<slot>": string}
+// (docs/formats/textos.md). An empty slot has no key. A block that does not read is an unknown and is left out.
 YamlNode readSource(std::string_view source, const StringManifest& manifest, const MemoryImage& image,
                     const MemoryImage& executable, Extraction& extraction, std::size_t& strings) {
-    YamlNode blocks = YamlNode::mapping();
+    YamlNode table = YamlNode::mapping();
     for (const StringBlock& block : manifest.blocks) {
         if (block.source != source) {
             continue;
@@ -71,26 +73,23 @@ YamlNode readSource(std::string_view source, const StringManifest& manifest, con
             extraction.unknowns.push_back(std::format("text {}: {}", sourceName(source), read.error().message));
             continue;
         }
-        YamlNode list = YamlNode::sequence();
-        for (const auto& raw : *read) {
+        for (std::size_t slot = 0; slot < read->size(); ++slot) {
+            const auto& raw = (*read)[slot];
             if (!raw) {
-                list.append(YamlNode::scalar("null"));
                 continue;
             }
-            list.append(YamlNode::scalar(formats::text::decodeByteString(std::as_bytes(std::span{*raw})),
-                                         YamlNode::ScalarStyle::Quoted));
+            table.set(assets::gameTextEntryKey(block.name, slot),
+                      YamlNode::scalar(formats::text::decodeByteString(std::as_bytes(std::span{*raw})),
+                                       YamlNode::ScalarStyle::Quoted));
             ++strings;
         }
-        blocks.set(std::string{block.name}, std::move(list));
     }
-    return blocks;
+    return table;
 }
 
 core::Result<void> addTextTable(Extraction& extraction, const StringManifest& manifest, std::string_view source,
                                 const MemoryImage& image, const MemoryImage& executable, std::size_t& strings) {
-    YamlNode root = YamlNode::mapping();
-    root.set("source", YamlNode::scalar(source.empty() ? std::string{MainSource} : std::string{source}));
-    root.set("strings", readSource(source, manifest, image, executable, extraction, strings));
+    const YamlNode root = readSource(source, manifest, image, executable, extraction, strings);
     auto output = yamlOutput(names::textTable(manifest.language, sourceName(source)), root);
     if (!output) {
         return std::unexpected{output.error()};

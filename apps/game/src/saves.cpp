@@ -13,15 +13,14 @@
 #include <format>
 #include <string>
 
+#include "common.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
 
 namespace {
 
-// Where the saves are in the user's data folder: <data>/<Organization>/<Application>/<SavesFolderName>.
-constexpr std::string_view Organization = "indie-modding-games";
-constexpr std::string_view Application = "dwe";
+// The saves folder in the game's user data folder (common.hpp).
 constexpr std::string_view SavesFolderName = "saves";
 
 std::string describeSlot(const game::save::SlotInfo& info) {
@@ -45,9 +44,8 @@ core::Result<std::filesystem::path> savesFolder(const Options& options) {
     if (options.saves) {
         return *options.saves;
     }
-    return platform::userDataFolder(Organization, Application).transform([](const std::filesystem::path& data) {
-        return data / SavesFolderName;
-    });
+    return platform::userDataFolder(UserDataOrganization, UserDataApplication)
+        .transform([](const std::filesystem::path& data) { return data / SavesFolderName; });
 }
 
 int listSaves(const Options& options) {

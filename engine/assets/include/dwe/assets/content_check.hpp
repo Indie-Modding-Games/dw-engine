@@ -20,7 +20,7 @@ core::Result<void> openAsset(std::string_view extension, std::span<const std::by
 
 // Opens an asset as openAsset does and, when the game reads a document of that id with a reader of its own, with that
 // reader too: map/<id>/data with parseMapDocument and data/maps with parseMapTable, which refuse unknown and missing
-// keys.
+// keys, and the text tables (localization/*/* and text/*/*) with parseTextTable.
 core::Result<void> openAsset(const AssetId& id, std::string_view extension, std::span<const std::byte> bytes);
 
 // An asset the engine could not read or open.

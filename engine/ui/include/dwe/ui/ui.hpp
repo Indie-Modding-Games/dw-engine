@@ -3,6 +3,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/platform/events.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/minimap.hpp>
@@ -34,12 +35,16 @@ inline constexpr std::string_view MinimapImage = "minimap-image";
 // The box around the image, sized and centred by the UI to keep the map's proportions in its square panel; the
 // markers are positioned in percent of it.
 inline constexpr std::string_view MinimapFrame = "minimap-frame";
-// The current map's display name, as text.
+// The current map's name, as text in the player's language.
 inline constexpr std::string_view MinimapName = "minimap-name";
 // The markers, placed with left, top and a rotate() transform, and hidden with display: none.
 inline constexpr std::string_view MinimapPlayer = "minimap-player";
 inline constexpr std::string_view MinimapPartner = "minimap-partner";
 } // namespace hud
+
+// The attribute that gives an element its text by key, in the player's language: <span text-key="hud.menu"/>. The UI
+// fills the element when the document loads and again when the language changes (Ui::refreshTexts).
+inline constexpr std::string_view TextKeyAttribute = "text-key";
 
 // Draws the UI's geometry. The headless UI (tests, tools) draws nothing; the game passes one built on render.
 class UiRenderer;
@@ -49,6 +54,9 @@ struct UiDesc {
     const assets::VirtualFileSystem* files = nullptr;
     // Draws the UI; nullptr for a UI that only lays out (tests). Must outlive the UI.
     UiRenderer* renderer = nullptr;
+    // The player-facing texts in the player's language. Must outlive the UI. When null, the UI reads the packs'
+    // English texts itself (tests, tools).
+    const localization::Catalog* texts = nullptr;
     // The size of the area the UI covers, in pixels.
     int width = 1280;
     int height = 720;
@@ -134,8 +142,13 @@ public:
     // is smaller), times the scale option.
     [[nodiscard]] float dpRatio() const;
 
-    // Replaces the minimap with a new map's: its walkable area and display name, shown in the hud:: elements.
-    void setMinimap(const MinimapGrid& grid, std::string_view mapName);
+    // Replaces the minimap with a new map's: its walkable area and the key of its name (localization::mapNameKey; empty
+    // for none), shown in the hud:: elements.
+    void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey);
+
+    // Shows every text again after the catalog's language changed: the elements with a TextKeyAttribute, the map's
+    // name, and whatever the shown documents' on_language handlers write.
+    void refreshTexts();
 
     // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner), every frame. Markers that did not move
     // cost nothing.

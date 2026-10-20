@@ -9,6 +9,8 @@
 #include <dwe/core/log.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/localization/catalog.hpp>
+#include <dwe/platform/locale.hpp>
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
@@ -98,9 +100,13 @@ assets::MapDocument testMap() {
     return map;
 }
 
+// The key of the test map's name among the texts.
+constexpr std::string_view TestMapNameKey = "dev.test_map";
+
 struct LoadedMap {
     assets::MapDocument document;
-    std::string name;
+    std::string name;    // for the log
+    std::string nameKey; // for the player
 };
 
 LoadedMap loadMap(const assets::VirtualFileSystem* files, const std::string& id) {
@@ -108,19 +114,21 @@ LoadedMap loadMap(const assets::VirtualFileSystem* files, const std::string& id)
         auto map = assets::loadMapDocument(*files, id);
         if (map) {
             std::string name = id;
+            std::string nameKey;
             if (auto table = assets::loadMapTable(*files); table) {
                 if (const assets::MapEntry* entry = table->find(id); entry != nullptr) {
                     const std::string_view shown = table->displayName(*entry);
                     if (!shown.empty()) {
                         name = shown;
+                        nameKey = localization::mapNameKey(entry->loadingName);
                     }
                 }
             }
-            return {.document = std::move(*map), .name = std::move(name)};
+            return {.document = std::move(*map), .name = std::move(name), .nameKey = std::move(nameKey)};
         }
         core::logWarning("ui demo: map {}: {}; showing a test map", id, map.error().message);
     }
-    return {.document = testMap(), .name = "Mapa de prueba"};
+    return {.document = testMap(), .name = std::string{TestMapNameKey}, .nameKey = std::string{TestMapNameKey}};
 }
 
 // A player that walks the map on its own, turning at walls, and a partner that follows its steps.
@@ -436,10 +444,18 @@ int runUiDemo(const UiDemoOptions& options) {
         core::logError("{}", uiRenderer.error().message);
         return EXIT_FAILURE;
     }
+    auto texts = localization::Catalog::load(
+        content->files,
+        localization::pickLanguage(localization::availableLanguages(content->files), platform::systemLanguage()));
+    if (!texts) {
+        core::logError("ui demo: {}", texts.error().message);
+        return EXIT_FAILURE;
+    }
     const platform::PixelSize size = window->pixelSize();
     auto ui = ui::Ui::create({
         .files = &content->files,
         .renderer = uiRenderer->get(),
+        .texts = &*texts,
         .width = size.width,
         .height = size.height,
         .scale = 1.0F,
@@ -473,7 +489,7 @@ int runUiDemo(const UiDemoOptions& options) {
     (*ui)->show("hud");
 
     const LoadedMap map = loadMap(&content->files, options.map);
-    (*ui)->setMinimap(ui::minimapGridOf(map.document), map.name);
+    (*ui)->setMinimap(ui::minimapGridOf(map.document), map.nameKey);
     Walkers walkers{map.document};
     core::logInfo("ui demo: map {} ({})", map.document.id, map.name);
 

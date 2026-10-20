@@ -93,6 +93,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     if (argument == "--start") {
         return readStart(options, value);
     }
+    if (argument == LanguageOption) {
+        options.language = std::string{value};
+        return !value.empty();
+    }
     if (argument == "--virtual-gamepad") {
         options.virtualGamepad = value;
         return true;

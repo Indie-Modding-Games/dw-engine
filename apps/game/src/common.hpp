@@ -13,9 +13,13 @@ inline constexpr double TickSeconds = 1.0 / 60.0;
 // A longer frame (a stall, a breakpoint) runs at most this much logic, so the game slows down instead of spiralling.
 inline constexpr double MaxFrameSeconds = 0.25;
 // The UI settings the game publishes for the HUD on a map change: how much the fade takes away (0 to 1), and the
-// name of the map it goes to while the original shows it (empty otherwise).
+// text key of the name of the map it goes to while the original shows it (empty otherwise).
 inline constexpr std::string_view ScreenFadeSetting = "screen_fade";
-inline constexpr std::string_view MapTitleSetting = "map_title";
+inline constexpr std::string_view MapTitleKeySetting = "map_title_key";
+// Where the game keeps the player's own files (settings, saves): <user data>/<organization>/<application>/
+// (platform::userDataFolder).
+inline constexpr std::string_view UserDataOrganization = "indie-modding-games";
+inline constexpr std::string_view UserDataApplication = "dwe";
 // How long to sleep per loop while there is nothing to draw, about one display refresh.
 inline constexpr std::chrono::milliseconds IdleWait{16};
 

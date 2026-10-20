@@ -1,8 +1,8 @@
 -- The pause menu: three pages (main, minimap, options). The menu never changes a setting itself: it sends a command to
 -- the game with ui.send and shows what the game reports back through ui.setting, so the labels always tell the truth.
+-- Every text the player sees comes from the texts in the player's language: t(key) here, text-key in the document.
 
 local pages = { "main", "minimap", "options" }
-local titles = { main = "Pausa", minimap = "Minimapa", options = "Opciones" }
 local first_entry = { main = "continue", minimap = "minimap-visible", options = "display-mode" }
 -- The entry of the main page that opened each page, focused again when going back.
 local opener = { minimap = "open-minimap", options = "open-options" }
@@ -10,11 +10,10 @@ local opener = { minimap = "open-minimap", options = "open-options" }
 local current = "main"
 
 local minimap_sizes = { "small", "medium", "large" }
-local minimap_size_names = { small = "Pequeño", medium = "Mediano", large = "Grande" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function on_off(value)
-	return value and "Sí" or "No"
+	return t(value and "common.yes" or "common.no")
 end
 
 local function index_of(list, value)
@@ -64,9 +63,12 @@ local options = {
 
 local function refresh(document)
 	document:get("minimap-visible-value"):set_text(on_off(ui.setting("minimap_visible")))
-	document:get("minimap-size-value"):set_text(minimap_size_names[ui.setting("minimap_size")] or "Mediano")
-	document:get("display-mode-value"):set_text(ui.setting("fullscreen") and "Completa" or "Ventana")
-	document:get("ui-scale-value"):set_text(string.format("%d%%", math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)))
+	local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size") or "medium"
+	document:get("minimap-size-value"):set_text(t("pause_menu.minimap_size." .. size))
+	document:get("display-mode-value"):set_text(t(ui.setting("fullscreen") and "pause_menu.display_mode.fullscreen"
+		or "pause_menu.display_mode.window"))
+	local percent = math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)
+	document:get("ui-scale-value"):set_text(t("pause_menu.ui_scale.value", { percent = percent }))
 	document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
 end
 
@@ -80,7 +82,7 @@ local function show_page(document, name, focus)
 		document:get("page-" .. page):set_class("hidden", page ~= name)
 	end
 	current = name
-	document:get("title"):set_text(titles[name])
+	document:get("title"):set_text(t("pause_menu.title." .. name))
 	document:get(focus or first_entry[name]):focus()
 end
 
@@ -115,6 +117,13 @@ function on_setting(document, name)
 end
 
 function on_device(document)
+	refresh_prompts(document)
+end
+
+-- The language changed: the elements with a text-key are already in the new one; the rest are written here.
+function on_language(document)
+	document:get("title"):set_text(t("pause_menu.title." .. current))
+	refresh(document)
 	refresh_prompts(document)
 end
 

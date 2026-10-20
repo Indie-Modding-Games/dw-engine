@@ -1,0 +1,32 @@
+# The language route (R3.9): the main menu, a change of language there and back, then the HUD and the pause menu in the
+# language the run started in. It runs once per language, with --lang en and --lang es, and each run's screenshots go
+# to their own folder. How to run it: docs/guides/prueba-vertical.md.
+name: language
+device: keyboard
+main_menu: true
+timeout: 180
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: main-menu
+  # The language entry moves to the next language the packs have; with two, a second press comes back.
+  - menu_select: language
+  - wait: {seconds: 0.5}
+  - screenshot: main-menu-switched
+  - menu_select: language
+  - wait: {seconds: 0.5}
+  - screenshot: main-menu-back
+  - menu_select: play
+  - wait: {menu_open: false, seconds: 0.5}
+  - screenshot: field
+  - menu: open
+  - screenshot: pause-menu
+  - menu_select: open-minimap
+  - screenshot: pause-minimap
+  - menu: close
+  - wait: {menu_open: false}
+  - menu: open
+  - menu_select: open-options
+  - screenshot: pause-options
+  - menu: close
+  - wait: {menu_open: false}

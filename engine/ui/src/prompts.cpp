@@ -1,5 +1,3 @@
-#include <dwe/assets/yaml_reader.hpp>
-#include <dwe/core/yaml.hpp>
 #include <dwe/ui/prompts.hpp>
 
 #include <algorithm>
@@ -71,6 +69,12 @@ constexpr KeyCode LastFunction = 69;
 
 constexpr std::string_view KeyPrefix = "key:";
 constexpr std::string_view GamepadPrefix = "gamepad:";
+
+// Where the labels are among the texts (localization/<language>/prompt).
+constexpr std::string_view LabelKeyPrefix = "prompt.";
+constexpr std::string_view FamilyKeyPrefix = "prompt.family.";
+constexpr char ControlSeparator = ':';
+constexpr char KeySeparator = '.';
 
 std::string_view mouseButtonName(MouseButton button) {
     switch (button) {
@@ -157,61 +161,25 @@ std::string capitals(std::string_view text) {
     return upper;
 }
 
-// Reads a section that maps names to labels into labels, each under prefix + name.
-void readSection(assets::YamlReader& reader, const core::YamlNode& section, std::string_view what,
-                 std::string_view prefix, std::map<std::string, std::string, std::less<>>& labels) {
-    if (!section.isMapping()) {
-        reader.fail(section, std::format("{} must map names to labels", what));
-        return;
-    }
-    for (const core::YamlEntry& entry : section.entries()) {
-        labels.insert_or_assign(std::format("{}{}", prefix, entry.key), reader.text(entry.value));
-    }
+// The key of a control's label: "key:enter" is prompt.key.enter.
+std::string labelKey(std::string_view control) {
+    std::string key = std::format("{}{}", LabelKeyPrefix, control);
+    std::ranges::replace(key, ControlSeparator, KeySeparator);
+    return key;
 }
 
 } // namespace
 
-core::Result<PromptLabels> PromptLabels::parse(std::string_view yaml) {
-    auto tree = core::parseYaml(yaml);
-    if (!tree) {
-        return std::unexpected{core::Error{std::format("prompt labels: {}", tree.error().message)}};
-    }
-    assets::YamlReader reader;
-    if (!reader.expectKeys(*tree, "the prompt labels", {}, {"keys", "mouse", "gamepad", "families"})) {
-        return std::unexpected{reader.error("prompt labels")};
-    }
-    PromptLabels labels;
-    if (const core::YamlNode* keys = tree->find("keys")) {
-        readSection(reader, *keys, "keys", KeyPrefix, labels.labels_);
-    }
-    if (const core::YamlNode* mouse = tree->find("mouse")) {
-        readSection(reader, *mouse, "mouse", "mouse:", labels.labels_);
-    }
-    if (const core::YamlNode* gamepad = tree->find("gamepad")) {
-        readSection(reader, *gamepad, "gamepad", GamepadPrefix, labels.labels_);
-    }
-    if (const core::YamlNode* families = tree->find("families")) {
-        if (!families->isMapping()) {
-            reader.fail(*families, "families must map gamepad families to their labels");
-        } else {
-            for (const core::YamlEntry& family : families->entries()) {
-                readSection(reader, family.value, family.key, family.key + ":", labels.labels_);
-            }
-        }
-    }
-    return reader.finish(std::move(labels), "prompt labels");
-}
-
-std::string PromptLabels::label(std::string_view control, GamepadFamily family) const {
+std::string controlLabel(std::string_view control, GamepadFamily family, const localization::Catalog& texts) {
     if (control.starts_with(GamepadPrefix)) {
         const std::string_view button = control.substr(GamepadPrefix.size());
-        if (auto found = labels_.find(std::format("{}:{}", gamepadFamilyName(family), button));
-            found != labels_.end()) {
-            return found->second;
+        if (auto found =
+                texts.find(std::format("{}{}{}{}", FamilyKeyPrefix, gamepadFamilyName(family), KeySeparator, button))) {
+            return localization::formatText(*found, {});
         }
     }
-    if (auto found = labels_.find(control); found != labels_.end()) {
-        return found->second;
+    if (auto found = texts.find(labelKey(control))) {
+        return localization::formatText(*found, {});
     }
     if (control.starts_with(KeyPrefix) && printsItself(control.substr(KeyPrefix.size()))) {
         return capitals(control.substr(KeyPrefix.size()));
@@ -281,9 +249,9 @@ std::string promptControl(const input::ActionMap& map, input::DeviceKind device,
 }
 
 std::string promptLabel(const input::ActionMap& map, input::DeviceKind device, GamepadFamily family,
-                        std::string_view action, const PromptLabels& labels) {
+                        std::string_view action, const localization::Catalog& texts) {
     const std::string control = promptControl(map, device, action);
-    return control.empty() ? std::string{} : labels.label(control, family);
+    return control.empty() ? std::string{} : controlLabel(control, family, texts);
 }
 
 } // namespace dwe::ui

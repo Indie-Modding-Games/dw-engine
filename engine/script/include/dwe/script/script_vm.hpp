@@ -18,6 +18,10 @@ namespace dwe::input {
 class InputState;
 }
 
+namespace dwe::localization {
+class Catalog;
+}
+
 namespace dwe::script {
 
 // What a script may use, so a broken or hostile mod cannot hang or exhaust the game.
@@ -56,6 +60,11 @@ public:
 
     // Exposes the input as the global table `input` (value, down, pressed, vector).
     void bindInput(const input::InputState& input);
+
+    // Exposes the player-facing texts: the global function t(key[, arguments]) gives the text of a key in the
+    // player's language with its placeholders filled from a table ({count = 3}), as in the UI's documents;
+    // texts.language() gives the language. The catalog must outlive the VM.
+    void bindTexts(const localization::Catalog& catalog);
 
     // The underlying state, for modules that register their own API.
     sol::state& lua();

@@ -56,6 +56,14 @@ Cadenas de bytes:
 |---|---|
 | `{byte:XX}` | un byte de control (`< 0x20`), `0x7F`, o un primer byte de Shift-JIS sin segundo al final de la cadena |
 | `{sjis:XXXX}` | un código de dos bytes sin carácter en el juego del juego |
+| `{color:N}` | `#C` y una cifra: el color del texto que sigue (`battle_hud.c: BTL_drawBattleEndText`) |
+| `{br}` | `#R`: salto de línea (ídem) |
+| `{wait}` | `#W`: espera y salto de línea (ídem) |
+| `{0}`, `{1}`... | cada `%d` por orden: un número que el juego escribe con `sprintf` (mensajes de la pesca). Una traducción puede cambiarlos de orden, porque cada uno lleva su número |
+
+Los códigos con `#` solo los lee el texto del final de la batalla (`btl.battle_effect_messages`), y `%d` los mensajes
+de la pesca (`fish.messages`), pero se convierten en todas las cadenas de bytes: ninguna otra los tiene. Un `#` o un
+`%` que no forman uno de estos códigos se quedan como texto.
 
 Texto de script: cada celda de control es `código, parámetro` (`showTextbox` expande los nombres y números;
 `drawString2` dibuja colores, tabulaciones y columnas):
@@ -123,10 +131,59 @@ Los overlays (`BTL`, `STD`, `VS`, `KAR`, `FISH`, `TRN`) se leen en su dirección
 puede apuntar al ejecutable, y se busca ahí si no está en el overlay. Los códigos de modelo
 (`DIGIMON_FILE_NAMES`) no son texto y no están.
 
-`dwx extract` escribe `text/<idioma>/<fuente>.yaml` (`text/en/main.yaml`, `text/en/btl.yaml`...): `source` y
-`strings`, un mapping de bloque a lista de cadenas (o `null`). El id estable de una cadena es
-`<fuente>.<bloque>.<índice>`. Las cadenas que el decomp nombra sin dirección conocida (tres bloques de `BTL` y `VS`)
-salen como notas del informe.
+Las cadenas que el decomp nombra sin dirección conocida (tres bloques de `BTL` y `VS`) salen como notas del informe.
+
+## Tablas de texto
+
+`dwx extract` escribe una tabla por fuente, `text/<idioma>/<fuente>.yaml` (`text/en/main.yaml`, `text/en/btl.yaml`...):
+un mapping plano de clave a texto, sin más campos.
+
+```yaml
+map_names.0003: "File City"
+move_names.0012: "{color:2}Spit Fire"
+```
+
+- **Clave:** `<bloque>.<índice>`, con el índice en cuatro cifras (`map_names.0003`). Dentro del juego la clave
+  completa lleva delante la fuente: `main.map_names.0003`. Los nombres de bloque y de fuente salen del manifiesto de
+  cadenas y no cambian entre versiones del extractor, así que la clave es estable: la usan las traducciones.
+- **Huecos:** un puntero nulo no tiene cadena y no tiene clave; el índice de las demás no cambia.
+- **Texto:** UTF-8 con las etiquetas de [arriba](#etiquetas). Para las tablas de idiomas, cada etiqueta es un marcador
+  (`{color:2}`, `{digimon:pstat=3}`, `{byte:0A}`): `dwx validate` comprueba que una traducción tenga el mismo
+  conjunto de marcadores que el inglés en cada clave. `{{` y `}}` son llaves literales.
+- **Traducciones:** otro idioma va en `text/<idioma>/<fuente>.yaml` de un paquete de traducción, con las mismas
+  claves y nada más; puede dejar fuera cadenas (se ven en inglés) y puede ser parcial. Los nombres que se quedan en
+  inglés no se repiten. Un paquete más alto en la pila cambia claves sueltas sin copiar la tabla. Ver
+  [localización](../architecture/localizacion.md).
+
+### Lock de una traducción
+
+Un paquete de traducción puede llevar `text/<idioma>/.sources.lock` junto a sus tablas. No es un asset (los ficheros
+con punto no entran en la VFS); lo lee `dwx validate` de la carpeta del paquete.
+
+```yaml
+sources:
+  main.map_names.0003: 0a1b...   # SHA-1 del texto inglés del que se tradujo
+kept_english: [main.digimon_names.0001, main.move_names.0012]
+kept_original: [main.tournament_grades.0000]
+```
+
+- `sources`: clave completa de cada cadena traducida → SHA-1, en 40 cifras hexadecimales en minúscula, de su texto
+  inglés tal como lo escribe `dwx extract`: el valor de la tabla en UTF-8, con sus etiquetas (`{color:1}`, `{br}`),
+  sin comillas de YAML.
+- `kept_english`: las claves que se quedan en inglés y no están en la traducción (nombres de Digimon y de técnicas).
+- `kept_original`: opcional; las claves que no son palabras inglesas y se quedan tal cual (huecos, nombres de quien
+  habla, letras de rango, restos en japonés, HP/MP/Bits). Separarlas de `kept_english` deja honesto el recuento de lo
+  que queda en inglés.
+- `sources` y `kept_english` están siempre; vacías son `{}` y `[]`.
+
+`dwx validate` avisa de una cadena cuyo inglés ha cambiado desde que se tradujo (otro SHA-1), de una cadena traducida
+sin SHA-1 en el lock, de una clave de `kept_english` o `kept_original` que también está traducida y de una clave que
+el inglés no tiene.
+Una traducción sin lock no se comprueba así.
+
+El esquema es `content/schemas/text.schema.json`. El motor todavía lee el formato anterior (`source` y `strings`, un
+mapping de bloque a lista de cadenas o `null`) con las mismas claves, para el contenido extraído antes de este cambio;
+`dwx extract` ya no lo escribe.
 
 El texto de los scripts no va a estas tablas: está en el listado de cada script (ver [Scripts de eventos](scripts.md)),
 y su id estable es el script más el offset de su instrucción.

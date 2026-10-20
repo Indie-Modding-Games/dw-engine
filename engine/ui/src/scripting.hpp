@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -20,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 namespace dwe::ui {
 
@@ -28,6 +30,10 @@ class Scripting;
 // The longest name (element id, class, document, command, setting) and text a script may pass to the UI, in bytes.
 inline constexpr std::size_t MaxScriptName = 256;
 inline constexpr std::size_t MaxScriptText = std::size_t{64} * 1024;
+// The most placeholder values one call of t() may pass.
+inline constexpr std::size_t MaxTextArguments = 16;
+// The global function that gives the text of a key: t(key[, {name = value}]).
+inline constexpr std::string_view TextFunction = "t";
 
 // What the Lua API asks of the UI.
 struct ScriptHost {
@@ -35,6 +41,10 @@ struct ScriptHost {
     std::function<bool(UiCommand)> send;
     std::function<UiValue(std::string_view)> setting;
     std::function<std::string(std::string_view)> prompt;
+    // The text of a key in the player's language with its placeholders filled.
+    std::function<std::string(std::string_view, std::span<const localization::TextArgument>)> text;
+    // The languages the player can choose.
+    std::function<std::vector<std::string>()> languages;
     std::function<std::string()> device;
     std::function<std::string()> gamepadFamily;
     std::function<void(std::string_view)> show;

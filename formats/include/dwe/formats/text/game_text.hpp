@@ -43,6 +43,8 @@ struct ControlTag {
 std::span<const ControlTag> scriptControlTags();
 
 // Decodes a byte string of the executable or an overlay (without its NUL). It never fails: every byte has a form.
+// The codes the game reads inside some strings become tags too: #C<digit> is {color:<digit>}, #R is {br}, #W is
+// {wait} (the end-of-battle messages), and each %d is {0}, {1}... in order (the numbers sprintf prints).
 std::string decodeByteString(std::span<const std::byte> raw);
 
 // Encodes text written by decodeByteString back to its bytes.

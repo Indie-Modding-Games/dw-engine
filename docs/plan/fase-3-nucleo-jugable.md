@@ -70,6 +70,7 @@ Los rulesets del diseño nuevo vuelven al ciclo completo: diseño en el GDD, apr
 | R3.6 | El guardado usa ranuras y autoguardado; una partida guardada se carga igual tras actualizar el juego, o se migra | Tests de guardado y migración |
 | R3.7 | La batalla y los menús del partner se usan con ratón, teclado y mando | Prueba manual con los tres dispositivos |
 | R3.8 | El cambio de mapa se ve como en el original: fundido sustractivo a gris y nombre del mapa al entrar (pendientes de la fase 2, ver [campo](../reference/campo.md)) | Test del fundido y captura comparada con el original |
+| R3.9 | Todo texto que ve el jugador sale de tablas de idioma de los paquetes, en inglés y español, con una sola búsqueda por clave desde C++, RmlUi y Lua; lo que falta en un idioma sale en inglés con un aviso. El idioma se elige en el menú principal (ratón, teclado y mando), cambia todo el juego sin reiniciar, también el texto del original si hay paquete de traducción, y se guarda en los ajustes del usuario; sin elección, el del sistema si es `en` o `es`, si no inglés. Un paquete añade idiomas o cambia textos sueltos ([localización](../architecture/localizacion.md)) | Tests de carga, respaldo, marcadores, mezcla de paquetes y cambio en caliente; `dwx validate` compara cada idioma con el inglés (claves que faltan o sobran, marcadores, lock de la traducción); la ruta `route-language.yaml` con `--lang en` y `--lang es` cambia el idioma en el menú principal y saca capturas de cada pantalla |
 
 ## Diseño
 

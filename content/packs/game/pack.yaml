@@ -28,5 +28,5 @@ schemas:
     - rules/*/life
   ruleset_training:
     - rules/*/training
-  ui_prompts:
-    - ui/common/prompts
+  localization:
+    - localization/*/*

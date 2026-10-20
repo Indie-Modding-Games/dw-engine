@@ -3,9 +3,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <charconv>
 #include <format>
 #include <optional>
+#include <string>
 
 namespace dwe::formats::text {
 
@@ -18,6 +20,44 @@ constexpr std::uint8_t NewLine = 0x0D;
 constexpr std::uint8_t FirstGlyphByte = 0x20; // script cells starting below are control cells
 constexpr std::uint8_t FirstLeadByte = 0x80;  // in byte strings, a byte from here starts a two-byte code
 constexpr std::uint8_t Delete = 0x7F;
+
+// The codes inside the battle's end-of-battle messages (battle_hud.c: BTL_drawBattleEndText): '#', then 'C' and the
+// colour's character, 'R' (a new line) or 'W' (a new line after a wait).
+constexpr char InlineCode = '#';
+constexpr char InlineColor = 'C';
+constexpr char InlineNewLine = 'R';
+constexpr char InlineWait = 'W';
+// A number the game prints into the string with sprintf (the fishing messages).
+constexpr std::string_view PrintedNumber = "%d";
+// The tags of the codes above. A printed number is its position among the string's numbers: {0}, {1}...
+constexpr std::string_view ColorTag = "color";
+constexpr std::string_view NewLineTag = "br";
+constexpr std::string_view WaitTag = "wait";
+
+// The inline code at `at`, as a tag, and the bytes it takes; nothing when the bytes there are not one.
+struct InlineTag {
+    std::string tag;
+    std::size_t length = 0;
+};
+
+std::optional<InlineTag> inlineTagAt(std::span<const std::byte> raw, std::size_t at, int& numbers) {
+    const auto charAt = [&raw](std::size_t index) {
+        return index < raw.size() ? static_cast<char>(std::to_integer<std::uint8_t>(raw[index])) : '\0';
+    };
+    if (charAt(at) == InlineCode) {
+        const char code = charAt(at + 1);
+        if (code == InlineColor && std::isdigit(static_cast<unsigned char>(charAt(at + 2))) != 0) {
+            return InlineTag{.tag = std::format("{{{}:{}}}", ColorTag, charAt(at + 2)), .length = 3};
+        }
+        if (code == InlineNewLine || code == InlineWait) {
+            return InlineTag{.tag = std::format("{{{}}}", code == InlineNewLine ? NewLineTag : WaitTag), .length = 2};
+        }
+    }
+    if (charAt(at) == PrintedNumber[0] && charAt(at + 1) == PrintedNumber[1]) {
+        return InlineTag{.tag = std::format("{{{}}}", numbers++), .length = PrintedNumber.size()};
+    }
+    return std::nullopt;
+}
 
 constexpr std::array ControlTags = {
     ControlTag{.code = 0x01, .name = "color", .parameter = Value},
@@ -175,8 +215,14 @@ std::span<const ControlTag> scriptControlTags() {
 
 std::string decodeByteString(std::span<const std::byte> raw) {
     std::string text;
+    int numbers = 0;
     for (std::size_t i = 0; i < raw.size(); ++i) {
         const std::uint8_t byte = byteAt(raw, i);
+        if (auto tag = inlineTagAt(raw, i, numbers)) {
+            text += tag->tag;
+            i += tag->length - 1;
+            continue;
+        }
         if (byte >= FirstGlyphByte && byte < Delete) {
             appendCharacter(text, byte);
             continue;
@@ -202,6 +248,12 @@ core::Result<std::vector<std::byte>> encodeByteString(std::string_view text) {
         return std::unexpected{tokens.error()};
     }
     std::vector<std::byte> bytes;
+    const auto appendText = [&bytes](std::string_view text) {
+        for (const char c : text) {
+            bytes.push_back(static_cast<std::byte>(c));
+        }
+    };
+    int numbers = 0;
     for (std::size_t i = 0; i < tokens->size(); ++i) {
         const Token& token = (*tokens)[i];
         if (token.character) {
@@ -217,7 +269,26 @@ core::Result<std::vector<std::byte>> encodeByteString(std::string_view text) {
             appendCell(bytes, *code >> 8U, *code & 0xFFU);
             continue;
         }
-        if (token.name == "byte") {
+        if (token.name == ColorTag) {
+            if (token.argument.size() != 1 || std::isdigit(static_cast<unsigned char>(token.argument[0])) == 0) {
+                return core::fail(
+                    std::format("{{{}:{}}}: the colour of a byte string is one digit", ColorTag, token.argument));
+            }
+            appendText(std::string{InlineCode} + InlineColor + token.argument[0]);
+        } else if (token.name == NewLineTag || token.name == WaitTag) {
+            if (!token.argument.empty()) {
+                return core::fail(std::format("{{{}}} takes no argument", token.name));
+            }
+            appendText(std::string{InlineCode} + (token.name == NewLineTag ? InlineNewLine : InlineWait));
+        } else if (!token.name.empty() &&
+                   std::ranges::all_of(token.name, [](char c) { return c >= '0' && c <= '9'; })) {
+            if (token.name != std::to_string(numbers) || !token.argument.empty()) {
+                return core::fail(
+                    std::format("{{{}}}: the printed numbers of a byte string go in order from {{0}}", token.name));
+            }
+            ++numbers;
+            appendText(PrintedNumber);
+        } else if (token.name == "byte") {
             const auto value = parseHex(token.argument, 2);
             // A lead byte is alone only at the end; anywhere else it would pair with the next byte.
             if (!value || *value == 0 || (*value >= FirstLeadByte && i + 1 != tokens->size())) {

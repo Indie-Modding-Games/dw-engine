@@ -4,6 +4,7 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/text_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
@@ -25,6 +26,7 @@
 #include "asset_names.hpp"
 #include "cook.hpp"
 #include "dwx.hpp"
+#include "messages.hpp"
 
 namespace dwe::dwx {
 
@@ -150,6 +152,12 @@ public:
         }
         for (assets::ContentProblem& problem : assets::checkContent(*stack_)) {
             add(problem.file, 0, 0, std::format("the engine cannot load {}: {}", problem.id.str(), problem.message));
+        }
+        for (assets::ContentProblem& problem : assets::checkTranslations(*stack_)) {
+            add(problem.file, 0, 0, std::format(messages::TranslationProblem, problem.id.str(), problem.message));
+        }
+        for (assets::SourcesLockProblem& problem : assets::checkSourcesLocks(*stack_)) {
+            add(std::move(problem.file), 0, 0, std::move(problem.message));
         }
         std::ranges::sort(report_.problems);
         return std::move(report_);

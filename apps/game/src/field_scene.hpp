@@ -77,9 +77,11 @@ public:
 
     [[nodiscard]] const game::field::Field& field() const { return *field_; }
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
-    [[nodiscard]] const std::string& mapName() const { return mapName_; }
-    // A map's name as the game shows it (the base pack's map table and text), or its id when it has none.
-    [[nodiscard]] std::string displayName(std::string_view mapId) const;
+    // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
+    [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }
+    // The key of a map's name among the texts (localization::mapNameKey of the base pack's map table), empty when the
+    // map has no name. The one place the app looks a map's name up.
+    [[nodiscard]] std::string nameKeyOf(std::string_view mapId) const;
     // Grows by one on every map entered, so the app notices a change (minimap, autotests).
     [[nodiscard]] std::uint32_t mapSerial() const { return mapSerial_; }
     [[nodiscard]] const std::optional<MapChangeTiming>& lastMapChange() const { return lastChange_; }
@@ -141,7 +143,7 @@ private:
     // What the camera centres on; it stays put during a map change's walk-out.
     std::optional<glm::vec3> cameraFocus_;
     render::MapSceneData map_;
-    std::string mapName_;
+    std::string mapNameKey_;
     std::uint32_t mapSerial_ = 0;
     std::optional<MapChangeTiming> lastChange_;
     std::unique_ptr<Actor> playerActor_;

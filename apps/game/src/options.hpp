@@ -40,6 +40,9 @@ struct Options {
     // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour when not given.
     std::optional<render::TimeOfDay> time;
 
+    // The language of the texts (--lang en|es...), instead of the saved one or the system's; for autotests.
+    std::optional<std::string> language;
+
     // A scripted run (--autotest <route.yaml>), and where its screenshots go (--shots <folder>).
     std::optional<std::filesystem::path> autotest;
     std::optional<std::filesystem::path> shots;
@@ -65,13 +68,14 @@ struct Options {
 
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> "
-    "[--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
+    "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
+    "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view TuningOption = "--tuning";
+inline constexpr std::string_view LanguageOption = "--lang";
 
 // Reads the command line; logs what is wrong and gives nothing for a bad one.
 std::optional<Options> parseOptions(std::span<char* const> arguments);

@@ -9,6 +9,8 @@
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/localization/catalog.hpp>
+#include <dwe/platform/locale.hpp>
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
@@ -29,6 +31,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include <memory>
@@ -42,30 +45,35 @@
 #include "common.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
+#include "language.hpp"
 #include "messages.hpp"
+#include "user_settings.hpp"
 
 namespace dwe::app {
 namespace {
 
 constexpr std::string_view MenuDocument = "pause_menu";
+// The menu the game starts at (R3.9): play, the language, quit.
+constexpr std::string_view MainMenuDocument = "main_menu";
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
 // Frames left out of the steady frame times after a map change: the new map's textures upload in the next frames.
 constexpr int MapChangeSettleFrames = 5;
 
-// Tells the HUD what the map change shows: how much the fade takes away and the name of the map it goes to.
+// Tells the HUD what the map change shows: how much the fade takes away and the key of the map name it shows, which
+// the HUD writes in the player's language.
 class MapChangeView {
 public:
     explicit MapChangeView(ui::Ui& ui) : ui_(&ui) {
         ui_->setSetting(ScreenFadeSetting, fade_);
-        ui_->setSetting(MapTitleSetting, title_);
+        ui_->setSetting(MapTitleKeySetting, titleKey_);
     }
 
-    // Publishes the field's fade and map name when they changed.
+    // Publishes the field's fade and map name key when they changed.
     void show(const FieldScene& scene) {
         showFade(scene.field().fadeLevel());
         const auto named = scene.field().mapNameShown();
-        showTitle(named ? scene.displayName(*named) : std::string{});
+        showTitleKey(named ? scene.nameKeyOf(*named) : std::string{});
     }
 
 private:
@@ -76,16 +84,16 @@ private:
         }
     }
 
-    void showTitle(std::string title) {
-        if (title != title_) {
-            title_ = std::move(title);
-            ui_->setSetting(MapTitleSetting, title_);
+    void showTitleKey(std::string titleKey) {
+        if (titleKey != titleKey_) {
+            titleKey_ = std::move(titleKey);
+            ui_->setSetting(MapTitleKeySetting, titleKey_);
         }
     }
 
     ui::Ui* ui_;
     double fade_ = 0.0;
-    std::string title_;
+    std::string titleKey_;
 };
 
 std::string describe(const ui::UiValue& value) {
@@ -109,13 +117,16 @@ struct Settings {
 };
 
 // Applies a command of the UI's documents and publishes the resulting state. Returns false for quit.
-bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings) {
+bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
+           LanguageChanger& language) {
     core::logInfo("game: command {} = {}", command.name, describe(command.value));
     if (command.name == "quit") {
         return false;
     }
     if (command.name == "open_menu") {
         ui.show(MenuDocument, true);
+    } else if (command.name == LanguageCommand && std::holds_alternative<std::string>(command.value)) {
+        language.change(std::get<std::string>(command.value));
     } else if (command.name == "minimap_visible" && std::holds_alternative<bool>(command.value)) {
         ui.setSetting("minimap_visible", command.value);
     } else if (command.name == "minimap_size" && std::holds_alternative<std::string>(command.value)) {
@@ -148,7 +159,8 @@ ui::MinimapMarker markerOf(const game::field::CharacterState& character) {
 
 core::Result<void> loadDocuments(ui::Ui& ui) {
     for (const auto& [name, id] :
-         {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"}}) {
+         {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
+          std::pair{"main_menu", "ui/main_menu/document"}}) {
         auto asset = assets::AssetId::parse(id);
         if (!asset) {
             return std::unexpected{asset.error()};
@@ -232,6 +244,17 @@ private:
     bool held_ = false;
     int heldTicks_ = 0;
     std::optional<glm::vec3> target_;
+};
+
+// Makes a catalog the one localization::tr reads while it lives, and clears it before the catalog goes.
+class CatalogInUse {
+public:
+    explicit CatalogInUse(const localization::Catalog& texts) { localization::useCatalog(&texts); }
+    CatalogInUse(const CatalogInUse&) = delete;
+    CatalogInUse& operator=(const CatalogInUse&) = delete;
+    CatalogInUse(CatalogInUse&&) = delete;
+    CatalogInUse& operator=(CatalogInUse&&) = delete;
+    ~CatalogInUse() { localization::useCatalog(nullptr); }
 };
 
 // The desktop's own pointer and keyboard; the gamepad is not among them, as an autotest's is a virtual one.
@@ -345,6 +368,21 @@ int runGame(const Options& options) {
     if (options.tuning) {
         (*debugUi)->openTuning();
     }
+    // An autotest neither reads nor writes the player's settings: its language is --lang or the system's.
+    const std::optional<std::filesystem::path> settingsFile = autotest ? std::nullopt : userSettingsFile();
+    UserSettings userSettings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
+    const std::vector<std::string> languages = localization::availableLanguages(files);
+    auto language = startLanguage(languages, options.language, userSettings.language, platform::systemLanguage());
+    if (!language) {
+        core::logError("game: {}", language.error().message);
+        return EXIT_FAILURE;
+    }
+    auto texts = localization::Catalog::load(files, *language);
+    if (!texts) {
+        core::logError("game: {}", texts.error().message);
+        return EXIT_FAILURE;
+    }
+    const CatalogInUse catalogInUse{*texts};
     auto uiRenderer = ui::UiRenderer::create(**renderer);
     if (!uiRenderer) {
         core::logError("{}", uiRenderer.error().message);
@@ -362,6 +400,7 @@ int runGame(const Options& options) {
     auto ui = ui::Ui::create({
         .files = &files,
         .renderer = uiRenderer->get(),
+        .texts = &*texts,
         .width = size.width,
         .height = size.height,
         .scale = 1.0F,
@@ -377,6 +416,8 @@ int runGame(const Options& options) {
         core::logError("game: {}", loaded.error().message);
         return EXIT_FAILURE;
     }
+    LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
+    (*ui)->setSetting(LanguageSetting, texts->language());
     (*ui)->setSetting("minimap_visible", true);
     (*ui)->setSetting("minimap_size", std::string{"medium"});
     (*ui)->setSetting("fullscreen", settings.fullscreen);
@@ -385,6 +426,10 @@ int runGame(const Options& options) {
     MapChangeView mapChangeView{**ui};
     (*ui)->setMenuDocument(MenuDocument);
     (*ui)->show("hud");
+    // The game starts at the main menu; an autotest only when its route asks for it, so the others start in the field.
+    if (!autotest || autotest->startsAtMainMenu()) {
+        (*ui)->show(MainMenuDocument, true);
+    }
 
     auto scene = FieldScene::create(
         **renderer, files, {.startMap = options.startMap, .startExit = options.startExit, .time = options.time});
@@ -401,6 +446,7 @@ int runGame(const Options& options) {
         return EXIT_FAILURE;
     }
     (*scripts)->bindInput(input);
+    (*scripts)->bindTexts(*texts);
 
     FrameStats frameStats;
     const AutotestHost host{
@@ -521,8 +567,8 @@ int runGame(const Options& options) {
             } else {
                 mouse.release();
             }
-            // The menu pauses the field and the game time.
-            if (!(*ui)->isVisible(MenuDocument)) {
+            // The menus pause the field and the game time.
+            if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument)) {
                 (*scene)->tick(intent, static_cast<float>(TickSeconds));
                 gameClock.advance(TickSeconds);
             }
@@ -538,11 +584,11 @@ int runGame(const Options& options) {
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-            running = apply(command, **ui, *window, settings) && running;
+            running = apply(command, **ui, *window, settings, languageChanger) && running;
         }
         if ((*scene)->mapSerial() != mapSerial) {
             mapSerial = (*scene)->mapSerial();
-            (*ui)->setMinimap(ui::minimapGridOf((*scene)->map()), (*scene)->mapName());
+            (*ui)->setMinimap(ui::minimapGridOf((*scene)->map()), (*scene)->mapNameKey());
             if (const auto& change = (*scene)->lastMapChange(); change && autotest) {
                 autotest->mapChanged(*change);
             }
@@ -553,7 +599,7 @@ int runGame(const Options& options) {
         screenFade->setDarkness(field.fadeLevel());
         mapChangeView.show(**scene);
 
-        const bool paused = (*ui)->isVisible(MenuDocument);
+        const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument);
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
         (*ui)->update();
 

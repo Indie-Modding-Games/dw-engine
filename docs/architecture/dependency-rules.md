@@ -23,7 +23,7 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 |---|---|
 | `core` | La librería estándar y dependencias de terceros básicas |
 | `platform`, `rhi` | `core` |
-| `render`, `audio`, `input`, `assets`, `animation`, `scene` | Capas base, `core` y otros sistemas, sin ciclos (`animation` y `render` usan `assets`) |
+| `render`, `audio`, `input`, `assets`, `localization`, `animation`, `scene` | Capas base, `core` y otros sistemas, sin ciclos (`animation`, `render` y `localization` usan `assets`) |
 | `script`, `ui` | Sistemas, base y `core` |
 | `game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
 | `apps/game`, `apps/editor` | Todo excepto `formats` |

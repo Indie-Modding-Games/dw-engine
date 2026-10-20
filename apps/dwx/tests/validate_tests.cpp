@@ -1,5 +1,6 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/text_table.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -73,6 +74,7 @@ void addSchemas(MemoryFileSystem& files) {
             "count": {"type": "integer"}}})");
     files.addFile("content/schemas/map.schema.json", R"({"type": "object", "required": ["camera"]})");
     files.addFile("content/schemas/maps.schema.json", R"({"type": "object", "required": ["maps"]})");
+    files.addFile("content/schemas/texts.schema.json", R"({"type": "object"})");
     files.addFile("content/schemas/model_contract.schema.json", R"({
         "type": "object", "required": ["model", "joint_parents", "animations"],
         "properties": {
@@ -92,6 +94,7 @@ schemas:
   map: ["map/*/data"]
   maps: ["data/maps"]
   model_contract: ["digimon/*/contract"]
+  texts: ["text/*/*", "localization/*/*"]
 )");
     files.addFile("content/base/sound/hit/bank_meta.yaml", "bank: bank.sf2\nmap: town\ncount: 3\n");
     files.addFile("content/base/sound/hit/bank.sf2", dwe::assets::testing::soundFontFile());
@@ -313,6 +316,71 @@ dependencies:
     CHECK(text.contains("packs/mod/map/town/data.yaml: the engine cannot load map/town/data: "));
     CHECK(text.contains("packs/mod/model/door/door00.glb: the engine cannot load model/door/door00: "));
     CHECK(text.contains("extras.tickCount must not be 0"));
+}
+
+TEST_CASE("dwx validate checks every language against English") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("content/base/text/en/main.yaml", "map_names.0001: File City\nmove_names.0000: \"{color:2}Fire\"\n");
+    files.addFile("packs/es/pack.yaml", R"(id: es
+version: 1.0.0
+layer: mods
+name: Spanish
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    // A partial translation of the original's text is fine; a key English lacks and other placeholders are not.
+    files.addFile("packs/es/text/es/main.yaml", "map_names.0001: Ciudad Archivo\nmap_names.0002: Extra\n"
+                                                "move_names.0000: Fuego\n");
+    files.addFile("packs/es/localization/en/menu.yaml", "title: Pause\nquit: Quit\n");
+    files.addFile("packs/es/localization/es/menu.yaml", "title: \"{name}\"\n");
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/es", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    const std::string text = textOf(*report);
+    MESSAGE(text);
+    CHECK(report->problems.size() == 4);
+    CHECK(text.contains("packs/es/text/es/main.yaml: the translation text/es/main has the key main.map_names.0002"));
+    CHECK(text.contains("has the key main.move_names.0000 with the placeholders {}, where en has {color:2}"));
+    CHECK(text.contains("packs/es/localization/es/menu.yaml: the translation localization/es/menu misses the key "
+                        "menu.quit"));
+    CHECK(text.contains("has the key menu.title with the placeholders {name}, where en has {}"));
+}
+
+TEST_CASE("dwx validate reads a translation's lock and finds what changed in English since") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("content/base/text/en/main.yaml", "map_names.0001: File City\nmap_names.0002: Native Forest\n"
+                                                    "move_names.0000: Fire\nmove_names.0001: Spit Fire\n");
+    files.addFile("packs/es/pack.yaml", R"(id: es
+version: 1.0.0
+layer: mods
+name: Spanish
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    files.addFile("packs/es/text/es/main.yaml", "map_names.0001: Ciudad Archivo\nmap_names.0002: Bosque Nativo\n"
+                                                "move_names.0001: Spit Fire\n");
+    files.addFile("packs/es/text/es/.sources.lock",
+                  std::format("sources:\n  main.map_names.0001: {}\n  main.map_names.0002: {}\n"
+                              "  main.nothing.0000: {}\nkept_english: [main.move_names.0000, main.move_names.0001]\n",
+                              dwe::assets::sourceHash("File City"), dwe::assets::sourceHash("Native forest"),
+                              dwe::assets::sourceHash("x")));
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/es", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    const std::string text = textOf(*report);
+    MESSAGE(text);
+    CHECK(report->problems.size() == 3);
+    CHECK(text.contains(std::format("packs/es/text/es/.sources.lock: main.map_names.0002 was translated from another "
+                                    "English text: check it and write the new hash, {}",
+                                    dwe::assets::sourceHash("Native Forest"))));
+    CHECK(text.contains("main.move_names.0001 is kept as it is, but the translation has it"));
+    CHECK(text.contains("names main.nothing.0000, which the English text does not have"));
 }
 
 TEST_CASE("dwx validate cannot check a folder without packs") {

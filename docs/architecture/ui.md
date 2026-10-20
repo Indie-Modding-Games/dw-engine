@@ -13,7 +13,8 @@ La UI del juego (menús y HUD) vive en `engine/ui`, en la capa de servicios, sob
 | Puente de render (`src/render_bridge.*`) | La `RenderInterface` de RmlUi: crea las texturas en el `Renderer` y graba cada llamada de dibujo para el `UiRenderer`; sin renderer (tests) solo da tamaños de textura |
 | Scripts (`src/scripting.*`) | El `ScriptVm` propio de la UI, la API de Lua y los instanciadores de RmlUi: cada `<body>` es un `ScriptedDocument` con su entorno de Lua, y cada atributo `on*` un manejador en Lua |
 | `Navigation` | Convierte las acciones de un tick en pasos de navegación, con repetición al mantener una dirección |
-| `promptControl`, `PromptLabels` | El control que dispara una acción en el último dispositivo usado (`key:enter`, `gamepad:south`) y su nombre para el jugador, leído del paquete (`ui/common/prompts.yaml`) |
+| `promptControl`, `promptLabel` | El control que dispara una acción en el último dispositivo usado (`key:enter`, `gamepad:south`) y su nombre para el jugador, en el idioma del juego (`localization/<idioma>/prompt.yaml`) |
+| Textos | Los textos salen del `localization::Catalog` que da la app (`UiDesc::texts`; sin él, la UI carga el inglés): `text-key` en el RML, `t()` en Lua, y `refreshTexts()` al cambiar de idioma ([localización](localizacion.md)) |
 | `buildMinimap` | Dibuja el minimapa desde una rejilla de celdas (`MinimapGrid`) y da el `MinimapLayout` que sitúa posiciones del mundo en la imagen |
 
 `ui` no conoce el juego: recibe valores planos (la rejilla del minimapa, las posiciones de los marcadores, los
@@ -41,13 +42,16 @@ sequenceDiagram
 
 ```cpp
 auto uiRenderer = ui::UiRenderer::create(renderer);           // después del Renderer
-auto ui = ui::Ui::create({.files = &vfs, .renderer = uiRenderer->get(), .width = w, .height = h,
-                          .scale = 1.0F, .hotReload = true, .clock = {}, .scripts = {}});
+auto ui = ui::Ui::create({.files = &vfs, .renderer = uiRenderer->get(), .texts = &catalog, .width = w,
+                          .height = h, .scale = 1.0F, .hotReload = true, .clock = {}, .scripts = {}});
 ui->loadDocument("hud", hudId);                                // ui/hud/document
 ui->loadDocument("pause_menu", menuId);                        // ui/pause_menu/document
+ui->loadDocument("main_menu", mainMenuId);                     // ui/main_menu/document
 ui->setMenuDocument("pause_menu");
 ui->show("hud");
-ui->setMinimap(ui::minimapGridOf(map), nombreDelMapa);         // en cada cambio de mapa
+ui->show("main_menu", true);                                   // al arrancar
+ui->setMinimap(ui::minimapGridOf(map), claveDelNombre);        // en cada cambio de mapa: main.map_names.0003
+ui->refreshTexts();                                            // tras catalog.setLanguage(...)
 ```
 
 Se destruyen al revés: `Ui` (suelta sus texturas en el renderer), `UiRenderer`, `Renderer`.
@@ -82,10 +86,11 @@ recorte de RmlUi (`EnableClipMask`) no están implementadas: solo hacen falta pa
   usa una acción, `capturesInput()` es true, así que la misma pulsación no llega también al juego.
 - **Avisos de botones:** `ui.prompt(acción)` da el nombre del control según el último dispositivo y la familia del
   mando (`Intro`/`Esc`, `A`/`B`, `Cruz`/`Círculo`, `B`/`A` en Nintendo). El motor solo nombra el control
-  (`key:enter`, `mouse:left`, `gamepad:south`, `gamepad:left_stick`); el texto sale de `ui/common/prompts.yaml` del
-  paquete, en el idioma del juego, con secciones `keys`, `mouse`, `gamepad` y `families` (los botones que cada familia
-  nombra a su manera). Las letras, cifras y F1–F12 sin entrada se muestran tal cual. Cuando cambia el dispositivo,
-  los documentos visibles reciben `on_device`.
+  (`key:enter`, `mouse:left`, `gamepad:south`, `gamepad:left_stick`); el texto sale de la tabla `prompt` del idioma
+  del juego (`localization/<idioma>/prompt.yaml`): `prompt.key.enter`, `prompt.gamepad.south`, y
+  `prompt.family.<familia>.<botón>` para los botones que cada familia nombra a su manera. Las letras, cifras y
+  F1–F12 sin entrada se muestran tal cual. Cuando cambia el dispositivo, los documentos visibles reciben `on_device`;
+  cuando cambia el idioma, `on_language`.
 - **Mando virtual:** `Platform::attachVirtualGamepad` conecta un mando de software que pasa por el mismo camino que uno
   real. Lo usan los tests de `platform` y la demo (`--virtual-gamepad`).
 
@@ -120,7 +125,7 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 |---|---|---|
 | `minimap-image` | `hud::MinimapImage` | Un `<img>`: le pone como `src` la imagen del minimapa del mapa actual |
 | `minimap-frame` | `hud::MinimapFrame` | La caja que contiene la imagen y los marcadores: le da `width`, `height`, `left` y `top` en porcentaje para mantener la proporción del mapa dentro de su panel cuadrado |
-| `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa |
+| `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del marco), `transform: rotate(...)`, y `display: none` sin marcador |
 
 ## Comandos y ajustes
@@ -135,13 +140,14 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `fullscreen` | booleano | `fullscreen` |
 | `ui_scale` | número (0,75–2) | `ui_scale` |
 | `vsync` | booleano | `vsync` |
+| `language` | código de idioma (`en`, `es`) | `language` (y la UI vuelve a poner todos sus textos) |
 
 Otros ajustes los publica el juego sin que un menú los pida:
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `screen_fade` | número de 0 a 1 | Cuánto quita de la pantalla el fundido del cambio de mapa, que el render resta de la escena debajo de la UI; el HUD desvanece con él sus paneles |
-| `map_title` | texto | El nombre del mapa al que lleva el cambio de mapa mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacío el resto del tiempo. El HUD lo pone en el centro, delante del fundido |
+| `map_title_key` | clave de texto | La clave del nombre del mapa al que lleva el cambio de mapa (`main.map_names.NNNN`) mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacía el resto del tiempo o si el mapa no tiene nombre. El HUD pone su texto en el idioma del jugador (`t()`) en el centro, delante del fundido, y lo reescribe al cambiar de idioma |
 
 ## Scripts
 

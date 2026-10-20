@@ -6,6 +6,7 @@
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/sound.hpp>
+#include <dwe/assets/text_table.hpp>
 #include <dwe/assets/texture.hpp>
 #include <dwe/core/yaml.hpp>
 
@@ -149,6 +150,14 @@ core::Result<void> openAsset(std::string_view extension, std::span<const std::by
 core::Result<void> openAsset(const AssetId& id, std::string_view extension, std::span<const std::byte> bytes) {
     if (auto opened = openAsset(extension, bytes); !opened || extension != "yaml") {
         return opened;
+    }
+    if (const std::optional<TextTableName> table = textTableOf(id)) {
+        if (auto texts =
+                parseTextTable(*table, std::string_view{reinterpret_cast<const char*>(bytes.data()), bytes.size()});
+            !texts) {
+            return std::unexpected{texts.error()};
+        }
+        return {};
     }
     for (const auto& [pattern, reader] : DocumentReaders) {
         if (matchesIdPattern(pattern, id)) {

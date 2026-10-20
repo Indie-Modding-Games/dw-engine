@@ -6,6 +6,7 @@ set_property(TARGET SDL3::Headers PROPERTY SYSTEM 1)
 dwe_add_module(platform
     LAYER base
     SOURCES
+        src/locale.cpp
         src/platform.cpp
         src/window.cpp
     DEPS core

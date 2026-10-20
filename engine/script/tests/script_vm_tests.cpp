@@ -1,6 +1,9 @@
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/script/script_vm.hpp>
 
 #include <doctest/doctest.h>
@@ -12,6 +15,7 @@
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace dwe;
 
@@ -164,6 +168,28 @@ TEST_CASE("the input API reports actions") {
     REQUIRE(vm->runString("held = input.down('move_right'); device = input.device()", "test"));
     CHECK(vm->lua()["held"].get<bool>());
     CHECK(vm->lua()["device"].get<std::string>() == "keyboard_mouse");
+}
+
+TEST_CASE("the texts API gives the text of a key in the player's language") {
+    assets::MemoryFileSystem memory;
+    memory.addFile("game/pack.yaml", "id: game\nversion: 1.0.0\nlayer: base\n");
+    memory.addFile("game/localization/en/menu.yaml", "items: \"{count} of {total}\"\nonly_english: Only\n");
+    memory.addFile("game/localization/es/menu.yaml", "items: \"{count} de {total}\"\n");
+    auto files = assets::VirtualFileSystem::mount(memory, std::vector<std::filesystem::path>{"game"});
+    REQUIRE(files.has_value());
+    auto catalog = localization::Catalog::load(*files, "es");
+    REQUIRE(catalog.has_value());
+    auto vm = makeVm();
+    vm->bindTexts(*catalog);
+    REQUIRE(vm->runString("a = t('menu.items', {count = 3, total = 'siete', [1] = 'ignored'})", "test"));
+    REQUIRE(vm->runString("b = t('menu.only_english'); c = t('menu.none'); d = texts.language()", "test"));
+    CHECK(vm->lua()["a"].get<std::string>() == "3 de siete");
+    CHECK(vm->lua()["b"].get<std::string>() == "Only");
+    CHECK(vm->lua()["c"].get<std::string>() == "menu.none");
+    CHECK(vm->lua()["d"].get<std::string>() == "es");
+    REQUIRE(catalog->setLanguage("en"));
+    REQUIRE(vm->runString("a = t('menu.items', {count = 1.5, total = 2})", "test"));
+    CHECK(vm->lua()["a"].get<std::string>() == "1.5 of 2");
 }
 
 TEST_CASE("an edited file is reloaded, and a broken edit keeps the previous state") {

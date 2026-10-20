@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/navigation.hpp>
 #include <dwe/ui/prompts.hpp>
@@ -20,9 +21,12 @@
 #include <format>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "messages.hpp"
 #include "render_bridge.hpp"
 #include "rml_interfaces.hpp"
 #include "scripting.hpp"
@@ -41,9 +45,6 @@ constexpr float MaxDpRatio = 8.0F;
 
 // The commands the menus may queue between two takeCommands(): more is a script gone wrong.
 constexpr std::size_t MaxPendingCommands = 256;
-
-// Where the prompt labels are in the packs.
-constexpr std::string_view PromptLabelsAsset = "ui/common/prompts";
 
 // The units the markers are written in: thousandths of a percent of the minimap and tenths of a degree.
 constexpr float MarkerPositionSteps = 100'000.0F;
@@ -127,6 +128,29 @@ std::string percent(float value) {
     return std::format("{:.3f}%", value * 100.0F);
 }
 
+// The handler a shown document gets when the language changes.
+constexpr std::string_view LanguageHandler = "on_language";
+constexpr std::string_view Blanks = " \t";
+
+// A text without the blanks around it: the original pads map names to centre them in its box.
+std::string_view trimmed(std::string_view text) {
+    const std::size_t first = text.find_first_not_of(Blanks);
+    if (first == std::string_view::npos) {
+        return {};
+    }
+    return text.substr(first, text.find_last_not_of(Blanks) - first + 1);
+}
+
+// Gives every element under root with a TextKeyAttribute the text of its key.
+void applyTextKeys(Rml::Element& root, const localization::Catalog& texts) {
+    if (const Rml::Variant* key = root.GetAttribute(Rml::String{TextKeyAttribute})) {
+        root.SetInnerRML(Rml::StringUtilities::EncodeRml(texts.text(key->Get<Rml::String>())));
+    }
+    for (int i = 0; i < root.GetNumChildren(); ++i) {
+        applyTextKeys(*root.GetChild(i), texts);
+    }
+}
+
 } // namespace
 
 struct Ui::Impl {
@@ -155,7 +179,7 @@ struct Ui::Impl {
     struct Minimap {
         MinimapLayout layout;
         std::string source; // the generated image's name, with the prefix
-        std::string mapName;
+        std::string mapNameKey;
         float aspect = 1.0F;
     };
 
@@ -193,7 +217,9 @@ struct Ui::Impl {
     std::array<MarkerSlot, 2> markers{MarkerSlot{.id = hud::MinimapPlayer, .elements = {}, .shown = {}},
                                       MarkerSlot{.id = hud::MinimapPartner, .elements = {}, .shown = {}}};
     bool markersStale = true;
-    PromptLabels promptLabels;
+    // The texts: the app's catalog, or ownTexts read from the packs when it gives none.
+    const localization::Catalog* texts = nullptr;
+    std::optional<localization::Catalog> ownTexts;
     double lastReloadCheck = 0.0;
 
     explicit Impl(const UiDesc& uiDesc, std::unique_ptr<script::ScriptVm> scripts)
@@ -232,9 +258,14 @@ struct Ui::Impl {
             },
             .prompt = [this](std::string_view action) -> std::string {
                 static const input::ActionMap defaults = input::defaultActionMap();
-                return promptLabel(input != nullptr ? input->actionMap() : defaults, device, family, action,
-                                   promptLabels);
+                return promptLabel(input != nullptr ? input->actionMap() : defaults, device, family, action, *texts);
             },
+            .text =
+                [this](std::string_view key, std::span<const localization::TextArgument> arguments) {
+                    return texts->text(key, arguments);
+                },
+            .languages =
+                [this]() { return std::vector<std::string>{texts->languages().begin(), texts->languages().end()}; },
             .device = [this]() -> std::string {
                 return device == input::DeviceKind::Gamepad ? "gamepad" : "keyboard_mouse";
             },
@@ -267,22 +298,17 @@ struct Ui::Impl {
         return {};
     }
 
-    [[nodiscard]] core::Result<void> loadPromptLabels() {
-        auto id = assets::AssetId::parse(PromptLabelsAsset);
-        if (!id || desc.files->resolve(*id) == nullptr) {
-            core::logWarning("ui: no {} in the packs; the prompts show the controls' names", PromptLabelsAsset);
+    [[nodiscard]] core::Result<void> loadTexts() {
+        if (desc.texts != nullptr) {
+            texts = desc.texts;
             return {};
         }
-        auto bytes = desc.files->read(*id);
-        if (!bytes) {
-            return std::unexpected{bytes.error()};
+        auto loaded = localization::Catalog::load(*desc.files, localization::FallbackLanguage);
+        if (!loaded) {
+            return core::fail(std::format(messages::NoTexts, loaded.error().message));
         }
-        auto labels =
-            PromptLabels::parse(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
-        if (!labels) {
-            return std::unexpected{labels.error()};
-        }
-        promptLabels = std::move(*labels);
+        ownTexts = std::move(*loaded);
+        texts = &*ownTexts;
         return {};
     }
 
@@ -314,6 +340,7 @@ struct Ui::Impl {
             return core::fail(std::format("could not load the document {}", path));
         }
         document->setName(name);
+        applyTextKeys(*document, *texts);
         applyMinimap(*document);
         return Document{.element = document, .asset = asset, .path = path, .files = std::move(read)};
     }
@@ -544,11 +571,20 @@ struct Ui::Impl {
             frame->SetProperty("top", percent((1.0F - height) / 2.0F));
         }
         if (Rml::Element* name = document.GetElementById(Rml::String{hud::MinimapName})) {
-            name->SetInnerRML(Rml::StringUtilities::EncodeRml(minimap->mapName));
+            const std::string text = minimap->mapNameKey.empty() ? std::string{} : texts->text(minimap->mapNameKey);
+            name->SetInnerRML(Rml::StringUtilities::EncodeRml(Rml::String{trimmed(text)}));
         }
     }
 
-    void setMinimap(const MinimapGrid& grid, std::string_view mapName) {
+    void refreshTexts() {
+        for (auto& [name, document] : documents) {
+            applyTextKeys(*document.element, *texts);
+            applyMinimap(*document.element);
+        }
+        forEachVisible([](Document& document) { document.element->callHandler(LanguageHandler); });
+    }
+
+    void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey) {
         if (minimap) {
             Rml::ReleaseTexture(minimap->source);
             sources.dropGenerated(minimap->source.substr(GeneratedPrefix.size()));
@@ -559,12 +595,12 @@ struct Ui::Impl {
             minimap = Minimap{
                 .layout = built->layout,
                 .source = std::string{GeneratedPrefix} + name,
-                .mapName = std::string{mapName},
+                .mapNameKey = std::string{mapNameKey},
                 .aspect = static_cast<float>(built->image.width) / static_cast<float>(built->image.height),
             };
             sources.setGenerated(name, std::move(built->image));
         } else {
-            core::logWarning("ui: the map {} has no walkable cell for the minimap", mapName);
+            core::logWarning("ui: the map {} has no walkable cell for the minimap", mapNameKey);
         }
         for (auto& [name, document] : documents) {
             applyMinimap(*document.element);
@@ -710,8 +746,8 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
         return core::fail("could not start RmlUi");
     }
     impl->scripting->install();
-    if (auto labels = impl->loadPromptLabels(); !labels) {
-        return std::unexpected{labels.error()};
+    if (auto texts = impl->loadTexts(); !texts) {
+        return std::unexpected{texts.error()};
     }
     constexpr std::uint32_t MarkerSize = 64;
     impl->sources.setGenerated("minimap_marker", buildMinimapMarker(MarkerSize));
@@ -798,8 +834,12 @@ float Ui::dpRatio() const {
     return impl_->context->GetDensityIndependentPixelRatio();
 }
 
-void Ui::setMinimap(const MinimapGrid& grid, std::string_view mapName) {
-    impl_->setMinimap(grid, mapName);
+void Ui::setMinimap(const MinimapGrid& grid, std::string_view mapNameKey) {
+    impl_->setMinimap(grid, mapNameKey);
+}
+
+void Ui::refreshTexts() {
+    impl_->refreshTexts();
 }
 
 void Ui::setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner) {

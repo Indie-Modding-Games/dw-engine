@@ -6,7 +6,7 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<button id="menu-button" onclick="ui.send('open_menu')"><span class="key" id="prompt-menu">Tab</span>Menú</button>
+	<button id="menu-button" onclick="ui.send('open_menu')"><span class="key" id="prompt-menu"></span><span text-key="hud.menu"></span></button>
 	<div id="minimap" class="size-medium">
 		<div id="minimap-map">
 			<div id="minimap-frame">
