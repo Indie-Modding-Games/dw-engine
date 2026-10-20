@@ -7,7 +7,7 @@ están en las [especificaciones por fase](plan/README.md).
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Base | S | Casi cerrada: todo hecho en Linux; la CI corre en GitHub desde el primer push (Windows en verificación); falta la limpieza de repositorios |
+| 0 | Base | S | Casi cerrada: Linux y Windows pasan en la CI de GitHub (2026-10-20); falta la limpieza de repositorios |
 | 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; falta decidir el formato cocinado de los vídeos |
 | 2 | Prueba vertical | M | En curso |
 | 3 | Núcleo jugable | L | En curso |
@@ -39,7 +39,7 @@ CI pasa.
 |---|---|
 | Documentación, ADR, plan y convenciones | Hecho |
 | CMake, presets, vcpkg, clang-format, contenedor y CI de Linux | Hecho. Compila sin warnings en `linux-clang-debug` y en `ci` (warnings como errores), tests, formato y clang-tidy en verde en local. La CI corre en GitHub desde el primer push |
-| CI de Windows | Escrito; se verifica con la primera ejecución en GitHub: presets `windows-clang-*` (clang-cl, STL de MSVC, CRT estático) y job `windows` en la CI |
+| CI de Windows | Hecho: el job `windows` pasa en GitHub (clang-cl, STL de MSVC, CRT estático) y el preset `windows-cross` compila lo mismo desde el contenedor |
 | clang-tidy limpio | Hecho: cero avisos; la CI lo pasa con los avisos como errores |
 | Ventana y dispositivo Vulkan | Hecho: swapchain que se rehace al cambiar de tamaño, sin errores de validación |
 | Entrada por acciones, conexión en caliente | Hecho con teclado; mandos sin probar en una máquina real |
