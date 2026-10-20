@@ -381,7 +381,9 @@ core::Result<std::vector<std::string>> PakFileSystem::listFiles(const std::files
         return core::fail(std::format("cannot open folder '{}': the archive '{}' only has its own root",
                                       pathText(folder), pathText(archive_)));
     }
-    std::vector<std::string> files{std::string{ManifestName}};
+    std::vector<std::string> files;
+    files.reserve(entries_.size() + 1);
+    files.emplace_back(ManifestName);
     for (const PakEntry& entry : entries_) {
         files.push_back(entry.path);
     }
