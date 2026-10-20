@@ -101,6 +101,8 @@ public:
 
     [[nodiscard]] std::size_t instructions() const { return instructions_; }
     [[nodiscard]] std::size_t models() const { return models_; }
+    [[nodiscard]] std::size_t unusedRanges() const { return unusedRanges_; }
+    [[nodiscard]] std::size_t unusedBytes() const { return unusedBytes_; }
 
 private:
     [[nodiscard]] std::size_t fileOffset(std::int32_t payloadOffset) const {
@@ -158,6 +160,17 @@ private:
         // The analysis counts from the slot's base, as script.yaml does.
         for (const auto& issue : analysis->issues) {
             unknown(std::format("base {:#x}: {}", fileOffset(0), issue));
+        }
+        std::vector<std::string> unused;
+        for (const fx::EfeDataItem& item : analysis->data) {
+            if (item.kind == fx::EfeDataKind::Unused) {
+                unused.push_back(std::format("{:#06x}-{:#06x}", item.offset, item.offset + item.size));
+                unusedBytes_ += item.size;
+            }
+        }
+        if (!unused.empty()) {
+            note(std::format("base {:#x}: unused data, kept in script.yaml: {}", fileOffset(0), joined(unused)));
+            unusedRanges_ += unused.size();
         }
         fx::EfeYamlIds ids;
         if (tables_ != nullptr) {
@@ -273,6 +286,8 @@ private:
     std::optional<formats::image::Tim> tim_;
     std::size_t instructions_ = 0;
     std::size_t models_ = 0;
+    std::size_t unusedRanges_ = 0;
+    std::size_t unusedBytes_ = 0;
 };
 
 } // namespace
@@ -292,6 +307,9 @@ core::Result<Extraction> extractEffects(std::span<const std::byte> bytes, const 
     std::size_t used = 0;
     std::size_t instructions = 0;
     std::size_t models = 0;
+    std::size_t unusedRanges = 0;
+    std::size_t unusedBytes = 0;
+    std::size_t unusedSlots = 0;
     for (std::size_t slot = 0; slot < *slotCount; ++slot) {
         const auto slotBytes = fx::efeSlot(bytes, slot);
         if (!slotBytes) {
@@ -305,6 +323,9 @@ core::Result<Extraction> extractEffects(std::span<const std::byte> bytes, const 
         extractor.extract(*slotBytes);
         instructions += extractor.instructions();
         models += extractor.models();
+        unusedRanges += extractor.unusedRanges();
+        unusedBytes += extractor.unusedBytes();
+        unusedSlots += extractor.unusedRanges() > 0 ? 1 : 0;
         ++used;
     }
     extraction.notes.push_back(std::format("{} effect slots of {:#x} bytes, one per technique; {} in use with {} "
@@ -312,6 +333,11 @@ core::Result<Extraction> extractEffects(std::span<const std::byte> bytes, const 
                                            *slotCount, fx::EfeSlotSize, used, instructions, models));
     if (!empty.empty()) {
         extraction.notes.push_back(std::format("slots that are all fill, which no technique uses: {}", joined(empty)));
+    }
+    if (unusedRanges > 0) {
+        extraction.notes.push_back(std::format(
+            "unused data: {} ranges ({} bytes in {} slots), kept in script.yaml as kind unused; for each, {}",
+            unusedRanges, unusedBytes, unusedSlots, fx::EfeUnusedReason));
     }
     extraction.notes.emplace_back(
         "each slot's UV animation and sub-effect rooms are workspace: the loader clears some fields and the scripts "

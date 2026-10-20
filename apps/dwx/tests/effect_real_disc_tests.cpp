@@ -6,6 +6,7 @@
 #include <cgltf.h>
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
@@ -26,7 +27,7 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 
 } // namespace
 
-TEST_CASE("the user's disc: every effect slot decodes, its data is only unreferenced ranges short of whole") {
+TEST_CASE("the user's disc: every effect slot decodes and every byte of its data is typed, fill or unused") {
     const char* path = std::getenv("DWE_DISC");
     if (path == nullptr || std::string_view{path}.empty()) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
@@ -64,9 +65,19 @@ TEST_CASE("the user's disc: every effect slot decodes, its data is only unrefere
         CHECK_MESSAGE(data->images_count > 0, output.id.str());
     }
     for (const std::string& unknown : extraction->unknowns) {
-        CHECK_MESSAGE(unknown.ends_with("data that no instruction addresses"), unknown);
+        MESSAGE(unknown);
     }
-    MESSAGE(scripts, " scripts, ", models, " models, ", extraction->unknowns.size(), " unreferenced ranges");
+    CHECK(extraction->unknowns.empty());
+    std::size_t unusedSlots = 0;
+    for (const std::string& note : extraction->notes) {
+        unusedSlots += note.contains("unused data, kept in script.yaml") ? 1 : 0;
+    }
+    MESSAGE(scripts, " scripts, ", models, " models, ", unusedSlots, " slots with unused data");
     CHECK(scripts == 121);
     CHECK(models == 89);
+    // 40 ranges in 33 slots; slot 14's CLUT row spans 62 bytes of a range that was 92.
+    CHECK(unusedSlots == 33);
+    CHECK(std::ranges::any_of(extraction->notes, [](const std::string& note) {
+        return note.starts_with("unused data: 40 ranges (590 bytes in 33 slots)");
+    }));
 }
