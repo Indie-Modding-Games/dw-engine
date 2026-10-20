@@ -9,12 +9,15 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -33,8 +36,8 @@ using dwe::formats::disc::SectorLayout;
 
 namespace {
 
-// A test extractor for the files of folder A: it copies each one to test/<name>.bin, reports an unknown and a note
-// for TWO and fails on BAD.
+// A test extractor for the files of folder A: it copies each one, a YAML document, to test/<name>.yaml, reports an
+// unknown and a note for TWO and fails on BAD.
 bool handlesFolderA(std::string_view path) {
     return path.starts_with("A/");
 }
@@ -50,7 +53,7 @@ dwe::core::Result<Extraction> copyFile(const Disc& disc, const IsoFile& file) {
     const std::string name = file.path == "A/ONE.BIN" ? "one" : "two";
     Extraction extraction;
     extraction.outputs.push_back(
-        OutputFile{.id = *AssetId::parse("test/" + name), .extension = "bin", .bytes = std::move(*bytes)});
+        OutputFile{.id = *AssetId::parse("test/" + name), .extension = "yaml", .bytes = std::move(*bytes)});
     if (file.path == "A/TWO.BIN") {
         extraction.unknowns.emplace_back("the last byte means nothing yet");
         extraction.notes.emplace_back("a note for the reader");
@@ -111,13 +114,21 @@ constexpr std::array StreamRegistry = {Extractor{.name = "stream", .handles = ha
 constexpr std::array ClashingRegistry = {
     Extractor{.name = "clash", .handles = handlesFolderA, .extract = clashingFile}};
 
+// A YAML document of `size` bytes: a value, then a comment that fills the rest.
+std::vector<std::byte> yamlBytes(std::size_t size, char value) {
+    const std::string head = std::format("v: {}\n#", value);
+    const std::string text = head + std::string(size - head.size() - 1, '-') + "\n";
+    const auto bytes = std::as_bytes(std::span{text});
+    return {bytes.begin(), bytes.end()};
+}
+
 // A cooked disc with three files the test extractor takes and one it does not.
 struct TestDisc {
     TestDisc() {
         fixtures::IsoBuilder builder;
-        builder.addFile("A/ONE.BIN", fixtures::patternBytes(3000, 1));
-        builder.addFile("A/TWO.BIN", fixtures::patternBytes(10, 2));
-        builder.addFile("A/BAD.BIN", fixtures::patternBytes(10, 3));
+        builder.addFile("A/ONE.BIN", yamlBytes(3000, '1'));
+        builder.addFile("A/TWO.BIN", yamlBytes(10, '2'));
+        builder.addFile("A/BAD.BIN", yamlBytes(10, '3'));
         builder.addFile("B/OTHER.DAT", fixtures::patternBytes(100, 4));
         image = builder.build();
         source = std::make_unique<MemorySectorSource>(image, SectorLayout::Cooked);
@@ -156,7 +167,7 @@ TEST_CASE("files get the status of their extraction") {
     CHECK(run->files[0].status == FileStatus::Partial);
     CHECK(run->files[0].unknowns.size() == 1);
     CHECK(run->files[1].status == FileStatus::Extracted);
-    CHECK(run->files[1].outputs == std::vector<std::string>{"test/one.bin"});
+    CHECK(run->files[1].outputs == std::vector<std::string>{"test/one.yaml"});
     CHECK(run->files[2].status == FileStatus::Partial);
     CHECK(run->files[3].status == FileStatus::Pending);
     CHECK(run->files[3].extractor.empty());
@@ -229,7 +240,7 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
     CHECK(files.contains("pack.yaml"));
     CHECK(files.contains("dwx/coverage.yaml"));
     CHECK(files.contains(".dwx-extract"));
-    CHECK(files.at("test/one.bin").size() == 3000);
+    CHECK(files.at("test/one.yaml").size() == 3000);
 
     const auto manifest = dwe::assets::parsePackManifest(files.at("pack.yaml"));
     REQUIRE(manifest.has_value());
@@ -240,6 +251,7 @@ TEST_CASE("the base pack is written, mounts and is the same on every run") {
     CHECK(manifest->schemas.front().schema == "cards");
     CHECK(manifest->schemas.front().ids == std::vector<std::string>{"data/cards"});
 
+    // The engine mounts the pack and opens every asset.
     const auto assets = checkBasePack(first, *run);
     REQUIRE(assets.has_value());
     CHECK(*assets == 3); // two outputs and the coverage report
@@ -262,6 +274,20 @@ TEST_CASE("streamed outputs are written part by part and are not compared for du
     }
     CHECK(files.at("stream/one.bin") == expected);
     CHECK(files.at("stream/bad.bin") == expected);
+}
+
+TEST_CASE("the check of the written pack fails when the engine cannot open an asset") {
+    const TestDisc fixture;
+    const auto run = runExtractors(fixture.disc(), TestRegistry);
+    REQUIRE(run.has_value());
+    const TempFolder temp;
+    REQUIRE(prepareOutputFolder(temp.path(), false).has_value());
+    REQUIRE(writeBasePack(temp.path(), *run, fixture.info).has_value());
+    temp.write("test/two.yaml", "v: [unclosed\n");
+    const auto assets = checkBasePack(temp.path(), *run);
+    REQUIRE_FALSE(assets.has_value());
+    CHECK(assets.error().message.starts_with("the engine cannot open 1 of its assets:"));
+    CHECK(assets.error().message.contains("two.yaml"));
 }
 
 TEST_CASE("the output folder is only emptied when dwx wrote it") {

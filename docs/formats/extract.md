@@ -17,8 +17,8 @@ build/<preset>/apps/dwx/dwx extract [--out <carpeta>] [--force] <imagen.cue|imag
   rompe el paquete, la comprobación del final lo dice.
 - Nada se escribe fuera de `--out`: las rutas de salida salen solo de ids de asset ya validados (minúsculas, cifras y
   `_`), nunca de nombres leídos del disco.
-- Códigos de salida: 0 si el paquete se escribió y el motor lo monta (aunque queden ficheros pendientes), 2 si hubo
-  un error.
+- Códigos de salida: 0 si el paquete se escribió, el motor lo monta y abre todos sus assets (aunque queden ficheros
+  pendientes), 2 si hubo un error.
 
 Con la imagen fuera del repositorio, desde el contenedor:
 
@@ -36,8 +36,12 @@ DWE_DISC="/ruta/al/disco.bin" scripts/dev.sh test -R dwx   # incluye la prueba c
    ficheros se reparten entre varios hilos (como mucho 16); los resultados se juntan en orden de ruta, así que la
    salida no depende del número de hilos.
 4. Prepara la carpeta de salida y escribe el paquete: `pack.yaml`, las salidas, `dwx/coverage.yaml` y `.dwx-extract`.
-5. Monta el paquete con el `VirtualFileSystem` del motor (`engine/assets`, sobre `DiskFileSystem`) y comprueba que
-   cada salida se resuelve a su fichero. Es la primera prueba de que el motor carga lo extraído.
+5. Monta el paquete con el `VirtualFileSystem` del motor (`engine/assets`, sobre `DiskFileSystem`), comprueba que
+   cada salida se resuelve a su fichero y abre cada asset del paquete con los lectores del motor
+   (`assets::checkContent`, lo mismo que `dwe-game --check-content` y el último paso de
+   [`dwx validate`](../architecture/assets-pipeline.md#dwx-validate)). Es la prueba de que el motor carga lo extraído:
+   si un asset no se abre, lo lista y termina con error. Los esquemas, las referencias y los contratos no se miran
+   aquí; para eso está `dwx validate`.
 6. Imprime el resumen: ficheros totales, extraídos, parciales y pendientes, bytes cubiertos y número de salidas.
 
 La salida es **determinista**: dos extracciones del mismo disco dan los mismos bytes en todos los ficheros. No hay
@@ -377,3 +381,4 @@ Con las películas tarda unos 3,5 min en `ci`: al extraer, cada uno de los 13 08
 (`decodeBitstream`, para comprobar su bitstream); la IDCT corre una sola vez, al escribir el Y4M, y se escriben 1,1 GB.
 Los bitstreams de las películas y sus WAV (unos 200 MB) se quedan en memoria hasta que se escribe el paquete.
 `formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.
+La comprobación del final, que abre todos los assets del paquete, los reparte entre hilos y añade unos segundos.

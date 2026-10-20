@@ -26,8 +26,8 @@ void printUsage() {
     std::println(stderr, "  dwx extract [--out <folder>] [--force] <image.cue|image.bin|image.iso>");
     std::println(stderr, "      Writes the base pack (default content/base) and its coverage report, then checks that");
     std::println(stderr,
-                 "      the engine mounts it. A folder that dwx did not write is refused unless --force, which");
-    std::println(stderr, "      writes into it without deleting anything.");
+                 "      the engine mounts it and opens every asset. A folder that dwx did not write is refused");
+    std::println(stderr, "      unless --force, which writes into it without deleting anything.");
     std::println(stderr, "  dwx cook <pack folder> -o <folder>");
     std::println(stderr,
                  "      Cooks a pack into the forms the game loads: PNG to KTX2 with mipmaps, binary glTF checked,");

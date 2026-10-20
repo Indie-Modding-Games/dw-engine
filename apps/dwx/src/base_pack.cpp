@@ -1,5 +1,6 @@
 #include "base_pack.hpp"
 
+#include <dwe/assets/content_check.hpp>
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/sha1.hpp>
@@ -452,6 +453,14 @@ core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder, con
         if (source->packId != PackId || source->file != folder / outputPath(output)) {
             return core::fail(std::format("the asset '{}' resolves to {}", output.id.str(), source->file.string()));
         }
+    }
+    const std::vector<assets::ContentProblem> problems = assets::checkContent(*vfs);
+    if (!problems.empty()) {
+        std::string list;
+        for (const assets::ContentProblem& problem : problems) {
+            list += std::format("\n  {}: {}", problem.file, problem.message);
+        }
+        return core::fail(std::format("the engine cannot open {} of its assets:{}", problems.size(), list));
     }
     return vfs->ids().size();
 }

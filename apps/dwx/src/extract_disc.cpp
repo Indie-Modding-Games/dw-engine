@@ -70,7 +70,7 @@ int extractDisc(const std::filesystem::path& path, const std::filesystem::path& 
         std::println(stderr, "dwx: engine check failed: {}", assets.error().message);
         return ExitFailed;
     }
-    std::println("Engine check: the pack mounts with {} assets and every output resolves", *assets);
+    std::println("Engine check: the pack mounts with {} assets, every output resolves and every asset opens", *assets);
     return ExitOk;
 }
 

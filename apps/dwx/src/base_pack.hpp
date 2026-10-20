@@ -78,8 +78,8 @@ core::Result<void> prepareOutputFolder(const std::filesystem::path& folder, bool
 // lets the next extraction replace it.
 core::Result<void> writeBasePack(const std::filesystem::path& folder, const ExtractionRun& run, const DiscInfo& info);
 
-// Mounts the written pack with the engine's virtual file system and checks that every output resolves to its file.
-// Returns how many assets the pack has.
+// Mounts the written pack with the engine's virtual file system, checks that every output resolves to its file and
+// opens every asset with the engine's readers (assets::checkContent). Returns how many assets the pack has.
 core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder, const ExtractionRun& run);
 
 } // namespace dwe::dwx
