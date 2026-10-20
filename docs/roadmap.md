@@ -2,6 +2,9 @@
 
 Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da por terminada hasta que se cumple.
 
+Este documento es el resumen con el estado del día. Lo que hace cada fase, sus requisitos y cómo se comprueban
+están en las [especificaciones por fase](plan/README.md).
+
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
 | 0 | Base | S | Casi cerrada: todo hecho en Linux; la CI corre en GitHub desde el primer push (Windows en verificación); falta la limpieza de repositorios |
