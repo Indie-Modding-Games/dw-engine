@@ -12,8 +12,8 @@
 
 namespace dwe::assets {
 
-// Where packs are read from. The virtual file system only talks to this interface, so tests can use files kept in
-// memory and a future backend can read archives. Its const functions may be called from several threads at once.
+// Where packs are read from: folders on disk, .pak archives (PakFileSystem) or files kept in memory for tests. The
+// virtual file system only talks to this interface. Its const functions may be called from several threads at once.
 class FileSystem {
 public:
     FileSystem() = default;

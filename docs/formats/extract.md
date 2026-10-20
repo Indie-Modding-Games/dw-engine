@@ -371,14 +371,16 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y
 
 ## Tiempo
 
-En el build `ci` (debug con sanitizers) la extracción del disco US tarda unos 9 s con 12 hilos. Para eso, `sha1.cpp`
-se compila optimizado también en debug, los builds de debug enlazan el lodepng de release (salvo en Windows) y el
-codificador de PNG no copia los píxeles. La salida es la misma byte a byte. Con los modelos tardaba entre 21 y 28 s: cada
-modelo de puerta o de mapa lee y sube a su escena los mapas donde aparece. Además, cada uno de los seis modelos que
-pone un script desensambla todos los scripts para buscar sus mapas.
+En el build `ci` (debug con sanitizers), con 12 hilos, la extracción del disco US tardó 2 min 40 s (medido el
+2026-10-19 con el host ocupado por compilaciones de otras ramas: carga media de 9 a 10 en 12 núcleos). Unos 13 s de eso
+son la comprobación del final, que abre los 4813 assets del paquete repartidos entre hilos. En las mismas condiciones,
+sin las películas, tardaba unos 40 s. Para eso, `sha1.cpp` se compila optimizado también en debug, los builds de debug
+enlazan el lodepng de release (salvo en Windows) y el codificador de PNG no copia los píxeles. La salida es la misma
+byte a byte. Sin películas, lo más lento son los modelos: cada modelo de puerta o de mapa lee y sube a su escena los
+mapas donde aparece, y cada uno de los seis modelos que pone un script desensambla todos los scripts para buscar sus
+mapas.
 
-Con las películas tarda unos 3,5 min en `ci`: al extraer, cada uno de los 13 089 frames solo pasa por la etapa VLC
+Las películas son la mayor parte del tiempo: al extraer, cada uno de los 13 089 frames solo pasa por la etapa VLC
 (`decodeBitstream`, para comprobar su bitstream); la IDCT corre una sola vez, al escribir el Y4M, y se escriben 1,1 GB.
 Los bitstreams de las películas y sus WAV (unos 200 MB) se quedan en memoria hasta que se escribe el paquete.
 `formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.
-La comprobación del final, que abre todos los assets del paquete, los reparte entre hilos y añade unos segundos.
