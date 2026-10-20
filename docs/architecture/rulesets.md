@@ -179,6 +179,9 @@ cada 20 fotogramas, 30 días por año, el año vuelve a 0 en 100, y una partida 
   juego por segundo. Lo usan los tests, el autotest, las simulaciones y el panel de depuración.
 - **Pausa y saltos.** `setRunning(false)` es el `stopGameTime` del original. `jumpTo(hora, minuto)` es el salto al
   dormir (`advanceToTime`): solo cuenta el cambio de día, no las horas saltadas.
+- **Uno por partida.** El reloj lo tiene la partida (`apps/session`), que lo avanza solo en los ticks en que el campo
+  corre tiempo de juego (`Field::gameTimeRan`) y lo guarda con sus fracciones (`restore(fotogramas, pendientes)`),
+  así que una partida cargada sigue igual que la guardada.
 
 ## Recarga en caliente y ajuste (R3.4)
 

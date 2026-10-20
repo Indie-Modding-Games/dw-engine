@@ -20,6 +20,10 @@ public:
         next();
     }
 
+    // Where the sequence is, to save it with a game; restoreState goes on from there.
+    [[nodiscard]] std::uint64_t state() const { return state_; }
+    void restoreState(std::uint64_t state) { state_ = state; }
+
     // The next 32 random bits.
     std::uint32_t next() {
         const std::uint64_t old = state_;

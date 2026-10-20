@@ -46,9 +46,6 @@ transition:
   shade_max: 160
   shade_full: 128
   name_frame: 10
-clock:
-  start_hour: 8
-  minute_seconds: 1
 time_of_day:
   day_start: 6
   dusk_start: 16
@@ -80,7 +77,6 @@ TEST_CASE("field rules read every tunable") {
     CHECK(rules->transition.fadeInFrames == 10);
     CHECK(rules->transition.shadeFull == 128);
     CHECK(rules->transition.nameFrame == 10);
-    CHECK(rules->clock.startHour == 8);
     CHECK(rules->timeOfDay.duskStart == 16);
     CHECK(rules->timeOfDay.duskLight.g == doctest::Approx(0.7F));
     CHECK(rules->timeOfDay.nightLight.r == doctest::Approx(0.5F));
@@ -93,7 +89,6 @@ TEST_CASE("broken field rules are refused") {
         dwe::game::field::parseFieldRules(replaced(Rules, "walk_distance: 2.5", "walk_distance: 4")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "dead_zone: 0.2", "dead_zone: 1")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "turn_speed: 0", "turn_speed: -1")).has_value());
-    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "start_hour: 8", "start_hour: 24")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "dusk_start: 16", "dusk_start: 21")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "shade_step: 7", "shade_step: 0")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "shade_max: 160", "shade_max: 300")).has_value());

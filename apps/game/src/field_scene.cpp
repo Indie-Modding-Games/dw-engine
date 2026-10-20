@@ -12,6 +12,8 @@
 #include <tuple>
 #include <utility>
 
+#include "messages.hpp"
+
 namespace dwe::app {
 namespace {
 
@@ -20,7 +22,6 @@ using Milliseconds = std::chrono::duration<double, std::milli>;
 
 // The original switches clips at once; a short blend hides the pop when a walk turns into a run.
 constexpr float ClipFadeSeconds = 0.1F;
-constexpr std::int32_t MinutesPerHour = 60;
 
 // The click-to-move target, drawn as a small marker on the ground while the player walks to it.
 constexpr render::MapMarker TargetMarker{
@@ -54,9 +55,10 @@ render::TimeOfDaySchedule scheduleOf(const game::field::TimeOfDayRules& rules) {
             .nightLight = rules.nightLight};
 }
 
-// The hour --time starts the clock at: the first hour of that time of day, or for day the hour a new game starts at
-// when it falls in the day (clock.c), all from the field rules.
-std::int32_t startHourOf(render::TimeOfDay time, const game::field::FieldRules& rules) {
+// The hour --time jumps the clock to: the first hour of that time of day (field rules), or for day the hour a new game
+// starts at (clock rules) when it falls in the day (clock.c).
+std::int32_t startHourOf(render::TimeOfDay time, const game::field::FieldRules& rules,
+                         const ruleset::ClockRules& clockRules) {
     switch (time) {
     case render::TimeOfDay::Dusk:
         return rules.timeOfDay.duskStart;
@@ -65,7 +67,7 @@ std::int32_t startHourOf(render::TimeOfDay time, const game::field::FieldRules& 
     case render::TimeOfDay::Day:
         break;
     }
-    const std::int32_t start = rules.clock.startHour;
+    const std::int32_t start = clockRules.start.hour;
     return render::timeOfDayAt(start, scheduleOf(rules.timeOfDay)) == render::TimeOfDay::Day ? start
                                                                                              : rules.timeOfDay.dayStart;
 }
@@ -83,6 +85,9 @@ FieldScene::~FieldScene() = default;
 
 core::Result<std::unique_ptr<FieldScene>>
 FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& files, const FieldSceneDesc& desc) {
+    if (desc.clock == nullptr) {
+        return core::fail(std::string{messages::NoGameClock});
+    }
     std::unique_ptr<FieldScene> scene{new FieldScene{files}};
     auto map = render::MapRenderer::create(renderer);
     if (!map) {
@@ -112,8 +117,9 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     }
     scene->field_ = std::make_unique<game::field::Field>(scene->world_, *rules, warps->scriptedWarps);
     scene->schedule_ = scheduleOf(rules->timeOfDay);
+    scene->clock_ = desc.clock;
     if (desc.time) {
-        scene->field_->setClockMinutes(startHourOf(*desc.time, *rules) * MinutesPerHour);
+        static_cast<void>(desc.clock->jumpTo(startHourOf(*desc.time, *rules, desc.clock->rules()), 0));
     }
 
     auto player = scene->loadActor("models/tamer", scene->field_->playerEntity(), rules->player);
@@ -129,7 +135,7 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
 
     const std::string startMap = desc.startMap.value_or(warps->startMap);
     const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
-    if (auto entered = scene->enterMap(startMap, startExit); !entered) {
+    if (auto entered = scene->enterMap(startMap, startExit, desc.startMap ? desc.startAt : std::nullopt); !entered) {
         return std::unexpected{entered.error()};
     }
     return scene;
@@ -177,21 +183,24 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity, const 
     return actor;
 }
 
-core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t exit) {
+core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t exit,
+                                        std::optional<assets::SpawnPoint> at) {
     const auto start = Clock::now();
     auto scene = render::loadMapSceneData(*files_, mapId);
     if (!scene) {
         return core::fail(std::format("map {}: {}", mapId, scene.error().message));
     }
     const auto loaded = Clock::now();
-    if (auto entered = field_->enterMap(scene->document, exit); !entered) {
+    if (at) {
+        field_->enterMapAt(scene->document, *at);
+    } else if (auto entered = field_->enterMap(scene->document, exit); !entered) {
         return core::fail(std::format("map {}: {}", mapId, entered.error().message));
     }
     const assets::MapEntry* entry = mapTable_ ? mapTable_->find(mapId) : nullptr;
     const bool fixedTime = entry != nullptr && entry->fixedTimeOfDay;
     std::string nameKey = nameKeyOf(mapId);
     // map.c: setupMap shows the palette and the lights of the clock's time of day (updateTimeOfDay).
-    clockHour_ = field_->clockMinutes() / MinutesPerHour;
+    clockHour_ = clock_->time().hour;
     time_ = render::timeOfDayAt(clockHour_, schedule_);
     fixedTime_ = fixedTime;
     if (auto set = mapRenderer_->setMap(*scene, scene->backgroundVariant(time_, fixedTime)); !set) {
@@ -238,6 +247,9 @@ std::string FieldScene::nameKeyOf(std::string_view mapId) const {
 void FieldScene::tick(const game::field::FieldInput& input, float seconds) {
     field_->setInput(input);
     field_->tick(seconds);
+}
+
+void FieldScene::finishTick() {
     followClock();
     if (auto change = field_->takeMapChange()) {
         if (auto entered = enterMap(change->map, change->exit); !entered) {
@@ -248,7 +260,7 @@ void FieldScene::tick(const game::field::FieldInput& input, float seconds) {
 }
 
 void FieldScene::followClock() {
-    const std::int32_t hour = field_->clockMinutes() / MinutesPerHour;
+    const std::int32_t hour = clock_->time().hour;
     if (hour == clockHour_) {
         return;
     }

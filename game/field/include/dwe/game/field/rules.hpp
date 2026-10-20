@@ -92,13 +92,6 @@ struct TransitionRules {
 // How much of the screen a shade takes away: 0 (nothing) to 1 (everything, black).
 [[nodiscard]] float shadeDarkness(const TransitionRules& rules, std::int32_t shade);
 
-// The game clock (clock.c: tickGameClock): a minute every 20 frames at normal speed, starting at 8:00 in a new game.
-// It stops while a map change runs (tamer.c: stopGameTime, startGameTime).
-struct ClockRules {
-    std::int32_t startHour = 8;
-    float minuteSeconds = 1.0F;
-};
-
 // The times of day (map.c: updateTimeOfDay): the hours each one starts at, which are also the only hours the palette
 // fades at (map.c: renderMap), and what dusk and night do to the map's lights, per red, green and blue.
 struct TimeOfDayRules {
@@ -114,7 +107,6 @@ struct FieldRules {
     PartnerRules partner;
     InputRules input;
     TransitionRules transition;
-    ClockRules clock;
     TimeOfDayRules timeOfDay;
 };
 

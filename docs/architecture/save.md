@@ -111,6 +111,11 @@ Para cambiar el formato de una sección:
 3. Se añade un test con un fichero de la versión anterior que se carga con el resultado esperado (como
    `game/save/tests/fixtures/partner_v1.yaml` y `partner_v2.yaml`).
 
+En el juego esa unión es la partida, `session::GameSession` ([apps/session](../../apps/session/README.md)): registra
+`clock`, `partner`, `tamer`, `field` y `random`, y cada sistema que se enchufa como adaptador añade las suyas. También
+pide los autoguardados: el partner se duerme, día nuevo, cambio de mapa, fin de batalla; `AutosaveRequests` los junta
+en uno y el ruleset dice cuáles cuentan.
+
 Los nombres de sección son de 1 a 64 caracteres `a-z`, `0-9` y `_`. Un mod usa un prefijo propio (`mod_fishing`) para
 no chocar con los del juego.
 

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: tamer",
+  "description": "rules/<id>/tamer.yaml: the tamer's rules (apps/session: TamerRules, apps/session/README.md).",
+  "type": "object",
+  "required": ["level_min", "level_max"],
+  "additionalProperties": false,
+  "properties": {
+    "level_min": { "description": "The lowest tamer level.", "type": "integer", "minimum": 0 },
+    "level_max": { "description": "The highest tamer level.", "type": "integer", "minimum": 0 }
+  }
+}

@@ -25,6 +25,7 @@ inline constexpr std::string_view RepeatedScenario = "scenario '{}' is registere
 inline constexpr std::string_view UnknownScenario = "unknown scenario '{}'; known: {}";
 inline constexpr std::string_view ScenarioFailed = "scenario {}: {}";
 inline constexpr std::string_view RunFailed = "run {} (seed {}): {}";
+inline constexpr std::string_view NoScenarioContext = "a headless session needs the scenario's files and ruleset";
 inline constexpr std::string_view ScenarioLine = "{}: {}\n";
 inline constexpr std::string_view NameSeparator = ", ";
 

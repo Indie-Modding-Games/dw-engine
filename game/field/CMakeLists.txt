@@ -4,7 +4,8 @@ dwe_add_module(field
         src/rules.cpp
         src/grid.cpp
         src/field.cpp
-    DEPS core assets scene)
+    DEPS core assets scene
+    TEST_LIBS dwe::ruleset)
 
 # The tests read the game pack from the source tree.
 if(TARGET dwe_field_tests)

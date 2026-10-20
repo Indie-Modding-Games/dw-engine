@@ -119,6 +119,11 @@ std::int64_t GameClock::frameOfDay() const {
     return elapsed_ % framesPerDay();
 }
 
+void GameClock::restore(std::int64_t elapsedFrames, double pendingFrames) {
+    elapsed_ = std::max<std::int64_t>(elapsedFrames, 0);
+    pendingFrames_ = std::max(pendingFrames, 0.0);
+}
+
 void GameClock::setSpeed(double multiplier) {
     speed_ = std::max(multiplier, 0.0);
 }

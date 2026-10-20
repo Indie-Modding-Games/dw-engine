@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: new_game",
+  "description": "rules/<id>/new_game.yaml: how a new game starts (apps/session: NewGameRules, apps/session/README.md): the partner's species and stats and the tamer's level.",
+  "type": "object",
+  "required": ["partner", "stats", "tamer_level"],
+  "additionalProperties": false,
+  "properties": {
+    "partner": { "description": "The Digimon id (data/digimon) the partner starts as; it needs a raise row.", "type": "string", "minLength": 1 },
+    "stats": {
+      "description": "The partner's maximum stats; current HP and MP start full.",
+      "type": "object",
+      "required": ["hp", "mp", "offense", "defense", "speed", "brain"],
+      "additionalProperties": false,
+      "properties": {
+        "hp": { "type": "integer", "minimum": 1 },
+        "mp": { "type": "integer", "minimum": 0 },
+        "offense": { "type": "integer", "minimum": 0 },
+        "defense": { "type": "integer", "minimum": 0 },
+        "speed": { "type": "integer", "minimum": 0 },
+        "brain": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tamer_level": { "description": "The tamer's level at the start, within the tamer section's limits.", "type": "integer", "minimum": 0 }
+  }
+}

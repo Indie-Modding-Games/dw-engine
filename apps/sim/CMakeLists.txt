@@ -8,12 +8,13 @@ get_property(game_modules GLOBAL PROPERTY DWE_GAME_MODULES)
 dwe_add_module(sim
     LAYER apps
     SOURCES
+        src/headless_session.cpp
         src/report.cpp
         src/runner.cpp
         src/scenario.cpp
         src/sim_options.cpp
         src/simulation.cpp
-    DEPS core assets ruleset content ${game_modules})
+    DEPS core assets ruleset content session ${game_modules})
 
 # Each file of scenarios/ registers one scenario: adding a scenario is adding its file. An object library, so the
 # linker keeps every registration although nothing calls into its file.

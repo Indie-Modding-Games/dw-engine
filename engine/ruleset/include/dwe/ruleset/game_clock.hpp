@@ -78,6 +78,13 @@ public:
     // Frames since year 0, day 0 at midnight.
     [[nodiscard]] std::int64_t elapsedFrames() const { return elapsed_; }
 
+    // The fraction of a frame that real time has run past the last whole frame; advance carries it over.
+    [[nodiscard]] double pendingFrames() const { return pendingFrames_; }
+
+    // Puts the clock back at a saved moment (elapsedFrames and pendingFrames), as loading a game does. Negative
+    // values are taken as 0.
+    void restore(std::int64_t elapsedFrames, double pendingFrames);
+
     // The fast-forward multiplier: 1 is the original's speed, 0 stops the clock, 60 runs a game hour per real minute.
     // Negative values are taken as 0.
     void setSpeed(double multiplier);

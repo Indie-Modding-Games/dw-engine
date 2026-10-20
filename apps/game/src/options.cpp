@@ -1,6 +1,7 @@
 #include "options.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
 #include <array>
@@ -8,6 +9,8 @@
 #include <memory>
 #include <ranges>
 #include <system_error>
+
+#include "messages.hpp"
 
 namespace dwe::app {
 namespace {
@@ -117,6 +120,16 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
         options.height = (*size)[1];
         return true;
     }
+    if (argument == "--load") {
+        options.load = session::slotFromName(value);
+        return options.load.has_value();
+    }
+    if (argument == "--clock-speed") {
+        double speed = 0.0;
+        const auto parsed = std::from_chars(value.data(), value.data() + value.size(), speed);
+        options.clockSpeed = speed;
+        return parsed.ec == std::errc{} && parsed.ptr == value.data() + value.size() && speed >= 0.0;
+    }
     if (argument == "--time") {
         const auto time = parseTime(value);
         options.time = time;
@@ -149,6 +162,8 @@ bool readFlag(Options& options, std::string_view argument) {
         options.fullscreen = true;
     } else if (argument == "--no-vsync") {
         options.vsync = false;
+    } else if (argument == "--new-game") {
+        options.newGame = true;
     } else if (argument == "--list-saves") {
         options.listSaves = true;
     } else if (argument == TuningOption) {
@@ -187,6 +202,10 @@ std::optional<Options> parseOptions(std::span<char* const> arguments) {
     }
     if (options.modelViewer && options.characters.empty()) {
         options.characters = {"models/tamer", "models/partner"};
+    }
+    if (options.newGame && options.load) {
+        core::logError("{}", messages::NewGameOrLoad);
+        return std::nullopt;
     }
     // The texture churn is a check of the test scene.
     options.testScene = options.testScene || options.textureChurn;

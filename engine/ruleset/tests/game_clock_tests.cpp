@@ -115,6 +115,34 @@ TEST_CASE("new rules keep the time of day") {
     CHECK(clock.advanceFrames(10).minutes == 1);
 }
 
+TEST_CASE("a restored clock goes on as the one it was saved from") {
+    GameClock played{Original};
+    // A third of a frame per step, as a 60 Hz loop at the original's speed: a fraction is left over.
+    for (int step = 0; step < 100; ++step) {
+        played.advance(1.0 / 60.0);
+    }
+    GameClock loaded{Original};
+    loaded.restore(played.elapsedFrames(), played.pendingFrames());
+    CHECK(loaded.time() == played.time());
+    for (int step = 0; step < 100; ++step) {
+        CHECK(loaded.advance(1.0 / 60.0).frames == played.advance(1.0 / 60.0).frames);
+    }
+    CHECK(loaded.elapsedFrames() == played.elapsedFrames());
+    loaded.restore(-5, -1.0);
+    CHECK(loaded.elapsedFrames() == 0);
+    CHECK(loaded.pendingFrames() == 0.0);
+}
+
+TEST_CASE("random numbers go on from a saved state") {
+    Random played{77};
+    static_cast<void>(played.next());
+    Random loaded{1};
+    loaded.restoreState(played.state());
+    for (int roll = 0; roll < 10; ++roll) {
+        CHECK(loaded.next() == played.next());
+    }
+}
+
 TEST_CASE("the random numbers repeat with their seed and stay in range") {
     Random first{1234};
     Random second{1234};

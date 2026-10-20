@@ -87,6 +87,19 @@ TEST_CASE("time: eight days cared for with the same seed raise the same partner"
     CHECK(*restored == first.state());
 }
 
+TEST_CASE("time: a partner restored with its state and random numbers goes on as the saved one") {
+    OriginalRuleset original;
+    Raising saved(original.rules(), "bota", 7);
+    careFor(saved, 3);
+    Raising loaded(original.rules(), "bota", 99);
+    loaded.edit([&](PartnerState& state) { state = saved.state(); });
+    loaded.partner().restoreRandomState(saved.partner().randomState());
+    loaded.clock().restore(saved.clock().elapsedFrames(), saved.clock().pendingFrames());
+    careFor(saved, 3);
+    careFor(loaded, 3);
+    CHECK(loaded.state() == saved.state());
+}
+
 TEST_CASE("time: different seeds roll differently") {
     OriginalRuleset original;
     std::set<std::int32_t> heals;

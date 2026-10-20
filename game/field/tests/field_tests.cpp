@@ -1,4 +1,5 @@
 #include <dwe/game/field/field.hpp>
+#include <dwe/ruleset/game_clock.hpp>
 
 #include <doctest/doctest.h>
 
@@ -389,8 +390,10 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
     CHECK(field.fadeLevel() == doctest::Approx(1.0F));
     CHECK(field.mapNameShown() == std::optional<std::string_view>{"house"});
 
-    // The fade in: the player stands still, and the clock waits, until its 20th frame.
-    const std::int32_t minutes = field.clockMinutes();
+    // Game time stood still from the warp on.
+    CHECK_FALSE(field.gameTimeRan());
+
+    // The fade in: the player stands still, and game time with it, until its 20th frame.
     REQUIRE(field.enterMap(house, change->exit).has_value());
     CHECK_FALSE(field.mapNameShown().has_value());
     CHECK(field.fadeLevel() == doctest::Approx(1.0F));
@@ -398,27 +401,42 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
     run(field, 0.9F);
     CHECK(field.fadeLevel() == doctest::Approx(darkness(27)));
     CHECK(field.player().position == glm::vec3{0.0F});
-    CHECK(field.clockMinutes() == minutes);
+    CHECK_FALSE(field.gameTimeRan());
     // Frame 20: the player moves again, under the fade's last shade, which goes on the next frame.
     run(field, 0.05F);
     CHECK(field.fadeLevel() == doctest::Approx(darkness(20)));
     CHECK(field.player().position != glm::vec3{0.0F});
+    CHECK(field.gameTimeRan());
     run(field, 0.05F);
     CHECK(field.fadeLevel() == doctest::Approx(0.0F));
 }
 
-TEST_CASE("the clock counts minutes while the player plays and wraps at midnight") {
+TEST_CASE("the game clock counts minutes while the player plays and wraps at midnight") {
     dwe::scene::World world;
-    auto rules = originalRules();
-    rules.clock = {.startHour = 8, .minuteSeconds = 1.0F};
-    Field field{world, rules};
-    CHECK(field.clockMinutes() == 8 * 60);
+    Field field{world, originalRules()};
+    dwe::ruleset::GameClock clock{dwe::ruleset::ClockRules{}};
+    // The owner of the game loop advances the clock by the ticks that ran game time.
+    const auto play = [&](float seconds) {
+        const int ticks = static_cast<int>(std::lround(seconds / Tick));
+        for (int i = 0; i < ticks; ++i) {
+            field.tick(Tick);
+            if (field.gameTimeRan()) {
+                clock.advance(Tick);
+            }
+        }
+    };
+    play(1.0F);
+    // Before the first map nothing plays.
+    CHECK(clock.time().hour == 8);
+    CHECK(clock.time().minute == 0);
     field.enterMapAt(roomMap("town"), at(0.0F, 0.0F));
-    run(field, 90.0F, 0.25F);
-    CHECK(field.clockMinutes() == (8 * 60) + 90);
-    field.setClockMinutes((24 * 60) - 1);
-    run(field, 1.0F, 0.25F);
-    CHECK(field.clockMinutes() == 0);
+    play(90.0F);
+    CHECK(clock.time().hour == 9);
+    CHECK(clock.time().minute == 30);
+    clock.jumpTo(23, 59);
+    play(1.0F);
+    CHECK(clock.time().hour == 0);
+    CHECK(clock.time().minute == 0);
 }
 
 TEST_CASE("up on the stick follows the map's camera rounded to an eighth of a turn") {

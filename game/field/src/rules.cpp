@@ -125,19 +125,6 @@ TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
     return transition;
 }
 
-ClockRules readClock(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, "clock", {"start_hour", "minute_seconds"})) {
-        return {};
-    }
-    ClockRules clock{.startHour = reader.integer<std::int32_t>(reader.field(node, "start_hour")),
-                     .minuteSeconds = readPositive(reader, reader.field(node, "minute_seconds"))};
-    constexpr std::int32_t HoursPerDay = 24;
-    if (reader.ok() && (clock.startHour < 0 || clock.startHour >= HoursPerDay)) {
-        reader.fail(node, "clock: start_hour must be 0 to 23");
-    }
-    return clock;
-}
-
 glm::vec3 readLight(YamlReader& reader, const YamlNode& node, std::string_view what) {
     const auto items = reader.sequence(node, what, 3);
     if (items.size() != 3) {
@@ -208,15 +195,13 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
         return std::unexpected{core::Error{std::format("field rules: {}", tree.error().message)}};
     }
     YamlReader reader;
-    if (!reader.expectKeys(*tree, "the field rules",
-                           {"player", "partner", "input", "transition", "clock", "time_of_day"})) {
+    if (!reader.expectKeys(*tree, "the field rules", {"player", "partner", "input", "transition", "time_of_day"})) {
         return std::unexpected{reader.error("field rules")};
     }
     FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
                      .partner = readPartner(reader, reader.field(*tree, "partner")),
                      .input = readInput(reader, reader.field(*tree, "input")),
                      .transition = readTransition(reader, reader.field(*tree, "transition")),
-                     .clock = readClock(reader, reader.field(*tree, "clock")),
                      .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day"))};
     return reader.finish(std::move(rules), "field rules");
 }

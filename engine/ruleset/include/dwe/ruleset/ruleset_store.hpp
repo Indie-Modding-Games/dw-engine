@@ -20,6 +20,11 @@ public:
     static core::Result<RulesetStore> load(const assets::VirtualFileSystem& vfs, std::string_view id,
                                            SectionChecks checks = {});
 
+    // Takes a ruleset already loaded from the packs, such as one a simulation changed with its --set values, once it
+    // passes the checks. The packs must outlive the store.
+    static core::Result<RulesetStore> adopt(const assets::VirtualFileSystem& vfs, Ruleset ruleset,
+                                            SectionChecks checks = {});
+
     [[nodiscard]] const Ruleset& current() const { return current_; }
 
     // 1 after the load, and one more for each accepted change.

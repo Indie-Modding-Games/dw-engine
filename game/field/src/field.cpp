@@ -31,8 +31,6 @@ constexpr float StuckFraction = 0.1F;
 constexpr float PathStallSeconds = 0.5F;
 // How many cells around a clicked cell to look for one the player can get to.
 constexpr int ClickSearchCells = 3;
-constexpr std::int32_t MinutesPerHour = 60;
-constexpr std::int32_t MinutesPerDay = 24 * MinutesPerHour;
 // tamer.c: getMapRotation rounds the camera's heading to 512 of the original's 4096: an eighth of a turn.
 constexpr float CameraHeadingStep = Turn / 8.0F;
 // The ground directions at each eighth of a turn from +X toward +Z, exact so that straight moves stay on their line.
@@ -83,7 +81,7 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 
 Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps)
     : world_(&world), rules_(std::move(rules)), scriptedWarps_(std::move(scriptedWarps)), player_(world.create()),
-      partner_(world.create()), clockMinutes_(rules_.clock.startHour * MinutesPerHour) {
+      partner_(world.create()) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
     registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -167,6 +165,7 @@ void Field::setInput(const FieldInput& input) {
 
 void Field::tick(float seconds) {
     triggerSteps_.clear();
+    gameTimeRan_ = false;
     entt::registry& registry = world_->registry();
     scene::beginTick(registry.get<Transform>(player_));
     scene::beginTick(registry.get<Transform>(partner_));
@@ -191,7 +190,8 @@ void Field::tick(float seconds) {
             return;
         }
     }
-    advanceClock(seconds);
+    // clock.c: tickGameClock runs while the player plays.
+    gameTimeRan_ = true;
     movePlayer(seconds);
     checkTriggers();
     updateTrail();
@@ -215,20 +215,6 @@ std::int32_t Field::fadeFrame(float seconds) const {
     // A little slack, so that ticks adding up to a frame's length land on that frame despite rounding.
     constexpr float Slack = 1e-3F;
     return 1 + static_cast<std::int32_t>(std::floor((seconds / rules_.transition.frameSeconds) + Slack));
-}
-
-void Field::advanceClock(float seconds) {
-    // clock.c: tickGameClock counts a minute every 20 frames and wraps at midnight.
-    clockSeconds_ += seconds;
-    while (clockSeconds_ >= rules_.clock.minuteSeconds) {
-        clockSeconds_ -= rules_.clock.minuteSeconds;
-        clockMinutes_ = (clockMinutes_ + 1) % MinutesPerDay;
-    }
-}
-
-void Field::setClockMinutes(std::int32_t minutes) {
-    clockMinutes_ = ((minutes % MinutesPerDay) + MinutesPerDay) % MinutesPerDay;
-    clockSeconds_ = 0.0F;
 }
 
 float Field::fadeLevel() const {

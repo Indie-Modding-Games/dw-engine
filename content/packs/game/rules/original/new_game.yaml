@@ -1,0 +1,11 @@
+# La partida nueva (apps/session: NewGameRules, apps/session/README.md): con qué partner y qué domador empieza.
+# Los stats son los del partner (ataque, defensa, velocidad, cerebro, PV y PM máximos); el resto del partner lo pone
+# game/partner al empezar (care.yaml, life.yaml).
+# main.c: main: una partida nueva cría a Agumon (initializePartner(3)); la respuesta de la introducción puede elegir
+# a Gabumon (0x11, readPStat(0xfe)), que llegará con la historia.
+partner: agum
+# Hueco: el original no da estos stats en initializePartner ni en main_menu.c: initializeDefaultSavegame (falta
+# localizar dónde los pone). Valores provisionales, no del original.
+stats: { hp: 500, mp: 500, offense: 50, defense: 50, speed: 50, brain: 50 }
+# main_menu.c: initializeDefaultSavegame: tamerLevel = 0.
+tamer_level: 0

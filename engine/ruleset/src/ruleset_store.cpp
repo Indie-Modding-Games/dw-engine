@@ -14,6 +14,14 @@ core::Result<RulesetStore> RulesetStore::load(const assets::VirtualFileSystem& v
     return RulesetStore{vfs, std::move(*ruleset), std::move(checks)};
 }
 
+core::Result<RulesetStore> RulesetStore::adopt(const assets::VirtualFileSystem& vfs, Ruleset ruleset,
+                                               SectionChecks checks) {
+    if (auto checked = checkRuleset(ruleset, checks); !checked) {
+        return std::unexpected{checked.error()};
+    }
+    return RulesetStore{vfs, std::move(ruleset), std::move(checks)};
+}
+
 core::Result<void> RulesetStore::reload() {
     return select(std::string{current_.id()});
 }

@@ -6,7 +6,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
-#include <dwe/game/save/autosave.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/localization/catalog.hpp>
@@ -16,9 +15,9 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/rhi/device.hpp>
-#include <dwe/ruleset/game_clock.hpp>
-#include <dwe/ruleset/ruleset_store.hpp>
+#include <dwe/ruleset/ruleset.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/session/game_session.hpp>
 #include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
 #include <dwe/ui/ui_renderer.hpp>
@@ -47,6 +46,8 @@
 #include "frame_stats.hpp"
 #include "language.hpp"
 #include "messages.hpp"
+#include "partner_tab.hpp"
+#include "session_start.hpp"
 #include "text_font_setting.hpp"
 #include "user_settings.hpp"
 
@@ -350,24 +351,17 @@ int runGame(const Options& options) {
         return EXIT_FAILURE;
     }
     const assets::VirtualFileSystem& files = (*content)->files();
-    // The game systems will read their sections from it and give it their checks (docs/architecture/rulesets.md).
-    const ruleset::SectionChecks checks{{std::string{game::save::SaveSectionName}, game::save::saveSectionCheck()}};
-    auto rules = ruleset::RulesetStore::load(files, options.ruleset, checks);
-    if (!rules) {
-        core::logError("{}", core::formatMessage(messages::RulesetFailed, options.ruleset, rules.error().message));
+    // The game session (apps/session): the ruleset, the game clock and the game systems, saved and loaded as one.
+    // The tuning panel tunes its ruleset, sets the speed of its clock, pauses it and jumps it.
+    auto game = startGame(files, options, !autotest);
+    if (!game) {
+        core::logError("{}", game.error().message);
         return EXIT_FAILURE;
     }
-    logRuleset(rules->current());
-    auto clockRules = ruleset::readClockRules(rules->current());
-    if (!clockRules) {
-        core::logError("{}", core::formatMessage(messages::RulesetFailed, options.ruleset, clockRules.error().message));
-        return EXIT_FAILURE;
-    }
-    // The game time of the rulesets (docs/architecture/rulesets.md, "Reloj de juego"): it runs while the field does,
-    // and the tuning panel sets its speed, pauses it and jumps it.
-    ruleset::GameClock gameClock{*clockRules};
-    std::uint64_t clockRevision = rules->revision();
-    (*debugUi)->attachTuning({.files = &files, .store = &*rules, .clock = &gameClock});
+    session::GameSession& session = *game->session;
+    logRuleset(session.rules().current());
+    (*debugUi)->attachTuning({.files = &files, .store = &session.rules(), .clock = &session.clock()});
+    (*debugUi)->addTuningTab(partnerTab(session));
     if (options.tuning) {
         (*debugUi)->openTuning();
     }
@@ -439,12 +433,19 @@ int runGame(const Options& options) {
         (*ui)->show(MainMenuDocument, true);
     }
 
-    auto scene = FieldScene::create(
-        **renderer, files, {.startMap = options.startMap, .startExit = options.startExit, .time = options.time});
+    // A loaded game starts where it was saved, unless --start says otherwise.
+    const std::optional<session::FieldPlace> savedPlace = options.startMap ? std::nullopt : session.savedPlace();
+    auto scene = FieldScene::create(**renderer, files,
+                                    {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
+                                     .startExit = options.startExit,
+                                     .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
+                                     .clock = &session.clock(),
+                                     .time = options.time});
     if (!scene) {
         core::logError("game: {}", scene.error().message);
         return EXIT_FAILURE;
     }
+    session.attachField((*scene)->field());
     loadUserGamepadMappings();
 
     input::InputState input{input::defaultActionMap()};
@@ -583,17 +584,11 @@ int runGame(const Options& options) {
             // The menus pause the field and the game time.
             if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument)) {
                 (*scene)->tick(intent, static_cast<float>(TickSeconds));
-                gameClock.advance(TickSeconds);
+                session.tick(TickSeconds);
+                (*scene)->finishTick();
             }
             input.endTick();
             ++ticksRun;
-        }
-
-        if (rules->revision() != clockRevision) {
-            clockRevision = rules->revision();
-            if (auto changed = ruleset::readClockRules(rules->current()); changed) {
-                gameClock.setRules(*changed);
-            }
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
@@ -638,6 +633,7 @@ int runGame(const Options& options) {
         }
     }
     (*device)->waitIdle();
+    session.detachField();
     if (!autotest) {
         // The locals go in reverse order: the scene and the UI release their textures into the renderer before it.
         return EXIT_SUCCESS;

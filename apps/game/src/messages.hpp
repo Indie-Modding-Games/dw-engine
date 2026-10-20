@@ -35,6 +35,16 @@ inline constexpr std::string_view UnknownSavedTextFont = "game: the saved text f
 // Autotest: a wait for a map change's name that has not come yet (the map id).
 inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";
 
+// The command line (options.cpp).
+inline constexpr std::string_view NewGameOrLoad = "--new-game and --load exclude each other";
+
+// The game session (session_start.cpp, partner_tab.cpp).
+inline constexpr std::string_view SessionFailed = "game: session: {}";
+inline constexpr std::string_view SessionStarted = "game: new game, seed {}";
+inline constexpr std::string_view SessionLoaded = "game: loaded {}";
+inline constexpr std::string_view SessionNoSaves = "game: the game is not saved: {}";
+inline constexpr std::string_view NoGameClock = "field scene: no game clock";
+
 // --list-saves.
 inline constexpr std::string_view CannotMountContent = "cannot mount the content: {}";
 inline constexpr std::string_view CannotReadSaveSettings = "cannot read the save settings: {}";

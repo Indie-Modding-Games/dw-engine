@@ -307,6 +307,21 @@ TEST_CASE("the store switches to another ruleset") {
     CHECK(windowOf(store->current()) == 90);
 }
 
+TEST_CASE("the store adopts a loaded ruleset that passes its checks") {
+    FixturePacks packs;
+    const assets::VirtualFileSystem& files = packs.mount();
+    auto loaded = loadRuleset(files, "small", careChecks());
+    REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
+    REQUIRE(loaded->setValue("care", "hunger.window_minutes", "45").has_value());
+    auto store = RulesetStore::adopt(files, *loaded, careChecks());
+    REQUIRE_MESSAGE(store.has_value(), errorOf(store));
+    CHECK(store->revision() == 1);
+    CHECK(windowOf(store->current()) == 45);
+
+    REQUIRE(loaded->setValue("care", "hunger.window_minutes", "0").has_value());
+    CHECK(errorOf(RulesetStore::adopt(files, *loaded, careChecks())).contains("window_minutes"));
+}
+
 TEST_CASE("quirks are read by name, each true or false") {
     const auto read = [](std::string_view text) {
         const auto node = core::parseYaml(text);

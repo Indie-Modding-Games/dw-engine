@@ -39,6 +39,10 @@ public:
     // New rules after a ruleset change; the state stays.
     void setRules(const PartnerRules& rules) { rules_ = &rules; }
 
+    // Where the partner's random numbers are, for the session's save: a loaded game rolls what the saved one would.
+    [[nodiscard]] std::uint64_t randomState() const { return random_.state(); }
+    void restoreRandomState(std::uint64_t state) { random_.restoreState(state); }
+
     [[nodiscard]] const PartnerState& state() const { return state_; }
     [[nodiscard]] const SpeciesCare& species() const { return *species_; }
     [[nodiscard]] bool alive() const { return state_.life.phase == LifePhase::Alive; }

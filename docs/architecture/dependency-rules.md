@@ -12,7 +12,8 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 4. **Los módulos de `game/` no se usan entre sí directamente.** Se comunican por eventos de `scene` o a través de
    interfaces declaradas en el módulo que las necesita. Así `battle` no se rompe cuando cambia `partner`.
    Lo que comparten todos (el ruleset, sus estrategias y el reloj de juego) está en el servicio `ruleset`
-   ([rulesets](rulesets.md)).
+   ([rulesets](rulesets.md)). El único sitio que los junta es la librería de app `apps/session`
+   ([README](../../apps/session/README.md)): la partida, que el juego y `dwe-sim` usan igual.
 5. **Lua solo ve lo que `script` expone.** La API de Lua es un contrato versionado con semver: los cambios
    incompatibles suben la versión mayor.
 6. **Solo se incluyen headers públicos**: `<dwe/<módulo>/...>`. Nunca `src/` de otro módulo.
@@ -26,6 +27,7 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 | `render`, `audio`, `input`, `assets`, `localization`, `animation`, `scene` | Capas base, `core` y otros sistemas, sin ciclos (`animation`, `render` y `localization` usan `assets`) |
 | `script`, `ui` | Sistemas, base y `core` |
 | `game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
+| `apps/session` | `game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
 | `apps/game`, `apps/editor` | Todo excepto `formats` |
 | `apps/dwx` | `formats`, `assets` y `core` |
 | `formats` | `core` |

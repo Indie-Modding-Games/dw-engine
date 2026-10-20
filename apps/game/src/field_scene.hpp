@@ -13,6 +13,7 @@
 #include <dwe/render/map_scene.hpp>
 #include <dwe/render/model_renderer.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/ruleset/game_clock.hpp>
 #include <dwe/scene/world.hpp>
 
 #include <array>
@@ -29,7 +30,11 @@ struct FieldSceneDesc {
     // The map and exit to start at; field/warps' start when not given.
     std::optional<std::string> startMap;
     std::int32_t startExit = 0;
-    // Start the clock at this time of day instead of the field rules' start hour.
+    // A place on startMap to start at instead of its exit, as a saved game keeps it.
+    std::optional<assets::SpawnPoint> startAt;
+    // The game clock, whose hour gives the time of day; it must outlive the scene.
+    ruleset::GameClock* clock = nullptr;
+    // Jump the clock to this time of day instead of keeping its hour.
     std::optional<render::TimeOfDay> time;
 };
 
@@ -59,8 +64,12 @@ public:
     FieldScene& operator=(FieldScene&&) = delete;
     ~FieldScene();
 
-    // One logic tick with this intent. A warp the player steps on loads its map at once, keeping the partner.
+    // One logic tick of the field with this intent. The owner of the game clock advances it next, by the time the
+    // field played (Field::gameTimeRan), and then calls finishTick.
     void tick(const game::field::FieldInput& input, float seconds);
+    // Ends the tick: follows the clock's time of day, and loads the map of a warp the player stepped on, keeping the
+    // partner.
+    void finishTick();
 
     // Prepares the next frame: advances the animations by frameSeconds (not while paused; a time-of-day fade under
     // way goes on), places the characters between the last two ticks (alpha from core::FixedStep) and points the
@@ -115,7 +124,8 @@ private:
 
     core::Result<std::unique_ptr<Actor>> loadActor(std::string_view characterId, scene::Entity entity,
                                                    const game::field::MoverRules& rules);
-    core::Result<void> enterMap(const std::string& mapId, std::int32_t exit);
+    core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
+                                std::optional<assets::SpawnPoint> at = std::nullopt);
     void animate(Actor& actor, double seconds);
     void submit(const Actor& actor, float alpha);
     void followClock();
@@ -134,6 +144,7 @@ private:
     render::TimeOfDay time_ = render::TimeOfDay::Day;
     // The field rules' hours and light scales.
     render::TimeOfDaySchedule schedule_;
+    const ruleset::GameClock* clock_ = nullptr;
     std::int32_t clockHour_ = 0;
     bool fixedTime_ = false;
     // The map's own lights, and how long until the time of day's change reaches them: the original switches them

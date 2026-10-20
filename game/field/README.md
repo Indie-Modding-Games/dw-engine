@@ -46,7 +46,11 @@ if (auto change = field.takeMapChange()) {
 - `field/rules` (`content/packs/game/field/rules.yaml`, [esquema](../../content/schemas/field_rules.schema.json)):
   radios, velocidades y giro del jugador y del partner, las distancias de seguimiento, el rastro y los límites para
   desatascarlo, la zona muerta del stick, el cambio de mapa (fotogramas, tonos del fundido y fotograma del nombre),
-  el reloj y las horas del día.
+  y las horas del día.
+
+El campo no tiene reloj propio: `gameTimeRan()` dice si el último tick corrió tiempo de juego (no lo corre durante
+un cambio de mapa, `tamer.c: stopGameTime`/`startGameTime`), y quien lleva el bucle avanza `ruleset::GameClock` con
+él. En el juego lo hace la partida ([apps/session](../../apps/session/README.md)).
 - `field/warps` (`content/packs/game/field/warps.yaml`, [esquema](../../content/schemas/field_warps.schema.json)): el
   mapa y la salida de inicio, y los warps que en el original hacía un script, cada uno con su prueba.
 

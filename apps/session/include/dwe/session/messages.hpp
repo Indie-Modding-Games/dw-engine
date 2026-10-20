@@ -1,0 +1,49 @@
+#pragma once
+
+#include <dwe/core/message.hpp>
+
+#include <string_view>
+
+// The error and log messages of the session, as std::format templates for core::formatMessage.
+namespace dwe::session::messages {
+
+using core::formatMessage;
+
+// The session's ruleset sections.
+inline constexpr std::string_view NewGameSectionText = "the new_game section";
+inline constexpr std::string_view TamerSectionText = "the tamer section";
+inline constexpr std::string_view StatsText = "stats";
+inline constexpr std::string_view NegativeValue = "{} cannot be negative";
+inline constexpr std::string_view InFile = "{}: {}";
+inline constexpr std::string_view LevelLimitsReversed = "level_min ({}) is above level_max ({})";
+inline constexpr std::string_view StartLevelOutside = "tamer_level {} is outside the tamer section's {} to {}";
+
+// Setting up a session.
+inline constexpr std::string_view NoFiles = "a session needs the packs";
+inline constexpr std::string_view RulesetFailed = "ruleset '{}': {}";
+inline constexpr std::string_view SpeciesFailed = "the species tables: {}";
+inline constexpr std::string_view SaveSettingsFailed = "save/settings: {}";
+inline constexpr std::string_view UnknownStartSpecies = "new_game: partner '{}' has no raise row";
+
+// Saving and loading.
+inline constexpr std::string_view NoStorage = "this session has no save storage";
+inline constexpr std::string_view NoPartner = "no game is running: start a new game or load one";
+inline constexpr std::string_view LoadFailed = "loading {}: {}";
+inline constexpr std::string_view SaveFailed = "saving {}: {}";
+inline constexpr std::string_view AutosaveFailed = "autosave: {}";
+inline constexpr std::string_view Autosaved = "session: autosaved to {}";
+inline constexpr std::string_view RulesChanged = "session: ruleset revision {} read";
+inline constexpr std::string_view RulesRefused =
+    "session: the ruleset's new values cannot be used, the old ones stay: {}";
+inline constexpr std::string_view RebirthFailed = "session: the partner could not be reborn: {}";
+inline constexpr std::string_view NotSleepy = "the partner is not sleepy";
+
+// The session's save sections.
+inline constexpr std::string_view ClockStateText = "the clock state";
+inline constexpr std::string_view TamerStateText = "the tamer state";
+inline constexpr std::string_view FieldStateText = "the field state";
+inline constexpr std::string_view RandomStateText = "the random state";
+inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
+inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
+
+} // namespace dwe::session::messages

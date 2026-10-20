@@ -54,10 +54,6 @@ transition:
   # tamer.c: tamerTickChangeMap muestra el nombre del mapa nuevo cuando FADE_OUT_CURRENT es 10
   # (map.c: addMapNameObject) y lo quita al cargarlo.
   name_frame: 10
-# El reloj del juego (clock.c: tickGameClock): un minuto cada 20 imágenes; una partida nueva empieza a las 8:00.
-clock:
-  start_hour: 8
-  minute_seconds: 1.0
 # Las horas del día (map.c: updateTimeOfDay): el día empieza a las 6, el atardecer a las 16 y la noche a las 20, y
 # la paleta del fondo sólo cambia justo a esas horas (map.c: renderMap). Al atardecer las tres luces del mapa
 # conservan 7/10 del verde y del azul; de noche, 5/10 de cada canal (rojo, verde, azul).

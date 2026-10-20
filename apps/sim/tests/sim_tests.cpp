@@ -1,5 +1,8 @@
 #include <dwe/content/game_content.hpp>
+#include <dwe/game/partner/species.hpp>
 #include <dwe/ruleset/random.hpp>
+#include <dwe/ruleset/ruleset_store.hpp>
+#include <dwe/sim/headless_session.hpp>
 #include <dwe/sim/report.hpp>
 #include <dwe/sim/runner.hpp>
 #include <dwe/sim/scenario.hpp>
@@ -243,6 +246,41 @@ TEST_CASE("an unknown scenario names the known ones") {
     const auto report = simulate(standInFiles(), builtInScenarios(), optionsFor("battles"));
     REQUIRE_FALSE(report.has_value());
     CHECK(errorOf(report).contains("unknown scenario 'battles'; known: clock, ruleset-diff"));
+}
+
+TEST_CASE("a headless session plays a new game on the scenario's ruleset, the same for the same seed") {
+    auto store = ruleset::RulesetStore::load(standInFiles(), ruleset::OriginalRuleset);
+    REQUIRE_MESSAGE(store.has_value(), errorOf(store));
+    // A value set with --set reaches the session.
+    REQUIRE(store->setValue("tamer", "level_max", "7").has_value());
+    const ScenarioContext context{
+        .files = &standInFiles(), .rules = &store->current(), .days = 1, .speed = 3600.0, .parameters = nullptr};
+    // The stand-in base pack has no species: a made-up start partner.
+    game::partner::SpeciesTable species;
+    game::partner::SpeciesCare start;
+    start.id = "agum";
+    start.level = game::partner::Level::Rookie;
+    start.energyCap = 60;
+    start.defaultWeight = 20;
+    species.add(std::move(start));
+    const auto sessions =
+        HeadlessSessions::prepare(context, std::make_shared<const game::partner::SpeciesTable>(std::move(species)));
+    REQUIRE_MESSAGE(sessions.has_value(), errorOf(sessions));
+
+    auto first = sessions->start(5);
+    auto second = sessions->start(5);
+    REQUIRE_MESSAGE(first.has_value(), errorOf(first));
+    REQUIRE_MESSAGE(second.has_value(), errorOf(second));
+    CHECK((*first)->sessionRules().tamer.levelMax == 7);
+    CHECK((*first)->clock().speed() == doctest::Approx(3600.0));
+    constexpr double Tick = 0.1;
+    constexpr int Ticks = 60;
+    for (int tick = 0; tick < Ticks; ++tick) {
+        (*first)->tick(Tick);
+        (*second)->tick(Tick);
+    }
+    CHECK((*first)->partner().state() == (*second)->partner().state());
+    CHECK((*first)->clock().time() == (*second)->clock().time());
 }
 
 } // namespace dwe::sim

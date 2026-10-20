@@ -92,9 +92,10 @@ public:
     // (tamer.c: tamerTickChangeMap, map.c: addMapNameObject). Nothing otherwise.
     [[nodiscard]] std::optional<std::string_view> mapNameShown() const;
 
-    // The game clock, in minutes since midnight (0 to 1439).
-    [[nodiscard]] std::int32_t clockMinutes() const { return clockMinutes_; }
-    void setClockMinutes(std::int32_t minutes);
+    // Whether game time ran during the last tick. The field has no clock of its own: whoever owns the game clock
+    // (ruleset::GameClock) advances it by the tick only then. The original stops game time for a map change, from
+    // the warp until the fade in gives the player back control (tamer.c: stopGameTime, startGameTime).
+    [[nodiscard]] bool gameTimeRan() const { return gameTimeRan_; }
 
     // The trigger cells the player stepped onto during the last tick.
     [[nodiscard]] std::span<const TriggerStep> triggerSteps() const { return triggerSteps_; }
@@ -142,7 +143,6 @@ private:
     // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
     // FADE_IN_CURRENT).
     [[nodiscard]] std::int32_t fadeFrame(float seconds) const;
-    void advanceClock(float seconds);
     void updateTrail();
     void movePartner(float seconds);
     void placePartnerNearPlayer();
@@ -175,8 +175,7 @@ private:
     // How long the fade in after entering a map has run; nothing once it ends.
     std::optional<float> fadeInSeconds_;
 
-    std::int32_t clockMinutes_ = 0;
-    float clockSeconds_ = 0.0F;
+    bool gameTimeRan_ = false;
     std::vector<TriggerStep> triggerSteps_;
 
     assets::CollisionCell lastPlayerCell_;

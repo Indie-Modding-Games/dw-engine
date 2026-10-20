@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/math.hpp>
+#include <dwe/game/save/slots.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ui/text_font.hpp>
@@ -38,6 +39,12 @@ struct Options {
     // The field's start, instead of field/warps (--start <map>[,<exit>]).
     std::optional<std::string> startMap;
     int startExit = 0;
+    // How the game starts: a new game (--new-game, also when nothing is given) or a saved one (--load <slot>, as
+    // slot_01 or autosave_01).
+    bool newGame = false;
+    std::optional<game::save::SlotId> load;
+    // The game clock's speed (--clock-speed <x>): 1 is the original's, 60 a game hour per real minute.
+    std::optional<double> clockSpeed;
     // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour when not given.
     std::optional<render::TimeOfDay> time;
     // The font of "original look" text (--text-font modern|original), instead of the packs' default; for autotests.
@@ -72,7 +79,8 @@ struct Options {
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
-    "[--text-font modern|original] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
+    "[--text-font modern|original] [--new-game | --load <slot>] [--clock-speed <x>] "
+    "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
