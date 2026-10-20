@@ -1,0 +1,17 @@
+# El reloj del juego (docs/reference/care.md, "El reloj"). El original cuenta el tiempo en fotogramas de su bucle, y
+# las reglas de cuidado van cada tantos fotogramas, así que el reloj conserva esa unidad.
+# main.c: gameLoop espera tres retrazados por fotograma (VSync(3)): unos 20 fotogramas por segundo en NTSC
+# (docs/reference/campo.md, "Ritmo").
+frames_per_second: 20
+# clock.c: tickGameClock suma un minuto cada 20 fotogramas (CURRENT_FRAME % 20): 1200 son una hora y 28 800 un día.
+frames_per_minute: 20
+# clock.c: tickGameClock: el día vuelve a 0 y el año sube al llegar a 30 días.
+days_per_year: 30
+# clock.c: tickGameClock: el año vuelve a 0 al llegar a 100.
+year_limit: 100
+# clock.c: initializeClockData: una partida nueva empieza el año 0, día 0, a las 8:00 (CURRENT_FRAME = 9600).
+start:
+  year: 0
+  day: 0
+  hour: 8
+  minute: 0

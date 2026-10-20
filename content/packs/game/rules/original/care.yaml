@@ -1,0 +1,28 @@
+# Cuidado del partner (docs/reference/care.md). Primera versión: solo unas constantes del hambre y del sueño, para
+# probar el formato de punta a punta; el sistema del partner completa la sección cuando llega. Los tiempos van en
+# minutos de juego (20 fotogramas cada uno, ver clock.yaml).
+hunger:
+  # partner_impl.c: setFoodTimer: un bebé (nivel 1) tiene hambre cada 2 horas (HOUR / 2 * 2 + 2).
+  baby_interval_hours: 2
+  # partner_impl.c: setFoodTimer: uno de entrenamiento (nivel 2) cada 3 horas (HOUR / 3 * 3 + 3).
+  in_training_interval_hours: 3
+  # partner_impl.c: tickHungerMechanics: la ventana empieza con starvationTimer = 180 y baja 1 cada 10 fotogramas:
+  # 1800 fotogramas, hora y media.
+  window_minutes: 90
+  # partner_impl.c: tickHungerMechanics: con la energía a 0, el peso baja 1 cada 200 fotogramas.
+  starving_weight_loss_minutes: 10
+sleep:
+  # partner_impl.c: tickSleepMechanics: cada minuto (CURRENT_FRAME % 20) el contador de sueño suma cansancio × 3 / 10.
+  tiredness_percent_per_minute: 30
+  # partner_impl.c: tickSleepMechanics: con el contador en 180 o más, cada 200 fotogramas se quitan 10 minutos de
+  # vigilia (timeAwakeToday cuenta en bloques de 10 minutos) y el contador vuelve a 0.
+  tiredness_threshold: 180
+  awake_cut_minutes: 10
+# Rarezas del original (docs/reference/care.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
+quirks:
+  # partner_impl.c: handleSleeping quita el hambre (condition &= ~4) antes de mirarla para bajar el peso, así que
+  # dormirse con hambre nunca baja el peso.
+  sleeping_hungry_keeps_weight: true
+  # partner_impl.c: handleSleeping suma al contador de evolución las horas de sueño por defecto (hoursAsleepDefault),
+  # aunque durmiera menos.
+  sleep_adds_default_hours_to_evolution: true

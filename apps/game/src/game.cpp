@@ -3,6 +3,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
@@ -10,6 +11,7 @@
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/ruleset/ruleset_store.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
@@ -37,6 +39,7 @@
 #include "content.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
+#include "messages.hpp"
 
 namespace dwe::app {
 namespace {
@@ -215,6 +218,19 @@ bool isPointerOrKey(const platform::Event& event) {
            std::holds_alternative<platform::MouseWheelMoved>(event);
 }
 
+// Logs which ruleset the game plays with, and where each of its sections comes from.
+void logRuleset(const ruleset::Ruleset& rules) {
+    std::string sections;
+    for (const auto& [name, section] : rules.sections()) {
+        if (!sections.empty()) {
+            sections += messages::ListSeparator;
+        }
+        sections += core::formatMessage(messages::RulesetSection, name, section.owner);
+    }
+    const ruleset::RulesetInfo& info = rules.info();
+    core::logInfo("{}", core::formatMessage(messages::RulesetActive, info.id, info.version, info.name, sections));
+}
+
 } // namespace
 
 int runGame(const Options& options) {
@@ -270,6 +286,13 @@ int runGame(const Options& options) {
         return EXIT_FAILURE;
     }
     const assets::VirtualFileSystem& files = (*content)->files();
+    // The game systems will read their sections from it and give it their checks (docs/architecture/rulesets.md).
+    auto rules = ruleset::RulesetStore::load(files, options.ruleset);
+    if (!rules) {
+        core::logError("{}", core::formatMessage(messages::RulesetFailed, options.ruleset, rules.error().message));
+        return EXIT_FAILURE;
+    }
+    logRuleset(rules->current());
     auto uiRenderer = ui::UiRenderer::create(**renderer);
     if (!uiRenderer) {
         core::logError("{}", uiRenderer.error().message);

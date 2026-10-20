@@ -2,6 +2,7 @@
 
 #include <dwe/core/math.hpp>
 #include <dwe/render/map_scene.hpp>
+#include <dwe/ruleset/ruleset.hpp>
 
 #include <filesystem>
 #include <optional>
@@ -19,6 +20,8 @@ struct Options {
     std::filesystem::path content = "content";
     // Folders with more packs, such as mods (--mods, may repeat). The VFS stacks them by layer and priority.
     std::vector<std::filesystem::path> mods;
+    // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
+    std::string ruleset{dwe::ruleset::OriginalRuleset};
     // Set by --check-content: open every asset of the folder's packs and quit, without a window.
     bool checkContent = false;
     int width = 1280;
@@ -55,11 +58,14 @@ struct Options {
 };
 
 inline constexpr std::string_view Usage =
-    "dwe-game [--content <folder>] [--mods <folder>]... [--size <width>x<height>] [--fullscreen] [--no-vsync] "
-    "[--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> [--shots <folder>] [--skip-steps "
+    "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--size <width>x<height>] [--fullscreen] "
+    "[--no-vsync] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> [--shots <folder>] "
+    "[--skip-steps "
     "<kind>[,<kind>...]]] | "
     "--check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] [--focus <x>,<z>] | "
     "--ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
+
+inline constexpr std::string_view RulesetOption = "--ruleset";
 
 // Reads the command line; logs what is wrong and gives nothing for a bad one.
 std::optional<Options> parseOptions(std::span<char* const> arguments);

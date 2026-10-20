@@ -21,7 +21,8 @@ engine/
 │  ├─ scene/
 │  ├─ script/
 │  ├─ ui/
-│  └─ debug/                consola y paneles de desarrollo (Dear ImGui)
+│  ├─ debug/                consola y paneles de desarrollo (Dear ImGui)
+│  └─ ruleset/              formato de ruleset, estrategias por nombre y reloj de juego
 ├─ game/                    reglas del juego
 │  ├─ partner/              cuidado, vida, evolución
 │  ├─ battle/

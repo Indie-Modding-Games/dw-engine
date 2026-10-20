@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset manifest",
+  "description": "rules/<id>/ruleset.yaml of a pack: a ruleset, the tables it uses and its sections (docs/architecture/rulesets.md). engine/ruleset/src/ruleset.cpp applies the same rules, and also that the id is the name of the folder.",
+  "type": "object",
+  "required": ["id", "name", "version", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "description": "The ruleset's id: the name of its folder under rules/.", "$ref": "#/$defs/name" },
+    "name": { "description": "The name shown to players and designers.", "type": "string", "minLength": 1 },
+    "version": {
+      "description": "A semantic version, MAJOR.MINOR.PATCH.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "description": { "type": "string" },
+    "extends": {
+      "description": "Another ruleset whose sections, tables and scripts this one starts from; its own replace them, section by section and table by table.",
+      "$ref": "#/$defs/name",
+      "assetReference": "rules/{}/ruleset"
+    },
+    "tables": {
+      "description": "The tables of the packs the ruleset uses, by role: digimon, evolution, raise, training, moves, items... Each value is an asset id.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/name" },
+      "additionalProperties": { "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$", "assetReference": "{}" }
+    },
+    "sections": {
+      "description": "The sections this ruleset defines, each in rules/<id>/<section>.yaml with its schema ruleset_<section>.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/name", "assetReference": "./{}" }
+    },
+    "scripts": {
+      "description": "Lua files of the ruleset's folder, for strategies written in Lua.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9_]+\\.lua$", "assetReference": "./{}" }
+    }
+  },
+  "$defs": {
+    "name": {
+      "description": "Lowercase letters, digits and underscores.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    }
+  }
+}

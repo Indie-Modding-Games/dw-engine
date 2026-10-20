@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: clock",
+  "description": "rules/<id>/clock.yaml: the game clock (engine/ruleset: GameClock, docs/reference/care.md). Time is counted in frames of the original's game loop.",
+  "type": "object",
+  "required": ["frames_per_second", "frames_per_minute", "days_per_year", "year_limit", "start"],
+  "additionalProperties": false,
+  "properties": {
+    "frames_per_second": { "description": "Frames per real second at normal speed.", "type": "number", "exclusiveMinimum": 0 },
+    "frames_per_minute": { "description": "Frames per game minute.", "type": "integer", "minimum": 1 },
+    "days_per_year": { "description": "Days per game year.", "type": "integer", "minimum": 1 },
+    "year_limit": { "description": "The year goes back to 0 when it reaches this.", "type": "integer", "minimum": 1 },
+    "start": {
+      "description": "When a new game starts.",
+      "type": "object",
+      "required": ["year", "day", "hour", "minute"],
+      "additionalProperties": false,
+      "properties": {
+        "year": { "type": "integer", "minimum": 0 },
+        "day": { "type": "integer", "minimum": 0 },
+        "hour": { "type": "integer", "minimum": 0, "maximum": 23 },
+        "minute": { "type": "integer", "minimum": 0, "maximum": 59 }
+      }
+    }
+  }
+}

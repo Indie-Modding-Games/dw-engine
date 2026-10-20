@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: care",
+  "description": "rules/<id>/care.yaml: the partner's care (docs/reference/care.md). Times in game minutes. A first version with a few constants; the partner system completes it.",
+  "type": "object",
+  "required": ["hunger", "sleep", "quirks"],
+  "additionalProperties": false,
+  "properties": {
+    "hunger": {
+      "type": "object",
+      "required": ["baby_interval_hours", "in_training_interval_hours", "window_minutes", "starving_weight_loss_minutes"],
+      "additionalProperties": false,
+      "properties": {
+        "baby_interval_hours": { "description": "A baby is hungry every this many hours.", "type": "integer", "minimum": 1, "maximum": 24 },
+        "in_training_interval_hours": { "description": "An in-training partner is hungry every this many hours.", "type": "integer", "minimum": 1, "maximum": 24 },
+        "window_minutes": { "description": "How long the partner asks for food; unfed by then is a care mistake.", "type": "integer", "minimum": 1 },
+        "starving_weight_loss_minutes": { "description": "With no energy left, the weight goes down 1 every this many minutes.", "type": "integer", "minimum": 1 }
+      }
+    },
+    "sleep": {
+      "type": "object",
+      "required": ["tiredness_percent_per_minute", "tiredness_threshold", "awake_cut_minutes"],
+      "additionalProperties": false,
+      "properties": {
+        "tiredness_percent_per_minute": { "description": "Each minute this percent of the tiredness adds to the sleep counter.", "type": "integer", "minimum": 0 },
+        "tiredness_threshold": { "description": "With the sleep counter at this, the time awake is cut and the counter starts again.", "type": "integer", "minimum": 1 },
+        "awake_cut_minutes": { "description": "How much time awake each cut takes away.", "type": "integer", "minimum": 1 }
+      }
+    },
+    "quirks": {
+      "description": "The original's oddities: true reproduces the original, false fixes it.",
+      "type": "object",
+      "required": ["sleeping_hungry_keeps_weight", "sleep_adds_default_hours_to_evolution"],
+      "additionalProperties": false,
+      "properties": {
+        "sleeping_hungry_keeps_weight": { "description": "Falling asleep hungry never costs weight: the hunger is cleared before it is checked.", "type": "boolean" },
+        "sleep_adds_default_hours_to_evolution": { "description": "Sleeping adds the default sleep hours to the evolution counter, however long the partner slept.", "type": "boolean" }
+      }
+    }
+  }
+}

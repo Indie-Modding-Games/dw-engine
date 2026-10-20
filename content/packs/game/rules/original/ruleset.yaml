@@ -1,0 +1,17 @@
+# El ruleset del juego original (ADR 0022): sus reglas tal como están en el decomp y en las tablas que extrae dwx.
+# Formato: docs/architecture/rulesets.md. Cada sistema añade aquí su sección cuando llega.
+id: original
+name: "Original"
+version: 0.1.0
+description: "Las reglas del juego original, con sus rarezas, como punto de partida y de comparación."
+# Las tablas por Digimon, técnica u objeto no se copian: son las del paquete base que extrae dwx.
+tables:
+  digimon: data/digimon
+  evolution: data/evolution
+  raise: data/raise
+  training: data/training
+  moves: data/moves
+  items: data/items
+sections:
+  - clock
+  - care

@@ -11,6 +11,8 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 3. **`game/*` no conoce Vulkan ni SDL.** Pide cosas a `render`, `audio`, `input`, `ui` o `scene` a través de sus APIs públicas.
 4. **Los módulos de `game/` no se usan entre sí directamente.** Se comunican por eventos de `scene` o a través de
    interfaces declaradas en el módulo que las necesita. Así `battle` no se rompe cuando cambia `partner`.
+   Lo que comparten todos (el ruleset, sus estrategias y el reloj de juego) está en el servicio `ruleset`
+   ([rulesets](rulesets.md)).
 5. **Lua solo ve lo que `script` expone.** La API de Lua es un contrato versionado con semver: los cambios
    incompatibles suben la versión mayor.
 6. **Solo se incluyen headers públicos**: `<dwe/<módulo>/...>`. Nunca `src/` de otro módulo.

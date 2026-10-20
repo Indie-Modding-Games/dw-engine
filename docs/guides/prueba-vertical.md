@@ -25,6 +25,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 |---|---|
 | `--content <carpeta>` | Paquetes del juego (por defecto `content`) |
 | `--mods <carpeta>` | Más paquetes, como mods; se puede repetir. La VFS los apila por capa y prioridad |
+| `--ruleset <id>` | El ruleset con el que se juega, `rules/<id>/` de los paquetes (por defecto `original`, ver [rulesets](../architecture/rulesets.md)) |
 | `--size <ancho>x<alto>` | Tamaño de la ventana (por defecto 1280x720) |
 | `--fullscreen` | Empieza a pantalla completa |
 | `--no-vsync` | Presenta cada frame en cuanto está listo (para medir fps) |
