@@ -30,6 +30,9 @@ struct BitstreamHeader {
 // Reads and checks the header: the 0x3800 marker, a quantisation scale of 1..63 and version 2 or 3.
 core::Result<BitstreamHeader> readBitstreamHeader(std::span<const std::byte> bitstream);
 
+// The number of 16x16 macroblocks in a frame of this size. Fails unless both sides are non-zero multiples of 16.
+core::Result<std::size_t> countMacroblocks(std::uint32_t width, std::uint32_t height);
+
 // Turns a frame's bitstream into MDEC codes, as DecDCTvlc2 does. Per block, in the order Cr, Cb, Y0..Y3 of each
 // macroblock: a DC code (quantisation scale in the top 6 bits, signed DC in the bottom 10), one code per run of zeros
 // and level (run in the top 6 bits, signed level in the bottom 10) and MdecEndOfBlock. Version 2 stores each DC as

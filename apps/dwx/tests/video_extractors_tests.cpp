@@ -69,11 +69,18 @@ Bytes rawSector(std::span<const std::byte> data, SectorForm form, std::uint8_t m
     return sector;
 }
 
-Bytes videoSector(std::uint32_t number, const Bytes& frame, std::uint16_t sectorsInFrame = 1) {
+struct FrameSize {
+    std::uint16_t width = 16;
+    std::uint16_t height = 16;
+};
+
+Bytes videoSector(std::uint32_t number, const Bytes& frame, std::uint16_t sectorsInFrame = 1, FrameSize size = {}) {
     const auto data = fixtures::makeVideoSectorData({.sectorInFrame = 0,
                                                      .sectorsInFrame = sectorsInFrame,
                                                      .frameNumber = number,
                                                      .frameBytes = static_cast<std::uint32_t>(frame.size()),
+                                                     .width = size.width,
+                                                     .height = size.height,
                                                      .headm = wordAt(frame, 0),
                                                      .headv = wordAt(frame, 4)},
                                                     frame);
@@ -201,6 +208,39 @@ TEST_CASE("frames that do not decode or end early are unknowns") {
     CHECK(extraction->unknowns[2] == "the file has no frames");
     // No frame is left: only the audio and the document.
     CHECK(extraction->outputs.size() == 2);
+}
+
+TEST_CASE("frames whose size is not made of macroblocks are unknowns") {
+    auto sectors = MovieDisc::goodSectors();
+    // One macroblock's worth of bitstream: only the size tells these frames apart from a good one.
+    sectors[0] = videoSector(1, frameBitstream(), 1, {.width = 24, .height = 16});
+    sectors[3] = videoSector(3, frameBitstream(), 1, {.width = 0, .height = 0});
+    sectors[5] = videoSector(2, frameBitstream());
+    const MovieDisc fixture{sectors};
+    const Disc disc = fixture.disc();
+    const auto extraction = extractMovie(disc, fixture.volume.files.front());
+    REQUIRE_MESSAGE(extraction.has_value(), errorOf(extraction));
+    REQUIRE(extraction->unknowns.size() == 2);
+    CHECK(extraction->unknowns[0].find("frame 1") != std::string::npos);
+    CHECK(extraction->unknowns[0].find("24x16") != std::string::npos);
+    CHECK(extraction->unknowns[1].find("frame 3") != std::string::npos);
+    CHECK(extraction->unknowns[1].find("0x0") != std::string::npos);
+
+    // The good frame after them is the movie's only one, and the video it gives writes to the end.
+    const OutputFile& video = outputOf(*extraction, "movie/a/video");
+    REQUIRE(video.stream);
+    std::size_t size = 0;
+    const auto streamed = video.stream([&](std::span<const std::byte> part) -> dwe::core::Result<void> {
+        size += part.size();
+        return {};
+    });
+    REQUIRE_MESSAGE(streamed.has_value(), errorOf(streamed));
+    CHECK(size > 0);
+    const auto yaml = dwe::core::parseYaml(textOf(outputOf(*extraction, "movie/a/movie").bytes));
+    REQUIRE_MESSAGE(yaml.has_value(), errorOf(yaml));
+    CHECK(yaml->find("video")->find("frames")->text() == "1");
+    CHECK(yaml->find("video")->find("first_frame")->text() == "2");
+    CHECK(yaml->find("video")->find("width")->text() == "16");
 }
 
 TEST_CASE("a movie needs a raw image") {

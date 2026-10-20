@@ -84,6 +84,13 @@ struct Demux {
 };
 
 void addFrame(Demux& demux, StrFrame frame, std::uint32_t start, Problems& problems) {
+    // The size is checked here, not only when the video is written: a frame the writer cannot decode would stop the
+    // pack halfway through the file.
+    const auto macroblocks = formats::video::countMacroblocks(frame.width, frame.height);
+    if (!macroblocks) {
+        problems.add(std::format("frame {} is left out: {}", frame.number, macroblocks.error().message));
+        return;
+    }
     MovieInfo& info = demux.info;
     if (demux.frames.empty()) {
         info.width = frame.width;
@@ -96,8 +103,7 @@ void addFrame(Demux& demux, StrFrame frame, std::uint32_t start, Problems& probl
     } else if (frame.number != demux.frames.back().number + 1) {
         problems.add(std::format("frame {} follows frame {}", frame.number, demux.frames.back().number));
     }
-    const std::size_t macroblocks = (std::size_t{frame.width} / 16) * (std::size_t{frame.height} / 16);
-    const auto codes = formats::video::decodeBitstream(frame.bitstream, macroblocks);
+    const auto codes = formats::video::decodeBitstream(frame.bitstream, *macroblocks);
     if (!codes) {
         problems.add(std::format("frame {} does not decode and is left out: {}", frame.number, codes.error().message));
         return;

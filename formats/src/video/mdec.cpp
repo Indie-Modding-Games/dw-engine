@@ -504,10 +504,17 @@ core::Result<std::vector<std::uint16_t>> decodeBitstream(std::span<const std::by
     return codes;
 }
 
-core::Result<YCbCrFrame> decodeMacroblocks(std::span<const std::uint16_t> codes, std::uint32_t width,
-                                           std::uint32_t height) {
+core::Result<std::size_t> countMacroblocks(std::uint32_t width, std::uint32_t height) {
     if (width == 0 || height == 0 || width % 16 != 0 || height % 16 != 0) {
         return core::fail(std::format("a frame of {}x{} is not made of 16x16 macroblocks", width, height));
+    }
+    return std::size_t{width / 16} * (height / 16);
+}
+
+core::Result<YCbCrFrame> decodeMacroblocks(std::span<const std::uint16_t> codes, std::uint32_t width,
+                                           std::uint32_t height) {
+    if (const auto count = countMacroblocks(width, height); !count) {
+        return std::unexpected{count.error()};
     }
     YCbCrFrame frame{.width = width,
                      .height = height,
@@ -537,10 +544,11 @@ core::Result<YCbCrFrame> decodeMacroblocks(std::span<const std::uint16_t> codes,
 }
 
 core::Result<YCbCrFrame> decodeFrame(std::span<const std::byte> bitstream, std::uint32_t width, std::uint32_t height) {
-    if (width == 0 || height == 0 || width % 16 != 0 || height % 16 != 0) {
-        return core::fail(std::format("a frame of {}x{} is not made of 16x16 macroblocks", width, height));
+    const auto count = countMacroblocks(width, height);
+    if (!count) {
+        return std::unexpected{count.error()};
     }
-    const auto codes = decodeBitstream(bitstream, std::size_t{width / 16} * (height / 16));
+    const auto codes = decodeBitstream(bitstream, *count);
     if (!codes) {
         return std::unexpected{codes.error()};
     }

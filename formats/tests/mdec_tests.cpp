@@ -183,6 +183,21 @@ TEST_CASE("malformed bitstreams are errors") {
     }
 }
 
+TEST_CASE("a frame is made of whole 16x16 macroblocks") {
+    CHECK(countMacroblocks(320, 240).value_or(0) == 300);
+    CHECK(countMacroblocks(16, 16).value_or(0) == 1);
+    CHECK_FALSE(countMacroblocks(0, 16).has_value());
+    CHECK_FALSE(countMacroblocks(16, 0).has_value());
+    CHECK_FALSE(countMacroblocks(24, 16).has_value());
+    CHECK_FALSE(countMacroblocks(320, 232).has_value());
+    // A 24x16 frame would round down to the one macroblock this bitstream holds.
+    BitWriter bits;
+    writeEmptyMacroblock(bits);
+    const auto stream = fixtures::makeBitstream(3, 1, 12, bits);
+    CHECK(decodeFrame(stream, 16, 16).has_value());
+    CHECK_FALSE(decodeFrame(stream, 24, 16).has_value());
+}
+
 TEST_CASE("the IDCT of a DC-only block is flat") {
     std::array<std::int16_t, 64> coefficients{};
     coefficients[0] = 3192; // level 100 dequantised: 100 * 2 * 16 - 8
