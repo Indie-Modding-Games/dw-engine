@@ -2,6 +2,7 @@
 
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/texture.hpp>
 #include <dwe/core/log.hpp>
 
 #include <imgui.h>
@@ -16,6 +17,7 @@
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace dwe::debug {
 namespace {
@@ -26,6 +28,49 @@ constexpr int MaxZoom = 16;
 constexpr std::uint32_t PreviewSide = 512;
 constexpr std::string_view TopLevelGroup = "(top level)";
 constexpr ImVec4 ErrorColor{1.0F, 0.4F, 0.4F, 1.0F};
+
+// A preview texture on the GPU and how its file stores it.
+struct Upload {
+    rhi::Texture texture;
+    std::string_view stored;
+};
+
+core::Result<Upload> uploadPng(rhi::Device& device, std::span<const std::byte> bytes) {
+    const auto image = assets::decodePng(bytes);
+    if (!image) {
+        return std::unexpected{image.error()};
+    }
+    // UNORM, like the swapchain: the pixels already hold sRGB values and the debug UI draws them as they are.
+    const std::array levels{std::span<const std::byte>{image->pixels}};
+    auto texture = rhi::Texture::create(
+        device,
+        {.format = rhi::TextureFormat::Rgba8Unorm, .width = image->width, .height = image->height, .levels = levels});
+    if (!texture) {
+        return std::unexpected{texture.error()};
+    }
+    return Upload{.texture = std::move(*texture), .stored = "PNG"};
+}
+
+// Transcodes a cooked texture to BC7 if the GPU samples it, and to RGBA8 if not.
+core::Result<Upload> uploadKtx2(rhi::Device& device, std::span<const std::byte> bytes) {
+    const bool bc7 = device.supportsBc7();
+    const auto data = assets::decodeKtx2(bytes, bc7 ? assets::TexelEncoding::Bc7 : assets::TexelEncoding::Rgba8);
+    if (!data) {
+        return std::unexpected{data.error()};
+    }
+    // UNORM even for sRGB colour, as with PNGs: the debug UI draws the stored values as they are.
+    const std::vector<std::span<const std::byte>> levels{data->levels.begin(), data->levels.end()};
+    auto texture =
+        rhi::Texture::create(device, {.format = bc7 ? rhi::TextureFormat::Bc7Unorm : rhi::TextureFormat::Rgba8Unorm,
+                                      .width = data->width,
+                                      .height = data->height,
+                                      .levels = levels});
+    if (!texture) {
+        return std::unexpected{texture.error()};
+    }
+    return Upload{.texture = std::move(*texture),
+                  .stored = bc7 ? "KTX2 UASTC, transcoded to BC7" : "KTX2 UASTC, transcoded to RGBA8"};
+}
 
 std::string_view groupOf(std::string_view id) {
     const std::size_t slash = id.find('/');
@@ -119,7 +164,7 @@ void AssetViewer::select(const assets::VirtualFileSystem& vfs, const assets::Ass
     previewError_.clear();
     selected_ = id;
     const assets::AssetSource* source = vfs.resolve(id);
-    if (source == nullptr || source->file.extension() != ".png") {
+    if (source == nullptr || (source->file.extension() != ".png" && source->file.extension() != ".ktx2")) {
         return;
     }
     auto bytes = vfs.read(id);
@@ -127,25 +172,18 @@ void AssetViewer::select(const assets::VirtualFileSystem& vfs, const assets::Ass
         previewError_ = bytes.error().message;
         return;
     }
-    auto image = assets::decodePng(*bytes);
-    if (!image) {
-        previewError_ = image.error().message;
+    auto upload = source->file.extension() == ".png" ? uploadPng(*device_, *bytes) : uploadKtx2(*device_, *bytes);
+    if (!upload) {
+        previewError_ = upload.error().message;
         return;
     }
-    // UNORM, like the swapchain: the pixels already hold sRGB values and the debug UI draws them as they are.
-    const std::array levels{std::span<const std::byte>{image->pixels}};
-    auto texture = rhi::Texture::create(
-        *device_,
-        {.format = rhi::TextureFormat::Rgba8Unorm, .width = image->width, .height = image->height, .levels = levels});
-    if (!texture) {
-        previewError_ = texture.error().message;
-        return;
-    }
+    auto& texture = upload->texture;
     const VkDescriptorSet descriptor =
-        ImGui_ImplVulkan_AddTexture(texture->view(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    preview_.emplace(Preview{.texture = std::move(*texture), .descriptor = descriptor, .fileBytes = bytes->size()});
-    zoom_ =
-        static_cast<int>(std::clamp<std::uint32_t>(PreviewSide / std::max(image->width, image->height), 1, MaxZoom));
+        ImGui_ImplVulkan_AddTexture(texture.view(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    zoom_ = static_cast<int>(
+        std::clamp<std::uint32_t>(PreviewSide / std::max(texture.width(), texture.height()), 1, MaxZoom));
+    preview_.emplace(Preview{
+        .texture = std::move(texture), .descriptor = descriptor, .fileBytes = bytes->size(), .stored = upload->stored});
 }
 
 void AssetViewer::releasePreview() {
@@ -248,12 +286,13 @@ void AssetViewer::drawDetails(const assets::VirtualFileSystem& vfs) {
         return;
     }
     if (!preview_) {
-        textWrapped("No preview: the viewer shows PNG textures only. Models need the 3D render path.");
+        textWrapped("No preview: the viewer shows PNG and KTX2 textures only. Models need the 3D render path.");
         return;
     }
     const rhi::Texture& texture = preview_->texture;
-    ImGui::TextUnformatted(
-        std::format("{}x{} pixels, {} bytes", texture.width(), texture.height(), preview_->fileBytes).c_str());
+    ImGui::TextUnformatted(std::format("{}x{} pixels, {} bytes, {}", texture.width(), texture.height(),
+                                       preview_->fileBytes, preview_->stored)
+                               .c_str());
     ImGui::SetNextItemWidth(200);
     ImGui::SliderInt("zoom", &zoom_, 1, MaxZoom, "%dx");
     // The backend samples with linear filtering unless told otherwise; texels stay sharp squares with nearest.

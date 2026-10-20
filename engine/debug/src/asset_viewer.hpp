@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dwe::debug {
@@ -49,6 +50,7 @@ private:
         rhi::Texture texture;
         VkDescriptorSet descriptor;
         std::size_t fileBytes;
+        std::string_view stored; // how the file stores the texture
     };
 
     void applyFilter();
