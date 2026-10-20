@@ -58,11 +58,12 @@ std::uint32_t wordAt(const Bytes& bytes, std::size_t offset) {
 }
 
 // A raw mode 2 sector with this subheader and user data.
-Bytes rawSector(std::span<const std::byte> data, SectorForm form, std::uint8_t mode, std::uint8_t coding = 0) {
+Bytes rawSector(std::span<const std::byte> data, SectorForm form, std::uint8_t mode, std::uint8_t coding = 0,
+                std::uint8_t channel = 1) {
     auto sector = fixtures::makeRawSector(data, 2, form);
     for (const std::size_t copy : {std::size_t{16}, std::size_t{20}}) {
         fixtures::putU8(sector, copy, 1);
-        fixtures::putU8(sector, copy + 1, 1);
+        fixtures::putU8(sector, copy + 1, channel);
         fixtures::putU8(sector, copy + 2, mode);
         fixtures::putU8(sector, copy + 3, coding);
     }
@@ -87,8 +88,8 @@ Bytes videoSector(std::uint32_t number, const Bytes& frame, std::uint16_t sector
     return rawSector(data, SectorForm::Form1, VideoSubmode);
 }
 
-Bytes audioSector() {
-    return rawSector(Bytes(dwe::formats::disc::Form2DataSize), SectorForm::Form2, AudioSubmode, StereoCoding);
+Bytes audioSector(std::uint8_t channel = 1) {
+    return rawSector(Bytes(dwe::formats::disc::Form2DataSize), SectorForm::Form2, AudioSubmode, StereoCoding, channel);
 }
 
 Bytes paddingSector() {
@@ -241,6 +242,23 @@ TEST_CASE("frames whose size is not made of macroblocks are unknowns") {
     CHECK(yaml->find("video")->find("frames")->text() == "1");
     CHECK(yaml->find("video")->find("first_frame")->text() == "2");
     CHECK(yaml->find("video")->find("width")->text() == "16");
+}
+
+TEST_CASE("audio of another channel is an unknown and is left out of the movie's audio") {
+    auto sectors = MovieDisc::goodSectors();
+    sectors[6] = audioSector(2);
+    const MovieDisc fixture{sectors};
+    const Disc disc = fixture.disc();
+    const auto extraction = extractMovie(disc, fixture.volume.files.front());
+    REQUIRE_MESSAGE(extraction.has_value(), errorOf(extraction));
+    REQUIRE(extraction->unknowns.size() == 1);
+    CHECK(extraction->unknowns[0].find("audio sector 6") != std::string::npos);
+    CHECK(extraction->unknowns[0].find("channel 2") != std::string::npos);
+    // Only the first audio sector is decoded: 2016 stereo sample frames.
+    CHECK(outputOf(*extraction, "movie/a/audio").bytes.size() == 44 + (2016 * 4));
+    const auto yaml = dwe::core::parseYaml(textOf(outputOf(*extraction, "movie/a/movie").bytes));
+    REQUIRE_MESSAGE(yaml.has_value(), errorOf(yaml));
+    CHECK(yaml->find("audio")->find("sample_frames")->text() == "2016");
 }
 
 TEST_CASE("a movie needs a raw image") {
