@@ -194,6 +194,16 @@ cada 20 fotogramas, 30 días por año, el año vuelve a 0 en 100, y una partida 
 La VFS lee los ficheros cada vez, así que editar una sección y recargar basta. Un fichero nuevo necesita volver a
 montar los paquetes.
 
+El [panel de ajuste](../../engine/debug/README.md#panel-de-ajuste-r34) del overlay de depuración usa todo esto: elige
+el ruleset, edita sus valores, enseña qué cambiaría una recarga, controla el reloj y guarda una sección en su fichero.
+Guardar no reescribe el documento con `emitYaml`, que perdería los comentarios (el árbol de YAML no los guarda):
+`saveSection` cambia solo el texto de cada valor que difiere del fichero, en su línea, así que las citas del decomp y
+el orden se quedan. Un cambio de forma (un valor que pasa a lista, una clave nueva) no se guarda: se edita el fichero.
+
+Las [simulaciones](../guides/simulaciones.md) (`dwe-sim`) cargan un ruleset igual que el juego y aceptan los mismos
+cambios por la línea de órdenes (`--set care.hunger.window_minutes=45`) para comparar variantes sin tocar los
+ficheros.
+
 ## Validación
 
 - **Al cargar** (`loadRuleset`): el manifiesto, que cada tabla, sección y script exista, `extends`, la sección `clock`

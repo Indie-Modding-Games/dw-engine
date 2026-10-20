@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/debug/messages.hpp>
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -13,6 +14,7 @@
 #include <string>
 
 #include "asset_viewer.hpp"
+#include "tuning_panel.hpp"
 
 namespace dwe::debug {
 namespace {
@@ -21,6 +23,11 @@ constexpr std::size_t ConsoleLines = 500;
 // Descriptors the backend may create for textures: the font atlas, the asset viewer's preview and the previews it
 // let go that are waiting for their last frames to finish.
 constexpr std::uint32_t TextureDescriptors = 16;
+
+// A console line that starts with this is a command of the overlay, not Lua.
+constexpr char CommandPrefix = '/';
+constexpr std::string_view TuningCommand = "/tuning";
+constexpr const char* TuningCheckboxLabel = "tuning panel";
 
 struct ConsoleLine {
     core::LogLevel level;
@@ -79,10 +86,14 @@ struct DebugUi::Impl {
     bool scrollToBottom = true;
     std::unique_ptr<AssetViewer> assets;
     bool assetsOpen = false;
+    std::unique_ptr<TuningPanel> tuning;
+    bool tuningOpen = false;
 
     void drawStats(const FrameStats& stats);
     static void drawInput(const input::InputState& input);
     void drawConsole(script::ScriptVm& scripts);
+    void runConsoleLine(const std::string& line, script::ScriptVm& scripts);
+    void runCommand(std::string_view name);
 };
 
 core::Result<std::unique_ptr<DebugUi>> DebugUi::create(const platform::Window& window, rhi::Device& device) {
@@ -170,6 +181,21 @@ void DebugUi::toggle() {
     impl_->scrollToBottom = true;
 }
 
+void DebugUi::attachTuning(const TuningTarget& target) {
+    impl_->tuning = std::make_unique<TuningPanel>(target);
+}
+
+void DebugUi::addTuningTab(TuningTab tab) {
+    if (impl_->tuning) {
+        impl_->tuning->addTab(std::move(tab));
+    }
+}
+
+void DebugUi::openTuning() {
+    impl_->visible = true;
+    impl_->tuningOpen = impl_->tuning != nullptr;
+}
+
 void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input::InputState& input,
                    script::ScriptVm& scripts, const Marker& marker) {
     ImGui_ImplVulkan_NewFrame();
@@ -186,6 +212,9 @@ void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input
         if (impl_->assetsOpen) {
             impl_->assets->draw(impl_->assetsOpen);
         }
+        if (impl_->tuningOpen && impl_->tuning) {
+            impl_->tuning->draw(impl_->tuningOpen);
+        }
     }
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frame.commands);
@@ -198,6 +227,9 @@ void DebugUi::Impl::drawStats(const FrameStats& stats) {
         std::format("{:.0f} fps ({:.2f} ms)", stats.framesPerSecond, stats.frameMilliseconds).c_str());
     ImGui::TextUnformatted(std::format("logic ticks this frame: {}", stats.ticksThisFrame).c_str());
     ImGui::Checkbox("asset viewer", &assetsOpen);
+    if (tuning) {
+        ImGui::Checkbox(TuningCheckboxLabel, &tuningOpen);
+    }
     ImGui::End();
 }
 
@@ -250,18 +282,32 @@ void DebugUi::Impl::drawConsole(script::ScriptVm& scripts) {
     ImGui::SetNextItemWidth(-1);
     if (ImGui::InputTextWithHint("##command", "Lua", command.data(), command.size(),
                                  ImGuiInputTextFlags_EnterReturnsTrue)) {
-        const std::string source{command.data()};
-        if (!source.empty()) {
-            core::logInfo("> {}", source);
-            if (auto result = scripts.runString(source, "console"); !result) {
-                core::logError("{}", result.error().message);
-            }
-        }
+        runConsoleLine(std::string{command.data()}, scripts);
         command.fill('\0');
         scrollToBottom = true;
         ImGui::SetKeyboardFocusHere(-1);
     }
     ImGui::End();
+}
+
+void DebugUi::Impl::runConsoleLine(const std::string& line, script::ScriptVm& scripts) {
+    if (line.empty()) {
+        return;
+    }
+    core::logInfo("> {}", line);
+    if (line.front() == CommandPrefix) {
+        runCommand(line);
+    } else if (auto result = scripts.runString(line, "console"); !result) {
+        core::logError("{}", result.error().message);
+    }
+}
+
+void DebugUi::Impl::runCommand(std::string_view name) {
+    if (name == TuningCommand && tuning) {
+        tuningOpen = true;
+        return;
+    }
+    core::logError("{}", messages::formatMessage(messages::UnknownCommand, name, TuningCommand));
 }
 
 } // namespace dwe::debug

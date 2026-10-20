@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/debug/tuning.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/rhi/device.hpp>
@@ -51,6 +52,16 @@ public:
     // Mounts the packs of a content folder in the asset viewer: the folder itself if it is a pack, otherwise the
     // packs right under it.
     void mountContent(const std::filesystem::path& folder);
+
+    // Gives the tuning panel (R3.4) the game's packs, ruleset store and clock. The panel opens from the Frame window or
+    // with the console command /tuning.
+    void attachTuning(const TuningTarget& target);
+
+    // Adds a system's tab to the tuning panel, after attachTuning.
+    void addTuningTab(TuningTab tab);
+
+    // Shows the overlay with the tuning panel open, after attachTuning.
+    void openTuning();
 
     // Builds the overlay for this frame and records it into the frame, which must be inside rendering.
     void draw(const rhi::Frame& frame, const FrameStats& stats, const input::InputState& input,

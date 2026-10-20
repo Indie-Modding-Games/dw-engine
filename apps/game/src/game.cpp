@@ -13,6 +13,7 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/minimap.hpp>
@@ -331,6 +332,19 @@ int runGame(const Options& options) {
         return EXIT_FAILURE;
     }
     logRuleset(rules->current());
+    auto clockRules = ruleset::readClockRules(rules->current());
+    if (!clockRules) {
+        core::logError("{}", core::formatMessage(messages::RulesetFailed, options.ruleset, clockRules.error().message));
+        return EXIT_FAILURE;
+    }
+    // The game time of the rulesets (docs/architecture/rulesets.md, "Reloj de juego"): it runs while the field does,
+    // and the tuning panel sets its speed, pauses it and jumps it.
+    ruleset::GameClock gameClock{*clockRules};
+    std::uint64_t clockRevision = rules->revision();
+    (*debugUi)->attachTuning({.files = &files, .store = &*rules, .clock = &gameClock});
+    if (options.tuning) {
+        (*debugUi)->openTuning();
+    }
     auto uiRenderer = ui::UiRenderer::create(**renderer);
     if (!uiRenderer) {
         core::logError("{}", uiRenderer.error().message);
@@ -507,12 +521,20 @@ int runGame(const Options& options) {
             } else {
                 mouse.release();
             }
-            // The menu pauses the field.
+            // The menu pauses the field and the game time.
             if (!(*ui)->isVisible(MenuDocument)) {
                 (*scene)->tick(intent, static_cast<float>(TickSeconds));
+                gameClock.advance(TickSeconds);
             }
             input.endTick();
             ++ticksRun;
+        }
+
+        if (rules->revision() != clockRevision) {
+            clockRevision = rules->revision();
+            if (auto changed = ruleset::readClockRules(rules->current()); changed) {
+                gameClock.setRules(*changed);
+            }
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {

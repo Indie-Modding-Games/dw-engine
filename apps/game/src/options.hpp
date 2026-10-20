@@ -32,6 +32,8 @@ struct Options {
     int height = 720;
     bool fullscreen = false;
     bool vsync = true;
+    // Start with the debug overlay's tuning panel open (--tuning), for manual tests and screenshots.
+    bool tuning = false;
     // The field's start, instead of field/warps (--start <map>[,<exit>]).
     std::optional<std::string> startMap;
     int startExit = 0;
@@ -63,12 +65,13 @@ struct Options {
 
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> "
+    "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--autotest <route.yaml> "
     "[--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
+inline constexpr std::string_view TuningOption = "--tuning";
 
 // Reads the command line; logs what is wrong and gives nothing for a bad one.
 std::optional<Options> parseOptions(std::span<char* const> arguments);

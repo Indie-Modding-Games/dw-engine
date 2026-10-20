@@ -50,6 +50,14 @@ inline constexpr std::string_view OutOfRange = "{} must be 0 to {}";
 // Quirks.
 inline constexpr std::string_view QuirksText = "quirks";
 
+// Values and section files.
+inline constexpr std::string_view NotOneLine = "the value does not fit on one line: {}";
+inline constexpr std::string_view ShapeChanged = "{}: only values can be written back in place, not a change of shape";
+inline constexpr std::string_view NotInPlace = "{}: the value at line {} is not on one line of the file";
+inline constexpr std::string_view NotOnDisk = "{} is not a file on disk (an archived pack cannot be written)";
+inline constexpr std::string_view WriteFailed = "could not write {}";
+inline constexpr std::string_view RootPath = "(root)";
+
 // Strategies.
 inline constexpr std::string_view MissingStrategy = "{} is missing";
 inline constexpr std::string_view StrategyNotName = "{} must name a {}";

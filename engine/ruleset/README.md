@@ -25,6 +25,8 @@ store->reload();                                                           // tr
 | `ruleset_store.hpp` | `RulesetStore`: el ruleset activo, `revision()`, `reload()`, `select(id)` y `setValue` |
 | `strategy.hpp` | `StrategyRegistry<Interfaz>`: implementaciones por nombre; un nombre desconocido es un error en su línea |
 | `game_clock.hpp` | `ClockRules` (sección `clock`), `readClockRules`, `GameTime`, `ClockAdvance` y `GameClock` |
+| `ruleset_values.hpp` | `listValues`, `diffValues` (los valores que difieren entre dos rulesets), `listRulesets` y `inlineYaml` |
+| `section_file.hpp` | `patchSectionText` y `saveSection`: escriben una sección ajustada en su fichero, valor a valor, sin perder los comentarios |
 | `messages.hpp` | Las plantillas de los mensajes de error del módulo |
 | `random.hpp` | `Random`: PCG32 con semilla, `below(n)` como `randomLimit` del original y `chance(p)` |
 
@@ -34,5 +36,6 @@ store->reload();                                                           // tr
 valores fuera de rango, manifiesto roto, estrategia desconocida), `setValue` con su revisión, recarga que conserva el
 ruleset anterior si falla, cambio de ruleset y rarezas. `game_clock_tests.cpp` prueba el reloj contra `clock.c`
 (minutos, días, años, avance rápido, pausa, salto al dormir) y que `Random` se repite con su semilla.
-`original_ruleset_tests.cpp` carga el ruleset `original` del paquete `game` y, si `DWE_CONTENT` apunta al contenido
+`ruleset_values_tests.cpp` prueba la lista y la comparación de valores y la escritura en el fichero (citas y formato
+intactos, cambio de forma rechazado, paquete en disco y en memoria). `original_ruleset_tests.cpp` carga el ruleset `original` del paquete `game` y, si `DWE_CONTENT` apunta al contenido
 extraído, comprueba que cada tabla que nombra está en el paquete base y cumple su esquema (R3.2).
