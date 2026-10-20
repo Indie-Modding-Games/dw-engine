@@ -60,23 +60,35 @@ public:
     Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps = {});
 
     // Enters a map through one of its exits: the player appears at the exit's spawn and the partner next to it
-    // (tamer.c: loadMapEntities). Fails if the map has no such exit.
+    // (tamer.c: loadMapEntities), and the screen fades in (tamer.c: tamerTickChangeMap) before the player can move.
+    // Fails if the map has no such exit.
     core::Result<void> enterMap(const assets::MapDocument& map, std::int32_t exit);
 
-    // Enters a map at a given place, for tests and debug tools.
+    // Enters a map at a given place, without a fade in, for tests and debug tools.
     void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn);
 
     // Sets the intent for the next ticks.
     void setInput(const FieldInput& input);
 
-    // Advances the logic by `seconds` (the app's fixed tick). Nothing moves while a map change is pending.
+    // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the fade out, without
+    // collision and without input; then nothing moves until the app enters the new map and the fade in ends.
     void tick(float seconds);
 
-    // The warp the player stepped on, once: after taking it the app loads the map and calls enterMap.
+    // The warp the player stepped on, once the fade out has ended: after taking it the app loads the map and calls
+    // enterMap.
     std::optional<MapChange> takeMapChange();
 
-    // Whether a map change is waiting to be taken or executed.
-    [[nodiscard]] bool mapChangePending() const { return pendingChange_.has_value() || waitingForMap_; }
+    // Whether a map change is fading out, waiting to be taken or waiting for its map.
+    [[nodiscard]] bool mapChangePending() const {
+        return leaving_.has_value() || pendingChange_.has_value() || waitingForMap_;
+    }
+
+    // How dark the screen is for the map change, from 0 (clear) to 1 (black).
+    [[nodiscard]] float fadeLevel() const;
+
+    // The game clock, in minutes since midnight (0 to 1439).
+    [[nodiscard]] std::int32_t clockMinutes() const { return clockMinutes_; }
+    void setClockMinutes(std::int32_t minutes);
 
     // The trigger cells the player stepped onto during the last tick.
     [[nodiscard]] std::span<const TriggerStep> triggerSteps() const { return triggerSteps_; }
@@ -120,6 +132,8 @@ private:
     void movePlayer(float seconds);
     glm::vec2 followPath(glm::vec3& position, float distance);
     void checkTriggers();
+    void walkOut(float seconds);
+    void advanceClock(float seconds);
     void updateTrail();
     void movePartner(float seconds);
     void placePartnerNearPlayer();
@@ -142,8 +156,16 @@ private:
     float pathStallSeconds_ = 0.0F;
 
     std::int32_t lastTrigger_ = 0;
+    // The warp being faded out to, and for how long; then the change waiting to be taken.
+    std::optional<MapChange> leaving_;
+    float leavingSeconds_ = 0.0F;
     std::optional<MapChange> pendingChange_;
     bool waitingForMap_ = false;
+    // What is left of the fade in after entering a map.
+    float arrivingSeconds_ = 0.0F;
+
+    std::int32_t clockMinutes_ = 0;
+    float clockSeconds_ = 0.0F;
     std::vector<TriggerStep> triggerSteps_;
 
     assets::CollisionCell lastPlayerCell_;

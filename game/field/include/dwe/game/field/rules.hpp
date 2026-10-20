@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/core/math.hpp>
 
 #include <cstdint>
 #include <string>
@@ -57,10 +58,38 @@ struct InputRules {
     float arriveDistance = 25.0F;
 };
 
+// The map change (tamer.c: tamerTickChangeMap): the screen fades out while the player walks on without collision,
+// the next map loads and the screen fades back in before the player can move (fade.c: fadeToBlack(20),
+// fadeFromBlack(20), 20 frames each).
+struct TransitionRules {
+    float fadeOutSeconds = 1.0F;
+    float fadeInSeconds = 1.0F;
+};
+
+// The game clock (clock.c: tickGameClock): a minute every 20 frames at normal speed, starting at 8:00 in a new game.
+// It stops while a map change runs (tamer.c: stopGameTime, startGameTime).
+struct ClockRules {
+    std::int32_t startHour = 8;
+    float minuteSeconds = 1.0F;
+};
+
+// The times of day (map.c: updateTimeOfDay): the hours each one starts at, which are also the only hours the palette
+// fades at (map.c: renderMap), and what dusk and night do to the map's lights, per red, green and blue.
+struct TimeOfDayRules {
+    std::int32_t dayStart = 6;
+    std::int32_t duskStart = 16;
+    std::int32_t nightStart = 20;
+    glm::vec3 duskLight{1.0F, 0.7F, 0.7F};
+    glm::vec3 nightLight{0.5F};
+};
+
 struct FieldRules {
     MoverRules player;
     PartnerRules partner;
     InputRules input;
+    TransitionRules transition;
+    ClockRules clock;
+    TimeOfDayRules timeOfDay;
 };
 
 // A warp the original does in an event script instead of the map's warp table: stepping on `trigger` in `map` takes

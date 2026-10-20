@@ -3,6 +3,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/render/map_camera.hpp>
 #include <dwe/render/map_layers.hpp>
+#include <dwe/render/map_renderer.hpp>
 #include <dwe/render/map_scene.hpp>
 
 #include <doctest/doctest.h>
@@ -194,18 +195,37 @@ TEST_CASE("a depth-layer sprite covers models from its ordering-table entry back
 }
 
 TEST_CASE("the time of day picks the background variant") {
-    CHECK(dwe::render::timeOfDayAt(5) == dwe::render::TimeOfDay::Night);
-    CHECK(dwe::render::timeOfDayAt(6) == dwe::render::TimeOfDay::Day);
-    CHECK(dwe::render::timeOfDayAt(15) == dwe::render::TimeOfDay::Day);
-    CHECK(dwe::render::timeOfDayAt(16) == dwe::render::TimeOfDay::Dusk);
-    CHECK(dwe::render::timeOfDayAt(19) == dwe::render::TimeOfDay::Dusk);
-    CHECK(dwe::render::timeOfDayAt(20) == dwe::render::TimeOfDay::Night);
+    const dwe::render::TimeOfDaySchedule schedule{.dayStart = 6,
+                                                  .duskStart = 16,
+                                                  .nightStart = 20,
+                                                  .duskLight = {1.0F, 0.7F, 0.7F},
+                                                  .nightLight = glm::vec3{0.5F}};
+    CHECK(dwe::render::timeOfDayAt(5, schedule) == dwe::render::TimeOfDay::Night);
+    CHECK(dwe::render::timeOfDayAt(6, schedule) == dwe::render::TimeOfDay::Day);
+    CHECK(dwe::render::timeOfDayAt(15, schedule) == dwe::render::TimeOfDay::Day);
+    CHECK(dwe::render::timeOfDayAt(16, schedule) == dwe::render::TimeOfDay::Dusk);
+    CHECK(dwe::render::timeOfDayAt(19, schedule) == dwe::render::TimeOfDay::Dusk);
+    CHECK(dwe::render::timeOfDayAt(20, schedule) == dwe::render::TimeOfDay::Night);
+    CHECK(dwe::render::timeOfDayChangesAt(16, schedule));
+    CHECK_FALSE(dwe::render::timeOfDayChangesAt(17, schedule));
+    CHECK(dwe::render::timeOfDayLightScale(dwe::render::TimeOfDay::Dusk, false, schedule).g == doctest::Approx(0.7F));
+    CHECK(dwe::render::timeOfDayLightScale(dwe::render::TimeOfDay::Night, false, schedule).r == doctest::Approx(0.5F));
+    CHECK(dwe::render::timeOfDayLightScale(dwe::render::TimeOfDay::Night, true, schedule).r == doctest::Approx(1.0F));
     dwe::render::MapSceneData scene;
     scene.images.backgroundPalettes.resize(3);
     CHECK(scene.backgroundVariant(dwe::render::TimeOfDay::Night, false) == 2);
     CHECK(scene.backgroundVariant(dwe::render::TimeOfDay::Night, true) == 0);
     scene.images.backgroundPalettes.resize(1);
     CHECK(scene.backgroundVariant(dwe::render::TimeOfDay::Dusk, false) == 0);
+}
+
+TEST_CASE("the time-of-day fade steps like the original's") {
+    using dwe::render::timeOfDayFadeShown;
+    CHECK(timeOfDayFadeShown(0.0) == doctest::Approx(1.0 / 6.0));
+    CHECK(timeOfDayFadeShown(4.9 / 25.0) == doctest::Approx(1.0 / 6.0));
+    CHECK(timeOfDayFadeShown(5.0 / 25.0) == doctest::Approx(1.0 / 5.0));
+    CHECK(timeOfDayFadeShown(24.0 / 25.0) == doctest::Approx(1.0 / 2.0));
+    CHECK(timeOfDayFadeShown(1.0) == doctest::Approx(1.0));
 }
 
 TEST_CASE("the user's disc, extracted: the route's maps load with their backgrounds, pages and depth layers") {

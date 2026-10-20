@@ -7,7 +7,8 @@
 
 namespace dwe::render {
 
-// The screen the original frames a map for, in pixels: a viewport with this aspect ratio shows exactly what it showed.
+// The screen the original frames a map for, in pixels (main.c: GsInitGraph(320, 240)): a viewport with this aspect
+// ratio shows exactly what it showed.
 inline constexpr glm::vec2 OriginalScreenSize{320.0F, 240.0F};
 
 // The original's near clip, in world units (main.c: view_init sets GsSetNearClip(100)).

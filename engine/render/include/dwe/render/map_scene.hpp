@@ -17,13 +17,31 @@ namespace dwe::render {
 
 // The time of day a map's background shows (map.c: updateTimeOfDay): the index of its palette variant.
 enum class TimeOfDay : std::uint8_t {
-    Day = 0,   // 6:00-15:59
-    Dusk = 1,  // 16:00-19:59
-    Night = 2, // 20:00-5:59
+    Day = 0,
+    Dusk = 1,
+    Night = 2,
+};
+
+// When each time of day starts and what it does to a map's lights. The values are game rules: the game reads them
+// from its field rules (map.c: updateTimeOfDay).
+struct TimeOfDaySchedule {
+    std::int32_t dayStart = 0;
+    std::int32_t duskStart = 0;
+    std::int32_t nightStart = 0;
+    glm::vec3 duskLight{1.0F};
+    glm::vec3 nightLight{1.0F};
 };
 
 // The time of day at an hour of the game's clock, 0-23.
-TimeOfDay timeOfDayAt(std::int32_t hour);
+TimeOfDay timeOfDayAt(std::int32_t hour, const TimeOfDaySchedule& schedule);
+
+// Whether the background changes palette at the start of this hour: map.c: renderMap starts the fade only at the
+// exact hours a time of day starts, on maps without a fixed time of day.
+bool timeOfDayChangesAt(std::int32_t hour, const TimeOfDaySchedule& schedule);
+
+// What the time of day does to a map's three lights (map.c: updateTimeOfDay). Maps with a fixed time of day keep
+// them whole.
+glm::vec3 timeOfDayLightScale(TimeOfDay time, bool fixedTimeOfDay, const TimeOfDaySchedule& schedule);
 
 // Everything the map renderer needs from a map, read through the VFS: the document, its camera, and its images (the
 // background as indices with one palette per variant, and the resolved sprite sheet).

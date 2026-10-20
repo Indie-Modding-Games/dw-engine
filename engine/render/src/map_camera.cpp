@@ -19,8 +19,9 @@ glm::mat4 lookAtWithoutRoll(glm::vec3 eye, glm::vec3 target) {
 }
 
 // The top-left background pixel of a window of `visible` pixels centred on `focus` along one axis: clamped to the
-// background like the original's cameraX, or centred when the background is the smaller one. The corner is snapped to
-// whole viewport pixels so the background does not shimmer while it scrolls.
+// background like the original's cameraX (map.c: updateDrawingOffsets and cameraIsAtEdge keep it in [0, width - 320],
+// so the player leaves the centre only near the edges), or centred when the background is the smaller one. The corner
+// is snapped to whole viewport pixels so the background does not shimmer while it scrolls.
 float scrollAxis(float focus, float visible, float background, float scale) {
     if (background < visible) {
         return (background - visible) * 0.5F;
@@ -33,7 +34,7 @@ float scrollAxis(float focus, float visible, float background, float scale) {
 
 MapCamera::MapCamera(const MapCameraDesc& desc)
     : desc_(desc), view_(lookAtWithoutRoll(desc.eye, desc.target)), inverseView_(glm::inverse(view_)),
-      focus_(desc.backgroundSize * 0.5F) {
+      focus_(desc.backgroundSize * 0.5F) { // map.c: setupMap starts centred: cameraX = width / 2 - 160
     setViewport(OriginalScreenSize);
 }
 
@@ -43,6 +44,10 @@ void MapCamera::setViewport(glm::vec2 size) {
     followBackgroundPixel(focus_);
 }
 
+// map.c: tickCameraFollowPlayer moves the camera by the player's whole projected movement every frame, with no easing
+// or dead zone. It only does so while the d-pad moves the player, which here is the same as always, and while the
+// tamer's state is 0: during a map change's walk-out the camera stays put, which the caller does by keeping the
+// focus (tamer.c: checkMapInteraction calls unsetCameraFollowPlayer).
 void MapCamera::follow(glm::vec3 worldFocus) {
     if (const auto point = projectToBackground(worldFocus)) {
         followBackgroundPixel(point->pixel);

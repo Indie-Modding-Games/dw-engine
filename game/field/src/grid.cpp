@@ -28,6 +28,11 @@ constexpr float StopGap = 0.01F;
 constexpr float SightStep = CollisionCellSize / 4.0F;
 constexpr int SightLines = 5;
 
+// map_collision.c: getModelTile takes the column x / 100 + 50 and the row 50 - z / 100 with C's division (towards
+// zero), then takes one off the column for x < 0 and off the row for z > 0. That is floor except on exact cell edges:
+// x on a negative multiple of 100 lands one column further left, and z at 0 or on a negative multiple one row
+// further. checkMapCollisionX/Z take the row as 49 - z / 100, plus one for z < 0, which differs from getModelTile at
+// z = 0. floor puts every edge on the same side, for both.
 std::int32_t cellIndex(float coordinate) {
     return static_cast<std::int32_t>(std::floor(coordinate / CollisionCellSize)) + GridOrigin;
 }
@@ -53,7 +58,8 @@ bool lineBlocked(const MapCollision& collision, Axis axis, std::int32_t along, s
     return false;
 }
 
-// Moves one coordinate; returns whether a blocked cell stopped it.
+// Moves one coordinate; returns whether a blocked cell stopped it. The probe is the original's (map_collision.c:
+// checkMapCollisionX/Z): the line of cells `radius` ahead, `radius / 2` to each side.
 bool moveAxis(const MapCollision& collision, glm::vec3& position, Axis axis, float distance, float radius) {
     if (distance == 0.0F) {
         return false;
@@ -95,6 +101,8 @@ bool nearWall(const MapCollision& collision, CollisionCell cell) {
 
 } // namespace
 
+// map.c: entityCheckCollision tests a whole predicted step and collisionGrace cancels the blocked parts; this moves X
+// then Z and stops short of the wall, so no tick length lets a step cross a cell (docs/reference/campo.md).
 GridMove moveOnGrid(const MapCollision& collision, glm::vec3 position, glm::vec2 displacement, float radius) {
     GridMove move{.position = position};
     move.blockedX = moveAxis(collision, move.position, Axis::X, displacement.x, radius);

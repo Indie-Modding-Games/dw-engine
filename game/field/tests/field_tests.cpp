@@ -331,3 +331,85 @@ TEST_CASE("a click on a warp walks onto it") {
     }
     CHECK(change->map == "house");
 }
+
+TEST_CASE("a warp fades out while the player walks on, and fades in on the new map") {
+    MapDocument town = roomMap("town");
+    fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);
+    fill(town, {.column = 50, .row = 38}, {.column = 52, .row = 39}, Blocked); // a wall right behind the warp
+    town.warps[2].targetMapId = "house";
+    town.warps[2].targetExit = 0;
+    MapDocument house = roomMap("house");
+    house.warps[0] = {
+        .exit = 0, .spawn = {0, 0, 0}, .rotation = 0, .targetMap = -1, .targetMapId = std::nullopt, .targetExit = -1};
+
+    dwe::scene::World world;
+    auto rules = originalRules();
+    rules.transition = {.fadeOutSeconds = 1.0F, .fadeInSeconds = 0.5F};
+    Field field{world, rules};
+    field.enterMapAt(town, at(0.0F, -600.0F, Pi)); // facing world -Z, toward the warp
+    field.setInput({.stick = {0.0F, 1.0F}});
+    for (int i = 0; i < 120 && !field.mapChangePending(); ++i) {
+        field.tick(Tick);
+    }
+    REQUIRE(field.mapChangePending());
+    CHECK(field.fadeLevel() < 0.1F);
+    const float onWarp = field.player().position.z;
+
+    // Half the fade: the player walks on at walk speed, through the wall, whatever the input says.
+    field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+    run(field, 0.5F);
+    CHECK(field.fadeLevel() == doctest::Approx(0.5F).epsilon(0.05));
+    CHECK(field.player().motion == Motion::Walk);
+    CHECK(field.player().position.z == doctest::Approx(onWarp - 200.0F).epsilon(0.05));
+    CHECK_FALSE(field.takeMapChange().has_value());
+
+    std::optional<MapChange> change;
+    for (int i = 0; i < 60 && !change; ++i) {
+        field.tick(Tick);
+        change = field.takeMapChange();
+    }
+    if (!change) {
+        FAIL("no map change");
+        return;
+    }
+    CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+
+    // The fade in: the player stands still, and the clock waits, until it ends.
+    const std::int32_t minutes = field.clockMinutes();
+    REQUIRE(field.enterMap(house, change->exit).has_value());
+    CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+    field.setInput({.stick = {0.0F, 1.0F}});
+    run(field, 0.25F);
+    CHECK(field.fadeLevel() == doctest::Approx(0.5F).epsilon(0.05));
+    CHECK(field.player().position == glm::vec3{0.0F});
+    CHECK(field.clockMinutes() == minutes);
+    run(field, 0.5F);
+    CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+    CHECK(field.player().position != glm::vec3{0.0F});
+}
+
+TEST_CASE("the clock counts minutes while the player plays and wraps at midnight") {
+    dwe::scene::World world;
+    auto rules = originalRules();
+    rules.clock = {.startHour = 8, .minuteSeconds = 1.0F};
+    Field field{world, rules};
+    CHECK(field.clockMinutes() == 8 * 60);
+    field.enterMapAt(roomMap("town"), at(0.0F, 0.0F));
+    run(field, 90.0F, 0.25F);
+    CHECK(field.clockMinutes() == (8 * 60) + 90);
+    field.setClockMinutes((24 * 60) - 1);
+    run(field, 1.0F, 0.25F);
+    CHECK(field.clockMinutes() == 0);
+}
+
+TEST_CASE("up on the stick follows the map's camera rounded to an eighth of a turn") {
+    MapDocument map = roomMap("town");
+    // A camera looking a little to the side of straight ahead (-Z in the world).
+    map.camera.viewpoint = {100, -2000, 4000};
+    map.camera.reference = {0, 0, 0};
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.enterMapAt(map, at(0.0F, 0.0F));
+    CHECK(std::abs(field.cameraForward().x) < 1e-5F);
+    CHECK(std::abs(std::abs(field.cameraForward().z) - 1.0F) < 1e-5F);
+}

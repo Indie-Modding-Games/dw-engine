@@ -245,7 +245,7 @@ bool MapRenderer::snapshotPalette() {
     std::vector<assets::PaletteColor>& snapshot = paletteRows_[snapshotRow];
     const std::vector<assets::PaletteColor>& from = paletteRows_[fromRow_];
     const std::vector<assets::PaletteColor>& to = paletteRows_[toRow_];
-    const auto mix = [fade = fade_](std::uint8_t lhs, std::uint8_t rhs) {
+    const auto mix = [fade = timeOfDayFadeShown(fade_)](std::uint8_t lhs, std::uint8_t rhs) {
         return static_cast<std::uint8_t>(
             std::lround(std::lerp(static_cast<double>(lhs), static_cast<double>(rhs), fade)));
     };
@@ -299,14 +299,25 @@ void MapRenderer::setVariant(std::size_t variant, double fadeSeconds) {
     fade_ = 0.0;
 }
 
-void MapRenderer::update(double seconds, glm::vec3 worldFocus) {
+double timeOfDayFadeShown(double progress) {
+    constexpr double Frames = 25.0;
+    constexpr double FramesPerStep = 5.0;
+    constexpr double FirstDivisor = 6.0;
+    if (progress >= 1.0) {
+        return 1.0;
+    }
+    const double frame = std::floor(std::max(0.0, progress) * Frames);
+    return 1.0 / (FirstDivisor - std::floor(frame / FramesPerStep));
+}
+
+void MapRenderer::update(double animationSeconds, double fadeSeconds, glm::vec3 worldFocus) {
     focus_ = worldFocus;
     if (!hasMap_) {
         return;
     }
-    layers_.update(seconds);
+    layers_.update(animationSeconds);
     if (fade_ < 1.0) {
-        fade_ = fadeSeconds_ > 0.0 ? std::min(1.0, fade_ + (seconds / fadeSeconds_)) : 1.0;
+        fade_ = fadeSeconds_ > 0.0 ? std::min(1.0, fade_ + (fadeSeconds / fadeSeconds_)) : 1.0;
     }
 }
 
@@ -343,7 +354,7 @@ void MapRenderer::drawBackground(DrawContext& context) {
     rhi::CommandList& commands = context.commands();
     commands.bindPipeline(pipelines_.background);
     commands.pushConstants(MapPush{.pixelsPerTexel = camera_.scale(),
-                                   .fade = static_cast<float>(fade_),
+                                   .fade = static_cast<float>(timeOfDayFadeShown(fade_)),
                                    .texels = static_cast<std::uint32_t>(TexelFilter::All),
                                    .fromRow = fromRow_,
                                    .toRow = toRow_});

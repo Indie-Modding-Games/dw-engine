@@ -104,6 +104,7 @@ core::Result<void> MapPreview::show(std::size_t mapIndex, std::optional<glm::vec
                   Milliseconds{loaded - start}.count(), Milliseconds{set - loaded}.count());
     mapIndex_ = mapIndex;
     scene_ = std::move(*scene);
+    fixedTime_ = fixedTime;
     return {};
 }
 
@@ -129,7 +130,7 @@ void MapPreview::handle(const platform::Event& event) {
 void MapPreview::tick(const input::InputState& input, double seconds) {
     for (std::size_t time = 0; time < TimeActions.size(); ++time) {
         if (input.wasPressed(TimeActions[time])) {
-            map_->setVariant(scene_.backgroundVariant(static_cast<render::TimeOfDay>(time), false));
+            map_->setVariant(scene_.backgroundVariant(static_cast<render::TimeOfDay>(time), fixedTime_));
         }
     }
     if (input.wasPressed("debug_next_map")) {
@@ -162,7 +163,7 @@ void MapPreview::update(double frameSeconds) {
                       frameSeconds * 1000.0);
         --framesToLog_;
     }
-    map_->update(frameSeconds, focus_);
+    map_->update(frameSeconds, frameSeconds, focus_);
     const std::array markers{render::MapMarker{.feet = focus_}};
     map_->setMarkers(markers);
 }

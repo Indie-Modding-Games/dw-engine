@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -30,6 +31,20 @@ constexpr float StuckFraction = 0.1F;
 constexpr float PathStallSeconds = 0.5F;
 // How many cells around a clicked cell to look for one the player can get to.
 constexpr int ClickSearchCells = 3;
+constexpr std::int32_t MinutesPerHour = 60;
+constexpr std::int32_t MinutesPerDay = 24 * MinutesPerHour;
+// tamer.c: getMapRotation rounds the camera's heading to 512 of the original's 4096: an eighth of a turn.
+constexpr float CameraHeadingStep = Turn / 8.0F;
+// The ground directions at each eighth of a turn from +X toward +Z, exact so that straight moves stay on their line.
+constexpr float Diagonal = std::numbers::sqrt2_v<float> / 2.0F;
+constexpr std::array<glm::vec3, 8> HeadingDirections{{{1.0F, 0.0F, 0.0F},
+                                                      {Diagonal, 0.0F, Diagonal},
+                                                      {0.0F, 0.0F, 1.0F},
+                                                      {-Diagonal, 0.0F, Diagonal},
+                                                      {-1.0F, 0.0F, 0.0F},
+                                                      {-Diagonal, 0.0F, -Diagonal},
+                                                      {0.0F, 0.0F, -1.0F},
+                                                      {Diagonal, 0.0F, -Diagonal}}};
 
 glm::vec2 ground(glm::vec3 v) {
     return {v.x, v.z};
@@ -68,7 +83,7 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 
 Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps)
     : world_(&world), rules_(std::move(rules)), scriptedWarps_(std::move(scriptedWarps)), player_(world.create()),
-      partner_(world.create()) {
+      partner_(world.create()), clockMinutes_(rules_.clock.startHour * MinutesPerHour) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
     registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -86,6 +101,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
         return core::fail(std::format("map '{}' has no exit {}", map.id, exit));
     }
     enterMapAt(map, assets::warpSpawn(*warp));
+    arrivingSeconds_ = rules_.transition.fadeInSeconds;
 
     const glm::ivec3 offset =
         partnerSpawnOffset(warp->rotation, static_cast<std::int32_t>(std::lround(rules_.partner.spawnDistance)));
@@ -104,8 +120,13 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     warps_ = map.warps;
     const glm::vec3 view =
         assets::toWorldPosition(map.camera.reference) - assets::toWorldPosition(map.camera.viewpoint);
-    cameraForward_ = glm::length(ground(view)) > 0.0F ? glm::normalize(glm::vec3{view.x, 0.0F, view.z})
-                                                      : glm::vec3{0.0F, 0.0F, -1.0F};
+    // tamer.c: tamerTickWalkingState adds the d-pad's direction to the camera's heading rounded to an eighth of a turn
+    // (getMapRotation), so "up" goes the same way on every map with a camera turned a little. The original rounds
+    // negative headings toward zero; this rounds to the nearest (docs/reference/campo.md).
+    const float heading = glm::length(ground(view)) > 0.0F ? std::atan2(view.z, view.x) : -Turn / 4.0F;
+    const auto eighth = static_cast<std::size_t>((std::lround(heading / CameraHeadingStep) + 8) % 8);
+    assert(eighth < HeadingDirections.size());
+    cameraForward_ = HeadingDirections[eighth];
 
     entt::registry& registry = world_->registry();
     scene::place(registry.get<Transform>(player_), spawn.position, spawn.yaw);
@@ -115,8 +136,11 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     moveTarget_.reset();
     path_.clear();
     pathStallSeconds_ = 0.0F;
+    leaving_.reset();
+    leavingSeconds_ = 0.0F;
     pendingChange_.reset();
     waitingForMap_ = false;
+    arrivingSeconds_ = 0.0F;
     triggerSteps_.clear();
     // The original has no guard against warping again at once; its spawns are never on triggers. Remembering the
     // value under the spawn makes a trigger fire only when stepped onto.
@@ -145,15 +169,66 @@ void Field::tick(float seconds) {
     entt::registry& registry = world_->registry();
     scene::beginTick(registry.get<Transform>(player_));
     scene::beginTick(registry.get<Transform>(partner_));
-    if (mapChangePending() || mapId_.empty()) {
-        registry.get<AnimationIntent>(player_) = {};
-        registry.get<AnimationIntent>(partner_) = {};
+    registry.get<AnimationIntent>(partner_) = {};
+    if (leaving_) {
+        walkOut(seconds);
         return;
     }
+    if (pendingChange_ || waitingForMap_ || mapId_.empty()) {
+        registry.get<AnimationIntent>(player_) = {};
+        return;
+    }
+    if (arrivingSeconds_ > 0.0F) {
+        // tamer.c: tamerTickChangeMap gives the player back control once the fade in ends.
+        arrivingSeconds_ = std::max(0.0F, arrivingSeconds_ - seconds);
+        registry.get<AnimationIntent>(player_) = {};
+        return;
+    }
+    advanceClock(seconds);
     movePlayer(seconds);
     checkTriggers();
     updateTrail();
     movePartner(seconds);
+}
+
+void Field::walkOut(float seconds) {
+    // tamer.c: tamerTickChangeMap plays the walk animation while the screen fades out and tests no collision: the
+    // root motion carries the player on the way it faces.
+    auto& transform = world_->registry().get<Transform>(player_);
+    transform.position += assets::forwardOfYaw(transform.yaw) * (rules_.player.walkSpeed * seconds);
+    world_->registry().get<AnimationIntent>(player_) = {.motion = Motion::Walk, .speedScale = 1.0F};
+    leavingSeconds_ += seconds;
+    if (leavingSeconds_ >= rules_.transition.fadeOutSeconds) {
+        pendingChange_ = std::exchange(leaving_, std::nullopt);
+    }
+}
+
+void Field::advanceClock(float seconds) {
+    // clock.c: tickGameClock counts a minute every 20 frames and wraps at midnight.
+    clockSeconds_ += seconds;
+    while (clockSeconds_ >= rules_.clock.minuteSeconds) {
+        clockSeconds_ -= rules_.clock.minuteSeconds;
+        clockMinutes_ = (clockMinutes_ + 1) % MinutesPerDay;
+    }
+}
+
+void Field::setClockMinutes(std::int32_t minutes) {
+    clockMinutes_ = ((minutes % MinutesPerDay) + MinutesPerDay) % MinutesPerDay;
+    clockSeconds_ = 0.0F;
+}
+
+float Field::fadeLevel() const {
+    const TransitionRules& transition = rules_.transition;
+    if (leaving_) {
+        return transition.fadeOutSeconds > 0.0F ? std::min(1.0F, leavingSeconds_ / transition.fadeOutSeconds) : 1.0F;
+    }
+    if (pendingChange_ || waitingForMap_) {
+        return 1.0F;
+    }
+    if (arrivingSeconds_ > 0.0F && transition.fadeInSeconds > 0.0F) {
+        return arrivingSeconds_ / transition.fadeInSeconds;
+    }
+    return 0.0F;
 }
 
 std::optional<MapChange> Field::takeMapChange() {
@@ -224,6 +299,8 @@ void Field::planPath(glm::vec3 target) {
     }
 }
 
+// tamer.c: tamerTickWalkingState: the direction pressed, relative to the camera, and run unless walk is held (walk
+// is animation 2, run animation 3).
 Field::Step Field::playerStep() {
     const float length = glm::length(input_.stick);
     if (length > rules_.input.deadZone) {
@@ -263,11 +340,12 @@ void Field::movePlayer(float seconds) {
             moveOnGrid(collision_, transform.position, step.direction * expected, mover.radius).position;
     }
     const float moved = groundDistance(transform.position, start);
-    // The original faces the way the stick points even against a wall (tamer.c: setTamerDirection).
+    // The original faces the way the stick points even against a wall (tamer.c: setTamerDirection), and keeps its
+    // walk or run animation playing at full speed there: it is the animation that moves it (anim.c:
+    // applyRootMomentum), and the collision only cancels the movement.
     transform.yaw =
         turnToward(transform.yaw, assets::yawOfDirection({facing.x, 0.0F, facing.y}), mover.turnSpeed * seconds);
-    animation = {.motion = step.run ? Motion::Run : Motion::Walk,
-                 .speedScale = expected > 0.0F ? std::clamp(moved / expected, 0.0F, 1.0F) : 1.0F};
+    animation = {.motion = step.run ? Motion::Run : Motion::Walk, .speedScale = 1.0F};
 
     if (moveTarget_) {
         pathStallSeconds_ = moved < expected * StuckFraction ? pathStallSeconds_ + seconds : 0.0F;
@@ -325,6 +403,8 @@ glm::vec2 Field::followPath(glm::vec3& position, float distance) {
     return facing;
 }
 
+// tamer.c: checkMapInteraction and map_collision.c: getTileTrigger: 110-119 warp through exit value - 110; the other
+// values go to later systems. The original tests the cell every frame; this fires on stepping onto it.
 void Field::checkTriggers() {
     const glm::vec3 position = world_->registry().get<Transform>(player_).position;
     const CollisionCell cell = assets::collisionCellAt(position);
@@ -340,17 +420,18 @@ void Field::checkTriggers() {
         const auto warp = std::ranges::find(warps_, value - FirstWarpTrigger, &assets::MapWarp::exit);
         const std::optional<std::string> target = warp != warps_.end() ? warp->targetMapId : std::nullopt;
         if (target) {
-            pendingChange_ = MapChange{.map = *target, .exit = warp->targetExit, .trigger = value};
+            leaving_ = MapChange{.map = *target, .exit = warp->targetExit, .trigger = value};
         }
     }
-    if (!pendingChange_) {
+    if (!leaving_) {
         const auto scripted = std::ranges::find_if(
             scriptedWarps_, [&](const ScriptedWarp& warp) { return warp.map == mapId_ && warp.trigger == value; });
         if (scripted != scriptedWarps_.end()) {
-            pendingChange_ = MapChange{.map = scripted->targetMap, .exit = scripted->targetExit, .trigger = value};
+            leaving_ = MapChange{.map = scripted->targetMap, .exit = scripted->targetExit, .trigger = value};
         }
     }
-    if (pendingChange_) {
+    if (leaving_) {
+        leavingSeconds_ = 0.0F;
         moveTarget_.reset();
         path_.clear();
         return;
@@ -362,30 +443,29 @@ void Field::updateTrail() {
     const glm::vec3 playerPosition = world_->registry().get<Transform>(player_).position;
     const glm::vec3 partnerPosition = world_->registry().get<Transform>(partner_).position;
     const CollisionCell cell = assets::collisionCellAt(playerPosition);
-    if (cell == lastPlayerCell_) {
-        return;
-    }
     const float halfWidth = rules_.partner.sightHalfWidth;
     const auto visible = [&](glm::vec3 point) { return isLineClear(collision_, playerPosition, point, halfWidth); };
-    // map.c: partnerTickCollision keeps a trail of the player's cells only while the partner cannot see the player.
-    if (visible(partnerPosition)) {
-        trail_.clear();
-    } else {
-        if (trail_.empty() || !visible(assets::collisionCellCenter(trail_.back()))) {
+    // map.c: partnerTickCollision keeps a trail of the player's cells only while the partner cannot see the player:
+    // when the player changes cell, its last cell is added if the newest one is out of sight too.
+    if (cell != lastPlayerCell_) {
+        if (visible(partnerPosition)) {
+            trail_.clear();
+        } else if (trail_.empty() || !visible(assets::collisionCellCenter(trail_.back()))) {
             trail_.push_back(lastPlayerCell_);
             if (std::cmp_greater(trail_.size(), rules_.partner.trailLength)) {
                 trail_.pop_front();
             }
         }
-        // A short cut: if an older cell is in sight, the newer ones are not needed.
-        for (std::size_t back = 4; back >= 2; --back) {
-            if (trail_.size() >= back && visible(assets::collisionCellCenter(trail_[trail_.size() - back]))) {
-                trail_.resize(trail_.size() - back + 1);
-                break;
-            }
+        lastPlayerCell_ = cell;
+    }
+    // map.c: partnerTickCollision, every frame: the first of the second, third and fourth newest cells that the
+    // player can see makes the newer ones unnecessary.
+    for (std::size_t back = 2; back <= 4 && back <= trail_.size(); ++back) {
+        if (visible(assets::collisionCellCenter(trail_[trail_.size() - back]))) {
+            trail_.resize(trail_.size() - back + 1);
+            break;
         }
     }
-    lastPlayerCell_ = cell;
 }
 
 void Field::movePartner(float seconds) {
@@ -407,6 +487,8 @@ void Field::movePartner(float seconds) {
         return;
     }
     const float radius = rules.mover.radius;
+    // partner.c: getPartnerTamerCloseness runs beyond 3.5 radii, walks beyond 2.5 and stops closer. Walking while it
+    // follows the trail is the engine's: the original's partner keeps its distance rule there too.
     Motion motion = Motion::Idle;
     if (distance > rules.runDistance * radius) {
         motion = Motion::Run;
@@ -415,6 +497,7 @@ void Field::movePartner(float seconds) {
     }
     partnerMotion_ = motion;
 
+    // map.c: partnerTickCollision heads for the oldest trail cell, or for the player without a trail.
     const glm::vec3 target = trail_.empty() ? playerPosition : assets::collisionCellCenter(trail_.front());
     const glm::vec2 toTarget = ground(target) - ground(transform.position);
     if (motion == Motion::Idle || glm::length(toTarget) == 0.0F) {

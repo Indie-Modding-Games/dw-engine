@@ -30,6 +30,11 @@ struct MapMarker {
 // (map.c: tickDaytimeTransition).
 inline constexpr double TimeOfDayFadeSeconds = 25.0 / MapDepthLayers::FramesPerSecond;
 
+// How far toward the new palette the original shows a fade that is `progress` (0 to 1) through: map.c:
+// tickDaytimeTransition moves each colour A - (A - B) / (6 - frame / 5) of the way from the old palette, so the fade
+// steps through 1/6, 1/5, 1/4, 1/3 and 1/2, five frames each, and jumps to the new palette at the end.
+double timeOfDayFadeShown(double progress);
+
 // Draws a field map (docs/formats/mapas.md, ADR 0020): the prerendered background of the current time of day, then,
 // after the models drawn with camera(), the depth-layer sprites with depth so they cover the models behind them, and
 // black bars where the background does not reach. Put background() first in the scene pass, the models next and
@@ -55,9 +60,10 @@ public:
     // continues from the colours shown at that moment.
     void setVariant(std::size_t variant, double fadeSeconds = TimeOfDayFadeSeconds);
 
-    // Advances the sprite animations and the fade, and sets the world point the camera centres on. The camera takes
-    // the size of the frame's targets when backgroundDrawer() prepares, before the drawers after it.
-    void update(double seconds, glm::vec3 worldFocus);
+    // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game may pause one
+    // and not the other), and sets the world point the camera centres on. The camera takes the size of the frame's
+    // targets when backgroundDrawer() prepares, before the drawers after it.
+    void update(double animationSeconds, double fadeSeconds, glm::vec3 worldFocus);
 
     // Markers drawn by layerDrawer() before the depth layers, so the layers cover them as they cover models.
     void setMarkers(std::span<const MapMarker> markers) { markers_.assign(markers.begin(), markers.end()); }

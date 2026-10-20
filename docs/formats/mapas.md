@@ -22,7 +22,7 @@ Bits de `MapEntry.flags` (`map.c: getMapSoundId`, `overworld.c: loadMapDigimon`,
 |---|---|
 | `0x1F` | sonido del mapa |
 | `0x20` | ningún código conocido lo lee |
-| `0x40` | hora fija: el fondo usa siempre la primera paleta |
+| `0x40` | hora fija: el fondo usa siempre la primera paleta y no hay fundido al cambiar la hora (`map.c: renderMap`) |
 | `0x80` | la sección de entidades tiene registros de NPC |
 
 Las entradas con nombre vacío no tienen fichero. La ruta del fichero es `\MAP\MAP<id / 15 + 1>\<nombre>.MAP` (o
@@ -215,6 +215,8 @@ Lo que hace el original para dibujar un mapa de campo, que es la especificación
 - La ventana sigue al jugador sin zona muerta ni suavizado:
   `cameraX = clamp(W · 64 + sx(jugador) − 160, 0, W · 128 − 320)`, y lo mismo en Y con 120 y 240. Solo se mueve
   mientras el jugador anda con la cruceta; los scripts la mueven con `moveCameraByDiff` y `createCameraMovement`.
+  La vuelta al centro tras un borde (`updateDrawingOffsets`) solo mira la dirección pulsada de la cruceta, así que en
+  un borde la ventana puede quedar algo descentrada; el motor no lo copia.
   El original aplica el desplazamiento un fotograma tarde, sin que se desalineen fondo y modelos.
 
 ### Capas de profundidad
@@ -258,8 +260,12 @@ Lo que hace el original para dibujar un mapa de campo, que es la especificación
 
 `map.c: updateTimeOfDay`: de 6:00 a 15:59 la paleta 0 (día), de 16:00 a 19:59 la 1 (atardecer) y el resto la 2
 (noche); al atardecer las luces pierden un 30 % de verde y azul y de noche la mitad de todo. Los mapas de hora fija
-(`0x40`) usan siempre la 0 y no tocan las luces. El cambio de paleta es un fundido de 25 fotogramas
-(`map.c: tickDaytimeTransition`); las luces cambian de golpe al final. `light_updates` en `data/maps` dice qué
+(`0x40`) usan siempre la 0 y no tocan las luces. El cambio de paleta empieza justo a las 6:00, 16:00 y 20:00
+(`map.c: renderMap`, salvo en los mapas de hora fija) y es un fundido de 25 fotogramas
+(`map.c: tickDaytimeTransition`) a escalones: cada color avanza 1/6, 1/5, 1/4, 1/3 y 1/2 del camino desde la paleta
+de partida, cinco fotogramas cada uno, y al final salta a la nueva; las luces cambian de golpe al final. El fundido
+se para mientras el juego no está en el campo (`GAME_STATE` distinto de 0). El reloj y su ritmo están en la
+[ficha del campo](../reference/campo.md#hora-del-día). `light_updates` en `data/maps` dice qué
 instancias se ven solo de día o solo de noche (`utils2.c: updateMapLightState`).
 
 ## Comprobación con el disco

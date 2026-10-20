@@ -498,6 +498,7 @@ glm::vec3 toWorldPosition(glm::ivec3 original) {
     return core::fromOriginalAxes(glm::vec3{original});
 }
 
+// map_collision.c: getModelTile, with floor instead of its truncation toward zero.
 CollisionCell collisionCellAt(glm::vec3 world) {
     return {.column = static_cast<std::int32_t>(std::floor(world.x / CollisionCellSize)) + GridOrigin,
             .row = static_cast<std::int32_t>(std::floor(world.z / CollisionCellSize)) + GridOrigin};

@@ -83,6 +83,7 @@ std::optional<MapChange> walkToTrigger(Field& field, std::uint8_t value, Drive d
         field.setInput({.run = true});
         CHECK(field.hasMoveTarget());
     }
+    float warpPartnerDistance = 0.0F;
     for (int tick = 0; tick < MaxTicksPerLeg; ++tick) {
         if (drive == Drive::Stick) {
             // As a gamepad would: point the stick, relative to the camera, at the next waypoint of the path.
@@ -98,13 +99,18 @@ std::optional<MapChange> walkToTrigger(Field& field, std::uint8_t value, Drive d
                                   glm::dot(direction, glm::vec2{forward.x, forward.z})};
             field.setInput({.stick = stick, .run = true});
         }
+        const bool wasLeaving = field.mapChangePending();
         field.tick(Tick);
+        if (!wasLeaving && field.mapChangePending()) {
+            // The partner kept up: it is within running distance of the player when the warp fires (then the player
+            // walks on alone while the screen fades out).
+            warpPartnerDistance = partnerDistance(field);
+        }
         if (auto change = field.takeMapChange()) {
             MESSAGE(field.mapId(), ": trigger ", change->trigger, " after ", tick + 1, " ticks; partner at ",
-                    partnerDistance(field), " (teleports ", field.partnerTeleports(), ")");
-            // The partner kept up: it is within running distance of the player when the warp fires.
+                    warpPartnerDistance, " (teleports ", field.partnerTeleports(), ")");
             const auto& partner = field.rules().partner;
-            CHECK(partnerDistance(field) < 2.0F * partner.runDistance * partner.mover.radius);
+            CHECK(warpPartnerDistance < 2.0F * partner.runDistance * partner.mover.radius);
             CHECK(field.partnerTeleports() == 0);
             return change;
         }

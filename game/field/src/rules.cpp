@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <format>
 #include <initializer_list>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -94,6 +95,58 @@ InputRules readInput(YamlReader& reader, const YamlNode& node) {
     return input;
 }
 
+TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
+    if (!reader.expectKeys(node, "transition", {"fade_out_seconds", "fade_in_seconds"})) {
+        return {};
+    }
+    return {.fadeOutSeconds = readNonNegative(reader, reader.field(node, "fade_out_seconds")),
+            .fadeInSeconds = readNonNegative(reader, reader.field(node, "fade_in_seconds"))};
+}
+
+ClockRules readClock(YamlReader& reader, const YamlNode& node) {
+    if (!reader.expectKeys(node, "clock", {"start_hour", "minute_seconds"})) {
+        return {};
+    }
+    ClockRules clock{.startHour = reader.integer<std::int32_t>(reader.field(node, "start_hour")),
+                     .minuteSeconds = readPositive(reader, reader.field(node, "minute_seconds"))};
+    constexpr std::int32_t HoursPerDay = 24;
+    if (reader.ok() && (clock.startHour < 0 || clock.startHour >= HoursPerDay)) {
+        reader.fail(node, "clock: start_hour must be 0 to 23");
+    }
+    return clock;
+}
+
+glm::vec3 readLight(YamlReader& reader, const YamlNode& node, std::string_view what) {
+    const auto items = reader.sequence(node, what, 3);
+    if (items.size() != 3) {
+        return glm::vec3{1.0F};
+    }
+    const glm::vec3 light{reader.number(items[0]), reader.number(items[1]), reader.number(items[2])};
+    if (reader.ok() &&
+        (glm::any(glm::lessThan(light, glm::vec3{0.0F})) || glm::any(glm::greaterThan(light, glm::vec3{1.0F})))) {
+        reader.fail(node, std::format("time_of_day: {} must be three numbers from 0 to 1", what));
+    }
+    return light;
+}
+
+TimeOfDayRules readTimeOfDay(YamlReader& reader, const YamlNode& node) {
+    if (!reader.expectKeys(node, "time_of_day",
+                           {"day_start", "dusk_start", "night_start", "dusk_light", "night_light"})) {
+        return {};
+    }
+    TimeOfDayRules time{.dayStart = reader.integer<std::int32_t>(reader.field(node, "day_start")),
+                        .duskStart = reader.integer<std::int32_t>(reader.field(node, "dusk_start")),
+                        .nightStart = reader.integer<std::int32_t>(reader.field(node, "night_start")),
+                        .duskLight = readLight(reader, reader.field(node, "dusk_light"), "dusk_light"),
+                        .nightLight = readLight(reader, reader.field(node, "night_light"), "night_light")};
+    constexpr std::int32_t HoursPerDay = 24;
+    if (reader.ok() && (time.dayStart < 0 || time.dayStart >= time.duskStart || time.duskStart >= time.nightStart ||
+                        time.nightStart >= HoursPerDay)) {
+        reader.fail(node, "time_of_day: the hours must go 0 <= day_start < dusk_start < night_start <= 23");
+    }
+    return time;
+}
+
 template <typename T>
 core::Result<T> loadDocument(const assets::VirtualFileSystem& vfs, std::string_view idText,
                              core::Result<T> (*parse)(std::string_view)) {
@@ -116,12 +169,16 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
         return std::unexpected{core::Error{std::format("field rules: {}", tree.error().message)}};
     }
     YamlReader reader;
-    if (!reader.expectKeys(*tree, "the field rules", {"player", "partner", "input"})) {
+    if (!reader.expectKeys(*tree, "the field rules",
+                           {"player", "partner", "input", "transition", "clock", "time_of_day"})) {
         return std::unexpected{reader.error("field rules")};
     }
     FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
                      .partner = readPartner(reader, reader.field(*tree, "partner")),
-                     .input = readInput(reader, reader.field(*tree, "input"))};
+                     .input = readInput(reader, reader.field(*tree, "input")),
+                     .transition = readTransition(reader, reader.field(*tree, "transition")),
+                     .clock = readClock(reader, reader.field(*tree, "clock")),
+                     .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day"))};
     return reader.finish(std::move(rules), "field rules");
 }
 

@@ -5,18 +5,20 @@ player:
   model: digimon/boys/model
   # DIGIMON_DATA[0].radius.
   radius: 100
-  # Raíz de las animaciones 2 (andar, con el botón) y 3 (correr, sin él): 20 y 50 unidades por imagen.
+  # Raíz de las animaciones 2 (andar, con el botón) y 3 (correr, sin él): 20 y 50 unidades por imagen
+  # (tamer.c: tamerTickWalkingState, anim.c: applyRootMomentum).
   walk_speed: 400
   run_speed: 1000
-  # El original gira de golpe (0); el motor suaviza la cara, no el movimiento.
-  turn_speed: 20
+  # tamer.c: setTamerDirection: gira de golpe.
+  turn_speed: 0
 partner:
   model: digimon/agum/model
   radius: 120
   # Media de la raíz de las animaciones 2 (andar) y 4 (correr) del partner inicial: 22,6 y 43,5 por imagen.
   walk_speed: 452
   run_speed: 870
-  turn_speed: 20
+  # map.c: partnerTickCollision le hace mirar de golpe a su destino (entityLookAtTile, entityLookAtLocation).
+  turn_speed: 0
   # En radios del partner (partner.c: getPartnerTamerCloseness): más lejos que 3,5 corre, entre 2,5 y 3,5 anda y
   # más cerca se para.
   run_distance: 3.5
@@ -33,3 +35,21 @@ partner:
 input:
   dead_zone: 0.25
   arrive_distance: 25
+# El cambio de mapa (tamer.c: tamerTickChangeMap): fundido a negro de 20 imágenes (fade.c: fadeToBlack(20)) mientras
+# el jugador sigue andando sin colisión, y de vuelta en otras 20 (fadeFromBlack(20)) antes de poder moverse.
+transition:
+  fade_out_seconds: 1.0
+  fade_in_seconds: 1.0
+# El reloj del juego (clock.c: tickGameClock): un minuto cada 20 imágenes; una partida nueva empieza a las 8:00.
+clock:
+  start_hour: 8
+  minute_seconds: 1.0
+# Las horas del día (map.c: updateTimeOfDay): el día empieza a las 6, el atardecer a las 16 y la noche a las 20, y
+# la paleta del fondo sólo cambia justo a esas horas (map.c: renderMap). Al atardecer las tres luces del mapa
+# conservan 7/10 del verde y del azul; de noche, 5/10 de cada canal (rojo, verde, azul).
+time_of_day:
+  day_start: 6
+  dusk_start: 16
+  night_start: 20
+  dusk_light: [1.0, 0.7, 0.7]
+  night_light: [0.5, 0.5, 0.5]

@@ -4,20 +4,22 @@
 
 namespace dwe::render {
 
-namespace {
+bool timeOfDayChangesAt(std::int32_t hour, const TimeOfDaySchedule& schedule) {
+    return hour == schedule.dayStart || hour == schedule.duskStart || hour == schedule.nightStart;
+}
 
-// map.c: updateTimeOfDay.
-constexpr std::int32_t DayStart = 6;
-constexpr std::int32_t DuskStart = 16;
-constexpr std::int32_t NightStart = 20;
+glm::vec3 timeOfDayLightScale(TimeOfDay time, bool fixedTimeOfDay, const TimeOfDaySchedule& schedule) {
+    if (fixedTimeOfDay || time == TimeOfDay::Day) {
+        return glm::vec3{1.0F};
+    }
+    return time == TimeOfDay::Dusk ? schedule.duskLight : schedule.nightLight;
+}
 
-} // namespace
-
-TimeOfDay timeOfDayAt(std::int32_t hour) {
-    if (hour >= DuskStart && hour < NightStart) {
+TimeOfDay timeOfDayAt(std::int32_t hour, const TimeOfDaySchedule& schedule) {
+    if (hour >= schedule.duskStart && hour < schedule.nightStart) {
         return TimeOfDay::Dusk;
     }
-    if (hour < DayStart || hour >= NightStart) {
+    if (hour < schedule.dayStart || hour >= schedule.nightStart) {
         return TimeOfDay::Night;
     }
     return TimeOfDay::Day;
@@ -25,6 +27,8 @@ TimeOfDay timeOfDayAt(std::int32_t hour) {
 
 std::size_t MapSceneData::backgroundVariant(TimeOfDay time, bool fixedTimeOfDay) const {
     const auto variant = static_cast<std::size_t>(time);
+    // map.c: updateTimeOfDay shows the first palette on maps with the fixed-time flag (0x40 of their MAP_ENTRIES
+    // flags).
     return fixedTimeOfDay || variant >= images.backgroundPalettes.size() ? 0 : variant;
 }
 

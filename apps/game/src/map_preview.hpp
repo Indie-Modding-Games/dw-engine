@@ -78,6 +78,8 @@ private:
     MapPreviewDesc desc_;
     std::size_t mapIndex_ = 0;
     render::MapSceneData scene_;
+    // The map keeps its day palette whatever the time (MapEntry::fixedTimeOfDay).
+    bool fixedTime_ = false;
     glm::vec3 focus_{0.0F};
     std::optional<glm::vec3> target_;
     glm::vec2 cursor_{0.0F};
