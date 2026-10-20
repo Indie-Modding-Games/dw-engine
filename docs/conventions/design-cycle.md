@@ -16,6 +16,7 @@ batalla, economía, un modo de juego…) sigue este ciclo.
 
 ## Reglas
 
-- **No se programa un sistema sin diseño aprobado.** Un prototipo para explorar sí, pero no se hace merge.
+- **No se programa un sistema sin diseño aprobado.** Un prototipo para explorar sí, pero no se hace merge. Para el
+  ruleset `original`, el diseño aprobado es la ficha de referencia ([ADR 0022](../adr/0022-primer-ruleset-fiel-al-original.md)).
 - **Los números no viven en C++.** Si un valor puede ajustarse, está en el ruleset.
 - **Cada desviación del original es una decisión.** El documento de diseño dice qué se conserva, qué cambia y por qué.

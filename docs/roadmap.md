@@ -10,11 +10,12 @@ están en las [especificaciones por fase](plan/README.md).
 | 0 | Base | S | Casi cerrada: todo hecho en Linux; la CI corre en GitHub desde el primer push (Windows en verificación); falta la limpieza de repositorios |
 | 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; falta decidir el formato cocinado de los vídeos |
 | 2 | Prueba vertical | M | En curso |
-| 3 | Núcleo jugable | L | Pendiente |
+| 3 | Núcleo jugable | L | En curso |
 | 4 | Contenido y modos | XL, continuo | Pendiente |
 
-Antes de la fase 3, el repositorio de diseño tiene que tener escritos los **pilares de diseño**
-([ADR 0010](adr/0010-reglas-propias-con-rulesets.md)).
+La fase 3 empieza con las reglas del original como primer ruleset; el diseño nuevo llega después como rulesets que
+aprueba el responsable de diseño ([ADR 0010](adr/0010-reglas-propias-con-rulesets.md),
+[fase 3](plan/fase-3-nucleo-jugable.md)).
 
 ## Fase 0 — Base
 
@@ -100,16 +101,20 @@ con 0 errores de validación (detalle en la
 
 ## Fase 3 — Núcleo jugable
 
-Cada sistema sigue el [ciclo de diseño](conventions/design-cycle.md): ficha de referencia, diseño aprobado en el GDD,
-implementación con las reglas en el ruleset, tests y pruebas de juego.
+Cada sistema sigue el [ciclo de diseño](conventions/design-cycle.md). El primer ruleset reproduce el original (ficha
+de referencia, decomp y tablas del disco); el diseño nuevo llega después como otros rulesets aprobados por el
+responsable de diseño.
 
-- Rulesets: el formato y el primer ruleset, sembrado con los valores del original.
+- Rulesets: el formato, con estrategias para las reglas que son lógica, y el ruleset `original`.
 - Partner: stats, cuidado, vida y evolución.
 - Batalla.
 - Inventario y guardado (ranuras y autoguardado).
 - Panel de ajuste en vivo y simulaciones de balance.
+- Interfaz de la batalla y del partner con ratón, teclado y mando.
+- El cambio de mapa como el original: fundido sustractivo a gris y nombre del mapa.
 
-**Hecho cuando:** el bucle de criar, entrenar, combatir y evolucionar se juega con el diseño nuevo.
+**Hecho cuando:** el bucle de criar, entrenar, combatir y evolucionar se juega con el ruleset del original, y un
+autotest lo recorre con el reloj acelerado.
 
 ## Fase 4 — Contenido y modos
 

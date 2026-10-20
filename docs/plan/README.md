@@ -14,13 +14,13 @@ El [plan por fases](../roadmap.md) es el resumen con el estado del día. Aquí e
 | 0 | [Base](fase-0-base.md) | El esqueleto del motor: compila en cualquier PC, abre una ventana, lee el mando y ejecuta Lua |
 | 1 | [Tubería de assets](fase-1-tuberia-de-assets.md) | Sacar todo el contenido del disco original a formatos abiertos y prepararlo para el motor |
 | 2 | [Prueba vertical](fase-2-prueba-vertical.md) | Un trozo pequeño del juego, jugable de punta a punta: caminar de File City a la casa de Jijimon y volver |
-| 3 | [Núcleo jugable](fase-3-nucleo-jugable.md) | El bucle principal del juego: criar, entrenar, combatir y evolucionar, con el diseño nuevo |
+| 3 | [Núcleo jugable](fase-3-nucleo-jugable.md) | El bucle principal del juego: criar, entrenar, combatir y evolucionar, primero con las reglas del original y sobre rulesets |
 | 4 | [Contenido y modos](fase-4-contenido-y-modos.md) | La historia, los personajes, los modos de juego y la API de mods; termina con la primera versión del mod |
 
 ```mermaid
 flowchart LR
     f0[0. Base] --> f1[1. Tubería de assets] --> f2[2. Prueba vertical] --> f3[3. Núcleo jugable] --> f4[4. Contenido y modos]
-    gdd[[Pilares de diseño y GDD]] --> f3
+    gdd[[Pilares de diseño y GDD]] -.->|rulesets nuevos| f3
     gdd --> f4
 ```
 
@@ -55,8 +55,9 @@ Todas siguen la misma estructura:
 4. **La fase se cierra** cuando todos los requisitos se cumplen y la prueba del criterio de cierre pasa. Entonces se
    actualiza el estado aquí y en el [plan](../roadmap.md).
 5. **Las reglas del juego no se especifican aquí.** Desde la fase 3, cómo funciona cada sistema (cuidado, batalla,
-   evolución…) lo define el GDD del repositorio de diseño, según el [ciclo de diseño](../conventions/design-cycle.md).
-   Estas especificaciones dicen qué tiene que hacer el motor para que ese diseño se pueda construir.
+   evolución…) lo define su ficha de referencia para el ruleset del original, y el GDD del repositorio de diseño para
+   los rulesets nuevos, según el [ciclo de diseño](../conventions/design-cycle.md). Estas especificaciones dicen qué
+   tiene que hacer el motor para que ese diseño se pueda construir.
 
 ## Cómo se trabaja sin esperas
 
