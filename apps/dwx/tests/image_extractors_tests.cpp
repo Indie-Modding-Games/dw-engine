@@ -17,6 +17,7 @@
 #include "disc_fixtures.hpp"
 #include "temp_folder.hpp"
 #include "tim_builder.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using namespace dwe::formats::image;
@@ -136,6 +137,8 @@ TEST_CASE("every image file of the disc is extracted to PNG and metadata") {
     const Disc disc{*fixture.source, fixture.volume, fixture.info};
     const auto run = runExtractors(disc, extractors());
     REQUIRE(run.has_value());
+    // The engine loads the pack written from the run and dwx validate finds nothing wrong with it.
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) == "");
 
     const auto& allTim = reportOf(*run, "CHDAT/ALLTIM.TIM");
     CHECK(allTim.extractor == "tim_pack");

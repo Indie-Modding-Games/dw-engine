@@ -17,6 +17,7 @@
 #include "map_fixtures.hpp"
 #include "temp_folder.hpp"
 #include "tim_builder.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using dwe::formats::exe::MapEntry;
@@ -104,6 +105,12 @@ TEST_CASE("a map gives its data and its images") {
     const Disc disc{*fixture.source, fixture.volume, fixture.info, &fixture.tables};
     const auto run = runExtractors(disc, extractors());
     REQUIRE(run.has_value());
+    // The engine loads the pack written from the run and dwx validate only finds the warps to record 1, which names
+    // the file of record 0 and so has no data of its own (the disc has no such record).
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) ==
+          "map/alone/data.yaml: $.warps[0].target_map_id: 'field_1' names map/field_1/data, which no pack has\n"
+          "map/field/data.yaml: $.warps[0].target_map_id: 'field_1' names map/field_1/data, which no pack has\n"
+          "map/glow/data.yaml: $.warps[0].target_map_id: 'field_1' names map/field_1/data, which no pack has\n");
 
     const auto& map = reportOf(*run, "MAP/MAP1/FIELD.MAP");
     CHECK(map.extractor == "map");

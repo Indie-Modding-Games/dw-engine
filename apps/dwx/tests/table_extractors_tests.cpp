@@ -15,6 +15,7 @@
 #include "disc_fixtures.hpp"
 #include "exe_fixture.hpp"
 #include "game_tables.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 
@@ -69,6 +70,8 @@ TEST_CASE("the executable gives the documents of its tables") {
     const Disc disc{*fixture.source, fixture.volume, fixture.info, &fixture.tables};
     const auto run = runExtractors(disc, extractors());
     REQUIRE(run.has_value());
+    // The engine loads the pack written from the run and dwx validate finds nothing wrong with it.
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) == "");
 
     const auto& executable = reportOf(*run, ExecutablePath);
     CHECK(executable.extractor == "executable");

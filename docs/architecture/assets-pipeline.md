@@ -165,6 +165,10 @@ problema. El test del disco (`DWE_DISC`, en `apps/dwx/tests/real_disc_tests.cpp`
 base con el mismo resultado; sin disco se salta. En el build `ci` tarda alrededor de dos minutos, casi todo en
 descomprimir los 1530 PNG.
 
+Sin disco, en CI, los tests de los extractores que montan un disco sintético (imágenes, mapas, tablas, sonido y
+scripts) escriben el paquete base de lo extraído y lo pasan por `validatePacks` con los esquemas de `content/schemas`
+(`apps/dwx/tests/written_pack.hpp`): así se comprueba siempre que el motor carga lo que escribe `dwx extract`.
+
 ## Dónde vive cada cosa
 
 | Qué | Dónde |

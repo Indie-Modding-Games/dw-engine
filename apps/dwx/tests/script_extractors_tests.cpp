@@ -15,6 +15,7 @@
 
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 
@@ -93,6 +94,8 @@ TEST_CASE("both script files become one listing per script") {
     const Disc disc{*fixture.source, fixture.volume, fixture.info};
     const auto run = runExtractors(disc, extractors());
     REQUIRE(run.has_value());
+    // The engine loads the pack written from the run and dwx validate finds nothing wrong with it.
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) == "");
 
     const auto& mapHead = reportOf(*run, "SCN/MAPHEAD.SCN");
     CHECK(mapHead.extractor == "event_script");

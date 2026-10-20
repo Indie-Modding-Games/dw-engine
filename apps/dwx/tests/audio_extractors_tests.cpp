@@ -18,6 +18,7 @@
 #include "game_tables.hpp"
 #include "riff_reader.hpp"
 #include "temp_folder.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using dwe::formats::audio::test::adpcmBlock;
@@ -142,6 +143,8 @@ TEST_CASE("a sound bank gives a SoundFont, a WAV per sample and what the game pl
     const Disc disc{*fixture.source, fixture.volume, fixture.info, &fixture.tables};
     const auto run = runExtractors(disc, extractors());
     REQUIRE(run.has_value());
+    // The engine loads the pack written from the run and dwx validate finds nothing wrong with it.
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) == "");
 
     const auto& bank = reportOf(*run, "SOUND/VHB/SS.VHB");
     CHECK(bank.extractor == "sound_bank");
