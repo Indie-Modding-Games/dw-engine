@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push cancels a pull request's run; every run on main finishes, so its caches get saved.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   linux:
