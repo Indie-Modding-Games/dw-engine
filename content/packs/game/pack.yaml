@@ -28,6 +28,8 @@ schemas:
     - rules/*/life
   ruleset_training:
     - rules/*/training
+  ruleset_inventory:
+    - rules/*/inventory
   localization:
     - localization/*/*
   ui_text_font:

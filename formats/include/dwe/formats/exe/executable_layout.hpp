@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/formats/exe/constant_switch.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -14,6 +16,30 @@ struct TableLocation {
     std::uint32_t count = 0;
 
     [[nodiscard]] bool located() const { return address != 0; }
+};
+
+// The functions ITEM_FUNCTIONS points to (item.c; main.c: handleBuffDisks).
+struct ItemHandlerAddresses {
+    std::uint32_t hpHealing = 0;    // handleHPHealingItem
+    std::uint32_t mpHealing = 0;    // handleMPHealingItem
+    std::uint32_t doubleFloppy = 0; // handleDoubleFloppy
+    std::uint32_t status = 0;       // handleStatusItems
+    std::uint32_t revive = 0;       // handleRestore
+    std::uint32_t battleDisk = 0;   // handleBuffDisks
+    std::uint32_t chip = 0;         // handleChips
+    std::uint32_t food = 0;         // handleFood
+    std::uint32_t evolution = 0;    // handleEvoItems
+};
+
+// The item code of a version: the handlers, the first item each per-item table is indexed from, and the constant
+// switches whose cases hold the values of food and chips (exe/item_effects.hpp).
+struct ItemCodeLayout {
+    ItemHandlerAddresses handlers;
+    std::uint8_t firstHpHealingItem = 0; // handleHPHealingItem reads HEALING_VALUES[item - this]
+    std::uint8_t firstMpHealingItem = 0; // handleMPHealingItem reads HEALING_VALUES[item - this]
+    std::uint8_t firstEvolutionItem = 0; // handleEvoItems reads EVOLUTION_ITEM_TARGET[item - this]
+    ConstantSwitch food;                 // handleFood, values in FoodValue order
+    ConstantSwitch chips;                // handleChips, values in ChipValue order
 };
 
 // The tables of one version's main executable. Addresses and counts come from the decomp
@@ -56,6 +82,10 @@ struct ExecutableLayout {
     TableLocation digimonVballSoundIds;  // u8[]: DIGIMON_VBALL_SOUND_ID
     TableLocation mapSoundPara;          // MapSoundPara[]: MAP_SOUND_PARA
     TableLocation jukeboxTracks;         // u8[2][]: MAIN_D_801303B8
+    TableLocation itemFunctions;         // ItemFunction[]: ITEM_FUNCTIONS, one per item
+    TableLocation healingValues;         // int16[]: HEALING_VALUES
+    TableLocation evolutionItemTargets;  // u8[]: EVOLUTION_ITEM_TARGET
+    ItemCodeLayout itemCode;
 };
 
 // Returns every version the tools know, located or not.

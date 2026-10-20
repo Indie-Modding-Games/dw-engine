@@ -12,6 +12,8 @@ tables:
   training: data/training
   moves: data/moves
   items: data/items
+  item_effects: data/item_effects
+  shops: data/shops
 sections:
   - clock
   - care
@@ -20,3 +22,4 @@ sections:
   - training
   - new_game
   - tamer
+  - inventory

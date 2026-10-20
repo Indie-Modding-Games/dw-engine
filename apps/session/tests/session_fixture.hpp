@@ -28,8 +28,8 @@ std::string errorOf(const core::Result<T>& result) {
 }
 
 // The tables the original ruleset names, by role (rules/original/ruleset.yaml).
-inline constexpr std::array<std::string_view, 6> OriginalTables{"digimon",  "evolution", "raise",
-                                                                "training", "moves",     "items"};
+inline constexpr std::array<std::string_view, 8> OriginalTables{"digimon", "evolution", "raise",        "training",
+                                                                "moves",   "items",     "item_effects", "shops"};
 
 // A game loop's tick.
 inline constexpr double Tick = 1.0 / 60.0;

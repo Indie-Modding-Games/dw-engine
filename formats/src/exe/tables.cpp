@@ -360,7 +360,8 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, co
         store(readScalars<std::uint8_t>(image, layout.digimonVballSoundIds, "DIGIMON_VBALL_SOUND_ID"),
               tables.digimonVballSoundIds, error) &&
         store(readMapSoundPara(image, layout), tables.mapSoundPara, error) &&
-        store(readJukeboxTracks(image, layout), tables.jukeboxTracks, error);
+        store(readJukeboxTracks(image, layout), tables.jukeboxTracks, error) &&
+        store(readItemEffects(image, layout), tables.itemEffects, error);
     if (!read) {
         return std::unexpected{std::move(error)};
     }

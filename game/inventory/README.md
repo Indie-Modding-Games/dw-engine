@@ -1,0 +1,102 @@
+# inventory
+
+El inventario (`dwe::game::inventory`, capa `game`): la bolsa del jugador, su dinero, el uso de objetos y el comercio de
+las tiendas. Lo que hacía el original está en la [ficha de inventario](../../docs/reference/inventory.md).
+
+No dibuja menús ni conoce al partner: depende de `core`, `assets` y `ruleset`. Los números salen de la sección
+`inventory` del ruleset (`rules/<id>/inventory.yaml`) y los datos por objeto de las tablas del paquete base
+`data/items`, `data/item_effects` y `data/shops`, que extrae `dwx`.
+
+## Uso
+
+```cpp
+auto inventory = dwe::game::inventory::Inventory::fromRuleset(ruleset);   // partida nueva: 10 huecos, 0 de dinero
+auto items = dwe::assets::loadItemTable(vfs);
+auto table = dwe::assets::loadItemEffectTable(vfs);
+dwe::game::inventory::ItemEffects effects{*table, inventory->rules().effects, inventory->rules().quirks};
+
+inventory->add(item, 1);                    // recoger, premio, cofre: AddResult dice qué entró, qué se perdió y qué no
+if (!inventory->hasRoomFor(item)) { ... }   // el objeto se queda en el suelo o en el cofre
+auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partnerTarget);
+```
+
+- **Estado** (`InventoryState`): los 30 huecos (`std::optional<Stack>` con número de objeto y cantidad), cuántos se
+  usan (`slotCount`) y el dinero. `toYaml` y `fromYaml` lo pasan a YAML para la sección de la partida guardada, con su versión en `SectionVersion`;
+  la sesión los envuelve en un `SectionSerializer` de `game/save`.
+- **Bolsa** (`Inventory`): `add`, `hasRoomFor`, `countOf`, `remove`, `move`, `discard`, `sort`, `setSlotCount`,
+  `loseOnDefeat` (devuelve las pilas perdidas, para la tienda de reciclaje) y `addMoney`, `spendMoney`.
+- **Efectos** (`ItemEffect`): una descripción plana de lo que hace un objeto (curar, revivir, curar estados, proteger,
+  medicina, subir atributos en combate o para siempre, cambios de cuidado, nivel de domador, sección de guion, baño,
+  evolución). `ItemEffects::resolve` la construye con la tabla y el ruleset.
+- **Destino** (`ItemEffectTarget`): lo implementa quien tiene al partner. `accepts` decide si lo acepta (solo en el
+  campo: `partnerWillRefuseItem`) y `apply` aplica el efecto con sus topes.
+- **Uso** (`useItem`): mira si el objeto está, si su `item_color` deja usarlo ahí y su efecto; en el campo pregunta al
+  partner; gasta uno y aplica. Devuelve `UseResult`: el `UseOutcome` (`Used`, `Refused`, `NotUsableHere`, `NotInBag`,
+  `Useless`) y `keyItem`.
+- **Objetos clave** (`isKeyItem`): el original no tiene una marca propia; son los de `droppable` igual a
+  `use.key_item_droppable` (0), que ni se venden ni se tiran. `useItem` y `buy` (`Purchase::keyItem`) lo dicen para que
+  la sesión decida el autoguardado; el inventario nunca guarda.
+- **Tiendas** (`shop.hpp`): `shopStock` con los disparadores de la historia (`StockTriggers`), `buyPrice`, `sellPrice`,
+  `maxPurchase`, `canAfford`, `buy`, `saleOffers` y `sell`. `Buyer` dice si el partner es un bebé.
+- **Apilar** (`StackingRule`): la estrategia que nombra `bag.stacking`; `stackingRules()` registra `original`.
+
+## Rarezas
+
+Cada una es un flag de `quirks` en la sección; `original` las tiene todas a `true`.
+
+| Quirk | Qué hace |
+|---|---|
+| `stack_overflow_is_lost` | Lo que pasa de 99 al apilar se pierde; con `false`, no entra y se queda donde estaba. |
+| `baby_discount_limited_by_full_price` | El máximo que se puede comprar con un bebé se calcula con el precio entero. |
+| `omni_disk_ignores_limit` | El disco de los tres atributos no mira el tope de combate. |
+| `useless_items_consumed` | Un objeto sin efecto se gasta al usarlo; con `false`, se queda en la bolsa. |
+
+## Paridad con el original
+
+Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decidido por diseño) o **Hueco** (falta).
+
+| Regla | Decomp | Nuestro código | Test | Estado |
+|---|---|---|---|---|
+| Apilar en la primera pila, tope 99, el resto se pierde | `item.c: giveItem` | `stacking.cpp: OriginalStackingRule`; `bag.max_stack` | `bag_tests`: "a stack holds 99…" | Igual |
+| Pila llena bloquea aunque haya huecos | `item.c: giveItem` | `OriginalStackingRule::addToStack` | `bag_tests`: "a stack holds 99…" | Igual |
+| Bolsa llena: el objeto no entra | `item.c: giveItem`, `pickupItem` | `Inventory::add`, `hasRoomFor` | `bag_tests`: "a full bag refuses…" | Igual |
+| Quitar deja hueco | `item.c: removeItem` | `Inventory::remove` | `bag_tests`: "a stack that runs out…" | Igual |
+| Contar la primera pila | `item.c: getItemCount` | `Inventory::countOf` | `bag_tests`: "items join…" | Igual |
+| Tamaños 10, 20 y 30 por guion | `script_interp.c: set_inventory_size`; `item.c: setInventorySize` | `Inventory::setSlotCount`; `bag.slot_counts` | `bag_tests`: "the story grows…" | Igual |
+| Partida nueva: 10 huecos y 0 de dinero | guion `dg 193`; `main_menu.c: initializeDefaultSavegame` | constructor de `Inventory`; `bag.new_game_*` | `bag_tests`: "a new game's bag…" | Igual (los objetos iniciales los da el guion: Hueco, fase 4) |
+| Mover intercambia huecos | `inventory.c: selectOptionMenu` | `Inventory::move` | `bag_tests`: "moving swaps…" | Igual |
+| Tirar: campo, `droppable` 1, pila entera | `inventory.c: selectOptionMenu` | `Inventory::discard`; `use.discard_droppable` | `bag_tests`: "moving swaps…" | Igual |
+| Objeto clave: `droppable` 0, ni se vende ni se tira (sin marca propia) | `script_common.c: shopFillSellItemList`; `inventory.c: selectOptionMenu` | `isKeyItem`; `use.key_item_droppable`; `UseResult::keyItem`, `Purchase::keyItem` | `use_tests`: "using an item says…"; `shop_tests`: "buying a key item…" | Igual (el aviso es para el autoguardado, que no existe en el original) |
+| Ordenar por categorías y número | `inventory.c: sortItems`, `ITEM_SORT_ORDER`; `utils.c: sortItemsById` | `Inventory::sort`; `sort.orders` | `bag_tests`: "sorting groups…" | Igual |
+| Dinero: tope 999 999, suelo 0 | `battle_ui.c`; `script_interp.c` | `addMoney`, `spendMoney`; `money.max` | `bag_tests`: "money stops…" | Igual |
+| Derrota: 30 % de huecos, pilas enteras | `script_common.c: handleItemLoss` | `Inventory::loseOnDefeat`; `defeat.lost_percent` | `bag_tests`: "a defeat loses…" | Igual (tirada con `ruleset::Random`, no la del original) |
+| Tienda de reciclaje con lo perdido | `script_common.c: handleItemLoss`, menú 2 | `loseOnDefeat` devuelve las pilas | — | Hueco (fase 4) |
+| Uso según `item_color` | `inventory.c: selectOptionMenu` | `use.cpp: usableIn`; `use.*_colors` | `use_tests`: "colour 0…" | Igual |
+| Campo: rechazo sin gastar; gastar y aplicar | `partner.c` (estados 4 a 6); `partner_impl.c: partnerWillRefuseItem` | `useItem`, `ItemEffectTarget::accepts` | `use_tests`: "in the field…" | Igual (el rechazo lo decide el partner) |
+| Combate: se gasta al lanzar, siempre llega | `main.c: startThrowingItem`, `tickThrownItem` | `useItem` con `UseContext::Battle` | `use_tests`: "in the field…" | Igual (el retraso del lanzamiento es de la batalla) |
+| Objetos sin efecto se gastan | `partner.c`; `ITEM_FUNCTIONS` nulos | `useless_items_consumed` | `use_tests`: "an item that does nothing…" | Igual |
+| Curas de HP y MP | `item.c: handleHPHealingItem`, `handleMPHealingItem`, `HEALING_VALUES` | `ItemEffects::describe`; `data/item_effects` | `effects_tests`: "healing items…" | Igual |
+| Doble cura 1500 | `item.c: handleDoubleFloppy` | `effects.double_floppy` | `effects_tests`: "healing items…" | Igual |
+| Estados, protección, medicina | `item.c: handleStatusItems`, `handleMedicineHealing` | `describeStatus`; `effects.status` | `effects_tests`: "status items…" | Igual |
+| Revivir | `item.c: handleRestore` | `describeRevive`; `effects.revive` | `effects_tests`: "status items…" | Igual |
+| Discos con tope +30 %, 999 | `main.c: handleBuffDisks` | `describeDisk`; `effects.battle_disk` | `effects_tests`: "status items…", "the omni disk…" | Igual |
+| Chips: atributos, vida, nivel de domador | `item.c: handleChips` | `describeChip`; `data/item_effects`, `effects.chip` | `effects_tests`: "chips give…" | Igual |
+| Piloto automático y orinal | `item.c: handleChips`, `handlePortaPotty` | `effects.chip.script`, `effects.chip.toilet` | `effects_tests`: "chips give…" | Igual |
+| Comida, favorita, baño −1 | `item.c: handleFood` | `describeFood`; `data/item_effects`, `effects.food` | `effects_tests`: "food gives…" | Igual |
+| Evolución por tabla y fija | `item.c: handleEvoItems`, `EVOLUTION_ITEM_TARGET` | `describeEvolution`; `effects.evolution` | `effects_tests`: "evolution items…" | Igual |
+| Existencias por disparador `0x180 + i` | `script_common.c: shopFillBuyItemList` | `shopStock`, `StockTriggers`; `shop.stock_trigger_base` | `shop_tests`: "the stock is…" | Igual |
+| Cuándo se puede comprar | `script_common.c: shopFillBuyItemList` | `shop.cpp: isBuyable` | `shop_tests`: "the stock is…", "with the bag full…" | Igual |
+| Precio, descuento de bebé 90 % | `script_common.c: tickItemMenuAmountBox`, `isPartnerBaby` | `buyPrice`, `buy`; `shop.baby_discount_percent` | `shop_tests`: "buying pays…" | Igual |
+| Máximo de compra | `script_common.c: createItemMenuAmountBox` | `maxPurchase`; `shop.max_amount` | `shop_tests`: "buying pays…", "the stack's room…" | Igual |
+| Venta a mitad de precio, solo lo que se tira | `script_common.c: shopFillSellItemList`, `createItemMenuAmountBox` | `saleOffers`, `sell`; `shop.sell_divisor` | `shop_tests`: "selling pays…" | Igual |
+| Intercambio por méritos | `script_common.c` (menú 7) | — | — | Hueco (fase 4, lo abre el guion) |
+| Objetos del suelo (11 a la vez) | `item.c: DROPPED_ITEMS`, `pickupItem` | `hasRoomFor`, `add` | `bag_tests`: "a full bag refuses…" | Hueco (el suelo es del campo y la batalla) |
+
+## Tests
+
+- Unitarios en `tests/`, con el ruleset `original` del paquete `game` y objetos inventados (`tests/fixture.hpp`):
+  ninguna tabla del original se copia.
+- `rules_tests` cambia un valor del ruleset (`bag.max_stack`) y cambia la estrategia de apilar por otra registrada en
+  el test.
+- `content_tests` ("the user's disc, extracted: …") carga con `DWE_CONTENT` todos los objetos, efectos y tiendas del
+  disco del usuario y resuelve el efecto de cada objeto: en el US se resuelven los 128.

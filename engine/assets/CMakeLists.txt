@@ -25,6 +25,9 @@ dwe_add_module(assets
         src/map_table.cpp
         src/digimon_table.cpp
         src/raise_table.cpp
+        src/item_table.cpp
+        src/item_effect_table.cpp
+        src/shop_table.cpp
         src/indexed_image.cpp
         src/map_images.cpp
         src/character_model.cpp

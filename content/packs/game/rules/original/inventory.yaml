@@ -1,0 +1,146 @@
+# Inventario del original (docs/reference/inventory.md): la bolsa, el dinero, el uso de objetos y las tiendas. Los
+# datos por objeto (precio, categoría, dónde se usa, qué hace cada comida, chip o curación) no están aquí: son las
+# tablas del paquete base, data/items y data/item_effects, que extrae dwx. Aquí van las constantes de la lógica de
+# cada función, citando el fichero y la función del decomp.
+bag:
+  # item.c: Inventory guarda 30 huecos (types, amounts, names).
+  max_slots: 30
+  # script_interp.c: set_inventory_size. La historia la amplía: dg 193 la deja en 10; dg 145, 082, 180, 109 y 048 la
+  # suben a 20 y a 30.
+  slot_counts: [10, 20, 30]
+  # dg 193 (partida nueva): reduce_money 50000 sobre el estado de arranque (main_menu.c: initializeDefaultSavegame
+  # pone 50000) y set_inventory_size 10. Los objetos con los que se empieza los deja el guion (fase 4).
+  new_game_slots: 10
+  new_game_money: 0
+  # item.c: giveItem: una pila llega a 99.
+  max_stack: 99
+  # Dónde va lo que entra en la bolsa. original: item.c: giveItem, a la primera pila de ese objeto aunque esté llena
+  # (y entonces no entra), o al primer hueco libre.
+  stacking: original
+money:
+  # battle_ui.c y script_interp.c (ADD_MONEY): el dinero no pasa de 999999; script_interp.c (REDUCE_MONEY) no baja de 0.
+  max: 999999
+sort:
+  # inventory.c: ITEM_SORT_ORDER: los tres órdenes del menú, como el orden de las 6 categorías (sorting_value). Dentro
+  # de cada categoría, por número de objeto (utils.c: sortItemsById).
+  orders:
+    - [0, 1, 3, 2, 5, 4]
+    - [2, 5, 0, 1, 4, 3]
+    - [2, 0, 1, 3, 5, 4]
+use:
+  # inventory.c: selectOptionMenu: en el campo se usan los objetos de item_color 0 o 2, en combate los de 1 o 2.
+  field_colors: [0, 2]
+  battle_colors: [1, 2]
+  # inventory.c: selectOptionMenu: tirar solo en el campo y solo con droppable 1; se tira la pila entera.
+  discard_droppable: 1
+  # Objetos clave: el original no tiene una marca propia; son los de droppable 0, que ni se venden
+  # (script_common.c: shopFillSellItemList) ni se tiran (inventory.c: selectOptionMenu, getItemOptionColor).
+  key_item_droppable: 0
+defeat:
+  # script_common.c: handleItemLoss: al perder se van count × 30 / 100 huecos ocupados al azar, con la pila entera.
+  lost_percent: 30
+shop:
+  # script_common.c: shopFillBuyItemList: no hay tabla de existencias; el objeto i se vende mientras el trigger
+  # 0x180 + i está puesto.
+  stock_trigger_base: 384
+  # script_common.c: createItemMenuAmountBox: la tienda compra a value >> 1.
+  sell_divisor: 2
+  # script_common.c: tickItemMenuAmountBox: con un bebé de partner (isPartnerBaby) el precio es × 90 / 100.
+  baby_discount_percent: 90
+  # script_common.c: createItemMenuAmountBox: no se compran más de 99 de una vez.
+  max_amount: 99
+effects:
+  # item.c: handleChips y handleFood: addWithLimit(..., 999) para los atributos y 9999 para HP y MP máximos.
+  stat_limit: 999
+  hp_mp_limit: 9999
+  # Las funciones que no hacen nada con el partner a 0 HP: handleHPHealingItem, handleMPHealingItem,
+  # handleDoubleFloppy, handleStatusItems y main.c: handleBuffDisks miran currentHP != 0.
+  conscious_only: [hp_healing, mp_healing, double_floppy, status, battle_disk]
+  # item.c: handleDoubleFloppy: 0x5dc de HP y de MP.
+  double_floppy:
+    hp: 1500
+    mp: 1500
+  # item.c: handleStatusItems, por número de objeto.
+  status:
+    # case 8: BTL_healStatusEffect(1).
+    - item: 8
+      battle_status_cure: 1
+    # case 9: BTL_healStatusEffect(0) en combate y luego handleDoubleFloppy.
+    - item: 9
+      battle_status_cure: 0
+      hp: 1500
+      mp: 1500
+    # case 10: fighter[0].flags |= FIGHTER_FLAG_PROTECTED.
+    - item: 10
+      protects: true
+    # case 0xd: handleMedicineHealing(3, 2): cura la herida si randomLimit(3) < 3 y la enfermedad si
+    # randomLimit(10) < 2.
+    - item: 13
+      injury_cure: 3
+      sickness_cure: 2
+    # case 0xe: handleMedicineHealing(3, 10).
+    - item: 14
+      injury_cure: 3
+      sickness_cure: 10
+  # item.c: handleMedicineHealing: las tiradas de la herida (randomLimit(3)) y de la enfermedad (randomLimit(10)).
+  injury_roll: 3
+  sickness_roll: 10
+  # item.c: handleRestore: revive; quita la cuenta atrás de muerte en combate (BTL_removeDeathCountdown).
+  revive:
+    # case 0xb: la mitad de los HP máximos.
+    - item: 11
+      hp_percent: 50
+    # case 0xc: 0x270f (todo, con el tope de los máximos) y BTL_healStatusEffect(0) en combate.
+    - item: 12
+      hp_percent: 100
+      battle_status_cure: 0
+  # main.c: handleBuffDisks: el tope es el valor del inicio del combate + × 3 / 10, como mucho 999.
+  battle_disk:
+    limit_percent: 130
+    limit_cap: 999
+    disks:
+      - { item: 15, offense: 20, defense: 0, speed: 0 }
+      - { item: 16, offense: 0, defense: 20, speed: 0 }
+      - { item: 17, offense: 0, defense: 0, speed: 20 }
+      # case 0x12: suma 20 a los tres sin mirar el tope (quirk omni_disk_ignores_limit).
+      - { item: 18, offense: 20, defense: 20, speed: 20, omni: true }
+      - { item: 19, offense: 50, defense: 0, speed: 0 }
+      - { item: 20, offense: 0, defense: 50, speed: 0 }
+      - { item: 21, offense: 0, defense: 0, speed: 50 }
+  chip:
+    # item.c: handleChips: case 0x16: con el guion en pausa (IS_SCRIPT_PAUSED) llama a la sección 0x4dd.
+    script:
+      - item: 22
+        section: 1245
+    # case 0x20: handlePortaPotty: si el partner tiene ganas, el contador vuelve al de RAISE_DATA y adelgaza.
+    toilet: [32]
+    # 0x1c < chipId < 0x20: addTamerLevel(10, -1): un 10 % de bajar el nivel del domador 1.
+    tamer_level:
+      items: [29, 30, 31]
+      chance_percent: 10
+      amount: -1
+  food:
+    # item.c: handleFood: la comida favorita (RAISE_DATA.favoriteFood) da energía × 14 / 10 y felicidad + 2.
+    favourite_energy_percent: 140
+    favourite_happiness: 2
+    # item.c: handleFood: toda comida llama a decreasePoopLevel.
+    poop_level_change: -1
+  evolution:
+    # item.c: handleEvoItems: solo si el nivel del partner es el del destino - 1.
+    requires_previous_level: true
+    # item >= 0x7d: destino fijo, sin mirar el nivel.
+    fixed:
+      - { item: 125, evolves_to: ggdr }
+      - { item: 126, evolves_to: panj }
+      - { item: 127, evolves_to: mtet }
+# Rarezas del original (docs/reference/inventory.md, "Rarezas"). true reproduce el original.
+quirks:
+  # item.c: giveItem: lo que pasa de 99 al apilar se pierde (y la tienda ya lo ha cobrado).
+  stack_overflow_is_lost: true
+  # script_common.c: createItemMenuAmountBox y shopFillBuyItemList miran el precio entero, no el rebajado de bebé.
+  baby_discount_limited_by_full_price: true
+  # main.c: handleBuffDisks: case 0x12 no mira el tope.
+  omni_disk_ignores_limit: true
+  # partner.c: con ITEM_FUNCTIONS a NULL (llaves, cañas) o un chip sin caso (0x21 a 0x25) el objeto se da igual y se
+  # gasta sin efecto.
+  useless_items_consumed: true

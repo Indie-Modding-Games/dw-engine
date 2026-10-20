@@ -1,4 +1,5 @@
 #include <dwe/formats/exe/executable_layout.hpp>
+#include <dwe/formats/exe/item_effects.hpp>
 
 #include <array>
 
@@ -13,6 +14,28 @@ constexpr ExecutableLayout unlocated(std::string_view version, bool inlineNames)
     layout.inlineNames = inlineNames;
     return layout;
 }
+
+using Reg = MipsRegister;
+
+// Where handleFood keeps each local when its cases join (US build: the arguments of addEnergy, reduceTiredness,
+// addHappiness, addDiscipline, addWeight, setTrainingBoost, handleItemSickness and the addWithLimit calls after the
+// switch), in FoodValue order.
+constexpr std::array<ValueLocation, FoodValueCount> UsFoodValues{
+    ValueLocation::inRegister(Reg::V0), ValueLocation::inRegister(Reg::S2), ValueLocation::inRegister(Reg::S0),
+    ValueLocation::onStack(56),         ValueLocation::inRegister(Reg::S1), ValueLocation::onStack(60),
+    ValueLocation::inRegister(Reg::S8), ValueLocation::inRegister(Reg::S7), ValueLocation::inRegister(Reg::S5),
+    ValueLocation::inRegister(Reg::S4), ValueLocation::onStack(64),         ValueLocation::onStack(68),
+    ValueLocation::onStack(72),         ValueLocation::onStack(76),         ValueLocation::onStack(80),
+    ValueLocation::onStack(84),         ValueLocation::inRegister(Reg::S6), ValueLocation::inRegister(Reg::S3),
+};
+
+// Where handleChips keeps each local when its cases join (US build: the addWithLimit and modifyLifetime calls after
+// the switch), in ChipValue order.
+constexpr std::array<ValueLocation, ChipValueCount> UsChipValues{
+    ValueLocation::inRegister(Reg::S1), ValueLocation::inRegister(Reg::S3), ValueLocation::inRegister(Reg::S2),
+    ValueLocation::inRegister(Reg::S4), ValueLocation::inRegister(Reg::S5), ValueLocation::inRegister(Reg::S6),
+    ValueLocation::inRegister(Reg::S0),
+};
 
 // US addresses: dw_decomp config/us/symbols.txt. Counts: the array declarations (evolution.c, partner.h, model.c,
 // map_object.h, tournament.c, sound.c, shop/script_menu.c) or, where there is none, the symbol's size divided by the
@@ -54,6 +77,27 @@ constexpr std::array Layouts = {
         .digimonVballSoundIds = {.address = 0x80127F40, .count = 180},
         .mapSoundPara = {.address = 0x80127FF4, .count = 22},
         .jukeboxTracks = {.address = 0x801303B8, .count = 64},
+        .itemFunctions = {.address = 0x80127C88, .count = 128},
+        .healingValues = {.address = 0x8013435C, .count = 4},
+        .evolutionItemTargets = {.address = 0x80127C5C, .count = 44},
+        .itemCode =
+            {
+                .handlers = {.hpHealing = 0x800C4AC0,
+                             .mpHealing = 0x800C4A08,
+                             .doubleFloppy = 0x800C4950,
+                             .status = 0x800C4728,
+                             .revive = 0x800C4834,
+                             .battleDisk = 0x800F06F0,
+                             .chip = 0x800C44C0,
+                             .food = 0x800C396C,
+                             .evolution = 0x800C3860},
+                .firstHpHealingItem = 0,
+                .firstMpHealingItem = 4,
+                .firstEvolutionItem = 0x47,
+                // The joins are the first instruction after the switches of the compiled functions.
+                .food = {.function = 0x800C396C, .join = 0x800C4314, .values = UsFoodValues},
+                .chips = {.function = 0x800C44C0, .join = 0x800C4658, .values = UsChipValues},
+            },
     },
     unlocated("eu", false),
     unlocated("jp", true),

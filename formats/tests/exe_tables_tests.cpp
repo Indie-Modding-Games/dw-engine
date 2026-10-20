@@ -102,6 +102,12 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
     CHECK(tables->itemPara[0].unknown1E == 0xBEEF);
     CHECK(tables->itemPara[1].name == "Odd\x82\xA0\\");
     CHECK(tables->itemDescriptions[1] == "Strange.");
+    REQUIRE(tables->itemEffects.size() == 2);
+    CHECK(tables->itemEffects[0].handler == dwe::formats::exe::ItemHandler::Food);
+    REQUIRE(tables->itemEffects[0].values.size() == dwe::formats::exe::FoodValueCount);
+    CHECK(tables->itemEffects[0].values[0] == 12);
+    CHECK(tables->itemEffects[1].handler == dwe::formats::exe::ItemHandler::HpHealing);
+    CHECK(tables->itemEffects[1].healing == 500);
 
     CHECK(tables->evolutionRequirements[0].digimon == -1);
     CHECK(tables->evolutionRequirements[1].hp == 1000);

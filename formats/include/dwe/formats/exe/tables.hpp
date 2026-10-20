@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/formats/exe/executable_layout.hpp>
+#include <dwe/formats/exe/item_effects.hpp>
 #include <dwe/formats/exe/memory_image.hpp>
 
 #include <array>
@@ -245,6 +246,7 @@ struct ExecutableTables {
     std::vector<std::uint8_t> digimonVballSoundIds; // VBALL entry by type (sound.c: loadDigimonSounds)
     std::vector<MapSoundPara> mapSoundPara;
     std::vector<JukeboxTrack> jukeboxTracks;
+    std::vector<ItemEffectCode> itemEffects; // one per item of itemPara
 };
 
 // Reads a table of char* pointers to NUL-terminated strings. A null pointer reads as an empty string.

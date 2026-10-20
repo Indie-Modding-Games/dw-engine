@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "messages.hpp"
+
 namespace dwe::formats::exe {
 
 namespace {
@@ -26,6 +28,15 @@ constexpr std::uint8_t NoneU8 = 0xFF;
 constexpr std::uint16_t AlwaysTrigger = 0xFFFF;
 constexpr std::size_t MedalDescriptionLines = 3;
 
+// The keys of data/item_effects (content/schemas/item_effects.schema.json).
+constexpr std::string_view ItemEffectsKey = "item_effects";
+constexpr std::string_view ItemKey = "item";
+constexpr std::string_view IndexKey = "index";
+constexpr std::string_view HandlerKey = "handler";
+constexpr std::string_view HealingKey = "healing";
+constexpr std::string_view EvolvesToKey = "evolves_to";
+constexpr std::string_view ValuesKey = "values";
+
 // Builds the documents, resolving references to ids and collecting notes.
 class Converter {
 public:
@@ -37,6 +48,7 @@ public:
         out.documents.push_back({.name = "skeletons", .document = skeletons()});
         out.documents.push_back({.name = "moves", .document = moves()});
         out.documents.push_back({.name = "items", .document = items()});
+        out.documents.push_back({.name = std::string{ItemEffectsKey}, .document = itemEffects()});
         out.documents.push_back({.name = "evolution", .document = evolution()});
         out.documents.push_back({.name = "raise", .document = raise()});
         out.documents.push_back({.name = "cards", .document = cards()});
@@ -192,6 +204,46 @@ private:
         YamlNode root = YamlNode::mapping();
         root.set("items", std::move(list));
         return root;
+    }
+
+    // What using each item does, as far as the executable says it (exe/item_effects.hpp).
+    YamlNode itemEffects() {
+        YamlNode list = YamlNode::sequence();
+        for (std::size_t i = 0; i < tables_->itemEffects.size() && i < ids_.items.size(); ++i) {
+            const ItemEffectCode& effect = tables_->itemEffects[i];
+            YamlNode node = YamlNode::mapping();
+            node.set(std::string{ItemKey}, quoted(ids_.items[i]));
+            node.set(std::string{IndexKey}, number(i));
+            node.set(std::string{HandlerKey},
+                     quoted(std::string{ItemHandlerNames[static_cast<std::size_t>(effect.handler)]}));
+            node.set(std::string{HealingKey}, effect.healing ? number(*effect.healing) : null());
+            node.set(std::string{EvolvesToKey},
+                     effect.evolutionTarget ? digimonRef(*effect.evolutionTarget, ItemEffectsKey) : null());
+            node.set(std::string{ValuesKey}, switchValues(effect));
+            if (!effect.skipped.empty()) {
+                notes_.push_back(
+                    messages::formatMessage(messages::ItemSwitchSkipped, i, ids_.items[i], effect.skipped));
+            }
+            list.append(std::move(node));
+        }
+        YamlNode root = YamlNode::mapping();
+        root.set(std::string{ItemEffectsKey}, std::move(list));
+        return root;
+    }
+
+    // The locals of a food or chip case by name, or null for other handlers and cases that do more than set them.
+    static YamlNode switchValues(const ItemEffectCode& effect) {
+        const std::span<const std::string_view> names = effect.handler == ItemHandler::Food
+                                                            ? std::span<const std::string_view>{FoodValueNames}
+                                                            : std::span<const std::string_view>{ChipValueNames};
+        if (effect.values.empty() || effect.values.size() != names.size()) {
+            return null();
+        }
+        YamlNode values = YamlNode::mapping();
+        for (std::size_t i = 0; i < names.size(); ++i) {
+            values.set(std::string{names[i]}, number(effect.values[i]));
+        }
+        return values;
     }
 
     YamlNode evolution() {

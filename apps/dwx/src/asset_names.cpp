@@ -158,6 +158,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "evolution", .ids = {"data/evolution"}},
         {.schema = "fishing", .ids = {"data/fishing"}},
         {.schema = "items", .ids = {"data/items"}},
+        {.schema = "item_effects", .ids = {"data/item_effects"}},
         {.schema = "maps", .ids = {"data/maps"}},
         {.schema = "medals", .ids = {"data/medals"}},
         {.schema = "moves", .ids = {"data/moves"}},

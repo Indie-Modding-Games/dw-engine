@@ -219,9 +219,10 @@ Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que e
   Felicidad −10, disciplina −6, cansancio +2, más el cansancio de después del combate. Cuenta en un contador de
   huidas (`startBattle`) **(comprobado)**.
 - **Derrota:** si el partner llega a 0 HP, hay una cuenta atrás durante la cual un objeto de revivir aún puede
-  salvarlo. Felicidad −30, disciplina −20 (`startBattle`). Después se pierde el 30 % de los objetos que se llevan
-  (`handleItemLoss`) y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere **(comprobado)**. Ver la
-  [ficha de cuidado](care.md).
+  salvarlo. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el 30 % de los huecos ocupados de la
+  bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver la
+  [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
+  **(comprobado)**. Ver la [ficha de cuidado](care.md).
 - **Victoria, cuidado:** felicidad +2, batallas +1 (cuenta para la [evolución](evolution.md)) **(comprobado)**.
 - **Cansancio y hambre tras ganar o huir** (`handlePostBattleTiredness`): cansancio +5, más un extra si el MP
   acabó por debajo del 80 % (ver rarezas), y la comida baja 15 **(comprobado)**.

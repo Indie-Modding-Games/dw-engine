@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/formats/exe/executable_layout.hpp>
+#include <dwe/formats/exe/item_effects.hpp>
 
 #include <array>
 #include <cstddef>
@@ -8,6 +9,8 @@
 #include <initializer_list>
 #include <string_view>
 #include <vector>
+
+#include "mips_code.hpp"
 
 // A synthetic executable: a PS-X EXE header and a text with small, made-up tables at addresses chosen here.
 namespace dwe::formats::test {
@@ -90,6 +93,14 @@ private:
     std::uint32_t baseAddress_;
     std::vector<std::byte> text_;
 };
+
+// handleFood of the fixture: item 0 gets 12 energy, any other item none. Every other local is the zero register.
+inline constexpr std::array<exe::ValueLocation, exe::FoodValueCount> FixtureFoodValues = [] {
+    std::array<exe::ValueLocation, exe::FoodValueCount> values{};
+    values.fill(exe::ValueLocation::inRegister(exe::MipsRegister::Zero));
+    values[0] = exe::ValueLocation::inRegister(exe::MipsRegister::V0);
+    return values;
+}();
 
 struct ExecutableFixture {
     std::vector<std::byte> file;
@@ -224,6 +235,24 @@ inline ExecutableFixture makeExecutableFixture() {
     layout.jukeboxTracks = {.address = image.place(4), .count = 2};
     image.u8(layout.jukeboxTracks.address, 0x1D);
     image.u8(layout.jukeboxTracks.address + 3, 2);
+
+    // Item 0 is food, item 1 heals HP; the HP handler's code is never run, so any address names it.
+    using namespace mips;
+    const std::array foodCode{li(V0, 0), bne(A0, Zero, 2), Nop, li(V0, 12), jr(Ra), Nop};
+    const std::uint32_t food = placeCode(image, std::span<const std::uint32_t>{foodCode});
+    const std::uint32_t hpHealing = image.place(4);
+    layout.itemFunctions = {.address = image.place(8), .count = 2};
+    image.u32(layout.itemFunctions.address, food);
+    image.u32(layout.itemFunctions.address + 4, hpHealing);
+    layout.healingValues = {.address = image.place(8), .count = 4};
+    image.i16(layout.healingValues.address + 2, 500);
+    layout.evolutionItemTargets = {.address = image.place(1), .count = 1};
+    layout.itemCode = {.handlers = {.hpHealing = hpHealing, .food = food},
+                       .firstHpHealingItem = 0,
+                       .firstMpHealingItem = 0,
+                       .firstEvolutionItem = 2,
+                       .food = {.function = food, .join = food + 16, .values = FixtureFoodValues},
+                       .chips = {}};
 
     return {.file = image.executable(), .layout = layout};
 }

@@ -204,7 +204,7 @@ content/base/
 ├─ pack.yaml            id base, capa base, versión 0.1.0 y el esquema de cada tipo de documento
 ├─ .dwx-extract         marca de que lo escribió dwx; oculto, el motor no lo ve
 ├─ dwx/coverage.yaml    informe de cobertura (asset dwx/coverage)
-├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, evolution, raise, cards,
+├─ data/<tabla>.yaml    tablas del ejecutable: digimon, skeletons, moves, items, item_effects, evolution, raise, cards,
 │                       tournaments, medals, music, shops, maps
 ├─ disc/boot.yaml       SYSTEM.CNF
 ├─ digimon/<id>/texture.png + texture_meta.yaml, model.glb + contract.yaml
@@ -226,7 +226,7 @@ dice cuál sigue cada uno ([reglas `schemas`](../architecture/vfs.md#esquemas-de
 
 | Esquema | Documentos |
 |---|---|
-| `cards`, `digimon`, `evolution`, `fishing`, `items`, `maps`, `medals`, `moves`, `music`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
+| `cards`, `digimon`, `evolution`, `fishing`, `item_effects`, `items`, `maps`, `medals`, `moves`, `music`, `raise`, `shops`, `skeletons`, `stadium`, `tournaments`, `training`, `versus` | `data/<el mismo nombre>` |
 | `boot` | `disc/boot` |
 | `map` | `map/*/data` |
 | `collision` | `arena/*/collision` |

@@ -31,8 +31,8 @@ std::string errorOf(const core::Result<T>& result) {
 }
 
 // The tables the original ruleset names, by role (rules/original/ruleset.yaml).
-inline constexpr std::array<std::string_view, 6> OriginalTables{"digimon",  "evolution", "raise",
-                                                                "training", "moves",     "items"};
+inline constexpr std::array<std::string_view, 8> OriginalTables{"digimon", "evolution", "raise",        "training",
+                                                                "moves",   "items",     "item_effects", "shops"};
 
 // The game pack's original ruleset, mounted over a stand-in base pack whose tables are empty, so the tests need no
 // disc. Not movable: the file systems must stay where the mounted packs point.

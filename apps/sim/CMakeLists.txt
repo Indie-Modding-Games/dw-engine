@@ -38,7 +38,7 @@ if(BUILD_TESTING)
     # species for the care scenario (tests/stand-in).
     set(stand_in ${CMAKE_CURRENT_BINARY_DIR}/stand-in-content)
     file(WRITE ${stand_in}/base/pack.yaml "id: base\nversion: 0.1.0\nlayer: base\n")
-    foreach(role evolution training moves items)
+    foreach(role evolution training moves items item_effects shops)
         file(WRITE ${stand_in}/base/data/${role}.yaml "${role}: []\n")
     endforeach()
     foreach(role digimon raise)

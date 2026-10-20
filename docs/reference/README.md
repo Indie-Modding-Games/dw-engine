@@ -34,4 +34,5 @@ Un fichero por sistema (`care.md`, `evolution.md`, `battle.md`…) con estas sec
 | [Cuidado](care.md) | Hambre, sueño, baño, enfermedad y heridas, felicidad y disciplina, cansancio, vida, muerte y renacer, entrenamiento, comida y objetos |
 | [Evolución](evolution.md) | Niveles, requisitos y puntuación, elección del destino, evoluciones especiales y por objeto, ganancias de stats |
 | [Batalla](battle.md) | Stats, órdenes e IA, técnicas, daño, acierto, estados, remate, fin del combate, recompensas y aprendizaje de técnicas |
+| [Inventario](inventory.md) | Bolsa, dinero, uso de objetos y sus efectos, tiendas, pérdidas al caer en combate |
 | [Campo](campo.md) | Movimiento del jugador, colisión con la rejilla, disparadores y warps, seguimiento del partner y la ruta de la fase 2 |

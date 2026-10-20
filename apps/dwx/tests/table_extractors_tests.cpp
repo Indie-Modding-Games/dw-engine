@@ -76,7 +76,8 @@ TEST_CASE("the executable gives the documents of its tables") {
     const auto& executable = reportOf(*run, ExecutablePath);
     CHECK(executable.extractor == "executable");
     CHECK(executable.status == FileStatus::Extracted);
-    CHECK(executable.outputs.size() == 12);
+    CHECK(executable.outputs.size() == 13);
+    CHECK(std::ranges::contains(executable.outputs, "data/item_effects.yaml"));
     CHECK(std::ranges::contains(executable.outputs, "data/digimon.yaml"));
     CHECK(std::ranges::contains(executable.outputs, "data/maps.yaml"));
     CHECK(hasNote(executable, "only the data tables are taken"));

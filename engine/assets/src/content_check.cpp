@@ -1,10 +1,13 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/image.hpp>
+#include <dwe/assets/item_effect_table.hpp>
+#include <dwe/assets/item_table.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/model_data.hpp>
+#include <dwe/assets/shop_table.hpp>
 #include <dwe/assets/sound.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/assets/texture.hpp>
@@ -131,9 +134,12 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 }};
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 2> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 5> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
     {"data/maps", discardParsed<parseMapTable>},
+    {"data/items", discardParsed<parseItemTable>},
+    {"data/item_effects", discardParsed<parseItemEffectTable>},
+    {"data/shops", discardParsed<parseShopTable>},
 }};
 
 } // namespace

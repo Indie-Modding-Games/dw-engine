@@ -50,6 +50,9 @@ tiene el nombre `char name[20]` al principio de `DigimonPara` ni de `Item` (`inl
 | `MOVE_NAMES` | 122 `char*` | | técnica |
 | `ITEM_PARA` | 128 × 32 | `Item` (`item.h`) | objeto |
 | `ITEM_DESCS` | 128 `char*` | | objeto |
+| `ITEM_FUNCTIONS` | 128 punteros | función que aplica el objeto, o nulo (`item.c`) | objeto |
+| `HEALING_VALUES` | 4 `s16` | HP o MP que cura (`handleHPHealingItem`, `handleMPHealingItem`) | objeto, u objeto − 4 para MP |
+| `EVOLUTION_ITEM_TARGET` | 44 `u8` | tipo destino (`handleEvoItems`) | objeto − 0x47 |
 | `EVOLUTION_REQS` | 63 × 28 | `EvoRequirements` (`evl.h`) | tipo destino |
 | `EVOLUTION_STATS_GAINS` | 66 × 14 | `EvoStatsGains` | tipo destino |
 | `EVOLUTION_PATHS` | 62 × 11 | `EvolutionPath {s8 from[5], s8 to[6]}` | tipo − 1 (`evolution.c`, `game_menu.c`) |
@@ -81,6 +84,23 @@ Notas:
 - `RaiseData` tiene un byte de relleno en `0x0B` que no se guarda.
 - Las tablas de juego de los overlays (pesca, torneo, versus y entrenamiento) están en [Overlays](overlays.md).
 
+## Efectos de objetos
+
+`readItemEffects` (`formats/exe/item_effects.hpp`) junta lo que el ejecutable dice de cada objeto. `ITEM_FUNCTIONS` da
+la función de cada uno, que se reconoce por su dirección (`ItemCodeLayout::handlers`); `HEALING_VALUES` y
+`EVOLUTION_ITEM_TARGET` dan los números de las curas y de la evolución. Los valores de la comida y de los chips no
+están en datos: cada objeto es un caso de un `switch` de `handleFood` o `handleChips` que solo pone constantes en
+variables locales y salta al final común.
+
+`evaluateConstantSwitch` (`formats/exe/constant_switch.hpp`) los lee sin copiar código: ejecuta la función desde su
+entrada con el número del objeto en `a0` hasta la dirección del final común (`join`) y devuelve los valores de las
+variables que da la versión (`ValueLocation`: un registro o un hueco de la pila). Solo entiende las instrucciones de
+un `switch` así (sumas, comparaciones, cargas y guardados, saltos con su *delay slot* y tablas de saltos); una
+llamada, una instrucción que no conoce, un salto sobre un valor desconocido o una variable sin valor detienen la
+lectura y el caso se anota en vez de adivinarse. En el US se leen los 35 casos de comida y 14 de los 16 chips: el
+piloto automático (llama al guion) y el orinal (llama a `handlePortaPotty`) quedan sin valores y su lógica la da el
+ruleset. `formats/tests/item_effects_disc_tests.cpp` lo comprueba con el disco.
+
 ## Textos
 
 Los textos se guardan tal como están en el ejecutable: ASCII en el US y Shift-JIS (cp932) en el JP. Los nombres de
@@ -93,7 +113,7 @@ escapado se anota en las notas de la conversión.
 
 ## YAML
 
-`tablesToYaml` convierte las tablas en doce documentos, cada uno con su esquema en
+`tablesToYaml` convierte las tablas en trece documentos, cada uno con su esquema en
 `content/schemas/<nombre>.schema.json` (JSON Schema 2020-12):
 
 | Documento | Contenido |
@@ -102,6 +122,7 @@ escapado se anota en las notas de la conversión.
 | `skeletons` | los huesos de cada tipo |
 | `moves` | `MOVE_DATA` con su nombre |
 | `items` | `ITEM_PARA` con su descripción |
+| `item_effects` | qué hace cada objeto: su función, lo que cura, a qué evoluciona y los valores de su caso de comida o chip |
 | `evolution` | requisitos, ganancias y el árbol de evolución |
 | `raise` | `RAISE_DATA` |
 | `cards` | precios y `CARD_DATA` |
@@ -132,7 +153,7 @@ listas, `enum`, `const` y `$ref` locales) escrito en los propios tests, sin depe
 ## Comprobación con el disco
 
 `formats/tests/real_data_tests.cpp` se ejecuta solo si `DWE_EXE_SAMPLE` apunta al ejecutable US (y `DWE_MAP_DIR` a la
-carpeta `MAP` para los mapas). Con el ejecutable US extraído del disco: se leen todas las tablas, los doce documentos
+carpeta `MAP` para los mapas). Con el ejecutable US extraído del disco: se leen todas las tablas, los trece documentos
 cumplen su esquema y no hay ningún texto con bytes escapados. Queda una referencia fuera de tabla: un `-2` en
 `EVOLUTION_PATHS`, que no es ni un tipo ni el `-1` de «ninguno».
 

@@ -48,8 +48,8 @@ std::vector<std::string> makeIds(std::span<const std::string> names, std::string
 // Builds the ids of every table that others refer to.
 TableIds makeTableIds(const ExecutableTables& tables);
 
-// Converts every table to its document: digimon, skeletons, moves, items, evolution, raise, cards, tournaments,
-// medals, music, shops and maps.
+// Converts every table to its document: digimon, skeletons, moves, items, item_effects, evolution, raise, cards,
+// tournaments, medals, music, shops and maps.
 TablesYaml tablesToYaml(const ExecutableTables& tables);
 
 } // namespace dwe::formats::exe

@@ -213,8 +213,9 @@ Es parte del cuidado porque gasta tiempo, cansa y baja la felicidad (`src/trn/`)
 
 ### Comida y objetos de cuidado
 
-- Los efectos de los objetos no están en una tabla: los decide el código, según el rango del identificador del objeto
-  (`ITEM_FUNCTIONS`) **(comprobado)**. Rangos: curas de HP y MP, curas de estado, discos de mejora temporal, chips
+- Los efectos de los objetos los decide el código: `ITEM_FUNCTIONS` da la función de cada objeto, y solo lo que curan
+  las curas de HP y MP (`HEALING_VALUES`) y los destinos de evolución están en tablas; el resto son constantes de cada
+  función **(comprobado)**. Detalle en la [ficha de inventario](inventory.md). Rangos: curas de HP y MP, curas de estado, discos de mejora temporal, chips
   (stats permanentes a cambio de vida), objetos de baño, comida y objetos de evolución.
 - Cada comida puede dar energía, quitar cansancio, cambiar felicidad, disciplina, peso o vida, subir stats de forma
   permanente, curar HP o MP, activar un bonus de entrenamiento o tener probabilidad de enfermar. Todo en un `switch`

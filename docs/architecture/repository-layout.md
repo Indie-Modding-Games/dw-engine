@@ -29,7 +29,7 @@ engine/
 │  ├─ field/                movimiento, colisión, warps, seguimiento del partner
 │  ├─ world/                mapas, NPCs, progreso de la ciudad
 │  ├─ story/                eventos, diálogos, flags, misiones
-│  ├─ inventory/
+│  ├─ inventory/            bolsa, dinero, uso de objetos y tiendas
 │  ├─ save/                 partidas guardadas: ranuras, autoguardado y migraciones
 │  └─ modes/                framework de modos de juego
 ├─ formats/                 lectores de PS1: TIM, TMD/MMD, mapas, VAB/SEQ, STR, scripts

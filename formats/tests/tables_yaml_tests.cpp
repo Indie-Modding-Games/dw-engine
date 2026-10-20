@@ -76,7 +76,7 @@ TEST_CASE("ids are lowercase slugs, unique and stable") {
 
 TEST_CASE("the tables become documents with ids and resolved references") {
     const TablesYaml yaml = tablesToYaml(fixtureTables());
-    CHECK(yaml.documents.size() == 12);
+    CHECK(yaml.documents.size() == 13);
 
     const YamlNode& digimon = documentNamed(yaml, "digimon");
     CHECK(at(digimon, {"digimon", std::size_t{0}, "id"}).text() == "tsta");
@@ -89,6 +89,15 @@ TEST_CASE("the tables become documents with ids and resolved references") {
     const YamlNode& items = documentNamed(yaml, "items");
     CHECK(at(items, {"items", std::size_t{1}, "name"}).text() == "Odd\\x82\\xA0\\\\");
     CHECK(at(items, {"items", std::size_t{1}, "description"}).text() == "Strange.");
+
+    const YamlNode& effects = documentNamed(yaml, "item_effects");
+    CHECK(at(effects, {"item_effects", std::size_t{0}, "item"}).text() == "meat");
+    CHECK(at(effects, {"item_effects", std::size_t{0}, "handler"}).text() == "food");
+    CHECK(at(effects, {"item_effects", std::size_t{0}, "values", "energy"}).text() == "12");
+    CHECK(at(effects, {"item_effects", std::size_t{0}, "healing"}).text() == "null");
+    CHECK(at(effects, {"item_effects", std::size_t{1}, "handler"}).text() == "hp_healing");
+    CHECK(at(effects, {"item_effects", std::size_t{1}, "healing"}).text() == "500");
+    CHECK(at(effects, {"item_effects", std::size_t{1}, "values"}).text() == "null");
 
     const YamlNode& evolution = documentNamed(yaml, "evolution");
     CHECK(at(evolution, {"requirements", std::size_t{0}, "digimon"}).text() == "null");

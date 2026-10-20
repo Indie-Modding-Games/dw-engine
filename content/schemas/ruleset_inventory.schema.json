@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: inventory",
+  "description": "rules/<id>/inventory.yaml: the bag, money, item use and shops (docs/reference/inventory.md). Per-item data is in data/items and data/item_effects; this section has the logic constants of the item functions.",
+  "type": "object",
+  "required": [
+    "bag",
+    "money",
+    "sort",
+    "use",
+    "defeat",
+    "shop",
+    "effects",
+    "quirks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "bag": {
+      "type": "object",
+      "required": [
+        "max_slots",
+        "slot_counts",
+        "new_game_slots",
+        "new_game_money",
+        "max_stack",
+        "stacking"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_slots": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Slots the bag has room for."
+        },
+        "slot_counts": {
+          "description": "The sizes the story gives the bag, growing, the last max_slots.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "new_game_slots": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The bag's size in a new game: one of slot_counts."
+        },
+        "new_game_money": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Money in a new game."
+        },
+        "max_stack": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Most of one item in a stack."
+        },
+        "stacking": {
+          "description": "Where items go when they enter the bag: original (item.c: giveItem).",
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        }
+      }
+    },
+    "money": {
+      "type": "object",
+      "required": [
+        "max"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Money never goes past this."
+        }
+      }
+    },
+    "sort": {
+      "type": "object",
+      "required": [
+        "orders"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "orders": {
+          "description": "For each sort mode, the order of the six sorting_value categories.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 6,
+            "maxItems": 6,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          }
+        }
+      }
+    },
+    "use": {
+      "type": "object",
+      "required": [
+        "field_colors",
+        "battle_colors",
+        "discard_droppable",
+        "key_item_droppable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "field_colors": {
+          "description": "item_color values usable in the field.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "battle_colors": {
+          "description": "item_color values usable in battle.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "discard_droppable": {
+          "type": "integer",
+          "description": "The droppable value that lets an item be thrown away."
+        },
+        "key_item_droppable": {
+          "description": "droppable value of the key items, which can be neither sold nor thrown away.",
+          "type": "integer"
+        }
+      }
+    },
+    "defeat": {
+      "type": "object",
+      "required": [
+        "lost_percent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lost_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Share of the occupied slots lost on a defeat."
+        }
+      }
+    },
+    "shop": {
+      "type": "object",
+      "required": [
+        "stock_trigger_base",
+        "sell_divisor",
+        "baby_discount_percent",
+        "max_amount"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stock_trigger_base": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Item i is in stock while trigger base + i is set."
+        },
+        "sell_divisor": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "A shop buys at value / this."
+        },
+        "baby_discount_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Price paid with a baby partner, in percent."
+        },
+        "max_amount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Most items bought at once."
+        }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "required": [
+        "stat_limit",
+        "hp_mp_limit",
+        "conscious_only",
+        "double_floppy",
+        "status",
+        "injury_roll",
+        "sickness_roll",
+        "revive",
+        "battle_disk",
+        "chip",
+        "food",
+        "evolution"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stat_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Cap of offense, defense, speed and brains."
+        },
+        "hp_mp_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Cap of maximum HP and MP."
+        },
+        "conscious_only": {
+          "description": "Handlers that do nothing while the partner has 0 HP.",
+          "type": "array",
+          "items": {
+            "enum": [
+              "none",
+              "hp_healing",
+              "mp_healing",
+              "double_floppy",
+              "status",
+              "revive",
+              "battle_disk",
+              "chip",
+              "food",
+              "evolution"
+            ]
+          }
+        },
+        "double_floppy": {
+          "type": "object",
+          "required": [
+            "hp",
+            "mp"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "HP healed."
+            },
+            "mp": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "MP healed."
+            }
+          }
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The item's number (data/items index)."
+              },
+              "battle_status_cure": {
+                "type": "integer",
+                "description": "In battle, BTL_healStatusEffect with this argument."
+              },
+              "hp": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "HP healed."
+              },
+              "mp": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "MP healed."
+              },
+              "protects": {
+                "description": "In battle, the partner is protected.",
+                "type": "boolean"
+              },
+              "injury_cure": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "An injury is cured when a roll of injury_roll falls under this."
+              },
+              "sickness_cure": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "A sickness is cured when a roll of sickness_roll falls under this."
+              }
+            }
+          }
+        },
+        "injury_roll": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The limit of the injury roll."
+        },
+        "sickness_roll": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The limit of the sickness roll."
+        },
+        "revive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "hp_percent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "item": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The item's number (data/items index)."
+              },
+              "hp_percent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "HP set back to this share of the maximum."
+              },
+              "battle_status_cure": {
+                "type": "integer",
+                "description": "In battle, BTL_healStatusEffect with this argument."
+              }
+            }
+          }
+        },
+        "battle_disk": {
+          "type": "object",
+          "required": [
+            "limit_percent",
+            "limit_cap",
+            "disks"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "limit_percent": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "A disk raises a stat up to this share of its value when the battle started."
+            },
+            "limit_cap": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "And never past this."
+            },
+            "disks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "item",
+                  "offense",
+                  "defense",
+                  "speed"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "item": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "The item's number (data/items index)."
+                  },
+                  "offense": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Offense gained."
+                  },
+                  "defense": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Defense gained."
+                  },
+                  "speed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Speed gained."
+                  },
+                  "omni": {
+                    "description": "The disk that raises the three (quirk omni_disk_ignores_limit).",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "chip": {
+          "type": "object",
+          "required": [
+            "script",
+            "toilet",
+            "tamer_level"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "script": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "item",
+                  "section"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "item": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "The item's number (data/items index)."
+                  },
+                  "section": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Script section run when the script is paused."
+                  }
+                }
+              }
+            },
+            "toilet": {
+              "description": "Chips that let the partner relieve itself.",
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "tamer_level": {
+              "type": "object",
+              "required": [
+                "items",
+                "chance_percent",
+                "amount"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "chance_percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Chance of the change."
+                },
+                "amount": {
+                  "type": "integer",
+                  "description": "Tamer levels added."
+                }
+              }
+            }
+          }
+        },
+        "food": {
+          "type": "object",
+          "required": [
+            "favourite_energy_percent",
+            "favourite_happiness",
+            "poop_level_change"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "favourite_energy_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Energy of the favourite food, in percent."
+            },
+            "favourite_happiness": {
+              "type": "integer",
+              "description": "Happiness the favourite food adds."
+            },
+            "poop_level_change": {
+              "type": "integer",
+              "description": "What every food does to the poop level."
+            }
+          }
+        },
+        "evolution": {
+          "type": "object",
+          "required": [
+            "requires_previous_level",
+            "fixed"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "requires_previous_level": {
+              "description": "Evolution items work only one level below the target.",
+              "type": "boolean"
+            },
+            "fixed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "item",
+                  "evolves_to"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "item": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "The item's number (data/items index)."
+                  },
+                  "evolves_to": {
+                    "description": "Digimon id (data/digimon).",
+                    "type": "string",
+                    "pattern": "^[a-z0-9_]+$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quirks": {
+      "type": "object",
+      "required": [
+        "stack_overflow_is_lost",
+        "baby_discount_limited_by_full_price",
+        "omni_disk_ignores_limit",
+        "useless_items_consumed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stack_overflow_is_lost": {
+          "description": "Items past a stack's limit are lost (item.c: giveItem).",
+          "type": "boolean"
+        },
+        "baby_discount_limited_by_full_price": {
+          "description": "The amount a baby's buyer can buy is limited by the full price.",
+          "type": "boolean"
+        },
+        "omni_disk_ignores_limit": {
+          "description": "The omni disk ignores the battle limit.",
+          "type": "boolean"
+        },
+        "useless_items_consumed": {
+          "description": "Items that do nothing are consumed when used.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

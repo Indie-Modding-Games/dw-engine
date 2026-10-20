@@ -31,7 +31,8 @@ std::string_view textOf(std::span<const std::byte> bytes) {
 }
 
 // The tables the original ruleset names, by role (rules/original/ruleset.yaml).
-constexpr std::array<std::string_view, 6> OriginalTables{"digimon", "evolution", "raise", "training", "moves", "items"};
+constexpr std::array<std::string_view, 8> OriginalTables{"digimon", "evolution", "raise",        "training",
+                                                         "moves",   "items",     "item_effects", "shops"};
 
 } // namespace
 

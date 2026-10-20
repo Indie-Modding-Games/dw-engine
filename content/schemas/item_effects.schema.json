@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Item effects",
+  "description": "item_effects.yaml: what using each item does, as far as the executable says it: the function ITEM_FUNCTIONS names for it, HEALING_VALUES, EVOLUTION_ITEM_TARGET and the constants of the food and chip cases of handleFood and handleChips (formats/exe/item_effects.hpp). Status items, revives, battle disks and the special cases are logic the ruleset describes (rules/<id>/inventory.yaml).",
+  "type": "object",
+  "required": ["item_effects"],
+  "additionalProperties": false,
+  "properties": {
+    "item_effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "index", "handler", "healing", "evolves_to", "values"],
+        "additionalProperties": false,
+        "properties": {
+          "item": { "description": "The item's id in items.yaml.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "index": { "description": "The item's index in ITEM_PARA.", "type": "integer", "minimum": 0 },
+          "handler": {
+            "description": "The function the item runs: none (NULL), hp_healing, mp_healing, double_floppy, status, revive (handleRestore), battle_disk (handleBuffDisks), chip, food or evolution.",
+            "enum": ["none", "hp_healing", "mp_healing", "double_floppy", "status", "revive", "battle_disk", "chip", "food", "evolution"]
+          },
+          "healing": { "description": "HP or MP healed (HEALING_VALUES), for hp_healing and mp_healing.", "type": ["integer", "null"] },
+          "evolves_to": {
+            "description": "The Digimon an evolution item leads to (EVOLUTION_ITEM_TARGET): its id, or the raw number when outside DIGIMON_DATA; null outside that table's range.",
+            "type": ["string", "integer", "null"]
+          },
+          "values": {
+            "description": "The constants a food or chip case sets, by name; null for other handlers and for cases that do more than set them. Food has every key: energy, tiredness taken away, happiness, discipline, weight, lifetime in hours, max HP and MP added, HP and MP healed, offense, defense, speed and brains added, the training boost (setTrainingBoost: flag, value, hours) and the chance in 100 of getting sick. A chip has max_hp, max_mp, offense, defense, speed, brain and lifetime.",
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+              "energy": { "type": "integer" },
+              "tiredness_relief": { "type": "integer" },
+              "happiness": { "type": "integer" },
+              "discipline": { "type": "integer" },
+              "weight": { "type": "integer" },
+              "lifetime": { "type": "integer" },
+              "max_hp": { "type": "integer" },
+              "max_mp": { "type": "integer" },
+              "hp": { "type": "integer" },
+              "mp": { "type": "integer" },
+              "offense": { "type": "integer" },
+              "defense": { "type": "integer" },
+              "speed": { "type": "integer" },
+              "brain": { "type": "integer" },
+              "training_boost_flag": { "type": "integer" },
+              "training_boost_value": { "type": "integer" },
+              "training_boost_hours": { "type": "integer" },
+              "sickness_chance": { "type": "integer" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
