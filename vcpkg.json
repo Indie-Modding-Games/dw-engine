@@ -14,7 +14,6 @@
       ]
     },
     "vk-bootstrap",
-    "vulkan-validationlayers",
     "lua",
     "sol2",
     "libyaml",
@@ -26,5 +25,12 @@
     "opus",
     "libopusenc",
     "ktx"
-  ]
+  ],
+  "default-features": ["validation"],
+  "features": {
+    "validation": {
+      "description": "The Vulkan validation layers, to check the renderer while developing; the CI leaves them out",
+      "dependencies": ["vulkan-validationlayers"]
+    }
+  }
 }

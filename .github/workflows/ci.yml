@@ -1,9 +1,12 @@
 name: CI
 
+# A change that only touches documentation builds nothing.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 
 permissions:
   contents: read
@@ -32,11 +35,16 @@ jobs:
       - name: Check the format
         run: scripts/dev.sh format --check
 
+      # Release-only dependencies, built once instead of twice, and no validation layers: no test draws anything.
       - name: Configure
         env:
           PRESET: ci
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-        run: scripts/dev.sh configure
+        run: >-
+          scripts/dev.sh configure
+          -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx-release
+          -DVCPKG_HOST_TRIPLET=x64-linux-libcxx-release
+          -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
 
       - name: Build
         env:
@@ -92,8 +100,10 @@ jobs:
           cmake --version
           ninja --version
 
+      # No validation layers: no test draws anything. The dependencies keep their debug build, because a debug build
+      # with clang-cl cannot link release libraries (a different CRT).
       - name: Configure
-        run: cmake --preset windows-ci
+        run: cmake --preset windows-ci -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
 
       - name: Build
         run: cmake --build --preset windows-ci

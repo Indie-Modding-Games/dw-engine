@@ -26,6 +26,11 @@ instalarlas a mano ensucia la máquina de cada desarrollador y da builds que sol
 
 - La única dependencia del host es Docker (y el driver de la GPU para jugar).
 - El primer `configure` tarda, porque vcpkg compila todas las dependencias; después sale de la caché.
+- La CI se aparta en dos cosas para tardar menos sin caché, y ninguna cambia el código que compila:
+  - no instala la capa de validación de Vulkan, que es la feature `validation` de `vcpkg.json`, activa por defecto en
+    local, porque ningún test dibuja;
+  - en Linux usa el triplet `x64-linux-libcxx-release`, que compila cada dependencia una vez en lugar de dos.
+- La caché binaria de vcpkg guarda cada paquete por separado, así que una dependencia nueva solo compila esa.
 - La imagen no puede ser más nueva que el sistema donde se juega: el ejecutable enlaza la glibc de la imagen. Por eso
   es Ubuntu 24.04 aunque 26.04 ya trae LLVM 22 en sus repositorios.
 - En Windows el contenedor solo sirve para compilar para Linux; el build nativo de Windows llegará con su propio
