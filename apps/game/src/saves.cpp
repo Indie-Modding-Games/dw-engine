@@ -1,6 +1,7 @@
 #include "saves.hpp"
 
 #include <dwe/assets/file_system.hpp>
+#include <dwe/content/game_content.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/save/settings.hpp>
 #include <dwe/game/save/slots.hpp>
@@ -12,7 +13,6 @@
 #include <format>
 #include <string>
 
-#include "content.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -51,7 +51,7 @@ core::Result<std::filesystem::path> savesFolder(const Options& options) {
 }
 
 int listSaves(const Options& options) {
-    const auto content = GameContent::mount(options.content, options.mods);
+    const auto content = dwe::content::GameContent::mount(options.content, options.mods);
     if (!content) {
         core::logError(messages::CannotMountContent, content.error().message);
         return EXIT_FAILURE;

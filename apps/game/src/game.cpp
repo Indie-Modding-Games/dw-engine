@@ -1,6 +1,7 @@
 #include "game.hpp"
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/content/game_content.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
@@ -39,7 +40,6 @@
 
 #include "autotest.hpp"
 #include "common.hpp"
-#include "content.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "messages.hpp"
@@ -318,7 +318,7 @@ int runGame(const Options& options) {
         core::logError("{}", renderer.error().message);
         return EXIT_FAILURE;
     }
-    auto content = GameContent::mount(options.content, options.mods);
+    auto content = dwe::content::GameContent::mount(options.content, options.mods);
     if (!content) {
         core::logError("game: {}", content.error().message);
         return EXIT_FAILURE;

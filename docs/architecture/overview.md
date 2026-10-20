@@ -38,6 +38,7 @@ flowchart LR
 | `apps/game` | El ejecutable del juego, con su launcher (elige el disco, los ajustes y los mods) | Jugadores |
 | `apps/editor` | Editor de mapas, Digimon y eventos (Dear ImGui) | Equipo y modders |
 | `apps/dwx` | CLI: `extract`, `validate`, `cook`, `pack` | Equipo, modders y el launcher |
+| `apps/sim` | `dwe-sim`: simulaciones sin gráficos que juegan escenarios con semillas e informan del balance ([simulaciones](../guides/simulaciones.md)) | Equipo y diseño |
 | Paquetes de contenido | Datos y scripts en formatos abiertos (base, remaster, mods) | Los carga el juego |
 
 ## Capas
@@ -48,7 +49,7 @@ Cada caja es una librería de CMake. Las dependencias solo bajan: una capa usa l
 ```mermaid
 flowchart TB
     subgraph apps[apps]
-        game_app[game] --- editor[editor] --- dwx[dwx]
+        game_app[game] --- editor[editor] --- dwx[dwx] --- sim[sim]
     end
     subgraph gameplay[game: reglas del juego]
         partner --- battle --- field --- world --- story --- inventory --- save --- modes

@@ -120,6 +120,10 @@ function(dwe_add_module name)
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "LAYER" "SOURCES;DEPS;PUBLIC_LIBS;PRIVATE_LIBS;TEST_LIBS")
     _dwe_check_deps(${name} ${arg_LAYER} ${arg_DEPS})
     set_property(GLOBAL PROPERTY DWE_LAYER_${name} ${arg_LAYER})
+    # The game modules, for the apps that may use them all (dwe-sim's scenarios).
+    if(arg_LAYER STREQUAL "game")
+        set_property(GLOBAL APPEND PROPERTY DWE_GAME_MODULES ${name})
+    endif()
 
     add_library(dwe_${name} STATIC ${arg_SOURCES})
     add_library(dwe::${name} ALIAS dwe_${name})

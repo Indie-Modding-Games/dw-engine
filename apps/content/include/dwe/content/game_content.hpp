@@ -9,10 +9,10 @@
 #include <memory>
 #include <span>
 
-namespace dwe::app {
+namespace dwe::content {
 
-// The packs the game reads, mounted as one virtual file system. Everything is read by asset id through it, so a mods
-// pack that overrides an id is what the game uses (docs/architecture/vfs.md).
+// The packs the game and dwe-sim read, mounted as one virtual file system. Everything is read by asset id through it,
+// so a mods pack that overrides an id is what the game uses (docs/architecture/vfs.md).
 class GameContent {
 public:
     // Mounts the packs of the content folder and of its packs/ folder, the team's packs from the source tree when
@@ -37,4 +37,4 @@ private:
     std::unique_ptr<assets::VirtualFileSystem> files_;
 };
 
-} // namespace dwe::app
+} // namespace dwe::content

@@ -1,6 +1,5 @@
-#include "content.hpp"
-
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/content/game_content.hpp>
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
@@ -10,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace dwe::app {
+namespace dwe::content {
 
 core::Result<std::unique_ptr<GameContent>> GameContent::mount(const std::filesystem::path& content,
                                                               std::span<const std::filesystem::path> mods) {
@@ -72,4 +71,4 @@ core::Result<std::unique_ptr<GameContent>> GameContent::mount(const std::filesys
     return mounted;
 }
 
-} // namespace dwe::app
+} // namespace dwe::content

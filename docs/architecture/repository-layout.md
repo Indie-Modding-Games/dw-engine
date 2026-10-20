@@ -34,9 +34,11 @@ engine/
 │  └─ modes/                framework de modos de juego
 ├─ formats/                 lectores de PS1: TIM, TMD/MMD, mapas, VAB/SEQ, STR, scripts
 ├─ apps/
+│  ├─ content/              cómo montan los paquetes el juego y dwe-sim
 │  ├─ game/                 el ejecutable del juego + launcher
 │  ├─ editor/               editor (Dear ImGui)
-│  └─ dwx/                  extract · validate · cook · pack
+│  ├─ dwx/                  extract · validate · cook · pack
+│  └─ sim/                  dwe-sim: simulaciones de balance sin gráficos
 ├─ shaders/                 módulos de Slang compartidos (cada módulo compila los suyos a SPIR-V)
 ├─ content/
 │  ├─ schemas/              JSON Schema de cada tipo (digimon, map, item, pack…)
