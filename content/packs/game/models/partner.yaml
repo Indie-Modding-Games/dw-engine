@@ -1,0 +1,10 @@
+# El compañero inicial (Agumon, tipo 3 en main.c al empezar partida) y sus animaciones. Los ids son los mismos para
+# cualquier Digimon compañero (partner.c: setPartnerIdle, setPartnerSlowWalking, partnerTickWalking): 0 quieto,
+# 1 quieto cansado, 2 anda (450 unidades/s en Agumon), 3 anda cansado, 4 corre cuando se queda lejos (900 unidades/s).
+model: digimon/agum/model
+animations:
+  idle: 0
+  idle_tired: 1
+  walk: 2
+  walk_tired: 3
+  run: 4

@@ -13,6 +13,7 @@ dwe_add_module(assets
         src/pak.cpp
         src/image.cpp
         src/model.cpp
+        src/model_data.cpp
         src/media_headers.cpp
         src/content_check.cpp
         src/ogg.cpp
@@ -23,6 +24,7 @@ dwe_add_module(assets
         src/map_table.cpp
         src/indexed_image.cpp
         src/map_images.cpp
+        src/character_model.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd Opus::opus KTX::ktx
     TEST_LIBS lodepng Opus::opus KTX::ktx)

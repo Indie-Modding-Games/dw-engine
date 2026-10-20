@@ -5,6 +5,7 @@ dwe_add_module(render
     LAYER systems
     SOURCES
         src/camera.cpp
+        src/model_renderer.cpp
         src/quad_batch.cpp
         src/renderer.cpp
         src/map_camera.cpp
@@ -16,4 +17,4 @@ dwe_add_module(render
     # false container overflows.
     TEST_LIBS dwe::rhi vk-bootstrap::vk-bootstrap dwe::assets)
 
-dwe_add_shaders(dwe_render FILES shaders/quad.slang shaders/map.slang)
+dwe_add_shaders(dwe_render FILES shaders/quad.slang shaders/map.slang shaders/skinned_model.slang)

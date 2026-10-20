@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "map_preview.hpp"
+#include "model_viewer.hpp"
 #include "test_scene.hpp"
 #include "ui_demo.hpp"
 
@@ -57,7 +58,7 @@ constexpr bool Validation = true;
 constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--check-content <folder>] [--texture-churn] "
     "[--size <width>x<height>] [--map <id>[,<id>...] [--time day|dusk|night] [--focus <x>,<z>]] "
-    "[--ui-demo [--virtual-gamepad <file>]]";
+    "[--ui-demo [--virtual-gamepad <file>]] [--model-viewer [character id...]]";
 
 struct Options {
     // Where the debug overlay's asset viewer and the map preview look for packs.
@@ -77,6 +78,9 @@ struct Options {
     // gamepad commands.
     bool uiDemo = false;
     std::optional<std::filesystem::path> virtualGamepad;
+    // Show these characters of the game pack (`--model-viewer [id...]`) instead of the test scene.
+    bool modelViewer = false;
+    std::vector<std::string> characters;
 };
 
 // Reads two numbers separated by `separator`, such as 1280x720.
@@ -157,6 +161,15 @@ std::optional<Options> parseOptions(std::span<char* const> arguments) {
     std::size_t index = 1;
     while (index < arguments.size()) {
         const std::string_view argument = arguments[index];
+        if (argument == "--model-viewer") {
+            options.modelViewer = true;
+            ++index;
+            while (index < arguments.size() && !std::string_view{arguments[index]}.starts_with("--")) {
+                options.characters.emplace_back(arguments[index]);
+                ++index;
+            }
+            continue;
+        }
         if (argument == "--texture-churn" || argument == "--ui-demo") {
             options.textureChurn = options.textureChurn || argument == "--texture-churn";
             options.uiDemo = options.uiDemo || argument == "--ui-demo";
@@ -168,6 +181,9 @@ std::optional<Options> parseOptions(std::span<char* const> arguments) {
             return std::nullopt;
         }
         index += 2;
+    }
+    if (options.modelViewer && options.characters.empty()) {
+        options.characters = {"models/tamer", "models/partner"};
     }
     return options;
 }
@@ -267,11 +283,23 @@ int run(const Options& options) {
         core::logError("{}", renderer.error().message);
         return EXIT_FAILURE;
     }
-    // Until the field scene exists, the frame shows the render foundation's test scene, or a map with --map.
-    auto testScene = app::TestScene::create(**renderer, options.textureChurn);
-    if (!testScene) {
-        core::logError("{}", testScene.error().message);
-        return EXIT_FAILURE;
+    // Until the field scene exists, the frame shows the render foundation's test scene, or the model viewer.
+    std::unique_ptr<app::TestScene> testScene;
+    std::unique_ptr<app::ModelViewer> modelViewer;
+    if (options.modelViewer) {
+        auto viewer = app::ModelViewer::create(**renderer, options.content, DWE_GAME_PACK, options.characters);
+        if (!viewer) {
+            core::logError("{}", viewer.error().message);
+            return EXIT_FAILURE;
+        }
+        modelViewer = std::move(*viewer);
+    } else {
+        auto scene = app::TestScene::create(**renderer, options.textureChurn);
+        if (!scene) {
+            core::logError("{}", scene.error().message);
+            return EXIT_FAILURE;
+        }
+        testScene = std::move(*scene);
     }
     std::unique_ptr<app::MapPreview> mapPreview;
     if (!options.maps.empty()) {
@@ -357,9 +385,13 @@ int run(const Options& options) {
             mapPreview->update(frameSeconds);
             drawers = {&mapPreview->backgroundDrawer(), &mapPreview->layerDrawer()};
             sceneDrawers = drawers;
+        } else if (modelViewer) {
+            modelViewer->update(now - start, (*renderer)->targetExtent());
+            drawers = {&modelViewer->opaqueDrawer(), &modelViewer->translucentDrawer()};
+            sceneDrawers = drawers;
         } else {
-            (*testScene)->update(now - start);
-            drawers = {&(*testScene)->sceneDrawer(), &(*testScene)->uiDrawer()};
+            testScene->update(now - start);
+            drawers = {&testScene->sceneDrawer(), &testScene->uiDrawer()};
             sceneDrawers = std::span{drawers}.first(1);
             uiDrawers = std::span{drawers}.last(1);
         }

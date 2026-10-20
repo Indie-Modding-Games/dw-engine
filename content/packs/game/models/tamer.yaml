@@ -1,0 +1,8 @@
+# El jugador: su modelo y qué clip es cada animación que pide el campo.
+# Ids de animación del original (tamer.c: tamerTickWalkingState): 0 quieto, 3 al pulsar una dirección (corre:
+# 1000 unidades/s de movimiento raíz) y 2 si además se mantiene R1 o el botón de cancelar (anda: 400 unidades/s).
+model: digimon/boys/model
+animations:
+  idle: 0
+  walk: 2
+  run: 3

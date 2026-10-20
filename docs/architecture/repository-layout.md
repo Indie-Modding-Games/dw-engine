@@ -17,6 +17,7 @@ engine/
 │  ├─ audio/
 │  ├─ input/
 │  ├─ assets/
+│  ├─ animation/            clips de los modelos: poses, bucles, movimiento raíz
 │  ├─ scene/
 │  ├─ script/
 │  ├─ ui/

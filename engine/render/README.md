@@ -10,6 +10,9 @@ El render del juego, encima de `rhi`. Ver [render.md](../../docs/architecture/re
 - `Drawer`, `PrepareContext` y `DrawContext`: la interfaz por la que el mapa, los modelos y la UI preparan sus datos
   antes de los pases y graban sus draws en un pase.
 - `Camera`, `perspective`, `pixelProjection`: matrices para el clip space de Vulkan (Y hacia abajo, profundidad 0..1).
+- `ModelRenderer`: modelos con piel (`assets::ModelData`), subidos una vez y dibujados N veces por frame con skinning
+  en la GPU, luz del original y semitransparencias ordenadas, con un drawer para lo opaco y otro para lo
+  semitransparente. `SlotMap` guarda sus modelos tras handles con generación. Ver [modelos](../../docs/architecture/models.md).
 - `QuadBatch`: rectángulos texturizados en píxeles en un solo draw (sprites, minimapa, imágenes de depuración).
 
 Sus shaders están en `shaders/` y se compilan con `dwe_add_shaders` ([ADR 0018](../../docs/adr/0018-shaders-slang-con-vcpkg.md)).

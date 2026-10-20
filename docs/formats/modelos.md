@@ -227,6 +227,12 @@ Una textura sin paletas no tiene imagen: sirve para dar a una primitiva las `u v
   con `image` = esquina de su textura y `clut` = su paleta. `clut` es `null` en las de 16 bits y en las texturas sin
   imagen, cuya esquina es la de la página. Un material sin textura solo lleva `{"blending": b}`.
 
+## En el motor
+
+El motor no lee nada de lo anterior: carga el `.glb` con `assets::loadModel` y reproduce sus clips con
+`animation::AnimationPlayer`, respetando los bucles y el movimiento raíz de `extras`. Qué clips usan el jugador y el
+compañero y a qué velocidad andan está en [modelos y animación en el motor](../architecture/models.md).
+
 ## Pruebas
 
 - Fixtures sintéticos en `formats/tests/model_fixtures.hpp`: un TMD con dos objetos (triángulo y cuadrilátero, con y

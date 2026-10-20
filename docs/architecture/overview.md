@@ -57,7 +57,7 @@ flowchart TB
         script[script: Lua 5.5 + sol2] --- ui[ui: RmlUi] --- debug[debug: Dear ImGui]
     end
     subgraph systems[sistemas]
-        render --- audio --- input[input: acciones] --- assets[assets: VFS y paquetes] --- scene[scene: ECS]
+        render --- audio --- input[input: acciones] --- assets[assets: VFS y paquetes] --- animation --- scene[scene: ECS]
     end
     subgraph base[base]
         rhi[rhi: Vulkan] --- platform[platform: SDL3]

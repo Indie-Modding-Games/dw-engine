@@ -8,7 +8,7 @@ frame en `render`, y cómo enchufan sus dibujos el mapa, los modelos y la UI.
 | Módulo | Capa | Qué tiene |
 |---|---|---|
 | `rhi` | base | `Device` (swapchain, frames en vuelo, `destroyLater`), VMA, `Buffer`, `Image`, `BindlessTable`, `GraphicsPipeline`, `UploadRing`, `CommandList` |
-| `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch` |
+| `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch`, `ModelRenderer` |
 | `apps/game` | apps | Junta todo; hoy dibuja una escena de prueba (`TestScene`) hasta que exista la del campo |
 
 Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus tipos (`rhi::CommandList`,
@@ -143,7 +143,8 @@ Hay dos momentos: **la carga**, donde se puede esperar a la GPU, y **el juego en
 
 Convención para el track de modelos: **un vertex buffer entrelazado** (binding 0, `VertexLayout::stride`) con
 `position` `Float3`, `normal` `Float3`, `uv` `Float2`, `joints` `Uint8x4` o `Uint16x4` y `weights` `Unorm8x4`,
-`Unorm16x4` o `Float4`, más un index buffer. El skinning se hace en el vertex shader con las matrices de huesos del
+`Unorm16x4` o `Float4`, más un index buffer. Los modelos añaden `color` `Float4` (location 3, el color de vértice) y
+guardan vértices e índices en un solo buffer, con los índices detrás de los vértices. El skinning se hace en el vertex shader con las matrices de huesos del
 frame en el anillo, leídas por puntero (`float4x4* joints` en push constants). No usamos varios bindings ni vertex
 pulling: un binding basta mientras la animación es por CPU y deja que `rhi::validate` compruebe el layout.
 
@@ -163,6 +164,18 @@ pulling: un binding basta mientras la animación es por CPU y deja que `rhi::val
 `rhi::SamplerKind`: `NearestClamp`, `NearestRepeat` (píxeles nítidos, mip más cercano) y `LinearClamp`,
 `LinearRepeat` (filtrado bilineal, mezcla de mips y anisotropía 16× o el máximo de la GPU). Hoy las imágenes tienen
 un solo nivel de mip; los samplers ya están listos para cuando lleguen.
+
+## Modelos
+
+`render::ModelRenderer` sube cada `assets::ModelData` una vez y dibuja las instancias que se le envían cada frame
+con sus matrices de huesos (de `animation`) en el anillo. Da dos drawers para `FrameDesc::scene`: `opaque()` (lo
+opaco y lo recortado por alfa) y `translucent()` (lo semitransparente, sin escribir profundidad). El orden de la
+escena del juego es **fondo → modelos opacos → capas del mapa → modelos semitransparentes**: las capas del mapa
+tapan a los modelos opacos por profundidad, y lo semitransparente se mezcla sobre todo lo opaco. `opaque()` va
+siempre antes: su `prepare` toma las instancias y sube las matrices, y `translucent()` dibuja de eso; solo,
+`translucent()` no dibuja nada. Lo semitransparente se ordena **por instancia** (la profundidad en espacio de vista
+de su origen), no por triángulo. Cómo pinta luz, transparencias y caras está en
+[modelos](models.md#dibujar-modelrenderer).
 
 ## Requisitos de la GPU
 

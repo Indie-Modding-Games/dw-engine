@@ -73,6 +73,8 @@ El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las val
 - Edita `apps/game/scripts/main.lua` con el juego abierto: se recarga al guardar.
 - En la ventana Frame del overlay, **asset viewer** abre el [visor de assets](../guides/visor-de-assets.md). Monta
   `content/base`, o la carpeta que pases con `scripts/dev.sh run --content <carpeta>`.
+- `scripts/dev.sh run --content <contenido extraído> --model-viewer` muestra, en vez de la escena de prueba, el
+  jugador y el compañero con cada una de sus animaciones ([modelos](../architecture/models.md#visor-de-modelos)).
 - Si tu mando no se reconoce, deja un `gamecontrollerdb.txt` de SDL en la carpeta desde la que lanzas el juego.
 - `scripts/dev.sh run --check-content content/base` no abre ventana: monta los paquetes de la carpeta (carpetas y
   archivos `.pak`), abre cada asset con los lectores del motor (PNG, KTX2, glTF, YAML, Ogg Opus, WAV, SF2, MIDI,

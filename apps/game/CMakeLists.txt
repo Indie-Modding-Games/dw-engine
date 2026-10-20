@@ -3,9 +3,10 @@ dwe_add_app(game
     SOURCES
         src/main.cpp
         src/map_preview.cpp
+        src/model_viewer.cpp
         src/test_scene.cpp
         src/ui_demo.cpp
-    DEPS core platform rhi render input assets script ui debug
+    DEPS core platform rhi assets animation render input script ui debug
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang)
@@ -15,3 +16,5 @@ target_compile_definitions(game PRIVATE DWE_GAME_SCRIPTS="${CMAKE_CURRENT_SOURCE
 
 # The UI demo reads the team's packs (menus, HUD, fonts) from the source tree, so editing them reloads them live.
 target_compile_definitions(game PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/content/packs")
+# Likewise the game pack (models/*.yaml), which the model viewer mounts over the extracted content.
+target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")

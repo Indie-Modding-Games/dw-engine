@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Character model",
+  "description": "A models/<name>.yaml document of the game pack: which model a character draws and which of its clips each animation the engine asks for is. engine/assets/src/character_model.cpp applies the same rules.",
+  "type": "object",
+  "required": ["model", "animations"],
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "description": "The asset id of the model (a binary glTF), such as digimon/boys/model.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$",
+      "maxLength": 200
+    },
+    "animations": {
+      "description": "Animation names the engine asks for (idle, walk, run...) and the clip each one plays: the original's animation id, which the extracted model keeps as its clip's extras.id and name anim_NN.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z0-9_]{1,64}$" },
+      "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+    }
+  }
+}
