@@ -58,6 +58,29 @@ Todas siguen la misma estructura:
    evolución…) lo define el GDD del repositorio de diseño, según el [ciclo de diseño](../conventions/design-cycle.md).
    Estas especificaciones dicen qué tiene que hacer el motor para que ese diseño se pueda construir.
 
+## Cómo se trabaja sin esperas
+
+El objetivo es que nadie espere a una comprobación: se ejecutan en paralelo y solo se repiten cuando algo cambia.
+
+| Nivel | Cuándo | Qué | Tiempo aproximado |
+|---|---|---|---|
+| Rápido | Mientras se trabaja | Build incremental y tests del módulo tocado | segundos |
+| `check-commit` | Cada commit | Build del preset `ci` sin warnings y tests sin el disco (`ctest -LE slow`) | ~30 s con caché |
+| `check-full` | Antes de integrar | Formato, build, todos los tests (también los del disco) y clang-tidy en paralelo | ~6 min con caché |
+| Windows | Antes de subir | Build cruzado `windows-cross` desde el contenedor | en paralelo |
+
+- **Un commit por funcionalidad completa.** El progreso se guarda con commits provisionales en la rama del worktree,
+  que se juntan en uno antes de entregar ([commits](../conventions/commits.md)).
+- **Integración continua.** Cada funcionalidad entra en `main` en cuanto pasa `check-full`, y las demás ramas se
+  actualizan sobre ella. Al cerrar una fase no queda una integración grande pendiente.
+- **La verificación acompaña al trabajo.** Cada funcionalidad se verifica cuando llega a `main`; al cerrar la fase
+  solo se repite la prueba del criterio de cierre.
+- **Reparto de la máquina.** Con varios builds a la vez, cada uno usa `DWE_JOBS=6`, y como mucho corren dos
+  `check-full` al mismo tiempo.
+- **La CI confirma, no descubre.** Lo que se sube ya pasó `check-full` y el build cruzado de Windows.
+
+Los detalles de las cachés y de cada nivel están en el [ADR 0015](../adr/0015-desarrollo-en-contenedor.md).
+
 ## Reglas que valen para todas las fases
 
 - **Sin limitaciones de PS1.** Cualquier resolución, IDs por nombre, nada de tablas de tamaño fijo

@@ -2,7 +2,10 @@
 
 ## Commits
 
-- **Un tema por commit.**
+- **Un tema por commit, y una funcionalidad completa por commit.** Nada de commits por cada paso: el progreso se
+  guarda con commits provisionales en la rama del worktree y se juntan antes de entregar. El stash se comparte entre
+  worktrees, así que no se usa para esto.
+- **Cada commit pasa `scripts/dev.sh check-commit`**, y el último de una entrega, `check-full`.
 - El mensaje es una frase en **inglés**, en imperativo, que dice qué cambia: `Add the virtual file system`,
   `Load map collision from packs`.
 - Cada commit lleva `Signed-off-by` (`git commit -s`) según el DCO (ver [CONTRIBUTING.md](../../CONTRIBUTING.md)).
