@@ -33,6 +33,13 @@ sources:
   "std.command_names.0004": "423208095dd7fc394399b8c356f8f00cd260869b"
   "std.command_names.0005": "1c59d3d634d7c1fc59947d34dda9ed08eec6b684"
   "std.command_names.0006": "64fbd995d3b6b156ee26ae3c03e6516434c34c12"
+  "vs.command_names.0000": "b1b392607deaf29a7e81453e069b7c07a32a6b18"
+  "vs.command_names.0001": "1b81f28b5afbfcaaf5253d26b7dba4028a92a860"
+  "vs.command_names.0002": "c614ba7c453cdcd4d21b20e8286c6266c891e0c6"
+  "vs.command_names.0003": "ea8b09c2354b17c2a83673437d6380be0e7b8c73"
+  "vs.command_names.0004": "423208095dd7fc394399b8c356f8f00cd260869b"
+  "vs.command_names.0005": "1c59d3d634d7c1fc59947d34dda9ed08eec6b684"
+  "vs.command_names.0006": "64fbd995d3b6b156ee26ae3c03e6516434c34c12"
 kept_english:
   - "main.digimon_names.0000"
   - "main.digimon_names.0001"
