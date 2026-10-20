@@ -282,7 +282,8 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
   TIM de su tipo en un mapa), `offset`, `mode` (`indexed4`, `indexed8`, `direct16`, `direct24`), `width` y `height`
   en píxeles, `image_rect` y `clut_rect` (dónde lo sube el original a la VRAM, en unidades de 16 bits), `png`
   (`indexed` o `rgba`), `png_palette` y `palettes`: cada paleta como una cadena de colores de 4 cifras hex separados
-  por espacios, en bruto (bit STP incluido). Si algo no se pudo escribir, va en `warnings`.
+  por espacios, en bruto (bit STP incluido). Los avisos del lector van en `warnings`. Un TIM que no se puede
+  convertir a PNG no da ni el PNG ni el `_meta`, porque el `_meta` describe un PNG: el motivo va a `unknowns`.
 - **Texturas de Digimon:** el PNG usa la paleta 0, pero cada primitiva del modelo elige su propia fila de la CLUT; el
   extractor de modelos tiene que usar las paletas del YAML para cada parte.
 

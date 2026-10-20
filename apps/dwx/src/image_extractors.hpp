@@ -25,7 +25,8 @@ struct TimPlace {
 };
 
 // Adds the PNG and the metadata (<id>_meta) of one TIM: indexed with palette 0 when it has a CLUT, RGBA when its
-// colours are direct. What could not be written goes to the extraction's unknowns and to the metadata's warnings.
+// colours are direct. The reader's warnings go to the extraction's unknowns and to the metadata's warnings; an image
+// that cannot be encoded gets neither file, only an unknown.
 core::Result<void> addTimImage(Extraction& extraction, const assets::AssetId& id, const formats::image::Tim& tim,
                                const TimPlace& place, std::vector<std::string> warnings = {});
 

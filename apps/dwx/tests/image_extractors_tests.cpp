@@ -171,7 +171,7 @@ TEST_CASE("every image file of the disc is extracted to PNG and metadata") {
 
     const auto& noClut = reportOf(*run, "STDDAT/NOCLUT.TIM");
     CHECK(noClut.status == FileStatus::Partial);
-    CHECK(noClut.outputs == std::vector<std::string>{"texture/stddat/noclut_meta.yaml"});
+    CHECK(noClut.outputs.empty()); // no PNG, so nothing for metadata to describe
 
     CHECK(reportOf(*run, "SOUND/VHB/ALL.VHB").status == FileStatus::Pending);
 

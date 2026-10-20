@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TIM image metadata",
-  "description": "<image>_meta.yaml: what the PNG of a TIM image leaves out, written by dwx extract (image_extractors.cpp: addTimImage). The PNG is the asset without the _meta suffix; it is missing when the TIM could not be encoded, and then warnings says why.",
+  "description": "<image>_meta.yaml: what the PNG of a TIM image leaves out, written by dwx extract (image_extractors.cpp: addTimImage). The PNG is the asset without the _meta suffix. A TIM that cannot be encoded gets neither file; the coverage report says why.",
   "type": "object",
   "required": ["source", "offset", "mode", "width", "height", "image_rect"],
   "additionalProperties": false,

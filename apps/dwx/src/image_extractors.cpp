@@ -117,6 +117,16 @@ core::Result<std::pair<std::vector<std::byte>, std::string_view>> encodeTim(cons
 
 core::Result<void> addTimImage(Extraction& extraction, const assets::AssetId& id, const Tim& tim, const TimPlace& place,
                                std::vector<std::string> warnings) {
+    // The metadata describes the PNG next to it, so an image that cannot be written gets neither; the coverage report
+    // says why.
+    auto png = encodeTim(tim);
+    if (!png) {
+        warnings.push_back(std::format("not written: {}", png.error().message));
+        for (const auto& warning : warnings) {
+            extraction.unknowns.push_back(std::format("{}: {}", placeName(place), warning));
+        }
+        return {};
+    }
     YamlNode meta = YamlNode::mapping();
     meta.set("source", YamlNode::scalar(std::string{place.source}, YamlNode::ScalarStyle::Quoted));
     if (place.entry) {
@@ -131,16 +141,11 @@ core::Result<void> addTimImage(Extraction& extraction, const assets::AssetId& id
         meta.set("clut_rect", rectNode(tim.clutRect));
     }
 
-    auto png = encodeTim(tim);
-    if (png) {
-        meta.set("png", YamlNode::scalar(std::string{png->second}));
-        if (png->second == "indexed") {
-            meta.set("png_palette", number(0));
-        }
-        extraction.outputs.push_back(OutputFile{.id = id, .extension = "png", .bytes = std::move(png->first)});
-    } else {
-        warnings.push_back(std::format("not written: {}", png.error().message));
+    meta.set("png", YamlNode::scalar(std::string{png->second}));
+    if (png->second == "indexed") {
+        meta.set("png_palette", number(0));
     }
+    extraction.outputs.push_back(OutputFile{.id = id, .extension = "png", .bytes = std::move(png->first)});
 
     const std::size_t paletteCount = formats::image::timPaletteCount(tim);
     if (paletteCount > 0) {

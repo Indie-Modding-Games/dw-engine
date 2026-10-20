@@ -8,6 +8,7 @@
 #include <dwe/formats/effect/efe_yaml.hpp>
 #include <dwe/formats/image/tim.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -220,7 +221,10 @@ private:
             unknown(std::format("texture not written: {}", added.error().message));
             return;
         }
-        texture_ = siblingFile(id->str(), "png");
+        // A TIM that cannot be encoded adds no PNG, only an unknown.
+        if (std::ranges::contains(extraction_->outputs, *id, &OutputFile::id)) {
+            texture_ = siblingFile(id->str(), "png");
+        }
     }
 
     void writeModel(std::span<const std::byte> payload, const fx::EfeHeader& header) {
