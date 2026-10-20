@@ -83,16 +83,21 @@ comprueban que cocinar la misma textura dos veces, también en varios hilos a la
 
 ## Medidas
 
-Con la extracción de la versión US (4623 assets, 1530 PNG), `dwx` del 2026-10-19:
+Con la extracción de la versión US (4813 assets, 1530 PNG, las 4 películas incluidas), `dwx` del 2026-10-19
+compilado en release (`linux-clang-release`). Cada tamaño, con la carpeta `movie/` y sin ella (en MB de 10⁶ bytes):
 
-| | Antes | Después |
+| | Extraído | Cocinado |
 |---|---|---|
-| Paquete base extraído → cocinado (carpeta) | 351,6 MB | 421,5 MB (el cocinado RGBA8 sin comprimir ocupaba 1617 MB) |
-| `.pak` del paquete base → del cocinado (versión 2, zstd) | 240,8 MB | 313,2 MB |
+| Carpeta del paquete base, sin `movie/` | 351,7 MB | 420,9 MB (el cocinado RGBA8 sin comprimir ocupaba 1617 MB) |
+| Carpeta del paquete base, con `movie/` | 1523,5 MB | 1592,7 MB |
+| `.pak` (versión 2, zstd), sin `movie/` | 240,9 MB | 313,3 MB |
+| `.pak` (versión 2, zstd), con `movie/` | 611,1 MB | 683,5 MB |
 | Los 645 PNG que pasan a KTX2 UASTC | 167,5 MB | 246,7 MB (en KTX2 RGBA8 sin comprimir, 1190,7 MB) |
 | — de ellos, los 513 fondos de mapa | 166,1 MB | 244,1 MB |
 | Los 642 WAV → Opus | 17,1 MB | 7,0 MB |
 
+- **Películas:** `movie/` ocupa 1171,8 MB (4 Y4M, 4 WAV y 4 YAML), tres cuartas partes del paquete, y se copia tal
+  cual (formato pendiente, arriba). En el `.pak`, zstd la deja en unos 370 MB.
 - **Qué pasa tal cual:** 885 PNG indexados se quedan como PNG (14,2 MB): 580 TIM de mapa, 179 texturas de Digimon,
   93 de efectos y 33 texturas sueltas de varias paletas. Se convierten 645: los 513 fondos de mapa, 66 cartas,
   36 texturas sueltas, 28 de efectos, una de Digimon y la fuente. `dwx cook` cuenta 611 copias de PNG porque los
@@ -101,11 +106,15 @@ Con la extracción de la versión US (4623 assets, 1530 PNG), `dwx` del 2026-10-
   un fondo prerenderizado guarda 8 bits por texel y deflate lo comprime mejor. Por eso las texturas convertidas
   ocupan 1,47 veces su PNG en disco (los fondos, 1,47; el resto, 1,86), aunque 4,8 veces menos que en KTX2 RGBA8.
   En la GPU, BC7 ocupa la cuarta parte que RGBA8, y el PNG indexado no se puede subir sin decodificar.
-- **Tiempo de `dwx cook`** del paquete entero, sin caché, con 12 hilos (compartidos con otras
-  compilaciones): 222 s en release, 1337 s con la compilación de depuración con sanitizers (`ci`, con libktx de
-  depuración). Las dos dan los mismos bytes en los 4623 ficheros. `dwx pack` tarda 21,5 s con `ci`, relectura
-  incluida. La extracción, 30 s.
-- El juego monta el `.pak` cocinado (`dwe-game --content` con la carpeta del `.pak`) sin avisos.
+- **Tiempos** en release, con 12 hilos compartidos con otras compilaciones: la extracción, 15,1 s; `dwx cook` del
+  paquete entero sin caché, 285 s (antes de las películas, 222 s; con la compilación de depuración con sanitizers,
+  `ci`, 1337 s y los mismos bytes en todos los ficheros); `dwx pack`, 20,7 s el base y 20,2 s el cocinado, relectura
+  incluida (2,7 s y 3,3 s sin `movie/`).
+- **Comprobación:** `dwx validate` no encuentra ningún problema en la carpeta cocinada (5,8 s) ni en su `.pak`
+  (10,1 s): 4813 assets, 2078 documentos, 9271 referencias y 178 contratos, y cada asset se abre con los lectores del
+  motor, KTX2 transcodificada a BC7 y Opus decodificado incluidos. `dwe-game --check-content` (compilación `ci`)
+  abre los 4813 en la carpeta (27 s) y en el `.pak` (36 s) sin fallos, y `dwe-game --content` monta los dos sin
+  avisos.
 
 ## Consecuencias
 
@@ -113,8 +122,8 @@ Con la extracción de la versión US (4623 assets, 1530 PNG), `dwx` del 2026-10-
   los que salen, y en la GPU una cuarta parte de RGBA8. UASTC es casi sin pérdida, y transcodificar a BC7 al cargar
   es rápido. Si el tamaño en disco llega a importar, UASTC tiene un modo RDO que prepara los bloques para que zstd
   los comprima mejor a cambio de algo de calidad; esta decisión lo deja apagado.
-- Cocinar es mucho más lento que antes (222 s en release para el paquete entero), casi todo por codificar UASTC. La
-  caché hace que solo se pague una vez por textura.
+- Cocinar es mucho más lento que antes (285 s en release para el paquete entero, películas incluidas), casi todo
+  por codificar UASTC. La caché hace que solo se pague una vez por textura.
 - Las paletas que se eligen al jugar siguen como PNG: el motor tendrá que dibujarlas con su paleta (un shader de
   búsqueda o variantes compuestas) cuando llegue el render de modelos y mapas.
 - Opus es con pérdida: un bucle corto de un instrumento puede notar el salto en el punto de vuelta. Las muestras sin
