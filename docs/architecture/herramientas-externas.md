@@ -18,7 +18,18 @@ Las dos herramientas se verifican contra la salida de `dwx extract`:
 
 Un paquete que deja una herramienta se comprueba junto con el paquete base, que es del que depende:
 `dwx validate --with <content>/base <paquete>`. La opción `--with` monta también los paquetes de esa carpeta para
-resolver las dependencias.
+resolver las dependencias. Además de los esquemas, las referencias y los contratos, `dwx validate` carga cada asset
+con los mismos lectores que usa el juego, así que un paquete que pasa la validación es un paquete que el juego acepta:
+
+- Cada modelo `.glb` con `parseModel` (`engine/assets/src/model_data.cpp`): nodos, una sola piel, articulaciones y
+  pesos de cada vértice (que suman 1 y nombran articulaciones de la piel), imágenes PNG incrustadas y los `extras` de
+  cada clip (`readClipExtras`: `ticksPerSecond`, `tickCount`, `loops`, `rootMotionNode`…).
+- Cada `map/<id>/data.yaml` con `parseMapDocument` (`engine/assets/src/map_document.cpp`).
+- `data/maps.yaml` con `parseMapTable` (`engine/assets/src/map_table.cpp`).
+
+Los dos lectores de YAML son estrictos: una clave que sobra o que falta hace fallar el documento aunque cumpla su
+esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el motivo
+(`<fichero>: the engine cannot load <id>: <motivo>`), y `dwx validate` termina con error.
 
 ## Qué es contrato
 
@@ -67,6 +78,7 @@ resolver las dependencias.
 |---|---|---|
 | 2026-10-19 | Aditivo: una carpeta de contenido también monta los archivos `.pak` que tiene directamente dentro (`findPacks`), y si hay una carpeta y un `.pak` con el mismo nombre (`base/` y `base.pak`) gana la carpeta y el archivo se deja fuera. Un paquete en carpeta se monta igual que antes | Nada. Para probar un mod empaquetado, dejar su `.pak` junto a `base/` |
 | 2026-10-20 | Aditivo: la tabla lista lo que el editor de mapas ya lee y escribe (`data/maps.yaml` y las otras tablas, texturas de mapa, puertas, textura de Digimon, scripts en YAML del motor), el `extras.rootMotionNode` de las animaciones y `dwx validate --with`. El contrato no cambia | Nada |
+| 2026-10-20 | Más estricto al validar: `dwx validate` carga los `.glb`, los `map/<id>/data.yaml` y `data/maps.yaml` con los lectores del juego, así que rechaza lo que el juego rechazaría. El formato no cambia | Nada, si el juego ya cargaba el paquete. Un paquete que ahora falla la validación tampoco lo cargaba el juego |
 
 ## Lo que aún no está probado
 

@@ -149,7 +149,7 @@ public:
             checkContractExists(id, source);
         }
         for (assets::ContentProblem& problem : assets::checkContent(*stack_)) {
-            add(problem.file, 0, 0, std::move(problem.message));
+            add(problem.file, 0, 0, std::format("the engine cannot load {}: {}", problem.id.str(), problem.message));
         }
         std::ranges::sort(report_.problems);
         return std::move(report_);

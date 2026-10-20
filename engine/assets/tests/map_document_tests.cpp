@@ -11,6 +11,8 @@
 #include <string_view>
 #include <vector>
 
+#include "map_documents.hpp"
+
 using dwe::assets::CollisionCell;
 using dwe::assets::CollisionKind;
 using dwe::assets::MapCollision;
@@ -18,6 +20,7 @@ using dwe::assets::MapDocument;
 using dwe::assets::MapWarp;
 using dwe::assets::MemoryFileSystem;
 using dwe::assets::VirtualFileSystem;
+using dwe::assets::testing::fixtureMap;
 
 namespace {
 
@@ -27,95 +30,6 @@ constexpr float Pi = std::numbers::pi_v<float>;
 template <typename T>
 std::string errorOf(const dwe::core::Result<T>& result) {
     return result ? std::string{} : result.error().message;
-}
-
-// The collision rows of the fixture: blocked border, a trigger 'A' (110) at column 10 of row 20 and a trigger 'B'
-// (51) at column 11 of row 20.
-std::string fixtureCollision() {
-    std::string text;
-    for (int row = 0; row < MapCollision::Size; ++row) {
-        std::string cells(MapCollision::Size, '.');
-        cells.front() = '#';
-        cells.back() = '#';
-        if (row == 0 || row == MapCollision::Size - 1) {
-            cells.assign(MapCollision::Size, '#');
-        }
-        if (row == 20) {
-            cells[10] = 'A';
-            cells[11] = 'B';
-        }
-        text += std::format("  - \"{}\"\n", cells);
-    }
-    return text;
-}
-
-std::string fixtureWarps() {
-    std::string text;
-    for (int exit = 0; exit < 10; ++exit) {
-        if (exit == 0) {
-            text += "- exit: 0\n  spawn:\n    x: -2500\n    y: 0\n    z: -2525\n  rotation: 3072\n"
-                    "  target_map: 218\n  target_map_id: \"room08\"\n  target_exit: 2\n";
-        } else {
-            text += std::format("- exit: {}\n  spawn:\n    x: 0\n    y: 0\n    z: 0\n  rotation: 0\n"
-                                "  target_map: -1\n  target_map_id: null\n  target_exit: -1\n",
-                                exit);
-        }
-    }
-    return text;
-}
-
-std::string fixtureMap(std::string_view objects = "null", std::string_view extraNpcs = "[]") {
-    return std::format(R"(camera:
-  viewpoint:
-    x: 0
-    y: -4301
-    z: -5973
-  reference:
-    x: 0
-    y: 0
-    z: -256
-  projection: 1813
-lights:
-- direction: {{x: 0, y: 170, z: 83}}
-  color: {{r: 178, g: 178, b: 178}}
-- direction: {{x: 1, y: 1, z: 1}}
-  color: {{r: 0, g: 0, b: 0}}
-- direction: {{x: 1, y: 1, z: 1}}
-  color: {{r: 0, g: 0, b: 0}}
-ambient: {{r: 0, g: 0, b: 0}}
-regions:
-  a: [-1, -1, -1, -1]
-  b: [1, 2, 3, 4]
-tiles:
-  width: 3
-  height: 2
-  rows:
-  - "0 1 -1"
-  - "2 3 4"
-images:
-- bits_per_pixel: 8
-  offset: 304
-  size: 66080
-objects: {}
-warps:
-{}digimon_count: 1
-npcs: {}
-collision:
-  width: 100
-  height: 100
-  encoding: "legend"
-  legend:
-  - cell: "."
-    value: 0
-  - cell: "A"
-    value: 110
-  - cell: "B"
-    value: 51
-  - cell: "#"
-    value: 128
-  rows:
-{})",
-                       objects, fixtureWarps(), extraNpcs, fixtureCollision());
 }
 
 constexpr std::string_view FixtureObjects = R"(

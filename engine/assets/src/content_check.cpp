@@ -1,7 +1,10 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/image.hpp>
+#include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_table.hpp>
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
+#include <dwe/assets/model_data.hpp>
 #include <dwe/assets/sound.hpp>
 #include <dwe/assets/texture.hpp>
 #include <dwe/core/yaml.hpp>
@@ -27,6 +30,15 @@ constexpr unsigned MaxThreads = 16;
 template <auto Reader>
 core::Result<void> discardValue(std::span<const std::byte> bytes) {
     if (auto read = Reader(bytes); !read) {
+        return std::unexpected{read.error()};
+    }
+    return {};
+}
+
+// Turns the result of a reader of text into success or its error, dropping what it read.
+template <auto Reader>
+core::Result<void> discardParsed(std::span<const std::byte> bytes) {
+    if (auto read = Reader(std::string_view{reinterpret_cast<const char*>(bytes.data()), bytes.size()}); !read) {
         return std::unexpected{read.error()};
     }
     return {};
@@ -99,7 +111,7 @@ core::Result<void> openFont(std::span<const std::byte> bytes) {
 constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
     {"png", discardValue<decodePng>},
     {"ktx2", openKtx2},
-    {"glb", discardValue<readModel>},
+    {"glb", discardValue<parseModel>},
     {"gltf", discardValue<readModel>},
     {"yaml", openYaml},
     {"wav", discardValue<readWavHeader>},
@@ -117,6 +129,12 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
     {"ttc", openFont},
 }};
 
+// The YAML documents the game reads with a reader of their own, which is strict about their keys and values.
+constexpr std::array<std::pair<std::string_view, Opener>, 2> DocumentReaders = {{
+    {"map/*/data", discardParsed<parseMapDocument>},
+    {"data/maps", discardParsed<parseMapTable>},
+}};
+
 } // namespace
 
 core::Result<void> openAsset(std::string_view extension, std::span<const std::byte> bytes) {
@@ -126,6 +144,18 @@ core::Result<void> openAsset(std::string_view extension, std::span<const std::by
         }
     }
     return core::fail(std::format("the engine has no reader for .{} files", extension));
+}
+
+core::Result<void> openAsset(const AssetId& id, std::string_view extension, std::span<const std::byte> bytes) {
+    if (auto opened = openAsset(extension, bytes); !opened || extension != "yaml") {
+        return opened;
+    }
+    for (const auto& [pattern, reader] : DocumentReaders) {
+        if (matchesIdPattern(pattern, id)) {
+            return reader(bytes);
+        }
+    }
+    return {};
 }
 
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
@@ -142,7 +172,8 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
                 continue;
             }
             const std::string extension = source->file.extension().string();
-            const auto opened = openAsset(std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
+            const auto opened =
+                openAsset(ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
             if (!opened) {
                 found[i] =
                     ContentProblem{.id = ids[i], .file = pathText(source->file), .message = opened.error().message};

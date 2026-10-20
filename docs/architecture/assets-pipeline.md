@@ -163,9 +163,12 @@ Qué comprueba:
    así que un modelo HD que lo cumple se puede animar como el original. Las animaciones del MMD que el extractor no
    pudo convertir van en `unconverted_animations`, que no se comprueba.
 7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
-   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF/GLB, YAML, Ogg Opus (`.opus` y `.ogg`,
+   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF, YAML, Ogg Opus (`.opus` y `.ogg`,
    decodificado entero), y las cabeceras de WAV, SF2, MIDI e Y4M. Así un paquete cocinado se comprueba igual que uno
-   extraído.
+   extraído. Los assets que el juego lee con un lector propio pasan también por ese lector: cada `.glb` por
+   `parseModel` (piel, pesos, articulaciones y `extras` de los clips), cada `map/<id>/data` por `parseMapDocument` y
+   `data/maps` por `parseMapTable`, que no admiten claves de más ni de menos. Un fallo se informa con el ID del asset
+   y el motivo.
 
 Límite conocido: los operandos de los scripts (`script/…` y el `script.yaml` de cada efecto) se guardan tal como
 están en el disco, y el esquema solo comprueba su forma (un número, una variable, una dirección o una etiqueta), no lo

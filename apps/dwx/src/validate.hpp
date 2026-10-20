@@ -49,7 +49,10 @@ struct ValidationReport {
 // mounted manifests, exactly one, from schemaFolder. The references the schemas mark, the files glTF models use and the
 // asset that each <name>_meta describes must be in the stack; a reference that names a file may name the type the
 // file was cooked from (.wav for .opus, .png for .ktx2). Each model of names::ContractedModels needs a contract,
-// and the model a contract names has its skeleton and its animations. Every asset must open with the engine's readers.
+// and the model a contract names has its skeleton and its animations. Every asset must open with the engine's readers
+// (assets::checkContent), the ones the game loads it with: a .glb as a model, with its skin, weights and clip extras,
+// map/<id>/data and data/maps with the strict readers of the map and of the map table; a problem there names the
+// asset id and why the engine refuses it.
 // Fails only when there are no packs or they cannot be mounted; anything else is a problem of the report. The packs at
 // each of withFolders (a pack or a folder of packs) are mounted too, so a pack that needs another one, such as the
 // game pack on the base pack, can be checked; they are checked with the rest.

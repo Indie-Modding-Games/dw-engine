@@ -17,6 +17,8 @@
 
 #include "asset_names.hpp"
 #include "audio_cooker.hpp"
+#include "glb_builder.hpp"
+#include "map_documents.hpp"
 #include "media_fixtures.hpp"
 #include "temp_folder.hpp"
 #include "validate.hpp"
@@ -47,7 +49,20 @@ std::string skinnedModel(bool withImage) {
     return model;
 }
 
-// The schemas of the tests: a sound bank's metadata names its SoundFont and a map, a map has a name.
+// A binary model with one joint and one clip, as dwx extracts them. The game refuses a clip whose extras say it has
+// no ticks.
+std::vector<std::byte> clipModel(int tickCount) {
+    dwe::assets::testing::GlbBuilder builder;
+    const int times = builder.addFloats({0.0F, 0.05F}, "SCALAR", 1, R"(,"min":[0],"max":[0.05])");
+    const int moves = builder.addFloats({0, 0, 0, 0, 0, 1}, "VEC3", 3);
+    return builder.build(std::format(
+        R"({{"scene":0,"scenes":[{{"nodes":[0]}}],"nodes":[{{"name":"bone_00"}}],"animations":[{{"name":"anim_00",)"
+        R"("extras":{{"id":0,"ticksPerSecond":20,"tickCount":{}}},"samplers":[{{"input":{},"output":{}}}],)"
+        R"("channels":[{{"sampler":0,"target":{{"node":0,"path":"translation"}}}}]}}]}})",
+        tickCount, times, moves));
+}
+
+// The schemas of the tests: a sound bank's metadata names its SoundFont and a map, a map has a camera.
 void addSchemas(MemoryFileSystem& files) {
     files.addFile("content/schemas/pack.schema.json", R"({"type": "object", "required": ["id", "name"]})");
     files.addFile("content/schemas/sound.schema.json", R"({
@@ -56,7 +71,8 @@ void addSchemas(MemoryFileSystem& files) {
             "bank": {"type": "string", "assetReference": "./{}"},
             "map": {"type": "string", "assetReference": "map/{}/data"},
             "count": {"type": "integer"}}})");
-    files.addFile("content/schemas/map.schema.json", R"({"type": "object", "required": ["name"]})");
+    files.addFile("content/schemas/map.schema.json", R"({"type": "object", "required": ["camera"]})");
+    files.addFile("content/schemas/maps.schema.json", R"({"type": "object", "required": ["maps"]})");
     files.addFile("content/schemas/model_contract.schema.json", R"({
         "type": "object", "required": ["model", "joint_parents", "animations"],
         "properties": {
@@ -74,11 +90,14 @@ name: Base
 schemas:
   sound: ["sound/*/bank_meta"]
   map: ["map/*/data"]
+  maps: ["data/maps"]
   model_contract: ["digimon/*/contract"]
 )");
     files.addFile("content/base/sound/hit/bank_meta.yaml", "bank: bank.sf2\nmap: town\ncount: 3\n");
     files.addFile("content/base/sound/hit/bank.sf2", dwe::assets::testing::soundFontFile());
-    files.addFile("content/base/map/town/data.yaml", "name: town\n");
+    files.addFile("content/base/map/town/data.yaml", dwe::assets::testing::fixtureMap());
+    files.addFile("content/base/data/maps.yaml", dwe::assets::testing::FixtureTable);
+    files.addFile("content/base/model/door/door00.glb", clipModel(2));
     files.addFile("content/base/digimon/agum/model.gltf", skinnedModel(false));
     files.addFile("content/base/digimon/agum/contract.yaml",
                   "model: model.gltf\njoint_parents: [-1, 0, 1]\nanimations: [walk]\n");
@@ -134,8 +153,8 @@ TEST_CASE("a pack whose documents follow their schemas and whose references reso
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report).empty());
     CHECK(report->packs == 1);
-    CHECK(report->assets == 5);
-    CHECK(report->documents == 4);  // pack.yaml and the three YAML assets
+    CHECK(report->assets == 7);
+    CHECK(report->documents == 5);  // pack.yaml and the four YAML assets
     CHECK(report->references == 4); // the bank, the map, the contract's model and what bank_meta describes
     CHECK(report->contracts == 1);
 }
@@ -170,7 +189,7 @@ content/base/sound/hit/bank_meta.yaml: the rules of several schemas match this d
 content/broken/digimon/gabu/model.gltf: the model has no contract: digimon/gabu/contract is missing
 content/broken/digimon/gabu/model.gltf: the model uses 'skin.png', which names digimon/gabu/skin, which no pack has
 content/broken/loose/b.yaml: no schema rule of the packs matches this document
-content/broken/map/swamp/data.yaml: line 2, column 1: did not find expected ',' or ']' (while parsing a flow sequence at line 1, column 7)
+content/broken/map/swamp/data.yaml: the engine cannot load map/swamp/data: line 2, column 1: did not find expected ',' or ']' (while parsing a flow sequence at line 1, column 7)
 content/broken/pack.yaml: schema 'other' cannot be used: cannot read 'content/schemas/other.schema.json': it does not exist
 content/broken/pack.yaml:1:1: $: the key 'name' is missing
 content/broken/sound/lone_meta.yaml: no schema rule of the packs matches this document
@@ -204,8 +223,8 @@ TEST_CASE("a pack in a .pak archive is checked like a folder") {
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report).empty());
     CHECK(report->packs == 1);
-    CHECK(report->assets == 5);
-    CHECK(report->documents == 4);
+    CHECK(report->assets == 7);
+    CHECK(report->documents == 5);
     CHECK(report->references == 4);
     CHECK(report->contracts == 1);
 }
@@ -235,7 +254,7 @@ TEST_CASE("a manifest that cannot be read for its schema is a problem") {
     const auto report = validatePacks(once, "content/base", "content/schemas");
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report) == "content/base/pack.yaml: cannot be read: it is gone\n");
-    CHECK(report->documents == 3);
+    CHECK(report->documents == 4);
 }
 
 TEST_CASE("a pack that needs another one is checked with --with") {
@@ -260,6 +279,40 @@ dependencies:
     const auto twice = validatePacks(files, "content/base", "content/schemas", with);
     REQUIRE_MESSAGE(twice.has_value(), errorOf(twice));
     CHECK(twice->packs == 1);
+}
+
+TEST_CASE("a pack that the game's readers refuse fails validate") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/mod/pack.yaml", R"(id: mod
+version: 1.0.0
+layer: mods
+name: Mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    // Each file follows its schema, but the game cannot load it.
+    files.addFile("packs/mod/model/door/door00.glb", clipModel(0));
+    files.addFile("packs/mod/map/town/data.yaml", dwe::assets::testing::fixtureMap() + "weather: rain\n");
+    std::string missingKey = dwe::assets::testing::fixtureMap();
+    const std::string digimonCount = "digimon_count: 1\n";
+    missingKey.erase(missingKey.find(digimonCount), digimonCount.size());
+    files.addFile("packs/mod/map/swamp/data.yaml", missingKey);
+    files.addFile("packs/mod/data/maps.yaml", std::string{dwe::assets::testing::FixtureTable} + "weather: []\n");
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/mod", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    const std::string text = textOf(*report);
+    CHECK(report->problems.size() == 4);
+    CHECK(text.contains("packs/mod/data/maps.yaml: the engine cannot load data/maps: "));
+    CHECK(text.contains("unknown key 'weather'"));
+    CHECK(text.contains("packs/mod/map/swamp/data.yaml: the engine cannot load map/swamp/data: "));
+    CHECK(text.contains("'digimon_count'"));
+    CHECK(text.contains("packs/mod/map/town/data.yaml: the engine cannot load map/town/data: "));
+    CHECK(text.contains("packs/mod/model/door/door00.glb: the engine cannot load model/door/door00: "));
+    CHECK(text.contains("extras.tickCount must not be 0"));
 }
 
 TEST_CASE("dwx validate cannot check a folder without packs") {

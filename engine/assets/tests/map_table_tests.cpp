@@ -5,70 +5,16 @@
 #include <string>
 #include <string_view>
 
+#include "map_documents.hpp"
+
+using dwe::assets::testing::FixtureTable;
+
 namespace {
 
 template <typename T>
 std::string errorOf(const dwe::core::Result<T>& result) {
     return result ? std::string{} : result.error().message;
 }
-
-constexpr std::string_view FixtureTable = R"(maps:
-- id: "twna01"
-  index: 204
-  filename: "TWNA01"
-  images_8bpp: 2
-  images_4bpp: 2
-  flags: 140
-  sound_id: 12
-  fixed_time_of_day: false
-  has_npcs: true
-  doors: null
-  toilet: 1
-  loading_name: 2
-- id: "room08"
-  index: 218
-  filename: "ROOM08"
-  images_8bpp: 1
-  images_4bpp: 0
-  flags: 204
-  sound_id: 12
-  fixed_time_of_day: true
-  has_npcs: true
-  doors: 0
-  toilet: null
-  loading_name: 1
-- id: "map_219"
-  index: 219
-  filename: ""
-  images_8bpp: 0
-  images_4bpp: 0
-  flags: 0
-  sound_id: 0
-  fixed_time_of_day: false
-  has_npcs: false
-  doors: null
-  toilet: null
-  loading_name: 70
-doors:
-- index: 0
-  doors:
-  - {model_id: null, position: {x: 0, y: 0, z: 0}, rotation: 0}
-  - {model_id: 9, position: {x: 1925, y: 0, z: -915}, rotation: 1024}
-  - {model_id: null, position: {x: 0, y: 0, z: 0}, rotation: 0}
-  - {model_id: null, position: {x: 0, y: 0, z: 0}, rotation: 0}
-  - {model_id: null, position: {x: 0, y: 0, z: 0}, rotation: 0}
-  - {model_id: 10, position: {x: -1950, y: 0, z: -520}, rotation: -1024}
-toilets:
-- {index: 0, x1: -196, z1: -1831, x2: -392, z2: -976}
-- {index: 1, x1: -2852, z1: -957, x2: -3319, z2: -714}
-map_names:
-- "      Native Forest     "
-- "      Jijimon's house   "
-- "        File City       "
-light_updates:
-- {map: "twnb04", mode: 1, start_id: 49, count: 2, trigger: null}
-- {map: 300, mode: 0, start_id: 1, count: 1, trigger: 7}
-)";
 
 } // namespace
 
