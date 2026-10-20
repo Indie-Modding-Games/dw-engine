@@ -46,8 +46,9 @@ struct SchemaReport {
 };
 
 // A JSON Schema, compiled once and used to check any number of YAML documents. Only a subset of draft 2020-12 is
-// supported: type, properties, required, additionalProperties, items, $ref to "#" or "#/$defs/<name>" with $defs at
-// the root, minimum, maximum, minItems, maxItems, minLength, maxLength, pattern, enum and const, plus the
+// supported: type, properties, required, additionalProperties, minProperties, propertyNames, items, $ref to "#" or
+// "#/$defs/<name>" with $defs at the root, minimum, maximum, exclusiveMinimum, exclusiveMaximum, minItems, maxItems,
+// minLength, maxLength, pattern, enum and const, plus the
 // annotations title, description, default, $schema and $id. Patterns take literals, escaped punctuation, []
 // classes with ranges, groups with |, the quantifiers ? * + {n} {n,} {n,m} and the anchors ^ and $. Anything else
 // is an error when compiling, so a schema never checks less than it says.

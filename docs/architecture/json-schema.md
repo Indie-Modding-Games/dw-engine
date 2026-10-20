@@ -14,10 +14,13 @@ así un esquema no comprueba menos de lo que dice.
 | `properties` | El esquema de cada clave de un mapping |
 | `required` | Las claves que tienen que estar |
 | `additionalProperties` | `false` (no se admiten otras claves), `true` o un esquema para las demás claves |
+| `minProperties` | Cuántas claves tiene un mapping, como mínimo |
+| `propertyNames` | El esquema que cumple cada clave de un mapping, como texto |
 | `items` | El esquema de cada elemento de una lista (la forma de tupla, una lista de esquemas, no está) |
 | `minItems`, `maxItems` | Cuántos elementos tiene una lista |
 | `minLength`, `maxLength` | Cuántos caracteres tiene un texto (puntos de código UTF-8, no bytes) |
 | `minimum`, `maximum` | Límites de un número, incluidos |
+| `exclusiveMinimum`, `exclusiveMaximum` | Límites de un número, excluidos (la forma de 2020-12: un número) |
 | `pattern` | Una expresión regular que el texto tiene que contener (ver abajo) |
 | `enum`, `const` | Los valores permitidos, comparados como JSON: los números por valor, `"1"` no es `1` |
 | `$ref` | `#` (la raíz) o `#/$defs/<nombre>`; se aplica junto a las demás palabras clave del mismo esquema |

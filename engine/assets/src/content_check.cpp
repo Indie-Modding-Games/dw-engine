@@ -48,7 +48,55 @@ core::Result<void> openYaml(std::span<const std::byte> bytes) {
     return {};
 }
 
-constexpr std::array<std::pair<std::string_view, Opener>, 11> Openers = {{
+// Text read by a library (RmlUi documents and style sheets, Lua, licence notes): it must be UTF-8.
+core::Result<void> openText(std::span<const std::byte> bytes) {
+    std::size_t i = 0;
+    while (i < bytes.size()) {
+        const auto lead = static_cast<unsigned char>(bytes[i]);
+        std::size_t length = 1;
+        if (lead >= 0xF0U && lead <= 0xF4U) {
+            length = 4;
+        } else if (lead >= 0xE0U) {
+            length = 3;
+        } else if (lead >= 0xC2U && lead <= 0xDFU) {
+            length = 2;
+        } else if (lead >= 0x80U) {
+            return core::fail(std::format("not UTF-8 text: byte {} starts no character", i));
+        }
+        if (lead >= 0xF5U || i + length > bytes.size()) {
+            return core::fail(std::format("not UTF-8 text: byte {} starts no character", i));
+        }
+        for (std::size_t k = 1; k < length; ++k) {
+            if ((static_cast<unsigned char>(bytes[i + k]) & 0xC0U) != 0x80U) {
+                return core::fail(std::format("not UTF-8 text: byte {} starts no character", i));
+            }
+        }
+        i += length;
+    }
+    return {};
+}
+
+// A TrueType or OpenType font, which the UI hands to FreeType: checks its signature.
+core::Result<void> openFont(std::span<const std::byte> bytes) {
+    constexpr std::array<std::array<unsigned char, 4>, 4> Signatures{{
+        {0x00, 0x01, 0x00, 0x00},
+        {'O', 'T', 'T', 'O'},
+        {'t', 'r', 'u', 'e'},
+        {'t', 't', 'c', 'f'},
+    }};
+    constexpr std::size_t HeaderSize = 12;
+    if (bytes.size() >= HeaderSize) {
+        for (const auto& signature : Signatures) {
+            if (std::ranges::equal(bytes.first(4), signature,
+                                   [](std::byte a, unsigned char b) { return static_cast<unsigned char>(a) == b; })) {
+                return {};
+            }
+        }
+    }
+    return core::fail("not a TrueType or OpenType font");
+}
+
+constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
     {"png", discardValue<decodePng>},
     {"ktx2", openKtx2},
     {"glb", discardValue<readModel>},
@@ -60,6 +108,13 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> Openers = {{
     {"sf2", discardValue<readSoundFontHeader>},
     {"mid", discardValue<readMidiHeader>},
     {"y4m", discardValue<readY4mHeader>},
+    {"rml", openText},
+    {"rcss", openText},
+    {"lua", openText},
+    {"txt", openText},
+    {"ttf", openFont},
+    {"otf", openFont},
+    {"ttc", openFont},
 }};
 
 } // namespace

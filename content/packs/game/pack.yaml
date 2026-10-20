@@ -7,3 +7,12 @@ description: "Datos y UI del motor hechos por el equipo: reglas del campo, menú
 dependencies:
   - id: base
     min_version: 0.1.0
+schemas:
+  character_model:
+    - models/*
+  field_rules:
+    - field/rules
+  field_warps:
+    - field/warps
+  ui_prompts:
+    - ui/common/prompts

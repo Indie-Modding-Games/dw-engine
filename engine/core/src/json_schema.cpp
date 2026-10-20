@@ -232,6 +232,10 @@ struct SchemaNode {
     std::optional<std::size_t> items;
     std::optional<double> minimum;
     std::optional<double> maximum;
+    std::optional<double> exclusiveMinimum;
+    std::optional<double> exclusiveMaximum;
+    std::optional<std::size_t> minProperties;
+    std::optional<std::size_t> propertyNames;
     std::optional<std::size_t> minItems;
     std::optional<std::size_t> maxItems;
     std::optional<std::size_t> minLength;
@@ -454,12 +458,34 @@ private:
             node.ref = *target;
             return {};
         }
-        if (key == "minimum" || key == "maximum") {
+        if (key == "minimum" || key == "maximum" || key == "exclusiveMinimum" || key == "exclusiveMaximum") {
             auto limit = readLimit(value, path);
             if (!limit) {
                 return std::unexpected{limit.error()};
             }
-            (key == "minimum" ? node.minimum : node.maximum) = *limit;
+            if (key == "minimum") {
+                node.minimum = *limit;
+            } else if (key == "maximum") {
+                node.maximum = *limit;
+            } else {
+                (key == "exclusiveMinimum" ? node.exclusiveMinimum : node.exclusiveMaximum) = *limit;
+            }
+            return {};
+        }
+        if (key == "minProperties") {
+            auto count = readCount(value, path);
+            if (!count) {
+                return std::unexpected{count.error()};
+            }
+            node.minProperties = *count;
+            return {};
+        }
+        if (key == "propertyNames") {
+            auto child = compileNew(value, path);
+            if (!child) {
+                return std::unexpected{child.error()};
+            }
+            node.propertyNames = *child;
             return {};
         }
         if (key == "minItems" || key == "maxItems" || key == "minLength" || key == "maxLength") {
@@ -607,6 +633,12 @@ private:
             if (schema.maximum && number > *schema.maximum) {
                 problem(value, path, std::format("{} is more than the maximum, {}", value.text(), *schema.maximum));
             }
+            if (schema.exclusiveMinimum && number <= *schema.exclusiveMinimum) {
+                problem(value, path, std::format("{} is not more than {}", value.text(), *schema.exclusiveMinimum));
+            }
+            if (schema.exclusiveMaximum && number >= *schema.exclusiveMaximum) {
+                problem(value, path, std::format("{} is not less than {}", value.text(), *schema.exclusiveMaximum));
+            }
         }
         if (type != ScalarType::String) {
             return;
@@ -636,8 +668,15 @@ private:
     }
 
     void checkMapping(const YamlNode& value, const SchemaNode& schema, const std::string& path) {
+        if (schema.minProperties && value.entries().size() < *schema.minProperties) {
+            problem(value, path,
+                    std::format("has {} keys, fewer than {}", value.entries().size(), *schema.minProperties));
+        }
         for (const YamlEntry& entry : value.entries()) {
             const std::string childPath = std::format("{}.{}", path, entry.key);
+            if (schema.propertyNames) {
+                checkKey(entry, *schema.propertyNames, childPath);
+            }
             const auto property =
                 std::ranges::find(schema.properties, entry.key, &std::pair<std::string, std::size_t>::first);
             if (property != schema.properties.end()) {
@@ -652,6 +691,17 @@ private:
             if (value.find(key) == nullptr) {
                 problem(value, path, std::format("the key '{}' is missing", key));
             }
+        }
+    }
+
+    // A key checked as the string it is, with its problems placed at its value (keys keep no position).
+    void checkKey(const YamlEntry& entry, std::size_t schema, const std::string& path) {
+        const std::size_t before = report_.problems.size();
+        check(YamlNode::scalar(entry.key, YamlNode::ScalarStyle::Quoted), schema, path);
+        for (std::size_t i = before; i < report_.problems.size(); ++i) {
+            report_.problems[i].line = entry.value.line();
+            report_.problems[i].column = entry.value.column();
+            report_.problems[i].message = std::format("the key: {}", report_.problems[i].message);
         }
     }
 

@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -49,9 +50,12 @@ struct ValidationReport {
 // asset that each <name>_meta describes must be in the stack; a reference that names a file may name the type the
 // file was cooked from (.wav for .opus, .png for .ktx2). Each model of names::ContractedModels needs a contract,
 // and the model a contract names has its skeleton and its animations. Every asset must open with the engine's readers.
-// Fails only when there are no packs or they cannot be mounted; anything else is a problem of the report.
+// Fails only when there are no packs or they cannot be mounted; anything else is a problem of the report. The packs at
+// each of withFolders (a pack or a folder of packs) are mounted too, so a pack that needs another one, such as the
+// game pack on the base pack, can be checked; they are checked with the rest.
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,
-                                             const std::filesystem::path& schemaFolder);
+                                             const std::filesystem::path& schemaFolder,
+                                             std::span<const std::filesystem::path> withFolders = {});
 
 // Where the schemas of the packs at a folder are by default: a schemas folder next to the pack, or inside the
 // folder of packs ("content/base" and "content" both give "content/schemas").
@@ -59,6 +63,7 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem, 
 
 // dwx validate: prints each problem as "file:line:column: message" and a summary. Returns ExitOk when there are
 // none, ExitUnknown when there are and ExitFailed when the packs cannot be checked.
-int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder);
+int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder,
+             std::span<const std::filesystem::path> withFolders = {});
 
 } // namespace dwe::dwx

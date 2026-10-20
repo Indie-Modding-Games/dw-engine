@@ -127,6 +127,32 @@ TEST_CASE("a schema checks items, counts, limits, enums and constants") {
           std::vector<std::string>{"$.hp: 256 is more than the maximum, 255", "$.mp: -2 is less than the minimum, -1"});
 }
 
+TEST_CASE("a schema checks exclusive limits, the number of keys and the keys' names") {
+    const JsonSchema schema = compiled(R"({
+        "type": "object",
+        "properties": {
+            "speed": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 10},
+            "clips": {
+                "type": "object",
+                "minProperties": 1,
+                "propertyNames": {"pattern": "^[a-z_]+$"},
+                "additionalProperties": {"type": "integer"}
+            }
+        }
+    })");
+    CHECK(problems(schema, "speed: 0.5\nclips: {idle: 0, walk_fast: 2}\n").empty());
+    CHECK(problems(schema, "speed: 0\n") == std::vector<std::string>{"$.speed: 0 is not more than 0"});
+    CHECK(problems(schema, "speed: 10\n") == std::vector<std::string>{"$.speed: 10 is not less than 10"});
+    CHECK(problems(schema, "clips: {}\n") == std::vector<std::string>{"$.clips: has 0 keys, fewer than 1"});
+    CHECK(problems(schema, "clips: {Idle: 0, \"2\": 1}\n") ==
+          std::vector<std::string>{"$.clips.Idle: the key: 'Idle' does not match the pattern ^[a-z_]+$",
+                                   "$.clips.2: the key: '2' does not match the pattern ^[a-z_]+$"});
+    // A key's problem points at its value: keys keep no position of their own.
+    const auto report = schema.check(parsed("clips:\n  Idle: 0\n"));
+    REQUIRE(report.problems.size() == 1);
+    CHECK(report.problems[0].line == 2);
+}
+
 TEST_CASE("a schema follows references to its definitions and to itself") {
     const JsonSchema schema = compiled(R"({
         "$defs": {

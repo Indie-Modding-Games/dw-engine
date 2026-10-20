@@ -125,7 +125,7 @@ TEST_CASE("every asset of a stack is opened with the reader of its type") {
     memory.addFile("pack/sound/bank.sf2", testing::soundFontFile());
     memory.addFile("pack/music/theme.mid", testing::midiFile());
     memory.addFile("pack/video/intro.y4m", testing::y4mFile());
-    memory.addFile("pack/notes/readme.txt", "hello");
+    memory.addFile("pack/notes/readme.doc", "hello");
     const std::vector<std::filesystem::path> roots{"pack"};
     const auto vfs = VirtualFileSystem::mount(memory, roots);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
@@ -136,7 +136,20 @@ TEST_CASE("every asset of a stack is opened with the reader of its type") {
     CHECK(problems[1].id.str() == "image/bad");
     CHECK(problems[1].message.contains("not a PNG"));
     CHECK(problems[2].id.str() == "notes/readme");
-    CHECK(problems[2].message == "the engine has no reader for .txt files");
+    CHECK(problems[2].message == "the engine has no reader for .doc files");
+}
+
+TEST_CASE("the UI's documents, scripts and notes must be UTF-8, and its fonts TrueType or OpenType") {
+    CHECK(openAsset("rml", bytesOf("<rml><body>Men\xc3\xba</body></rml>")).has_value());
+    CHECK(openAsset("lua", bytesOf("")).has_value());
+    CHECK(openAsset("txt", bytesOf("\xe2\x82\xac \xf0\x9f\x98\x80")).has_value());
+    CHECK(errorOf(openAsset("rcss", bytesOf("body { color: \xff; }"))) ==
+          "not UTF-8 text: byte 14 starts no character");
+    CHECK(errorOf(openAsset("lua", bytesOf("x = '\xc3'"))) == "not UTF-8 text: byte 5 starts no character");
+    CHECK(openAsset("ttf", bytesOf(std::string_view{"\x00\x01\x00\x00\x00\x0a\x00\x80\x00\x03\x00\x20", 12}))
+              .has_value());
+    CHECK(openAsset("otf", bytesOf(std::string_view{"OTTO\x00\x0a\x00\x80\x00\x03\x00\x20", 12})).has_value());
+    CHECK(errorOf(openAsset("ttf", bytesOf("<html>not a font</html>"))) == "not a TrueType or OpenType font");
 }
 
 TEST_CASE("the assets of a .pak layer are opened like those of a folder") {

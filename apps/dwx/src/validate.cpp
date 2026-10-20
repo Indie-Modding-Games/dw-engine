@@ -413,7 +413,20 @@ private:
 } // namespace
 
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,
-                                             const std::filesystem::path& schemaFolder) {
+                                             const std::filesystem::path& schemaFolder,
+                                             std::span<const std::filesystem::path> withFolders) {
+    std::vector<assets::FoundPack> packs;
+    for (const std::filesystem::path& with : withFolders) {
+        const auto found = assets::findPacks(fileSystem, with);
+        if (!found) {
+            return std::unexpected{found.error()};
+        }
+        if (found->packs.empty()) {
+            return core::fail(std::format("--with {} has no pack.yaml nor .pak, nor do the folders right under it",
+                                          assets::pathText(with)));
+        }
+        packs.insert(packs.end(), found->packs.begin(), found->packs.end());
+    }
     const auto found = assets::findPacks(fileSystem, folder);
     if (!found) {
         return std::unexpected{found.error()};
@@ -422,8 +435,16 @@ core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSyste
         return core::fail(
             std::format("{} has no pack.yaml nor .pak, nor do the folders right under it", assets::pathText(folder)));
     }
+    for (const assets::FoundPack& pack : found->packs) {
+        // A pack named twice (by --with and by the folder) is mounted once.
+        if (std::ranges::none_of(packs, [&](const assets::FoundPack& mounted) {
+                return mounted.path.lexically_normal() == pack.path.lexically_normal();
+            })) {
+            packs.push_back(pack);
+        }
+    }
     // The archives stay open while the stack is checked.
-    const auto opened = assets::openPacks(fileSystem, found->packs);
+    const auto opened = assets::openPacks(fileSystem, packs);
     if (!opened) {
         return std::unexpected{opened.error()};
     }
@@ -448,10 +469,11 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem, 
     return normal.has_parent_path() ? normal.parent_path() / "schemas" : (normal / ".." / "schemas").lexically_normal();
 }
 
-int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder) {
+int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder,
+             std::span<const std::filesystem::path> withFolders) {
     const assets::DiskFileSystem disk;
     const std::filesystem::path schemas = schemaFolder.value_or(defaultSchemaFolder(disk, folder));
-    const auto report = validatePacks(disk, folder, schemas);
+    const auto report = validatePacks(disk, folder, schemas, withFolders);
     if (!report) {
         std::println(stderr, "dwx validate: {}", report.error().message);
         return ExitFailed;

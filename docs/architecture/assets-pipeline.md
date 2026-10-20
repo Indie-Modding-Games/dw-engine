@@ -128,13 +128,17 @@ dwx pack content/cooked -o base.pak
 ## `dwx validate`
 
 ```text
-dwx validate [--schemas <carpeta>] <paquete | carpeta de paquetes>
+dwx validate [--schemas <carpeta>] [--with <carpeta>]... <paquete | carpeta de paquetes>
 ```
 
 Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`; carpetas y archivos `.pak`), tal como los va a usar el motor y antes
 de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se comprueba junto con la base que
 sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
-(`content/schemas` en los dos ejemplos). El código está en `apps/dwx/src/validate.cpp`.
+(`content/schemas` en los dos ejemplos). `--with` monta además los paquetes de otra carpeta (un paquete o una carpeta
+de paquetes), para comprobar un paquete que depende de otro que está en otro sitio; esos paquetes también se
+comprueban. Así se comprueba el paquete `game` del repositorio sobre una extracción de `base`:
+`dwx validate --schemas content/schemas --with <contenido>/base content/packs/game`. El código está en
+`apps/dwx/src/validate.cpp`.
 
 Qué comprueba:
 

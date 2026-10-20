@@ -238,6 +238,30 @@ TEST_CASE("a manifest that cannot be read for its schema is a problem") {
     CHECK(report->documents == 3);
 }
 
+TEST_CASE("a pack that needs another one is checked with --with") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/extra/pack.yaml", R"(id: extra
+version: 1.0.0
+layer: mods
+name: Extra
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    CHECK(errorOf(validatePacks(files, "packs/extra", "content/schemas")).contains("not mounted"));
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/extra", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(textOf(*report).empty());
+    CHECK(report->packs == 2);
+    // A pack named by --with and by the folder is mounted once.
+    const auto twice = validatePacks(files, "content/base", "content/schemas", with);
+    REQUIRE_MESSAGE(twice.has_value(), errorOf(twice));
+    CHECK(twice->packs == 1);
+}
+
 TEST_CASE("dwx validate cannot check a folder without packs") {
     MemoryFileSystem files;
     files.addFile("content/readme.yaml", "a: 1\n");
