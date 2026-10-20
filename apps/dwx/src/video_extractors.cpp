@@ -188,6 +188,7 @@ core::Result<Demux> demuxMovie(const Disc& disc, const IsoFile& file, Problems& 
 }
 
 // The frame rate: the stream's sector rate over the average number of sectors from one frame's start to the next.
+// With one frame, or frames that all start at the same sector, the whole file is taken as the frames' time.
 void setFrameRate(MovieInfo& info, const std::vector<std::uint32_t>& frameStarts) {
     if (frameStarts.empty()) {
         return;
@@ -197,7 +198,8 @@ void setFrameRate(MovieInfo& info, const std::vector<std::uint32_t>& frameStarts
     if (frameStarts.size() >= 2) {
         numerator = std::uint64_t{SectorsPerSecond} * (frameStarts.size() - 1);
         denominator = frameStarts.back() - frameStarts.front();
-    } else {
+    }
+    if (denominator == 0) {
         numerator = std::uint64_t{SectorsPerSecond} * frameStarts.size();
         denominator = std::max<std::uint64_t>(info.sectors, 1);
     }
