@@ -9,7 +9,7 @@ página dice qué es contrato, quién depende de cada parte y cómo se cambia.
 | Herramienta | Repositorio | Qué lee del motor | Qué escribe |
 |---|---|---|---|
 | Digimon Animation Studio (complemento de Blender) | [3D-Moddeler-Base](https://github.com/Indie-Modding-Games/3D-Moddeler-Base) | `digimon/<slug>/model.glb` del paquete base | Un paquete de la capa `mods` con `digimon/<slug>/model.glb`, con las animaciones nuevas como `anim_NN` |
-| DW1 Field Editor (`dw1fe`) | [Digimon-World-Map-Editor](https://github.com/Indie-Modding-Games/Digimon-World-Map-Editor) | `map/<id>/data.yaml` y los fondos del paquete base (lo usa `engine-check` para compararse) | Un paquete de la capa `mods` con `map/<id>/data.yaml` y `map/<id>/background_*.png` |
+| DW1 Field Editor (`dw1fe`) | [Digimon-World-Map-Editor](https://github.com/Indie-Modding-Games/Digimon-World-Map-Editor) | `map/<id>/data.yaml` y los fondos del paquete base (lo usa `engine-check` para compararse); los scripts `script/dg/NNN.yaml` y `script/maphead.yaml`, que su panel Script edita como texto; `texture/etcdat/item.png` y su `_meta.yaml` | Un paquete de la capa `mods` con `map/<id>/data.yaml` y `map/<id>/background_*.png`. Los scripts editados todavía se guardan en el formato del disco |
 
 Las dos herramientas se verifican contra la salida de `dwx extract`:
 
@@ -30,6 +30,8 @@ Las dos herramientas se verifican contra la salida de `dwx extract`:
 | Contrato del modelo | `content/schemas/model_contract.schema.json`, `digimon/<slug>/contract.yaml` | Studio | Lo que `dwx validate` exige a un modelo que sustituye al original |
 | Mapa `data.yaml` | `content/schemas/map.schema.json`, `formats/src/map/map_yaml.cpp` (`mapToYaml`) | Editor | Campos, y además **el texto exacto**: el editor escribe con las mismas reglas de `emitYaml` (`engine/core/src/yaml.cpp`) |
 | Fondos de mapa | [mapas](../formats/mapas.md) | Editor | `background_day.png`, `background_dusk.png`, `background_night.png` o `background_paletteN.png` |
+| Scripts de eventos | `content/schemas/script.schema.json`, `formats/src/script/script_yaml.cpp` (`scriptToYaml`), [scripts](../formats/scripts.md) | Editor | `script/dg/NNN.yaml` y `script/maphead.yaml`; los nombres de las operaciones, los offsets, las etiquetas, `code_end` con su relleno y la cuenta de instrucciones inalcanzables. El editor convierte cada script a texto y de vuelta, y comprueba que sale el mismo YAML |
+| Texturas de objetos | [TIM](../formats/tim.md) | Editor | `texture/etcdat/item.png` y `texture/etcdat/item_meta.yaml` |
 
 ## Cómo se cambia el contrato
 
