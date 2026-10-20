@@ -15,7 +15,9 @@
 
 ## Un PR está terminado cuando
 
-- compila y pasa la CI (formato, clang-tidy, tests);
+- compila y pasa la CI (formato, clang-tidy, tests): `scripts/dev.sh check-full` pasa lo mismo en local, y
+  `scripts/dev.sh check-commit` lo que cada commit debe cumplir
+  ([Preparar el entorno](docs/getting-started/setup.md#comprobar-antes-de-un-pr));
 - trae tests del comportamiento que cambia;
 - **actualiza `docs/`** si cambia la arquitectura, una API, un formato o una regla;
 - trae un ADR si toma una decisión de arquitectura (ver [docs/adr/README.md](docs/adr/README.md));

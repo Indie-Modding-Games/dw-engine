@@ -31,6 +31,21 @@ scripts/dev.sh test
 El preset por defecto es `linux-clang-debug`, con ASan y UBSan. Para otro: `PRESET=linux-clang-release
 scripts/dev.sh configure`.
 
+Los objetos compilados se guardan en una caché de ccache (el volumen `dwe-ccache`), así que volver a compilar algo
+que ya se compiló, aunque sea en otra carpeta o worktree del repositorio, sale de la caché. El build, los tests,
+clang-tidy y clang-format usan todos los núcleos; `DWE_JOBS=6` los limita.
+
+### Comprobar antes de un PR
+
+```bash
+scripts/dev.sh check-commit   # lo de cada commit: build con warnings como errores y los tests rápidos
+scripts/dev.sh check-full     # lo de la punta de la rama, como la CI: además formato, tests lentos y clang-tidy
+```
+
+Las dos usan el preset `ci`, guardan el log de cada paso en `build/logs/` (o en `DWE_LOG_DIR`) y terminan con error
+si falla algo. Los tests lentos son los que leen el disco del usuario (la etiqueta `slow` de ctest): sin `DWE_DISC`
+pasan al momento. Detalle en el [ADR 0015](../adr/0015-desarrollo-en-contenedor.md).
+
 ### Con tu disco
 
 El contenedor no ve nada fuera del repositorio. Para que las herramientas y los tests del disco lean tu copia, pon en
@@ -93,7 +108,8 @@ no llevan sanitizers.
 |---|---|
 | `scripts/dev.sh shell` | Abre una terminal dentro del contenedor |
 | `scripts/dev.sh format` | Formatea el código con clang-format (`--check` solo comprueba) |
-| `scripts/dev.sh tidy` | Pasa clang-tidy (necesita un `build` previo) |
+| `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
+| `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
 | `build/<preset>/apps/dwx/dwx validate content/base` | Comprueba un paquete o una carpeta de paquetes: esquemas, referencias, contratos de los modelos y que cada asset se abre ([detalle](../architecture/assets-pipeline.md#dwx-validate)) |

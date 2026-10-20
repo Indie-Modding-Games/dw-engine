@@ -65,3 +65,9 @@ RUN cmake_bin="$(dirname "$(${VCPKG_ROOT}/vcpkg fetch cmake 2>/dev/null | tail -
 
 ENV VCPKG_DEFAULT_BINARY_CACHE=/cache/vcpkg
 ENV PATH=${VCPKG_ROOT}:${PATH}
+
+# The compiler cache, last so adding it reuses every layer above. The presets put DWE_COMPILER_LAUNCHER in front of
+# the compiler, so a compilation whose inputs have not changed comes out of the cache that scripts/dev.sh mounts.
+RUN apt-get update && apt-get install -y --no-install-recommends ccache \
+    && rm -rf /var/lib/apt/lists/*
+ENV DWE_COMPILER_LAUNCHER=ccache

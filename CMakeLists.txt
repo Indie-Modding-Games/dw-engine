@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.30)
 project(dwe VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# The project uses headers, not C++ modules (ADR 0008): without the scan, no source is preprocessed twice, and the
+# compile commands that clang-tidy reads exist right after configuring, before any build.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 include(CTest)
 include(cmake/DweModule.cmake)

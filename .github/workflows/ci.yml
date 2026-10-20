@@ -32,38 +32,27 @@ jobs:
           key: vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-
 
-      - name: Check the format
-        run: scripts/dev.sh format --check
+      - name: Restore the compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-linux-${{ github.sha }}
+          restore-keys: ccache-linux-
 
-      # Release-only dependencies, built once instead of twice, and no validation layers: no test draws anything.
-      - name: Configure
+      # The same check as a branch's tip on a developer machine (scripts/dev.sh check-full), with release-only
+      # dependencies, built once instead of twice, and no validation layers: no test draws anything. clang-tidy runs
+      # next to the tests; each step's log is folded in the output.
+      - name: Check
         env:
-          PRESET: ci
           DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
+          DWE_CCACHE_DIR: ${{ runner.temp }}/ccache
+          DWE_CCACHE_SIZE: 2G
+          DWE_LOG_DIR: ${{ runner.temp }}/logs
         run: >-
-          scripts/dev.sh configure
+          scripts/dev.sh check-full
           -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx-release
           -DVCPKG_HOST_TRIPLET=x64-linux-libcxx-release
           -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
-
-      - name: Build
-        env:
-          PRESET: ci
-          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-        run: scripts/dev.sh build
-
-      # After the build: the compile commands read the module maps that the build writes.
-      - name: Run clang-tidy
-        env:
-          PRESET: ci
-          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-        run: scripts/dev.sh tidy --warnings-as-errors='*'
-
-      - name: Test
-        env:
-          PRESET: ci
-          DWE_CACHE_DIR: ${{ runner.temp }}/vcpkg-cache
-        run: scripts/dev.sh test
 
   # Written from the documentation of CMake, vcpkg and clang-cl; not run yet.
   windows:
@@ -87,6 +76,28 @@ jobs:
           "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
           "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
 
+      # sccache in front of clang-cl: the presets ask for the compiler launcher in DWE_COMPILER_LAUNCHER and put the
+      # debug information in the objects (/Z7), which a compiler cache can store, instead of a shared PDB (/Zi).
+      - name: Set up sccache
+        shell: pwsh
+        run: |
+          $version = 'v0.10.0'
+          $name = "sccache-$version-x86_64-pc-windows-msvc"
+          $zip = Join-Path $env:RUNNER_TEMP "$name.zip"
+          Invoke-WebRequest "https://github.com/mozilla/sccache/releases/download/$version/$name.zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          (Join-Path $env:RUNNER_TEMP $name) >> $env:GITHUB_PATH
+          "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP sccache)" >> $env:GITHUB_ENV
+          "SCCACHE_CACHE_SIZE=2G" >> $env:GITHUB_ENV
+          "DWE_COMPILER_LAUNCHER=sccache" >> $env:GITHUB_ENV
+
+      - name: Restore the compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-windows-${{ github.sha }}
+          restore-keys: sccache-windows-
+
       - name: Restore the vcpkg binary cache
         uses: actions/cache@v4
         with:
@@ -97,6 +108,7 @@ jobs:
       - name: Show the tools
         run: |
           clang-cl --version
+          sccache --version
           cmake --version
           ninja --version
 
@@ -109,4 +121,8 @@ jobs:
         run: cmake --build --preset windows-ci
 
       - name: Test
-        run: ctest --preset windows-ci
+        run: ctest --preset windows-ci -j 4
+
+      - name: Show the compiler cache statistics
+        if: always()
+        run: sccache --show-stats

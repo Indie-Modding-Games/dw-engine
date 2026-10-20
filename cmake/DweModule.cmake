@@ -83,6 +83,35 @@ function(dwe_apply_options target)
     endif()
 endfunction()
 
+# The test cases on the user's disc are named "the user's disc: ..." and read the whole disc, which takes minutes. Each
+# one is a test of its own, labelled slow, so they run in parallel and the check of every commit can leave them out
+# (ctest -LE slow); without DWE_DISC they pass at once. The cases are found by reading the sources when configuring,
+# and <name>.disc runs any case added since, so none is ever skipped.
+function(_dwe_add_tests name target)
+    set(disc "the user's disc")
+    add_test(NAME ${name} COMMAND ${target} "--test-case-exclude=${disc}*")
+    set(found "")
+    foreach(source IN LISTS ARGN)
+        file(STRINGS ${source} lines REGEX "TEST_CASE\\(\"${disc}")
+        foreach(line IN LISTS lines)
+            if(line MATCHES "TEST_CASE\\(\"([^\"]+)\"")
+                # A comma separates doctest's filters: ? matches it.
+                string(REPLACE "," "?" filter "${CMAKE_MATCH_1}")
+                add_test(NAME "${name}: ${CMAKE_MATCH_1}" COMMAND ${target} "--test-case=${filter}")
+                set_tests_properties("${name}: ${CMAKE_MATCH_1}" PROPERTIES LABELS slow COST 1000)
+                list(APPEND found "${filter}")
+            endif()
+        endforeach()
+    endforeach()
+    set(rest "--test-case=${disc}*")
+    if(found)
+        list(JOIN found "," found)
+        list(APPEND rest "--test-case-exclude=${found}")
+    endif()
+    add_test(NAME ${name}.disc COMMAND ${target} ${rest})
+    set_tests_properties(${name}.disc PROPERTIES LABELS slow)
+endfunction()
+
 # dwe_add_module(<name> LAYER <layer> SOURCES <files...> [DEPS <modules...>] [PUBLIC_LIBS <libs...>]
 #                [PRIVATE_LIBS <libs...>] [TEST_LIBS <libs...>])
 # Declares the static library dwe::<name> from the current directory: include/ is public, src/ is private, and every
@@ -107,7 +136,7 @@ function(dwe_add_module name)
         target_link_libraries(dwe_${name}_tests PRIVATE dwe::${name} dwe_test_main ${arg_TEST_LIBS})
         target_include_directories(dwe_${name}_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
         dwe_apply_options(dwe_${name}_tests)
-        add_test(NAME ${name} COMMAND dwe_${name}_tests)
+        _dwe_add_tests(${name} dwe_${name}_tests ${test_sources})
     endif()
 endfunction()
 

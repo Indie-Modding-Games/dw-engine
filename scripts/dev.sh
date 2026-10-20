@@ -4,11 +4,17 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-image="dwe-dev"
-# The vcpkg binary cache: a named volume by default, or a host folder when DWE_CACHE_DIR is set (CI caches it).
+self="$root/scripts/dev.sh"
+image="${DWE_IMAGE:-dwe-dev}"
+# The vcpkg binary cache and the compiler cache: named volumes by default, or host folders when DWE_CACHE_DIR and
+# DWE_CCACHE_DIR are set (CI caches them).
 cache_volume="dwe-vcpkg-cache"
 cache_dir="${DWE_CACHE_DIR:-}"
+ccache_volume="dwe-ccache"
+ccache_dir="${DWE_CCACHE_DIR:-}"
 preset="${PRESET:-linux-clang-debug}"
+jobs="${DWE_JOBS:-$(nproc)}"
+log_dir="${DWE_LOG_DIR:-$root/build/logs}"
 
 usage() {
     cat <<EOF
@@ -18,14 +24,21 @@ Usage: scripts/dev.sh <command> [args]
   shell               Open a shell in the container
   configure           Configure the preset (PRESET=$preset)
   build               Build the preset
-  test                Run the tests of the preset
+  test                Run the tests of the preset, in parallel
   format [--check]    Format the sources with clang-format
-  tidy [args]         Run clang-tidy on the sources, passing it args
+  tidy [args]         Run clang-tidy on the sources in parallel, passing it args (needs a configure, not a build)
+  check-commit [args] The check of every commit: configure (with args), build and the tests but the slow ones
+  check-full [args]   The check of the tip: format, configure (with args), build, every test and clang-tidy
   run [args]          Run the game on the host
 
 Environment:
-  PRESET              CMake preset (default linux-clang-debug)
+  PRESET              CMake preset (default linux-clang-debug; ci for the checks)
+  DWE_IMAGE           Development image (default dwe-dev)
+  DWE_JOBS            Parallel jobs of the build, the tests, clang-tidy and clang-format (default: the CPU count)
   DWE_CACHE_DIR       Host folder for the vcpkg binary cache (default: the $cache_volume volume)
+  DWE_CCACHE_DIR      Host folder for the compiler cache (default: the $ccache_volume volume)
+  DWE_CCACHE_SIZE     Size limit of the compiler cache (default 10G)
+  DWE_LOG_DIR         Folder for the logs of the checks (default build/logs)
   DWE_DISC            Path to the user's disc image (.bin or .cue); its folder is mounted read-only in the container at
                       the same path, so the tools and the disc tests can read it
 EOF
@@ -39,8 +52,13 @@ in_container() {
         --user "$(id -u):$(id -g)" \
         -e HOME=/tmp/home \
         -e VCPKG_DOWNLOADS=/cache/vcpkg/downloads \
+        -e CTEST_PARALLEL_LEVEL="$jobs" \
+        -e CCACHE_DIR=/cache/ccache \
+        -e CCACHE_MAXSIZE="${DWE_CCACHE_SIZE:-10G}" \
+        -e CCACHE_BASEDIR="$root" -e CCACHE_NOHASHDIR=true \
         -v "$root:$root" -w "$root" \
-        -v "$(cache_mount):/cache/vcpkg" \
+        -v "$(mount_of "$cache_dir" "$cache_volume"):/cache/vcpkg" \
+        -v "$(mount_of "$ccache_dir" "$ccache_volume"):/cache/ccache" \
         "${disc_flags[@]}" \
         "$image" "$@"
 }
@@ -57,22 +75,98 @@ if [[ -n "${DWE_DISC:-}" ]]; then
     disc_flags=(-v "$(dirname "$DWE_DISC"):$(dirname "$DWE_DISC"):ro" -e DWE_DISC)
 fi
 
-cache_mount() {
-    if [[ -n "$cache_dir" ]]; then echo "$cache_dir"; else echo "$cache_volume"; fi
+# The host folder when one is given, otherwise the named volume.
+mount_of() {
+    if [[ -n "$1" ]]; then echo "$1"; else echo "$2"; fi
 }
 
-ensure_cache_volume() {
-    if [[ -n "$cache_dir" ]]; then
-        mkdir -p "$cache_dir"
+ensure_cache() {
+    local dir="$1" volume="$2"
+    if [[ -n "$dir" ]]; then
+        mkdir -p "$dir"
         return
     fi
-    docker volume inspect "$cache_volume" >/dev/null 2>&1 || docker volume create "$cache_volume" >/dev/null
-    # The volume is created by root; let the host user write the binary cache.
-    docker run --rm -v "$cache_volume:/cache/vcpkg" "$image" chmod a+rwx /cache/vcpkg
+    docker volume inspect "$volume" >/dev/null 2>&1 && return
+    docker volume create "$volume" >/dev/null
+    # The volume is created by root; let the host user write the cache.
+    docker run --rm -v "$volume:/cache" "$image" chmod a+rwx /cache
+}
+
+ensure_caches() {
+    ensure_cache "$cache_dir" "$cache_volume"
+    ensure_cache "$ccache_dir" "$ccache_volume"
 }
 
 sources() {
     git -C "$root" ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp'
+}
+
+# One clang-tidy per file, its output printed in one piece so parallel runs do not mix their lines. Any diagnostic
+# that fails clang-tidy fails the whole run: xargs exits with 123.
+tidy_one='out="$(clang-tidy "$@" 2>&1)"; rc=$?; [[ -z "$out" ]] || printf "%s\n" "$out"; exit $((rc == 0 ? 0 : 1))'
+
+# step <name> [--forbid <regex>] <command...>: runs a step of a check with its output in $log_dir/<name>.log and
+# prints its result. With --forbid, a log line that matches fails the step even when the command passed.
+step() {
+    local name="$1" log="$log_dir/$1.log" start=$SECONDS forbid=""
+    shift
+    if [[ "$1" == "--forbid" ]]; then
+        forbid="$2"
+        shift 2
+    fi
+    echo "[$(date +%T)] $name"
+    if "$@" >"$log" 2>&1 </dev/null && { [[ -z "$forbid" ]] || ! grep -qE "$forbid" "$log"; }; then
+        echo "[$(date +%T)] $name OK ($((SECONDS - start)) s)"
+    else
+        echo "[$(date +%T)] $name FAILED ($((SECONDS - start)) s): $log"
+        if [[ -n "$forbid" ]]; then grep -nE "$forbid" "$log" | head -n 20 | sed 's/^/    /'; fi
+        tail -n 40 "$log" | sed 's/^/    /'
+        return 1
+    fi
+}
+
+# Prints the logs of a check folded, for the CI.
+print_logs() {
+    [[ "${GITHUB_ACTIONS:-}" == "true" ]] || return 0
+    local name
+    for name in "$@"; do
+        echo "::group::$name"
+        cat "$log_dir/$name.log"
+        echo "::endgroup::"
+    done
+}
+
+# The checks of a commit, and of the tip. The tip adds the format, the slow tests and clang-tidy; clang-tidy reads only
+# the compile commands, so it runs at a lower priority next to the tests, which wait for the build.
+check() {
+    local tier="$1" status=0 steps
+    shift
+    export PRESET="${PRESET:-ci}"
+    preset="$PRESET"
+    mkdir -p "$log_dir"
+    echo "check-$tier: preset $preset, $jobs jobs, logs in $log_dir"
+    if [[ "$tier" == "full" ]]; then
+        [[ -n "${DWE_DISC:-}" ]] || echo "DWE_DISC is not set: the tests on the user's disc skip"
+        step format "$self" format --check || status=1
+    fi
+    # Warnings fail the build already, but not the linker's; clang-tidy fails on any diagnostic, and the log says so too.
+    if step configure "$self" configure "$@" && step build --forbid 'warning:' "$self" build; then
+        if [[ "$tier" == "full" ]]; then
+            step test "$self" test &
+            local test_pid=$!
+            step tidy --forbid 'warning:|error:' env DWE_NICE=10 "$self" tidy --warnings-as-errors='*' || status=1
+            wait "$test_pid" || status=1
+        else
+            step test "$self" test -LE slow || status=1
+        fi
+    else
+        status=1
+    fi
+    steps=(configure build test)
+    [[ "$tier" == "full" ]] && steps=(format "${steps[@]}" tidy)
+    print_logs "${steps[@]}"
+    echo "[$(date +%T)] check-$tier $([[ $status -eq 0 ]] && echo passed || echo FAILED)"
+    return "$status"
 }
 
 command="${1:-}"
@@ -83,28 +177,40 @@ case "$command" in
         docker build -t "$image" -f "$root/.devcontainer/Dockerfile" "$root/.devcontainer"
         ;;
     shell)
-        ensure_cache_volume
-        in_container bash
+        ensure_caches
+        in_container bash "$@"
         ;;
     configure)
-        ensure_cache_volume
+        ensure_caches
         in_container cmake --preset "$preset" "$@"
         ;;
     build)
-        in_container cmake --build --preset "$preset" "$@"
+        ensure_caches
+        in_container cmake --build --preset "$preset" -j "$jobs" "$@"
         ;;
     test)
+        ensure_caches
         in_container ctest --preset "$preset" "$@"
         ;;
     format)
+        ensure_caches
         if [[ "${1:-}" == "--check" ]]; then
-            sources | in_container xargs -r clang-format --dry-run --Werror
+            sources | in_container xargs -r -P "$jobs" -n 16 clang-format --dry-run --Werror
         else
-            sources | in_container xargs -r clang-format -i
+            sources | in_container xargs -r -P "$jobs" -n 16 clang-format -i
         fi
         ;;
     tidy)
-        sources | grep '\.cpp$' | in_container xargs -r clang-tidy -p "build/$preset" --quiet "$@"
+        ensure_caches
+        sources | grep '\.cpp$' |
+            in_container nice -n "${DWE_NICE:-0}" xargs -r -P "$jobs" -n 1 bash -c "$tidy_one" tidy \
+                -p "build/$preset" --quiet "$@"
+        ;;
+    check-commit)
+        check commit "$@"
+        ;;
+    check-full)
+        check full "$@"
         ;;
     run)
         build_dir="$root/build/$preset"

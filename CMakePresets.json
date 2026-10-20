@@ -10,6 +10,8 @@
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/linux-clang-libcxx.cmake",
+        "CMAKE_C_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
         "VCPKG_TARGET_TRIPLET": "x64-linux-libcxx",
         "VCPKG_HOST_TRIPLET": "x64-linux-libcxx",
@@ -47,6 +49,9 @@
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
       "cacheVariables": {
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/windows-clang-cl.cmake",
+        "CMAKE_C_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
+        "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
         "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/build/${presetName}/vcpkg_buildtrees"
