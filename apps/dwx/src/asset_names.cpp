@@ -177,6 +177,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "font", .ids = {"font/main_meta"}},
         {.schema = "effect", .ids = {"effect/*/effect"}},
         {.schema = "effect_script", .ids = {"effect/*/script"}},
+        {.schema = "movie", .ids = {"movie/*/movie"}},
         {.schema = "coverage", .ids = {"dwx/coverage"}},
     };
     return schemas;
