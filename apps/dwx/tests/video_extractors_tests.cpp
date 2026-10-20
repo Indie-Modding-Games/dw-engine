@@ -13,10 +13,12 @@
 #include <string_view>
 #include <vector>
 
+#include "base_pack.hpp"
 #include "disc_fixtures.hpp"
 #include "extractor.hpp"
 #include "video_extractors.hpp"
 #include "video_fixtures.hpp"
+#include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using dwe::formats::disc::SectorForm;
@@ -193,6 +195,14 @@ TEST_CASE("a movie becomes its video, its audio and its document") {
     CHECK(yaml->find("sectors")->find("padding")->text() == "6");
     CHECK(yaml->find("playback")->text() == "null");
     CHECK_FALSE(extraction->notes.empty());
+}
+
+TEST_CASE("the pack written from a movie opens with the engine's readers and follows its schemas") {
+    const MovieDisc fixture{MovieDisc::goodSectors()};
+    const auto run = runExtractors(fixture.disc(), extractors());
+    REQUIRE(run.has_value());
+    // The video is streamed to its file part by part; the engine opens what that gives.
+    CHECK(dwe::dwx::testing::problemsOfWrittenPack(*run, fixture.info) == "");
 }
 
 TEST_CASE("frames that do not decode or end early are unknowns") {

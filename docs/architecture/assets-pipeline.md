@@ -166,8 +166,8 @@ base con el mismo resultado; sin disco se salta. En el build `ci`, `dwx validate
 un minuto: abrir los assets (`checkContent`, que los reparte entre hilos, como mucho 16) son unos 10 s y el resto es
 comprobar los documentos contra sus esquemas, en un hilo.
 
-Sin disco, en CI, los tests de los extractores que montan un disco sintético (imágenes, mapas, tablas, sonido y
-scripts) escriben el paquete base de lo extraído y lo pasan por `validatePacks` con los esquemas de `content/schemas`
+Sin disco, en CI, los tests de los extractores que montan un disco sintético (imágenes, mapas, tablas, sonido,
+scripts y películas) escriben el paquete base de lo extraído y lo pasan por `validatePacks` con los esquemas de `content/schemas`
 (`apps/dwx/tests/written_pack.hpp`): así se comprueba siempre que el motor carga lo que escribe `dwx extract`.
 
 ## Dónde vive cada cosa
