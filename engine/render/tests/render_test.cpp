@@ -1,5 +1,6 @@
 #include <dwe/render/camera.hpp>
 #include <dwe/render/quad_batch.hpp>
+#include <dwe/render/screen_fade.hpp>
 
 #include <doctest/doctest.h>
 
@@ -73,4 +74,11 @@ TEST_CASE("a quad becomes two triangles covering its rectangle") {
         return (a.x * b.y) - (a.y * b.x);
     };
     CHECK(winding(0) * winding(3) > 0.0F);
+}
+
+TEST_CASE("the screen fade subtracts a grey as dark as asked, opaque so all of it comes off") {
+    CHECK(render::screenFadeColor(0.0F) == glm::vec4{0.0F, 0.0F, 0.0F, 1.0F});
+    CHECK(render::screenFadeColor(0.25F) == glm::vec4{0.25F, 0.25F, 0.25F, 1.0F});
+    CHECK(render::screenFadeColor(2.0F) == glm::vec4{1.0F});
+    CHECK(render::screenFadeColor(-1.0F) == glm::vec4{0.0F, 0.0F, 0.0F, 1.0F});
 }

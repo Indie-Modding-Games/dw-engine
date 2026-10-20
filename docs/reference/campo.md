@@ -80,6 +80,27 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   `fadeFromBlack(20)` quita el gris en otros 20 fotogramas y solo entonces el jugador vuelve al estado normal, el
   partner al suyo y el reloj sigue (`startGameTime`). Cada fundido dura **un segundo**. Los warps de script hacen lo
   mismo (`map.c: scriptTickChangeMap`).
+- **El fundido, fotograma a fotograma** (`fade.c: renderFadeOut`, `renderFadeIn`, `renderFade`) **(comprobado)**:
+  - El rectángulo cubre los 320 × 240 en la capa 1 del orden (delante del mapa, de los personajes y del HUD) en el
+    modo semitransparente 2 (fondo − rectángulo). Es un polígono con textura: su texel (página de 896, 256, u 250,
+    v 253, CLUT 256, 502: la entrada 4 de `ETCDAT/ETCTIM.BIN`, paleta 6, índice 0) vale `0xFFFF`, blanco con el bit
+    de semitransparencia. La consola multiplica el texel por el tono / 128, así que lo que se resta es el blanco ×
+    tono / 128: con un tono de 128 o más la pantalla queda **negra del todo**, no en un gris de 140.
+  - El tono de salida sube `160 / (20 + 1) = 7` por fotograma hasta 160. `fadeToBlack` no lo pone a 0: empieza en lo
+    que dejó el último fundido de vuelta, que acaba en `160 − 20 × 7 = 20`. Así el de salida va 27, 34… y la pantalla
+    está negra desde su fotograma 16 (132). El mapa nuevo se carga en el fotograma 20 (`FADE_OUT_CURRENT` llega a
+    20), que ya dibuja el primer tono de vuelta.
+  - El de vuelta baja de 160 de 7 en 7 (153, 146…): negro hasta su fotograma 4 y claro poco a poco hasta 20 en su
+    fotograma 20, en el que el jugador ya se mueve; el siguiente fotograma ya no hay rectángulo.
+- **El nombre del mapa** (`map.c: addMapNameObject`, `renderMapName`; `font.c: drawString`) **(comprobado)**: en el
+  fotograma 10 del fundido de salida se escribe `MAP_NAME_PTR[MAP_ENTRIES[mapa].loadingName]` (en el paquete base,
+  `loading_name` de `data/maps.yaml` y `map_names` de `text/en/main.yaml`) y se dibuja en la capa 0, delante del
+  fundido; `changeMap` lo quita, así que se ve 10 fotogramas (medio segundo) mientras la pantalla se oscurece. Va en
+  el centro de la pantalla (la versión americana lo coloca en `x = 12 − (largo / 2) × 8`, `y = −6`; los nombres
+  traen espacios a los lados hasta 24 caracteres, así que el texto queda centrado a unos píxeles), con la fuente del
+  juego (11 píxeles de alto), en gris claro (color 1 de la CLUT de la fuente, `0x6B5A`), sin caja y sin sombra. Sale
+  en cada warp de la tabla del mapa; en los de script, si el script lo pide (`consumeMapChangeShowName`: siempre en
+  las secciones de disparadores, no en las de eventos, salvo que la variable 6 diga otra cosa).
 - No hay protección contra volver a disparar el warp al aparecer: los puntos de aparición de los datos nunca caen en
   celdas de warp **(comprobado)**.
 - **Aparición** (`tamer.c: loadMapEntities`, `partner_impl.c: setupPartnerOnWarp`) **(comprobado)**: el jugador
@@ -159,7 +180,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Celdas truncando hacia cero | `floor` | Mismo resultado salvo en bordes exactos; sin depender del signo |
 | Disparador cada fotograma sobre la celda | Al entrar en una celda con disparador (no mientras se está encima) | Evita warps repetidos aunque un dato cambie |
 | Cambio de mapa: 20 + 20 fotogramas, el jugador anda sin colisión, el reloj y la cámara parados | Igual (`transition` en `field/rules.yaml`, `Field::fadeLevel`; la cámara guarda su foco mientras el jugador sale, en `FieldScene::update`) | |
-| Fundido restando gris (7 por fotograma, hasta ~140 de 255) y nombre del mapa en el fotograma 10 | Negro con transparencia hasta el negro entero, dibujado por el HUD; el nombre se ve en el minimapa | RmlUi no resta colores; el nombre ya está siempre a la vista |
+| Fundido restando gris (tono de 7 en 7, texel blanco × tono / 128) y nombre del mapa del fotograma 10 al 20 | Igual (`transition` en `field/rules.yaml`, `Field::fadeLevel` y `Field::mapNameShown`): `render::ScreenFade` resta el gris sobre la escena, por fotogramas del original, y el HUD pone el nombre delante (`map_title`), en el centro y en gris claro, con la fuente de la UI. El HUD del motor (minimapa, botón del menú) se desvanece con el fundido en vez de restarle el gris | El HUD es RmlUi: se dibuja después del fundido para que el nombre quede delante. La fuente del original no está en la UI |
 | Warps de script | `field/warps.yaml`: mapa + disparador → mapa + salida, con la prueba | No se leen scripts en tiempo de ejecución (fase 4) |
 | Partner nuevo mirando hacia fuera un fotograma | Mirando al jugador desde el principio, y solo si cabe en la rejilla | Mismo resultado visible; no aparece dentro de una pared |
 | Rastro: poda cada fotograma, de la más nueva a la más antigua | Igual | |

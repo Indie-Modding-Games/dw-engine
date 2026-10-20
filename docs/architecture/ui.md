@@ -136,6 +136,13 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `ui_scale` | número (0,75–2) | `ui_scale` |
 | `vsync` | booleano | `vsync` |
 
+Otros ajustes los publica el juego sin que un menú los pida:
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `screen_fade` | número de 0 a 1 | Cuánto quita de la pantalla el fundido del cambio de mapa, que el render resta de la escena debajo de la UI; el HUD desvanece con él sus paneles |
+| `map_title` | texto | El nombre del mapa al que lleva el cambio de mapa mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacío el resto del tiempo. El HUD lo pone en el centro, delante del fundido |
+
 ## Scripts
 
 - **Entornos:** cada documento tiene su entorno de Lua con copias propias de las bibliotecas (`string`, `table`,

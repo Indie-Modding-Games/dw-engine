@@ -17,6 +17,6 @@
 		</div>
 		<div id="minimap-name"></div>
 	</div>
-	<div id="screen-fade"></div>
+	<div id="map-title"></div>
 </body>
 </rml>

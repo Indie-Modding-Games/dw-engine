@@ -12,6 +12,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dwe::game::field {
@@ -83,8 +84,13 @@ public:
         return leaving_.has_value() || pendingChange_.has_value() || waitingForMap_;
     }
 
-    // How dark the screen is for the map change, from 0 (clear) to 1 (black).
+    // How much the map change's fade takes away from the screen this tick, from 0 (nothing) to 1 (everything:
+    // black). The original subtracts a grey from every pixel (fade.c: renderFade), and the app draws it that way.
     [[nodiscard]] float fadeLevel() const;
+
+    // The map whose name the map change shows now: from the fade out's name frame until the new map is entered
+    // (tamer.c: tamerTickChangeMap, map.c: addMapNameObject). Nothing otherwise.
+    [[nodiscard]] std::optional<std::string_view> mapNameShown() const;
 
     // The game clock, in minutes since midnight (0 to 1439).
     [[nodiscard]] std::int32_t clockMinutes() const { return clockMinutes_; }
@@ -133,6 +139,9 @@ private:
     glm::vec2 followPath(glm::vec3& position, float distance);
     void checkTriggers();
     void walkOut(float seconds);
+    // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
+    // FADE_IN_CURRENT).
+    [[nodiscard]] std::int32_t fadeFrame(float seconds) const;
     void advanceClock(float seconds);
     void updateTrail();
     void movePartner(float seconds);
@@ -161,8 +170,10 @@ private:
     float leavingSeconds_ = 0.0F;
     std::optional<MapChange> pendingChange_;
     bool waitingForMap_ = false;
-    // What is left of the fade in after entering a map.
-    float arrivingSeconds_ = 0.0F;
+    // The map being changed to, from the warp until it is entered.
+    std::string changeTarget_;
+    // How long the fade in after entering a map has run; nothing once it ends.
+    std::optional<float> fadeInSeconds_;
 
     std::int32_t clockMinutes_ = 0;
     float clockSeconds_ = 0.0F;

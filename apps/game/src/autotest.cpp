@@ -4,6 +4,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/field/grid.hpp>
 #include <dwe/input/keys.hpp>
@@ -17,13 +18,17 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <ranges>
 #include <span>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 
 #include "common.hpp"
 #include "device_names.hpp"
+#include "messages.hpp"
 
 namespace dwe::app {
 namespace {
@@ -125,6 +130,9 @@ void readCondition(assets::YamlReader& reader, const core::YamlNode& node, Autot
     if (const core::YamlNode* open = node.find("menu_open")) {
         step.until.menuOpen = reader.boolean(*open);
     }
+    if (const core::YamlNode* named = node.find("map_name")) {
+        step.until.mapNameShown = reader.text(*named);
+    }
     if (const core::YamlNode* seconds = node.find("seconds")) {
         step.seconds = reader.number(*seconds);
     }
@@ -155,14 +163,16 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     const core::YamlNode& value = entries.front().value;
     if (kind == "wait") {
         step.kind = Kind::Wait;
-        reader.expectKeys(value, "wait", {},
-                          {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "timeout"});
+        reader.expectKeys(
+            value, "wait", {},
+            {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "map_name", "timeout"});
         readCondition(reader, value, step);
         readCommon(reader, value, step);
     } else if (kind == "walk_to") {
         step.kind = Kind::WalkTo;
         step.timeout = 90.0;
-        reader.expectKeys(value, "walk_to", {}, {"trigger", "point", "radius", "walk", "device", "timeout"});
+        reader.expectKeys(value, "walk_to", {},
+                          {"trigger", "point", "radius", "walk", "stop_on_warp", "device", "timeout"});
         if (const core::YamlNode* trigger = value.find("trigger")) {
             step.trigger = reader.integer<std::int32_t>(*trigger);
         }
@@ -177,6 +187,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
         }
         if (const core::YamlNode* walk = value.find("walk")) {
             step.walk = reader.boolean(*walk);
+        }
+        if (const core::YamlNode* stop = value.find("stop_on_warp")) {
+            step.stopOnWarp = reader.boolean(*stop);
         }
         readCommon(reader, value, step);
     } else if (kind == "menu") {
@@ -511,7 +524,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
 bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, double now) {
     const AutotestCondition& until = step.until;
     const bool hasCondition = until.map.has_value() || until.partnerWithin.has_value() ||
-                              until.playerNear.has_value() || until.menuOpen.has_value();
+                              until.playerNear.has_value() || until.menuOpen.has_value() ||
+                              until.mapNameShown.has_value();
     const double waited = now - progress_->start;
     if (waited < step.seconds) {
         return false;
@@ -522,7 +536,11 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     const game::field::Field& field = host.scene->field();
     const glm::vec3 player = field.player().position;
     std::string unmet;
-    if (field.mapChangePending()) {
+    if (until.mapNameShown) {
+        if (field.mapNameShown() != std::optional<std::string_view>{*until.mapNameShown}) {
+            unmet = core::formatMessage(messages::MapNameNotShown, *until.mapNameShown);
+        }
+    } else if (field.mapChangePending()) {
         unmet = "a map change is pending";
     } else if (until.map && field.mapId() != *until.map) {
         unmet = std::format("the map is {}, not {}", field.mapId(), *until.map);
@@ -594,7 +612,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     }
     if (field.mapChangePending()) {
         releaseMovement();
-        return false;
+        return step.stopOnWarp;
     }
     bool stalled = false;
     if (groundDistance(position, progress.lastPosition) > ProgressDistance) {

@@ -186,16 +186,9 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     if (auto entered = field_->enterMap(scene->document, exit); !entered) {
         return core::fail(std::format("map {}: {}", mapId, entered.error().message));
     }
-    bool fixedTime = false;
-    std::string name = mapId;
-    if (mapTable_) {
-        if (const assets::MapEntry* entry = mapTable_->find(mapId)) {
-            fixedTime = entry->fixedTimeOfDay;
-            if (const std::string_view shown = mapTable_->displayName(*entry); !shown.empty()) {
-                name = shown;
-            }
-        }
-    }
+    const assets::MapEntry* entry = mapTable_ ? mapTable_->find(mapId) : nullptr;
+    const bool fixedTime = entry != nullptr && entry->fixedTimeOfDay;
+    std::string name = displayName(mapId);
     // map.c: setupMap shows the palette and the lights of the clock's time of day (updateTimeOfDay).
     clockHour_ = field_->clockMinutes() / MinutesPerHour;
     time_ = render::timeOfDayAt(clockHour_, schedule_);
@@ -227,6 +220,17 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     mapName_ = std::move(name);
     ++mapSerial_;
     return {};
+}
+
+std::string FieldScene::displayName(std::string_view mapId) const {
+    if (mapTable_) {
+        if (const assets::MapEntry* entry = mapTable_->find(mapId)) {
+            if (const std::string_view shown = mapTable_->displayName(*entry); !shown.empty()) {
+                return std::string{shown};
+            }
+        }
+    }
+    return std::string{mapId};
 }
 
 void FieldScene::tick(const game::field::FieldInput& input, float seconds) {

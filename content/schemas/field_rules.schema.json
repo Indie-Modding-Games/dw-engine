@@ -35,11 +35,16 @@
     "transition": {
       "description": "The map change: the screen fades out while the player walks on, then fades in before it can move (tamer.c: tamerTickChangeMap).",
       "type": "object",
-      "required": ["fade_out_seconds", "fade_in_seconds"],
+      "required": ["frame_seconds", "fade_out_frames", "fade_in_frames", "shade_step", "shade_max", "shade_full", "name_frame"],
       "additionalProperties": false,
       "properties": {
-        "fade_out_seconds": { "type": "number", "minimum": 0 },
-        "fade_in_seconds": { "type": "number", "minimum": 0 }
+        "frame_seconds": { "description": "One frame of the original: the fade steps once per frame.", "type": "number", "exclusiveMinimum": 0 },
+        "fade_out_frames": { "description": "The fade out's frame on which the new map loads (fade.c: fadeToBlack).", "type": "integer", "minimum": 1 },
+        "fade_in_frames": { "description": "The fade in's frame on which the player moves again (fade.c: fadeFromBlack).", "type": "integer", "minimum": 1 },
+        "shade_step": { "description": "How much the subtracted grey rises or falls per frame (fade.c: renderFadeOut, renderFadeIn).", "type": "integer", "minimum": 1 },
+        "shade_max": { "description": "The highest subtracted grey (fade.c: renderFadeOut).", "type": "integer", "minimum": 1, "maximum": 255 },
+        "shade_full": { "description": "The grey from which the screen is black: the fade's white texel times grey / 128.", "type": "integer", "minimum": 1, "maximum": 255 },
+        "name_frame": { "description": "The fade out's frame on which the new map's name appears (map.c: addMapNameObject).", "type": "integer", "minimum": 1 }
       }
     },
     "clock": {

@@ -10,4 +10,7 @@ inline constexpr std::string_view RulesetActive = "game: ruleset {} {} ({}), sec
 inline constexpr std::string_view RulesetSection = "{} ({})";
 inline constexpr std::string_view ListSeparator = ", ";
 
+// Autotest: a wait for a map change's name that has not come yet (the map id).
+inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";
+
 } // namespace dwe::app::messages

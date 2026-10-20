@@ -101,7 +101,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
         return core::fail(std::format("map '{}' has no exit {}", map.id, exit));
     }
     enterMapAt(map, assets::warpSpawn(*warp));
-    arrivingSeconds_ = rules_.transition.fadeInSeconds;
+    fadeInSeconds_ = 0.0F;
 
     const glm::ivec3 offset =
         partnerSpawnOffset(warp->rotation, static_cast<std::int32_t>(std::lround(rules_.partner.spawnDistance)));
@@ -140,7 +140,8 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     leavingSeconds_ = 0.0F;
     pendingChange_.reset();
     waitingForMap_ = false;
-    arrivingSeconds_ = 0.0F;
+    changeTarget_.clear();
+    fadeInSeconds_.reset();
     triggerSteps_.clear();
     // The original has no guard against warping again at once; its spawns are never on triggers. Remembering the
     // value under the spawn makes a trigger fire only when stepped onto.
@@ -178,11 +179,17 @@ void Field::tick(float seconds) {
         registry.get<AnimationIntent>(player_) = {};
         return;
     }
-    if (arrivingSeconds_ > 0.0F) {
-        // tamer.c: tamerTickChangeMap gives the player back control once the fade in ends.
-        arrivingSeconds_ = std::max(0.0F, arrivingSeconds_ - seconds);
-        registry.get<AnimationIntent>(player_) = {};
-        return;
+    if (fadeInSeconds_) {
+        // tamer.c: tamerTickChangeMap gives the player back control on the fade in's last frame
+        // (FADE_IN_CURRENT reaching 20); fade.c: renderFadeIn still draws that frame and ends on the next.
+        *fadeInSeconds_ += seconds;
+        const std::int32_t frame = fadeFrame(*fadeInSeconds_);
+        if (frame > rules_.transition.fadeInFrames) {
+            fadeInSeconds_.reset();
+        } else if (frame < rules_.transition.fadeInFrames) {
+            registry.get<AnimationIntent>(player_) = {};
+            return;
+        }
     }
     advanceClock(seconds);
     movePlayer(seconds);
@@ -198,9 +205,16 @@ void Field::walkOut(float seconds) {
     transform.position += assets::forwardOfYaw(transform.yaw) * (rules_.player.walkSpeed * seconds);
     world_->registry().get<AnimationIntent>(player_) = {.motion = Motion::Walk, .speedScale = 1.0F};
     leavingSeconds_ += seconds;
-    if (leavingSeconds_ >= rules_.transition.fadeOutSeconds) {
+    // The new map loads when FADE_OUT_CURRENT reaches 20.
+    if (fadeFrame(leavingSeconds_) >= rules_.transition.fadeOutFrames) {
         pendingChange_ = std::exchange(leaving_, std::nullopt);
     }
+}
+
+std::int32_t Field::fadeFrame(float seconds) const {
+    // A little slack, so that ticks adding up to a frame's length land on that frame despite rounding.
+    constexpr float Slack = 1e-3F;
+    return 1 + static_cast<std::int32_t>(std::floor((seconds / rules_.transition.frameSeconds) + Slack));
 }
 
 void Field::advanceClock(float seconds) {
@@ -220,15 +234,26 @@ void Field::setClockMinutes(std::int32_t minutes) {
 float Field::fadeLevel() const {
     const TransitionRules& transition = rules_.transition;
     if (leaving_) {
-        return transition.fadeOutSeconds > 0.0F ? std::min(1.0F, leavingSeconds_ / transition.fadeOutSeconds) : 1.0F;
+        return shadeDarkness(transition, fadeOutShade(transition, fadeFrame(leavingSeconds_)));
     }
     if (pendingChange_ || waitingForMap_) {
-        return 1.0F;
+        // The frame that loads the new map already draws the fade in's first shade.
+        return shadeDarkness(transition, fadeInShade(transition, 1));
     }
-    if (arrivingSeconds_ > 0.0F && transition.fadeInSeconds > 0.0F) {
-        return arrivingSeconds_ / transition.fadeInSeconds;
+    if (fadeInSeconds_) {
+        return shadeDarkness(transition, fadeInShade(transition, fadeFrame(*fadeInSeconds_)));
     }
     return 0.0F;
+}
+
+std::optional<std::string_view> Field::mapNameShown() const {
+    // tamer.c: tamerTickChangeMap adds the name on frame 10 of the fade out and changeMap's frame removes it.
+    const bool shown =
+        (leaving_ && fadeFrame(leavingSeconds_) >= rules_.transition.nameFrame) || pendingChange_ || waitingForMap_;
+    if (!shown) {
+        return std::nullopt;
+    }
+    return std::string_view{changeTarget_};
 }
 
 std::optional<MapChange> Field::takeMapChange() {
@@ -432,6 +457,7 @@ void Field::checkTriggers() {
     }
     if (leaving_) {
         leavingSeconds_ = 0.0F;
+        changeTarget_ = leaving_->map;
         moveTarget_.reset();
         path_.clear();
         return;

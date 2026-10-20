@@ -480,6 +480,30 @@ TEST_CASE("the HUD shows the minimap of the current map and its markers") {
     CHECK(ui->elementText("hud", "minimap-name") == "Casa");
 }
 
+TEST_CASE("the HUD shows the map change's map name in the middle of the screen") {
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->setSetting("map_title", std::string{});
+    ui->show("hud");
+    ui->update();
+    CHECK(ui->elementText("hud", "map-title").empty());
+
+    ui->setSetting("map_title", std::string{"Native Forest"});
+    ui->setSetting("screen_fade", 0.75);
+    ui->update();
+    CHECK(ui->elementText("hud", "map-title") == "Native Forest");
+    const auto title = ui->elementCenter("hud", "map-title");
+    REQUIRE(title.has_value());
+    const Ui::Point titleAt = title.value_or(Ui::Point{});
+    CHECK(titleAt.x == doctest::Approx(640.0).epsilon(0.01));
+    CHECK(titleAt.y == doctest::Approx(360.0).epsilon(0.01));
+
+    ui->setSetting("map_title", std::string{});
+    ui->update();
+    CHECK(ui->elementText("hud", "map-title").empty());
+}
+
 TEST_CASE("hot reload picks up an edited document") {
     Content content;
     content.add("ui/test/document.rml", TestDocument);

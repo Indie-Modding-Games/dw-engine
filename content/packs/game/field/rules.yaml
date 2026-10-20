@@ -35,11 +35,25 @@ partner:
 input:
   dead_zone: 0.25
   arrive_distance: 25
-# El cambio de mapa (tamer.c: tamerTickChangeMap): fundido a negro de 20 imágenes (fade.c: fadeToBlack(20)) mientras
-# el jugador sigue andando sin colisión, y de vuelta en otras 20 (fadeFromBlack(20)) antes de poder moverse.
+# El cambio de mapa (tamer.c: tamerTickChangeMap): fundido de salida (fade.c: fadeToBlack(20)) mientras el jugador sigue
+# andando sin colisión; cuando FADE_OUT_CURRENT llega a 20 se carga el mapa nuevo (changeMap) y empieza el de vuelta
+# (fadeFromBlack(20)); el jugador se mueve otra vez cuando FADE_IN_CURRENT llega a 20, y ese fotograma aún se funde.
 transition:
-  fade_out_seconds: 1.0
-  fade_in_seconds: 1.0
+  # Un fotograma del original (20 por segundo): el fundido cambia una vez por fotograma.
+  frame_seconds: 0.05
+  fade_out_frames: 20
+  fade_in_frames: 20
+  # fade.c: renderFade pone delante un rectángulo que resta un gris (modo semitransparente 2, B - F). Su tono sube
+  # 160 / (20 + 1) = 7 por fotograma hasta 160 (renderFadeOut) y baja de 160 de 7 en 7 al volver (renderFadeIn).
+  # fadeToBlack no lo pone a 0: el de salida empieza en el 20 que deja el de vuelta anterior (160 - 20 × 7).
+  shade_step: 7
+  shade_max: 160
+  # La textura del rectángulo es blanca (ETCTIM, entrada 4, paleta 6: 0xFFFF) y la consola la multiplica por
+  # tono / 128: desde 128 resta el blanco entero y la pantalla queda negra.
+  shade_full: 128
+  # tamer.c: tamerTickChangeMap muestra el nombre del mapa nuevo cuando FADE_OUT_CURRENT es 10
+  # (map.c: addMapNameObject) y lo quita al cargarlo.
+  name_frame: 10
 # El reloj del juego (clock.c: tickGameClock): un minuto cada 20 imágenes; una partida nueva empieza a las 8:00.
 clock:
   start_hour: 8

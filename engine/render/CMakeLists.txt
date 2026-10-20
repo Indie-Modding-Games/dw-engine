@@ -7,6 +7,7 @@ dwe_add_module(render
         src/camera.cpp
         src/model_renderer.cpp
         src/quad_batch.cpp
+        src/screen_fade.cpp
         src/renderer.cpp
         src/map_camera.cpp
         src/map_layers.cpp

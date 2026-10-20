@@ -77,17 +77,22 @@ body {
 	background-color: #1c2633;
 }
 
-/* The map change's fade to black, over the whole HUD. */
-#screen-fade {
+/* The name of the map a map change goes to, while the original shows it (map.c: renderMapName): in the middle of
+   the screen, light grey, with no box and no shadow, over the fade that the game draws under the UI. */
+#map-title {
 	position: absolute;
 	left: 0;
-	top: 0;
 	right: 0;
-	bottom: 0;
-	background-color: #000000;
+	top: 50%;
+	height: 40dp;
+	margin-top: -20dp;
+	line-height: 40dp;
+	text-align: center;
+	font-size: 30dp;
+	color: #d6d6d6;
 	display: none;
 }
 
-#screen-fade.shown {
+#map-title.shown {
 	display: block;
 }

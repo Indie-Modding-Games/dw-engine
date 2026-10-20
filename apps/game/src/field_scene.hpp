@@ -78,6 +78,8 @@ public:
     [[nodiscard]] const game::field::Field& field() const { return *field_; }
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
     [[nodiscard]] const std::string& mapName() const { return mapName_; }
+    // A map's name as the game shows it (the base pack's map table and text), or its id when it has none.
+    [[nodiscard]] std::string displayName(std::string_view mapId) const;
     // Grows by one on every map entered, so the app notices a change (minimap, autotests).
     [[nodiscard]] std::uint32_t mapSerial() const { return mapSerial_; }
     [[nodiscard]] const std::optional<MapChangeTiming>& lastMapChange() const { return lastChange_; }

@@ -8,7 +8,7 @@ frame en `render`, y cómo enchufan sus dibujos el mapa, los modelos y la UI.
 | Módulo | Capa | Qué tiene |
 |---|---|---|
 | `rhi` | base | `Device` (swapchain, frames en vuelo, `destroyLater`), VMA, `Buffer`, `Image`, `BindlessTable`, `GraphicsPipeline`, `UploadRing`, `CommandList` |
-| `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch`, `ModelRenderer` |
+| `render` | sistemas | `Renderer` (flujo de frame, texturas, target de profundidad), `Drawer`, `Camera`, `QuadBatch`, `ScreenFade`, `ModelRenderer` |
 | `apps/game` | apps | Junta todo; hoy dibuja una escena de prueba (`TestScene`) hasta que exista la del campo |
 
 Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus tipos (`rhi::CommandList`,
@@ -29,8 +29,9 @@ Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus
    Llama a cada `Drawer` de `FrameDesc::scene`.
 7. Barrera de color entre pases.
 8. **Pase de UI** (`Pass::Ui`): el mismo color, cargado, sin profundidad. Llama a cada `Drawer` de `FrameDesc::ui`
-   (RmlUi, minimapa) y después a `FrameDesc::overlay` con el `rhi::Frame` crudo (el overlay de ImGui). El overlay es
-   siempre lo último que se graba: puede cambiar cualquier estado (pipeline, set de descriptores) sin restaurarlo.
+   (el fundido del cambio de mapa, RmlUi) y después a `FrameDesc::overlay` con el `rhi::Frame` crudo (el overlay de
+   ImGui). El overlay es siempre lo último que se graba: puede cambiar cualquier estado (pipeline, set de
+   descriptores) sin restaurarlo.
 9. Cierra el anillo de subidas y `Device::endFrame()` presenta.
 
 Antes de cada `Drawer` el viewport y el scissor son el target entero. Un drawer puede cambiarlos; `setScissor` recorta
@@ -155,6 +156,9 @@ pulling: un binding basta mientras la animación es por CPU y deja que `rhi::val
   clip space de Vulkan. El mundo es el de [world-space.md](world-space.md) (+Y arriba).
 - `render::pixelProjection(extent)`: píxeles con origen arriba a la izquierda → clip space, para 2D.
 - `render::QuadBatch`: rectángulos texturizados en píxeles, en un único draw, en cualquiera de los dos pases.
+- `render::ScreenFade`: resta un gris de todo el target (mezcla `Subtractive`, fondo − gris) sobre lo dibujado
+  antes, como el rectángulo del fundido del original (`fade.c: renderFade`); no mezcla hacia negro. El juego lo pone
+  el primero de `FrameDesc::ui`: resta de la escena y la UI queda encima (el nombre del mapa delante del fundido).
 - `render::MapCamera` y `render::MapRenderer`: la cámara fija de un mapa de campo, con proyección descentrada sobre
   su fondo, y el dibujo del fondo y sus capas de profundidad
   ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [README](../../engine/render/README.md)).

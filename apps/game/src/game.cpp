@@ -10,6 +10,7 @@
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/render/screen_fade.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
 #include <dwe/script/script_vm.hpp>
@@ -49,6 +50,41 @@ constexpr std::string_view MenuDocument = "pause_menu";
 constexpr double FadeEpsilon = 1e-4;
 // Frames left out of the steady frame times after a map change: the new map's textures upload in the next frames.
 constexpr int MapChangeSettleFrames = 5;
+
+// Tells the HUD what the map change shows: how much the fade takes away and the name of the map it goes to.
+class MapChangeView {
+public:
+    explicit MapChangeView(ui::Ui& ui) : ui_(&ui) {
+        ui_->setSetting(ScreenFadeSetting, fade_);
+        ui_->setSetting(MapTitleSetting, title_);
+    }
+
+    // Publishes the field's fade and map name when they changed.
+    void show(const FieldScene& scene) {
+        showFade(scene.field().fadeLevel());
+        const auto named = scene.field().mapNameShown();
+        showTitle(named ? scene.displayName(*named) : std::string{});
+    }
+
+private:
+    void showFade(double fade) {
+        if (std::abs(fade - fade_) > FadeEpsilon) {
+            fade_ = fade;
+            ui_->setSetting(ScreenFadeSetting, fade_);
+        }
+    }
+
+    void showTitle(std::string title) {
+        if (title != title_) {
+            title_ = std::move(title);
+            ui_->setSetting(MapTitleSetting, title_);
+        }
+    }
+
+    ui::Ui* ui_;
+    double fade_ = 0.0;
+    std::string title_;
+};
 
 std::string describe(const ui::UiValue& value) {
     if (const auto* flag = std::get_if<bool>(&value)) {
@@ -298,6 +334,14 @@ int runGame(const Options& options) {
         core::logError("{}", uiRenderer.error().message);
         return EXIT_FAILURE;
     }
+    // The map change's fade, subtracted from the scene before the UI is drawn (fade.c: renderFade).
+    std::optional<render::ScreenFade> screenFade;
+    if (auto fade = render::ScreenFade::create(**renderer)) {
+        screenFade.emplace(std::move(*fade));
+    } else {
+        core::logError("{}", fade.error().message);
+        return EXIT_FAILURE;
+    }
     const platform::PixelSize size = window->pixelSize();
     auto ui = ui::Ui::create({
         .files = &files,
@@ -322,9 +366,7 @@ int runGame(const Options& options) {
     (*ui)->setSetting("fullscreen", settings.fullscreen);
     (*ui)->setSetting("ui_scale", settings.uiScale);
     (*ui)->setSetting("vsync", settings.vsync);
-    // How dark the map change has made the screen; the HUD draws it.
-    double screenFade = 0.0;
-    (*ui)->setSetting("screen_fade", screenFade);
+    MapChangeView mapChangeView{**ui};
     (*ui)->setMenuDocument(MenuDocument);
     (*ui)->show("hud");
 
@@ -484,10 +526,8 @@ int runGame(const Options& options) {
         }
         const game::field::Field& field = (*scene)->field();
         (*ui)->setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
-        if (const double fade = field.fadeLevel(); std::abs(fade - screenFade) > FadeEpsilon) {
-            screenFade = fade;
-            (*ui)->setSetting("screen_fade", screenFade);
-        }
+        screenFade->setDarkness(field.fadeLevel());
+        mapChangeView.show(**scene);
 
         const bool paused = (*ui)->isVisible(MenuDocument);
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
@@ -498,7 +538,9 @@ int runGame(const Options& options) {
             .frameMilliseconds = frameSeconds * 1000.0,
             .ticksThisFrame = ticks,
         };
-        const std::array<render::Drawer*, 1> uiDrawers{uiRenderer->get()};
+        // The fade goes over the scene and under the UI: the HUD fades its panels itself and keeps the map's name
+        // on top, as the original draws it in front of the fade (map.c: renderMapName, layer 0).
+        const std::array<render::Drawer*, 2> uiDrawers{&*screenFade, uiRenderer->get()};
         const bool drawn = (*renderer)->renderFrame({
             .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
             .scene = (*scene)->drawers(),
@@ -522,6 +564,7 @@ int runGame(const Options& options) {
     scripts->reset();
     ui->reset();
     uiRenderer->reset();
+    screenFade.reset();
     renderer->reset();
     debugUi->reset();
     device->reset();

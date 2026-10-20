@@ -58,13 +58,39 @@ struct InputRules {
     float arriveDistance = 25.0F;
 };
 
+// The highest shade of a fade: what one color channel holds.
+inline constexpr std::int32_t MaxShade = 255;
+
 // The map change (tamer.c: tamerTickChangeMap): the screen fades out while the player walks on without collision,
 // the next map loads and the screen fades back in before the player can move (fade.c: fadeToBlack(20),
-// fadeFromBlack(20), 20 frames each).
+// fadeFromBlack(20)). Counted in frames of the original, as its fade steps once per frame.
 struct TransitionRules {
-    float fadeOutSeconds = 1.0F;
-    float fadeInSeconds = 1.0F;
+    // How long one frame of the original lasts (20 per second).
+    float frameSeconds = 0.05F;
+    // The fade out's frame on which the new map loads (FADE_OUT_CURRENT reaching 20), and the fade in's frame on
+    // which the player moves again (FADE_IN_CURRENT reaching 20); the fade in still draws that frame.
+    std::int32_t fadeOutFrames = 20;
+    std::int32_t fadeInFrames = 20;
+    // fade.c: renderFade subtracts a grey "shade" from the screen: it rises by shadeStep per frame up to shadeMax
+    // (renderFadeOut) and falls back from shadeMax by shadeStep per frame (renderFadeIn).
+    std::int32_t shadeStep = 7;
+    std::int32_t shadeMax = 160;
+    // The shade from which the whole screen goes black: the fade's texel is white and the console multiplies it by
+    // shade / 128.
+    std::int32_t shadeFull = 128;
+    // The fade out's frame on which the new map's name appears (addMapNameObject); it goes when the map loads.
+    std::int32_t nameFrame = 10;
 };
+
+// The shade of the fade out on frame `frame` (1 = the first): it starts from what the last fade in left, because
+// fade.c: fadeToBlack does not reset FADE_PROGRESS.
+[[nodiscard]] std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame);
+
+// The shade of the fade in on frame `frame` (1 = the first, drawn on the frame the new map loads).
+[[nodiscard]] std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame);
+
+// How much of the screen a shade takes away: 0 (nothing) to 1 (everything, black).
+[[nodiscard]] float shadeDarkness(const TransitionRules& rules, std::int32_t shade);
 
 // The game clock (clock.c: tickGameClock): a minute every 20 frames at normal speed, starting at 8:00 in a new game.
 // It stops while a map change runs (tamer.c: stopGameTime, startGameTime).

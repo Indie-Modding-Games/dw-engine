@@ -14,6 +14,8 @@ El render del juego, encima de `rhi`. Ver [render.md](../../docs/architecture/re
   en la GPU, luz del original y semitransparencias ordenadas, con un drawer para lo opaco y otro para lo
   semitransparente. `SlotMap` guarda sus modelos tras handles con generación. Ver [modelos](../../docs/architecture/models.md).
 - `QuadBatch`: rectángulos texturizados en píxeles en un solo draw (sprites, minimapa, imágenes de depuración).
+- `ScreenFade`: resta un gris de toda la pantalla sobre lo dibujado antes (mezcla `Subtractive`), como el fundido
+  del cambio de mapa del original (`fade.c: renderFade`).
 
 Sus shaders están en `shaders/` y se compilan con `dwe_add_shaders` ([ADR 0018](../../docs/adr/0018-shaders-slang-con-vcpkg.md)).
 

@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -38,8 +39,13 @@ input:
   dead_zone: 0.2
   arrive_distance: 25
 transition:
-  fade_out_seconds: 1
-  fade_in_seconds: 0.5
+  frame_seconds: 0.05
+  fade_out_frames: 20
+  fade_in_frames: 10
+  shade_step: 7
+  shade_max: 160
+  shade_full: 128
+  name_frame: 10
 clock:
   start_hour: 8
   minute_seconds: 1
@@ -70,7 +76,10 @@ TEST_CASE("field rules read every tunable") {
     CHECK(rules->partner.trailLength == 30);
     CHECK(rules->partner.stuckSeconds == doctest::Approx(1.5F));
     CHECK(rules->input.deadZone == doctest::Approx(0.2F));
-    CHECK(rules->transition.fadeInSeconds == doctest::Approx(0.5F));
+    CHECK(rules->transition.frameSeconds == doctest::Approx(0.05F));
+    CHECK(rules->transition.fadeInFrames == 10);
+    CHECK(rules->transition.shadeFull == 128);
+    CHECK(rules->transition.nameFrame == 10);
     CHECK(rules->clock.startHour == 8);
     CHECK(rules->timeOfDay.duskStart == 16);
     CHECK(rules->timeOfDay.duskLight.g == doctest::Approx(0.7F));
@@ -86,6 +95,10 @@ TEST_CASE("broken field rules are refused") {
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "turn_speed: 0", "turn_speed: -1")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "start_hour: 8", "start_hour: 24")).has_value());
     CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "dusk_start: 16", "dusk_start: 21")).has_value());
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "shade_step: 7", "shade_step: 0")).has_value());
+    CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "shade_max: 160", "shade_max: 300")).has_value());
+    CHECK_FALSE(
+        dwe::game::field::parseFieldRules(replaced(Rules, "frame_seconds: 0.05", "frame_seconds: 0")).has_value());
     CHECK_FALSE(
         dwe::game::field::parseFieldRules(replaced(Rules, "night_light: [0.5, 0.5, 0.5]", "night_light: [0.5, 2]"))
             .has_value());
@@ -96,6 +109,33 @@ TEST_CASE("broken field rules are refused") {
     const auto missing = dwe::game::field::parseFieldRules(replaced(Rules, "  trail_length: 30\n", ""));
     REQUIRE_FALSE(missing.has_value());
     CHECK(missing.error().message.find("trail_length") != std::string::npos);
+}
+
+TEST_CASE("the fade's shades follow the original's curve") {
+    // fade.c: renderFadeOut and renderFadeIn with fadeToBlack(20) and fadeFromBlack(20): a step of 160 / 21 = 7.
+    const dwe::game::field::TransitionRules rules;
+    using dwe::game::field::fadeInShade;
+    using dwe::game::field::fadeOutShade;
+    using dwe::game::field::shadeDarkness;
+    // The fade in falls from 160 by 7 per frame and ends at 20 on its 20th frame.
+    CHECK(fadeInShade(rules, 1) == 153);
+    CHECK(fadeInShade(rules, 10) == 90);
+    CHECK(fadeInShade(rules, 20) == 20);
+    CHECK(fadeInShade(rules, 30) == 0);
+    // The fade out starts from those 20: 27 on its first frame, 7 more per frame, at most 160.
+    CHECK(fadeOutShade(rules, 1) == 27);
+    CHECK(fadeOutShade(rules, 10) == 90);
+    CHECK(fadeOutShade(rules, 19) == 153);
+    CHECK(fadeOutShade(rules, 30) == 160);
+    for (std::int32_t frame = 1; frame < rules.fadeOutFrames; ++frame) {
+        CHECK(fadeOutShade(rules, frame + 1) - fadeOutShade(rules, frame) == 7);
+    }
+    // The subtracted grey is the white texel times shade / 128: black from 128 on (the fade out's 16th frame).
+    CHECK(shadeDarkness(rules, 0) == doctest::Approx(0.0F));
+    CHECK(shadeDarkness(rules, 64) == doctest::Approx(0.5F));
+    CHECK(shadeDarkness(rules, fadeOutShade(rules, 15)) < 1.0F);
+    CHECK(shadeDarkness(rules, fadeOutShade(rules, 16)) == doctest::Approx(1.0F));
+    CHECK(shadeDarkness(rules, 160) == doctest::Approx(1.0F));
 }
 
 TEST_CASE("field warps read the start and the scripted warps") {

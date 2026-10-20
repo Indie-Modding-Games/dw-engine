@@ -35,12 +35,18 @@ if (auto change = field.takeMapChange()) {
 - **Cambios**: `takeMapChange()` da una vez el warp pisado (`MapChange`: mapa, salida y disparador); mientras está
   pendiente nada se mueve. `triggerSteps()` da los disparadores que no son warps pisados en el último tick, para los
   scripts de más adelante.
+- **Fundido y nombre**: el cambio de mapa cuenta en fotogramas del original. `fadeLevel()` dice cuánto quita el
+  fundido de la pantalla (0 nada, 1 negro), con la curva de `fade.c` (`fadeOutShade`, `fadeInShade` y
+  `shadeDarkness` en `rules.hpp`): la app lo resta sobre la escena (`render::ScreenFade`), no lo mezcla con negro.
+  `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
+  nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido.
 
 ## Datos
 
 - `field/rules` (`content/packs/game/field/rules.yaml`, [esquema](../../content/schemas/field_rules.schema.json)):
   radios, velocidades y giro del jugador y del partner, las distancias de seguimiento, el rastro y los límites para
-  desatascarlo, y la zona muerta del stick.
+  desatascarlo, la zona muerta del stick, el cambio de mapa (fotogramas, tonos del fundido y fotograma del nombre),
+  el reloj y las horas del día.
 - `field/warps` (`content/packs/game/field/warps.yaml`, [esquema](../../content/schemas/field_warps.schema.json)): el
   mapa y la salida de inicio, y los warps que en el original hacía un script, cada uno con su prueba.
 
@@ -49,6 +55,6 @@ Los dos se pueden cambiar desde un paquete de mod con el mismo id.
 ## Tests
 
 `grid_tests.cpp` (colisión con trayectorias fijas, deslizamiento, sin atravesar paredes, caminos), `field_tests.cpp`
-(movimiento, warps, seguimiento y desatasco del partner) y `rules_tests.cpp` (lectura de los YAML, también los del
-paquete `game`) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
+(movimiento, warps con su fundido y su nombre fotograma a fotograma, seguimiento y desatasco del partner) y
+`rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
 `DWE_CONTENT` apunta a él: File City (`twna01`) → casa de Jijimon (`room08`) → File City, con el stick y con clics.

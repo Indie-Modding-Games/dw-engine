@@ -1,0 +1,13 @@
+# The map change as the original shows it (docs/reference/campo.md): into the elder's house, a capture while the fade
+# out shows the new map's name in front of it, and one once the fade in has ended.
+name: fade
+device: mouse
+timeout: 120
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - walk_to: {trigger: 112, stop_on_warp: true}
+  - wait: {map_name: room08, timeout: 5}
+  - screenshot: fade-name
+  - wait: {map: room08, seconds: 1.1}
+  - screenshot: room08

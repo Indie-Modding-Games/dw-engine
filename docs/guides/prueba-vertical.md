@@ -55,8 +55,9 @@ Correr es lo normal, como en el original (allí R1 hacía andar). Los avisos de 
 
 La lógica va a 60 ticks por segundo fijos; el dibujo interpola entre ticks y las animaciones avanzan por frame. Como
 en el original, el reloj del juego avanza un minuto por segundo y el fondo cambia de paleta a las 6:00, 16:00 y
-20:00, y al cruzar una puerta la pantalla se funde a negro un segundo mientras el jugador sigue andando, y vuelve en
-otro segundo ([ficha del campo](../reference/campo.md)).
+20:00, y al cruzar una puerta la pantalla se oscurece restando un gris durante un segundo mientras el jugador sigue
+andando, con el nombre del mapa nuevo en el centro en la segunda mitad, y vuelve en otro segundo
+([ficha del campo](../reference/campo.md)).
 
 ## Autotests
 
@@ -64,12 +65,14 @@ Un autotest recorre una ruta escrita en YAML con los mismos eventos que un jugad
 como eventos de la plataforma y el mando es un mando virtual de SDL, así que pasan por el mapa de acciones, la UI y
 el campo de verdad. Mientras corre, el juego descarta el ratón y el teclado reales del escritorio (el puntero de quien
 use el ordenador, o el que descansa sobre la ventana, movería el puntero bajo un clic o una pulsación sostenida), así
-que se puede seguir usando el escritorio; un mando real sí llega. Las tres rutas de la prueba están en `tests/autotest/`:
+que se puede seguir usando el escritorio; un mando real sí llega. Las rutas de la prueba están en `tests/autotest/`:
 
 - `route-keyboard.yaml`, `route-gamepad.yaml` y `route-mouse.yaml`: File City → casa del anciano → File City con
   cada dispositivo; abren el menú con ese dispositivo, ocultan y vuelven a mostrar el minimapa, se paran detrás de
   una capa de profundidad de File City, cambian la ventana a 800x600, 1280x720, 1920x1080, 2560x1080 y pantalla
   completa, y hacen capturas.
+- `route-fade.yaml`: entra en la casa del anciano con el ratón y hace una captura en mitad del fundido, con el nombre
+  del mapa a la vista, y otra al acabar.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --autotest tests/autotest/route-keyboard.yaml --shots <carpeta de capturas>
@@ -113,8 +116,8 @@ steps:
 
 | Paso | Qué hace |
 |---|---|
-| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas) |
-| `walk_to: {trigger \| point: [x, z], radius, walk, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr |
+| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás |
+| `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú (`open-minimap`, `minimap-visible`...) |
 | `expect_setting: {<nombre>: <valor>}` | Comprueba un ajuste publicado a la UI (`minimap_visible: false`) |

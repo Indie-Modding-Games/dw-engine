@@ -39,6 +39,8 @@ struct AutotestCondition {
     std::optional<glm::vec2> playerNear;
     float playerRadius = 100.0F;
     std::optional<bool> menuOpen;
+    // A map change under way that shows this map's name (its id): the only condition checked during a map change.
+    std::optional<std::string> mapNameShown;
 };
 
 struct AutotestStep {
@@ -67,6 +69,8 @@ struct AutotestStep {
     std::optional<glm::vec2> point;
     float radius = 60.0F;
     bool walk = false;
+    // walk_to a trigger: done when its warp starts the map change, without waiting for the new map.
+    bool stopOnWarp = false;
     bool flag = false; // menu open, fullscreen on
     int width = 0;
     int height = 0;

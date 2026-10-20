@@ -1,6 +1,8 @@
 -- The HUD follows the minimap settings the game reports: shown or hidden, and its size. Its menu button asks the game
 -- to open the pause menu (the open_menu command) and shows the control that opens it with the last device used. On a
--- map change the game reports how dark the screen is (screen_fade, 0 to 1) and the HUD covers everything with black.
+-- map change the game subtracts its fade from the scene under the HUD and reports how much it takes away
+-- (screen_fade, 0 to 1): the panels fade out with it, as the original's fade covers its HUD. The name of the map it
+-- goes to (map_title, empty when none) shows in front of the fade.
 
 local sizes = { small = true, medium = true, large = true }
 
@@ -20,19 +22,33 @@ local function refresh_prompts(document)
 	document:get("prompt-menu"):set_text(ui.prompt("menu"))
 end
 
+local panels = { "minimap", "menu-button" }
+
 local function refresh_fade(document)
 	local level = ui.setting("screen_fade")
 	if type(level) ~= "number" then
 		level = 0
 	end
-	local fade = document:get("screen-fade")
-	fade:set_class("shown", level > 0)
-	fade:set_property("opacity", string.format("%.3f", level))
+	local opacity = string.format("%.3f", 1 - math.min(math.max(level, 0), 1))
+	for _, id in ipairs(panels) do
+		document:get(id):set_property("opacity", opacity)
+	end
+end
+
+local function refresh_title(document)
+	local title = ui.setting("map_title")
+	if type(title) ~= "string" then
+		title = ""
+	end
+	local element = document:get("map-title")
+	element:set_text(title)
+	element:set_class("shown", title ~= "")
 end
 
 function on_show(document)
 	refresh(document)
 	refresh_fade(document)
+	refresh_title(document)
 	refresh_prompts(document)
 end
 
@@ -43,6 +59,8 @@ end
 function on_setting(document, name)
 	if name == "screen_fade" then
 		refresh_fade(document)
+	elseif name == "map_title" then
+		refresh_title(document)
 	else
 		refresh(document)
 	end

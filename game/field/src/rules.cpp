@@ -1,5 +1,6 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/field/rules.hpp>
 
@@ -9,6 +10,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "messages.hpp"
 
 namespace dwe::game::field {
 
@@ -96,11 +99,30 @@ InputRules readInput(YamlReader& reader, const YamlNode& node) {
 }
 
 TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, "transition", {"fade_out_seconds", "fade_in_seconds"})) {
+    if (!reader.expectKeys(node, "transition",
+                           {"frame_seconds", "fade_out_frames", "fade_in_frames", "shade_step", "shade_max",
+                            "shade_full", "name_frame"})) {
         return {};
     }
-    return {.fadeOutSeconds = readNonNegative(reader, reader.field(node, "fade_out_seconds")),
-            .fadeInSeconds = readNonNegative(reader, reader.field(node, "fade_in_seconds"))};
+    const auto count = [&](std::string_view key) {
+        const YamlNode& value = reader.field(node, key);
+        const auto number = reader.integer<std::int32_t>(value);
+        if (reader.ok() && number < 1) {
+            reader.fail(value, core::formatMessage(messages::TransitionCountTooLow, key));
+        }
+        return number;
+    };
+    TransitionRules transition{.frameSeconds = readPositive(reader, reader.field(node, "frame_seconds")),
+                               .fadeOutFrames = count("fade_out_frames"),
+                               .fadeInFrames = count("fade_in_frames"),
+                               .shadeStep = count("shade_step"),
+                               .shadeMax = count("shade_max"),
+                               .shadeFull = count("shade_full"),
+                               .nameFrame = count("name_frame")};
+    if (reader.ok() && (transition.shadeMax > MaxShade || transition.shadeFull > MaxShade)) {
+        reader.fail(node, core::formatMessage(messages::TransitionShadeTooHigh, MaxShade));
+    }
+    return transition;
 }
 
 ClockRules readClock(YamlReader& reader, const YamlNode& node) {
@@ -162,6 +184,23 @@ core::Result<T> loadDocument(const assets::VirtualFileSystem& vfs, std::string_v
 }
 
 } // namespace
+
+std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame) {
+    // fade.c: renderFadeOut adds the step to FADE_PROGRESS, which still holds the last fade in's final shade.
+    const std::int32_t start = fadeInShade(rules, rules.fadeInFrames);
+    return std::min(rules.shadeMax, start + (rules.shadeStep * std::max(frame, 0)));
+}
+
+std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame) {
+    // fade.c: renderFadeIn draws shadeMax - step * FADE_IN_CURRENT.
+    return std::clamp(rules.shadeMax - (rules.shadeStep * std::max(frame, 0)), 0, rules.shadeMax);
+}
+
+float shadeDarkness(const TransitionRules& rules, std::int32_t shade) {
+    // fade.c: renderFade's texel (ETCTIM entry 4, palette 6: 0xFFFF) is white, with the semi-transparency bit set;
+    // the console multiplies it by shade / 128 and subtracts the result (FADE_MODE 2, B - F), saturating at white.
+    return std::clamp(static_cast<float>(shade) / static_cast<float>(rules.shadeFull), 0.0F, 1.0F);
+}
 
 core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
     auto tree = core::parseYaml(yaml);

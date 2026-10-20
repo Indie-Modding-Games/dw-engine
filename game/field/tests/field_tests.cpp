@@ -3,8 +3,11 @@
 #include <doctest/doctest.h>
 
 #include <cmath>
+#include <cstdint>
 #include <numbers>
+#include <optional>
 #include <string>
+#include <string_view>
 
 #include "fixture.hpp"
 
@@ -343,8 +346,9 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
         .exit = 0, .spawn = {0, 0, 0}, .rotation = 0, .targetMap = -1, .targetMapId = std::nullopt, .targetExit = -1};
 
     dwe::scene::World world;
-    auto rules = originalRules();
-    rules.transition = {.fadeOutSeconds = 1.0F, .fadeInSeconds = 0.5F};
+    const auto rules = originalRules();
+    const dwe::game::field::TransitionRules& transition = rules.transition;
+    const auto darkness = [&](std::int32_t shade) { return dwe::game::field::shadeDarkness(transition, shade); };
     Field field{world, rules};
     field.enterMapAt(town, at(0.0F, -600.0F, Pi)); // facing world -Z, toward the warp
     field.setInput({.stick = {0.0F, 1.0F}});
@@ -352,19 +356,28 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
         field.tick(Tick);
     }
     REQUIRE(field.mapChangePending());
-    CHECK(field.fadeLevel() < 0.1F);
+    // fade.c: renderFadeOut's first frame: the 20 the last fade in left plus 7.
+    CHECK(field.fadeLevel() == doctest::Approx(darkness(27)));
+    CHECK_FALSE(field.mapNameShown().has_value());
     const float onWarp = field.player().position.z;
 
-    // Half the fade: the player walks on at walk speed, through the wall, whatever the input says.
+    // Frame 9 of the fade out: the player walks on at walk speed, through the wall, whatever the input says.
     field.setInput({.stick = {1.0F, 0.0F}, .run = true});
-    run(field, 0.5F);
-    CHECK(field.fadeLevel() == doctest::Approx(0.5F).epsilon(0.05));
+    run(field, 0.4F);
+    CHECK(field.fadeLevel() == doctest::Approx(darkness(83)));
+    CHECK_FALSE(field.mapNameShown().has_value());
     CHECK(field.player().motion == Motion::Walk);
-    CHECK(field.player().position.z == doctest::Approx(onWarp - 200.0F).epsilon(0.05));
+    CHECK(field.player().position.z == doctest::Approx(onWarp - 160.0F).epsilon(0.05));
+    // Frame 10: the new map's name appears.
+    run(field, 0.05F);
+    CHECK(field.fadeLevel() == doctest::Approx(darkness(90)));
+    CHECK(field.mapNameShown() == std::optional<std::string_view>{"house"});
     CHECK_FALSE(field.takeMapChange().has_value());
 
+    // The map loads when the fade out reaches frame 20: 19 frames after the warp.
     std::optional<MapChange> change;
-    for (int i = 0; i < 60 && !change; ++i) {
+    int ticks = 0;
+    for (; ticks < 60 && !change; ++ticks) {
         field.tick(Tick);
         change = field.takeMapChange();
     }
@@ -372,20 +385,26 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
         FAIL("no map change");
         return;
     }
+    CHECK(ticks == 30);
     CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+    CHECK(field.mapNameShown() == std::optional<std::string_view>{"house"});
 
-    // The fade in: the player stands still, and the clock waits, until it ends.
+    // The fade in: the player stands still, and the clock waits, until its 20th frame.
     const std::int32_t minutes = field.clockMinutes();
     REQUIRE(field.enterMap(house, change->exit).has_value());
+    CHECK_FALSE(field.mapNameShown().has_value());
     CHECK(field.fadeLevel() == doctest::Approx(1.0F));
     field.setInput({.stick = {0.0F, 1.0F}});
-    run(field, 0.25F);
-    CHECK(field.fadeLevel() == doctest::Approx(0.5F).epsilon(0.05));
+    run(field, 0.9F);
+    CHECK(field.fadeLevel() == doctest::Approx(darkness(27)));
     CHECK(field.player().position == glm::vec3{0.0F});
     CHECK(field.clockMinutes() == minutes);
-    run(field, 0.5F);
-    CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+    // Frame 20: the player moves again, under the fade's last shade, which goes on the next frame.
+    run(field, 0.05F);
+    CHECK(field.fadeLevel() == doctest::Approx(darkness(20)));
     CHECK(field.player().position != glm::vec3{0.0F});
+    run(field, 0.05F);
+    CHECK(field.fadeLevel() == doctest::Approx(0.0F));
 }
 
 TEST_CASE("the clock counts minutes while the player plays and wraps at midnight") {
