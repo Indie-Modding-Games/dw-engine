@@ -1,0 +1,9 @@
+id: es_translation
+version: 0.1.0
+layer: base
+priority: 2
+name: "Traducción al español"
+description: "Traducción propia del equipo de los textos del original, como delta sobre text/en del paquete base: solo el español, con las claves de text/en. Ver docs/guides/traducir.md."
+dependencies:
+  - id: base
+    min_version: 0.1.0

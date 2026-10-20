@@ -115,7 +115,11 @@ Un documento oculto se actualiza al mostrarse, en su `on_show`.
 - **Traducción del original:** el español del texto del juego va en `content/packs/es-translation`
   (`text/es/<fuente>.yaml`). Los nombres de Digimon y de técnicas se quedan en inglés y no se repiten en esos ficheros:
   el lock de la traducción (`text/es/.sources.lock`, ver [textos](../formats/textos.md#lock-de-una-traducción)) los
-  lista y guarda el SHA-1 del inglés de cada cadena traducida. Cómo traducir: [traducir](../guides/traducir.md).
+  lista y guarda el SHA-1 del inglés de cada cadena traducida. Cómo traducir: [traducir](../guides/traducir.md). Las
+  decisiones de estilo del responsable de diseño (2026-10-20: se traducen los objetos, se tutea, `HP` y `MP` no
+  cambian, etapas en español, las pantallas en columnas usan claves propias del motor, las letras del español en la
+  pantalla de nombre llegan con la UI del motor y del inglés roto se traduce la intención) están en el
+  [glosario](../guides/glosario-es.md#decisiones-del-responsable-de-diseño).
 
 ## Comprobaciones
 
@@ -145,8 +149,7 @@ Los tests: `dwe_assets_tests` (`text_table_tests`) para el formato, los marcador
 
 Los textos del motor (`localization/`) son del equipo y van en git. El texto del original no: el inglés lo extrae
 `dwx` del disco del usuario y nunca entra en el repositorio, y el lock de la traducción solo guarda su SHA-1. Lo que
-no tiene traducción sale en inglés: hoy, todo el texto del original hasta que llegue el paquete de español, y siempre
-los nombres de Digimon y de técnicas. La traducción del original al español es un derivado
+no tiene traducción sale en inglés, y siempre los nombres de Digimon y de técnicas. La traducción del original al español es un derivado
 ([assets](../legal/assets.md)).
 
 ## Fuentes

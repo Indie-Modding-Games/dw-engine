@@ -42,13 +42,14 @@ engine/
 ├─ shaders/                 módulos de Slang compartidos (cada módulo compila los suyos a SPIR-V)
 ├─ content/
 │  ├─ schemas/              JSON Schema de cada tipo (digimon, map, item, pack…)
-│  ├─ packs/                paquetes en texto creados por el equipo: datos, rulesets y Lua
+│  ├─ packs/                paquetes en texto creados por el equipo: datos, rulesets, Lua y la traducción
 │  └─ fixtures/             assets pequeños hechos por el equipo para tests y CI
 ├─ tests/
 │  ├─ integration/          tests que cruzan módulos
 │  ├─ simulation/           simulaciones de balance sobre los rulesets
 │  └─ golden/               capturas de render de referencia
-├─ scripts/                 dev.sh: la entrada de todo el desarrollo (image, build, test, run…)
+├─ scripts/                 dev.sh: la entrada de todo el desarrollo (image, build, test, run…); translation.sh: la
+│                           traducción de los textos del original
 ├─ third_party/             solo parches o lo que no esté en vcpkg
 ├─ triplets/                triplets propios de vcpkg (dependencias con Clang y libc++)
 ├─ CMakeLists.txt

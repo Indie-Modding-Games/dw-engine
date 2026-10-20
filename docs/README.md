@@ -23,7 +23,7 @@ Seguimos el marco [Diátaxis](https://diataxis.fr/), que separa los documentos s
 | Tipo | Para qué | Carpeta |
 |---|---|---|
 | Tutorial | Aprender desde cero | [`getting-started/`](getting-started/setup.md) |
-| Guía práctica | Hacer una tarea concreta | `guides/` (llega con cada sistema; ya están el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md) y las [simulaciones](guides/simulaciones.md)) |
+| Guía práctica | Hacer una tarea concreta | `guides/` (llega con cada sistema; ya están el [visor de assets](guides/visor-de-assets.md), la [prueba vertical](guides/prueba-vertical.md), las [simulaciones](guides/simulaciones.md) y [traducir los textos del original](guides/traducir.md), con su [glosario](guides/glosario-es.md)) |
 | Referencia | Consultar un detalle exacto | [`reference/`](reference/README.md) (el original), [`formats/`](formats/README.md) (los formatos del disco, fase 1), `modding/` (fase 4) |
 | Explicación | Entender por qué es así | [`architecture/`](architecture/), [`adr/`](adr/README.md) |
 
