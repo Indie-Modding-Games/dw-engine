@@ -2,9 +2,7 @@
 #include <dwe/formats/video/mdec.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <format>
-#include <numbers>
 #include <string_view>
 
 namespace dwe::formats::video {
@@ -320,24 +318,18 @@ constexpr std::array<std::uint8_t, CoefficientCount> makeZigZag() {
 }
 constexpr std::array<std::uint8_t, CoefficientCount> ZigZag = makeZigZag();
 
-// The IDCT matrix as the MDEC uses it, indexed [sample * 8 + frequency]. libpress uploads
-// floor(32768 * c(u) * cos((2x + 1) * u * pi / 16)) with c(0) = 1/sqrt(2), c(u) = 1 otherwise (DecDCTReset; floor,
-// not rounding, checked against the library's table), and the MDEC keeps those values shifted right by 3.
-const std::array<std::int32_t, CoefficientCount>& idctMatrix() {
-    static const std::array<std::int32_t, CoefficientCount> matrix = [] {
-        std::array<std::int32_t, CoefficientCount> built{};
-        for (std::size_t x = 0; x < 8; ++x) {
-            for (std::size_t u = 0; u < 8; ++u) {
-                const double scale = u == 0 ? std::numbers::sqrt2 / 2.0 : 1.0;
-                const double angle = static_cast<double>(((2 * x) + 1) * u) * std::numbers::pi / 16.0;
-                const auto stored = static_cast<std::int32_t>(std::floor(32768.0 * scale * std::cos(angle)));
-                built[(x * 8) + u] = stored >> 3;
-            }
+// The IDCT matrix as the MDEC uses it, indexed [sample * 8 + frequency]: libpress's table (IdctTable, floor and not
+// rounding, as in the library) transposed, and shifted right by 3 as the MDEC keeps it.
+constexpr std::array<std::int32_t, CoefficientCount> makeIdctMatrix() {
+    std::array<std::int32_t, CoefficientCount> matrix{};
+    for (std::size_t x = 0; x < 8; ++x) {
+        for (std::size_t u = 0; u < 8; ++u) {
+            matrix[(x * 8) + u] = IdctTable[(u * 8) + x] >> 3;
         }
-        return built;
-    }();
+    }
     return matrix;
 }
+constexpr std::array<std::int32_t, CoefficientCount> IdctMatrix = makeIdctMatrix();
 
 // The MDEC keeps 9 bits of a result and saturates them to a signed byte.
 int wrapToByte(int value) {
@@ -556,7 +548,6 @@ core::Result<YCbCrFrame> decodeFrame(std::span<const std::byte> bitstream, std::
 }
 
 std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coefficients) {
-    const auto& matrix = idctMatrix();
     // First pass: each column of frequencies becomes a column of samples. A column without coefficients stays 0 and
     // adds nothing to the second pass, so only the others are kept.
     std::array<std::int32_t, CoefficientCount> columns{};
@@ -574,7 +565,7 @@ std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coeff
         for (std::size_t y = 0; y < 8; ++y) {
             std::int32_t sum = 0;
             for (std::size_t v = 0; v < 8; ++v) {
-                sum += coefficients[(v * 8) + u] * matrix[(y * 8) + v];
+                sum += coefficients[(v * 8) + u] * IdctMatrix[(y * 8) + v];
             }
             columns[(y * 8) + u] = static_cast<std::int16_t>((sum + 0x4000) >> 15);
         }
@@ -585,7 +576,7 @@ std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coeff
             std::int32_t sum = 0;
             for (std::size_t i = 0; i < usedCount; ++i) {
                 const std::size_t u = used[i];
-                sum += columns[(y * 8) + u] * matrix[(x * 8) + u];
+                sum += columns[(y * 8) + u] * IdctMatrix[(x * 8) + u];
             }
             samples[(y * 8) + x] = static_cast<std::int8_t>(wrapToByte((sum + 0x4000) >> 15));
         }

@@ -80,7 +80,9 @@ tablas que sube libpress (`DecDCTReset`):
   es la matriz intra por defecto de MPEG-1 con DC 2, en orden natural; el coeficiente k va a su posición por el
   zigzag estándar.
 - **IDCT.** Matriz `M[x][u] = floor(32768 · c(u) · cos((2x + 1)uπ/16)) >> 3` con `c(0) = 1/√2` y `c(u) = 1` en el
-  resto. Es `floor` y no redondeo: así es la tabla del ejecutable. Primero columnas, luego filas, cada pasada con
+  resto. Es `floor` y no redondeo: así es la tabla del ejecutable. Está escrita en el código (`IdctTable`, la que
+  lista psx-spx para el comando del MDEC que la carga) en vez de calcularse con `cos`, para no depender de la libm de
+  cada plataforma; una prueba la compara con la fórmula. Primero columnas, luego filas, cada pasada con
   `(suma + 0x4000) >> 15`; el resultado se queda en 9 bits y se satura a un byte con signo.
 - **Planos.** Las muestras con signo se guardan + 128 como bytes sin signo. Los macrobloques llenan el frame por
   columnas: de arriba abajo y luego de izquierda a derecha.

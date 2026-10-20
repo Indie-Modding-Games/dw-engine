@@ -61,6 +61,21 @@ core::Result<YCbCrFrame> decodeMacroblocks(std::span<const std::uint16_t> codes,
 // Decodes a frame's bitstream to its planes: decodeBitstream and then decodeMacroblocks.
 core::Result<YCbCrFrame> decodeFrame(std::span<const std::byte> bitstream, std::uint32_t width, std::uint32_t height);
 
+// The IDCT matrix libpress uploads to the MDEC (DecDCTReset), indexed [frequency * 8 + sample]:
+// floor(32768 * c(u) * cos((2x + 1) * u * pi / 16)) with c(0) = 1/sqrt(2) and c(u) = 1 otherwise. It is written out
+// rather than computed so the decoder does not depend on the platform's cos; it is the table psx-spx lists for the
+// MDEC's "set scale table" command, and the tests check it against the formula.
+constexpr std::array<std::int16_t, 64> IdctTable = {
+    23170, 23170,  23170,  23170,  23170,  23170,  23170,  23170,  //
+    32138, 27245,  18204,  6392,   -6393,  -18205, -27246, -32139, //
+    30273, 12539,  -12540, -30274, -30274, -12540, 12539,  30273,  //
+    27245, -6393,  -32139, -18205, 18204,  32138,  6392,   -27246, //
+    23170, -23171, -23171, 23170,  23170,  -23171, -23171, 23170,  //
+    18204, -32139, 6392,   27245,  -27246, -6393,  32138,  -18205, //
+    12539, -30274, 30273,  -12540, -12540, 30273,  -30274, 12539,  //
+    6392,  -18205, 27245,  -32139, 32138,  -27246, 18204,  -6393,  //
+};
+
 // The IDCT of one block as the MDEC computes it: coefficients in natural order (row by row), columns first, each
 // pass rounded to 15 fractional bits, and the result wrapped to 9 bits and clamped to a signed byte.
 std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coefficients);

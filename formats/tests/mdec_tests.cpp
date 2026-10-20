@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -196,6 +198,21 @@ TEST_CASE("a frame is made of whole 16x16 macroblocks") {
     const auto stream = fixtures::makeBitstream(3, 1, 12, bits);
     CHECK(decodeFrame(stream, 16, 16).has_value());
     CHECK_FALSE(decodeFrame(stream, 24, 16).has_value());
+}
+
+TEST_CASE("the IDCT table is libpress's formula, rounded down") {
+    for (std::size_t u = 0; u < 8; ++u) {
+        for (std::size_t x = 0; x < 8; ++x) {
+            const double scale = u == 0 ? std::numbers::sqrt2 / 2.0 : 1.0;
+            const double angle = static_cast<double>(((2 * x) + 1) * u) * std::numbers::pi / 16.0;
+            const double exact = 32768.0 * scale * std::cos(angle);
+            const double stored = IdctTable[(u * 8) + x];
+            CAPTURE(u);
+            CAPTURE(x);
+            CHECK(stored <= exact);
+            CHECK(exact - stored < 1.0);
+        }
+    }
 }
 
 TEST_CASE("the IDCT of a DC-only block is flat") {
