@@ -60,7 +60,9 @@ El menú crece con la inteligencia (`BTL_initializeCombat`) **(comprobado)**:
 | 200–299 | + moderado |
 | 300–399 | + distancia y cambiar |
 | 400–499 | + defensa |
-| ≥ 500 | Huir, cambiar, defensa, distancia, una por cada técnica equipada, a su aire. **Atacar y moderado desaparecen.** |
+| ≥ 500 | Huir, cambiar, defensa, distancia, una por cada técnica equipada (de la tercera ranura a la primera), a su aire. **Atacar y moderado desaparecen.** |
+
+En combates de guion la orden de huir no aparece en el menú (`BTL_initializeCombat`) **(comprobado)**.
 
 Qué hace cada una (`BTL_tickPartnerAI`, `BTL_handlePartnerMoveCommand`) **(comprobado)**:
 
@@ -94,7 +96,10 @@ a 0, así que las órdenes son inmediatas **(comprobado)**.
 - Inteligencia ≥ 150: el de menor puntuación.
 - Menos: el más cercano.
 - Puntuación = % de HP restante + (afinidad invertida × defensa relativa) / 10. Un enemigo débil y vulnerable puntúa
-  bajo.
+  bajo... en teoría: `BTL_calculateTargetScore` usa la vida y la defensa **del propio luchador**, no las del
+  candidato, así que solo la afinidad distingue a los enemigos (ver rarezas) **(comprobado)**.
+- `BTL_getWeakestEnemy` devuelve la puntuación del último enemigo que miró, no la del elegido, y con ella se decide si
+  cambia de objetivo (ver rarezas) **(comprobado)**.
 
 **Elección de técnica "a su aire"** (`BTL_selectPartnerMove`) **(comprobado)**. Sorteo ponderado entre las tres
 técnicas equipadas (la cuarta ranura es el remate):
@@ -195,6 +200,8 @@ Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que e
 - Solo se muestra un icono a la vez: aturdimiento antes que confusión y confusión antes que veneno.
 - Algunos objetos curan los estados en combate (`BTL_healStatusEffect`).
 - Que la confusión pueda hacer que los enemigos se golpeen entre ellos es **(suposición)**.
+- La confusión de cualquier luchador, aunque se le acabe el tiempo, solo se quita en un fotograma en que el partner
+  no está atacando (ver rarezas) **(comprobado)**.
 
 ### Remate y su barra
 
@@ -219,16 +226,19 @@ Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que e
   Felicidad −10, disciplina −6, cansancio +2, más el cansancio de después del combate. Cuenta en un contador de
   huidas (`startBattle`) **(comprobado)**.
 - **Derrota:** si el partner llega a 0 HP, hay una cuenta atrás durante la cual un objeto de revivir aún puede
-  salvarlo. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el 30 % de los huecos ocupados de la
-  bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver la
-  [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
+  salvarlo. Al revivir se reinician todos los luchadores, no solo el partner: sin enfriamiento, sin técnica planeada,
+  sin persecución, carga ni enfriamiento, y se cancela el remate (`BTL_isBattleFinished`) **(comprobado)**. La cuenta
+  atrás se para mientras el tamer usa un objeto. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el
+  30 % de los huecos ocupados de la bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver
+  la [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
   **(comprobado)**. Ver la [ficha de cuidado](care.md).
 - **Victoria, cuidado:** felicidad +2, batallas +1 (cuenta para la [evolución](evolution.md)) **(comprobado)**.
 - **Cansancio y hambre tras ganar o huir** (`handlePostBattleTiredness`): cansancio +5, más un extra si el MP
   acabó por debajo del 80 % (ver rarezas), y la comida baja 15 **(comprobado)**.
 - **Tiempo:** cada combate adelanta 20 minutos el reloj del juego (`advanceBattleTime`) **(comprobado)**.
-- **Lesión:** si recibió daño y no estaba lesionado, probabilidad = cansancio − % de HP restante
-  (`handleBattleInjury`) **(comprobado)**.
+- **Lesión:** si alguien recibió un golpe en el combate (no solo el partner: `handleBattleEndBox` mira
+  `HAS_TAKEN_DAMAGE`, que marca cualquier golpe) y el partner no estaba lesionado, probabilidad = cansancio − % de HP
+  restante (`handleBattleInjury`) **(comprobado)**.
 
 ### Recompensas
 
@@ -295,6 +305,12 @@ Todas **(comprobado)** salvo donde se indica:
   siempre se cumple). En la rama de poca vida de `BTL_selectPartnerMove` el bucle interno reutiliza el índice externo
   **(suposición: parece un error)**.
 - En combates de guion sin huida los enemigos no gastan MP.
+- **Puntuación de objetivo con stats propios.** `BTL_calculateTargetScore` usa la vida y la defensa del que elige.
+- **El más débil informa mal.** `BTL_getWeakestEnemy` devuelve la puntuación del último enemigo mirado.
+- **La confusión espera al partner.** Ninguna confusión se quita mientras el partner ataca.
+- **Lesión por cualquier golpe.** La tirada de lesión tras ganar se hace si cualquier luchador recibió un golpe.
+- **Sin límite de tiempo.** Dos luchadores sin MP para ninguna técnica esperan para siempre; el original no tiene
+  tiempo máximo de combate.
 - El torneo (`src/std/`) y el modo versus (`src/vs/`) tienen copias casi iguales de esta lógica; no se han comparado
   en detalle **(suposición: pueden diferir)**.
 
