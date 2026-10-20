@@ -11,7 +11,10 @@ if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)
     add_library(dwe_test_main STATIC tests/main.cpp)
     target_link_libraries(dwe_test_main PUBLIC doctest::doctest)
-    target_compile_definitions(dwe_test_main PUBLIC DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS)
+    # doctest prints failed comparisons through std::ostream, which libc++ brings in with <string> but the MSVC STL
+    # does not: USE_STD_HEADERS makes doctest include <ostream> itself.
+    target_compile_definitions(dwe_test_main PUBLIC
+        DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS DOCTEST_CONFIG_USE_STD_HEADERS)
     dwe_apply_options(dwe_test_main)
 endif()
 
