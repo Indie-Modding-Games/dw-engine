@@ -86,14 +86,17 @@ cero pendientes.
 **Hecho cuando:** se puede caminar de File City a la casa de Jijimon y volver, con minimapa, en cualquier resolución y
 con cualquier dispositivo de entrada.
 
-**Estado (2026-10-19):** en curso, en cuatro líneas en paralelo que entran en `main` cuando cierre la fase 1.
+**Estado (2026-10-20): cerrada.** Las cuatro líneas están en el juego y el recorrido pasa con teclado, mando y ratón,
+con 0 errores de validación (detalle en la
+[especificación](plan/fase-2-prueba-vertical.md#estado-2026-10-20)).
 
 | Línea | Qué incluye | Estado |
 |---|---|---|
-| Render del mapa | Fondo prerenderizado con capas de profundidad y la cámara de cada mapa | En curso |
-| Modelos | Skinning y animaciones del jugador y del partner a partir de los `.glb` extraídos | En curso |
-| Campo | Movimiento, colisión, warps y el partner siguiendo al jugador | En curso |
-| Interfaz | RmlUi, un primer menú nuevo con ratón y mando, y el minimapa | En curso |
+| Render del mapa | Fondo prerenderizado con capas de profundidad y la cámara de cada mapa | Hecha |
+| Modelos | Skinning y animaciones del jugador y del partner a partir de los `.glb` extraídos | Hecha |
+| Campo | Movimiento, colisión, warps y el partner siguiendo al jugador | Hecha |
+| Interfaz | RmlUi, un primer menú nuevo con ratón y mando, y el minimapa | Hecha |
+| Integración | El juego en `apps/game`, entrada con los tres dispositivos y autotests de las tres rutas | Hecha |
 
 ## Fase 3 — Núcleo jugable
 

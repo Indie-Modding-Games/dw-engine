@@ -1,6 +1,6 @@
 # 0021. Animación muestreada en la CPU, skinning en la GPU, en un módulo `animation`
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-19
 
 ## Contexto

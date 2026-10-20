@@ -66,7 +66,8 @@ Pon la ruta entre comillas si tiene espacios o paréntesis. Sin `DWE_DISC`, los 
 scripts/dev.sh run
 ```
 
-El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las validation layers de Vulkan.
+El juego se ejecuta en tu máquina, no en el contenedor. En debug activa las validation layers de Vulkan; si no están
+instaladas (un build sin la feature `validation`), avisa en el registro (`validation layer unavailable`) y sigue sin ellas.
 
 - Muévete con WASD, las flechas, la cruceta o el stick izquierdo de cualquier mando.
 - `º`/`` ` `` o `F1` abre la consola de desarrollo. Ahí puedes escribir Lua: `marker.x = 100`.

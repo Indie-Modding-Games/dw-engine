@@ -1,6 +1,6 @@
 # 0020. Cámara de mapa con proyección descentrada y capas de profundidad como planos
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-10-19
 
 ## Contexto

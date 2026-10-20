@@ -60,6 +60,11 @@ Las dos herramientas se verifican contra la salida de `dwx extract`:
 
 ## Lo que aún no está probado
 
-Ninguna de las dos herramientas ha visto su salida cargada en el motor en ejecución, porque todavía no carga modelos
-ni mapas. Eso llega con la [fase 2](../plan/fase-2-prueba-vertical.md). Cuando cierre, se prueba un paquete de cada
-herramienta en el juego y se apunta aquí el resultado.
+Con la [fase 2](../plan/fase-2-prueba-vertical.md) el juego carga mapas y modelos, y se ha probado un paquete de
+mod hecho a mano con la forma que dejan las herramientas: capa `mods`, dependencia de `base`, un mapa
+(`map/twna01/data.yaml` con un punto de aparición movido) y un modelo de personaje (`model.glb`, `texture.png` y
+`texture_meta.yaml` de otro personaje en el ID del partner). Con `--mods`, el registro dice que esos cuatro assets
+salen del mod, el partner se dibuja con el modelo cambiado, el jugador aparece en el punto nuevo y la ruta de
+teclado pasa con 0 errores de validación.
+
+Falta repetirlo con la salida real del editor de mapas y del de modelos cuando generen un paquete completo.

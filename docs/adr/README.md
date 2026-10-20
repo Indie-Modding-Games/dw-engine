@@ -53,5 +53,5 @@ sustituido.
 | [0017](0017-cocinado-y-archivos-pak.md) | Cocinado a KTX2 UASTC y Opus, y archivos `.pak` propios con zstd | Aceptada |
 | [0018](0018-shaders-slang-con-vcpkg.md) | Shaders en Slang compilados en el build con `slangc` de vcpkg | Aceptada |
 | [0019](0019-descriptores-bindless.md) | Un único set de descriptores bindless y datos por frame por dirección de buffer | Aceptada |
-| [0020](0020-camara-de-mapa-y-capas-de-profundidad.md) | Cámara de mapa descentrada y capas de profundidad como planos | Propuesta |
-| [0021](0021-animacion-en-cpu-y-skinning-en-gpu.md) | Animación muestreada en la CPU, skinning en la GPU, en un módulo `animation` | Propuesta |
+| [0020](0020-camara-de-mapa-y-capas-de-profundidad.md) | Cámara de mapa descentrada y capas de profundidad como planos | Aceptada |
+| [0021](0021-animacion-en-cpu-y-skinning-en-gpu.md) | Animación muestreada en la CPU, skinning en la GPU, en un módulo `animation` | Aceptada |

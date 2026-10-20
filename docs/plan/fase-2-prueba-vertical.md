@@ -73,7 +73,49 @@ dispositivo de entrada. Se demuestra con dos pruebas:
   capturas del original en cada mapa del recorrido.
 - Riesgo: integrar RmlUi con nuestro render Vulkan. Es la primera vez que una librería de terceros dibuja con `render`.
 
-## Estado (2026-10-19)
+## Estado (2026-10-20)
 
-En curso, en cuatro líneas en paralelo: render del mapa, modelos, campo e interfaz. Entran en `main` cuando la fase 1
-termine de integrarse.
+Cerrada. Las cuatro líneas (render del mapa, modelos, campo e interfaz) están integradas en el juego (`apps/game`) y
+el recorrido pasa con teclado, mando y ratón, con 0 mensajes de validación y 0 errores en el log.
+Cómo jugarlo y cómo pasar las pruebas: [guía de la prueba vertical](../guides/prueba-vertical.md).
+
+| Requisito | Cómo se cumple | Prueba |
+|---|---|---|
+| R2.1 | `loadMapDocument` y `loadMapImages` cargan fondo, capas, cámara, colisión y warps por asset id; el motor no incluye `formats/` | `engine/assets/tests/map_content_tests.cpp`; registro `field: entered ...` de cada cambio de mapa |
+| R2.2 | El fondo se escala a la ventana conservando la proporción | Capturas de las rutas a 800x600, 1280x720, 1920x1080 y 2560x1080 |
+| R2.3 | Capas de profundidad entre los modelos opacos y los translúcidos ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md)) | `map_layers_tests.cpp`; captura `twna01-behind-layer` de cada ruta |
+| R2.4 | La cámara del mapa se sincroniza con la de los modelos | `map_camera_tests.cpp`; capturas de los dos mapas |
+| R2.5 | Animación en CPU y skinning en GPU ([ADR 0021](../adr/0021-animacion-en-cpu-y-skinning-en-gpu.md)); quieto, andar y correr | `animation_tests.cpp`, `model_renderer_tests.cpp`; paso `walk: true` de las rutas |
+| R2.6 | Acciones `move_*` y `walk`, relativas a la cámara; colisión por celdas; clic para ir a un punto | `game/field/tests/field_tests.cpp`, `input_state_tests.cpp`; las tres rutas |
+| R2.7 | Los warps cargan el destino y colocan al jugador en la salida | Rutas: secuencia `twna01 → room08 → twna01` |
+| R2.8 | El partner sigue y cambia de mapa con el jugador | Pasos `wait` con `partner_within` de las rutas, tras cada cambio de mapa y tras caminar dentro de cada mapa |
+| R2.9 | Jugador y partner son entidades de `scene` | `scene_tests.cpp`; revisión de `apps/game/src/field_scene.cpp` |
+| R2.10 | RmlUi dibuja con `render` a resolución nativa; la lógica del HUD y del menú va en Lua | `minimap_tests.cpp`, `navigation_tests.cpp`, `prompts_tests.cpp` |
+| R2.11 | Menú de pausa con ratón, teclado y mando; los avisos siguen al último dispositivo | Pasos `menu` y `menu_select` de cada ruta, con su dispositivo; capturas `menu-open` |
+| R2.12 | Minimapa desde colisión y warps, con la posición del jugador; se oculta y se muestra desde el menú | `minimap_tests.cpp`; pasos `expect_setting` de las rutas |
+| R2.13 | 0 mensajes de validación; por encima de 60 fps | Rutas en debug con validación y en release (abajo) |
+
+Medidas en el host (NVIDIA, 1920x1080 a 144 Hz, build release, sin los frames lentos a propósito):
+
+- Con vsync, 144 fps de media en las tres rutas y un mínimo de 78 a 119. En otras pasadas ha habido frames sueltos
+  de ~34 ms: son esperas de la presentación, porque sin vsync el peor frame no pasa de 7 ms.
+- Sin vsync (modo `immediate`), entre 3.700 y 5.000 fps de media, un mínimo de 144 a 290 y un percentil 99 de unos
+  800 a 1.100.
+- Cambio de mapa (lectura y preparación, sin contar el fundido de un segundo a cada lado): `twna01 → room08`
+  4–6 ms, `room08 → twna01` 15–40 ms.
+- En debug con la capa de validación, las tres rutas pasan con 0 mensajes.
+
+El campo se ha comprobado contra el decomp (movimiento, cámara, warps y fundido, colisión, partner y hora del día):
+lo que reproduce del original lo cita en el código, y lo que hace distinto está, con el motivo, en la
+[ficha del campo](../reference/campo.md#qué-hace-el-motor-gamefield).
+
+Pendiente o conocido:
+
+- Una ventana no puede ser mayor que el escritorio usable: en una pantalla de 1920x1080 con paneles, los tamaños
+  1920x1080 y 2560x1080 en ventana se saltan, y se cubren en un Xvfb con lavapipe (sin pantalla completa).
+- Del partner faltan el paso según su estado y las animaciones de emoción: esperan al cuidado (fase 3).
+- La salida de la casa del anciano queda en el borde de la imagen; con ratón se llega manteniendo el botón (el
+  jugador sigue al puntero y, en el borde, sigue andando hacia fuera).
+- `dwx validate --schemas content/schemas --with <contenido>/base content/packs/game` sobre una extracción nueva de
+  `base` da 0 problemas en los dos paquetes (4828 assets, 2084 documentos, 178 contratos). Una extracción anterior
+  a los esquemas del paquete `base` da problemas en `base`; hay que volver a extraer.
