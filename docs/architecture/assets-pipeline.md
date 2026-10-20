@@ -113,7 +113,7 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 ## Empaquetar
 
 `dwx pack` guarda un paquete (fuente o cocinado) en un [archivo `.pak`](../formats/pak.md): el `pack.yaml` y todos
-sus ficheros, ordenados por ID, con el SHA-1 de cada uno. No comprime todavía. Al terminar abre el archivo y lee cada
+sus ficheros, ordenados por ID, con el SHA-1 de cada uno, cada fichero comprimido con zstd si así ocupa menos. Al terminar abre el archivo y lee cada
 entrada para comprobar que coincide con la carpeta.
 
 El motor monta un `.pak` igual que una carpeta (`PakFileSystem`), así que en una misma pila puede haber paquetes de
@@ -131,7 +131,7 @@ dwx pack content/cooked -o base.pak
 dwx validate [--schemas <carpeta>] <paquete | carpeta de paquetes>
 ```
 
-Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`), tal como los va a usar el motor y antes
+Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`; carpetas y archivos `.pak`), tal como los va a usar el motor y antes
 de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se comprueba junto con la base que
 sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
 (`content/schemas` en los dos ejemplos). El código está en `apps/dwx/src/validate.cpp`.
@@ -156,7 +156,9 @@ Qué comprueba:
    así que un modelo HD que lo cumple se puede animar como el original. Las animaciones del MMD que el extractor no
    pudo convertir van en `unconverted_animations`, que no se comprueba.
 7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
-   `dwe-game --check-content`: PNG, glTF/GLB, YAML, WAV, SF2, MIDI e Y4M.
+   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF/GLB, YAML, Ogg Opus (`.opus` y `.ogg`,
+   decodificado entero), y las cabeceras de WAV, SF2, MIDI e Y4M. Así un paquete cocinado se comprueba igual que uno
+   extraído.
 
 Límite conocido: los operandos de los scripts (`script/…` y el `script.yaml` de cada efecto) se guardan tal como
 están en el disco, y el esquema solo comprueba su forma (un número, una variable, una dirección o una etiqueta), no lo
