@@ -275,7 +275,7 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 
 ## Estado con el disco US
 
-Con el disco US (`SLUS_010.32`): 818 ficheros, 813 extraídos, 1 parcial y 4 pendientes; 197,1 de 331,2 MB
+Con el disco US (`SLUS_010.32`): 818 ficheros, 814 extraídos, ninguno parcial y 4 pendientes; 197,1 de 331,2 MB
 (59,5 %). Salen 4622 salidas, de las que 403 repiten otra byte a byte:
 
 | Tipo | Salidas |
@@ -294,7 +294,8 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 813 extraídos, 1 parcial y 4 pen
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
 
-- Efectos: `ETCHI/EFEDAT.EFE` es parcial por 40 rangos de datos que ningún script direcciona ([Efectos](efectos.md)).
+- Efectos: `ETCHI/EFEDAT.EFE` queda extraído; sus 40 rangos de datos a los que nada llega (590 bytes en 33 ranuras)
+  van como `unused` en cada `script.yaml` y en las notas ([Efectos](efectos.md#datos-sin-uso)).
 - Overlays: los 16 extraídos. `SHOP_REL.BIN` es el build `jp_rev1`, byte a byte; sus datos van rango a rango con el
   mapa de [Overlays](overlays.md#los-datos-de-shop).
 - `MAP/MAP16/MGEN17.MAP`, que ninguna entrada de `MAP_ENTRIES` nombra, se extrae como `map/mgen17` con las opciones

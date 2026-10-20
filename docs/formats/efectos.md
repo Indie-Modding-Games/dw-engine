@@ -192,9 +192,50 @@ El área de datos no tiene índice; solo los scripts dicen qué es cada byte. `a
    llega de quien llama queda sin unir. Repite hasta que no aparecen etiquetas nuevas.
 3. Tipa los datos: variables de la base que leen o escriben las instrucciones, tablas de `load_indexed` (hasta el
    siguiente byte cubierto), tablas de instancias de `spawn` y lo que apunta cada argumento de dirección según su tipo.
-   Una dirección apilada para otra cosa usa su `declared_width`.
-4. Rellena los huecos: si son todo `0xCD` son relleno; si no, son datos que ninguna instrucción direcciona y cuentan
-   como desconocidos.
+   Una dirección apilada para otra cosa usa su `declared_width`. Si el argumento que da el tamaño o el índice de una
+   lectura no es un número apilado, la lectura no tiene fin conocido; con una excepción: un índice que el mismo
+   bloque deja como `load_immediate n` y `apply_operator variable modulo` toma los valores 0 a n − 1 (el dividendo en
+   el disco es el contador de fotogramas de la instancia), así que la fila de CLUT cubre las n en que puede empezar.
+4. Rellena los huecos: si son todo `0xCD` son relleno; si no, son datos sin uso (`unused`), salvo que antes empiece
+   una lectura sin fin conocido, que podría llegar a ellos: entonces cuentan como desconocidos.
+
+### Datos sin uso
+
+El intérprete solo forma direcciones del área de datos de tres maneras, y el análisis las sigue todas:
+
+- un operando de la instrucción sumado a la base (`EFE_SCRIPT_HEAD + ip[n]` en los manejadores de
+  `battle_effect.c`), o a la instancia que corre, para las variables con flag 0;
+- `load_indexed` (`BTL_loadEFEIndexedVariable`), que suma índice × ancho al operando;
+- un puntero que apila `push_address` (`BTL_pushEFEVariableAddress`) y del que un subopcode lee lo que dice el tipo de
+  su argumento.
+
+El código en C no lee el área de otra forma: `EFE_DATA_ITERATOR->data` solo sirve para poner `EFE_SCRIPT_HEAD`. Los
+scripts tampoco guardan punteros para hacer cuentas con ellos: los dos `pop_to_variable` del US sacan valores que pasa
+quien llama. Las variables de instancia tienen offsets positivos y ninguna tabla de instancias va antes de un hueco.
+Una tabla de `load_indexed` se extiende hasta el siguiente byte cubierto, así que un hueco nunca la sigue: para
+llegar a él el índice tendría que saltarse datos que el script usa como otra cosa. En las tablas con índice acotado se
+ve que la herramienta las midió justas: la ranura 77 lee la tabla de 6 `s16` en `0x12c` con el contador de la
+instancia, y su script de fotograma (`l_1938`) la libera en cuanto pasa de 4. Un hueco antes de una tabla pediría un
+índice negativo, y los índices son contadores.
+
+Con el disco US quedan 40 rangos sin uso, 590 bytes en 33 ranuras. Se escriben enteros en `script.yaml` y el informe
+los anota ranura a ranura. Son de estas clases:
+
+| Qué hay | Ranuras |
+|---|---|
+| Vectores o colores de tres `s32` a los que no apunta ningún `push_address`, junto a otros que sí se usan | 10, 26, 29, 32, 34, 56, 77, 81, 86, 91 |
+| El bloque de seis `s32` `76, 69, 3, 13, 6, 0`, igual en todas | 1, 33 y 61 al principio; 77 en `0x198` |
+| Seis `s16` en rampa (130 a 592, o 130 a 905) al principio | 112 a 120 |
+| Otras tablas de `s16` que ningún `load_indexed` lee | 3, 29, 54, 76, 104 |
+| Un fotograma clave más de los que dice la cuenta: `BTL_tickEFEUVAnimation` vuelve al primero al llegar a `numKeyframes` | 34 (`0x40`, `0x54`) |
+| Listas de huesos que nadie apila (una entrada y su fin, o solo el fin) | 62, 98 |
+| El color 16 tras una ventana de 15: `BTL_loadClutColors` copia `count` colores y los scripts siempre apilan 15 | 31 |
+| Lo que sigue a la fila de CLUT de la ranura 14: el último color de la paleta doble y 28 bytes más | 14 |
+| Dos o cuatro bytes a cero tras una variable o un vector | 86, 94, 102, 109 |
+
+La fila de CLUT de la ranura 14 es lo único que sí se lee: `queue_clut_load` (`BTL_addClutLoadPrim`) copia 32 bytes
+desde los colores más dos por el índice, y el índice es el contador de la instancia módulo 16. La paleta está dos veces
+seguida para que la ventana rote, y la fila cubre 62 bytes de un hueco que medía 92.
 
 ## Lo que escribe `dwx`
 
@@ -212,7 +253,9 @@ En `script.yaml` cada instrucción lleva `at` (offset desde la base), `op` y sus
 destinos son etiquetas (`start`, `init`, `l_<offset>`) y cada `sub` lista sus argumentos por nombre con lo que se
 apiló: un número, una variable (`base+0x0040`, `instance+0x0008`), una dirección (`&base+0x0040`) o una etiqueta. Un
 argumento sin unir es `null`. El área de datos va elemento a elemento con su tipo y sus valores; un valor que es
-relleno (una variable sin valor inicial) es `null`. Un ejemplo inventado:
+relleno (una variable sin valor inicial) es `null`. Los datos sin uso van como `kind: unused` con sus bytes y el
+motivo (`reason`); una fila de CLUT con índice calculado lleva `row_starts` y todos los colores que puede leer. Un
+ejemplo inventado:
 
 ```yaml
 start_script:
@@ -250,9 +293,7 @@ data:
   comparten textura y modelo.
 - Todas las instrucciones decodifican, todos los argumentos se unen con lo que los apila y todos los punteros a código
   caen en instrucciones.
-- El fichero queda **parcial** por 40 rangos de datos (652 bytes en 33 ranuras) que ninguna instrucción direcciona y
-  no son relleno; el informe los lista. Algunos siguen a una tabla de `load_indexed` y podrían ser parte de ella, a la
-  que se llega con índices calculados en tiempo de ejecución; otros (12 bytes al principio de las ranuras 112 a 120)
-  parecen tablas que nada usa.
+- El fichero queda **extraído**: cada byte del área de datos está tipado, es relleno o es un dato sin uso de los de
+  [Datos sin uso](#datos-sin-uso) (40 rangos, 590 bytes en 33 ranuras), que el informe anota.
 
 Se comprueba con `DWE_DISC` en `apps/dwx/tests/effect_real_disc_tests.cpp`.
