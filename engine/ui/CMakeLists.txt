@@ -5,12 +5,15 @@ find_package(sol2 CONFIG REQUIRED)
 dwe_add_module(ui
     LAYER services
     SOURCES
+        src/bitmap_font.cpp
+        src/font_engine.cpp
         src/minimap.cpp
         src/navigation.cpp
         src/prompts.cpp
         src/render_bridge.cpp
         src/rml_interfaces.cpp
         src/scripting.cpp
+        src/text_font.cpp
         src/ui.cpp
         src/ui_renderer.cpp
     DEPS core platform input assets render script

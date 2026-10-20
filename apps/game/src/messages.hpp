@@ -28,6 +28,9 @@ inline constexpr std::string_view LanguageChanged = "game: language changed to {
 inline constexpr std::string_view CannotChangeLanguage = "game: cannot change the language: {}";
 inline constexpr std::string_view FromSavedSetting = "saved setting";
 inline constexpr std::string_view FromSystem = "system locale or default";
+// The player's text font (text_font_setting.cpp): a name that is neither modern nor original.
+inline constexpr std::string_view UnknownTextFont = "game: unknown text font '{}'; use modern or original";
+inline constexpr std::string_view UnknownSavedTextFont = "game: the saved text font '{}' is unknown; using the default";
 
 // Autotest: a wait for a map change's name that has not come yet (the map id).
 inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";

@@ -1,0 +1,16 @@
+# El texto con «aspecto original» (el nombre del mapa al cambiar de mapa, y más adelante otros): la familia
+# original-look, que usa la clase .original-look de ui/common/theme.rcss. Dibuja con la fuente que elige el ajuste
+# text_font del jugador (docs/architecture/ui.md).
+family: original-look
+# Decisión del responsable de diseño, 2026-10-20: la moderna hasta que el jugador elija.
+default: modern
+modern: Noto Sans
+original:
+  # La fuente de mapa de bits del original, tal como la extrae dwx al paquete base (docs/formats/textos.md).
+  atlas: font/main
+  meta: font/main_meta
+  # La fila bajo los pies de las mayúsculas, desde arriba de la celda: la línea base.
+  baseline: 10
+  # Los caracteres que le faltan (ñ, á, ¿, ¡...) se dibujan con la moderna, en la misma línea base y a este tamaño,
+  # en fracción del alto de línea de la de mapa de bits.
+  fallback_size: 1.0

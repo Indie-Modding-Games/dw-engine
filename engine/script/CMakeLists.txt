@@ -5,6 +5,7 @@ dwe_add_module(script
     LAYER services
     SOURCES
         src/script_vm.cpp
+        src/command_bindings.cpp
         src/input_bindings.cpp
         src/text_bindings.cpp
     DEPS core input localization

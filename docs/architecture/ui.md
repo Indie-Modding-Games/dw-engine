@@ -15,6 +15,7 @@ La UI del juego (menús y HUD) vive en `engine/ui`, en la capa de servicios, sob
 | `Navigation` | Convierte las acciones de un tick en pasos de navegación, con repetición al mantener una dirección |
 | `promptControl`, `promptLabel` | El control que dispara una acción en el último dispositivo usado (`key:enter`, `gamepad:south`) y su nombre para el jugador, en el idioma del juego (`localization/<idioma>/prompt.yaml`) |
 | Textos | Los textos salen del `localization::Catalog` que da la app (`UiDesc::texts`; sin él, la UI carga el inglés): `text-key` en el RML, `t()` en Lua, y `refreshTexts()` al cambiar de idioma ([localización](localizacion.md)) |
+| `FontEngine` (`src/font_engine.*`), `BitmapFont` | El motor de fuentes de RmlUi con la familia `original-look` encima: dibuja con la fuente de mapa de bits del original o con la moderna, según el ajuste `text_font` (ver [Aspecto original](#aspecto-original)); el resto de familias va al motor de RmlUi (FreeType) |
 | `buildMinimap` | Dibuja el minimapa desde una rejilla de celdas (`MinimapGrid`) y da el `MinimapLayout` que sitúa posiciones del mundo en la imagen |
 
 `ui` no conoce el juego: recibe valores planos (la rejilla del minimapa, las posiciones de los marcadores, los
@@ -141,6 +142,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `ui_scale` | número (0,75–2) | `ui_scale` |
 | `vsync` | booleano | `vsync` |
 | `language` | código de idioma (`en`, `es`) | `language` (y la UI vuelve a poner todos sus textos) |
+| `text_font` | `modern`, `original` | `text_font` (y la UI vuelve a componer los documentos con la fuente) |
 
 Otros ajustes los publica el juego sin que un menú los pida:
 
@@ -148,6 +150,40 @@ Otros ajustes los publica el juego sin que un menú los pida:
 |---|---|---|
 | `screen_fade` | número de 0 a 1 | Cuánto quita de la pantalla el fundido del cambio de mapa, que el render resta de la escena debajo de la UI; el HUD desvanece con él sus paneles |
 | `map_title_key` | clave de texto | La clave del nombre del mapa al que lleva el cambio de mapa (`main.map_names.NNNN`) mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacía el resto del tiempo o si el mapa no tiene nombre. El HUD pone su texto en el idioma del jugador (`t()`) en el centro, delante del fundido, y lo reescribe al cambiar de idioma |
+
+## Aspecto original
+
+El texto que imita al original (de momento, el nombre del mapa del cambio de mapa) usa la clase `.original-look` de
+`ui/common/theme.rcss`, que pone la familia `original-look` y el color de la tinta de la fuente del original (`#d6d6d6`,
+el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro texto con ese aspecto.
+
+- **La familia** la describe `ui/fonts/original_look.yaml` del paquete `game` (esquema `ui_text_font`): su nombre, la
+  fuente moderna (`Noto Sans`), la elección por defecto y la fuente de mapa de bits (`font/main.png` y
+  `font/main_meta.yaml` del paquete base, que escribe `dwx extract`; ver [textos](../formats/textos.md#fuente)), con su
+  línea base y el tamaño de la moderna que dibuja lo que le falta. El juego solo lee ese PNG y ese YAML, nunca el
+  disco.
+- **`FontEngine`** se instala sobre el motor de RmlUi al arrancar la UI y le pasa todas las familias menos
+  `original-look`. Con `original`, esa familia dibuja cada glifo desde el atlas: un glifo responde a su carácter
+  (`Ａ`) y a su equivalente ASCII (`A`), la tinta es blanca y la tiñe el `color` de RCSS, y crece en múltiplos enteros
+  (`round(tamaño / 11)`, al menos 1) con los píxeles en coordenadas enteras, así que se ve nítida a cualquier
+  resolución. Los caracteres que no tiene (ñ, á, ¿, ¡, paréntesis...) los dibuja la moderna en la misma línea base,
+  al tamaño de la línea de mapa de bits por `fallback_size`; nunca se dibuja el glifo de sustitución del original.
+  Sin la fuente extraída, `original` dibuja con la moderna (con un aviso en el log).
+- **El ajuste `text_font`** (`modern` u `original`) es del jugador: `Ui::setTextFont` lo cambia y vuelve a componer y
+  dibujar en el momento todos los documentos abiertos (`Rml::ReleaseFontResources`). El valor por defecto es dato
+  (`default` en `original_look.yaml`). El jugador lo elige en el menú principal (entrada «Fuente del texto», junto al
+  idioma, con los textos `main_menu.text_font`, `main_menu.text_font.modern` y `main_menu.text_font.original` de
+  `localization/<idioma>/main_menu.yaml`), que manda el comando `text_font`; la app lo guarda junto al idioma en
+  `settings.yaml` de los datos del usuario y lo publica como ajuste `text_font`. También lo ponen `--text-font`
+  (autotests, que no leen ni escriben los ajustes del jugador) y `text_font("original")` en la consola de depuración.
+
+Decisiones del responsable de diseño sobre el nombre del mapa (ver la [ficha del campo](../reference/campo.md)):
+
+| Decisión | Qué hace el motor |
+|---|---|
+| La fuente del nombre del mapa es un ajuste del jugador: la de mapa de bits del original o la moderna. Por defecto, la moderna (decisión del responsable de diseño, 2026-10-20) | Ajuste `text_font`; `default: modern` en `original_look.yaml` |
+| El HUD del motor se desvanece con alfa durante el cambio de mapa. El original no tiene HUD fijo en el campo: lo que dibuja (personajes, barras de estado de `partner_impl.c: renderStatusBars`, ventanas) queda detrás del rectángulo del fundido (capa 1 del orden, `fade.c: renderFade`) y se oscurece restándole el mismo gris; solo el nombre del mapa va delante (capa 0). Desviación aprobada (decisión del responsable de diseño, 2026-10-20) | `screen_fade` en el HUD, que baja la opacidad de sus paneles |
+| El nombre del mapa va centrado exacto, sin imitar el desvío de unos píxeles del original (`x = 12 − (largo / 2) × 8` con los espacios de relleno), y sin opción para imitarlo (decisión del responsable de diseño, 2026-10-20) | `text-align: center` en `#map-title` |
 
 ## Scripts
 
@@ -185,7 +221,8 @@ mando virtual: `attach playstation`, `tap dpad_down`, `press south`, `release so
 ## Tests
 
 `dwe_ui_tests` funciona sin GPU: carga los documentos reales del paquete `game` desde el árbol de fuentes, recorre el
-menú con teclado, con mando y con ratón, comprueba los avisos, el minimapa y sus marcadores, la escala (también en
+menú con teclado, con mando y con ratón, comprueba los avisos, el minimapa y sus marcadores, el texto con aspecto original con una fuente de mapa de bits de
+prueba (el cambio de fuente en el momento y los caracteres que faltan), la escala (también en
 alta densidad), los entornos de Lua, el presupuesto compartido, los límites, la falta de memoria y la recarga en
 caliente.
 

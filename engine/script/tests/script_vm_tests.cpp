@@ -63,6 +63,16 @@ TEST_CASE("precompiled chunks are rejected") {
     CHECK_FALSE(vm->runString("\x1bLua", "test").has_value());
 }
 
+TEST_CASE("a bound command gets its text argument, and another argument type is an error") {
+    auto vm = makeVm();
+    std::string received;
+    vm->bindCommand("text_font", [&received](std::string_view argument) { received = argument; });
+    REQUIRE(vm->runString("text_font('original')", "test"));
+    CHECK(received == "original");
+    CHECK_FALSE(vm->runString("text_font({})", "test"));
+    CHECK(received == "original");
+}
+
 TEST_CASE("an error is returned, not thrown") {
     auto vm = makeVm();
     auto result = vm->runString("error('broken')", "test");

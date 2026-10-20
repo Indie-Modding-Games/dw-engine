@@ -14,6 +14,9 @@
 			<button id="language" class="option" onclick="change_language(1)">
 				<span class="label" text-key="main_menu.language"></span><span class="value" id="language-value"></span>
 			</button>
+			<button id="text-font" class="option" onclick="change_text_font()">
+				<span class="label" text-key="main_menu.text_font"></span><span class="value" id="text-font-value"></span>
+			</button>
 			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
 
 			<div id="prompts">

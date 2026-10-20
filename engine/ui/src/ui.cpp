@@ -1,4 +1,6 @@
+#include <dwe/assets/image.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/navigation.hpp>
@@ -26,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "font_engine.hpp"
 #include "messages.hpp"
 #include "render_bridge.hpp"
 #include "rml_interfaces.hpp"
@@ -55,6 +58,10 @@ constexpr double ReloadInterval = 0.5;
 
 // There may be one Ui at a time, because RmlUi's interfaces and factory are global.
 bool uiAlive = false; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables): guards RmlUi's global state.
+
+std::string_view textOf(std::span<const std::byte> bytes) {
+    return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
+}
 
 float dpRatioFor(int width, int height, float scale) {
     const float fit = std::min(static_cast<float>(height) / DesignHeight, static_cast<float>(width) / DesignWidth);
@@ -190,6 +197,8 @@ struct Ui::Impl {
     TextureSources sources{files};
     RenderBridge render{sources, desc.renderer};
     std::unique_ptr<Scripting> scripting;
+    // Installed over RmlUi's own after it starts; RmlUi shuts it down, so it outlives Rml::Shutdown.
+    std::unique_ptr<FontEngine> fontEngine;
     Rml::Context* context = nullptr;
 
     std::map<std::string, Document, std::less<>> documents;
@@ -296,6 +305,70 @@ struct Ui::Impl {
             return core::fail("no fonts under ui/fonts/ in the packs");
         }
         return {};
+    }
+
+    // Puts the "original look" family over RmlUi's font engine. Without its description in the packs there is no
+    // such family; without the extracted bitmap font, it draws with the modern font.
+    [[nodiscard]] core::Result<void> installFontEngine() {
+        auto id = assets::AssetId::parse(OriginalLookAsset);
+        if (!id || desc.files->resolve(*id) == nullptr) {
+            core::logWarning("{}", core::formatMessage(messages::OriginalLookMissing, OriginalLookAsset));
+            return {};
+        }
+        auto bytes = desc.files->read(*id);
+        if (!bytes) {
+            return std::unexpected{bytes.error()};
+        }
+        auto look = parseOriginalLook(textOf(*bytes));
+        if (!look) {
+            return std::unexpected{look.error()};
+        }
+        auto bitmap = loadBitmapFont(*look);
+        if (bitmap) {
+            core::logInfo("{}", core::formatMessage(messages::BitmapFontLoaded, look->atlas, bitmap->characterCount(),
+                                                    bitmap->cellWidth(), bitmap->cellHeight()));
+        } else {
+            core::logWarning("{}",
+                             core::formatMessage(messages::BitmapFontUnavailable, look->atlas, bitmap.error().message));
+        }
+        fontEngine = std::make_unique<FontEngine>(*Rml::GetFontEngineInterface(), std::move(*look),
+                                                  bitmap ? std::optional{std::move(*bitmap)} : std::nullopt);
+        Rml::SetFontEngineInterface(fontEngine.get());
+        return {};
+    }
+
+    [[nodiscard]] core::Result<BitmapFont> loadBitmapFont(const OriginalLook& look) const {
+        auto atlasId = assets::AssetId::parse(look.atlas);
+        auto metaId = assets::AssetId::parse(look.meta);
+        if (!atlasId) {
+            return std::unexpected{atlasId.error()};
+        }
+        if (!metaId) {
+            return std::unexpected{metaId.error()};
+        }
+        auto png = desc.files->read(*atlasId);
+        if (!png) {
+            return std::unexpected{png.error()};
+        }
+        auto atlas = assets::decodePng(*png);
+        if (!atlas) {
+            return std::unexpected{atlas.error()};
+        }
+        auto meta = desc.files->read(*metaId);
+        if (!meta) {
+            return std::unexpected{meta.error()};
+        }
+        return BitmapFont::parse(textOf(*meta), std::move(*atlas), look.baseline);
+    }
+
+    void setTextFont(TextFont font) const {
+        if (fontEngine == nullptr || fontEngine->textFont() == font) {
+            return;
+        }
+        fontEngine->setTextFont(font);
+        core::logInfo("{}", core::formatMessage(messages::TextFontChanged, textFontName(font)));
+        // RmlUi asks for the faces again, so every element with the family lays out and draws with the new font.
+        Rml::ReleaseFontResources();
     }
 
     [[nodiscard]] core::Result<void> loadTexts() {
@@ -745,6 +818,9 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
     if (!Rml::Initialise()) {
         return core::fail("could not start RmlUi");
     }
+    if (auto fonts = impl->installFontEngine(); !fonts) {
+        return std::unexpected{fonts.error()};
+    }
     impl->scripting->install();
     if (auto texts = impl->loadTexts(); !texts) {
         return std::unexpected{texts.error()};
@@ -781,6 +857,14 @@ void Ui::hide(std::string_view name) {
 
 bool Ui::isVisible(std::string_view name) const {
     return impl_->isVisible(name);
+}
+
+void Ui::setTextFont(TextFont font) {
+    impl_->setTextFont(font);
+}
+
+TextFont Ui::textFont() const {
+    return impl_->fontEngine != nullptr ? impl_->fontEngine->textFont() : TextFont::Modern;
 }
 
 void Ui::setMenuDocument(std::string_view name) {

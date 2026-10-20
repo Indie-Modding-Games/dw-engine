@@ -112,7 +112,9 @@ no los guardaría). `dwx extract` escribe:
 - `font/main_meta.yaml`: `cell_width`, `cell_height`, `columns`, `fallback`, `colors` (los 16 colores en hex) y por
   glifo `index`, `sjis`, `character`, `ascii` (si lo tiene), `x`, `y` y `width`.
 
-`fontFromAtlas` reconstruye la fuente a partir de los dos ficheros.
+`fontFromAtlas` reconstruye la fuente a partir de los dos ficheros. El juego no usa `formats`: la UI lee esos dos
+ficheros con su propio lector (`ui::BitmapFont`) para el texto con aspecto original
+([UI](../architecture/ui.md#aspecto-original)).
 
 ## Cadenas del ejecutable y los overlays
 

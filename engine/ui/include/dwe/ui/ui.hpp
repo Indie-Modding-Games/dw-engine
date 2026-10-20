@@ -7,6 +7,7 @@
 #include <dwe/platform/events.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/minimap.hpp>
+#include <dwe/ui/text_font.hpp>
 
 #include <functional>
 #include <memory>
@@ -141,6 +142,13 @@ public:
     // Pixels per dp: the window's height against the 720 pixels the UI is designed at (its width against 960 when that
     // is smaller), times the scale option.
     [[nodiscard]] float dpRatio() const;
+
+    // Changes what "original look" text (font-family original-look, ui/fonts/original_look.yaml) draws with, and lays
+    // out and draws the documents again with it. Without the original bitmap font in the packs, the original choice
+    // draws with the modern font.
+    void setTextFont(TextFont font);
+    // The player's choice; the packs' default until one is made.
+    [[nodiscard]] TextFont textFont() const;
 
     // Replaces the minimap with a new map's: its walkable area and the key of its name (localization::mapNameKey; empty
     // for none), shown in the hud:: elements.

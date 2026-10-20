@@ -1,4 +1,5 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
@@ -20,6 +21,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "bitmap_font_fixture.hpp"
 
 namespace dwe::ui {
 namespace {
@@ -616,6 +619,45 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
     CHECK_FALSE(ui->isVisible("main_menu"));
 }
 
+TEST_CASE("the main menu switches the text font and shows the one the game reports, in the player's language") {
+    Content content;
+    VirtualFileSystem& files = content.mount();
+    localization::Catalog texts = catalogIn(files, "es");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("main_menu", idOf("ui/main_menu/document")));
+    ui->setSetting("language", std::string{"es"});
+    ui->setSetting("text_font", std::string{"modern"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("main_menu", true);
+    frame(*ui, input);
+    CHECK(ui->elementText("main_menu", "text-font-value") == "Moderna");
+
+    press(*ui, input, input::keys::Down);
+    press(*ui, input, input::keys::Down);
+    REQUIRE(ui->focusedElementId("main_menu") == "text-font");
+    // With two fonts, left and right both switch to the other one.
+    press(*ui, input, input::keys::Left);
+    auto commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].name == "text_font");
+    CHECK(commands[0].value == UiValue{std::string{"original"}});
+
+    // The menu shows what the game reports back, not what it asked for.
+    ui->setSetting("text_font", std::string{"original"});
+    frame(*ui, input);
+    CHECK(ui->elementText("main_menu", "text-font-value") == "Original");
+    press(*ui, input, input::keys::Return);
+    commands = ui->takeCommands();
+    REQUIRE(commands.size() == 1);
+    CHECK(commands[0].value == UiValue{std::string{"modern"}});
+
+    REQUIRE(texts.setLanguage("en"));
+    ui->setSetting("text_font", std::string{"modern"});
+    ui->refreshTexts();
+    frame(*ui, input);
+    CHECK(ui->elementText("main_menu", "text-font-value") == "Modern");
+}
+
 TEST_CASE("the main menu works with the mouse alone") {
     Content content;
     VirtualFileSystem& files = content.mount();
@@ -873,6 +915,80 @@ TEST_CASE("a path names an asset only with the extension of the file that provid
     auto ui = createUi(content.mount());
     REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
     CHECK(ui->takeCommands().empty());
+}
+
+namespace {
+
+// Three samples with the original look, at a size the fixture font draws three times larger (33 px over 11-pixel
+// cells): all in the bitmap font, with a character it lacks, and with its glyph that has no ASCII equivalent.
+constexpr std::string_view OriginalLookDocument = R"rml(<rml>
+<head>
+	<link type="text/rcss" href="/ui/common/theme.rcss"/>
+	<style>
+		div { position: absolute; left: 0; font-size: 33px; }
+	</style>
+</head>
+<body>
+	<div id="bitmap" class="original-look" style="top: 0;">AB</div>
+	<div id="missing" class="original-look" style="top: 50px;">AñB</div>
+	<div id="symbol" class="original-look" style="top: 100px;">A○B</div>
+</body>
+</rml>)rml";
+
+// The width of a sample: it sits at the left edge, so its centre is half of it.
+float widthOf(const Ui& ui, std::string_view sample) {
+    const auto center = ui.elementCenter("look", sample);
+    REQUIRE(center.has_value());
+    return 2.0F * center.value_or(Ui::Point{}).x;
+}
+
+void addFixtureFont(Content& content) {
+    auto png = assets::encodePng(fixture::atlas());
+    REQUIRE(png.has_value());
+    content.add("font/main.png", std::string_view{reinterpret_cast<const char*>(png->data()), png->size()});
+    content.add("font/main_meta.yaml", fixture::Meta);
+    content.add("ui/look/document.rml", OriginalLookDocument);
+}
+
+} // namespace
+
+TEST_CASE("original look text draws with the font the player picks, at once") {
+    Content content;
+    addFixtureFont(content);
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("look", idOf("ui/look/document")));
+    ui->show("look");
+    ui->update();
+    // The game pack's default is the modern font.
+    CHECK(ui->textFont() == TextFont::Modern);
+    const float modern = widthOf(*ui, "bitmap");
+    CHECK(modern > 0.0F);
+
+    ui->setTextFont(TextFont::Original);
+    ui->update();
+    CHECK(ui->textFont() == TextFont::Original);
+    // The fixture's A and B advance 3 and 4 pixels, three times larger.
+    CHECK(widthOf(*ui, "bitmap") == doctest::Approx(21.0F));
+    CHECK(widthOf(*ui, "symbol") == doctest::Approx(39.0F));
+    // ñ is not in the bitmap font: the modern font draws it between the bitmap's A and B.
+    CHECK(widthOf(*ui, "missing") > 21.0F);
+
+    ui->setTextFont(TextFont::Modern);
+    ui->update();
+    CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
+}
+
+TEST_CASE("without the extracted bitmap font, original look text keeps the modern font") {
+    Content content;
+    content.add("ui/look/document.rml", OriginalLookDocument);
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("look", idOf("ui/look/document")));
+    ui->show("look");
+    ui->update();
+    const float modern = widthOf(*ui, "bitmap");
+    ui->setTextFont(TextFont::Original);
+    ui->update();
+    CHECK(widthOf(*ui, "bitmap") == doctest::Approx(modern));
 }
 
 } // namespace dwe::ui

@@ -88,7 +88,8 @@ constantes en inglés en el `messages.hpp` de cada módulo.
    `SDL_GetPrefPath`), si los paquetes todavía lo tienen.
 3. El idioma del sistema (`SDL_GetPreferredLocales`), si los paquetes lo tienen. Si no, inglés.
 
-El jugador lo cambia en el **menú principal**, que sale al arrancar el juego: Jugar, Idioma y Salir. Se usa con
+El jugador lo cambia en el **menú principal**, que sale al arrancar el juego: Jugar, Idioma, Fuente del texto
+([aspecto original](ui.md#aspecto-original), que se guarda en los mismos ajustes) y Salir. Se usa con
 ratón, teclado y mando, como el de pausa. Izquierda y derecha, o confirmar, pasan al idioma siguiente. Esa elección
 cambia todo el juego, también el texto del original cuando hay un paquete de traducción, y se guarda en los ajustes.
 Un autotest no lee ni escribe los ajustes del usuario.

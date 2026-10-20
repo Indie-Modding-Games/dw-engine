@@ -8,7 +8,8 @@ en un build de desarrollo, el juego los recarga solo al guardarlos. Arquitectura
 ```
 content/packs/game/ui/
   common/theme.rcss          estilo común: fuente, botones, avisos de botones
-  fonts/                     fuentes (.ttf/.otf) y sus licencias; se cargan todas
+  fonts/                     fuentes (.ttf/.otf) y sus licencias; se cargan todas. original_look.yaml
+                             describe la familia original-look (ver docs/architecture/ui.md)
   pause_menu/document.rml    el menú de pausa
   pause_menu/style.rcss
   pause_menu/logic.lua

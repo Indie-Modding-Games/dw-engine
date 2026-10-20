@@ -78,7 +78,8 @@ body {
 }
 
 /* The name of the map a map change goes to, while the original shows it (map.c: renderMapName): in the middle of
-   the screen, light grey, with no box and no shadow, over the fade that the game draws under the UI. */
+   the screen, with the original look (light grey, in the font the player picks), with no box and no shadow, over the
+   fade that the game draws under the UI. */
 #map-title {
 	position: absolute;
 	left: 0;
@@ -89,7 +90,6 @@ body {
 	line-height: 40dp;
 	text-align: center;
 	font-size: 30dp;
-	color: #d6d6d6;
 	display: none;
 }
 

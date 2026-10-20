@@ -13,7 +13,7 @@ namespace dwe::app {
 struct UserSettings {
     // The language of the texts ("en", "es"); the system's when not chosen yet.
     std::optional<std::string> language;
-    // The font of the original's text (text_font): kept for the font option, which reads and writes it.
+    // The font of "original look" text (text_font: modern, original); the packs' default when not chosen yet.
     std::optional<std::string> textFont;
 };
 

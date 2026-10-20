@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -65,6 +66,9 @@ public:
     // player's language with its placeholders filled from a table ({count = 3}), as in the UI's documents;
     // texts.language() gives the language. The catalog must outlive the VM.
     void bindTexts(const localization::Catalog& catalog);
+    // Exposes a global function of one text argument, for the developer console's commands: bindCommand("text_font",
+    // ...) makes `text_font("original")` call `run` with "original". Another argument type is a Lua error.
+    void bindCommand(std::string_view name, std::function<void(std::string_view)> run);
 
     // The underlying state, for modules that register their own API.
     sol::state& lua();

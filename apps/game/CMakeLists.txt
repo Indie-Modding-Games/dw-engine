@@ -15,6 +15,7 @@ dwe_add_app(game
         src/options.cpp
         src/saves.cpp
         src/test_scene.cpp
+        src/text_font_setting.cpp
         src/ui_demo.cpp
         src/user_settings.cpp
     DEPS core platform rhi assets localization animation render input script ui debug scene ruleset field save content

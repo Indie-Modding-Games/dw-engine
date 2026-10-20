@@ -47,6 +47,7 @@
 #include "frame_stats.hpp"
 #include "language.hpp"
 #include "messages.hpp"
+#include "text_font_setting.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -118,7 +119,7 @@ struct Settings {
 
 // Applies a command of the UI's documents and publishes the resulting state. Returns false for quit.
 bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
-           LanguageChanger& language) {
+           LanguageChanger& language, TextFontChanger& textFont) {
     core::logInfo("game: command {} = {}", command.name, describe(command.value));
     if (command.name == "quit") {
         return false;
@@ -142,6 +143,8 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
         ui.setScale(static_cast<float>(std::get<double>(command.value)));
         settings.uiScale = ui.scale();
         ui.setSetting("ui_scale", settings.uiScale);
+    } else if (command.name == ui::TextFontSetting && std::holds_alternative<std::string>(command.value)) {
+        textFont.change(std::get<std::string>(command.value));
     } else if (command.name == "vsync") {
         // The device picks its present mode when it is created (--no-vsync); the menu keeps showing the real one.
         core::logInfo("game: vsync cannot change while running yet");
@@ -423,6 +426,11 @@ int runGame(const Options& options) {
     (*ui)->setSetting("fullscreen", settings.fullscreen);
     (*ui)->setSetting("ui_scale", settings.uiScale);
     (*ui)->setSetting("vsync", settings.vsync);
+    TextFontChanger textFontChanger{**ui, userSettings, settingsFile};
+    if (const auto font = startTextFont(options.textFont, userSettings.textFont)) {
+        (*ui)->setTextFont(*font);
+    }
+    (*ui)->setSetting(ui::TextFontSetting, std::string{ui::textFontName((*ui)->textFont())});
     MapChangeView mapChangeView{**ui};
     (*ui)->setMenuDocument(MenuDocument);
     (*ui)->show("hud");
@@ -447,6 +455,11 @@ int runGame(const Options& options) {
     }
     (*scripts)->bindInput(input);
     (*scripts)->bindTexts(*texts);
+    // The console's text_font("original"|"modern"), the main menu's setting; applied between frames, like a menu's
+    // command, so the UI never changes fonts while a frame draws it.
+    std::optional<std::string> consoleTextFont;
+    (*scripts)->bindCommand(ui::TextFontSetting,
+                            [&consoleTextFont](std::string_view name) { consoleTextFont = std::string{name}; });
 
     FrameStats frameStats;
     const AutotestHost host{
@@ -584,7 +597,10 @@ int runGame(const Options& options) {
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-            running = apply(command, **ui, *window, settings, languageChanger) && running;
+            running = apply(command, **ui, *window, settings, languageChanger, textFontChanger) && running;
+        }
+        if (consoleTextFont) {
+            textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
         }
         if ((*scene)->mapSerial() != mapSerial) {
             mapSerial = (*scene)->mapSerial();

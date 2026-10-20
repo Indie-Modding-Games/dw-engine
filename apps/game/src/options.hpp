@@ -3,6 +3,7 @@
 #include <dwe/core/math.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/ui/text_font.hpp>
 
 #include <filesystem>
 #include <optional>
@@ -39,6 +40,8 @@ struct Options {
     int startExit = 0;
     // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour when not given.
     std::optional<render::TimeOfDay> time;
+    // The font of "original look" text (--text-font modern|original), instead of the packs' default; for autotests.
+    std::optional<ui::TextFont> textFont;
 
     // The language of the texts (--lang en|es...), instead of the saved one or the system's; for autotests.
     std::optional<std::string> language;
@@ -69,7 +72,7 @@ struct Options {
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
-    "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
+    "[--text-font modern|original] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 

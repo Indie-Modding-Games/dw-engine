@@ -1,5 +1,6 @@
--- The main menu, shown when the game starts: play, choose the language, quit. Like the pause menu it never changes a
--- setting itself: it sends the language command and shows the language the game reports back (ui.setting).
+-- The main menu, shown when the game starts: play, choose the language and the text font, quit. Like the pause menu it
+-- never changes a setting itself: it sends the language and text_font commands and shows what the game reports back
+-- (ui.setting).
 
 -- The language after the current one in the list the packs offer, step entries away, wrapping around.
 local function next_language(step)
@@ -13,8 +14,15 @@ local function next_language(step)
 	return languages[((current - 1 + step) % #languages) + 1]
 end
 
+-- The fonts "original look" text can draw with (text_font): two, so left and right both switch to the other one.
+local function other_text_font()
+	return ui.setting("text_font") == "original" and "modern" or "original"
+end
+
 local function refresh(document)
 	document:get("language-value"):set_text(t("language.name"))
+	local font = ui.setting("text_font") == "original" and "original" or "modern"
+	document:get("text-font-value"):set_text(t("main_menu.text_font." .. font))
 end
 
 local function refresh_prompts(document)
@@ -27,6 +35,10 @@ end
 
 function change_language(step)
 	ui.send("language", next_language(step))
+end
+
+function change_text_font()
+	ui.send("text_font", other_text_font())
 end
 
 function on_show(document)
@@ -56,6 +68,10 @@ function on_action(document, action)
 	end
 	if (action == "left" or action == "right") and document:get("language"):has_focus() then
 		change_language(action == "left" and -1 or 1)
+		return true
+	end
+	if (action == "left" or action == "right") and document:get("text-font"):has_focus() then
+		change_text_font()
 		return true
 	end
 	return false

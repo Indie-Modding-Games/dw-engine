@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Original look font",
+  "description": "ui/fonts/original_look.yaml of the game pack: the font family for text with the original's look, drawn with the original's bitmap font or a modern font as the player's text_font setting picks (docs/architecture/ui.md).",
+  "type": "object",
+  "required": ["family", "default", "modern", "original"],
+  "additionalProperties": false,
+  "properties": {
+    "family": { "description": "The font-family the documents name.", "type": "string", "minLength": 1 },
+    "default": { "description": "The choice before the player makes one.", "enum": ["modern", "original"] },
+    "modern": { "description": "The family of a font under ui/fonts/ that the modern choice draws with; it also draws the characters the bitmap font lacks.", "type": "string", "minLength": 1 },
+    "original": {
+      "type": "object",
+      "required": ["atlas", "meta", "baseline", "fallback_size"],
+      "additionalProperties": false,
+      "properties": {
+        "atlas": { "description": "Asset id of the bitmap font's atlas (font/main.png, written by dwx extract).", "type": "string", "minLength": 1 },
+        "meta": { "description": "Asset id of the atlas's glyphs (font/main_meta.yaml).", "type": "string", "minLength": 1 },
+        "baseline": { "description": "The row under the capitals, from the top of a cell.", "type": "integer", "minimum": 1 },
+        "fallback_size": { "description": "Size of the modern font that draws missing characters, as a fraction of the bitmap font's line height.", "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  }
+}

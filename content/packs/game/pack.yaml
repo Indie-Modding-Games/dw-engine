@@ -30,3 +30,5 @@ schemas:
     - rules/*/training
   localization:
     - localization/*/*
+  ui_text_font:
+    - ui/fonts/original_look

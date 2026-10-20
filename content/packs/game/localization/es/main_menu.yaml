@@ -2,4 +2,8 @@
 title: "Menú principal"
 play: "Jugar"
 language: "Idioma"
+# La fuente del texto con el aspecto del original (el nombre del mapa): la de mapa de bits del original o una moderna.
+text_font: "Fuente del texto"
+text_font.modern: "Moderna"
+text_font.original: "Original"
 quit: "Salir del juego"

@@ -60,3 +60,13 @@ button:active {
 	text-align: center;
 	color: #e8edf3;
 }
+
+/* Text with the original's look (the map name, and others later): the original-look family draws with the original's
+   bitmap font or a modern one, as the player's text_font setting picks (ui/fonts/original_look.yaml). The bitmap font
+   grows in whole steps of its 11-pixel cells, so a size near a multiple of 11 px at 720 lines keeps its shape. Its
+   ink takes this color: the font's own, color 1 of its CLUT (0x6B5A, font.c: drawString). */
+.original-look {
+	font-family: original-look;
+	font-weight: normal;
+	color: #d6d6d6;
+}

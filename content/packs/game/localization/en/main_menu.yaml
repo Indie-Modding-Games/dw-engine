@@ -2,4 +2,8 @@
 title: "Main menu"
 play: "Play"
 language: "Language"
+# The font of the text that looks like the original's (the map name): the original's bitmap font or a modern one.
+text_font: "Text font"
+text_font.modern: "Modern"
+text_font.original: "Original"
 quit: "Quit game"
