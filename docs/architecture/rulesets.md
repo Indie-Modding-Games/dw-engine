@@ -101,6 +101,15 @@ Cada constante de `original` lleva encima el fichero y la función del decomp qu
 `field/rules.yaml`: `# partner_impl.c: tickHungerMechanics: ...`. Las unidades van en el comentario de la cabecera de
 la sección.
 
+### Decisiones del responsable de diseño (2026-10-20)
+
+Estas cuatro reglas del formato están aprobadas y son definitivas:
+
+1. `extends` sustituye secciones y tablas **enteras**; no hay mezcla profunda de valores.
+2. `reload()` **descarta** los valores ajustados en vivo: los ficheros mandan.
+3. Cada rareza que lee una sección se **declara en cada ruleset**; no hay valores por defecto.
+4. La velocidad del reloj es un **multiplicador real** (`setSpeed(x)`), no una lista de pasos.
+
 ## Cómo lo usa un sistema
 
 1. **Su sección.** El sistema define su struct y lo lee de la sección con `assets::YamlReader`, con los errores
