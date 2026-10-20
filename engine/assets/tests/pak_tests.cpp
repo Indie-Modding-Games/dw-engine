@@ -345,6 +345,55 @@ TEST_CASE("a compressed .pak entry that is damaged does not read") {
           }).ends_with("the archive is damaged"));
 }
 
+TEST_CASE("a compressed .pak entry that claims a huge size fails without expanding to it") {
+    const TempFolder folder;
+    folder.write("base/pack.yaml", "id: base\nversion: 1.0.0\nlayer: base\n");
+    std::string text;
+    for (int i = 0; i < 8; ++i) {
+        text += "The quick brown fox jumps over the lazy dog, again and again. ";
+    }
+    folder.write("base/fox.txt", text);
+    const std::filesystem::path archive = folder.path() / "base.pak";
+    REQUIRE(writePak(DiskFileSystem{}, folder.path() / "base", archive).has_value());
+    auto bytes = fileBytes(archive);
+    const std::uint64_t entry = u64At(bytes, 0x18);
+    const std::uint64_t offset = u64At(bytes, entry);
+    REQUIRE(u32At(bytes, entry + 0x20) == static_cast<std::uint32_t>(PakCompression::Zstd));
+    REQUIRE(u64At(bytes, entry + 0x08) >= 13);
+
+    // A 13-byte zstd frame with one block of 128 KiB of zeros that says it holds much more, and a table that agrees:
+    // 1 GiB, more than zstd's window limit, and 32 MiB, which decompression finds short.
+    const auto good = bytes;
+    for (const std::uint32_t claimed : {1U << 30U, 1U << 25U}) {
+        bytes = good;
+        const std::array<std::uint8_t, 13> frame{0x28,
+                                                 0xB5,
+                                                 0x2F,
+                                                 0xFD, // magic
+                                                 0xA0, // single segment, 4-byte content size
+                                                 static_cast<std::uint8_t>(claimed & 0xFFU),
+                                                 static_cast<std::uint8_t>((claimed >> 8U) & 0xFFU),
+                                                 static_cast<std::uint8_t>((claimed >> 16U) & 0xFFU),
+                                                 static_cast<std::uint8_t>(claimed >> 24U),
+                                                 0x03,
+                                                 0x00,
+                                                 0x10, // last block, RLE, 128 KiB
+                                                 0x00};
+        for (std::size_t i = 0; i < frame.size(); ++i) {
+            bytes[offset + i] = std::byte{frame[i]};
+        }
+        putU32(bytes, entry + 0x08, static_cast<std::uint32_t>(frame.size()));
+        putU32(bytes, entry + 0x10, claimed);
+        writeBytes(archive, bytes);
+
+        const auto pak = PakFileSystem::open(archive);
+        REQUIRE(pak.has_value());
+        const auto read = (*pak)->readFile(archive / "fox.txt");
+        REQUIRE_FALSE(read.has_value());
+        CHECK_MESSAGE(read.error().message.ends_with("the archive is damaged"), read.error().message);
+    }
+}
+
 TEST_CASE("a version 1 .pak still reads") {
     const TempFolder folder;
     folder.write("old/pack.yaml", "id: old\nversion: 1.0.0\nlayer: base\n");

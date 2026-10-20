@@ -83,18 +83,51 @@ core::Result<std::optional<std::vector<std::byte>>> compress(std::span<const std
     return std::optional{std::move(compressed)};
 }
 
+struct FreeDecompressor {
+    void operator()(ZSTD_DCtx* context) const { ZSTD_freeDCtx(context); }
+};
+
+// The first output buffer of a decompression, which then doubles as needed, so that what is allocated follows what
+// the frame really expands to, not the size an archive claims.
+constexpr std::size_t FirstOutputChunk = std::size_t{1} << 20U;
+
 // Expands one zstd frame that must hold exactly size bytes and nothing after it.
 core::Result<std::vector<std::byte>> decompress(std::span<const std::byte> stored, std::uint64_t size) {
     if (ZSTD_getFrameContentSize(stored.data(), stored.size()) != size ||
         ZSTD_findFrameCompressedSize(stored.data(), stored.size()) != stored.size()) {
         return core::fail("it is not one zstd frame of its size");
     }
-    std::vector<std::byte> bytes(static_cast<std::size_t>(size));
-    const std::size_t result = ZSTD_decompress(bytes.data(), bytes.size(), stored.data(), stored.size());
-    if (ZSTD_isError(result) != 0) {
-        return core::fail(std::format("zstd cannot decompress it: {}", ZSTD_getErrorName(result)));
+    const std::unique_ptr<ZSTD_DCtx, FreeDecompressor> context{ZSTD_createDCtx()};
+    if (!context) {
+        return core::fail("cannot create a zstd context");
     }
-    if (result != size) {
+    const auto total = static_cast<std::size_t>(size);
+    std::vector<std::byte> bytes(std::min(total, FirstOutputChunk));
+    ZSTD_inBuffer input{.src = stored.data(), .size = stored.size(), .pos = 0};
+    std::size_t produced = 0;
+    for (;;) {
+        ZSTD_outBuffer output{.dst = bytes.data(), .size = bytes.size(), .pos = produced};
+        const std::size_t consumed = input.pos;
+        const std::size_t result = ZSTD_decompressStream(context.get(), &output, &input);
+        if (ZSTD_isError(result) != 0) {
+            return core::fail(std::format("zstd cannot decompress it: {}", ZSTD_getErrorName(result)));
+        }
+        produced = output.pos;
+        if (result == 0) {
+            break;
+        }
+        if (produced < bytes.size()) {
+            if (input.pos == input.size) {
+                return core::fail("its zstd frame ends early");
+            }
+        } else if (bytes.size() < total) {
+            bytes.resize(bytes.size() + std::min(total - bytes.size(), bytes.size()));
+        } else if (input.pos == consumed) {
+            // Full, and nothing more read: the frame holds more than its size.
+            return core::fail("it decompresses to more than its size");
+        }
+    }
+    if (produced != total || input.pos != input.size) {
         return core::fail("it decompresses to the wrong size");
     }
     return bytes;
