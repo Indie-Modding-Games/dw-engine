@@ -92,15 +92,19 @@ int main(int argc, char** argv) {
         std::optional<std::filesystem::path> schemas;
         std::vector<std::string_view> folders;
         const auto options = arguments.subspan(2);
+        bool usable = true;
         for (std::size_t i = 0; i < options.size(); ++i) {
             const std::string_view option{options[i]};
-            if (option == "--schemas" && i + 1 < options.size()) {
-                schemas = options[++i];
+            if (option == "--schemas") {
+                usable = usable && i + 1 < options.size();
+                if (usable) {
+                    schemas = options[++i];
+                }
             } else {
                 folders.push_back(option);
             }
         }
-        if (folders.size() == 1) {
+        if (usable && folders.size() == 1) {
             return validate(std::filesystem::path{folders.front()}, schemas);
         }
     }
