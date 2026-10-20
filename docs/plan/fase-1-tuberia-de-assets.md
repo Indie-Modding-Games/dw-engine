@@ -84,14 +84,25 @@ Cada fichero del disco US se extrae, el informe de cobertura está a cero pendie
 - Riesgo: formatos poco documentados (scripts de eventos, efectos). Se mitiga con el decomp como referencia.
 - Riesgo: tamaño. El vídeo crudo ocupa más de 1 GB; su formato cocinado está por decidir.
 
-## Estado (2026-10-19)
+## Estado
 
-- Extracción completa del disco US: 818 de 818 ficheros, 0 parciales, 0 pendientes, 100 % de los bytes. Unos 4600
-  ficheros (1,5 GB), en unos 2,5 minutos.
-- `cook` y `pack` están en `main`. Se está integrando lo siguiente:
-  - texturas en KTX2 con Basis UASTC;
-  - audio en Opus;
-  - `.pak` con zstd;
-  - las correcciones de `validate`.
-- Medido antes de contar los vídeos: el contenido cocinado ocupa unos 420 MB.
-- Pendiente de decisión: el formato cocinado de los vídeos (propuesta: AV1 + Opus en WebM).
+**Cerrada el 2026-10-20.** Con el disco US, `dwx extract` deja el informe de cobertura a 818 de 818 ficheros
+extraídos, 0 parciales y 0 pendientes (100 % de los bytes), y el motor carga el resultado, tanto el extraído como el
+cocinado, en carpeta y en `.pak`.
+
+| Requisito | Estado | Cómo se comprobó |
+|---|---|---|
+| R1.1 | Cumple | El test con el disco real lista los 818 ficheros con su SHA-1, y la tabla de ficheros del ejecutable coincide con el volumen |
+| R1.2 | Cumple | `coverage.yaml`: 0 pendientes y 0 parciales. Lo que no es un asset va con su motivo en las notas: relleno (`MMM.DAT`, todo ceros), datos de efectos a los que nada llega (590 bytes de `EFEDAT.EFE`, marcados `unused`), el overlay que es el build `jp_rev1` y el mapa que nada carga |
+| R1.3 | Cumple | Test de extracción repetida con un disco sintético. Con el disco US, dos extracciones seguidas dan los mismos bytes en los 4814 ficheros del paquete |
+| R1.4 | Cumple | IDs por nombre: criaturas por el nombre de su modelo, mapas por su fichero, técnicas por su nombre. Tests de `assets` |
+| R1.5 | Cumple | Cada documento que escribe `dwx extract` tiene su regla de esquema, y `dwx validate` comprueba 2078 documentos con 0 problemas. Cada formato tiene su página en [`docs/formats/`](../formats/README.md) |
+| R1.6 | Cumple | Tests de `validate`. Con el disco US: 4813 assets, 2078 documentos, 9271 referencias y 178 contratos de modelo, 0 problemas, en el paquete extraído y en el cocinado |
+| R1.7 | Cumple | Tests de `cook`: caché, salida idéntica al repetir, ida y vuelta UASTC → BC7/RGBA8. Medido sin vídeos: de 351,7 MB a 421,6 MB; con vídeos, de 1523,5 a 1593,5 MB. Unos 4 min sin caché en release ([ADR 0017](../adr/0017-cocinado-y-archivos-pak.md)) |
+| R1.8 | Cumple | Test de `.pak` (versión 2 con zstd). `dwe-game --content` monta el `.pak` cocinado con sus 4813 assets, y `--check-content` los abre todos |
+| R1.9 | Cumple | Tests de `assets`: capas, override por ID, carpetas y `.pak` mezclados. Un paquete `mods` con solo un mapa o solo un modelo valida, se cocina y se monta sobre el base |
+| R1.10 | Cumple con texturas | Prueba manual con los PNG del paquete base. Los KTX2 cocinados se abren con la misma ruta de carga (BC7 o RGBA8), que comprueban los tests y `--check-content`. Modelos y mapas, con el render 3D de la fase 2 |
+| R1.11 | Cumple | `content/base/` y `content/cooked/` están en `.gitignore`; ninguna rama integrada añadió datos extraídos |
+
+Pendiente de decisión del usuario: el formato cocinado de los vídeos (propuesta: AV1 + Opus en WebM). Hasta entonces,
+`dwx cook` copia los Y4M y los WAV tal cual (1,17 GB; unos 370 MB dentro del `.pak`).

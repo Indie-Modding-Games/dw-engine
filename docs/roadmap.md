@@ -8,7 +8,7 @@ están en las [especificaciones por fase](plan/README.md).
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
 | 0 | Base | S | Casi cerrada: todo hecho en Linux; la CI corre en GitHub desde el primer push (Windows en verificación); falta la limpieza de repositorios |
-| 1 | Tubería de assets | M | En cierre: el disco US se extrae entero (0 pendientes); falta integrar la compresión del cocinado |
+| 1 | Tubería de assets | M | Cerrada (2026-10-20): el disco US se extrae entero (0 pendientes, 0 parciales) y el motor carga el resultado, extraído y cocinado; falta decidir el formato cocinado de los vídeos |
 | 2 | Prueba vertical | M | En curso |
 | 3 | Núcleo jugable | L | Pendiente |
 | 4 | Contenido y modos | XL, continuo | Pendiente |
@@ -61,19 +61,19 @@ CI pasa.
 **Hecho cuando:** cada fichero del disco US se extrae y el motor carga el resultado. El informe de cobertura está a
 cero pendientes.
 
-**Estado (2026-10-19):**
+**Estado (2026-10-20): cerrada.** El criterio se cumple: `dwx extract` deja el informe a 0 pendientes y 0 parciales, abre cada salida con los lectores del motor, `dwx validate` no encuentra problemas y el juego monta el paquete extraído y el cocinado (carpeta y `.pak`). Requisitos uno a uno en la [especificación](plan/fase-1-tuberia-de-assets.md#estado).
 
 | Punto | Estado |
 |---|---|
 | Disco: CUE, sectores, ISO9660 y tabla de ficheros del ejecutable | Hecho. `dwx extract --list` lista los 818 ficheros del disco US con su SHA-1; la tabla del ejecutable coincide con el volumen |
 | Sistema de ficheros virtual con capas y manifiestos | Hecho: módulo `assets` (IDs por nombre, `pack.yaml`, capas, override por ID) y YAML en `core` ([ADR 0016](adr/0016-yaml-con-libyaml.md)) |
 | TIM y packs → PNG | Hecho: TIM sueltos, apilados, ALLTIM y CARD.ALL (315 PNG con su paleta en YAML) |
-| `dwx extract` a `content/base/` con informe de cobertura | Hecho: paquete base que monta el VFS, salida determinista y `coverage.yaml`. Disco US: 818 de 818 ficheros extraídos, 0 parciales, 0 pendientes, 100 % de los bytes (unos 4600 ficheros, 1,5 GB, en unos 2,5 minutos) |
+| `dwx extract` a `content/base/` con informe de cobertura | Hecho: paquete base que monta el VFS, salida determinista y `coverage.yaml`. Disco US: 818 de 818 ficheros extraídos, 0 parciales, 0 pendientes, 100 % de los bytes; 4812 salidas (1,5 GB, 1,1 GB de ellos vídeo). Unos 15 s en release y 2,5–3,5 min en la compilación `ci` con sanitizers. Al terminar abre cada salida con los lectores del motor. Los 590 bytes de `EFEDAT.EFE` a los que nada llega van marcados como `unused`, con su motivo ([Efectos](formats/efectos.md#datos-sin-uso)) |
 | TMD/MMD y animaciones → glTF | Hecho: 337 modelos `.glb` con texturas y animaciones, con variantes por escena |
 | Mapas y tablas del ejecutable → PNG + YAML, esquemas | Hecho, conectado a `dwx extract` |
 | Textos, VHB/SEQ, STR, scripts SCN | Hecho: textos y fuente, scripts de eventos desensamblados, música (MIDI + SF2), sonidos (WAV) y vídeos (Y4M + WAV + `movie.yaml`) |
-| `dwx validate`, `cook` y `pack` | `cook` y `pack` hechos; en integración: texturas KTX2 con Basis UASTC (BC7 en GPU), audio Opus y `.pak` con zstd ([ADR 0017](adr/0017-cocinado-y-archivos-pak.md)), y correcciones de `validate`. Formato cocinado de los vídeos sin decidir |
-| Visor ImGui | Texturas hechas: el [visor de assets](guides/visor-de-assets.md) del overlay lista los IDs de los paquetes y enseña los PNG. Modelos y mapas, con el render 3D de la fase 2 |
+| `dwx validate`, `cook` y `pack` | Hecho. `validate`: JSON Schema de cada documento, referencias, contratos de los modelos y apertura de cada asset; 0 problemas en el paquete base y en el cocinado. `cook`: texturas KTX2 con Basis UASTC (BC7 en la GPU, RGBA8 si no hay BC7), audio Opus y caché por contenido; las imágenes cuya paleta se elige al jugar siguen en PNG. `pack`: `.pak` con zstd ([ADR 0017](adr/0017-cocinado-y-archivos-pak.md), aceptada). Sin vídeos, el base pasa de 351,7 MB a 421,6 MB cocinado (`.pak`: de 240,9 a 313,3 MB). Con vídeos, de 1523,5 a 1593,5 MB (`.pak`: de 611,1 a 683,5 MB). El formato cocinado de los vídeos está sin decidir: se copian Y4M + WAV |
+| Visor ImGui | Texturas hechas: el [visor de assets](guides/visor-de-assets.md) del overlay lista los IDs de los paquetes montados, carpetas y `.pak`, y enseña los PNG y los KTX2 cocinados (en BC7 o RGBA8, según la GPU). Los modelos y los mapas pasan a la fase 2, con el render 3D |
 | Fichas de referencia: cuidado, evolución y batalla | Hecho, con los puntos dudosos marcados |
 
 ## Fase 2 — Prueba vertical

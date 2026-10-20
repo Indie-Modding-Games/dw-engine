@@ -317,7 +317,8 @@ La fase 1 se cierra cuando no quede ningún fichero pendiente ni parcial.
 ## Estado con el disco US
 
 Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y ninguno pendiente; 331,2 de 331,2 MB
-(100 %). Salen 4634 salidas, de las que 403 repiten otra byte a byte:
+(100 %). Salen 4812 salidas, de las que 403 repiten otra byte a byte, y dos extracciones seguidas dan los mismos
+bytes en todas:
 
 | Tipo | Salidas |
 |---|---|
@@ -335,6 +336,8 @@ Con el disco US (`SLUS_010.32`): 818 ficheros, 818 extraídos, ninguno parcial y
 | Música (`music/`): 33 fuentes | 33 SF2 + 74 MIDI + 33 YAML |
 | Efectos (`effect/`): 121 técnicas | 363 YAML, 121 PNG, 89 GLB |
 | Películas (`movie/`) | 4 Y4M + 4 WAV + 4 YAML |
+| Scripts de eventos (`script/`) | 222 YAML |
+| Textos (`text/`) y fuente (`font/`) | 7 YAML; 1 PNG + 1 YAML |
 
 - Efectos: `ETCHI/EFEDAT.EFE` queda extraído; sus 40 rangos de datos a los que nada llega (590 bytes en 33 ranuras)
   van como `unused` en cada `script.yaml` y en las notas ([Efectos](efectos.md#datos-sin-uso)).
@@ -384,3 +387,6 @@ Las películas son la mayor parte del tiempo: al extraer, cada uno de los 13 089
 (`decodeBitstream`, para comprobar su bitstream); la IDCT corre una sola vez, al escribir el Y4M, y se escriben 1,1 GB.
 Los bitstreams de las películas y sus WAV (unos 200 MB) se quedan en memoria hasta que se escribe el paquete.
 `formats/src/video/mdec.cpp` se compila optimizado también en debug, como `sha1.cpp`; sin eso eran casi 9 min.
+
+Con `dwx` compilado en release (`linux-clang-release`), la extracción entera tarda unos 15 s. Medidas del cierre de la
+fase 1 (2026-10-20, host compartido con otras compilaciones): 2 min 40 s a 3 min en `ci`, 15 s en release.
