@@ -1,0 +1,1168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: battle",
+  "description": "rules/<id>/battle.yaml: the battle rules (game/battle: readBattleRules, docs/reference/battle.md). The original ruleset holds the decomp values with their citations.",
+  "type": "object",
+  "required": [
+    "strategies",
+    "limits",
+    "damage_tick",
+    "affinity",
+    "moves",
+    "speed_reserve",
+    "pacing",
+    "spacing",
+    "obedience",
+    "commands",
+    "partner_ai",
+    "enemy_ai",
+    "hit",
+    "damage",
+    "status",
+    "finisher",
+    "condition",
+    "ending",
+    "consequences",
+    "rewards",
+    "joining",
+    "timing",
+    "quirks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "strategies": {
+      "type": "object",
+      "required": [
+        "partner_ai",
+        "enemy_ai",
+        "damage",
+        "obedience"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "partner_ai": {
+          "type": "string"
+        },
+        "enemy_ai": {
+          "type": "string"
+        },
+        "damage": {
+          "type": "string"
+        },
+        "obedience": {
+          "type": "string"
+        }
+      },
+      "description": "The strategies the battle plays with (game/battle: BattleStrategies)."
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "max_enemies",
+        "pending_damage_cap",
+        "stat_cap"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_enemies": {
+          "type": "integer"
+        },
+        "pending_damage_cap": {
+          "type": "integer"
+        },
+        "stat_cap": {
+          "type": "integer"
+        }
+      },
+      "description": "Caps of the battle (btl.c, battle_main.c)."
+    },
+    "damage_tick": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "above",
+          "amount"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "above": {
+            "type": "integer"
+          },
+          "amount": {
+            "type": "integer"
+          }
+        }
+      },
+      "description": "How the pending damage drains each frame, from the highest step down (utils.c: damageTick)."
+    },
+    "affinity": {
+      "type": "object",
+      "required": [
+        "factors",
+        "empty_slot",
+        "move_weight_bonus",
+        "target_score"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "factors": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "empty_slot": {
+          "type": "integer"
+        },
+        "move_weight_bonus": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "target_score": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "description": "The affinities of the specials (TYPE_FACTORS) and the bonuses read from them."
+    },
+    "moves": {
+      "type": "object",
+      "required": [
+        "mp_cost_multiplier",
+        "finisher_first_index",
+        "finisher_last_index",
+        "learnable_below_index",
+        "counter",
+        "flattened_shot",
+        "speed_reserve_floor",
+        "shared_cooldown_frames",
+        "buffs",
+        "buff_uses",
+        "learned_together"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mp_cost_multiplier": {
+          "type": "integer"
+        },
+        "finisher_first_index": {
+          "type": "integer"
+        },
+        "finisher_last_index": {
+          "type": "integer"
+        },
+        "learnable_below_index": {
+          "type": "integer"
+        },
+        "counter": {
+          "type": "string"
+        },
+        "flattened_shot": {
+          "type": "string"
+        },
+        "speed_reserve_floor": {
+          "type": "integer"
+        },
+        "shared_cooldown_frames": {
+          "type": "integer"
+        },
+        "buffs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "move",
+              "offense",
+              "defense",
+              "speed"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "move": {
+                "type": "string"
+              },
+              "offense": {
+                "type": "integer"
+              },
+              "defense": {
+                "type": "integer"
+              },
+              "speed": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "buff_uses": {
+          "type": "object",
+          "required": [
+            "per_brain",
+            "base",
+            "tiers"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "per_brain": {
+              "type": "integer"
+            },
+            "base": {
+              "type": "integer"
+            },
+            "tiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "brain",
+                  "uses"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "brain": {
+                    "type": "integer"
+                  },
+                  "uses": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "learned_together": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "How the battle reads the moves table: finishers, counter, support moves, shared cooldown."
+    },
+    "speed_reserve": {
+      "type": "object",
+      "required": [
+        "start",
+        "cap",
+        "gain_every_frames",
+        "gain_per_speed",
+        "gain_base"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "integer"
+        },
+        "cap": {
+          "type": "integer"
+        },
+        "gain_every_frames": {
+          "type": "integer"
+        },
+        "gain_per_speed": {
+          "type": "integer"
+        },
+        "gain_base": {
+          "type": "integer"
+        }
+      },
+      "description": "The speed reserve that paces attacks (battle_main.c: BTL_increaseSpeedBuffer)."
+    },
+    "pacing": {
+      "type": "object",
+      "required": [
+        "after_attack_frames",
+        "no_move_frames",
+        "ranged_patience_frames",
+        "ranged_band_percent",
+        "flattened_shot_every_frames",
+        "flattened_shot_frames",
+        "flattened_shot_release_frame"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "after_attack_frames": {
+          "type": "integer"
+        },
+        "no_move_frames": {
+          "type": "integer"
+        },
+        "ranged_patience_frames": {
+          "type": "integer"
+        },
+        "ranged_band_percent": {
+          "type": "integer"
+        },
+        "flattened_shot_every_frames": {
+          "type": "integer"
+        },
+        "flattened_shot_frames": {
+          "type": "integer"
+        },
+        "flattened_shot_release_frame": {
+          "type": "integer"
+        }
+      },
+      "description": "Waits between attacks, in frames."
+    },
+    "spacing": {
+      "type": "object",
+      "required": [
+        "contact_margin",
+        "standing",
+        "walking",
+        "keep_away_margin_squared",
+        "keep_away_walking_squared"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contact_margin": {
+          "type": "integer"
+        },
+        "standing": {
+          "type": "object",
+          "required": [
+            "near_squared",
+            "far_squared"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "near_squared": {
+              "type": "integer"
+            },
+            "far_squared": {
+              "type": "integer"
+            }
+          }
+        },
+        "walking": {
+          "type": "object",
+          "required": [
+            "near_squared",
+            "far_squared"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "near_squared": {
+              "type": "integer"
+            },
+            "far_squared": {
+              "type": "integer"
+            }
+          }
+        },
+        "keep_away_margin_squared": {
+          "type": "integer"
+        },
+        "keep_away_walking_squared": {
+          "type": "integer"
+        }
+      },
+      "description": "Distances kept between fighters, squared world units."
+    },
+    "obedience": {
+      "type": "object",
+      "required": [
+        "brain_below",
+        "roll_brain_divisor",
+        "roll_period_frames",
+        "partner_chance_base",
+        "enemy_chance_brain",
+        "enemy_chance_divisor",
+        "idle_frames",
+        "retarget_chances",
+        "enemy_follow_attacker_percent",
+        "command_delay"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "brain_below": {
+          "type": "integer"
+        },
+        "roll_brain_divisor": {
+          "type": "integer"
+        },
+        "roll_period_frames": {
+          "type": "integer"
+        },
+        "partner_chance_base": {
+          "type": "integer"
+        },
+        "enemy_chance_brain": {
+          "type": "integer"
+        },
+        "enemy_chance_divisor": {
+          "type": "integer"
+        },
+        "idle_frames": {
+          "type": "integer"
+        },
+        "retarget_chances": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "enemy_follow_attacker_percent": {
+          "type": "integer"
+        },
+        "command_delay": {
+          "type": "object",
+          "required": [
+            "low_discipline_below",
+            "low_base",
+            "low_divisor",
+            "high_base",
+            "high_divisor",
+            "high_scale"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "low_discipline_below": {
+              "type": "integer"
+            },
+            "low_base": {
+              "type": "integer"
+            },
+            "low_divisor": {
+              "type": "integer"
+            },
+            "high_base": {
+              "type": "integer"
+            },
+            "high_divisor": {
+              "type": "integer"
+            },
+            "high_scale": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "description": "Disobedience, command delay and turning to the attacker."
+    },
+    "commands": {
+      "type": "object",
+      "required": [
+        "menus"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "menus": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "brain",
+              "commands"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "brain": {
+                "type": "integer"
+              },
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "The battle menu by brain."
+    },
+    "partner_ai": {
+      "type": "object",
+      "required": [
+        "status_target_brain",
+        "switch_margin",
+        "scored_target_brain",
+        "power_weights",
+        "mp_weights",
+        "reach_weights",
+        "even_weight",
+        "empty_slot_weight",
+        "area_brain",
+        "area_min_enemies",
+        "area_weight_per_enemy",
+        "low_hp_percent",
+        "buff_priority_brain_divisor",
+        "buff_priority_base",
+        "buff_priority_decay_frames",
+        "confused_air_percent",
+        "confused_swing_percent",
+        "confused_turn_roll",
+        "confused_turn_from"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status_target_brain": {
+          "type": "integer"
+        },
+        "switch_margin": {
+          "type": "integer"
+        },
+        "scored_target_brain": {
+          "type": "integer"
+        },
+        "power_weights": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "mp_weights": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "reach_weights": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "even_weight": {
+          "type": "integer"
+        },
+        "empty_slot_weight": {
+          "type": "integer"
+        },
+        "area_brain": {
+          "type": "integer"
+        },
+        "area_min_enemies": {
+          "type": "integer"
+        },
+        "area_weight_per_enemy": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "low_hp_percent": {
+          "type": "integer"
+        },
+        "buff_priority_brain_divisor": {
+          "type": "integer"
+        },
+        "buff_priority_base": {
+          "type": "integer"
+        },
+        "buff_priority_decay_frames": {
+          "type": "integer"
+        },
+        "confused_air_percent": {
+          "type": "integer"
+        },
+        "confused_swing_percent": {
+          "type": "integer"
+        },
+        "confused_turn_roll": {
+          "type": "integer"
+        },
+        "confused_turn_from": {
+          "type": "integer"
+        }
+      },
+      "description": "The partner's move and target choice (battle_main.c: BTL_selectPartnerMove)."
+    },
+    "enemy_ai": {
+      "type": "object",
+      "required": [
+        "area_weight"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "area_weight": {
+          "type": "integer"
+        }
+      },
+      "description": "The enemies' move choice (battle_main.c: BTL_selectEnemyMove)."
+    },
+    "hit": {
+      "type": "object",
+      "required": [
+        "always_hit_below_level",
+        "accuracy_divisor",
+        "attacker_speed_divisor",
+        "speed_scale",
+        "standing_evasion_percent",
+        "block_frames",
+        "blocked_melee_min_percent",
+        "blocked_melee_max_percent",
+        "counter_min_mp",
+        "big_hit_percent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "always_hit_below_level": {
+          "type": "integer"
+        },
+        "accuracy_divisor": {
+          "type": "integer"
+        },
+        "attacker_speed_divisor": {
+          "type": "integer"
+        },
+        "speed_scale": {
+          "type": "integer"
+        },
+        "standing_evasion_percent": {
+          "type": "integer"
+        },
+        "block_frames": {
+          "type": "integer"
+        },
+        "blocked_melee_min_percent": {
+          "type": "integer"
+        },
+        "blocked_melee_max_percent": {
+          "type": "integer"
+        },
+        "counter_min_mp": {
+          "type": "integer"
+        },
+        "big_hit_percent": {
+          "type": "integer"
+        }
+      },
+      "description": "Hit chance, block and counter (battle_main.c: BTL_calculateHitChance, BTL_tickAttackHits)."
+    },
+    "damage": {
+      "type": "object",
+      "required": [
+        "affinity_divisor",
+        "difference_cap",
+        "power_scale",
+        "variance_min",
+        "variance_max",
+        "counter_defense_percent",
+        "finisher_charge_divisor",
+        "enemy_finisher_min",
+        "enemy_finisher_max",
+        "min",
+        "max"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "affinity_divisor": {
+          "type": "integer"
+        },
+        "difference_cap": {
+          "type": "integer"
+        },
+        "power_scale": {
+          "type": "integer"
+        },
+        "variance_min": {
+          "type": "integer"
+        },
+        "variance_max": {
+          "type": "integer"
+        },
+        "counter_defense_percent": {
+          "type": "integer"
+        },
+        "finisher_charge_divisor": {
+          "type": "integer"
+        },
+        "enemy_finisher_min": {
+          "type": "integer"
+        },
+        "enemy_finisher_max": {
+          "type": "integer"
+        },
+        "min": {
+          "type": "integer"
+        },
+        "max": {
+          "type": "integer"
+        }
+      },
+      "description": "Damage formula (battle_main.c: BTL_calculateDamage)."
+    },
+    "status": {
+      "type": "object",
+      "required": [
+        "poison_every_frames",
+        "poison_min_percent",
+        "poison_max_percent",
+        "confusion_min_frames",
+        "confusion_max_frames",
+        "stun_min_frames",
+        "stun_max_frames",
+        "flatten_transition_frames",
+        "flatten_min_frames",
+        "flatten_max_frames"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "poison_every_frames": {
+          "type": "integer"
+        },
+        "poison_min_percent": {
+          "type": "integer"
+        },
+        "poison_max_percent": {
+          "type": "integer"
+        },
+        "confusion_min_frames": {
+          "type": "integer"
+        },
+        "confusion_max_frames": {
+          "type": "integer"
+        },
+        "stun_min_frames": {
+          "type": "integer"
+        },
+        "stun_max_frames": {
+          "type": "integer"
+        },
+        "flatten_transition_frames": {
+          "type": "integer"
+        },
+        "flatten_min_frames": {
+          "type": "integer"
+        },
+        "flatten_max_frames": {
+          "type": "integer"
+        }
+      },
+      "description": "Status effects and their timers (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects)."
+    },
+    "finisher": {
+      "type": "object",
+      "required": [
+        "goal_base",
+        "per_frame",
+        "per_attack",
+        "per_block",
+        "per_blocked_attack",
+        "progress_divisor",
+        "aura_frames",
+        "charge_per_press",
+        "charge_cap"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "goal_base": {
+          "type": "integer"
+        },
+        "per_frame": {
+          "type": "integer"
+        },
+        "per_attack": {
+          "type": "integer"
+        },
+        "per_block": {
+          "type": "integer"
+        },
+        "per_blocked_attack": {
+          "type": "integer"
+        },
+        "progress_divisor": {
+          "type": "integer"
+        },
+        "aura_frames": {
+          "type": "integer"
+        },
+        "charge_per_press": {
+          "type": "integer"
+        },
+        "charge_cap": {
+          "type": "integer"
+        }
+      },
+      "description": "The finisher gauge and charge."
+    },
+    "condition": {
+      "type": "object",
+      "required": [
+        "stat_penalty_percent",
+        "mp_cost_extra_percent",
+        "mp_discounts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stat_penalty_percent": {
+          "type": "integer"
+        },
+        "mp_cost_extra_percent": {
+          "type": "integer"
+        },
+        "mp_discounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "brain",
+              "percent"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "brain": {
+                "type": "integer"
+              },
+              "percent": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "description": "A sick or injured partner, and the MP discounts by brain."
+    },
+    "ending": {
+      "type": "object",
+      "required": [
+        "flee_frames",
+        "flee_ignores_hits_from",
+        "revive_frames",
+        "revive_countdown_shown_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "flee_frames": {
+          "type": "integer"
+        },
+        "flee_ignores_hits_from": {
+          "type": "integer"
+        },
+        "revive_frames": {
+          "type": "integer"
+        },
+        "revive_countdown_shown_at": {
+          "type": "integer"
+        }
+      },
+      "description": "Fleeing and the revive countdown, in frames."
+    },
+    "consequences": {
+      "type": "object",
+      "required": [
+        "victory",
+        "flee",
+        "defeat",
+        "after_battle_tiredness",
+        "after_battle_food",
+        "mp_tiredness_below_percent",
+        "mp_tiredness_scale",
+        "defeat_lives",
+        "defeat_item_loss_percent",
+        "elapsed_minutes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "victory": {
+          "type": "object",
+          "required": [
+            "happiness",
+            "discipline",
+            "tiredness",
+            "battles"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            },
+            "battles": {
+              "type": "integer"
+            }
+          }
+        },
+        "flee": {
+          "type": "object",
+          "required": [
+            "happiness",
+            "discipline",
+            "tiredness",
+            "battles"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            },
+            "battles": {
+              "type": "integer"
+            }
+          }
+        },
+        "defeat": {
+          "type": "object",
+          "required": [
+            "happiness",
+            "discipline",
+            "tiredness",
+            "battles"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "happiness": {
+              "type": "integer"
+            },
+            "discipline": {
+              "type": "integer"
+            },
+            "tiredness": {
+              "type": "integer"
+            },
+            "battles": {
+              "type": "integer"
+            }
+          }
+        },
+        "after_battle_tiredness": {
+          "type": "integer"
+        },
+        "after_battle_food": {
+          "type": "integer"
+        },
+        "mp_tiredness_below_percent": {
+          "type": "integer"
+        },
+        "mp_tiredness_scale": {
+          "type": "integer"
+        },
+        "defeat_lives": {
+          "type": "integer"
+        },
+        "defeat_item_loss_percent": {
+          "type": "integer"
+        },
+        "elapsed_minutes": {
+          "type": "integer"
+        }
+      },
+      "description": "What the outcome does to the partner's care values."
+    },
+    "rewards": {
+      "type": "object",
+      "required": [
+        "enemy_factors",
+        "partner_scale",
+        "fallback",
+        "no_drop_maps",
+        "tracked_moves"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enemy_factors": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "partner_scale": {
+          "type": "integer"
+        },
+        "fallback": {
+          "type": "object",
+          "required": [
+            "hp_lost_percent",
+            "attacks",
+            "big_hits",
+            "blocks",
+            "speed_hp_lost_percent",
+            "brain_attacks",
+            "brain_big_hits"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp_lost_percent": {
+              "type": "integer"
+            },
+            "attacks": {
+              "type": "integer"
+            },
+            "big_hits": {
+              "type": "integer"
+            },
+            "blocks": {
+              "type": "integer"
+            },
+            "speed_hp_lost_percent": {
+              "type": "integer"
+            },
+            "brain_attacks": {
+              "type": "integer"
+            },
+            "brain_big_hits": {
+              "type": "integer"
+            }
+          }
+        },
+        "no_drop_maps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tracked_moves": {
+          "type": "integer"
+        }
+      },
+      "description": "Stat gains, drops and learning after a victory."
+    },
+    "joining": {
+      "type": "object",
+      "required": [
+        "chances",
+        "untyped_chance",
+        "bell_item",
+        "bell_roll",
+        "repel_item",
+        "repel_roll"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "chances": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "untyped_chance": {
+          "type": "integer"
+        },
+        "bell_item": {
+          "type": "string"
+        },
+        "bell_roll": {
+          "type": "integer"
+        },
+        "repel_item": {
+          "type": "string"
+        },
+        "repel_roll": {
+          "type": "integer"
+        }
+      },
+      "description": "Which enemies on screen join a battle (btl.c: handleBattleStart)."
+    },
+    "timing": {
+      "type": "object",
+      "required": [
+        "attack_frames",
+        "hit_frame",
+        "hit_reaction_frames",
+        "block_animation_frames",
+        "faint_frames",
+        "walk_speed",
+        "projectile_speed",
+        "arena_radius"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "attack_frames": {
+          "type": "integer"
+        },
+        "hit_frame": {
+          "type": "integer"
+        },
+        "hit_reaction_frames": {
+          "type": "integer"
+        },
+        "block_animation_frames": {
+          "type": "integer"
+        },
+        "faint_frames": {
+          "type": "integer"
+        },
+        "walk_speed": {
+          "type": "integer"
+        },
+        "projectile_speed": {
+          "type": "integer"
+        },
+        "arena_radius": {
+          "type": "integer"
+        }
+      },
+      "description": "Engine values for what the original's animations decide (Hueco)."
+    },
+    "quirks": {
+      "type": "object",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "broken_mp_tiredness": {
+          "type": "boolean"
+        },
+        "command_delay_discarded": {
+          "type": "boolean"
+        },
+        "sickness_always_hits": {
+          "type": "boolean"
+        },
+        "smart_menu_drops_attack_and_moderate": {
+          "type": "boolean"
+        },
+        "counter_needs_mp": {
+          "type": "boolean"
+        },
+        "low_hp_weights_loop_bug": {
+          "type": "boolean"
+        },
+        "target_score_uses_own_stats": {
+          "type": "boolean"
+        },
+        "weakest_reports_last_score": {
+          "type": "boolean"
+        },
+        "confusion_waits_for_partner_attack": {
+          "type": "boolean"
+        },
+        "scripted_enemies_free_mp": {
+          "type": "boolean"
+        },
+        "injury_counts_any_hit": {
+          "type": "boolean"
+        },
+        "scripted_battle_everyone_joins": {
+          "type": "boolean"
+        },
+        "mp_check_and_payment_round_differently": {
+          "type": "boolean"
+        }
+      },
+      "description": "The original's quirks: true reproduces them."
+    }
+  }
+}

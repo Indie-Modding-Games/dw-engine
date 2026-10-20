@@ -1,3 +1,5 @@
+#include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/game/partner/species.hpp>
 #include <dwe/ruleset/random.hpp>
@@ -276,7 +278,7 @@ TEST_CASE("--set changes the ruleset the scenarios see, without editing its file
 TEST_CASE("an unknown scenario names the known ones") {
     const auto report = simulate(standInFiles(), builtInScenarios(), optionsFor("battles"));
     REQUIRE_FALSE(report.has_value());
-    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: care, clock, raisings, ruleset-diff"));
+    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: battle, care, clock, raisings, ruleset-diff"));
 }
 
 TEST_CASE("the care scenario raises a partner and reports how the raisings went") {
@@ -324,6 +326,48 @@ TEST_CASE("the care scenario refuses a parameter it does not know or cannot use"
     options.parameters = {};
     options.speed = 0.0;
     CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("--speed above 0"));
+}
+
+TEST_CASE("the battle scenario needs its fighters, from the ruleset's Digimon table") {
+    SimOptions options = optionsFor("battle");
+    const auto unnamed = simulate(standInFiles(), builtInScenarios(), options);
+    REQUIRE_FALSE(unnamed.has_value());
+    CHECK(errorOf(unnamed).contains("--param partner=<species>"));
+    options.parameters = {{"partner", "nobody"}, {"enemies", "nobody"}};
+    const auto unknown = simulate(standInFiles(), builtInScenarios(), options);
+    REQUIRE_FALSE(unknown.has_value());
+    CHECK(errorOf(unknown).contains("no species 'nobody'"));
+    options.parameters = {{"partner", "nobody"}, {"enemies", "nobody"}, {"stats", "lots"}};
+    CHECK(errorOf(simulate(standInFiles(), builtInScenarios(), options)).contains("stats is not a number"));
+}
+
+TEST_CASE("the user's disc, extracted: the battle scenario gives the win rates of a duel") {
+    const char* content = std::getenv("DWE_CONTENT");
+    if (content == nullptr || std::string_view{content}.empty()) {
+        MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
+        return;
+    }
+    const auto mounted = content::GameContent::mount(content, {});
+    REQUIRE_MESSAGE(mounted.has_value(), errorOf(mounted));
+    const auto table = assets::loadDigimonTable((*mounted)->files(), *assets::AssetId::parse("data/digimon"));
+    REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+    std::vector<std::string> fighters;
+    for (const assets::DigimonRow& entry : table->digimon) {
+        if (entry.radius > 0 && entry.level > 0 && entry.moves.front() && fighters.size() < 2) {
+            fighters.push_back(entry.id);
+        }
+    }
+    REQUIRE(fighters.size() == 2);
+    SimOptions options = optionsFor("battle");
+    options.parameters = {{"partner", fighters[0]}, {"enemies", fighters[1]}};
+    const auto report = simulate((*mounted)->files(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(report->markdown.contains("| unfinished | 8 | 0 | 0 | 0 |"));
+    CHECK(report->markdown.contains("| victory | 8 |"));
+    // The same seeds give the same report.
+    const auto again = simulate((*mounted)->files(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(again.has_value(), errorOf(again));
+    CHECK(report->markdown == again->markdown);
 }
 
 TEST_CASE("a headless session plays a new game on the scenario's ruleset, the same for the same seed") {

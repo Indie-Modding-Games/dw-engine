@@ -16,6 +16,8 @@ schemas:
     - field/warps
   ruleset:
     - rules/*/ruleset
+  ruleset_battle:
+    - rules/*/battle
   ruleset_care:
     - rules/*/care
   ruleset_clock:
