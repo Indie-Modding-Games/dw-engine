@@ -139,6 +139,10 @@ TEST_CASE("a schema follows references to its definitions and to itself") {
     CHECK(problems(schema, "- name: root\n  children:\n  - name: leaf\n").empty());
     CHECK(problems(schema, "- name: root\n  children:\n  - name: Leaf\n") ==
           std::vector<std::string>{"$[0].children[0].name: 'Leaf' does not match the pattern ^[a-z]+$"});
+    // A rule that both the reference and the keywords next to it give is broken once.
+    const JsonSchema twice =
+        compiled(R"({"$defs": {"id": {"type": "string"}}, "$ref": "#/$defs/id", "type": "string"})");
+    CHECK(problems(twice, "[1]\n") == std::vector<std::string>{"$: expected string, found array"});
 }
 
 TEST_CASE("problems point at the line and column of the value") {

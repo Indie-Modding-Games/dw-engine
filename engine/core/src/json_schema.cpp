@@ -584,9 +584,17 @@ public:
     }
 
 private:
+    // A value checked against a $ref and against keywords next to it can break the same rule twice, such as a type
+    // both give; it is reported once.
     void problem(const YamlNode& value, const std::string& path, std::string message) {
-        report_.problems.push_back(
-            {.path = path, .line = value.line(), .column = value.column(), .message = std::move(message)});
+        const bool reported = std::ranges::any_of(report_.problems, [&](const SchemaProblem& known) {
+            return known.line == value.line() && known.column == value.column() && known.path == path &&
+                   known.message == message;
+        });
+        if (!reported) {
+            report_.problems.push_back(
+                {.path = path, .line = value.line(), .column = value.column(), .message = std::move(message)});
+        }
     }
 
     void checkScalar(const YamlNode& value, const SchemaNode& schema, const std::string& path) {
