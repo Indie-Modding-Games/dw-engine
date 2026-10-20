@@ -55,6 +55,7 @@ Esta especificación fija lo que el motor tiene que ofrecer para que eso sea pos
 | R3.5 | Hay simulaciones que juegan miles de partidas sin gráficos para medir el balance | Herramienta de simulación con informe |
 | R3.6 | El guardado usa ranuras y autoguardado; una partida guardada se carga igual tras actualizar el juego, o se migra | Tests de guardado y migración |
 | R3.7 | La batalla y los menús del partner se usan con ratón, teclado y mando | Prueba manual con los tres dispositivos |
+| R3.8 | El cambio de mapa se ve como en el original: fundido sustractivo a gris y nombre del mapa al entrar (pendientes de la fase 2, ver [campo](../reference/campo.md)) | Test del fundido y captura comparada con el original |
 
 ## Diseño
 
