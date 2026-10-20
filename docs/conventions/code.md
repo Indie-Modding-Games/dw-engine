@@ -24,10 +24,30 @@
 | Macros (solo si no hay alternativa) | `UPPER_SNAKE` con prefijo | `DWE_ASSERT` |
 
 - Una palabra por concepto en todo el código: si es `pack`, no es también `bundle`.
-- Sin números mágicos: se nombran con un enum o una constante.
+- Sin números ni strings mágicos: se nombran con un enum o una constante, en el header del módulo dueño.
+- El nombre dice la responsabilidad: qué hace la función o qué guarda la variable, sin abreviaturas ni nombres
+  genéricos (`data`, `tmp`, `helper`, `manager`).
 - Los nombres vienen del juego cuando existen (ver el [glosario](../glossary.md)).
 
+## Diseño y legibilidad
+
+- Responsabilidad única: cada módulo, clase y función hace una sola cosa. Si su nombre necesita un "y", se separa.
+- El código se lee como prosa: funciones cortas, un nivel de abstracción por función y sin trucos de una línea.
+- Cada constante tiene un único dueño: se declara una vez y el resto la incluye, nunca se copia.
+- Los mensajes de error y de log no van inline en la lógica: viven como constantes con nombre (texto o plantilla de
+  `std::format`) en el `messages.hpp` del módulo. Un mensaje que se usa en varios sitios sale de una sola constante.
+- Los textos que ve el jugador vienen del contenido (packs y localización), nunca del código.
+
+## Código que viene del decomp
+
+- El decomp es la referencia del **comportamiento**, no del código. Nada se copia tal cual: se reescribe con estas
+  convenciones (nombres por responsabilidad, tipos y enums propios, sin offsets ni `unkXX`, funciones cortas).
+- Lo que se conserva es el resultado: las mismas fórmulas, probabilidades y orden de efectos, con la referencia al
+  decomp en un comentario corto donde ayude a verificarlo.
+
 ## Comentarios
+
+- El código se documenta solo con buenos nombres; los comentarios son pocos, cortos y precisos.
 
 - Cada función pública tiene un comentario corto que dice qué hace.
 - El resto de comentarios explica **por qué**, nunca repite lo que dice el código.
