@@ -567,6 +567,9 @@ std::array<std::int8_t, 64> inverseDct(const std::array<std::int16_t, 64>& coeff
             for (std::size_t v = 0; v < 8; ++v) {
                 sum += coefficients[(v * 8) + u] * IdctMatrix[(y * 8) + v];
             }
+            // The pass's result is kept in 16 bits, as in the 16-bit buffer between the two passes of Mednafen's
+            // MDEC, which this IDCT follows. It never actually wraps: the matrix's values are below 4096, so eight
+            // products of 16-bit coefficients stay within 2^30 and the rounded result within +-32144.
             columns[(y * 8) + u] = static_cast<std::int16_t>((sum + 0x4000) >> 15);
         }
     }
