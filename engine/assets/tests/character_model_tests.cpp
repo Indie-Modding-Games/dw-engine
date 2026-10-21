@@ -9,9 +9,9 @@
 using dwe::assets::parseCharacterModel;
 
 TEST_CASE("a character model maps animation names to clip ids") {
-    const auto character = parseCharacterModel("model: digimon/boys/model\nanimations:\n  idle: 0\n  walk: 2\n");
+    const auto character = parseCharacterModel("model: digimon/species_a/model\nanimations:\n  idle: 0\n  walk: 2\n");
     REQUIRE_MESSAGE(character.has_value(), (character ? "" : character.error().message));
-    CHECK(character->model.str() == "digimon/boys/model");
+    CHECK(character->model.str() == "digimon/species_a/model");
     CHECK(character->clipOf("idle") == 0U);
     CHECK(character->clipOf("walk") == 2U);
     CHECK_FALSE(character->clipOf("run").has_value());
@@ -20,13 +20,13 @@ TEST_CASE("a character model maps animation names to clip ids") {
 TEST_CASE("a character model that breaks its schema is refused with the place") {
     const std::array broken{
         "animations:\n  idle: 0\n",
-        "model: digimon/boys/model\n",
+        "model: digimon/species_a/model\n",
         "model: Digimon/Boys\nanimations:\n  idle: 0\n",
-        "model: digimon/boys/model\nanimations:\n  Idle: 0\n",
-        "model: digimon/boys/model\nanimations:\n  idle: 4294967296\n",
-        "model: digimon/boys/model\nanimations:\n  idle: -1\n",
-        "model: digimon/boys/model\nanimations: {}\n",
-        "model: digimon/boys/model\nanimations:\n  idle: 0\nspeed: 2\n",
+        "model: digimon/species_a/model\nanimations:\n  Idle: 0\n",
+        "model: digimon/species_a/model\nanimations:\n  idle: 4294967296\n",
+        "model: digimon/species_a/model\nanimations:\n  idle: -1\n",
+        "model: digimon/species_a/model\nanimations: {}\n",
+        "model: digimon/species_a/model\nanimations:\n  idle: 0\nspeed: 2\n",
     };
     for (const char* yaml : broken) {
         CAPTURE(yaml);
@@ -37,13 +37,13 @@ TEST_CASE("a character model that breaks its schema is refused with the place") 
 }
 
 TEST_CASE("a clip id may be any 32-bit number") {
-    const auto character = parseCharacterModel("model: digimon/boys/model\nanimations:\n  idle: 4294967295\n");
+    const auto character = parseCharacterModel("model: digimon/species_a/model\nanimations:\n  idle: 4294967295\n");
     REQUIRE(character.has_value());
     CHECK(character->clipOf("idle") == 4294967295U);
 }
 
 TEST_CASE("checkCharacterModel wants a clip for every animation") {
-    const auto character = parseCharacterModel("model: digimon/boys/model\nanimations:\n  idle: 0\n  run: 3\n");
+    const auto character = parseCharacterModel("model: digimon/species_a/model\nanimations:\n  idle: 0\n  run: 3\n");
     REQUIRE(character.has_value());
     dwe::assets::ModelData model;
     model.clips.resize(1);

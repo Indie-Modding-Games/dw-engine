@@ -41,12 +41,19 @@ Lo que hay que tener claro:
   probabilidades) pueden estar en git, en los rulesets y con su cita al decomp; las tablas por entidad (por Digimon,
   objeto, técnica o mapa) salen del disco del usuario (ejecutable y overlays) con `dwx`. «Decidido por el coordinador
   (2026-10-21)». Detalle y clasificación de cada valor: [auditoría de los rulesets](auditoria-rulesets.md).
-- **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) se pueden usar en rulesets,
-  tests, fixtures y sustitutos; el nombre de la franquicia y sus logos no (nunca se pudieron), ni las tablas de datos
-  (stats, efectos, textos), y los datos que acompañan a un id versionado son inventados, nunca copiados del disco ni
-  del decomp (decisión del usuario, 2026-10-21). Un id real nunca va en su número del original: donde un test necesita
-  una entrada en ese número, usa un id inventado. Las categorías y los comportamientos (categoría de orden, color del
-  objeto, tipo de manejador, banderas de uso en combate, si se puede tirar) pueden coincidir con el original.
+- **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) **y los códigos internos de
+  archivo de los mapas** (`twna01`, `ROOM08`) se pueden usar en rulesets, tests, fixtures y sustitutos; el nombre de la
+  franquicia y sus logos no (nunca se pudieron), ni las tablas de datos (stats, efectos, textos), y los datos que
+  acompañan a un id versionado son inventados, nunca copiados del disco ni del decomp (decisión del usuario,
+  2026-10-21). Un id real nunca va en su número del original: donde un test necesita una entrada en ese número, usa un
+  id inventado. Las categorías y los comportamientos (categoría de orden, color del objeto, tipo de manejador, banderas
+  de uso en combate, si se puede tirar) pueden coincidir con el original.
+- **Los nombres de especies y de personajes nunca son ids en git.** El paquete base que dwx genera en la máquina del
+  usuario lleva los nombres reales y nunca va a git. En git, un id de especie solo aparece donde un ruleset o el
+  paquete del juego nombra una entrada del paquete base, y en los fixtures y sustitutos que cargan esos rulesets, que
+  necesitan ese id (con datos inventados y nunca en su número del original). Todo otro test, fixture o ejemplo de la
+  documentación usa ids neutros (`species_a`, `species_b`…), y ningún fixture lleva el nombre de una especie o un
+  personaje en un nombre visible o un texto.
 - **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
   misma regla.
 

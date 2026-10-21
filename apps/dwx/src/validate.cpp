@@ -82,7 +82,7 @@ std::string_view textOf(std::span<const std::byte> bytes) {
     return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
-// The folder of an id with a slash after it ("digimon/agum/" for digimon/agum/model), or nothing at the root.
+// The folder of an id with a slash after it ("digimon/species_a/" for digimon/species_a/model), or nothing at the root.
 std::string folderOf(const AssetId& id) {
     const std::size_t slash = id.str().rfind('/');
     return slash == std::string::npos ? std::string{} : id.str().substr(0, slash + 1);

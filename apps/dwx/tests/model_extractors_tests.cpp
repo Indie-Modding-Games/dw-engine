@@ -79,22 +79,22 @@ bool hasUnknown(const BuiltModel& model, std::string_view text) {
 
 TEST_CASE("Digimon model paths name their type through the folder and the file name") {
     std::vector<std::string> names(40, "NONE");
-    names[3] = "AGUM";
-    names[33] = "GREY";
-    CHECK(handlesDigimonModel("CHDAT/MMD0/AGUM.MMD"));
-    CHECK_FALSE(handlesDigimonModel("CHDAT/MMD0/AGUM.TMD"));
-    CHECK_FALSE(handlesDigimonModel("CHDAT/MMDX/AGUM.MMD"));
-    CHECK_FALSE(handlesDigimonModel("CHDAT/MMD0/SUB/AGUM.MMD"));
+    names[4] = "SPCA";
+    names[33] = "SPCB";
+    CHECK(handlesDigimonModel("CHDAT/MMD0/SPCA.MMD"));
+    CHECK_FALSE(handlesDigimonModel("CHDAT/MMD0/SPCA.TMD"));
+    CHECK_FALSE(handlesDigimonModel("CHDAT/MMDX/SPCA.MMD"));
+    CHECK_FALSE(handlesDigimonModel("CHDAT/MMD0/SUB/SPCA.MMD"));
     CHECK_FALSE(handlesDigimonModel("CHDAT/ALLTIM.TIM"));
 
-    const auto agum = digimonTypeOfModel("CHDAT/MMD0/AGUM.MMD", names);
-    const auto grey = digimonTypeOfModel("CHDAT/MMD1/GREY.MMD", names);
-    REQUIRE(agum.has_value());
-    REQUIRE(grey.has_value());
-    CHECK(*agum == 3);
-    CHECK(*grey == 33);
+    const auto first = digimonTypeOfModel("CHDAT/MMD0/SPCA.MMD", names);
+    const auto second = digimonTypeOfModel("CHDAT/MMD1/SPCB.MMD", names);
+    REQUIRE(first.has_value());
+    REQUIRE(second.has_value());
+    CHECK(*first == 4);
+    CHECK(*second == 33);
     // The folder must be the one the original builds for the type.
-    CHECK_FALSE(digimonTypeOfModel("CHDAT/MMD1/AGUM.MMD", names).has_value());
+    CHECK_FALSE(digimonTypeOfModel("CHDAT/MMD1/SPCA.MMD", names).has_value());
     CHECK_FALSE(digimonTypeOfModel("CHDAT/MMD0/WHAT.MMD", names).has_value());
 }
 
@@ -147,15 +147,15 @@ TEST_CASE("an animation that cannot be converted is left out of the model and se
     CHECK(model->unconvertedAnimations == std::vector<std::string>{"anim_01"});
 
     // dwx validate holds the extracted model to the contract written with it.
-    const auto contract = digimonContract("agumon", skeleton, *model);
+    const auto contract = digimonContract("species_a", skeleton, *model);
     REQUIRE(contract.has_value());
     CHECK(contract->contains("unconverted_animations"));
     const dwe::test_support::TempFolder temp;
     temp.write("base/pack.yaml",
                "id: base\nversion: 1.0.0\nlayer: base\nschemas:\n  model_contract: [digimon/*/contract]\n");
-    temp.write("base/digimon/agumon/model.glb",
+    temp.write("base/digimon/species_a/model.glb",
                std::string_view{reinterpret_cast<const char*>(model->glb.data()), model->glb.size()});
-    temp.write("base/digimon/agumon/contract.yaml", *contract);
+    temp.write("base/digimon/species_a/contract.yaml", *contract);
     const auto report = validatePacks(dwe::assets::DiskFileSystem{}, temp.path() / "base", DWE_SCHEMA_DIR, {},
                                       dwe::assets::PackOrigin::Engine);
     REQUIRE(report.has_value());

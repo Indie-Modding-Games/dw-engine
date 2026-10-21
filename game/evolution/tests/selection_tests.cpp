@@ -74,11 +74,11 @@ TEST_CASE("a baby becomes its in-training form once the counter reaches the baby
 TEST_CASE("each level checks from its own hours, and the ultimate never") {
     TableFixture fixture;
     fixture.setPath("koro", {"agum"});
-    fixture.setPath("agum", {"grey"});
-    fixture.setPath("grey", {"mtgr"});
+    fixture.setPath("agum", {"species_b"});
+    fixture.setPath("species_b", {"species_e"});
     asksFor(fixture, "agum", &BaseStats::brains, FavouredStat);
-    asksFor(fixture, "grey", &BaseStats::offense, 0);
-    asksFor(fixture, "mtgr", &BaseStats::offense, 0);
+    asksFor(fixture, "species_b", &BaseStats::offense, 0);
+    asksFor(fixture, "species_e", &BaseStats::offense, 0);
     const Evolution evolution = fixture.makeEvolution();
     const auto withOffense = [](std::string_view id, std::int32_t timer) {
         EvolutionInputs inputs = inputsOf(id, timer);
@@ -89,9 +89,9 @@ TEST_CASE("each level checks from its own hours, and the ultimate never") {
     CHECK(checkAt(evolution, inputsOf("koro", 24)).evolution);
     CHECK_FALSE(checkAt(evolution, withOffense("agum", 71)).evolution);
     CHECK(checkAt(evolution, withOffense("agum", 72)).evolution);
-    CHECK_FALSE(checkAt(evolution, withOffense("grey", 143)).evolution);
-    CHECK(checkAt(evolution, withOffense("grey", 144)).evolution);
-    CHECK_FALSE(checkAt(evolution, withOffense("mtgr", 1000)).evolution);
+    CHECK_FALSE(checkAt(evolution, withOffense("species_b", 143)).evolution);
+    CHECK(checkAt(evolution, withOffense("species_b", 144)).evolution);
+    CHECK_FALSE(checkAt(evolution, withOffense("species_e", 1000)).evolution);
 }
 
 TEST_CASE("no natural evolution while the tamer is busy") {
@@ -135,8 +135,8 @@ TEST_CASE("a check over several hours evolves at the first hour that passes and 
 
 TEST_CASE("a target scores a point each for care, weight, stats and one bonus") {
     TableFixture fixture;
-    asksFor(fixture, "grey", &BaseStats::hp, 100);
-    assets::EvolutionRequirementEntry& row = fixture.requirement("grey");
+    asksFor(fixture, "species_b", &BaseStats::hp, 100);
+    assets::EvolutionRequirementEntry& row = fixture.requirement("species_b");
     row.care = 5;
     row.flags = CareIsMaximumFlag;
     row.weight = 30;
@@ -148,75 +148,75 @@ TEST_CASE("a target scores a point each for care, weight, stats and one bonus") 
     inputs.careMistakes = 3;
     inputs.weight = 30;
     inputs.discipline = 50;
-    CHECK(scoreOf(tables, inputs, "grey") == 4);
+    CHECK(scoreOf(tables, inputs, "species_b") == 4);
 
     SUBCASE("care mistakes: at most the requirement with the flag") {
         inputs.careMistakes = 5;
-        CHECK(scoreOf(tables, inputs, "grey") == 4);
+        CHECK(scoreOf(tables, inputs, "species_b") == 4);
         inputs.careMistakes = 6;
-        CHECK(scoreOf(tables, inputs, "grey") == 3);
+        CHECK(scoreOf(tables, inputs, "species_b") == 3);
     }
     SUBCASE("care mistakes: at least the requirement without it") {
-        fixture.requirement("grey").flags = 0;
+        fixture.requirement("species_b").flags = 0;
         const EvolutionTables minimum = fixture.build();
-        CHECK(scoreOf(minimum, inputs, "grey") == 3);
+        CHECK(scoreOf(minimum, inputs, "species_b") == 3);
         inputs.careMistakes = 6;
-        CHECK(scoreOf(minimum, inputs, "grey") == 4);
+        CHECK(scoreOf(minimum, inputs, "species_b") == 4);
     }
     SUBCASE("weight: within the margin either way") {
         for (const std::int32_t weight : {25, 35}) {
             inputs.weight = weight;
-            CHECK(scoreOf(tables, inputs, "grey") == 4);
+            CHECK(scoreOf(tables, inputs, "species_b") == 4);
         }
         for (const std::int32_t weight : {24, 36}) {
             inputs.weight = weight;
-            CHECK(scoreOf(tables, inputs, "grey") == 3);
+            CHECK(scoreOf(tables, inputs, "species_b") == 3);
         }
     }
     SUBCASE("stats: HP and MP are compared divided by 10") {
         inputs.stats.hp = 999;
-        CHECK(scoreOf(tables, inputs, "grey") == 3);
+        CHECK(scoreOf(tables, inputs, "species_b") == 3);
     }
     SUBCASE("bonus: the previous form instead of the discipline") {
         inputs.discipline = 49;
-        CHECK(scoreOf(tables, inputs, "grey") == 3);
-        fixture.requirement("grey").digimon = "agum";
-        CHECK(scoreOf(fixture.build(), inputs, "grey") == 4);
+        CHECK(scoreOf(tables, inputs, "species_b") == 3);
+        fixture.requirement("species_b").digimon = "agum";
+        CHECK(scoreOf(fixture.build(), inputs, "species_b") == 4);
     }
 }
 
 TEST_CASE("the battles bonus is a minimum, or a maximum with the flag") {
     TableFixture fixture;
-    fixture.requirement("grey").battles = 10;
+    fixture.requirement("species_b").battles = 10;
     const EvolutionTables minimum = fixture.build();
-    fixture.requirement("grey").flags = BattlesAreMaximumFlag;
+    fixture.requirement("species_b").flags = BattlesAreMaximumFlag;
     const EvolutionTables maximum = fixture.build();
     EvolutionInputs inputs = inputsOf("agum");
     inputs.weight = 100;
     inputs.battles = 10;
-    CHECK(scoreOf(minimum, inputs, "grey") == 3);
-    CHECK(scoreOf(maximum, inputs, "grey") == 3);
+    CHECK(scoreOf(minimum, inputs, "species_b") == 3);
+    CHECK(scoreOf(maximum, inputs, "species_b") == 3);
     inputs.battles = 11;
-    CHECK(scoreOf(minimum, inputs, "grey") == 3);
-    CHECK(scoreOf(maximum, inputs, "grey") == 2);
+    CHECK(scoreOf(minimum, inputs, "species_b") == 3);
+    CHECK(scoreOf(maximum, inputs, "species_b") == 2);
     inputs.battles = 9;
-    CHECK(scoreOf(minimum, inputs, "grey") == 2);
-    CHECK(scoreOf(maximum, inputs, "grey") == 3);
+    CHECK(scoreOf(minimum, inputs, "species_b") == 2);
+    CHECK(scoreOf(maximum, inputs, "species_b") == 3);
 }
 
 TEST_CASE("the happiness and learned moves bonuses") {
     TableFixture fixture;
-    fixture.requirement("grey").happiness = 60;
-    fixture.requirement("tyra").techs = 12;
+    fixture.requirement("species_b").happiness = 60;
+    fixture.requirement("species_d").techs = 12;
     const EvolutionTables tables = fixture.build();
     EvolutionInputs inputs = inputsOf("agum");
     inputs.weight = 100;
-    CHECK(scoreOf(tables, inputs, "grey") == 2);
-    CHECK(scoreOf(tables, inputs, "tyra") == 2);
+    CHECK(scoreOf(tables, inputs, "species_b") == 2);
+    CHECK(scoreOf(tables, inputs, "species_d") == 2);
     inputs.happiness = 60;
     inputs.learnedMoves = 12;
-    CHECK(scoreOf(tables, inputs, "grey") == 3);
-    CHECK(scoreOf(tables, inputs, "tyra") == 3);
+    CHECK(scoreOf(tables, inputs, "species_b") == 3);
+    CHECK(scoreOf(tables, inputs, "species_d") == 3);
 }
 
 TEST_CASE("a rookie target scores its stat point when the partner's highest stat is one it favours") {
@@ -247,31 +247,31 @@ TEST_CASE("quirk rookie_stat_tie_picks_last: on a tie of highest stats the last 
 TEST_CASE("against a best candidate, a passing target the partner was already raised as is dropped") {
     const EvolutionTables tables = TableFixture{}.build();
     const EvolutionInputs inputs = inputsOf("agum");
-    const Species grey = TableFixture::index("grey");
-    const Species tyra = TableFixture::index("tyra");
-    CHECK(scoreOf(tables, inputs, "grey") == 3);
-    EvolutionState raisedGrey;
-    raisedGrey.raised.insert(grey);
-    CHECK(scoreOf(tables, inputs, "grey", raisedGrey) == 3);
-    CHECK(scoreOf(tables, inputs, "grey", raisedGrey, tyra) == 0);
-    CHECK(scoreOf(tables, inputs, "tyra", raisedGrey, grey) == 4);
-    EvolutionState raisedBoth = raisedGrey;
-    raisedBoth.raised.insert(tyra);
-    CHECK(scoreOf(tables, inputs, "grey", raisedBoth, tyra) == 3);
+    const Species speciesB = TableFixture::index("species_b");
+    const Species speciesD = TableFixture::index("species_d");
+    CHECK(scoreOf(tables, inputs, "species_b") == 3);
+    EvolutionState raisedB;
+    raisedB.raised.insert(speciesB);
+    CHECK(scoreOf(tables, inputs, "species_b", raisedB) == 3);
+    CHECK(scoreOf(tables, inputs, "species_b", raisedB, speciesD) == 0);
+    CHECK(scoreOf(tables, inputs, "species_d", raisedB, speciesB) == 4);
+    EvolutionState raisedBoth = raisedB;
+    raisedBoth.raised.insert(speciesD);
+    CHECK(scoreOf(tables, inputs, "species_b", raisedBoth, speciesD) == 3);
 }
 
 // --- Choosing among candidates (getInTrainingEvolutionTarget, getRookie/ChampionEvolutionTarget) ---
 
 TEST_CASE("an in-training partner takes the candidate with the most points, the first on a tie") {
     TableFixture fixture;
-    fixture.setPath("koro", {"agum", "gabu", "kune"});
-    for (const std::string_view rookie : {"agum", "gabu", "kune"}) {
+    fixture.setPath("koro", {"agum", "species_c", "kune"});
+    for (const std::string_view rookie : {"agum", "species_c", "kune"}) {
         asksFor(fixture, rookie, &BaseStats::brains, FavouredStat);
     }
-    fixture.requirement("gabu").discipline = 10;
+    fixture.requirement("species_c").discipline = 10;
     EvolutionInputs inputs = inputsOf("koro", 24);
     inputs.discipline = 10;
-    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("gabu"));
+    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("species_c"));
     inputs.discipline = 0;
     CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("agum"));
     // No candidate reaches the passing points.
@@ -281,14 +281,14 @@ TEST_CASE("an in-training partner takes the candidate with the most points, the 
 
 TEST_CASE("rookies and champions take the passing candidate with the best average of the stats it asks for") {
     TableFixture fixture;
-    fixture.setPath("agum", {"grey", "aird"});
-    asksFor(fixture, "grey", &BaseStats::offense, 50);
+    fixture.setPath("agum", {"species_b", "aird"});
+    asksFor(fixture, "species_b", &BaseStats::offense, 50);
     asksFor(fixture, "aird", &BaseStats::speed, 10);
     EvolutionInputs inputs = inputsOf("agum", 72);
     inputs.stats = {.hp = 0, .mp = 0, .offense = 100, .defense = 0, .speed = 150, .brains = 0};
     CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("aird"));
     inputs.stats.speed = 99;
-    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("grey"));
+    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("species_b"));
     // A candidate that does not pass is not averaged.
     inputs.stats.offense = 49;
     CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("aird"));
@@ -296,14 +296,14 @@ TEST_CASE("rookies and champions take the passing candidate with the best averag
 
 TEST_CASE("quirk selection_average_carries_over: a candidate that is not the best leaves its sum to the next") {
     TableFixture fixture;
-    fixture.setPath("agum", {"grey", "tyra", "aird"});
-    asksFor(fixture, "grey", &BaseStats::offense, 50);
-    asksFor(fixture, "tyra", &BaseStats::defense, 10);
+    fixture.setPath("agum", {"species_b", "species_d", "aird"});
+    asksFor(fixture, "species_b", &BaseStats::offense, 50);
+    asksFor(fixture, "species_d", &BaseStats::defense, 10);
     asksFor(fixture, "aird", &BaseStats::speed, 10);
     EvolutionInputs inputs = inputsOf("agum", 72);
-    // grey averages 100 and becomes the best; tyra's 50 stays in the sum, so aird's 120 averages 85.
+    // species_b averages 100 and becomes the best; species_d's 50 stays in the sum, so aird's 120 averages 85.
     inputs.stats = {.hp = 0, .mp = 0, .offense = 100, .defense = 50, .speed = 120, .brains = 0};
-    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("grey"));
+    CHECK(selectionOf(fixture.build(), inputs) == TableFixture::index("species_b"));
     const EvolutionRules apart = testing::originalRulesWithQuirk(SelectionAverageCarriesOver, false);
     CHECK(selectionOf(fixture.build(), inputs, apart) == TableFixture::index("aird"));
 }

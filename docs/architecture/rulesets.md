@@ -114,7 +114,7 @@ Estas cuatro reglas del formato están aprobadas y son definitivas:
 
 ## Rangos e ids
 
-Un ruleset nombra cada objeto o técnica suelto **por su id** (`item: bandage`, `evolves_to: ggdr`), nunca por número:
+Un ruleset nombra cada objeto o técnica suelto **por su id** (`item: bandage`, `evolves_to: species_b`), nunca por número:
 el número de una entrada que añade un mod lo pone el motor y depende de los paquetes montados.
 
 **Los rangos solo cubren el juego original; los mods usan ids.** Las clases que el decomp define por intervalos de

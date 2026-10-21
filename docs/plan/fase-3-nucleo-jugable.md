@@ -104,7 +104,7 @@ Dos pruebas, las dos con el disco del usuario extraído (`DWE_CONTENT`):
   estadísticas suben con el entrenamiento y con lo que da el combate, los valores de cuidado se mueven, el resultado
   del combate se aplica) y que el rookie evoluciona por la regla normal, antes de la hora del recurso, al campeón que
   apunta: el primero de la tabla de evoluciones del compañero inicial que se alcanza con buen cuidado (como mucho
-  los errores de cuidado que pide, una sola estadística y el bonus de disciplina o de combates; con el disco, cent).
+  los errores de cuidado que pide, una sola estadística y el bonus de disciplina o de combates; con el disco, el que pide cerebro).
   Todo sale de las tablas y del ruleset (`evolution.c: calculateRequirementScore`, `evolution.yaml`), no de números
   escritos en la prueba. Seis semillas, unos 2 s. Pasa en `check-full` con `DWE_CONTENT`; a mano:
 

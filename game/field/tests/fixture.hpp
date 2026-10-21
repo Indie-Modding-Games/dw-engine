@@ -39,10 +39,16 @@ inline void fill(assets::MapDocument& map, assets::CollisionCell from, assets::C
 // The original's values, as in content/packs/game/field/rules.yaml, with instant turns.
 inline FieldRules originalRules() {
     FieldRules rules;
-    rules.player = {
-        .model = "digimon/boys/model", .radius = 100.0F, .walkSpeed = 400.0F, .runSpeed = 1000.0F, .turnSpeed = 0.0F};
-    rules.partner.mover = {
-        .model = "digimon/agum/model", .radius = 120.0F, .walkSpeed = 452.0F, .runSpeed = 870.0F, .turnSpeed = 0.0F};
+    rules.player = {.model = "digimon/species_g/model",
+                    .radius = 100.0F,
+                    .walkSpeed = 400.0F,
+                    .runSpeed = 1000.0F,
+                    .turnSpeed = 0.0F};
+    rules.partner.mover = {.model = "digimon/species_a/model",
+                           .radius = 120.0F,
+                           .walkSpeed = 452.0F,
+                           .runSpeed = 870.0F,
+                           .turnSpeed = 0.0F};
     return rules;
 }
 

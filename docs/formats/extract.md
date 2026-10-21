@@ -265,7 +265,7 @@ cumple las reglas de `engine/assets`: segmentos de `[a-z0-9_]` y un solo punto e
 | Efecto de una técnica (`names::effectAsset`) | `effect/<id de la técnica>/<hoja>`, o la ranura con 3 cifras sin tablas | `effect/<id>/script`, `effect/<id>/model` |
 | Película (`names::movieAsset`) | `movie/<nombre>/<hoja>` | `MOVIE/OP1.STR` → `movie/op1/video` |
 | Metadatos de una imagen | `<id de la imagen>_meta` | `card/065_meta` |
-| Contrato del modelo de un Digimon (`names::modelContract`) | `digimon/<id>/contract` | `digimon/agum/contract` |
+| Contrato del modelo de un Digimon (`names::modelContract`) | `digimon/<id>/contract` | `digimon/species_a/contract` |
 
 - El id de un Digimon es el de `makeTableIds`, que sale del nombre de fichero de su modelo
   (`PTR_DIGIMON_FILE_NAMES`, cuatro letras en minúsculas). Sin tablas es el tipo con 3 cifras. Todos los assets de un

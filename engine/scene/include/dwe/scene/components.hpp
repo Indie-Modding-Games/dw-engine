@@ -36,7 +36,7 @@ void beginTick(Transform& transform);
 // Places an entity without drawing a move from where it was (a spawn, a teleport).
 void place(Transform& transform, glm::vec3 position, float yaw);
 
-// The model drawn for an entity: the asset id of its .glb (`digimon/agum/model`).
+// The model drawn for an entity: the asset id of its .glb (`digimon/species_a/model`).
 struct ModelRef {
     std::string asset;
 };

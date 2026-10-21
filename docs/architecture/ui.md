@@ -158,7 +158,7 @@ número de la ranura), `bag_move` (`"<desde> <hasta>"`), `bag_sort` (el orden, 0
 
 En la consola de depuración (y en los pasos `script` de los autotests), `battle("")` empieza un combate contra el
 primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0,2")`), y `give_item("meat 3")` mete
-objetos en la bolsa. `evolve("grey")` hace evolucionar al compañero a esa forma como lo hace un guion de mapa
+objetos en la bolsa. `evolve("species_b")` hace evolucionar al compañero a esa forma como lo hace un guion de mapa
 (`EvolutionAdapter::evolveByScript`). Son ayudas de depuración hasta que corran los scripts de los mapas y existan cofres y tiendas:
 el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
 partida nueva empieza con la bolsa vacía. Decisión del responsable de diseño (2026-10-21): hasta que corran los guiones

@@ -76,7 +76,7 @@ TEST_CASE("the stick moves the player relative to the map's camera") {
     // The scene components follow.
     const auto& transform = world.registry().get<dwe::scene::Transform>(field.playerEntity());
     CHECK(transform.position == field.player().position);
-    CHECK(world.registry().get<dwe::scene::ModelRef>(field.playerEntity()).asset == "digimon/boys/model");
+    CHECK(world.registry().get<dwe::scene::ModelRef>(field.playerEntity()).asset == "digimon/species_g/model");
     CHECK(world.first<dwe::scene::PartnerTag>() == field.partnerEntity());
 }
 

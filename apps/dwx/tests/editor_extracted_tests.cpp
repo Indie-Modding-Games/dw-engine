@@ -75,6 +75,25 @@ std::vector<std::filesystem::path> scriptListings(const std::filesystem::path& b
     return files;
 }
 
+// The folder of the species in a pack.
+constexpr std::string_view SpeciesFolder = "digimon";
+
+// The id of a file of the first species of the user's base pack that has a model: "digimon/<id>/<leaf>". The ids
+// of the base pack are the user's, so the test finds one instead of naming it.
+std::string extractedDigimonAsset(const std::filesystem::path& base, std::string_view leaf) {
+    const std::filesystem::path folder = base / SpeciesFolder;
+    REQUIRE(std::filesystem::is_directory(folder));
+    std::vector<std::string> species;
+    for (const auto& entry : std::filesystem::directory_iterator{folder}) {
+        if (std::filesystem::is_regular_file(entry.path() / std::format("model.{}", GlbExtension))) {
+            species.push_back(dwe::assets::pathText(entry.path().filename()));
+        }
+    }
+    REQUIRE_FALSE(species.empty());
+    std::ranges::sort(species);
+    return std::format("{}/{}/{}", SpeciesFolder, species.front(), leaf);
+}
+
 // Writes the mods pack the tools would make from the user's base pack: the first spawn of a map moved, the first
 // toilet of the map table removed and the first text of a script rewritten; a background and a model copied as they
 // are.
@@ -87,7 +106,8 @@ void writeToolPack(const std::filesystem::path& base, const std::filesystem::pat
     };
     write(pack / "pack.yaml", manifestText(toolPackManifest()));
     for (const auto& [id, extension] : std::array<std::pair<std::string, std::string_view>, 2>{
-             {{editedMapAsset("background_day"), PngExtension}, {editedDigimonAsset("model"), GlbExtension}}}) {
+             {{editedMapAsset("background_day"), PngExtension},
+              {extractedDigimonAsset(base, "model"), GlbExtension}}}) {
         write(packFile(pack, id, extension), readText(packFile(base, id, extension)));
     }
     const std::string mapData = editedMapAsset("data");
@@ -189,7 +209,7 @@ TEST_CASE("the user's disc, extracted: a mods pack of edited copies passes dwx v
     const auto vfs = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     for (const std::string& id : {editedMapAsset("data"), editedMapAsset("background_day"), std::string{MapTable},
-                                  std::string{EditedScript}, editedDigimonAsset("model")}) {
+                                  std::string{EditedScript}, extractedDigimonAsset(*base, "model")}) {
         const auto assetId = dwe::assets::AssetId::parse(id);
         REQUIRE_MESSAGE(assetId.has_value(), id);
         const dwe::assets::AssetSource* source = vfs->resolve(*assetId);

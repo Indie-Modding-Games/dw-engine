@@ -10,7 +10,7 @@ Los componentes compartidos (`<dwe/scene/components.hpp>`) son los que la app ne
 | Componente | Qué es |
 |---|---|
 | `Transform` | Posición y yaw (radianes sobre +Y; con 0 mira a +Z), y los del tick anterior para dibujar entre ticks con `interpolate` |
-| `ModelRef` | El ID del `.glb` que se dibuja (`digimon/agum/model`) |
+| `ModelRef` | El ID del `.glb` que se dibuja (`digimon/species_a/model`) |
 | `AnimationIntent` | `Motion` (`idle`, `walk`, `run`) y la escala de velocidad del clip, para que los pies vayan con el suelo |
 | `PlayerTag`, `PartnerTag` | Marcan al jugador y al partner |
 

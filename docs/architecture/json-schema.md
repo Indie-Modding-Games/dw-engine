@@ -47,7 +47,7 @@ referencia a un asset de la pila. Su valor es una plantilla donde `{}` es el tex
 |---|---|---|
 | `"./{}"` | `"bank.sf2"` en `sound/ss/bank_meta` | el fichero `sound/ss/bank.sf2`: id `sound/ss/bank`, y tiene que ser `.sf2` |
 | `"{}"` | `"map/yaka02/data.yaml"` | el fichero `map/yaka02/data.yaml`, desde la raíz del paquete |
-| `"digimon/{}/model"` | `"agum"` | el asset `digimon/agum/model`, sea cual sea su extensión |
+| `"digimon/{}/model"` | `"species_a"` | el asset `digimon/species_a/model`, sea cual sea su extensión |
 
 Si el último segmento del resultado tiene extensión es un fichero, relativo a la carpeta del documento si la plantilla
 empieza por `./` y a la raíz del paquete si no; si no la tiene, es un id. La referencia tiene que resolverse en la pila

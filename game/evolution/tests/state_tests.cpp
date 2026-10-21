@@ -66,7 +66,7 @@ EvolutionInputs randomInTraining(ruleset::Random& random) {
 TEST_CASE("each evolution is recorded as raised, with the item flag") {
     EvolutionState state;
     EvolutionResult virus{.target = TableFixture::index("scum")};
-    virus.virusBackup = VirusBackup{.species = TableFixture::index("grey"), .stats = {.hp = 10}};
+    virus.virusBackup = VirusBackup{.species = TableFixture::index("species_b"), .stats = {.hp = 10}};
     recordEvolution(state, virus);
     CHECK(state.raised == std::set<Species>{TableFixture::index("scum")});
     CHECK_FALSE(state.evolutionItemUsed);
@@ -78,12 +78,12 @@ TEST_CASE("each evolution is recorded as raised, with the item flag") {
 TEST_CASE("the evolution state goes to YAML by form id and back") {
     const EvolutionTables tables = TableFixture{}.build();
     EvolutionState state;
-    state.raised = {TableFixture::index("grey"), TableFixture::index("agum")};
+    state.raised = {TableFixture::index("species_b"), TableFixture::index("agum")};
     const auto node = toYaml(state, tables);
     REQUIRE_MESSAGE(node.has_value(), errorOf(node));
     const auto text = core::emitYaml(*node);
     REQUIRE_MESSAGE(text.has_value(), errorOf(text));
-    CHECK(text->contains("grey"));
+    CHECK(text->contains("species_b"));
     const auto parsed = core::parseYaml(*text);
     REQUIRE_MESSAGE(parsed.has_value(), errorOf(parsed));
     const auto back = fromYaml(*parsed, tables);
@@ -100,7 +100,7 @@ TEST_CASE("a state with an unknown form or key is refused") {
     REQUIRE(unknown.has_value());
     CHECK(errorOf(fromYaml(*unknown, tables)).contains("unknown form 'nobody'"));
     // The partner keeps the virus backup now: the evolution state has no place for it.
-    const auto backup = core::parseYaml("raised: []\nvirus_backup: {form: grey}\n");
+    const auto backup = core::parseYaml("raised: []\nvirus_backup: {form: species_b}\n");
     REQUIRE(backup.has_value());
     CHECK_FALSE(fromYaml(*backup, tables).has_value());
 }
@@ -109,7 +109,7 @@ TEST_CASE("a state with an unknown form or key is refused") {
 
 TEST_CASE("another selection strategy changes the target without touching the rules") {
     TableFixture fixture;
-    fixture.setPath("koro", {"agum", "gabu"});
+    fixture.setPath("koro", {"agum", "species_c"});
     const auto lastTarget =
         Evolution::create(testing::originalRules(), fixture.build(), std::make_unique<LastTargetSelection>(),
                           std::make_unique<OriginalScoring>());
@@ -117,7 +117,7 @@ TEST_CASE("another selection strategy changes the target without touching the ru
     ruleset::Random random{1};
     const NaturalCheck check = lastTarget->checkNatural(inputsOf("koro", 24), {}, 1, random);
     REQUIRE(check.evolution);
-    CHECK(valueOf(check.evolution).target == TableFixture::index("gabu"));
+    CHECK(valueOf(check.evolution).target == TableFixture::index("species_c"));
     // The original finds no candidate with these inputs.
     CHECK_FALSE(fixture.makeEvolution().checkNatural(inputsOf("koro", 24), {}, 1, random).evolution);
 }
@@ -202,9 +202,9 @@ TEST_CASE("the item effects are read by the ruleset's table id") {
 
 TEST_CASE("simulated raisings fill a histogram, the same for the same seed") {
     TableFixture fixture;
-    fixture.setPath("koro", {"agum", "gabu"});
+    fixture.setPath("koro", {"agum", "species_c"});
     fixture.requirement("agum").offense = FavouredStat;
-    fixture.requirement("gabu").speed = FavouredStat;
+    fixture.requirement("species_c").speed = FavouredStat;
     const Evolution evolution = fixture.makeEvolution();
     constexpr std::int32_t Raisings = 1000;
     constexpr std::uint64_t SimulationSeed = 99;
@@ -217,7 +217,7 @@ TEST_CASE("simulated raisings fill a histogram, the same for the same seed") {
     }
     CHECK(first.unchanged + evolved == Raisings);
     CHECK(first.targets.contains(TableFixture::index("agum")));
-    CHECK(first.targets.contains(TableFixture::index("gabu")));
+    CHECK(first.targets.contains(TableFixture::index("species_c")));
     CHECK(first.unchanged > 0);
     CHECK(again.targets == first.targets);
     CHECK(again.unchanged == first.unchanged);

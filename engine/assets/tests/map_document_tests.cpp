@@ -53,7 +53,7 @@ constexpr std::string_view FixtureObjects = R"(
 
 constexpr std::string_view FixtureNpc = R"(
 - type_id: 117
-  digimon: "jiji"
+  digimon: "species_f"
   follow_mode: 1
   position: {x: -161, y: 0, z: -2451}
   rotation: {x: 0, y: 3584, z: 0}
@@ -118,7 +118,7 @@ TEST_CASE("a map document keeps every field of the data as it is") {
     CHECK(map->warp(10) == nullptr);
 
     REQUIRE(map->npcs.size() == 1);
-    CHECK(map->npcs[0].digimon == std::optional<std::string>{"jiji"});
+    CHECK(map->npcs[0].digimon == std::optional<std::string>{"species_f"});
     CHECK(map->npcs[0].moves[3] == 255);
     CHECK(map->npcs[0].aiSections[1] == -1);
     CHECK(map->npcs[0].waypoints.size() == 1);

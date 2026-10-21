@@ -242,7 +242,7 @@ TEST_CASE("a fixed evolution item is refused away from its level and evolves the
     CHECK(refused->outcome == UseOutcome::Refused);
 
     PartnerState state = session->partner().state();
-    state.species = "grey";
+    state.species = "species_b";
     REQUIRE(session->partner().restore(state).has_value());
     const auto used = adapters.inventory->use(*session, items::handleOf(items::BigCrest));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));

@@ -4,7 +4,7 @@
 digimon:
 - id: "agum"
   index: 2
-  name: "Test agum"
+  name: "Test form 2"
   file_name: null
   bone_count: 1
   radius: 100
@@ -17,7 +17,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "bota"
   index: 0
-  name: "Test bota"
+  name: "Test form 0"
   file_name: null
   bone_count: 1
   radius: 100
@@ -30,7 +30,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "puni"
   index: 4
-  name: "Test puni"
+  name: "Test form 4"
   file_name: null
   bone_count: 1
   radius: 100
@@ -43,7 +43,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "poyo"
   index: 5
-  name: "Test poyo"
+  name: "Test form 5"
   file_name: null
   bone_count: 1
   radius: 100
@@ -56,7 +56,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "yura"
   index: 6
-  name: "Test yura"
+  name: "Test form 6"
   file_name: null
   bone_count: 1
   radius: 100
@@ -69,7 +69,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "koro"
   index: 100
-  name: "Test koro"
+  name: "Test form 100"
   file_name: null
   bone_count: 1
   radius: 100
@@ -82,7 +82,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "toko"
   index: 101
-  name: "Test toko"
+  name: "Test form 101"
   file_name: null
   bone_count: 1
   radius: 100
@@ -95,7 +95,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "tuno"
   index: 102
-  name: "Test tuno"
+  name: "Test form 102"
   file_name: null
   bone_count: 1
   radius: 100
@@ -108,7 +108,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "tane"
   index: 103
-  name: "Test tane"
+  name: "Test form 103"
   file_name: null
   bone_count: 1
   radius: 100
@@ -121,7 +121,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "nume"
   index: 104
-  name: "Test nume"
+  name: "Test form 104"
   file_name: null
   bone_count: 1
   radius: 100
@@ -134,7 +134,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "aird"
   index: 105
-  name: "Test aird"
+  name: "Test form 105"
   file_name: null
   bone_count: 1
   radius: 100
@@ -147,7 +147,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "bird"
   index: 106
-  name: "Test bird"
+  name: "Test form 106"
   file_name: null
   bone_count: 1
   radius: 100
@@ -160,7 +160,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "dori"
   index: 107
-  name: "Test dori"
+  name: "Test form 107"
   file_name: null
   bone_count: 1
   radius: 100
@@ -173,7 +173,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "hoee"
   index: 108
-  name: "Test hoee"
+  name: "Test form 108"
   file_name: null
   bone_count: 1
   radius: 100
@@ -186,7 +186,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "igam"
   index: 109
-  name: "Test igam"
+  name: "Test form 109"
   file_name: null
   bone_count: 1
   radius: 100
@@ -199,7 +199,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "kune"
   index: 110
-  name: "Test kune"
+  name: "Test form 110"
   file_name: null
   bone_count: 1
   radius: 100
@@ -212,7 +212,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "mono"
   index: 111
-  name: "Test mono"
+  name: "Test form 111"
   file_name: null
   bone_count: 1
   radius: 100
@@ -225,7 +225,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "nani"
   index: 112
-  name: "Test nani"
+  name: "Test form 112"
   file_name: null
   bone_count: 1
   radius: 100
@@ -238,7 +238,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "scum"
   index: 113
-  name: "Test scum"
+  name: "Test form 113"
   file_name: null
   bone_count: 1
   radius: 100
@@ -251,7 +251,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "sead"
   index: 114
-  name: "Test sead"
+  name: "Test form 114"
   file_name: null
   bone_count: 1
   radius: 100
@@ -264,7 +264,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "shel"
   index: 115
-  name: "Test shel"
+  name: "Test form 115"
   file_name: null
   bone_count: 1
   radius: 100
@@ -277,7 +277,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "sira"
   index: 116
-  name: "Test sira"
+  name: "Test form 116"
   file_name: null
   bone_count: 1
   radius: 100
@@ -290,7 +290,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "veda"
   index: 117
-  name: "Test veda"
+  name: "Test form 117"
   file_name: null
   bone_count: 1
   radius: 100
@@ -303,7 +303,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "vegi"
   index: 118
-  name: "Test vegi"
+  name: "Test form 118"
   file_name: null
   bone_count: 1
   radius: 100
@@ -316,7 +316,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "devi"
   index: 130
-  name: "Test devi"
+  name: "Test form 130"
   file_name: null
   bone_count: 1
   radius: 100
@@ -329,7 +329,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "ggdr"
   index: 131
-  name: "Test ggdr"
+  name: "Test form 131"
   file_name: null
   bone_count: 1
   radius: 100
@@ -342,7 +342,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "mtet"
   index: 132
-  name: "Test mtet"
+  name: "Test form 132"
   file_name: null
   bone_count: 1
   radius: 100
@@ -355,7 +355,7 @@ digimon:
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "panj"
   index: 133
-  name: "Test panj"
+  name: "Test form 133"
   file_name: null
   bone_count: 1
   radius: 100

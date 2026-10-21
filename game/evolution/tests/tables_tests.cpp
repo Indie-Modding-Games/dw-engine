@@ -38,15 +38,16 @@ TEST_CASE("an evolution row a pack adds belongs to the Digimon it names, with no
 
 TEST_CASE("the Digimon a row names wins over its place, which another row may have") {
     TableFixture fixture;
-    // A higher pack's row for grey that carries tyra's place: it is grey's, and tyra keeps none of it.
-    fixture.requirement("grey").index = TableFixture::index("tyra");
-    fixture.requirement("grey").weight = 22;
-    fixture.requirement("tyra").target = std::nullopt;
-    fixture.requirement("tyra").index = std::nullopt;
+    // A higher pack's row for species_b that carries species_d's place: it is species_b's, and species_d keeps none of
+    // it.
+    fixture.requirement("species_b").index = TableFixture::index("species_d");
+    fixture.requirement("species_b").weight = 22;
+    fixture.requirement("species_d").target = std::nullopt;
+    fixture.requirement("species_d").index = std::nullopt;
     const EvolutionTables tables = fixture.build();
-    CHECK(tables.requirement(TableFixture::index("grey"))->weight == 22);
-    const auto* tyra = tables.requirement(TableFixture::index("tyra"));
-    CHECK((tyra == nullptr || tyra->weight != 22));
+    CHECK(tables.requirement(TableFixture::index("species_b"))->weight == 22);
+    const auto* speciesD = tables.requirement(TableFixture::index("species_d"));
+    CHECK((speciesD == nullptr || speciesD->weight != 22));
 }
 
 TEST_CASE("a row that names no Digimon belongs to its place in the original, and without one to none") {

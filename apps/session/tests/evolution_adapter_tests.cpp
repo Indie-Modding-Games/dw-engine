@@ -217,10 +217,10 @@ TEST_CASE("an event script's evolution needs a form of the tables") {
     EvolutionAdapter* adapter = nullptr;
     auto session = sessionWithEvolution(packs, fixture, adapter);
     CHECK_FALSE(adapter->evolveByScript(*session, "nobody").has_value());
-    const auto evolved = adapter->evolveByScript(*session, "grey");
+    const auto evolved = adapter->evolveByScript(*session, "species_b");
     REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
     CHECK(*evolved);
-    CHECK(session->partner().state().species == "grey");
+    CHECK(session->partner().state().species == "species_b");
 }
 
 TEST_CASE("the evolution state goes in the save and comes back") {

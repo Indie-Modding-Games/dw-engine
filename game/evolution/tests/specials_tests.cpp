@@ -64,7 +64,7 @@ TEST_CASE("waking up: the listed forms at full discipline and happiness and rest
     inputs.tiredness = 1;
     CHECK_FALSE(wakeUpTarget(evolution, inputs));
     inputs.tiredness = 0;
-    inputs.species = TableFixture::index("grey");
+    inputs.species = TableFixture::index("species_b");
     CHECK_FALSE(wakeUpTarget(evolution, inputs));
 }
 
@@ -129,12 +129,12 @@ TEST_CASE("a special needs its roll and a free tamer") {
 TEST_CASE("one roll for every rule, and the last rule that holds wins") {
     EvolutionRules rules = withRolls(testing::originalRules(), true);
     rules.specials.wakeUp.push_back(
-        {.target = "tyra", .rollBelow = std::nullopt, .from = {"bird"}, .requirements = {}});
+        {.target = "species_d", .rollBelow = std::nullopt, .from = {"bird"}, .requirements = {}});
     const Evolution evolution = TableFixture{}.makeEvolution(rules);
     EvolutionInputs inputs = inputsOf("bird");
     inputs.discipline = 100;
     inputs.happiness = 100;
-    CHECK(wakeUpTarget(evolution, inputs) == TableFixture::index("tyra"));
+    CHECK(wakeUpTarget(evolution, inputs) == TableFixture::index("species_d"));
 }
 
 TEST_CASE("praise or scold: the timer, scold and late-champion specials") {
@@ -144,10 +144,10 @@ TEST_CASE("praise or scold: the timer, scold and late-champion specials") {
     shel.evolutionTimer = 201;
     CHECK_FALSE(praiseScoldTarget(evolution, shel, Praise));
 
-    EvolutionInputs grey = inputsOf("grey", 240);
-    CHECK(praiseScoldTarget(evolution, grey, Praise) == TableFixture::index("veda"));
-    grey.evolutionTimer = 239;
-    CHECK_FALSE(praiseScoldTarget(evolution, grey, Praise));
+    EvolutionInputs speciesB = inputsOf("species_b", 240);
+    CHECK(praiseScoldTarget(evolution, speciesB, Praise) == TableFixture::index("veda"));
+    speciesB.evolutionTimer = 239;
+    CHECK_FALSE(praiseScoldTarget(evolution, speciesB, Praise));
 
     // partner_impl.c: handlePraiseScold: a scold of a rookie with no discipline and the lowest happiness.
     const EvolutionInputs agum = inputsOf("agum");
@@ -155,12 +155,12 @@ TEST_CASE("praise or scold: the timer, scold and late-champion specials") {
     CHECK(praiseScoldTarget(evolution, agum, scold) == TableFixture::index("nani"));
     CHECK_FALSE(praiseScoldTarget(evolution, agum, {.scolded = false, .disciplineBefore = 0, .happinessBefore = -100}));
     CHECK_FALSE(praiseScoldTarget(evolution, agum, {.scolded = true, .disciplineBefore = 1, .happinessBefore = -100}));
-    CHECK_FALSE(praiseScoldTarget(evolution, inputsOf("grey"), scold));
+    CHECK_FALSE(praiseScoldTarget(evolution, inputsOf("species_b"), scold));
 }
 
 TEST_CASE("a champion at the timer hours runs the praise and scold specials, without the scold ones") {
     const Evolution evolution = alwaysRolling();
-    const NaturalCheck check = checkAt(evolution, inputsOf("grey", 360));
+    const NaturalCheck check = checkAt(evolution, inputsOf("species_b", 360));
     REQUIRE(check.evolution);
     CHECK(valueOf(check.evolution).target == TableFixture::index("veda"));
     CHECK(valueOf(check.evolution).reason == EvolutionReason::Special);
@@ -168,9 +168,9 @@ TEST_CASE("a champion at the timer hours runs the praise and scold specials, wit
 
 TEST_CASE("quirk timer_special_overrides_normal: at the timer hours a failed special also drops the normal target") {
     TableFixture fixture;
-    fixture.setPath("grey", {"mtgr"});
-    fixture.requirement("mtgr").offense = 0;
-    EvolutionInputs inputs = inputsOf("grey", 360);
+    fixture.setPath("species_b", {"species_e"});
+    fixture.requirement("species_e").offense = 0;
+    EvolutionInputs inputs = inputsOf("species_b", 360);
     inputs.stats.offense = 10;
     const EvolutionRules never = withRolls(testing::originalRules(), false);
     CHECK_FALSE(checkAt(fixture.makeEvolution(never), inputs).evolution);
@@ -182,7 +182,7 @@ TEST_CASE("quirk timer_special_overrides_normal: at the timer hours a failed spe
     EvolutionRules fixed = withRolls(testing::originalRulesWithQuirk(TimerSpecialOverridesNormal, false), false);
     const NaturalCheck check = checkAt(fixture.makeEvolution(fixed), inputs);
     REQUIRE(check.evolution);
-    CHECK(valueOf(check.evolution).target == TableFixture::index("mtgr"));
+    CHECK(valueOf(check.evolution).target == TableFixture::index("species_e"));
     CHECK(valueOf(check.evolution).reason == EvolutionReason::Normal);
 }
 
@@ -190,7 +190,7 @@ TEST_CASE("quirk timer_special_overrides_normal: at the timer hours a failed spe
 
 TEST_CASE("the partner's full virus bar turns it into the virus form, keeping its form and stats") {
     const Evolution evolution = TableFixture{}.makeEvolution();
-    EvolutionInputs inputs = inputsOf("grey", 50);
+    EvolutionInputs inputs = inputsOf("species_b", 50);
     inputs.stats = {.hp = 1000, .mp = 900, .offense = 100, .defense = 90, .speed = 80, .brains = 70};
     inputs.tamerFree = false;
     const auto result = evolution.fillVirusBar(inputs, {});
@@ -204,7 +204,7 @@ TEST_CASE("the partner's full virus bar turns it into the virus form, keeping it
     inputs.species = TableFixture::index("scum");
     CHECK_FALSE(evolution.fillVirusBar(inputs, {}));
     // A ruleset whose care section names no virus form.
-    inputs = inputsOf("grey", 50);
+    inputs = inputsOf("species_b", 50);
     inputs.virusForm = std::nullopt;
     CHECK_FALSE(evolution.fillVirusBar(inputs, {}));
 }
@@ -215,11 +215,11 @@ TEST_CASE("back from the virus form the partner is its kept form, with stats reb
     inputs.stats = {.hp = 600, .mp = 400, .offense = 100, .defense = 100, .speed = 50, .brains = 20};
     CHECK_FALSE(evolution.returnFromVirus(inputs, {}));
     inputs.virusBackup =
-        VirusBackup{.species = TableFixture::index("grey"),
+        VirusBackup{.species = TableFixture::index("species_b"),
                     .stats = {.hp = 1000, .mp = 1000, .offense = 100, .defense = 100, .speed = 100, .brains = 100}};
     const auto result = evolution.returnFromVirus(inputs, {});
     REQUIRE(result);
-    CHECK(valueOf(result).target == TableFixture::index("grey"));
+    CHECK(valueOf(result).target == TableFixture::index("species_b"));
     CHECK(valueOf(result).reason == EvolutionReason::Script);
     // evl.c: EVL_scaleBaseStats: kept + (current - kept / 2) / 2, restored as they are rather than added.
     CHECK(valueOf(result).restoredStats ==
@@ -233,7 +233,7 @@ TEST_CASE("the stats rebuilt from the virus backup are left to the session to cl
     const Evolution evolution = TableFixture{}.makeEvolution();
     EvolutionInputs inputs = inputsOf("scum");
     inputs.stats = {.hp = 9999, .mp = 9999, .offense = 999, .defense = 999, .speed = 999, .brains = 999};
-    inputs.virusBackup = VirusBackup{.species = TableFixture::index("grey"), .stats = inputs.stats};
+    inputs.virusBackup = VirusBackup{.species = TableFixture::index("species_b"), .stats = inputs.stats};
     const auto result = evolution.returnFromVirus(inputs, {});
     REQUIRE(result);
     CHECK(valueOf(result).restoredStats ==
@@ -260,51 +260,51 @@ TEST_CASE("a fixed evolution item works at any level and gives no stats") {
 
 TEST_CASE("an item of the item table works only one level below its form") {
     TableFixture fixture;
-    fixture.evolution.itemTargets.push_back({.item = "test_claws", .index = 71, .target = "grey"});
+    fixture.evolution.itemTargets.push_back({.item = "test_claws", .index = 71, .target = "species_b"});
     const Evolution evolution = fixture.makeEvolution();
     const auto result = evolution.useItem(inputsOf("agum"), {}, "test_claws");
     REQUIRE(result);
-    CHECK(valueOf(result).target == TableFixture::index("grey"));
+    CHECK(valueOf(result).target == TableFixture::index("species_b"));
     CHECK_FALSE(evolution.useItem(inputsOf("koro"), {}, "test_claws"));
-    CHECK_FALSE(evolution.useItem(inputsOf("tyra"), {}, "test_claws"));
+    CHECK_FALSE(evolution.useItem(inputsOf("species_d"), {}, "test_claws"));
     CHECK_FALSE(evolution.useItem(inputsOf("agum"), {}, "meat"));
 }
 
 TEST_CASE("the evolution items' targets come from the item effects, by id, and only the evolution handler's") {
     TableFixture fixture;
     fixture.itemEffects.effects = {
-        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
-        {.item = "meat", .index = 0, .handler = assets::ItemHandler::Food, .evolvesTo = "grey"},
+        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "species_b"},
+        {.item = "meat", .index = 0, .handler = assets::ItemHandler::Food, .evolvesTo = "species_b"},
         // A raw number outside the Digimon table leads nowhere.
         {.item = "odd_charm", .index = 72, .handler = assets::ItemHandler::Evolution, .evolvesTo = "250"},
     };
     const Evolution evolution = fixture.makeEvolution();
-    CHECK(evolution.tables().itemTarget("test_claws") == TableFixture::index("grey"));
+    CHECK(evolution.tables().itemTarget("test_claws") == TableFixture::index("species_b"));
     CHECK_FALSE(evolution.tables().itemTarget("meat"));
     CHECK_FALSE(evolution.tables().itemTarget("odd_charm"));
     const auto result = evolution.useItem(inputsOf("agum"), {}, "test_claws");
     REQUIRE(result);
-    CHECK(valueOf(result).target == TableFixture::index("grey"));
+    CHECK(valueOf(result).target == TableFixture::index("species_b"));
     CHECK(valueOf(result).reason == EvolutionReason::Item);
 }
 
 TEST_CASE("data/evolution's item_targets override the item effects item by item") {
     TableFixture fixture;
     fixture.itemEffects.effects = {
-        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
-        {.item = "tyra_scale", .index = 73, .handler = assets::ItemHandler::Evolution, .evolvesTo = "tyra"},
+        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "species_b"},
+        {.item = "tyra_scale", .index = 73, .handler = assets::ItemHandler::Evolution, .evolvesTo = "species_d"},
     };
     fixture.evolution.itemTargets.push_back({.item = "test_claws", .index = 71, .target = "nume"});
     const EvolutionTables tables = fixture.build();
     CHECK(tables.itemTarget("test_claws") == TableFixture::index("nume"));
-    CHECK(tables.itemTarget("tyra_scale") == TableFixture::index("tyra"));
+    CHECK(tables.itemTarget("tyra_scale") == TableFixture::index("species_d"));
 }
 
 TEST_CASE("a form's move that is no move of the table, by id or by the original's number, is refused") {
     for (const std::string_view move : {"nothing", "200"}) {
         CAPTURE(move);
         TableFixture fixture;
-        fixture.form("grey").moves.at(3) = std::string{move};
+        fixture.form("species_b").moves.at(3) = std::string{move};
         const auto tables = EvolutionTables::build(fixture.digimon, fixture.raise, assets::MoveTable{fixture.moves},
                                                    fixture.evolution, fixture.itemEffects);
         REQUIRE_FALSE(tables.has_value());
@@ -327,13 +327,14 @@ TEST_CASE("quirk evolution_item_sticks: after an item, later evolutions give no 
     const EvolutionInputs inputs = inputsOf("agum");
     EvolutionState state;
     state.evolutionItemUsed = true;
-    const auto sticking = TableFixture{}.makeEvolution().evolveByScript(inputs, state, TableFixture::index("grey"));
+    const auto sticking =
+        TableFixture{}.makeEvolution().evolveByScript(inputs, state, TableFixture::index("species_b"));
     REQUIRE(sticking);
     CHECK(valueOf(sticking).statChange == BaseStats{});
     CHECK(valueOf(sticking).evolutionItemUsed);
 
     const Evolution fixed = TableFixture{}.makeEvolution(testing::originalRulesWithQuirk(EvolutionItemSticks, false));
-    const auto result = fixed.evolveByScript(inputs, state, TableFixture::index("grey"));
+    const auto result = fixed.evolveByScript(inputs, state, TableFixture::index("species_b"));
     REQUIRE(result);
     CHECK(valueOf(result).statChange != BaseStats{});
     CHECK_FALSE(valueOf(result).evolutionItemUsed);

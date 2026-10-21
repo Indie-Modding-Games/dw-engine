@@ -199,10 +199,10 @@ TEST_CASE("the evolution requirements count the learned moves below the evolutio
     // evolution.c: getNumMasteredMoves; the rookie's check hour is check_hours.rookie (72).
     constexpr std::int32_t RookieHours = 72;
     dwe::game::evolution::testing::TableFixture fixture;
-    fixture.setPath("agum", {"tyra"});
+    fixture.setPath("agum", {"species_d"});
     // A champion target asks for a stat (the rookie's pick averages them), and its bonus is two learned moves.
-    fixture.requirement("tyra").offense = 1;
-    fixture.requirement("tyra").techs = 2;
+    fixture.requirement("species_d").offense = 1;
+    fixture.requirement("species_d").techs = 2;
     // The session composes one move table for both systems: the evolution's names the battle's moves alike.
     fixture.moves.at(0).id = "punch";
     fixture.moves.at(46).id = "dynamite_kick";
@@ -222,7 +222,7 @@ TEST_CASE("the evolution requirements count the learned moves below the evolutio
         return session->partner().state().species;
     };
     CHECK(speciesAfterLearning("move_121") == "agum");
-    CHECK(speciesAfterLearning("dynamite_kick") == "tyra");
+    CHECK(speciesAfterLearning("dynamite_kick") == "species_d");
 }
 
 TEST_CASE("the partner fights with its stats, HP, MP and the moves at its equipped positions") {

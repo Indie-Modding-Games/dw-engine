@@ -154,7 +154,7 @@ rama pasa una revisión independiente contra la guía de código y las reglas de
   `1.x` sigue valiendo. Un mod roto o incompatible se salta, se registra en el log y aparece en la lista de mods; los
   demás cargan.
 - *IDs de contenido:*
-  - El contenido original lleva el prefijo `base:` (`base:agum`, `base:twna01`). La migración (contenido, partidas
+  - El contenido original lleva el prefijo `base:` (`base:species_a`, `base:twna01`). La migración (contenido, partidas
     guardadas, rulesets, scripts, tests y documentación) y su efecto en las herramientas externas se planifican
     aparte; un alias sin prefijo durante la transición solo existiría si se declara explícitamente.
   - En la fase 4a los mods solo añaden o sustituyen entradas; no las borran.

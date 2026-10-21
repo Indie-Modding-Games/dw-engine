@@ -107,7 +107,7 @@ el rol de la clase en sus `tables` (`raise: data/hard_raise`). El juego y `dwx v
 
 Cada entrada se nombra por su id de contenido (`ContentId`, `engine/assets/include/dwe/assets/content_id.hpp`):
 
-- **Originales:** su nombre estable de siempre, sin espacio de nombres (`agum`, `twna01`). Es el que ya escribe
+- **Originales:** su nombre estable de siempre, sin espacio de nombres (`species_a`, `twna01`). Es el que ya escribe
   `dwx extract` y leen las herramientas, así que no cambia.
 - **Lo que añade un paquete:** `<id del paquete>:<nombre>`, como `example_mod:meadow`. Cada parte es `[a-z0-9_]`; el
   nombre tiene 64 caracteres como mucho.

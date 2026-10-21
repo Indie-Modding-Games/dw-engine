@@ -101,17 +101,20 @@ struct FixtureForm {
     std::int32_t level = 0;
 };
 
-// Every id the original section names, plus a few forms of the tests' own, with made-up indices and levels.
+// Every id the original section names, the partner the original ruleset's new game starts with (the session tests
+// start one), and a few forms of the tests' own with neutral ids, all with made-up indices and levels.
 inline constexpr std::array<FixtureForm, 33> FixtureForms{{
-    {.id = "bota", .level = 1}, {.id = "boys", .level = 0}, {.id = "puni", .level = 1}, {.id = "poyo", .level = 1},
-    {.id = "yura", .level = 1}, {.id = "koro", .level = 2}, {.id = "tuno", .level = 2}, {.id = "toko", .level = 2},
-    {.id = "tane", .level = 2}, {.id = "agum", .level = 3}, {.id = "gabu", .level = 3}, {.id = "kune", .level = 3},
-    {.id = "grey", .level = 4}, {.id = "tyra", .level = 4}, {.id = "nume", .level = 4}, {.id = "aird", .level = 4},
-    {.id = "bird", .level = 4}, {.id = "sead", .level = 4}, {.id = "igam", .level = 4}, {.id = "vegi", .level = 4},
-    {.id = "mono", .level = 4}, {.id = "dori", .level = 4}, {.id = "sira", .level = 4}, {.id = "hoee", .level = 4},
-    {.id = "shel", .level = 4}, {.id = "nani", .level = 4}, {.id = "scum", .level = 4}, {.id = "panj", .level = 4},
-    {.id = "devi", .level = 4}, {.id = "mtgr", .level = 5}, {.id = "veda", .level = 5}, {.id = "ggdr", .level = 5},
-    {.id = "mtet", .level = 5},
+    {.id = "bota", .level = 1},      {.id = "species_g", .level = 0}, {.id = "puni", .level = 1},
+    {.id = "poyo", .level = 1},      {.id = "yura", .level = 1},      {.id = "koro", .level = 2},
+    {.id = "tuno", .level = 2},      {.id = "toko", .level = 2},      {.id = "tane", .level = 2},
+    {.id = "agum", .level = 3},      {.id = "species_c", .level = 3}, {.id = "kune", .level = 3},
+    {.id = "species_b", .level = 4}, {.id = "species_d", .level = 4}, {.id = "nume", .level = 4},
+    {.id = "aird", .level = 4},      {.id = "bird", .level = 4},      {.id = "sead", .level = 4},
+    {.id = "igam", .level = 4},      {.id = "vegi", .level = 4},      {.id = "mono", .level = 4},
+    {.id = "dori", .level = 4},      {.id = "sira", .level = 4},      {.id = "hoee", .level = 4},
+    {.id = "shel", .level = 4},      {.id = "nani", .level = 4},      {.id = "scum", .level = 4},
+    {.id = "panj", .level = 4},      {.id = "devi", .level = 4},      {.id = "species_e", .level = 5},
+    {.id = "veda", .level = 5},      {.id = "ggdr", .level = 5},      {.id = "mtet", .level = 5},
 }};
 
 inline constexpr std::int32_t FixtureMoveCount = 122;
@@ -133,7 +136,7 @@ public:
             assets::DigimonRow entry;
             entry.id = form.id;
             entry.index = index;
-            entry.name = form.id;
+            entry.name = std::format("Form {}", index);
             entry.level = form.level;
             entry.special = {0, std::nullopt, std::nullopt};
             entry.moves.at(0) = "move_2";

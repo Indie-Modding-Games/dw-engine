@@ -117,7 +117,7 @@ inline constexpr assets::Version BasePackVersion{.major = 0, .minor = 1, .patch 
 inline constexpr std::string_view ToolPackId = "tool_edits";
 inline constexpr std::string_view ToolPackName = "Tool edits";
 inline constexpr std::string_view EditedMapId = "twna01";
-inline constexpr std::string_view EditedDigimon = "agum";
+inline constexpr std::string_view EditedDigimon = "species_a";
 inline constexpr std::string_view EditedScript = "script/dg/001";
 inline constexpr std::string_view MapHeadScript = "script/maphead";
 inline constexpr std::string_view MapTable = "data/maps";
@@ -177,7 +177,7 @@ inline std::string editedMapAsset(std::string_view leaf) {
     return std::format("map/{}/{}", EditedMapId, leaf);
 }
 
-// The id of a file of the edited Digimon: "digimon/agum/<leaf>".
+// The id of a file of the edited Digimon: "digimon/species_a/<leaf>".
 inline std::string editedDigimonAsset(std::string_view leaf) {
     return std::format("digimon/{}/{}", EditedDigimon, leaf);
 }

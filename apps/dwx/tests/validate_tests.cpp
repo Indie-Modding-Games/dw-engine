@@ -108,8 +108,8 @@ schemas:
     files.addFile("content/base/map/town/data.yaml", dwe::assets::testing::fixtureMap());
     files.addFile("content/base/data/maps.yaml", dwe::assets::testing::FixtureTable);
     files.addFile("content/base/model/door/door00.glb", clipModel(2));
-    files.addFile("content/base/digimon/agum/model.gltf", skinnedModel(false));
-    files.addFile("content/base/digimon/agum/contract.yaml",
+    files.addFile("content/base/digimon/species_a/model.gltf", skinnedModel(false));
+    files.addFile("content/base/digimon/species_a/contract.yaml",
                   "model: model.gltf\njoint_parents: [-1, 0, 1]\nanimations: [walk]\n");
 }
 
@@ -190,18 +190,18 @@ schemas:
     files.addFile("content/broken/sound/odd/bank_meta.yaml", "bank: bank.wav\nmap: nowhere\ncount: many\n");
     files.addFile("content/broken/sound/odd/bank.sf2", dwe::assets::testing::soundFontFile());
     files.addFile("content/broken/sound/lone_meta.yaml", "x: 1\n");
-    files.addFile("content/broken/digimon/gabu/model.gltf", skinnedModel(true));
-    files.addFile("content/broken/digimon/agum/contract.yaml",
+    files.addFile("content/broken/digimon/species_c/model.gltf", skinnedModel(true));
+    files.addFile("content/broken/digimon/species_a/contract.yaml",
                   "model: model.gltf\njoint_parents: [-1, 0, 0]\nanimations: [walk, run]\n");
     const auto report = validatePacks(files, "content", "content/schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(report->packs == 2);
     const std::string expected =
-        R"(content/base/digimon/agum/model.gltf: breaks its contract content/broken/digimon/agum/contract.yaml: it lacks the animations run
-content/base/digimon/agum/model.gltf: breaks its contract content/broken/digimon/agum/contract.yaml: joint 2 has the parent 1, the contract says 0
+        R"(content/base/digimon/species_a/model.gltf: breaks its contract content/broken/digimon/species_a/contract.yaml: it lacks the animations run
+content/base/digimon/species_a/model.gltf: breaks its contract content/broken/digimon/species_a/contract.yaml: joint 2 has the parent 1, the contract says 0
 content/base/sound/hit/bank_meta.yaml: the rules of several schemas match this document: map (sound/hit/bank_meta), sound (sound/*/bank_meta)
-content/broken/digimon/gabu/model.gltf: the model has no contract: digimon/gabu/contract is missing
-content/broken/digimon/gabu/model.gltf: the model uses 'skin.png', which names digimon/gabu/skin, which no pack has
+content/broken/digimon/species_c/model.gltf: the model has no contract: digimon/species_c/contract is missing
+content/broken/digimon/species_c/model.gltf: the model uses 'skin.png', which names digimon/species_c/skin, which no pack has
 content/broken/loose/b.yaml: no schema rule of the packs matches this document
 content/broken/map/swamp/data.yaml: the engine cannot load map/swamp/data: line 2, column 1: did not find expected ',' or ']' (while parsing a flow sequence at line 1, column 7)
 content/broken/pack.yaml: schema 'other' cannot be used: cannot read 'content/schemas/other.schema.json': it does not exist

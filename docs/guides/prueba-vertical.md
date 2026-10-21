@@ -163,7 +163,7 @@ steps:
 
 | Paso | Qué hace |
 |---|---|
-| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, partner_has, setting, partner_model, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse. `partner_has: <clave>` espera a que el compañero tenga ese estado, por la clave de la página de estado (`partner_menu.condition.sleepy`, `.hungry`, `.needs_toilet`, `.sick`...). `setting: {<nombre>: <valor>}` espera a que un ajuste tenga ese valor (`battle.phase: end`). `partner_model: <id>` espera a que el compañero se dibuje con ese modelo (`digimon/grey/model`) |
+| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, partner_has, setting, partner_model, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse. `partner_has: <clave>` espera a que el compañero tenga ese estado, por la clave de la página de estado (`partner_menu.condition.sleepy`, `.hungry`, `.needs_toilet`, `.sick`...). `setting: {<nombre>: <valor>}` espera a que un ajuste tenga ese valor (`battle.phase: end`). `partner_model: <id>` espera a que el compañero se dibuje con ese modelo (`digimon/species_b/model`) |
 | `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-visible`...), si no la pantalla de combate (`command-0`..., `open-bag` y, con la bolsa abierta, `bag-slot-0`...) o el menú del compañero. Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
@@ -194,7 +194,7 @@ fase 4:
 |---|---|
 | `battle("")` | Empieza un combate contra el primer NPC del mapa que puede luchar; `battle("2,3")`, contra esos NPC del mapa |
 | `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
-| `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("grey")`); el campo lo dibuja con su modelo |
+| `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("species_b")`); el campo lo dibuja con su modelo |
 | `use_item("<id>")` | Usa uno de la bolsa con el compañero, como «Usar» en la bolsa; el compañero puede rechazarlo |
 | `toilet("")` | Lleva al compañero al baño |
 | `sleep("")` | Lo acuesta, si tiene sueño |

@@ -17,13 +17,13 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 }
 
 constexpr std::string_view Rules = R"(player:
-  model: digimon/boys/model
+  model: digimon/species_g/model
   radius: 100
   walk_speed: 400
   run_speed: 1000
   turn_speed: 0
 partner:
-  model: digimon/agum/model
+  model: digimon/species_a/model
   radius: 120
   walk_speed: 452.5
   run_speed: 870
@@ -65,7 +65,7 @@ std::string replaced(std::string_view text, std::string_view from, std::string_v
 TEST_CASE("field rules read every tunable") {
     const auto rules = dwe::game::field::parseFieldRules(Rules);
     REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
-    CHECK(rules->player.model == "digimon/boys/model");
+    CHECK(rules->player.model == "digimon/species_g/model");
     CHECK(rules->player.runSpeed == doctest::Approx(1000.0F));
     CHECK(rules->player.turnSpeed == doctest::Approx(0.0F));
     CHECK(rules->partner.mover.walkSpeed == doctest::Approx(452.5F));

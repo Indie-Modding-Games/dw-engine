@@ -38,7 +38,7 @@ the original`) juega el bucle entero sobre una `HeadlessGame` con el ruleset `or
 - **Partida nueva**: el partner de `new_game` (agum, novato).
 - **Forma buscada**: la primera de su carta (`data/evolution`, `paths`) cuyos puntos puede ganar el cuidador sin el
   peso (`evolution.c: calculateRequirementScore`): un solo stat que no sea HP ni MP, errores de cuidado como máximo y
-  disciplina o batallas de bonus. Con el disco del usuario es cent (cerebro 100, como mucho 3 errores, disciplina 60).
+  disciplina o batallas de bonus. Con el disco del usuario es el campeón que pide cerebro 100, como mucho 3 errores y disciplina 60.
 - **Cuidador** (una cosa por turno, como un jugador): cura la enfermedad o la herida con la medicina que cura seguro
   (`item.c: handleMedicineHealing`), da la comida favorita (`raise`) por el inventario, lleva al baño, acuesta,
   entrena el curso de ese stat (`training`) sin pasar del cansancio de `overwork_tiredness`, regaña hasta la

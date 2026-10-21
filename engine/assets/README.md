@@ -54,7 +54,7 @@ paquete lo trae. Lo usa [`apps/session`](../../apps/session/README.md).
 ## IDs de contenido y tablas por entradas
 
 `ContentId` (`<dwe/assets/content_id.hpp>`) es el id de una entrada de una tabla de contenido (un Digimon, un mapa, un
-objeto): el nombre estable de un original (`agum`, `twna01`) o, para lo que añade un paquete, `<id del paquete>:<nombre>`.
+objeto): el nombre estable de un original (`species_a`, `twna01`) o, para lo que añade un paquete, `<id del paquete>:<nombre>`.
 `assetPath` lo convierte en carpetas (`example_mod:meadow` → `example_mod/meadow`), así que los IDs de asset no
 cambian de gramática. `composeTable` y `readComposedTable` (`<dwe/assets/table_composition.hpp>`) componen el fichero
 de una tabla de todos los paquetes que lo tienen, de abajo arriba: una entrada con un id que ya está la sustituye en

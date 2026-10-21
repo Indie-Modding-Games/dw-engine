@@ -33,7 +33,7 @@ TEST_CASE("each stat that reaches the reference gains a tenth of it, and one bel
     inputs.weight = 7;
     inputs.careMistakes = 3;
     inputs.battles = 5;
-    const EvolutionResult result = evolveTo(evolution, inputs, "grey");
+    const EvolutionResult result = evolveTo(evolution, inputs, "species_b");
     CHECK(result.statChange ==
           BaseStats{.hp = 100, .mp = 300, .offense = 10, .defense = 25, .speed = 10, .brains = 50});
     CHECK_FALSE(result.restoredStats);
@@ -45,12 +45,12 @@ TEST_CASE("each stat that reaches the reference gains a tenth of it, and one bel
 
     // The change is not capped: the partner caps it when it adds it.
     inputs.stats.hp = 9990;
-    CHECK(evolveTo(evolution, inputs, "grey").statChange.hp == 100);
+    CHECK(evolveTo(evolution, inputs, "species_b").statChange.hp == 100);
 }
 
 TEST_CASE("an evolution within the level keeps the counter") {
     const Evolution evolution = TableFixture{}.makeEvolution();
-    CHECK(evolveTo(evolution, inputsOf("grey", 50), "tyra").evolutionTimer == 50);
+    CHECK(evolveTo(evolution, inputsOf("species_b", 50), "species_d").evolutionTimer == 50);
 }
 
 TEST_CASE("the listed forms and those below the scaled level multiply the stats by the row's brains, as a byte") {
@@ -73,16 +73,16 @@ TEST_CASE("the listed forms and those below the scaled level multiply the stats 
 
 TEST_CASE("an ultimate adds lifetime, and a paused script gives the tamer level chance") {
     const Evolution evolution = TableFixture{}.makeEvolution();
-    EvolutionInputs inputs = inputsOf("grey");
-    CHECK(evolveTo(evolution, inputs, "mtgr").lifetimeBonusHours == 96);
-    CHECK(evolveTo(evolution, inputs, "tyra").lifetimeBonusHours == 0);
-    CHECK(evolveTo(evolution, inputs, "mtgr").tamerLevelChance == 0);
+    EvolutionInputs inputs = inputsOf("species_b");
+    CHECK(evolveTo(evolution, inputs, "species_e").lifetimeBonusHours == 96);
+    CHECK(evolveTo(evolution, inputs, "species_d").lifetimeBonusHours == 0);
+    CHECK(evolveTo(evolution, inputs, "species_e").tamerLevelChance == 0);
     inputs.scriptPaused = true;
-    CHECK(evolveTo(evolution, inputs, "mtgr").tamerLevelChance == 100);
-    CHECK(evolveTo(evolution, inputsOf("agum"), "grey").tamerLevelChance == 0);
+    CHECK(evolveTo(evolution, inputs, "species_e").tamerLevelChance == 100);
+    CHECK(evolveTo(evolution, inputsOf("agum"), "species_b").tamerLevelChance == 0);
     EvolutionInputs rookie = inputsOf("agum");
     rookie.scriptPaused = true;
-    CHECK(evolveTo(evolution, rookie, "grey").tamerLevelChance == 20);
+    CHECK(evolveTo(evolution, rookie, "species_b").tamerLevelChance == 20);
     EvolutionInputs inTraining = inputsOf("koro");
     inTraining.scriptPaused = true;
     CHECK(evolveTo(evolution, inTraining, "agum").tamerLevelChance == 0);
@@ -90,22 +90,22 @@ TEST_CASE("an ultimate adds lifetime, and a paused script gives the tamer level 
 
 TEST_CASE("a target whose stats row loads another form becomes that form") {
     TableFixture fixture;
-    fixture.gains("tyra").targetDigimon = "grey";
-    CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "tyra").target == TableFixture::index("grey"));
+    fixture.gains("species_d").targetDigimon = "species_b";
+    CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_d").target == TableFixture::index("species_b"));
 }
 
 // --- Moves (evl.c: EVL_applyEvolution) ---
 
 TEST_CASE("the form learns the weakest move of its specialty's block and equips it with its finisher") {
     TableFixture fixture;
-    const EvolutionResult result = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
+    const EvolutionResult result = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_b");
     // The block of specialty 0 is moves 0 to 8: move_1 (power 11) is weaker than move_2 (power 12).
     CHECK(result.learnedMove == "move_1");
     CHECK(result.equippedMoves == EquippedMoves{1, std::nullopt, std::nullopt, 2});
 
     SUBCASE("a move of power 0 is never the weakest") {
         fixture.moves.at(1).power = 0;
-        CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey").learnedMove == "move_2");
+        CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_b").learnedMove == "move_2");
     }
     SUBCASE("below the basic slot level the first slot holds the basic attack") {
         const EvolutionResult koro = evolveTo(fixture.makeEvolution(), inputsOf("bota"), "koro");
@@ -113,8 +113,8 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
         CHECK(koro.equippedMoves.front() == 0);
     }
     SUBCASE("a specialty with no move of its block learns nothing") {
-        fixture.form("grey").special.front() = 1;
-        const EvolutionResult none = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
+        fixture.form("species_b").special.front() = 1;
+        const EvolutionResult none = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_b");
         CHECK_FALSE(none.learnedMove);
         CHECK_FALSE(none.equippedMoves.front());
     }
@@ -122,16 +122,16 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
         // The engine numbered the pack's moves inside the block of specialty 0 and the finisher range.
         fixture.moves.push_back({.id = "my_mod:ember", .index = 5, .originalIndex = false, .power = 1});
         fixture.moves.push_back({.id = "my_mod:blaze", .index = 58, .originalIndex = false, .power = 90});
-        fixture.form("grey").moves.at(3) = "my_mod:ember";
-        fixture.form("grey").moves.at(4) = "my_mod:blaze";
-        const EvolutionResult unnamed = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
+        fixture.form("species_b").moves.at(3) = "my_mod:ember";
+        fixture.form("species_b").moves.at(4) = "my_mod:blaze";
+        const EvolutionResult unnamed = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "species_b");
         CHECK(unnamed.learnedMove == "move_1");
         CHECK(unnamed.equippedMoves.back() == 2);
 
         EvolutionRules rules = testing::originalRules();
         rules.moves.specialtyBlockIds[0] = {"my_mod:ember"};
         rules.moves.finishers.ids = {"my_mod:blaze"};
-        const EvolutionResult named = evolveTo(fixture.makeEvolution(rules), inputsOf("agum"), "grey");
+        const EvolutionResult named = evolveTo(fixture.makeEvolution(rules), inputsOf("agum"), "species_b");
         CHECK(named.learnedMove == "my_mod:ember");
         CHECK(named.equippedMoves == EquippedMoves{3, std::nullopt, std::nullopt, 4});
     }
@@ -141,7 +141,7 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
 
 TEST_CASE("rebirth turns the partner into one of the babies, with the basic attack equipped") {
     const Evolution evolution = TableFixture{}.makeEvolution();
-    EvolutionInputs inputs = inputsOf("mtgr", 90);
+    EvolutionInputs inputs = inputsOf("species_e", 90);
     inputs.stats.hp = 3000;
     ruleset::Random random{3};
     std::set<Species> babies;

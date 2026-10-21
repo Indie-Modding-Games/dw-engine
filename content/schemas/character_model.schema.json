@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "model": {
-      "description": "The asset id of the model (a binary glTF), such as digimon/boys/model.",
+      "description": "The asset id of the model (a binary glTF), such as digimon/species_a/model.",
       "type": "string",
       "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$",
       "maxLength": 200

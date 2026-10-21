@@ -17,9 +17,10 @@ inline constexpr char ContentNamespaceSeparator = ':';
 inline constexpr std::size_t MaxContentNameLength = 64;
 
 // The id of an entry of a content table (a Digimon, a map, an item, a move), as other tables, saves and scripts name
-// it. An original keeps the stable name the base pack gives it (`agum`); an entry a pack adds is namespaced with that
-// pack's id (`mymod:newmon`), so two mods never claim the same name (docs/architecture/vfs.md#tablas-por-entradas).
-// Each part is lowercase letters, digits and underscores; numbers (`index`) stay internal to the engine.
+// it. An original keeps the stable name the base pack gives it (`species_a`); an entry a pack adds is namespaced with
+// that pack's id (`mymod:newmon`), so two mods never claim the same name
+// (docs/architecture/vfs.md#tablas-por-entradas). Each part is lowercase letters, digits and underscores; numbers
+// (`index`) stay internal to the engine.
 class ContentId {
 public:
     // Checks the text and builds the id.
@@ -35,7 +36,7 @@ public:
 
     [[nodiscard]] bool isNamespaced() const { return separator_ != std::string::npos; }
 
-    // The asset path of the entry's folder, below the table's folder: `agum` for an original, `mymod/newmon` for a
+    // The asset path of the entry's folder, below the table's folder: `species_a` for an original, `mymod/newmon` for a
     // namespaced id, since asset ids have no ':' (`digimon/mymod/newmon/model`).
     [[nodiscard]] std::string assetPath() const;
 

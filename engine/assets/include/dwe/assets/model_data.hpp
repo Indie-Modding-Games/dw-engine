@@ -169,7 +169,7 @@ inline constexpr std::size_t MaxModelImagePixels = std::size_t{1} << 24U;
 // what the runtime draws is supported: triangle lists, one skin, TRS nodes, linear and step keyframes, PNG images.
 core::Result<ModelData> parseModel(std::span<const std::byte> glb);
 
-// Reads and parses the model with this asset id (for example `digimon/agum/model`).
+// Reads and parses the model with this asset id (for example `digimon/species_a/model`).
 core::Result<ModelData> loadModel(const VirtualFileSystem& vfs, const AssetId& id);
 
 } // namespace dwe::assets
