@@ -40,7 +40,8 @@ std::uint64_t newSeed() {
 } // namespace
 
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options, bool keepsSaves) {
-    GameStart start{.storage = storageFor(options, keepsSaves), .session = nullptr};
+    GameStart start{
+        .storage = storageFor(options, keepsSaves), .session = nullptr, .systems = session::createGameSystems(files)};
     const std::uint64_t seed = newSeed();
     auto session = session::GameSession::create({.files = &files,
                                                  .rulesetId = options.ruleset,
@@ -50,7 +51,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
                                                  .storage = start.storage.get(),
                                                  .gameVersion = DWE_GAME_VERSION,
                                                  .wallClock = wallClock,
-                                                 .systems = {}});
+                                                 .systems = std::move(start.systems.systems)});
     if (!session) {
         return core::fail(core::formatMessage(messages::SessionFailed, session.error().message));
     }

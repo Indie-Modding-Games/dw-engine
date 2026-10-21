@@ -7,6 +7,7 @@ dwe_add_module(session
         src/battle_adapter.cpp
         src/evolution_adapter.cpp
         src/game_session.cpp
+        src/game_systems.cpp
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
         src/partner_moves.cpp

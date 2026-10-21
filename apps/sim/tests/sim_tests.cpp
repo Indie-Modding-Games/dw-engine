@@ -90,9 +90,11 @@ TEST_CASE("the scenarios of dwe-sim register themselves") {
     CHECK(registry.find("raisings") != nullptr);
 }
 
-TEST_CASE("the raisings scenario needs the extracted tables and a known form") {
-    const auto empty = simulate(standInFiles(), builtInScenarios(), optionsFor("raisings"));
-    CHECK_FALSE(empty.has_value());
+TEST_CASE("the raisings scenario needs a known form") {
+    SimOptions options = optionsFor("raisings");
+    options.parameters.insert_or_assign("from", "nobody");
+    const auto unknown = simulate(standInFiles(), builtInScenarios(), options);
+    CHECK(errorOf(unknown).contains("unknown form 'nobody'"));
 }
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).

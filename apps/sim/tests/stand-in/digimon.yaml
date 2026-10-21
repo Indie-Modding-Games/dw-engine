@@ -1,5 +1,6 @@
 # Made-up Digimon for the dwe-sim tests, in the shape of data/digimon: not the original's data. The rookie and the
-# four babies of the original ruleset's rebirth, so the care scenario can raise and rebirth a partner.
+# four babies of the original ruleset's rebirth, so the care scenario can raise and rebirth a partner, and the other
+# forms the original ruleset's evolution section names, so the session's evolution adapter can resolve it.
 digimon:
 - id: "agum"
   index: 3
@@ -62,6 +63,305 @@ digimon:
   height: 200
   type: 0
   level: 1
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "koro"
+  index: 100
+  name: "Test koro"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 2
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "toko"
+  index: 101
+  name: "Test toko"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 2
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "tuno"
+  index: 102
+  name: "Test tuno"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 2
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "tane"
+  index: 103
+  name: "Test tane"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 2
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "nume"
+  index: 104
+  name: "Test nume"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "aird"
+  index: 105
+  name: "Test aird"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "bird"
+  index: 106
+  name: "Test bird"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "dori"
+  index: 107
+  name: "Test dori"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "hoee"
+  index: 108
+  name: "Test hoee"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "igam"
+  index: 109
+  name: "Test igam"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "kune"
+  index: 110
+  name: "Test kune"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "mono"
+  index: 111
+  name: "Test mono"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "nani"
+  index: 112
+  name: "Test nani"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "scum"
+  index: 113
+  name: "Test scum"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "sead"
+  index: 114
+  name: "Test sead"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "shel"
+  index: 115
+  name: "Test shel"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "sira"
+  index: 116
+  name: "Test sira"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "veda"
+  index: 117
+  name: "Test veda"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "vegi"
+  index: 118
+  name: "Test vegi"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "devi"
+  index: 130
+  name: "Test devi"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 4
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "ggdr"
+  index: 131
+  name: "Test ggdr"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 5
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "mtet"
+  index: 132
+  name: "Test mtet"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 5
+  special: [null, null, null]
+  drop_item: null
+  drop_chance: 0
+  moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+- id: "panj"
+  index: 133
+  name: "Test panj"
+  file_name: null
+  bone_count: 1
+  radius: 100
+  height: 200
+  type: 0
+  level: 5
   special: [null, null, null]
   drop_item: null
   drop_chance: 0

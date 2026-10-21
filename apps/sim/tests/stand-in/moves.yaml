@@ -1,0 +1,180 @@
+# Made-up moves for the dwe-sim tests, in the shape of data/moves: not the original's data. The moves the original
+# ruleset's battle section names (support moves, the counter, the flattened shot and the others it names), so the
+# session's battle adapter can build its catalog.
+moves:
+- id: "muscle_charge"
+  index: 0
+  name: "Test muscle_charge"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "war_cry"
+  index: 1
+  name: "Test war_cry"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "mass_morph"
+  index: 2
+  name: "Test mass_morph"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "aqua_magic"
+  index: 3
+  name: "Test aqua_magic"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "full_potential"
+  index: 4
+  name: "Test full_potential"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "move_121"
+  index: 121
+  name: "Test move_121"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "counter"
+  index: 45
+  name: "Test counter"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "dynamite_kick"
+  index: 44
+  name: "Test dynamite_kick"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "dynamite_kick_48"
+  index: 48
+  name: "Test dynamite_kick_48"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "horizontal_kick"
+  index: 55
+  name: "Test horizontal_kick"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]
+- id: "horizontal_kick_57"
+  index: 57
+  name: "Test horizontal_kick_57"
+  distance: 0
+  power: 0
+  mp_cost: 0
+  iframes: 0
+  range: 0
+  special: 0
+  status: 0
+  accuracy: 0
+  status_chance: 0
+  unknown_0d: 0
+  unknown_0e: 0
+  unknown_0f: 0
+  learn_chances: [0, 0, 0]

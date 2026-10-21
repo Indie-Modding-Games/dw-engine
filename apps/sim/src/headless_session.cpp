@@ -18,19 +18,24 @@ core::Result<HeadlessSessions> HeadlessSessions::prepare(const ScenarioContext& 
         }
         species = std::make_shared<const game::partner::SpeciesTable>(std::move(*table));
     }
-    return HeadlessSessions{context, std::move(species)};
+    auto tables = session::loadSystemTables(*context.files, *context.rules);
+    if (!tables) {
+        return std::unexpected{tables.error()};
+    }
+    return HeadlessSessions{context, std::move(species), std::move(*tables)};
 }
 
 core::Result<std::unique_ptr<session::GameSession>> HeadlessSessions::start(std::uint64_t seed) const {
-    auto session = session::GameSession::create({.files = context_.files,
-                                                 .rulesetId = context_.rules->id(),
-                                                 .rules = *context_.rules,
-                                                 .species = species_,
-                                                 .seed = seed,
-                                                 .storage = nullptr,
-                                                 .gameVersion = {},
-                                                 .wallClock = {},
-                                                 .systems = {}});
+    auto session =
+        session::GameSession::create({.files = context_.files,
+                                      .rulesetId = context_.rules->id(),
+                                      .rules = *context_.rules,
+                                      .species = species_,
+                                      .seed = seed,
+                                      .storage = nullptr,
+                                      .gameVersion = {},
+                                      .wallClock = {},
+                                      .systems = session::createGameSystems(*context_.files, tables_).systems});
     if (!session) {
         return std::unexpected{session.error()};
     }

@@ -95,6 +95,11 @@ de antes). Para sus órdenes la partida les da `careContext()`, `currentPlace()`
 de los sistemas, guardados con la partida), `addTamerLevel(probabilidad, niveles)` (`tamer.c: addTamerLevel`) y
 `afterSystemCommand()`, que reparte los eventos y escribe el autoguardado como las órdenes de la partida.
 
+El juego y `dwe-sim` enchufan los tres con `createGameSystems(files, tablas)` (`game_systems.hpp`): da la lista para
+`SessionDesc::systems`, en el orden en que avanzan (evolución, inventario, batalla), y los adaptadores por tipo para
+las órdenes de la app (empezar un combate, usar un objeto), válidos mientras viva la partida. `loadSystemTables` lee
+una vez las tablas de los tres (`dwe-sim` las comparte entre sus partidas); sin ellas, cada adaptador lee las suyas.
+
 ### Evolución (`EvolutionAdapter`)
 
 `EvolutionAdapter({.files = &files})` lee la sección `evolution` y sus tablas (las del manifiesto, una vez; los tests
