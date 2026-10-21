@@ -55,12 +55,17 @@ TEST_CASE("the status page shows what the original's does, in its order") {
     CHECK(view.mp == 750);
     CHECK(view.maxMp == 800);
     CHECK(view.stats.at(0) ==
-          dwe::screens::MeterView{.labelKey = "main.stat_labels.0002", .value = 120, .min = 0, .max = 999});
+          dwe::screens::MeterView{
+              .labelKey = "main.stat_labels.0002", .value = 120, .min = 0, .max = 999, .twoTone = false});
     CHECK(view.stats.at(3).labelKey == "main.stat_labels.0005");
     REQUIRE(view.meters.size() == 3);
     CHECK(view.meters[0] ==
-          dwe::screens::MeterView{.labelKey = "partner_menu.happiness", .value = -10, .min = -100, .max = 100});
+          dwe::screens::MeterView{
+              .labelKey = "partner_menu.happiness", .value = -10, .min = -100, .max = 100, .twoTone = true});
+    // game_menu.c: renderDigimonStatsView: happiness and discipline are two-tone bars, the virus bar a plain one.
+    CHECK(view.meters[1].twoTone);
     CHECK(view.meters[2].labelKey == "partner_menu.virus");
+    CHECK_FALSE(view.meters[2].twoTone);
     CHECK(view.conditionKeys ==
           std::vector<std::string>{"partner_menu.condition.hungry", "partner_menu.condition.sick"});
 

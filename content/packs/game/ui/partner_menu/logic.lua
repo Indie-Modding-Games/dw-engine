@@ -77,6 +77,22 @@ local function draw_bar(document, prefix, list, index)
 		percent(value, number(base .. "min"), number(base .. "max")) .. "%")
 end
 
+-- A care meter. A two-tone one fills the bar from the minimum to the middle of its range, then fills it again in
+-- its second colour from the middle to the maximum (game_menu.c: renderDigimonStatsView: happiness, discipline).
+local function draw_meter(document, index)
+	local prefix = "meter-" .. index
+	local base = "partner.meter." .. index .. "."
+	draw_bar(document, prefix, "partner.meter", index)
+	local high = 0
+	if setting(base .. "two_tone", false) then
+		local value, low, top = number(base .. "value"), number(base .. "min"), number(base .. "max")
+		local middle = (low + top) / 2
+		document:get(prefix .. "-fill"):set_property("width", percent(value, low, middle) .. "%")
+		high = percent(value, middle, top)
+	end
+	document:get(prefix .. "-high"):set_property("width", high .. "%")
+end
+
 local function draw_status(document)
 	document:get("status-name"):set_text(text(setting("partner.name", "")))
 	document:get("status-lives"):set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
@@ -90,7 +106,7 @@ local function draw_status(document)
 		draw_bar(document, "stat-" .. index, "partner.stat", index)
 	end
 	for index = 0, meters - 1 do
-		draw_bar(document, "meter-" .. index, "partner.meter", index)
+		draw_meter(document, index)
 	end
 	local count = number("partner.condition.count")
 	for index = 0, max_conditions - 1 do

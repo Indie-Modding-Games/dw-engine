@@ -34,11 +34,13 @@ constexpr std::string_view LabelField = "label";
 constexpr std::string_view ValueField = "value";
 constexpr std::string_view MinField = "min";
 constexpr std::string_view MaxField = "max";
+constexpr std::string_view TwoToneField = "two_tone";
 constexpr std::string_view KeyField = "key";
 constexpr std::string_view CountSuffix = ".count";
 
-MeterView meterOf(std::string_view label, const session::CareMeter& meter) {
-    return {.labelKey = std::string{label}, .value = meter.value, .min = meter.min, .max = meter.max};
+MeterView meterOf(std::string_view label, const session::CareMeter& meter, bool twoTone) {
+    return {
+        .labelKey = std::string{label}, .value = meter.value, .min = meter.min, .max = meter.max, .twoTone = twoTone};
 }
 
 void addMeter(ScreenSettings& settings, std::string_view list, std::size_t index, const MeterView& meter) {
@@ -46,6 +48,7 @@ void addMeter(ScreenSettings& settings, std::string_view list, std::size_t index
     settings.push_back({.name = listEntryName(list, index, ValueField), .value = static_cast<double>(meter.value)});
     settings.push_back({.name = listEntryName(list, index, MinField), .value = static_cast<double>(meter.min)});
     settings.push_back({.name = listEntryName(list, index, MaxField), .value = static_cast<double>(meter.max)});
+    settings.push_back({.name = listEntryName(list, index, TwoToneField), .value = meter.twoTone});
 }
 
 std::string countName(std::string_view list) {
@@ -64,16 +67,17 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
                            .mp = partner.currentMp,
                            .maxMp = partner.stats[Stat::Mp],
                            .stats = {},
-                           .meters = {meterOf(HappinessLabel, partner.happiness),
-                                      meterOf(DisciplineLabel, partner.discipline),
-                                      meterOf(VirusLabel, partner.virusBar)},
+                           .meters = {meterOf(HappinessLabel, partner.happiness, true),
+                                      meterOf(DisciplineLabel, partner.discipline, true),
+                                      meterOf(VirusLabel, partner.virusBar, false)},
                            .conditionKeys = {}};
     for (std::size_t index = 0; index < BarStats.size(); ++index) {
         const Stat stat = BarStats.at(index);
         view.stats.at(index) = {.labelKey = mainLabelKey(StatLabelsBlock, static_cast<std::size_t>(stat)),
                                 .value = partner.stats[stat],
                                 .min = 0,
-                                .max = StatBarMax};
+                                .max = StatBarMax,
+                                .twoTone = false};
     }
     for (const auto& [condition, label] : ConditionLabels) {
         if (partner.conditions.has(condition)) {

@@ -26,12 +26,15 @@ inline constexpr std::string_view PartnerStatList = "partner.stat";
 inline constexpr std::string_view PartnerMeterList = "partner.meter";
 inline constexpr std::string_view PartnerConditionList = "partner.condition";
 
-// A bar of the status page: its label, value and range.
+// A bar of the status page: its label, value and range. A two-tone bar fills its whole width once from the minimum
+// to the middle of the range, then fills it again in a second colour from the middle to the maximum (game_menu.c:
+// renderDigimonStatsView draws happiness and discipline so).
 struct MeterView {
     std::string labelKey;
     std::int32_t value = 0;
     std::int32_t min = 0;
     std::int32_t max = 0;
+    bool twoTone = false;
 
     friend bool operator==(const MeterView&, const MeterView&) = default;
 };

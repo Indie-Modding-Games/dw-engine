@@ -105,6 +105,18 @@
 .stat .fill { background-color: #f0a73a; }
 .meter .fill { background-color: #6fc3ff; }
 
+/* The second colour of a two-tone meter, over the first from the left. */
+.meter {
+	position: relative;
+}
+
+.meter .fill.high {
+	position: absolute;
+	left: 0;
+	top: 0;
+	background-color: #ffd34f;
+}
+
 .bar-row .value {
 	width: 70dp;
 	text-align: right;
