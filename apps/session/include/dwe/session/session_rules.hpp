@@ -27,6 +27,8 @@ struct NewGameRules {
 struct TamerRules {
     std::int32_t levelMin = 0;
     std::int32_t levelMax = 0;
+    // Levels gained when an evolution's tamer chance succeeds (evl.c: EVL_applyEvolution).
+    std::int32_t evolutionLevelGain = 0;
 };
 
 // Reads the sections; errors name the file, line and column.

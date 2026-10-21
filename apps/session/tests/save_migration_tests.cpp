@@ -58,3 +58,25 @@ TEST_CASE("a save whose partner section is version 1 loads, its virus backup wit
     CHECK(loaded->partner().state().virusBackup.stats[Stat::Offense] == KeptOffense);
     CHECK(loaded->partner().state().species == saved->partner().state().species);
 }
+
+TEST_CASE("a save whose random section is version 1 loads, the systems' numbers going on from the partner's") {
+    const TestPacks packs;
+    auto saved = newGame(packs, nullptr);
+    auto file = saved->saveFile();
+    REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+    auto found = file->sections.find("random");
+    REQUIRE(found != file->sections.end());
+    CHECK(found->second.version == 2);
+    YamlNode& state = found->second.state;
+    const YamlNode* partner = state.find("partner");
+    REQUIRE(partner != nullptr);
+    YamlNode version1 = YamlNode::mapping();
+    version1.set("partner", *partner);
+    state = version1;
+    found->second.version = 1;
+
+    auto loaded = newGame(packs, nullptr);
+    const auto read = loaded->loadFile(*file);
+    REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+    CHECK(loaded->random().state() == saved->partner().randomState());
+}

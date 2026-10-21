@@ -24,6 +24,9 @@ using messages::formatMessage;
 // The slot list's label of a save: the partner's species, then the map.
 constexpr std::string_view LabelSeparator = " ";
 
+// The roll of a chance in percent (tamer.c: addTamerLevel rolls randomLimit(100)).
+constexpr std::int32_t PercentRoll = 100;
+
 // The checks of every section the session's systems read.
 ruleset::SectionChecks allChecks(const std::vector<std::unique_ptr<SessionSystem>>& systems) {
     ruleset::SectionChecks checks = game::partner::partnerSectionChecks();
@@ -196,6 +199,7 @@ core::Result<void> GameSession::startNewGame() {
     }
     // The same seed starts the same playthrough, whatever came before in this session.
     state_->partner.restoreRandomState(ruleset::Random{seed_}.state());
+    state_->random.reseed(seed_ + SystemsSeedOffset);
     if (auto started = state_->partner.start(start.partner, stats, clock); !started) {
         return started;
     }
@@ -321,6 +325,10 @@ const std::optional<FieldPlace>& GameSession::savedPlace() const {
     return state_->savedPlace;
 }
 
+std::optional<FieldPlace> GameSession::currentPlace() const {
+    return state_->currentPlace();
+}
+
 void GameSession::followMap() {
     if (state_->field == nullptr || state_->field->mapId() == lastMap_) {
         return;
@@ -371,6 +379,12 @@ void GameSession::routePartnerEvent(const PartnerEvent& event) {
     }
 }
 
+void GameSession::addTamerLevel(std::int32_t chancePercent, std::int32_t amount) {
+    if (state_->random.below(PercentRoll) < chancePercent) {
+        changeTamerLevel(amount);
+    }
+}
+
 void GameSession::changeTamerLevel(std::int32_t change) {
     // tamer.c: addTamerLevel keeps the level within its limits.
     const TamerRules& rules = state_->rules.tamer;
@@ -388,6 +402,22 @@ void GameSession::rebirthPartner() {
 void GameSession::afterCommand() {
     routePartnerEvents();
     writeRequestedAutosave();
+}
+
+void GameSession::afterSystemCommand() {
+    afterCommand();
+}
+
+PraiseOrScold GameSession::praiseOrScold(bool scolded) const {
+    const game::partner::MoodState& mood = state_->partner.state().mood;
+    return {.scolded = scolded, .disciplineBefore = mood.discipline, .happinessBefore = mood.happiness};
+}
+
+void GameSession::afterPraiseOrScold(const PraiseOrScold& event) {
+    for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
+        system->afterPraiseOrScold(*this, event);
+    }
+    afterCommand();
 }
 
 void GameSession::requestAutosave(AutosaveReason reason) {
@@ -481,6 +511,10 @@ const TamerState& GameSession::tamer() const {
     return state_->tamer;
 }
 
+ruleset::Random& GameSession::random() {
+    return state_->random;
+}
+
 std::vector<PartnerEvent> GameSession::takePartnerEvents() {
     return std::exchange(partnerEvents_, {});
 }
@@ -503,13 +537,15 @@ bool GameSession::cure(const game::partner::CureEffect& cure) {
 }
 
 void GameSession::scold() {
+    const PraiseOrScold event = praiseOrScold(true);
     state_->partner.scold();
-    afterCommand();
+    afterPraiseOrScold(event);
 }
 
 void GameSession::praise() {
+    const PraiseOrScold event = praiseOrScold(false);
     state_->partner.praise();
-    afterCommand();
+    afterPraiseOrScold(event);
 }
 
 void GameSession::useToilet() {

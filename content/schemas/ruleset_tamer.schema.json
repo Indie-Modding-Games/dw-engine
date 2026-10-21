@@ -3,10 +3,15 @@
   "title": "Ruleset: tamer",
   "description": "rules/<id>/tamer.yaml: the tamer's rules (apps/session: TamerRules, apps/session/README.md).",
   "type": "object",
-  "required": ["level_min", "level_max"],
+  "required": ["level_min", "level_max", "evolution_level_gain"],
   "additionalProperties": false,
   "properties": {
     "level_min": { "description": "The lowest tamer level.", "type": "integer", "minimum": 0 },
-    "level_max": { "description": "The highest tamer level.", "type": "integer", "minimum": 0 }
+    "level_max": { "description": "The highest tamer level.", "type": "integer", "minimum": 0 },
+    "evolution_level_gain": {
+      "description": "Tamer levels gained when an evolution's tamer chance succeeds.",
+      "type": "integer",
+      "minimum": 0
+    }
   }
 }

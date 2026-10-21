@@ -29,6 +29,7 @@ if (check.evolution) {
 // Eventos:
 evolution->wakeUp(inputs, state, random);                               // al despertar
 evolution->praiseOrScold(inputs, state, {.scolded = true, .disciplineBefore = 0, .happinessBefore = -100}, random);
+evolution->fillVirusBar(inputs, state);                                 // el partner avisó de la barra llena
 evolution->useItem(inputs, state, "giga_hand");                         // id del objeto en data/items
 evolution->returnFromVirus(inputs, state);                              // rutina de script 2 (lee inputs.virusBackup)
 evolution->evolveByScript(inputs, state, target);                       // rutina de script 10
@@ -51,9 +52,9 @@ evolution->rebirth(inputs, random);                                     // al mo
   (`care.limits`: 9999 HP y MP, 999 el resto), como `EVL_clampBaseStats`, pero sin el tope de 999 por ganancia
   (decidido por el responsable de diseño, 2026-10-20); `statChange` queda a 0.
 - **Copia de la forma virus**: al entrar en la forma virus, `EvolutionResult::virusBackup` trae la forma y los stats
-  anteriores. La sesión guarda los stats en `PartnerState::virusBackup` y la forma donde el original la guarda (la
-  variable de script `PSTAT_SUKAMON_BACKUP_DIGIMON`), y los devuelve en `EvolutionInputs::virusBackup`, que leen
-  `returnFromVirus` y la reconstrucción de stats.
+  anteriores. La sesión guarda las dos en `PartnerState::virusBackup` (el original guarda la forma en la variable de
+  guion `PSTAT_SUKAMON_BACKUP_DIGIMON`; decidido por el responsable de diseño, 2026-10-20: va con el partner), y las
+  devuelve en `EvolutionInputs::virusBackup`, que leen `returnFromVirus` y la reconstrucción de stats.
 - **`EvolutionState`**: formas ya criadas y la marca de objeto usado. `toYaml`/`fromYaml` guardan las formas por id,
   en la versión de sección `EvolutionStateVersion` (para las migraciones de `game/save`); la marca no se guarda, como
   en el original.
@@ -104,7 +105,7 @@ hay que extraerlo de nuevo.
 | Especiales al despertar | `evolution.c`: `handleSpecialEvolutions` (modo 2) | `Evolution::wakeUp`, `specials.wake_up` | `waking up: …`, `a special needs its roll…`, `one roll for every rule…` | Igual |
 | Especiales al elogiar o regañar; aviso de regaño | `evolution.c`: `handleSpecialEvolutions` (modo 3); `partner_impl.c`: `handlePraiseScold` | `Evolution::praiseOrScold`, `specials.praise_scold` | `praise or scold: …` | Igual |
 | Especial de las 360 h que pisa la normal | `partner_impl.c`: `tickConditions` | `praise_scold_on_timer`, `quirks.timer_special_overrides_normal` | `a champion at the timer hours…`, `quirk timer_special_overrides_normal…` | Igual; decidido por el responsable de diseño (2026-10-20): fiel al original |
-| Barra de virus y copia al entrar | `partner_impl.c`: `tickConditions` | `virus`, `EvolutionResult::virusBackup` (la guarda el partner) | `a full virus bar…` | Igual |
+| Barra de virus y copia al entrar | `partner_impl.c`: `tickConditions` | `virus`, `Evolution::fillVirusBar` (el aviso del partner), `EvolutionResult::virusBackup` (la guarda el partner, con la forma) | `a full virus bar…`, `the partner's full virus bar…` | Igual |
 | Vuelta de la forma virus y stats reconstruidos | `partner.c`: `callDigimonRoutine` (2); `evl.c`: `EVL_scaleBaseStats` | `Evolution::returnFromVirus`, `EvolutionInputs::virusBackup`, `EvolutionResult::restoredStats` | `back from the virus form…`, `the stats rebuilt from the virus backup are left to the session to clamp` | Igual: se restauran con `setStats` y la sesión los deja en el tope de cada stat, como `EVL_clampBaseStats`; sin el tope de 999 por ganancia (decidido por el responsable de diseño, 2026-10-20) |
 | Evolución por script | `partner.c`: `callDigimonRoutine` (10) | `Evolution::evolveByScript` | `effects_tests.cpp` | Igual |
 | Objetos de evolución fijos y de tabla | `item.c`: `handleEvoItems` | `Evolution::useItem`, `items`, `EvolutionTables::itemTarget` (`data/item_effects`, `item_targets`) | `a fixed evolution item…`, `an item of the item table…`, `the evolution items' targets come from the item effects…`, slow `every evolution item of the item effects…` | Igual |

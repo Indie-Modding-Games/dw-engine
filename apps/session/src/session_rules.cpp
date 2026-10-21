@@ -20,6 +20,7 @@ constexpr std::string_view StatsKey = "stats";
 constexpr std::string_view TamerLevelKey = "tamer_level";
 constexpr std::string_view LevelMinKey = "level_min";
 constexpr std::string_view LevelMaxKey = "level_max";
+constexpr std::string_view EvolutionLevelGainKey = "evolution_level_gain";
 
 // The keys of the stats, in the order of game::partner::AllStats.
 constexpr std::array<std::string_view, game::partner::StatCount> StatKeys{"hp",      "mp",    "offense",
@@ -73,11 +74,12 @@ core::Result<NewGameRules> readNewGameRules(const ruleset::Section& section) {
 core::Result<TamerRules> readTamerRules(const ruleset::Section& section) {
     YamlReader reader;
     const YamlNode& root = section.node;
-    if (!reader.expectKeys(root, messages::TamerSectionText, {LevelMinKey, LevelMaxKey})) {
+    if (!reader.expectKeys(root, messages::TamerSectionText, {LevelMinKey, LevelMaxKey, EvolutionLevelGainKey})) {
         return std::unexpected{reader.error(section.file)};
     }
     const TamerRules rules{.levelMin = nonNegative(reader, root, LevelMinKey),
-                           .levelMax = nonNegative(reader, root, LevelMaxKey)};
+                           .levelMax = nonNegative(reader, root, LevelMaxKey),
+                           .evolutionLevelGain = nonNegative(reader, root, EvolutionLevelGainKey)};
     if (reader.ok() && rules.levelMin > rules.levelMax) {
         reader.fail(root, formatMessage(messages::LevelLimitsReversed, rules.levelMin, rules.levelMax));
     }

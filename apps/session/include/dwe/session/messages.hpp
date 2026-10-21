@@ -45,5 +45,12 @@ inline constexpr std::string_view FieldStateText = "the field state";
 inline constexpr std::string_view RandomStateText = "the random state";
 inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
 inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
+inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";
+
+// The evolution adapter.
+inline constexpr std::string_view EvolutionNeedsTables = "the evolution adapter needs the packs or its tables";
+inline constexpr std::string_view EvolutionNotRead = "the evolution rules have not been read";
+inline constexpr std::string_view EvolutionNotApplied = "evolution: the partner could not become '{}': {}";
+inline constexpr std::string_view UnknownEvolutionForm = "evolution: no form '{}' in the tables";
 
 } // namespace dwe::session::messages

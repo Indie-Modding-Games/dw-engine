@@ -6,9 +6,18 @@
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
+#include <cstdint>
+
 namespace dwe::session {
 
 class GameSession;
+
+// The player praised or scolded the partner: the discipline and happiness it had before.
+struct PraiseOrScold {
+    bool scolded = false;
+    std::int32_t disciplineBefore = 0;
+    std::int32_t happinessBefore = 0;
+};
 
 // A game system the session drives besides its core (clock, field, partner, save). Evolution, battle and inventory
 // each plug in as one adapter file that implements this and turns the system's own structs into the partner's and
@@ -39,6 +48,9 @@ public:
 
     // Sees each partner event after the session routed it (evolution reads VirusBarFull, for example).
     virtual void routePartnerEvent(GameSession& /*session*/, const game::partner::PartnerEvent& /*event*/) {}
+
+    // Runs after the player praised or scolded the partner, before its events are routed.
+    virtual void afterPraiseOrScold(GameSession& /*session*/, const PraiseOrScold& /*event*/) {}
 };
 
 } // namespace dwe::session

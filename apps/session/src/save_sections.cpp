@@ -26,6 +26,7 @@ constexpr std::string_view MapKey = "map";
 constexpr std::string_view PositionKey = "position";
 constexpr std::string_view YawKey = "yaw";
 constexpr std::string_view PartnerKey = "partner";
+constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
 
 // Numbers are written in their shortest form that reads back exactly.
@@ -61,6 +62,24 @@ T parsed(YamlReader& reader, const YamlNode& node, std::string_view problem) {
 game::save::MigrationChain partnerMigrations() {
     game::save::MigrationChain chain;
     chain.add(game::partner::addVirusBackupSpecies);
+    return chain;
+}
+
+// Version 1 kept only the partner's random state; the systems' numbers go on from the same point.
+core::Result<YamlNode> addSystemsRandom(YamlNode state) {
+    const YamlNode* partner = state.find(PartnerKey);
+    if (partner == nullptr) {
+        return core::fail(formatMessage(messages::MissingRandomKey, PartnerKey));
+    }
+    const YamlNode systems = *partner;
+    state.set(std::string{SystemsKey}, systems);
+    return state;
+}
+
+// The random section's versions: 2 adds the systems' random state.
+game::save::MigrationChain randomMigrations() {
+    game::save::MigrationChain chain;
+    chain.add(addSystemsRandom);
     return chain;
 }
 
@@ -157,19 +176,22 @@ core::Result<void> FieldSave::read(const YamlNode& state) {
 core::Result<YamlNode> RandomSave::write() const {
     YamlNode node = YamlNode::mapping();
     node.set(std::string{PartnerKey}, scalarOf(state_->partner.randomState()));
+    node.set(std::string{SystemsKey}, scalarOf(state_->random.state()));
     return node;
 }
 
 core::Result<void> RandomSave::read(const YamlNode& state) {
     YamlReader reader;
-    if (!reader.expectKeys(state, messages::RandomStateText, {PartnerKey})) {
+    if (!reader.expectKeys(state, messages::RandomStateText, {PartnerKey, SystemsKey})) {
         return std::unexpected{reader.error(messages::RandomStateText)};
     }
     const auto partner = parsed<std::uint64_t>(reader, reader.field(state, PartnerKey), messages::NotARandomState);
+    const auto systems = parsed<std::uint64_t>(reader, reader.field(state, SystemsKey), messages::NotARandomState);
     if (auto done = reader.finish(true, messages::RandomStateText); !done) {
         return std::unexpected{done.error()};
     }
     state_->partner.restoreRandomState(partner);
+    state_->random.restoreState(systems);
     return {};
 }
 
@@ -179,7 +201,7 @@ core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections)
           SectionEntry{.name = PartnerName, .serializer = &partner, .migrations = partnerMigrations()},
           SectionEntry{.name = TamerName, .serializer = &tamer, .migrations = {}},
           SectionEntry{.name = FieldName, .serializer = &field, .migrations = {}},
-          SectionEntry{.name = RandomName, .serializer = &random, .migrations = {}}}) {
+          SectionEntry{.name = RandomName, .serializer = &random, .migrations = randomMigrations()}}) {
         if (auto added = sections.add(std::string{name}, *serializer, migrations); !added) {
             return added;
         }

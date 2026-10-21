@@ -116,6 +116,13 @@ public:
     // The evolution counters the evolution system resets.
     void setEvolutionCounters(const EvolutionCounters& counters) { state_.evolution = counters; }
 
+    // The weight an evolution gives the new form (evl.c: EVL_applyEvolution).
+    void setWeight(std::int32_t weight) { state_.weight = weight; }
+
+    // What the evolution system keeps on entering the virus form, and the virus bar starting again.
+    void setVirusBackup(const VirusBackup& backup) { state_.virusBackup = backup; }
+    void restartVirusBar() { state_.toilet.virusBar = 0; }
+
     // After the death: the partner is reborn as a baby (evolution.c: reincarnatePartner,
     // initializeReincarnatedPartner). A natural death passes on a part of the stats, as much as the tamer's level.
     core::Result<void> rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel);

@@ -13,6 +13,7 @@
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
 #include <dwe/ruleset/game_clock.hpp>
+#include <dwe/ruleset/random.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
 #include <dwe/session/partner_view.hpp>
@@ -121,6 +122,12 @@ public:
     // Where the loaded save left the player, for entering its map; nothing for a new game.
     [[nodiscard]] const std::optional<FieldPlace>& savedPlace() const;
 
+    // Where the player is now: on the attached field's map, else where the loaded save left them.
+    [[nodiscard]] std::optional<FieldPlace> currentPlace() const;
+
+    // What the care rules and the systems see of the rest of the game now (the tamer busy in a map change).
+    [[nodiscard]] game::partner::CareContext careContext() const;
+
     [[nodiscard]] ruleset::RulesetStore& rules() { return store_; }
     [[nodiscard]] ruleset::GameClock& clock();
     [[nodiscard]] const ruleset::GameClock& clock() const;
@@ -133,6 +140,13 @@ public:
     // What the UI shows of the partner; only while playing().
     [[nodiscard]] PartnerView partnerView() const;
     [[nodiscard]] const TamerState& tamer() const;
+
+    // The random numbers of the systems besides the partner (an evolution's special roll, a chip's tamer level, the
+    // items lost in a defeat), saved with the game. A new game starts them from the seed.
+    [[nodiscard]] ruleset::Random& random();
+
+    // A tamer level change with its chance (tamer.c: addTamerLevel), kept within the tamer section's limits.
+    void addTamerLevel(std::int32_t chancePercent, std::int32_t amount);
 
     // The partner's events of the last tick and of the commands since, for the UI.
     [[nodiscard]] std::vector<game::partner::PartnerEvent> takePartnerEvents();
@@ -149,6 +163,10 @@ public:
     core::Result<game::partner::TrainingResult> train(const game::partner::TrainingRequest& request);
     // A battle ended; until game/battle lands its adapter calls this.
     void finishBattle(const game::partner::BattleOutcome& outcome);
+
+    // After a system's command changed the partner (an item, an evolution): routes the partner's events and writes a
+    // requested autosave, as the session's own commands do.
+    void afterSystemCommand();
 
     // Asks for an autosave; the save module keeps one request and the ruleset decides which reasons count.
     void requestAutosave(game::save::AutosaveReason reason);
@@ -175,7 +193,9 @@ private:
     void writeRequestedAutosave();
     // What every command of the player does after it: route the partner's events and write a requested autosave.
     void afterCommand();
-    [[nodiscard]] game::partner::CareContext careContext() const;
+    // The praise or scold about to happen, with the partner's values before it.
+    [[nodiscard]] PraiseOrScold praiseOrScold(bool scolded) const;
+    void afterPraiseOrScold(const PraiseOrScold& event);
     [[nodiscard]] game::save::SaveHeader headerNow() const;
     [[nodiscard]] std::chrono::sys_seconds now() const;
 

@@ -2,3 +2,5 @@
 # tamer.c: addTamerLevel: el nivel sube o baja con su tirada y queda entre 0 y 10.
 level_min: 0
 level_max: 10
+# evl.c: EVL_applyEvolution: addTamerLevel(20 o 100, 1); la evolución da la probabilidad, esto los niveles.
+evolution_level_gain: 1

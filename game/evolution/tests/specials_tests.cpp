@@ -195,6 +195,23 @@ TEST_CASE("a full virus bar turns the partner into the virus form, even with the
     CHECK_FALSE(checkAt(evolution, inputs).evolution);
 }
 
+TEST_CASE("the partner's full virus bar turns it into the virus form, keeping its form and stats") {
+    const Evolution evolution = TableFixture{}.makeEvolution();
+    EvolutionInputs inputs = inputsOf("grey", 50);
+    inputs.stats = {.hp = 1000, .mp = 900, .offense = 100, .defense = 90, .speed = 80, .brains = 70};
+    inputs.tamerFree = false;
+    const auto result = evolution.fillVirusBar(inputs, {});
+    REQUIRE(result);
+    CHECK(valueOf(result).target == TableFixture::index("scum"));
+    CHECK(valueOf(result).reason == EvolutionReason::Virus);
+    CHECK(valueOf(result).restartsVirusBar);
+    CHECK(valueOf(result).evolutionTimer == 50);
+    CHECK(valueOf(valueOf(result).virusBackup) == VirusBackup{.species = inputs.species, .stats = inputs.stats});
+
+    inputs.species = TableFixture::index("scum");
+    CHECK_FALSE(evolution.fillVirusBar(inputs, {}));
+}
+
 TEST_CASE("back from the virus form the partner is its kept form, with stats rebuilt from the kept ones") {
     const Evolution evolution = TableFixture{}.makeEvolution();
     EvolutionInputs inputs = inputsOf("scum");

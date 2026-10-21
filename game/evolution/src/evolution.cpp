@@ -244,6 +244,15 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
     return {.evolutionTimer = timer, .evolution = std::nullopt};
 }
 
+std::optional<EvolutionResult> Evolution::fillVirusBar(const EvolutionInputs& inputs,
+                                                       const EvolutionState& state) const {
+    const Species virusForm = require(rules_.virus.target);
+    if (inputs.species == virusForm) {
+        return std::nullopt;
+    }
+    return evolve(inputs, state, virusForm, EvolutionReason::Virus);
+}
+
 std::optional<EvolutionResult> Evolution::wakeUp(const EvolutionInputs& inputs, const EvolutionState& state,
                                                  ruleset::Random& random) const {
     const auto target = specialTarget(rules_.specials.wakeUp, inputs, std::nullopt, random);

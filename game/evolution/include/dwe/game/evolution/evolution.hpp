@@ -47,6 +47,11 @@ public:
     [[nodiscard]] NaturalCheck checkNatural(const EvolutionInputs& inputs, const EvolutionState& state,
                                             std::int64_t hoursCrossed, ruleset::Random& random) const;
 
+    // The partner's virus bar filled up (partner_impl.c: tickConditions): into the virus form, whatever the tamer
+    // does; nothing when the partner is in it already. The result keeps the form and stats to come back to.
+    [[nodiscard]] std::optional<EvolutionResult> fillVirusBar(const EvolutionInputs& inputs,
+                                                              const EvolutionState& state) const;
+
     // The special rules on waking up (handleSpecialEvolutions, mode 2).
     [[nodiscard]] std::optional<EvolutionResult> wakeUp(const EvolutionInputs& inputs, const EvolutionState& state,
                                                         ruleset::Random& random) const;
