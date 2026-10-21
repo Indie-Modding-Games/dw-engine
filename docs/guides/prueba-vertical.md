@@ -147,6 +147,84 @@ DISPLAY=:23 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json scripts/dev.sh
     --skip-steps fullscreen
 ```
 
+### Rutas sobre el paquete cocinado
+
+Las rutas de arriba corren sobre el contenido extraído (PNG, WAV, glTF), pero un jugador carga el paquete cocinado
+(KTX2, Opus) y empaquetado en un `.pak`. Si `dwx cook` convierte algo que el juego necesita leer de otra forma, el
+contenido extraído no lo nota: así se perdieron los fondos de los mapas y la fuente, que se cocinaron a KTX2 y ya no
+cargaban. Por eso el gate cocina la extracción y corre algunas rutas sobre el resultado.
+
+Cocina, empaqueta y comprueba dentro del contenedor. Necesita un build del preset; con un preset que no compila para
+Linux (`windows-cross`) usa el `dwx` del build `ci`:
+
+```sh
+DWE_CONTENT=<carpeta extraída> DWE_COOKED_DIR=<salida> PRESET=ci scripts/dev.sh cook-content
+```
+
+Lee `DWE_CONTENT/base` y escribe en `DWE_COOKED_DIR` (por defecto `build/cooked-content`; fuera del repositorio se
+monta en el contenedor en la misma ruta). Antes de escribir nada rechaza una salida que esté dentro de, o que
+contenga, `DWE_CONTENT`, la carpeta del disco, `DWE_DECOMP`, `~/code/assets` o las carpetas protegidas del equipo
+(`_work/content*`, `_work/p2/content`, `_work/p2/scratch-routes`, `_work/p3-inventory`, `_work/saves-play`,
+`_work/mouse-route`, `_work/validate-runtime`, `_work/viz` y `build/verify-p1` del checkout principal), también a
+través de enlaces simbólicos, y la propia carpeta del repositorio. Si git no le dice dónde está el checkout principal,
+no cocina: sin él no sabe qué carpetas proteger. Escribe:
+
+- `folder/base`: el paquete cocinado (`dwx cook`). **A mano, el cocinado es incremental:** la segunda vez solo cocina
+  lo que ha cambiado en la extracción y conserva lo demás. Si cambias `dwx` (un cocinero, `PngOnlyImages`), borra
+  `DWE_COOKED_DIR` antes, o el resultado puede ser de un cocinado anterior.
+- `archive/base.pak`: ese paquete en un archivo (`dwx pack`). Se borra antes de cocinar, así que un cocinado que falla
+  no deja un `.pak` viejo.
+
+Después pasa `dwx validate --engine` por el paquete cocinado y por el paquete `game` del repositorio montado sobre el
+`.pak` (así comprueba también el `.pak`); las dos tienen que acabar en `0 problems`. Tarda unos 8 minutos con el
+preset `ci` la primera vez y unos 5 después.
+
+`check-full` hace este paso solo (`cook-content.log`) cuando le das `DWE_CONTENT` y el preset compila para Linux; con
+`windows-cross` lo salta y lo dice. No usa `DWE_COOKED_DIR`: cocina desde cero en `build/gate-cooked`, que vacía
+antes, para que nada de un cocinado anterior tape un fallo. Después corre estas rutas sobre el `.pak`, en los dos
+idiomas, en el mismo Xvfb que las demás (`<cocinado>` es `build/gate-cooked` tras `check-full`, o tu
+`DWE_COOKED_DIR`):
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <cocinado>/archive --mods tests/mods/example_mod --lang $lang \
+        --autotest tests/autotest/route-mod-map.yaml --skip-steps fullscreen
+    scripts/dev.sh run --content <cocinado>/archive --text-font original --lang $lang \
+        --autotest tests/autotest/route-fade.yaml --skip-steps fullscreen
+done
+```
+
+Entre las dos cubren lo que el juego lee de su PNG (`assets::PngOnlyImages`) y lo demás del paquete cocinado:
+
+- `route-mod-map`: el mapa de un mod (en PNG, sin cocinar) sobre la base cocinada, y su salida a File City: los fondos y
+  las páginas de textura de `twna01` desde el `.pak`, y los modelos del jugador y del compañero.
+- `route-fade` con `--text-font original`: los fondos y las páginas de textura de `twna01` y `room08`, con la paleta
+  de la hora, y el nombre del mapa durante el fundido dibujado con la fuente de mapa de bits (en `es`, con los
+  caracteres que le faltan desde la moderna).
+
+Además de `autotest: PASS`, 0 mensajes de la capa de validación y 0 líneas `[error]`, el registro de cada una tiene
+que decir `ui: original bitmap font font/main: ...`: si el atlas de la fuente no carga, el juego solo avisa
+(`[warning]`) y sigue con la moderna, así que la ruta pasaría igual.
+
+En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
+(`build\windows-clang-debug\apps\dwx\dwx.exe cook <carpeta extraída>\base -o <salida>\folder\base`, luego `pack` y
+`validate`), y el juego con `--content <salida>\archive`.
+
+### Las ejecuciones del gate
+
+Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
+
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (16) sobre el contenido extraído, en `en` y en `es`: 32
+  ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod` y
+  `route-skins` con `--mods tests/mods/ui_skin`.
+- [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
+  las dos comprobaciones.
+- [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
+
+En total, **36 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+`autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
+añades una ruta, súmala aquí.
+
 ### Formato de una ruta
 
 ```yaml
