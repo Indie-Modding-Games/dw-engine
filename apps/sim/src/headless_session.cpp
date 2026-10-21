@@ -26,16 +26,26 @@ core::Result<HeadlessSessions> HeadlessSessions::prepare(const ScenarioContext& 
 }
 
 core::Result<std::unique_ptr<session::GameSession>> HeadlessSessions::start(std::uint64_t seed) const {
-    auto session =
-        session::GameSession::create({.files = context_.files,
-                                      .rulesetId = context_.rules->id(),
-                                      .rules = *context_.rules,
-                                      .species = species_,
-                                      .seed = seed,
-                                      .storage = nullptr,
-                                      .gameVersion = {},
-                                      .wallClock = {},
-                                      .systems = session::createGameSystems(*context_.files, tables_).systems});
+    auto game = startGame(seed);
+    if (!game) {
+        return std::unexpected{game.error()};
+    }
+    return std::move(game->session);
+}
+
+core::Result<HeadlessGame> HeadlessSessions::startGame(std::uint64_t seed) const {
+    session::GameSystems systems = session::createGameSystems(*context_.files, tables_);
+    HeadlessGame game{
+        .session = nullptr, .evolution = systems.evolution, .inventory = systems.inventory, .battle = systems.battle};
+    auto session = session::GameSession::create({.files = context_.files,
+                                                 .rulesetId = context_.rules->id(),
+                                                 .rules = *context_.rules,
+                                                 .species = species_,
+                                                 .seed = seed,
+                                                 .storage = nullptr,
+                                                 .gameVersion = {},
+                                                 .wallClock = {},
+                                                 .systems = std::move(systems.systems)});
     if (!session) {
         return std::unexpected{session.error()};
     }
@@ -43,7 +53,8 @@ core::Result<std::unique_ptr<session::GameSession>> HeadlessSessions::start(std:
         return std::unexpected{started.error()};
     }
     (*session)->clock().setSpeed(context_.speed);
-    return std::move(*session);
+    game.session = std::move(*session);
+    return game;
 }
 
 } // namespace dwe::sim

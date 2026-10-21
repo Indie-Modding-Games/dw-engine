@@ -12,6 +12,15 @@
 
 namespace dwe::sim {
 
+// A headless game: the session and its systems by type, for the commands a scenario or a test plays on it (an item,
+// a battle). The adapters belong to the session and live as long as it does.
+struct HeadlessGame {
+    std::unique_ptr<session::GameSession> session;
+    session::EvolutionAdapter* evolution = nullptr;
+    session::InventoryAdapter* inventory = nullptr;
+    session::BattleAdapter* battle = nullptr;
+};
+
 // Game sessions for a scenario's runs, without a window, a field or saves: the whole game as the session plays it
 // (partner care, evolution, inventory, battle and autosave requests), on the scenario's ruleset with its --set values.
 // Prepared once in setup(), with the systems' tables; start() reads only what was prepared, so runs on several threads
@@ -24,6 +33,11 @@ public:
 
     // A new game with this seed, its clock at the context's speed.
     [[nodiscard]] core::Result<std::unique_ptr<session::GameSession>> start(std::uint64_t seed) const;
+    // The same new game, with its systems by type.
+    [[nodiscard]] core::Result<HeadlessGame> startGame(std::uint64_t seed) const;
+
+    // The systems' tables read in prepare().
+    [[nodiscard]] const session::SystemTables& tables() const { return tables_; }
 
 private:
     HeadlessSessions(const ScenarioContext& context, std::shared_ptr<const game::partner::SpeciesTable> species,
