@@ -1,5 +1,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/game/battle/messages.hpp>
 #include <dwe/game/battle/strategies.hpp>
+#include <dwe/game/inventory/item_effect.hpp>
 #include <dwe/game/partner/effects.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/partner.hpp>
@@ -39,6 +41,49 @@ StatBlock statBlockOf(const game::battle::StatValues& gains) {
     }
     return block;
 }
+
+// What an item of the inventory does once thrown in battle (item.c, with GAME_STATE 1).
+game::battle::ThrownItem thrownItemOf(const game::inventory::ItemEffect& effect) {
+    game::battle::ThrownItem item;
+    item.hp = effect.healing.hp;
+    item.mp = effect.healing.mp;
+    if (effect.revive) {
+        item.reviveHpPercent = effect.revive->hpPercent;
+    }
+    item.curesStatus = effect.battleStatusCure.has_value();
+    item.protects = effect.protects;
+    if (effect.battleBoost) {
+        const game::inventory::BattleBoost& boost = *effect.battleBoost;
+        item.boost = game::battle::StatBoost{.offense = boost.offense,
+                                             .defense = boost.defense,
+                                             .speed = boost.speed,
+                                             .limitPercent = boost.limitPercent,
+                                             .limitCap = boost.limitCap,
+                                             .ignoresLimit = boost.ignoresLimit};
+    }
+    item.consciousOnly = effect.consciousOnly;
+    return item;
+}
+
+// The partner in battle as the inventory sees it: it never refuses, and the effect goes with the tamer's throw.
+class ThrowTarget final : public game::inventory::ItemEffectTarget {
+public:
+    explicit ThrowTarget(game::battle::Battle& battle) : battle_(&battle) {}
+
+    bool accepts(const game::inventory::ItemEffect& /*effect*/, game::inventory::UseContext /*context*/) override {
+        return true;
+    }
+
+    void apply(const game::inventory::ItemEffect& effect, game::inventory::UseContext /*context*/) override {
+        thrown_ = battle_->throwItem(thrownItemOf(effect));
+    }
+
+    [[nodiscard]] const core::Result<void>& thrown() const { return thrown_; }
+
+private:
+    game::battle::Battle* battle_;
+    core::Result<void> thrown_;
+};
 
 game::partner::BattleResult partnerResultOf(Outcome outcome) {
     switch (outcome) {
@@ -319,6 +364,22 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session, const 
     }
     session.afterSystemCommand();
     return aftermath;
+}
+
+core::Result<game::inventory::UseResult> BattleAdapter::throwItem(game::battle::Battle& battle,
+                                                                  std::int32_t item) const {
+    if (desc_.inventory == nullptr) {
+        return core::fail(std::string{messages::BattleWithoutBag});
+    }
+    if (!battle.bagAvailable()) {
+        return core::fail(std::string{game::battle::messages::BagUnavailable});
+    }
+    ThrowTarget target{battle};
+    auto used = desc_.inventory->useInBattle(item, target);
+    if (used && !target.thrown()) {
+        return std::unexpected{target.thrown().error()};
+    }
+    return used;
 }
 
 core::Result<void> BattleAdapter::equip(const GameSession& session, std::size_t place, std::optional<MoveSlot> slot) {

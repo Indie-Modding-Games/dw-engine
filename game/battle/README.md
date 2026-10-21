@@ -40,8 +40,11 @@ auto joins = battle::rollJoiningEnemies(*rules, {.partnerType = ..., .inventory 
 battle::WinRates rates = battle::runBattles(setup, *rules, *moves, factory, {.count = 1000, .firstSeed = 1});
 ```
 
-- **Entradas del tamer:** `command`, `pressFinisherCharge` y los objetos (`restorePartner`, `curePartnerStatus`,
-  `protectPartner`, `revivePartner`). Sus eventos salen en el siguiente `step`.
+- **Entradas del tamer:** `command`, `pressFinisherCharge` y la bolsa: `openBag`, `closeBag` y `throwItem`, que lanza
+  un `ThrownItem` (`items.hpp`: curación, revivir, curar estados, protección y discos) que llega al compañero tras los
+  fotogramas de `battle.item_throw`. La sesión construye el `ThrownItem` a partir del efecto del objeto del inventario
+  (`BattleAdapter::throwItem`). Quedan los efectos directos (`restorePartner`, `curePartnerStatus`, `protectPartner`,
+  `revivePartner`) para las herramientas. Sus eventos salen en el siguiente `step`.
 - **Eventos:** `BattleEvent` con `EventKind`, el luchador, el otro, la técnica, una cantidad, el estado y la orden.
   Los eventos de un `step` valen hasta la siguiente llamada.
 - **Textos:** solo claves de localización (`text_keys.hpp`: `battle.command.<orden>`, resultado, estados, objeto
@@ -97,7 +100,12 @@ probable y está marcado en el código), **Hueco** (falta).
 | Enemigos que se unen | `btl.c: handleBattleStart` | `rollJoiningEnemies` | enemies on screen join | Igual |
 | Restauración de la vida perdida por enfermedad tras una derrota | `tamer.c: tamerTickBattleLostLife`, `tamerTickSicknessLostLife`; `murd/murd.c: MURD_tick` y el guion del mapa de la derrota | — (la restauración de la derrota sigue en `battle.consequences.defeat_restore` hasta los guiones de la fase 4) | — | Hueco |
 | Orden aprendida y bonus de MP en el cuadro final | `battle_ui.c: handleBattleEndBox` | — | — | Hueco |
-| Cuenta atrás parada mientras el tamer usa un objeto | `battle_setup.c: BTL_isBattleFinished` | — | — | Hueco |
+| Bolsa del domador en combate: su propio botón, no con huida, sin domador ni con otro objeto en el aire; el menú de órdenes espera mientras está abierta y el combate sigue | `battle_tick.c: tamerTickBattle`, `handleCommands`; `inventory.c: addInventoryUI`; `BTL_battleMain` | `Battle::bagAvailable`, `openBag`, `closeBag`, `command` (`BagOpen`) | the tamer's bag opens only with the tamer... | Igual |
+| Qué se puede lanzar: `item_color` 1 o 2 | `inventory.c: selectOptionMenu` | `inventory::useItem` con `UseContext::Battle` (sesión) | an item thrown in battle is consumed at once... (session) | Igual |
+| Lanzamiento: se gasta al lanzarlo, sale en el fotograma 7 de la animación, vuela 24 fotogramas, siempre llega, uno cada vez, cierra la bolsa | `main.c: startThrowingItem`, `tickThrownItem` | `throwItem`, `tickThrownItem` (`battle.item_throw`) | a thrown item closes the bag and lands...; the throw's frames come from the ruleset | Suposición (los fotogramas de la animación del domador van a un fotograma de combate cada uno) |
+| Efecto al llegar: curación hasta el máximo, revivir, curar, proteger, discos hasta el 130 % del valor inicial (el omnidisco sin ese límite); con 0 HP solo funcionan los de revivir | `item.c: ITEM_FUNCTIONS`, `handleRestore`; `main.c: handleBuffDisks`; `battle_main.c: BTL_healStatusEffect` | `land`, `boost` | a thrown item heals up to the maximums... | Igual |
+| Cuenta atrás parada mientras vuela un objeto | `battle_setup.c: BTL_isBattleFinished` | `Battle::step` | the defeat countdown waits while a thrown item flies... | Igual |
+| Barra de HP de los enemigos: solo HP, tras recibir daño, se oculta 21 fotogramas después de acabar el retroceso | `battle_main.c: BTL_renderEnemyHPBars` | `tickHpBars` (`battle.hud.enemy_hp_bar_frames`), `hpBarShown` | an enemy's HP bar shows after damage... | Igual |
 | Enemigo fuera de pantalla prudente | `battle_main.c: BTL_tickEnemyAI` | tira como los demás | — | Hueco (decidido: se hará cuando el campo dé visibilidad) |
 | Tiempos de animación (golpe, bloqueo, revivir) | animaciones de cada especie | `timing` del ruleset | — | Suposición |
 

@@ -24,6 +24,7 @@ constexpr std::string_view MaxHpField = "max_hp";
 constexpr std::string_view MpField = "mp";
 constexpr std::string_view MaxMpField = "max_mp";
 constexpr std::string_view FaintedField = "fainted";
+constexpr std::string_view HpBarField = "hp_bar";
 constexpr std::string_view StatusField = "status";
 constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
@@ -47,7 +48,7 @@ battle::StatusEffect statusOf(const battle::StatusState& status) {
     return status.poisoned ? battle::StatusEffect::Poison : battle::StatusEffect::None;
 }
 
-FighterView fighterViewOf(const battle::Fighter& fighter, const NameKeys& names) {
+FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const NameKeys& names) {
     const battle::StatusEffect status = statusOf(fighter.status);
     return {.nameKey = names.species(fighter.combatant.species),
             .hp = fighter.hp,
@@ -55,6 +56,7 @@ FighterView fighterViewOf(const battle::Fighter& fighter, const NameKeys& names)
             .mp = fighter.mp,
             .maxMp = fighter.stats.maxMp,
             .fainted = fighter.fainted,
+            .hpBarShown = hpBarShown,
             .statusKey =
                 status == battle::StatusEffect::None ? std::string{} : std::string{battle::statusTextKey(status)}};
 }
@@ -95,6 +97,7 @@ void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& 
     add(MpField, static_cast<double>(fighter.mp));
     add(MaxMpField, static_cast<double>(fighter.maxMp));
     add(FaintedField, fighter.fainted);
+    add(HpBarField, fighter.hpBarShown);
     add(StatusField, fighter.statusKey);
 }
 
@@ -117,8 +120,8 @@ std::string countName(std::string_view list) {
 BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
     const battle::BattleState& state = battle.state();
     BattleView view;
-    for (const battle::Fighter& fighter : state.fighters) {
-        view.fighters.push_back(fighterViewOf(fighter, names));
+    for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
+        view.fighters.push_back(fighterViewOf(state.fighters[id], battle.hpBarShown(id), names));
     }
     const battle::Fighter& partner = state.partner();
     for (const battle::Command command : battle.menu()) {
@@ -134,6 +137,9 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
                      .charging = partnerCharging && state.finisher.charging,
                      .charge = partnerCharging ? state.finisher.charge : 0};
     view.reviveSeconds = reviveSecondsOf(battle);
+    view.bagAvailable = battle.bagAvailable();
+    view.bagOpen = battle.bagOpen();
+    view.itemInFlight = battle.itemInFlight();
     return view;
 }
 
@@ -191,6 +197,9 @@ ScreenSettings settingsOf(const BattleView& view) {
         {.name = std::string{FinisherChargeSetting}, .value = static_cast<double>(view.finisher.charge)});
     settings.push_back({.name = std::string{ReviveSecondsSetting},
                         .value = view.reviveSeconds ? static_cast<double>(*view.reviveSeconds) : NoValue});
+    settings.push_back({.name = std::string{BagAvailableSetting}, .value = view.bagAvailable});
+    settings.push_back({.name = std::string{BagOpenSetting}, .value = view.bagOpen});
+    settings.push_back({.name = std::string{ItemInFlightSetting}, .value = view.itemInFlight});
     return settings;
 }
 

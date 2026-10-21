@@ -19,6 +19,11 @@ inline constexpr std::string_view BattleDocument = "battle";
 inline constexpr std::string_view BattleCommandName = "battle_command";
 inline constexpr std::string_view BattleChargeCommand = "battle_charge";
 inline constexpr std::string_view BattleCloseCommand = "battle_close";
+// The tamer's bag (battle_tick.c: tamerTickBattle opens it with its own button): open, close, and throw the item of
+// a slot (the command's number) to the partner.
+inline constexpr std::string_view BattleBagOpenCommand = "battle_bag_open";
+inline constexpr std::string_view BattleBagCloseCommand = "battle_bag_close";
+inline constexpr std::string_view BattleThrowCommand = "battle_throw";
 // What the battle screen shows: the fight or the end box.
 inline constexpr std::string_view BattlePhaseSetting = "battle.phase";
 inline constexpr std::string_view FightPhase = "fight";
@@ -53,6 +58,9 @@ public:
 
 private:
     [[nodiscard]] screens::NameKeys names() const;
+    void publish() const;
+    void openBag();
+    void throwItem(double slot);
     void finish();
     void close();
 

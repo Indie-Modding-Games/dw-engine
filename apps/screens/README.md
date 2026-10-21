@@ -25,21 +25,27 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
-| `battle.fighter.<i>.{name,hp,max_hp,mp,max_mp,fainted,status}` | clave, números, booleano, clave | El compañero (0) y los enemigos: nombre, barras, si ha caído y su estado (`battle.status.*`) |
+| `battle.fighter.<i>.{name,hp,max_hp,mp,max_mp,fainted,status,hp_bar}` | clave, números, booleanos, clave | El compañero (0) y los enemigos: nombre, barras, si ha caído, su estado (`battle.status.*`) y si el HUD enseña ahora su barra de HP. La del compañero se ve siempre; la de un enemigo, solo un rato tras recibir daño y sin barra de MP (`battle_main.c: BTL_renderEnemyHPBars`) |
 | `battle.menu.<i>.{command,label,available,current}` | número, clave, booleanos | Las entradas que su inteligencia permite, en orden (`command_menu.c: BTL_renderCommandMenu`): el comando, su etiqueta (los comandos del original o el nombre de la técnica), si se puede elegir (el golpe final, solo con el indicador lleno) y si es la orden que sigue |
 | `battle.finisher.{progress,goal,ready,charging,charge}` | números, booleanos | El indicador del golpe final (`battle_hud.c: BTL_renderFinisherGauge`) y su carga durante el aura (`command_menu.c: BTL_tickFinisherChargeup`) |
 | `battle.revive_seconds` | número, -1 sin cuenta | Los segundos que le quedan al compañero caído para levantarse, desde que el original enseña la cuenta (`command_menu.c: BTL_renderDeathCountdown`) |
+| `battle.bag.{available,open}`, `battle.item_in_flight` | booleanos | La bolsa del domador: si se puede abrir (no huyendo, no sin domador, sin otro objeto en el aire), si está abierta y si un objeto lanzado va de camino (`battle_tick.c: tamerTickBattle`, `main.c: tickThrownItem`) |
 | `battle.end.outcome` | clave | `battle.outcome.victory`, `fled` o `defeat` |
 | `battle.end.<i>.{key,name,amount}` | claves, número | Las líneas de la caja final (`battle_ui.c: handleBattleEndBox`): objetos encontrados, herida, técnicas aprendidas, vidas perdidas, objetos perdidos, quien se une a la ciudad |
 | `battle.end.gain.<i>.value` | número | Lo que ha ganado cada estadística (HP, MP, ataque, defensa, velocidad, cerebro) |
 | `battle.end.bits` | número | Los bits ganados |
 
+Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
+de abajo): `usable` dice qué objetos se pueden lanzar en combate.
+
 El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_command` (el número del comando),
-`battle_charge` y `battle_close` ([ui.md](../../docs/architecture/ui.md)).
+`battle_charge`, `battle_close`, `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
+([ui.md](../../docs/architecture/ui.md)).
 
 ## Menú del compañero
 
-`partnerStatusViewOf(partner, names)` es la página de estado y `bagViewOf(inventory, items, names)` la bolsa.
+`partnerStatusViewOf(partner, names)` es la página de estado y `bagViewOf(inventory, items, names, context)` la bolsa
+(`context` es `UseContext::Field` en el menú y `UseContext::Battle` en combate).
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
@@ -47,7 +53,7 @@ El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_
 | `partner.stat.<i>.{label,value,min,max}` | clave, números | Las barras de ataque, defensa, velocidad y cerebro, sobre 999 |
 | `partner.meter.<i>.{label,value,min,max}` | clave, números | Felicidad, disciplina y virus, con sus límites del ruleset |
 | `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |
-| `bag.slot.<i>.{empty,item,name,description,count,dimmed}` | booleano, número, claves, número, booleano | Las ranuras que tiene la bolsa, en orden (`inventory.c: renderInventoryTop`); `dimmed` es un objeto que no se usa desde la bolsa (`item_color` 255), que el original pinta de otro color |
+| `bag.slot.<i>.{empty,item,name,description,count,dimmed,usable}` | booleano, número, claves, número, booleanos | Las ranuras que tiene la bolsa, en orden (`inventory.c: renderInventoryTop`); `dimmed` es un objeto que no se usa desde la bolsa (`item_color` 255), que el original pinta de otro color; `usable`, si su `item_color` deja usarlo en ese contexto (`inventory.c: selectOptionMenu`) |
 | `bag.money` | número | Los bits |
 | `bag.result` | clave | Qué hizo la última orden sobre la bolsa (`partner_menu.bag_result.*`); el juego añade `bag.result_item`, la clave del nombre del objeto |
 

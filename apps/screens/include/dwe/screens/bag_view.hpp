@@ -2,6 +2,7 @@
 
 #include <dwe/assets/item_table.hpp>
 #include <dwe/game/inventory/inventory.hpp>
+#include <dwe/game/inventory/item_effect.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
@@ -28,6 +29,8 @@ struct BagSlotView {
     std::int32_t count = 0;
     // Drawn in the other colour: an item that is never used from the bag (item_color 255).
     bool dimmed = false;
+    // Whether its item_color lets it be used where the bag is open (inventory.c: selectOptionMenu).
+    bool usable = false;
 
     friend bool operator==(const BagSlotView&, const BagSlotView&) = default;
 };
@@ -38,8 +41,10 @@ struct BagView {
     std::int32_t money = 0;
 };
 
+// `context` is where the bag is open: the field's menu or the battle.
 [[nodiscard]] BagView bagViewOf(const game::inventory::Inventory& inventory, const assets::ItemTable& items,
-                                const NameKeys& names);
+                                const NameKeys& names,
+                                game::inventory::UseContext context = game::inventory::UseContext::Field);
 
 [[nodiscard]] ScreenSettings settingsOf(const BagView& view);
 

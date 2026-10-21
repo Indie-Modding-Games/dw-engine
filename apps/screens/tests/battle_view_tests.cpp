@@ -104,6 +104,30 @@ TEST_CASE("a clever partner's menu names its techniques by their moves") {
     CHECK(second->labelKey == "main.move_names.0001");
 }
 
+TEST_CASE("the battle view shows the partner's HP bar always and an enemy's only after damage, and the bag") {
+    const auto species = fixtureSpecies();
+    const NameKeys names{&species, nullptr, &testCatalog()};
+    Battle battle = startBattle(duel(evenStats(900, 100), evenStats(700, 80)), 3);
+
+    auto view = dwe::screens::battleViewOf(battle, names);
+    CHECK(view.fighters[0].hpBarShown);
+    CHECK_FALSE(view.fighters[1].hpBarShown);
+    CHECK(view.bagAvailable);
+    CHECK_FALSE(view.bagOpen);
+    REQUIRE(battle.openBag());
+    CHECK(dwe::screens::battleViewOf(battle, names).bagOpen);
+    REQUIRE(battle.throwItem({}));
+    view = dwe::screens::battleViewOf(battle, names);
+    CHECK(view.itemInFlight);
+    CHECK_FALSE(view.bagAvailable);
+    CHECK_FALSE(view.bagOpen);
+    const auto settings = dwe::screens::settingsOf(view);
+    const auto* hpBar = settingNamed(settings, "battle.fighter.1.hp_bar");
+    REQUIRE(hpBar != nullptr);
+    CHECK_FALSE(std::get<bool>(hpBar->value));
+    REQUIRE(settingNamed(settings, "battle.item_in_flight") != nullptr);
+}
+
 TEST_CASE("the battle view becomes the settings the battle document reads") {
     const auto species = fixtureSpecies();
     const NameKeys names{&species, nullptr, &testCatalog()};

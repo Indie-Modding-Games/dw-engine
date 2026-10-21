@@ -19,6 +19,7 @@ dwe_add_module(battle
         src/movement.cpp
         src/aftermath.cpp
         src/battle.cpp
+        src/thrown_item.cpp
         src/joining.cpp
         src/simulation.cpp
         src/text_keys.cpp

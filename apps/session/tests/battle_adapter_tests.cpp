@@ -352,6 +352,43 @@ TEST_CASE("a battle started by the session runs to its end and its result goes b
     CHECK(session->partner().state().evolution.battles == 1);
 }
 
+TEST_CASE("an item thrown in battle is consumed at once and lands with the throw; field items stay in the bag") {
+    using dwe::game::inventory::UseOutcome;
+    const TestPacks packs;
+    Adapters adapters;
+    auto session = sessionWithBattle(packs, adapters);
+    changePartner(*session, [](PartnerState& state) {
+        state.stats.base[Stat::Hp] = FullHp;
+        state.stats.currentHp = FullHp;
+    });
+    dwe::game::inventory::Inventory& bag = adapters.inventory->inventory();
+    bag.add(items::Tonic, 2);
+    bag.add(items::Bandage, 1);
+    auto battle = adapters.battle->start(*session, duelWithFoe());
+    REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
+
+    // inventory.c: selectOptionMenu: in battle only item_color 1 and 2.
+    const auto bandage = adapters.battle->throwItem(*battle, items::Bandage);
+    REQUIRE_MESSAGE(bandage.has_value(), errorOf(bandage));
+    CHECK(bandage->outcome == UseOutcome::NotUsableHere);
+    CHECK(bag.countOf(items::Bandage) == 1);
+    CHECK_FALSE(battle->itemInFlight());
+
+    // main.c: startThrowingItem: removeItem when thrown; one item on its way at a time.
+    const auto tonic = adapters.battle->throwItem(*battle, items::Tonic);
+    REQUIRE_MESSAGE(tonic.has_value(), errorOf(tonic));
+    CHECK(tonic->outcome == UseOutcome::Used);
+    CHECK(bag.countOf(items::Tonic) == 1);
+    CHECK(battle->itemInFlight());
+    CHECK_FALSE(adapters.battle->throwItem(*battle, items::Tonic).has_value());
+    CHECK(bag.countOf(items::Tonic) == 1);
+    bool landed = false;
+    while (battle->itemInFlight() && !battle->finished()) {
+        landed = battle_test::hasEvent(battle->step(), dwe::game::battle::EventKind::ItemLanded) || landed;
+    }
+    CHECK(landed);
+}
+
 TEST_CASE("a reborn partner equips one move again and keeps the learned ones") {
     const TestPacks packs;
     Adapters adapters;

@@ -22,6 +22,8 @@
     "finisher",
     "condition",
     "ending",
+    "item_throw",
+    "hud",
     "consequences",
     "rewards",
     "joining",
@@ -856,6 +858,36 @@
         }
       },
       "description": "Fleeing and the revive countdown, in frames."
+    },
+    "item_throw": {
+      "type": "object",
+      "required": [
+        "release_frame",
+        "flight_frames"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "release_frame": {
+          "type": "integer"
+        },
+        "flight_frames": {
+          "type": "integer"
+        }
+      },
+      "description": "The tamer's thrown item: the frame of the throw it leaves the hand and the frames it flies."
+    },
+    "hud": {
+      "type": "object",
+      "required": [
+        "enemy_hp_bar_frames"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enemy_hp_bar_frames": {
+          "type": "integer"
+        }
+      },
+      "description": "What the battle HUD shows: the frames an enemy's HP bar stays after its damage."
     },
     "consequences": {
       "type": "object",

@@ -306,6 +306,18 @@ ending:
   revive_frames: 171
   revive_countdown_shown_at: 20
 
+# El objeto que lanza el tamer (main.c: startThrowingItem, tickThrownItem): sale de la mano en el fotograma 7 de la
+# animación de lanzar y llega al partner 24 fotogramas después (time >= 0x18), siempre. Mientras vuela, la cuenta atrás
+# de la derrota se para (battle_setup.c: BTL_isBattleFinished).
+item_throw:
+  release_frame: 7
+  flight_frames: 24
+
+# La barra de HP de un enemigo (battle_main.c: BTL_renderEnemyHPBars): sale al recibir daño y se oculta cuando pasan
+# 21 fotogramas (0x15) sin reacción al golpe ni daño pendiente.
+hud:
+  enemy_hp_bar_frames: 21
+
 # Consecuencias para el cuidado (tamer.c: startBattle, advanceBattleTime; partner_impl.c: handlePostBattleTiredness;
 # battle_ui.c: handleBattleInjury). Esta sección es la dueña de estos números: el partner los recibe de la batalla
 # (Partner::applyBattle). Los objetos que se pierden al perder son de la sección inventory (defeat.lost_percent).

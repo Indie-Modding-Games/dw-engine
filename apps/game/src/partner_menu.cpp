@@ -10,14 +10,13 @@
 #include <dwe/screens/screen_settings.hpp>
 
 #include <charconv>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <span>
 #include <string>
 #include <variant>
 
+#include "bag_slots.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -58,27 +57,6 @@ std::string_view keyOf(game::inventory::UseOutcome outcome) {
         return UselessKey;
     }
     return FailedKey;
-}
-
-// A slot number of a command, or nothing for one that is not a whole number.
-std::optional<std::size_t> slotOf(double value) {
-    if (!std::isfinite(value) || value < 0.0 || std::trunc(value) != value) {
-        return std::nullopt;
-    }
-    return static_cast<std::size_t>(value);
-}
-
-// The item in a slot of the bag, or nothing for an empty slot or one past the bag.
-std::optional<std::int32_t> itemAt(std::span<const std::optional<game::inventory::Stack>> slots,
-                                   std::optional<std::size_t> slot) {
-    if (!slot || *slot >= slots.size()) {
-        return std::nullopt;
-    }
-    const std::optional<game::inventory::Stack>& stack = slots[*slot];
-    if (!stack) {
-        return std::nullopt;
-    }
-    return stack->item;
 }
 
 std::optional<std::size_t> parseSlot(std::string_view text) {

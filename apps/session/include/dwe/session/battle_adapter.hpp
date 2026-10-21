@@ -7,6 +7,7 @@
 #include <dwe/game/battle/moves.hpp>
 #include <dwe/game/battle/rules.hpp>
 #include <dwe/game/inventory/stacking.hpp>
+#include <dwe/game/inventory/use.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/session/partner_moves.hpp>
 #include <dwe/session/session_system.hpp>
@@ -94,6 +95,11 @@ public:
     // Gives a finished battle's result to the partner, the bag and the moves, and asks for the autosaves of the
     // battle's end, a recruit and a tournament.
     core::Result<BattleAftermath> finish(GameSession& session, const game::battle::BattleResult& result);
+
+    // Throws one of an item of the bag at the partner (inventory.c: selectOptionMenu, main.c: startThrowingItem): only
+    // while the battle's bag is available; the item is consumed at once and its effect lands with the throw. The
+    // outcome says when the item was not thrown (not in the bag, not usable in battle).
+    core::Result<game::inventory::UseResult> throwItem(game::battle::Battle& battle, std::int32_t item) const;
 
     // Equips the species' move at `slot` in one of the four places, or empties it.
     core::Result<void> equip(const GameSession& session, std::size_t place, std::optional<MoveSlot> slot);

@@ -32,6 +32,8 @@ enum class EventKind : std::uint8_t {
     Fainted,         // `fighter` fell
     Revived,         // `fighter` got up with `amount` HP
     FleeStarted,     // the tamer calls the partner back
+    ItemThrown,      // the tamer throws an item at the partner
+    ItemLanded,      // the thrown item reached the partner and did its effect
     BattleEnded,     // the result is ready
 };
 

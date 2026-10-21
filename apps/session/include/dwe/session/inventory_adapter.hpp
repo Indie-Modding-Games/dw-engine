@@ -57,6 +57,10 @@ public:
     // Uses one of an item on the partner in the field: it may refuse it; an item used that is a key item asks for
     // the KeyItem autosave.
     core::Result<game::inventory::UseResult> use(GameSession& session, std::int32_t item);
+    // Uses one of an item in battle on `target` (inventory.c: selectOptionMenu with GAME_STATE 1): only the items
+    // whose item_color allows battle; the partner never refuses it and it is consumed when thrown
+    // (main.c: startThrowingItem).
+    core::Result<game::inventory::UseResult> useInBattle(std::int32_t item, game::inventory::ItemEffectTarget& target);
     // Buys from a shop, with the baby discount when the partner's level gets it; a key item asks for the autosave.
     core::Result<game::inventory::Purchase> buy(GameSession& session, std::int32_t item, std::int32_t amount,
                                                 const game::inventory::StockTriggers& triggers);

@@ -199,6 +199,9 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules, 
         }
         state.fighters.push_back(std::move(*enemy));
     }
+    for (Fighter& each : state.fighters) {
+        each.hpBarFrames = rules.hud.enemyHpBarFrames;
+    }
     Fighter& fighter = state.partner();
     if (setup.condition.sick || setup.condition.injured) {
         applySicknessPenalty(fighter, rules);
@@ -224,6 +227,9 @@ core::Result<void> Battle::command(Command command) {
     }
     if (state_.tamerless) {
         return core::fail(std::string{messages::NoCommands});
+    }
+    if (state_.bagOpen) {
+        return core::fail(std::string{messages::BagOpen});
     }
     if (std::ranges::find(state_.commands.menu, command) == state_.commands.menu.end()) {
         return core::fail(std::string{messages::CommandNotInMenu});
@@ -285,24 +291,41 @@ void Battle::pressFinisherCharge() {
     chargePressed_ = true;
 }
 
-void Battle::restorePartner(std::int32_t hp, std::int32_t mp) {
-    Fighter& partner = state_.partner();
-    if (partner.fainted) {
-        return;
+bool Battle::bagAvailable() const {
+    return !result_ && !state_.tamerless && !state_.fleeFrames && !state_.thrownItem;
+}
+
+core::Result<void> Battle::openBag() {
+    if (!bagAvailable()) {
+        return core::fail(std::string{messages::BagUnavailable});
     }
-    partner.hp = std::min(partner.hp + hp, partner.stats.maxHp);
-    partner.mp = std::min(partner.mp + mp, partner.stats.maxMp);
+    state_.bagOpen = true;
+    return {};
+}
+
+void Battle::closeBag() {
+    state_.bagOpen = false;
+}
+
+core::Result<void> Battle::throwItem(ThrownItem item) {
+    if (!bagAvailable()) {
+        return core::fail(std::string{messages::BagUnavailable});
+    }
+    BattleContext context = contextOf(pending());
+    battle::throwItem(context, item);
+    return {};
+}
+
+bool Battle::hpBarShown(FighterId fighter) const {
+    return fighter == PartnerId || state_.fighters.at(fighter).hpBarFrames < rules_->hud.enemyHpBarFrames;
+}
+
+void Battle::restorePartner(std::int32_t hp, std::int32_t mp) {
+    battle::restorePartner(state_.partner(), hp, mp);
 }
 
 void Battle::curePartnerStatus() {
-    pending();
-    BattleContext context{.rules = rules_,
-                          .moves = moves_,
-                          .state = &state_,
-                          .strategies = &strategies_,
-                          .random = &random_,
-                          .events = &events_,
-                          .condition = &setup_.condition};
+    BattleContext context = contextOf(pending());
     cureStatus(context, PartnerId);
 }
 
@@ -311,36 +334,23 @@ void Battle::protectPartner() {
 }
 
 core::Result<void> Battle::revivePartner(std::int32_t hp) {
-    Fighter& partner = state_.partner();
+    const Fighter& partner = state_.partner();
     if (result_ || !partner.fainted || state_.deathFrames >= rules_->ending.reviveFrames) {
         return core::fail(std::string{messages::NotRevivable});
     }
-    // battle_setup.c: BTL_isBattleFinished, at the end of the revive animation (its length is not modelled).
-    partner.fainted = false;
-    partner.struck = false;
-    partner.hp = std::clamp(hp, 1, partner.stats.maxHp);
-    partner.pendingDamage = 0;
-    standIdle(partner);
-    state_.deathFrames = 0;
-    state_.finisher.fighter.reset();
-    state_.finisher.auraFrames = 0;
-    state_.finisher.charging = false;
-    for (Fighter& fighter : state_.fighters) {
-        resetAction(fighter);
-        fighter.planned = false;
-        fighter.chasingAttacker = false;
-        if (!fighter.fainted || !fighter.defeated()) {
-            fighter.moveRange = 0;
-        }
-    }
-    pending().push_back({.kind = EventKind::Revived,
-                         .fighter = PartnerId,
-                         .other = std::nullopt,
-                         .move = std::nullopt,
-                         .amount = partner.hp,
-                         .status = StatusEffect::None,
-                         .command = Command::None});
+    BattleContext context = contextOf(pending());
+    battle::revivePartner(context, hp);
     return {};
+}
+
+BattleContext Battle::contextOf(BattleEvents& events) {
+    return {.rules = rules_,
+            .moves = moves_,
+            .state = &state_,
+            .strategies = &strategies_,
+            .random = &random_,
+            .events = &events,
+            .condition = &setup_.condition};
 }
 
 BattleEvents& Battle::pending() {
@@ -371,7 +381,9 @@ const BattleEvents& Battle::step() {
         finish(Outcome::Fled);
         return events_;
     }
-    if (partner.fainted && partner.pose == Pose::Fainted && ++state_.deathFrames >= rules_->ending.reviveFrames) {
+    // The countdown waits while a thrown item is on its way (TAMER_ITEM.worldItem.type != 0xff).
+    if (partner.fainted && partner.pose == Pose::Fainted && !state_.thrownItem &&
+        ++state_.deathFrames >= rules_->ending.reviveFrames) {
         finish(Outcome::Defeat);
         return events_;
     }
@@ -382,6 +394,7 @@ const BattleEvents& Battle::step() {
     tickPartnerAi(context);
     tickEnemyAi(context);
     tickFighterStates(context);
+    tickThrownItem(context);
     // command_menu.c: BTL_tickFinisherChargeup.
     FinisherState& finisher = state_.finisher;
     if (finisher.charging && chargePressed_ && finisher.charge < rules_->finisher.chargeCap) {
@@ -396,6 +409,7 @@ const BattleEvents& Battle::step() {
     }
     chargePressed_ = false;
     drainPendingDamage(context);
+    tickHpBars(context);
     if (state_.fleeFrames) {
         ++*state_.fleeFrames;
     }

@@ -4,6 +4,7 @@
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/events.hpp>
+#include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
 #include <dwe/game/battle/rules.hpp>
 #include <dwe/game/battle/state.hpp>
@@ -17,6 +18,8 @@
 #include <vector>
 
 namespace dwe::game::battle {
+
+struct BattleContext;
 
 // The battle runs at the original's 20 frames a second on its own fixed tick: the game clock stands still during a
 // battle (tamer.c: startBattle), which then moves it on by a fixed amount (BattleResult::elapsedMinutes).
@@ -110,6 +113,21 @@ public:
     // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
     // BTL_tickFinisherChargeup); at most one counts per frame.
     void pressFinisherCharge();
+    // The tamer's bag (battle_tick.c: tamerTickBattle, inventory.c: addInventoryUI): it opens in a battle with the
+    // tamer while the partner is not running away and no thrown item is on its way. While it is open the partner
+    // takes no command; the battle goes on.
+    [[nodiscard]] bool bagAvailable() const;
+    [[nodiscard]] bool bagOpen() const { return state_.bagOpen; }
+    core::Result<void> openBag();
+    void closeBag();
+    // Throws an item at the partner (main.c: startThrowingItem): the bag closes and the item lands releaseFrame +
+    // flightFrames later, always on the partner (tickThrownItem). The defeat countdown waits while it flies.
+    core::Result<void> throwItem(ThrownItem item);
+    [[nodiscard]] bool itemInFlight() const { return state_.thrownItem.has_value(); }
+    // Whether the HUD shows a fighter's HP bar: always the partner's, an enemy's for a while after damage
+    // (battle_main.c: BTL_renderEnemyHPBars).
+    [[nodiscard]] bool hpBarShown(FighterId fighter) const;
+
     // Item effects on the partner (item.c): restore HP and MP, cure its status effects, keep new ones off, revive it
     // after it fell (before the countdown ends).
     void restorePartner(std::int32_t hp, std::int32_t mp);
@@ -134,6 +152,8 @@ private:
     Battle(const BattleRules& rules, const MoveCatalog& moves, BattleStrategies strategies, std::uint64_t seed);
 
     void finish(Outcome outcome);
+    // The frame's context, with its events going to `events`.
+    BattleContext contextOf(BattleEvents& events);
     // The events not yet returned by step(): those of the last frame are dropped once returned.
     BattleEvents& pending();
 

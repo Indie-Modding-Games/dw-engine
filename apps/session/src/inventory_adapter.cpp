@@ -323,6 +323,14 @@ core::Result<game::inventory::UseResult> InventoryAdapter::use(GameSession& sess
     return used;
 }
 
+core::Result<game::inventory::UseResult> InventoryAdapter::useInBattle(std::int32_t item,
+                                                                       game::inventory::ItemEffectTarget& target) {
+    if (!inventory_ || !effects_) {
+        return core::fail(std::string{messages::InventoryNotRead});
+    }
+    return game::inventory::useItem(*inventory_, item, UseContext::Battle, items(), *effects_, target);
+}
+
 core::Result<game::inventory::Purchase> InventoryAdapter::buy(GameSession& session, std::int32_t item,
                                                               std::int32_t amount,
                                                               const game::inventory::StockTriggers& triggers) {

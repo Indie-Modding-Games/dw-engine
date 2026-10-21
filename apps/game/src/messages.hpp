@@ -65,6 +65,11 @@ inline constexpr std::string_view BattleStarted = "game: battle against {} on {}
 inline constexpr std::string_view BattleFinished = "game: battle over: {}";
 inline constexpr std::string_view NoSpeciesTable = "game: the ruleset names no Digimon table";
 inline constexpr std::string_view BattleCommandRefused = "game: battle: command {} refused: {}";
+inline constexpr std::string_view BattleBagRefused = "game: battle: the bag did not open: {}";
+inline constexpr std::string_view BattleThrowRefused = "game: battle: no throw from bag slot {}: {}";
+inline constexpr std::string_view BattleItemThrown = "game: battle: threw item {}";
+inline constexpr std::string_view EmptyBagSlot = "the slot is empty";
+inline constexpr std::string_view ItemNotThrowable = "the item cannot be thrown in battle";
 
 // The partner's menu (partner_menu.cpp).
 inline constexpr std::string_view BagCommandFailed = "game: bag: {} failed: {}";

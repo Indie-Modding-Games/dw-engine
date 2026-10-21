@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
 
 #include <array>
@@ -154,6 +155,8 @@ struct Fighter {
     std::int32_t finisherGoal = 0;
 
     bool fainted = false;
+    // Frames since its HP bar last showed damage (battle_main.c: BTL_renderEnemyHPBars); it starts hidden.
+    std::int32_t hpBarFrames = 0;
 
     // Out of the fight: the damage on its way is enough to beat it (battle_main.c: BTL_isFighterDefeated).
     [[nodiscard]] bool defeated() const { return hp - pendingDamage <= 0; }
@@ -193,6 +196,12 @@ struct FinisherState {
     bool charging = false;
 };
 
+// The item the tamer threw, on its way to the partner (main.c: tickThrownItem).
+struct ThrownItemState {
+    ThrownItem item;
+    std::int32_t frames = 0;
+};
+
 struct BattleState {
     std::vector<Fighter> fighters;
     CommandState commands;
@@ -207,6 +216,9 @@ struct BattleState {
     std::optional<std::int32_t> fleeFrames;
     // After the partner faints, the frames left to revive it.
     std::int32_t deathFrames = 0;
+    // The tamer's bag is open: the partner takes no command meanwhile (battle_tick.c: handleCommands).
+    bool bagOpen = false;
+    std::optional<ThrownItemState> thrownItem;
     Point tamer;
     // The fighters stay within the arena radius of this point.
     Point arenaCenter;

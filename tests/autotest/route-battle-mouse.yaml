@@ -9,6 +9,8 @@ timeout: 300
 steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
+  # The new game's bag is empty, as the original's: the debug give_item puts a Recovery in its first slot.
+  - script: give_item("sm_recovery 2")
   - script: battle("")
   - wait: {shown: battle, seconds: 1}
   - expect_setting: {battle.phase: fight}
@@ -17,6 +19,15 @@ steps:
   - wait: {seconds: 4}
   - expect_setting: {battle.phase: fight}
   - screenshot: battle-fight
+  # The tamer's bag: open-bag (or cancel) opens it while the battle goes on, a slot throws its item to the partner.
+  - menu_select: open-bag
+  - expect_setting: {battle.bag.open: true}
+  - screenshot: battle-bag
+  - menu_select: bag-slot-0
+  - expect_setting: {battle.item_in_flight: true}
+  - screenshot: battle-item-thrown
+  - wait: {seconds: 3}
+  - expect_setting: {battle.item_in_flight: false}
   - menu_select: command-1
   - wait: {seconds: 3}
   - expect_setting: {battle.phase: end}

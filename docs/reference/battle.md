@@ -228,10 +228,26 @@ Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que e
 - **Derrota:** si el partner llega a 0 HP, hay una cuenta atrás durante la cual un objeto de revivir aún puede
   salvarlo. Al revivir se reinician todos los luchadores, no solo el partner: sin enfriamiento, sin técnica planeada,
   sin persecución, carga ni enfriamiento, y se cancela el remate (`BTL_isBattleFinished`) **(comprobado)**. La cuenta
-  atrás se para mientras el tamer usa un objeto. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el
+  atrás se para mientras vuela un objeto que lanza el tamer (`BTL_isBattleFinished`) **(comprobado)**. Felicidad −30, disciplina −20 (`startBattle`). Después se pierden el
   30 % de los huecos ocupados de la bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver
   la [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
   **(comprobado)**. Ver la [ficha de cuidado](care.md).
+- **Objetos en combate:** el tamer abre la bolsa con su propio botón, no desde el menú de órdenes
+  (`battle_tick.c: tamerTickBattle` → `inventory.c: addInventoryUI`); no se abre huyendo, en los combates sin tamer
+  ni con otro objeto en el aire. Mientras está abierta, el menú de órdenes espera (`handleCommands` vuelve) pero el
+  combate sigue (`BTL_battleMain`). Solo se lanzan los objetos de `item_color` 1 o 2 (`inventory.c:
+  selectOptionMenu`). El objeto se gasta al lanzarlo (`main.c: startThrowingItem`), sale de la mano en el fotograma
+  7 de la animación del tamer, vuela 24 fotogramas hacia el partner y siempre llega; el partner no lo rechaza, va uno
+  cada vez y la bolsa se cierra (`main.c: tickThrownItem`) **(comprobado)**. Con 0 HP solo hacen algo los de revivir
+  (`item.c: handleRestore`). Los discos suben ataque, defensa o velocidad (+20 o +50), sin pasar del 130 % de su valor
+  al empezar el combate; el omnidisco no tiene ese límite (`main.c: handleBuffDisks`) **(comprobado)**. Que un
+  fotograma de la animación del tamer dure un fotograma de combate es **(suposición)**.
+- **Barras de HP:** el HUD del partner enseña sus barras de HP y MP con el valor actual (`battle_hud.c`). De los
+  enemigos solo se ve una barra de HP con su valor, junto a él, al recibir daño, y se oculta 21 fotogramas después de
+  acabar el retroceso; no hay nombre ni MP (`battle_main.c: BTL_renderEnemyHPBars`) **(comprobado)**.
+- **Reloj:** el tiempo de juego y el cuidado se paran durante todo el combate (`tamer.c: startBattle` llama a
+  `stopGameTime`; `clock.c: tickGameClock` no avanza fuera del campo), y al acabar se suman 20 minutos
+  (`advanceBattleTime`) **(comprobado)**.
 - **HP y MP tras perder:** ningún código de combate los toca; el partner pasa al mapa de la derrota
   (`murd.c: MURD_tick`, mapa 205 o 218) y el guion de ese mapa (script 212, sección 0x48) suma 9999 al HP y al MP
   actuales, que `script_value.c: enforceStatsLimits` deja en el máximo: vuelve con todo **(comprobado en el guion

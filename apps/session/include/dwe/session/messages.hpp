@@ -71,6 +71,7 @@ inline constexpr std::string_view PartnerMovesStateText = "the partner's moves";
 inline constexpr std::string_view EquippedCount = "the partner's moves have {} equipped positions, not {}";
 inline constexpr std::string_view BattleNeedsTables = "the battle adapter needs the packs or its tables";
 inline constexpr std::string_view BattleNotRead = "the battle rules have not been read";
+inline constexpr std::string_view BattleWithoutBag = "the battle adapter has no inventory to throw items from";
 inline constexpr std::string_view NoMoveTable = "the ruleset names no {} table";
 inline constexpr std::string_view UnknownPartnerSpecies = "battle: the partner's species '{}' is not in data/digimon";
 inline constexpr std::string_view MovePlaceOutside = "battle: place {} is not one of the {} equipped places";

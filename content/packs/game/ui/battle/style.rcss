@@ -197,6 +197,65 @@
 	color: #9aa7b6;
 }
 
+#prompt-bag {
+	margin-left: 14dp;
+}
+
+/* The tamer's bag (inventory.c: addInventoryUI) over the middle of the screen while the battle goes on; items that
+   cannot be thrown in battle are greyed out. */
+.bag-button {
+	margin-left: 12dp;
+}
+
+#bag {
+	position: absolute;
+	left: 50%;
+	top: 70dp;
+	width: 520dp;
+	margin-left: -260dp;
+	padding: 10dp 14dp;
+	background-color: #10161ef0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+#bag h2 {
+	font-size: 24dp;
+	margin-bottom: 6dp;
+}
+
+.bag-slot {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 48%;
+	margin: 2dp 1%;
+	padding: 3dp 10dp;
+	font-size: 20dp;
+}
+
+.bag-slot.unusable {
+	color: #6b7480;
+}
+
+.slot-count {
+	float: right;
+}
+
+#bag-description {
+	min-height: 48dp;
+	margin-top: 8dp;
+	font-size: 20dp;
+}
+
+#item-in-flight {
+	position: absolute;
+	left: 0;
+	top: 36%;
+	width: 100%;
+	text-align: center;
+	font-size: 26dp;
+}
+
 /* The end box: the outcome, the lines of drops, injury and moves learned, then the stats and the bits. */
 #end {
 	display: flex;
@@ -269,6 +328,12 @@
 }
 
 /* Hidden wins over the display of the elements above. */
-#fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .end-line.hidden, .fighter.hidden {
+#fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .end-line.hidden, .fighter.hidden,
+#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden {
 	display: none;
+}
+
+/* The focused bag slot's text keeps the focus colours over the original look's ink. */
+.bag-slot:focus .original-look {
+	color: #1a1f27;
 }

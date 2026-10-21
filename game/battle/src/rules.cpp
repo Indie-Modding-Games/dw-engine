@@ -509,6 +509,20 @@ EndingRules readEnding(ValueReader& in, const YamlNode& node) {
     return ending;
 }
 
+ItemThrowRules readItemThrow(ValueReader& in, const YamlNode& node) {
+    if (!in.group(node, "item_throw", {"release_frame", "flight_frames"})) {
+        return {};
+    }
+    return {.releaseFrame = in.count(node, "release_frame"), .flightFrames = in.positive(node, "flight_frames")};
+}
+
+HudRules readHud(ValueReader& in, const YamlNode& node) {
+    if (!in.group(node, "hud", {"enemy_hp_bar_frames"})) {
+        return {};
+    }
+    return {.enemyHpBarFrames = in.positive(node, "enemy_hp_bar_frames")};
+}
+
 CareChange readCareChange(ValueReader& in, const YamlNode& node, std::string_view what) {
     if (!in.group(node, what, {"happiness", "discipline", "tiredness", "battles"})) {
         return {};
@@ -630,11 +644,11 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
     YamlReader reader;
     ValueReader in{reader};
     const YamlNode& root = section.node;
-    if (!in.group(root, messages::SectionText,
-                  {"strategies",   "limits",  "damage_tick", "affinity", "moves",      "speed_reserve",
-                   "pacing",       "spacing", "obedience",   "commands", "partner_ai", "enemy_ai",
-                   "hit",          "damage",  "status",      "finisher", "condition",  "ending",
-                   "consequences", "rewards", "joining",     "timing",   "quirks"})) {
+    if (!in.group(root, messages::SectionText, {"strategies",    "limits",    "damage_tick", "affinity",   "moves",
+                                                "speed_reserve", "pacing",    "spacing",     "obedience",  "commands",
+                                                "partner_ai",    "enemy_ai",  "hit",         "damage",     "status",
+                                                "finisher",      "condition", "ending",      "item_throw", "hud",
+                                                "consequences",  "rewards",   "joining",     "timing",     "quirks"})) {
         return std::unexpected{reader.error(section.file)};
     }
     BattleRules rules{.strategies = readStrategies(in, in.field(root, "strategies")),
@@ -655,6 +669,8 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                       .finisher = readFinisher(in, in.field(root, "finisher")),
                       .condition = readCondition(in, in.field(root, "condition")),
                       .ending = readEnding(in, in.field(root, "ending")),
+                      .itemThrow = readItemThrow(in, in.field(root, "item_throw")),
+                      .hud = readHud(in, in.field(root, "hud")),
                       .consequences = readConsequences(in, in.field(root, "consequences")),
                       .rewards = readRewards(in, in.field(root, "rewards")),
                       .joining = readJoining(in, in.field(root, "joining")),

@@ -3,12 +3,16 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/text_keys.hpp>
+#include <dwe/game/inventory/use.hpp>
+#include <dwe/screens/bag_view.hpp>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
 
+#include "bag_slots.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -29,8 +33,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
     battle_.emplace(std::move(*battle));
     core::logInfo("{}", core::formatMessage(messages::BattleStarted, enemies, map));
     desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
-    screens::publish(*desc_.ui, screens::settingsOf(screens::battleViewOf(*battle_, names())),
-                     screens::BattleRevisionSetting);
+    publish();
     desc_.ui->show(BattleDocument, true);
     return {};
 }
@@ -40,8 +43,7 @@ void BattleScreen::tick(double seconds) {
         return;
     }
     battle_->advance(seconds);
-    screens::publish(*desc_.ui, screens::settingsOf(screens::battleViewOf(*battle_, names())),
-                     screens::BattleRevisionSetting);
+    publish();
     if (battle_->finished()) {
         finish();
     }
@@ -65,6 +67,23 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
         }
         return true;
     }
+    if (command.name == BattleBagOpenCommand) {
+        openBag();
+        return true;
+    }
+    if (command.name == BattleBagCloseCommand) {
+        if (battle_) {
+            battle_->closeBag();
+            publish();
+        }
+        return true;
+    }
+    if (command.name == BattleThrowCommand) {
+        if (const auto* number = std::get_if<double>(&command.value); number != nullptr) {
+            throwItem(*number);
+        }
+        return true;
+    }
     if (command.name == BattleCloseCommand) {
         close();
         return true;
@@ -74,6 +93,50 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
 
 screens::NameKeys BattleScreen::names() const {
     return {desc_.species, desc_.inventory != nullptr ? &desc_.inventory->items() : nullptr, &desc_.battle->catalog()};
+}
+
+void BattleScreen::publish() const {
+    if (!battle_) {
+        return;
+    }
+    screens::publish(*desc_.ui, screens::settingsOf(screens::battleViewOf(*battle_, names())),
+                     screens::BattleRevisionSetting);
+}
+
+void BattleScreen::openBag() {
+    if (!battle_) {
+        return;
+    }
+    if (auto opened = battle_->openBag(); !opened) {
+        core::logInfo("{}", core::formatMessage(messages::BattleBagRefused, opened.error().message));
+        return;
+    }
+    // inventory.c: selectOptionMenu: in battle only the items of a battle colour can be thrown.
+    screens::publish(*desc_.ui,
+                     screens::settingsOf(screens::bagViewOf(desc_.inventory->inventory(), desc_.inventory->items(),
+                                                            names(), game::inventory::UseContext::Battle)),
+                     screens::BagRevisionSetting);
+    publish();
+}
+
+void BattleScreen::throwItem(double slot) {
+    if (!battle_) {
+        return;
+    }
+    const std::optional<std::int32_t> item = itemAt(desc_.inventory->inventory().slots(), slotOf(slot));
+    if (!item) {
+        core::logInfo("{}", core::formatMessage(messages::BattleThrowRefused, slot, messages::EmptyBagSlot));
+        return;
+    }
+    auto thrown = desc_.battle->throwItem(*battle_, *item);
+    if (!thrown) {
+        core::logInfo("{}", core::formatMessage(messages::BattleThrowRefused, slot, thrown.error().message));
+    } else if (thrown->outcome != game::inventory::UseOutcome::Used) {
+        core::logInfo("{}", core::formatMessage(messages::BattleThrowRefused, slot, messages::ItemNotThrowable));
+    } else {
+        core::logInfo("{}", core::formatMessage(messages::BattleItemThrown, *item));
+    }
+    publish();
 }
 
 void BattleScreen::finish() {

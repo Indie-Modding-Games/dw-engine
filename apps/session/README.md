@@ -179,6 +179,11 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
   hora: `tamer.c: advanceBattleTime`); las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
   derrota, las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
   (si se unió el recluta: `recruitJoined`) y `TournamentResult` (torneo o arena).
+- **Lanzar un objeto** (`throwItem(combate, objeto)`): el domador lanza un objeto de la bolsa al compañero. Lo usa
+  `InventoryAdapter::useInBattle` con `UseContext::Battle` (solo los de `item_color` 1 o 2: `inventory.c:
+  selectOptionMenu`), que lo gasta al lanzarlo (`main.c: startThrowingItem`), y su efecto se convierte en el
+  `ThrownItem` del combate, que siempre llega (`main.c: tickThrownItem`). Falla si no hay bolsa o si el combate no la
+  deja abrir (`Battle::bagAvailable`).
 
 La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_moves.schema.json)) es de la partida.
 
@@ -191,6 +196,7 @@ La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_mov
 | Nivel de domador 0 y hora 8:00 al empezar | `main_menu.c: initializeDefaultSavegame` | `new_game.tamer_level`, `clock.start` | idem | Igual |
 | Nivel de domador entre 0 y 10 | `tamer.c: addTamerLevel` | `tamer.level_min/level_max`, `changeTamerLevel` | `the original's tamer level ...` | Igual |
 | El reloj corre en el campo y se para en los cambios de mapa | `clock.c: tickGameClock`, `tamer.c: stopGameTime/startGameTime` | `advanceGameTime` con `Field::gameTimeRan` | `field_clock_tests.cpp` | Igual |
+| El reloj y el cuidado se paran durante todo el combate; al acabar, 20 minutos de golpe | `tamer.c: startBattle` (`stopGameTime`), `clock.c: tickGameClock` (vuelve si `GAME_STATE != 0`), `tamer.c: advanceBattleTime` | el campo no corre mientras se ve el combate (`apps/game`: `BattleScreen::active`), así que `Field::gameTimeRan` no avanza el reloj; los minutos los da `Partner::applyBattle` | `a won battle gives the partner its HP, raises, care, minutes...` | Igual |
 | Un minuto de juego por segundo | `clock.c: tickGameClock` | sección `clock` | `on the field the game clock keeps ...` | Igual |
 | Los efectos del área vuelven a empezar en cada mapa | `partner.c: setupPartnerOnWarp` | `followMap` → `Partner::enterMap` | `a map change autosaves, ...` | Igual |
 | Autoguardado al dormir, al cambiar de mapa y al acabar una batalla | El original no autoguarda | sección `save` | `the partner going to sleep autosaves`, `a map change autosaves, ...` | Desviación aprobada (2026-10-20) |

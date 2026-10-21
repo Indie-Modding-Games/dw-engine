@@ -42,6 +42,9 @@ inline constexpr std::string_view CommandNotInMenu = "the command is not in the 
 inline constexpr std::string_view BattleOver = "the battle is over";
 inline constexpr std::string_view NoCommands = "the partner takes no commands in this battle";
 inline constexpr std::string_view FinisherNotReady = "the finisher gauge is not full";
+inline constexpr std::string_view BagOpen = "the tamer's bag is open";
+inline constexpr std::string_view BagUnavailable =
+    "the tamer's bag only opens while the partner is not running away and no thrown item is on its way";
 inline constexpr std::string_view NotRevivable =
     "the partner can only be revived after it falls and before the countdown ends";
 

@@ -272,6 +272,20 @@ struct EndingRules {
     std::int32_t reviveCountdownShownAt = 0;
 };
 
+// The item the tamer throws (main.c: startThrowingItem, tickThrownItem): it leaves the hand at this frame of the
+// throw and lands on the partner flightFrames later.
+struct ItemThrowRules {
+    std::int32_t releaseFrame = 0;
+    std::int32_t flightFrames = 0;
+};
+
+// What the battle's HUD shows (battle_main.c: BTL_renderEnemyHPBars).
+struct HudRules {
+    // An enemy's HP bar shows after it takes damage, until this many frames pass with no hit reaction and no
+    // damage left to drain.
+    std::int32_t enemyHpBarFrames = 0;
+};
+
 // What a battle's outcome does to the partner's care values.
 struct CareChange {
     std::int32_t happiness = 0;
@@ -358,6 +372,8 @@ struct BattleRules {
     FinisherRules finisher;
     ConditionRules condition;
     EndingRules ending;
+    ItemThrowRules itemThrow;
+    HudRules hud;
     ConsequenceRules consequences;
     RewardRules rewards;
     JoiningRules joining;

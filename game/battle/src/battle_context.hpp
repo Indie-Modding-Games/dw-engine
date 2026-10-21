@@ -76,6 +76,17 @@ void cureStatus(BattleContext& context, FighterId id);
 // The finisher gauge (battle_main.c: BTL_addFinisherProgress).
 void addFinisherProgress(BattleContext& context, FighterId id, std::int32_t amount);
 
+// thrown_item.cpp: the tamer's thrown item (main.c: startThrowingItem, tickThrownItem) and what it does when it lands
+// (item.c), and the HUD's HP bars (battle_main.c: BTL_renderEnemyHPBars).
+void throwItem(BattleContext& context, const ThrownItem& item);
+void tickThrownItem(BattleContext& context);
+// HP and MP healed, each up to its maximum; nothing while the partner is down.
+void restorePartner(Fighter& partner, std::int32_t hp, std::int32_t mp);
+// Gets the fallen partner up with `hp` and resets every fighter's action (battle_setup.c: BTL_isBattleFinished).
+void revivePartner(BattleContext& context, std::int32_t hp);
+// An enemy's HP bar shows again on damage and counts the frames after its hit reaction and its damage drain.
+void tickHpBars(BattleContext& context);
+
 // movement.cpp: walking on the battle ground. Distances squared, as the original compares them.
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b);
 void lookAt(Fighter& fighter, Point point);

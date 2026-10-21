@@ -29,8 +29,11 @@ inline constexpr std::string_view FinisherChargeSetting = "battle.finisher.charg
 inline constexpr std::string_view ReviveSecondsSetting = "battle.revive_seconds";
 inline constexpr std::string_view BattleOutcomeSetting = "battle.end.outcome";
 inline constexpr std::string_view BattleBitsSetting = "battle.end.bits";
+inline constexpr std::string_view BagAvailableSetting = "battle.bag.available";
+inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
+inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
 
-// A fighter's bars and name (battle_hud.c: BTL_renderPartnerStatusBars).
+// A fighter's bars and name (battle_hud.c: BTL_renderPartnerStatusBars; battle_main.c: BTL_renderEnemyHPBars).
 struct FighterView {
     std::string nameKey;
     std::int32_t hp = 0;
@@ -38,6 +41,8 @@ struct FighterView {
     std::int32_t mp = 0;
     std::int32_t maxMp = 0;
     bool fainted = false;
+    // Whether the HUD shows its HP bar now: the partner's always, an enemy's for a while after damage.
+    bool hpBarShown = true;
     // The key of its status effect (battle.status.<name>), or empty without one.
     std::string statusKey;
 
@@ -77,6 +82,10 @@ struct BattleView {
     // The seconds left to revive the fallen partner, once the countdown shows (command_menu.c:
     // BTL_renderDeathCountdown).
     std::optional<std::int32_t> reviveSeconds;
+    // The tamer's bag: whether it can open, whether it is open and whether a thrown item is on its way.
+    bool bagAvailable = false;
+    bool bagOpen = false;
+    bool itemInFlight = false;
 };
 
 // A line of the end box: a text key and the values its placeholders take.
