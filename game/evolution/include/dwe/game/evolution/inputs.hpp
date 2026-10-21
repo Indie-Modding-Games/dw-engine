@@ -56,9 +56,6 @@ struct EvolutionInputs {
     std::int32_t ageDays = 0;
     // Hours of the evolution counter (evoTimer) since the last change of level.
     std::int32_t evolutionTimer = 0;
-    // Poop piles left on the floor since the last reset (virusBar). The original's rules do not read it: a full bar
-    // comes as the partner's own event (fillVirusBar), on the care section's limit.
-    std::int32_t virusBar = 0;
     // The original's index of the map the partner is on (CURRENT_SCREEN).
     std::int32_t map = 0;
     // Whether the tamer is free (tamerGetState() == 0): the natural and special evolutions wait for it.

@@ -6,7 +6,7 @@ cambiar (stats, técnicas, contador). Lo que hacía el original está en la
 [rulesets](../../docs/architecture/rulesets.md).
 
 No conoce al partner: recibe un `EvolutionInputs` con lo que lee (forma, stats, peso, errores de cuidado, disciplina,
-felicidad, cansancio, batallas, técnicas aprendidas, edad, contador, barra de virus, mapa, si el tamer está libre,
+felicidad, cansancio, batallas, técnicas aprendidas, edad, contador, mapa, si el tamer está libre,
 forma virus, copia de la forma virus) y devuelve un `EvolutionResult` que el partner aplica. Solo guarda su propio estado
 (`EvolutionState`): los contadores de evolución y la copia de la forma virus son del partner. No incluye otros
 módulos de `game`; la sesión hace de pegamento.
@@ -108,7 +108,7 @@ hay que extraerlo de nuevo.
 | Especiales al despertar | `evolution.c`: `handleSpecialEvolutions` (modo 2) | `Evolution::wakeUp`, `specials.wake_up` | `waking up: …`, `a special needs its roll…`, `one roll for every rule…` | Igual |
 | Especiales al elogiar o regañar; aviso de regaño | `evolution.c`: `handleSpecialEvolutions` (modo 3); `partner_impl.c`: `handlePraiseScold` | `Evolution::praiseOrScold`, `specials.praise_scold` | `praise or scold: …` | Igual |
 | Especial de las 360 h que pisa la normal | `partner_impl.c`: `tickConditions` | `praise_scold_on_timer`, `quirks.timer_special_overrides_normal` | `a champion at the timer hours…`, `quirk timer_special_overrides_normal…` | Igual; decidido por el responsable de diseño (2026-10-20): fiel al original |
-| Barra de virus y copia al entrar | `partner_impl.c`: `tickConditions` | `care.toilet.virus_bar_limit` y `virus_form` (dueña: `care`), `Evolution::fillVirusBar` con `EvolutionInputs::virusForm` (el aviso del partner), `EvolutionResult::virusBackup` (la guarda el partner, con la forma) | `the periodic check leaves a full virus bar…`, `the partner's full virus bar…` | Igual |
+| Barra de virus y copia al entrar | `partner_impl.c`: `tickConditions` | `care.toilet.virus_bar_limit` y `virus_form` (dueña: `care`), `Evolution::fillVirusBar` con `EvolutionInputs::virusForm` (el aviso del partner), `EvolutionResult::virusBackup` (la guarda el partner, con la forma) | `the partner's full virus bar…` | Igual |
 | Vuelta de la forma virus y stats reconstruidos | `partner.c`: `callDigimonRoutine` (2); `evl.c`: `EVL_scaleBaseStats` | `Evolution::returnFromVirus`, `EvolutionInputs::virusBackup`, `EvolutionResult::restoredStats` | `back from the virus form…`, `the stats rebuilt from the virus backup are left to the session to clamp` | Igual: se restauran con `setStats` y la sesión los deja en el tope de cada stat, como `EVL_clampBaseStats`; sin el tope de 999 por ganancia (decidido por el responsable de diseño, 2026-10-20) |
 | Evolución por script | `partner.c`: `callDigimonRoutine` (10) | `Evolution::evolveByScript` | `effects_tests.cpp` | Igual |
 | Objetos de evolución fijos y de tabla | `item.c`: `handleEvoItems` | `Evolution::useItem`, `items`, `EvolutionTables::itemTarget` (`data/item_effects`, `item_targets`) | `a fixed evolution item…`, `an item of the item table…`, `the evolution items' targets come from the item effects…`, slow `every evolution item of the item effects…` | Igual |

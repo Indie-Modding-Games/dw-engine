@@ -172,14 +172,6 @@ TEST_CASE("quirk timer_special_overrides_normal: at the timer hours a failed spe
 
 // --- The virus form (partner_impl.c: tickConditions; partner.c: callDigimonRoutine) ---
 
-TEST_CASE("the periodic check leaves a full virus bar to the partner's own event") {
-    const Evolution evolution = TableFixture{}.makeEvolution();
-    EvolutionInputs inputs = inputsOf("grey", 50);
-    inputs.virusBar = 100;
-    inputs.tamerFree = false;
-    CHECK_FALSE(checkAt(evolution, inputs).evolution);
-}
-
 TEST_CASE("the partner's full virus bar turns it into the virus form, keeping its form and stats") {
     const Evolution evolution = TableFixture{}.makeEvolution();
     EvolutionInputs inputs = inputsOf("grey", 50);

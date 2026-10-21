@@ -350,7 +350,6 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                            .learnedMoves = masteredMoves(),
                            .ageDays = partner.life.age,
                            .evolutionTimer = partner.evolution.hours,
-                           .virusBar = partner.toilet.virusBar,
                            .map = mapIndexOf(session),
                            .tamerFree = session.careContext().tamerIdle,
                            .scriptPaused = !scriptRunning,

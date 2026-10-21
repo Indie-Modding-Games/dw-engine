@@ -89,8 +89,7 @@ EvolutionInputs randomInputs(Species species, ruleset::Random& random) {
             .tiredness = random.below(MaxPercent),
             .battles = random.below(MaxBattles),
             .learnedMoves = random.below(MaxMoves),
-            .evolutionTimer = random.below(MaxHours),
-            .virusBar = random.below(MaxCare)};
+            .evolutionTimer = random.below(MaxHours)};
 }
 
 // Inputs of `from` that meet every requirement of `target`.
@@ -270,7 +269,6 @@ TEST_CASE("the user's disc, extracted: a thousand simulated raisings of each in-
         const auto generator = [species](ruleset::Random& random) {
             EvolutionInputs inputs = randomInputs(species, random);
             inputs.evolutionTimer = 24;
-            inputs.virusBar = 0;
             return inputs;
         };
         const EvolutionHistogram histogram = simulateRaisings(evolution, generator, Raisings, 1);

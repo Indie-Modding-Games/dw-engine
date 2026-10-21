@@ -129,7 +129,6 @@ public:
             inputs.weight = result.weight;
             inputs.careMistakes = result.careMistakes;
             inputs.battles = result.battles;
-            inputs.virusBar = 0;
             ++evolutions;
         }
         Metrics metrics{

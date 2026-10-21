@@ -106,7 +106,7 @@ una vez las tablas de los tres (`dwe-sim` las comparte entre sus partidas); sin 
 le dan las suyas en `.tables`) y registra su comprobación de sección y la sección de guardado `evolution`.
 
 - **Entradas**: llena `EvolutionInputs` desde el partner: forma, stats, peso, errores de cuidado, disciplina,
-  felicidad, cansancio, batallas, días, contador de evolución, barra de virus, la forma virus
+  felicidad, cansancio, batallas, días, contador de evolución, la forma virus
   (`care.toilet.virus_form`), la copia de la forma virus, el mapa
   (índice original de `data/maps`, `UnknownMapIndex` sin tabla de mapas), si el domador está libre
   (`careContext().tamerIdle`), si corre un guion (solo en las rutinas de guion) y las técnicas aprendidas: las del
