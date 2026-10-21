@@ -519,10 +519,18 @@ CareChange readCareChange(ValueReader& in, const YamlNode& node, std::string_vie
             .battles = in.count(node, "battles")};
 }
 
+StatRestore readStatRestore(ValueReader& in, const YamlNode& node) {
+    if (!in.group(node, "defeat_restore", {"hp", "mp"})) {
+        return {};
+    }
+    return {.hp = in.count(node, "hp"), .mp = in.count(node, "mp")};
+}
+
 ConsequenceRules readConsequences(ValueReader& in, const YamlNode& node) {
     if (!in.group(node, "consequences",
                   {"victory", "flee", "defeat", "after_battle_tiredness", "after_battle_food",
-                   "mp_tiredness_below_percent", "mp_tiredness_scale", "defeat_lives", "elapsed_minutes"})) {
+                   "mp_tiredness_below_percent", "mp_tiredness_scale", "defeat_lives", "defeat_restore",
+                   "elapsed_minutes"})) {
         return {};
     }
     return {.victory = readCareChange(in, in.field(node, "victory"), "victory"),
@@ -533,6 +541,7 @@ ConsequenceRules readConsequences(ValueReader& in, const YamlNode& node) {
             .mpTirednessBelowPercent = in.percent(node, "mp_tiredness_below_percent"),
             .mpTirednessScale = in.count(node, "mp_tiredness_scale"),
             .defeatLives = in.count(node, "defeat_lives"),
+            .defeatRestore = readStatRestore(in, in.field(node, "defeat_restore")),
             .elapsedMinutes = in.count(node, "elapsed_minutes")};
 }
 

@@ -135,6 +135,22 @@ TEST_CASE("a partner that falls loses the battle when the countdown ends, unless
     CHECK(resultOf(battle).care.happiness == -30);
 }
 
+TEST_CASE("a lost battle gives the partner back the section's HP and MP, up to the maximums") {
+    // dg 212, section 0x48 (the death map's script): add_stat 6 and 7; script_value.c: enforceStatsLimits.
+    const auto lose = [](const BattleRules& rules) {
+        Battle battle = startBattle(duel(evenStats(30, 20), evenStats(500, 400)), 9, rules);
+        runToEnd(battle);
+        REQUIRE(resultOf(battle).outcome == Outcome::Defeat);
+        return resultOf(battle);
+    };
+    const BattleResult full = lose(originalRules());
+    CHECK(full.partnerHp == 30);
+    CHECK(full.partnerMp == 500);
+    const BattleResult partly =
+        lose(rulesOf(originalWith("defeat_restore: { hp: 9999, mp: 9999 }", "defeat_restore: { hp: 7, mp: 0 }")));
+    CHECK(partly.partnerHp == 7);
+}
+
 TEST_CASE("fleeing ends the battle after the flee frames") {
     Battle battle = startBattle(duel(evenStats(300, 100), evenStats(300, 100)), 2);
     REQUIRE(battle.command(Command::Flee));

@@ -165,10 +165,10 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
   `data/digimon`, sus stats, HP y MP y las técnicas equipadas), su estado (disciplina, cansancio, enfermo, herido y
   las técnicas que ya sabe), el minuto del reloj y una semilla de `random()`. La partida decide el recluta que se une
   si gana (`recruitOnVictory`).
-- **Acabar** (`finish(session, BattleResult)`): HP y MP del final (`setStats`), las subidas por `addStatGains`, y el
-  cuidado, la herida, las vidas y los minutos como los da la batalla por `Partner::applyBattle` (con la cuenta horaria
-  del partner si la batalla acaba una hora: `tamer.c: advanceBattleTime`);
-  las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
+- **Acabar** (`finish(session, BattleResult)`): HP y MP del final (`setStats`; tras perder, ya con lo que devuelve
+  `battle.consequences.defeat_restore`), las subidas por `addStatGains`, y el cuidado, la herida, las vidas y los
+  minutos como los da la batalla por `Partner::applyBattle` (con la cuenta horaria del partner si la batalla acaba una
+  hora: `tamer.c: advanceBattleTime`); las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
   derrota, las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
   (si se unió el recluta: `recruitJoined`) y `TournamentResult` (torneo o arena).
 

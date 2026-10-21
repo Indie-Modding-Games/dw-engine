@@ -170,6 +170,10 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
     case Outcome::Defeat:
         result.care = consequences.defeat;
         result.livesLost = consequences.defeatLives;
+        // The defeat takes the partner to the death map, whose script (dg 212, section 0x48) adds to the current HP
+        // and MP and script_value.c: enforceStatsLimits caps them at the maximums.
+        result.partnerHp = std::min(result.partnerHp + consequences.defeatRestore.hp, partner.stats.maxHp);
+        result.partnerMp = std::min(result.partnerMp + consequences.defeatRestore.mp, partner.stats.maxMp);
         break;
     }
     result.elapsedMinutes = consequences.elapsedMinutes;

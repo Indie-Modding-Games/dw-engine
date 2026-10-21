@@ -68,7 +68,8 @@ using StatValues = std::array<std::int32_t, StatCount>;
 struct BattleResult {
     Outcome outcome = Outcome::Defeat;
     std::int64_t frames = 0;
-    // The partner's HP and MP at the end.
+    // The partner's HP and MP at the end; after a defeat, with what the death map's script gives back
+    // (consequences.defeat_restore).
     std::int32_t partnerHp = 0;
     std::int32_t partnerMp = 0;
     // On a victory: what each stat goes up by (battle_ui.c: battleStatsGainsAndDrops), the bits and items won and the

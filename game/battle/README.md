@@ -90,6 +90,7 @@ probable y está marcado en el código), **Hueco** (falta).
 | Remate y su barra | `battle_main.c: BTL_tickFighterAction`, `BTL_addFinisherProgress`, `command_menu.c: BTL_tickFinisherChargeup` | `beginFinisher`, `addFinisherProgress` | the finisher gauge fills | Igual |
 | Victoria, huida, derrota, revivir | `battle_setup.c: BTL_isBattleFinished` | `Battle::step`, `revivePartner` | victory; flee; falls and revives | Igual |
 | Cuidado tras el combate | `tamer.c: startBattle`, `partner_impl.c: handlePostBattleTiredness`, `tamer.c: advanceBattleTime` | `settleBattle`, `addPostBattleTiredness` (dueña de los números: `battle.consequences`; la pérdida de objetos es de `inventory`) | a battle plays to a victory; fleeing costs happiness and discipline and tires more | Igual |
+| HP y MP tras perder | guion del mapa de la derrota (script 212, sección 0x48); `murd.c: MURD_tick`; `script_value.c: enforceStatsLimits` | `settleBattle` con `consequences.defeat_restore` | a lost battle gives the partner back the section's HP and MP | Igual en efecto: lo hace la batalla, no un guion (decisión pendiente: moverlo al motor de guiones en la fase 4) |
 | Ganancia de stats y objetos | `battle_ui.c: battleStatsGainsAndDrops` | `settleBattle` | the stat gains; no drops | Igual |
 | Lesión | `battle_ui.c: handleBattleEndBox`, `handleBattleInjury` | `settleBattle` | the injury roll | Igual |
 | Aprender técnicas | `battle_ui.c: battleMoveLearning` | `settleBattle`, `MoveCatalog::learnedWith` | the partner learns a seen technique | Igual |

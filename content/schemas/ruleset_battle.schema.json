@@ -868,6 +868,7 @@
         "mp_tiredness_below_percent",
         "mp_tiredness_scale",
         "defeat_lives",
+        "defeat_restore",
         "elapsed_minutes"
       ],
       "additionalProperties": false,
@@ -958,6 +959,25 @@
         },
         "defeat_lives": {
           "type": "integer"
+        },
+        "defeat_restore": {
+          "description": "Added to the partner's current HP and MP after a defeat, each up to its maximum.",
+          "type": "object",
+          "required": [
+            "hp",
+            "mp"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hp": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mp": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         },
         "elapsed_minutes": {
           "type": "integer"

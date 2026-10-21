@@ -320,6 +320,10 @@ consequences:
   mp_tiredness_scale: 10
   # Tras perder: se pierde una vida (script_interp.c: SCRIPT_OP_START_BATTLE).
   defeat_lives: 1
+  # Tras perder, el guion del mapa de la derrota (murd.c: MURD_tick lleva al mapa 205 o 218; script dg 212, sección
+  # 0x48: add_stat 6 y 7) suma 9999 al HP y al MP actuales, y script_value.c: enforceStatsLimits los deja en el
+  # máximo: el partner vuelve con todo el HP y el MP.
+  defeat_restore: { hp: 9999, mp: 9999 }
   # Cada combate adelanta el reloj 20 minutos.
   elapsed_minutes: 20
 

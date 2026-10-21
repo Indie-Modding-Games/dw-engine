@@ -232,6 +232,10 @@ Se aplican al acertar, con la probabilidad de estado de la técnica, salvo que e
   30 % de los huecos ocupados de la bolsa, redondeando hacia abajo y cada uno con su pila entera (`handleItemLoss`, ver
   la [ficha de inventario](inventory.md)), y una vida; con 0 vidas, la vida restante pasa a 0 y el partner muere
   **(comprobado)**. Ver la [ficha de cuidado](care.md).
+- **HP y MP tras perder:** ningún código de combate los toca; el partner pasa al mapa de la derrota
+  (`murd.c: MURD_tick`, mapa 205 o 218) y el guion de ese mapa (script 212, sección 0x48) suma 9999 al HP y al MP
+  actuales, que `script_value.c: enforceStatsLimits` deja en el máximo: vuelve con todo **(comprobado en el guion
+  desensamblado)**.
 - **Victoria, cuidado:** felicidad +2, batallas +1 (cuenta para la [evolución](evolution.md)) **(comprobado)**.
 - **Cansancio y hambre tras ganar o huir** (`handlePostBattleTiredness`): cansancio +5, más un extra si el MP
   acabó por debajo del 80 % (ver rarezas), y la comida baja 15 **(comprobado)**.
