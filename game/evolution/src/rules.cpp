@@ -183,6 +183,15 @@ SpecialRequirement readSpecialRequirement(YamlReader& reader, const core::YamlEn
         return requirement;
     }
     requirement.comparison = equals != nullptr ? Comparison::Equals : Comparison::AtLeast;
+    if (requirement.field == SpecialField::Map) {
+        // A map is named by its id: a pack's map has no number of the original.
+        if (equals == nullptr) {
+            reader.fail(entry.value, messages::MapByIdOnly);
+            return requirement;
+        }
+        requirement.mapId = reader.text(*equals);
+        return requirement;
+    }
     requirement.value = reader.integer<std::int32_t>(equals != nullptr ? *equals : *atLeast);
     return requirement;
 }

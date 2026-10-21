@@ -139,7 +139,7 @@
   },
   "$defs": {
     "name": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-    "id": { "description": "An id of a table of the packs.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "id": { "description": "An id of a table of the packs.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
     "move": {
       "description": "A move's id in data/moves.",
       "type": "string",
@@ -149,6 +149,14 @@
     "hours": { "type": "integer", "minimum": 0 },
     "level": { "description": "1 baby, 2 in-training, 3 rookie, 4 champion, 5 ultimate.", "type": "integer", "minimum": 0, "maximum": 5 },
     "percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "map_comparison": {
+      "type": "object",
+      "required": ["equals"],
+      "additionalProperties": false,
+      "properties": {
+        "equals": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$", "entryReference": "data/maps" }
+      }
+    },
     "comparison": {
       "type": "object",
       "minProperties": 1,
@@ -178,7 +186,7 @@
             "tiredness": { "$ref": "#/$defs/comparison" },
             "battles": { "$ref": "#/$defs/comparison" },
             "defense": { "$ref": "#/$defs/comparison" },
-            "map": { "$ref": "#/$defs/comparison" },
+            "map": { "$ref": "#/$defs/map_comparison" },
             "discipline_before": { "$ref": "#/$defs/comparison" },
             "happiness_before": { "$ref": "#/$defs/comparison" }
           }

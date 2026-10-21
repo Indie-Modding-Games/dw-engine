@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace dwe::game::evolution {
 
@@ -56,8 +57,9 @@ struct EvolutionInputs {
     std::int32_t ageDays = 0;
     // Hours of the evolution counter (evoTimer) since the last change of level.
     std::int32_t evolutionTimer = 0;
-    // The original's index of the map the partner is on (CURRENT_SCREEN).
-    std::int32_t map = 0;
+    // The id in data/maps of the map the partner is on (CURRENT_SCREEN), or empty when it is on none.
+    // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+    std::string map = {};
     // Whether the tamer is free (tamerGetState() == 0): the natural and special evolutions wait for it.
     bool tamerFree = true;
     // The original's IS_SCRIPT_PAUSED flag, which gates the tamer level chance on evolving. What it stands for at

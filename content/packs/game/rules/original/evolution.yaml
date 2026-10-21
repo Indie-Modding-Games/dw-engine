@@ -63,12 +63,12 @@ specials:
       require:
         defense: { at_least: 500 }
         discipline: { equals: 100 }
-    # CURRENT_SCREEN == 1.
+    # CURRENT_SCREEN == 1: el mapa mayo02, por su id de data/maps.
     - target: kune
       roll_below: 50
       from: [koro, toko, tuno, tane]
       require:
-        map: { equals: 1 }
+        map: { equals: mayo02 }
   # partner.c: partnerTickPraiseScold: tras elogiar o regañar (modo 3).
   praise_scold:
     - target: sira

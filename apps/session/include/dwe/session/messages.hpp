@@ -62,6 +62,8 @@ inline constexpr std::string_view EvolutionNeedsTables = "the evolution adapter 
 inline constexpr std::string_view EvolutionNotRead = "the evolution rules have not been read";
 inline constexpr std::string_view EvolutionNotApplied = "evolution: the partner could not become '{}': {}";
 inline constexpr std::string_view UnknownEvolutionForm = "evolution: no form '{}' in the tables";
+inline constexpr std::string_view UnknownEvolutionMap =
+    "evolution: the special evolution to '{}' asks for map '{}', which is no map of data/maps: the rule never holds";
 
 // The inventory adapter.
 inline constexpr std::string_view InventoryNeedsTables = "the inventory adapter needs the packs or its tables";

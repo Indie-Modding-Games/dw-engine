@@ -34,6 +34,7 @@ inline constexpr std::string_view SelectionWhat = "evolution selection";
 inline constexpr std::string_view NotMapping = "{} must be a mapping";
 inline constexpr std::string_view NotPositive = "{} must be 1 or more";
 inline constexpr std::string_view OneComparison = "a comparison must have exactly one of equals and at_least";
+inline constexpr std::string_view MapByIdOnly = "map compares with equals and a map id of data/maps";
 inline constexpr std::string_view UnknownSpecialField = "unknown requirement '{}'";
 inline constexpr std::string_view UnknownForm = "{}: unknown form '{}'";
 inline constexpr std::string_view UnknownItem = "{}: unknown item '{}'";

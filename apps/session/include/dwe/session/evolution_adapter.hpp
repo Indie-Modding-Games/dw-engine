@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -24,9 +25,6 @@ class BattleAdapter;
 
 // The save section of the evolution state.
 inline constexpr std::string_view EvolutionSaveName = "evolution";
-
-// The map index the evolution rules see when the packs have no map table or the player is on no map of it.
-inline constexpr std::int32_t UnknownMapIndex = -1;
 
 struct EvolutionAdapterDesc {
     // The mounted packs, for the tables and the map table; they must outlive the adapter.
@@ -82,7 +80,10 @@ private:
     // What the rules read of the partner now, or nothing when its form is not in the tables.
     [[nodiscard]] std::optional<game::evolution::EvolutionInputs> inputsOf(const GameSession& session,
                                                                            bool scriptRunning) const;
-    [[nodiscard]] std::int32_t mapIndexOf(const GameSession& session) const;
+    [[nodiscard]] static std::string mapIdOf(const GameSession& session);
+    // Warns of each map a special rule asks for that is no map of data/maps, when the packs have a map table: that
+    // rule never holds (dwx validate reports it too).
+    void warnUnknownMaps(const game::evolution::SpecialRules& specials) const;
     // Applies the result to the partner (evl.c: EVL_applyEvolution's effects) and records it.
     void apply(GameSession& session, const game::evolution::EvolutionResult& result);
 

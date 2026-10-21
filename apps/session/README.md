@@ -108,7 +108,9 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
 - **Entradas**: llena `EvolutionInputs` desde el partner: forma, stats, peso, errores de cuidado, disciplina,
   felicidad, cansancio, batallas, días, contador de evolución, la forma virus
   (`care.toilet.virus_form`), la copia de la forma virus, el mapa
-  (índice original de `data/maps`, `UnknownMapIndex` sin tabla de mapas), si el domador está libre
+  (su id de `data/maps`, vacío fuera del campo; una regla especial nombra el mapa por id, `map: { equals: mayo02 }`,
+  y un id que no está en la tabla de mapas se avisa al leer las reglas y la regla nunca se cumple; `dwx validate` lo da
+  como problema), si el domador está libre
   (`careContext().tamerIdle`), si corre un guion (solo en las rutinas de guion) y las técnicas aprendidas: las del
   `BattleAdapter` (`moves().learned`, por ID), contadas con `countMasteredMoves` contra la tabla de técnicas de la
   sesión (las del original de número menor que `evolution.requirements.mastered_moves_below`, 64:

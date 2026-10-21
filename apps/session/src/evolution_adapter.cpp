@@ -149,14 +149,30 @@ core::Result<void> EvolutionAdapter::readRules(const ruleset::Ruleset& rules) {
     if (!built) {
         return std::unexpected{built.error()};
     }
-    evolution_.emplace(std::move(*built));
+    const game::evolution::Evolution& evolution = evolution_.emplace(std::move(*built));
     if (!maps_ && desc_.files != nullptr) {
         // Packs without a map table (tests' stand-in packs) leave the map unknown to the rules.
         if (auto maps = assets::loadMapTable(*desc_.files); maps) {
             maps_ = std::move(*maps);
         }
     }
+    warnUnknownMaps(evolution.rules().specials);
     return {};
+}
+
+void EvolutionAdapter::warnUnknownMaps(const game::evolution::SpecialRules& specials) const {
+    if (!maps_) {
+        return;
+    }
+    for (const auto* rules : {&specials.wakeUp, &specials.praiseScold}) {
+        for (const game::evolution::SpecialRule& rule : *rules) {
+            for (const game::evolution::SpecialRequirement& need : rule.requirements) {
+                if (need.field == game::evolution::SpecialField::Map && maps_->find(need.mapId) == nullptr) {
+                    core::logWarning("{}", formatMessage(messages::UnknownEvolutionMap, rule.target, need.mapId));
+                }
+            }
+        }
+    }
 }
 
 core::Result<void> EvolutionAdapter::addSaveSections(game::save::SaveSections& sections) {
@@ -350,7 +366,7 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                            .learnedMoves = masteredMoves(),
                            .ageDays = partner.life.age,
                            .evolutionTimer = partner.evolution.hours,
-                           .map = mapIndexOf(session),
+                           .map = mapIdOf(session),
                            .tamerFree = session.careContext().tamerIdle,
                            .scriptPaused = !scriptRunning,
                            .virusForm = tables.find(session.partnerRules().care.toilet.virusForm),
@@ -365,13 +381,9 @@ std::int32_t EvolutionAdapter::masteredMoves() const {
                                                evolution_->tables().moves());
 }
 
-std::int32_t EvolutionAdapter::mapIndexOf(const GameSession& session) const {
+std::string EvolutionAdapter::mapIdOf(const GameSession& session) {
     const std::optional<FieldPlace> place = session.currentPlace();
-    if (!maps_ || !place) {
-        return UnknownMapIndex;
-    }
-    const assets::MapEntry* entry = maps_->find(place->map);
-    return entry != nullptr ? entry->index : UnknownMapIndex;
+    return place ? place->map : std::string{};
 }
 
 void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result) {

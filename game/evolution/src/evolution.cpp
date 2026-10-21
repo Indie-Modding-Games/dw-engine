@@ -74,7 +74,8 @@ std::int32_t fieldValue(SpecialField field, const EvolutionInputs& inputs, const
     case SpecialField::Defense:
         return inputs.stats.defense;
     case SpecialField::Map:
-        return inputs.map;
+        // Compared by id in holds.
+        return 0;
     case SpecialField::DisciplineBefore:
         return event.disciplineBefore;
     case SpecialField::HappinessBefore:
@@ -89,6 +90,14 @@ bool needsEvent(SpecialField field) {
 
 bool compares(const SpecialRequirement& requirement, std::int32_t value) {
     return requirement.comparison == Comparison::Equals ? value == requirement.value : value >= requirement.value;
+}
+
+bool holds(const SpecialRequirement& requirement, const EvolutionInputs& inputs, const EvolutionTables& tables,
+           const PraiseScold& event) {
+    if (requirement.field == SpecialField::Map) {
+        return !inputs.map.empty() && inputs.map == requirement.mapId;
+    }
+    return compares(requirement, fieldValue(requirement.field, inputs, tables, event));
 }
 
 } // namespace
@@ -181,8 +190,7 @@ std::optional<Species> Evolution::specialTarget(const std::vector<SpecialRule>& 
             });
         const bool scoldMatches = !special.scolded || (event && event->scolded);
         const bool requirementsHold = std::ranges::all_of(special.requirements, [&](const SpecialRequirement& need) {
-            return (!needsEvent(need.field) || event) &&
-                   compares(need, fieldValue(need.field, inputs, tables_, event.value_or(noEvent)));
+            return (!needsEvent(need.field) || event) && holds(need, inputs, tables_, event.value_or(noEvent));
         });
         if (rolled && fromMatches && scoldMatches && requirementsHold) {
             target = require(special.target);

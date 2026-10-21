@@ -87,14 +87,27 @@ TEST_CASE("waking up: the battles, defense and map specials") {
     for (const std::string_view from : {"koro", "toko", "tuno", "tane"}) {
         EvolutionInputs inputs = inputsOf(from);
         CHECK_FALSE(wakeUpTarget(evolution, inputs));
-        inputs.map = 1;
+        inputs.map = "mayo02";
         CHECK(wakeUpTarget(evolution, inputs) == TableFixture::index("kune"));
     }
 }
 
+TEST_CASE("a special asks for a map by its id, so a pack's map can be one") {
+    EvolutionRules rules = testing::originalRules();
+    rules.specials.wakeUp.at(3).requirements.front().mapId = "my_mod:meadow";
+    const Evolution evolution = TableFixture{}.makeEvolution(withRolls(rules, true));
+    EvolutionInputs inputs = inputsOf("koro");
+    inputs.map = "mayo02";
+    CHECK_FALSE(wakeUpTarget(evolution, inputs));
+    inputs.map = "my_mod:meadow";
+    CHECK(wakeUpTarget(evolution, inputs) == TableFixture::index("kune"));
+    inputs.map.clear();
+    CHECK_FALSE(wakeUpTarget(evolution, inputs));
+}
+
 TEST_CASE("a special needs its roll and a free tamer") {
     EvolutionInputs inputs = inputsOf("koro");
-    inputs.map = 1;
+    inputs.map = "mayo02";
     const Evolution never = TableFixture{}.makeEvolution(withRolls(testing::originalRules(), false));
     CHECK_FALSE(wakeUpTarget(never, inputs));
     const Evolution always = alwaysRolling();

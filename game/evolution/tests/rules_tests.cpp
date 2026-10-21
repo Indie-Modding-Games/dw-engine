@@ -55,6 +55,8 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     CHECK(rules.specials.wakeUp.size() == 4);
     CHECK(rules.specials.praiseScold.size() == 3);
     CHECK(rules.specials.praiseScold.at(1).scolded);
+    // CURRENT_SCREEN == 1, by the map's id.
+    CHECK(rules.specials.wakeUp.at(3).requirements.front().mapId == "mayo02");
     CHECK(rules.specials.praiseScoldOnTimer.level == 4);
     CHECK(rules.specials.praiseScoldOnTimer.hours == 360);
     // item.c: handleEvoItems.
@@ -135,6 +137,12 @@ TEST_CASE("the section reader refuses what the rules could not use") {
             sectionFrom(originalWith("tiredness: { equals: 0 }", "tiredness: { equals: 0, at_least: 1 }")));
         REQUIRE_FALSE(rules.has_value());
         CHECK(rules.error().message.find("exactly one of equals and at_least") != std::string::npos);
+    }
+    SUBCASE("a map by anything but equals") {
+        const auto rules =
+            readEvolutionRules(sectionFrom(originalWith("map: { equals: mayo02 }", "map: { at_least: 1 }")));
+        REQUIRE_FALSE(rules.has_value());
+        CHECK(rules.error().message.find("map compares with equals and a map id") != std::string::npos);
     }
     SUBCASE("an unknown requirement") {
         const auto rules =

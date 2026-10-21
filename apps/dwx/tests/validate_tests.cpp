@@ -335,6 +335,36 @@ schemas:
     CHECK(textOf(*unnamed).contains("'my_mod:<name>'"));
 }
 
+TEST_CASE("dwx validate reports a map of the evolution rules that is no map of data/maps") {
+    // The game pack's evolution section, whose special rule asks for mayo02, over a base whose maps lack it.
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("content/schemas/ruleset_evolution.schema.json",
+                  readText(std::format("{}/ruleset_evolution.schema.json", DWE_SCHEMA_DIR)));
+    files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
+version: 1.0.0
+layer: mods
+name: My mod
+schemas:
+  ruleset_evolution: ["rules/*/evolution"]
+)");
+    const std::string section = readText(std::format("{}/rules/original/evolution.yaml", DWE_GAME_PACK));
+    REQUIRE(section.contains("map: { equals: mayo02 }"));
+    const auto problems = [&](std::string_view map) {
+        std::string text = section;
+        const std::string_view rule = "equals: mayo02";
+        text.replace(text.find(rule), rule.size(), std::format("equals: {}", map));
+        files.addFile("packs/my_mod/rules/original/evolution.yaml", text);
+        const std::array<std::filesystem::path, 1> with{"content/base"};
+        const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);
+        REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+        return textOf(*report);
+    };
+    CHECK(problems("mayo02").contains("'mayo02' is no entry of data/maps"));
+    CHECK_FALSE(problems("twna01").contains("is no entry of data/maps"));
+}
+
 TEST_CASE("an id a schema says names a table's entry must be one, in the table as the packs compose it") {
     MemoryFileSystem files;
     addSchemas(files);

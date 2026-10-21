@@ -79,6 +79,9 @@ struct SpecialRequirement {
     SpecialField field = SpecialField::Level;
     Comparison comparison = Comparison::Equals;
     std::int32_t value = 0;
+    // The map the partner must be on, by its id in data/maps, for SpecialField::Map (always Equals).
+    // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+    std::string mapId = {};
 };
 
 // A special evolution: when everything it asks holds, the partner turns into the target.
