@@ -75,6 +75,8 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
         return report.extractor.starts_with("map") && report.status != FileStatus::Extracted;
     }));
     CHECK(has("map/mgen17/data"));
+    // The new-game script sets the partner's starting stats (formats::script::findNewGameStats).
+    CHECK(has("data/new_game_stats"));
     CHECK(taken("arena_collision") == 2);
     // The seven sound files, every bank and sequence understood.
     CHECK(taken("sound_bank") == 7);

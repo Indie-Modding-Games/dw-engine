@@ -55,7 +55,10 @@ pestaña "Partner" del panel de ajuste (`apps/game/src/partner_tab.cpp`) la ense
 Las secciones del ruleset de la partida (en `content/packs/game/rules/original/`):
 
 - `new_game` ([esquema](../../content/schemas/ruleset_new_game.schema.json)): el partner de inicio, sus estadísticas y
-  el nivel de domador.
+  el nivel de domador. Las estadísticas de la sección son la reserva: si el paquete base trae `data/new_game_stats`
+  (lo que pone el guion 193 tras la introducción, extraído por `dwx`;
+  [scripts](../../docs/formats/scripts.md#estadísticas-de-la-partida-nueva)), el partner empieza con las de su
+  especie en ese documento, o con las de `others`, con el HP y el MP actuales que da el guion.
 - `tamer` ([esquema](../../content/schemas/ruleset_tamer.schema.json)): los límites del nivel de domador y los
   niveles que da una evolución cuando sale su probabilidad (`evolution_level_gain`, `evl.c: EVL_applyEvolution`).
 
@@ -179,7 +182,7 @@ La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_mov
 | Regla | Decomp | Nuestro | Test | Estado |
 |---|---|---|---|---|
 | Partida nueva con el partner de id 3 | `main.c: main` (`initializePartner(3)`) | `new_game.partner: agum` | `a new game starts the partner, ...` | Igual |
-| Estadísticas de inicio del partner | No encontrado | `new_game.stats` | idem | **Hueco**: valores provisionales |
+| Estadísticas de inicio del partner | script 193 de `DG.SCN`, offsets 0x0918–0x0964 (`store_digimon_type`, `if` y `set_stat`; `script_interp.c: SCRIPT_OP_SET_STAT`) | `data/new_game_stats` (`dwx`, `findNewGameStats`), `GameSession::startingStats`; `new_game.stats` solo sin el documento | `a new game takes the partner's stats from what the new-game script sets ...`, `the user's disc, extracted: the partner starts with ...` | Igual (con datos extraídos); el guion los pone tras la introducción y aquí al empezar |
 | Nivel de domador 0 y hora 8:00 al empezar | `main_menu.c: initializeDefaultSavegame` | `new_game.tamer_level`, `clock.start` | idem | Igual |
 | Nivel de domador entre 0 y 10 | `tamer.c: addTamerLevel` | `tamer.level_min/level_max`, `changeTamerLevel` | `the original's tamer level ...` | Igual |
 | El reloj corre en el campo y se para en los cambios de mapa | `clock.c: tickGameClock`, `tamer.c: stopGameTime/startGameTime` | `advanceGameTime` con `Field::gameTimeRan` | `field_clock_tests.cpp` | Igual |

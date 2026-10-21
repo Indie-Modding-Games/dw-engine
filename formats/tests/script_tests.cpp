@@ -1,5 +1,6 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/script/disassembly.hpp>
+#include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
 
@@ -13,6 +14,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "schema_check.hpp"
 
 using dwe::formats::script::ArgumentKind;
 using dwe::formats::script::Combine;
@@ -237,4 +240,63 @@ TEST_CASE("what the interpreter would not run is an unknown, not a guess") {
     CHECK(disassembly->unknowns.front().find("0x40") != std::string::npos);
     ScriptBuilder badHeader{{{0xFE, 2}}};
     CHECK_FALSE(disassembleScript(badHeader.bytes()).has_value());
+}
+
+namespace {
+
+// A new-game block after a single section at 8: the partner's type into variable 103, an IF on type 3 that sets
+// every stat (in the order 7..0 for the first branch), and the other branch at 58; the code goes on at 90.
+ScriptBuilder newGameBlock(unsigned type) {
+    ScriptBuilder script{{{0xFE, 8}}};
+    script.u8({0x22, 103});                                             // 8 store_digimon_type
+    script.u8({0x19, 0x00, 0x08, 0x00, 103, type, 0x18, 0x00}).u16(58); // 10 if pstat 103 == type, else 58
+    script.u8({0x19, 0x00});
+    for (unsigned stat = 8; stat-- > 0;) {
+        script.u8({0x34, stat}).u16(100 + stat); // 22 set_stat
+    }
+    script.u8({0x16, 0x00}).u16(90); // 54 jump_to
+    for (unsigned stat = 0; stat < 8; ++stat) {
+        script.u8({0x34, stat}).u16(200 + stat); // 58 set_stat
+    }
+    script.u8({0xFF, 0x00}); // 90 end_script
+    return script;
+}
+
+} // namespace
+
+TEST_CASE("the new-game script's stats are the SET_STAT runs of the IF on the partner's type") {
+    const auto script = newGameBlock(3);
+    const auto disassembly = disassembleScript(script.bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    REQUIRE(disassembly->unknowns.empty());
+    const auto stats = dwe::formats::script::findNewGameStats(*disassembly);
+    REQUIRE_MESSAGE(stats.has_value(), errorOf(stats));
+    CHECK(stats->at == 10);
+    CHECK(stats->partnerType == 3);
+    CHECK(stats->partner == dwe::formats::script::StartingStats{100, 101, 102, 103, 104, 105, 106, 107});
+    CHECK(stats->others == dwe::formats::script::StartingStats{200, 201, 202, 203, 204, 205, 206, 207});
+
+    const auto document = dwe::formats::script::newGameStatsToYaml(*stats, "hero");
+    CHECK(dwe::formats::test::checkAgainstSchema(document, "new_game_stats").empty());
+    const auto* partners = document.find("partners");
+    REQUIRE(partners != nullptr);
+    REQUIRE(partners->items().size() == 1);
+    CHECK(partners->items()[0].find("digimon")->text() == "hero");
+    CHECK(partners->items()[0].find("stats")->find("max_hp")->text() == "104");
+    CHECK(document.find("others")->find("mp")->text() == "207");
+}
+
+TEST_CASE("a script without the new-game block has no new-game stats") {
+    ScriptBuilder plain{{{0xFE, 8}}};
+    plain.u8({0x34, 0x00}).u16(5).u8({0xFF, 0x00});
+    const auto disassembly = disassembleScript(plain.bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    CHECK_FALSE(dwe::formats::script::findNewGameStats(*disassembly).has_value());
+
+    // A stat set twice in a branch leaves another unset: not the block.
+    auto bytes = newGameBlock(3).bytes();
+    bytes[23] = std::byte{6};
+    const auto twice = disassembleScript(bytes);
+    REQUIRE_MESSAGE(twice.has_value(), errorOf(twice));
+    CHECK_FALSE(dwe::formats::script::findNewGameStats(*twice).has_value());
 }

@@ -14,6 +14,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <initializer_list>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -42,14 +43,18 @@ inline constexpr double SixtyGameHoursPerSecond = 3600.0;
 // The date the saves of the tests are written on.
 inline constexpr std::chrono::sys_seconds SaveDate{std::chrono::seconds{1'790'000'000}};
 
-// The game pack, mounted over a stand-in base pack whose tables are empty, so the tests need no disc. Not movable:
-// the file systems must stay where the mounted packs point.
+// The game pack, mounted over a stand-in base pack whose tables are empty, so the tests need no disc; `baseFiles`
+// adds documents to the base pack, by path inside it. Not movable: the file systems must stay where the mounted packs
+// point.
 class TestPacks {
 public:
-    TestPacks() {
+    explicit TestPacks(std::initializer_list<std::pair<std::string_view, std::string_view>> baseFiles = {}) {
         memory_.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\n");
         for (const std::string_view role : OriginalTables) {
             memory_.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
+        }
+        for (const auto& [path, text] : baseFiles) {
+            memory_.addFile(std::format("base/{}", path), text);
         }
         const std::array<assets::PackLocation, 2> packs{
             assets::PackLocation{.fileSystem = &memory_, .root = "base"},

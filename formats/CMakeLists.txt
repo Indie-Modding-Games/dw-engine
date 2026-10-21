@@ -46,6 +46,7 @@ dwe_add_module(formats
         src/model/skeleton.cpp
         src/model/tmd.cpp
         src/script/disassembly.cpp
+        src/script/new_game_stats.cpp
         src/script/scn_file.cpp
         src/script/script_yaml.cpp
         src/text/charset.cpp

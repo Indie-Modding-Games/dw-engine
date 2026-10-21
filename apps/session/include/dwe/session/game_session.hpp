@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/new_game_stats.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field.hpp>
@@ -179,6 +180,8 @@ private:
 
     core::Result<void> setUp();
     core::Result<void> readRules();
+    // The partner's stats at the start: the extracted ones, or the ruleset's when the packs have none.
+    [[nodiscard]] game::partner::PartnerStats startingStats(const NewGameRules& start) const;
     void followRules();
     core::Result<void> registerSaveSections();
     void advanceGameTime(double realSeconds);
@@ -203,6 +206,8 @@ private:
     std::uint64_t seed_;
     std::unique_ptr<SessionState> state_;
     std::shared_ptr<const game::partner::SpeciesTable> species_;
+    // The stats the new-game script sets (data/new_game_stats), when the packs have them; new_game.stats otherwise.
+    std::optional<assets::NewGameStatsTable> newGameStats_;
     std::optional<game::save::SaveSlots> slots_;
     std::optional<game::save::AutosaveRequests> autosave_;
     std::optional<Autosave> autosaved_;

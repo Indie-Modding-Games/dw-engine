@@ -100,6 +100,13 @@ core::Result<void> GameSession::setUp() {
         return std::unexpected{species.error()};
     }
     species_ = std::move(*species);
+    if (desc_.files != nullptr) {
+        auto starting = assets::loadNewGameStats(*desc_.files);
+        if (!starting) {
+            return core::fail(formatMessage(messages::NewGameStatsFailed, starting.error().message));
+        }
+        newGameStats_ = std::move(*starting);
+    }
     auto clockRules = ruleset::readClockRules(current);
     if (!clockRules) {
         return std::unexpected{clockRules.error()};
@@ -182,6 +189,24 @@ core::Result<void> GameSession::registerSaveSections() {
     return {};
 }
 
+game::partner::PartnerStats GameSession::startingStats(const NewGameRules& start) const {
+    using game::partner::Stat;
+    if (!newGameStats_) {
+        // No extracted data: the ruleset's own stats, with HP and MP full.
+        return {.base = start.stats, .currentHp = start.stats[Stat::Hp], .currentMp = start.stats[Stat::Mp]};
+    }
+    // What the new-game script sets (dg 193: SET_STAT for the partner's type, or the other run).
+    const assets::StartingStats& set = newGameStats_->statsOf(start.partner);
+    game::partner::PartnerStats stats{.base = {}, .currentHp = set.hp, .currentMp = set.mp};
+    stats.base[Stat::Hp] = set.maxHp;
+    stats.base[Stat::Mp] = set.maxMp;
+    stats.base[Stat::Offense] = set.offense;
+    stats.base[Stat::Defense] = set.defense;
+    stats.base[Stat::Speed] = set.speed;
+    stats.base[Stat::Brain] = set.brains;
+    return stats;
+}
+
 core::Result<void> GameSession::startNewGame() {
     const NewGameRules& start = state_->rules.newGame;
     ruleset::GameClock& clock = state_->clock;
@@ -191,9 +216,7 @@ core::Result<void> GameSession::startNewGame() {
     clock.setSpeed(speed);
     clock.setRunning(running);
 
-    const game::partner::PartnerStats stats{.base = start.stats,
-                                            .currentHp = start.stats[game::partner::Stat::Hp],
-                                            .currentMp = start.stats[game::partner::Stat::Mp]};
+    const game::partner::PartnerStats stats = startingStats(start);
     if (species_->find(start.partner) == nullptr) {
         return core::fail(formatMessage(messages::UnknownStartSpecies, start.partner));
     }

@@ -2,6 +2,7 @@
 
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/script/disassembly.hpp>
+#include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
 
@@ -21,6 +22,8 @@ namespace {
 
 constexpr std::string_view MapHeadPath = "SCN/MAPHEAD.SCN";
 constexpr std::string_view ScriptPackPath = "SCN/DG.SCN";
+// data/new_game_stats: what the new-game script sets.
+constexpr std::string_view NewGameStatsDocument = "new_game_stats";
 
 // What the listings of a file add up to, for the notes.
 struct Totals {
@@ -67,6 +70,30 @@ core::Result<void> addScript(Extraction& extraction, Totals& totals, std::string
         disassembly->instructions, [](const formats::script::Instruction& i) { return i.text.has_value(); }));
     totals.unreachable += disassembly->unreachable;
     totals.padding += script.size() - std::min<std::size_t>(disassembly->codeEnd, script.size());
+    return {};
+}
+
+// The partner's stats at the start of a new game, which the new-game script sets (formats::script::findNewGameStats):
+// data/new_game_stats. A script without them is noted and writes nothing.
+core::Result<void> addNewGameStats(Extraction& extraction, const Disc& disc, std::span<const std::byte> script) {
+    const auto disassembly = formats::script::disassembleScript(script);
+    if (!disassembly) {
+        return {};
+    }
+    const auto stats = formats::script::findNewGameStats(*disassembly);
+    if (!stats) {
+        extraction.notes.push_back(
+            std::format("script {} does not set the new game's stats ({}); data/{} is not written",
+                        formats::script::NewGameScript, stats.error().message, NewGameStatsDocument));
+        return {};
+    }
+    const std::string partner = names::digimonSlug(disc.tables(), static_cast<std::size_t>(stats->partnerType));
+    auto output =
+        yamlOutput(names::tableDocument(NewGameStatsDocument), formats::script::newGameStatsToYaml(*stats, partner));
+    if (!output) {
+        return std::unexpected{output.error()};
+    }
+    extraction.outputs.push_back(std::move(*output));
     return {};
 }
 
@@ -121,6 +148,11 @@ core::Result<Extraction> extractScriptPack(const Disc& disc, std::span<const std
         }
         if (auto added = addScript(extraction, totals, ScriptPackPath, id, script); !added) {
             return std::unexpected{added.error()};
+        }
+        if (id == formats::script::NewGameScript) {
+            if (auto added = addNewGameStats(extraction, disc, script); !added) {
+                return std::unexpected{added.error()};
+            }
         }
     }
     noteTotals(extraction, totals);

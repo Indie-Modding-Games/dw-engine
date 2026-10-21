@@ -7,6 +7,7 @@
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/model_data.hpp>
+#include <dwe/assets/new_game_stats.hpp>
 #include <dwe/assets/shop_table.hpp>
 #include <dwe/assets/sound.hpp>
 #include <dwe/assets/text_table.hpp>
@@ -134,12 +135,13 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 }};
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 5> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 6> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
     {"data/maps", discardParsed<parseMapTable>},
     {"data/items", discardParsed<parseItemTable>},
     {"data/item_effects", discardParsed<parseItemEffectTable>},
     {"data/shops", discardParsed<parseShopTable>},
+    {"data/new_game_stats", discardParsed<parseNewGameStats>},
 }};
 
 } // namespace

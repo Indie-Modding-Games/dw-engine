@@ -1,5 +1,6 @@
 #include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/item_table.hpp>
+#include <dwe/assets/new_game_stats.hpp>
 #include <dwe/assets/shop_table.hpp>
 
 #include <doctest/doctest.h>
@@ -163,4 +164,23 @@ TEST_CASE("the shop table reads its maps and shopkeepers, named or raw") {
     CHECK(table->shopMaps == std::vector<std::string>{"inn01", "12"});
     CHECK(table->shopkeepers == std::vector<std::string>{"mole"});
     CHECK_FALSE(dwe::assets::parseShopTable("shop_maps: []\n").has_value());
+}
+
+TEST_CASE("the new game stats give a listed partner its own stats and any other the rest") {
+    constexpr std::string_view Text = R"(script: 7
+at: 32
+partners:
+- digimon: "hero"
+  stats: {offense: 1, defense: 2, speed: 3, brains: 4, max_hp: 50, max_mp: 60, hp: 50, mp: 60}
+others: {offense: 5, defense: 6, speed: 7, brains: 8, max_hp: 70, max_mp: 80, hp: 70, mp: 80}
+)";
+    const auto table = dwe::assets::parseNewGameStats(Text);
+    REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+    CHECK(table->script == 7);
+    CHECK(table->at == 32);
+    CHECK(table->statsOf("hero").brains == 4);
+    CHECK(table->statsOf("hero").maxMp == 60);
+    CHECK(table->statsOf("other").offense == 5);
+    CHECK(table->statsOf("other").hp == 70);
+    CHECK_FALSE(dwe::assets::parseNewGameStats("script: 7\nat: 32\npartners: []\n").has_value());
 }

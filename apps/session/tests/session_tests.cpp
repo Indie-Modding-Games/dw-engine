@@ -1,3 +1,6 @@
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/new_game_stats.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/save_file.hpp>
@@ -12,6 +15,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -141,6 +146,84 @@ TEST_CASE("a new game starts the partner, the tamer and the clock from the new_g
     CHECK(session->clock().time().hour == session->clock().rules().start.hour);
     CHECK(session->clock().elapsedFrames() == dwe::ruleset::GameClock{session->clock().rules()}.elapsedFrames());
     CHECK_FALSE(session->savedPlace().has_value());
+}
+
+TEST_CASE("a new game takes the partner's stats from what the new-game script sets, when the packs have it") {
+    // dg 193: SET_STAT for the partner's type, or the run for any other; new_game.stats only without the document.
+    const TestPacks packs{{{"data/new_game_stats.yaml", R"(script: 193
+at: 2328
+partners:
+- digimon: "agum"
+  stats: {offense: 11, defense: 12, speed: 13, brains: 14, max_hp: 150, max_mp: 160, hp: 140, mp: 130}
+others: {offense: 1, defense: 2, speed: 3, brains: 4, max_hp: 50, max_mp: 60, hp: 50, mp: 60}
+)"}}};
+    MemorySaveStorage storage;
+    const auto session = newGame(packs, &storage);
+    const PartnerState& partner = session->partner().state();
+    CHECK(partner.species == "agum");
+    CHECK(partner.stats.base[Stat::Offense] == 11);
+    CHECK(partner.stats.base[Stat::Defense] == 12);
+    CHECK(partner.stats.base[Stat::Speed] == 13);
+    CHECK(partner.stats.base[Stat::Brain] == 14);
+    CHECK(partner.stats.base[Stat::Hp] == 150);
+    CHECK(partner.stats.base[Stat::Mp] == 160);
+    CHECK(partner.stats.currentHp == 140);
+    CHECK(partner.stats.currentMp == 130);
+
+    const TestPacks broken{{{"data/new_game_stats.yaml", "script: 193\n"}}};
+    CHECK_FALSE(GameSession::create({.files = &broken.files(),
+                                     .rulesetId = "original",
+                                     .rules = std::nullopt,
+                                     .species = dwe::session::testing::madeUpTable(),
+                                     .seed = 7,
+                                     .storage = nullptr,
+                                     .gameVersion = "test",
+                                     .wallClock = [] { return dwe::session::testing::SaveDate; },
+                                     .systems = {}})
+                    .has_value());
+}
+
+// Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
+TEST_CASE("the user's disc, extracted: the partner starts with the stats the new-game script sets") {
+    const char* folder = std::getenv("DWE_CONTENT");
+    if (folder == nullptr || std::string_view{folder}.empty()) {
+        MESSAGE("DWE_CONTENT is not set: skipping the new game's stats on extracted content");
+        return;
+    }
+    const dwe::assets::DiskFileSystem disk;
+    const std::array<dwe::assets::PackLocation, 2> locations{
+        dwe::assets::PackLocation{.fileSystem = &disk, .root = std::filesystem::path{folder} / "base"},
+        dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+    auto files = dwe::assets::VirtualFileSystem::mount(locations);
+    REQUIRE_MESSAGE(files.has_value(), errorOf(files));
+    const auto table = dwe::assets::loadNewGameStats(*files);
+    REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+    if (!table->has_value()) {
+        MESSAGE("the extracted base pack has no data/new_game_stats (extracted before dwx wrote it): skipping");
+        return;
+    }
+    auto session = GameSession::create({.files = &*files,
+                                        .rulesetId = "original",
+                                        .rules = std::nullopt,
+                                        .species = nullptr,
+                                        .seed = 7,
+                                        .storage = nullptr,
+                                        .gameVersion = "test",
+                                        .wallClock = [] { return dwe::session::testing::SaveDate; },
+                                        .systems = {}});
+    REQUIRE_MESSAGE(session.has_value(), errorOf(session));
+    const auto started = (*session)->startNewGame();
+    REQUIRE_MESSAGE(started.has_value(), errorOf(started));
+    const PartnerState& partner = (*session)->partner().state();
+    // The script asks about the partner a new game starts with (main.c: main, initializePartner(3)).
+    REQUIRE((*table)->partners.size() == 1);
+    CHECK((*table)->partners.front().digimon == partner.species);
+    const dwe::assets::StartingStats& set = (*table)->statsOf(partner.species);
+    CHECK(partner.stats.base[Stat::Hp] == set.maxHp);
+    CHECK(partner.stats.base[Stat::Brain] == set.brains);
+    // It starts with HP and MP full.
+    CHECK(partner.stats.currentHp == partner.stats.base[Stat::Hp]);
+    CHECK(partner.stats.currentMp == partner.stats.base[Stat::Mp]);
 }
 
 TEST_CASE("the same seed plays the same partner; a new game starts it again") {

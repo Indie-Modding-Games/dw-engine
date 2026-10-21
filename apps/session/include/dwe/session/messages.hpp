@@ -29,6 +29,7 @@ inline constexpr std::string_view NoFiles = "a session needs the packs";
 inline constexpr std::string_view RulesetFailed = "ruleset '{}': {}";
 inline constexpr std::string_view SpeciesFailed = "the species tables: {}";
 inline constexpr std::string_view SaveSettingsFailed = "save/settings: {}";
+inline constexpr std::string_view NewGameStatsFailed = "data/new_game_stats: {}";
 inline constexpr std::string_view UnknownStartSpecies = "new_game: partner '{}' has no raise row";
 
 // Saving and loading.

@@ -27,6 +27,7 @@ dwe_add_module(assets
         src/raise_table.cpp
         src/item_table.cpp
         src/item_effect_table.cpp
+        src/new_game_stats.cpp
         src/shop_table.cpp
         src/indexed_image.cpp
         src/map_images.cpp

@@ -8,7 +8,7 @@
   "properties": {
     "partner": { "description": "The Digimon id (data/digimon) the partner starts as; it needs a raise row.", "type": "string", "minLength": 1 },
     "stats": {
-      "description": "The partner's maximum stats; current HP and MP start full.",
+      "description": "The partner's maximum stats when the packs have no data/new_game_stats (which the session uses instead); current HP and MP start full.",
       "type": "object",
       "required": ["hp", "mp", "offense", "defense", "speed", "brain"],
       "additionalProperties": false,

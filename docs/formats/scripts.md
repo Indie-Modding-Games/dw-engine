@@ -145,6 +145,17 @@ instructions:
 El id estable de un texto de script es el script y el offset de su instrucción (`dg/007@0x0040`); el catálogo de
 textos de la fase 4 (Lua) lo usará. El listado no es Lua: la traducción es trabajo de la fase 4.
 
+## Estadísticas de la partida nueva
+
+Ningún código C pone los stats con los que empieza el partner: los pone el script 193 de `DG.SCN` tras la
+introducción. Guarda el tipo del partner en una variable (`store_digimon_type`), pregunta con un `if` si es un tipo
+concreto y, en cada rama, una serie de `set_stat` pone los ocho valores (ataque, defensa, velocidad, inteligencia, HP y
+MP máximos, HP y MP actuales); la primera rama acaba con un `jump_to` que salta la otra. `findNewGameStats`
+(`formats/script/new_game_stats.hpp`) busca ese bloque en el listado y `dwx` lo escribe en `data/new_game_stats`
+([esquema](../../content/schemas/new_game_stats.schema.json)): `script`, `at` (el offset del `if`), `partners` (el
+Digimon por el que pregunta, por su id, y sus stats) y `others` (los de cualquier otro partner). Si el script no tiene el
+bloque, se anota y no se escribe el documento. La sesión lo lee al empezar una partida (`apps/session`).
+
 ## Cobertura
 
 Un fichero queda `extracted` si todos sus scripts decodifican hasta el final del código sin `unknown`; el relleno de

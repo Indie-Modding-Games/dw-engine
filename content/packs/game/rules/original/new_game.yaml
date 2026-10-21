@@ -4,8 +4,9 @@
 # main.c: main: una partida nueva cría a Agumon (initializePartner(3)); la respuesta de la introducción puede elegir
 # a Gabumon (0x11, readPStat(0xfe)), que llegará con la historia.
 partner: agum
-# Hueco: el original no da estos stats en initializePartner ni en main_menu.c: initializeDefaultSavegame (falta
-# localizar dónde los pone). Valores provisionales, no del original.
+# Reserva: los stats de inicio los pone el guion 193 tras la introducción (set_stat en 0x0918-0x0964), que dwx extrae a
+# data/new_game_stats; la sesión usa ese documento y estos valores solo si el paquete base no lo trae. No son del
+# original.
 stats: { hp: 500, mp: 500, offense: 50, defense: 50, speed: 50, brain: 50 }
 # main_menu.c: initializeDefaultSavegame: tamerLevel = 0.
 tamer_level: 0
