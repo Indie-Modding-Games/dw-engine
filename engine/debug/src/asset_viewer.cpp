@@ -109,7 +109,7 @@ void AssetViewer::mount(const std::filesystem::path& folder) {
     } else if (found->packs.empty()) {
         status_ = std::format("There are no packs in '{}'.", text);
         core::logInfo("asset viewer: no packs in '{}'", text);
-    } else if (auto opened = assets::openPacks(disk_, found->packs); !opened) {
+    } else if (auto opened = assets::openPacks(disk_, found->packs, assets::PackOrigin::Engine); !opened) {
         status_ = opened.error().message;
         core::logWarning("asset viewer: {}", status_);
     } else if (auto vfs = assets::VirtualFileSystem::mount(opened->locations); !vfs) {

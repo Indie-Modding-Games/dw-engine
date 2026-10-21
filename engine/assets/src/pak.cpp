@@ -523,18 +523,20 @@ core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const
     return entries;
 }
 
-core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs) {
+core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs, PackOrigin origin) {
     OpenedPacks opened;
     for (const FoundPack& pack : packs) {
         if (pack.kind == FoundPack::Kind::Folder) {
-            opened.locations.push_back(PackLocation{.fileSystem = &folders, .root = pack.path});
+            opened.locations.push_back(
+                PackLocation{.fileSystem = &folders, .root = pack.path, .fillsGaps = false, .origin = origin});
             continue;
         }
         auto archive = PakFileSystem::open(pack.path);
         if (!archive) {
             return std::unexpected{archive.error()};
         }
-        opened.locations.push_back(PackLocation{.fileSystem = archive->get(), .root = pack.path});
+        opened.locations.push_back(
+            PackLocation{.fileSystem = archive->get(), .root = pack.path, .fillsGaps = false, .origin = origin});
         opened.archives.push_back(std::move(*archive));
     }
     return opened;

@@ -20,6 +20,12 @@ namespace {
 
 using core::YamlNode;
 
+// The base's rights, adding ids without a namespace and giving indices, belong to the engine's own base packs: where a
+// pack was found decides, not the layer its manifest declares.
+bool hasBaseRights(const TableContribution& contribution) {
+    return contribution.origin == PackOrigin::Engine && contribution.layer == Layer::Base;
+}
+
 std::string textOf(std::span<const std::byte> bytes) {
     return std::string{reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
@@ -121,9 +127,9 @@ private:
         if (!rule_->ownsIds) {
             return {};
         }
-        if (!id.isNamespaced() && contribution.layer != Layer::Base) {
+        if (!id.isNamespaced() && !hasBaseRights(contribution)) {
             return fail(messages::CompositionOriginalAdded, contribution, id.str(), rule_->section,
-                        layerName(contribution.layer), contribution.packId);
+                        originName(contribution.origin), layerName(contribution.layer), contribution.packId);
         }
         if (id.isNamespaced() && id.packNamespace() != contribution.packId) {
             return fail(messages::CompositionForeignNamespace, contribution, id.str(), rule_->section,
@@ -140,7 +146,7 @@ private:
         if (!given) {
             return std::unexpected{given.error()};
         }
-        if (*given && contribution.layer != Layer::Base) {
+        if (*given && !hasBaseRights(contribution)) {
             return fail(messages::CompositionIndexOfNewEntry, contribution, id.str(), rule_->section);
         }
         if (!rule_->numbered) {
@@ -171,7 +177,7 @@ private:
             return std::unexpected{given.error()};
         }
         const std::optional<std::int64_t> kept = indices_[position];
-        if (*given && !original_[position] && contribution.layer != Layer::Base) {
+        if (*given && !original_[position] && !hasBaseRights(contribution)) {
             // The engine numbers the entries the packs add: a higher pack cannot give one an index either, not even
             // the one the engine gave it, which depends on the packs mounted.
             return fail(messages::CompositionIndexOfNewEntry, contribution, id.str(), rule_->section);
@@ -264,6 +270,7 @@ core::Result<TableContribution> readContribution(const VirtualFileSystem& vfs, c
     }
     return TableContribution{.packId = source.packId,
                              .layer = pack->manifest.layer,
+                             .origin = pack->origin,
                              .file = pathText(source.file),
                              .document = std::move(*document)};
 }

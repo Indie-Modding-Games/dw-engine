@@ -46,8 +46,10 @@ public:
             memory_.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
         }
         const std::array<assets::PackLocation, 2> packs{
-            assets::PackLocation{.fileSystem = &memory_, .root = "base"},
-            assets::PackLocation{.fileSystem = &disk_, .root = DWE_GAME_PACK}};
+            assets::PackLocation{
+                .fileSystem = &memory_, .root = "base", .fillsGaps = false, .origin = assets::PackOrigin::Engine},
+            assets::PackLocation{
+                .fileSystem = &disk_, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine}};
         auto vfs = assets::VirtualFileSystem::mount(packs);
         REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
         vfs_ = std::make_unique<assets::VirtualFileSystem>(std::move(*vfs));

@@ -40,7 +40,7 @@ std::optional<assets::VirtualFileSystem> mountContent(const assets::DiskFileSyst
     auto found = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));
     found->packs.push_back({.path = DWE_GAME_PACK, .kind = assets::FoundPack::Kind::Folder});
-    const auto opened = assets::openPacks(disk, found->packs);
+    const auto opened = assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
     auto vfs = assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));

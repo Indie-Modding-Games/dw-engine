@@ -180,8 +180,13 @@ TEST_CASE("the user's disc, extracted: a mods pack of edited copies passes dwx v
     CHECK_MESSAGE(report->problems.empty(), problemsOf(*report));
 
     const dwe::assets::DiskFileSystem disk;
-    const std::array<std::filesystem::path, 2> roots{*base, pack};
-    const auto vfs = dwe::assets::VirtualFileSystem::mount(disk, roots);
+    // The extracted base is the engine's own; the edited copies are a mod.
+    const std::array<dwe::assets::PackLocation, 2> locations{
+        dwe::assets::PackLocation{
+            .fileSystem = &disk, .root = *base, .fillsGaps = false, .origin = dwe::assets::PackOrigin::Engine},
+        dwe::assets::PackLocation{
+            .fileSystem = &disk, .root = pack, .fillsGaps = false, .origin = dwe::assets::PackOrigin::Mod}};
+    const auto vfs = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     for (const std::string& id : {editedMapAsset("data"), editedMapAsset("background_day"), std::string{MapTable},
                                   std::string{EditedScript}, editedDigimonAsset("model")}) {

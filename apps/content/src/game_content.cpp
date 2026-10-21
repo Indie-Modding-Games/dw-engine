@@ -16,10 +16,15 @@
 namespace dwe::content {
 namespace {
 
-// The packs of the content folder, its packs/ folder, the team's packs when it has no game pack, and the mods.
-core::Result<std::vector<assets::FoundPack>> findNormalPacks(const assets::FileSystem& disk,
-                                                             const std::filesystem::path& content,
-                                                             std::span<const std::filesystem::path> mods) {
+// The packs of the content folder, its packs/ folder and the team's packs when it has no game pack (the engine's
+// own), then the mods.
+struct NormalPacks {
+    std::vector<assets::FoundPack> found;
+    std::size_t engineCount = 0;
+};
+
+core::Result<NormalPacks> findNormalPacks(const assets::FileSystem& disk, const std::filesystem::path& content,
+                                          std::span<const std::filesystem::path> mods) {
     std::vector<std::filesystem::path> folders{content};
     std::error_code error;
     if (std::filesystem::is_directory(content / "packs", error)) {
@@ -48,12 +53,13 @@ core::Result<std::vector<assets::FoundPack>> findNormalPacks(const assets::FileS
             return std::unexpected{added.error()};
         }
     }
+    const std::size_t engineCount = found.size();
     for (const std::filesystem::path& folder : mods) {
         if (auto added = add(folder); !added) {
             return std::unexpected{added.error()};
         }
     }
-    return found;
+    return NormalPacks{.found = std::move(found), .engineCount = engineCount};
 }
 
 void logShadowed(std::span<const assets::ShadowedDevPack> shadowed) {
@@ -83,22 +89,28 @@ core::Result<std::unique_ptr<GameContent>> GameContent::mount(const std::filesys
                                                               std::span<const std::filesystem::path> mods,
                                                               const assets::DevAssetSources& devAssets) {
     std::unique_ptr<GameContent> mounted{new GameContent};
-    auto found = findNormalPacks(mounted->disk_, content, mods);
-    if (!found) {
-        return std::unexpected{found.error()};
+    auto normal = findNormalPacks(mounted->disk_, content, mods);
+    if (!normal) {
+        return std::unexpected{normal.error()};
     }
-    const std::size_t normalCount = found->size();
+    std::vector<assets::FoundPack>& found = normal->found;
+    const std::size_t normalCount = found.size();
     auto dev = assets::findDevPacks(mounted->disk_, devAssets.extractedContent);
     if (!dev) {
         return std::unexpected{dev.error()};
     }
-    found->insert(found->end(), dev->begin(), dev->end());
-    if (found->empty()) {
+    found.insert(found.end(), dev->begin(), dev->end());
+    if (found.empty()) {
         return core::fail(core::formatMessage(messages::NoPacks, assets::pathText(content)));
     }
-    auto opened = assets::openPacks(mounted->disk_, *found);
+    // The content folder, the team's packs and the dev assets are the engine's own; the mods are not.
+    auto opened = assets::openPacks(mounted->disk_, found, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
+    }
+    for (assets::PackLocation& location :
+         std::span{opened->locations}.subspan(normal->engineCount, normalCount - normal->engineCount)) {
+        location.origin = assets::PackOrigin::Mod;
     }
     mounted->packs_ = std::move(*opened);
     auto locations = stackedLocations(mounted->packs_.locations, normalCount);

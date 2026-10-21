@@ -160,7 +160,7 @@ TEST_CASE("the .pak archives of a content folder are found, opened and mounted w
                       FoundPack{.path = folder.path() / "content/hd", .kind = FoundPack::Kind::Folder}});
     CHECK(found->hidden == std::vector{folder.path() / "content/hd.pak"});
 
-    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE(opened.has_value());
     CHECK(opened->archives.size() == 1);
     REQUIRE(opened->locations.size() == 2);
@@ -182,7 +182,7 @@ TEST_CASE("opening packs fails on an archive that does not open") {
     const auto found = dwe::assets::findPacks(disk, folder.path() / "content");
     REQUIRE(found.has_value());
     REQUIRE(found->packs.size() == 1);
-    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_FALSE(opened.has_value());
     CHECK(opened.error().message.contains("broken.pak"));
 }

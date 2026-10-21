@@ -6,6 +6,8 @@
 #include <string>
 #include <tuple>
 
+#include "vm_state.hpp"
+
 namespace dwe::script {
 namespace {
 
@@ -29,7 +31,7 @@ std::string familyName(platform::GamepadFamily family) {
 
 void ScriptVm::bindInput(const input::InputState& input) {
     const input::InputState* state = &input;
-    sol::table api = lua().create_named_table("input");
+    sol::table api = vm_->lua.create_named_table("input");
     api["value"] = [state](const std::string& action) { return state->value(action); };
     api["down"] = [state](const std::string& action) { return state->isDown(action); };
     api["pressed"] = [state](const std::string& action) { return state->wasPressed(action); };

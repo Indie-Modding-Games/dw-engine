@@ -5,6 +5,14 @@
 // The log and error messages of ui. Templates take their arguments in the order of their placeholders.
 namespace dwe::ui::messages {
 
+// Lua that documents bring (code_trust.cpp, scripting.cpp).
+inline constexpr std::string_view CodeOutsideLoad =
+    "an event attribute or inline script outside a document's load does not run: only a document of the base and "
+    "remaster layers runs its own code";
+// A C string: Lua takes it without a size.
+inline constexpr const char* EventAttributeFromScript =
+    "set_attribute cannot set an event attribute (on...): its value would run as Lua";
+
 inline constexpr std::string_view NoTexts = "cannot read the texts of the packs: {}";
 // Bitmap font meta (font/main_meta.yaml).
 inline constexpr std::string_view BitmapFontContext = "bitmap font";

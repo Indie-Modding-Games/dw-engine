@@ -163,8 +163,11 @@ inline ruleset::Ruleset originalRuleset() {
         memory.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
     }
     assets::DiskFileSystem disk;
-    const std::array<assets::PackLocation, 2> packs{assets::PackLocation{.fileSystem = &memory, .root = "base"},
-                                                    assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+    const std::array<assets::PackLocation, 2> packs{
+        assets::PackLocation{
+            .fileSystem = &memory, .root = "base", .fillsGaps = false, .origin = assets::PackOrigin::Engine},
+        assets::PackLocation{
+            .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine}};
     auto vfs = assets::VirtualFileSystem::mount(packs);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     const ruleset::SectionChecks checks{{std::string{SectionName}, inventorySectionCheck()}};

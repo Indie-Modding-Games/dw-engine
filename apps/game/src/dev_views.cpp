@@ -49,7 +49,8 @@ int checkContentFolder(const std::filesystem::path& folder) {
                        found ? "no pack.yaml nor .pak" : found.error().message);
         return EXIT_FAILURE;
     }
-    const auto opened = assets::openPacks(disk, found->packs);
+    // A content folder holds the engine's own packs.
+    const auto opened = assets::openPacks(disk, found->packs, assets::PackOrigin::Engine);
     if (!opened) {
         core::logError("cannot open the packs of {}: {}", assets::pathText(folder), opened.error().message);
         return EXIT_FAILURE;

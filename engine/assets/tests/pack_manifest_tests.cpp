@@ -2,13 +2,17 @@
 
 #include <doctest/doctest.h>
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+using dwe::assets::ApiRequirement;
+using dwe::assets::formatApiRequirement;
 using dwe::assets::formatVersion;
 using dwe::assets::Layer;
 using dwe::assets::PackManifest;
+using dwe::assets::parseApiRequirement;
 using dwe::assets::parsePackManifest;
 using dwe::assets::parseVersion;
 using dwe::assets::Version;
@@ -58,12 +62,34 @@ TEST_CASE("a full manifest is read") {
     CHECK(manifest->dependencies[1].minVersion == Version{.major = 0, .minor = 3, .patch = 1});
 }
 
+TEST_CASE("an API requirement is a major version and .x, or a major and a minimum minor version") {
+    CHECK(*parseApiRequirement("1.x") == ApiRequirement{.major = 1, .minimumMinor = std::nullopt});
+    CHECK(*parseApiRequirement("0.x") == ApiRequirement{.major = 0, .minimumMinor = std::nullopt});
+    CHECK(*parseApiRequirement("1.3") == ApiRequirement{.major = 1, .minimumMinor = 3});
+    CHECK(*parseApiRequirement("2.0") == ApiRequirement{.major = 2, .minimumMinor = 0});
+    CHECK(formatApiRequirement(ApiRequirement{.major = 12, .minimumMinor = std::nullopt}) == "12.x");
+    CHECK(formatApiRequirement(ApiRequirement{.major = 1, .minimumMinor = 4}) == "1.4");
+    for (const char* text : {"", "1", "x", ".x", "1.", "1.0.0", "1.x.x", "01.x", "1.01", "1.X", "-1.x", "1.-1",
+                             "4294967296.x", "1.4294967296", "x.1"}) {
+        CHECK_FALSE_MESSAGE(parseApiRequirement(text).has_value(), text);
+    }
+}
+
+TEST_CASE("a manifest may declare the Lua API of its scripts") {
+    const auto manifest = parsePackManifest("id: my_mod\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\n");
+    REQUIRE_MESSAGE(manifest.has_value(), manifest.error().message);
+    CHECK(manifest->api == ApiRequirement{.major = 1, .minimumMinor = std::nullopt});
+    CHECK(errorOf("id: a\nversion: 1.0.0\nlayer: mods\napi: 1.2.0\n") ==
+          "line 4, column 6: api '1.2.0' is not MAJOR.x or MAJOR.MINOR, such as 1.x or 1.2");
+}
+
 TEST_CASE("a minimal manifest gets the defaults") {
     const auto manifest = parsePackManifest("id: base\nversion: 0.1.0\nlayer: base\n");
     REQUIRE(manifest.has_value());
     CHECK(manifest->priority == 0);
     CHECK(manifest->name.empty());
     CHECK(manifest->dependencies.empty());
+    CHECK_FALSE(manifest->api.has_value());
 }
 
 TEST_CASE("manifest errors say what is wrong and where") {

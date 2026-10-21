@@ -446,7 +446,7 @@ core::Result<void> writeBasePack(const std::filesystem::path& folder, const Extr
 core::Result<std::size_t> checkBasePack(const std::filesystem::path& folder, const ExtractionRun& run) {
     const assets::DiskFileSystem disk;
     const std::array roots = {folder};
-    auto vfs = assets::VirtualFileSystem::mount(disk, roots);
+    auto vfs = assets::VirtualFileSystem::mount(disk, roots, assets::PackOrigin::Engine);
     if (!vfs) {
         return core::fail(std::format("the base pack does not mount: {}", vfs.error().message));
     }

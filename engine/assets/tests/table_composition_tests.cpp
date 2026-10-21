@@ -19,6 +19,7 @@ using dwe::assets::AssetId;
 using dwe::assets::EntrySection;
 using dwe::assets::Layer;
 using dwe::assets::MemoryFileSystem;
+using dwe::assets::PackOrigin;
 using dwe::assets::TableComposition;
 using dwe::assets::TableContribution;
 using dwe::assets::VirtualFileSystem;
@@ -50,8 +51,10 @@ names:
 TableContribution contribution(std::string_view packId, Layer layer, std::string_view yaml) {
     auto document = dwe::core::parseYaml(yaml);
     REQUIRE(document.has_value());
+    // The base packs of these tests are the engine's own, as in the game; mods come from elsewhere.
     return {.packId = std::string{packId},
             .layer = layer,
+            .origin = layer == Layer::Base ? PackOrigin::Engine : PackOrigin::Mod,
             .file = std::format("{}/data/table.yaml", packId),
             .document = std::move(*document)};
 }
@@ -85,8 +88,17 @@ void addPack(MemoryFileSystem& memory, std::string_view id, std::string_view lay
                    std::format("id: {}\nversion: 1.0.0\nlayer: {}\npriority: {}\n", id, layer, priority));
 }
 
+// Mounts packs as the game would find them: packs/base is the engine's own, any other pack a mod.
 VirtualFileSystem mounted(const MemoryFileSystem& memory, const std::vector<std::filesystem::path>& roots) {
-    auto vfs = VirtualFileSystem::mount(memory, roots);
+    std::vector<dwe::assets::PackLocation> locations;
+    locations.reserve(roots.size());
+    for (const std::filesystem::path& root : roots) {
+        locations.push_back({.fileSystem = &memory,
+                             .root = root,
+                             .fillsGaps = false,
+                             .origin = root.filename() == "base" ? PackOrigin::Engine : PackOrigin::Mod});
+    }
+    auto vfs = VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);
     return std::move(*vfs);
 }
@@ -162,6 +174,32 @@ TEST_CASE("a pack outside the base names its new entries in its own namespace an
               .contains("namespace is not the pack's id"));
     CHECK(failure({base, contribution("my_mod", Layer::Mods, "rows:\n- id: my_mod:pebble\n  index: 50\n")})
               .contains("leave it out"));
+}
+
+TEST_CASE("a mod that declares the base layer has none of the base's rights") {
+    const auto base = contribution("base", Layer::Base, BaseTable);
+    const auto fakeBase = [](std::string_view yaml) {
+        TableContribution modded = contribution("fake_base", Layer::Base, yaml);
+        modded.origin = PackOrigin::Mod;
+        return modded;
+    };
+    // No ids without a namespace, no index for a new entry, nor for an entry another mod added.
+    CHECK(failure({base, fakeBase("rows:\n- id: pebble\n  power: 1\n")}).contains("'fake_base:<name>'"));
+    CHECK(failure({base, fakeBase("rows:\n- id: fake_base:pebble\n  index: 50\n")}).contains("leave it out"));
+    CHECK(failure({base, contribution("my_mod", Layer::Mods, "rows:\n- id: my_mod:pebble\n"),
+                   fakeBase("rows:\n- id: my_mod:pebble\n  index: 3\n")})
+              .contains("leave it out"));
+
+    // The same through the file system: the pack's origin comes from where it was found, not from its manifest.
+    MemoryFileSystem memory;
+    addPack(memory, "base", "base");
+    addPack(memory, "fake_base", "base");
+    memory.addFile("packs/base/data/moves.yaml", "rows:\n- id: a\n");
+    memory.addFile("packs/fake_base/data/moves.yaml", "rows:\n- id: b\n");
+    const VirtualFileSystem vfs = mounted(memory, {"packs/base", "packs/fake_base"});
+    const auto table = dwe::assets::readComposedTable(vfs, idOf("data/moves"), FixtureComposition);
+    REQUIRE_FALSE(table.has_value());
+    CHECK(table.error().message.contains("'fake_base:<name>'"));
 }
 
 TEST_CASE("an entry that replaces another keeps its index, and a file lists each id once with its key") {

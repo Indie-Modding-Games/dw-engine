@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "code_trust.hpp"
 #include "font_engine.hpp"
 #include "messages.hpp"
 #include "render_bridge.hpp"
@@ -193,6 +194,7 @@ struct Ui::Impl {
     UiDesc desc;
     std::unique_ptr<script::ScriptVm> vm;
     SystemInterface system;
+    CodeTrust trust;
     FileInterface files;
     TextureSources sources{files};
     RenderBridge render{sources, desc.renderer};
@@ -232,7 +234,8 @@ struct Ui::Impl {
     double lastReloadCheck = 0.0;
 
     explicit Impl(const UiDesc& uiDesc, std::unique_ptr<script::ScriptVm> scripts)
-        : desc{uiDesc}, vm{std::move(scripts)}, system{uiDesc.clock}, files{*uiDesc.files} {}
+        : desc{uiDesc}, vm{std::move(scripts)}, system{uiDesc.clock}, trust{*uiDesc.files},
+          files{*uiDesc.files, trust} {}
 
     Impl(const Impl&) = delete;
     Impl& operator=(const Impl&) = delete;
@@ -403,7 +406,13 @@ struct Ui::Impl {
         }
         const std::string path = asset.str() + source->file.extension().string();
         files.startRecording();
+        // RmlUi caches templates by path and by name, and a cached one is not read again: a mod's template that an
+        // earlier load read would reach this document unseen by the trust, and its event attributes would run as the
+        // engine's. Emptying the cache makes every load read, and so judge, the templates it uses.
+        Rml::Factory::ClearTemplateCache();
+        trust.beginLoad(path);
         Rml::ElementDocument* loaded = context->LoadDocument(path);
+        core::Result<void> ownCode = trust.endLoad();
         auto read = files.stopRecording();
         auto* document = dynamic_cast<ScriptedDocument*>(loaded);
         if (document == nullptr) {
@@ -411,6 +420,10 @@ struct Ui::Impl {
                 context->UnloadDocument(loaded);
             }
             return core::fail(std::format("could not load the document {}", path));
+        }
+        // A document that read a mod's template while loading loses its own code, also the handlers made before.
+        if (document->ownCode()) {
+            document->setOwnCode(std::move(ownCode));
         }
         document->setName(name);
         applyTextKeys(*document, *texts);
@@ -810,7 +823,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
     uiAlive = true;
     auto impl = std::make_unique<Impl>(desc, std::move(*vm));
     impl->desc.scale = validScale(desc.scale).value_or(1.0F);
-    impl->scripting = std::make_unique<Scripting>(*impl->vm, impl->host());
+    impl->scripting = std::make_unique<Scripting>(*impl->vm, impl->host(), impl->trust);
 
     Rml::SetSystemInterface(&impl->system);
     Rml::SetFileInterface(&impl->files);

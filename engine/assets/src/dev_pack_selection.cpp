@@ -35,7 +35,8 @@ core::Result<DevPackSelection> selectDevPacks(std::span<const PackLocation> norm
         }
         const auto [holder, added] = taken.try_emplace(manifest->id, pack.root);
         if (added) {
-            selection.packs.push_back({.fileSystem = pack.fileSystem, .root = pack.root, .fillsGaps = true});
+            selection.packs.push_back(
+                {.fileSystem = pack.fileSystem, .root = pack.root, .fillsGaps = true, .origin = pack.origin});
         } else {
             selection.shadowed.push_back({.id = manifest->id, .pack = pack.root, .winner = holder->second});
         }

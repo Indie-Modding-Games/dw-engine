@@ -17,6 +17,8 @@
 
 namespace dwe::ui {
 
+class CodeTrust;
+
 // The prefix of the images the UI makes itself, such as the minimap: `generated:minimap/3`.
 inline constexpr std::string_view GeneratedPrefix = "generated:";
 
@@ -46,7 +48,8 @@ private:
 // can be reloaded when one of its files changes.
 class FileInterface final : public Rml::FileInterface {
 public:
-    explicit FileInterface(const assets::VirtualFileSystem& files) : files_{&files} {}
+    // Tells trust of every file it reads, so a document that reads a template from a mod loses its own code.
+    FileInterface(const assets::VirtualFileSystem& files, CodeTrust& trust) : files_{&files}, trust_{&trust} {}
 
     Rml::FileHandle Open(const Rml::String& path) override;
     void Close(Rml::FileHandle file) override;
@@ -73,6 +76,7 @@ private:
     };
 
     const assets::VirtualFileSystem* files_;
+    CodeTrust* trust_;
     std::map<Rml::FileHandle, OpenFile> open_;
     Rml::FileHandle nextHandle_ = 1;
     std::map<std::string, std::size_t> recorded_;

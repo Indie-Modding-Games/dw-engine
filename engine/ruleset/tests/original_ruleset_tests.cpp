@@ -46,8 +46,11 @@ TEST_CASE("the game pack's original ruleset loads, with the clock of the origina
     for (const std::string_view role : OriginalTables) {
         memory.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
     }
-    const std::array<assets::PackLocation, 2> packs{assets::PackLocation{.fileSystem = &memory, .root = "base"},
-                                                    assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+    const std::array<assets::PackLocation, 2> packs{
+        assets::PackLocation{
+            .fileSystem = &memory, .root = "base", .fillsGaps = false, .origin = assets::PackOrigin::Engine},
+        assets::PackLocation{
+            .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine}};
     const auto vfs = assets::VirtualFileSystem::mount(packs);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     const auto ruleset = loadRuleset(*vfs, OriginalRuleset);
@@ -82,7 +85,7 @@ TEST_CASE(
     auto found = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));
     found->packs.push_back({.path = DWE_GAME_PACK, .kind = assets::FoundPack::Kind::Folder});
-    const auto opened = assets::openPacks(disk, found->packs);
+    const auto opened = assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
     const auto vfs = assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));

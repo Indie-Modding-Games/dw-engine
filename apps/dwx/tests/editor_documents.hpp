@@ -137,7 +137,8 @@ inline assets::PackManifest toolPackManifest() {
             .name = std::string{ToolPackName},
             .description = {},
             .dependencies = {{.id = std::string{BasePackId}, .minVersion = BasePackVersion}},
-            .schemas = {}};
+            .schemas = {},
+            .api = {}};
 }
 
 // pack.yaml for a manifest, laid out as dwx extract and the tools write it.

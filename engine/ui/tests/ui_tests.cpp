@@ -1,6 +1,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
@@ -9,7 +10,9 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -40,13 +43,16 @@ assets::AssetId idOf(std::string_view text) {
     return *id;
 }
 
-// The team pack from the source tree, a stand-in for the base pack it depends on, and a pack for the tests' own
-// documents, all in memory so a test can edit a file.
+// The team pack from the source tree, a stand-in for the base pack it depends on, a pack for the tests' own documents
+// in the base layer, all three the engine's own (only the engine's own packs of its layers run their documents' Lua),
+// a mod from a mods folder in the layer it declares, and, once a test adds to it, a dev pack: all in memory so a test
+// can edit a file.
 struct Content {
     MemoryFileSystem memory;
     std::unique_ptr<VirtualFileSystem> files;
+    bool hasDevPack = false;
 
-    Content() {
+    explicit Content(std::string_view modLayer = "mods") {
         const std::filesystem::path game = DWE_GAME_PACK;
         for (const auto& entry : std::filesystem::recursive_directory_iterator{game}) {
             if (!entry.is_regular_file()) {
@@ -57,17 +63,39 @@ struct Content {
             memory.addFile(std::filesystem::path{"packs/game"} / entry.path().lexically_relative(game), bytes);
         }
         memory.addFile("packs/base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
-        memory.addFile("packs/tests/pack.yaml", "id: tests\nversion: 0.1.0\nlayer: mods\npriority: 0\n");
+        // Above the team pack, so the tests' files override its own.
+        memory.addFile("packs/tests/pack.yaml", "id: tests\nversion: 0.1.0\nlayer: base\npriority: 2\n");
+        memory.addFile("packs/mod/pack.yaml",
+                       std::format("id: mod\nversion: 0.1.0\nlayer: {}\npriority: 0\n", modLayer));
+        memory.addFile("packs/dev/pack.yaml", "id: dev\nversion: 0.1.0\nlayer: base\npriority: 0\n");
     }
 
     void add(std::string_view path, std::string_view text) {
         memory.addFile(std::filesystem::path{"packs/tests"} / path, text);
     }
 
+    void addToMod(std::string_view path, std::string_view text) {
+        memory.addFile(std::filesystem::path{"packs/mod"} / path, text);
+    }
+
+    void addToDev(std::string_view path, std::string_view text) {
+        memory.addFile(std::filesystem::path{"packs/dev"} / path, text);
+        hasDevPack = true;
+    }
+
     // Mounts the packs; call after adding the tests' files, because mounting lists them.
     VirtualFileSystem& mount() {
-        const std::vector<std::filesystem::path> roots{"packs/base", "packs/game", "packs/tests"};
-        auto mounted = VirtualFileSystem::mount(memory, roots);
+        const auto location = [this](std::string_view root, assets::PackOrigin origin, bool fillsGaps = false) {
+            return assets::PackLocation{
+                .fileSystem = &memory, .root = std::string{root}, .fillsGaps = fillsGaps, .origin = origin};
+        };
+        std::vector<assets::PackLocation> locations{
+            location("packs/base", assets::PackOrigin::Engine), location("packs/game", assets::PackOrigin::Engine),
+            location("packs/tests", assets::PackOrigin::Engine), location("packs/mod", assets::PackOrigin::Mod)};
+        if (hasDevPack) {
+            locations.push_back(location("packs/dev", assets::PackOrigin::Engine, true));
+        }
+        auto mounted = VirtualFileSystem::mount(locations);
         REQUIRE_MESSAGE(mounted.has_value(), mounted.error().message);
         files = std::make_unique<VirtualFileSystem>(std::move(*mounted));
         return *files;
@@ -165,6 +193,63 @@ function greet(name)
 end
 )lua";
 
+// The lines written to the log since it was made.
+class LogLines {
+public:
+    LogLines() {
+        static const bool added = [] {
+            core::addLogSink([](core::LogLevel /*level*/, std::string_view message) { lines().emplace_back(message); });
+            return true;
+        }();
+        static_cast<void>(added);
+        lines().clear();
+    }
+
+    [[nodiscard]] static std::size_t count(std::string_view text) {
+        return static_cast<std::size_t>(
+            std::ranges::count_if(lines(), [text](const std::string& line) { return line.contains(text); }));
+    }
+
+private:
+    static std::vector<std::string>& lines() {
+        static std::vector<std::string> captured;
+        return captured;
+    }
+};
+
+// A document a mod brings: a script from the game's layers, one of its own, inline Lua and an event attribute.
+constexpr std::string_view ModDocument = R"rml(<rml>
+<head>
+	<link type="text/rcss" href="/ui/common/theme.rcss"/>
+	<script src="/ui/test/logic.lua"></script>
+	<script src="own.lua"></script>
+	<script>ui.send('inline')</script>
+</head>
+<body>
+	<p id="label">before</p>
+	<button id="first" autofocus="autofocus" onclick="ui.send('pressed', element.id)">One</button>
+</body>
+</rml>)rml";
+
+// A template of the game, its override by a mod (with Lua in an event attribute), and a game document that uses it.
+constexpr std::string_view FrameTemplate = R"rml(<template name="frame" content="content">
+<head><link type="text/rcss" href="/ui/common/theme.rcss"/></head>
+<body><button id="framed" onclick="ui.send('game')">Framed</button><div id="content"/></body>
+</template>)rml";
+
+constexpr std::string_view ModFrameTemplate = R"rml(<template name="frame" content="content">
+<head><link type="text/rcss" href="/ui/common/theme.rcss"/></head>
+<body><button id="framed" onclick="ui.send('hijacked')">Framed</button><div id="content"/></body>
+</template>)rml";
+
+constexpr std::string_view FramedDocument = R"rml(<rml>
+<head>
+	<link type="text/template" href="/ui/tpl/frame.rml"/>
+	<script>ui.send('inline')</script>
+</head>
+<body template="frame"><p>inside</p></body>
+</rml>)rml";
+
 } // namespace
 
 TEST_CASE("documents load through the virtual file system and run their scripts") {
@@ -190,6 +275,156 @@ TEST_CASE("documents load through the virtual file system and run their scripts"
     CHECK_FALSE(ui->callScript("test", "missing"));
 
     CHECK_FALSE(ui->loadDocument("nothing", idOf("ui/test/missing")));
+}
+
+TEST_CASE("a mod's document loads and runs the game's scripts, but none of its own Lua") {
+    const LogLines log;
+    Content content;
+    content.add("ui/test/logic.lua", TestLogic);
+    content.addToMod("ui/modded/document.rml", ModDocument);
+    content.addToMod("ui/modded/own.lua", "function greet() ui.send('hijacked') end");
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("modded", idOf("ui/modded/document")));
+    ui->show("modded");
+    // The game's logic.lua ran; the mod's own.lua, its inline script and its onclick did not.
+    CHECK(commandNames(*ui).empty());
+    REQUIRE(ui->callScript("modded", "greet", std::array<std::string, 1>{"lua"}));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"greeted"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("modded", true);
+    frame(*ui, input);
+    CHECK(click(*ui, input, "modded", "first"));
+    CHECK(commandNames(*ui).empty());
+    CHECK(log.count("the engine script ui/modded/own comes from the pack 'mod' (a mod, mods layer)") == 1);
+    // One line for the document, however many inline scripts and attributes it has.
+    CHECK(log.count("the document ui/modded/document comes from the pack 'mod' (a mod, mods layer); its inline scripts "
+                    "and event attributes do not run") == 1);
+}
+
+TEST_CASE("a mod that declares the base layer is still a mod: none of its own Lua runs as the engine") {
+    const LogLines log;
+    Content content{"base"};
+    content.add("ui/test/logic.lua", TestLogic);
+    content.addToMod("ui/modded/document.rml", ModDocument);
+    content.addToMod("ui/modded/own.lua", "function greet() ui.send('hijacked') end");
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("modded", idOf("ui/modded/document")));
+    ui->show("modded");
+    // The game's logic.lua ran; the mod's own.lua, its inline script and its onclick did not.
+    CHECK(commandNames(*ui).empty());
+    input::InputState input{input::defaultActionMap()};
+    ui->show("modded", true);
+    frame(*ui, input);
+    CHECK(click(*ui, input, "modded", "first"));
+    CHECK(commandNames(*ui).empty());
+    CHECK(log.count("the engine script ui/modded/own comes from the pack 'mod' (a mod, base layer)") == 1);
+    CHECK(log.count("the document ui/modded/document comes from the pack 'mod' (a mod, base layer); its inline "
+                    "scripts and event attributes do not run") == 1);
+}
+
+TEST_CASE("a dev pack is one of the engine's own: its documents run their Lua") {
+    Content content;
+    content.addToDev("ui/test/document.rml", TestDocument);
+    content.addToDev("ui/test/logic.lua", TestLogic);
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+    REQUIRE(ui->callScript("test", "greet", std::array<std::string, 1>{"lua"}));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"greeted"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("test", true);
+    frame(*ui, input);
+    CHECK(click(*ui, input, "test", "second"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"pressed"});
+}
+
+TEST_CASE("a game document does not run a script that a mod overrides, and runs the rest") {
+    const LogLines log;
+    Content content;
+    content.add("ui/test/document.rml", TestDocument);
+    content.add("ui/test/logic.lua", TestLogic);
+    content.addToMod("ui/test/logic.lua", "function greet() ui.send('hijacked') end");
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+    CHECK_FALSE(ui->callScript("test", "greet", std::array<std::string, 1>{"lua"}));
+    CHECK(commandNames(*ui).empty());
+    CHECK(log.count("the engine script ui/test/logic comes from the pack 'mod' (a mod, mods layer)") == 1);
+    // Its own inline Lua and its event attributes still run.
+    input::InputState input{input::defaultActionMap()};
+    ui->show("test", true);
+    frame(*ui, input);
+    CHECK(click(*ui, input, "test", "second"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"pressed"});
+}
+
+TEST_CASE("a mod's template taints every game document that uses it, also after the first") {
+    const LogLines log;
+    Content content;
+    content.add("ui/tpl/frame.rml", FrameTemplate);
+    content.add("ui/first/document.rml", FramedDocument);
+    content.add("ui/second/document.rml", FramedDocument);
+    content.addToMod("ui/tpl/frame.rml", ModFrameTemplate);
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("first", idOf("ui/first/document")));
+    REQUIRE(ui->loadDocument("second", idOf("ui/second/document")));
+    input::InputState input{input::defaultActionMap()};
+    for (const std::string_view name : {"first", "second"}) {
+        CAPTURE(name);
+        ui->show(name, true);
+        frame(*ui, input);
+        CHECK(click(*ui, input, name, "framed"));
+        ui->hide(name);
+    }
+    // Neither the inline script nor the template's onclick ran, in either document.
+    CHECK(commandNames(*ui).empty());
+    CHECK(log.count("the document ui/tpl/frame comes from the pack 'mod' (a mod, mods layer)") == 2);
+}
+
+TEST_CASE("a mod's template named like the game's does not replace it in a game document") {
+    Content content;
+    content.add("ui/tpl/frame.rml", FrameTemplate);
+    content.add("ui/first/document.rml", FramedDocument);
+    content.add("ui/second/document.rml", FramedDocument);
+    content.addToMod("ui/modtpl/frame.rml", ModFrameTemplate);
+    content.addToMod("ui/modded/document.rml", R"rml(<rml>
+<head><link type="text/template" href="/ui/modtpl/frame.rml"/></head>
+<body template="frame"><p>mod</p></body>
+</rml>)rml");
+    auto ui = createUi(content.mount());
+    // The game's template is read by the first document, then the mod's takes its name, then the second document
+    // links the game's again.
+    REQUIRE(ui->loadDocument("first", idOf("ui/first/document")));
+    REQUIRE(ui->loadDocument("modded", idOf("ui/modded/document")));
+    REQUIRE(ui->loadDocument("second", idOf("ui/second/document")));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"inline", "inline"});
+    input::InputState input{input::defaultActionMap()};
+    ui->show("second", true);
+    frame(*ui, input);
+    CHECK(click(*ui, input, "second", "framed"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"game"});
+}
+
+TEST_CASE("a script cannot set an event attribute, so it cannot make Lua from text") {
+    Content content;
+    content.add("ui/test/document.rml", R"rml(<rml>
+<head><script>
+function on_show(document) shown = document end
+function arm(name) shown:get("target"):set_attribute(name, "ui.send('armed')") end
+function title() shown:get("target"):set_attribute("title", "fine") ui.send("titled") end
+</script></head>
+<body><button id="target">Target</button></body>
+</rml>)rml");
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("test", idOf("ui/test/document")));
+    input::InputState input{input::defaultActionMap()};
+    ui->show("test", true);
+    frame(*ui, input);
+    for (const std::string_view name : {"onclick", "OnClick", "onmousedown"}) {
+        CAPTURE(name);
+        CHECK_FALSE(ui->callScript("test", "arm", std::array<std::string, 1>{std::string{name}}));
+    }
+    REQUIRE(ui->callScript("test", "title"));
+    CHECK(click(*ui, input, "test", "target"));
+    CHECK(commandNames(*ui) == std::vector<std::string>{"titled"});
 }
 
 TEST_CASE("there is one UI at a time, and it needs files") {
@@ -784,9 +1019,10 @@ function fill()
 	exhaust(function() return ui.languages() end)
 end
 </script></head><body><p id="label-with-a-long-id-that-does-not-fit-in-a-short-string" title="a title long enough to live on the heap, not in the string">a text long enough to live on the heap, not inside the string</p></body></rml>)rml");
-    auto ui = createUi(
-        content.mount(), nullptr, false,
-        script::ScriptLimits{.memoryBytes = std::size_t{4} * 1024 * 1024, .instructionsPerCall = 1'000'000'000});
+    auto ui = createUi(content.mount(), nullptr, false,
+                       script::ScriptLimits{.memoryBytes = std::size_t{4} * 1024 * 1024,
+                                            .instructionsPerCall = 1'000'000'000,
+                                            .callDeadline = std::chrono::seconds{60}});
     REQUIRE(ui->loadDocument("memory", idOf("ui/memory/document")));
     ui->setSetting("long", std::string(200, 's'));
     ui->show("memory");

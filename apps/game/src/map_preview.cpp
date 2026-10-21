@@ -44,7 +44,8 @@ core::Result<std::unique_ptr<MapPreview>> MapPreview::create(render::Renderer& r
     if (!packs) {
         return std::unexpected{packs.error()};
     }
-    auto opened = assets::openPacks(content->disk, packs->packs);
+    // A content folder holds the engine's own packs.
+    auto opened = assets::openPacks(content->disk, packs->packs, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
     }

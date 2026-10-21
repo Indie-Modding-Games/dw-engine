@@ -147,7 +147,7 @@ TEST_CASE("the user's disc, extracted: the Digimon, raise, move and evolution ta
     const dwe::assets::DiskFileSystem disk;
     const auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));
-    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
     const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));

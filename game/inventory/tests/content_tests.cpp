@@ -37,7 +37,7 @@ TEST_CASE("the user's disc, extracted: every item and shop loads and every item'
     auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));
     found->packs.push_back({.path = DWE_GAME_PACK, .kind = dwe::assets::FoundPack::Kind::Folder});
-    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
     const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));

@@ -21,7 +21,8 @@ core::Result<MountedPack> readPack(const PackLocation& location) {
     return MountedPack{.manifest = std::move(*manifest),
                        .root = location.root,
                        .fileSystem = location.fileSystem,
-                       .fillsGaps = location.fillsGaps};
+                       .fillsGaps = location.fillsGaps,
+                       .origin = location.origin};
 }
 
 } // namespace
@@ -154,11 +155,13 @@ std::vector<MountedPack> stack(std::vector<MountedPack> packs) {
 } // namespace
 
 core::Result<VirtualFileSystem> VirtualFileSystem::mount(const FileSystem& fileSystem,
-                                                         std::span<const std::filesystem::path> packRoots) {
+                                                         std::span<const std::filesystem::path> packRoots,
+                                                         PackOrigin origin) {
     std::vector<PackLocation> locations;
     locations.reserve(packRoots.size());
     for (const std::filesystem::path& root : packRoots) {
-        locations.push_back(PackLocation{.fileSystem = &fileSystem, .root = root});
+        locations.push_back(
+            PackLocation{.fileSystem = &fileSystem, .root = root, .fillsGaps = false, .origin = origin});
     }
     return mount(locations);
 }

@@ -67,7 +67,8 @@ core::Result<MountedContent> mountContent(const assets::FileSystem& disk, const 
         }
         found.insert(found.end(), packs->packs.begin(), packs->packs.end());
     }
-    auto opened = assets::openPacks(disk, found);
+    // The content folder and the team's packs are the engine's own.
+    auto opened = assets::openPacks(disk, found, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
     }

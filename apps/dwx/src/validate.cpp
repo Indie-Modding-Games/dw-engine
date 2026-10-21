@@ -455,7 +455,8 @@ core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSyste
         }
     }
     // The archives stay open while the stack is checked.
-    const auto opened = assets::openPacks(fileSystem, packs);
+    // Checked as the engine's own packs, as in a content folder.
+    const auto opened = assets::openPacks(fileSystem, packs, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
     }

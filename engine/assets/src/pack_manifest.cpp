@@ -1,5 +1,6 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/pack_manifest.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -9,6 +10,8 @@
 #include <system_error>
 #include <utility>
 
+#include "messages.hpp"
+
 namespace dwe::assets {
 
 namespace {
@@ -16,6 +19,16 @@ namespace {
 using core::YamlNode;
 
 constexpr std::size_t MaxPackIdLength = 64;
+
+// What follows the major version in an API requirement: any minor version and patch.
+constexpr char VersionSeparator = '.';
+
+// The minor part of an API requirement that takes any minor version: `1.x`.
+constexpr std::string_view AnyMinorVersion = "x";
+
+// The versions an error message suggests.
+constexpr std::uint32_t ExampleApiMajor = 1;
+constexpr std::uint32_t ExampleApiMinor = 2;
 
 constexpr std::array<std::pair<std::string_view, Layer>, 4> LayerNames = {{
     {"base", Layer::Base},
@@ -59,6 +72,18 @@ core::Result<Version> readVersion(const YamlNode& node, std::string_view key) {
         return failAt(node, version.error().message);
     }
     return *version;
+}
+
+core::Result<ApiRequirement> readApiRequirement(const YamlNode& node, std::string_view key) {
+    auto text = readText(node, key);
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
+    auto requirement = parseApiRequirement(*text);
+    if (!requirement) {
+        return failAt(node, requirement.error().message);
+    }
+    return *requirement;
 }
 
 core::Result<std::string> readPackId(const YamlNode& node, std::string_view key) {
@@ -185,6 +210,25 @@ std::string formatVersion(const Version& version) {
     return std::format("{}.{}.{}", version.major, version.minor, version.patch);
 }
 
+core::Result<ApiRequirement> parseApiRequirement(std::string_view text) {
+    const std::size_t dot = text.find(VersionSeparator);
+    const auto major = dot != std::string_view::npos ? parseNumber<std::uint32_t>(text.substr(0, dot)) : std::nullopt;
+    const std::string_view minorText = dot != std::string_view::npos ? text.substr(dot + 1) : std::string_view{};
+    const auto minor = minorText == AnyMinorVersion ? std::nullopt : parseNumber<std::uint32_t>(minorText);
+    if (!major || (minorText != AnyMinorVersion && !minor)) {
+        return core::fail(
+            core::formatMessage(messages::BadApiRequirement, text, ExampleApiMajor, ExampleApiMajor, ExampleApiMinor));
+    }
+    return ApiRequirement{.major = *major, .minimumMinor = minor};
+}
+
+std::string formatApiRequirement(const ApiRequirement& requirement) {
+    if (requirement.minimumMinor) {
+        return std::format("{}{}{}", requirement.major, VersionSeparator, *requirement.minimumMinor);
+    }
+    return std::format("{}{}{}", requirement.major, VersionSeparator, AnyMinorVersion);
+}
+
 std::optional<Layer> parseLayer(std::string_view name) {
     for (const auto& [text, layer] : LayerNames) {
         if (text == name) {
@@ -201,6 +245,21 @@ std::string_view layerName(Layer layer) {
         }
     }
     return "unknown";
+}
+
+std::string_view originName(PackOrigin origin) {
+    return origin == PackOrigin::Engine ? "an engine pack" : "a mod";
+}
+
+bool isEngineLayer(Layer layer) {
+    return layer == Layer::Base || layer == Layer::Remaster;
+}
+
+core::Result<void> checkModLayer(const PackManifest& manifest) {
+    if (isEngineLayer(manifest.layer)) {
+        return core::fail(core::formatMessage(messages::ModInEngineLayer, manifest.id, layerName(manifest.layer)));
+    }
+    return {};
 }
 
 core::Result<void> checkPackId(std::string_view id) {
@@ -277,6 +336,12 @@ core::Result<PackManifest> parsePackManifest(std::string_view text) {
                 return std::unexpected{description.error()};
             }
             manifest.description = std::move(*description);
+        } else if (entry.key == "api") {
+            auto requirement = readApiRequirement(value, entry.key);
+            if (!requirement) {
+                return std::unexpected{requirement.error()};
+            }
+            manifest.api = *requirement;
         } else if (entry.key == "dependencies") {
             dependencies = &value;
         } else if (entry.key == "schemas") {

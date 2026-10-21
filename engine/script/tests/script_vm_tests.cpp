@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -33,24 +34,24 @@ TEST_CASE("scripts run and keep their globals") {
     auto vm = makeVm();
     REQUIRE(vm->runString("counter = 41", "test"));
     REQUIRE(vm->runString("counter = counter + 1", "test"));
-    CHECK(vm->lua()["counter"].get<int>() == 42);
+    CHECK(script::ScriptCall{*vm}.lua()["counter"].get<int>() == 42);
 }
 
 TEST_CASE("the sandbox has no file, process or module access") {
     auto vm = makeVm();
     for (const std::string_view name : {"io", "os", "package", "require", "dofile", "loadfile", "load", "debug"}) {
         CAPTURE(name);
-        CHECK_FALSE(vm->lua()[name].valid());
+        CHECK_FALSE(script::ScriptCall{*vm}.lua()[name].valid());
     }
-    CHECK(vm->lua()["string"].get_type() == sol::type::table);
-    CHECK(vm->lua()["math"].get_type() == sol::type::table);
+    CHECK(script::ScriptCall{*vm}.lua()["string"].get_type() == sol::type::table);
+    CHECK(script::ScriptCall{*vm}.lua()["math"].get_type() == sol::type::table);
 }
 
 TEST_CASE("scripts cannot dump bytecode or control the garbage collector") {
     auto vm = makeVm();
-    CHECK_FALSE(vm->lua()["string"]["dump"].valid());
+    CHECK_FALSE(script::ScriptCall{*vm}.lua()["string"]["dump"].valid());
     REQUIRE(vm->runString("used = collectgarbage('count')", "test"));
-    CHECK(vm->lua()["used"].get<double>() > 0.0);
+    CHECK(script::ScriptCall{*vm}.lua()["used"].get<double>() > 0.0);
     for (const char* option : {"stop", "collect", "step", "incremental", "generational"}) {
         CAPTURE(option);
         CHECK_FALSE(vm->runString(std::string{"collectgarbage('"} + option + "')", "test").has_value());
@@ -107,7 +108,7 @@ TEST_CASE("table.move refuses ranges that would run for too long") {
     CHECK_FALSE(vm->runString("table.move({}, math.mininteger, 0, 1)", "test").has_value());
     REQUIRE(vm->runString("moved = table.move({1, 2, 3}, 1, 3, 2, {})", "test"));
     REQUIRE(vm->runString("count = #moved + (moved[1] == nil and 0 or 100)", "test"));
-    CHECK(vm->lua()["count"].get<int>() == 4);
+    CHECK(script::ScriptCall{*vm}.lua()["count"].get<int>() == 4);
 }
 
 TEST_CASE("a printed line is cut to a bounded size") {
@@ -144,6 +145,21 @@ TEST_CASE("coroutines share the instruction budget") {
     CHECK(result.error().message.find("too long") != std::string::npos);
 }
 
+TEST_CASE("a coroutine that yields before the budget check still pays for its instructions") {
+    // Each resume runs a few hundred instructions, fewer than the main thread's check interval, then yields. Were the
+    // hook's count restarted for free on every resume, the budget would allow hundreds of thousands of rounds.
+    constexpr int MaxRounds = 10'000;
+    auto vm = makeVm({.memoryBytes = std::size_t{16} * 1024 * 1024, .instructionsPerCall = 1'000'000});
+    auto result = vm->runString("rounds = 0"
+                                " local step = coroutine.wrap(function()"
+                                "   while true do for _ = 1, 300 do end coroutine.yield() end end)"
+                                " while true do step() rounds = rounds + 1 end",
+                                "test");
+    REQUIRE_FALSE(result.has_value());
+    CHECK(result.error().message.find("too long") != std::string::npos);
+    CHECK(script::ScriptCall{*vm}.lua()["rounds"].get<int>() < MaxRounds);
+}
+
 TEST_CASE("each call gets a fresh budget") {
     auto vm = makeVm({.memoryBytes = std::size_t{16} * 1024 * 1024, .instructionsPerCall = 1'000'000});
     REQUIRE(vm->runString("function work() local n = 0 for i = 1, 20000 do n = n + i end end", "test"));
@@ -153,7 +169,9 @@ TEST_CASE("each call gets a fresh budget") {
 }
 
 TEST_CASE("a script cannot allocate past its memory limit") {
-    auto vm = makeVm({.memoryBytes = std::size_t{4} * 1024 * 1024, .instructionsPerCall = 100'000'000});
+    auto vm = makeVm({.memoryBytes = std::size_t{4} * 1024 * 1024,
+                      .instructionsPerCall = 100'000'000,
+                      .callDeadline = std::chrono::seconds{60}});
     auto result = vm->runString("local t = {} for i = 1, 10000000 do t[i] = i end", "test");
     REQUIRE_FALSE(result.has_value());
 }
@@ -165,7 +183,7 @@ TEST_CASE("calling a missing function does nothing, and arguments reach the scri
     const std::array<double, 1> step{0.5};
     REQUIRE(vm->call("tick", step));
     REQUIRE(vm->call("tick", step));
-    CHECK(vm->lua()["total"].get<double>() == doctest::Approx(1.0));
+    CHECK(script::ScriptCall{*vm}.lua()["total"].get<double>() == doctest::Approx(1.0));
 }
 
 TEST_CASE("the input API reports actions") {
@@ -174,10 +192,10 @@ TEST_CASE("the input API reports actions") {
     vm->bindInput(input);
     input.handle(platform::KeyChanged{.key = input::keys::D, .down = true, .repeat = false});
     REQUIRE(vm->runString("x, y = input.vector('move_left', 'move_right', 'move_up', 'move_down')", "test"));
-    CHECK(vm->lua()["x"].get<double>() == doctest::Approx(1.0));
+    CHECK(script::ScriptCall{*vm}.lua()["x"].get<double>() == doctest::Approx(1.0));
     REQUIRE(vm->runString("held = input.down('move_right'); device = input.device()", "test"));
-    CHECK(vm->lua()["held"].get<bool>());
-    CHECK(vm->lua()["device"].get<std::string>() == "keyboard_mouse");
+    CHECK(script::ScriptCall{*vm}.lua()["held"].get<bool>());
+    CHECK(script::ScriptCall{*vm}.lua()["device"].get<std::string>() == "keyboard_mouse");
 }
 
 TEST_CASE("the texts API gives the text of a key in the player's language") {
@@ -193,13 +211,13 @@ TEST_CASE("the texts API gives the text of a key in the player's language") {
     vm->bindTexts(*catalog);
     REQUIRE(vm->runString("a = t('menu.items', {count = 3, total = 'siete', [1] = 'ignored'})", "test"));
     REQUIRE(vm->runString("b = t('menu.only_english'); c = t('menu.none'); d = texts.language()", "test"));
-    CHECK(vm->lua()["a"].get<std::string>() == "3 de siete");
-    CHECK(vm->lua()["b"].get<std::string>() == "Only");
-    CHECK(vm->lua()["c"].get<std::string>() == "menu.none");
-    CHECK(vm->lua()["d"].get<std::string>() == "es");
+    CHECK(script::ScriptCall{*vm}.lua()["a"].get<std::string>() == "3 de siete");
+    CHECK(script::ScriptCall{*vm}.lua()["b"].get<std::string>() == "Only");
+    CHECK(script::ScriptCall{*vm}.lua()["c"].get<std::string>() == "menu.none");
+    CHECK(script::ScriptCall{*vm}.lua()["d"].get<std::string>() == "es");
     REQUIRE(catalog->setLanguage("en"));
     REQUIRE(vm->runString("a = t('menu.items', {count = 1.5, total = 2})", "test"));
-    CHECK(vm->lua()["a"].get<std::string>() == "1.5 of 2");
+    CHECK(script::ScriptCall{*vm}.lua()["a"].get<std::string>() == "1.5 of 2");
 }
 
 TEST_CASE("an edited file is reloaded, and a broken edit keeps the previous state") {
@@ -211,12 +229,12 @@ TEST_CASE("an edited file is reloaded, and a broken edit keeps the previous stat
     std::ofstream{path} << "value = 2";
     std::filesystem::last_write_time(path, std::filesystem::last_write_time(path) + std::chrono::seconds{1});
     vm->reloadChanged();
-    CHECK(vm->lua()["value"].get<int>() == 2);
+    CHECK(script::ScriptCall{*vm}.lua()["value"].get<int>() == 2);
 
     std::ofstream{path} << "value = 3 +";
     std::filesystem::last_write_time(path, std::filesystem::last_write_time(path) + std::chrono::seconds{1});
     vm->reloadChanged();
-    CHECK(vm->lua()["value"].get<int>() == 2);
+    CHECK(script::ScriptCall{*vm}.lua()["value"].get<int>() == 2);
     std::filesystem::remove(path);
 }
 

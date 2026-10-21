@@ -170,7 +170,7 @@ TEST_CASE("the user's disc, extracted: every map with a file gives a minimap") {
     const assets::DiskFileSystem disk;
     const auto packs = assets::findPacks(disk, content);
     REQUIRE(packs.has_value());
-    const auto opened = assets::openPacks(disk, packs->packs);
+    const auto opened = assets::openPacks(disk, packs->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE(opened.has_value());
     const auto vfs = assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE(vfs.has_value());

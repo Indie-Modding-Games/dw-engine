@@ -26,6 +26,7 @@
 namespace dwe::ui {
 
 class Scripting;
+class CodeTrust;
 
 // The longest name (element id, class, document, command, setting) and text a script may pass to the UI, in bytes.
 inline constexpr std::size_t MaxScriptName = 256;
@@ -75,6 +76,10 @@ public:
 
     // The name the UI knows the document by, also visible to its scripts as `document_name`.
     void setName(std::string_view name);
+
+    // Whether the document may run the Lua written inside it (CodeTrust). Until its load ends it may not.
+    void setOwnCode(core::Result<void> verdict) { ownCode_ = std::move(verdict); }
+    [[nodiscard]] const core::Result<void>& ownCode() const { return ownCode_; }
     [[nodiscard]] const std::string& name() const { return name_; }
 
     [[nodiscard]] sol::environment& environment() { return environment_; }
@@ -89,6 +94,7 @@ private:
     Scripting* scripting_;
     sol::environment environment_;
     std::string name_;
+    core::Result<void> ownCode_;
 };
 
 // A function to call: compiled code, or a function a document's environment defines (none when it does not).
@@ -114,7 +120,8 @@ struct LuaCallResult {
 // strings as views into Lua's own, and push their results in a protected call after which only plain values remain.
 class Scripting {
 public:
-    Scripting(script::ScriptVm& vm, ScriptHost host);
+    // trust decides which Lua the documents may run, and must outlive this.
+    Scripting(script::ScriptVm& vm, ScriptHost host, CodeTrust& trust);
 
     Scripting(const Scripting&) = delete;
     Scripting& operator=(const Scripting&) = delete;
@@ -142,7 +149,7 @@ public:
     // A fresh environment for a document: copies of the global libraries and of `ui`, and no way back to the globals.
     sol::environment newEnvironment();
 
-    [[nodiscard]] sol::state& lua() { return vm_->lua(); }
+    [[nodiscard]] CodeTrust& trust() { return *trust_; }
 
 private:
     class DocumentInstancer final : public Rml::ElementInstancer {
@@ -156,9 +163,15 @@ private:
         Scripting* scripting_;
     };
 
+    // Makes the listener of an event attribute such as onclick, which is Lua written inside a document: none when the
+    // document may not run its own code.
     class ListenerInstancer final : public Rml::EventListenerInstancer {
     public:
+        explicit ListenerInstancer(Scripting& scripting) : scripting_{&scripting} {}
         Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
+
+    private:
+        Scripting* scripting_;
     };
 
     // The argument pack of one call, read by the trampoline inside the protected call.
@@ -181,15 +194,15 @@ private:
     static void pushArgument(lua_State* state, std::span<const std::string> texts);
 
     // Runs a pushed function and its arguments protected; afterwards the stack is back to `top`.
-    core::Result<LuaCallResult> protectedCall(lua_State* state, int top);
+    static core::Result<LuaCallResult> protectedCall(lua_State* state, int top);
 
     void registerApi();
 
     script::ScriptVm* vm_;
     ScriptHost host_;
-    int depth_ = 0;
+    CodeTrust* trust_;
     DocumentInstancer documentInstancer_{*this};
-    ListenerInstancer listenerInstancer_;
+    ListenerInstancer listenerInstancer_{*this};
 };
 
 template <typename... Arguments>
@@ -211,7 +224,9 @@ int Scripting::trampoline(lua_State* state) {
 
 template <typename... Arguments>
 core::Result<LuaCallResult> Scripting::call(const LuaCallee& callee, const Arguments&... arguments) {
-    lua_State* state = lua().lua_state();
+    // Nested calls (a document's script calling into another) share the budget of the outermost one.
+    const script::ScriptCall scope{*vm_};
+    lua_State* state = scope.lua().lua_state();
     const int top = lua_gettop(state);
     CallFrame<Arguments...> frame{.callee = &callee, .arguments = {arguments...}};
     if (lua_checkstack(state, 2) == 0) {

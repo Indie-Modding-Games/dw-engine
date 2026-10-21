@@ -46,7 +46,8 @@ core::Result<std::unique_ptr<ModelViewer>> ModelViewer::create(render::Renderer&
         return std::unexpected{packs.error()};
     }
     packs->packs.push_back({.path = gamePack, .kind = assets::FoundPack::Kind::Folder});
-    const auto opened = assets::openPacks(disk, packs->packs);
+    // The content folder and the team's game pack are the engine's own.
+    const auto opened = assets::openPacks(disk, packs->packs, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
     }

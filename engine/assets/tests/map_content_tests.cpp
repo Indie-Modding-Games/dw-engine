@@ -32,7 +32,7 @@ TEST_CASE("the user's disc, extracted: every map of the table parses") {
     const dwe::assets::DiskFileSystem disk;
     const auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(packs.has_value(), errorOf(packs));
-    const auto opened = dwe::assets::openPacks(disk, packs->packs);
+    const auto opened = dwe::assets::openPacks(disk, packs->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
     const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));

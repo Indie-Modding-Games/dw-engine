@@ -23,6 +23,7 @@ struct PackLocation {
     // A pack of the dev assets (findDevPacks): it stacks under every other pack, whatever its layer and priority, so
     // it only provides the ids that no other pack has.
     bool fillsGaps = false;
+    PackOrigin origin = PackOrigin::Mod;
 };
 
 // A pack in the stack of the virtual file system.
@@ -32,6 +33,7 @@ struct MountedPack {
     const FileSystem* fileSystem = nullptr;
     // As in its PackLocation.
     bool fillsGaps = false;
+    PackOrigin origin = PackOrigin::Mod;
 };
 
 // A file of a pack and the asset id it gives.
@@ -54,9 +56,10 @@ core::Result<PackManifest> readPackManifest(const PackLocation& location);
 class VirtualFileSystem {
 public:
     // Reads the manifests and lists the files of the packs at these folders, checks their dependencies and stacks
-    // them. The file system must outlive the result.
+    // them, all with one origin. The file system must outlive the result.
     static core::Result<VirtualFileSystem> mount(const FileSystem& fileSystem,
-                                                 std::span<const std::filesystem::path> packRoots);
+                                                 std::span<const std::filesystem::path> packRoots,
+                                                 PackOrigin origin = PackOrigin::Mod);
 
     // The same for packs that may each be in a different file system, such as folders on disk and .pak archives.
     // Every file system must outlive the result.

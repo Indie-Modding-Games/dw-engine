@@ -94,8 +94,10 @@ struct OpenedPacks {
     std::vector<PackLocation> locations;
 };
 
-// Opens packs for mounting: a folder pack is read through the given file system, which must outlive the result, and
-// an archive is opened from disk with PakFileSystem. Fails on the first archive that does not open.
-core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs);
+// Opens packs for mounting, all with one origin: a folder pack is read through the given file system, which must
+// outlive the result, and an archive is opened from disk with PakFileSystem. Fails on the first archive that does not
+// open.
+core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs,
+                                    PackOrigin origin = PackOrigin::Mod);
 
 } // namespace dwe::assets

@@ -56,7 +56,8 @@ dwe::assets::PackManifest basePackManifest() {
             .schemas = {{.schema = "maps", .ids = {std::string{MapTable}}},
                         {.schema = "map", .ids = {"map/*/data"}},
                         {.schema = "model_contract", .ids = {"digimon/*/contract"}},
-                        {.schema = "script", .ids = {std::string{MapHeadScript}, "script/*/*"}}}};
+                        {.schema = "script", .ids = {std::string{MapHeadScript}, "script/*/*"}}},
+            .api = {}};
 }
 
 std::string textOf(std::span<const std::byte> bytes) {
@@ -133,8 +134,17 @@ TEST_CASE("a mods pack of the files the tools write passes dwx validate with the
     CHECK(report->contracts == 1);
 
     const dwe::assets::DiskFileSystem disk;
-    const std::array<std::filesystem::path, 2> roots{folder.path() / baseFolder(), folder.path() / toolFolder()};
-    const auto vfs = dwe::assets::VirtualFileSystem::mount(disk, roots);
+    // The base pack is the engine's own; the tools' pack is a mod.
+    const std::array<dwe::assets::PackLocation, 2> locations{
+        dwe::assets::PackLocation{.fileSystem = &disk,
+                                  .root = folder.path() / baseFolder(),
+                                  .fillsGaps = false,
+                                  .origin = dwe::assets::PackOrigin::Engine},
+        dwe::assets::PackLocation{.fileSystem = &disk,
+                                  .root = folder.path() / toolFolder(),
+                                  .fillsGaps = false,
+                                  .origin = dwe::assets::PackOrigin::Mod}};
+    const auto vfs = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     for (const std::string& id :
          {editedMapAsset("data"), editedMapAsset("background_day"), editedMapAsset("background_night"),

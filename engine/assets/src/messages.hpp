@@ -5,6 +5,16 @@
 // The error messages of assets. Templates take their arguments in the order of their placeholders.
 namespace dwe::assets::messages {
 
+// Pack manifests (pack_manifest.cpp).
+inline constexpr std::string_view BadApiRequirement = "api '{}' is not MAJOR.x or MAJOR.MINOR, such as {}.x or {}.{}";
+inline constexpr std::string_view ModInEngineLayer =
+    "pack '{}' is a mod and declares the {} layer, which only the engine's own packs have: a mod's layer is mods or "
+    "user";
+
+// The Lua API a pack asks for (lua_api.cpp).
+inline constexpr std::string_view IncompatibleApi = "the scripts need the Lua API {}, and this engine has {}";
+inline constexpr std::string_view PackNeedsOtherApi = "pack '{}': {}";
+
 // Text tables (text_table.cpp).
 inline constexpr std::string_view TableContext = "text table {}";
 inline constexpr std::string_view GameTableWhat = "the text table";

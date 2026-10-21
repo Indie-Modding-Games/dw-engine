@@ -53,7 +53,7 @@ inline constexpr std::string_view CompositionIndexChanged =
 inline constexpr std::string_view CompositionIndexOfNewEntry =
     "{}: '{}' is new in '{}' and gives an index: leave it out, the engine numbers new entries";
 inline constexpr std::string_view CompositionOriginalAdded =
-    "{}: '{}' is new in '{}': an entry a {} pack adds is named '{}:<name>'";
+    "{}: '{}' is new in '{}': an entry that {} of the {} layer adds is named '{}:<name>'";
 inline constexpr std::string_view CompositionForeignNamespace =
     "{}: '{}' is new in '{}', but its namespace is not the pack's id, '{}'";
 

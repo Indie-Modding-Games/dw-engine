@@ -108,10 +108,11 @@ TEST_CASE("the user's disc, extracted: every partner species loads and each rook
     const assets::DiskFileSystem disk;
     const auto packs = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(packs.has_value(), testing::errorOf(packs));
-    const auto opened = assets::openPacks(disk, packs->packs);
+    const auto opened = assets::openPacks(disk, packs->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), testing::errorOf(opened));
     std::vector<assets::PackLocation> locations = opened->locations;
-    locations.push_back({.fileSystem = &disk, .root = DWE_GAME_PACK});
+    locations.push_back(
+        {.fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine});
     const auto vfs = assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(vfs.has_value(), testing::errorOf(vfs));
     const auto ruleset = ruleset::loadRuleset(*vfs, ruleset::OriginalRuleset, partnerSectionChecks());

@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "vm_state.hpp"
+
 namespace dwe::script {
 namespace {
 
@@ -37,10 +39,10 @@ std::vector<localization::TextArgument> argumentsOf(const sol::optional<sol::tab
 
 void ScriptVm::bindTexts(const localization::Catalog& catalog) {
     const localization::Catalog* texts = &catalog;
-    lua().set_function(TextFunction, [texts](const std::string& key, const sol::optional<sol::table>& arguments) {
+    vm_->lua.set_function(TextFunction, [texts](const std::string& key, const sol::optional<sol::table>& arguments) {
         return texts->text(key, argumentsOf(arguments));
     });
-    sol::table api = lua().create_named_table(TextsTable);
+    sol::table api = vm_->lua.create_named_table(TextsTable);
     api["language"] = [texts]() { return texts->language(); };
 }
 

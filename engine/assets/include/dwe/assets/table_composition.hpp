@@ -41,13 +41,17 @@ struct TableComposition {
 struct TableContribution {
     std::string packId;
     Layer layer = Layer::Base;
+    // Only a base pack of the engine's own (PackOrigin::Engine) has the base's rights: adding ids without a namespace
+    // and giving indices. A mod that declares the base layer has none of them.
+    PackOrigin origin = PackOrigin::Mod;
     std::string file; // for the errors
     core::YamlNode document;
 };
 
 // Composes the files of a table from the bottom of the stack up. In an entry section, an entry whose id is already
 // there replaces that entry in its place and keeps its index; a new one goes at the end, in stack order and then in
-// file order, with the next free index. A pack outside the base layer names its new entries `<its id>:<name>`.
+// file order, with the next free index. Any pack but the engine's own base packs names its new entries
+// `<its id>:<name>`.
 core::Result<core::YamlNode> composeTable(std::span<const TableContribution> contributions,
                                           const TableComposition& composition);
 

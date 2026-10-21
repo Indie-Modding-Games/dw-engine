@@ -12,7 +12,9 @@
 #include <RmlUi/Core/ObserverPtr.h>
 #include <RmlUi/Core/StringUtilities.h>
 
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <format>
 #include <memory>
 #include <optional>
@@ -22,6 +24,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "code_trust.hpp"
+#include "messages.hpp"
 
 namespace dwe::ui {
 namespace {
@@ -40,6 +45,15 @@ void checkName(lua_State* state, std::string_view name) {
     if (name.size() > MaxScriptName) {
         raise(state, "the name is too long");
     }
+}
+
+// The prefix of the attributes that RmlUi turns into event listeners (onclick, onkeydown...), in any case.
+constexpr std::string_view EventAttributePrefix = "on";
+
+bool isEventAttribute(std::string_view name) {
+    return name.size() >= EventAttributePrefix.size() &&
+           std::ranges::equal(name.substr(0, EventAttributePrefix.size()), EventAttributePrefix,
+                              [](char a, char b) { return std::tolower(static_cast<unsigned char>(a)) == b; });
 }
 
 void checkText(lua_State* state, std::string_view text) {
@@ -243,7 +257,8 @@ public:
     void ProcessEvent(Rml::Event& event) override {
         Rml::Element* element = event.GetCurrentElement();
         auto* document = dynamic_cast<ScriptedDocument*>(element != nullptr ? element->GetOwnerDocument() : nullptr);
-        if (document == nullptr) {
+        // A document whose load turned out to read a template from a mod runs none of its own code.
+        if (document == nullptr || !document->ownCode()) {
             return;
         }
         Scripting& scripting = document->scripting();
@@ -283,7 +298,8 @@ private:
 } // namespace
 
 ScriptedDocument::ScriptedDocument(const Rml::String& tag, Scripting& scripting)
-    : Rml::ElementDocument{tag}, scripting_{&scripting}, environment_{scripting.newEnvironment()} {}
+    : Rml::ElementDocument{tag}, scripting_{&scripting}, environment_{scripting.newEnvironment()},
+      ownCode_{scripting.trust().loadVerdict()} {}
 
 void ScriptedDocument::setName(std::string_view name) {
     name_ = name;
@@ -291,6 +307,12 @@ void ScriptedDocument::setName(std::string_view name) {
 }
 
 void ScriptedDocument::LoadInlineScript(const Rml::String& content, const Rml::String& sourcePath, int sourceLine) {
+    // The script is part of the document, or of a template it reads: both must come from the engine's layers.
+    if (auto trusted = scripting_->trust().checkInlineSource(sourcePath); !trusted) {
+        ownCode_ = std::move(trusted);
+        scripting_->trust().reportRefusedInline();
+        return;
+    }
     auto compiled = scripting_->compile(content, std::format("={}:{}", sourcePath, sourceLine), environment_);
     if (!compiled) {
         core::logError("ui: {}", compiled.error().message);
@@ -300,6 +322,11 @@ void ScriptedDocument::LoadInlineScript(const Rml::String& content, const Rml::S
 }
 
 void ScriptedDocument::LoadExternalScript(const Rml::String& sourcePath) {
+    // The script file is the engine's code only if the engine's layers provide it, whoever names it.
+    if (auto trusted = scripting_->trust().checkScript(sourcePath); !trusted) {
+        core::logError("ui: {}", trusted.error().message);
+        return;
+    }
     Rml::String source;
     if (!Rml::GetFileInterface()->LoadFile(sourcePath, source)) {
         core::logError("ui: could not read the script {}", sourcePath);
@@ -313,7 +340,8 @@ void ScriptedDocument::LoadExternalScript(const Rml::String& sourcePath) {
     scripting_->run(LuaCallee{.function = &*compiled, .environment = nullptr, .name = {}}, sourcePath, "load");
 }
 
-Scripting::Scripting(script::ScriptVm& vm, ScriptHost host) : vm_{&vm}, host_{std::move(host)} {
+Scripting::Scripting(script::ScriptVm& vm, ScriptHost host, CodeTrust& trust)
+    : vm_{&vm}, host_{std::move(host)}, trust_{&trust} {
     registerApi();
 }
 
@@ -325,7 +353,8 @@ void Scripting::install() {
 core::Result<sol::protected_function> Scripting::compile(std::string_view source, std::string_view chunkName,
                                                          const sol::environment& environment) {
     // Text only: precompiled bytecode is not checked by Lua and could break out of the sandbox.
-    sol::load_result loaded = lua().load(source, std::string{chunkName}, sol::load_mode::text);
+    const script::ScriptCall scope{*vm_};
+    sol::load_result loaded = scope.lua().load(source, std::string{chunkName}, sol::load_mode::text);
     if (!loaded.valid()) {
         const sol::error error = loaded;
         return core::fail(error.what());
@@ -336,12 +365,13 @@ core::Result<sol::protected_function> Scripting::compile(std::string_view source
 }
 
 sol::environment Scripting::newEnvironment() {
-    lua_State* state = lua().lua_state();
+    const script::ScriptCall scope{*vm_};
+    lua_State* state = scope.lua().lua_state();
     lua_pushcfunction(state, buildEnvironment);
     if (lua_pcall(state, 0, 1, 0) != LUA_OK) {
         lua_pop(state, 1);
         core::logError("ui: no memory left for a document's scripts");
-        return sol::environment{lua(), sol::create};
+        return sol::environment{scope.lua(), sol::create};
     }
     sol::environment environment{state, -1};
     lua_pop(state, 1);
@@ -387,13 +417,8 @@ void Scripting::pushArgument(lua_State* state, std::span<const std::string> text
 }
 
 core::Result<LuaCallResult> Scripting::protectedCall(lua_State* state, int top) {
-    if (depth_ == 0) {
-        vm_->startCall();
-    }
-    ++depth_;
-    const int status = lua_pcall(state, 1, 2, 0);
-    --depth_;
-    if (status != LUA_OK) {
+    // call() holds the ScriptCall that gives this its budget.
+    if (lua_pcall(state, 1, 2, 0) != LUA_OK) {
         std::string message = lua_type(state, -1) == LUA_TSTRING
                                   ? std::string{lua_tostring(state, -1)}
                                   : std::string{"the script raised a value that is not a text"};
@@ -419,12 +444,32 @@ void Scripting::DocumentInstancer::ReleaseElement(Rml::Element* element) {
 }
 
 Rml::EventListener* Scripting::ListenerInstancer::InstanceEventListener(const Rml::String& value,
-                                                                        Rml::Element* /*element*/) {
+                                                                        Rml::Element* element) {
+    // While a document loads, its elements are not in it yet: the load's verdict applies. Later, the element's
+    // document's. An element with neither is refused.
+    CodeTrust& trust = scripting_->trust();
+    core::Result<void> trusted = core::fail(std::string{messages::CodeOutsideLoad});
+    if (trust.loading()) {
+        trusted = trust.loadVerdict();
+    } else if (auto* document =
+                   dynamic_cast<ScriptedDocument*>(element != nullptr ? element->GetOwnerDocument() : nullptr);
+               document != nullptr) {
+        trusted = document->ownCode();
+    }
+    if (!trusted) {
+        if (trust.loading()) {
+            trust.reportRefusedInline();
+        } else {
+            core::logError("ui: {}", trusted.error().message);
+        }
+        return nullptr;
+    }
     return new LuaListener{value}; // NOLINT(cppcoreguidelines-owning-memory): deleted by OnDetach.
 }
 
 void Scripting::registerApi() {
-    sol::state& state = lua();
+    const script::ScriptCall scope{*vm_};
+    sol::state& state = scope.lua();
 
     // Every function takes its strings as views into Lua's own and returns through result(): see the class comment.
     state.new_usertype<LuaElement>(
@@ -478,6 +523,10 @@ void Scripting::registerApi() {
         [](const LuaElement& self, std::string_view name, std::string_view value, sol::this_state lua) {
             checkName(lua, name);
             checkText(lua, value);
+            // A listener made from a script's text would run code that no document brought, past the trust.
+            if (isEventAttribute(name)) {
+                raise(lua, messages::EventAttributeFromScript);
+            }
             if (self.element) {
                 self.element->SetAttribute(Rml::String{name}, Rml::String{value});
             }

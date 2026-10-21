@@ -39,7 +39,7 @@ std::optional<ExtractedTables> extractedTables() {
     const dwe::assets::DiskFileSystem disk;
     const auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), found.error().message);
-    const auto opened = dwe::assets::openPacks(disk, found->packs);
+    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), opened.error().message);
     const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);

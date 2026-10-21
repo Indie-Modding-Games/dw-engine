@@ -33,11 +33,12 @@ dependencies:
 |---|---|---|
 | `id` | Sí | De 1 a 64 caracteres `a-z`, `0-9` y `_`. No puede haber dos paquetes montados con el mismo |
 | `version` | Sí | Versión semántica `MAJOR.MINOR.PATCH`, sin sufijos (`-beta`, `+build`) |
-| `layer` | Sí | `base`, `remaster`, `mods` o `user` |
+| `layer` | Sí | `base`, `remaster`, `mods` o `user`. Un mod (de una carpeta de mods o de `--mods`) solo puede declarar `mods` o `user`; si no, se deja fuera |
 | `priority` | No (0) | Número entero. Ordena los paquetes de una misma capa: gana el más alto |
 | `name`, `description` | No | Texto para las personas |
 | `dependencies` | No | Lista de `id` y `min_version` |
 | `schemas` | No | Qué esquema sigue cada documento YAML del paquete (ver abajo) |
+| `api` | No | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.3` (la 1.3 o posterior) ([script](../../engine/script/README.md)). Prevista como obligatoria para `mods` y `user` cuando llegue docs/modding |
 
 Una clave desconocida es un error, para que una errata no pase desapercibida. El formato también está como JSON
 Schema en [`content/schemas/pack.schema.json`](../../content/schemas/pack.schema.json), para editores y herramientas.
@@ -123,7 +124,8 @@ y con qué clave se nombra cada entrada (`id`, o `digimon` en `data/raise`):
 
 1. Una entrada con un id que ya está **sustituye** a esa entrada en su sitio y se queda con su `index`. Si da un
    `index` distinto, es un error, y fuera de la base tampoco puede dar `index` a una entrada que añadió otro paquete:
-   ese número lo pone el motor y depende de los mods montados.
+   ese número lo pone el motor y depende de los mods montados. «La base» son los paquetes del motor
+   (`PackOrigin::Engine`) de la capa base: un paquete que solo declara `layer: base` no tiene sus derechos.
 2. Una entrada nueva se **añade al final**, en el orden de la pila y, dentro de un paquete, en el de su fichero, con
    el siguiente `index` libre (el mayor más uno). Solo la base da el `index` de sus entradas, y dos entradas de la
    base no pueden tener el mismo; fuera de la base se deja fuera.

@@ -230,7 +230,7 @@ std::optional<dwe::assets::VirtualFileSystem> mountContent(const dwe::assets::Di
         }
     }
     roots.emplace_back(DWE_GAME_PACK);
-    auto vfs = dwe::assets::VirtualFileSystem::mount(disk, roots);
+    auto vfs = dwe::assets::VirtualFileSystem::mount(disk, roots, dwe::assets::PackOrigin::Engine);
     if (!vfs) {
         FAIL(errorOf(vfs));
         return std::nullopt;

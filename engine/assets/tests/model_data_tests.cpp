@@ -339,7 +339,7 @@ TEST_CASE("the user's disc, extracted: every model loads") {
     const dwe::assets::DiskFileSystem disk;
     const auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE(packs.has_value());
-    const auto opened = dwe::assets::openPacks(disk, packs->packs);
+    const auto opened = dwe::assets::openPacks(disk, packs->packs, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(opened.has_value(), (opened ? "" : opened.error().message));
     const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
     REQUIRE_MESSAGE(vfs.has_value(), (vfs ? "" : vfs.error().message));

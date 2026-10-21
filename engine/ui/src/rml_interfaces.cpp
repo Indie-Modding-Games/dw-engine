@@ -10,6 +10,8 @@
 #include <functional>
 #include <utility>
 
+#include "code_trust.hpp"
+
 namespace dwe::ui {
 namespace {
 
@@ -125,6 +127,7 @@ std::optional<std::vector<std::byte>> FileInterface::read(std::string_view path)
     if (!bytes) {
         return std::nullopt;
     }
+    trust_->noteRead(path);
     recorded_[std::string{path}] = fingerprintOf(*bytes);
     return std::move(*bytes);
 }

@@ -129,8 +129,11 @@ TEST_CASE("a value tuned in the ruleset store changes the evolution, and a bad o
     for (const std::string_view role : OriginalTables) {
         memory.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
     }
-    const std::array<assets::PackLocation, 2> packs{assets::PackLocation{.fileSystem = &memory, .root = "base"},
-                                                    assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+    const std::array<assets::PackLocation, 2> packs{
+        assets::PackLocation{
+            .fileSystem = &memory, .root = "base", .fillsGaps = false, .origin = assets::PackOrigin::Engine},
+        assets::PackLocation{
+            .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine}};
     const auto vfs = assets::VirtualFileSystem::mount(packs);
     REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
     auto store =
@@ -177,8 +180,10 @@ TEST_CASE("the item effects are read by the ruleset's table id") {
         }
         memory.addFile("base/data/item_effects.yaml", std::string{itemEffects});
         const std::array<assets::PackLocation, 2> packs{
-            assets::PackLocation{.fileSystem = &memory, .root = "base"},
-            assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+            assets::PackLocation{
+                .fileSystem = &memory, .root = "base", .fillsGaps = false, .origin = assets::PackOrigin::Engine},
+            assets::PackLocation{
+                .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = assets::PackOrigin::Engine}};
         const auto vfs = assets::VirtualFileSystem::mount(packs);
         REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
         const auto store = ruleset::RulesetStore::load(*vfs, "original", {});

@@ -1,3 +1,139 @@
 # script
 
-La máquina virtual de Lua 5.5 con sol2 ([ADR 0004](../../docs/adr/0004-lua-y-sol2.md)). Sandbox: sin `io`, `os`, `package` ni carga de ficheros, con límite de memoria y de instrucciones por llamada. Recarga en caliente los scripts editados. Expone la entrada como la tabla `input` y los textos del jugador como `t(clave[, valores])` y `texts.language()` ([localización](../../docs/architecture/localizacion.md)), y `bindCommand` añade funciones globales de un argumento de texto para los comandos de la consola de depuración (`text_font("original")`).
+La máquina virtual de Lua 5.5 con sol2 ([ADR 0004](../../docs/adr/0004-lua-y-sol2.md)) y la única puerta de los mods
+al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los mods.
+
+## Sandbox
+
+- Sin `io`, `os`, `package`, `debug`, `load`, `loadfile`, `dofile` ni `string.dump`; `collectgarbage` solo admite
+  `"count"`. `setmetatable` no acepta `__gc`: Lua ejecuta los finalizadores fuera de las llamadas y sin hooks, así
+  que ningún presupuesto los pararía.
+- Cada llamada del motor a Lua es un `ScriptCall` (o su versión interna): la más externa recibe el presupuesto
+  completo; las anidadas, como un script que llama a una función de la API que lanza un evento, comparten lo que
+  queda. El estado de Lua solo se alcanza con `ScriptCall::lua()`: un módulo que registra su API o llama a Lua lo hace
+  siempre dentro de un `ScriptCall`.
+- Límites por llamada (`ScriptLimits`): instrucciones (el hook las cuenta cada 1000, y cada llamada paga esas 1000
+  por adelantado, porque preparar el hook reinicia su cuenta) y tiempo (`callDeadline`, 1 s).
+  Lo que agota uno de los dos se para con «the script ran too long and was stopped», y una vez parado cada
+  instrucción falla, así que `pcall` no sirve para seguir. Los manejadores de `xpcall` no se ejecutan una vez parado
+  el script: Lua los llamaría con los hooks apagados. `xpcall` y las funciones que cobran por bytes llaman con
+  continuación (`lua_callk`), así que una corrutina puede hacer `coroutine.yield` dentro de `xpcall`.
+- Las funciones de C que trabajan en proporción a la longitud de sus textos pagan por bytes (64 bytes cuestan una
+  instrucción): los patrones de `string.find`, `match`, `gmatch` y `gsub` (`pattern_matcher.cpp`, el mismo
+  comportamiento que el de Lua, sin `goto`), `string.rep` (antes de construir el resultado), `upper`, `lower`,
+  `reverse`, `sub`, `byte`, `char`, `format`, `pack`, `packsize`, `string.unpack`, `utf8.len`, `codepoint`, `char` y
+  `offset`, cada paso del iterador de `utf8.codes` (por los bytes que recorre), `table.concat`, `unpack`, `insert`,
+  `remove`, `move` y `sort` sin comparador. El asignador también cobra los bytes que reserva, así que construir textos
+  grandes con `..` en un bucle se para. Las corrutinas comparten el presupuesto: `coroutine.resume` y `wrap` preparan
+  el hook de la corrutina antes de reanudarla. Preparar el hook reinicia su cuenta, así que una corrutina que cede
+  antes de llegar a ella correría gratis: por eso su hook mira el presupuesto cada 64 instrucciones y cada
+  reanudación paga esas 64 por adelantado.
+- Comparar dos textos (`<`, `<=`, `==`) es trabajo de la VM y no pasa por ninguna función que se pueda cobrar por
+  bytes. Es una decisión aceptada: cada comparación recorre como mucho un bloque (`largestBlockBytes`, 4 MiB), y un
+  bucle que compara textos grandes se para por el límite de tiempo de la llamada (`callDeadline`).
+- Memoria: el límite total (`memoryBytes`, 64 MiB) guarda un octavo para el trabajo del propio motor fuera de las
+  llamadas; cada paquete tiene su cuota (`packMemoryBytes`, 16 MiB) y ningún bloque de una llamada pasa de
+  `largestBlockBytes` (4 MiB). Cada bloque lleva en una cabecera quién lo pagó, para devolvérselo al liberarlo. Un
+  script que se pasa recibe un error de memoria, nunca para el motor.
+- Los scripts globales del motor y de la interfaz (`runAsset`, `runString`, `ScriptCall::lua()`) y todo `ScriptCall` corren a
+  nombre del motor, sin cuota de paquete. Es una decisión aceptada: son código de confianza de las capas base y
+  remaster, y les sigue aplicando el límite total de la VM, el presupuesto de instrucciones y el de tiempo.
+- El código que corre a nombre del motor solo viene de un paquete que el motor encontró en sus propias carpetas
+  (`assets::PackOrigin::Engine`: la carpeta de contenido, los paquetes del equipo, los de desarrollo) y que declara la
+  capa base o remaster. Decide dónde se encontró el paquete, nunca solo su `pack.yaml`, que escribe el propio paquete:
+  un mod que declara `layer: base` sigue siendo un mod. `engine_code.hpp` (`isEngineCode`, `checkEngineScript`,
+  `checkEngineDocument`) es el único dueño de esa regla. `runAsset` la usa, y la UI también: un documento de un mod se
+  carga, pero sus scripts en línea y sus atributos de evento (`onclick`…) no corren, y un `<script src>` solo corre si
+  el fichero lo da un paquete del motor, sea cual sea el documento. Que un mod
+  programe su propia UI en su entorno no entra en la fase 4a.
+- La metatabla de las cadenas está bloqueada (`getmetatable("")` da «locked by the engine») y su `__index` es una
+  copia de solo lectura de la librería `string`: lo que un script haga a su tabla `string` no cambia los métodos
+  (`("a"):upper()`) de nadie.
+- `print` escribe como mucho 100 líneas por llamada, y el log corta en 4096 bytes cualquier texto que venga de un
+  script (líneas, errores de manejadores, errores de recarga).
+- Lo que escribe cada paquete (sus `print` y los errores de sus manejadores) tiene además un cubo de bytes
+  (`pack_logs.hpp`): 16 KiB por segundo, con ráfagas de hasta 64 KiB. Lo que no cabe se descarta, con un aviso al
+  empezar y la cuenta de líneas descartadas al volver a escribir. Un error idéntico al último del paquete no se
+  repite: se cuenta («the last error repeated N times») cuando llega otro distinto, o cada 10 s si sigue igual. Si los
+  errores paran, la cuenta pendiente se escribe en el siguiente fotograma pasados esos 10 s (`beginFrame`), y toda la
+  que quede al cerrar la VM, aunque el cubo del paquete esté vacío.
+
+## Versión de la API
+
+`LuaApiVersion` (`api_version.hpp`) es la versión semántica de toda la API de Lua. Es un alias de
+`assets::SupportedLuaApi` (`engine/assets`, `lua_api.hpp`), que es su dueño: la versión es un contrato de datos con el
+`pack.yaml`, y así `dwx validate` la comprueba sin depender de Lua. Un paquete declara en su `pack.yaml` la versión que
+piden sus scripts ([VFS](../../docs/architecture/vfs.md)): `api: "1.x"`, cualquier 1.y, o `api: "1.3"`, la 1.3 o una
+posterior. `assets::checkPackApi` rechaza otra versión mayor o una menor más nueva que la del motor. `apps/content` lo comprueba al montar y deja fuera, con el motivo, el mod que no la cumple.
+
+Un paquete sin `api` se acepta durante la fase 4a. Está previsto exigirla a las capas `mods` y `user` cuando llegue la
+documentación para modders (docs/modding).
+
+Subir la versión: la menor cuando se añade algo (una función, un evento, un argumento opcional); la mayor cuando se
+quita o cambia algo que un mod ya usa.
+
+## Entornos de los mods
+
+Cada paquete tiene su propio entorno (`ScriptVm::modEnvironment`, `ModEnvironment`):
+
+- copias de las tablas estándar (`string`, `table`, `math`...): lo que un mod cambia en ellas no lo ve otro;
+- `print` escribe en el log como `mod <paquete>: ...`;
+- las globales son estrictas: leer una global que no existe o crear una nueva es un error, así que el código del mod
+  usa `local`. `rawset(_G, ...)` tampoco crea globales;
+- los espacios de la API (`hooks` y los que publica el motor) son vistas de solo lectura: escribir en ellas, `rawset`
+  y `setmetatable` fallan, y `getmetatable` devuelve «locked by the engine».
+
+`runModScript(files, id)` ejecuta el asset de Lua `id` de la VFS en el entorno del paquete que lo da, con el nombre de
+trozo `@<paquete>:<id>` en los errores. Solo se aceptan ficheros `.lua`. `runAsset`, que ejecuta con las globales del
+motor, solo acepta assets de los paquetes del motor de las capas `base` y `remaster` (`isEngineCode`): un mod que
+sustituyera ese asset tendría los privilegios del motor, como los comandos de la consola.
+
+## Recarga en caliente
+
+`reloadChanged()` vuelve a ejecutar los ficheros de disco (`runFile`) y los assets (`runAsset`) que cambiaron. Para un
+mod es una transacción: crea un entorno nuevo, ejecuta otra vez todos sus assets y solo si todos van bien cambia el
+entorno y sus manejadores; si alguno falla, sigue el anterior y el error va al log. Los mods se recorren por índice,
+porque un script puede crear el entorno de otro paquete mientras se recarga.
+
+## Publicar funciones: `ApiRegistry`
+
+El dueño de un sistema en C++ publica funciones bajo un espacio con nombre:
+
+```cpp
+vm.api().publish("field", "map_id", [](const script::ApiCall& call) -> core::Result<script::ApiValue> { ... });
+```
+
+En Lua es `field.map_id()`. `ApiCall` da el paquete que llama (`pack()`) y los argumentos, que son escalares
+(`nil`, booleano, entero, número, texto); el resultado también. Las tablas llegarán como subida menor cuando un
+sistema las necesite. Un error vuelve a Lua como error del script. Los
+nombres son `[a-z][a-z0-9_]*`; `hooks` está reservado y no se puede tapar una global estándar.
+
+## Eventos: `HookRegistry`
+
+El motor declara eventos `espacio.nombre` y los lanza con argumentos escalares:
+
+```cpp
+vm.hooks().declare("field.map_entered");
+vm.hooks().fire("field.map_entered", arguments);
+```
+
+Un mod se suscribe con `hooks.on("field.map_entered", function(map) ... end)`. Los manejadores se ejecutan en el
+orden de los paquetes y, dentro de cada uno, en el orden en que se registraron. Los manejadores de un paquete
+comparten una llamada, con su cuota de memoria y un presupuesto menor que el de una llamada: `instructionsPerHook`
+(1 millón) y `hookDeadline` (5 ms) por evento lanzado. Además, todos los manejadores de un paquete comparten un
+presupuesto por fotograma, `hookInstructionsPerFrame` (2 millones) y `hookTimePerFrame` (8 ms); el módulo que lleva
+los fotogramas llama a `vm.hooks().beginFrame()` una vez por fotograma para rellenarlo. Cuando un paquete agota el de
+un evento o el del fotograma, el resto de sus manejadores se salta, y el log lo dice como mucho una vez cada 10 s.
+Si `fire` se llama desde dentro de una llamada (un script que llama a una función de la API que lanza un evento),
+cada paquete recibe lo menor entre su presupuesto de evento y lo que le queda a la llamada (y el plazo que antes
+venza), y la llamada paga lo que gastó; un manejador parado por tiempo no cuenta como si hubiera gastado todas sus
+instrucciones. Un paquete sin manejadores del evento no abre llamada ni paga nada. Un paquete registra como mucho 64
+manejadores por evento. Si uno falla, el error va al log con el paquete («mod <paquete>: a handler of <evento>
+failed: ...») y siguen los demás. `fire` devuelve cuántos se ejecutaron, cuántos fallaron y cuántos se saltaron.
+
+## Consola y pruebas
+
+El entorno global sigue para la consola de depuración y las rutas de autotest: la tabla `input`, los textos del
+jugador como `t(clave[, valores])` y `texts.language()` ([localización](../../docs/architecture/localizacion.md)), y
+`bindCommand`, que añade funciones globales de un argumento de texto para los comandos de la consola
+(`text_font("original")`).

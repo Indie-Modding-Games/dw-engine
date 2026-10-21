@@ -119,8 +119,12 @@ public:
         memory_.addFile("link/pack.yaml", "id: link\nversion: 1.0.0\nlayer: mods\npriority: 1\n");
         memory_.addFile(std::format("link/map/{}/data.yaml", OriginalMap), originalMapToNewMap());
         const std::array<dwe::assets::PackLocation, 4> packs{
-            dwe::assets::PackLocation{.fileSystem = &memory_, .root = "base"},
-            dwe::assets::PackLocation{.fileSystem = &disk_, .root = DWE_GAME_PACK},
+            dwe::assets::PackLocation{
+                .fileSystem = &memory_, .root = "base", .fillsGaps = false, .origin = dwe::assets::PackOrigin::Engine},
+            dwe::assets::PackLocation{.fileSystem = &disk_,
+                                      .root = DWE_GAME_PACK,
+                                      .fillsGaps = false,
+                                      .origin = dwe::assets::PackOrigin::Engine},
             dwe::assets::PackLocation{.fileSystem = &disk_, .root = DWE_EXAMPLE_MOD},
             dwe::assets::PackLocation{.fileSystem = &memory_, .root = "link"}};
         auto vfs = VirtualFileSystem::mount(packs);
@@ -256,8 +260,12 @@ TEST_CASE("the user's disc, extracted: the example mod's Digimon is a partner wi
     }
     const dwe::assets::DiskFileSystem disk;
     const std::array<dwe::assets::PackLocation, 3> locations{
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = *content / "base"},
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK},
+        dwe::assets::PackLocation{.fileSystem = &disk,
+                                  .root = *content / "base",
+                                  .fillsGaps = false,
+                                  .origin = dwe::assets::PackOrigin::Engine},
+        dwe::assets::PackLocation{
+            .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = dwe::assets::PackOrigin::Engine},
         dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_EXAMPLE_MOD}};
     auto files = VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(files.has_value(), errorOf(files));

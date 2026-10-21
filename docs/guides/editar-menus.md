@@ -78,7 +78,7 @@ API disponible:
 | `element:get(id)` | Un elemento descendiente, o `nil` |
 | `element:set_text(texto)`, `element:text()` | Cambia el texto (siempre como texto, nunca como RML) o lee el contenido |
 | `element:set_class(clase, sí)`, `element:has_class(clase)` | Clases |
-| `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos |
+| `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos (`set_attribute` no acepta los de evento, `on...`) |
 | `element:set_property(nombre, valor)` | Una propiedad de estilo, como `display` |
 | `element:focus()`, `element:has_focus()`, `element:click()` | Foco y clic |
 | `element.id`, `element:valid()` | Su id; si sigue existiendo |

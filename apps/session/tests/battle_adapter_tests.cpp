@@ -451,8 +451,12 @@ TEST_CASE("the user's disc, extracted: the first partner starts with its first t
     const std::filesystem::path& folder = *mountedFolder;
     const dwe::assets::DiskFileSystem disk;
     const std::array<dwe::assets::PackLocation, 2> locations{
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = folder / "base"},
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+        dwe::assets::PackLocation{.fileSystem = &disk,
+                                  .root = folder / "base",
+                                  .fillsGaps = false,
+                                  .origin = dwe::assets::PackOrigin::Engine},
+        dwe::assets::PackLocation{
+            .fileSystem = &disk, .root = DWE_GAME_PACK, .fillsGaps = false, .origin = dwe::assets::PackOrigin::Engine}};
     auto files = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(files.has_value(), errorOf(files));
     auto battle = std::make_unique<BattleAdapter>(

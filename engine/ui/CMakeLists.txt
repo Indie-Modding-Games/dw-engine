@@ -6,6 +6,7 @@ dwe_add_module(ui
     LAYER services
     SOURCES
         src/bitmap_font.cpp
+        src/code_trust.cpp
         src/font_engine.cpp
         src/minimap.cpp
         src/navigation.cpp

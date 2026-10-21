@@ -11,6 +11,7 @@ dwe_add_module(assets
         src/table_composition.cpp
         src/table_kinds.cpp
         src/pack_manifest.cpp
+        src/lua_api.cpp
         src/file_system.cpp
         src/virtual_file_system.cpp
         src/pak.cpp

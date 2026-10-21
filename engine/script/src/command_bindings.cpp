@@ -5,10 +5,12 @@
 #include <string>
 #include <utility>
 
+#include "vm_state.hpp"
+
 namespace dwe::script {
 
 void ScriptVm::bindCommand(std::string_view name, std::function<void(std::string_view)> run) {
-    lua()[std::string{name}] = [run = std::move(run)](const std::string& argument) { run(argument); };
+    vm_->lua[std::string{name}] = [run = std::move(run)](const std::string& argument) { run(argument); };
 }
 
 } // namespace dwe::script
