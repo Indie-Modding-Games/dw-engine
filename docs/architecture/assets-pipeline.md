@@ -69,6 +69,9 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
   con la cámara exportada. La máscara de profundidad tiene que coincidir con la colisión.
 - **Música:** un tema remasterizado sobrescribe el original por ID.
 
+Cómo se generan en tu máquina las imágenes mejoradas de la capa `remaster` (recetas, proveedores, caché, coste y
+revisión) está en la [tubería del remaster](remaster-pipeline.md); todavía es un diseño.
+
 ## Herramienta `dwx`
 
 | Comando | Qué hace |

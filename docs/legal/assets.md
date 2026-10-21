@@ -60,6 +60,26 @@ Lo que hay que tener claro:
 | **`.gitignore`** | `content/base/` y las cachés de cocinado nunca se versionan |
 | **Recetas y deltas** | Lo derivado se distribuye como instrucciones o diferencias que se aplican sobre la base local |
 
+## Salida mejorada (remaster)
+
+Las reglas de la [tubería del remaster](../architecture/remaster-pipeline.md#legal)
+([ADR 0023](../adr/0023-tuberia-del-remaster.md)):
+
+- **Lo mejorado es derivado.** Un fondo escalado o una textura repintada a partir del disco siguen siendo el
+  original. Se distribuyen **solo las recetas**; nunca las salidas, las cachés ni los paquetes `remaster` generados.
+- **Por defecto, solo lo integrado:** sin configuración solo funciona el escalador integrado, sin red y bit a bit
+  igual en todas las plataformas. Un modelo local con pesos fijados (mismo hash de los pesos, misma semilla, mismos
+  parámetros) es una opción tuya y es reproducible; en otra plataforma o GPU el resultado puede variar un poco.
+- **La nube es cosa tuya.** Un servicio remoto no es reproducible y obliga a subir arte extraído de tu disco, algo que
+  sus términos pueden no permitirte. Solo funciona si tú lo configuras con tu propia clave y declaras en tu
+  configuración que has leído sus términos, y **cada ejecución** que suba algo necesita tu confirmación explícita
+  (`--confirm-upload`), aunque el servicio sea gratis. El proyecto no lo recomienda.
+- **Licencias de los pesos:** cada receta declara la de sus pesos; una desconocida se rechaza salvo que tú la aceptes.
+- **Nadie acepta términos por ti:** ni las herramientas ni los agentes aceptan términos, guardan claves ni confirman
+  gastos ni subidas en tu nombre.
+- **Las claves** viven en el entorno o en el almacén de credenciales del sistema, nunca en git ni en una receta.
+- **Música:** «La música HD rehecha a partir de la original es obra derivada: solo se distribuyen recetas o deltas. La música del juego original nunca se distribuye. La música nueva compuesta por el equipo, o con licencia, declara autor, licencia y origen en provenance.yaml. Decidido por el coordinador (2026-10-21).»
+
 ## Licencias propuestas
 
 - **Código:** por decidir entre MIT (máxima libertad) y GPL-3.0 (obliga a que los forks sigan abiertos).
