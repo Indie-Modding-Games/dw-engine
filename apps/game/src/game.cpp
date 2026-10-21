@@ -17,6 +17,7 @@
 #include <dwe/rhi/device.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
@@ -49,6 +50,7 @@
 #include "frame_stats.hpp"
 #include "language.hpp"
 #include "messages.hpp"
+#include "partner_events.hpp"
 #include "partner_menu.hpp"
 #include "partner_tab.hpp"
 #include "session_start.hpp"
@@ -473,6 +475,11 @@ int runGame(const Options& options) {
         return EXIT_FAILURE;
     }
     session.attachField((*scene)->field());
+    // A loaded game's partner may be another species than the game pack's partner model.
+    if (auto shown = (*scene)->showPartnerSpecies(session.partnerView().species); !shown) {
+        core::logWarning("{}", core::formatMessage(messages::PartnerModelNotShown, session.partnerView().species,
+                                                   shown.error().message));
+    }
     loadUserGamepadMappings();
 
     input::InputState input{input::defaultActionMap()};
@@ -517,6 +524,9 @@ int runGame(const Options& options) {
     careCommands.bind(**scripts);
     // The partner's status for the autotest's checks, refreshed every frame of a run.
     screens::ScreenSettings partnerStatus;
+    std::optional<std::string> pendingEvolution;
+    (*scripts)->bindCommand(EvolveCommand,
+                            [&pendingEvolution](std::string_view form) { pendingEvolution = std::string{form}; });
 
     FrameStats frameStats;
     const AutotestHost host{
@@ -676,6 +686,14 @@ int runGame(const Options& options) {
                         *std::exchange(pendingBattle, std::nullopt));
         }
         careCommands.apply(session);
+        if (pendingEvolution) {
+            const std::string form = *std::exchange(pendingEvolution, std::nullopt);
+            if (auto evolved = game->systems.evolution->evolveByScript(session, form); !evolved) {
+                core::logWarning("{}", core::formatMessage(messages::EvolveFailed, evolved.error().message));
+            } else if (!*evolved) {
+                core::logWarning("{}", core::formatMessage(messages::EvolveRefused, form));
+            }
+        }
         if (consoleTextFont) {
             textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
         }
@@ -693,9 +711,7 @@ int runGame(const Options& options) {
         mapChangeView.show(**scene);
 
         partnerMenu.update();
-        // Nothing shows the partner's events yet (the HUD's reactions come with the map scripts); they are dropped
-        // here so they do not pile up.
-        static_cast<void>(session.takePartnerEvents());
+        showPartnerEvents(session.takePartnerEvents(), session, **scene);
 
         const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
                             (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();

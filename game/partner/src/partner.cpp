@@ -76,6 +76,7 @@ core::Result<void> Partner::changeSpecies(std::string_view species, const rulese
     setSleepTimes(now.hour);
     resetCare(now.hour, now.minute);
     state_.life.protectedHour.reset();
+    emit(EventKind::Evolved, 0);
     return {};
 }
 

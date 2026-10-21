@@ -181,4 +181,16 @@ TEST_CASE("care.md rebirth: the baby is a strategy; another one picks differentl
     }
 }
 
+TEST_CASE("evolution: a partner that becomes another species says so, for the field to draw it") {
+    OriginalRuleset original;
+    Raising raising(original.rules());
+    static_cast<void>(raising.partner().takeEvents());
+    REQUIRE(raising.partner().changeSpecies("greymon", raising.clock()));
+    CHECK(raising.state().species == "greymon");
+    CHECK(has(raising.partner().takeEvents(), EventKind::Evolved));
+    // An unknown species changes nothing and says nothing.
+    CHECK_FALSE(raising.partner().changeSpecies("nobody", raising.clock()));
+    CHECK_FALSE(has(raising.partner().takeEvents(), EventKind::Evolved));
+}
+
 } // namespace dwe::game::partner

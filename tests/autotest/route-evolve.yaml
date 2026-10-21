@@ -1,0 +1,20 @@
+# The field draws the partner's species: a script evolution (the console's and the scripts' debug evolve(), as a map
+# script makes the partner evolve, apps/game/src/partner_events.hpp) turns the new game's partner into another form,
+# and the partner in the field is drawn with that form's model from then on. How to run it:
+# docs/guides/prueba-vertical.md.
+name: evolve
+device: keyboard
+timeout: 120
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - wait: {partner_model: digimon/agum/model}
+  - screenshot: partner-before
+  - script: evolve("grey")
+  - wait: {partner_model: digimon/grey/model, timeout: 5}
+  - wait: {seconds: 1}
+  - screenshot: partner-evolved
+  # It keeps following the player with the new model.
+  - walk_to: {point: [600, 300], radius: 40}
+  - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
+  - screenshot: partner-evolved-follows

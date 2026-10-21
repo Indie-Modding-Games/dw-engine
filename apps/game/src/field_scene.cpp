@@ -23,6 +23,18 @@ using Milliseconds = std::chrono::duration<double, std::milli>;
 // The original switches clips at once; a short blend hides the pop when a walk turns into a run.
 constexpr float ClipFadeSeconds = 0.1F;
 
+constexpr std::string_view PlayerCharacter = "models/tamer";
+constexpr std::string_view PartnerCharacter = "models/partner";
+// A species' model in the base pack is digimon/<species>/model (dwx: digimonSlug).
+constexpr std::string_view SpeciesModelFolder = "digimon/";
+constexpr std::string_view SpeciesModelName = "/model";
+
+std::string speciesModelOf(std::string_view species) {
+    std::string id{SpeciesModelFolder};
+    id.append(species).append(SpeciesModelName);
+    return id;
+}
+
 // The click-to-move target, drawn as a small marker on the ground while the player walks to it.
 constexpr render::MapMarker TargetMarker{
     .feet = glm::vec3{0.0F}, .width = 24.0F, .height = 24.0F, .color = glm::vec4{1.0F, 0.85F, 0.3F, 1.0F}};
@@ -122,16 +134,17 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
         static_cast<void>(desc.clock->jumpTo(startHourOf(*desc.time, *rules, desc.clock->rules()), 0));
     }
 
-    auto player = scene->loadActor("models/tamer", scene->field_->playerEntity(), rules->player);
+    auto player = scene->loadActor(PlayerCharacter, scene->field_->playerEntity(), rules->player);
     if (!player) {
         return std::unexpected{player.error()};
     }
     scene->playerActor_ = std::move(*player);
-    auto partner = scene->loadActor("models/partner", scene->field_->partnerEntity(), rules->partner.mover);
+    auto partner = scene->loadActor(PartnerCharacter, scene->field_->partnerEntity(), rules->partner.mover);
     if (!partner) {
         return std::unexpected{partner.error()};
     }
     scene->partnerActor_ = std::move(*partner);
+    scene->partnerMover_ = rules->partner.mover;
 
     const std::string startMap = desc.startMap.value_or(warps->startMap);
     const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
@@ -141,8 +154,26 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     return scene;
 }
 
+core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
+    auto model = assets::AssetId::parse(speciesModelOf(species));
+    if (!model) {
+        return std::unexpected{model.error()};
+    }
+    if (model->str() == partnerModel().str()) {
+        return {};
+    }
+    auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model);
+    if (!partner) {
+        return std::unexpected{partner.error()};
+    }
+    models_->remove(partnerActor_->handle);
+    partnerActor_ = std::move(*partner);
+    return {};
+}
+
 core::Result<std::unique_ptr<FieldScene::Actor>>
-FieldScene::loadActor(std::string_view characterId, scene::Entity entity, const game::field::MoverRules& rules) {
+FieldScene::loadActor(std::string_view characterId, scene::Entity entity, const game::field::MoverRules& rules,
+                      const std::optional<assets::AssetId>& otherModel) {
     const auto id = assets::AssetId::parse(characterId);
     if (!id) {
         return std::unexpected{id.error()};
@@ -151,7 +182,9 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity, const 
     if (!character) {
         return core::fail(std::format("{}: {}", characterId, character.error().message));
     }
-    if (character->model.str() != rules.model) {
+    if (otherModel) {
+        character->model = *otherModel;
+    } else if (character->model.str() != rules.model) {
         core::logWarning("field: {} draws {}, but field/rules moves it as {}", characterId, character->model.str(),
                          rules.model);
     }

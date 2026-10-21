@@ -94,4 +94,10 @@ inline constexpr std::string_view CareSlept = "game: the partner slept";
 inline constexpr std::string_view CareTrained = "game: the partner trained {} {}";
 inline constexpr std::string_view ClockSpeedSet = "game: clock speed {}";
 
+// The partner's events and the debug evolve command (partner_events.cpp, game.cpp).
+inline constexpr std::string_view PartnerModelNotShown = "game: the partner cannot be drawn as {}: {}";
+inline constexpr std::string_view PartnerEventNotShown = "game: partner event {} (value {}) is not shown yet";
+inline constexpr std::string_view EvolveFailed = "game: evolve: {}";
+inline constexpr std::string_view EvolveRefused = "game: evolve: the partner cannot become {} now";
+
 } // namespace dwe::app::messages

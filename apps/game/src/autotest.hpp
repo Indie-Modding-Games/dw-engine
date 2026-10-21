@@ -52,6 +52,8 @@ struct AutotestCondition {
     std::optional<std::string> partnerHas;
     // A setting with this value (setting: {battle.phase: end}), as expect_setting reads it.
     std::optional<std::pair<std::string, std::string>> setting;
+    // The model the partner is drawn with (partner_model: digimon/grey/model), as FieldScene::partnerModel gives it.
+    std::optional<std::string> partnerModel;
 };
 
 struct AutotestStep {

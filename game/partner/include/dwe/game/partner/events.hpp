@@ -37,6 +37,8 @@ enum class EventKind : std::uint8_t {
     Died,
     // value: the index of the baby in the life section's rebirth babies.
     Reborn,
+    // The partner became another species (changeSpecies: an evolution, the virus form or its way back).
+    Evolved,
     // value: the change of the tamer's level (+1 or -1), already rolled (tamer.c: addTamerLevel).
     TamerLevelChanged,
     // The virus bar is full: the evolution system turns the partner into the virus form (tickConditions).

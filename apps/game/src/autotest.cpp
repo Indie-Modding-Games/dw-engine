@@ -239,6 +239,9 @@ void readCondition(assets::YamlReader& reader, const core::YamlNode& node, Autot
     if (const core::YamlNode* setting = node.find("setting")) {
         step.until.setting = readSetting(reader, *setting, step, "setting");
     }
+    if (const core::YamlNode* model = node.find("partner_model")) {
+        step.until.partnerModel = reader.text(*model);
+    }
     if (const core::YamlNode* seconds = node.find("seconds")) {
         step.seconds = reader.number(*seconds);
     }
@@ -294,7 +297,7 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
         step.kind = Kind::Wait;
         reader.expectKeys(value, "wait", {},
                           {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "map_name",
-                           "shown", "hidden", "partner_has", "setting", "timeout"});
+                           "shown", "hidden", "partner_has", "setting", "partner_model", "timeout"});
         readCondition(reader, value, step);
         readCommon(reader, value, step);
     } else if (kind == "walk_to") {
@@ -716,7 +719,8 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
     const bool hasCondition = until.map.has_value() || until.partnerWithin.has_value() ||
                               until.playerNear.has_value() || until.menuOpen.has_value() ||
                               until.mapNameShown.has_value() || until.shown.has_value() || until.hidden.has_value() ||
-                              until.partnerHas.has_value() || until.setting.has_value();
+                              until.partnerHas.has_value() || until.setting.has_value() ||
+                              until.partnerModel.has_value();
     if (!hasCondition) {
         return {};
     }
@@ -748,6 +752,9 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
     } else if (until.setting && settingText(host, until.setting->first) != until.setting->second) {
         unmet = std::format("{} is {}, not {}", until.setting->first, settingText(host, until.setting->first),
                             until.setting->second);
+    } else if (until.partnerModel && host.scene->partnerModel().str() != *until.partnerModel) {
+        unmet =
+            std::format("the partner is drawn as {}, not {}", host.scene->partnerModel().str(), *until.partnerModel);
     }
     return unmet;
 }

@@ -8,6 +8,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/field/rules.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_renderer.hpp>
 #include <dwe/render/map_scene.hpp>
@@ -84,6 +85,13 @@ public:
     // Where a world point appears in the window, in drawable pixels; nothing if it is behind the camera.
     [[nodiscard]] std::optional<glm::vec2> worldToWindow(glm::vec3 world) const;
 
+    // Draws the partner as this species (its model in the base pack, digimon/<species>/model) with models/partner's
+    // animations, which are the same ids for every partner; nothing changes if it is drawn so already. On a failure
+    // the partner keeps its model.
+    core::Result<void> showPartnerSpecies(std::string_view species);
+    // The model the partner is drawn with.
+    [[nodiscard]] const assets::AssetId& partnerModel() const { return partnerActor_->character.model; }
+
     [[nodiscard]] const game::field::Field& field() const { return *field_; }
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
     // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
@@ -122,8 +130,10 @@ private:
 
     explicit FieldScene(const assets::VirtualFileSystem& files);
 
+    // Loads a character; `otherModel` draws it with another model than its document's, with the same animations.
     core::Result<std::unique_ptr<Actor>> loadActor(std::string_view characterId, scene::Entity entity,
-                                                   const game::field::MoverRules& rules);
+                                                   const game::field::MoverRules& rules,
+                                                   const std::optional<assets::AssetId>& otherModel = std::nullopt);
     core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                                 std::optional<assets::SpawnPoint> at = std::nullopt);
     void animate(Actor& actor, double seconds);
@@ -159,6 +169,8 @@ private:
     std::optional<MapChangeTiming> lastChange_;
     std::unique_ptr<Actor> playerActor_;
     std::unique_ptr<Actor> partnerActor_;
+    // The field rules' partner mover, for a partner loaded again with another species' model.
+    game::field::MoverRules partnerMover_;
 };
 
 } // namespace dwe::app

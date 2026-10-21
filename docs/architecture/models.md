@@ -97,7 +97,10 @@ El campo pide animaciones por nombre (`idle`, `walk`, `run`) y `CharacterModel::
 | Jugador (`models/tamer`) | `digimon/boys/model` (tipo 0) | `idle` 0, `walk` 2, `run` 3 | `tamer.c: tamerTickWalkingState`: con una dirección pulsada pone la 3; si además se mantiene R1 o cancelar, la 2; sin dirección, la 0 |
 | Compañero (`models/partner`) | `digimon/agum/model` (tipo 3) | `idle` 0, `idle_tired` 1, `walk` 2, `walk_tired` 3, `run` 4 | `main.c`: la partida nueva crea el compañero de tipo 3 (o 0x11 con un flag); `partner.c: partnerTickWalking` usa la 4 cuando se queda lejos, `setPartnerSlowWalking` la 2 (3 si está cansado o enfermo) y `setPartnerIdle` la 0 (1 si está cansado o enfermo) |
 
-Los ids del compañero son los mismos para cualquier Digimon: cambiar de compañero es cambiar `model`.
+Los ids del compañero son los mismos para cualquier Digimon: cambiar de compañero es cambiar `model`. Así lo hace el
+juego cuando el compañero cambia de especie (evolución, forma virus o renacer, y al cargar una partida):
+`FieldScene::showPartnerSpecies` lo dibuja con `digimon/<especie>/model` del paquete base y las animaciones de
+`models/partner` (ver el [README de apps/game](../../apps/game/README.md)).
 
 En el original el movimiento sale de la animación (movimiento raíz). Medido sobre los modelos extraídos (lo comprueba
 el test de `animation` con `DWE_CONTENT`), en unidades por segundo (100 = una casilla):

@@ -52,7 +52,7 @@ partner.addStatGains(evolutionGains);                                           
   y el MP tras un combate). La vida que dan o quitan los objetos va por `addLifetime`.
 - **Eventos** (`EventKind`, `takeEvents`; `pendingEvents` los mira sin sacarlos): necesidades que empiezan, ventana de hambre cerrada, error de cuidado (con su causa),
   caca en el suelo (con su tamaño, para `PoopPiles`), rechazo, `Slept` (al despertar) y `NewDay` (cada medianoche
-  cruzada jugando, durmiendo, combatiendo o entrenando), entrenado, vida perdida, muerte, renacer, cambio del nivel
+  cruzada jugando, durmiendo, combatiendo o entrenando), entrenado, vida perdida, muerte, renacer, evolución (`Evolved`, al cambiar de especie con `changeSpecies`), cambio del nivel
   del tamer (ya tirado; la sesión lo limita a 0..10), barra de virus llena y regañina en el peor momento.
 - **Tope de las ganancias.** Toda ganancia de un stat se queda en 999 como mucho (desviación aprobada,
   2026-10-20): el entrenamiento, las comidas y chips (`FoodEffect::permanentGain`), la herencia al renacer y
