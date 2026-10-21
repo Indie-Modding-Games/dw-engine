@@ -85,10 +85,44 @@ esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el m
 | 2026-10-20 | Más estricto al validar: `dwx validate` carga los `.glb`, los `map/<id>/data.yaml` y `data/maps.yaml` con los lectores del juego, así que rechaza lo que el juego rechazaría. El formato no cambia | Nada, si el juego ya cargaba el paquete. Un paquete que ahora falla la validación tampoco lo cargaba el juego |
 | 2026-10-21 | Aditivo: documentos nuevos `data/item_effects` y `data/new_game_stats`, el campo opcional `moves.learn_chances` y el opcional `evolution.item_targets` del ruleset, escrito a mano. Las dos herramientas son compatibles con la fase 3 y el contrato no cambia | Nada |
 | 2026-10-21 | Más estricto al validar: `dwx validate` también lee con los lectores estrictos del juego `data/items`, `data/item_effects`, `data/shops`, `data/new_game_stats` y los textos (`localization` y `text`). El formato no cambia | Nada, si el juego ya cargaba el paquete. Un paquete que ahora falla la validación tampoco lo cargaba el juego |
+| 2026-10-21 | Revisión de 3D-Moddeler-Base en `8acd5ca` (exportador e importador `.dasanim`, visor glTF, `.opencode/skill/dw_engine.md`, `anim_format.md`) y `d4e349f` (solo `.gitignore`); Digimon-World-Map-Editor sigue en `f067e23`. Lo que el Studio escribe en un paquete (`pack.yaml`, `digimon/<slug>/model.glb`, `anim_NN`, 20 ticks por segundo, movimiento raíz en el hueso 0, `extras`) no cambia. El `.dasanim` es un formato intermedio del Studio y por defecto no se escribe dentro de un paquete. Si alguien lo copia a uno, el motor no lo ignora: un nombre con mayúsculas o espacios no da un ID válido y el paquete no monta, y si el nombre es válido `dwx validate` lo rechaza porque el motor no tiene lector para `.dasanim`. Compatible | Nada. No dejar ficheros `.dasanim` dentro de un paquete |
+| 2026-10-21 | Aditivo: tests de ida y vuelta del contrato con el editor de mapas (R4.7; ver [abajo](#pruebas-de-ida-y-vuelta-r47)). El formato no cambia | Nada |
 
 **Textos planos (fuera del contrato).** Desde la fase 3, `text/<idioma>/` son ficheros planos `clave: "texto"`
 ([localización](localizacion.md)). No es parte del contrato, porque ninguna herramienta los lee, pero quien compare con
 la salida de `dwx` tiene que volver a extraer un paquete base sacado antes de la fase 3.
+
+## Pruebas de ida y vuelta (R4.7)
+
+El editor de mapas no convierte nada. Lee el YAML del motor como un árbol, cambia un valor y lo escribe con las
+mismas reglas que `emitYaml`. Los tests de `apps/dwx/tests/editor_*.cpp` repiten eso con cada tipo de fichero que
+escribe el editor y comprueban dos cosas: que abrir y guardar sin cambios da los mismos bytes, y que una edición cambia
+solo su valor y el motor la lee.
+
+| Fichero | Sintético (cada commit) | Paquete base del usuario (`DWE_CONTENT`, tests lentos) |
+|---|---|---|
+| `map/<id>/data.yaml` | Un mapa escrito con `mapToYaml`: mismos bytes; se mueve un punto de aparición y `parseMapDocument` lo lee; si se deshace el cambio, vuelven los bytes originales | Los 242 mapas del paquete base, con la misma edición en cada uno |
+| `data/maps.yaml` | Mismos bytes; se quita el `toilet` del primer mapa y `parseMapTable` lo lee; `parseMapTable` rechaza una clave de más (`weather`) o de menos (`doors`) y la nombra en el error | La tabla real, con los mismos casos |
+| `script/dg/NNN.yaml` y `script/maphead.yaml` | Un script escrito con `scriptToYaml`: mismos bytes; se edita un texto con comillas y saltos de línea; las etiquetas son coherentes (`at` en orden, cada `label` es `l_` y su offset, y las etiquetas son exactamente los destinos de los saltos y las secciones); un salto a una etiqueta que no existe se detecta | Los 222 listados, con un texto editado en los 212 que tienen alguno |
+| Paquete `mods` | `pack.yaml` (capa `mods`, dependencia de `base` con `min_version`), un mapa editado con sus fondos, `data/maps.yaml` entero con un cambio, dos scripts editados y un `model.glb` del Studio con un `anim_01` de más: `dwx validate --with` no da problemas y la VFS resuelve esos IDs desde el mod. Un modelo al que le falta una animación de su contrato no pasa | Un paquete hecho en una carpeta temporal a partir del paquete base del usuario: el mapa, la tabla de mapas y un script, editados; un fondo y el modelo, copiados sin cambios. Pasa `dwx validate --with` y gana a la base. No se guarda nada |
+| Formato de `emitYaml` | Un test fija el texto exacto de cada tipo de valor de estos documentos: hex, negativos, `null`, booleanos, textos entre comillas con escapes y Unicode, listas y mapas vacíos, anidamiento y líneas sin cortar | — |
+
+Si un cambio rompe el test que fija el formato, es un cambio de contrato (paso 2 de arriba). No basta con actualizar el
+test.
+
+Un valor sin comillas que YAML tiene que entrecomillar (`a: b`) sale entre comillas simples. Al volver a leerlo, el
+árbol lo guarda como entrecomillado, y la siguiente escritura usa comillas dobles. Así que ese documento cambia la
+primera vez que se abre y se guarda, y después ya queda estable. Los escritores del motor entrecomillan todos los
+textos, así que ningún documento extraído tiene un valor así. El test lo deja fijado para que el editor lo sepa.
+
+El motor no tiene lector de YAML a script, es decir, no hay ensamblador. El editor hace su propia conversión del listado
+a texto y de vuelta, y se compara con el YAML del motor. Los tests del motor comprueban las propiedades del listado en
+las que se apoya esa conversión. La ida y vuelta de un script editado, de listado a bytes, está pendiente del paquete de
+conversión de scripts a Lua (W3b en el plan de la fase 4; aún no existe). Por decisión del responsable de diseño
+(2026-10-21), ese paquete añade `formats::script::assembleScript`, con un test que comprueba que cada script del disco
+se vuelve a ensamblar idéntico, byte a byte.
+
+El comportamiento de las comillas descrito arriba se deja como está (decisión del 2026-10-21); el test lo deja fijado.
 
 ## Lo que aún no está probado
 
@@ -99,4 +133,9 @@ mod hecho a mano con la forma que dejan las herramientas: capa `mods`, dependenc
 salen del mod, el partner se dibuja con el modelo cambiado, el jugador aparece en el punto nuevo y la ruta de
 teclado pasa con 0 errores de validación.
 
-Falta repetirlo con la salida real del editor de mapas y del de modelos cuando generen un paquete completo.
+Falta:
+
+- Repetirlo con un paquete real que haya generado cada herramienta: un paquete de `dw1fe` con mapas, tabla y scripts
+  editados, y uno del Studio con animaciones nuevas. Los tests de ida y vuelta prueban nuestro lado del contrato, pero
+  no el código de las herramientas.
+- La ida y vuelta de un script editado hasta sus bytes, con `assembleScript` (paquete de conversión a Lua, aún no existe).

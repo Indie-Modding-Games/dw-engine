@@ -87,7 +87,7 @@ cajones de utilidades):
 | Intérprete de historia | `game/story`: estado de la historia (banderas y variables), planificador de corrutinas, puntos de entrada; el pegamento con campo, compañero, inventario y combate en `apps/session` (funciones publicadas en la API de Lua) |
 | Mods por ID | `engine/assets`: IDs con espacio de nombres y composición de tablas por entrada; paquete de ejemplo sintético en `tests/mods/` |
 | Modos | `game/modes`: manifiesto y catálogo de modos; `content/packs/game/modes/<modo>/mode.yaml` con su esquema; selección en `apps/session` y `apps/screens` |
-| Contrato con el editor | Solo tests (`formats/tests`, `engine/assets/tests`) y [herramientas externas](../architecture/herramientas-externas.md) |
+| Contrato con el editor | Solo tests, en `apps/dwx/tests/editor_*` (el único módulo que enlaza los escritores de `formats`, los lectores de `engine/assets` y `dwx validate`), y [herramientas externas](../architecture/herramientas-externas.md) |
 | Documentación de modding | `docs/modding/`: índice, API de Lua, paquetes, IDs, modos, aspectos y un tutorial del primer mod |
 | Aspectos de la interfaz | `engine/ui`: carga de un aspecto (`skin.hpp`), hojas de sprites y variantes de paleta generadas; `content/packs/game/ui/skins/<aspecto>/` (`skin.yaml` + RCSS por pantalla); el ajuste `ui_skin` en `apps/game` por el mismo camino que `text_font`; la receta de escalado en `apps/dwx` |
 
