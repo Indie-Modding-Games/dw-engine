@@ -2,7 +2,10 @@
 
 #include <doctest/doctest.h>
 
+#include <format>
 #include <ostream>
+#include <string>
+#include <string_view>
 
 #include "fixture.hpp"
 
@@ -282,6 +285,18 @@ TEST_CASE("data/evolution's item_targets override the item effects item by item"
     const EvolutionTables tables = fixture.build();
     CHECK(tables.itemTarget("grey_claws") == TableFixture::index("nume"));
     CHECK(tables.itemTarget("tyra_scale") == TableFixture::index("tyra"));
+}
+
+TEST_CASE("a form's move that is no move of the table, by id or by the original's number, is refused") {
+    for (const std::string_view move : {"nothing", "200"}) {
+        CAPTURE(move);
+        TableFixture fixture;
+        fixture.form("grey").moves.at(3) = std::string{move};
+        const auto tables = EvolutionTables::build(fixture.digimon, fixture.raise, assets::MoveTable{fixture.moves},
+                                                   fixture.evolution, fixture.itemEffects);
+        REQUIRE_FALSE(tables.has_value());
+        CHECK(errorOf(tables).contains(std::format("has unknown move '{}'", move)));
+    }
 }
 
 TEST_CASE("an item effect that names an unknown form is refused") {

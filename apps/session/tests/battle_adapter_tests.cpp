@@ -203,6 +203,9 @@ TEST_CASE("the evolution requirements count the learned moves below the evolutio
     // A champion target asks for a stat (the rookie's pick averages them), and its bonus is two learned moves.
     fixture.requirement("tyra").offense = 1;
     fixture.requirement("tyra").techs = 2;
+    // The session composes one move table for both systems: the evolution's names the battle's moves alike.
+    fixture.moves.at(0).id = "punch";
+    fixture.moves.at(44).id = "dynamite_kick";
     // The new game's technique and one more, but the second is past the 64 moves the original counts.
     const auto speciesAfterLearning = [&](const std::string& move) {
         const TestPacks packs;

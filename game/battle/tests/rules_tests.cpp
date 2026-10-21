@@ -105,3 +105,29 @@ TEST_CASE("the catalog reads the moves as the battle uses them") {
     CHECK(errorOf(MoveCatalog::build(dwe::assets::MoveTable{std::move(kept)}, originalRules())).find("counter") !=
           std::string::npos);
 }
+
+TEST_CASE("a pack's move is a finisher or learnable only when the battle section names its id") {
+    // The engine numbered the pack's moves inside the original's finisher range and below the learnable limit.
+    std::vector<dwe::assets::MoveEntry> entries{std::from_range, testMoveTable().entries()};
+    entries.push_back(testMove("my_mod:blaze", 70, Melee, 150, 0, 0, 1));
+    entries.back().originalIndex = false;
+    entries.push_back(testMove("my_mod:ember", 7, Ranged, 20, 5, Near, 0));
+    entries.back().originalIndex = false;
+    const dwe::assets::MoveTable table{std::move(entries)};
+
+    const auto unnamed = MoveCatalog::build(table, originalRules());
+    REQUIRE_MESSAGE(unnamed.has_value(), errorOf(unnamed));
+    CHECK_FALSE(unnamed->at(refOf(*unnamed, "my_mod:blaze")).finisher);
+    CHECK_FALSE(unnamed->at(refOf(*unnamed, "my_mod:ember")).learnable);
+
+    BattleRules rules = originalRules();
+    rules.moves.finishers.ids = {"my_mod:blaze"};
+    rules.moves.learnable.ids = {"my_mod:ember"};
+    const auto named = MoveCatalog::build(table, rules);
+    REQUIRE_MESSAGE(named.has_value(), errorOf(named));
+    CHECK(named->at(refOf(*named, "my_mod:blaze")).finisher);
+    CHECK(named->at(refOf(*named, "my_mod:ember")).learnable);
+
+    rules.moves.finishers.ids = {"my_mod:nothing"};
+    CHECK(errorOf(MoveCatalog::build(table, rules)).find("my_mod:nothing") != std::string::npos);
+}

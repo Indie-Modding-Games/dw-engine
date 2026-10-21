@@ -361,7 +361,8 @@ std::int32_t EvolutionAdapter::masteredMoves() const {
     if (battle_ == nullptr || !evolution_) {
         return 0;
     }
-    return game::evolution::countMasteredMoves(evolution_->rules().requirements, battle_->learnedMoveIndices());
+    return game::evolution::countMasteredMoves(evolution_->rules().requirements, battle_->moves().learned,
+                                               evolution_->tables().moves());
 }
 
 std::int32_t EvolutionAdapter::mapIndexOf(const GameSession& session) const {

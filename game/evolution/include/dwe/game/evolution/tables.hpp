@@ -51,8 +51,8 @@ struct SpeciesData {
     Level level = Level::None;
     // Its first element type, which picks the move it learns on evolving; nothing for none.
     std::optional<std::int32_t> firstSpecialty;
-    // The move of each of its 16 slots, as an index of the move table, or nothing for an empty slot.
-    std::array<std::optional<std::int32_t>, std::tuple_size_v<decltype(assets::DigimonRow::moves)>> moves{};
+    // The id of the move of each of its 16 slots, an entry of the move table, or nothing for an empty slot.
+    std::array<std::optional<std::string>, std::tuple_size_v<decltype(assets::DigimonRow::moves)>> moves{};
     // RAISE_DATA's default weight; 0 when the raise table has no entry.
     std::int32_t defaultWeight = 0;
 };
@@ -120,8 +120,8 @@ public:
     // The targets of a species' evolution chart, in the table's order, without the empty ones.
     [[nodiscard]] std::span<const Species> pathTargets(Species from) const;
 
-    // The power of a move; 0 for an unknown one.
-    [[nodiscard]] std::int32_t movePower(std::int32_t move) const;
+    // The move table the tables were built with.
+    [[nodiscard]] const assets::MoveTable& moves() const { return moves_; }
 
     // The form an item of the evolution item table leads to, or nothing.
     [[nodiscard]] std::optional<Species> itemTarget(std::string_view item) const;
@@ -132,7 +132,7 @@ private:
     std::map<Species, Requirement> requirements_;
     std::map<Species, StatReference> statReferences_;
     std::map<Species, std::vector<Species>> paths_;
-    std::map<std::int32_t, std::int32_t> movePowers_;
+    assets::MoveTable moves_;
     std::map<std::string, Species, std::less<>> itemTargets_;
 };
 

@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace dwe::game::evolution {
 
@@ -54,8 +55,8 @@ struct EvolutionResult {
     std::int32_t lifetimeBonusHours = 0;
     // Percent chance that the tamer gains a level.
     std::int32_t tamerLevelChance = 0;
-    // The move the new form learns: an index of the move table.
-    std::optional<std::int32_t> learnedMove = std::nullopt;
+    // The move the new form learns, by its id in the move table.
+    std::optional<std::string> learnedMove = std::nullopt;
     EquippedMoves equippedMoves{};
     // Whether the virus bar goes back to 0.
     bool restartsVirusBar = false;

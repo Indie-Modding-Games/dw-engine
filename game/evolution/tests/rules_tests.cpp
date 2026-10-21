@@ -45,7 +45,8 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     CHECK(rules.requirements.weightMargin == 5);
     CHECK(rules.requirements.hpMpDivisor == 10);
     // evolution.c: getNumMasteredMoves.
-    CHECK(rules.requirements.masteredMovesBelow == 64);
+    CHECK(rules.requirements.masteredMoves.below == 64);
+    CHECK(rules.requirements.masteredMoves.ids.empty());
     // evolution.c: getRookieEvolutionTarget.
     CHECK(rules.fallback.rookieHours == 96);
     CHECK(rules.fallback.rookieTarget == "nume");
@@ -62,6 +63,9 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     // evl.c: EVL_applyEvolution.
     CHECK(rules.statGains.ultimateLifetimeHours == 96);
     CHECK(rules.moves.specialtyBlocks == std::vector<std::int32_t>{0, 40, 8, 32, 16, 24, 49});
+    CHECK(rules.moves.specialtyBlock(1) == dwe::assets::EntryClass{.ranges = {{.from = 40, .to = 48}}});
+    CHECK_FALSE(rules.moves.specialtyBlock(7).has_value());
+    CHECK(rules.moves.finishers == dwe::assets::EntryClass{.ranges = {{.from = 58, .to = 112}}});
     CHECK(rules.rebirth.babies.size() == 4);
     for (const std::string_view quirk : {EvolutionItemSticks, SelectionAverageCarriesOver, UnlistedBabyRestartsTimer,
                                          RookieStatTiePicksLast, TimerSpecialOverridesNormal}) {
@@ -69,13 +73,43 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     }
 }
 
-TEST_CASE("the moves requirement counts only the learned moves below the section's limit") {
+TEST_CASE("the moves requirement counts only the learned moves below the section's limit, and those it names") {
     // evolution.c: getNumMasteredMoves reads two 32-bit words: moves 64 and up never count.
+    std::vector<dwe::assets::MoveEntry> entries;
+    for (const std::int32_t index : {0, 12, 63, 64, 90}) {
+        entries.push_back({.id = std::format("move_{}", index), .index = index});
+    }
+    // A pack's move, which the engine numbered 2: no number of the original covers it.
+    entries.push_back({.id = "my_mod:spark", .index = 2, .originalIndex = false});
+    const dwe::assets::MoveTable moves{std::move(entries)};
     RequirementRules rules = testing::originalRules().requirements;
-    const std::vector<std::int32_t> learned{0, 12, 63, 64, 90};
-    CHECK(countMasteredMoves(rules, learned) == 3);
-    rules.masteredMovesBelow = 100;
-    CHECK(countMasteredMoves(rules, learned) == 5);
+    const std::vector<std::string> learned{"move_0",  "move_12",      "move_63", "move_64",
+                                           "move_90", "my_mod:spark", "unknown"};
+    CHECK(countMasteredMoves(rules, learned, moves) == 3);
+    rules.masteredMoves.below = 100;
+    CHECK(countMasteredMoves(rules, learned, moves) == 5);
+    rules.masteredMoves.ids = {"my_mod:spark"};
+    CHECK(countMasteredMoves(rules, learned, moves) == 6);
+}
+
+TEST_CASE("the move classes read their ids, and a block's ids need the block") {
+    std::string text{originalSectionText()};
+    const std::string end = "  finisher_end: 113\n";
+    REQUIRE(text.contains(end));
+    text.replace(text.find(end), end.size(),
+                 end + "  finisher_ids: [\"my_mod:nova\"]\n  specialty_block_ids: {2: [\"my_mod:ember\"]}\n");
+    const auto rules = readEvolutionRules(sectionFrom(text));
+    REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+    CHECK(rules->moves.finishers.ids == std::vector<std::string>{"my_mod:nova"});
+    CHECK(rules->moves.specialtyBlock(2).value_or(dwe::assets::EntryClass{}).ids ==
+          std::vector<std::string>{"my_mod:ember"});
+    CHECK(rules->moves.specialtyBlock(3).value_or(dwe::assets::EntryClass{}).ids.empty());
+
+    std::string unknown{originalSectionText()};
+    unknown.replace(unknown.find(end), end.size(), end + "  specialty_block_ids: {9: [\"my_mod:ember\"]}\n");
+    const auto refused = readEvolutionRules(sectionFrom(unknown));
+    REQUIRE_FALSE(refused.has_value());
+    CHECK(refused.error().message.contains("specialty 9 has no block"));
 }
 
 TEST_CASE("the section check accepts the game pack's section") {

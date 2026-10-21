@@ -104,6 +104,9 @@ core::Result<Evolution> Evolution::create(EvolutionRules rules, EvolutionTables 
     if (auto problem = checkRuleIds(rules, tables); problem) {
         return std::unexpected{*problem};
     }
+    if (auto moves = checkMoveClasses(rules, tables.moves()); !moves) {
+        return std::unexpected{moves.error()};
+    }
     return Evolution{std::move(rules), std::move(tables), std::move(selection), std::move(scoring)};
 }
 

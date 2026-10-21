@@ -34,7 +34,8 @@
         "pass_points": { "description": "The points a candidate needs to pass.", "type": "integer", "minimum": 1 },
         "weight_margin": { "description": "How far from the asked weight still scores.", "type": "integer", "minimum": 0 },
         "hp_mp_divisor": { "description": "HP and MP are divided by this before comparing them.", "type": "integer", "minimum": 1 },
-        "mastered_moves_below": { "description": "Only the learned moves with an index of the move table below this count for the moves requirement.", "type": "integer", "minimum": 1 }
+        "mastered_moves_below": { "description": "Only the original's learned moves with a number below this count for the moves requirement.", "type": "integer", "minimum": 1 },
+        "mastered_move_ids": { "description": "More learned moves that count, by id: those a pack adds.", "type": "array", "items": { "$ref": "#/$defs/move" } }
       }
     },
     "fallback": {
@@ -104,7 +105,14 @@
         "block_size": { "description": "How many moves a block has.", "type": "integer", "minimum": 1 },
         "basic_slot_below_level": { "description": "Below this level the first equipped slot is the first of the list.", "$ref": "#/$defs/level" },
         "finisher_first": { "description": "The fourth equipped slot is the last move of the list from this index...", "type": "integer", "minimum": 0 },
-        "finisher_end": { "description": "...up to before this one.", "type": "integer", "minimum": 0 }
+        "finisher_end": { "description": "...up to before this one.", "type": "integer", "minimum": 0 },
+        "finisher_ids": { "description": "More finishers, by id: those a pack adds.", "type": "array", "items": { "$ref": "#/$defs/move" } },
+        "specialty_block_ids": {
+          "description": "More moves of a specialty's block, by id, by specialty: those a pack adds (the blocks cover only the original's moves).",
+          "type": "object",
+          "propertyNames": { "pattern": "^[0-9]+$" },
+          "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/move" } }
+        }
       }
     },
     "rebirth": {
@@ -132,6 +140,12 @@
   "$defs": {
     "name": { "type": "string", "pattern": "^[a-z0-9_]+$" },
     "id": { "description": "An id of a table of the packs.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "move": {
+      "description": "A move's id in data/moves.",
+      "type": "string",
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+      "entryReference": "data/moves"
+    },
     "hours": { "type": "integer", "minimum": 0 },
     "level": { "description": "1 baby, 2 in-training, 3 rookie, 4 champion, 5 ultimate.", "type": "integer", "minimum": 0, "maximum": 5 },
     "percent": { "type": "integer", "minimum": 0, "maximum": 100 },

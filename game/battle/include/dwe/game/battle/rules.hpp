@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/entry_class.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
@@ -90,9 +91,10 @@ struct BuffUseRules {
 
 struct MoveRules {
     std::int32_t mpCostMultiplier = 0;
-    std::int32_t finisherFirstIndex = 0;
-    std::int32_t finisherLastIndex = 0;
-    std::int32_t learnableBelowIndex = 0;
+    // The finishers: the original's moves finisher_first_index to finisher_last_index, and those finisher_ids names.
+    assets::EntryClass finishers;
+    // The moves a partner can learn: the original's below learnable_below_index, and those learnable_ids names.
+    assets::EntryClass learnable;
     std::string counter;
     std::string flattenedShot;
     std::int32_t speedReserveFloor = 0;

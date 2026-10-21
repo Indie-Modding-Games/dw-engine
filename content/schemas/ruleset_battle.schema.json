@@ -170,6 +170,24 @@
         "learnable_below_index": {
           "type": "integer"
         },
+        "finisher_ids": {
+          "description": "More finishers, by id: those a pack adds (the index range covers only the original's moves).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+            "entryReference": "data/moves"
+          }
+        },
+        "learnable_ids": {
+          "description": "More moves a partner can learn, by id: those a pack adds.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+            "entryReference": "data/moves"
+          }
+        },
         "counter": {
           "type": "string"
         },

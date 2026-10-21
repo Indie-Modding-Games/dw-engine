@@ -1,3 +1,4 @@
+#include <dwe/assets/entry_class.hpp>
 #include <dwe/assets/move_table.hpp>
 #include <dwe/game/battle/messages.hpp>
 #include <dwe/game/battle/moves.hpp>
@@ -9,6 +10,10 @@ namespace dwe::game::battle {
 
 namespace {
 
+constexpr std::string_view FinishersRule = "battle moves.finisher_first_index to finisher_last_index, finisher_ids";
+constexpr std::string_view LearnableRule = "battle moves.learnable_ids";
+constexpr std::string_view MoveText = "move";
+
 core::Result<MoveRef> requireMove(const MoveCatalog& catalog, std::string_view id) {
     const auto found = catalog.find(id);
     if (!found) {
@@ -18,7 +23,6 @@ core::Result<MoveRef> requireMove(const MoveCatalog& catalog, std::string_view i
 }
 
 BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) {
-    const bool finisher = entry.index >= rules.finisherFirstIndex && entry.index <= rules.finisherLastIndex;
     BattleMove move{.id = entry.id,
                     .index = entry.index,
                     .power = entry.power,
@@ -33,9 +37,9 @@ BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) 
                     .iframes = entry.iframes,
                     .needsTarget = (entry.flags & NeedsTargetFlag) != 0,
                     .sharedCooldown = (entry.flags & SharedCooldownFlag) != 0,
-                    .finisher = finisher,
+                    .finisher = rules.finishers.contains(entry),
                     .counter = entry.id == rules.counter,
-                    .learnable = entry.index < rules.learnableBelowIndex,
+                    .learnable = rules.learnable.contains(entry),
                     .learnChances = entry.learnChances,
                     .buff = std::nullopt};
     const auto buff = std::ranges::find(rules.buffs, entry.id, &BuffRule::move);
@@ -48,6 +52,12 @@ BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) 
 } // namespace
 
 core::Result<MoveCatalog> MoveCatalog::build(const assets::MoveTable& table, const BattleRules& rules) {
+    if (auto finishers = assets::checkEntryClass(rules.moves.finishers, table, FinishersRule, MoveText); !finishers) {
+        return std::unexpected{finishers.error()};
+    }
+    if (auto learnable = assets::checkEntryClass(rules.moves.learnable, table, LearnableRule, MoveText); !learnable) {
+        return std::unexpected{learnable.error()};
+    }
     MoveCatalog catalog;
     catalog.moves_.reserve(table.entries().size());
     for (const assets::MoveEntry& entry : table.entries()) {

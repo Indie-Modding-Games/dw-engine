@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -29,6 +30,7 @@
 namespace items = dwe::game::inventory::testing;
 using dwe::game::evolution::testing::TableFixture;
 using dwe::game::inventory::UseOutcome;
+using dwe::game::partner::Condition;
 using dwe::game::partner::PartnerState;
 using dwe::game::partner::Stat;
 using dwe::game::save::AutosaveReason;
@@ -324,6 +326,54 @@ TEST_CASE("a defeat takes stacks with the session's random numbers: the same see
     const auto lost = first.inventory->loseOnDefeat(*one);
     CHECK_FALSE(lost.empty());
     CHECK(lost == second.inventory->loseOnDefeat(*two));
+}
+
+TEST_CASE("a pack's food is a meal when item_use names its id, whatever number the engine gave it") {
+    // A pack adds a food the engine numbered inside the original's meal range: only its id makes it a meal.
+    constexpr std::string_view HoneyBun = "my_mod:honey_bun";
+    constexpr std::int32_t EngineNumber = 50;
+    std::vector<dwe::assets::ItemEntry> entries{std::from_range, items::fixtureItems().entries()};
+    entries.push_back({.id = std::string{HoneyBun}, .index = EngineNumber, .originalIndex = false, .value = 10});
+    dwe::assets::ItemEffectTable effects = items::fixtureEffects();
+    dwe::assets::ItemEffectEntry food{
+        .item = std::string{HoneyBun}, .index = EngineNumber, .handler = dwe::assets::ItemHandler::Food};
+    food.food = dwe::assets::FoodValues{.energy = 12, .weight = 1};
+    effects.effects.push_back(std::move(food));
+
+    const TestPacks packs;
+    const TableFixture forms;
+    auto evolution = evolutionAdapter(packs, forms);
+    auto inventory = std::make_unique<InventoryAdapter>(InventoryAdapterDesc{.files = &packs.files(),
+                                                                             .items = dwe::assets::ItemTable{entries},
+                                                                             .effects = std::move(effects),
+                                                                             .evolution = evolution.get()});
+    InventoryAdapter& adapter = *inventory;
+    std::vector<std::unique_ptr<SessionSystem>> systems;
+    systems.push_back(std::move(evolution));
+    systems.push_back(std::move(inventory));
+    auto session = newGameWith(packs, std::move(systems));
+    const auto feedHungry = [&] {
+        PartnerState state = session->partner().state();
+        state.mood.discipline = FullDiscipline;
+        state.conditions.set(Condition::Hungry);
+        state.hunger.energy = Bits;
+        REQUIRE(session->partner().restore(state).has_value());
+        const dwe::assets::ItemHandle bun = adapter.items().handleOf(HoneyBun).value();
+        adapter.inventory().add(bun, 1);
+        const auto used = adapter.use(*session, bun);
+        REQUIRE_MESSAGE(used.has_value(), errorOf(used));
+        REQUIRE(used->outcome == UseOutcome::Used);
+        return !session->partner().state().conditions.has(Condition::Hungry);
+    };
+    CHECK_FALSE(feedHungry());
+
+    // The ruleset adds it by id, with no code.
+    REQUIRE(
+        session->rules()
+            .setValue("item_use", "meals", std::format("[{{from: 38, to: 70}}, {{from: 121, to: 122}}, {}]", HoneyBun))
+            .has_value());
+    session->tick(0.0);
+    CHECK(feedHungry());
 }
 
 TEST_CASE("the inventory adapter registers the inventory and item_use sections' checks") {

@@ -100,16 +100,16 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
     TableFixture fixture;
     const EvolutionResult result = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
     // The block of specialty 0 is moves 0 to 8: move_1 (power 11) is weaker than move_2 (power 12).
-    CHECK(result.learnedMove == 1);
+    CHECK(result.learnedMove == "move_1");
     CHECK(result.equippedMoves == EquippedMoves{1, std::nullopt, std::nullopt, 2});
 
     SUBCASE("a move of power 0 is never the weakest") {
         fixture.moves.at(1).power = 0;
-        CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey").learnedMove == 2);
+        CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey").learnedMove == "move_2");
     }
     SUBCASE("below the basic slot level the first slot holds the basic attack") {
         const EvolutionResult koro = evolveTo(fixture.makeEvolution(), inputsOf("bota"), "koro");
-        CHECK(koro.learnedMove == 1);
+        CHECK(koro.learnedMove == "move_1");
         CHECK(koro.equippedMoves.front() == 0);
     }
     SUBCASE("a specialty with no move of its block learns nothing") {
@@ -117,6 +117,23 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
         const EvolutionResult none = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
         CHECK_FALSE(none.learnedMove);
         CHECK_FALSE(none.equippedMoves.front());
+    }
+    SUBCASE("a pack's move joins a block or the finishers only by its id, whatever number the engine gave it") {
+        // The engine numbered the pack's moves inside the block of specialty 0 and the finisher range.
+        fixture.moves.push_back({.id = "my_mod:ember", .index = 5, .originalIndex = false, .power = 1});
+        fixture.moves.push_back({.id = "my_mod:blaze", .index = 58, .originalIndex = false, .power = 90});
+        fixture.form("grey").moves.at(3) = "my_mod:ember";
+        fixture.form("grey").moves.at(4) = "my_mod:blaze";
+        const EvolutionResult unnamed = evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey");
+        CHECK(unnamed.learnedMove == "move_1");
+        CHECK(unnamed.equippedMoves.back() == 2);
+
+        EvolutionRules rules = testing::originalRules();
+        rules.moves.specialtyBlockIds[0] = {"my_mod:ember"};
+        rules.moves.finishers.ids = {"my_mod:blaze"};
+        const EvolutionResult named = evolveTo(fixture.makeEvolution(rules), inputsOf("agum"), "grey");
+        CHECK(named.learnedMove == "my_mod:ember");
+        CHECK(named.equippedMoves == EquippedMoves{3, std::nullopt, std::nullopt, 4});
     }
 }
 

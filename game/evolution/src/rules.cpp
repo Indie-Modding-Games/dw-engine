@@ -1,3 +1,4 @@
+#include <dwe/assets/entry_class.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/evolution/messages.hpp>
@@ -6,6 +7,9 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
+#include <string>
+#include <system_error>
 #include <utility>
 
 namespace dwe::game::evolution {
@@ -68,6 +72,9 @@ constexpr std::string_view BlockSizeKey = "block_size";
 constexpr std::string_view BasicSlotBelowLevelKey = "basic_slot_below_level";
 constexpr std::string_view FinisherFirstKey = "finisher_first";
 constexpr std::string_view FinisherEndKey = "finisher_end";
+constexpr std::string_view SpecialtyBlockIdsKey = "specialty_block_ids";
+constexpr std::string_view FinisherIdsKey = "finisher_ids";
+constexpr std::string_view MasteredMoveIdsKey = "mastered_move_ids";
 
 constexpr std::string_view BabiesKey = "babies";
 
@@ -136,13 +143,18 @@ CheckHours readCheckHours(YamlReader& reader, const YamlNode& node) {
 
 RequirementRules readRequirementRules(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::RequirementsText,
-                           {PassPointsKey, WeightMarginKey, HpMpDivisorKey, MasteredMovesBelowKey})) {
+                           {PassPointsKey, WeightMarginKey, HpMpDivisorKey, MasteredMovesBelowKey},
+                           {MasteredMoveIdsKey})) {
         return {};
     }
-    return {.passPoints = readNumber(reader, node, PassPointsKey),
-            .weightMargin = readNumber(reader, node, WeightMarginKey),
-            .hpMpDivisor = readPositive(reader, node, HpMpDivisorKey),
-            .masteredMovesBelow = readPositive(reader, node, MasteredMovesBelowKey)};
+    RequirementRules rules{.passPoints = readNumber(reader, node, PassPointsKey),
+                           .weightMargin = readNumber(reader, node, WeightMarginKey),
+                           .hpMpDivisor = readPositive(reader, node, HpMpDivisorKey),
+                           .masteredMoves = {.below = readPositive(reader, node, MasteredMovesBelowKey)}};
+    if (const YamlNode* ids = node.find(MasteredMoveIdsKey)) {
+        assets::readEntryIds(reader, *ids, MasteredMoveIdsKey, rules.masteredMoves);
+    }
+    return rules;
 }
 
 FallbackRules readFallback(YamlReader& reader, const YamlNode& node) {
@@ -253,19 +265,53 @@ StatGainRules readStatGains(YamlReader& reader, const YamlNode& node) {
             .ultimateTamerLevelChance = readNumber(reader, node, UltimateTamerLevelChanceKey)};
 }
 
+// specialty_block_ids: a mapping from a specialty to the ids its block adds.
+void readSpecialtyBlockIds(YamlReader& reader, const YamlNode& node, MoveRules& moves) {
+    if (!node.isMapping()) {
+        reader.fail(node, messages::formatMessage(messages::NotMapping, SpecialtyBlockIdsKey));
+        return;
+    }
+    for (const core::YamlEntry& entry : node.entries()) {
+        std::int32_t specialty = -1;
+        const char* const last = entry.key.data() + entry.key.size();
+        if (const auto [end, error] = std::from_chars(entry.key.data(), last, specialty);
+            error != std::errc{} || end != last || !moves.specialtyBlock(specialty)) {
+            reader.fail(entry.value, messages::formatMessage(messages::SpecialtyWithoutBlock, entry.key));
+            return;
+        }
+        assets::EntryClass ids;
+        assets::readEntryIds(reader, entry.value, SpecialtyBlockIdsKey, ids);
+        moves.specialtyBlockIds[specialty] = std::move(ids.ids);
+    }
+}
+
 MoveRules readMoves(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(
-            node, messages::MovesText,
-            {SpecialtyBlocksKey, BlockSizeKey, BasicSlotBelowLevelKey, FinisherFirstKey, FinisherEndKey})) {
+    if (!reader.expectKeys(node, messages::MovesText,
+                           {SpecialtyBlocksKey, BlockSizeKey, BasicSlotBelowLevelKey, FinisherFirstKey, FinisherEndKey},
+                           {SpecialtyBlockIdsKey, FinisherIdsKey})) {
         return {};
     }
     MoveRules moves{.specialtyBlocks = {},
                     .blockSize = readPositive(reader, node, BlockSizeKey),
+                    .specialtyBlockIds = {},
                     .basicSlotBelowLevel = readNumber(reader, node, BasicSlotBelowLevelKey),
-                    .finisherFirst = readNumber(reader, node, FinisherFirstKey),
-                    .finisherEnd = readNumber(reader, node, FinisherEndKey)};
+                    .finishers = {}};
     for (const YamlNode& item : reader.sequence(reader.field(node, SpecialtyBlocksKey), SpecialtyBlocksKey)) {
         moves.specialtyBlocks.push_back(reader.integer<std::int32_t>(item));
+    }
+    // finisher_end is past the last finisher.
+    const std::int32_t finisherFirst = readNumber(reader, node, FinisherFirstKey);
+    const std::int32_t finisherEnd = readNumber(reader, node, FinisherEndKey);
+    if (reader.ok() && finisherEnd <= finisherFirst) {
+        reader.fail(reader.field(node, FinisherEndKey),
+                    messages::formatMessage(messages::FinisherEndNotAfterFirst, finisherEnd, finisherFirst));
+    }
+    moves.finishers.ranges = {{.from = finisherFirst, .to = finisherEnd - 1}};
+    if (const YamlNode* ids = node.find(FinisherIdsKey)) {
+        assets::readEntryIds(reader, *ids, FinisherIdsKey, moves.finishers);
+    }
+    if (const YamlNode* blocks = node.find(SpecialtyBlockIdsKey); blocks != nullptr && reader.ok()) {
+        readSpecialtyBlockIds(reader, *blocks, moves);
     }
     return moves;
 }
@@ -315,10 +361,48 @@ core::Result<void> checkEvolutionSection(const ruleset::Section& section) {
     return scoringStrategies().check(section, ScoringKey);
 }
 
-std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::int32_t> learned) {
+std::optional<assets::EntryClass> MoveRules::specialtyBlock(std::int32_t specialty) const {
+    if (specialty < 0 || static_cast<std::size_t>(specialty) >= specialtyBlocks.size()) {
+        return std::nullopt;
+    }
+    const std::int32_t first = specialtyBlocks.at(static_cast<std::size_t>(specialty));
+    assets::EntryClass block{.ranges = {{.from = first, .to = first + blockSize - 1}}};
+    if (const auto ids = specialtyBlockIds.find(specialty); ids != specialtyBlockIds.end()) {
+        block.ids = ids->second;
+    }
+    return block;
+}
+
+std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::string> learned,
+                                const assets::MoveTable& moves) {
     // evolution.c: getNumMasteredMoves counts the bits of the two 32-bit words of learnedMoves.
-    return static_cast<std::int32_t>(std::ranges::count_if(
-        learned, [&](std::int32_t index) { return index >= 0 && index < rules.masteredMovesBelow; }));
+    return static_cast<std::int32_t>(std::ranges::count_if(learned, [&](const std::string& id) {
+        const assets::MoveEntry* move = moves.find(id);
+        return move != nullptr && rules.masteredMoves.contains(*move);
+    }));
+}
+
+core::Result<void> checkMoveClasses(const EvolutionRules& rules, const assets::MoveTable& moves) {
+    if (auto mastered = assets::checkEntryClass(rules.requirements.masteredMoves, moves, messages::MasteredMovesRule,
+                                                messages::MoveText);
+        !mastered) {
+        return mastered;
+    }
+    if (auto finishers =
+            assets::checkEntryClass(rules.moves.finishers, moves, messages::FinishersRule, messages::MoveText);
+        !finishers) {
+        return finishers;
+    }
+    for (std::size_t specialty = 0; specialty < rules.moves.specialtyBlocks.size(); ++specialty) {
+        const auto block = rules.moves.specialtyBlock(static_cast<std::int32_t>(specialty));
+        const std::string rule = messages::formatMessage(messages::SpecialtyBlockRule, specialty);
+        if (auto checked =
+                assets::checkEntryClass(block.value_or(assets::EntryClass{}), moves, rule, messages::MoveText);
+            !checked) {
+            return checked;
+        }
+    }
+    return {};
 }
 
 } // namespace dwe::game::evolution

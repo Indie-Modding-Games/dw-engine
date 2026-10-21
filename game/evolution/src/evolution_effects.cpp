@@ -180,30 +180,29 @@ bool EvolutionEffects::inVirusForm(const EvolutionInputs& inputs) {
 // lowest power other than 0. A form with no move in its block learns nothing: the original passes the list's end
 // marker to learnMove, as for the in-training forms, whose only move is outside every block. A form with no specialty
 // also learns nothing (the original would read an unset block; its tables have no such evolution target).
-std::optional<std::int32_t> EvolutionEffects::learnedMove(const SpeciesData& form) const {
-    const std::vector<std::int32_t>& blocks = rules_->moves.specialtyBlocks;
-    if (!form.firstSpecialty || *form.firstSpecialty < 0 ||
-        static_cast<std::size_t>(*form.firstSpecialty) >= blocks.size()) {
+std::optional<std::string> EvolutionEffects::learnedMove(const SpeciesData& form) const {
+    const std::optional<assets::EntryClass> block =
+        form.firstSpecialty ? rules_->moves.specialtyBlock(*form.firstSpecialty) : std::nullopt;
+    if (!block) {
         return std::nullopt;
     }
-    const std::int32_t first = blocks.at(static_cast<std::size_t>(*form.firstSpecialty));
-    const std::int32_t last = first + rules_->moves.blockSize - 1;
-    std::optional<std::int32_t> best;
+    const assets::MoveEntry* best = nullptr;
     for (const auto& move : form.moves) {
-        if (!move || *move < first || *move > last) {
+        const assets::MoveEntry* entry = move ? tables_->moves().find(*move) : nullptr;
+        if (entry == nullptr || !block->contains(*entry)) {
             continue;
         }
-        const std::int32_t power = tables_->movePower(*move);
-        if (!best || (tables_->movePower(*best) > power && power != 0)) {
-            best = move;
+        if (best == nullptr || (best->power > entry->power && entry->power != 0)) {
+            best = entry;
         }
     }
-    return best;
+    return best == nullptr ? std::nullopt : std::optional<std::string>{best->id};
 }
 
 // The first slot holds the learned move (the basic attack below the basic slot level), the fourth the last move of
 // the list in the finisher range, and the others are emptied.
-EquippedMoves EvolutionEffects::equippedMoves(const SpeciesData& form, std::optional<std::int32_t> learned) const {
+EquippedMoves EvolutionEffects::equippedMoves(const SpeciesData& form,
+                                              const std::optional<std::string>& learned) const {
     EquippedMoves equipped{};
     for (std::size_t slot = 0; learned && slot < form.moves.size(); ++slot) {
         if (form.moves.at(slot) == learned) {
@@ -215,8 +214,9 @@ EquippedMoves EvolutionEffects::equippedMoves(const SpeciesData& form, std::opti
         equipped.front() = BasicSlot;
     }
     for (std::size_t slot = form.moves.size(); slot > 0; --slot) {
-        const std::optional<std::int32_t>& move = form.moves.at(slot - 1);
-        if (move && *move >= rules_->moves.finisherFirst && *move < rules_->moves.finisherEnd) {
+        const std::optional<std::string>& move = form.moves.at(slot - 1);
+        const assets::MoveEntry* entry = move ? tables_->moves().find(*move) : nullptr;
+        if (entry != nullptr && rules_->moves.finishers.contains(*entry)) {
             equipped.back() = static_cast<std::int32_t>(slot - 1);
             break;
         }

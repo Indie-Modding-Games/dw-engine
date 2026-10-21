@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace dwe::game::evolution {
 
@@ -39,8 +40,8 @@ private:
     [[nodiscard]] static bool inVirusForm(const EvolutionInputs& inputs);
 
     // The move the new form learns: the weakest of its first specialty's block.
-    [[nodiscard]] std::optional<std::int32_t> learnedMove(const SpeciesData& form) const;
-    [[nodiscard]] EquippedMoves equippedMoves(const SpeciesData& form, std::optional<std::int32_t> learned) const;
+    [[nodiscard]] std::optional<std::string> learnedMove(const SpeciesData& form) const;
+    [[nodiscard]] EquippedMoves equippedMoves(const SpeciesData& form, const std::optional<std::string>& learned) const;
 
     const EvolutionRules* rules_;
     const EvolutionTables* tables_;

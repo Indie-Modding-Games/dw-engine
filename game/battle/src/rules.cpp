@@ -1,3 +1,4 @@
+#include <dwe/assets/entry_class.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/messages.hpp>
@@ -32,6 +33,11 @@ public:
 
     bool group(const YamlNode& node, std::string_view what, std::initializer_list<std::string_view> keys) {
         return reader_->expectKeys(node, what, keys);
+    }
+
+    bool group(const YamlNode& node, std::string_view what, std::initializer_list<std::string_view> keys,
+               std::initializer_list<std::string_view> optional) {
+        return reader_->expectKeys(node, what, keys, optional);
     }
 
     const YamlNode& field(const YamlNode& node, std::string_view key) { return reader_->field(node, key); }
@@ -193,14 +199,22 @@ MoveRules readMoves(ValueReader& in, const YamlNode& node) {
     if (!in.group(node, "moves",
                   {"mp_cost_multiplier", "finisher_first_index", "finisher_last_index", "learnable_below_index",
                    "counter", "flattened_shot", "speed_reserve_floor", "shared_cooldown_frames", "buffs", "buff_uses",
-                   "learned_together"})) {
+                   "learned_together"},
+                  {"finisher_ids", "learnable_ids"})) {
         return moves;
     }
     moves.mpCostMultiplier = in.positive(node, "mp_cost_multiplier");
-    moves.finisherFirstIndex = in.count(node, "finisher_first_index");
-    moves.finisherLastIndex = in.count(node, "finisher_last_index");
-    in.ordered(node, "finisher_first_index", moves.finisherFirstIndex, "finisher_last_index", moves.finisherLastIndex);
-    moves.learnableBelowIndex = in.count(node, "learnable_below_index");
+    const std::int32_t finisherFirst = in.count(node, "finisher_first_index");
+    const std::int32_t finisherLast = in.count(node, "finisher_last_index");
+    in.ordered(node, "finisher_first_index", finisherFirst, "finisher_last_index", finisherLast);
+    moves.finishers.ranges = {{.from = finisherFirst, .to = finisherLast}};
+    moves.learnable.below = in.count(node, "learnable_below_index");
+    if (const YamlNode* ids = node.find("finisher_ids")) {
+        assets::readEntryIds(in.yaml(), *ids, "finisher_ids", moves.finishers);
+    }
+    if (const YamlNode* ids = node.find("learnable_ids")) {
+        assets::readEntryIds(in.yaml(), *ids, "learnable_ids", moves.learnable);
+    }
     moves.counter = in.text(node, "counter");
     moves.flattenedShot = in.text(node, "flattened_shot");
     moves.speedReserveFloor = in.any(node, "speed_reserve_floor");

@@ -90,16 +90,19 @@ public:
         return std::nullopt;
     }
 
-    // A move reference of a Digimon's slot.
-    std::optional<std::int32_t> move(const assets::TableReference& reference, std::string_view digimon) {
+    // The move of a Digimon's slot, by id. A raw number the extractor wrote is the original's move with that number.
+    // An id or a number the move table lacks is an error.
+    std::optional<std::string> move(const assets::TableReference& reference, std::string_view digimon) {
         if (!reference) {
             return std::nullopt;
         }
         if (const assets::MoveEntry* entry = moves_->find(*reference); entry != nullptr) {
-            return entry->index;
+            return entry->id;
         }
         if (const auto number = rawNumber(*reference); number) {
-            return number;
+            if (const assets::MoveEntry* entry = moves_->findByOriginalIndex(*number); entry != nullptr) {
+                return entry->id;
+            }
         }
         fail(messages::formatMessage(messages::UnknownMove, DigimonTableRole, digimon, *reference));
         return std::nullopt;
@@ -145,9 +148,7 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
                                                      const assets::ItemEffectTable& itemEffects) {
     TableResolver resolver{digimon, moves};
     EvolutionTables tables;
-    for (const assets::MoveEntry& move : moves.entries()) {
-        tables.movePowers_.insert_or_assign(move.index, move.power);
-    }
+    tables.moves_ = moves;
     for (const assets::DigimonRow& entry : digimon.digimon) {
         SpeciesData data{.id = entry.id,
                          .level = levelFrom(entry.level),
@@ -297,11 +298,6 @@ std::span<const Species> EvolutionTables::pathTargets(Species from) const {
         return {};
     }
     return found->second;
-}
-
-std::int32_t EvolutionTables::movePower(std::int32_t move) const {
-    const auto found = movePowers_.find(move);
-    return found == movePowers_.end() ? 0 : found->second;
 }
 
 std::optional<Species> EvolutionTables::itemTarget(std::string_view item) const {

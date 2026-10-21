@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -113,6 +114,12 @@ inline dwe::assets::MoveTable testMoveTable() {
         testMove("move_121", 121, Ranged, 10, 0, Near, 0),
     };
     moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
+    // The other numbers of the finisher range the ruleset names, which the catalog checks are moves of the original.
+    for (std::int32_t index = 58; index <= 112; ++index) {
+        if (std::ranges::none_of(moves, [&](const dwe::assets::MoveEntry& move) { return move.index == index; })) {
+            moves.push_back(testMove(std::format("filler_{}", index), index, Self, 0, 0, 0, 0, 0, 0, 0));
+        }
+    }
     return dwe::assets::MoveTable{std::move(moves)};
 }
 

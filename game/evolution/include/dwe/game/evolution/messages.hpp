@@ -51,4 +51,12 @@ inline constexpr std::string_view RebirthWhere = "rebirth.babies";
 inline constexpr std::string_view DigimonWhat = "digimon";
 inline constexpr std::string_view ItemWhat = "item";
 
+// The move classes of the rules (checkMoveClasses), and the table they name.
+inline constexpr std::string_view MasteredMovesRule = "evolution requirements.mastered_moves_below, mastered_move_ids";
+inline constexpr std::string_view FinishersRule = "evolution moves.finisher_first to finisher_end, finisher_ids";
+inline constexpr std::string_view SpecialtyBlockRule = "evolution moves.specialty_blocks[{}], specialty_block_ids";
+inline constexpr std::string_view MoveText = "move";
+inline constexpr std::string_view FinisherEndNotAfterFirst = "finisher_end {} must be after finisher_first {}";
+inline constexpr std::string_view SpecialtyWithoutBlock = "specialty_block_ids: specialty {} has no block";
+
 } // namespace dwe::game::evolution::messages

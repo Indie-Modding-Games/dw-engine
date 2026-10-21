@@ -129,6 +129,19 @@ refusal:
   discipline_checked_ids: [example_mod:honey_bun]
 ```
 
+Las técnicas siguen la misma regla, con claves hermanas opcionales de ids junto a cada rango o umbral:
+
+| Sección | Rango o umbral del original | Ids |
+|---|---|---|
+| `battle.moves` | `finisher_first_index`..`finisher_last_index` | `finisher_ids` |
+| `battle.moves` | `learnable_below_index` | `learnable_ids` |
+| `evolution.requirements` | `mastered_moves_below` | `mastered_move_ids` |
+| `evolution.moves` | `finisher_first`..`finisher_end` | `finisher_ids` |
+| `evolution.moves` | `specialty_blocks` + `block_size` | `specialty_block_ids` (especialidad → ids) |
+
+Así un mod añade un remate o una técnica de un bloque de especialidad sin código: la define en `data/moves` y nombra
+su id en la clave de ids de su ruleset.
+
 Al cargar, cada número de un rango debe ser una entrada del original y cada id una entrada de la tabla compuesta; si
 no, la sesión no arranca y dice qué regla y qué número o id. `dwx validate` comprueba los ids con la anotación
 `entryReference` de los esquemas.

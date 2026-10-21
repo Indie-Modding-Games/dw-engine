@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/assets/entry_class.hpp>
+#include <dwe/assets/move_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
@@ -43,8 +45,9 @@ struct RequirementRules {
     std::int32_t passPoints = 0;
     std::int32_t weightMargin = 0;
     std::int32_t hpMpDivisor = 1;
-    // Only the learned moves with an index below this count (evolution.c: getNumMasteredMoves).
-    std::int32_t masteredMovesBelow = 0;
+    // The learned moves that count (evolution.c: getNumMasteredMoves): the original's below mastered_moves_below, and
+    // those mastered_move_ids names.
+    assets::EntryClass masteredMoves;
 };
 
 // Where a rookie with no candidate goes.
@@ -121,13 +124,19 @@ struct StatGainRules {
 };
 
 struct MoveRules {
-    // The first move of each specialty's block, by specialty.
+    // The first move of each specialty's block, by specialty: the original's numbers.
     std::vector<std::int32_t> specialtyBlocks;
     std::int32_t blockSize = 0;
+    // More moves of a specialty's block, by id, by specialty (specialty_block_ids): those a pack adds.
+    std::map<std::int32_t, std::vector<std::string>> specialtyBlockIds;
     std::int32_t basicSlotBelowLevel = 0;
-    // The fourth equipped slot is the last move of the list in [finisherFirst, finisherEnd).
-    std::int32_t finisherFirst = 0;
-    std::int32_t finisherEnd = 0;
+    // The moves the fourth equipped slot takes, the last of the list among them: the original's from finisher_first to
+    // before finisher_end, and those finisher_ids names.
+    assets::EntryClass finishers;
+
+    // The moves of a specialty's block: the original's from its first to its first + blockSize - 1, and its ids;
+    // nothing for a specialty without a block.
+    [[nodiscard]] std::optional<assets::EntryClass> specialtyBlock(std::int32_t specialty) const;
 };
 
 struct RebirthRules {
@@ -157,7 +166,12 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
 // The check of the evolution section for RulesetStore: it reads the section and checks the strategy names.
 core::Result<void> checkEvolutionSection(const ruleset::Section& section);
 
-// How many of the learned moves (their indices in the move table) the requirements count.
-[[nodiscard]] std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::int32_t> learned);
+// How many of the learned moves (their ids in the move table) the requirements count.
+[[nodiscard]] std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::string> learned,
+                                              const assets::MoveTable& moves);
+
+// Checks the move classes of the rules against the session's move table: every number of a block or of the finishers
+// is a move of the original, and every id a move.
+[[nodiscard]] core::Result<void> checkMoveClasses(const EvolutionRules& rules, const assets::MoveTable& moves);
 
 } // namespace dwe::game::evolution
