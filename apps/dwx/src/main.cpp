@@ -44,14 +44,17 @@ void printUsage() {
     std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
     std::println(stderr, "      Writes a pack as a single .pak archive and checks that it reads back.");
     std::println(stderr,
-                 "  dwx validate [--schemas <folder>] [--with <folder>]... [--mod] <pack folder|content folder>");
+                 "  dwx validate [--schemas <folder>] [--with <folder>]... [--engine] <pack folder|content folder>");
     std::println(stderr, "      Checks a pack, or every pack of a folder, before the engine loads them: each YAML");
     std::println(stderr, "      document against its JSON Schema (default: the schemas folder next to the packs),");
     std::println(stderr, "      the assets they name, the models against their contracts and that every asset opens.");
-    std::println(stderr, "      --with mounts the packs at another folder too (checked with the rest), for packs that");
-    std::println(stderr, "      need them: dwx validate --with <content>/base content/packs/game");
-    std::println(stderr, "      --mod checks the packs as the game loads a mod: only the mods and user layers, and");
-    std::println(stderr, "      none of the base's rights. Without it they are checked as the engine's own packs.");
+    std::println(stderr,
+                 "      --with mounts the game's own packs at another folder too (checked with the rest, as the");
+    std::println(stderr, "      game's), for packs that need them: dwx validate --with <content>/base <mod folder>");
+    std::println(stderr,
+                 "      The packs are checked as the game loads a mod: only the mods and user layers, and none");
+    std::println(stderr, "      of the base's rights. --engine checks them as the game's own packs instead, such as");
+    std::println(stderr, "      dwx validate --engine --with <content>/base content/packs/game.");
     std::println(stderr, "Exit codes: 0 known and consistent (or written), 1 unknown or inconsistent, 2 error.");
 }
 
@@ -112,7 +115,7 @@ int main(int argc, char** argv) {
         std::optional<std::filesystem::path> schemas;
         std::vector<std::filesystem::path> withFolders;
         std::vector<std::string_view> folders;
-        dwe::assets::PackOrigin origin = dwe::assets::PackOrigin::Engine;
+        dwe::assets::PackOrigin origin = dwe::assets::PackOrigin::Mod;
         const auto options = arguments.subspan(2);
         bool usable = true;
         for (std::size_t i = 0; i < options.size(); ++i) {
@@ -122,8 +125,8 @@ int main(int argc, char** argv) {
                 if (usable) {
                     schemas = options[++i];
                 }
-            } else if (option == "--mod") {
-                origin = dwe::assets::PackOrigin::Mod;
+            } else if (option == "--engine") {
+                origin = dwe::assets::PackOrigin::Engine;
             } else if (option == "--with") {
                 usable = usable && i + 1 < options.size();
                 if (usable) {

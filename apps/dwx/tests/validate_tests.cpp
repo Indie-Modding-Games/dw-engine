@@ -156,7 +156,7 @@ TEST_CASE("a pack whose documents follow their schemas and whose references reso
     MemoryFileSystem files;
     addSchemas(files);
     addBasePack(files);
-    const auto report = validatePacks(files, "content/base", "content/schemas");
+    const auto report = validatePacks(files, "content/base", "content/schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report).empty());
     CHECK(report->packs == 1);
@@ -186,7 +186,7 @@ schemas:
     files.addFile("content/broken/digimon/gabu/model.gltf", skinnedModel(true));
     files.addFile("content/broken/digimon/agum/contract.yaml",
                   "model: model.gltf\njoint_parents: [-1, 0, 0]\nanimations: [walk, run]\n");
-    const auto report = validatePacks(files, "content", "content/schemas");
+    const auto report = validatePacks(files, "content", "content/schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(report->packs == 2);
     const std::string expected =
@@ -226,7 +226,7 @@ TEST_CASE("a pack in a .pak archive is checked like a folder") {
                      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
     }
     const dwe::assets::DiskFileSystem disk;
-    const auto report = validatePacks(disk, content, content / "schemas");
+    const auto report = validatePacks(disk, content, content / "schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report).empty());
     CHECK(report->packs == 1);
@@ -246,7 +246,7 @@ TEST_CASE("a reference may name the type that a cooked file was made from") {
     files.addFile("content/base/sound/cooked/bank.opus", *opus);
     files.addFile("content/base/sound/odd/bank_meta.yaml", "bank: bank.png\nmap: town\ncount: 1\n");
     files.addFile("content/base/sound/odd/bank.opus", *opus);
-    const auto report = validatePacks(files, "content/base", "content/schemas");
+    const auto report = validatePacks(files, "content/base", "content/schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     // dwx cook makes .opus from .wav, never from .png.
     CHECK(textOf(*report) == "content/base/sound/odd/bank_meta.yaml:1:7: $.bank: 'bank.png' names a .png file, but "
@@ -258,7 +258,7 @@ TEST_CASE("a manifest that cannot be read for its schema is a problem") {
     addSchemas(files);
     addBasePack(files);
     const ManifestOnceFileSystem once{files};
-    const auto report = validatePacks(once, "content/base", "content/schemas");
+    const auto report = validatePacks(once, "content/base", "content/schemas", {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(textOf(*report) == "content/base/pack.yaml: cannot be read: it is gone\n");
     CHECK(report->documents == 4);
@@ -283,7 +283,7 @@ dependencies:
     CHECK(textOf(*report).empty());
     CHECK(report->packs == 2);
     // A pack named by --with and by the folder is mounted once.
-    const auto twice = validatePacks(files, "content/base", "content/schemas", with);
+    const auto twice = validatePacks(files, "content/base", "content/schemas", with, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(twice.has_value(), errorOf(twice));
     CHECK(twice->packs == 1);
 }
@@ -490,7 +490,8 @@ dependencies:
 TEST_CASE("dwx validate cannot check a folder without packs") {
     MemoryFileSystem files;
     files.addFile("content/readme.yaml", "a: 1\n");
-    CHECK(errorOf(validatePacks(files, "content", "content/schemas")).contains("has no pack.yaml"));
+    CHECK(errorOf(validatePacks(files, "content", "content/schemas", {}, dwe::assets::PackOrigin::Engine))
+              .contains("has no pack.yaml"));
 }
 
 TEST_CASE("the schemas are next to the packs by default") {
@@ -525,14 +526,15 @@ TEST_CASE("the user's disc, extracted: dwx validate finds no problem in the game
         return;
     }
     const std::array<std::filesystem::path, 1> with{*content / "base"};
-    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, DWE_GAME_PACK, DWE_SCHEMA_DIR, with);
+    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, DWE_GAME_PACK, DWE_SCHEMA_DIR, with,
+                                      dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(report->packs == 2);
     CHECK_MESSAGE(report->problems.empty(), textOf(*report));
     MESSAGE(report->documents, " documents, ", report->assets, " assets, ", report->references, " references");
 }
 
-TEST_CASE("dwx validate --mod reports a mod that declares an engine layer, as the game skips it") {
+TEST_CASE("dwx validate checks a pack as a mod unless told it is the game's: no engine layer, no base rights") {
     MemoryFileSystem files;
     addSchemas(files);
     addBasePack(files);
@@ -544,13 +546,21 @@ dependencies:
   - id: base
     min_version: 1.0.0
 )");
+    files.addFile("packs/fake/data/maps.yaml", "maps:\n- id: meadow\n");
     const std::array<std::filesystem::path, 1> with{"content/base"};
-    const auto asMod = validatePacks(files, "packs/fake", "content/schemas", with, dwe::assets::PackOrigin::Mod);
+    const std::string_view layerProblem =
+        "packs/fake/pack.yaml: pack 'fake' is a mod and declares the base layer, which "
+        "only the engine's own packs have: a mod's layer is mods or user\n";
+    const std::string_view namespaceProblem = "'fake:<name>'";
+    // A mod by default, as dwx validate checks a folder without --engine: the layer and the new entry without the
+    // pack's namespace are both refused, as the game refuses them.
+    const auto asMod = validatePacks(files, "packs/fake", "content/schemas", with);
     REQUIRE_MESSAGE(asMod.has_value(), errorOf(asMod));
-    CHECK(textOf(*asMod) == "packs/fake/pack.yaml: pack 'fake' is a mod and declares the base layer, which only the "
-                            "engine's own packs have: a mod's layer is mods or user\n");
-    // Checked as one of the engine's own packs, the base layer is its own.
+    CHECK(textOf(*asMod).contains(layerProblem));
+    CHECK(textOf(*asMod).contains(namespaceProblem));
+    // Checked as one of the engine's own packs, the base layer and its rights are its own.
     const auto asEngine = validatePacks(files, "packs/fake", "content/schemas", with, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(asEngine.has_value(), errorOf(asEngine));
-    CHECK(textOf(*asEngine).empty());
+    CHECK_FALSE(textOf(*asEngine).contains(layerProblem));
+    CHECK_FALSE(textOf(*asEngine).contains(namespaceProblem));
 }

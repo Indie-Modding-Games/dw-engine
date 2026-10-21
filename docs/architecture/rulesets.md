@@ -211,7 +211,7 @@ ficheros.
 
 - **Al cargar** (`loadRuleset`): el manifiesto, que cada tabla, sección y script exista, `extends`, la sección `clock`
   y las comprobaciones de los sistemas. Los errores dicen el fichero, la línea y la columna.
-- **`dwx validate --with <content>/base content/packs/game`**: el manifiesto y cada sección contra su esquema, y las
+- **`dwx validate --engine --with <content>/base content/packs/game`**: el manifiesto y cada sección contra su esquema, y las
   referencias del manifiesto (tablas, secciones, scripts y `extends`) con `assetReference`, así que una tabla que
   falta en el paquete base es un problema.
 - **Test del disco** (`engine/ruleset`, con `DWE_CONTENT`): cada tabla de `original` está en el paquete base

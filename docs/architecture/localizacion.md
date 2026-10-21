@@ -143,7 +143,7 @@ Los tests: `dwe_assets_tests` (`text_table_tests`) para el formato, los marcador
 2. Añádela a `content/packs/game/localization/en/<área>.yaml` y a `.../es/<área>.yaml`, con los mismos marcadores.
 3. Úsala: `text-key="pause_menu.save_done"` en el RML, `t("pause_menu.save_done")` en Lua o
    `localization::tr("pause_menu.save_done")` en C++.
-4. `dwx validate content/packs/game --with <base>` comprueba que los dos idiomas cuadran.
+4. `dwx validate --engine content/packs/game --with <base>` comprueba que los dos idiomas cuadran.
 
 ## Nota legal
 

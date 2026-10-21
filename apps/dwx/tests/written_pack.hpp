@@ -27,7 +27,7 @@ inline std::string problemsOfWrittenPack(const ExtractionRun& run, const DiscInf
     REQUIRE(prepareOutputFolder(folder, false).has_value());
     REQUIRE(writeBasePack(folder, run, info).has_value());
     REQUIRE(checkBasePack(folder, run).has_value());
-    const auto report = validatePacks(assets::DiskFileSystem{}, folder, DWE_SCHEMA_DIR);
+    const auto report = validatePacks(assets::DiskFileSystem{}, folder, DWE_SCHEMA_DIR, {}, assets::PackOrigin::Engine);
     REQUIRE(report.has_value());
     CHECK(report->assets > 0);
     std::string problems;

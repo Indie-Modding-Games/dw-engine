@@ -284,9 +284,10 @@ TEST_CASE("with dev assets, a mod with a dev pack's id is skipped and the dev pa
     const SkippedMod* taken = skippedFolder(**content, "my_base");
     REQUIRE(taken != nullptr);
     CHECK(taken->reason.contains("base"));
+    // Its layer is checked on the manifest it mounts with, so it is left out first as the id is taken.
     const SkippedMod* engineLayer = skippedFolder(**content, "engine_layer_base");
     REQUIRE(engineLayer != nullptr);
-    CHECK(engineLayer->reason.contains("is a mod and declares the base layer"));
+    CHECK(engineLayer->reason.contains("'base' is mounted twice"));
 }
 
 TEST_CASE("a mod that declares an engine layer is skipped, and only the engine's own packs are of engine origin") {

@@ -147,7 +147,7 @@ PRESET=windows-cross scripts/dev.sh build
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |
 | `build/<preset>/apps/dwx/dwx extract --cache <carpeta> <imagen.cue>` | Escribe la carpeta del contenido extraído del disco en una caché (la extrae la primera vez): lo que usa `--dev-assets` con `disc_image` ([assets de desarrollo](../architecture/assets-de-desarrollo.md#leer-el-disco-en-el-juego)) |
-| `build/<preset>/apps/dwx/dwx validate content/base` | Comprueba un paquete o una carpeta de paquetes: esquemas, referencias, contratos de los modelos y que cada asset se abre ([detalle](../architecture/assets-pipeline.md#dwx-validate)) |
+| `build/<preset>/apps/dwx/dwx validate --engine content/base` | Comprueba un paquete o una carpeta de paquetes: esquemas, referencias, contratos de los modelos y que cada asset se abre. Sin `--engine` los comprueba como mods ([detalle](../architecture/assets-pipeline.md#dwx-validate)) |
 
 ## Editor
 

@@ -24,7 +24,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | Opción | Qué hace |
 |---|---|
 | `--content <carpeta>` | Paquetes del juego (por defecto `content`) |
-| `--mods <carpeta>` | Más paquetes, como mods; se puede repetir. La VFS los apila por capa y prioridad |
+| `--mods <carpeta>` | Más paquetes, como mods; se puede repetir. La VFS los apila por capa y prioridad. Un paquete de terceros va solo en una carpeta de mods o en `--mods`, nunca en la carpeta de contenido ni en su `packs/`: todo lo que hay ahí se trata como contenido del propio motor |
 | `--dev-assets` | Usa también los assets locales del fichero `dev-assets.yaml`, con un aviso en pantalla mientras está activo; solo para desarrollo ([assets de desarrollo](../architecture/assets-de-desarrollo.md)) |
 | `--ruleset <id>` | El ruleset con el que se juega, `rules/<id>/` de los paquetes (por defecto `original`, ver [rulesets](../architecture/rulesets.md)) |
 | `--size <ancho>x<alto>` | Tamaño de la ventana (por defecto 1280x720) |

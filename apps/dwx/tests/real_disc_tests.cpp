@@ -163,7 +163,7 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
     // dwx validate: every document follows its schema, every reference and contract holds and every asset opens with
     // the engine's readers.
     const dwe::assets::DiskFileSystem disk;
-    const auto report = validatePacks(disk, temp.path() / "base", DWE_SCHEMA_DIR);
+    const auto report = validatePacks(disk, temp.path() / "base", DWE_SCHEMA_DIR, {}, dwe::assets::PackOrigin::Engine);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     for (const ValidationProblem& problem : report->problems) {
         MESSAGE(std::format("{}:{}:{}: {}", problem.file, problem.line, problem.column, problem.message));

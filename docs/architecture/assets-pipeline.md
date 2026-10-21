@@ -74,7 +74,7 @@ El motor monta un sistema de ficheros virtual con capas apiladas. Cada capa es u
 | Comando | Qué hace |
 |---|---|
 | `dwx extract <disco>` | Comprueba el SHA-1 del disco y genera la base en formato fuente |
-| `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon); ver [abajo](#dwx-validate) |
+| `dwx validate <paquete>` | Esquemas, referencias rotas y contratos (por ejemplo, las animaciones de cada Digimon), como mod; `--engine` para los del juego. Ver [abajo](#dwx-validate) |
 | `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado, en otra carpeta |
 | `dwx pack <paquete> -o <fichero.pak>` | Genera un paquete distribuible en un solo fichero, con su manifiesto |
 
@@ -128,7 +128,7 @@ dwx pack content/cooked -o base.pak
 ## `dwx validate`
 
 ```text
-dwx validate [--schemas <carpeta>] [--with <carpeta>]... <paquete | carpeta de paquetes>
+dwx validate [--schemas <carpeta>] [--with <carpeta>]... [--engine] <paquete | carpeta de paquetes>
 ```
 
 Comprueba un paquete, o todos los de una carpeta (`content/base` o `content`; carpetas y archivos `.pak`), tal como los va a usar el motor y antes
@@ -136,9 +136,12 @@ de que los use. Monta la pila con el VFS, igual que el juego, así que un mod se
 sobrescribe. Los esquemas se leen de `--schemas` o, si no se da, de la carpeta `schemas` junto a los paquetes
 (`content/schemas` en los dos ejemplos). `--with` monta además los paquetes de otra carpeta (un paquete o una carpeta
 de paquetes), para comprobar un paquete que depende de otro que está en otro sitio; esos paquetes también se
-comprueban. Así se comprueba el paquete `game` del repositorio sobre una extracción de `base`:
-`dwx validate --schemas content/schemas --with <contenido>/base content/packs/game`. El código está en
-`apps/dwx/src/validate.cpp`.
+comprueban. Los paquetes de la carpeta se comprueban como mods, como los carga el juego desde una carpeta de mods:
+solo pueden declarar las capas `mods` o `user` y no tienen los derechos de la base (ids sin espacio de nombres e
+`index` de las tablas). Con `--engine` se comprueban como paquetes del propio juego, y los de `--with` lo son siempre.
+Así se comprueba el paquete `game` del repositorio sobre una extracción de `base`:
+`dwx validate --engine --schemas content/schemas --with <contenido>/base content/packs/game`, y un mod:
+`dwx validate --with <contenido>/base <mod>`. El código está en `apps/dwx/src/validate.cpp`.
 
 Qué comprueba:
 

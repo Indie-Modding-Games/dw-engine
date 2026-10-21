@@ -78,9 +78,15 @@ core::Result<std::vector<assets::FoundPack>> findGamePacks(const assets::FileSys
     return found;
 }
 
-// Whether every pack of a stack declares a Lua API the engine has.
-core::Result<void> checkScriptApis(const assets::VirtualFileSystem& files) {
+// Whether every mod of a stack declares a mod layer and every pack a Lua API the engine has. The manifests are the ones
+// the stack mounted, so a pack is checked as it is used.
+core::Result<void> checkMountedPacks(const assets::VirtualFileSystem& files) {
     for (const assets::MountedPack& pack : files.packs()) {
+        if (pack.origin == assets::PackOrigin::Mod) {
+            if (auto layer = assets::checkModLayer(pack.manifest); !layer) {
+                return layer;
+            }
+        }
         if (auto compatible = assets::checkPackApi(pack.manifest); !compatible) {
             return compatible;
         }
@@ -88,13 +94,13 @@ core::Result<void> checkScriptApis(const assets::VirtualFileSystem& files) {
     return {};
 }
 
-// Mounts a stack and checks its packs' Lua APIs.
+// Mounts a stack and checks its packs' layers and Lua APIs.
 core::Result<assets::VirtualFileSystem> mountChecked(std::span<const assets::PackLocation> locations) {
     auto files = assets::VirtualFileSystem::mount(locations);
     if (!files) {
         return std::unexpected{files.error()};
     }
-    if (auto compatible = checkScriptApis(*files); !compatible) {
+    if (auto compatible = checkMountedPacks(*files); !compatible) {
         return std::unexpected{compatible.error()};
     }
     return files;
@@ -115,14 +121,8 @@ OpenedMods openMods(const assets::FileSystem& disk, std::span<const std::filesys
                 opened.skipped.push_back(SkippedMod{.path = pack.path, .reason = opening.error().message});
                 continue;
             }
-            // A broken manifest fails later, when the mod is mounted, with the reader's error.
+            // Its manifest is read and checked when it is mounted (checkMountedPacks).
             const assets::PackLocation& location = opening->locations.front();
-            if (auto manifest = assets::readPackManifest(location); manifest) {
-                if (auto layer = assets::checkModLayer(*manifest); !layer) {
-                    opened.skipped.push_back(SkippedMod{.path = pack.path, .reason = layer.error().message});
-                    continue;
-                }
-            }
             std::ranges::move(opening->archives, std::back_inserter(opened.archives));
             opened.candidates.push_back(ModCandidate{.path = pack.path, .location = location, .lastError = {}});
         }

@@ -156,7 +156,8 @@ TEST_CASE("an animation that cannot be converted is left out of the model and se
     temp.write("base/digimon/agumon/model.glb",
                std::string_view{reinterpret_cast<const char*>(model->glb.data()), model->glb.size()});
     temp.write("base/digimon/agumon/contract.yaml", *contract);
-    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, temp.path() / "base", DWE_SCHEMA_DIR);
+    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, temp.path() / "base", DWE_SCHEMA_DIR, {},
+                                      dwe::assets::PackOrigin::Engine);
     REQUIRE(report.has_value());
     CHECK(report->contracts == 1);
     for (const ValidationProblem& problem : report->problems) {

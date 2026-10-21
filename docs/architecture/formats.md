@@ -260,7 +260,7 @@ Cada uno es un issue antes de cerrar la fase 1, porque el criterio es extraer **
 |---|---|---|
 | `dwx verify <fichero>` | Imagen o ejecutable → informe | SHA-1 y versión conocida (hecho en la fase 0) |
 | `dwx extract <imagen> [--out content/base] [--force]` | Disco → fuente | Versión y tablas por el ejecutable; un extractor por tipo de fichero (imágenes, tablas, mapas, colisión de arenas, audio, efectos); informe de cobertura con duplicados; el motor monta el resultado ([detalle](../formats/extract.md)) |
-| `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) y que el motor abre cada asset ([detalle](assets-pipeline.md#dwx-validate)) |
+| `dwx validate <paquete>` | Fuente | Esquemas de `content/schemas/`, referencias rotas, contrato de cada Digimon (esqueleto y animaciones) y que el motor abre cada asset, como mod; `--engine` para los del juego ([detalle](assets-pipeline.md#dwx-validate)) |
 | `dwx cook <paquete> -o <carpeta>` | Fuente → cocinado | Manifiesto e ids del paquete; cada PNG decodifica, cada GLB tiene una cabecera válida; el paquete cocinado da los mismos ids ([detalle](assets-pipeline.md#cocinar)) |
 | `dwx pack <paquete> -o <fichero.pak>` | Fuente o cocinado → `.pak` con su manifiesto | Manifiesto e ids del paquete; el archivo se vuelve a leer entero y cada entrada coincide con su SHA-1 ([formato](../formats/pak.md)) |
 

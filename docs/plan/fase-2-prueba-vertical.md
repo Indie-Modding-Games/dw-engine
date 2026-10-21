@@ -116,6 +116,6 @@ Pendiente o conocido:
 - Del partner faltan el paso según su estado y las animaciones de emoción: esperan al cuidado (fase 3).
 - La salida de la casa del anciano queda en el borde de la imagen; con ratón se llega manteniendo el botón (el
   jugador sigue al puntero y, en el borde, sigue andando hacia fuera).
-- `dwx validate --schemas content/schemas --with <contenido>/base content/packs/game` sobre una extracción nueva de
+- `dwx validate --engine --schemas content/schemas --with <contenido>/base content/packs/game` sobre una extracción nueva de
   `base` da 0 problemas en los dos paquetes (4828 assets, 2084 documentos, 178 contratos). Una extracción anterior
   a los esquemas del paquete `base` da problemas en `base`; hay que volver a extraer.

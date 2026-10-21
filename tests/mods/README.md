@@ -30,7 +30,7 @@ Los dos ficheros binarios los escribe [`make_example_mod.py`](make_example_mod.p
   campo pide a un compañero, cada una un balanceo de 2 ticks a 20 ticks por segundo que acaba en un bucle (los
   `extras` que lee `engine/assets/src/model_data.cpp`). Cumple `contract.yaml` (un hueso raíz y esas animaciones).
 
-Para cambiarlos basta con otro PNG o glTF que cumpla lo mismo; `dwx validate --with <base> content/packs/game
+Para cambiarlos basta con otro PNG o glTF que cumpla lo mismo; `dwx validate --with <base> --with content/packs/game
 tests/mods/example_mod` dice si el paquete sigue valiendo.
 
 ### Dónde se usa
