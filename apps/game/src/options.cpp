@@ -130,6 +130,12 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
         options.clockSpeed = speed;
         return parsed.ec == std::errc{} && parsed.ptr == value.data() + value.size() && speed >= 0.0;
     }
+    if (argument == SeedOption) {
+        std::uint64_t seed = 0;
+        const auto parsed = std::from_chars(value.data(), value.data() + value.size(), seed);
+        options.seed = seed;
+        return parsed.ec == std::errc{} && parsed.ptr == value.data() + value.size();
+    }
     if (argument == "--time") {
         const auto time = parseTime(value);
         options.time = time;

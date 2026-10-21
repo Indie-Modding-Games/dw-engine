@@ -6,6 +6,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ui/text_font.hpp>
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <span>
@@ -46,6 +47,9 @@ struct Options {
     // The game clock's speed (--clock-speed <x>): 1 is the original's (a game minute per real second), 60 a game hour
     // per real second.
     std::optional<double> clockSpeed;
+    // The seed of a new game's random numbers (--seed <n>), so that a route plays the same every run; a new seed from
+    // the system clock when not given. A loaded game keeps the random state it saved.
+    std::optional<std::uint64_t> seed;
     // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour when not given.
     std::optional<render::TimeOfDay> time;
     // The font of "original look" text (--text-font modern|original), instead of the packs' default; for autotests.
@@ -80,7 +84,7 @@ struct Options {
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
-    "[--text-font modern|original] [--new-game | --load <slot>] [--clock-speed <x>] "
+    "[--text-font modern|original] [--new-game | --load <slot>] [--clock-speed <x>] [--seed <n>] "
     "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
@@ -88,6 +92,7 @@ inline constexpr std::string_view Usage =
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view LanguageOption = "--lang";
+inline constexpr std::string_view SeedOption = "--seed";
 
 // Reads the command line; logs what is wrong and gives nothing for a bad one.
 std::optional<Options> parseOptions(std::span<char* const> arguments);

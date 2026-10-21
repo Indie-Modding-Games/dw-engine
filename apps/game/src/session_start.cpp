@@ -32,7 +32,8 @@ std::chrono::sys_seconds wallClock() {
     return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
 }
 
-// A new playthrough's seed; the log keeps it, so the playthrough can be told apart in a bug report.
+// A new playthrough's seed when --seed gives none; the log keeps it, so a bug report's playthrough can be played again
+// with --seed.
 std::uint64_t newSeed() {
     return static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
 }
@@ -42,7 +43,7 @@ std::uint64_t newSeed() {
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options, bool keepsSaves) {
     GameStart start{
         .storage = storageFor(options, keepsSaves), .session = nullptr, .systems = session::createGameSystems(files)};
-    const std::uint64_t seed = newSeed();
+    const std::uint64_t seed = options.seed ? *options.seed : newSeed();
     auto session = session::GameSession::create({.files = &files,
                                                  .rulesetId = options.ruleset,
                                                  .rules = std::nullopt,
