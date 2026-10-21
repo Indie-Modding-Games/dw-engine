@@ -29,7 +29,7 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 | `game/*` | Servicios, sistemas y `core`; **no** `rhi` ni `platform` |
 | `apps/session` | `game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
 | `apps/screens` | `apps/session`, `game/*`, `ui`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
-| `apps/game`, `apps/editor` | Todo excepto `formats` |
+| `apps/game` | Todo excepto `formats` |
 | `apps/dwx` | `formats`, `assets` y `core` |
 | `formats` | `core` |
 

@@ -123,7 +123,8 @@ autotest lo recorre con el reloj acelerado.
 - Framework de modos de juego, cada uno con su ruleset.
 - API de mods: paquetes que añaden o sobrescriben contenido por ID, y hooks de Lua.
 - Más Digimon y mapas, fondos HD.
-- El editor de mapas, adaptado al formato fuente.
+- El editor de mapas es la herramienta externa de la organización (`dw1fe`), con tests de ida y vuelta de nuestro
+  formato; el motor no tiene editor propio.
 
 **Hecho cuando:** se publica la primera versión del mod. A partir de ahí la fase sigue abierta.
 

@@ -36,7 +36,6 @@ flowchart LR
 | Contenedor | Qué es | Quién lo usa |
 |---|---|---|
 | `apps/game` | El ejecutable del juego, con su launcher (elige el disco, los ajustes y los mods) | Jugadores |
-| `apps/editor` | Editor de mapas, Digimon y eventos (Dear ImGui) | Equipo y modders |
 | `apps/dwx` | CLI: `extract`, `validate`, `cook`, `pack` | Equipo, modders y el launcher |
 | `apps/sim` | `dwe-sim`: simulaciones sin gráficos que juegan escenarios con semillas e informan del balance ([simulaciones](../guides/simulaciones.md)) | Equipo y diseño |
 | Paquetes de contenido | Datos y scripts en formatos abiertos (base, remaster, mods) | Los carga el juego |
@@ -49,7 +48,7 @@ Cada caja es una librería de CMake. Las dependencias solo bajan: una capa usa l
 ```mermaid
 flowchart TB
     subgraph apps[apps]
-        game_app[game] --- editor[editor] --- dwx[dwx] --- sim[sim]
+        game_app[game] --- dwx[dwx] --- sim[sim]
     end
     subgraph gameplay[game: reglas del juego]
         partner --- battle --- field --- world --- story --- inventory --- save --- modes
@@ -77,7 +76,7 @@ flowchart TB
 | sistemas | `render`, `audio`, `input`, `assets`, `localization`, `scene` | Grafo de render, materiales, skinning y fondos; mezcla y síntesis; acciones, contextos y perfiles de teclado, ratón y mandos; sistema de ficheros virtual, paquetes y recarga en caliente; los textos del jugador en su idioma; mundo ECS (EnTT) |
 | servicios | `script`, `ui`, `debug`, `ruleset` | VM de Lua, sandbox y bindings; menús, HUD y minimapa; herramientas de desarrollo (consola, paneles); el formato de [ruleset](rulesets.md), sus estrategias y el reloj de juego |
 | juego | `game/*` | Las reglas: cuidado, vida y evolución, batalla, campo, mundo, historia, inventario, guardado y modos |
-| apps | `game`, `editor`, `dwx` | Puntos de entrada |
+| apps | `game`, `dwx`, `sim` | Puntos de entrada |
 | aparte | `formats` | Lectura de los formatos de PS1. **Solo** lo usa `dwx` |
 
 ## Dónde cae cada mejora
@@ -102,7 +101,7 @@ flowchart TB
 | Entrada | SDL3 (teclado, ratón y mandos), con acciones y perfiles | [0014](../adr/0014-mandos-y-entrada.md) |
 | Entidades | EnTT | [0012](../adr/0012-ecs-con-entt.md) |
 | UI del juego | RmlUi | [0009](../adr/0009-rmlui.md) |
-| Herramientas de depuración y editor | Dear ImGui | — |
+| Herramientas de depuración | Dear ImGui | — |
 | Formatos fuente | glTF 2.0, PNG, YAML, SF2 + MIDI, FLAC; vídeo en Y4M + WAV | [0005](../adr/0005-tuberia-de-assets.md) |
 | Lectura y escritura de YAML | libyaml, envuelto en `core` | [0016](../adr/0016-yaml-con-libyaml.md) |
 | Formatos cocinados | KTX2 (BC7), mallas binarias, Opus; vídeo **pendiente** de decisión (propuesta: AV1/WebM), no implementado | [0005](../adr/0005-tuberia-de-assets.md) |
