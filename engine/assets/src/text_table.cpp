@@ -22,7 +22,7 @@ namespace {
 
 using core::YamlNode;
 
-constexpr char KeySeparator = '.';
+constexpr char KeySeparator = TextKeySeparator;
 constexpr char PlaceholderOpen = '{';
 constexpr char PlaceholderClose = '}';
 constexpr std::string_view PlaceholderListSeparator = ", ";

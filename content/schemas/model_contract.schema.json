@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "model": { "description": "The glTF model file, next to this document.", "type": "string", "pattern": "^[a-z0-9_]+\\.(glb|gltf)$", "assetReference": "./{}" },
-    "skeleton": { "description": "The Digimon whose skeleton the model has (skeletons.yaml).", "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "skeleton": { "description": "The Digimon whose skeleton the model has (skeletons.yaml).", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
     "joint_parents": {
       "description": "The parent of each joint of the skin as an index into the joints; -1 = root.",
       "type": "array",

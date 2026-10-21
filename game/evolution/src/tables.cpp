@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <optional>
 #include <utility>
 
 namespace dwe::game::evolution {
@@ -21,14 +22,21 @@ std::optional<std::int32_t> rawNumber(std::string_view text) {
     return number;
 }
 
-// The rows of the Digimon and raise tables whose original index is `index`.
+// Whether the Digimon table has a row whose original index is `index`.
 bool hasDigimonIndex(const assets::DigimonTable& table, std::int32_t index) {
     return std::ranges::any_of(table.digimon, [&](const assets::DigimonRow& row) { return row.index == index; });
 }
 
-const assets::RaiseRow* raiseOfIndex(const assets::RaiseTable& table, std::int32_t index) {
-    const auto found = std::ranges::find(table.raise, index, &assets::RaiseRow::index);
-    return found != table.raise.end() ? &*found : nullptr;
+// The species a row of the evolution table belongs to: the one it names, else its place in the original (a row whose
+// Digimon is a raw number outside the table), counted from `first`; none for a row that has neither.
+std::optional<Species> ownerOf(std::optional<Species> named, std::optional<std::int32_t> place, Species first) {
+    if (named) {
+        return named;
+    }
+    if (place) {
+        return *place + first;
+    }
+    return std::nullopt;
 }
 
 Level levelFrom(std::int32_t level) {
@@ -149,24 +157,29 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
         for (std::size_t slot = 0; slot < entry.moves.size(); ++slot) {
             data.moves.at(slot) = resolver.move(entry.moves.at(slot), entry.id);
         }
-        if (const assets::RaiseRow* raised = raiseOfIndex(raise, entry.index); raised != nullptr) {
+        if (const assets::RaiseRow* raised = raise.find(entry.id); raised != nullptr) {
             data.defaultWeight = raised->defaultWeight;
         }
         tables.speciesById_.insert_or_assign(entry.id, entry.index);
         tables.species_.insert_or_assign(entry.index, std::move(data));
     }
+    // A row belongs to the Digimon it names, so a pack's new Digimon finds its rows whatever index it got; a row whose
+    // Digimon is a raw number outside the table keeps its place by index, as the original's.
     for (const assets::EvolutionRequirementEntry& row : evolution.requirements) {
-        tables.requirements_.insert_or_assign(row.index, requirementFrom(row, resolver));
+        if (const auto target = ownerOf(resolver.species(row.target, EvolutionTableRole), row.index, 0)) {
+            tables.requirements_.insert_or_assign(*target, requirementFrom(row, resolver));
+        }
     }
     for (const assets::EvolutionStatsGainEntry& row : evolution.statsGains) {
-        if (const auto loads = resolver.species(row.targetDigimon, EvolutionTableRole); loads) {
-            tables.statReferences_.insert_or_assign(row.index, StatReference{.stats = {.hp = row.hp,
-                                                                                       .mp = row.mp,
-                                                                                       .offense = row.offense,
-                                                                                       .defense = row.defense,
-                                                                                       .speed = row.speed,
-                                                                                       .brains = row.brains},
-                                                                             .loads = *loads});
+        const auto target = ownerOf(resolver.species(row.target, EvolutionTableRole), row.index, 0);
+        if (const auto loads = resolver.species(row.targetDigimon, EvolutionTableRole); target && loads) {
+            tables.statReferences_.insert_or_assign(*target, StatReference{.stats = {.hp = row.hp,
+                                                                                     .mp = row.mp,
+                                                                                     .offense = row.offense,
+                                                                                     .defense = row.defense,
+                                                                                     .speed = row.speed,
+                                                                                     .brains = row.brains},
+                                                                           .loads = *loads});
         }
     }
     // evolution.c: EVOLUTION_PATHS[currentDigimon - 1]: entry i is the chart of type i + 1.
@@ -177,7 +190,9 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
                 targets.push_back(*species);
             }
         }
-        tables.paths_.insert_or_assign(row.index + 1, std::move(targets));
+        if (const auto owner = ownerOf(resolver.species(row.digimon, EvolutionTableRole), row.index, 1)) {
+            tables.paths_.insert_or_assign(*owner, std::move(targets));
+        }
     }
     // item.c: handleEvoItems: EVOLUTION_ITEM_TARGET, as dwx extracts it into the item effects.
     for (const assets::ItemEffectEntry& row : itemEffects.effects) {

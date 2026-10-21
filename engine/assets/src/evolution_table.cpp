@@ -15,13 +15,14 @@ using core::YamlNode;
 
 EvolutionRequirementEntry readRequirement(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::RequirementText,
-                           {"target", "index", "digimon", "hp", "mp", "offense", "defense", "speed", "brain", "care",
-                            "weight", "discipline", "happiness", "battles", "techs", "flags"})) {
+                           {"target", "digimon", "hp", "mp", "offense", "defense", "speed", "brain", "care", "weight",
+                            "discipline", "happiness", "battles", "techs", "flags"},
+                           {EntryIndexKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.target = reader.optionalText(reader.field(node, "target")),
-            .index = integer("index"),
+            .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
             .digimon = reader.optionalText(reader.field(node, "digimon")),
             .hp = integer("hp"),
             .mp = integer("mp"),
@@ -39,14 +40,14 @@ EvolutionRequirementEntry readRequirement(YamlReader& reader, const YamlNode& no
 }
 
 EvolutionStatsGainEntry readStatsGain(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(
-            node, messages::StatsGainText,
-            {"target", "index", "hp", "mp", "offense", "defense", "speed", "brains", "target_digimon"})) {
+    if (!reader.expectKeys(node, messages::StatsGainText,
+                           {"target", "hp", "mp", "offense", "defense", "speed", "brains", "target_digimon"},
+                           {EntryIndexKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.target = reader.optionalText(reader.field(node, "target")),
-            .index = integer("index"),
+            .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
             .hp = integer("hp"),
             .mp = integer("mp"),
             .offense = integer("offense"),
@@ -66,11 +67,11 @@ void readReferences(YamlReader& reader, const YamlNode& node, std::string_view w
 }
 
 EvolutionPathEntry readPath(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, messages::PathText, {"digimon", "index", "from", "to"})) {
+    if (!reader.expectKeys(node, messages::PathText, {"digimon", "from", "to"}, {EntryIndexKey})) {
         return {};
     }
     EvolutionPathEntry path{.digimon = reader.optionalText(reader.field(node, "digimon")),
-                            .index = reader.integer<std::int32_t>(reader.field(node, "index")),
+                            .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
                             .from = {},
                             .to = {}};
     readReferences(reader, reader.field(node, "from"), "from", path.from);
@@ -79,11 +80,11 @@ EvolutionPathEntry readPath(YamlReader& reader, const YamlNode& node) {
 }
 
 EvolutionItemTargetEntry readItemTarget(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, messages::ItemTargetText, {"item", "index", "target"})) {
+    if (!reader.expectKeys(node, messages::ItemTargetText, {"item", "target"}, {EntryIndexKey})) {
         return {};
     }
     return {.item = reader.optionalText(reader.field(node, "item")),
-            .index = reader.integer<std::int32_t>(reader.field(node, "index")),
+            .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
             .target = reader.optionalText(reader.field(node, "target"))};
 }
 
@@ -122,7 +123,7 @@ core::Result<EvolutionTable> parseEvolutionTable(std::string_view yaml) {
 }
 
 core::Result<EvolutionTable> loadEvolutionTable(const VirtualFileSystem& vfs, const AssetId& id) {
-    auto tree = readTableDocument(vfs, id, messages::EvolutionTableText);
+    auto tree = readTableDocument(vfs, id, messages::EvolutionTableText, EvolutionComposition);
     if (!tree) {
         return std::unexpected{tree.error()};
     }

@@ -92,6 +92,79 @@ El orden en que se pasan las carpetas no importa: los mismos paquetes dan siempr
 extensiones sean distintas (un `background.ktx2` del remaster sustituye al `background.png` de la base). Un ID que
 solo tiene un paquete simplemente se añade.
 
+## Tablas por entradas
+
+Las tablas de contenido no se sustituyen enteras: se **componen entrada a entrada**, para que un mod añada un Digimon
+o un mapa sin copiar la tabla (`readComposedTable`, `engine/assets/include/dwe/assets/table_composition.hpp`). Hay seis
+clases de tabla: Digimon, raise, mapas, objetos, técnicas y evolución (`composedTableKinds`,
+`engine/assets/include/dwe/assets/table_kinds.hpp`). De cada clase se componen su tabla de siempre (`data/digimon`,
+`data/raise`, `data/maps`, `data/items`, `data/moves` y `data/evolution`) y cualquier otra que un ruleset nombre con
+el rol de la clase en sus `tables` (`raise: data/hard_raise`). El juego y `dwx validate` componen las mismas
+(`composedTablesOf`). El resto de assets sigue la regla de la pila: gana el de más arriba.
+
+### IDs de contenido
+
+Cada entrada se nombra por su id de contenido (`ContentId`, `engine/assets/include/dwe/assets/content_id.hpp`):
+
+- **Originales:** su nombre estable de siempre, sin espacio de nombres (`agum`, `twna01`). Es el que ya escribe
+  `dwx extract` y leen las herramientas, así que no cambia.
+- **Lo que añade un paquete:** `<id del paquete>:<nombre>`, como `example_mod:meadow`. Cada parte es `[a-z0-9_]`; el
+  nombre tiene 64 caracteres como mucho.
+- **Sus assets** van en una carpeta por parte: el mapa `example_mod:meadow` está en `map/example_mod/meadow/` y el
+  modelo del Digimon `example_mod:pebblemon` en `digimon/example_mod/pebblemon/model`. Así los
+  [IDs de asset](#ids-de-asset) siguen siendo `[a-z0-9_/]`.
+- **El número (`index`) es interno:** el del original, que usan sus datos (los warps, los guardados), o el que pone el
+  motor a una entrada nueva. Un paquete se refiere a las entradas por su id.
+
+### Cómo se componen
+
+Los ficheros de la tabla se leen de abajo arriba en la pila. Cada tabla dice qué secciones son **listas de entradas**
+y con qué clave se nombra cada entrada (`id`, o `digimon` en `data/raise`):
+
+1. Una entrada con un id que ya está **sustituye** a esa entrada en su sitio y se queda con su `index`. Si da un
+   `index` distinto, es un error, y fuera de la base tampoco puede dar `index` a una entrada que añadió otro paquete:
+   ese número lo pone el motor y depende de los mods montados.
+2. Una entrada nueva se **añade al final**, en el orden de la pila y, dentro de un paquete, en el de su fichero, con
+   el siguiente `index` libre (el mayor más uno). Solo la base da el `index` de sus entradas, y dos entradas de la
+   base no pueden tener el mismo; fuera de la base se deja fuera.
+3. Fuera de la capa base, una entrada nueva se llama `<id del paquete>:<nombre>`: un nombre sin espacio de nombres o
+   con el de otro paquete es un error.
+4. Las secciones que van por el id de otra tabla (las filas de `data/raise` y las de `data/evolution`, por Digimon u
+   objeto) aceptan filas de cualquier id y **no numeran** las nuevas: el `index` de una fila de la base es el sitio de
+   la entrada a la que pertenece en el original, se conserva cuando un paquete la sustituye y una fila nueva no tiene.
+5. Una lista de entradas solo se puede dar como lista: `maps: null` o `maps: 1` es un error, no una forma de vaciarla.
+6. Cualquier otra sección (las puertas y los baños de `data/maps`, por ejemplo) se **sustituye entera** por la del
+   paquete de más arriba que la tiene, como las secciones de un ruleset con `extends`. Una sección nueva se añade.
+7. La composición se hace siempre, aunque solo un paquete tenga la tabla: así se comprueban sus ids y se numeran sus
+   entradas. Si no cambia nada, se lee el fichero tal cual, para que los errores de los lectores digan sus líneas.
+
+El resultado es el mismo YAML que leería el juego de un solo fichero, así que los lectores estrictos de cada tabla no
+cambian. **Un paquete que trae la tabla entera** (una copia de la de la base, editada) da la misma tabla que antes:
+cada entrada sustituye a la suya con el mismo `index`. Un mod **no puede quitar** entradas: una entrada que falta en
+su fichero sigue estando.
+
+### Un Digimon nuevo trae su contrato
+
+Un Digimon que añade un paquete (un id con espacio de nombres) tiene que traer el contrato de su modelo,
+`digimon/<paquete>/<nombre>/contract.yaml` ([esquema](../../content/schemas/model_contract.schema.json)): es contra lo
+que se comprueba su modelo, porque no hay un original con el que compararlo. Sin él, el juego no carga la tabla
+(`loadDigimonTable`) y `dwx validate` da un problema (`requireNewSpeciesContracts`).
+
+### Límite: los guardados y el `index`
+
+El `index` de una entrada nueva depende de qué mods hay montados y en qué orden. Lo que se guarda por id (la especie
+del compañero, el mapa, las técnicas aprendidas, las especies criadas) no se ve afectado, pero **el inventario aún
+guarda el `index` de cada objeto**: una partida con objetos de un mod puede cargar otros objetos si cambian los mods.
+Pasar el inventario y las demás referencias por número a ids es el trabajo siguiente de la fase 4.
+
+### Nombres de lo añadido
+
+Lo que se ve de una entrada nueva sale de la tabla de textos del paquete, `text/<idioma>/<id del paquete>.yaml`, con
+la clave `<bloque>.<nombre>`: `digimon_names.pebblemon`, `map_names.meadow` (`addedEntryTextKey`,
+`engine/localization/include/dwe/localization/catalog.hpp`). Los originales siguen con sus claves numeradas.
+
+Un ejemplo completo está en [`tests/mods/example_mod`](../../tests/mods/README.md).
+
 ## Dependencias
 
 Cada dependencia tiene que:

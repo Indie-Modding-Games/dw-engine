@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 
@@ -97,6 +98,11 @@ struct MapTable {
     // The doors of a map, or nullptr.
     [[nodiscard]] const MapDoorSet* doorsOf(const MapEntry& entry) const;
 };
+
+// How the packs' files of the table compose: maps by id; doors, toilets, map names and light updates are numbered by
+// position or by map index, so a pack that has them replaces each of those sections whole (table_composition.hpp).
+inline constexpr std::array<EntrySection, 1> MapEntrySections{{{.section = "maps", .entryKey = "id"}}};
+inline constexpr TableComposition MapComposition{.sections = MapEntrySections};
 
 // Parses the text of `data/maps`. Unknown and missing keys are errors.
 core::Result<MapTable> parseMapTable(std::string_view yaml);

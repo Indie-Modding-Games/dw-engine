@@ -1,3 +1,4 @@
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
@@ -425,11 +426,11 @@ core::Result<MapDocument> parseMapDocument(std::string_view yaml) {
 }
 
 core::Result<AssetId> mapDataId(std::string_view mapId) {
-    return AssetId::parse(std::format("map/{}/data", mapId));
+    return AssetId::parse(std::format("map/{}/data", contentAssetPath(mapId)));
 }
 
 MapAssetIds findMapAssets(const VirtualFileSystem& vfs, std::string_view mapId) {
-    const std::string prefix = std::format("map/{}/", mapId);
+    const std::string prefix = std::format("map/{}/", contentAssetPath(mapId));
     constexpr std::string_view BackgroundPrefix = "background_";
     constexpr std::string_view MetaSuffix = "_meta";
     constexpr std::array<std::pair<std::string_view, std::int32_t>, 2> TextureFolders = {{

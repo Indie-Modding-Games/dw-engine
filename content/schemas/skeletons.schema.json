@@ -10,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["digimon", "index", "bones"],
+        "required": ["digimon", "bones"],
         "additionalProperties": false,
         "properties": {
           "digimon": { "description": "Id of the Digimon (digimon.yaml).", "type": "string" },

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -39,6 +41,10 @@ struct ItemTable {
     // The item with this original index, or nullptr.
     [[nodiscard]] const ItemEntry* findByIndex(std::int32_t index) const;
 };
+
+// How the packs' files of the table compose: items by id (table_composition.hpp).
+inline constexpr std::array<EntrySection, 1> ItemEntrySections{{{.section = "items", .entryKey = "id"}}};
+inline constexpr TableComposition ItemComposition{.sections = ItemEntrySections};
 
 // Parses the text of `data/items`. Unknown and missing keys are errors.
 core::Result<ItemTable> parseItemTable(std::string_view yaml);

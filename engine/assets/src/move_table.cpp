@@ -32,14 +32,14 @@ std::optional<LearnChances> readLearnChances(YamlReader& reader, const YamlNode&
 
 MoveEntry readMove(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::MoveText,
-                           {"id", "index", "name", "distance", "power", "mp_cost", "iframes", "range", "special",
+                           {"id", EntryIndexKey, "name", "distance", "power", "mp_cost", "iframes", "range", "special",
                             "status", "accuracy", "status_chance", "unknown_0d", "unknown_0e", "unknown_0f"},
                            {LearnChancesKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.id = reader.text(reader.field(node, "id")),
-            .index = integer("index"),
+            .index = integer(EntryIndexKey),
             .name = reader.optionalText(reader.field(node, "name")),
             .distance = integer("distance"),
             .power = integer("power"),
@@ -96,7 +96,7 @@ core::Result<MoveTable> parseMoveTable(std::string_view yaml) {
 }
 
 core::Result<MoveTable> loadMoveTable(const VirtualFileSystem& vfs, const AssetId& id) {
-    auto tree = readTableDocument(vfs, id, messages::MoveTableText);
+    auto tree = readTableDocument(vfs, id, messages::MoveTableText, MoveComposition);
     if (!tree) {
         return std::unexpected{tree.error()};
     }

@@ -13,12 +13,13 @@ core::Result<core::YamlNode> parseTableDocument(std::string_view yaml, std::stri
     return tree;
 }
 
-core::Result<core::YamlNode> readTableDocument(const VirtualFileSystem& vfs, const AssetId& id, std::string_view what) {
-    auto bytes = vfs.read(id);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
+core::Result<core::YamlNode> readTableDocument(const VirtualFileSystem& vfs, const AssetId& id, std::string_view what,
+                                               const TableComposition& composition) {
+    auto text = readComposedTable(vfs, id, composition);
+    if (!text) {
+        return std::unexpected{text.error()};
     }
-    return parseTableDocument(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()}, what);
+    return parseTableDocument(*text, what);
 }
 
 } // namespace dwe::assets

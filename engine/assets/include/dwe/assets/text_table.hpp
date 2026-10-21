@@ -19,6 +19,9 @@
 // the engine (localization/<language>/<area>) or per source of the original's text (text/<language>/<source>).
 namespace dwe::assets {
 
+// What joins the parts of a text key: <table>.<block>.<slot or name>.
+inline constexpr char TextKeySeparator = '.';
+
 // The folders the two kinds of tables live in.
 inline constexpr std::string_view EngineTextFolder = "localization";
 inline constexpr std::string_view GameTextFolder = "text";

@@ -7,6 +7,9 @@ dwe_add_module(assets
     LAYER systems
     SOURCES
         src/asset_id.cpp
+        src/content_id.cpp
+        src/table_composition.cpp
+        src/table_kinds.cpp
         src/pack_manifest.cpp
         src/file_system.cpp
         src/virtual_file_system.cpp

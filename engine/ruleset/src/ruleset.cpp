@@ -35,7 +35,7 @@ constexpr std::string_view NameKey = "name";
 constexpr std::string_view VersionKey = "version";
 constexpr std::string_view DescriptionKey = "description";
 constexpr std::string_view ExtendsKey = "extends";
-constexpr std::string_view TablesKey = "tables";
+constexpr std::string_view TablesKey = assets::RulesetTablesKey;
 constexpr std::string_view SectionsKey = "sections";
 constexpr std::string_view ScriptsKey = "scripts";
 

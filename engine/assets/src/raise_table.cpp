@@ -16,7 +16,6 @@ using core::YamlNode;
 
 constexpr std::string_view TableKey = "raise";
 constexpr std::string_view DigimonKey = "digimon";
-constexpr std::string_view IndexKey = "index";
 constexpr std::string_view HungerTimesKey = "hunger_times";
 constexpr std::string_view EnergyCapKey = "energy_cap";
 constexpr std::string_view EnergyThresholdKey = "energy_threshold";
@@ -56,14 +55,15 @@ std::array<std::int32_t, HungerTimeCount> readHungerTimes(YamlReader& reader, co
 
 RaiseRow readRow(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::RaiseRowText,
-                           {DigimonKey, IndexKey, HungerTimesKey, EnergyCapKey, EnergyThresholdKey, EnergyUsageKey,
-                            PoopTimerKey, Unknown0eKey, PoopSizeKey, FavoriteFoodKey, SleepCycleKey, FavoredRegionKey,
-                            TrainingTypeKey, DefaultWeightKey, ViewKey})) {
+                           {DigimonKey, HungerTimesKey, EnergyCapKey, EnergyThresholdKey, EnergyUsageKey, PoopTimerKey,
+                            Unknown0eKey, PoopSizeKey, FavoriteFoodKey, SleepCycleKey, FavoredRegionKey,
+                            TrainingTypeKey, DefaultWeightKey, ViewKey},
+                           {EntryIndexKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.digimon = reader.optionalText(reader.field(node, DigimonKey)),
-            .index = integer(IndexKey),
+            .index = reader.optionalInteger<std::int32_t>(node, EntryIndexKey),
             .hungerTimes = readHungerTimes(reader, reader.field(node, HungerTimesKey)),
             .energyCap = integer(EnergyCapKey),
             .energyThreshold = integer(EnergyThresholdKey),
@@ -102,11 +102,11 @@ core::Result<RaiseTable> parseRaiseTable(std::string_view yaml) {
 }
 
 core::Result<RaiseTable> loadRaiseTable(const VirtualFileSystem& vfs, const AssetId& id) {
-    auto bytes = vfs.read(id);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
+    auto text = readComposedTable(vfs, id, RaiseComposition);
+    if (!text) {
+        return std::unexpected{text.error()};
     }
-    return parseRaiseTable(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    return parseRaiseTable(*text);
 }
 
 } // namespace dwe::assets

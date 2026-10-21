@@ -48,6 +48,20 @@ leen aquí. `ItemEffectTable` (`item_effect_table.hpp`) es `data/item_effects`: 
 ([scripts](../../docs/formats/scripts.md#estadísticas-de-la-partida-nueva)); `loadNewGameStats` no da nada si ningún
 paquete lo trae. Lo usa [`apps/session`](../../apps/session/README.md).
 
+## IDs de contenido y tablas por entradas
+
+`ContentId` (`<dwe/assets/content_id.hpp>`) es el id de una entrada de una tabla de contenido (un Digimon, un mapa, un
+objeto): el nombre estable de un original (`agum`, `twna01`) o, para lo que añade un paquete, `<id del paquete>:<nombre>`.
+`assetPath` lo convierte en carpetas (`example_mod:meadow` → `example_mod/meadow`), así que los IDs de asset no
+cambian de gramática. `composeTable` y `readComposedTable` (`<dwe/assets/table_composition.hpp>`) componen el fichero
+de una tabla de todos los paquetes que lo tienen, de abajo arriba: una entrada con un id que ya está la sustituye en
+su sitio, una nueva va al final con el siguiente `index` libre y una sección que no es de entradas se sustituye entera.
+Cada tabla dice qué secciones son de entradas con su `…Composition` (`DigimonComposition`, `MapComposition`…), y su
+lector la lee compuesta. `composedTableKinds` y `composedTablesOf` (`<dwe/assets/table_kinds.hpp>`) dicen qué tablas de los paquetes
+se componen y de qué clase son (las de siempre y las que nombran los rulesets por rol), para que `checkContent` componga
+las mismas que el juego. `requireNewSpeciesContracts` (`digimon_table.hpp`) exige el contrato del modelo de cada Digimon
+que añade un paquete. Las reglas están en [tablas por entradas](../../docs/architecture/vfs.md#tablas-por-entradas).
+
 `YamlReader` (`<dwe/assets/yaml_reader.hpp>`) lee valores tipados de un documento YAML y guarda el primer error con
 su línea y columna; lo usan los lectores de documentos del motor.
 

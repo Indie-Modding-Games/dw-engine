@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 
 #include <array>
@@ -60,6 +61,10 @@ struct MoveTable {
     // The move with this index, or nullptr.
     [[nodiscard]] const MoveEntry* findByIndex(std::int32_t index) const;
 };
+
+// How the packs' files of the table compose: moves by id (table_composition.hpp).
+inline constexpr std::array<EntrySection, 1> MoveEntrySections{{{.section = "moves", .entryKey = "id"}}};
+inline constexpr TableComposition MoveComposition{.sections = MoveEntrySections};
 
 // Parses the text of `data/moves`. Unknown and missing keys, and an id or index listed twice, are errors.
 core::Result<MoveTable> parseMoveTable(std::string_view yaml);

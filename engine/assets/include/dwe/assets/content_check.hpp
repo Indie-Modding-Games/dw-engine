@@ -19,8 +19,8 @@ namespace dwe::assets {
 core::Result<void> openAsset(std::string_view extension, std::span<const std::byte> bytes);
 
 // Opens an asset as openAsset does and, when the game reads a document of that id with a reader of its own, with that
-// reader too: map/<id>/data with parseMapDocument and data/maps with parseMapTable, which refuse unknown and missing
-// keys, and the text tables (localization/*/* and text/*/*) with parseTextTable.
+// reader too: map/<id>/data with parseMapDocument and the game tables (data/maps, data/digimon...) with theirs, which
+// refuse unknown and missing keys, and the text tables (localization/*/* and text/*/*) with parseTextTable.
 core::Result<void> openAsset(const AssetId& id, std::string_view extension, std::span<const std::byte> bytes);
 
 // An asset the engine could not read or open.
@@ -30,8 +30,11 @@ struct ContentProblem {
     std::string message;
 };
 
-// Reads the file that wins for every asset of the stack and opens it with openAsset by its id, several assets at a
-// time, so the file systems of the packs are read from several threads. Returns the problems, by id.
+// Reads every asset of the stack as the game reads it (the file that wins, or a content table composed entry by entry
+// from every pack that has it: each kind's table and the ones the rulesets name, table_kinds.hpp) and opens it with
+// openAsset by its id, a content table with the reader of its kind, and checks that the Digimon the packs add have
+// their model contracts. Several assets at a time, so the file systems of the packs are read from several threads.
+// Returns the problems, by id.
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem);
 
 } // namespace dwe::assets

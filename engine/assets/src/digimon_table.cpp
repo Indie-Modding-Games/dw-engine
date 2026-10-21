@@ -1,3 +1,4 @@
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/messages.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
@@ -5,6 +6,7 @@
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
+#include <format>
 #include <span>
 #include <utility>
 
@@ -16,7 +18,6 @@ using core::YamlNode;
 
 constexpr std::string_view TableKey = "digimon";
 constexpr std::string_view IdKey = "id";
-constexpr std::string_view IndexKey = "index";
 constexpr std::string_view NameKey = "name";
 constexpr std::string_view FileNameKey = "file_name";
 constexpr std::string_view BoneCountKey = "bone_count";
@@ -53,13 +54,13 @@ std::array<std::optional<std::string>, Count> readOptionalTexts(YamlReader& read
 
 DigimonRow readRow(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::DigimonRowText,
-                           {IdKey, IndexKey, NameKey, FileNameKey, BoneCountKey, RadiusKey, HeightKey, TypeKey,
+                           {IdKey, EntryIndexKey, NameKey, FileNameKey, BoneCountKey, RadiusKey, HeightKey, TypeKey,
                             LevelKey, SpecialKey, DropItemKey, DropChanceKey, MovesKey})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.id = reader.text(reader.field(node, IdKey)),
-            .index = integer(IndexKey),
+            .index = integer(EntryIndexKey),
             .name = reader.text(reader.field(node, NameKey)),
             .fileName = reader.text(reader.field(node, FileNameKey)),
             .boneCount = integer(BoneCountKey),
@@ -95,12 +96,38 @@ core::Result<DigimonTable> parseDigimonTable(std::string_view yaml) {
     return reader.finish(std::move(table), messages::DigimonTableText);
 }
 
-core::Result<DigimonTable> loadDigimonTable(const VirtualFileSystem& vfs, const AssetId& id) {
-    auto bytes = vfs.read(id);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
+std::string speciesContractId(std::string_view species) {
+    return std::format("{}/{}/{}", SpeciesFolder, contentAssetPath(species), SpeciesContractLeaf);
+}
+
+core::Result<void> requireNewSpeciesContracts(const VirtualFileSystem& vfs, const DigimonTable& table) {
+    for (const DigimonRow& row : table.digimon) {
+        const auto species = ContentId::parse(row.id);
+        if (!species || !species->isNamespaced()) {
+            continue;
+        }
+        const std::string contract = speciesContractId(row.id);
+        const auto id = AssetId::parse(contract);
+        if (!id || vfs.resolve(*id) == nullptr) {
+            return core::fail(messages::formatMessage(messages::NewSpeciesWithoutContract, row.id, contract));
+        }
     }
-    return parseDigimonTable(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    return {};
+}
+
+core::Result<DigimonTable> loadDigimonTable(const VirtualFileSystem& vfs, const AssetId& id) {
+    auto text = readComposedTable(vfs, id, DigimonComposition);
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
+    auto table = parseDigimonTable(*text);
+    if (!table) {
+        return table;
+    }
+    if (auto contracts = requireNewSpeciesContracts(vfs, *table); !contracts) {
+        return std::unexpected{contracts.error()};
+    }
+    return table;
 }
 
 } // namespace dwe::assets

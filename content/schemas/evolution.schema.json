@@ -3,7 +3,6 @@
   "title": "Evolution",
   "description": "evolution.yaml: EVOLUTION_REQS, EVOLUTION_STATS_GAINS and EVOLUTION_PATHS of the executable (evl.h), and optionally EVOLUTION_ITEM_TARGET. Digimon references are ids of digimon.yaml.",
   "type": "object",
-  "required": ["requirements", "stats_gains", "paths"],
   "additionalProperties": false,
   "properties": {
     "requirements": {
@@ -11,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["target", "index", "digimon", "hp", "mp", "offense", "defense", "speed", "brain", "care", "weight", "discipline", "happiness", "battles", "techs", "flags"],
+        "required": ["target", "digimon", "hp", "mp", "offense", "defense", "speed", "brain", "care", "weight", "discipline", "happiness", "battles", "techs", "flags"],
         "additionalProperties": false,
         "properties": {
           "target": { "$ref": "#/$defs/reference" },
@@ -38,7 +37,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["target", "index", "hp", "mp", "offense", "defense", "speed", "brains", "target_digimon"],
+        "required": ["target", "hp", "mp", "offense", "defense", "speed", "brains", "target_digimon"],
         "additionalProperties": false,
         "properties": {
           "target": { "$ref": "#/$defs/reference" },
@@ -58,7 +57,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["digimon", "index", "from", "to"],
+        "required": ["digimon", "from", "to"],
         "additionalProperties": false,
         "properties": {
           "digimon": { "$ref": "#/$defs/reference" },
@@ -73,7 +72,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["item", "index", "target"],
+        "required": ["item", "target"],
         "additionalProperties": false,
         "properties": {
           "item": { "$ref": "#/$defs/reference" },

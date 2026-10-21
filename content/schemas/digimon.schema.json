@@ -10,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "index", "name", "file_name", "bone_count", "radius", "height", "type", "level", "special", "drop_item", "drop_chance", "moves"],
+        "required": ["id", "name", "file_name", "bone_count", "radius", "height", "type", "level", "special", "drop_item", "drop_chance", "moves"],
         "additionalProperties": false,
         "properties": {
           "id": { "$ref": "#/$defs/id" },
@@ -40,9 +40,9 @@
   },
   "$defs": {
     "id": {
-      "description": "The string id other files use: the model file name in lowercase.",
+      "description": "The string id other files use: the model file name in lowercase for an original, <pack id>:<name> for a Digimon a pack adds (docs/architecture/vfs.md).",
       "type": "string",
-      "pattern": "^[a-z0-9_]+$"
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$"
     },
     "text": {
       "description": "A text of the executable. Printable ASCII is kept; a backslash is written \\\\ and any other byte \\xNN.",

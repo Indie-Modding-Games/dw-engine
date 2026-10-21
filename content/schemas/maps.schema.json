@@ -3,17 +3,17 @@
   "title": "Map table",
   "description": "maps.yaml: MAP_ENTRIES, DOOR_MAPDATA, TOILET_DATA, MAP_NAME_PTR and MAP_LIGHT_UPDATE_DATA of the executable (map.h, map_object.h). Each map's own data is in map.schema.json.",
   "type": "object",
-  "required": ["maps", "doors", "toilets", "map_names", "light_updates"],
+  "required": ["maps"],
   "additionalProperties": false,
   "properties": {
     "maps": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "index", "filename", "images_8bpp", "images_4bpp", "flags", "sound_id", "fixed_time_of_day", "has_npcs", "doors", "toilet", "loading_name"],
+        "required": ["id", "filename", "images_8bpp", "images_4bpp", "flags", "sound_id", "fixed_time_of_day", "has_npcs", "doors", "toilet", "loading_name"],
         "additionalProperties": false,
         "properties": {
-          "id": { "description": "The file name in lowercase, or map_<index> for entries without one.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "id": { "description": "The file name in lowercase, or map_<index> for entries without one; <pack id>:<name> for a map a pack adds.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
           "index": { "description": "The map id.", "type": "integer", "minimum": 0 },
           "filename": { "description": "Base name of \\MAP\\MAP<index / 15 + 1>\\<filename>.MAP and .TFS.", "type": "string" },
           "images_8bpp": { "type": "integer" },

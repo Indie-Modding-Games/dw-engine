@@ -1,12 +1,11 @@
 #include <dwe/assets/item_table.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
 #include <format>
 #include <utility>
-
-#include "document_text.hpp"
 
 namespace dwe::assets {
 
@@ -19,13 +18,13 @@ constexpr std::string_view Context = "item table";
 
 ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, "an item",
-                           {"id", "index", "name", "description", "value", "merit_value", "sorting_value", "item_color",
-                            "droppable", "unknown_1e"})) {
+                           {"id", EntryIndexKey, "name", "description", "value", "merit_value", "sorting_value",
+                            "item_color", "droppable", "unknown_1e"})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.id = reader.text(reader.field(node, "id")),
-            .index = integer("index"),
+            .index = integer(EntryIndexKey),
             .value = integer("value"),
             .meritValue = integer("merit_value"),
             .sortingValue = integer("sorting_value"),
@@ -73,7 +72,11 @@ core::Result<ItemTable> parseItemTable(std::string_view yaml) {
 }
 
 core::Result<ItemTable> loadItemTable(const VirtualFileSystem& vfs) {
-    auto text = readDocumentText(vfs, ItemsId);
+    auto id = AssetId::parse(ItemsId);
+    if (!id) {
+        return std::unexpected{id.error()};
+    }
+    auto text = readComposedTable(vfs, *id, ItemComposition);
     if (!text) {
         return std::unexpected{text.error()};
     }

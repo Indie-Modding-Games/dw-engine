@@ -10,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["digimon", "index", "hunger_times", "energy_cap", "energy_threshold", "energy_usage", "poop_timer", "unknown_0e", "poop_size", "favorite_food", "sleep_cycle", "favored_region", "training_type", "default_weight", "view"],
+        "required": ["digimon", "hunger_times", "energy_cap", "energy_threshold", "energy_usage", "poop_timer", "unknown_0e", "poop_size", "favorite_food", "sleep_cycle", "favored_region", "training_type", "default_weight", "view"],
         "additionalProperties": false,
         "properties": {
           "digimon": { "description": "Id of the Digimon (digimon.yaml).", "type": ["string", "integer", "null"] },

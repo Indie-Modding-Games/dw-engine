@@ -61,6 +61,16 @@ public:
         return integer<T>(node);
     }
 
+    // The number at a key that a mapping may leave out, or nothing when it is missing or null.
+    template <std::integral T>
+    std::optional<T> optionalInteger(const core::YamlNode& mapping, std::string_view key) {
+        const core::YamlNode* value = mapping.isMapping() ? mapping.find(key) : nullptr;
+        if (value == nullptr) {
+            return std::nullopt;
+        }
+        return optionalInteger<T>(*value);
+    }
+
     // A decimal number, whole or with a fraction (tunables such as speeds); 0 on error.
     float number(const core::YamlNode& node);
 

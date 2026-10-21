@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 
 #include <array>
@@ -19,7 +20,8 @@ class VirtualFileSystem;
 struct RaiseRow {
     // The Digimon id (digimon.yaml), or the raw number as text.
     std::optional<std::string> digimon;
-    std::int32_t index = 0;
+    // The Digimon's place in the original; none for a pack's new row (TableComposition: unnumbered).
+    std::optional<std::int32_t> index;
     // The hours the partner gets hungry, from rookie on; -1 ends the list.
     std::array<std::int32_t, 8> hungerTimes{};
     std::int32_t energyCap = 0;
@@ -46,6 +48,11 @@ struct RaiseTable {
     // The row of a Digimon id, or nullptr.
     [[nodiscard]] const RaiseRow* find(std::string_view digimon) const;
 };
+
+// How the packs' files of the table compose: rows by their Digimon's id (table_composition.hpp).
+inline constexpr std::array<EntrySection, 1> RaiseEntrySections{
+    {{.section = "raise", .entryKey = "digimon", .numbered = false, .ownsIds = false}}};
+inline constexpr TableComposition RaiseComposition{.sections = RaiseEntrySections};
 
 // Parses the text of `data/raise`. Unknown and missing keys are errors.
 core::Result<RaiseTable> parseRaiseTable(std::string_view yaml);

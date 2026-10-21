@@ -1,4 +1,6 @@
 #include <dwe/assets/content_check.hpp>
+#include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/evolution_table.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/item_table.hpp>
@@ -7,9 +9,13 @@
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/model_data.hpp>
+#include <dwe/assets/move_table.hpp>
 #include <dwe/assets/new_game_stats.hpp>
+#include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/shop_table.hpp>
 #include <dwe/assets/sound.hpp>
+#include <dwe/assets/table_composition.hpp>
+#include <dwe/assets/table_kinds.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/assets/texture.hpp>
 #include <dwe/core/yaml.hpp>
@@ -19,8 +25,10 @@
 #include <atomic>
 #include <format>
 #include <optional>
+#include <span>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -135,14 +143,67 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 }};
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 6> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
+    {"map/*/*/data", discardParsed<parseMapDocument>},
+    {"data/digimon", discardParsed<parseDigimonTable>},
+    {"data/raise", discardParsed<parseRaiseTable>},
     {"data/maps", discardParsed<parseMapTable>},
     {"data/items", discardParsed<parseItemTable>},
+    {"data/moves", discardParsed<parseMoveTable>},
+    {"data/evolution", discardParsed<parseEvolutionTable>},
     {"data/item_effects", discardParsed<parseItemEffectTable>},
     {"data/shops", discardParsed<parseShopTable>},
     {"data/new_game_stats", discardParsed<parseNewGameStats>},
 }};
+
+// The strict reader of each kind of content table (table_kinds.hpp) but the Digimon table's, by its role.
+constexpr std::array<std::pair<std::string_view, Opener>, 5> TableReaders = {{
+    {"raise", discardParsed<parseRaiseTable>},
+    {"maps", discardParsed<parseMapTable>},
+    {"items", discardParsed<parseItemTable>},
+    {"moves", discardParsed<parseMoveTable>},
+    {"evolution", discardParsed<parseEvolutionTable>},
+}};
+
+using ComposedTables = std::vector<std::pair<AssetId, const TableKind*>>;
+
+const TableKind* kindOf(const ComposedTables& tables, const AssetId& id) {
+    const auto found = std::ranges::find(tables, id, [](const auto& table) -> const AssetId& { return table.first; });
+    return found == tables.end() ? nullptr : found->second;
+}
+
+// The bytes of an asset as the game reads them: a content table composed entry by entry, else the file that wins.
+core::Result<std::vector<std::byte>> readAsGameReads(const VirtualFileSystem& fileSystem, const AssetId& id,
+                                                     const TableKind* kind) {
+    if (kind == nullptr) {
+        return fileSystem.read(id);
+    }
+    auto text = readComposedTable(fileSystem, id, *kind->composition);
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
+    const auto bytes = std::as_bytes(std::span{*text});
+    return std::vector<std::byte>{bytes.begin(), bytes.end()};
+}
+
+// Opens a content table with the strict reader of its kind, whatever id a ruleset gave it; a Digimon table's new
+// Digimon must have their model contracts.
+core::Result<void> openTable(const VirtualFileSystem& fileSystem, const TableKind& kind,
+                             std::span<const std::byte> bytes) {
+    if (auto parsed = openYaml(bytes); !parsed) {
+        return parsed;
+    }
+    if (kind.composition == &DigimonComposition) {
+        auto table = parseDigimonTable(std::string_view{reinterpret_cast<const char*>(bytes.data()), bytes.size()});
+        if (!table) {
+            return std::unexpected{table.error()};
+        }
+        return requireNewSpeciesContracts(fileSystem, *table);
+    }
+    const auto reader = std::ranges::find(TableReaders, kind.role, [](const auto& entry) { return entry.first; });
+    return reader == TableReaders.end() ? core::Result<void>{} : reader->second(bytes);
+}
 
 } // namespace
 
@@ -177,12 +238,14 @@ core::Result<void> openAsset(const AssetId& id, std::string_view extension, std:
 
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
     const std::vector<AssetId> ids = fileSystem.ids();
+    const ComposedTables tables = composedTablesOf(fileSystem);
     std::vector<std::optional<ContentProblem>> found(ids.size());
     std::atomic<std::size_t> next{0};
     const auto worker = [&] {
         for (std::size_t i = next++; i < ids.size(); i = next++) {
             const AssetSource* source = fileSystem.resolve(ids[i]);
-            auto bytes = fileSystem.read(ids[i]);
+            const TableKind* kind = kindOf(tables, ids[i]);
+            auto bytes = readAsGameReads(fileSystem, ids[i], kind);
             if (!bytes) {
                 found[i] =
                     ContentProblem{.id = ids[i], .file = pathText(source->file), .message = bytes.error().message};
@@ -190,7 +253,9 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
             }
             const std::string extension = source->file.extension().string();
             const auto opened =
-                openAsset(ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
+                kind != nullptr
+                    ? openTable(fileSystem, *kind, *bytes)
+                    : openAsset(ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
             if (!opened) {
                 found[i] =
                     ContentProblem{.id = ids[i], .file = pathText(source->file), .message = opened.error().message};

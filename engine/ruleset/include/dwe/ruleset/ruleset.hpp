@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/table_kinds.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/error.hpp>
@@ -17,8 +18,8 @@ namespace dwe::ruleset {
 
 // Every ruleset lives in a pack under rules/<id>/: the manifest rules/<id>/ruleset.yaml and one rules/<id>/<name>.yaml
 // per section (docs/architecture/rulesets.md).
-inline constexpr std::string_view RulesFolder = "rules";
-inline constexpr std::string_view ManifestLeaf = "ruleset";
+inline constexpr std::string_view RulesFolder = assets::RulesetsFolder;
+inline constexpr std::string_view ManifestLeaf = assets::RulesetManifestLeaf;
 
 // The ruleset of the original game's rules (ADR 0022), the one the game starts with.
 inline constexpr std::string_view OriginalRuleset = "original";

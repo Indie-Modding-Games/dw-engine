@@ -246,7 +246,8 @@ struct MapDocument {
 // Parses the text of `map/<id>/data`. Unknown and missing keys are errors.
 core::Result<MapDocument> parseMapDocument(std::string_view yaml);
 
-// The asset id of a map's data, `map/<id>/data`.
+// The asset id of a map's data, `map/<id>/data`; a namespaced id is a folder per part, `map/<pack>/<name>/data`
+// (ContentId::assetPath).
 core::Result<AssetId> mapDataId(std::string_view mapId);
 
 // Finds the backgrounds and textures of a map, sorted by variant order and by index.

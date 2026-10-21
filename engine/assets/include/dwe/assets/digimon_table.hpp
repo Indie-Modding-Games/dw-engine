@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/table_composition.hpp>
 #include <dwe/core/error.hpp>
 
 #include <array>
@@ -42,10 +43,28 @@ struct DigimonTable {
     [[nodiscard]] const DigimonRow* find(std::string_view id) const;
 };
 
+// How the packs' files of the table compose: rows by id (table_composition.hpp).
+inline constexpr std::array<EntrySection, 1> DigimonEntrySections{{{.section = "digimon", .entryKey = "id"}}};
+inline constexpr TableComposition DigimonComposition{.sections = DigimonEntrySections};
+
 // Parses the text of `data/digimon`. Unknown and missing keys are errors.
 core::Result<DigimonTable> parseDigimonTable(std::string_view yaml);
 
-// Reads and parses the digimon table at `id` (a ruleset names it by role) from the virtual file system.
+// The folder of the species' assets, `digimon/<folder of the id>/` (contentAssetPath), and the leaf of their model
+// contract.
+inline constexpr std::string_view SpeciesFolder = "digimon";
+inline constexpr std::string_view SpeciesContractLeaf = "contract";
+
+// The id of a species' model contract (content/schemas/model_contract.schema.json): what a model must have to be that
+// species', `digimon/<folder>/contract`.
+std::string speciesContractId(std::string_view species);
+
+// Checks that every Digimon a pack adds (a namespaced id) has its model contract in the packs, so that its model is
+// checked against it: an original's model is checked against the original's, a new one has no other.
+core::Result<void> requireNewSpeciesContracts(const VirtualFileSystem& vfs, const DigimonTable& table);
+
+// Reads and parses the digimon table at `id` (a ruleset names it by role) from the virtual file system, and checks the
+// contracts of the new Digimon (requireNewSpeciesContracts).
 core::Result<DigimonTable> loadDigimonTable(const VirtualFileSystem& vfs, const AssetId& id);
 
 } // namespace dwe::assets

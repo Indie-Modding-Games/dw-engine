@@ -26,13 +26,13 @@ glm::ivec3 readVector(YamlReader& reader, const YamlNode& node) {
 
 MapEntry readEntry(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, "a map",
-                           {"id", "index", "filename", "images_8bpp", "images_4bpp", "flags", "sound_id",
+                           {"id", EntryIndexKey, "filename", "images_8bpp", "images_4bpp", "flags", "sound_id",
                             "fixed_time_of_day", "has_npcs", "doors", "toilet", "loading_name"})) {
         return {};
     }
     const auto integer = [&](std::string_view key) { return reader.integer<std::int32_t>(reader.field(node, key)); };
     return {.id = reader.text(reader.field(node, "id")),
-            .index = integer("index"),
+            .index = integer(EntryIndexKey),
             .filename = reader.text(reader.field(node, "filename")),
             .images8bpp = integer("images_8bpp"),
             .images4bpp = integer("images_4bpp"),
@@ -159,11 +159,11 @@ core::Result<MapTable> loadMapTable(const VirtualFileSystem& vfs) {
     if (!id) {
         return std::unexpected{id.error()};
     }
-    auto bytes = vfs.read(*id);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
+    auto text = readComposedTable(vfs, *id, MapComposition);
+    if (!text) {
+        return std::unexpected{text.error()};
     }
-    return parseMapTable(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    return parseMapTable(*text);
 }
 
 } // namespace dwe::assets
