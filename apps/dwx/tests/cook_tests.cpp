@@ -34,7 +34,7 @@ std::uint32_t u32At(const std::vector<std::byte>& bytes, std::size_t offset) {
 // Whether a cooked texture holds sRGB colour, as the engine reads it.
 bool srgbOf(const std::vector<std::byte>& ktx2) {
     const auto texture = dwe::assets::decodeKtx2(ktx2, dwe::assets::TexelEncoding::Rgba8);
-    REQUIRE(texture.has_value());
+    REQUIRE_MESSAGE(texture.has_value(), texture.error().message);
     return texture->srgb;
 }
 

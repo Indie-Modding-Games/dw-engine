@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI skin",
+  "description": "ui/skins/<id>/skin.yaml of any pack: the look of every screen of the UI, which the player picks with the ui_skin setting. A skin only changes the look: the documents keep their element ids, scripts and commands (docs/architecture/ui.md).",
+  "type": "object",
+  "required": ["id", "name"],
+  "additionalProperties": false,
+  "$defs": {
+    "plainName": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+    "styleName": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
+    "assetId": { "description": "An asset id: the path without its extension.", "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$" },
+    "pixels": { "type": "integer", "minimum": 0 }
+  },
+  "properties": {
+    "id": { "description": "The skin's id: the name of its folder under ui/skins/.", "$ref": "#/$defs/plainName" },
+    "name": { "description": "The text key of the name the menus show, such as ui_skin.<id> for the game pack's skins; a mod keeps its keys in a localization file of its own.", "type": "string", "minLength": 1 },
+    "extends": { "description": "The id of a skin this one adds to: its sheets apply first, so this skin's rules win.", "$ref": "#/$defs/plainName" },
+    "theme": { "description": "RCSS style sheets for every document, before each screen's styles.", "type": "array", "items": { "$ref": "#/$defs/assetId" } },
+    "screens": {
+      "description": "The look of each screen, by the name the game loads its document under (hud, main_menu, pause_menu, partner_menu, battle).",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9_]{1,64}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "styles": { "description": "RCSS style sheets for the screen, in order.", "type": "array", "items": { "$ref": "#/$defs/assetId" } },
+          "document": { "description": "An RML document that replaces the screen's own: the same element ids and scripts, laid out another way.", "$ref": "#/$defs/assetId" }
+        }
+      }
+    },
+    "sprite_sheets": {
+      "description": "Sprite sheets the style sheets use (RCSS @spritesheet), measured in the pixels of the original image.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "image", "sprites"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "description": "The sprite sheet's name in RCSS.", "$ref": "#/$defs/styleName" },
+          "image": { "description": "The image's asset id; any file type the packs provide (PNG, KTX2).", "$ref": "#/$defs/assetId" },
+          "palette": { "description": "A palette of the indexed image's metadata (<image>_meta.yaml) to draw it with.", "type": "integer", "minimum": 0 },
+          "original_size": { "description": "The image's size in original pixels, [width, height]; a larger image is an upscaled copy and the sprites grow with it.", "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 },
+          "dp_per_pixel": { "description": "How many dp an original pixel covers (3 draws the original's 240 lines over the UI's 720 dp).", "type": "number", "minimum": 0.0625, "maximum": 16 },
+          "sprites": {
+            "description": "Each sprite's rectangle in original pixels: [x, y, width, height].",
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": { "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
+            "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/pixels" }, "minItems": 4, "maxItems": 4 }
+          }
+        }
+      }
+    }
+  }
+}

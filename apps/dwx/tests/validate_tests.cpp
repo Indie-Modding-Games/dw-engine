@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -143,6 +144,10 @@ public:
             return dwe::core::fail("it is gone");
         }
         return files_->readFile(file);
+    }
+
+    [[nodiscard]] dwe::core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override {
+        return files_->fileSize(file);
     }
 
 private:

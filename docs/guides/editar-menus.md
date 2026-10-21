@@ -7,20 +7,26 @@ en un build de desarrollo, el juego los recarga solo al guardarlos. Arquitectura
 
 ```
 content/packs/game/ui/
-  common/theme.rcss          estilo común: fuente, botones, avisos de botones
+  common/base.rcss           la estructura común, igual en todos los aspectos: display, tamaño, navegación
+  common/ui_skin_choice.lua  la entrada «Aspecto de la interfaz» de los menús principal y de pausa
+  skins/modern/skin.yaml     el aspecto moderno: qué hojas pone sobre cada pantalla
+  skins/modern/theme.rcss    su estilo común: fuente, botones, avisos de botones
+  skins/modern/<pantalla>/style.rcss
   fonts/                     fuentes (.ttf/.otf) y sus licencias; se cargan todas. original_look.yaml
                              describe la familia original-look (ver docs/architecture/ui.md)
   pause_menu/document.rml    el menú de pausa
-  pause_menu/style.rcss
+  pause_menu/structure.rcss  su comportamiento en todos los aspectos: las listas dan la vuelta
   pause_menu/logic.lua
   hud/document.rml           el HUD con el minimapa
-  hud/style.rcss
   hud/logic.lua
 ```
 
 Cada documento va en su carpeta porque los ficheros se leen por asset id, que es la ruta sin extensión:
 `menu.rml` y `menu.rcss` en la misma carpeta chocarían. Un mod puede sustituir cualquiera de estos ficheros con uno
-del mismo id en su paquete.
+del mismo id en su paquete, o añadir un aspecto entero con su `ui/skins/<id>/skin.yaml` (ver
+[Aspectos](../architecture/ui.md#aspectos)). El estilo va en el aspecto, no en el documento: un documento solo
+enlaza `../common/base.rcss` y, si la pantalla tiene un comportamiento propio que no cambia con el aspecto (por
+ejemplo, que una lista dé la vuelta), su `structure.rcss`.
 
 ## RML y RCSS
 
@@ -28,13 +34,15 @@ RML es casi HTML y RCSS casi CSS; la referencia es la [documentación de RmlUi](
 Lo propio de este proyecto:
 
 - Las medidas, en `dp` (un dp es un píxel a 720 líneas; la UI escala sola con la ventana y la opción del jugador).
-- Las rutas son relativas al documento (`href="style.rcss"`) o a la raíz de los paquetes (`/ui/common/theme.rcss`).
+- Las rutas son relativas al documento (`href="../common/base.rcss"`) o a la raíz de los paquetes
+  (`/ui/skins/modern/theme.rcss`). Las imágenes se piden sin depender de la extensión (`.png` encuentra la `.ktx2`
+  de un remaster) y con `?palette=N` usan otra paleta de una imagen indexada.
 - Un elemento se puede elegir con teclado y mando si tiene `tab-index: auto; focus: auto; nav: auto;` (los `button`
-  ya lo tienen en `theme.rcss`). `nav-up: #id` y compañía fijan a dónde va cada dirección, por ejemplo para dar la
+  ya lo tienen en `base.rcss`). `nav-up: #id` y compañía fijan a dónde va cada dirección, por ejemplo para dar la
   vuelta en una lista. El estilo del elemento elegido es `:focus`; el ratón también mueve el foco.
 - `autofocus` marca el elemento que recibe el foco al abrir el documento.
 - El HUD no debe tapar el ratón: su `body` tiene `pointer-events: none`.
-- No hay estilos por defecto: un elemento nuevo necesita su `display` en `theme.rcss`.
+- No hay estilos por defecto: un elemento nuevo necesita su `display` en `base.rcss`.
 
 ## Lógica en Lua
 
@@ -71,6 +79,7 @@ API disponible:
 | `ui.setting(nombre)` | El valor actual de un ajuste que publica la app, o `nil` |
 | `t(clave[, valores])` | El texto de una clave en el idioma del juego, con sus marcadores rellenos: `t("pause_menu.ui_scale.value", {percent = 150})` |
 | `ui.languages()` | Los idiomas que tienen los paquetes (`{"en", "es"}`) |
+| `ui.skins()`, `ui.skin_name_key(id)` | Los ids de los aspectos que ofrecen los paquetes (`{"modern"}`) y la clave del nombre de uno, para `t()` |
 | `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Enter"`, `"A"`, `"Cross"`), en el idioma del juego; los textos están en `localization/<idioma>/prompt.yaml` |
 | `ui.device()`, `ui.gamepad_family()` | `"keyboard_mouse"` o `"gamepad"`; `"xbox"`, `"playstation"`, `"nintendo"`, `"steam"` o `"generic"` |
 | `ui.show(nombre)`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado |

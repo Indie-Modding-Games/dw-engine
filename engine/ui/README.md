@@ -14,6 +14,13 @@ mod, o uno que lee una plantilla de un mod, se carga sin su propio código y el 
 (`CodeTrust`, con la regla de `script::checkEngineDocument`). Cada carga vacía antes la caché de plantillas de RmlUi,
 que guarda las plantillas por ruta y por nombre: así cada documento lee, y juzga, las plantillas que usa, y una
 plantilla de un mod leída por otra carga no le llega sin ser vista. `element:set_attribute` no acepta atributos de
-evento (`on...`), para que un script no pueda convertir texto en Lua. Detalles en
+evento (`on...`), para que un script no pueda convertir texto en Lua.
+
+El estilo lo pone el **aspecto** (skin) que elige el jugador: `SkinCatalog` lee los `ui/skins/<id>/skin.yaml` de
+todos los paquetes montados (un mod añade un aspecto añadiendo una carpeta) y `Ui::setSkin` cambia en vivo las hojas
+de todos los documentos abiertos sin recargarlos, con los mismos ids y scripts. Los documentos solo enlazan
+`ui/common/base.rcss`; el resto del estilo es del aspecto. Las imágenes se piden sin depender de la extensión (una
+KTX2 del remaster responde a `.png`) y una imagen indexada se dibuja con otra paleta de sus metadatos con
+`?palette=N`. Detalles en
 [docs/architecture/ui.md](../../docs/architecture/ui.md); cómo editar menús en
 [docs/guides/editar-menus.md](../../docs/guides/editar-menus.md).

@@ -1,0 +1,5 @@
+/* How the main menu behaves whatever the skin: the list wraps around, up from the first entry to the last and down
+   from the last to the first. The look is the skin's (docs/architecture/ui.md#aspectos). */
+
+#play { nav-up: #quit; }
+#quit { nav-down: #play; }

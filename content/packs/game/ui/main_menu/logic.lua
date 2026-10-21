@@ -1,6 +1,6 @@
--- The main menu, shown when the game starts: play, choose the language and the text font, quit. Like the pause menu it
--- never changes a setting itself: it sends the language and text_font commands and shows what the game reports back
--- (ui.setting).
+-- The main menu, shown when the game starts: play, choose the language, the text font and the interface skin, quit.
+-- Like the pause menu it never changes a setting itself: it sends the language, text_font and ui_skin commands and shows
+-- what the game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the pause menu.
 
 -- The language after the current one in the list the packs offer, step entries away, wrapping around.
 local function next_language(step)
@@ -23,6 +23,7 @@ local function refresh(document)
 	document:get("language-value"):set_text(t("language.name"))
 	local font = ui.setting("text_font") == "original" and "original" or "modern"
 	document:get("text-font-value"):set_text(t("main_menu.text_font." .. font))
+	document:get("ui-skin-value"):set_text(skin_choice.name())
 end
 
 local function refresh_prompts(document)
@@ -72,6 +73,10 @@ function on_action(document, action)
 	end
 	if (action == "left" or action == "right") and document:get("text-font"):has_focus() then
 		change_text_font()
+		return true
+	end
+	if (action == "left" or action == "right") and document:get("ui-skin"):has_focus() then
+		skin_choice.change(action == "left" and -1 or 1)
 		return true
 	end
 	return false

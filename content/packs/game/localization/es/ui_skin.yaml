@@ -1,0 +1,4 @@
+# Los nombres de los aspectos de la UI del paquete del juego en los menús (ui/skins/<id>/skin.yaml nombra su clave).
+# Un aspecto de un mod guarda su nombre en un archivo de textos propio: uno llamado ui_skin.yaml reemplazaría este
+# entero.
+modern: "Moderno"

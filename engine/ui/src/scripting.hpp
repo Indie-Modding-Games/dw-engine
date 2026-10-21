@@ -46,6 +46,9 @@ struct ScriptHost {
     std::function<std::string(std::string_view, std::span<const localization::TextArgument>)> text;
     // The languages the player can choose.
     std::function<std::vector<std::string>()> languages;
+    // The skins the player can choose, by id, and the text key of a skin's name (empty for an unknown id).
+    std::function<std::vector<std::string>()> skins;
+    std::function<std::string(std::string_view)> skinNameKey;
     std::function<std::string()> device;
     std::function<std::string()> gamepadFamily;
     std::function<void(std::string_view)> show;

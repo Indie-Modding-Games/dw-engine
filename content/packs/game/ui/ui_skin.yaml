@@ -1,0 +1,3 @@
+# El aspecto de la UI con el que empieza el juego hasta que el jugador elige otro (ajuste ui_skin): el id de uno de
+# los aspectos de ui/skins/ (docs/architecture/ui.md#aspectos).
+default: modern

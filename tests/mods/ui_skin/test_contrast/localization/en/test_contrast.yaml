@@ -1,0 +1,3 @@
+# The texts of the test skin's pack. A mod keeps its keys in a file of its own: a file with the name of one of the game
+# pack's (ui_skin.yaml) would replace that file whole, and its keys with it.
+skin_name: "Test contrast"

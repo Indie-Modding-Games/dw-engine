@@ -18,3 +18,4 @@ ui_scale: "Escala de la interfaz"
 # {percent} es la escala en porcentaje, un número entero.
 ui_scale.value: "{percent} %"
 vsync: "Sincronización vertical"
+ui_skin: "Aspecto de la interfaz"

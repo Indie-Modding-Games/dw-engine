@@ -1,9 +1,0 @@
-/* The main menu: the pause menu's panel (../pause_menu/style.rcss) over a darker screen. */
-
-#scrim {
-	background-color: #05080cf0;
-}
-
-/* The list wraps around: up from the first entry goes to the last and down from the last to the first. */
-#play { nav-up: #quit; }
-#quit { nav-down: #play; }

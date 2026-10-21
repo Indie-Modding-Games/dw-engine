@@ -390,7 +390,7 @@ core::Result<std::vector<std::string>> PakFileSystem::listFiles(const std::files
     return files;
 }
 
-core::Result<std::vector<std::byte>> PakFileSystem::readFile(const std::filesystem::path& file) const {
+core::Result<const PakEntry*> PakFileSystem::entryOf(const std::filesystem::path& file) const {
     const std::string archive = normalized(archive_);
     const std::string path = normalized(file);
     if (!path.starts_with(archive) || path.size() <= archive.size() + 1 || path[archive.size()] != '/') {
@@ -398,13 +398,34 @@ core::Result<std::vector<std::byte>> PakFileSystem::readFile(const std::filesyst
     }
     const std::string_view name = std::string_view{path}.substr(archive.size() + 1);
     if (name == ManifestName) {
-        return manifest_;
+        return nullptr;
     }
     // Sorted by asset id is also sorted by path: '.' sorts before every character an id may have.
     const auto entry = std::ranges::lower_bound(entries_, name, {}, &PakEntry::path);
     if (entry == entries_.end() || entry->path != name) {
         return core::fail(std::format("cannot read '{}': it does not exist", path));
     }
+    return &*entry;
+}
+
+core::Result<std::uint64_t> PakFileSystem::fileSize(const std::filesystem::path& file) const {
+    auto entry = entryOf(file);
+    if (!entry) {
+        return std::unexpected{entry.error()};
+    }
+    return *entry == nullptr ? manifest_.size() : (*entry)->size;
+}
+
+core::Result<std::vector<std::byte>> PakFileSystem::readFile(const std::filesystem::path& file) const {
+    auto found = entryOf(file);
+    if (!found) {
+        return std::unexpected{found.error()};
+    }
+    if (*found == nullptr) {
+        return manifest_;
+    }
+    const PakEntry* entry = *found;
+    const std::string path = normalized(file);
     std::ifstream stream{archive_, std::ios::binary};
     auto bytes = readAt(stream, archive_, entry->offset, entry->storedSize);
     if (!bytes) {

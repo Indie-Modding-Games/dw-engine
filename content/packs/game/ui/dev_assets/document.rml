@@ -1,8 +1,8 @@
 <rml>
 <head>
 	<title>Dev assets</title>
-	<link type="text/rcss" href="../common/theme.rcss"/>
-	<link type="text/rcss" href="style.rcss"/>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
 </head>
 <body>
 	<div id="dev-assets-banner"><span text-key="dev.assets_active"></span></div>

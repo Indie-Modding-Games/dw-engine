@@ -1,5 +1,5 @@
 /* The banner of the dev assets (--dev-assets): over every other document while they are in use, and never in the way
-   of the pointer. */
+   of the pointer. It is a developer's warning, not part of the game's look, so it is the same with every skin. */
 
 body {
 	pointer-events: none;

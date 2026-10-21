@@ -21,6 +21,32 @@ inline constexpr std::string_view PaletteColorNotHex =
 inline constexpr std::string_view PaletteNotText = "texture metadata: a palette is not a string";
 inline constexpr std::string_view NoImagePalettes = "texture metadata: palettes is missing";
 
+// Files and assets (file_system.cpp, virtual_file_system.cpp).
+inline constexpr std::string_view CannotReadFile = "cannot read '{}': {}";
+inline constexpr std::string_view FileMissing = "cannot read '{}': it does not exist";
+inline constexpr std::string_view NoPackHasAsset = "no pack has the asset '{}'";
+
+// KTX2 textures (texture.cpp).
+inline constexpr std::string_view Ktx2TooShort = "not a KTX2 texture: {} bytes is shorter than its header";
+inline constexpr std::string_view NotKtx2 = "not a KTX2 texture: {}";
+inline constexpr std::string_view Ktx2LevelIndexCut =
+    "not a KTX2 texture: the index of its {} mip levels runs past its {} bytes";
+inline constexpr std::string_view Ktx2RegionOutsideFile =
+    "not a KTX2 texture: its {} ({} bytes at {}) runs past its {} bytes";
+inline constexpr std::string_view Ktx2LevelOutsideFile = "not a KTX2 texture: mip level {} runs past its {} bytes";
+inline constexpr std::string_view Ktx2NotPlain2d =
+    "the KTX2 texture is not a plain 2D texture: {} dimensions, depth {}, {} layers, {} faces";
+inline constexpr std::string_view Ktx2BadSize = "the KTX2 texture is {}x{}, not 1 to {} on a side";
+inline constexpr std::string_view Ktx2BadLevels = "a {}x{} texture cannot have {} mip levels";
+inline constexpr std::string_view Ktx2BadSupercompression =
+    "the KTX2 texture is supercompressed with a scheme other than BasisLZ or Zstd";
+inline constexpr std::string_view Ktx2LevelTooLarge =
+    "mip level {} of the KTX2 texture takes {} bytes once loaded, more than the {} a {}x{} level holds";
+inline constexpr std::string_view Ktx2NotBasis = "the KTX2 texture does not hold Basis Universal data";
+inline constexpr std::string_view Ktx2LoadFailed = "cannot load the texels of the KTX2 texture: {}";
+inline constexpr std::string_view Ktx2TranscodeFailed = "cannot transcode the KTX2 texture: {}";
+inline constexpr std::string_view Ktx2LevelOutOfData = "mip level {} of the KTX2 texture is out of its data";
+
 // Text tables (text_table.cpp).
 inline constexpr std::string_view TableContext = "text table {}";
 inline constexpr std::string_view GameTableWhat = "the text table";

@@ -1,8 +1,12 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/core/message.hpp>
 
+#include <cstdint>
 #include <format>
 #include <fstream>
 #include <system_error>
+
+#include "messages.hpp"
 
 namespace dwe::assets {
 
@@ -60,6 +64,15 @@ core::Result<std::vector<std::string>> DiskFileSystem::listFiles(const std::file
     return files;
 }
 
+core::Result<std::uint64_t> DiskFileSystem::fileSize(const std::filesystem::path& file) const {
+    std::error_code error;
+    const std::uintmax_t size = std::filesystem::file_size(file, error);
+    if (error) {
+        return core::fail(core::formatMessage(messages::CannotReadFile, pathText(file), error.message()));
+    }
+    return size;
+}
+
 core::Result<std::vector<std::byte>> DiskFileSystem::readFile(const std::filesystem::path& file) const {
     std::error_code error;
     const std::uintmax_t size = std::filesystem::file_size(file, error);
@@ -114,6 +127,14 @@ core::Result<std::vector<std::byte>> MemoryFileSystem::readFile(const std::files
         return core::fail(std::format("cannot read '{}': it does not exist", pathText(file)));
     }
     return found->second;
+}
+
+core::Result<std::uint64_t> MemoryFileSystem::fileSize(const std::filesystem::path& file) const {
+    const auto found = files_.find(keyOf(file));
+    if (found == files_.end()) {
+        return core::fail(core::formatMessage(messages::FileMissing, pathText(file)));
+    }
+    return found->second.size();
 }
 
 } // namespace dwe::assets

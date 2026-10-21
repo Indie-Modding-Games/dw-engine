@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Default UI skin",
+  "description": "ui/ui_skin.yaml of the game pack: the skin the game starts with until the player picks one (ui_skin setting, docs/architecture/ui.md).",
+  "type": "object",
+  "required": ["default"],
+  "additionalProperties": false,
+  "properties": {
+    "default": { "description": "The id of a skin under ui/skins/.", "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
+  }
+}

@@ -73,6 +73,8 @@ public:
 
     // Reads the bytes of an asset from the pack that wins.
     [[nodiscard]] core::Result<std::vector<std::byte>> read(const AssetId& id) const;
+    // The size in bytes of the file read() would return, without reading it.
+    [[nodiscard]] core::Result<std::uint64_t> size(const AssetId& id) const;
 
     // Every asset id, sorted.
     [[nodiscard]] std::vector<AssetId> ids() const;

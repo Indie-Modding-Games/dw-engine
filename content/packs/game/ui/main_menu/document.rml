@@ -1,9 +1,9 @@
 <rml>
 <head>
 	<title>Main menu</title>
-	<link type="text/rcss" href="../common/theme.rcss"/>
-	<link type="text/rcss" href="../pause_menu/style.rcss"/>
-	<link type="text/rcss" href="style.rcss"/>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/ui_skin_choice.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -16,6 +16,9 @@
 			</button>
 			<button id="text-font" class="option" onclick="change_text_font()">
 				<span class="label" text-key="main_menu.text_font"></span><span class="value" id="text-font-value"></span>
+			</button>
+			<button id="ui-skin" class="option" onclick="skin_choice.change(1)">
+				<span class="label" text-key="main_menu.ui_skin"></span><span class="value" id="ui-skin-value"></span>
 			</button>
 			<button id="quit" onclick="ui.send('quit')" text-key="main_menu.quit"></button>
 

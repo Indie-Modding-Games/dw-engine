@@ -1,0 +1,9 @@
+/* How the pause menu behaves whatever the skin: each page's list wraps around, up from the first entry to the last
+   and down from the last to the first. The look is the skin's (docs/architecture/ui.md#aspectos). */
+
+#continue { nav-up: #quit; }
+#quit { nav-down: #continue; }
+#minimap-visible { nav-up: #minimap-back; }
+#minimap-back { nav-down: #minimap-visible; }
+#display-mode { nav-up: #options-back; }
+#options-back { nav-down: #display-mode; }

@@ -61,8 +61,16 @@ enteros (BC7) o solo los texels de la imagen (RGBA8).
 
 ## Cómo se carga
 
-`assets::decodeKtx2` lee el fichero con libktx, comprueba que sea una textura 2D con datos de Basis Universal, de 1 a
-16384 texels de lado y con un número de niveles posible, y transcodifica todos los niveles a la vez:
+`assets::decodeKtx2` abre el fichero con libktx sin cargar sus texels (`KTX_TEXTURE_CREATE_NO_FLAGS`) y lee la
+cabecera y el índice de niveles (`inspectKtx2`). Antes de dárselo a libktx comprueba que el descriptor de formato
+(DFD), los datos clave/valor (KVD) y los datos globales de supercompresión (SGD) que dice la cabecera caben en el
+fichero. Con eso solo, `checkPlain2dKtx2` comprueba que sea una sola imagen
+2D (sin capas ni caras de cubo, profundidad 1) con datos de Basis Universal, de 1 a 16384 texels de lado, con un
+número de niveles posible, sin supercompresión o con BasisLZ o Zstd, que cada nivel esté dentro del fichero y que
+ninguno ocupe al cargarse (`uncompressedByteLength` con Zstd, `byteLength` sin supercompresión) más de lo que cabe
+en un nivel de su tamaño; los de BasisLZ se cargan tal cual, así que los acota el propio fichero. Una textura que
+promete inflarse a gigas se rechaza sin reservar nada. Solo entonces carga e infla los texels
+(`ktxTexture2_LoadImageData`) y transcodifica todos los niveles a la vez:
 
 - a **BC7** (`KTX_TTF_BC7_RGBA`), 16 bytes por bloque de 4×4, si `rhi::Device::supportsBc7()` dice que la GPU lo
   muestrea en UNORM y en sRGB (todas las de escritorio);

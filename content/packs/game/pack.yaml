@@ -36,6 +36,10 @@ schemas:
     - localization/*/*
   ui_text_font:
     - ui/fonts/original_look
+  ui_skin:
+    - ui/skins/*/skin
+  ui_skin_choice:
+    - ui/ui_skin
   ruleset_new_game:
     - rules/*/new_game
   ruleset_tamer:

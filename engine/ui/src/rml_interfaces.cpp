@@ -1,6 +1,7 @@
 #include "rml_interfaces.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/ui/image_reference.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -217,11 +218,11 @@ core::Result<assets::Image> TextureSources::load(std::string_view source) const 
         }
         return found->second;
     }
-    auto bytes = files_->read(source);
-    if (!bytes) {
-        return core::fail(std::format("could not read the image '{}'", source));
+    auto reference = parseImageReference(source);
+    if (!reference) {
+        return std::unexpected{reference.error()};
     }
-    return assets::decodePng(*bytes);
+    return loadImage(*files_, *reference);
 }
 
 } // namespace dwe::ui

@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <span>
@@ -30,6 +31,9 @@ public:
 
     // Reads a whole file.
     [[nodiscard]] virtual core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const = 0;
+
+    // The size of a file in bytes, as readFile would return it, without reading it.
+    [[nodiscard]] virtual core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const = 0;
 };
 
 // The files on disk. Symbolic links are errors: a pack must not reach outside its folder.
@@ -37,6 +41,7 @@ class DiskFileSystem final : public FileSystem {
 public:
     [[nodiscard]] core::Result<std::vector<std::string>> listFiles(const std::filesystem::path& folder) const override;
     [[nodiscard]] core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override;
+    [[nodiscard]] core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override;
 };
 
 // Files kept in memory, for tests and for content built at run time.
@@ -50,6 +55,7 @@ public:
 
     [[nodiscard]] core::Result<std::vector<std::string>> listFiles(const std::filesystem::path& folder) const override;
     [[nodiscard]] core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override;
+    [[nodiscard]] core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override;
 
 private:
     // Keyed by the normalized path with '/' separators.

@@ -72,8 +72,12 @@ public:
 
     [[nodiscard]] core::Result<std::vector<std::string>> listFiles(const std::filesystem::path& folder) const override;
     [[nodiscard]] core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override;
+    [[nodiscard]] core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override;
 
 private:
+    // The entry a path names: nullptr for pack.yaml, an error for a path outside the archive or with no entry.
+    [[nodiscard]] core::Result<const PakEntry*> entryOf(const std::filesystem::path& file) const;
+
     std::filesystem::path archive_;
     std::vector<std::byte> manifest_;
     std::vector<PakEntry> entries_;

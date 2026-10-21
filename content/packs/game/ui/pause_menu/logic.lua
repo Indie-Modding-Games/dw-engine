@@ -59,6 +59,9 @@ local options = {
 	["vsync"] = function(step)
 		ui.send("vsync", not ui.setting("vsync"))
 	end,
+	["ui-skin"] = function(step)
+		skin_choice.change(step)
+	end,
 }
 
 local function refresh(document)
@@ -70,6 +73,7 @@ local function refresh(document)
 	local percent = math.floor((ui.setting("ui_scale") or 1.0) * 100 + 0.5)
 	document:get("ui-scale-value"):set_text(t("pause_menu.ui_scale.value", { percent = percent }))
 	document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
+	document:get("ui-skin-value"):set_text(skin_choice.name())
 end
 
 local function refresh_prompts(document)

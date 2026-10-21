@@ -1,0 +1,6 @@
+# Un aspecto de prueba: el moderno con otros colores en todas las pantallas, para ver un cambio en vivo.
+id: test_contrast
+name: test_contrast.skin_name
+extends: modern
+theme:
+  - ui/skins/test_contrast/theme

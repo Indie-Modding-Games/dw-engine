@@ -172,7 +172,7 @@ std::vector<std::string> commandNames(Ui& ui) {
 // A minimal document: a button that sends a command and a label its script fills.
 constexpr std::string_view TestDocument = R"rml(<rml>
 <head>
-	<link type="text/rcss" href="/ui/common/theme.rcss"/>
+	<link type="text/rcss" href="/ui/common/base.rcss"/>
 	<script src="logic.lua"></script>
 	<script>shown = 0</script>
 </head>
@@ -220,7 +220,7 @@ private:
 // A document a mod brings: a script from the game's layers, one of its own, inline Lua and an event attribute.
 constexpr std::string_view ModDocument = R"rml(<rml>
 <head>
-	<link type="text/rcss" href="/ui/common/theme.rcss"/>
+	<link type="text/rcss" href="/ui/common/base.rcss"/>
 	<script src="/ui/test/logic.lua"></script>
 	<script src="own.lua"></script>
 	<script>ui.send('inline')</script>
@@ -233,12 +233,12 @@ constexpr std::string_view ModDocument = R"rml(<rml>
 
 // A template of the game, its override by a mod (with Lua in an event attribute), and a game document that uses it.
 constexpr std::string_view FrameTemplate = R"rml(<template name="frame" content="content">
-<head><link type="text/rcss" href="/ui/common/theme.rcss"/></head>
+<head><link type="text/rcss" href="/ui/common/base.rcss"/></head>
 <body><button id="framed" onclick="ui.send('game')">Framed</button><div id="content"/></body>
 </template>)rml";
 
 constexpr std::string_view ModFrameTemplate = R"rml(<template name="frame" content="content">
-<head><link type="text/rcss" href="/ui/common/theme.rcss"/></head>
+<head><link type="text/rcss" href="/ui/common/base.rcss"/></head>
 <body><button id="framed" onclick="ui.send('hijacked')">Framed</button><div id="content"/></body>
 </template>)rml";
 
@@ -1117,7 +1117,7 @@ TEST_CASE("hot reload keeps the old document when the edit is broken, and keeps 
     Content content;
     content.add("ui/test/document.rml", TestDocument);
     content.add("ui/test/logic.lua", TestLogic);
-    content.add("ui/top/document.rml", "<rml><head><link type='text/rcss' href='/ui/common/theme.rcss'/></head>"
+    content.add("ui/top/document.rml", "<rml><head><link type='text/rcss' href='/ui/common/base.rcss'/></head>"
                                        "<body><button id='top' autofocus='autofocus'>Top</button></body></rml>");
     FakeClock clock;
     auto ui = createUi(content.mount(), &clock, true);
@@ -1159,7 +1159,7 @@ namespace {
 // cells): all in the bitmap font, with a character it lacks, and with its glyph that has no ASCII equivalent.
 constexpr std::string_view OriginalLookDocument = R"rml(<rml>
 <head>
-	<link type="text/rcss" href="/ui/common/theme.rcss"/>
+	<link type="text/rcss" href="/ui/common/base.rcss"/>
 	<style>
 		div { position: absolute; left: 0; font-size: 33px; }
 	</style>

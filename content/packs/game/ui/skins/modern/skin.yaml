@@ -1,0 +1,18 @@
+# El aspecto moderno, el de por defecto, para todas las pantallas. Un aspecto solo cambia cómo se ve la UI: los
+# documentos (ui/<pantalla>/document.rml) y su lógica son los mismos con cualquiera (docs/architecture/ui.md#aspectos).
+id: modern
+name: ui_skin.modern
+theme:
+  - ui/skins/modern/theme
+screens:
+  hud:
+    styles: [ui/skins/modern/hud/style]
+  pause_menu:
+    styles: [ui/skins/modern/pause_menu/style]
+  # El menú principal usa los paneles y las opciones del menú de pausa.
+  main_menu:
+    styles: [ui/skins/modern/pause_menu/style, ui/skins/modern/main_menu/style]
+  partner_menu:
+    styles: [ui/skins/modern/partner_menu/style]
+  battle:
+    styles: [ui/skins/modern/battle/style]

@@ -7,6 +7,7 @@
 #include <dwe/platform/events.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/minimap.hpp>
+#include <dwe/ui/skin_catalog.hpp>
 #include <dwe/ui/text_font.hpp>
 
 #include <functional>
@@ -150,6 +151,16 @@ public:
     // The player's choice; the packs' default until one is made.
     [[nodiscard]] TextFont textFont() const;
 
+    // The skins the packs offer (ui/skins/<id>/skin.yaml); a mod adds one by adding its folder.
+    [[nodiscard]] const SkinCatalog& skins() const;
+
+    // Gives every document the look of a skin at once: documents keep their state, focus and scripts, and only a
+    // screen whose document the skin replaces loads again. Starts with the packs' default (ui/ui_skin.yaml). Fails,
+    // keeping the look, for a skin the packs do not offer.
+    core::Result<void> setSkin(std::string_view id);
+    // The skin shown; empty when the packs offer none.
+    [[nodiscard]] std::string_view skin() const;
+
     // Replaces the minimap with a new map's: its walkable area and the key of its name (localization::mapNameKey; empty
     // for none), shown in the hud:: elements.
     void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey);
@@ -175,6 +186,11 @@ public:
 
     // The id of the element that has the focus in a document, or an empty string.
     [[nodiscard]] std::string focusedElementId(std::string_view document) const;
+
+    // The value of a style property of an element of a document (its body for an empty id) as RCSS writes it, or an
+    // empty string when it has none, for tests.
+    [[nodiscard]] std::string styleProperty(std::string_view document, std::string_view elementId,
+                                            std::string_view property) const;
 
     // The text inside an element of a document, for tests.
     [[nodiscard]] std::string elementText(std::string_view document, std::string_view elementId) const;

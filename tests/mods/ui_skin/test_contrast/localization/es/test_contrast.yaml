@@ -1,0 +1,3 @@
+# Los textos del paquete del aspecto de prueba. Un mod guarda sus claves en un archivo propio: uno con el nombre de un
+# archivo del paquete del juego (ui_skin.yaml) lo reemplazaría entero, con sus claves.
+skin_name: "Contraste de prueba"

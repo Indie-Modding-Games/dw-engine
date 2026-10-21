@@ -1,4 +1,5 @@
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/message.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -6,6 +7,8 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
+
+#include "messages.hpp"
 
 namespace dwe::assets {
 
@@ -217,9 +220,17 @@ const AssetSource* VirtualFileSystem::resolve(const AssetId& id) const {
 core::Result<std::vector<std::byte>> VirtualFileSystem::read(const AssetId& id) const {
     const AssetSource* source = resolve(id);
     if (source == nullptr) {
-        return core::fail(std::format("no pack has the asset '{}'", id.str()));
+        return core::fail(core::formatMessage(messages::NoPackHasAsset, id.str()));
     }
     return packs_[indexOf(packs_, source->packId)].fileSystem->readFile(source->file);
+}
+
+core::Result<std::uint64_t> VirtualFileSystem::size(const AssetId& id) const {
+    const AssetSource* source = resolve(id);
+    if (source == nullptr) {
+        return core::fail(core::formatMessage(messages::NoPackHasAsset, id.str()));
+    }
+    return packs_[indexOf(packs_, source->packId)].fileSystem->fileSize(source->file);
 }
 
 std::vector<AssetId> VirtualFileSystem::ids() const {

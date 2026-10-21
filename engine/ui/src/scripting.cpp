@@ -586,6 +586,11 @@ void Scripting::registerApi() {
         return result(lua, [&] { return host_.prompt(action); });
     };
     api["languages"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.languages(); }); };
+    api["skins"] = [this](sol::this_state lua) { return result(lua, [&] { return host_.skins(); }); };
+    api["skin_name_key"] = [this](std::string_view id, sol::this_state lua) {
+        checkName(lua, id);
+        return result(lua, [&] { return host_.skinNameKey(id); });
+    };
     // The key is argument 1 and the table of placeholder values, if any, argument 2.
     state[std::string{TextFunction}] = [this](std::string_view key, sol::this_state lua) {
         checkName(lua, key);

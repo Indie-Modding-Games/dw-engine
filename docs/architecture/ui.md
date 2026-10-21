@@ -16,6 +16,8 @@ La UI del juego (menús y HUD) vive en `engine/ui`, en la capa de servicios, sob
 | `promptControl`, `promptLabel` | El control que dispara una acción en el último dispositivo usado (`key:enter`, `gamepad:south`) y su nombre para el jugador, en el idioma del juego (`localization/<idioma>/prompt.yaml`) |
 | Textos | Los textos salen del `localization::Catalog` que da la app (`UiDesc::texts`; sin él, la UI carga el inglés): `text-key` en el RML, `t()` en Lua, y `refreshTexts()` al cambiar de idioma ([localización](localizacion.md)) |
 | `FontEngine` (`src/font_engine.*`), `BitmapFont` | El motor de fuentes de RmlUi con la familia `original-look` encima: dibuja con la fuente de mapa de bits del original o con la moderna, según el ajuste `text_font` (ver [Aspecto original](#aspecto-original)); el resto de familias va al motor de RmlUi (FreeType) |
+| Aspectos (`SkinCatalog`, `src/skin_styler.*`) | Los aspectos que ofrecen los paquetes (`ui/skins/<id>/skin.yaml`) y las hojas de estilo que cada uno pone sobre cada documento; ver [Aspectos](#aspectos) |
+| Imágenes (`image_reference.*`) | Lo que nombra una imagen de RCSS o RML: un asset sin extensión y, si se pide, una paleta (`?palette=N`) |
 | `buildMinimap` | Dibuja el minimapa desde una rejilla de celdas (`MinimapGrid`) y da el `MinimapLayout` que sitúa posiciones del mundo en la imagen |
 
 `ui` no conoce el juego: recibe valores planos (la rejilla del minimapa, las posiciones de los marcadores, los
@@ -143,6 +145,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `vsync` | booleano | `vsync` |
 | `language` | código de idioma (`en`, `es`) | `language` (y la UI vuelve a poner todos sus textos) |
 | `text_font` | `modern`, `original` | `text_font` (y la UI vuelve a componer los documentos con la fuente) |
+| `ui_skin` | id de un aspecto (`modern`, ...) | `ui_skin` (y la UI cambia el estilo de todos los documentos en el momento) |
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
@@ -173,10 +176,128 @@ Otros ajustes los publica el juego sin que un menú los pida:
 | `screen_fade` | número de 0 a 1 | Cuánto quita de la pantalla el fundido del cambio de mapa, que el render resta de la escena debajo de la UI; el HUD desvanece con él sus paneles |
 | `map_title_key` | clave de texto | La clave del nombre del mapa al que lleva el cambio de mapa (`main.map_names.NNNN`) mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacía el resto del tiempo o si el mapa no tiene nombre. El HUD pone su texto en el idioma del jugador (`t()`) en el centro, delante del fundido, y lo reescribe al cambiar de idioma |
 
+## Aspectos
+
+Un **aspecto** (skin) es el estilo de toda la UI: colores, tipos, tamaños, marcos e imágenes de cada pantalla. Hay
+un solo ajuste global, `ui_skin`, que vale para todas las pantallas y se cambia en vivo; por defecto, el aspecto
+moderno (`modern`). Los mods pueden añadir aspectos: este es su contrato, y es estable.
+
+**Lo que es de cada documento y lo que es del aspecto.** Un documento (`ui/<pantalla>/document.rml`) solo enlaza
+hojas de estructura, lo que no depende del aspecto: `ui/common/base.rcss` (los `display` por defecto, el tamaño del
+`body`, `.hidden`, qué elementos toman el foco y `.original-look`) y, si la pantalla lo necesita, su
+`ui/<pantalla>/structure.rcss` con el comportamiento propio de esa pantalla (las listas de los menús principal y de
+pausa dan la vuelta con `nav-up` y `nav-down`). Todo lo demás (la fuente, los colores, los tamaños, la posición de
+los paneles) lo pone el aspecto. La excepción es el aviso de los assets de desarrollo (`ui/dev_assets`): es un aviso
+para quien desarrolla, no parte del aspecto del juego, así que todo su estilo está en su `structure.rcss` y se ve
+igual con todos los aspectos.
+
+**Un aspecto no cambia cómo se navega.** Es una convención, también para los aspectos de los mods: ni sus RCSS ni
+sus RML de reemplazo escriben propiedades `nav-*` (`nav-up`, `nav-down`, `nav-left`, `nav-right`). La navegación
+de una pantalla está en su `structure.rcss`, que es igual con todos los aspectos. Un test (`skin_switch_tests.cpp`)
+recorre los aspectos del paquete `game` y de `tests/mods` y falla si alguno escribe `nav-`. Los ids de los elementos, las clases que usan los scripts, los scripts
+y los ajustes y comandos que leen y envían son el contrato con el juego y no cambian con el aspecto.
+
+**`ui/skins/<id>/skin.yaml`** (esquema `ui_skin`, registrado en `pack.yaml`):
+
+```yaml
+id: framed                          # igual que el nombre de la carpeta
+name: framed.skin_name              # la clave del nombre que enseñan los menús
+extends: modern                     # opcional: el aspecto al que este añade
+theme: [ui/skins/framed/theme]      # hojas para todos los documentos
+screens:                            # por pantalla, con el nombre con el que se carga el documento
+  main_menu:
+    styles: [ui/skins/framed/main_menu/style]
+    document: ui/skins/framed/main_menu/document   # opcional: otro RML para esa pantalla
+sprite_sheets:                      # opcional: hojas de sprites para RCSS
+  - name: frames
+    image: texture/stddat/time      # asset, sin extensión
+    palette: 3                      # opcional: otra paleta de la imagen indexada
+    original_size: [66, 29]         # opcional: el tamaño del original, para copias escaladas
+    dp_per_pixel: 3                 # opcional: cuántos dp ocupa un píxel del original (1 por defecto)
+    sprites:
+      corner: [0, 0, 8, 8]          # x, y, ancho, alto en píxeles del original
+```
+
+| Pieza | Qué hace |
+|---|---|
+| `parseSkin`, `parseSkinChoice` (`skin.hpp`) | Leen `skin.yaml` y `ui/ui_skin.yaml` (`default: modern`, esquema `ui_skin_choice`): el aspecto con el que arranca el juego es dato del paquete |
+| `SkinCatalog` (`skin_catalog.hpp`) | Los aspectos de todos los paquetes montados, por id. Uno cuyo id no es su carpeta, que nombra un asset que falta o que extiende uno que no está (o en bucle) se queda fuera con un aviso en el log |
+| `SkinStyler` (`src/skin_styler.*`) | La hoja de cada pantalla con el aspecto actual: sus hojas de sprites y las de `theme` y `screens.<pantalla>.styles` de cada aspecto de la cadena, el aspecto base primero, encima de las hojas propias del documento |
+| `spriteSheetRcss` (`sprite_sheet_rcss.hpp`) | Escribe el `@spritesheet` de RCSS de una hoja de sprites. Si la imagen es un múltiplo entero de `original_size` (una copia escalada del remaster), multiplica los rectángulos y ajusta `resolution`, así que los sprites ocupan los mismos dp. Del archivo de la imagen solo lee la cabecera, para su tamaño (`imageSize`) |
+
+- **Cambio en vivo:** `Ui::setSkin(id)` cambia la hoja de cada documento abierto sin volver a cargarlo: los scripts,
+  su estado, el foco y lo que está visible siguen igual. Solo un documento cuyo RML cambia (`document`) se carga de
+  nuevo, y se muestra donde estaba. `Ui::skins()` da el catálogo, `Ui::skin()` el aspecto actual. Desde Lua,
+  `ui.skins()` da los ids y `ui.skin_name_key(id)` la clave de su nombre.
+- **Herencia:** con `extends`, las hojas del aspecto base van primero y las del nuevo después, así que un aspecto
+  pequeño solo escribe lo que cambia. Si varios nombran `document` para una pantalla, gana el más cercano. Con las
+  hojas de sprites también gana el más cercano: una hoja con el nombre de una del aspecto base la reemplaza, y si
+  dos hojas dan un sprite con el mismo nombre, se queda el de la más cercana, con un aviso en el log (RmlUi se
+  quedaría con el primero que lee).
+- **Si falla:** el cambio va en dos pasos. Primero se cargan, ocultos, los documentos que el aspecto nuevo cambia
+  de RML; si alguno no se puede cargar, se descartan todos, la UI vuelve al aspecto que tenía y `setSkin` devuelve
+  el error. Hasta ahí ningún documento ha cambiado, así que volver no puede fallar, y nada se carga dos veces ni
+  recibe `on_show` dos veces. Los documentos de reemplazo descartados sí han corrido ya los scripts que se ejecutan
+  al cargarse (el código de nivel superior de su `logic.lua`), así que esos scripts no deben tener efectos fuera de
+  su documento. Si todos cargan, cada uno ocupa el sitio del suyo (visible, en el mismo lugar de la pila modal y con
+  su `on_show`) y los demás documentos toman el aspecto sin recargarse. El menú sigue enseñando el aspecto que hay
+  de verdad.
+- **El ajuste `ui_skin`** sigue el camino de `text_font`: al arrancar manda `--ui-skin <id>`, luego el guardado en
+  `settings.yaml` y luego el de los paquetes (`ui/ui_skin.yaml`); un id que no existe deja el de los paquetes con
+  un aviso. Los menús principal y de pausa (opciones) tienen la entrada «Aspecto de la interfaz»
+  (`ui/common/ui_skin_choice.lua`, compartido), que recorre `ui.skins()` y manda el comando `ui_skin`; la app lo
+  aplica, lo guarda y lo publica. En la consola de depuración, `ui_skin("modern")`.
+- **Un mod que añade un aspecto** trae `ui/skins/<id>/skin.yaml`, sus hojas y el nombre en un archivo de textos
+  propio (`localization/<idioma>/<mod>.yaml`): un archivo con el nombre de uno del juego (`ui_skin.yaml`) lo
+  reemplaza entero. El ejemplo mínimo es `tests/mods/ui_skin/test_contrast`, que extiende `modern` y cambia colores
+  en todas las pantallas.
+- **Un aspecto de un mod no trae scripts:** se cargan su `skin.yaml`, sus RML y sus RCSS, pero sus scripts no. Un
+  `<script src>` externo solo se ejecuta si el archivo del script viene de las capas base o remaster, también desde
+  un documento de un mod; un script en línea solo se ejecuta en documentos de las capas base o remaster. Así, un RML
+  de reemplazo de un mod enlaza el script de su pantalla del paquete `game` por su ruta
+  (`<script src="/ui/<pantalla>/logic.lua">`) y conserva sus ids, y la lógica sigue siendo la del juego. Cambiar de
+  aspecto y la entrada de los menús son del motor y del paquete `game` (`ui/common/ui_skin_choice.lua`); ningún
+  aspecto necesita scripts propios.
+- **Recarga en caliente:** con `hotReload`, las hojas RCSS de un aspecto se vigilan como las del documento: al
+  guardar una, los documentos que la usan se cargan de nuevo con el aspecto actual. `skin.yaml`, `ui/ui_skin.yaml` y
+  las imágenes de las hojas de sprites no se vigilan: el catálogo se lee al arrancar, y un cambio en ellos necesita
+  reiniciar el juego. Decisión del responsable de diseño (2026-10-21): la recarga de `skin.yaml` llega más tarde,
+  con la documentación de modding.
+
+### Imágenes
+
+Las imágenes de RCSS y RML (`decorator: image(...)`, `<img src>`, `@spritesheet`) se leen por asset id, sin mirar la
+extensión: `texture/x.png` encuentra `texture/x.ktx2` si un remaster lo reemplaza, así que los aspectos pueden
+escribir siempre `.png`. Se leen PNG (`decodePng`) y KTX2 (`decodeKtx2`: transcodifica todos los niveles y la UI
+se queda con el primero). Una KTX2 tiene que llevar datos Basis Universal (UASTC o ETC1S, como los escribe
+`dwx cook`); una KTX2 con texeles sin comprimir no se lee.
+
+Antes de decodificar, reservar o descomprimir nada, una imagen de la UI pasa estos límites:
+
+- su archivo tiene como mucho `MaxUiImageFileBytes` (64 MiB), mirado sin leerlo (`VirtualFileSystem::size`);
+- tiene como mucho `MaxUiImageSide` (4096) píxeles de lado, según su cabecera;
+- decodificada a RGBA ocupa como mucho `MaxUiImageBytes`, sumando todos sus niveles (`checkUiImageBudget`): lo que
+  ocupa un cuadrado de 4096 con su cadena de mips completa (13 niveles, unos 85,3 MiB), que es lo que escribe
+  `dwx cook`, así que una imagen cocinada de 4096x4096 se carga;
+- una KTX2 pasa además `checkPlain2dKtx2` (de `engine/assets`, la misma comprobación que hace cualquier carga de
+  una KTX2): una sola imagen 2D (sin capas, sin caras de cubo, profundidad 1), no más niveles de los que da su
+  tamaño, datos Basis Universal sin supercompresión o con BasisLZ o Zstd, y ningún nivel que al cargarse ocupe más
+  de lo que cabe en un nivel de su tamaño (así una «bomba» Zstd se rechaza antes de inflarse).
+
+Pendiente: no hay un presupuesto total de textura por aspecto. Cada imagen tiene sus límites, pero un aspecto con
+muchas hojas de sprites grandes no tiene un tope conjunto.
+
+Una imagen indexada extraída lleva su paleta 0; las demás están en `<imagen>_meta.yaml` (`palettes`, colores de
+16 bits). `texture/x.png?palette=3` la dibuja con la paleta 3, con la regla de transparencia de `dwx` (`0x0000`
+transparente, el resto opaco). Pedir una paleta a una imagen sin metadatos es un error en el log. Pedírsela a una
+imagen cuyo archivo es una KTX2 también (`PaletteNeedsPng`): pasa cuando un remaster reemplaza la PNG indexada con
+una KTX2, que ya no tiene paletas, así que un aspecto que use `?palette=` de esa imagen se queda sin ella; el
+remaster tiene que dar las variantes que necesite como imágenes propias.
+
 ## Aspecto original
 
 El texto que imita al original (de momento, el nombre del mapa del cambio de mapa) usa la clase `.original-look` de
-`ui/common/theme.rcss`, que pone la familia `original-look` y el color de la tinta de la fuente del original (`#d6d6d6`,
+`ui/common/base.rcss`, que pone la familia `original-look` y el color de la tinta de la fuente del original (`#d6d6d6`,
 el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro texto con ese aspecto.
 
 - **La familia** la describe `ui/fonts/original_look.yaml` del paquete `game` (esquema `ui_text_font`): su nombre, la
@@ -246,7 +367,12 @@ mando virtual: `attach playstation`, `tap dpad_down`, `press south`, `release so
 menú con teclado, con mando y con ratón, comprueba los avisos, el minimapa y sus marcadores, el texto con aspecto original con una fuente de mapa de bits de
 prueba (el cambio de fuente en el momento y los caracteres que faltan), la escala (también en
 alta densidad), los entornos de Lua, el presupuesto compartido, los límites, la falta de memoria y la recarga en
-caliente.
+caliente. `skin_tests`, `skin_switch_tests` e `image_reference_tests` comprueban la lectura de `skin.yaml`, el
+catálogo con el paquete de prueba `tests/mods/ui_skin/test_contrast`, el cambio en vivo en todos los documentos
+(estilo nuevo, foco y estado intactos), el cambio de RML de una pantalla y la vuelta atrás si no carga, las hojas
+de sprites a lo largo de `extends`, la recarga en caliente de una hoja del aspecto, la entrada de los menús, las
+paletas y la KTX2 que responde a un `.png`. `dwe_game_tests` (`apps/game/tests`, que compila los fuentes de los
+ajustes del juego) comprueba el orden de arranque de `ui_skin` y que el ajuste se guarda y se vuelve a leer.
 
 La demo registra cada pocos segundos lo que cuesta la UI en la CPU por frame (marcadores, layout y grabación de las
 llamadas) y cuántas llamadas de dibujo hace.

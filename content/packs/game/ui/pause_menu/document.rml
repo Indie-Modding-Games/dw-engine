@@ -1,8 +1,9 @@
 <rml>
 <head>
 	<title>Pause menu</title>
-	<link type="text/rcss" href="../common/theme.rcss"/>
-	<link type="text/rcss" href="style.rcss"/>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="../common/ui_skin_choice.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -37,6 +38,9 @@
 				</button>
 				<button id="vsync" class="option" onclick="adjust(document, 'vsync', 1)">
 					<span class="label" text-key="pause_menu.vsync"></span><span class="value" id="vsync-value"></span>
+				</button>
+				<button id="ui-skin" class="option" onclick="adjust(document, 'ui-skin', 1)">
+					<span class="label" text-key="pause_menu.ui_skin"></span><span class="value" id="ui-skin-value"></span>
 				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>

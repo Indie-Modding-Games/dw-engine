@@ -1,0 +1,14 @@
+/* The test skin: the modern look with other colours on every screen, so a switch shows at once. */
+
+body {
+	color: #ffe066;
+}
+
+button {
+	color: #b8f0ff;
+}
+
+button:focus {
+	background-color: #2f7de1;
+	color: #ffffff;
+}

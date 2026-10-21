@@ -1,0 +1,41 @@
+/* The modern skin's look shared by every document: the font, the entries of the menus and the button prompts. Sizes
+   are in dp: one dp is one pixel at 720 lines, scaled with the window and the player's UI scale option. */
+
+body {
+	font-family: "Noto Sans";
+	font-weight: normal;
+	font-size: 18dp;
+	color: #e8edf3;
+}
+
+button {
+	padding: 9dp 18dp;
+	margin: 3dp 0;
+	border-radius: 8dp;
+	color: #c9d3de;
+	background-color: transparent;
+	transition: background-color color 0.12s cubic-out;
+}
+
+button:focus {
+	background-color: #f0a73a;
+	color: #1a1f27;
+}
+
+button:active {
+	background-color: #ffc36b;
+}
+
+/* A button prompt: the name of the key or gamepad button that does something. */
+.key {
+	display: inline-block;
+	min-width: 18dp;
+	padding: 1dp 8dp;
+	margin-right: 6dp;
+	border-radius: 5dp;
+	border: 1dp #c9d3de;
+	font-weight: bold;
+	font-size: 14dp;
+	text-align: center;
+	color: #e8edf3;
+}

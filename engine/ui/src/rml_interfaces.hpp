@@ -82,10 +82,11 @@ private:
     std::map<std::string, std::size_t> recorded_;
 };
 
-// Where a texture's pixels come from: an image the UI generated, or a PNG asset.
+// Where a texture's pixels come from: an image the UI generated, or an image asset (ImageReference: any extension,
+// and a palette of an indexed image).
 class TextureSources {
 public:
-    explicit TextureSources(FileInterface& files) : files_{&files} {}
+    explicit TextureSources(const assets::VirtualFileSystem& files) : files_{&files} {}
 
     void setGenerated(const std::string& name, assets::Image image) { generated_[name] = std::move(image); }
     void dropGenerated(const std::string& name) { generated_.erase(name); }
@@ -94,7 +95,7 @@ public:
     [[nodiscard]] core::Result<assets::Image> load(std::string_view source) const;
 
 private:
-    FileInterface* files_;
+    const assets::VirtualFileSystem* files_;
     std::map<std::string, assets::Image, std::less<>> generated_;
 };
 

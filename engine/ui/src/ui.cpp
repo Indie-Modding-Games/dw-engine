@@ -15,6 +15,7 @@
 #include <RmlUi/Core/Factory.h>
 #include <RmlUi/Core/Input.h>
 #include <RmlUi/Core/StringUtilities.h>
+#include <RmlUi/Core/StyleSheetContainer.h>
 
 #include <algorithm>
 #include <array>
@@ -34,6 +35,7 @@
 #include "render_bridge.hpp"
 #include "rml_interfaces.hpp"
 #include "scripting.hpp"
+#include "skin_styler.hpp"
 
 namespace dwe::ui {
 namespace {
@@ -164,8 +166,14 @@ void applyTextKeys(Rml::Element& root, const localization::Catalog& texts) {
 struct Ui::Impl {
     struct Document {
         ScriptedDocument* element = nullptr;
+        // The document shown, and the screen's own one, which a skin may replace.
         assets::AssetId asset;
+        assets::AssetId screenAsset;
+        // The document's own style sheet, under the skin's.
+        Rml::SharedPtr<Rml::StyleSheetContainer> ownSheet;
         std::string path;
+        // What the document and its skin's look were read from, and what they held, for hot reload.
+        std::map<std::string, std::size_t> documentFiles;
         std::map<std::string, std::size_t> files;
     };
 
@@ -196,12 +204,14 @@ struct Ui::Impl {
     SystemInterface system;
     CodeTrust trust;
     FileInterface files;
-    TextureSources sources{files};
+    TextureSources sources{*desc.files};
     RenderBridge render{sources, desc.renderer};
     std::unique_ptr<Scripting> scripting;
     // Installed over RmlUi's own after it starts; RmlUi shuts it down, so it outlives Rml::Shutdown.
     std::unique_ptr<FontEngine> fontEngine;
     Rml::Context* context = nullptr;
+    SkinCatalog skins;
+    SkinStyler styler{*desc.files, skins};
 
     std::map<std::string, Document, std::less<>> documents;
     std::vector<std::string> modalStack;
@@ -248,6 +258,9 @@ struct Ui::Impl {
         if (context != nullptr) {
             Rml::RemoveContext(std::string{ContextName});
         }
+        // Style sheets hold RmlUi's textures and decorators: they go before RmlUi too.
+        documents.clear();
+        styler.use(nullptr);
         scripting.reset();
         vm.reset();
         Rml::Shutdown();
@@ -278,6 +291,18 @@ struct Ui::Impl {
                 },
             .languages =
                 [this]() { return std::vector<std::string>{texts->languages().begin(), texts->languages().end()}; },
+            .skins =
+                [this]() {
+                    std::vector<std::string> ids;
+                    for (const Skin& skin : skins.skins()) {
+                        ids.push_back(skin.id);
+                    }
+                    return ids;
+                },
+            .skinNameKey = [this](std::string_view id) -> std::string {
+                const Skin* skin = skins.find(id);
+                return skin != nullptr ? skin->nameKey : std::string{};
+            },
             .device = [this]() -> std::string {
                 return device == input::DeviceKind::Gamepad ? "gamepad" : "keyboard_mouse";
             },
@@ -398,8 +423,10 @@ struct Ui::Impl {
         return found == documents.end() ? nullptr : &found->second;
     }
 
-    // Loads a document without making it the one known by its name.
-    core::Result<Document> loadDetached(std::string_view name, const assets::AssetId& asset) {
+    // Loads a document without making it the one known by its name: the skin's replacement for the screen, if it
+    // has one, styled with the skin's look.
+    core::Result<Document> loadDetached(std::string_view name, const assets::AssetId& screenAsset) {
+        const assets::AssetId asset = styler.documentOf(name, screenAsset);
         const assets::AssetSource* source = desc.files->resolve(asset);
         if (source == nullptr) {
             return core::fail(std::format("no document {} in the packs", asset.str()));
@@ -428,7 +455,99 @@ struct Ui::Impl {
         document->setName(name);
         applyTextKeys(*document, *texts);
         applyMinimap(*document);
-        return Document{.element = document, .asset = asset, .path = path, .files = std::move(read)};
+        Document loadedDocument{.element = document,
+                                .asset = asset,
+                                .screenAsset = screenAsset,
+                                .ownSheet = ownSheetOf(*document),
+                                .path = path,
+                                .documentFiles = std::move(read),
+                                .files = {}};
+        applySkin(loadedDocument);
+        return loadedDocument;
+    }
+
+    // A copy of the style sheet a document's own links and <style> give it.
+    static Rml::SharedPtr<Rml::StyleSheetContainer> ownSheetOf(const Rml::ElementDocument& document) {
+        const Rml::StyleSheetContainer* own = document.GetStyleSheetContainer();
+        const Rml::StyleSheetContainer none;
+        return own != nullptr ? own->CombineStyleSheetContainer(none) : Rml::MakeShared<Rml::StyleSheetContainer>();
+    }
+
+    // Gives a document its screen's look in the current skin, and watches the files the look comes from.
+    void applySkin(Document& document) {
+        const std::vector<std::string> lookFiles =
+            styler.style(*document.element, document.element->name(), *document.ownSheet);
+        document.files = document.documentFiles;
+        for (const std::string& path : lookFiles) {
+            document.files.insert_or_assign(path, files.fingerprint(path).value_or(0));
+        }
+    }
+
+    // Switches to a skin: every document takes its look. The documents the skin lays out with another document are
+    // loaded first, hidden; if one cannot load, none of them is kept, the UI goes back to the skin it had and the
+    // switch fails. Until then no document has changed, so going back cannot fail and nothing is loaded or shown twice.
+    core::Result<void> setSkin(std::string_view id) {
+        const Skin* skin = skins.find(id);
+        if (skin == nullptr) {
+            return core::fail(core::formatMessage(messages::UnknownSkin, id));
+        }
+        const Skin* previous = styler.skin();
+        if (skin == previous) {
+            return {};
+        }
+        styler.use(skin);
+        clearRmlCaches();
+        auto fresh = loadReplacements();
+        if (!fresh) {
+            styler.use(previous);
+            clearRmlCaches();
+            return core::fail(
+                core::formatMessage(messages::SkinSwitchFailed, id, fresh.error().message, skinIdOf(previous)));
+        }
+        for (auto& [name, document] : documents) {
+            if (!fresh->contains(name)) {
+                applySkin(document);
+            }
+        }
+        for (auto& [name, document] : *fresh) {
+            swapIn(name, std::move(document));
+        }
+        core::logInfo("{}", core::formatMessage(messages::SkinChanged, id));
+        return {};
+    }
+
+    static std::string_view skinIdOf(const Skin* skin) { return skin != nullptr ? skin->id : std::string_view{}; }
+
+    // Loads, hidden, every document the current skin lays out with another document than the one it shows. Every
+    // document is tried; if any cannot load, the others are unloaded and the errors are joined.
+    core::Result<std::map<std::string, Document, std::less<>>> loadReplacements() {
+        std::map<std::string, Document, std::less<>> fresh;
+        std::string errors;
+        for (const auto& [name, document] : documents) {
+            if (styler.documentOf(name, document.screenAsset) == document.asset) {
+                continue;
+            }
+            auto loaded = loadDetached(name, document.screenAsset);
+            if (!loaded) {
+                errors += (errors.empty() ? "" : "; ") +
+                          core::formatMessage(messages::DocumentReloadFailed, name, loaded.error().message);
+                continue;
+            }
+            fresh.emplace(name, std::move(*loaded));
+        }
+        if (!errors.empty()) {
+            for (const auto& [name, document] : fresh) {
+                context->UnloadDocument(document.element);
+            }
+            return core::fail(std::move(errors));
+        }
+        return fresh;
+    }
+
+    // Makes RmlUi read style sheets and templates from their files again.
+    static void clearRmlCaches() {
+        Rml::Factory::ClearStyleSheetCache();
+        Rml::Factory::ClearTemplateCache();
     }
 
     core::Result<void> load(std::string_view name, const assets::AssetId& asset) {
@@ -767,33 +886,44 @@ struct Ui::Impl {
                 stale.push_back(name);
             }
         }
+        if (stale.empty()) {
+            return;
+        }
+        clearRmlCaches();
+        styler.forget();
         for (const std::string& name : stale) {
-            reload(name);
+            if (auto swapped = replace(name); !swapped) {
+                core::logError("ui: {}", swapped.error().message);
+                // Wait for the next edit instead of failing again every check.
+                for (auto& [path, fingerprint] : find(name)->files) {
+                    fingerprint = files.fingerprint(path).value_or(0);
+                }
+            }
         }
     }
 
-    // Loads the document again and swaps it in only when that worked: a broken edit leaves the old one running.
-    // A shown document is shown again in its place among the modal ones.
-    void reload(const std::string& name) {
-        Document& old = *find(name);
-        Rml::Factory::ClearStyleSheetCache();
-        Rml::Factory::ClearTemplateCache();
-        auto fresh = loadDetached(name, old.asset);
+    // Loads a document again, in the current skin, and swaps it in only when that worked: on an error the old one
+    // keeps running. The caller clears the style caches first.
+    core::Result<void> replace(const std::string& name) {
+        auto fresh = loadDetached(name, find(name)->screenAsset);
         if (!fresh) {
-            core::logError("ui: could not reload {}: {}", name, fresh.error().message);
-            // Wait for the next edit instead of failing again every check.
-            for (auto& [path, fingerprint] : old.files) {
-                fingerprint = files.fingerprint(path).value_or(0);
-            }
-            return;
+            return core::fail(core::formatMessage(messages::DocumentReloadFailed, name, fresh.error().message));
         }
+        swapIn(name, std::move(*fresh));
+        return {};
+    }
+
+    // Puts a document loaded hidden in the place of the one with its name: shown, and in the same place of the modal
+    // stack, if the old one was, and told so through on_show.
+    void swapIn(const std::string& name, Document fresh) {
+        Document& old = *find(name);
         const bool visible = old.element->IsVisible();
         const auto place = std::ranges::find(modalStack, name);
         const bool modal = place != modalStack.end();
         context->UnloadDocument(old.element);
-        old = std::move(*fresh);
+        old = std::move(fresh);
         markersStale = true;
-        core::logInfo("ui: reloaded {}", name);
+        core::logInfo("{}", core::formatMessage(messages::DocumentReloaded, name));
         if (!visible) {
             return;
         }
@@ -848,6 +978,8 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
         return core::fail("could not create the UI context");
     }
     impl->resize(desc.width, desc.height);
+    impl->skins = SkinCatalog::load(*desc.files);
+    impl->styler.use(impl->skins.find(impl->skins.defaultSkin()));
     core::logInfo("RmlUi {} started", Rml::GetVersion());
     return std::unique_ptr<Ui>{new Ui{std::move(impl)}};
 }
@@ -878,6 +1010,19 @@ void Ui::setTextFont(TextFont font) {
 
 TextFont Ui::textFont() const {
     return impl_->fontEngine != nullptr ? impl_->fontEngine->textFont() : TextFont::Modern;
+}
+
+const SkinCatalog& Ui::skins() const {
+    return impl_->skins;
+}
+
+core::Result<void> Ui::setSkin(std::string_view id) {
+    return impl_->setSkin(id);
+}
+
+std::string_view Ui::skin() const {
+    const Skin* skin = impl_->styler.skin();
+    return skin != nullptr ? std::string_view{skin->id} : std::string_view{};
 }
 
 void Ui::setMenuDocument(std::string_view name) {
@@ -977,6 +1122,16 @@ std::string Ui::focusedElementId(std::string_view document) const {
         return {};
     }
     return focus->GetId();
+}
+
+std::string Ui::styleProperty(std::string_view document, std::string_view elementId, std::string_view property) const {
+    const Impl::Document* found = impl_->find(document);
+    if (found == nullptr) {
+        return {};
+    }
+    Rml::Element* element = elementId.empty() ? found->element : found->element->GetElementById(std::string{elementId});
+    const Rml::Property* value = element != nullptr ? element->GetProperty(std::string{property}) : nullptr;
+    return value != nullptr ? value->ToString() : std::string{};
 }
 
 std::string Ui::elementText(std::string_view document, std::string_view elementId) const {
