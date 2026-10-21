@@ -184,6 +184,13 @@ void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& a
     if (!inputs) {
         return;
     }
+    // partner_impl.c: tickConditions checks the virus bar after the natural evolution and its target wins: when
+    // the bar filled in this tick, the routed VirusBarFull evolves the partner and the natural check waits.
+    if (std::ranges::any_of(session.partner().pendingEvents(), [](const game::partner::PartnerEvent& event) {
+            return event.kind == EventKind::VirusBarFull;
+        })) {
+        return;
+    }
     // partner_impl.c: tickConditions checks once a game hour.
     const game::evolution::NaturalCheck check =
         evolution_->checkNatural(*inputs, state_, advance.hours, session.random());

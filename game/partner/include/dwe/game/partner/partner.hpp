@@ -53,6 +53,8 @@ public:
 
     // The events since the last call.
     [[nodiscard]] std::vector<PartnerEvent> takeEvents();
+    // The events since the last takeEvents, left in place: what the systems that run before the routing look at.
+    [[nodiscard]] const std::vector<PartnerEvent>& pendingEvents() const { return events_; }
 
     // Whether the partner refuses an offered item; a refusal readies a stronger scold.
     [[nodiscard]] bool refuses(const ItemOffer& offer);

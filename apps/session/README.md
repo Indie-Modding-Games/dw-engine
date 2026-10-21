@@ -106,8 +106,9 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
   crea después (necesita el inventario, que necesita la evolución), así que se le da con
   `setMoveSource(batalla)`; sin él, la evolución no ve técnicas aprendidas.
 - **Cuándo mira**: en cada tick que cruza horas de juego, `checkNatural` con las horas cruzadas (el contador lo sube
-  el partner; si no evoluciona, el adaptador deja el que devuelve). `VirusBarFull` → `fillVirusBar`; `Slept` →
-  `wakeUp`; tras alabar o regañar → `praiseOrScold`; `Reborn` marca al bebé como criado
+  el partner; si no evoluciona, el adaptador deja el que devuelve), salvo si la barra de virus se llenó en ese tick:
+  el virus gana (`partner_impl.c: tickConditions`) y la evolución natural espera. `VirusBarFull` → `fillVirusBar`;
+  `Slept` → `wakeUp`; tras alabar o regañar → `praiseOrScold`; `Reborn` marca al bebé como criado
   (`evolution.c: reincarnatePartner`). Órdenes: `useItem(session, objeto)` (la llama el inventario),
   `returnFromVirus(session)` (rutina de guion 2) y `evolveByScript(session, forma)` (rutina 10).
 - **Aplicar** (`evl.c: EVL_applyEvolution`): `Partner::changeSpecies` a la forma destino; `statChange` por
@@ -192,7 +193,7 @@ La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_mov
 | La evolución se mira cada hora de juego, aunque se adelante el reloj | `partner_impl.c: tickConditions` | `EvolutionAdapter::tick` → `checkNatural` con `advance.hours` | `a baby evolves when the clock's hour ...` | Igual |
 | Lo que cambia al evolucionar | `evl.c: EVL_applyEvolution`, `EVL_clampBaseStats` | `EvolutionAdapter::apply` | `an evolution item turns ...`, `back from the virus form ...` | Igual (vuelta del virus: decisión del 2026-10-20) |
 | Nivel de domador al evolucionar a campeón o definitivo | `evl.c: EVL_applyEvolution` (`addTamerLevel(20/100, 1)` si no corre un guion) | `tamer.evolution_level_gain`, `GameSession::addTamerLevel` | `a tamer level chance of 100 ...` | Igual |
-| Barra de virus llena y evolución natural en la misma hora | `partner_impl.c: tickConditions` (gana el virus) | el partner reparte `VirusBarFull` después del `tick` del adaptador: se aplican las dos, la del virus la última | — | **Hueco**: pregunta abierta |
+| Barra de virus llena y evolución natural en la misma hora | `partner_impl.c: tickConditions` (el virus se mira después y su destino gana) | `EvolutionAdapter::tick` no mira la evolución natural si el partner tiene pendiente `VirusBarFull` (`Partner::pendingEvents`); el evento la convierte en la forma virus | `the virus bar filling in the hour the counter reaches ...` | Igual (decidido el 2026-10-20): se decide por tick de la partida, no por fotograma |
 | Qué objetos rechaza el partner | `partner_impl.c: partnerWillRefuseItem` | `item_use.refusal`, `InventoryAdapter` (`RefusalCheck`) | `the partner never takes some items ...`, `a fixed evolution item is refused ...` | Igual |
 | Solo la comida responde al hambre | `partner_impl.c: partnerHandleFoodFeed` | `item_use.meals` → `FoodEffect::meal` | `food feeds the partner ...` | Igual |
 | Descuento de bebé en las tiendas | `script_common.c: isPartnerBaby` (`BABY_IDS`) | `item_use.shop_discount_levels` | `buying a key item asks ...` | Igual |

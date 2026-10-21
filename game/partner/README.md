@@ -51,7 +51,7 @@ partner.addStatGains(evolutionGains);                                           
   efecto. Las ganancias de stats que vienen de fuera (evolución, combate) van por `addStatGains`, que aplica el tope de
   cada ganancia (`care.limits.stat_gain_max`) y el de cada stat; `setStats` pone los stats tal cual, sin tope (el HP
   y el MP tras un combate). La vida que dan o quitan los objetos va por `addLifetime`.
-- **Eventos** (`EventKind`): necesidades que empiezan, ventana de hambre cerrada, error de cuidado (con su causa),
+- **Eventos** (`EventKind`, `takeEvents`; `pendingEvents` los mira sin sacarlos): necesidades que empiezan, ventana de hambre cerrada, error de cuidado (con su causa),
   caca en el suelo (con su tamaño, para `PoopPiles`), rechazo, `Slept` (al despertar) y `NewDay` (cada medianoche
   cruzada jugando, durmiendo, combatiendo o entrenando), entrenado, vida perdida, muerte, renacer, cambio del nivel
   del tamer (ya tirado; la sesión lo limita a 0..10), barra de virus llena y regañina en el peor momento.

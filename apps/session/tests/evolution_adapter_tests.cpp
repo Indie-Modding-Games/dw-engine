@@ -133,6 +133,28 @@ TEST_CASE("the full virus bar turns the partner into the virus form and keeps it
     CHECK(after.toilet.virusBar == 0);
 }
 
+TEST_CASE("the virus bar filling in the hour the counter reaches the check hour wins over the natural evolution") {
+    // partner_impl.c: tickConditions checks the virus bar after the natural evolution, and its target wins.
+    const TestPacks packs;
+    const TableFixture fixture;
+    EvolutionAdapter* adapter = nullptr;
+    auto session = sessionWithEvolution(packs, fixture, adapter);
+    const std::int32_t barLimit = session->partnerRules().care.toilet.virusBarLimit;
+    changePartner(*session, [&](PartnerState& state) {
+        state.species = "bota";
+        state.evolution.hours = BabyHours - 1;
+        state.toilet.virusBar = barLimit;
+    });
+    session->clock().setSpeed(GameHourPerSecond);
+    session->tick(1.0);
+    const PartnerState& after = session->partner().state();
+    CHECK(after.species == "scum");
+    CHECK(after.virusBackup.species == "bota");
+    const auto evolutions = adapter->takeEvolutions();
+    REQUIRE(evolutions.size() == 1);
+    CHECK(evolutions.front().reason == EvolutionReason::Virus);
+}
+
 TEST_CASE("back from the virus form, the rebuilt stats are set and clamped to each stat's limit") {
     const TestPacks packs;
     const TableFixture fixture;
