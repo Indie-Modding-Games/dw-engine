@@ -50,6 +50,7 @@ El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `partner.{name,age,weight,lives,hp,max_hp,mp,max_mp}` | clave, números | Lo que enseña la vista de estadísticas del original (`game_menu.c: renderDigimonStatsView`): nombre, edad en días, peso, vidas, HP y MP actuales y máximos |
+| `partner.pool.<i>.{label,value,min,max}` | clave, números | Las barras de HP (0) y MP (1): el máximo de cada uno sobre 9999, no lo que le queda, como las dibuja el original debajo de los números (`game_menu.c: renderDigimonStatsView`, `renderDigimonStatsBar`) |
 | `partner.stat.<i>.{label,value,min,max}` | clave, números | Las barras de ataque, defensa, velocidad y cerebro, sobre 999 |
 | `partner.meter.<i>.{label,value,min,max,two_tone}` | clave, números, booleano | Felicidad, disciplina y virus, con sus límites del ruleset. Felicidad y disciplina son barras de dos tonos: la barra se llena del mínimo a la mitad del rango y vuelve a llenarse en otro color de la mitad al máximo (`game_menu.c: renderDigimonStatsView`) |
 | `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |

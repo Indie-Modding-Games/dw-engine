@@ -54,6 +54,12 @@ TEST_CASE("the status page shows what the original's does, in its order") {
     CHECK(view.maxHp == 1200);
     CHECK(view.mp == 750);
     CHECK(view.maxMp == 800);
+    // game_menu.c: renderDigimonStatsView: the HP and MP bars show the maximums over 9999, the stat bars over 999.
+    CHECK(view.pools.at(0) ==
+          dwe::screens::MeterView{
+              .labelKey = "main.stat_labels.0000", .value = 1200, .min = 0, .max = 9999, .twoTone = false});
+    CHECK(view.pools.at(1).labelKey == "main.stat_labels.0001");
+    CHECK(view.pools.at(1).value == 800);
     CHECK(view.stats.at(0) ==
           dwe::screens::MeterView{
               .labelKey = "main.stat_labels.0002", .value = 120, .min = 0, .max = 999, .twoTone = false});
@@ -73,4 +79,6 @@ TEST_CASE("the status page shows what the original's does, in its order") {
     CHECK(std::ranges::any_of(settings, [](const dwe::screens::ScreenSetting& setting) {
         return setting.name == "partner.condition.1.key";
     }));
+    CHECK(std::ranges::any_of(
+        settings, [](const dwe::screens::ScreenSetting& setting) { return setting.name == "partner.pool.1.max"; }));
 }

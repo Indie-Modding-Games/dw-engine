@@ -22,9 +22,9 @@
 				</div>
 				<div class="status-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
 				<div class="status-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
-				<div class="status-line"><span class="original-look" id="status-hp-label"></span><span class="original-look line-value" id="status-hp"></span></div>
-				<div class="status-line"><span class="original-look" id="status-mp-label"></span><span class="original-look line-value" id="status-mp"></span></div>
 				<div class="status-bars">
+					<div class="bar-row pool"><span class="label original-look" id="pool-0-label"></span><div class="bar stat"><div class="fill" id="pool-0-fill"></div></div><span class="value original-look" id="pool-0"></span></div>
+					<div class="bar-row pool"><span class="label original-look" id="pool-1-label"></span><div class="bar stat"><div class="fill" id="pool-1-fill"></div></div><span class="value original-look" id="pool-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-1-label"></span><div class="bar stat"><div class="fill" id="stat-1-fill"></div></div><span class="value original-look" id="stat-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>

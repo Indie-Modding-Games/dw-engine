@@ -13,6 +13,11 @@ using game::partner::Stat;
 // The scale of the stat bars of the status page (game_menu.c: renderDigimonStatsView): a full bar is 999.
 constexpr std::int32_t StatBarMax = 999;
 
+// The scale of the HP and MP bars of the same page: a full bar is a maximum of 9999 (renderDigimonStatsBar(maxHp,
+// 9999, ...)); the bar shows the maximum, not what is left.
+constexpr std::int32_t PoolBarMax = 9999;
+
+constexpr std::array<Stat, 2> PoolStats{Stat::Hp, Stat::Mp};
 constexpr std::array<Stat, 4> BarStats{Stat::Offense, Stat::Defense, Stat::Speed, Stat::Brain};
 
 // The bars below the stats, in the original's order, with the texts of their labels.
@@ -66,11 +71,20 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
                            .maxHp = partner.stats[Stat::Hp],
                            .mp = partner.currentMp,
                            .maxMp = partner.stats[Stat::Mp],
+                           .pools = {},
                            .stats = {},
                            .meters = {meterOf(HappinessLabel, partner.happiness, true),
                                       meterOf(DisciplineLabel, partner.discipline, true),
                                       meterOf(VirusLabel, partner.virusBar, false)},
                            .conditionKeys = {}};
+    for (std::size_t index = 0; index < PoolStats.size(); ++index) {
+        const Stat stat = PoolStats.at(index);
+        view.pools.at(index) = {.labelKey = mainLabelKey(StatLabelsBlock, static_cast<std::size_t>(stat)),
+                                .value = partner.stats[stat],
+                                .min = 0,
+                                .max = PoolBarMax,
+                                .twoTone = false};
+    }
     for (std::size_t index = 0; index < BarStats.size(); ++index) {
         const Stat stat = BarStats.at(index);
         view.stats.at(index) = {.labelKey = mainLabelKey(StatLabelsBlock, static_cast<std::size_t>(stat)),
@@ -98,6 +112,9 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
         {.name = std::string{PartnerMpSetting}, .value = static_cast<double>(view.mp)},
         {.name = std::string{PartnerMaxMpSetting}, .value = static_cast<double>(view.maxMp)},
     };
+    for (std::size_t index = 0; index < view.pools.size(); ++index) {
+        addMeter(settings, PartnerPoolList, index, view.pools.at(index));
+    }
     for (std::size_t index = 0; index < view.stats.size(); ++index) {
         addMeter(settings, PartnerStatList, index, view.stats.at(index));
     }

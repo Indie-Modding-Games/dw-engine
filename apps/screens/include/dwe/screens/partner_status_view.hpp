@@ -22,6 +22,7 @@ inline constexpr std::string_view PartnerHpSetting = "partner.hp";
 inline constexpr std::string_view PartnerMaxHpSetting = "partner.max_hp";
 inline constexpr std::string_view PartnerMpSetting = "partner.mp";
 inline constexpr std::string_view PartnerMaxMpSetting = "partner.max_mp";
+inline constexpr std::string_view PartnerPoolList = "partner.pool";
 inline constexpr std::string_view PartnerStatList = "partner.stat";
 inline constexpr std::string_view PartnerMeterList = "partner.meter";
 inline constexpr std::string_view PartnerConditionList = "partner.condition";
@@ -40,8 +41,8 @@ struct MeterView {
 };
 
 // What the status page shows, in the original's order (game_menu.c: renderDigimonStatsView): the name, age and
-// weight; HP and MP, now and at most; offense, defense, speed and brain; the lives; the conditions; and the bars of
-// happiness, discipline and the virus.
+// weight; HP and MP, now and at most, with a bar of the maximum; offense, defense, speed and brain; the lives; the
+// conditions; and the bars of happiness, discipline and the virus.
 struct PartnerStatusView {
     std::string nameKey;
     std::int32_t ageDays = 0;
@@ -51,6 +52,8 @@ struct PartnerStatusView {
     std::int32_t maxHp = 0;
     std::int32_t mp = 0;
     std::int32_t maxMp = 0;
+    // The bars of HP and MP: their maximums over 9999, as the original draws them under the numbers.
+    std::array<MeterView, 2> pools;
     // Offense, defense, speed and brain, with the original's labels (main.stat_labels).
     std::array<MeterView, 4> stats;
     std::vector<MeterView> meters;

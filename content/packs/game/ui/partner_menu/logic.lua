@@ -6,14 +6,13 @@
 local pages = { "status", "items", "care" }
 local first_entry = { status = "tab-status", items = "slot-0", care = "care-praise" }
 local max_slots = 30
+local pool_bars = 2
 local stat_bars = 4
 local meters = 3
 local max_conditions = 7
 
--- The original's labels: HP and MP (main.stat_labels), the item options (main.item_menu_labels: use, move, sort,
--- drop), the sort orders (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and bits.
-local hp_label_key = "main.stat_labels.0000"
-local mp_label_key = "main.stat_labels.0001"
+-- The original's labels: the item options (main.item_menu_labels: use, move, sort, drop), the sort orders
+-- (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and bits.
 local option_names = { "use", "move", "sort", "drop" }
 local sort_orders = 3
 local bits_label_key = "main.battle_ui_bits_labels.0000"
@@ -98,10 +97,13 @@ local function draw_status(document)
 	document:get("status-lives"):set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
 	document:get("status-age"):set_text(t("partner_menu.age.value", { days = number("partner.age") }))
 	document:get("status-weight"):set_text(t("partner_menu.weight.value", { weight = number("partner.weight") }))
-	document:get("status-hp-label"):set_text(t(hp_label_key))
-	document:get("status-mp-label"):set_text(t(mp_label_key))
-	document:get("status-hp"):set_text(number("partner.hp") .. " / " .. number("partner.max_hp"))
-	document:get("status-mp"):set_text(number("partner.mp") .. " / " .. number("partner.max_mp"))
+	-- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c: renderDigimonStatsView).
+	local pool_now = { number("partner.hp"), number("partner.mp") }
+	for index = 0, pool_bars - 1 do
+		draw_bar(document, "pool-" .. index, "partner.pool", index)
+		local maximum = number("partner.pool." .. index .. ".value")
+		document:get("pool-" .. index):set_text(pool_now[index + 1] .. " / " .. maximum)
+	end
 	for index = 0, stat_bars - 1 do
 		draw_bar(document, "stat-" .. index, "partner.stat", index)
 	end

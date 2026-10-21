@@ -122,6 +122,11 @@
 	text-align: right;
 }
 
+/* HP and MP show "now / most" after their bar. */
+.pool .value {
+	width: 150dp;
+}
+
 #conditions {
 	margin-top: 10dp;
 	font-size: 22dp;
