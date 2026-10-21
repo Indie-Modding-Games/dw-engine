@@ -102,7 +102,10 @@ probable y está marcado en el código), **Hueco** (falta).
 | Orden aprendida y bonus de MP en el cuadro final | `battle_ui.c: handleBattleEndBox` | — | — | Hueco |
 | Bolsa del domador en combate: su propio botón, no con huida, sin domador ni con otro objeto en el aire; el menú de órdenes espera mientras está abierta y el combate sigue | `battle_tick.c: tamerTickBattle`, `handleCommands`; `inventory.c: addInventoryUI`; `BTL_battleMain` | `Battle::bagAvailable`, `openBag`, `closeBag`, `command` (`BagOpen`) | the tamer's bag opens only with the tamer... | Igual |
 | Qué se puede lanzar: `item_color` 1 o 2 | `inventory.c: selectOptionMenu` | `inventory::useItem` con `UseContext::Battle` (sesión) | an item thrown in battle is consumed at once... (session) | Igual |
-| Lanzamiento: se gasta al lanzarlo, sale en el fotograma 7 de la animación, vuela 24 fotogramas, siempre llega, uno cada vez, cierra la bolsa | `main.c: startThrowingItem`, `tickThrownItem` | `throwItem`, `tickThrownItem` (`battle.item_throw`) | a thrown item closes the bag and lands...; the throw's frames come from the ruleset | Suposición (los fotogramas de la animación del domador van a un fotograma de combate cada uno) |
+| Lanzamiento: se gasta al lanzarlo, sale en el fotograma 7 de la animación, vuela 24 fotogramas, siempre llega, uno cada vez, cierra la bolsa | `main.c: startThrowingItem`, `tickThrownItem` | `throwItem`, `tickThrownItem` (`battle.item_throw`) | a thrown item closes the bag and lands...; the throw's frames come from the ruleset | Suposición (los fotogramas de la animación del domador van a un fotograma de combate cada uno); pendiente de comprobar con el sistema de animación (2026-10-21) |
+| Elegir un objeto de la bolsa en combate | `inventory.c: selectOptionMenu` (caja de opciones antes de lanzar) | `ui/battle`: confirmar una ranura envía `battle_throw` | `route-battle-*` | Desviación aprobada (2026-10-21): lanza al confirmar |
+| Título de la caja final | `battle_ui.c: handleBattleEndBox` (sin título) | `outcomeTextKey` (`battle.outcome.*`) | `route-battle-*` | Desviación aprobada (2026-10-21): accesibilidad |
+| Nombre del enemigo | `battle_main.c: BTL_renderEnemyHPBars` (barra sobre el enemigo, sin nombre) | `battle.fighter.<i>.name` en el panel de HP | — | Desviación aprobada (2026-10-21) hasta la escena 3D del combate |
 | Efecto al llegar: curación hasta el máximo, revivir, curar, proteger, discos hasta el 130 % del valor inicial (el omnidisco sin ese límite); con 0 HP solo funcionan los de revivir | `item.c: ITEM_FUNCTIONS`, `handleRestore`; `main.c: handleBuffDisks`; `battle_main.c: BTL_healStatusEffect` | `land`, `boost` | a thrown item heals up to the maximums... | Igual |
 | Cuenta atrás parada mientras vuela un objeto | `battle_setup.c: BTL_isBattleFinished` | `Battle::step` | the defeat countdown waits while a thrown item flies... | Igual |
 | Barra de HP de los enemigos: solo HP, tras recibir daño, se oculta 21 fotogramas después de acabar el retroceso | `battle_main.c: BTL_renderEnemyHPBars` | `tickHpBars` (`battle.hud.enemy_hp_bar_frames`), `hpBarShown` | an enemy's HP bar shows after damage... | Igual |
@@ -126,6 +129,16 @@ probable y está marcado en el código), **Hueco** (falta).
 - **Cómo empieza un combate:** el original solo los empieza desde los guiones de los NPC (`script_interp.c`: la
   operación `START_BATTLE`); no hay encuentros al azar. Hasta que corran los guiones de los mapas (fase 4) solo existe
   el disparador de depuración `battle("")` de la consola y de los autotests (`apps/game/src/battle_trigger.cpp`).
+- **Nombre del enemigo en su panel de HP:** el original no lo escribe; sus barras de HP van sobre los enemigos de la
+  escena 3D (`battle_main.c: BTL_renderEnemyHPBars`). El panel lo enseña hasta que exista la escena 3D del combate.
+- **«Has escapado.» (`battle.outcome.fled`):** el original no pone título a la caja final
+  (`battle_ui.c: handleBattleEndBox`). La pantalla dice cómo acabó el combate (victoria, huida o derrota) como
+  desviación de accesibilidad documentada, y se queda.
+- **La bolsa lanza al confirmar:** en el original, elegir un objeto de la bolsa abre su caja de opciones
+  (`inventory.c: selectOptionMenu`) antes de lanzarlo; en la pantalla de combate confirmar una ranura lo lanza
+  directamente (`battle_throw`). Desviación documentada.
+- **Fotograma 7 del lanzamiento (pendiente):** que el objeto salga en el fotograma 7 de la animación del domador
+  (`main.c: startThrowingItem`) sigue como suposición; se comprueba cuando llegue el sistema de animación del combate.
 
 ## Tests
 

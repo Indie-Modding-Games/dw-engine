@@ -60,6 +60,15 @@ El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_
 
 El juego añade `partner.care_result` (`partner_menu.care_result.praised` o `scolded`).
 
+**Barra del virus proporcional (decisión del responsable de diseño, 2026-10-21).** El original la dibuja con 3 píxeles
+por punto de la barra (`game_menu.c: renderDigimonStatsView`: `renderBox(..., virusBar * 3, 6, ...)`); aquí se llena
+en proporción a su máximo del ruleset. Es una diferencia solo de aspecto y se queda.
+
+**Combate (decisiones del responsable de diseño, 2026-10-21).** El panel de HP de un enemigo lleva su nombre hasta que
+exista la escena 3D del combate; el título de la caja final («Has escapado.» al huir) se queda como desviación de
+accesibilidad; y la bolsa lanza el objeto al confirmar su ranura, sin la caja de opciones del original. Están en la
+tabla de paridad del [README de game/battle](../../game/battle/README.md).
+
 **Alabar y regañar solo en el campo (decisión del responsable de diseño, 2026-10-20/21).** En el original se alaba y
 se regaña al compañero en el campo, junto a él (`partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold`),
 no desde un menú. La pestaña del menú del compañero (`partner_praise`, `partner_scold`) se queda, sin cambiar nada,

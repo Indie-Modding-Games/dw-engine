@@ -163,7 +163,8 @@ de los mapas en la fase 4, `battle("")` es el único disparador de combates. `us
 con el compañero, y `toilet("")`, `sleep("")`, `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
 comandos de cuidado de la sesión y aceleran el reloj, hasta que existan los baños, las camas, las pantallas de
 entrenamiento y las opciones del reloj (fase 4); la lista está en [la guía de la prueba
-vertical](../guides/prueba-vertical.md).
+vertical](../guides/prueba-vertical.md). Decisión del responsable de diseño (2026-10-21): `toilet`, `sleep`, `train`, `scold` y
+`clock_speed` se quedan como ayudas de depuración.
 
 Otros ajustes los publica el juego sin que un menú los pida:
 
