@@ -14,6 +14,7 @@ inline constexpr std::string_view MountedDevPack =
 inline constexpr std::string_view OverriddenId = "content: {} comes from pack {}";
 inline constexpr std::string_view ShadowedDevPack = "content: dev assets pack {} at {} left out: {} has its id";
 inline constexpr std::string_view UnknownPack = "?";
+inline constexpr std::string_view ModSkipped = "content: left out the mod at {}: {}";
 
 // The dev assets (dev_assets.cpp).
 inline constexpr std::string_view InFile = "{}: {}";

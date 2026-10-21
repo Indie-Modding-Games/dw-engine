@@ -3,6 +3,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/content_id.hpp>
+#include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/text_table.hpp>
@@ -212,10 +213,19 @@ private:
         return compiled;
     }
 
-    // Each pack.yaml against pack.schema.json; the rules of every pack apply to the whole stack.
+    // Each pack.yaml against pack.schema.json and the engine's Lua API; the rules of every pack apply to the whole
+    // stack. The grammar of api is the manifest reader's, so a pack with a malformed one does not even mount.
     void checkManifests() {
         for (const assets::MountedPack& pack : stack_->packs()) {
             const std::string manifest = assets::pathText(pack.root / ManifestFile);
+            if (auto api = assets::checkPackApi(pack.manifest); !api) {
+                add(manifest, 0, 0, api.error().message);
+            }
+            if (pack.origin == assets::PackOrigin::Mod) {
+                if (auto layer = assets::checkModLayer(pack.manifest); !layer) {
+                    add(manifest, 0, 0, layer.error().message);
+                }
+            }
             for (const assets::SchemaRule& rule : pack.manifest.schemas) {
                 for (const std::string& pattern : rule.ids) {
                     rules_.push_back({.schema = rule.schema, .pattern = pattern, .manifest = manifest});
@@ -425,7 +435,8 @@ private:
 
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,
                                              const std::filesystem::path& schemaFolder,
-                                             std::span<const std::filesystem::path> withFolders) {
+                                             std::span<const std::filesystem::path> withFolders,
+                                             assets::PackOrigin origin) {
     std::vector<assets::FoundPack> packs;
     for (const std::filesystem::path& with : withFolders) {
         const auto found = assets::findPacks(fileSystem, with);
@@ -438,6 +449,7 @@ core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSyste
         }
         packs.insert(packs.end(), found->packs.begin(), found->packs.end());
     }
+    const std::size_t withPackCount = packs.size();
     const auto found = assets::findPacks(fileSystem, folder);
     if (!found) {
         return std::unexpected{found.error()};
@@ -454,11 +466,14 @@ core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSyste
             packs.push_back(pack);
         }
     }
-    // The archives stay open while the stack is checked.
-    // Checked as the engine's own packs, as in a content folder.
-    const auto opened = assets::openPacks(fileSystem, packs, assets::PackOrigin::Engine);
+    // The archives stay open while the stack is checked. The --with packs are the engine's own, the folder's have the
+    // origin asked for.
+    auto opened = assets::openPacks(fileSystem, packs, assets::PackOrigin::Engine);
     if (!opened) {
         return std::unexpected{opened.error()};
+    }
+    for (assets::PackLocation& location : std::span{opened->locations}.subspan(withPackCount)) {
+        location.origin = origin;
     }
     const auto stack = VirtualFileSystem::mount(opened->locations);
     if (!stack) {
@@ -482,10 +497,10 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem, 
 }
 
 int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder,
-             std::span<const std::filesystem::path> withFolders) {
+             std::span<const std::filesystem::path> withFolders, assets::PackOrigin origin) {
     const assets::DiskFileSystem disk;
     const std::filesystem::path schemas = schemaFolder.value_or(defaultSchemaFolder(disk, folder));
-    const auto report = validatePacks(disk, folder, schemas, withFolders);
+    const auto report = validatePacks(disk, folder, schemas, withFolders, origin);
     if (!report) {
         std::println(stderr, "dwx validate: {}", report.error().message);
         return ExitFailed;

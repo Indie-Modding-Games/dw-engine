@@ -1,4 +1,5 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/core/json_schema.hpp>
@@ -350,6 +351,43 @@ TEST_CASE("the user's disc, extracted: the example mod passes dwx validate over 
     CHECK(report->contracts == baseContracts + 1);
 }
 
+TEST_CASE("dwx validate checks the Lua API a pack asks for as the game does") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    const auto validateWithApi = [&files](std::string_view api) {
+        files.addFile("packs/extra/pack.yaml", std::format(R"(id: extra
+version: 1.0.0
+layer: mods
+name: Extra
+api: "{}"
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)",
+                                                           api));
+        const std::array<std::filesystem::path, 1> with{"content/base"};
+        return validatePacks(files, "packs/extra", "content/schemas", with);
+    };
+    for (const std::string_view supported : {"1.x", "1.0"}) {
+        CAPTURE(supported);
+        const auto report = validateWithApi(supported);
+        REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+        CHECK(textOf(*report).empty());
+    }
+    // The manifest reader refuses the grammar, so the pack does not mount.
+    CHECK(errorOf(validateWithApi("one")).contains("api 'one' is not MAJOR.x or MAJOR.MINOR"));
+    for (const std::string_view unsupported : {"2.x", "1.99"}) {
+        CAPTURE(unsupported);
+        const auto report = validateWithApi(unsupported);
+        REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+        CHECK(textOf(*report) ==
+              std::format(
+                  "packs/extra/pack.yaml: pack 'extra': the scripts need the Lua API {}, and this engine has {}\n",
+                  unsupported, dwe::assets::formatVersion(dwe::assets::SupportedLuaApi)));
+    }
+}
+
 TEST_CASE("a pack that the game's readers refuse fails validate") {
     MemoryFileSystem files;
     addSchemas(files);
@@ -492,4 +530,27 @@ TEST_CASE("the user's disc, extracted: dwx validate finds no problem in the game
     CHECK(report->packs == 2);
     CHECK_MESSAGE(report->problems.empty(), textOf(*report));
     MESSAGE(report->documents, " documents, ", report->assets, " assets, ", report->references, " references");
+}
+
+TEST_CASE("dwx validate --mod reports a mod that declares an engine layer, as the game skips it") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/fake/pack.yaml", R"(id: fake
+version: 1.0.0
+layer: base
+name: Fake
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto asMod = validatePacks(files, "packs/fake", "content/schemas", with, dwe::assets::PackOrigin::Mod);
+    REQUIRE_MESSAGE(asMod.has_value(), errorOf(asMod));
+    CHECK(textOf(*asMod) == "packs/fake/pack.yaml: pack 'fake' is a mod and declares the base layer, which only the "
+                            "engine's own packs have: a mod's layer is mods or user\n");
+    // Checked as one of the engine's own packs, the base layer is its own.
+    const auto asEngine = validatePacks(files, "packs/fake", "content/schemas", with, dwe::assets::PackOrigin::Engine);
+    REQUIRE_MESSAGE(asEngine.has_value(), errorOf(asEngine));
+    CHECK(textOf(*asEngine).empty());
 }

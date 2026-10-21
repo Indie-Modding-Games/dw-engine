@@ -45,7 +45,10 @@ paquete `game`, y los de `--mods`) y después los de cada carpeta extraída:
 
 1. Un paquete normal gana al paquete de desarrollo con su **id** (el del `pack.yaml`, no el nombre de la carpeta): con
    `--content` apuntando a una carpeta con `base/`, un `base/` o un `base_viejo/` con id `base` de las carpetas de
-   desarrollo se queda fuera.
+   desarrollo se queda fuera. Los paquetes de desarrollo se eligen con los del juego solos, sin los mods, y el juego
+   tiene que montar con ellos: un mod no puede cambiar ni romper esa base. Un mod con el id de un paquete de
+   desarrollo elegido se deja fuera (`skippedMods()`) porque el id ya está montado, igual que sin assets de desarrollo
+   un mod con el id de un paquete del juego, y el paquete de desarrollo se queda.
 2. Entre carpetas de desarrollo, la primera de la lista gana a las siguientes. La carpeta que sale de `disc_image` va
    la última: las de `extracted_content`, que se nombran a mano, le ganan por id.
 3. Los que entran van **debajo de todos los paquetes normales**, también de `base` y de los de `--mods`, digan lo que

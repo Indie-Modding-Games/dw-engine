@@ -21,6 +21,9 @@ Un paquete que deja una herramienta se comprueba junto con el paquete base, que 
 resolver las dependencias. Además de los esquemas, las referencias y los contratos, `dwx validate` carga cada asset
 con los mismos lectores que usa el juego, así que un paquete que pasa la validación es un paquete que el juego acepta:
 
+- El `api` de cada `pack.yaml`, con el lector de manifiestos del juego (`MAJOR.x` o `MAJOR.MINOR`; si no, el paquete
+  no se monta) y con la misma comprobación de compatibilidad que hace el juego (`assets::checkPackApi`): una versión
+  mayor distinta o una menor más nueva que la del motor es un problema del `pack.yaml`.
 - Cada modelo `.glb` con `parseModel` (`engine/assets/src/model_data.cpp`): nodos, una sola piel, articulaciones y
   pesos de cada vértice (que suman 1 y nombran articulaciones de la piel), imágenes PNG incrustadas y los `extras` de
   cada clip (`readClipExtras`: `ticksPerSecond`, `tickCount`, `loops`, `rootMotionNode`…).
@@ -44,7 +47,7 @@ esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el m
 
 | Parte | Fuente de verdad | Quién depende | Detalle |
 |---|---|---|---|
-| Manifiesto `pack.yaml` | `content/schemas/pack.schema.json`, [VFS](vfs.md) | Las dos | `id`, `version`, `layer: mods` y `dependencies` con `base` y `min_version` |
+| Manifiesto `pack.yaml` | `content/schemas/pack.schema.json`, [VFS](vfs.md) | Las dos | `id`, `version`, `layer: mods` y `dependencies` con `base` y `min_version`. Opcional: `api` (`1.x` o `1.3`), la versión de la API de Lua que piden los scripts del paquete |
 | Reglas de ID de asset | [VFS](vfs.md#ids-de-asset) | Las dos | El ID es la ruta sin extensión; un fichero que no da un ID válido hace fallar el paquete |
 | Capas y prioridad | [VFS](vfs.md) | Las dos | Un paquete `mods` gana a `base` por ID |
 | IDs de contenido y tablas por entradas | [VFS](vfs.md#tablas-por-entradas), `engine/assets/include/dwe/assets/content_id.hpp` | Las dos | Los originales se llaman como hasta ahora (`agum`, `twna01`); lo que añade un paquete se llama `<id del paquete>:<nombre>` y sus assets van en `<tipo>/<id del paquete>/<nombre>/`. Una tabla de un paquete sustituye por `id` las entradas de las de debajo y añade las nuevas; una tabla entera (una copia editada de la de la base) da la misma tabla que antes |
@@ -96,6 +99,8 @@ esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el m
 | 2026-10-21 | Aditivo: [tablas por entradas](vfs.md#tablas-por-entradas). Las tablas `data/digimon`, `raise`, `maps`, `items`, `moves` y `evolution` de los paquetes se componen por `id` en vez de sustituirse enteras; `index` es opcional (el motor numera las entradas nuevas); los IDs de contenido admiten el espacio de nombres `<paquete>:<nombre>`, con sus assets en `map/<paquete>/<nombre>/` y `digimon/<paquete>/<nombre>/`; las claves de texto admiten `<bloque>.<nombre>`. Las secciones de nivel superior de `data/maps` y `data/evolution` son opcionales. Una tabla entera da lo mismo que antes | Nada. Para añadir un mapa o un Digimon sin copiar la tabla, escribir solo sus filas con un id `<paquete>:<nombre>` |
 | 2026-10-21 | Más estricto al validar: `dwx validate` también lee con los lectores del juego `data/digimon`, `data/raise`, `data/moves` y `data/evolution`, compuestas con las de los paquetes de debajo. El formato no cambia | Nada, si el juego ya cargaba el paquete |
 | 2026-10-21 | Más estricto al validar: un Digimon que añade un paquete necesita su `digimon/<paquete>/<nombre>/contract.yaml`; dos entradas de la base con el mismo `index` y una lista de entradas a `null` son errores; las tablas que un ruleset nombra por rol se componen y se leen como las de siempre. `dwx validate` entiende `patternProperties` en los esquemas. Las filas de `data/raise` y `data/evolution` pueden no llevar `index` | Nada: los paquetes de las herramientas solo sustituyen originales |
+| 2026-10-21 | Aditivo: clave opcional `api` en `pack.yaml` (`MAJOR.x`, como `1.x`, o `MAJOR.MINOR`, como `1.3`) con la versión de la API de Lua que piden los scripts del paquete. El juego deja fuera, con el motivo, un mod que pide otra versión mayor o una menor más nueva, y monta los demás; `dwx validate` lo marca como problema. Un `pack.yaml` sin `api` se lee igual que antes | Nada. Un paquete con scripts de Lua puede declarar `api: "1.x"` |
+| 2026-10-21 | Más estricto: un mod (un paquete de una carpeta de mods o de `--mods`) solo puede declarar `layer: mods` o `user`; uno que declara `base` o `remaster` se deja fuera con el motivo. Lo que un paquete puede hacer como el motor (su Lua de interfaz, los ids sin espacio de nombres y los `index` de las tablas) depende de dónde se encontró, no de su capa. `dwx validate --mod` comprueba los paquetes como mods y marca esa capa como problema; sin `--mod` se comprueban como paquetes del motor, como antes | Un paquete de herramientas que se instala como mod declara `layer: mods`. Validarlo con `dwx validate --mod --with <contenido>/base <paquete>` |
 
 **Textos planos (fuera del contrato).** Desde la fase 3, `text/<idioma>/` son ficheros planos `clave: "texto"`
 ([localización](localizacion.md)). No es parte del contrato, porque ninguna herramienta los lee, pero quien compare con

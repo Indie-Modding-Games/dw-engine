@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/pack_manifest.hpp>
 #include <dwe/core/error.hpp>
 
 #include <compare>
@@ -54,11 +55,14 @@ struct ValidationReport {
 // map/<id>/data and data/maps with the strict readers of the map and of the map table; a problem there names the
 // asset id and why the engine refuses it.
 // Fails only when there are no packs or they cannot be mounted; anything else is a problem of the report. The packs at
-// each of withFolders (a pack or a folder of packs) are mounted too, so a pack that needs another one, such as the
-// game pack on the base pack, can be checked; they are checked with the rest.
+// each of withFolders (a pack or a folder of packs) are mounted too, as the engine's own, so a pack that needs another
+// one, such as the game pack on the base pack, can be checked; they are checked with the rest. The packs at the folder
+// have the given origin: as mods (PackOrigin::Mod) they must declare a mod layer (assets::checkModLayer) and have none
+// of the base's rights, as the game loads them from a mods folder.
 core::Result<ValidationReport> validatePacks(const assets::FileSystem& fileSystem, const std::filesystem::path& folder,
                                              const std::filesystem::path& schemaFolder,
-                                             std::span<const std::filesystem::path> withFolders = {});
+                                             std::span<const std::filesystem::path> withFolders = {},
+                                             assets::PackOrigin origin = assets::PackOrigin::Engine);
 
 // Where the schemas of the packs at a folder are by default: a schemas folder next to the pack, or inside the
 // folder of packs ("content/base" and "content" both give "content/schemas").
@@ -67,6 +71,7 @@ std::filesystem::path defaultSchemaFolder(const assets::FileSystem& fileSystem, 
 // dwx validate: prints each problem as "file:line:column: message" and a summary. Returns ExitOk when there are
 // none, ExitUnknown when there are and ExitFailed when the packs cannot be checked.
 int validate(const std::filesystem::path& folder, const std::optional<std::filesystem::path>& schemaFolder,
-             std::span<const std::filesystem::path> withFolders = {});
+             std::span<const std::filesystem::path> withFolders = {},
+             assets::PackOrigin origin = assets::PackOrigin::Engine);
 
 } // namespace dwe::dwx
