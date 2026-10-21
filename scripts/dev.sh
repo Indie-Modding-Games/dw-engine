@@ -122,6 +122,16 @@ sources() {
     git -C "$root" ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp'
 }
 
+# Fails when any C++ or Lua source of the repository uses goto (project rule: structured control flow only).
+no_goto() {
+    local found
+    found="$(git -C "$root" ls-files --cached --others --exclude-standard -z -- '*.cpp' '*.hpp' '*.h' '*.lua' \
+        | xargs -0 -r grep -nwH 'goto' --)" || true
+    [[ -z "$found" ]] && return 0
+    printf 'goto is not allowed:\n%s\n' "$found"
+    return 1
+}
+
 # One clang-tidy per file, its output printed in one piece so parallel runs do not mix their lines. Any diagnostic
 # that fails clang-tidy fails the whole run: xargs exits with 123.
 tidy_one='out="$(clang-tidy "$@" 2>&1)"; rc=$?; [[ -z "$out" ]] || printf "%s\n" "$out"; exit $((rc == 0 ? 0 : 1))'
@@ -170,6 +180,7 @@ check() {
         [[ -n "${DWE_DISC:-}" ]] || echo "DWE_DISC is not set: the tests on the user's disc skip"
         step format "$self" format --check || status=1
     fi
+    step no-goto no_goto || status=1
     # Warnings fail the build already, but not the linker's; clang-tidy fails on any diagnostic, and the log says so too.
     if step configure "$self" configure "$@" && step build --forbid 'warning:' "$self" build; then
         if [[ "$tier" == "full" ]]; then
@@ -183,7 +194,7 @@ check() {
     else
         status=1
     fi
-    steps=(configure build test)
+    steps=(no-goto configure build test)
     [[ "$tier" == "full" ]] && steps=(format "${steps[@]}" tidy)
     print_logs "${steps[@]}"
     echo "[$(date +%T)] check-$tier $([[ $status -eq 0 ]] && echo passed || echo FAILED)"

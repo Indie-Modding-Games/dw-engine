@@ -37,6 +37,9 @@
 - Los mensajes de error y de log no van inline en la lógica: viven como constantes con nombre (texto o plantilla de
   `std::format`) en el `messages.hpp` del módulo. Un mensaje que se usa en varios sitios sale de una sola constante.
 - Los textos que ve el jugador vienen del contenido (packs y localización), nunca del código.
+- **Sin `goto` en ningún sitio:** ni en C++, ni en el Lua que escribimos, ni en el Lua que genera `dwx`. El flujo de
+  control es estructurado y moderno: if/else, bucles, `break`, retornos tempranos, funciones auxiliares y, si hace
+  falta, bucles con estado.
 
 ## Código que viene del decomp
 
@@ -58,6 +61,9 @@
 
 - `clang-format` obligatorio: la configuración está en `.clang-format` y la CI la comprueba.
 - `clang-tidy` con el perfil del repositorio y warnings como errores en la CI.
+- `check-commit` y `check-full` fallan si un fuente C++ o Lua del repositorio contiene `goto` (paso `no-goto`), y
+  `clang-tidy` aplica `cppcoreguidelines-avoid-goto`. Los tests del conversor de scripts comprueban lo mismo en el Lua
+  generado.
 - ASan y UBSan en los builds de depuración.
 
 ## Tests

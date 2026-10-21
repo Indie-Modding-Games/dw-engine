@@ -79,7 +79,7 @@ ScriptBuilder everyKindOfInstruction() {
     script.u8({0x2A, 0x00}).u32(0xFFFFFFFE);               // 20 add_money -2
     script.u8({0x4D, 0xFC}).u16(0xFF38);                   // 26 entity_set_rotation partner -200
     script.u8({0x34, 0x03}).u16(0x10);                     // 30 set_stat
-    script.u8({0x19, 0x00, 0x0A, 0x00, 5, 2, 0x18, 0x00}); // 34 if pstat 5 >= 2, else goto 92
+    script.u8({0x19, 0x00, 0x0A, 0x00, 5, 2, 0x18, 0x00}); // 34 if pstat 5 >= 2, else jump to 92
     script.u16(92).u8({0x19, 0x00});
     script.u8({0x1A, 0x00, 0x82, 0x60, 0x0D, 0x00, 0x00, 0x00}); // 46 show_textbox
     script.u8({0x13, 0x00}).u16(94);                             // 54 jump_and_link
