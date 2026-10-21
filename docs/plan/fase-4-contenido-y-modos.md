@@ -150,6 +150,29 @@ rama pasa una revisión independiente contra la guía de código y las reglas de
   - Un mod se suscribe con `hooks.on("espacio.evento", fn)`; cada entorno de mod tiene su propia vista de la API; la
     consola de depuración solo ve los espacios de nombres del motor.
 
+- *Más sobre la API de Lua:* `api` admite también `MAYOR.MENOR` (`"1.3"` = API 1, al menos la versión menor 3);
+  `1.x` sigue valiendo. Un mod roto o incompatible se salta, se registra en el log y aparece en la lista de mods; los
+  demás cargan.
+- *IDs de contenido:*
+  - El contenido original lleva el prefijo `base:` (`base:agum`, `base:twna01`). La migración (contenido, partidas
+    guardadas, rulesets, scripts, tests y documentación) y su efecto en las herramientas externas se planifican
+    aparte; un alias sin prefijo durante la transición solo existiría si se declara explícitamente.
+  - En la fase 4a los mods solo añaden o sustituyen entradas; no las borran.
+  - Una entrada nueva recibe el índice interno siguiente (máximo + 1); las partidas guardan IDs, nunca índices, con su
+    migración.
+  - Los nombres de las entradas nuevas usan la clave `<paquete>.<bloque>.<nombre>` en el fichero de texto del propio
+    mod (`text/<idioma>/<paquete>.yaml`).
+  - Un modelo nuevo debe traer su fichero de contrato.
+  - Objetos, técnicas, puertas y baños también pasan a IDs en la fase 4a.
+  - El mod de ejemplo sustituye el mapa de inicio del campo como ejemplo de sustitución de un asset (solo en tests).
+- *Aspectos de la interfaz:* la opción se llama «Aspecto de la interfaz». La opción de fuente pasa a llamarse «Texto con
+  aspecto original» cuando llegue el aspecto original. La recarga en caliente de `skin.yaml` llega con la documentación
+  de modding. La clase `.original-look` vive en la hoja base común. Un mod nombra su aspecto en su propio fichero de
+  localización.
+- *Reparto de los mods por ID:* tres ramas que se integran una tras otra: composición de tablas por entradas con IDs con
+  espacio de nombres y el mod de ejemplo; referencias por ID en objetos, técnicas, puertas, baños y partidas guardadas;
+  y la migración al prefijo `base:`.
+
 **Criterio de cierre de la fase 4a:** en `main`, todos los scripts de eventos convertidos se ejecutan sin errores en
 un test sin ventana y pasan los tests de paridad; el mod de ejemplo (un Digimon nuevo, un mapa nuevo y una sustitución)
 carga sin cambiar código; pasan los tests del sandbox y de versión de la API; los dos modos se eligen desde el menú
