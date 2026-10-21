@@ -206,7 +206,7 @@ public:
     }
 
     [[nodiscard]] EvolutionTables build() const {
-        auto tables = EvolutionTables::build(digimon, raise, moves, evolution);
+        auto tables = EvolutionTables::build(digimon, raise, moves, evolution, itemEffects);
         REQUIRE_MESSAGE(tables.has_value(), errorOf(tables));
         return *tables;
     }
@@ -223,6 +223,7 @@ public:
     assets::RaiseTable raise;
     assets::MoveTable moves;
     assets::EvolutionTable evolution;
+    assets::ItemEffectTable itemEffects;
 };
 
 // Inputs of a form with the given stats, timer and nothing else.

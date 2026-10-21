@@ -48,7 +48,8 @@ mismo lector estricto (cada fila con exactamente sus claves, cada id una sola ve
 
 - `MoveTable` (`<dwe/assets/move_table.hpp>`, `data/moves`): cada técnica con su índice, potencia, coste y demás campos.
 - `EvolutionTable` (`<dwe/assets/evolution_table.hpp>`, `data/evolution`): requisitos, filas de stats de referencia,
-  cartas de evolución y, si están, los destinos de los objetos de evolución (`item_targets`, que `dwx` aún no extrae).
+  cartas de evolución y, si están, destinos de objetos de evolución escritos a mano (`item_targets`, que `dwx` no
+  escribe: los extrae en `evolves_to` de `data/item_effects`, y `item_targets` los sustituye objeto a objeto).
 
 Cada una tiene `parse…Table(texto)` y `load…Table(vfs, id)`. Las referencias a otras filas (`TableReference`,
 `<dwe/assets/table_reference.hpp>`) quedan como texto: un id, nada, o un número crudo que el extractor no pudo

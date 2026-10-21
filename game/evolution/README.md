@@ -69,9 +69,15 @@ cada nivel, destinos de los bebés, puntuación, fallback, especiales (como regl
 origen y requisitos), virus, objetos fijos, ganancias de stats, técnicas, bebés del renacer y las rarezas en
 `quirks:`. `selection` y `scoring` nombran las estrategias (`original` de cada una, en `strategies.hpp`).
 
-Las tablas salen del manifiesto del ruleset (`tables:`): `digimon`, `raise`, `moves` y `evolution`, leídas con los
-lectores de [`assets`](../../engine/assets/README.md#tablas-del-juego). `EvolutionTables` resuelve las referencias a
-índices; un destino de carta que es un número crudo fuera de la tabla se ignora.
+Las tablas salen del manifiesto del ruleset (`tables:`): `digimon`, `raise`, `moves`, `evolution` e `item_effects`,
+leídas con los lectores de [`assets`](../../engine/assets/README.md#tablas-del-juego). `EvolutionTables` resuelve las
+referencias a índices; un destino de carta que es un número crudo fuera de la tabla se ignora.
+
+Los destinos de los objetos de evolución (`EVOLUTION_ITEM_TARGET`) salen de `evolves_to` de `data/item_effects`, que
+`dwx` extrae del ejecutable, para los objetos con `handler: evolution`. La lista opcional `item_targets` de
+`data/evolution` (no la escribe `dwx`) sustituye esos destinos objeto a objeto, y es la única fuente si el ruleset no
+nombra `item_effects`. El ruleset `original` la nombra, así que el contenido extraído antes de que `dwx` la escribiera
+hay que extraerlo de nuevo.
 
 | Rareza (`quirks:`) | Con `true` (original) |
 |---|---|
@@ -101,7 +107,7 @@ lectores de [`assets`](../../engine/assets/README.md#tablas-del-juego). `Evoluti
 | Barra de virus y copia al entrar | `partner_impl.c`: `tickConditions` | `virus`, `EvolutionResult::virusBackup` (la guarda el partner) | `a full virus bar…` | Igual |
 | Vuelta de la forma virus y stats reconstruidos | `partner.c`: `callDigimonRoutine` (2); `evl.c`: `EVL_scaleBaseStats` | `Evolution::returnFromVirus`, `EvolutionInputs::virusBackup`, `EvolutionResult::restoredStats` | `back from the virus form…`, `the stats rebuilt from the virus backup are left to the session to clamp` | Igual: se restauran con `setStats` y la sesión los deja en el tope de cada stat, como `EVL_clampBaseStats`; sin el tope de 999 por ganancia (decidido por el responsable de diseño, 2026-10-20) |
 | Evolución por script | `partner.c`: `callDigimonRoutine` (10) | `Evolution::evolveByScript` | `effects_tests.cpp` | Igual |
-| Objetos de evolución fijos y de tabla | `item.c`: `handleEvoItems` | `Evolution::useItem`, `items` | `a fixed evolution item…`, `an item of the item table…` | Hueco: `EVOLUTION_ITEM_TARGET` no está extraída; la lógica está y lee `item_targets` |
+| Objetos de evolución fijos y de tabla | `item.c`: `handleEvoItems` | `Evolution::useItem`, `items`, `EvolutionTables::itemTarget` (`data/item_effects`, `item_targets`) | `a fixed evolution item…`, `an item of the item table…`, `the evolution items' targets come from the item effects…`, slow `every evolution item of the item effects…` | Igual |
 | Marca de objeto contagiosa | `item.c`: `handleEvoItems`; `evl.c`: `EVL_applyEvolution` | `quirks.evolution_item_sticks` | `quirk evolution_item_sticks…` | Igual |
 | Ganancias de stats y escala | `evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats` | `stat_gains` (`EvolutionEffects`), `EvolutionResult::statChange` | `each stat that reaches the reference…`, `the listed forms…` | Igual |
 | Topes de los stats | `evl.c`: `EVL_clampBaseStats` | `Partner::addStatGains` (`care.limits`), no la evolución | `game/partner`: `stat_gain_tests.cpp` | Desviación aprobada: además, cada ganancia queda en 999 como mucho (`stat_gain_max`, 2026-10-20) |

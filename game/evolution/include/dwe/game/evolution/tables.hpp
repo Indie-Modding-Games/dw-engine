@@ -2,6 +2,7 @@
 
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/evolution_table.hpp>
+#include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/move_table.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/core/error.hpp>
@@ -33,6 +34,8 @@ inline constexpr std::string_view DigimonTableRole = "digimon";
 inline constexpr std::string_view RaiseTableRole = "raise";
 inline constexpr std::string_view MoveTableRole = "moves";
 inline constexpr std::string_view EvolutionTableRole = "evolution";
+// Optional: a ruleset that names no item_effects takes the evolution items only from data/evolution's item_targets.
+inline constexpr std::string_view ItemEffectsTableRole = "item_effects";
 
 // "No requirement" in the requirement table.
 inline constexpr std::int32_t NoRequirement = -1;
@@ -82,11 +85,15 @@ struct StatReference {
 class EvolutionTables {
 public:
     // Resolves the tables: every id they refer to must be in its table. References the extractor wrote as raw numbers
-    // outside the Digimon table (a path's -2) are left out.
+    // outside the Digimon table (a path's -2) are left out. The evolution items' targets are those of the item effects
+    // (EVOLUTION_ITEM_TARGET), and data/evolution's item_targets override them item by item, or stand in for them
+    // when the item effects are missing.
     static core::Result<EvolutionTables> build(const assets::DigimonTable& digimon, const assets::RaiseTable& raise,
-                                               const assets::MoveTable& moves, const assets::EvolutionTable& evolution);
+                                               const assets::MoveTable& moves, const assets::EvolutionTable& evolution,
+                                               const assets::ItemEffectTable& itemEffects = {});
 
-    // Reads the four tables a ruleset names (digimon, raise, moves, evolution) and resolves them.
+    // Reads the tables a ruleset names (digimon, raise, moves, evolution and, when the ruleset names it, item_effects)
+    // and resolves them.
     static core::Result<EvolutionTables> load(const assets::VirtualFileSystem& vfs, const ruleset::Ruleset& ruleset);
 
     // The species with this index, or nullptr.

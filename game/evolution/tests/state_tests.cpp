@@ -12,6 +12,8 @@
 #include <format>
 #include <memory>
 #include <ostream>
+#include <string>
+#include <string_view>
 
 #include "fixture.hpp"
 
@@ -157,6 +159,38 @@ TEST_CASE("a value tuned in the ruleset store changes the evolution, and a bad o
     CHECK(errorOf(store->setValue(EvolutionSection, "stat_gains.gain_divisor", "0")).contains("must be 1 or more"));
     CHECK(errorOf(store->setValue(EvolutionSection, "scoring", "lenient")).contains("unknown evolution scoring"));
     CHECK(store->revision() == 2);
+}
+
+// --- The evolution items' table from the packs ---
+
+TEST_CASE("the item effects are read by the ruleset's table id") {
+    const assets::DiskFileSystem disk;
+    const auto loadWith = [&](std::string_view itemEffects) {
+        assets::MemoryFileSystem memory;
+        memory.addFile("base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\n");
+        for (const std::string_view role : OriginalTables) {
+            if (role == EvolutionTableRole) {
+                memory.addFile("base/data/evolution.yaml", "requirements: []\nstats_gains: []\npaths: []\n");
+            } else if (role != ItemEffectsTableRole) {
+                memory.addFile(std::format("base/data/{}.yaml", role), std::format("{}: []\n", role));
+            }
+        }
+        memory.addFile("base/data/item_effects.yaml", std::string{itemEffects});
+        const std::array<assets::PackLocation, 2> packs{
+            assets::PackLocation{.fileSystem = &memory, .root = "base"},
+            assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
+        const auto vfs = assets::VirtualFileSystem::mount(packs);
+        REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+        const auto store = ruleset::RulesetStore::load(*vfs, "original", {});
+        REQUIRE_MESSAGE(store.has_value(), errorOf(store));
+        return EvolutionTables::load(*vfs, store->current());
+    };
+    const auto empty = loadWith("item_effects: []\n");
+    CHECK_MESSAGE(empty.has_value(), errorOf(empty));
+    const auto unknown = loadWith("item_effects:\n  - {item: grey_claws, index: 71, handler: evolution, healing: null, "
+                                  "evolves_to: nobody, values: null}\n");
+    CHECK(errorOf(unknown).contains("item_effects: unknown digimon 'nobody'"));
+    CHECK_FALSE(loadWith("item_effects: 3\n").has_value());
 }
 
 // --- The simulation for tuning ---

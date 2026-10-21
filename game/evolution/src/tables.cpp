@@ -46,6 +46,21 @@ core::Result<const assets::AssetId*> tableOf(const ruleset::Ruleset& ruleset, st
     return id;
 }
 
+// The item effects the ruleset names, or none when it names none (the ruleset store checks that a named table is in a
+// pack).
+core::Result<assets::ItemEffectTable> loadItemEffects(const assets::VirtualFileSystem& vfs,
+                                                      const ruleset::Ruleset& ruleset) {
+    const assets::AssetId* id = ruleset.table(ItemEffectsTableRole);
+    if (id == nullptr) {
+        return assets::ItemEffectTable{};
+    }
+    auto bytes = vfs.read(*id);
+    if (!bytes) {
+        return std::unexpected{bytes.error()};
+    }
+    return assets::parseItemEffectTable(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+}
+
 // Resolves the references of the asset tables to indices, keeping the first problem.
 class TableResolver {
 public:
@@ -118,7 +133,8 @@ Requirement requirementFrom(const assets::EvolutionRequirementEntry& row, TableR
 
 core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable& digimon,
                                                      const assets::RaiseTable& raise, const assets::MoveTable& moves,
-                                                     const assets::EvolutionTable& evolution) {
+                                                     const assets::EvolutionTable& evolution,
+                                                     const assets::ItemEffectTable& itemEffects) {
     TableResolver resolver{digimon, moves};
     EvolutionTables tables;
     for (const assets::MoveEntry& move : moves.moves) {
@@ -163,6 +179,15 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
         }
         tables.paths_.insert_or_assign(row.index + 1, std::move(targets));
     }
+    // item.c: handleEvoItems: EVOLUTION_ITEM_TARGET, as dwx extracts it into the item effects.
+    for (const assets::ItemEffectEntry& row : itemEffects.effects) {
+        if (row.handler != assets::ItemHandler::Evolution) {
+            continue;
+        }
+        if (const auto target = resolver.species(row.evolvesTo, ItemEffectsTableRole); target) {
+            tables.itemTargets_.insert_or_assign(row.item, *target);
+        }
+    }
     for (const assets::EvolutionItemTargetEntry& row : evolution.itemTargets) {
         const auto target = resolver.species(row.target, EvolutionTableRole);
         if (row.item && target) {
@@ -202,7 +227,11 @@ core::Result<EvolutionTables> EvolutionTables::load(const assets::VirtualFileSys
     if (!evolution) {
         return std::unexpected{evolution.error()};
     }
-    return build(*digimon, *raise, *moves, *evolution);
+    auto itemEffects = loadItemEffects(vfs, ruleset);
+    if (!itemEffects) {
+        return std::unexpected{itemEffects.error()};
+    }
+    return build(*digimon, *raise, *moves, *evolution, *itemEffects);
 }
 
 const SpeciesData* EvolutionTables::species(Species species) const {

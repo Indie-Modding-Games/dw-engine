@@ -69,7 +69,7 @@
       }
     },
     "item_targets": {
-      "description": "Optional, not extracted yet: EVOLUTION_ITEM_TARGET, the form each evolution item leads to (item.c: handleEvoItems). Items are ids of items.yaml.",
+      "description": "Optional, written by hand, not by dwx: the form an evolution item leads to (item.c: handleEvoItems), overriding item by item the evolves_to that dwx extracts from EVOLUTION_ITEM_TARGET into item_effects.yaml, or standing in for it when the ruleset names no item_effects table. Items are ids of items.yaml.",
       "type": "array",
       "items": {
         "type": "object",

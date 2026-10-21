@@ -64,7 +64,8 @@ struct EvolutionPathEntry {
     std::array<TableReference, EvolutionPathTargets> to{};
 };
 
-// The form an evolution item leads to (EVOLUTION_ITEM_TARGET): optional, the extractor does not write it yet.
+// The form an evolution item leads to, written by hand: optional, it overrides the item effects' evolves_to
+// (EVOLUTION_ITEM_TARGET), which the extractor writes.
 struct EvolutionItemTargetEntry {
     TableReference item;
     std::int32_t index = 0;

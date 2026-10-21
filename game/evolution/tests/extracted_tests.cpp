@@ -1,4 +1,6 @@
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/evolution/evolution.hpp>
@@ -51,6 +53,9 @@ Evolution loadOriginal(const assets::VirtualFileSystem& vfs) {
 }
 
 constexpr std::string_view Skipping = "DWE_CONTENT is not set: skipping the evolution on extracted content";
+constexpr std::string_view ItemEffectsAsset = "data/item_effects";
+constexpr std::string_view NoItemEffects =
+    "the extracted content has no data/item_effects (extracted before dwx wrote it): skipping the evolution items";
 
 Species idOf(const Evolution& evolution, std::string_view id) {
     const auto species = evolution.tables().find(id);
@@ -274,6 +279,51 @@ TEST_CASE("the user's disc, extracted: a thousand simulated raisings of each in-
         }
         CHECK_MESSAGE(!histogram.targets.empty(), id);
     }
+}
+
+TEST_CASE("the user's disc, extracted: every item of EVOLUTION_ITEM_TARGET evolves a form one level below its target") {
+    const assets::DiskFileSystem disk;
+    const auto vfs = mountContent(disk);
+    if (!vfs) {
+        MESSAGE(Skipping);
+        return;
+    }
+    const auto itemEffectsId = assets::AssetId::parse(ItemEffectsAsset);
+    REQUIRE_MESSAGE(itemEffectsId.has_value(), errorOf(itemEffectsId));
+    if (vfs->resolve(*itemEffectsId) == nullptr) {
+        MESSAGE(NoItemEffects);
+        return;
+    }
+    const auto itemEffects = assets::loadItemEffectTable(*vfs);
+    REQUIRE_MESSAGE(itemEffects.has_value(), errorOf(itemEffects));
+    const Evolution evolution = loadOriginal(*vfs);
+    const EvolutionTables& tables = evolution.tables();
+    const std::vector<Species> allSpecies = tables.allSpecies();
+    // item.c: EVOLUTION_ITEM_TARGET has 44 entries, for the items from 0x47 on.
+    constexpr std::int32_t TableItems = 44;
+    std::int32_t tableItems = 0;
+    for (const assets::ItemEffectEntry& effect : itemEffects->effects) {
+        if (effect.handler != assets::ItemHandler::Evolution || !effect.evolvesTo) {
+            continue;
+        }
+        CAPTURE(effect.item);
+        ++tableItems;
+        const auto found = tables.itemTarget(effect.item);
+        REQUIRE(found);
+        const Species target = valueOf(found);
+        const auto below = static_cast<std::int32_t>(tables.levelOf(target)) - evolution.rules().items.levelStep;
+        const auto partner = std::ranges::find_if(
+            allSpecies, [&](Species species) { return static_cast<std::int32_t>(tables.levelOf(species)) == below; });
+        if (partner == allSpecies.end()) {
+            continue;
+        }
+        const auto result = evolution.useItem({.species = *partner}, {}, effect.item);
+        REQUIRE(result);
+        CHECK(valueOf(result).reason == EvolutionReason::Item);
+        CHECK(valueOf(result).statChange == BaseStats{});
+        CHECK_FALSE(evolution.useItem({.species = target}, {}, effect.item));
+    }
+    CHECK(tableItems == TableItems);
 }
 
 } // namespace dwe::game::evolution
