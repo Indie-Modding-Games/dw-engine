@@ -26,6 +26,10 @@ con los mismos lectores que usa el juego, así que un paquete que pasa la valida
   cada clip (`readClipExtras`: `ticksPerSecond`, `tickCount`, `loops`, `rootMotionNode`…).
 - Cada `map/<id>/data.yaml` con `parseMapDocument` (`engine/assets/src/map_document.cpp`).
 - `data/maps.yaml` con `parseMapTable` (`engine/assets/src/map_table.cpp`).
+- `data/items.yaml`, `data/item_effects.yaml`, `data/shops.yaml` y `data/new_game_stats.yaml` con sus lectores
+  (`parseItemTable`, `parseItemEffectTable`, `parseShopTable` y `parseNewGameStats`, en `engine/assets/src/`).
+- Los textos, `localization/<idioma>/*.yaml` y `text/<idioma>/*.yaml`, con `parseTextTable`
+  (`engine/assets/src/text_table.cpp`).
 
 Los dos lectores de YAML son estrictos: una clave que sobra o que falta hace fallar el documento aunque cumpla su
 esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el motivo
@@ -79,6 +83,12 @@ esquema. Cada fallo sale como un problema con el fichero, el ID del asset y el m
 | 2026-10-19 | Aditivo: una carpeta de contenido también monta los archivos `.pak` que tiene directamente dentro (`findPacks`), y si hay una carpeta y un `.pak` con el mismo nombre (`base/` y `base.pak`) gana la carpeta y el archivo se deja fuera. Un paquete en carpeta se monta igual que antes | Nada. Para probar un mod empaquetado, dejar su `.pak` junto a `base/` |
 | 2026-10-20 | Aditivo: la tabla lista lo que el editor de mapas ya lee y escribe (`data/maps.yaml` y las otras tablas, texturas de mapa, puertas, textura de Digimon, scripts en YAML del motor), el `extras.rootMotionNode` de las animaciones y `dwx validate --with`. El contrato no cambia | Nada |
 | 2026-10-20 | Más estricto al validar: `dwx validate` carga los `.glb`, los `map/<id>/data.yaml` y `data/maps.yaml` con los lectores del juego, así que rechaza lo que el juego rechazaría. El formato no cambia | Nada, si el juego ya cargaba el paquete. Un paquete que ahora falla la validación tampoco lo cargaba el juego |
+| 2026-10-21 | Aditivo: documentos nuevos `data/item_effects` y `data/new_game_stats`, el campo opcional `moves.learn_chances` y el opcional `evolution.item_targets` del ruleset, escrito a mano. Las dos herramientas son compatibles con la fase 3 y el contrato no cambia | Nada |
+| 2026-10-21 | Más estricto al validar: `dwx validate` también lee con los lectores estrictos del juego `data/items`, `data/item_effects`, `data/shops`, `data/new_game_stats` y los textos (`localization` y `text`). El formato no cambia | Nada, si el juego ya cargaba el paquete. Un paquete que ahora falla la validación tampoco lo cargaba el juego |
+
+**Textos planos (fuera del contrato).** Desde la fase 3, `text/<idioma>/` son ficheros planos `clave: "texto"`
+([localización](localizacion.md)). No es parte del contrato, porque ninguna herramienta los lee, pero quien compare con
+la salida de `dwx` tiene que volver a extraer un paquete base sacado antes de la fase 3.
 
 ## Lo que aún no está probado
 
