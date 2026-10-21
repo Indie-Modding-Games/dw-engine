@@ -43,7 +43,8 @@ struct Options {
     // slot_01 or autosave_01).
     bool newGame = false;
     std::optional<game::save::SlotId> load;
-    // The game clock's speed (--clock-speed <x>): 1 is the original's, 60 a game hour per real minute.
+    // The game clock's speed (--clock-speed <x>): 1 is the original's (a game minute per real second), 60 a game hour
+    // per real second.
     std::optional<double> clockSpeed;
     // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour when not given.
     std::optional<render::TimeOfDay> time;

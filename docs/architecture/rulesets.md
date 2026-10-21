@@ -175,8 +175,8 @@ cada 20 fotogramas, 30 días por año, el año vuelve a 0 en 100, y una partida 
   `frameOfDay()` es el `CURRENT_FRAME` del original.
 - **Avance.** `advance(segundos)` devuelve cuántos minutos, horas, días y años ha cruzado. Un sistema que hace algo
   cada hora lo repite `hours` veces, así que avanzar días de golpe da lo mismo que jugarlos.
-- **Velocidad.** `setSpeed(x)` es el avance rápido: 1 es la velocidad del original, 0 lo para y 3600 hace una hora de
-  juego por segundo. Lo usan los tests, el autotest, las simulaciones y el panel de depuración.
+- **Velocidad.** `setSpeed(x)` es el avance rápido: 1 es la velocidad del original (un minuto de juego por segundo
+  real), 0 lo para, 60 hace una hora de juego por segundo y 3600, 60 horas de juego por segundo. Lo usan los tests, el autotest, las simulaciones y el panel de depuración.
 - **Pausa y saltos.** `setRunning(false)` es el `stopGameTime` del original. `jumpTo(hora, minuto)` es el salto al
   dormir (`advanceToTime`): solo cuenta el cambio de día, no las horas saltadas.
 - **Uno por partida.** El reloj lo tiene la partida (`apps/session`), que lo avanza solo en los ticks en que el campo

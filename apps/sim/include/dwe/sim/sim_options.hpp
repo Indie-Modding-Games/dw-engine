@@ -44,7 +44,7 @@ struct SimOptions {
     // 0 takes one per hardware thread.
     std::size_t threads = 0;
     std::int64_t days = 1;
-    // An hour of game time per real second by default: the fast clock.
+    // Sixty game hours per real second by default (1 is a game minute per real second): the fast clock.
     double speed = 3600.0;
     std::vector<ValueOverride> overrides;
     ScenarioParameters parameters;

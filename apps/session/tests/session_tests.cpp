@@ -36,8 +36,8 @@ using dwe::session::GameSession;
 using dwe::session::slotFromName;
 using dwe::session::testing::careFor;
 using dwe::session::testing::errorOf;
-using dwe::session::testing::HourPerSecond;
 using dwe::session::testing::newGame;
+using dwe::session::testing::SixtyGameHoursPerSecond;
 using dwe::session::testing::TestPacks;
 using dwe::session::testing::Tick;
 
@@ -147,8 +147,8 @@ TEST_CASE("the same seed plays the same partner; a new game starts it again") {
     const TestPacks packs;
     const auto first = newGame(packs, nullptr, 11);
     const auto second = newGame(packs, nullptr, 11);
-    first->clock().setSpeed(HourPerSecond);
-    second->clock().setSpeed(HourPerSecond);
+    first->clock().setSpeed(SixtyGameHoursPerSecond);
+    second->clock().setSpeed(SixtyGameHoursPerSecond);
     careFor(*first, SecondsPerGameDay);
     careFor(*second, SecondsPerGameDay);
     CHECK(first->partner().state() == second->partner().state());
@@ -158,14 +158,14 @@ TEST_CASE("the same seed plays the same partner; a new game starts it again") {
     const auto fresh = newGame(packs, nullptr, 11);
     CHECK(first->partner().state() == fresh->partner().state());
     CHECK(first->clock().elapsedFrames() == fresh->clock().elapsedFrames());
-    CHECK(first->clock().speed() == doctest::Approx(HourPerSecond));
+    CHECK(first->clock().speed() == doctest::Approx(SixtyGameHoursPerSecond));
 }
 
 TEST_CASE("a partner raised for days at fast-forward, saved and loaded, goes on as the one it was saved from") {
     const TestPacks packs;
     MemorySaveStorage storage;
     const auto raised = newGame(packs, &storage);
-    raised->clock().setSpeed(HourPerSecond);
+    raised->clock().setSpeed(SixtyGameHoursPerSecond);
     careFor(*raised, RaisedDays * SecondsPerGameDay);
     REQUIRE(raised->partner().alive());
     CHECK(raised->partner().state().life.age >= RaisedDays);
@@ -175,7 +175,7 @@ TEST_CASE("a partner raised for days at fast-forward, saved and loaded, goes on 
     // Another seed: everything the loaded game plays comes from the save.
     MemorySaveStorage otherStorage;
     const auto loaded = newGame(packs, &otherStorage, 99);
-    loaded->clock().setSpeed(HourPerSecond);
+    loaded->clock().setSpeed(SixtyGameHoursPerSecond);
     const auto read = loaded->loadFile(throughText(*saved));
     REQUIRE_MESSAGE(read.has_value(), errorOf(read));
     CHECK(loaded->partner().state() == raised->partner().state());
@@ -195,7 +195,7 @@ TEST_CASE("a game saved to a slot loads from it") {
     const TestPacks packs;
     MemorySaveStorage storage;
     const auto session = newGame(packs, &storage);
-    session->clock().setSpeed(HourPerSecond);
+    session->clock().setSpeed(SixtyGameHoursPerSecond);
     careFor(*session, SecondsPerGameDay);
     const SlotId slot{.kind = SlotKind::Manual, .index = 2};
     const auto saved = session->save(slot);
@@ -216,7 +216,7 @@ TEST_CASE("the partner going to sleep autosaves") {
     const TestPacks packs;
     MemorySaveStorage storage;
     const auto session = newGame(packs, &storage);
-    session->clock().setSpeed(HourPerSecond);
+    session->clock().setSpeed(SixtyGameHoursPerSecond);
     const std::vector<Autosave> before = playUntilSleepy(*session);
     REQUIRE(session->partner().canSleep());
     CHECK_FALSE(savedFor(before, AutosaveReason::PartnerSleep));
@@ -245,13 +245,13 @@ TEST_CASE("a new day autosaves only when the ruleset says so") {
     // The original ruleset turns it on (save.yaml: autosave.on_new_day).
     MemorySaveStorage onStorage;
     const auto on = newGame(packs, &onStorage);
-    on->clock().setSpeed(HourPerSecond);
+    on->clock().setSpeed(SixtyGameHoursPerSecond);
     CHECK(savedFor(play(*on, SecondsPerGameDay), AutosaveReason::NewDay));
 
     MemorySaveStorage offStorage;
     const auto off = newGame(packs, &offStorage);
     REQUIRE(off->rules().setValue("save", "autosave.on_new_day", "false").has_value());
-    off->clock().setSpeed(HourPerSecond);
+    off->clock().setSpeed(SixtyGameHoursPerSecond);
     CHECK_FALSE(savedFor(play(*off, SecondsPerGameDay), AutosaveReason::NewDay));
 }
 
@@ -271,7 +271,7 @@ TEST_CASE("a partner that dies is reborn as a baby") {
     const TestPacks packs;
     const auto session = newGame(packs, nullptr);
     makePartnerDie(*session);
-    session->clock().setSpeed(HourPerSecond);
+    session->clock().setSpeed(SixtyGameHoursPerSecond);
     std::vector<PartnerEvent> events;
     for (std::int32_t step = 0; step < 120 && !has(events, EventKind::Reborn); ++step) {
         session->tick(Tick);
@@ -290,7 +290,7 @@ TEST_CASE("a partner reborn after dying autosaves") {
     MemorySaveStorage storage;
     const auto session = newGame(packs, &storage);
     makePartnerDie(*session);
-    session->clock().setSpeed(HourPerSecond);
+    session->clock().setSpeed(SixtyGameHoursPerSecond);
     constexpr double DeathAndCoalesceSeconds = 30.0;
     CHECK(savedFor(play(*session, DeathAndCoalesceSeconds), AutosaveReason::PartnerReborn));
 }
@@ -298,7 +298,7 @@ TEST_CASE("a partner reborn after dying autosaves") {
 TEST_CASE("the partner view shows the partner's state within the care limits") {
     const TestPacks packs;
     const auto session = newGame(packs, nullptr);
-    session->clock().setSpeed(HourPerSecond);
+    session->clock().setSpeed(SixtyGameHoursPerSecond);
     careFor(*session, SecondsPerGameDay / 2.0);
     const dwe::session::PartnerView view = session->partnerView();
     const PartnerState& state = session->partner().state();

@@ -23,7 +23,7 @@ dwe-sim --scenario ruleset-diff --param against=original --set care.hunger.windo
 | `--seed <n>` | La semilla base: cada partida usa la suya, derivada de esta y de su número | 1 |
 | `--threads <n>` | Hilos; el resultado es el mismo con cualquier número | Uno por hilo del procesador |
 | `--days <n>` | Días de juego que juega cada partida | 1 |
-| `--speed <x>` | El avance rápido del reloj (`GameClock::setSpeed`) | 3600: una hora por segundo |
+| `--speed <x>` | El avance rápido del reloj (`GameClock::setSpeed`) | 3600: 60 horas de juego por segundo real (1 es un minuto de juego por segundo, 60 una hora) |
 | `--set <sección>.<ruta>=<valor>` | Cambia un valor del ruleset sin tocar sus ficheros; se repite. Pasa las mismas comprobaciones que el panel de ajuste | |
 | `--param <clave>=<valor>` | Un parámetro del escenario; se repite | |
 | `--out <carpeta>` | Escribe `<escenario>.md`, `<escenario>-runs.csv` y `<escenario>-summary.csv` | Solo Markdown por la salida estándar |

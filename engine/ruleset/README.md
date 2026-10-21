@@ -13,7 +13,7 @@ const dwe::ruleset::Ruleset& rules = store->current();
 const dwe::ruleset::Section* care = rules.section("care");                // YAML, fichero y ruleset de origen
 const dwe::assets::AssetId* raise = rules.table("raise");                 // data/raise
 dwe::ruleset::GameClock clock{*dwe::ruleset::readClockRules(rules)};
-clock.setSpeed(60.0);                                                      // una hora de juego por minuto real
+clock.setSpeed(60.0);                                                      // una hora de juego por segundo real
 dwe::ruleset::ClockAdvance step = clock.advance(1.0 / 60.0);               // step.hours: reglas de cada hora
 store->setValue("care", "hunger.window_minutes", "45");                   // panel de ajuste; sube revision()
 store->reload();                                                           // tras editar los YAML

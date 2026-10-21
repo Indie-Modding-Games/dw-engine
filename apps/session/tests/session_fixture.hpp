@@ -33,11 +33,12 @@ inline constexpr std::array<std::string_view, 8> OriginalTables{"digimon", "evol
 
 // A game loop's tick.
 inline constexpr double Tick = 1.0 / 60.0;
-// The tick of the tamer of the long raises: six game minutes at a game hour per real second, as a fast-forward that
-// skips frames would play.
+// The tick of the tamer of the long raises: six game hours at sixty game hours per real second, as a fast-forward
+// that skips frames would play.
 inline constexpr double CareTick = 0.1;
-// A game hour per real second.
-inline constexpr double HourPerSecond = 3600.0;
+// GameClock speeds: 1 is a game minute per real second.
+inline constexpr double GameHourPerSecond = 60.0;
+inline constexpr double SixtyGameHoursPerSecond = 3600.0;
 // The date the saves of the tests are written on.
 inline constexpr std::chrono::sys_seconds SaveDate{std::chrono::seconds{1'790'000'000}};
 

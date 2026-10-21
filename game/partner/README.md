@@ -56,14 +56,19 @@ partner.addStatGains(evolutionGains);                                           
   del tamer (ya tirado; la sesión lo limita a 0..10), barra de virus llena y regañina en el peor momento.
 - **Tope de las ganancias.** Toda ganancia de un stat se queda en 999 como mucho (desviación aprobada,
   2026-10-20): el entrenamiento, las comidas y chips (`FoodEffect::permanentGain`), la herencia al renacer y
-  `addStatGains` pasan por la misma función. HP y MP siguen llegando hasta 9999 sumando ganancias.
+  `addStatGains` pasan por la misma función. HP y MP siguen llegando hasta 9999 sumando ganancias. Se aceptan sus dos
+  efectos (decidido por el responsable de diseño, 2026-10-20): un objeto de +1000 da +999, y la media con los stats de
+  referencia de una evolución sube 999 como mucho. La vuelta de la forma virus no pasa por aquí: `setStats` y después
+  el tope de cada stat (ver abajo).
 - **Muerte y renacer.** El partner emite `Died` (valor 1 si fue natural); la sesión juega la muerte y llama a
   `rebirth(clock, nivelDelTamer)`.
 - **Evolución.** El partner lleva los contadores (`EvolutionCounters`) y avisa de la barra de virus; el módulo de
   evolución decide y la sesión aplica el resultado con `changeSpecies`, `addStatGains` o `setStats`. La copia de la
   forma virus (`VirusBackup`) guarda la forma y los stats de antes, como el original guarda la forma en la variable de
   guion `PSTAT_SUKAMON_BACKUP_DIGIMON` y los stats en `sukaBackup*` (decidido por el responsable de diseño,
-  2026-10-20: la forma va con el partner).
+  2026-10-20: la forma va con el partner). Al volver de la forma virus la sesión pone los stats reconstruidos con
+  `setStats` y los deja en el tope de cada stat de `care.limits` (9999 HP y MP, 999 el resto), sin el tope por
+  ganancia (`apps/session`: `EvolutionAdapter`).
 - **Cacas.** `PoopPiles` guarda las cacas del mundo como el original: delante del partner, a un paso al azar si la
   casilla está ocupada, 16 por mapa y 100 en total, reutilizando las más antiguas.
 - **Guardado.** `toYaml`/`fromYaml` con `PartnerStateVersion` (`state_yaml.hpp`); la sesión los envuelve en un
@@ -170,8 +175,9 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Infelicidad al saltar horas | `partner_impl.c: skipHours` | `unhappyChecksWhileSkipping`, `care.quirks.skipped_hours_unhappiness_only_at_midnight` | `activity_tests`: rest, only at midnight | Igual (2026-10-20): la rareza queda por defecto; `false` resta por cada múltiplo de 4 horas cruzado |
 | Multiplicador de entrenamiento | `trn_reward.c: TRN_calculateTrainingMultiplier` | `OriginalGainFormula` | `training_tests` | Igual |
 | Ganancias y cansado del todo | `trn_reward.c: TRN_award*TrainingGains` | `OriginalGainFormula` | `training_tests` | Igual |
-| Tope de cada ganancia: 999 | `trn_reward.c: TRN_award*TrainingGains` (solo la primera ganancia de la sesión); sin tope por ganancia en `item.c: handleFood`, `evl.c: EVL_applyEvolution` y `partner_impl.c: setReincarnateStats` | `addStatGains`, `care.limits.stat_gain_max` | `stat_gain_tests` | Desviación aprobada (2026-10-20): toda ganancia se queda en 999, también la de un objeto (un chip de +1000 HP da 999), la de la evolución y la herencia |
+| Tope de cada ganancia: 999 | `trn_reward.c: TRN_award*TrainingGains` (solo la primera ganancia de la sesión); sin tope por ganancia en `item.c: handleFood`, `evl.c: EVL_applyEvolution` y `partner_impl.c: setReincarnateStats` | `addStatGains`, `care.limits.stat_gain_max` | `stat_gain_tests` | Desviación aprobada (2026-10-20): toda ganancia se queda en 999, también la de un objeto (un objeto de +1000 HP da +999), la media de la evolución (sube 999 como mucho) y la herencia; los dos efectos se aceptan |
 | Tope de cada stat: 9999 y 999 | `item.c: addWithLimit`; `evl.c: EVL_clampBaseStats` | `addStatGains`, `care.limits` | `training_tests`: stop at 9999 | Igual |
+| Vuelta de la forma virus: stats reconstruidos | `partner.c: callDigimonRoutine` (2); `evl.c: EVL_scaleBaseStats`, `EVL_clampBaseStats` | `setStats` y el tope de `care.limits` en `apps/session` (`EvolutionAdapter`) | `apps/session`: `back from the virus form ...` | Igual (2026-10-20): sin el tope de 999 por ganancia |
 | Hora de entrenamiento | `trn_reward.c: TRN_advanceTrainingTime` | `passTrainingHour` | `training_tests`: takes an hour | Igual |
 | Año de 31 días al entrenar | `trn_reward.c: TRN_advanceTrainingTime` (el día vuelve a 0 en 31; el reloj, en 30) | — (usa el reloj, 30) | — | Hueco conocido (2026-10-20): se queda así, sin bandera |
 | Patrones de sueño | `partner_impl.c: SLEEP_PATTERN` | `care.sleep.patterns`, con su cita | `rules_tests`: the original's numbers | Igual (2026-10-20): constantes del ruleset |

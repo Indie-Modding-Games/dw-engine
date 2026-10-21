@@ -85,7 +85,8 @@ public:
     // values are taken as 0.
     void restore(std::int64_t elapsedFrames, double pendingFrames);
 
-    // The fast-forward multiplier: 1 is the original's speed, 0 stops the clock, 60 runs a game hour per real minute.
+    // The fast-forward multiplier: 1 is the original's speed (a game minute per real second), 0 stops the clock, 60
+    // runs a game hour per real second.
     // Negative values are taken as 0.
     void setSpeed(double multiplier);
     [[nodiscard]] double speed() const { return speed_; }

@@ -45,7 +45,8 @@ auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partne
 
 ## Rarezas
 
-Cada una es un flag de `quirks` en la sección; `original` las tiene todas a `true`.
+Cada una es un flag de `quirks` en la sección; `original` las tiene todas a `true` (decidido por el responsable de
+diseño, 2026-10-20). Las variantes corregidas irán más adelante en un ruleset de diseño, no en `original`.
 
 | Quirk | Qué hace |
 |---|---|
@@ -53,6 +54,19 @@ Cada una es un flag de `quirks` en la sección; `original` las tiene todas a `tr
 | `baby_discount_limited_by_full_price` | El máximo que se puede comprar con un bebé se calcula con el precio entero. |
 | `omni_disk_ignores_limit` | El disco de los tres atributos no mira el tope de combate. |
 | `useless_items_consumed` | Un objeto sin efecto se gasta al usarlo; con `false`, se queda en la bolsa. |
+
+## Decisiones de diseño (2026-10-20)
+
+Del responsable de diseño:
+
+1. **De dónde salen los efectos**: híbrido. Los números de cada objeto vienen de `data/item_effects` (los extrae
+   `dwx`) y las constantes de la lógica de cada función, del ruleset (`effects`), con su cita.
+2. **Objetos de partida nueva**: una lista del ruleset (`bag.new_game_items`) citada al guion `dg 193`, que pone la
+   sesión; en `original` está vacía. Cuando la máquina de guiones de la fase 4 corra `dg 193`, queda como respaldo.
+3. **Rarezas**: las 4 a `true` en `original`; las variantes corregidas, en un ruleset de diseño más adelante.
+4. **Objeto clave**: `droppable` igual a 0 (8 objetos en el original), sin marca propia.
+5. **Pérdida al perder un combate**: con `ruleset::Random` (los números de la partida), no con la tirada del original;
+   el efecto es el mismo (Igual).
 
 ## Paridad con el original
 
@@ -70,10 +84,10 @@ Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decid
 | Partida nueva: sin objetos | guion `dg 193` (`script_interp.c: remove_item` de los 29 huecos de `main_menu.c: initializeDefaultSavegame`, sin `give_item`) | `bag.new_game_items: []`; los pone la sesión (`InventoryAdapter::startNewGame`) | `rules_tests`: "the original starts with an empty bag…"; `apps/session` `inventory_adapter_tests` | Igual (cuando la máquina de guiones de la fase 4 corra `dg 193`, la lista queda como respaldo; decidido el 2026-10-20) |
 | Mover intercambia huecos | `inventory.c: selectOptionMenu` | `Inventory::move` | `bag_tests`: "moving swaps…" | Igual |
 | Tirar: campo, `droppable` 1, pila entera | `inventory.c: selectOptionMenu` | `Inventory::discard`; `use.discard_droppable` | `bag_tests`: "moving swaps…" | Igual |
-| Objeto clave: `droppable` 0, ni se vende ni se tira (sin marca propia) | `script_common.c: shopFillSellItemList`; `inventory.c: selectOptionMenu` | `isKeyItem`; `use.key_item_droppable`; `UseResult::keyItem`, `Purchase::keyItem` | `use_tests`: "using an item says…"; `shop_tests`: "buying a key item…" | Igual (el aviso es para el autoguardado, que no existe en el original) |
+| Objeto clave: `droppable` 0, ni se vende ni se tira (sin marca propia) | `script_common.c: shopFillSellItemList`; `inventory.c: selectOptionMenu` | `isKeyItem`; `use.key_item_droppable`; `UseResult::keyItem`, `Purchase::keyItem` | `use_tests`: "using an item says…"; `shop_tests`: "buying a key item…" | Igual (8 objetos; decidido el 2026-10-20; el aviso es para el autoguardado, que no existe en el original) |
 | Ordenar por categorías y número | `inventory.c: sortItems`, `ITEM_SORT_ORDER`; `utils.c: sortItemsById` | `Inventory::sort`; `sort.orders` | `bag_tests`: "sorting groups…" | Igual |
 | Dinero: tope 999 999, suelo 0 | `battle_ui.c`; `script_interp.c` | `addMoney`, `spendMoney`; `money.max` | `bag_tests`: "money stops…" | Igual |
-| Derrota: 30 % de huecos, pilas enteras | `script_common.c: handleItemLoss` | `Inventory::loseOnDefeat`; `defeat.lost_percent` | `bag_tests`: "a defeat loses…" | Igual (tirada con `ruleset::Random`, no la del original) |
+| Derrota: 30 % de huecos, pilas enteras | `script_common.c: handleItemLoss` | `Inventory::loseOnDefeat`; `defeat.lost_percent` | `bag_tests`: "a defeat loses…" | Igual en efecto (decidido el 2026-10-20): tirada con `ruleset::Random`, los números de la partida (`InventoryAdapter::loseOnDefeat`), no la del original |
 | Tienda de reciclaje con lo perdido | `script_common.c: handleItemLoss`, menú 2 | `loseOnDefeat` devuelve las pilas | — | Hueco (fase 4) |
 | Uso según `item_color` | `inventory.c: selectOptionMenu` | `use.cpp: usableIn`; `use.*_colors` | `use_tests`: "colour 0…" | Igual |
 | Campo: rechazo sin gastar; gastar y aplicar | `partner.c` (estados 4 a 6); `partner_impl.c: partnerWillRefuseItem` | `useItem`, `ItemEffectTarget::accepts` | `use_tests`: "in the field…" | Igual (el rechazo lo decide el partner) |

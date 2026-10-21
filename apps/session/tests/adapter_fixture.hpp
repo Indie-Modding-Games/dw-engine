@@ -20,9 +20,6 @@
 
 namespace dwe::session::testing {
 
-// One game hour per real second (GameClock: speed 1 is a game minute per real second).
-inline constexpr double GameHourPerSecond = 60.0;
-
 // The partner species of every form of the evolution tests' made-up tables, so the partner can become any of them.
 inline std::shared_ptr<const game::partner::SpeciesTable> fixtureFormsTable() {
     game::partner::SpeciesTable table;
