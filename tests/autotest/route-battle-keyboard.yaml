@@ -10,6 +10,16 @@ steps:
   - resize: [1280, 720]
   # The new game's bag is empty, as the original's: the debug give_item puts a Recovery in its first slot.
   - script: give_item("sm_recovery 2")
+  # Nine more fill the new game's ten slots, to check the full bag's layout.
+  - script: give_item("med_recovery 1")
+  - script: give_item("lrg_recovery 1")
+  - script: give_item("sup_recovery 1")
+  - script: give_item("mp_floppy 1")
+  - script: give_item("medium_mp 1")
+  - script: give_item("large_mp 1")
+  - script: give_item("double_flop 1")
+  - script: give_item("various 1")
+  - script: give_item("omnipotent 1")
   - script: battle("")
   - wait: {shown: battle, seconds: 1}
   - expect_setting: {battle.phase: fight}
@@ -22,6 +32,12 @@ steps:
   - menu_select: open-bag
   - expect_setting: {battle.bag.open: true}
   - screenshot: battle-bag
+  # The bag clears the enemies' panels and the prompts on a 4:3 screen and on a wide one too.
+  - resize: [800, 600]
+  - screenshot: battle-bag
+  - resize: [1920, 1080]
+  - screenshot: battle-bag
+  - resize: [1280, 720]
   - menu_select: bag-slot-0
   - expect_setting: {battle.item_in_flight: true}
   - screenshot: battle-item-thrown
