@@ -72,6 +72,13 @@ private:
     SessionState* state_;
 };
 
+// A section to register: its name, serializer and versions.
+struct SectionEntry {
+    std::string_view name;
+    game::save::SectionSerializer* serializer = nullptr;
+    game::save::MigrationChain migrations;
+};
+
 // Every section of the session, registered in this order: the partner is read before its random numbers.
 struct SessionSerializers {
     explicit SessionSerializers(SessionState& state)

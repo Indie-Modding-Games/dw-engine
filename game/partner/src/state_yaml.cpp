@@ -42,6 +42,7 @@ constexpr std::string_view EvolutionKey = "evolution";
 constexpr std::string_view TrainingKey = "training";
 constexpr std::string_view WeightKey = "weight";
 constexpr std::string_view VirusBackupKey = "virus_backup";
+constexpr std::string_view VirusBackupStatsKey = "stats";
 
 constexpr std::string_view SleepyHourKey = "sleepy_hour";
 constexpr std::string_view SleepyMinuteKey = "sleepy_minute";
@@ -124,6 +125,13 @@ YamlNode statsNode(const StatBlock& stats) {
 template <typename Enum, std::size_t Count>
 YamlNode enumNode(const std::array<std::string_view, Count>& names, Enum value) {
     return YamlNode::scalar(std::string{names.at(static_cast<std::size_t>(value))});
+}
+
+YamlNode virusBackupNode(const VirusBackup& backup) {
+    YamlNode node = YamlNode::mapping();
+    node.set(std::string{SpeciesKey}, text(backup.species));
+    node.set(std::string{VirusBackupStatsKey}, statsNode(backup.stats));
+    return node;
 }
 
 YamlNode sleepNode(const SleepState& sleep) {
@@ -254,6 +262,18 @@ StatBlock readStats(YamlReader& reader, const YamlNode& parent, std::string_view
         stats[stat] = integer(reader, node, statName(stat));
     }
     return stats;
+}
+
+VirusBackup readVirusBackup(YamlReader& reader, const YamlNode& root) {
+    const YamlNode* node = nullptr;
+    if (!group(reader, root, VirusBackupKey, {SpeciesKey, VirusBackupStatsKey}, node)) {
+        return {};
+    }
+    VirusBackup backup;
+    const YamlNode& species = reader.field(*node, SpeciesKey);
+    backup.species = reader.ok() ? reader.text(species) : std::string{};
+    backup.stats = readStats(reader, *node, VirusBackupStatsKey);
+    return backup;
 }
 
 PartnerStats readPartnerStats(YamlReader& reader, const YamlNode& root) {
@@ -440,7 +460,7 @@ YamlNode toYaml(const PartnerState& state) {
     root.set(std::string{EvolutionKey}, evolutionNode(state.evolution));
     root.set(std::string{TrainingKey}, trainingNode(state.training));
     put(root, WeightKey, state.weight);
-    root.set(std::string{VirusBackupKey}, statsNode(state.virusBackup));
+    root.set(std::string{VirusBackupKey}, virusBackupNode(state.virusBackup));
     return root;
 }
 
@@ -452,7 +472,7 @@ core::Result<PartnerState> fromYaml(const YamlNode& node) {
         return std::unexpected{reader.error(messages::StateText)};
     }
     const std::int32_t version = integer(reader, node, VersionKey);
-    if (reader.ok() && (version < 1 || version > PartnerStateVersion)) {
+    if (reader.ok() && version != PartnerStateVersion) {
         reader.fail(node.find(VersionKey) != nullptr ? *node.find(VersionKey) : node,
                     formatMessage(messages::UnsupportedVersion, version, PartnerStateVersion));
     }
@@ -470,8 +490,21 @@ core::Result<PartnerState> fromYaml(const YamlNode& node) {
     state.evolution = readEvolution(reader, node);
     state.training = readTraining(reader, node);
     state.weight = integer(reader, node, WeightKey);
-    state.virusBackup = readStats(reader, node, VirusBackupKey);
+    state.virusBackup = readVirusBackup(reader, node);
     return reader.finish(std::move(state), messages::StateText);
+}
+
+core::Result<YamlNode> addVirusBackupSpecies(YamlNode state) {
+    const YamlNode* stats = state.isMapping() ? state.find(VirusBackupKey) : nullptr;
+    if (stats == nullptr) {
+        return core::fail(formatMessage(messages::MissingStateKey, VirusBackupKey));
+    }
+    YamlNode backup = YamlNode::mapping();
+    backup.set(std::string{SpeciesKey}, text({}));
+    backup.set(std::string{VirusBackupStatsKey}, *stats);
+    state.set(std::string{VirusBackupKey}, std::move(backup));
+    put(state, VersionKey, VirusBackupSpeciesVersion);
+    return state;
 }
 
 } // namespace dwe::game::partner

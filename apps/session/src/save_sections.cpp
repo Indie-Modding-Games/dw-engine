@@ -57,6 +57,13 @@ T parsed(YamlReader& reader, const YamlNode& node, std::string_view problem) {
     return value;
 }
 
+// The partner section's versions: the chain reaches game::partner::PartnerStateVersion.
+game::save::MigrationChain partnerMigrations() {
+    game::save::MigrationChain chain;
+    chain.add(game::partner::addVirusBackupSpecies);
+    return chain;
+}
+
 } // namespace
 
 core::Result<YamlNode> ClockSave::write() const {
@@ -167,12 +174,13 @@ core::Result<void> RandomSave::read(const YamlNode& state) {
 }
 
 core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections) {
-    for (auto [name, serializer] : {std::pair<std::string_view, game::save::SectionSerializer*>{ClockName, &clock},
-                                    {PartnerName, &partner},
-                                    {TamerName, &tamer},
-                                    {FieldName, &field},
-                                    {RandomName, &random}}) {
-        if (auto added = sections.add(std::string{name}, *serializer); !added) {
+    for (auto& [name, serializer, migrations] :
+         {SectionEntry{.name = ClockName, .serializer = &clock, .migrations = {}},
+          SectionEntry{.name = PartnerName, .serializer = &partner, .migrations = partnerMigrations()},
+          SectionEntry{.name = TamerName, .serializer = &tamer, .migrations = {}},
+          SectionEntry{.name = FieldName, .serializer = &field, .migrations = {}},
+          SectionEntry{.name = RandomName, .serializer = &random, .migrations = {}}}) {
+        if (auto added = sections.add(std::string{name}, *serializer, migrations); !added) {
             return added;
         }
     }

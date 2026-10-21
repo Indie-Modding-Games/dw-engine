@@ -59,7 +59,9 @@ inline constexpr std::string_view BadBabyPick = "the rebirth choice picked baby 
 // The saved state.
 inline constexpr std::string_view StateText = "the partner state";
 inline constexpr std::string_view StateVersionText = "version";
-inline constexpr std::string_view UnsupportedVersion = "the partner state is version {}; this build reads up to {}";
+inline constexpr std::string_view UnsupportedVersion =
+    "the partner state is version {}; this build reads version {} (older ones are migrated by the save)";
+inline constexpr std::string_view MissingStateKey = "the partner state has no '{}'";
 inline constexpr std::string_view UnknownEnum = "unknown {} '{}'";
 
 } // namespace dwe::game::partner::messages

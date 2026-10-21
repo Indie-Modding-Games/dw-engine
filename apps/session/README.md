@@ -67,7 +67,7 @@ de `clock` (con la velocidad que tenía).
 | Sección | Qué guarda |
 |---|---|
 | `clock` | `elapsed_frames` y `pending_frames`: los fotogramas y la fracción que el siguiente tick completa |
-| `partner` | El estado del partner (`partner::toYaml`, versión `PartnerStateVersion`) |
+| `partner` | El estado del partner (`partner::toYaml`, versión `PartnerStateVersion`); una partida de la versión 1 sube con `partner::addVirusBackupSpecies` (la copia de la forma virus sin forma) |
 | `tamer` | `level` |
 | `field` | `map`, `position` y `yaw` del jugador; vacío sin mapa |
 | `random` | El estado del generador del partner, para que una partida cargada siga igual que la guardada |
@@ -107,6 +107,7 @@ partner (`routePartnerEvent`). Hasta que `game/battle` tenga el suyo, `finishBat
 partida → seguir igual, ranuras, autoguardado al dormir y por día nuevo según el ruleset, ajuste en marcha, muerte y
 renacer, la vista del partner, nombres de ranura), `tests/field_clock_tests.cpp` (con un campo de prueba: el ritmo del
 reloj de antes, el reloj parado en los fundidos a cualquier velocidad, autoguardado al cambiar de mapa y el sitio
-guardado) y `tests/rules_tests.cpp` (esquemas de `new_game` y `tamer`, valores del original y comprobaciones). Usan el
+guardado), `tests/save_migration_tests.cpp` (partidas con secciones de versiones anteriores) y `tests/rules_tests.cpp`
+(esquemas de `new_game` y `tamer`, valores del original y comprobaciones). Usan el
 paquete `game` del árbol de fuentes sobre un paquete base de sustitución con las tablas vacías, especies inventadas
 (no las del original) y `MemorySaveStorage`.

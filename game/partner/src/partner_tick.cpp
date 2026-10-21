@@ -354,12 +354,12 @@ void Partner::tickUnhappyLifetime(const FrameTime& time) {
 }
 
 void Partner::tickVirusBar() {
-    // tickConditions: a full virus bar turns the partner into its virus form; the stats it had are kept to come
-    // back from it.
+    // tickConditions: a full virus bar turns the partner into its virus form; the form and stats it had are kept to
+    // come back from it.
     if (state_.toilet.virusBar < care().toilet.virusBarLimit || state_.species == care().toilet.virusForm) {
         return;
     }
-    state_.virusBackup = state_.stats.base;
+    state_.virusBackup = {.species = state_.species, .stats = state_.stats.base};
     state_.toilet.virusBar = 0;
     emit(EventKind::VirusBarFull);
 }

@@ -21,7 +21,8 @@ TEST_CASE("the partner state goes to YAML and back unchanged, with its version")
         state.life.phase = LifePhase::DiedOtherwise;
         state.training.boost = {.stats = {Stat::Hp, Stat::Brain}, .value = 15, .frames = 300};
         state.training.youngSessions[Stat::Speed] = 4;
-        state.virusBackup[Stat::Mp] = 77;
+        state.virusBackup.species = "kept";
+        state.virusBackup.stats[Stat::Mp] = 77;
         state.hunger.refusedFavorite = true;
     });
     const core::YamlNode node = toYaml(raising.state());
@@ -45,6 +46,34 @@ TEST_CASE("a partner state of an unknown version or with a bad value is refused"
     core::YamlNode missing = core::YamlNode::mapping();
     missing.set("version", core::YamlNode::scalar("1"));
     CHECK_FALSE(fromYaml(missing).has_value());
+}
+
+TEST_CASE("a partner state of version 1 gains an empty virus backup species and keeps its stats") {
+    testing::OriginalRuleset original;
+    testing::Raising raising(original.rules());
+    raising.edit([](PartnerState& state) {
+        state.virusBackup.species = "kept";
+        state.virusBackup.stats[Stat::Offense] = 321;
+    });
+    // Version 1 kept only the stats, straight under virus_backup.
+    core::YamlNode old = toYaml(raising.state());
+    const core::YamlNode* backup = old.find("virus_backup");
+    REQUIRE(backup != nullptr);
+    const core::YamlNode* stats = backup->find("stats");
+    REQUIRE(stats != nullptr);
+    old.set("virus_backup", *stats);
+    old.set("version", core::YamlNode::scalar("1"));
+    CHECK_FALSE(fromYaml(old).has_value());
+
+    const auto migrated = addVirusBackupSpecies(old);
+    REQUIRE_MESSAGE(migrated.has_value(), testing::errorOf(migrated));
+    const auto restored = fromYaml(*migrated);
+    REQUIRE_MESSAGE(restored.has_value(), testing::errorOf(restored));
+    CHECK(restored->virusBackup.species.empty());
+    CHECK(restored->virusBackup.stats[Stat::Offense] == 321);
+    CHECK(restored->species == raising.state().species);
+
+    CHECK_FALSE(addVirusBackupSpecies(core::YamlNode::mapping()).has_value());
 }
 
 } // namespace dwe::game::partner

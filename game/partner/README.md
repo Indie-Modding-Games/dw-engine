@@ -60,11 +60,15 @@ partner.addStatGains(evolutionGains);                                           
 - **Muerte y renacer.** El partner emite `Died` (valor 1 si fue natural); la sesión juega la muerte y llama a
   `rebirth(clock, nivelDelTamer)`.
 - **Evolución.** El partner lleva los contadores (`EvolutionCounters`) y avisa de la barra de virus; el módulo de
-  evolución decide y llama a `changeSpecies`.
+  evolución decide y la sesión aplica el resultado con `changeSpecies`, `addStatGains` o `setStats`. La copia de la
+  forma virus (`VirusBackup`) guarda la forma y los stats de antes, como el original guarda la forma en la variable de
+  guion `PSTAT_SUKAMON_BACKUP_DIGIMON` y los stats en `sukaBackup*` (decidido por el responsable de diseño,
+  2026-10-20: la forma va con el partner).
 - **Cacas.** `PoopPiles` guarda las cacas del mundo como el original: delante del partner, a un paso al azar si la
   casilla está ocupada, 16 por mapa y 100 en total, reutilizando las más antiguas.
 - **Guardado.** `toYaml`/`fromYaml` con `PartnerStateVersion` (`state_yaml.hpp`); la sesión los envuelve en un
-  `SectionSerializer`. `PoopPiles::slots()`/`restore()` para las cacas.
+  `SectionSerializer` con sus migraciones. La versión 2 añade la forma a la copia de la forma virus:
+  `addVirusBackupSpecies` sube una partida de la versión 1, que no la tenía, con la forma vacía. `PoopPiles::slots()`/`restore()` para las cacas.
 
 ## Datos
 
@@ -147,6 +151,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Cacas en el mapa | `partner_impl.c: createPoopPile` | `PoopPiles` | `toilet_tests`: piles | Igual |
 | Comer caca | `partner_impl.c: handleEatingPoop` | `eatPoop` | `toilet_tests`, `health_tests` | Igual |
 | Barra de virus | `partner_impl.c: tickConditions` | `tickVirusBar` | `toilet_tests`: sixteenth pile | Igual |
+| Copia de la forma virus: forma y stats | `partner_impl.c: tickConditions` (`sukaBackup*`); variable de guion `PSTAT_SUKAMON_BACKUP_DIGIMON` | `PartnerState::virusBackup` (`VirusBackup`), versión 2 del estado | `toilet_tests`: sixteenth pile; `state_yaml_tests`: version 1 | Igual (2026-10-20): la forma se guarda con el partner y no en una variable de guion; las partidas de la versión 1 la cargan vacía |
 | Enfermar por no dormir, por zona, por herida | `partner_impl.c: tickSicknessMechanics` | `tickSickness`, `OriginalSicknessRoll` | `health_tests` | Igual |
 | Enfermedad sin tratar: vida | `partner_impl.c: tickSicknessMechanics` | `tickSickness`, `loseLife` | `health_tests`: twelve hours sick | Igual |
 | Comida que enferma | `item.c: handleItemSickness` | `rollFoodSickness` | `health_tests`: a food | Igual |

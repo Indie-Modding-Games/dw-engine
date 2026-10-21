@@ -199,6 +199,16 @@ struct TrainingState {
     friend bool operator==(const TrainingState&, const TrainingState&) = default;
 };
 
+// What the partner kept of itself on turning into the virus form, to come back from it: the form, which the original
+// keeps in a script variable (PSTAT_SUKAMON_BACKUP_DIGIMON), and the maximum stats (sukaBackup*). An empty species
+// means nothing was kept.
+struct VirusBackup {
+    std::string species;
+    StatBlock stats;
+
+    friend bool operator==(const VirusBackup&, const VirusBackup&) = default;
+};
+
 // Everything the original keeps about the partner (params.h: PartnerPara, entity.h: PartnerEntity), but its
 // position, model and moves, which the field, evolution and battle keep.
 struct PartnerState {
@@ -215,8 +225,8 @@ struct PartnerState {
     EvolutionCounters evolution;
     TrainingState training;
     std::int32_t weight = 0;
-    // The stats before the virus bar turned the partner into its virus form, to come back from it (sukaBackup*).
-    StatBlock virusBackup;
+    // The form and stats before the virus bar turned the partner into its virus form.
+    VirusBackup virusBackup;
 
     friend bool operator==(const PartnerState&, const PartnerState&) = default;
 };

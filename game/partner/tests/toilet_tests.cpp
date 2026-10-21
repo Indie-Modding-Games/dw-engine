@@ -134,7 +134,8 @@ TEST_CASE("care.md toilet: the sixteenth pile on the ground fills the virus bar"
     CHECK_FALSE(has(raising.playFrames(UrgeFrames), EventKind::VirusBarFull));
     CHECK(has(raising.playFrames(1), EventKind::VirusBarFull));
     CHECK(raising.state().toilet.virusBar == 0);
-    CHECK(raising.state().virusBackup == raising.state().stats.base);
+    CHECK(raising.state().virusBackup.stats == raising.state().stats.base);
+    CHECK(raising.state().virusBackup.species == raising.state().species);
 }
 
 TEST_CASE("care.md toilet: the virus form's piles do not fill the bar") {
