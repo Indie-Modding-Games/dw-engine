@@ -145,9 +145,17 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `text_font` | `modern`, `original` | `text_font` (y la UI vuelve a componer los documentos con la fuente) |
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
-`battle_charge` (cada pulsación que carga el golpe final) y `battle_close` (cierra la caja del final). Lo que dibuja
-lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `fight` o `end`), y el menú del compañero
-con prefijos `partner.` y `bag.`; el contrato está en el [README de apps/screens](../../apps/screens/README.md).
+`battle_charge` (cada pulsación que carga el golpe final) y `battle_close` (cierra la caja del final). El menú de
+pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
+número de la ranura), `bag_move` (`"<desde> <hasta>"`), `bag_sort` (el orden, 0 a 2), `partner_praise` y
+`partner_scold`. Lo que dibujan lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `fight` o
+`end`), `partner.` y `bag.`; el contrato está en el [README de apps/screens](../../apps/screens/README.md).
+
+En la consola de depuración (y en los pasos `script` de los autotests), `battle("")` empieza un combate contra el
+primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0,2")`), y `give_item("meat 3")` mete
+objetos en la bolsa. Son ayudas de depuración hasta que corran los scripts de los mapas y existan cofres y tiendas:
+el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
+partida nueva empieza con la bolsa vacía.
 
 Otros ajustes los publica el juego sin que un menú los pida:
 

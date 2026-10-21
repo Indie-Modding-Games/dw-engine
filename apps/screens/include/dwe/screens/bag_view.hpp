@@ -16,7 +16,7 @@ namespace dwe::screens {
 inline constexpr std::string_view BagRevisionSetting = "bag.revision";
 inline constexpr std::string_view BagSlotList = "bag.slot";
 inline constexpr std::string_view BagMoneySetting = "bag.money";
-// What the last command on the bag did, as a text key (bag.result.<outcome>); empty before any.
+// What the last command on the bag did, as a text key (partner_menu.bag_result.*); empty before any.
 inline constexpr std::string_view BagResultSetting = "bag.result";
 
 // A slot of the bag as the item list shows it (inventory.c: renderInventoryTop, renderInventoryBottom).

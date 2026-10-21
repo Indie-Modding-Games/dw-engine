@@ -1,0 +1,113 @@
+<rml>
+<head>
+	<title>Partner menu</title>
+	<link type="text/rcss" href="../common/theme.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<div id="tabs">
+				<button id="tab-status" class="tab" onclick="open_page(document, 'status')" text-key="partner_menu.tab.status"></button>
+				<button id="tab-items" class="tab" onclick="open_page(document, 'items')" text-key="partner_menu.tab.items"></button>
+				<button id="tab-care" class="tab" onclick="open_page(document, 'care')" text-key="partner_menu.tab.care"></button>
+				<button id="close" class="tab" onclick="ui.hide(document_name)" text-key="common.back"></button>
+			</div>
+
+			<div id="page-status" class="page">
+				<div id="status-head">
+					<span class="original-look" id="status-name"></span>
+					<span class="original-look head-value" id="status-lives"></span>
+				</div>
+				<div class="status-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
+				<div class="status-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
+				<div class="status-line"><span class="original-look" id="status-hp-label"></span><span class="original-look line-value" id="status-hp"></span></div>
+				<div class="status-line"><span class="original-look" id="status-mp-label"></span><span class="original-look line-value" id="status-mp"></span></div>
+				<div class="status-bars">
+					<div class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
+					<div class="bar-row"><span class="label original-look" id="stat-1-label"></span><div class="bar stat"><div class="fill" id="stat-1-fill"></div></div><span class="value original-look" id="stat-1"></span></div>
+					<div class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>
+					<div class="bar-row"><span class="label original-look" id="stat-3-label"></span><div class="bar stat"><div class="fill" id="stat-3-fill"></div></div><span class="value original-look" id="stat-3"></span></div>
+				</div>
+				<div class="status-bars">
+					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div></div><span class="value original-look" id="meter-0"></span></div>
+					<div class="bar-row"><span class="label original-look" id="meter-1-label"></span><div class="bar meter"><div class="fill" id="meter-1-fill"></div></div><span class="value original-look" id="meter-1"></span></div>
+					<div class="bar-row"><span class="label original-look" id="meter-2-label"></span><div class="bar meter"><div class="fill" id="meter-2-fill"></div></div><span class="value original-look" id="meter-2"></span></div>
+				</div>
+				<div id="conditions"><span class="condition original-look hidden" id="condition-0"></span><span class="condition original-look hidden" id="condition-1"></span><span class="condition original-look hidden" id="condition-2"></span><span class="condition original-look hidden" id="condition-3"></span><span class="condition original-look hidden" id="condition-4"></span><span class="condition original-look hidden" id="condition-5"></span><span class="condition original-look hidden" id="condition-6"></span><span class="original-look" id="no-condition" text-key="partner_menu.condition.none"></span></div>
+			</div>
+
+			<div id="page-items" class="page hidden">
+				<div id="bag-grid">
+					<button id="slot-0" class="slot hidden" onclick="pick_slot(document, 0)"><span class="original-look slot-name" id="slot-0-name"></span><span class="original-look slot-count" id="slot-0-count"></span></button>
+					<button id="slot-1" class="slot hidden" onclick="pick_slot(document, 1)"><span class="original-look slot-name" id="slot-1-name"></span><span class="original-look slot-count" id="slot-1-count"></span></button>
+					<button id="slot-2" class="slot hidden" onclick="pick_slot(document, 2)"><span class="original-look slot-name" id="slot-2-name"></span><span class="original-look slot-count" id="slot-2-count"></span></button>
+					<button id="slot-3" class="slot hidden" onclick="pick_slot(document, 3)"><span class="original-look slot-name" id="slot-3-name"></span><span class="original-look slot-count" id="slot-3-count"></span></button>
+					<button id="slot-4" class="slot hidden" onclick="pick_slot(document, 4)"><span class="original-look slot-name" id="slot-4-name"></span><span class="original-look slot-count" id="slot-4-count"></span></button>
+					<button id="slot-5" class="slot hidden" onclick="pick_slot(document, 5)"><span class="original-look slot-name" id="slot-5-name"></span><span class="original-look slot-count" id="slot-5-count"></span></button>
+					<button id="slot-6" class="slot hidden" onclick="pick_slot(document, 6)"><span class="original-look slot-name" id="slot-6-name"></span><span class="original-look slot-count" id="slot-6-count"></span></button>
+					<button id="slot-7" class="slot hidden" onclick="pick_slot(document, 7)"><span class="original-look slot-name" id="slot-7-name"></span><span class="original-look slot-count" id="slot-7-count"></span></button>
+					<button id="slot-8" class="slot hidden" onclick="pick_slot(document, 8)"><span class="original-look slot-name" id="slot-8-name"></span><span class="original-look slot-count" id="slot-8-count"></span></button>
+					<button id="slot-9" class="slot hidden" onclick="pick_slot(document, 9)"><span class="original-look slot-name" id="slot-9-name"></span><span class="original-look slot-count" id="slot-9-count"></span></button>
+					<button id="slot-10" class="slot hidden" onclick="pick_slot(document, 10)"><span class="original-look slot-name" id="slot-10-name"></span><span class="original-look slot-count" id="slot-10-count"></span></button>
+					<button id="slot-11" class="slot hidden" onclick="pick_slot(document, 11)"><span class="original-look slot-name" id="slot-11-name"></span><span class="original-look slot-count" id="slot-11-count"></span></button>
+					<button id="slot-12" class="slot hidden" onclick="pick_slot(document, 12)"><span class="original-look slot-name" id="slot-12-name"></span><span class="original-look slot-count" id="slot-12-count"></span></button>
+					<button id="slot-13" class="slot hidden" onclick="pick_slot(document, 13)"><span class="original-look slot-name" id="slot-13-name"></span><span class="original-look slot-count" id="slot-13-count"></span></button>
+					<button id="slot-14" class="slot hidden" onclick="pick_slot(document, 14)"><span class="original-look slot-name" id="slot-14-name"></span><span class="original-look slot-count" id="slot-14-count"></span></button>
+					<button id="slot-15" class="slot hidden" onclick="pick_slot(document, 15)"><span class="original-look slot-name" id="slot-15-name"></span><span class="original-look slot-count" id="slot-15-count"></span></button>
+					<button id="slot-16" class="slot hidden" onclick="pick_slot(document, 16)"><span class="original-look slot-name" id="slot-16-name"></span><span class="original-look slot-count" id="slot-16-count"></span></button>
+					<button id="slot-17" class="slot hidden" onclick="pick_slot(document, 17)"><span class="original-look slot-name" id="slot-17-name"></span><span class="original-look slot-count" id="slot-17-count"></span></button>
+					<button id="slot-18" class="slot hidden" onclick="pick_slot(document, 18)"><span class="original-look slot-name" id="slot-18-name"></span><span class="original-look slot-count" id="slot-18-count"></span></button>
+					<button id="slot-19" class="slot hidden" onclick="pick_slot(document, 19)"><span class="original-look slot-name" id="slot-19-name"></span><span class="original-look slot-count" id="slot-19-count"></span></button>
+					<button id="slot-20" class="slot hidden" onclick="pick_slot(document, 20)"><span class="original-look slot-name" id="slot-20-name"></span><span class="original-look slot-count" id="slot-20-count"></span></button>
+					<button id="slot-21" class="slot hidden" onclick="pick_slot(document, 21)"><span class="original-look slot-name" id="slot-21-name"></span><span class="original-look slot-count" id="slot-21-count"></span></button>
+					<button id="slot-22" class="slot hidden" onclick="pick_slot(document, 22)"><span class="original-look slot-name" id="slot-22-name"></span><span class="original-look slot-count" id="slot-22-count"></span></button>
+					<button id="slot-23" class="slot hidden" onclick="pick_slot(document, 23)"><span class="original-look slot-name" id="slot-23-name"></span><span class="original-look slot-count" id="slot-23-count"></span></button>
+					<button id="slot-24" class="slot hidden" onclick="pick_slot(document, 24)"><span class="original-look slot-name" id="slot-24-name"></span><span class="original-look slot-count" id="slot-24-count"></span></button>
+					<button id="slot-25" class="slot hidden" onclick="pick_slot(document, 25)"><span class="original-look slot-name" id="slot-25-name"></span><span class="original-look slot-count" id="slot-25-count"></span></button>
+					<button id="slot-26" class="slot hidden" onclick="pick_slot(document, 26)"><span class="original-look slot-name" id="slot-26-name"></span><span class="original-look slot-count" id="slot-26-count"></span></button>
+					<button id="slot-27" class="slot hidden" onclick="pick_slot(document, 27)"><span class="original-look slot-name" id="slot-27-name"></span><span class="original-look slot-count" id="slot-27-count"></span></button>
+					<button id="slot-28" class="slot hidden" onclick="pick_slot(document, 28)"><span class="original-look slot-name" id="slot-28-name"></span><span class="original-look slot-count" id="slot-28-count"></span></button>
+					<button id="slot-29" class="slot hidden" onclick="pick_slot(document, 29)"><span class="original-look slot-name" id="slot-29-name"></span><span class="original-look slot-count" id="slot-29-count"></span></button>
+				</div>
+				<p id="bag-description" class="original-look"></p>
+				<div id="bag-foot">
+					<span class="original-look" id="bag-result"></span>
+					<span class="original-look" id="bag-money"></span>
+				</div>
+			</div>
+
+			<div id="page-care" class="page hidden">
+				<button id="care-praise" onclick="ui.send('partner_praise')" text-key="partner_menu.care.praise"></button>
+				<button id="care-scold" onclick="ui.send('partner_scold')" text-key="partner_menu.care.scold"></button>
+				<p class="care-hint" text-key="partner_menu.care.feed_hint"></p>
+				<p class="care-hint" text-key="partner_menu.care.training_hint"></p>
+				<p id="care-result" class="original-look"></p>
+			</div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+
+		<div id="options" class="box hidden">
+				<button id="opt-use" class="original-look" onclick="choose_option(document, 'use')"></button>
+				<button id="opt-move" class="original-look" onclick="choose_option(document, 'move')"></button>
+				<button id="opt-sort" class="original-look" onclick="choose_option(document, 'sort')"></button>
+				<button id="opt-drop" class="original-look" onclick="choose_option(document, 'drop')"></button>
+		</div>
+		<div id="sort-box" class="box hidden">
+				<button id="sort-0" class="original-look" onclick="choose_sort(document, 0)"></button>
+				<button id="sort-1" class="original-look" onclick="choose_sort(document, 1)"></button>
+				<button id="sort-2" class="original-look" onclick="choose_sort(document, 2)"></button>
+		</div>
+		<div id="confirm-box" class="box hidden">
+			<p class="original-look" id="confirm-text"></p>
+			<button id="confirm-yes" class="original-look" onclick="confirm_drop(document, true)"></button>
+			<button id="confirm-no" class="original-look" onclick="confirm_drop(document, false)"></button>
+		</div>
+	</div>
+</body>
+</rml>

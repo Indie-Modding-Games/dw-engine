@@ -48,6 +48,7 @@
 #include "frame_stats.hpp"
 #include "language.hpp"
 #include "messages.hpp"
+#include "partner_menu.hpp"
 #include "partner_tab.hpp"
 #include "session_start.hpp"
 #include "text_font_setting.hpp"
@@ -188,7 +189,8 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
 core::Result<void> loadDocuments(ui::Ui& ui) {
     for (const auto& [name, id] :
          {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
-          std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"}}) {
+          std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"},
+          std::pair{"partner_menu", "ui/partner_menu/document"}}) {
         auto asset = assets::AssetId::parse(id);
         if (!asset) {
             return std::unexpected{asset.error()};
@@ -497,7 +499,14 @@ int runGame(const Options& options) {
                                .inventory = game->systems.inventory,
                                .species = species ? &*species : nullptr,
                                .ui = ui->get()}};
+    PartnerMenu partnerMenu{{.session = &session,
+                             .inventory = game->systems.inventory,
+                             .species = species ? &*species : nullptr,
+                             .ui = ui->get()}};
     std::optional<std::string> pendingBattle;
+    std::optional<std::string> pendingGift;
+    (*scripts)->bindCommand(GiveItemCommand,
+                            [&pendingGift](std::string_view item) { pendingGift = std::string{item}; });
     (*scripts)->bindCommand(BattleCommand,
                             [&pendingBattle](std::string_view npcs) { pendingBattle = std::string{npcs}; });
 
@@ -626,7 +635,8 @@ int runGame(const Options& options) {
                 if (!(*ui)->isVisible(MenuDocument)) {
                     battleScreen.tick(TickSeconds);
                 }
-            } else if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument)) {
+            } else if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument) &&
+                       !(*ui)->isVisible(PartnerMenuDocument)) {
                 (*scene)->tick(intent, static_cast<float>(TickSeconds));
                 session.tick(TickSeconds);
                 (*scene)->finishTick();
@@ -636,10 +646,15 @@ int runGame(const Options& options) {
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-            if (battleScreen.handle(command)) {
+            if (battleScreen.handle(command) || partnerMenu.handle(command)) {
                 continue;
             }
             running = apply(command, **ui, *window, settings, languageChanger, textFontChanger) && running;
+        }
+        if (pendingGift) {
+            if (auto given = partnerMenu.giveItem(*std::exchange(pendingGift, std::nullopt)); !given) {
+                core::logWarning("{}", core::formatMessage(messages::GiveItemFailed, given.error().message));
+            }
         }
         if (pendingBattle) {
             startBattle(battleScreen, species ? &*species : nullptr, **scene,
@@ -661,8 +676,13 @@ int runGame(const Options& options) {
         screenFade->setDarkness(field.fadeLevel());
         mapChangeView.show(**scene);
 
-        const bool paused =
-            (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) || battleScreen.active();
+        partnerMenu.update();
+        // Nothing shows the partner's events yet (the HUD's reactions come with the map scripts); they are dropped
+        // here so they do not pile up.
+        static_cast<void>(session.takePartnerEvents());
+
+        const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
+                            (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
         (*ui)->update();
 

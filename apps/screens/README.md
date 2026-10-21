@@ -36,3 +36,19 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 
 El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_command` (el número del comando),
 `battle_charge` y `battle_close` ([ui.md](../../docs/architecture/ui.md)).
+
+## Menú del compañero
+
+`partnerStatusViewOf(partner, names)` es la página de estado y `bagViewOf(inventory, items, names)` la bolsa.
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `partner.{name,age,weight,lives,hp,max_hp,mp,max_mp}` | clave, números | Lo que enseña la vista de estadísticas del original (`game_menu.c: renderDigimonStatsView`): nombre, edad en días, peso, vidas, HP y MP actuales y máximos |
+| `partner.stat.<i>.{label,value,min,max}` | clave, números | Las barras de ataque, defensa, velocidad y cerebro, sobre 999 |
+| `partner.meter.<i>.{label,value,min,max}` | clave, números | Felicidad, disciplina y virus, con sus límites del ruleset |
+| `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |
+| `bag.slot.<i>.{empty,item,name,description,count,dimmed}` | booleano, número, claves, número, booleano | Las ranuras que tiene la bolsa, en orden (`inventory.c: renderInventoryTop`); `dimmed` es un objeto que no se usa desde la bolsa (`item_color` 255), que el original pinta de otro color |
+| `bag.money` | número | Los bits |
+| `bag.result` | clave | Qué hizo la última orden sobre la bolsa (`partner_menu.bag_result.*`); el juego añade `bag.result_item`, la clave del nombre del objeto |
+
+El juego añade `partner.care_result` (`partner_menu.care_result.praised` o `scolded`).

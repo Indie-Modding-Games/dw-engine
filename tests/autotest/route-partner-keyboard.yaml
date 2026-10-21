@@ -1,0 +1,46 @@
+# The partner's menu with the keyboard: from the pause menu, the status page, the item bag (an item's options, using
+# it, moving it to another slot, the sort orders, the drop's question answered no) and the care page (praise). How to
+# run it: docs/guides/prueba-vertical.md.
+name: partner-keyboard
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  # The new game's bag is empty, as the original's: the debug give_item fills a few slots first.
+  - script: give_item("meat 3")
+  - script: give_item("sm_recovery 2")
+  - script: give_item("mp_floppy 1")
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: partner-status
+  - menu_select: tab-items
+  - wait: {seconds: 0.5}
+  - screenshot: partner-bag
+  - menu_select: slot-0
+  - screenshot: partner-bag-options
+  - menu_select: opt-use
+  - wait: {seconds: 0.5}
+  - screenshot: partner-bag-used
+  - menu_select: slot-0
+  - menu_select: opt-move
+  - menu_select: slot-4
+  - wait: {seconds: 0.5}
+  - screenshot: partner-bag-moved
+  - menu_select: slot-4
+  - menu_select: opt-sort
+  - screenshot: partner-bag-sort
+  - menu_select: sort-0
+  - wait: {seconds: 0.5}
+  - menu_select: slot-0
+  - menu_select: opt-drop
+  - screenshot: partner-bag-drop
+  - menu_select: confirm-no
+  - menu_select: tab-care
+  - menu_select: care-praise
+  - expect_setting: {partner.care_result: partner_menu.care_result.praised}
+  - screenshot: partner-care
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  - screenshot: partner-closed

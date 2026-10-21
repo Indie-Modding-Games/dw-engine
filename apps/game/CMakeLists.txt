@@ -15,6 +15,7 @@ dwe_add_app(game
         src/map_preview.cpp
         src/model_viewer.cpp
         src/options.cpp
+        src/partner_menu.cpp
         src/partner_tab.cpp
         src/saves.cpp
         src/session_start.cpp

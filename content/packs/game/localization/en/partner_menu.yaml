@@ -1,0 +1,43 @@
+# The partner's menu (ui/partner_menu): the status page, the item bag and the care page. The original's own labels
+# (HP, MP, the stats, the item options, the sort orders, the drop's question, bits) come from its text tables.
+tab.status: "Status"
+tab.items: "Items"
+tab.care: "Care"
+age: "Age"
+# {days} is the partner's age in days.
+age.value: "{days} days"
+weight: "Weight"
+# {weight} is the partner's weight.
+weight.value: "{weight} G"
+# {lives} is the lives the partner has left.
+lives: "Lives {lives}"
+happiness: "Happiness"
+discipline: "Discipline"
+virus: "Virus"
+condition.none: "In good shape"
+condition.sleepy: "Sleepy"
+condition.tired: "Tired"
+condition.hungry: "Hungry"
+condition.needs_toilet: "Needs the toilet"
+condition.sulking: "Sulking"
+condition.injured: "Injured"
+condition.sick: "Sick"
+bag.empty: "-"
+# {name} is the item being moved.
+bag.move_prompt: "Where to put {name}?"
+# {name} is the item's name in all the bag results.
+bag_result.used: "Used {name}."
+bag_result.refused: "Your partner won't take {name}."
+bag_result.not_usable_here: "{name} can't be used here."
+bag_result.not_in_bag: "There is nothing there."
+bag_result.useless: "{name} would do nothing now."
+bag_result.moved: "Moved {name}."
+bag_result.dropped: "Threw away {name}."
+bag_result.sorted: "The bag is sorted."
+bag_result.failed: "That can't be done."
+care.praise: "Praise"
+care.scold: "Scold"
+care.feed_hint: "To feed your partner, use food from the bag."
+care.training_hint: "Training is done at the training spots in the field."
+care_result.praised: "You praised your partner."
+care_result.scolded: "You scolded your partner."

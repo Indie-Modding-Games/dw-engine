@@ -1,0 +1,43 @@
+# El menú del compañero (ui/partner_menu): el estado, la bolsa y los cuidados. Las etiquetas propias del original
+# (HP, MP, las estadísticas, las opciones de objeto, los órdenes, la pregunta de tirar, los bits) salen de sus tablas.
+tab.status: "Estado"
+tab.items: "Objetos"
+tab.care: "Cuidados"
+age: "Edad"
+# {days} es la edad del compañero en días.
+age.value: "{days} días"
+weight: "Peso"
+# {weight} es el peso del compañero.
+weight.value: "{weight} G"
+# {lives} son las vidas que le quedan al compañero.
+lives: "Vidas {lives}"
+happiness: "Felicidad"
+discipline: "Disciplina"
+virus: "Virus"
+condition.none: "En buena forma"
+condition.sleepy: "Con sueño"
+condition.tired: "Cansado"
+condition.hungry: "Con hambre"
+condition.needs_toilet: "Necesita ir al baño"
+condition.sulking: "Enfurruñado"
+condition.injured: "Herido"
+condition.sick: "Enfermo"
+bag.empty: "-"
+# {name} es el objeto que se mueve.
+bag.move_prompt: "¿Dónde pones {name}?"
+# {name} es el nombre del objeto en todos los resultados de la bolsa.
+bag_result.used: "Has usado {name}."
+bag_result.refused: "Tu compañero no quiere {name}."
+bag_result.not_usable_here: "{name} no se puede usar aquí."
+bag_result.not_in_bag: "Ahí no hay nada."
+bag_result.useless: "{name} no serviría de nada ahora."
+bag_result.moved: "Has movido {name}."
+bag_result.dropped: "Has tirado {name}."
+bag_result.sorted: "La bolsa está ordenada."
+bag_result.failed: "Eso no se puede hacer."
+care.praise: "Felicitar"
+care.scold: "Regañar"
+care.feed_hint: "Para dar de comer a tu compañero, usa comida de la bolsa."
+care.training_hint: "Se entrena en los lugares de entrenamiento del campo."
+care_result.praised: "Has felicitado a tu compañero."
+care_result.scolded: "Has regañado a tu compañero."

@@ -140,7 +140,7 @@ steps:
 | `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-visible`...), si no la pantalla de combate (`command-0`...) o el menú del compañero. Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
-| `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola: `battle("")` empieza un combate contra el primer NPC del mapa que puede luchar |
+| `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola: `battle("")` empieza un combate contra el primer NPC del mapa que puede luchar, `give_item("meat 3")` mete objetos en la bolsa |
 | `expect_setting: {<nombre>: <valor>}` | Comprueba un ajuste publicado a la UI (`minimap_visible: false`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |

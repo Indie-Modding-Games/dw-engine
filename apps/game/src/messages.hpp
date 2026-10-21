@@ -69,5 +69,9 @@ inline constexpr std::string_view BattleCommandRefused = "game: battle: command 
 // The partner's menu (partner_menu.cpp).
 inline constexpr std::string_view BagCommandFailed = "game: bag: {} failed: {}";
 inline constexpr std::string_view BadBagMove = "game: bag: '{}' is not two slots";
+inline constexpr std::string_view BadGiveItem = "'{}' is not an item id and a count";
+inline constexpr std::string_view UnknownItem = "no item '{}'";
+inline constexpr std::string_view GiveItemFailed = "game: give_item: {}";
+inline constexpr std::string_view GaveItem = "game: gave {} x{} ({} added)";
 
 } // namespace dwe::app::messages

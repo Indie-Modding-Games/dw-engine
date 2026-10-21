@@ -1,0 +1,208 @@
+/* The partner's menu: three pages under a row of tabs. The status page follows the original's stats view
+   (game_menu.c: renderDigimonStatsView), the bag its item list with the description below (inventory.c:
+   renderInventoryTop, renderInventoryBottom) and its option, sort and drop boxes. */
+
+#scrim {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #05080ca8;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#panel {
+	width: 760dp;
+	padding: 16dp 24dp 14dp 24dp;
+	border-radius: 14dp;
+	background-color: #151b24f0;
+	border: 1dp #2e3a4a;
+}
+
+#tabs {
+	margin-bottom: 12dp;
+	border-bottom: 1dp #2e3a4a;
+	padding-bottom: 8dp;
+}
+
+.tab {
+	display: inline-block;
+	margin-right: 8dp;
+}
+
+#close {
+	float: right;
+	color: #9aa7b6;
+}
+
+.tab.selected {
+	color: #f0a73a;
+}
+
+.tab.selected:focus {
+	color: #1a1f27;
+}
+
+.page.hidden, .box.hidden, .slot.hidden, .condition.hidden, #no-condition.hidden {
+	display: none;
+}
+
+/* The status page. */
+#status-head {
+	font-size: 33dp;
+	margin-bottom: 6dp;
+}
+
+.head-value {
+	float: right;
+	font-size: 22dp;
+}
+
+.status-line {
+	display: inline-block;
+	width: 48%;
+	font-size: 22dp;
+	margin: 2dp 0;
+}
+
+.line-value {
+	float: right;
+	margin-right: 16dp;
+}
+
+.status-bars {
+	margin-top: 10dp;
+}
+
+.bar-row {
+	display: flex;
+	align-items: center;
+	margin: 3dp 0;
+	font-size: 22dp;
+}
+
+.bar-row .label {
+	width: 150dp;
+}
+
+.bar {
+	flex: 1;
+	height: 10dp;
+	margin: 0 12dp;
+	background-color: #2a323d;
+	border-radius: 3dp;
+}
+
+.fill {
+	height: 100%;
+	width: 0%;
+	border-radius: 3dp;
+}
+
+.stat .fill { background-color: #f0a73a; }
+.meter .fill { background-color: #6fc3ff; }
+
+.bar-row .value {
+	width: 70dp;
+	text-align: right;
+}
+
+#conditions {
+	margin-top: 10dp;
+	font-size: 22dp;
+	color: #e07ad0;
+}
+
+.condition {
+	margin-right: 16dp;
+}
+
+/* The bag: the slots in two columns, the focused item's description and the bits below. */
+.slot {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 48%;
+	margin: 2dp 1%;
+	padding: 4dp 12dp;
+	font-size: 22dp;
+}
+
+.slot.dimmed {
+	color: #8fb8e8;
+}
+
+.slot.moving {
+	border: 2dp #6fc3ff;
+}
+
+.slot-count {
+	float: right;
+}
+
+#bag-description {
+	min-height: 52dp;
+	margin-top: 10dp;
+	padding: 8dp 12dp;
+	font-size: 22dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+#bag-foot {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 8dp;
+	font-size: 22dp;
+}
+
+/* The care page. */
+#page-care button {
+	width: 240dp;
+}
+
+.care-hint {
+	margin-top: 8dp;
+	font-size: 16dp;
+	color: #9aa7b6;
+}
+
+#care-result {
+	margin-top: 10dp;
+	font-size: 22dp;
+}
+
+/* The boxes over the bag: the options of an item, the sort orders and the drop's question. */
+.box {
+	position: absolute;
+	left: 50%;
+	top: 38%;
+	width: 260dp;
+	margin-left: -130dp;
+	padding: 10dp 12dp;
+	background-color: #10161ef8;
+	border: 2dp #f0a73a;
+	border-radius: 8dp;
+	font-size: 22dp;
+}
+
+#prompts {
+	margin-top: 12dp;
+	padding-top: 10dp;
+	border-top: 1dp #2e3a4a;
+	font-size: 15dp;
+	color: #9aa7b6;
+	text-align: right;
+}
+
+.prompt {
+	margin-left: 18dp;
+}
+
+/* The focused entry's text keeps the focus colours over the original look's ink. */
+button:focus .original-look, button.original-look:focus {
+	color: #1a1f27;
+}
