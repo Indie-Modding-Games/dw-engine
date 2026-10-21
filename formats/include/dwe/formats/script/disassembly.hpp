@@ -102,8 +102,29 @@ struct Disassembly {
     std::vector<std::string> unknowns;
 };
 
+// What an instruction does to the flow of a script.
+enum class FlowRole : std::uint8_t {
+    Plain,      // runs and goes on to the next instruction
+    Jump,       // jump_to: goes to its target
+    Call,       // jump_and_link: runs the subroutine at its target, then goes on
+    Return,     // jump_return: back to the instruction after the jump_and_link
+    FileCall,   // jump_to_file_and_link: runs a section of another script, then goes on
+    FileJump,   // jump_to_file: leaves this script for a section of another one
+    LoadScript, // set_script: loads another script and map, then goes on
+    If,         // goes to the target of a jump entry whose test holds, else on
+    Switch,     // goes to the case a variable selects
+    Selection,  // goes to the option the player picks
+    EndSection, // ends the script
+    EndScript,  // ends the script
+    Data,       // a table that tournaments read; never runs
+};
+
 // The name of an opcode in lowercase ("show_textbox"), or empty if the interpreter does not dispatch it.
 std::string_view opcodeName(std::uint8_t opcode);
+// The opcode with a name, if the interpreter dispatches one by that name.
+std::optional<std::uint8_t> opcodeNamed(std::string_view name);
+// How an opcode moves the flow; Plain for one the interpreter does not dispatch.
+FlowRole opcodeFlowRole(std::uint8_t opcode);
 
 // Decodes a script: a linear sweep from codeStart that stops at the first END_SCRIPT (0xFF) that lies past every
 // section start and target seen so far. The arena scripts keep DATA blocks after their first END_SCRIPT, which jump

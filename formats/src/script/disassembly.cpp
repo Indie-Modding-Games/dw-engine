@@ -15,14 +15,6 @@ namespace {
 using enum ArgumentKind;
 
 // Where execution can go after an instruction, for the reachability pass.
-enum class Flow : std::uint8_t {
-    Next,   // the next instruction
-    Goto,   // the target only
-    Call,   // the target, and the next instruction when it returns
-    Stop,   // nowhere: return, end, a jump to another script, DATA
-    Switch, // the cases only
-    Branch, // the targets and the next instruction
-};
 
 struct Field {
     ArgumentKind kind = Pad;
@@ -34,14 +26,14 @@ constexpr std::size_t MaxFields = 8;
 struct OpcodeInfo {
     std::uint8_t code = 0;
     std::string_view name;
-    Flow flow = Flow::Next;
+    FlowRole flow = FlowRole::Plain;
     std::array<Field, MaxFields> fields{};
     std::size_t fieldCount = 0;
 
     [[nodiscard]] std::span<const Field> layout() const { return std::span{fields}.first(fieldCount); }
 };
 
-constexpr OpcodeInfo op(std::uint8_t code, std::string_view name, Flow flow, std::initializer_list<Field> fields) {
+constexpr OpcodeInfo op(std::uint8_t code, std::string_view name, FlowRole flow, std::initializer_list<Field> fields) {
     OpcodeInfo info{.code = code, .name = name, .flow = flow, .fieldCount = fields.size()};
     std::ranges::copy(fields, info.fields.begin());
     return info;
@@ -79,114 +71,116 @@ constexpr Field label() {
 // include/dw/script.h. The layouts are the fixed operands; SET_SELECTION, SWITCH, IF, SHOW_TEXTBOX and DATA go on
 // with variable parts that decodeInstruction reads.
 constexpr std::array Opcodes = {
-    op(0x10, "set_selection", Flow::Branch, {u8("count")}),
-    op(0x11, "unused_11", Flow::Next, {}),
-    op(0x12, "unused_12", Flow::Next, {pad()}),
-    op(0x13, "jump_and_link", Flow::Call, {pad(), label()}),
-    op(0x14, "jump_to_file_and_link", Flow::Next, {pad(), u16("script"), u16("section")}),
-    op(0x15, "jump_return", Flow::Stop, {pad()}),
-    op(0x16, "jump_to", Flow::Goto, {pad(), label()}),
-    op(0x17, "jump_to_file", Flow::Stop, {pad(), u16("script"), u16("section")}),
-    op(0x18, "switch", Flow::Switch, {pstat(), u16("count")}),
-    op(0x19, "if", Flow::Branch, {pad()}),
-    op(0x1A, "show_textbox", Flow::Next, {pad()}),
-    op(0x1B, "set_dialog_owner", Flow::Next, {entity()}),
-    op(0x1C, "set_trigger", Flow::Next, {pad(), trigger()}),
-    op(0x1D, "unset_trigger", Flow::Next, {pad(), trigger()}),
-    op(0x1E, "set_pstat", Flow::Next, {pad(), pstat(), u8("value")}),
-    op(0x1F, "add_to_pstat", Flow::Next, {pad(), pstat(), u8("value")}),
-    op(0x20, "reduce_pstat", Flow::Next, {pad(), pstat(), u8("value")}),
-    op(0x21, "store_map_id", Flow::Next, {pstat()}),
-    op(0x22, "store_digimon_type", Flow::Next, {pstat()}),
-    op(0x23, "set_inventory_size", Flow::Next, {u8("size")}),
-    op(0x24, "store_random", Flow::Next, {pad(), pstat(), u8("max")}),
-    op(0x25, "store_date", Flow::Next, {pstat()}),
-    op(0x26, "set_textbox_size", Flow::Next, {entity(), u8("columns"), u8("rows")}),
-    op(0x27, "fadeout_hud", Flow::Next, {u8("box")}),
-    op(0x28, "give_item", Flow::Next, {pad(), u8("item"), u8("amount")}),
-    op(0x29, "remove_item", Flow::Next, {pad(), u8("item"), u8("amount")}),
-    op(0x2A, "add_money", Flow::Next, {pad(), s32("amount")}),
-    op(0x2B, "reduce_money", Flow::Next, {pad(), s32("amount")}),
-    op(0x2C, "compare_date", Flow::Next,
+    op(0x10, "set_selection", FlowRole::Selection, {u8("count")}),
+    op(0x11, "unused_11", FlowRole::Plain, {}),
+    op(0x12, "unused_12", FlowRole::Plain, {pad()}),
+    op(0x13, "jump_and_link", FlowRole::Call, {pad(), label()}),
+    op(0x14, "jump_to_file_and_link", FlowRole::FileCall, {pad(), u16("script"), u16("section")}),
+    op(0x15, "jump_return", FlowRole::Return, {pad()}),
+    op(0x16, "jump_to", FlowRole::Jump, {pad(), label()}),
+    op(0x17, "jump_to_file", FlowRole::FileJump, {pad(), u16("script"), u16("section")}),
+    op(0x18, "switch", FlowRole::Switch, {pstat(), u16("count")}),
+    op(0x19, "if", FlowRole::If, {pad()}),
+    op(0x1A, "show_textbox", FlowRole::Plain, {pad()}),
+    op(0x1B, "set_dialog_owner", FlowRole::Plain, {entity()}),
+    op(0x1C, "set_trigger", FlowRole::Plain, {pad(), trigger()}),
+    op(0x1D, "unset_trigger", FlowRole::Plain, {pad(), trigger()}),
+    op(0x1E, "set_pstat", FlowRole::Plain, {pad(), pstat(), u8("value")}),
+    op(0x1F, "add_to_pstat", FlowRole::Plain, {pad(), pstat(), u8("value")}),
+    op(0x20, "reduce_pstat", FlowRole::Plain, {pad(), pstat(), u8("value")}),
+    op(0x21, "store_map_id", FlowRole::Plain, {pstat()}),
+    op(0x22, "store_digimon_type", FlowRole::Plain, {pstat()}),
+    op(0x23, "set_inventory_size", FlowRole::Plain, {u8("size")}),
+    op(0x24, "store_random", FlowRole::Plain, {pad(), pstat(), u8("max")}),
+    op(0x25, "store_date", FlowRole::Plain, {pstat()}),
+    op(0x26, "set_textbox_size", FlowRole::Plain, {entity(), u8("columns"), u8("rows")}),
+    op(0x27, "fadeout_hud", FlowRole::Plain, {u8("box")}),
+    op(0x28, "give_item", FlowRole::Plain, {pad(), u8("item"), u8("amount")}),
+    op(0x29, "remove_item", FlowRole::Plain, {pad(), u8("item"), u8("amount")}),
+    op(0x2A, "add_money", FlowRole::Plain, {pad(), s32("amount")}),
+    op(0x2B, "reduce_money", FlowRole::Plain, {pad(), s32("amount")}),
+    op(0x2C, "compare_date", FlowRole::Plain,
        {pstat(), trigger(), u8("compare"), u8("year"), u8("day"), u8("hour"), u8("minute"), pad()}),
-    op(0x2D, "learn_move", Flow::Next, {u8("move")}),
-    op(0x2E, "unused_2e", Flow::Next, {u8("unknown01")}),
-    op(0x2F, "give_card", Flow::Next, {u8("card")}),
-    op(0x30, "take_card", Flow::Next, {u8("card")}),
-    op(0x31, "set_merit", Flow::Next, {pad(), u16("merit")}),
-    op(0x32, "add_merit", Flow::Next, {pad(), u16("merit")}),
-    op(0x33, "reduce_merit", Flow::Next, {pad(), u16("merit")}),
-    op(0x34, "set_stat", Flow::Next, {u8("stat"), u16("value")}),
-    op(0x35, "add_stat", Flow::Next, {u8("stat"), u16("value")}),
-    op(0x36, "reduce_stat", Flow::Next, {u8("stat"), u16("value")}),
-    op(0x37, "advance_to_date_at", Flow::Next, {pstat()}),
-    op(0x38, "add_minutes_to_date_at", Flow::Next, {pstat(), s32("minutes")}),
-    op(0x39, "add_minutes_to_date_at_2", Flow::Next, {pstat(), s32("minutes")}),
-    op(0x3A, "unused_3a", Flow::Next, {pad(), u8("unknown02"), u8("unknown03")}),
-    op(0x3B, "unused_3b", Flow::Next, {pad(), u8("unknown02"), u8("unknown03")}),
-    op(0x3C, "unused_3c", Flow::Next, {pad(), u8("unknown02"), u8("unknown03")}),
-    op(0x3D, "unused_3d", Flow::Next, {u8("unknown01")}),
-    op(0x3E, "unused_3e", Flow::Next, {u8("unknown01")}),
-    op(0x3F, "store_digimon_value", Flow::Next, {pad(), pstat("source"), pstat("destination")}),
-    op(0x46, "load_digimon", Flow::Next, {u8("digimon")}),
-    op(0x47, "set_digimon", Flow::Next, {u8("digimon"), u8("slot"), u8("autotalk")}),
-    op(0x48, "unload_entity", Flow::Next, {entity()}),
-    op(0x49, "call_digimon_routine", Flow::Next, {u8("routine")}),
-    op(0x4A, "wait_for_entity", Flow::Next, {entity()}),
-    op(0x4B, "warp_to", Flow::Next, {u8("screen"), u8("exit"), u8("section")}),
-    op(0x4C, "entity_look_at_entity", Flow::Next, {pad(), entity(), entity("target_entity")}),
-    op(0x4D, "entity_set_rotation", Flow::Next, {entity(), s16("rotation")}),
-    op(0x4E, "entity_walk_to", Flow::Next, {entity(), s16("x"), s16("z"), u8("animation"), u8("unknown07")}),
-    op(0x4F, "move_camera_to", Flow::Next, {u8("speed"), s16("x"), s16("z")}),
-    op(0x50, "move_camera_to_entity", Flow::Next, {pad(), entity(), u8("speed")}),
-    op(0x51, "entity_walk_to_entity", Flow::Next, {entity(), u8("animation"), entity("target_entity")}),
-    op(0x52, "entity_walk_to_with_camera", Flow::Next,
+    op(0x2D, "learn_move", FlowRole::Plain, {u8("move")}),
+    op(0x2E, "unused_2e", FlowRole::Plain, {u8("unknown01")}),
+    op(0x2F, "give_card", FlowRole::Plain, {u8("card")}),
+    op(0x30, "take_card", FlowRole::Plain, {u8("card")}),
+    op(0x31, "set_merit", FlowRole::Plain, {pad(), u16("merit")}),
+    op(0x32, "add_merit", FlowRole::Plain, {pad(), u16("merit")}),
+    op(0x33, "reduce_merit", FlowRole::Plain, {pad(), u16("merit")}),
+    op(0x34, "set_stat", FlowRole::Plain, {u8("stat"), u16("value")}),
+    op(0x35, "add_stat", FlowRole::Plain, {u8("stat"), u16("value")}),
+    op(0x36, "reduce_stat", FlowRole::Plain, {u8("stat"), u16("value")}),
+    op(0x37, "advance_to_date_at", FlowRole::Plain, {pstat()}),
+    op(0x38, "add_minutes_to_date_at", FlowRole::Plain, {pstat(), s32("minutes")}),
+    op(0x39, "add_minutes_to_date_at_2", FlowRole::Plain, {pstat(), s32("minutes")}),
+    op(0x3A, "unused_3a", FlowRole::Plain, {pad(), u8("unknown02"), u8("unknown03")}),
+    op(0x3B, "unused_3b", FlowRole::Plain, {pad(), u8("unknown02"), u8("unknown03")}),
+    op(0x3C, "unused_3c", FlowRole::Plain, {pad(), u8("unknown02"), u8("unknown03")}),
+    op(0x3D, "unused_3d", FlowRole::Plain, {u8("unknown01")}),
+    op(0x3E, "unused_3e", FlowRole::Plain, {u8("unknown01")}),
+    op(0x3F, "store_digimon_value", FlowRole::Plain, {pad(), pstat("source"), pstat("destination")}),
+    op(0x46, "load_digimon", FlowRole::Plain, {u8("digimon")}),
+    op(0x47, "set_digimon", FlowRole::Plain, {u8("digimon"), u8("slot"), u8("autotalk")}),
+    op(0x48, "unload_entity", FlowRole::Plain, {entity()}),
+    op(0x49, "call_digimon_routine", FlowRole::Plain, {u8("routine")}),
+    op(0x4A, "wait_for_entity", FlowRole::Plain, {entity()}),
+    op(0x4B, "warp_to", FlowRole::Plain, {u8("screen"), u8("exit"), u8("section")}),
+    op(0x4C, "entity_look_at_entity", FlowRole::Plain, {pad(), entity(), entity("target_entity")}),
+    op(0x4D, "entity_set_rotation", FlowRole::Plain, {entity(), s16("rotation")}),
+    op(0x4E, "entity_walk_to", FlowRole::Plain, {entity(), s16("x"), s16("z"), u8("animation"), u8("unknown07")}),
+    op(0x4F, "move_camera_to", FlowRole::Plain, {u8("speed"), s16("x"), s16("z")}),
+    op(0x50, "move_camera_to_entity", FlowRole::Plain, {pad(), entity(), u8("speed")}),
+    op(0x51, "entity_walk_to_entity", FlowRole::Plain, {entity(), u8("animation"), entity("target_entity")}),
+    op(0x52, "entity_walk_to_with_camera", FlowRole::Plain,
        {entity(), s16("x"), s16("z"), u8("animation"), u8("unknown07")}),
-    op(0x53, "entity_walk_to_entity_with_camera", Flow::Next, {entity(), u8("animation"), entity("target_entity")}),
-    op(0x54, "reset_entity_origin", Flow::Next, {entity()}),
-    op(0x55, "set_textbox_origin", Flow::Next, {pad(), s16("x"), s16("y"), s16("z")}),
-    op(0x56, "play_animation", Flow::Next, {pad(), entity(), u8("animation")}),
-    op(0x57, "set_obj_visibility", Flow::Next, {pad(), u8("object"), u8("visible")}),
-    op(0x58, "teleport", Flow::Next, {pstat()}),
-    op(0x5A, "play_sound", Flow::Next, {pad(), u8("bank"), u8("sound")}),
-    op(0x5B, "unused_5b", Flow::Next, {u8("unknown01")}),
-    op(0x5C, "unused_5c", Flow::Next, {u8("unknown01")}),
-    op(0x5D, "set_bgm", Flow::Next, {u8("track")}),
-    op(0x5E, "stop_bgm", Flow::Next, {u8("unknown01")}),
-    op(0x5F, "unused_5f", Flow::Next, {u8("unknown01")}),
-    op(0x64, "call_routine", Flow::Next, {u8("routine")}),
-    op(0x65, "remove_condition", Flow::Next, {u8("mask")}),
-    op(0x66, "start_battle", Flow::Next, {u8("unknown01")}),
-    op(0x67, "delay", Flow::Next, {pad(), u16("frames")}),
-    op(0x68, "set_textbox_mode", Flow::Next, {pad(), u8("mode"), u8("frames")}),
-    op(0x69, "deal_damage", Flow::Next, {pstat()}),
-    op(0x6A, "set_autotalk", Flow::Next, {pad(), entity(), u8("enabled")}),
-    op(0x6B, "data", Flow::Stop, {pad()}),
-    op(0x6C, "entity_move_to", Flow::Next, {entity(), s16("x"), s16("z"), u8("speed"), u8("unknown07")}),
-    op(0x6D, "entity_move_to_entity", Flow::Next, {entity(), entity("target_entity"), u8("speed")}),
-    op(0x6E, "entity_move_to_with_camera", Flow::Next, {entity(), s16("x"), s16("z"), u8("speed"), u8("unknown07")}),
-    op(0x6F, "entity_move_to_entity_with_camera", Flow::Next, {entity(), entity("target_entity"), u8("speed")}),
-    op(0x70, "rotate_3d_object", Flow::Next, {entity(), u8("unknown02"), u8("target")}),
-    op(0x71, "move_object_to", Flow::Next,
+    op(0x53, "entity_walk_to_entity_with_camera", FlowRole::Plain,
+       {entity(), u8("animation"), entity("target_entity")}),
+    op(0x54, "reset_entity_origin", FlowRole::Plain, {entity()}),
+    op(0x55, "set_textbox_origin", FlowRole::Plain, {pad(), s16("x"), s16("y"), s16("z")}),
+    op(0x56, "play_animation", FlowRole::Plain, {pad(), entity(), u8("animation")}),
+    op(0x57, "set_obj_visibility", FlowRole::Plain, {pad(), u8("object"), u8("visible")}),
+    op(0x58, "teleport", FlowRole::Plain, {pstat()}),
+    op(0x5A, "play_sound", FlowRole::Plain, {pad(), u8("bank"), u8("sound")}),
+    op(0x5B, "unused_5b", FlowRole::Plain, {u8("unknown01")}),
+    op(0x5C, "unused_5c", FlowRole::Plain, {u8("unknown01")}),
+    op(0x5D, "set_bgm", FlowRole::Plain, {u8("track")}),
+    op(0x5E, "stop_bgm", FlowRole::Plain, {u8("unknown01")}),
+    op(0x5F, "unused_5f", FlowRole::Plain, {u8("unknown01")}),
+    op(0x64, "call_routine", FlowRole::Plain, {u8("routine")}),
+    op(0x65, "remove_condition", FlowRole::Plain, {u8("mask")}),
+    op(0x66, "start_battle", FlowRole::Plain, {u8("unknown01")}),
+    op(0x67, "delay", FlowRole::Plain, {pad(), u16("frames")}),
+    op(0x68, "set_textbox_mode", FlowRole::Plain, {pad(), u8("mode"), u8("frames")}),
+    op(0x69, "deal_damage", FlowRole::Plain, {pstat()}),
+    op(0x6A, "set_autotalk", FlowRole::Plain, {pad(), entity(), u8("enabled")}),
+    op(0x6B, "data", FlowRole::Data, {pad()}),
+    op(0x6C, "entity_move_to", FlowRole::Plain, {entity(), s16("x"), s16("z"), u8("speed"), u8("unknown07")}),
+    op(0x6D, "entity_move_to_entity", FlowRole::Plain, {entity(), entity("target_entity"), u8("speed")}),
+    op(0x6E, "entity_move_to_with_camera", FlowRole::Plain,
+       {entity(), s16("x"), s16("z"), u8("speed"), u8("unknown07")}),
+    op(0x6F, "entity_move_to_entity_with_camera", FlowRole::Plain, {entity(), entity("target_entity"), u8("speed")}),
+    op(0x70, "rotate_3d_object", FlowRole::Plain, {entity(), u8("unknown02"), u8("target")}),
+    op(0x71, "move_object_to", FlowRole::Plain,
        {u8("slot"), entity(), u8("speed"), entity("target_entity"), pad(), s16("x"), s16("z")}),
-    op(0x72, "entity_move_to_axis", Flow::Next, {entity(), s16("position"), u8("axis"), u8("speed")}),
-    op(0x73, "entity_move_to_axis_with_camera", Flow::Next, {entity(), s16("position"), u8("axis"), u8("speed")}),
-    op(0x74, "spawn_item", Flow::Next, {u8("item"), s16("x"), s16("z")}),
-    op(0x75, "spawn_chest", Flow::Next, {u8("item"), s16("x"), s16("y"), s16("z"), s16("w"), trigger()}),
-    op(0x76, "spawn_boulder", Flow::Next, {u8("unknown01")}),
-    op(0x77, "move_boulder", Flow::Next, {u8("unknown01"), s16("x"), s16("z")}),
-    op(0x78, "despawn_boulder", Flow::Next, {u8("unknown01")}),
-    op(0x79, "unload_digimon", Flow::Next, {u8("model")}),
-    op(0x7A, "copy_pstat", Flow::Next, {pad(), pstat("source"), pstat("destination")}),
-    op(0x7B, "section_on_exit", Flow::Next, {u8("section")}),
-    op(0x7C, "set_rect_impassable", Flow::Next, {u8("unknown01"), s16("x"), s16("z"), u8("width"), u8("height")}),
-    op(0x7D, "spawn_sprite_at_location", Flow::Next, {u8("sprite"), s16("x"), s16("y"), s16("z"), s16("w")}),
-    op(0x7E, "spawn_sprite_at_entity", Flow::Next, {entity(), u8("node"), u8("sprite")}),
-    op(0xFB, "set_script", Flow::Next, {pad(), u16("script"), u16("map")}),
-    op(0xFC, "unused_fc", Flow::Next, {}),
-    op(0xFD, "unused_fd", Flow::Next, {}),
-    op(0xFE, "end_section", Flow::Stop, {}),
-    op(0xFF, "end_script", Flow::Stop, {}),
+    op(0x72, "entity_move_to_axis", FlowRole::Plain, {entity(), s16("position"), u8("axis"), u8("speed")}),
+    op(0x73, "entity_move_to_axis_with_camera", FlowRole::Plain, {entity(), s16("position"), u8("axis"), u8("speed")}),
+    op(0x74, "spawn_item", FlowRole::Plain, {u8("item"), s16("x"), s16("z")}),
+    op(0x75, "spawn_chest", FlowRole::Plain, {u8("item"), s16("x"), s16("y"), s16("z"), s16("w"), trigger()}),
+    op(0x76, "spawn_boulder", FlowRole::Plain, {u8("unknown01")}),
+    op(0x77, "move_boulder", FlowRole::Plain, {u8("unknown01"), s16("x"), s16("z")}),
+    op(0x78, "despawn_boulder", FlowRole::Plain, {u8("unknown01")}),
+    op(0x79, "unload_digimon", FlowRole::Plain, {u8("model")}),
+    op(0x7A, "copy_pstat", FlowRole::Plain, {pad(), pstat("source"), pstat("destination")}),
+    op(0x7B, "section_on_exit", FlowRole::Plain, {u8("section")}),
+    op(0x7C, "set_rect_impassable", FlowRole::Plain, {u8("unknown01"), s16("x"), s16("z"), u8("width"), u8("height")}),
+    op(0x7D, "spawn_sprite_at_location", FlowRole::Plain, {u8("sprite"), s16("x"), s16("y"), s16("z"), s16("w")}),
+    op(0x7E, "spawn_sprite_at_entity", FlowRole::Plain, {entity(), u8("node"), u8("sprite")}),
+    op(0xFB, "set_script", FlowRole::LoadScript, {pad(), u16("script"), u16("map")}),
+    op(0xFC, "unused_fc", FlowRole::Plain, {}),
+    op(0xFD, "unused_fd", FlowRole::Plain, {}),
+    op(0xFE, "end_section", FlowRole::EndSection, {}),
+    op(0xFF, "end_script", FlowRole::EndScript, {}),
 };
 
 constexpr std::uint8_t SetSelection = 0x10;
@@ -199,6 +193,22 @@ constexpr std::uint8_t EndScript = 0xFF;
 // DATA blocks end with 0xFF. Their readers (dget.c: isTournamentEnabled, tournamentCheckEligible...) stop at the
 // first byte >= 0xFE, and a trigger list that starts with 0xFE stands for every trigger: "FE FF".
 constexpr std::uint8_t DataEnd = 0xFF;
+
+// Whether the next instruction can run after one with this role.
+constexpr bool fallsThrough(FlowRole role) {
+    switch (role) {
+    case FlowRole::Jump:
+    case FlowRole::Return:
+    case FlowRole::FileJump:
+    case FlowRole::Switch:
+    case FlowRole::Data:
+    case FlowRole::EndSection:
+    case FlowRole::EndScript:
+        return false;
+    default:
+        return true;
+    }
+}
 
 const OpcodeInfo* findOpcode(std::uint8_t code) {
     const auto found = std::ranges::find(Opcodes, code, &OpcodeInfo::code);
@@ -518,8 +528,7 @@ std::size_t countUnreachable(const Disassembly& disassembly) {
             const Instruction& instruction = instructions[*index];
             const auto targets = targetsOf(instruction);
             work.insert(work.end(), targets.begin(), targets.end());
-            const Flow flow = findOpcode(instruction.opcode)->flow;
-            if (flow == Flow::Goto || flow == Flow::Stop || flow == Flow::Switch) {
+            if (!fallsThrough(findOpcode(instruction.opcode)->flow)) {
                 break;
             }
             index = *index + 1 < instructions.size() ? std::optional{*index + 1} : std::nullopt;
@@ -533,6 +542,16 @@ std::size_t countUnreachable(const Disassembly& disassembly) {
 std::string_view opcodeName(std::uint8_t opcode) {
     const OpcodeInfo* info = findOpcode(opcode);
     return info == nullptr ? std::string_view{} : info->name;
+}
+
+std::optional<std::uint8_t> opcodeNamed(std::string_view name) {
+    const auto found = std::ranges::find(Opcodes, name, &OpcodeInfo::name);
+    return found == Opcodes.end() ? std::nullopt : std::optional{found->code};
+}
+
+FlowRole opcodeFlowRole(std::uint8_t opcode) {
+    const OpcodeInfo* info = findOpcode(opcode);
+    return info == nullptr ? FlowRole::Plain : info->flow;
 }
 
 core::Result<Disassembly> disassembleScript(std::span<const std::byte> script) {

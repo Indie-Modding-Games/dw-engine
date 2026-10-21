@@ -17,3 +17,6 @@ Lectores de los formatos del original. Solo lo usa `apps/dwx`; el runtime nunca 
   ([Modelos y animaciones](../docs/formats/modelos.md)).
 - `map`: `.MAP` (`readMapFile`), `.TFS` (`readTfsFile`), composición del fondo por paleta (`composeBackgrounds`) y YAML
   del mapa (`mapToYaml`) ([Mapas](../docs/formats/mapas.md)).
+- `script`: `.SCN` (`readScnFile`), desensamblado y listado YAML (`scriptToYaml`), lectura del listado para el
+  control de flujo (`readScriptListing`), grafo de bloques y rutinas (`buildScriptFlow`) y estructuración sin saltos
+  (`structureScript`, con `measureStructure` para las cifras) ([Scripts](../docs/formats/scripts.md)).

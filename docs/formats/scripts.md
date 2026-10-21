@@ -145,6 +145,26 @@ instructions:
 El id estable de un texto de script es el script y el offset de su instrucción (`dg/007@0x0040`); el catálogo de
 textos de la fase 4 (Lua) lo usará. El listado no es Lua: la traducción es trabajo de la fase 4.
 
+## Control de flujo
+
+El paso a Lua (fase 4) parte del listado, no de los bytes, y no puede emitir saltos: el Lua convertido es código
+anidado que se lee y se modifica. `formats/script` lo prepara en tres pasos:
+
+1. **`readScriptListing`** lee del YAML solo lo que mueve el flujo: secciones, offsets, el papel de cada orden (salto,
+   llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, fin) y sus destinos. El formato del YAML no cambia.
+2. **`buildScriptFlow`** parte el código en bloques básicos. Un `IF` es una cadena de bifurcaciones, una por cada
+   entrada `goto_if_*`, en su orden. Un `SWITCH` elige entre sus casos; un `SET_SELECTION`, entre sus opciones y, al
+   cancelar, sigue detrás del bloque. Las rutinas son las secciones y los destinos de `jump_and_link`.
+3. **`structureScript`** convierte cada rutina en sentencias: `if`/`else` cuyas ramas se juntan en el
+   post-dominador, bucles naturales con `break` a su salida, elecciones y llamadas finales a otra rutina. El código al
+   que saltan varias rutinas, o varios caminos de una, se vuelve una **cola compartida** (una rutina más) si tiene al
+   menos 3 órdenes; si es más corto se copia. Lo que no se deja anidar (un bucle con dos entradas, una salida de dos
+   bucles a la vez, demasiadas copias) se vuelve una **máquina de estados**: un bucle que despacha cada bloque según
+   una variable. Así toda rutina se convierte, sin saltos.
+
+Lua no tiene `continue`: una rama que vuelve a la cabeza del bucle se lleva el resto del cuerpo a la otra rama. Las
+cifras sobre el disco están en la [ficha de scripts](../reference/scripts.md#forma-del-control-de-flujo).
+
 ## Estadísticas de la partida nueva
 
 Ningún código C pone los stats con los que empieza el partner: los pone el script 193 de `DG.SCN` tras la

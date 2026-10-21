@@ -45,10 +45,16 @@ dwe_add_module(formats
         src/model/mmd.cpp
         src/model/skeleton.cpp
         src/model/tmd.cpp
+        src/script/control_flow.cpp
         src/script/disassembly.cpp
+        src/script/dominance.cpp
         src/script/new_game_stats.cpp
+        src/script/routine_graph.cpp
         src/script/scn_file.cpp
+        src/script/script_listing.cpp
         src/script/script_yaml.cpp
+        src/script/structure_statistics.cpp
+        src/script/structuring.cpp
         src/text/charset.cpp
         src/text/font.cpp
         src/text/game_text.cpp

@@ -27,4 +27,15 @@ inline constexpr std::string_view InTable = "{}: {}";
 inline constexpr std::string_view UnknownItemHandler = "ITEM_FUNCTIONS[{}] points to {:08x}, which is no known handler";
 inline constexpr std::string_view ItemSwitchSkipped = "item {} ({}): {}";
 
+// Script listings read back from YAML (script/script_listing.cpp).
+inline constexpr std::string_view ListingNotMapping = "the listing is not a mapping with `sections` and `instructions`";
+inline constexpr std::string_view ListingMissingKey = "instruction {}: `{}` is missing";
+inline constexpr std::string_view ListingBadNumber = "instruction {}: `{}` is not a number: {}";
+inline constexpr std::string_view ListingBadLabel = "`{}` is not a label (l_<hex>)";
+inline constexpr std::string_view ListingOutOfOrder = "the instruction at {:#06x} does not come after the one before";
+inline constexpr std::string_view ListingNoInstruction = "{} {:#06x} is not the start of an instruction";
+
+// Control-flow graphs (script/control_flow.cpp).
+inline constexpr std::string_view FlowRunsOffEnd = "the instruction at {:#06x} runs past the end of the code";
+
 } // namespace dwe::formats::messages
