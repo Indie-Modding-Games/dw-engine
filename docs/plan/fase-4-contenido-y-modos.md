@@ -129,6 +129,27 @@ rama pasa una revisión independiente contra la guía de código y las reglas de
   - Entra en la fase 4a: el mecanismo (9a) ya, en paralelo; el aspecto original (9b) justo después del intérprete de
     historia, que trae el cuadro de texto.
 
+**Más decisiones del responsable de diseño (2026-10-21):**
+
+- *Assets de desarrollo:* `--dev-assets` es un interruptor sin argumentos; el fichero de configuración se busca en la
+  carpeta actual y luego en la carpeta de datos del usuario. Los paquetes de desarrollo quedan **siempre por debajo**
+  de todos los paquetes normales (base, los del equipo y `--mods`): solo rellenan lo que falta, y su capa y prioridad
+  se limitan al montarlos. Para leer el disco en tiempo de ejecución, `dwx` (en un proceso aparte) extrae bajo demanda
+  a una caché de desarrollo identificada por el hash del disco y la versión de `dwx`, y esa carpeta se monta como una
+  extraída más.
+- *Contrato con el editor:* el paquete de conversión a Lua añade `formats::script::assembleScript`, con un test de que
+  todos los scripts del disco se vuelven a ensamblar idénticos byte a byte. La rareza de las comillas del YAML se
+  queda como está, documentada y fijada por un test.
+- *API de Lua para mods:*
+  - Leer o crear una global desconocida es un error.
+  - En la fase 4a se acepta un paquete sin `api`; pasa a ser obligatorio en las capas `mods` y `user` cuando llegue
+    `docs/modding/`. Solo se acepta la forma `MAYOR.x`.
+  - Los argumentos de los hooks son solo escalares por ahora; las tablas llegarán con una versión menor cuando un
+    sistema las necesite.
+  - Los bytes que reserva el asignador cuentan contra el presupuesto de memoria del mod.
+  - Un mod se suscribe con `hooks.on("espacio.evento", fn)`; cada entorno de mod tiene su propia vista de la API; la
+    consola de depuración solo ve los espacios de nombres del motor.
+
 **Criterio de cierre de la fase 4a:** en `main`, todos los scripts de eventos convertidos se ejecutan sin errores en
 un test sin ventana y pasan los tests de paridad; el mod de ejemplo (un Digimon nuevo, un mapa nuevo y una sustitución)
 carga sin cambiar código; pasan los tests del sandbox y de versión de la API; los dos modos se eligen desde el menú
