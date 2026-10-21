@@ -213,6 +213,7 @@ La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_mov
 | Las técnicas equipadas son posiciones de la lista de la especie | `stats.base.moves`, `btl.c`, `utils2.c: entityGetTechFromAnim` | `PartnerMoves::equipped`, `partnerCombatant` | `the partner fights with its stats, ...` | Igual |
 | El renacido equipa una técnica y conserva las aprendidas | `evolution.c: reincarnatePartner` | `partner_moves.reborn_slot`, `Reborn` | `a reborn partner equips one move again ...` | Igual |
 | Lo que deja una batalla al partner (stats, cuidado, herida, vidas, 20 minutos y la hora) | `battle_ui.c: battleStatsGainsAndDrops`, `tamer.c: startBattle/advanceBattleTime` | `BattleAdapter::finish` → `Partner::applyBattle` | `a won battle gives ...`, `a lost battle costs ...` | Igual |
+| Alabar y regañar en el campo, junto al compañero | `partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold` | `GameSession::praise`/`scold` desde la pestaña del menú del compañero (`apps/game`) | `system_hook_tests.cpp` | Desviación temporal (decidida el 2026-10-20/21): solo en el campo, como el original; la pestaña se quita cuando exista la interacción en el campo (TODO) |
 | Autoguardado al unirse un recluta y tras un torneo | El original no autoguarda | `save.autosave.on_recruit_join/on_tournament_result` | `a recruit that joins ...`, `a tournament's battle ...` | Desviación aprobada (2026-10-20) |
 
 ## Tests

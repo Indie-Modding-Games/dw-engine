@@ -155,7 +155,8 @@ En la consola de depuración (y en los pasos `script` de los autotests), `battle
 primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0,2")`), y `give_item("meat 3")` mete
 objetos en la bolsa. Son ayudas de depuración hasta que corran los scripts de los mapas y existan cofres y tiendas:
 el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
-partida nueva empieza con la bolsa vacía.
+partida nueva empieza con la bolsa vacía. Decisión del responsable de diseño (2026-10-21): hasta que corran los guiones
+de los mapas en la fase 4, `battle("")` es el único disparador de combates.
 
 Otros ajustes los publica el juego sin que un menú los pida:
 

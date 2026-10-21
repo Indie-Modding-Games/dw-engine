@@ -19,6 +19,8 @@ inline constexpr std::string_view BagUseCommand = "bag_use";
 inline constexpr std::string_view BagMoveCommand = "bag_move";
 inline constexpr std::string_view BagDropCommand = "bag_drop";
 inline constexpr std::string_view BagSortCommand = "bag_sort";
+// TODO(phase 4): praise and scold are field-only in the original (partner.c: partnerTickPraiseScold); remove this tab
+// once the field interaction with the partner exists (design owner, 2026-10-21).
 inline constexpr std::string_view PraiseCommand = "partner_praise";
 inline constexpr std::string_view ScoldCommand = "partner_scold";
 // The console's and the scripts' give_item("<item id> <count>"): puts items in the bag, as a debug aid until the

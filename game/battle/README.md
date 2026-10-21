@@ -95,6 +95,7 @@ probable y está marcado en el código), **Hueco** (falta).
 | Lesión | `battle_ui.c: handleBattleEndBox`, `handleBattleInjury` | `settleBattle` | the injury roll | Igual |
 | Aprender técnicas | `battle_ui.c: battleMoveLearning` | `settleBattle`, `MoveCatalog::learnedWith` | the partner learns a seen technique | Igual |
 | Enemigos que se unen | `btl.c: handleBattleStart` | `rollJoiningEnemies` | enemies on screen join | Igual |
+| Restauración de la vida perdida por enfermedad tras una derrota | `tamer.c: tamerTickBattleLostLife`, `tamerTickSicknessLostLife`; `murd/murd.c: MURD_tick` y el guion del mapa de la derrota | — (la restauración de la derrota sigue en `battle.consequences.defeat_restore` hasta los guiones de la fase 4) | — | Hueco |
 | Orden aprendida y bonus de MP en el cuadro final | `battle_ui.c: handleBattleEndBox` | — | — | Hueco |
 | Cuenta atrás parada mientras el tamer usa un objeto | `battle_setup.c: BTL_isBattleFinished` | — | — | Hueco |
 | Enemigo fuera de pantalla prudente | `battle_main.c: BTL_tickEnemyAI` | tira como los demás | — | Hueco (decidido: se hará cuando el campo dé visibilidad) |
@@ -111,6 +112,12 @@ probable y está marcado en el código), **Hueco** (falta).
   `hourCrossed` y `lifetimeHoursLost`; el combate sigue independiente.
 - **Enemigo fuera de pantalla prudente:** se implementa más adelante, cuando el campo dé al combate una entrada de
   visibilidad.
+
+### Decisiones del responsable de diseño (2026-10-21)
+
+- **Cómo empieza un combate:** el original solo los empieza desde los guiones de los NPC (`script_interp.c`: la
+  operación `START_BATTLE`); no hay encuentros al azar. Hasta que corran los guiones de los mapas (fase 4) solo existe
+  el disparador de depuración `battle("")` de la consola y de los autotests (`apps/game/src/battle_trigger.cpp`).
 
 ## Tests
 
