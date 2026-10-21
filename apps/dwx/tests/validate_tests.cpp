@@ -9,6 +9,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,7 @@
 #include <format>
 #include <fstream>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <sstream>
 #include <string>
@@ -365,6 +367,81 @@ schemas:
     CHECK_FALSE(problems("twna01").contains("is no entry of data/maps"));
 }
 
+TEST_CASE("dwx validate names a mod map's dead warp, with the hint that an editor may have dropped its id") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
+version: 1.0.0
+layer: mods
+name: My mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+schemas:
+  map: ["map/*/*/data"]
+)");
+    files.addFile("packs/my_mod/data/maps.yaml", R"(maps:
+- id: "my_mod:meadow"
+  filename: "MEADOW"
+  images_8bpp: 0
+  images_4bpp: 0
+  flags: 64
+  sound_id: 0
+  fixed_time_of_day: true
+  has_npcs: false
+  doors: null
+  toilet: null
+  loading_name: 0
+)");
+    const std::string_view fixtureExit = "  target_map: 218\n  target_map_id: \"room08\"\n";
+    const auto withExit = [&](std::string_view exit) {
+        std::string map = dwe::assets::testing::fixtureMap();
+        map.replace(map.find(fixtureExit), fixtureExit.size(), exit);
+        files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", map);
+        const std::array<std::filesystem::path, 1> with{"content/base"};
+        const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);
+        REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+        return textOf(*report);
+    };
+    // The editor's shape: target_map -1 and no id, though the collision has the exit's trigger.
+    const std::string dead = withExit("  target_map: -1\n  target_map_id: null\n");
+    CHECK(dead.contains("map 'my_mod:meadow', exit 0"));
+    CHECK(dead.contains("may have dropped target_map_id"));
+    // The problem is at the line of the exit's item.
+    const std::string map = dwe::assets::testing::fixtureMap();
+    const auto exitLine = std::ranges::count(std::string_view{map}.substr(0, map.find("- exit: 0\n")), '\n') + 1;
+    CHECK(dead.contains(std::format("meadow/data.yaml:{}:0: ", exitLine)));
+    // As a Windows editor saves it, with CRLF line ends and the items indented: the same line.
+    {
+        std::string unix = dwe::assets::testing::fixtureMap();
+        unix.replace(unix.find(fixtureExit), fixtureExit.size(), "  target_map: -1\n  target_map_id: null\n");
+        std::string windows;
+        bool inWarps = false;
+        for (const auto line : std::views::split(std::string_view{unix}, '\n')) {
+            const std::string_view text{line.begin(), line.end()};
+            if (!text.empty() && text.front() != ' ' && text.front() != '-') {
+                inWarps = text == "warps:";
+            } else if (inWarps && !text.empty()) {
+                windows += "  ";
+            }
+            windows += text;
+            windows += "\r\n";
+        }
+        files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", windows);
+        const std::array<std::filesystem::path, 1> bases{"content/base"};
+        const auto crlf = validatePacks(files, "packs/my_mod", "content/schemas", bases);
+        REQUIRE_MESSAGE(crlf.has_value(), errorOf(crlf));
+        CHECK_MESSAGE(textOf(*crlf).contains(std::format("meadow/data.yaml:{}:0: ", exitLine)), textOf(*crlf));
+    }
+    // An id of no map next to an index of the original leads there, but the id is reported.
+    CHECK(withExit("  target_map: 218\n  target_map_id: \"my_mod:nowhere\"\n").contains("'my_mod:nowhere' is no map"));
+    // By id alone, even to the mod's own map, or by the original's index alone, the warp leads somewhere.
+    CHECK(withExit("  target_map: -1\n  target_map_id: \"my_mod:meadow\"\n").empty());
+    CHECK(withExit("  target_map: 218\n  target_map_id: null\n").empty());
+    CHECK(withExit("  target_map: 204\n  target_map_id: \"room08\"\n").contains("name different maps"));
+}
+
 TEST_CASE("an id a schema says names a table's entry must be one, in the table as the packs compose it") {
     MemoryFileSystem files;
     addSchemas(files);
@@ -605,6 +682,46 @@ TEST_CASE("the user's disc, extracted: dwx validate finds no problem in the game
     CHECK(report->packs == 2);
     CHECK_MESSAGE(report->problems.empty(), textOf(*report));
     MESSAGE(report->documents, " documents, ", report->assets, " assets, ", report->references, " references");
+}
+
+// Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
+TEST_CASE("the user's disc, extracted: a mod with copies of every original map's data passes dwx validate") {
+    const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
+    if (!content) {
+        MESSAGE("DWE_CONTENT is not set: skipping the copied maps' validation");
+        return;
+    }
+    // A mod that edits the original's maps in place: each map's data copied as it is, as an editor saves it.
+    const TempFolder folder;
+    folder.write("copies/pack.yaml", R"(id: copies
+version: 1.0.0
+layer: mods
+name: Copies
+dependencies:
+  - id: base
+    min_version: 0.1.0
+schemas:
+  map: ["map/*/data"]
+)");
+    std::size_t copied = 0;
+    for (const auto& map : std::filesystem::directory_iterator{*content / "base" / "map"}) {
+        const std::filesystem::path data = map.path() / "data.yaml";
+        if (!std::filesystem::exists(data)) {
+            continue;
+        }
+        const std::filesystem::path target = folder.path() / "copies" / "map" / map.path().filename();
+        std::filesystem::create_directories(target);
+        std::filesystem::copy_file(data, target / "data.yaml");
+        ++copied;
+    }
+    REQUIRE(copied > 0);
+    const std::array<std::filesystem::path, 1> with{*content / "base"};
+    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, folder.path() / "copies", DWE_SCHEMA_DIR, with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK_MESSAGE(report->problems.empty(), textOf(*report));
+    // Every copy was checked against the map schema, and so had its warps resolved as a mod's.
+    CHECK(report->documents >= copied);
+    MESSAGE(copied, " maps copied, ", report->documents, " documents, ", report->problems.size(), " problems");
 }
 
 TEST_CASE("dwx validate checks a pack as a mod unless told it is the game's: no engine layer, no base rights") {

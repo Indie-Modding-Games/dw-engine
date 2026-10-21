@@ -4,6 +4,9 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/lua_api.hpp>
+#include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_table.hpp>
+#include <dwe/assets/map_warps.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/table_composition.hpp>
@@ -25,6 +28,7 @@
 #include <print>
 #include <set>
 #include <span>
+#include <string>
 #include <system_error>
 #include <utility>
 
@@ -38,6 +42,7 @@ namespace dwe::dwx {
 namespace {
 
 using assets::AssetId;
+using assets::MapTable;
 using assets::VirtualFileSystem;
 using core::YamlNode;
 
@@ -46,6 +51,32 @@ constexpr std::string_view ManifestFile = "pack.yaml";
 constexpr std::string_view MetaSuffix = "_meta";
 constexpr std::string_view Placeholder = "{}";
 constexpr std::string_view SiblingPrefix = "./";
+constexpr std::string_view MapPrefix = "map/";
+constexpr std::string_view MapDataSuffix = "/data";
+// The keys of a map's warps and of an exit's number there.
+constexpr std::string_view WarpsKey = "warps";
+constexpr std::string_view WarpExitKey = "exit";
+
+// The line (from 1) of an exit's item in the warps of a map's data, as the parser read it, or 0 when there is none.
+std::size_t warpLine(const YamlNode& document, std::int32_t exit) {
+    const YamlNode* warps = document.isMapping() ? document.find(WarpsKey) : nullptr;
+    if (warps == nullptr || !warps->isSequence()) {
+        return 0;
+    }
+    for (const YamlNode& item : warps->items()) {
+        const YamlNode* number = item.isMapping() ? item.find(WarpExitKey) : nullptr;
+        if (number == nullptr || !number->isScalar()) {
+            continue;
+        }
+        const std::string& text = number->text();
+        std::int32_t value = 0;
+        const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (error == std::errc{} && end == text.data() + text.size() && value == exit) {
+            return item.line();
+        }
+    }
+    return 0;
+}
 
 std::string_view textOf(std::span<const std::byte> bytes) {
     return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
@@ -315,6 +346,40 @@ private:
         if (name == names::ContractSchema && checked.problems.empty()) {
             checkContract(id, file, *document);
         }
+        if (name == names::MapSchema) {
+            checkWarps(id, file, textOf(*bytes), *document);
+        }
+    }
+
+    // Where the warps of a map lead (assets/map_warps.hpp): a dead warp, two targets that disagree or one that names
+    // no map. A map that does not parse is checkContent's to report.
+    void checkWarps(const AssetId& id, const std::string& file, std::string_view text, const YamlNode& document) {
+        const MapTable* maps = mapTable();
+        auto map = assets::parseMapDocument(text);
+        if (maps == nullptr || !map) {
+            return;
+        }
+        // map/<id>/data, or map/<pack>/<name>/data for a pack's map.
+        std::string mapId{id.str()};
+        mapId = mapId.substr(MapPrefix.size(), mapId.size() - MapPrefix.size() - MapDataSuffix.size());
+        if (const auto slash = mapId.find('/'); slash != std::string::npos) {
+            mapId[slash] = ':';
+        }
+        const bool basePack = assets::isBaseMapData(*stack_, mapId);
+        for (const assets::WarpIssue& issue : assets::resolveWarpTargets(*map, *maps, basePack)) {
+            add(file, warpLine(document, issue.exit), 0, assets::warpIssueMessage(mapId, issue));
+        }
+    }
+
+    // The composed map table, read the first time; nullptr when the packs have none or it does not compose.
+    const MapTable* mapTable() {
+        if (!mapTableRead_) {
+            mapTableRead_ = true;
+            if (auto table = assets::loadMapTable(*stack_)) {
+                mapTable_ = std::move(*table);
+            }
+        }
+        return mapTable_ ? &*mapTable_ : nullptr;
     }
 
     // An id that must be an entry of a content table.
@@ -493,6 +558,8 @@ private:
     std::map<std::string, LoadedSchema, std::less<>> schemas_;
     std::set<std::pair<std::string, std::string>> reportedSchemas_;
     std::map<std::string, std::optional<EntryIds>, std::less<>> entryIds_;
+    bool mapTableRead_ = false;
+    std::optional<MapTable> mapTable_;
     ValidationReport report_;
 };
 

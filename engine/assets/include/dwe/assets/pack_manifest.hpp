@@ -65,6 +65,11 @@ std::string_view originName(PackOrigin origin);
 // declare one.
 [[nodiscard]] bool isEngineLayer(Layer layer);
 
+// Whether a pack has the base's rights: adding ids without a namespace, giving indices and writing the original's raw
+// warp targets. Only the engine's own base packs have them: where a pack was found decides, not the layer its manifest
+// declares.
+[[nodiscard]] bool hasBaseRights(PackOrigin origin, Layer layer);
+
 // Checks a pack id: 1 to 64 lowercase letters, digits and underscores.
 core::Result<void> checkPackId(std::string_view id);
 

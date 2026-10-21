@@ -94,6 +94,12 @@ const MapEntry* MapTable::findByIndex(std::int32_t index) const {
     return found == maps.end() ? nullptr : &*found;
 }
 
+const MapEntry* MapTable::findByOriginalIndex(std::int32_t index) const {
+    const auto found = std::ranges::find_if(
+        maps, [index](const MapEntry& entry) { return entry.originalIndex && entry.index == index; });
+    return found == maps.end() ? nullptr : &*found;
+}
+
 std::string_view MapTable::displayName(const MapEntry& entry) const {
     if (entry.loadingName < 0 || static_cast<std::size_t>(entry.loadingName) >= mapNames.size()) {
         return {};
@@ -116,7 +122,7 @@ const MapDoorSet* MapTable::doorsOf(const MapEntry& entry) const {
     return found == doors.end() ? nullptr : &*found;
 }
 
-core::Result<MapTable> parseMapTable(std::string_view yaml) {
+core::Result<MapTable> parseMapTable(std::string_view yaml, const std::set<std::string, std::less<>>& engineNumbered) {
     auto tree = core::parseYaml(yaml);
     if (!tree) {
         return std::unexpected{core::Error{std::format("map table: {}", tree.error().message)}};
@@ -129,6 +135,7 @@ core::Result<MapTable> parseMapTable(std::string_view yaml) {
     MapTable table;
     for (const YamlNode& item : reader.sequence(reader.field(root, "maps"), "maps")) {
         table.maps.push_back(readEntry(reader, item));
+        table.maps.back().originalIndex = !engineNumbered.contains(table.maps.back().id);
     }
     for (const YamlNode& item : reader.sequence(reader.field(root, "doors"), "doors")) {
         table.doors.push_back(readDoorSet(reader, item));
@@ -159,11 +166,11 @@ core::Result<MapTable> loadMapTable(const VirtualFileSystem& vfs) {
     if (!id) {
         return std::unexpected{id.error()};
     }
-    auto text = readComposedTable(vfs, *id, MapComposition);
-    if (!text) {
-        return std::unexpected{text.error()};
+    auto composed = readComposedTableText(vfs, *id, MapComposition);
+    if (!composed) {
+        return std::unexpected{composed.error()};
     }
-    return parseMapTable(*text);
+    return parseMapTable(composed->text, composed->engineNumbered);
 }
 
 } // namespace dwe::assets

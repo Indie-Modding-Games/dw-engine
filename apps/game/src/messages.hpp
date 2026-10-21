@@ -105,4 +105,9 @@ inline constexpr std::string_view PartnerEventNotShown = "game: partner event {}
 inline constexpr std::string_view EvolveFailed = "game: evolve: {}";
 inline constexpr std::string_view EvolveRefused = "game: evolve: the partner cannot become {} now";
 
+// A problem of a warp of the map entered (assets::warpIssueMessage): the field disables the warp, or for a problem
+// that leaves it working (assets::disablesWarp) only names it.
+inline constexpr std::string_view WarpDisabled = "game: {}; the warp is disabled";
+inline constexpr std::string_view WarpProblem = "game: {}";
+
 } // namespace dwe::app::messages

@@ -178,6 +178,44 @@ disparadores (`tamer.c: checkMapInteraction`): 51–79 llaman a un script al pis
 script si el compañero tiene el bit 8 de `condition` (probablemente, que necesita el baño).
 En el US solo aparecen 0, 51–86, 110–116, 120 y 128.
 
+### Destino de una salida
+
+Una salida nombra su destino dos veces: `target_map`, el índice crudo del original, y `target_map_id`, el id de
+`data/maps`. `assets::resolveWarpTargets` (`map_warps.hpp`) decide adónde lleva al entrar en el mapa:
+
+1. Un `target_map_id` que nombra un mapa de la tabla compuesta manda.
+2. Si no, un `target_map` de 0 o más lleva al mapa **del original** con ese índice; nunca a uno que añade un paquete,
+   cuyo índice lo pone el motor y depende de los paquetes montados.
+3. Si no, la salida no lleva a ningún sitio y el campo la ignora.
+
+El paquete de la base es el paquete propio del motor con la capa `base`: lo decide su origen y su capa, como los
+demás derechos de la base ([tablas por entradas](../architecture/vfs.md#tablas-por-entradas)). Un mod que declara
+`layer: base` cuenta como otro paquete.
+
+| Caso | Paquete de la base | Otro paquete |
+|---|---|---|
+| Los dos y coinciden | válido (lo que escribe `dwx`) | válido |
+| Los dos y nombran mapas distintos | error; el warp se desactiva | error; el warp se desactiva |
+| Un id de un mapa y un `target_map` fuera de la tabla | error; el warp se desactiva | válido: manda el id |
+| Solo `target_map_id` (`target_map: -1`) | error: la base escribe los dos | válido; así se llega a un mapa de un paquete |
+| Solo `target_map` de un mapa (`target_map_id` `null` o ausente) | error | válido |
+| `target_map_id` que no es ningún mapa y un `target_map` del original | error; el warp se desactiva | lleva al mapa del original con ese índice, pero `dwx validate` da el id como error y el juego avisa en el registro |
+| `target_map_id` que no es ningún mapa y sin índice que lo sea | error | error |
+| Sin id y un `target_map` fuera de la tabla, sin su disparador en la colisión | sin destino, como en el original | salida sin usar |
+| Sin id y un `target_map` fuera de la tabla, con su disparador | sin destino, como en el original | **warp muerto**: error |
+| `target_map: -1` sin id, sin su disparador (110 + i) en la colisión | salida sin usar | salida sin usar |
+| `target_map: -1` sin id, con su disparador en la colisión | salida sin usar | **warp muerto**: error |
+
+Un `target_map` fuera de la tabla de otro paquete incluye el número que el motor dio a un mapa de un paquete: ese
+número depende de los paquetes montados y un paquete nunca lo escribe.
+
+El warp muerto es lo que deja un editor que solo conoce los índices del original al guardar una salida hacia un mapa de
+un paquete: escribe `-1` (o el número que el motor dio al mapa) y pierde el id. `dwx validate` lo da como error con el
+mapa, la salida y su línea, y avisa de que el editor pudo perder `target_map_id`. En el juego, cada salida con un
+problema se desactiva con un aviso en el registro que la nombra, salvo la de un id desconocido junto a un índice del
+original, que sigue llevando a ese mapa; nunca se cae. Dos destinos que no coinciden desactivan el warp en cualquier
+paquete, y `dwx validate` lo da como error.
+
 ## Cómo se dibuja
 
 Lo que hace el original para dibujar un mapa de campo, que es la especificación del render de mapas del motor

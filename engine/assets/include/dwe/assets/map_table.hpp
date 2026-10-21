@@ -6,7 +6,9 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -22,8 +24,11 @@ class VirtualFileSystem;
 struct MapEntry {
     // The data's folder, `map/<id>/`: the file name in lowercase, or map_<index> for entries without a file.
     std::string id;
-    // The original's map id, which warps use.
+    // The original's map id, which warps use. The engine numbers the maps a pack adds after the original's; their
+    // number depends on the packs mounted.
     std::int32_t index = 0;
+    // Whether the base pack gave the index (the original's), not the engine.
+    bool originalIndex = true;
     std::string filename;
     std::int32_t images8bpp = 0;
     std::int32_t images4bpp = 0;
@@ -89,8 +94,11 @@ struct MapTable {
     // The map with this id, or nullptr.
     [[nodiscard]] const MapEntry* find(std::string_view id) const;
 
-    // The map with this original index, or nullptr.
+    // The map with this index, the original's or the engine's, or nullptr.
     [[nodiscard]] const MapEntry* findByIndex(std::int32_t index) const;
+
+    // The map of the original with this index (MapEntry::originalIndex), or nullptr: for a warp's raw target_map.
+    [[nodiscard]] const MapEntry* findByOriginalIndex(std::int32_t index) const;
 
     // The name shown when a map loads, without the padding; empty if its loadingName is outside mapNames.
     [[nodiscard]] std::string_view displayName(const MapEntry& entry) const;
@@ -104,8 +112,10 @@ struct MapTable {
 inline constexpr std::array<EntrySection, 1> MapEntrySections{{{.section = "maps", .entryKey = "id"}}};
 inline constexpr TableComposition MapComposition{.sections = MapEntrySections};
 
-// Parses the text of `data/maps`. Unknown and missing keys are errors.
-core::Result<MapTable> parseMapTable(std::string_view yaml);
+// Parses the text of `data/maps`. Unknown and missing keys are errors. `engineNumbered` are the ids of the maps whose
+// index the engine gave (ComposedTableText).
+core::Result<MapTable> parseMapTable(std::string_view yaml,
+                                     const std::set<std::string, std::less<>>& engineNumbered = {});
 
 // Reads and parses `data/maps` from the virtual file system.
 core::Result<MapTable> loadMapTable(const VirtualFileSystem& vfs);

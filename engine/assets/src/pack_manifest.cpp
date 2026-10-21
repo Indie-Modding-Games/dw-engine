@@ -255,6 +255,10 @@ bool isEngineLayer(Layer layer) {
     return layer == Layer::Base || layer == Layer::Remaster;
 }
 
+bool hasBaseRights(PackOrigin origin, Layer layer) {
+    return origin == PackOrigin::Engine && layer == Layer::Base;
+}
+
 core::Result<void> checkModLayer(const PackManifest& manifest) {
     if (isEngineLayer(manifest.layer)) {
         return core::fail(core::formatMessage(messages::ModInEngineLayer, manifest.id, layerName(manifest.layer)));

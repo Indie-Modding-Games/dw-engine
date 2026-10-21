@@ -65,4 +65,22 @@ inline constexpr std::string_view EntryClassNumberUnknown =
     "{}: number {} is no {} of the original (a range covers only the original game; a pack's entry joins by id)";
 inline constexpr std::string_view EntryClassIdUnknown = "{}: '{}' is no {} of the packs mounted";
 
+// The problems of a map's warps (map_warps.hpp), with the map and the exit.
+inline constexpr std::string_view WarpDead =
+    "map '{}', exit {}: the warp leads nowhere: its trigger is in the collision but target_map_id is empty and "
+    "target_map ({}) is no map of the original; an editor may have dropped target_map_id, so write the target map's "
+    "id there";
+inline constexpr std::string_view WarpDisagree =
+    "map '{}', exit {}: target_map_id and target_map name different maps ({}); write the same target in both";
+// The targets of WarpDisagree: the id, the index and the original's map of that index, or none.
+inline constexpr std::string_view WarpDisagreeTargets = "'{}' and {} ('{}')";
+inline constexpr std::string_view WarpDisagreeNoMap = "'{}' and {}, no map of the original";
+inline constexpr std::string_view WarpUnknownIdByIndex =
+    "map '{}', exit {}: target_map_id '{}' is no map of data/maps, so the warp leads to the original's map of "
+    "target_map; write a known id there, or leave it out";
+inline constexpr std::string_view WarpUnknownTarget =
+    "map '{}', exit {}: target '{}' is no map of data/maps, by id or by the original's index";
+inline constexpr std::string_view WarpBaseNeedsBoth =
+    "map '{}', exit {}: a base pack names a warp's target by both target_map and target_map_id ({})";
+
 } // namespace dwe::assets::messages

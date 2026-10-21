@@ -95,6 +95,8 @@ inline constexpr std::string_view ContractedModels = "digimon/*/model";
 inline constexpr std::string_view ContractLeaf = "contract";
 // The schema of the contracts; dwx validate checks the model a contract names against it.
 inline constexpr std::string_view ContractSchema = "model_contract";
+// The schema of a map's data; dwx validate checks where its warps lead (assets/map_warps.hpp).
+inline constexpr std::string_view MapSchema = "map";
 
 // A schema of content/schemas and the patterns of the ids of the documents that follow it (assets::SchemaRule).
 struct DocumentSchema {

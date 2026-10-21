@@ -107,7 +107,8 @@ struct MapWarp {
     std::int32_t rotation = 0;
     // The raw map index; meaningless for unused exits.
     std::int32_t targetMap = 0;
-    // The id of the target map in data/maps, or nothing when the raw index is outside the table.
+    // The id of the target map in data/maps, or nothing when the raw index is outside the table. As read; once
+    // resolveWarpTargets ran (map_warps.hpp), the map the warp leads to, or nothing when it leads nowhere.
     std::optional<std::string> targetMapId;
     std::int32_t targetExit = 0;
 };

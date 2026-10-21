@@ -1,5 +1,6 @@
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/messages.hpp>
+#include <dwe/assets/pack_manifest.hpp>
 #include <dwe/assets/table_composition.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 
@@ -20,10 +21,8 @@ namespace {
 
 using core::YamlNode;
 
-// The base's rights, adding ids without a namespace and giving indices, belong to the engine's own base packs: where a
-// pack was found decides, not the layer its manifest declares.
 bool hasBaseRights(const TableContribution& contribution) {
-    return contribution.origin == PackOrigin::Engine && contribution.layer == Layer::Base;
+    return assets::hasBaseRights(contribution.origin, contribution.layer);
 }
 
 std::string textOf(std::span<const std::byte> bytes) {

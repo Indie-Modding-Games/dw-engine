@@ -58,6 +58,10 @@ core::Result<MoveTable> parseMoves(std::string_view yaml) {
     return parseMoveTable(yaml);
 }
 
+core::Result<MapTable> parseMaps(std::string_view yaml) {
+    return parseMapTable(yaml);
+}
+
 // Turns the result of a reader of text into success or its error, dropping what it read.
 template <auto Reader>
 core::Result<void> discardParsed(std::span<const std::byte> bytes) {
@@ -158,7 +162,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = 
     {"map/*/*/data", discardParsed<parseMapDocument>},
     {"data/digimon", discardParsed<parseDigimonTable>},
     {"data/raise", discardParsed<parseRaiseTable>},
-    {"data/maps", discardParsed<parseMapTable>},
+    {"data/maps", discardParsed<parseMaps>},
     {"data/items", discardParsed<parseItems>},
     {"data/moves", discardParsed<parseMoves>},
     {"data/evolution", discardParsed<parseEvolutionTable>},
@@ -170,7 +174,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = 
 // The strict reader of each kind of content table (table_kinds.hpp) but the Digimon table's, by its role.
 constexpr std::array<std::pair<std::string_view, Opener>, 5> TableReaders = {{
     {"raise", discardParsed<parseRaiseTable>},
-    {"maps", discardParsed<parseMapTable>},
+    {"maps", discardParsed<parseMaps>},
     {"items", discardParsed<parseItems>},
     {"moves", discardParsed<parseMoves>},
     {"evolution", discardParsed<parseEvolutionTable>},

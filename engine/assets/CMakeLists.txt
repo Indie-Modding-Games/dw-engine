@@ -29,6 +29,7 @@ dwe_add_module(assets
         src/yaml_reader.cpp
         src/map_document.cpp
         src/map_table.cpp
+        src/map_warps.cpp
         src/digimon_table.cpp
         src/raise_table.cpp
         src/item_table.cpp

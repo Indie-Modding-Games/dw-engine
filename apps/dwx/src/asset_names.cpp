@@ -172,7 +172,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "training", .ids = {"data/training"}},
         {.schema = "versus", .ids = {"data/versus"}},
         {.schema = "boot", .ids = {"disc/boot"}},
-        {.schema = "map", .ids = {"map/*/data"}},
+        {.schema = MapSchema, .ids = {"map/*/data"}},
         {.schema = "collision", .ids = {"arena/*/collision"}},
         {.schema = "image",
          .ids = {"map/*/texture8/*_meta", "map/*/texture4/*_meta", "digimon/*/texture_meta", "card/*_meta",

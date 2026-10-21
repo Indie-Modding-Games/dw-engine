@@ -182,15 +182,17 @@ std::optional<MapObjects> readObjects(YamlReader& reader, const YamlNode& node) 
 std::vector<MapWarp> readWarps(YamlReader& reader, const YamlNode& node) {
     std::vector<MapWarp> warps;
     for (const YamlNode& item : reader.sequence(node, "warps", WarpCount)) {
-        if (!reader.expectKeys(item, "a warp",
-                               {"exit", "spawn", "rotation", "target_map", "target_map_id", "target_exit"})) {
+        // An editor that only knows the original's numbers may leave target_map_id out (map_warps.hpp).
+        if (!reader.expectKeys(item, "a warp", {"exit", "spawn", "rotation", "target_map", "target_exit"},
+                               {"target_map_id"})) {
             break;
         }
+        const YamlNode* targetId = item.find("target_map_id");
         warps.push_back({.exit = reader.integer<std::int32_t>(reader.field(item, "exit")),
                          .spawn = readVector(reader, reader.field(item, "spawn")),
                          .rotation = reader.integer<std::int32_t>(reader.field(item, "rotation")),
                          .targetMap = reader.integer<std::int32_t>(reader.field(item, "target_map")),
-                         .targetMapId = reader.optionalText(reader.field(item, "target_map_id")),
+                         .targetMapId = targetId != nullptr ? reader.optionalText(*targetId) : std::nullopt,
                          .targetExit = reader.integer<std::int32_t>(reader.field(item, "target_exit"))});
     }
     return warps;

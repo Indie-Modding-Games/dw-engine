@@ -24,7 +24,10 @@ sprites e instancias, warps, NPC y la rejilla de colisión de 100 × 100 (`MapCo
 
 `MapTable` (`<dwe/assets/map_table.hpp>`) es `data/maps` ([esquema](../../content/schemas/maps.schema.json)): por mapa,
 su id, su índice en el original (el que usan los warps), el fichero, los flags (hora fija, NPC), las puertas, el baño y
-el nombre que se ve al cargarlo (`displayName`, sin el relleno de espacios).
+el nombre que se ve al cargarlo (`displayName`, sin el relleno de espacios). Un mapa que añade un paquete lleva el
+índice que le da el motor (`originalIndex` falso), así que `findByOriginalIndex` solo encuentra los del original.
+`resolveWarpTargets` (`<dwe/assets/map_warps.hpp>`) decide adónde lleva cada salida de un mapa con la regla tolerante de
+[mapas](../../docs/formats/mapas.md#destino-de-una-salida) y devuelve sus problemas, como el warp muerto.
 
 `DigimonTable` (`<dwe/assets/digimon_table.hpp>`) es `data/digimon`
 ([esquema](../../content/schemas/digimon.schema.json)): por especie, su id, nombre, modelo, nivel, especiales, objeto

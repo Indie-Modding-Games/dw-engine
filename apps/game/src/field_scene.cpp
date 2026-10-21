@@ -3,7 +3,9 @@
 #include <dwe/animation/clip_sampling.hpp>
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_warps.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/scene/components.hpp>
@@ -224,6 +226,16 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     auto scene = render::loadMapSceneData(*files_, mapId);
     if (!scene) {
         return core::fail(std::format("map {}: {}", mapId, scene.error().message));
+    }
+    if (mapTable_) {
+        // Where each warp leads: a warp with a problem is named in the log, and disabled unless it still leads to a
+        // map of the original.
+        const bool basePack = assets::isBaseMapData(*files_, mapId);
+        for (const assets::WarpIssue& issue : assets::resolveWarpTargets(scene->document, *mapTable_, basePack)) {
+            const std::string_view message =
+                assets::disablesWarp(issue.problem) ? messages::WarpDisabled : messages::WarpProblem;
+            core::logWarning("{}", core::formatMessage(message, assets::warpIssueMessage(mapId, issue)));
+        }
     }
     const auto loaded = Clock::now();
     if (at) {
