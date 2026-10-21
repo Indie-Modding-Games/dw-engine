@@ -48,9 +48,9 @@ if(BUILD_TESTING)
     target_include_directories(dwe_dwx_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/formats/tests
         ${PROJECT_SOURCE_DIR}/engine/assets/tests)
-    target_compile_definitions(dwe_dwx_tests PRIVATE
-        DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
-        DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
+    target_compile_definitions(dwe_dwx_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
+                                                     DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
+                                                     DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod")
 endif()
 
 dwe_add_app(dwx_cli

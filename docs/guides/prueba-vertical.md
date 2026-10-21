@@ -101,6 +101,17 @@ done
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
 
+- `route-mod-map.yaml`: con el mod de ejemplo montado ([`tests/mods/example_mod`](../../tests/mods/README.md)),
+  empieza en el mapa que añade el mod por su id (`example_mod:meadow`), sin código propio, y sale por su salida a
+  File City. Se corre en los dos idiomas:
+
+```sh
+for lang in en es; do
+    scripts/dev.sh run --content <carpeta> --mods tests/mods/example_mod --lang $lang \
+        --autotest tests/autotest/route-mod-map.yaml --shots <capturas>/$lang
+done
+```
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario.
 

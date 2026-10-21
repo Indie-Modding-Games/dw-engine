@@ -9,6 +9,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -284,6 +285,69 @@ dependencies:
     const auto twice = validatePacks(files, "content/base", "content/schemas", with);
     REQUIRE_MESSAGE(twice.has_value(), errorOf(twice));
     CHECK(twice->packs == 1);
+}
+
+TEST_CASE("a mod adds a map by a namespaced id: its entry composes with the base's table and references find it") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
+version: 1.0.0
+layer: mods
+name: My mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+schemas:
+  map: ["map/*/*/data"]
+)");
+    files.addFile("packs/my_mod/data/maps.yaml", R"(maps:
+- id: "my_mod:meadow"
+  filename: "MEADOW"
+  images_8bpp: 0
+  images_4bpp: 0
+  flags: 64
+  sound_id: 0
+  fixed_time_of_day: true
+  has_npcs: false
+  doors: null
+  toilet: null
+  loading_name: 0
+)");
+    files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", dwe::assets::testing::fixtureMap());
+    files.addFile("packs/my_mod/sound/meadow/bank_meta.yaml", "bank: bank.sf2\nmap: my_mod:meadow\ncount: 1\n");
+    files.addFile("packs/my_mod/sound/meadow/bank.sf2", dwe::assets::testing::soundFontFile());
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(textOf(*report).empty());
+
+    // A new entry without the pack's namespace is refused, as the game refuses it.
+    files.addFile("packs/my_mod/data/maps.yaml", "maps:\n- id: meadow\n");
+    const auto unnamed = validatePacks(files, "packs/my_mod", "content/schemas", with);
+    REQUIRE_MESSAGE(unnamed.has_value(), errorOf(unnamed));
+    CHECK(textOf(*unnamed).contains("'my_mod:<name>'"));
+}
+
+// Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
+TEST_CASE("the user's disc, extracted: the example mod passes dwx validate over the base and the game pack") {
+    const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
+    if (!content) {
+        MESSAGE("DWE_CONTENT is not set: skipping the example mod's validation");
+        return;
+    }
+    const dwe::assets::DiskFileSystem disk;
+    const std::array<std::filesystem::path, 2> with{*content / "base", DWE_GAME_PACK};
+    const auto report = validatePacks(disk, DWE_EXAMPLE_MOD, DWE_SCHEMA_DIR, with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK_MESSAGE(report->problems.empty(), textOf(*report));
+    // Every model of the base against its contract, and the mod's new one against its own.
+    std::size_t baseContracts = 0;
+    for (const auto& species : std::filesystem::directory_iterator{*content / "base" / "digimon"}) {
+        baseContracts += std::filesystem::exists(species.path() / "contract.yaml") ? 1 : 0;
+    }
+    CHECK(baseContracts > 0);
+    CHECK(report->contracts == baseContracts + 1);
 }
 
 TEST_CASE("a pack that the game's readers refuse fails validate") {

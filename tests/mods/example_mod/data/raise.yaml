@@ -1,0 +1,27 @@
+# Los cuidados del Digimon nuevo, que lo hacen compañero. Valores inventados para los tests.
+raise:
+- digimon: "example_mod:pebblemon"
+  hunger_times:
+  - 7
+  - 12
+  - 18
+  - -1
+  - -1
+  - -1
+  - -1
+  - -1
+  energy_cap: 50
+  energy_threshold: 10
+  energy_usage: 2
+  poop_timer: 20
+  unknown_0e: 0
+  poop_size: 6
+  favorite_food: "meat"
+  sleep_cycle: 2
+  favored_region: 1
+  training_type: 1
+  default_weight: 12
+  view:
+    x: 600
+    y: 200
+    z: -2000

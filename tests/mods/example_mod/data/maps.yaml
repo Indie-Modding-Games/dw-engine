@@ -1,0 +1,13 @@
+# Un mapa nuevo: su entrada se añade a la tabla de la base por su ID y sus datos están en map/example_mod/meadow/.
+maps:
+- id: "example_mod:meadow"
+  filename: "MEADOW"
+  images_8bpp: 0
+  images_4bpp: 0
+  flags: 64
+  sound_id: 0
+  fixed_time_of_day: true
+  has_npcs: false
+  doors: null
+  toilet: null
+  loading_name: 0

@@ -1,0 +1,14 @@
+# A mod's map with no code of its own: with the synthetic example mod mounted (--mods tests/mods/example_mod, see
+# tests/mods/README.md) the game starts in the map the mod adds by its id, draws its background and leaves it by its
+# exit to File City. How to run it: docs/guides/prueba-vertical.md.
+name: mod-map
+device: keyboard
+timeout: 120
+steps:
+  - wait: {map: "example_mod:meadow", seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: meadow
+  - walk_to: {trigger: 110}
+  - wait: {map: twna01, seconds: 1, timeout: 10}
+  - wait: {partner_within: 400, seconds: 0.5, timeout: 5}
+  - screenshot: twna01-from-meadow

@@ -1,0 +1,10 @@
+model: model.glb
+skeleton: "example_mod:pebblemon"
+joint_parents:
+- -1
+animations:
+- anim_00
+- anim_01
+- anim_02
+- anim_03
+- anim_04

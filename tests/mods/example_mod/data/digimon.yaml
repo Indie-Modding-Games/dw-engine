@@ -1,0 +1,34 @@
+# Una fila nueva: se añade a la tabla de la base por su ID, con el espacio de nombres del paquete. El motor le da su
+# número (`index`).
+digimon:
+- id: "example_mod:pebblemon"
+  name: "Pebblemon"
+  file_name: null
+  bone_count: 1
+  radius: 90
+  height: 180
+  type: 1
+  level: 3
+  special:
+  - 0
+  - null
+  - null
+  drop_item: null
+  drop_chance: 0
+  moves:
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
+  - null
