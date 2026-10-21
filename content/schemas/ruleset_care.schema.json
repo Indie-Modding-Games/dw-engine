@@ -747,7 +747,8 @@
         "food_clears_training_boost",
         "skipped_hunger_window_counts_twice",
         "skipped_hours_add_sickness_tries",
-        "skipped_hours_unhappiness_only_at_midnight"
+        "skipped_hours_unhappiness_only_at_midnight",
+        "wake_searches_from_last_meal"
       ],
       "additionalProperties": false,
       "properties": {
@@ -779,6 +780,9 @@
           "type": "boolean"
         },
         "skipped_hours_unhappiness_only_at_midnight": {
+          "type": "boolean"
+        },
+        "wake_searches_from_last_meal": {
           "type": "boolean"
         }
       }

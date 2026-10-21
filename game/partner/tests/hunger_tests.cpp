@@ -167,6 +167,33 @@ TEST_CASE("care.md hunger: some items are refused less the more discipline the p
     CHECK(raising.partner().refuses({.item = "evolution", .check = RefusalCheck::Always}));
 }
 
+TEST_CASE("care.md hunger: waking searches the next meal from the one set before sleeping, skipping earlier ones") {
+    // partner_impl.c: handleSleeping calls setFoodTimer, which searches on from nextHungerHour, an hour with no day.
+    // The test species eats at 8, 13 and 19, gets sleepy at 22 and wakes at 7.
+    constexpr std::int32_t SleepyHour = 22;
+    constexpr std::int32_t WakeHour = 7;
+    OriginalRuleset original;
+    Raising raising(original.rules());
+    raising.quiet();
+    raising.playUntil(SleepyHour, 0);
+    // After the 19:00 meal the last meal set is tomorrow's first, 8:00.
+    raising.edit([](PartnerState& state) { state.hunger.nextHungerHour = 8; });
+    raising.partner().sleep(raising.clock(), {});
+    REQUIRE(raising.clock().time().hour == WakeHour);
+    // Waking at 7 with 8 as the last meal set, the original skips the 8:00 meal: hungry at 13, 6 hours later.
+    CHECK(raising.state().hunger.nextHungerHour == 13);
+    CHECK(raising.state().hunger.foodLevel == 6 * 60);
+
+    original.set("care", "quirks.wake_searches_from_last_meal", "false");
+    Raising fixed(original.rules());
+    fixed.quiet();
+    fixed.playUntil(SleepyHour, 0);
+    fixed.edit([](PartnerState& state) { state.hunger.nextHungerHour = 8; });
+    fixed.partner().sleep(fixed.clock(), {});
+    CHECK(fixed.state().hunger.nextHungerHour == 8);
+    CHECK(fixed.state().hunger.foodLevel == 60);
+}
+
 TEST_CASE("care.md hunger: a partner that is not hungry refuses its favourite food 20 % of the times") {
     OriginalRuleset original;
     Raising raising(original.rules());

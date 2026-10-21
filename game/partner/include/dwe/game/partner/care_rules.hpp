@@ -189,6 +189,7 @@ struct CareQuirks {
     bool skippedHungerWindowCountsTwice = true;
     bool skippedHoursAddSicknessTries = true;
     bool skippedHoursUnhappinessOnlyAtMidnight = true;
+    bool wakeSearchesFromLastMeal = true;
 };
 
 // The names of the strategies the section picks.

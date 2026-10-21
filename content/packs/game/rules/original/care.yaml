@@ -228,3 +228,9 @@ quirks:
   # infelicidad a medianoche y con grupos de 4 horas. false: la resta una vez por cada múltiplo de 4 horas cruzado,
   # como si se jugaran esas horas.
   skipped_hours_unhappiness_only_at_midnight: true
+  # partner_impl.c: setFoodTimer (versión americana) busca la comida siguiente a partir de la última que fijó
+  # (nextHungerHour, una hora sin día) cuando la hora actual no la ha pasado. handleSleeping la llama al despertar con
+  # la de antes de dormir: si despierta antes de esa hora, se salta esa comida y las anteriores. Un partner que se
+  # duerme a las 16 con la comida de las 18 pendiente y despierta a la 1 no tiene hambre hasta las 22 o las 23.
+  # false: al despertar busca desde la hora de despertar, como la versión japonesa.
+  wake_searches_from_last_meal: true

@@ -188,6 +188,11 @@ void Partner::regenerateWhileAsleep(std::int32_t hour, std::int32_t minute, cons
 void Partner::wakeUp(std::int32_t hour, std::int32_t minute, std::int32_t hoursSlept) {
     scheduleNextSleep();
     const bool wasHungry = state_.conditions.has(Condition::Hungry);
+    // The original searches on from the meal hour set before sleeping (wake_searches_from_last_meal); searching from
+    // the wake hour is the same search with that hour as the last meal.
+    if (!care().quirks.wakeSearchesFromLastMeal) {
+        state_.hunger.nextHungerHour = hour;
+    }
     setFoodTimer(hour, minute);
     state_.hunger.windowSteps = 0;
     state_.conditions.clear(Condition::Hungry);

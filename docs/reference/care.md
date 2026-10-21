@@ -282,6 +282,15 @@ Las vidas no están aquí, sino en la entidad del partner. Las estructuras de `R
   **(comprobado)**.
 - **Intentos de enfermedad al saltar horas.** Con el partner enfermo, saltar horas suma intentos de la tirada de
   enfermedad **(comprobado)**.
+- **Comida saltada al despertar.** `setFoodTimer` de la versión americana busca la comida siguiente a partir de la
+  última hora de comida que fijó (`nextHungerHour`, sin día) si la hora actual no la ha pasado; la japonesa busca
+  desde la hora actual. Al despertar, `handleSleeping` la llama con la hora de antes de dormir: si el partner
+  despierta antes de esa hora, se salta esa comida **(comprobado)**. Con las tablas del disco, un partner que se
+  duerme a las 16 con la comida de las 18 pendiente y despierta a la 1 no vuelve a tener hambre hasta las 22 o las 23
+  (patrón de sueño 0 con comidas a las 3, 8, 13, 18 y 23, o 2, 6, 10, 14, 18 y 22): 21 o 22 horas sin pedir comida,
+  y la energía llega a 0 y el peso baja **(comprobado en el decomp; el efecto en juego, suposición)**. El ruleset
+  `original` lo reproduce (`care.quirks.wake_searches_from_last_meal: true`); con `false` busca desde la hora de
+  despertar.
 - **Infelicidad al saltar horas.** `skipHours` comprueba `(HORA + horas % 4) == 0` en vez de cruzar un múltiplo de 4:
   solo resta vida por infelicidad a medianoche con grupos de 4 horas **(comprobado)**. El ruleset `original` lo
   reproduce (`care.quirks.skipped_hours_unhappiness_only_at_midnight: true`); con `false`, la resta una vez por cada

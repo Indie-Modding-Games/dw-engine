@@ -123,6 +123,7 @@ Cada rareza de la ficha que el juego nota va detrás de una bandera de `quirks:`
 | `skipped_hunger_window_counts_twice` | Saltar horas cuenta el error de la ventana de hambre dos veces |
 | `skipped_hours_add_sickness_tries` | Saltar horas enfermo suma intentos de enfermar |
 | `skipped_hours_unhappiness_only_at_midnight` | Saltar horas solo resta vida por infelicidad a medianoche y con grupos de 4 horas; `false` la resta por cada múltiplo de 4 horas cruzado |
+| `wake_searches_from_last_meal` | Al despertar busca la comida siguiente desde la última que fijó antes de dormir y se salta las anteriores; `false` busca desde la hora de despertar |
 | `training.quirks.brain_training_uses_mp_aptitude` | La inteligencia usa el multiplicador del MP |
 
 Dos rarezas no tienen bandera: el contador muerto `subTiredness`, porque nada lo sube, y el año de 31 días del
@@ -139,6 +140,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Año: nivel del tamer ±1 | `clock.c: tickGameClock` | `startDay`, `care.year` | `mood_tests`: a new year | Igual |
 | Orden de las reglas por fotograma | `partner_impl.c: tickConditions` | `Partner::stepCare` | `simulation_tests`: three days at once | Igual |
 | Horario de comida | `partner_impl.c: setFoodTimer` | `setFoodTimer`, `nextAdultMealHour` | `hunger_tests`: meal hours, baby every 2 | Igual |
+| Comida al despertar: busca desde la última que fijó, sin día, y puede saltarse comidas | `partner_impl.c: handleSleeping`, `setFoodTimer` (rama de la versión americana) | `wakeUp` → `setFoodTimer` (`care.quirks.wake_searches_from_last_meal`) | `waking searches the next meal from the one set before sleeping ...` | Igual (rareza con bandera) |
 | Ventana de hambre y error de cuidado | `partner_impl.c: tickHungerMechanics` | `tickHunger`, `closeHungerWindow` | `hunger_tests`: unfed window | Igual |
 | Energía y peso sin energía | `partner_impl.c: tickHungerMechanics` | `tickHunger` | `hunger_tests`: energy falls | Igual |
 | Cansancio adelanta el hambre | `partner_impl.c: tickTirednessMechanics` | `tickTiredness`, `tickHunger` | `hunger_tests`: long tiredness | Igual |
