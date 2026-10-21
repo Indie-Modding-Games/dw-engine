@@ -20,6 +20,21 @@ if(BUILD_TESTING)
     target_compile_definitions(dwe_test_main PUBLIC
         DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS DOCTEST_CONFIG_USE_STD_HEADERS)
     dwe_apply_options(dwe_test_main)
+
+    # The guard of tests/main.cpp: an entry whose --test-case filter matches nothing fails, here a truncated name.
+    add_executable(dwe_filter_guard_tests tests/filter_guard_tests.cpp)
+    target_link_libraries(dwe_filter_guard_tests PRIVATE dwe_test_main)
+    dwe_apply_options(dwe_filter_guard_tests)
+    set(guarded_case "the filter guard's test case runs")
+    add_test(NAME "filter guard: a filter that matches a test case runs it"
+        COMMAND dwe_filter_guard_tests "--test-case=${guarded_case}")
+    # The guard's own exit code and message, not just any failure: a crash must not pass.
+    add_test(NAME "filter guard: a filter that matches no test case fails"
+        COMMAND ${CMAKE_COMMAND} -DPROGRAM=$<TARGET_FILE:dwe_filter_guard_tests>
+            "-DARGUMENT=--test-case=the filter guard's test" -DEXIT_CODE=2 "-DMESSAGE=matches no test case"
+            -P ${PROJECT_SOURCE_DIR}/cmake/expect_failure.cmake)
+    add_test(NAME "filter guard: a catch-all entry may match no test case"
+        COMMAND dwe_filter_guard_tests "--test-case=${guarded_case} in another name" --dwe-allow-no-match)
 endif()
 
 add_subdirectory(third_party)

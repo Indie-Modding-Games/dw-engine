@@ -69,6 +69,12 @@
 ## Tests
 
 - **Unitarios:** en `tests/` de cada módulo, con doctest.
+- El nombre de un test va en **un solo literal**: ctest registra cada caso lento por su nombre, leído al hacer
+  `configure`. Una entrada cuyo filtro `--test-case` no encaja en ningún caso (un nombre partido en varios literales, un
+  test renombrado desde el último `configure`) falla con un mensaje de `tests/main.cpp`; un caso que se salta solo
+  (sin `DWE_DISC` o `DWE_CONTENT`) sí encaja y pasa. Un caso se salta **volviendo** (`return`), no con
+  `doctest::skip()`: con ese decorador no encaja en ningún filtro y su entrada fallaría. Un `ctest` que no encuentra ningún test también falla
+  (`noTestsAction` en `CMakePresets.json`).
 - **De integración:** en `tests/integration/`.
 - **De simulación:** en `tests/simulation/`, para el balance de los rulesets (por ejemplo, mil crianzas).
 - **De render:** en `tests/golden/`, contra capturas de referencia.

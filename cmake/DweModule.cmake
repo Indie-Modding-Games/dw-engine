@@ -86,21 +86,27 @@ endfunction()
 # The test cases on the user's disc are named "the user's disc: ..." and read the whole disc, which takes minutes. Each
 # one is a test of its own, labelled slow, so they run in parallel and the check of every commit can leave them out
 # (ctest -LE slow); without DWE_DISC they pass at once. The cases are found by reading the sources when configuring,
-# and <name>.disc runs any case added since, so none is ever skipped.
+# and <name>.disc runs any case added since, so none is ever skipped. An entry whose filter matches no case fails
+# (tests/main.cpp).
 function(_dwe_add_tests name target)
     set(disc "the user's disc")
     add_test(NAME ${name} COMMAND ${target} "--test-case-exclude=${disc}*")
     set(found "")
     foreach(source IN LISTS ARGN)
-        file(STRINGS ${source} lines REGEX "TEST_CASE\\(\"${disc}")
-        foreach(line IN LISTS lines)
-            if(line MATCHES "TEST_CASE\\(\"([^\"]+)\"")
-                # A comma separates doctest's filters: ? matches it.
-                string(REPLACE "," "?" filter "${CMAKE_MATCH_1}")
-                add_test(NAME "${name}: ${CMAKE_MATCH_1}" COMMAND ${target} "--test-case=${filter}")
-                set_tests_properties("${name}: ${CMAKE_MATCH_1}" PROPERTIES LABELS slow COST 1000)
-                list(APPEND found "${filter}")
-            endif()
+        # The whole file, so a name that clang-format moves to the line after TEST_CASE( is found too.
+        file(READ ${source} text)
+        string(REGEX MATCHALL "TEST_CASE\\([ \t\r\n]*\"${disc}[^\"]*\"" cases "${text}")
+        # Editing a source with disc cases configures again, so a renamed case gets its entry on the next build.
+        if(cases)
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${source})
+        endif()
+        foreach(case IN LISTS cases)
+            string(REGEX REPLACE "^TEST_CASE\\([ \t\r\n]*\"([^\"]*)\"$" "\\1" case_name "${case}")
+            # A comma separates doctest's filters: ? matches it.
+            string(REPLACE "," "?" filter "${case_name}")
+            add_test(NAME "${name}: ${case_name}" COMMAND ${target} "--test-case=${filter}")
+            set_tests_properties("${name}: ${case_name}" PROPERTIES LABELS slow COST 1000)
+            list(APPEND found "${filter}")
         endforeach()
     endforeach()
     set(rest "--test-case=${disc}*")
@@ -108,7 +114,8 @@ function(_dwe_add_tests name target)
         list(JOIN found "," found)
         list(APPEND rest "--test-case-exclude=${found}")
     endif()
-    add_test(NAME ${name}.disc COMMAND ${target} ${rest})
+    # The catch-all usually matches nothing: tests/main.cpp lets it pass then.
+    add_test(NAME ${name}.disc COMMAND ${target} ${rest} --dwe-allow-no-match)
     set_tests_properties(${name}.disc PROPERTIES LABELS slow)
 endfunction()
 
