@@ -1,0 +1,118 @@
+# The closing loop of phase 3 with the keyboard (docs/plan/fase-3-nucleo-jugable.md, "Criterio de cierre"): a new game
+# from the main menu, raising the partner (a meal from the bag, a scold, the toilet and sleep), a training session, a
+# battle with the debug trigger and, with the clock sped up, its evolution. The care, training and clock commands are
+# the debug ones (apps/game/src/care_commands.hpp) until the field's toilets and beds and the training screens exist;
+# each step checks its effect on the partner's live status. The evolved form depends on the run's seed and on how the
+# stretches of fast clock go (most runs end in the rookie's fallback form): the headless test
+# (apps/sim/tests/loop_tests.cpp) checks the form the original's rules give a well raised partner.
+# How to run it: docs/guides/prueba-vertical.md.
+name: loop-keyboard
+device: keyboard
+timeout: 600
+main_menu: true
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: main-menu
+  - menu_select: play
+  - wait: {map: twna01, hidden: main_menu, seconds: 1}
+  - screenshot: new-game
+  - remember: partner.name
+  - remember: partner.age
+  # Raise: the new game's bag is empty, as the original's; give_item puts the partner's favourite food in it.
+  - script: give_item("meat 3")
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: raise-status
+  - menu_select: tab-care
+  - remember: partner.meter.1.value
+  - menu_select: care-scold
+  - expect_change: {partner.meter.1.value: up}
+  - screenshot: raise-scolded
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  # Two game hours a real second until it is hungry: a partner that is not may refuse its favourite food at random
+  # (partner_impl.c: partnerWillRefuseItem).
+  - script: clock_speed("120")
+  - wait: {partner_has: partner_menu.condition.hungry, timeout: 60}
+  - script: clock_speed("1")
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - remember: partner.weight
+  - menu_select: tab-items
+  - menu_select: slot-0
+  - menu_select: opt-use
+  - expect_change: {partner.weight: up}
+  - screenshot: raise-fed
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  # Two game hours a real second, until the partner needs the toilet and then gets sleepy.
+  - script: clock_speed("120")
+  - wait: {partner_has: partner_menu.condition.needs_toilet, timeout: 60}
+  - remember: partner.condition.count
+  - script: toilet("")
+  - expect_change: {partner.condition.count: down}
+  - screenshot: raise-toilet
+  - wait: {partner_has: partner_menu.condition.sleepy, timeout: 60}
+  - script: clock_speed("1")
+  - script: sleep("")
+  # Sleeping moves the clock to the wake hour, the next day.
+  - expect_change: {partner.age: up}
+  - screenshot: raise-slept
+  # Train: one session of the brain course at the gym.
+  - remember: partner.stat.3.value
+  - script: train("trn brain")
+  - expect_change: {partner.stat.3.value: up}
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: train-status
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  # Battle: the first NPC of File City that can fight, to the end; the partner fights on its own.
+  - remember: partner.hp
+  - script: battle("")
+  - wait: {shown: battle, seconds: 1}
+  - screenshot: battle-start
+  - wait: {setting: {battle.phase: end}, timeout: 180}
+  - screenshot: battle-end
+  - menu_select: end-continue
+  - wait: {hidden: battle, timeout: 5}
+  - expect_change: {partner.hp: changed}
+  # Evolve: ten game hours a real second, in stretches of about six game hours, caring for the partner after each as
+  # a player would: a medicine when it is sick, as the original's untreated sickness takes a life every few hours
+  # (care.yaml: untreated_hours), and a scold if it refuses it, after which it takes it (partner_impl.c:
+  # partnerWillRefuseItem); its favourite food when hungry, the toilet when it needs it and sleep when sleepy. Fourteen
+  # stretches cover the rookie's evolution check (evolution.yaml: check_hours) whatever the hours played before.
+  - script: give_item("medicine 20")
+  - script: give_item("meat 40")
+  - repeat:
+      times: 14
+      steps:
+        - script: clock_speed("600")
+        - wait: {seconds: 0.6}
+        - script: clock_speed("1")
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+  - expect_change: {partner.name: changed}
+  # A reborn baby would start its age again.
+  - expect_change: {partner.age: up}
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: evolved-status
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  - screenshot: evolved

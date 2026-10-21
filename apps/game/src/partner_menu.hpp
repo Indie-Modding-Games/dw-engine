@@ -2,6 +2,7 @@
 
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/ui/ui.hpp>
@@ -26,6 +27,9 @@ inline constexpr std::string_view ScoldCommand = "partner_scold";
 // The console's and the scripts' give_item("<item id> <count>"): puts items in the bag, as a debug aid until the
 // field's chests and shops exist (the original's new game starts with an empty bag).
 inline constexpr std::string_view GiveItemCommand = "give_item";
+// The console's and the scripts' use_item("<item id>"): uses one from the bag on the partner, as the bag's Use does,
+// for the autotest routes that cannot find its slot.
+inline constexpr std::string_view UseItemCommand = "use_item";
 // What the last praise or scold was, as a text key (partner_menu.care_result.*); empty before any.
 inline constexpr std::string_view CareResultSetting = "partner.care_result";
 
@@ -49,6 +53,12 @@ public:
 
     // The give_item command: `argument` is an item id and a count.
     core::Result<void> giveItem(std::string_view argument);
+    // Uses one of the item on the partner (use_item); what came of it shows as the bag's result and is logged.
+    core::Result<void> useItem(std::string_view id);
+
+    // The partner's status as the status page shows it now (the partner.* settings), open or not; empty with no game.
+    // The autotest reads it to check what the care commands did.
+    [[nodiscard]] screens::ScreenSettings statusSettings() const;
 
     // Takes the partner menu's commands (and the pause menu's entry to it); false for any other command.
     bool handle(const ui::UiCommand& command);

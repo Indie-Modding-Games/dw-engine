@@ -7,6 +7,7 @@
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -15,10 +16,12 @@
 #include <deque>
 #include <filesystem>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "field_scene.hpp"
@@ -45,6 +48,10 @@ struct AutotestCondition {
     std::optional<std::string> hidden;
     // A map change under way that shows this map's name (its id): the only condition checked during a map change.
     std::optional<std::string> mapNameShown;
+    // A condition of the partner, by the status page's key (partner_has: partner_menu.condition.sleepy).
+    std::optional<std::string> partnerHas;
+    // A setting with this value (setting: {battle.phase: end}), as expect_setting reads it.
+    std::optional<std::pair<std::string, std::string>> setting;
 };
 
 struct AutotestStep {
@@ -60,9 +67,12 @@ struct AutotestStep {
         Press,         // press: <control>, release: <control>, tap: <control> (key or gamepad button names)
         Release,
         Tap,
-        Axis,   // axis: {axis, value}: a stick or trigger of the virtual gamepad
-        Click,  // click: [x, z]: a mouse click on a ground point
-        Script, // script: <lua>: runs a line of the game's scripts, as the console does (battle("0"))
+        Axis,         // axis: {axis, value}: a stick or trigger of the virtual gamepad
+        Click,        // click: [x, z]: a mouse click on a ground point
+        Script,       // script: <lua>: runs a line of the game's scripts, as the console does (battle("0"))
+        Remember,     // remember: <name>: keeps a setting's value for a later expect_change
+        ExpectChange, // expect_change: {name: up | down | changed}: the setting moved from the remembered value
+        ScriptIf,     // script_if: {script, and wait's conditions}: runs the script only if they all hold now
     };
     Kind kind = Kind::Wait;
     std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -108,6 +118,8 @@ struct AutotestHost {
     const input::InputState* input = nullptr;
     FrameStats* stats = nullptr;
     script::ScriptVm* scripts = nullptr;
+    // The partner's status as the status page shows it (partner.* settings), refreshed every frame, menu open or not.
+    const screens::ScreenSettings* partner = nullptr;
 };
 
 class Autotest {
@@ -173,6 +185,11 @@ private:
     bool controlStep(const AutotestHost& host, const AutotestStep& step);
     bool clickStep(const AutotestHost& host, const AutotestStep& step);
     bool scriptStep(const AutotestHost& host, const AutotestStep& step);
+    bool scriptIfStep(const AutotestHost& host, const AutotestStep& step);
+    // What of the condition does not hold now, or empty if all of it does.
+    [[nodiscard]] static std::string unmetCondition(const AutotestHost& host, const AutotestCondition& until);
+    bool rememberStep(const AutotestHost& host, const AutotestStep& step);
+    bool expectChangeStep(const AutotestHost& host, const AutotestStep& step);
 
     // Device helpers that queue actions.
     void key(platform::KeyCode code, bool down, int afterTicks = 0);
@@ -212,6 +229,8 @@ private:
     std::vector<std::string> skipped_;
     std::vector<MapChangeTiming> mapChanges_;
     int screenshots_ = 0;
+    // The values remember steps kept, by setting name.
+    std::map<std::string, std::string, std::less<>> remembered_;
     // The [error] lines logged since the route was loaded; shared with the log sink, which outlives the driver.
     std::shared_ptr<std::atomic<std::uint64_t>> errors_ = std::make_shared<std::atomic<std::uint64_t>>(0);
 };

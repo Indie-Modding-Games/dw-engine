@@ -43,6 +43,7 @@
 #include "autotest.hpp"
 #include "battle_screen.hpp"
 #include "battle_trigger.hpp"
+#include "care_commands.hpp"
 #include "common.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
@@ -507,8 +508,15 @@ int runGame(const Options& options) {
     std::optional<std::string> pendingGift;
     (*scripts)->bindCommand(GiveItemCommand,
                             [&pendingGift](std::string_view item) { pendingGift = std::string{item}; });
+    std::optional<std::string> pendingUse;
+    (*scripts)->bindCommand(UseItemCommand, [&pendingUse](std::string_view item) { pendingUse = std::string{item}; });
     (*scripts)->bindCommand(BattleCommand,
                             [&pendingBattle](std::string_view npcs) { pendingBattle = std::string{npcs}; });
+    // The care debug commands (toilet, sleep, scold, train, clock_speed), applied between frames like the others.
+    CareCommands careCommands;
+    careCommands.bind(**scripts);
+    // The partner's status for the autotest's checks, refreshed every frame of a run.
+    screens::ScreenSettings partnerStatus;
 
     FrameStats frameStats;
     const AutotestHost host{
@@ -521,6 +529,7 @@ int runGame(const Options& options) {
         .input = &input,
         .stats = &frameStats,
         .scripts = scripts->get(),
+        .partner = &partnerStatus,
     };
 
     core::FixedStep step{TickSeconds, MaxFrameSeconds};
@@ -540,6 +549,7 @@ int runGame(const Options& options) {
     while (running) {
         events.clear();
         if (autotest) {
+            partnerStatus = partnerMenu.statusSettings();
             autotest->frame(host, ticksRun, platform->nowSeconds(), events);
             if (autotest->finished()) {
                 break;
@@ -656,10 +666,16 @@ int runGame(const Options& options) {
                 core::logWarning("{}", core::formatMessage(messages::GiveItemFailed, given.error().message));
             }
         }
+        if (pendingUse) {
+            if (auto used = partnerMenu.useItem(*std::exchange(pendingUse, std::nullopt)); !used) {
+                core::logWarning("{}", core::formatMessage(messages::UseItemFailed, used.error().message));
+            }
+        }
         if (pendingBattle) {
             startBattle(battleScreen, species ? &*species : nullptr, **scene,
                         *std::exchange(pendingBattle, std::nullopt));
         }
+        careCommands.apply(session);
         if (consoleTextFont) {
             textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
         }

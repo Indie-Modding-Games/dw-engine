@@ -9,10 +9,12 @@
 #include <dwe/game/field/grid.hpp>
 #include <dwe/input/keys.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/screens/partner_status_view.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <charconv>
 #include <cmath>
 #include <format>
 #include <fstream>
@@ -23,6 +25,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <variant>
 
@@ -107,9 +110,18 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 14> StepNames{
-    "wait",       "walk_to", "menu",    "menu_select", "expect_setting", "screenshot", "resize",
-    "fullscreen", "press",   "release", "tap",         "axis",           "click",      "script"};
+constexpr std::array<std::string_view, 17> StepNames{
+    "wait",    "walk_to", "menu", "menu_select", "expect_setting", "screenshot", "resize",        "fullscreen", "press",
+    "release", "tap",     "axis", "click",       "script",         "remember",   "expect_change", "script_if"};
+
+// What an expect_change step asks of a setting against its remembered value.
+constexpr std::string_view ChangedUp = "up";
+constexpr std::string_view ChangedDown = "down";
+constexpr std::string_view ChangedAtAll = "changed";
+// The key of a block of steps repeated in place (repeat: {times, steps}).
+constexpr std::string_view RepeatKey = "repeat";
+// The key of a step's mapping that is its timeout, beside the setting it names.
+constexpr std::string_view TimeoutKey = "timeout";
 
 std::string_view kindName(Kind kind) {
     return StepNames.at(static_cast<std::size_t>(kind));
@@ -134,6 +146,66 @@ glm::vec2 readPoint(assets::YamlReader& reader, const core::YamlNode& node, std:
         return glm::vec2{0.0F};
     }
     return {reader.number(items[0]), reader.number(items[1])};
+}
+
+// A step's {name: value} mapping, with an optional timeout key: the setting it names and its value.
+std::optional<std::pair<std::string, std::string>> readSetting(assets::YamlReader& reader, const core::YamlNode& node,
+                                                               AutotestStep& step, std::string_view what) {
+    std::optional<std::pair<std::string, std::string>> setting;
+    if (node.isMapping()) {
+        for (const core::YamlEntry& entry : node.entries()) {
+            if (entry.key == TimeoutKey) {
+                step.timeout = reader.number(entry.value);
+            } else if (!setting) {
+                setting.emplace(entry.key, reader.text(entry.value));
+            } else {
+                setting.reset();
+                break;
+            }
+        }
+    }
+    if (!setting) {
+        reader.fail(node, std::format("{} is {{name: value}}, with an optional timeout", what));
+    }
+    return setting;
+}
+
+// The value of a setting as text: the partner's live status for partner.* settings, the UI's published ones
+// otherwise.
+std::string settingText(const AutotestHost& host, std::string_view name) {
+    if (host.partner != nullptr) {
+        const auto found = std::ranges::find(*host.partner, name, &screens::ScreenSetting::name);
+        if (found != host.partner->end()) {
+            return describe(found->value);
+        }
+    }
+    return describe(host.ui->setting(name));
+}
+
+// Whether the partner's live status lists a condition, by its key.
+bool partnerHas(const AutotestHost& host, std::string_view key) {
+    if (host.partner == nullptr) {
+        return false;
+    }
+    return std::ranges::any_of(*host.partner, [key](const screens::ScreenSetting& setting) {
+        const auto* text = std::get_if<std::string>(&setting.value);
+        return setting.name.starts_with(screens::PartnerConditionList) && text != nullptr && *text == key;
+    });
+}
+
+// Whether `now` moved from `before` as an expect_change step asks: up, down or changed at all.
+bool movedAsAsked(std::string_view before, std::string_view now, std::string_view asked) {
+    if (asked == ChangedAtAll) {
+        return before != now;
+    }
+    double from = 0.0;
+    double to = 0.0;
+    const auto [fromEnd, fromError] = std::from_chars(before.data(), before.data() + before.size(), from);
+    const auto [toEnd, toError] = std::from_chars(now.data(), now.data() + now.size(), to);
+    if (fromError != std::errc{} || toError != std::errc{}) {
+        return false;
+    }
+    return asked == ChangedUp ? to > from : to < from;
 }
 
 void readCondition(assets::YamlReader& reader, const core::YamlNode& node, AutotestStep& step) {
@@ -161,6 +233,12 @@ void readCondition(assets::YamlReader& reader, const core::YamlNode& node, Autot
     if (const core::YamlNode* hidden = node.find("hidden")) {
         step.until.hidden = reader.text(*hidden);
     }
+    if (const core::YamlNode* has = node.find("partner_has")) {
+        step.until.partnerHas = reader.text(*has);
+    }
+    if (const core::YamlNode* setting = node.find("setting")) {
+        step.until.setting = readSetting(reader, *setting, step, "setting");
+    }
     if (const core::YamlNode* seconds = node.find("seconds")) {
         step.seconds = reader.number(*seconds);
     }
@@ -179,6 +257,29 @@ void readCommon(assets::YamlReader& reader, const core::YamlNode& node, Autotest
     }
 }
 
+AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node);
+
+// A list of steps, where repeat: {times, steps} stands for its steps that many times over.
+void readSteps(assets::YamlReader& reader, const core::YamlNode& node, std::vector<AutotestStep>& steps) {
+    for (const core::YamlNode& step : reader.sequence(node, "steps")) {
+        const core::YamlNode* repeat = step.isMapping() ? step.find(RepeatKey) : nullptr;
+        if (repeat == nullptr) {
+            steps.push_back(readStep(reader, step));
+            continue;
+        }
+        reader.expectKeys(*repeat, RepeatKey, {"times", "steps"}, {});
+        const auto times = reader.integer<std::int32_t>(reader.field(*repeat, "times"));
+        if (times <= 0) {
+            reader.fail(*repeat, "repeat takes a positive times");
+        }
+        std::vector<AutotestStep> block;
+        readSteps(reader, reader.field(*repeat, "steps"), block);
+        for (std::int32_t round = 0; round < times; ++round) {
+            steps.insert(steps.end(), block.begin(), block.end());
+        }
+    }
+}
+
 // One step: a mapping with a single key, the kind of step, whose value says the rest.
 AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     AutotestStep step;
@@ -193,7 +294,7 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
         step.kind = Kind::Wait;
         reader.expectKeys(value, "wait", {},
                           {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "map_name",
-                           "shown", "hidden", "timeout"});
+                           "shown", "hidden", "partner_has", "setting", "timeout"});
         readCondition(reader, value, step);
         readCommon(reader, value, step);
     } else if (kind == "walk_to") {
@@ -230,19 +331,32 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     } else if (kind == "script") {
         step.kind = Kind::Script;
         step.text = reader.text(value);
+    } else if (kind == "script_if") {
+        step.kind = Kind::ScriptIf;
+        reader.expectKeys(value, "script_if", {"script"},
+                          {"map", "partner_within", "player_near", "radius", "menu_open", "shown", "hidden",
+                           "partner_has", "setting"});
+        readCondition(reader, value, step);
+        if (const core::YamlNode* script = value.find("script")) {
+            step.text = reader.text(*script);
+        }
     } else if (kind == "menu_select") {
         step.kind = Kind::MenuSelect;
         step.text = reader.text(value);
-    } else if (kind == "expect_setting") {
-        step.kind = Kind::ExpectSetting;
+    } else if (kind == "expect_setting" || kind == "expect_change") {
+        step.kind = kind == "expect_setting" ? Kind::ExpectSetting : Kind::ExpectChange;
         step.timeout = 2.0;
-        if (!value.isMapping() || value.entries().size() != 1) {
-            reader.fail(value, "expect_setting is {name: value}");
-        } else {
-            const std::span<const core::YamlEntry> setting = value.entries();
-            step.name = setting.front().key;
-            step.text = reader.text(setting.front().value);
+        if (const auto setting = readSetting(reader, value, step, kind)) {
+            step.name = setting->first;
+            step.text = setting->second;
         }
+        if (step.kind == Kind::ExpectChange && step.text != ChangedUp && step.text != ChangedDown &&
+            step.text != ChangedAtAll) {
+            reader.fail(value, "expect_change is {name: up | down | changed}");
+        }
+    } else if (kind == "remember") {
+        step.kind = Kind::Remember;
+        step.name = reader.text(value);
     } else if (kind == "screenshot") {
         step.kind = Kind::Screenshot;
         step.text = reader.text(value);
@@ -391,9 +505,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     if (const core::YamlNode* timeout = document->find("timeout")) {
         route.timeout = reader.number(*timeout);
     }
-    for (const core::YamlNode& step : reader.sequence(reader.field(*document, "steps"), "steps")) {
-        route.steps.push_back(readStep(reader, step));
-    }
+    readSteps(reader, reader.field(*document, "steps"), route.steps);
     return reader.finish(std::move(route), "autotest route");
 }
 
@@ -538,7 +650,7 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     case Kind::MenuSelect:
         return menuSelectStep(host, step);
     case Kind::ExpectSetting:
-        return describe(host.ui->setting(step.name)) == step.text;
+        return settingText(host, step.name) == step.text;
     case Kind::Screenshot:
         return screenshotStep(host, step);
     case Kind::Resize:
@@ -553,21 +665,60 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
         return clickStep(host, step);
     case Kind::Script:
         return scriptStep(host, step);
+    case Kind::Remember:
+        return rememberStep(host, step);
+    case Kind::ExpectChange:
+        return expectChangeStep(host, step);
+    case Kind::ScriptIf:
+        return scriptIfStep(host, step);
     }
     return true;
 }
 
+bool Autotest::rememberStep(const AutotestHost& host, const AutotestStep& step) {
+    remembered_.insert_or_assign(step.name, settingText(host, step.name));
+    return true;
+}
+
+bool Autotest::expectChangeStep(const AutotestHost& host, const AutotestStep& step) {
+    const auto remembered = remembered_.find(step.name);
+    if (remembered == remembered_.end()) {
+        failStep(std::format("{} was not remembered", step.name));
+        return false;
+    }
+    return movedAsAsked(remembered->second, settingText(host, step.name), step.text);
+}
+
+bool Autotest::scriptIfStep(const AutotestHost& host, const AutotestStep& step) {
+    if (const std::string unmet = unmetCondition(host, step.until); !unmet.empty()) {
+        core::logInfo("{}", core::formatMessage(messages::ScriptIfNotRun, stepIndex_ + 1, unmet));
+        return true;
+    }
+    return scriptStep(host, step);
+}
+
 bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, double now) {
-    const AutotestCondition& until = step.until;
-    const bool hasCondition = until.map.has_value() || until.partnerWithin.has_value() ||
-                              until.playerNear.has_value() || until.menuOpen.has_value() ||
-                              until.mapNameShown.has_value() || until.shown.has_value() || until.hidden.has_value();
     const double waited = now - progress_->start;
     if (waited < step.seconds) {
         return false;
     }
-    if (!hasCondition) {
+    const std::string unmet = unmetCondition(host, step.until);
+    if (unmet.empty()) {
         return true;
+    }
+    if (waited > step.timeout) {
+        failStep(std::format("{} after {:.0f} s; {}", unmet, step.timeout, where(*host.scene)));
+    }
+    return false;
+}
+
+std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCondition& until) {
+    const bool hasCondition = until.map.has_value() || until.partnerWithin.has_value() ||
+                              until.playerNear.has_value() || until.menuOpen.has_value() ||
+                              until.mapNameShown.has_value() || until.shown.has_value() || until.hidden.has_value() ||
+                              until.partnerHas.has_value() || until.setting.has_value();
+    if (!hasCondition) {
+        return {};
     }
     const game::field::Field& field = host.scene->field();
     const glm::vec3 player = field.player().position;
@@ -592,14 +743,13 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
         unmet = std::format("{} is not shown", *until.shown);
     } else if (until.hidden && host.ui->isVisible(*until.hidden)) {
         unmet = std::format("{} is still shown", *until.hidden);
+    } else if (until.partnerHas && !partnerHas(host, *until.partnerHas)) {
+        unmet = std::format("the partner is not {}", *until.partnerHas);
+    } else if (until.setting && settingText(host, until.setting->first) != until.setting->second) {
+        unmet = std::format("{} is {}, not {}", until.setting->first, settingText(host, until.setting->first),
+                            until.setting->second);
     }
-    if (unmet.empty()) {
-        return true;
-    }
-    if (waited > step.timeout) {
-        failStep(std::format("{} after {:.0f} s; {}", unmet, step.timeout, where(*host.scene)));
-    }
-    return false;
+    return unmet;
 }
 
 bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, double now) {

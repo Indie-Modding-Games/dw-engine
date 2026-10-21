@@ -90,6 +90,12 @@ for lang in en es; do
 done
 ```
 
+- `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
+  (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
+  lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
+  evoluciona. Cada paso comprueba su efecto en el estado del compañero; hace capturas de cada etapa. Tarda unos dos
+  minutos con lavapipe. Se corre en los dos idiomas, como `route-language.yaml`.
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario.
 
@@ -136,15 +142,40 @@ steps:
 
 | Paso | Qué hace |
 |---|---|
-| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse |
+| `wait: {seconds, map, partner_within, player_near: [x, z], radius, menu_open, map_name, shown, hidden, partner_has, setting, timeout}` | Espera los segundos y hasta que se cumplen las condiciones (todas las dadas). `map_name: <id>` espera a que un cambio de mapa enseñe el nombre de ese mapa, y entonces no mira las demás. `shown: <documento>` y `hidden: <documento>` esperan a que un documento de la UI (`battle`, `partner_menu`) se vea o deje de verse. `partner_has: <clave>` espera a que el compañero tenga ese estado, por la clave de la página de estado (`partner_menu.condition.sleepy`, `.hungry`, `.needs_toilet`, `.sick`...). `setting: {<nombre>: <valor>}` espera a que un ajuste tenga ese valor (`battle.phase: end`) |
 | `walk_to: {trigger \| point: [x, z], radius, walk, stop_on_warp, device, timeout}` | Camina con el dispositivo hasta las celdas con ese trigger (y el cambio de mapa que dispara) o hasta el punto; planifica con la colisión del mapa y evita los demás warps. `walk: true` anda en vez de correr. `stop_on_warp: true` acaba al empezar el cambio de mapa, sin esperar al mapa nuevo |
 | `menu: open \| close` | Abre o cierra el menú con el dispositivo (ratón: el botón «Menú» del HUD y clic derecho) |
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-visible`...), si no la pantalla de combate (`command-0`..., `open-bag` y, con la bolsa abierta, `bag-slot-0`...) o el menú del compañero. Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
-| `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola: `battle("")` empieza un combate contra el primer NPC del mapa que puede luchar, `give_item("meat 3")` mete objetos en la bolsa |
-| `expect_setting: {<nombre>: <valor>}` | Comprueba un ajuste publicado a la UI (`minimap_visible: false`) |
+| `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola; los comandos de depuración están más abajo |
+| `script_if: {script, <condiciones de wait>}` | Ejecuta el script solo si se cumplen ya todas las condiciones (las de `wait` salvo `map_name` y `seconds`); si no, sigue sin esperar y lo dice en el registro |
+| `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap_visible: false`) o del estado del compañero |
+| `remember: <nombre>` | Guarda el valor de un ajuste para un `expect_change` posterior |
+| `expect_change: {<nombre>: up \| down \| changed, timeout}` | Comprueba que el ajuste ha subido, bajado o cambiado desde el valor guardado (2 s por defecto) |
+| `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |
 | `press`, `release`, `tap: {key \| button}`, `axis: {axis, value}`, `click: [x, z]` | Controles sueltos: teclas, botones y ejes del mando virtual, clic en un punto del suelo |
 
 Las coordenadas son del mundo del motor (x, z en el suelo; 100 unidades por celda de colisión).
+
+Los ajustes del compañero se leen en vivo, con el menú del compañero abierto o no: `partner.name` (la clave de su
+nombre, igual en cualquier idioma), `partner.age`, `partner.weight`, `partner.lives`, `partner.hp`, `partner.max_hp`,
+`partner.mp`, `partner.max_mp`, `partner.stat.<0-3>.value` (ataque, defensa, velocidad e inteligencia, en el orden de
+la página de estado), `partner.meter.<0-2>.value` (felicidad, disciplina y virus) y `partner.condition.count` con
+`partner.condition.<n>.key`. La bolsa publica lo que pasó con el último objeto en `bag.result`.
+
+Comandos de depuración de los scripts, que también sirven en la consola. Hacen lo mismo que la acción del jugador y
+no añaden reglas; sustituyen a los baños, las camas, las pantallas de entrenamiento y las opciones del reloj hasta la
+fase 4:
+
+| Comando | Qué hace |
+|---|---|
+| `battle("")` | Empieza un combate contra el primer NPC del mapa que puede luchar; `battle("2,3")`, contra esos NPC del mapa |
+| `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
+| `use_item("<id>")` | Usa uno de la bolsa con el compañero, como «Usar» en la bolsa; el compañero puede rechazarlo |
+| `toilet("")` | Lleva al compañero al baño |
+| `sleep("")` | Lo acuesta, si tiene sueño |
+| `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |
+| `train("<lugar> <curso>")` | Una sesión de entrenamiento (`train("trn brain")`) |
+| `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |

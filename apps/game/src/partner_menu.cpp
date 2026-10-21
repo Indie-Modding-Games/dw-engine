@@ -91,6 +91,21 @@ core::Result<void> PartnerMenu::giveItem(std::string_view argument) {
     return {};
 }
 
+core::Result<void> PartnerMenu::useItem(std::string_view id) {
+    const assets::ItemEntry* item = desc_.inventory->items().find(id);
+    if (item == nullptr) {
+        return core::fail(core::formatMessage(messages::UnknownItem, id));
+    }
+    auto used = desc_.inventory->use(*desc_.session, item->index);
+    if (!used) {
+        return std::unexpected{used.error()};
+    }
+    const std::string_view outcome = keyOf(used->outcome);
+    core::logInfo("{}", core::formatMessage(messages::UsedItem, id, outcome));
+    bagResult(outcome, item->index);
+    return {};
+}
+
 void PartnerMenu::update() {
     if (desc_.ui->isVisible(PartnerMenuDocument)) {
         publish();
@@ -126,6 +141,14 @@ void PartnerMenu::open() {
     desc_.ui->setSetting(CareResultSetting, std::string{});
     publish();
     desc_.ui->show(PartnerMenuDocument, true);
+}
+
+screens::ScreenSettings PartnerMenu::statusSettings() const {
+    if (!desc_.session->playing()) {
+        return {};
+    }
+    const screens::NameKeys names{desc_.species, &desc_.inventory->items(), nullptr};
+    return screens::settingsOf(screens::partnerStatusViewOf(desc_.session->partnerView(), names));
 }
 
 void PartnerMenu::publish() const {

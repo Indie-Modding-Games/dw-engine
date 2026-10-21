@@ -78,5 +78,20 @@ inline constexpr std::string_view BadGiveItem = "'{}' is not an item id and a co
 inline constexpr std::string_view UnknownItem = "no item '{}'";
 inline constexpr std::string_view GiveItemFailed = "game: give_item: {}";
 inline constexpr std::string_view GaveItem = "game: gave {} x{} ({} added)";
+inline constexpr std::string_view ScriptIfNotRun = "autotest: step {} not run: {}";
+inline constexpr std::string_view CareScolded = "game: the partner was scolded";
+inline constexpr std::string_view UsedItem = "game: used {}: {}";
+inline constexpr std::string_view UseItemFailed = "game: use_item: {}";
+
+// The care debug commands (care_commands.cpp).
+inline constexpr std::string_view CareCommandFailed = "game: care command: {}";
+inline constexpr std::string_view NoGame = "no game is being played";
+inline constexpr std::string_view CannotSleep = "the partner is not sleepy";
+inline constexpr std::string_view BadTrainArgument = "'{}' is not a training place and a course";
+inline constexpr std::string_view BadClockSpeed = "'{}' is not a clock speed";
+inline constexpr std::string_view CareToilet = "game: the partner used the toilet";
+inline constexpr std::string_view CareSlept = "game: the partner slept";
+inline constexpr std::string_view CareTrained = "game: the partner trained {} {}";
+inline constexpr std::string_view ClockSpeedSet = "game: clock speed {}";
 
 } // namespace dwe::app::messages

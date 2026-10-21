@@ -158,7 +158,11 @@ primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0
 objetos en la bolsa. Son ayudas de depuración hasta que corran los scripts de los mapas y existan cofres y tiendas:
 el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
 partida nueva empieza con la bolsa vacía. Decisión del responsable de diseño (2026-10-21): hasta que corran los guiones
-de los mapas en la fase 4, `battle("")` es el único disparador de combates.
+de los mapas en la fase 4, `battle("")` es el único disparador de combates. `use_item("medicine")` usa uno de la bolsa
+con el compañero, y `toilet("")`, `sleep("")`, `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
+comandos de cuidado de la sesión y aceleran el reloj, hasta que existan los baños, las camas, las pantallas de
+entrenamiento y las opciones del reloj (fase 4); la lista está en [la guía de la prueba
+vertical](../guides/prueba-vertical.md).
 
 Otros ajustes los publica el juego sin que un menú los pida:
 
