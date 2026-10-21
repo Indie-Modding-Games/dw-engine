@@ -32,8 +32,9 @@ evolución. Al evolucionar, los stats se mezclan con los valores de referencia d
 
 `tickConditions` (en `partner_impl.c`) mira la evolución mientras el juego corre, el partner está en estado normal,
 el tamer está libre y no hay una transición de mapa en marcha **(comprobado)**. Que la comprobación sea continua y no
-una vez por hora es lo que se lee en el código; el significado exacto del contador `DAYTIME_TRANSITION_FRAME` que la
-habilita es **(suposición)**.
+una vez por hora es lo que se lee en el código; la habilita `DAYTIME_TRANSITION_FRAME` con 25 o más **(comprobado)**,
+y que eso signifique "sin fundido de paleta del cambio de hora" es **(suposición)**. La barra de virus se mira
+después y no espera a que el tamer esté libre **(comprobado)**.
 
 | Nivel actual | Umbral del contador | Función que elige el destino |
 |---|---|---|
@@ -49,7 +50,8 @@ comprobación.
 ### Bebé → entrenamiento
 
 El destino es fijo: cada uno de los cuatro bebés tiene una única forma siguiente, escrita en el propio código, sin
-mirar la crianza (`getFreshEvolutionTarget`) **(comprobado)**.
+mirar la crianza (`getFreshEvolutionTarget`) **(comprobado)**. La función pone además el contador a 0 cada vez
+que se la llama, aunque la forma no sea uno de los cuatro bebés **(comprobado)**; ver rarezas.
 
 ### Puntuación de un candidato
 
@@ -96,7 +98,8 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
   - Con un 50 % de probabilidad, una forma de entrenamiento que despierta en la pantalla 1 evoluciona al Digimon 32
     (Kunemon) **(comprobado)**. Que la pantalla 1 sea la de la cama de ese personaje es **(suposición)**.
 - **Tras elogiar o regañar** (modo 3, desde `partnerTickPraiseScold`), y también cuando un campeón llega justo a las
-  360 horas:
+  360 horas (`tickConditions`, sin aviso de regaño, así que el caso de Nanimon no aplica); en ese caso el resultado
+  sustituye al de la elección normal de esa misma comprobación, ver rarezas **(comprobado)**:
   - Dos campeones concretos con el contador exactamente en 200 horas: 30 % de evolucionar a otra forma concreta
     **(comprobado)**.
   - Cualquier campeón con 240 horas o más: 50 % de evolucionar al Digimon 28 (Vademon) **(comprobado)**.
@@ -106,7 +109,8 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
   Digimon 39 (Sukamon). Con la barra en **16**, el partner evoluciona a Sukamon; antes se guardan sus stats y su forma
   anterior, y la barra vuelve a 0 (`tickConditions`) **(comprobado)**. Un evento de script puede devolverlo a la
   forma guardada (`callDigimonRoutine`, rutina 2) **(comprobado)**; qué evento del juego lo hace es
-  **(suposición)**.
+  **(suposición)**. La rutina 10 hace evolucionar al partner a la forma que el script deja en `PSTAT_254`
+  **(comprobado)**.
 
 ### Objetos de evolución
 
@@ -117,6 +121,10 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
 - Tres objetos especiales llevan a tres formas fijas sin comprobar el nivel.
 - Usar un objeto de evolución marca `HAS_USED_EVOITEM`. Con esa marca, la evolución **no aplica ganancias de stats ni
   el bonus de vida**. Ver rarezas.
+- Antes, el partner puede rechazar el objeto (`partnerWillRefuseItem` en `partner_impl.c`): acepta un objeto de
+  evolución cuyo destino está 1 o 3 niveles por encima o 2 por debajo, una regla distinta de la de `handleEvoItems`
+  **(comprobado)**; qué casos de juego cubre es **(suposición)**. Esa regla es del sistema de objetos, no de la
+  evolución.
 
 ### Ganancias de stats al evolucionar
 
@@ -131,6 +139,16 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
   el Digimon 6 está en esa lista no está claro **(suposición: un caso de diseño o un error)**.
 - **Topes:** HP y MP a 9999; ataque, defensa, velocidad e inteligencia a 999 (`EVL_clampBaseStats`)
   **(comprobado)**.
+  - En `dwe`, los topes son los del partner (`care.limits` de `care.yaml`): la evolución da el cambio de cada stat
+    sin topar y el partner lo suma con `addStatGains`, que además deja **cada ganancia en 999 como mucho**
+    (desviación aprobada, 2026-10-20: en el original solo la primera ganancia de cada sesión de entrenamiento tiene
+    ese tope, y la evolución solo para en los topes de arriba).
+  - Al salir de Sukamon, los stats reconstruidos desde la copia se restauran sin pasar por `addStatGains`, así que
+    no tienen el tope de 999 por ganancia, pero sí el tope de cada stat (9999 HP y MP, 999 el resto), como hace el
+    original con `EVL_clampBaseStats` (decidido por el responsable de diseño, 2026-10-20). Con una copia y unos stats
+    altos la reconstrucción da más del tope (9999 y 9999 dan 12499) y se queda en 9999.
+  - La copia de Sukamon es del partner: sus stats en `virusBackup` del estado del partner (`sukaBackup*`) y la forma
+    en la variable de script `PSTAT_SUKAMON_BACKUP_DIGIMON` (`PSTAT_5`), como en el original.
 - **Además, siempre:** el peso pasa al peso por defecto de la forma nueva (`RAISE_DATA`), y los errores de cuidado y
   las batallas vuelven a 0 **(comprobado)**.
 - **Definitivo:** al llegar a nivel 5 sin objeto, la vida restante sube **96 horas** **(comprobado)**.
@@ -143,7 +161,9 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
 `EVL_applyEvolution` **(comprobado)**:
 
 - La forma nueva aprende la técnica más débil (menor potencia distinta de 0) de su lista que cae en el bloque de su
-  primera especialidad. Cada especialidad ocupa un bloque de 9 técnicas en la tabla de técnicas.
+  primera especialidad. Cada especialidad ocupa un bloque de 9 técnicas en la tabla de técnicas. Las formas de
+  entrenamiento no tienen ninguna técnica en su bloque (su única técnica está fuera de todos): el código pasa la marca
+  de fin de lista a `learnMove` y no aprenden nada **(comprobado)**.
 - Las ranuras de técnicas equipadas se reinician: la primera queda con esa técnica (o con el ataque básico si la
   forma es bebé o de entrenamiento) y la cuarta con la última técnica de la lista que esté en un rango alto de
   índices. Que ese rango sea el de las técnicas exclusivas o de remate es **(suposición)**.
@@ -151,7 +171,9 @@ Todas en `handleSpecialEvolutions`, salvo la de la suciedad. Solo se aplican si 
 ### Renacer
 
 Al morir, `reincarnatePartner` guarda los stats del partner muerto (para la herencia), elige el bebé según el huevo
-escogido (`REINCARNATE_BABY_TYPE`), pone las vidas a 3 y marca el bebé como criado **(comprobado)**. La herencia de
+escogido (`REINCARNATE_BABY_TYPE`), pone las vidas a 3 y marca el bebé como criado **(comprobado)**. El huevo sale
+al azar entre los cuatro (`rand() % 4` en `dooa.c`), y el bebé queda con el ataque básico en la primera ranura y las
+demás vacías **(comprobado)**. La herencia de
 stats y el resto del ciclo de vida están en la [ficha de cuidado](care.md).
 
 ## Datos
@@ -161,9 +183,9 @@ Tablas del ejecutable principal. `dwx` las extraerá a YAML desde el disco del u
 | Tabla | Entrada | Entradas | Campos |
 |---|---|---|---|
 | `EVOLUTION_REQS` | 28 bytes | 63 | Forma de origen para el bonus; mínimos de HP, MP, ataque, defensa, velocidad e inteligencia (en novato, 1 marca un stat favorecido); errores de cuidado; peso; disciplina; felicidad; batallas; técnicas; `flags` (bit 0: batallas como máximo; bit 4: errores como máximo); relleno. −1 significa "sin requisito". Indexada por la forma destino. |
-| `EVOLUTION_PATHS` | 11 bytes | 62 | Hasta 5 formas de origen y hasta 6 de destino (−1 vacío). Indexada por forma − 1. También la usa la carta de evolución del menú. |
+| `EVOLUTION_PATHS` | 11 bytes | 62 | Hasta 5 formas de origen y hasta 6 de destino (−1 vacío). Indexada por forma − 1. También la usa la carta de evolución del menú. La fila de un definitivo (forma 59) tiene un −2 y un 0 en los destinos; como los definitivos no evolucionan, la elección nunca la lee **(comprobado)**. |
 | `EVOLUTION_STATS_GAINS` | 14 bytes | 66 | Valores de referencia de HP, MP, ataque, defensa, velocidad e inteligencia, y la forma real que se carga. Indexada por la forma destino. |
-| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Forma destino de cada objeto de evolución, indexada por objeto − primer objeto de evolución. |
+| `EVOLUTION_ITEM_TARGET` | 1 byte | 44 | Forma destino de cada objeto de evolución, indexada por objeto − primer objeto de evolución. `dwx` aún no la extrae: el esquema de `data/evolution` le reserva la lista opcional `item_targets`. |
 | `DIGIMON_DATA` | 52 bytes | 180 | Parámetros de cada Digimon: nombre (no en la versión europea), huesos, radio, altura, tipo, nivel, tres especialidades, objeto que suelta y su probabilidad, 16 técnicas posibles. |
 | `RAISE_DATA` | — | — | Datos de crianza por Digimon; aquí solo se usa el peso por defecto. Ver la [ficha de cuidado](care.md). |
 | `REINCARNATE_BABY_TYPE` | 2 bytes | 4 | El bebé que sale de cada huevo al renacer. |
@@ -182,7 +204,13 @@ Tamaños de entrada calculados a partir de los `struct` de `include/dw/evl.h` y 
   media del siguiente **(comprobado)**. Si un destino no pidiera ningún stat, la media dividiría entre 0
   **(suposición: no sabemos si la tabla tiene algún caso así)**.
 - **Bebé sin destino.** `getFreshEvolutionTarget` devuelve un valor sin inicializar si la forma no es uno de los
-  cuatro bebés; el propio decomp lo señala **(comprobado)**.
+  cuatro bebés; el propio decomp lo señala **(comprobado)**. Aun así pone el contador a 0, así que un bebé sin
+  destino vuelve a empezar su cuenta **(comprobado)**. En `dwe` se mantiene (`unlisted_baby_restarts_timer: true`): decidido
+  por el responsable de diseño (2026-10-20): fiel al original.
+- **Las 360 horas pisan la elección normal.** Cuando un campeón llega justo a 360 horas, `tickConditions` llama a
+  las especiales del modo 3 después de la elección normal y guarda su resultado encima: si ninguna especial sale,
+  tampoco evoluciona aunque la elección normal hubiera encontrado destino **(comprobado)**. En `dwe` se mantiene
+  (`timer_special_overrides_normal: true`): decidido por el responsable de diseño (2026-10-20): fiel al original.
 - **Empate de stats en novato.** Gana el último stat empatado, no el primero **(comprobado)**.
 - **Regaño reforzado.** En `handlePraiseScold`, el regaño justo después de un rechazo de comida o de una caca
   en el suelo no inicializa el cambio de felicidad **(comprobado)**; el valor que acaba sumando es
@@ -197,8 +225,8 @@ Tamaños de entrada calculados a partir de los `struct` de `include/dw/evl.h` y 
 | Evoluciones especiales | `src/main/evolution.c`: `handleSpecialEvolutions`; llamadas desde `src/main/partner.c`: `partnerTickSleep`, `partnerTickPraiseScold` |
 | Aviso de Nanimon | `src/main/partner_impl.c`: `handlePraiseScold` |
 | Caca y barra de virus | `src/main/partner_impl.c`: `createPoopPile` |
-| Vuelta de Sukamon | `src/main/partner.c`: `callDigimonRoutine` |
-| Objetos de evolución | `src/main/item.c`: `handleEvoItems` |
+| Vuelta de Sukamon, evolución por script | `src/main/partner.c`: `callDigimonRoutine` (rutinas 2 y 10) |
+| Objetos de evolución | `src/main/item.c`: `handleEvoItems`; rechazo en `src/main/partner_impl.c`: `partnerWillRefuseItem` |
 | Aplicar la evolución (stats, técnicas, vida) | `src/evl/evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats`, `EVL_clampBaseStats` |
 | Contador por horas | `src/main/clock.c`; `src/main/partner_impl.c`: `skipHours`, `handleSleeping` |
 | Renacer | `src/main/evolution.c`: `reincarnatePartner`; `src/dooa/dooa.c` |

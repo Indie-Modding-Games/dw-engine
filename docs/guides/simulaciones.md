@@ -37,6 +37,7 @@ hilos: el informe de una semilla es el mismo en cualquier máquina, así que dos
 | Escenario | Qué mide |
 |---|---|
 | `clock` | Juega el reloj `--days` días a `--speed` en fotogramas de duración desigual, como un bucle de juego, y comprueba que cruza los mismos minutos, horas y días que avanzar esos fotogramas de golpe (`mismatch` es 0). Es lo que necesitan las reglas que van cada hora o cada día: el avance rápido da lo mismo que jugar |
+| `raisings` | Cría un partner desde `--param from=<forma>` (por defecto el primer bebé del renacer) durante `--days` días con cuidados al azar en cada nivel (`--param max_stat=<n>`, 300 por defecto, es lo más que un nivel suma a cada stat; HP y MP, por 10), a través de las reglas de [evolución](../../game/evolution/README.md): `final_level`, `evolutions` y una métrica por forma a la que puede llegar, 1 en la que acaba. No es un modelo de cómo cría un jugador ni prueba las especiales de dormir o regañar: muestra a qué formas llegan las reglas y las tablas con cuidados parejos, y cómo lo mueve un valor ajustado. Necesita las tablas extraídas (`--content`) |
 | `ruleset-diff` | Lista cada valor en que el ruleset (con sus `--set`) difiere de `--param against=<id>` (por defecto `original`) |
 | `care` | Cría un partner `--days` días con un cuidador de guion y da la vida del primer partner (`lifespan_days`), las muertes, los errores de cuidado, las enfermedades, el peso y los stats del final (`final_*`) |
 

@@ -39,3 +39,17 @@ leen aquí. `ItemEffectTable` (`item_effect_table.hpp`) es `data/item_effects`: 
 su línea y columna; lo usan los lectores de documentos del motor.
 
 Los tests de `map_content_tests.cpp` leen todos los mapas del contenido extraído si `DWE_CONTENT` apunta a él.
+
+## Técnicas y evolución
+
+Junto a `DigimonTable` y `RaiseTable`, dos tablas más que `dwx` extrae del disco del usuario al paquete `base`, con el
+mismo lector estricto (cada fila con exactamente sus claves, cada id una sola vez); sus esquemas están en
+`content/schemas` y las lee [`game/evolution`](../../game/evolution/README.md):
+
+- `MoveTable` (`<dwe/assets/move_table.hpp>`, `data/moves`): cada técnica con su índice, potencia, coste y demás campos.
+- `EvolutionTable` (`<dwe/assets/evolution_table.hpp>`, `data/evolution`): requisitos, filas de stats de referencia,
+  cartas de evolución y, si están, los destinos de los objetos de evolución (`item_targets`, que `dwx` aún no extrae).
+
+Cada una tiene `parse…Table(texto)` y `load…Table(vfs, id)`. Las referencias a otras filas (`TableReference`,
+`<dwe/assets/table_reference.hpp>`) quedan como texto: un id, nada, o un número crudo que el extractor no pudo
+resolver; las resuelve quien las usa.

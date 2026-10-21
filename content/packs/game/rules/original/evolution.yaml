@@ -1,0 +1,161 @@
+# Evolución del partner (docs/reference/evolution.md). Las horas son las del contador de evolución (evoTimer), que
+# sube una por hora de juego. Las formas son ids de la tabla de Digimon (data/digimon); los objetos, de data/items.
+# Las tablas de requisitos, caminos y ganancias son las que nombra el manifiesto (tables: evolution).
+
+# Estrategias (docs/architecture/rulesets.md): cómo se elige el destino y cómo se puntúa un candidato.
+selection: original
+scoring: original
+
+# partner_impl.c: tickConditions: horas del contador a partir de las que se mira la evolución, por nivel. El nivel 5
+# (definitivo) no evoluciona de forma natural.
+check_hours:
+  baby: 6
+  in_training: 24
+  rookie: 72
+  champion: 144
+
+# evolution.c: getFreshEvolutionTarget: el destino de cada bebé está escrito en el código, sin mirar la crianza.
+baby_targets:
+  bota: koro
+  puni: tuno
+  poyo: toko
+  yura: tane
+
+# evolution.c: calculateRequirementScore.
+requirements:
+  # Un destino aprueba con 3 puntos o más (de 4, más el de la preferencia por lo nuevo).
+  pass_points: 3
+  # El peso puntúa si está a esta distancia o menos del pedido.
+  weight_margin: 5
+  # HP y MP se comparan divididos entre 10, aquí y en la media de getRookieEvolutionTarget.
+  hp_mp_divisor: 10
+
+# evolution.c: getRookieEvolutionTarget: un novato sin candidato con el contador en 96 horas o más pasa a Numemon.
+fallback:
+  rookie_hours: 96
+  rookie_target: nume
+
+# evolution.c: handleSpecialEvolutions. Una sola tirada de randomLimit(100) por llamada, compartida por todas las
+# reglas; se miran en orden y gana la última que se cumple. `require` compara con `equals` o `at_least`.
+specials:
+  roll_limit: 100
+  # partner.c: partnerTickSleep: al despertar (modo 2).
+  wake_up:
+    - target: aird
+      roll_below: 30
+      from: [bird, sead]
+      require:
+        discipline: { equals: 100 }
+        happiness: { equals: 100 }
+        tiredness: { equals: 0 }
+    - target: igam
+      roll_below: 30
+      from: [vegi]
+      require:
+        battles: { at_least: 50 }
+        discipline: { equals: 100 }
+    - target: mono
+      roll_below: 30
+      from: [dori]
+      require:
+        defense: { at_least: 500 }
+        discipline: { equals: 100 }
+    # CURRENT_SCREEN == 1.
+    - target: kune
+      roll_below: 50
+      from: [koro, toko, tuno, tane]
+      require:
+        map: { equals: 1 }
+  # partner.c: partnerTickPraiseScold: tras elogiar o regañar (modo 3).
+  praise_scold:
+    - target: sira
+      roll_below: 30
+      from: [hoee, shel]
+      require:
+        level: { equals: 4 }
+        evolution_timer: { equals: 200 }
+    # partner_impl.c: handlePraiseScold: regañar a un novato con disciplina 0 y felicidad -100 activa NANIMON_TRIGGER.
+    - target: nani
+      scolded: true
+      require:
+        level: { equals: 3 }
+        discipline_before: { equals: 0 }
+        happiness_before: { equals: -100 }
+    - target: veda
+      roll_below: 50
+      require:
+        level: { equals: 4 }
+        evolution_timer: { at_least: 240 }
+  # partner_impl.c: tickConditions: un campeón con el contador justo en 360 horas prueba las de elogiar o regañar.
+  praise_scold_on_timer:
+    level: 4
+    hours: 360
+
+# partner_impl.c: tickConditions y createPoopPile: cada caca en el suelo suma 1 a la barra; con 16 el partner pasa a
+# Sukamon, que guarda sus stats y su forma anterior.
+virus:
+  bar_limit: 16
+  target: scum
+
+# item.c: handleEvoItems.
+items:
+  # Tres objetos llevan a una forma fija sin mirar el nivel.
+  fixed:
+    giga_hand: ggdr
+    noble_mane: panj
+    metalbanana: mtet
+  # Los de la tabla EVOLUTION_ITEM_TARGET solo sirven si el destino está justo un nivel por encima.
+  level_step: 1
+
+# evl.c: EVL_applyEvolution y EVL_scaleBaseStats. Los topes de EVL_clampBaseStats son los del partner (care.yaml,
+# limits): la evolución da el cambio sin topar y el partner lo suma con sus topes.
+stat_gains:
+  # Un stat que ya llega al de referencia suma una décima parte de él; si no, pasa a la media de los dos.
+  gain_divisor: 10
+  # En los casos de escala, cada stat se multiplica por el campo de inteligencia de la fila, en décimas.
+  scale_divisor: 10
+  # Destinos que escalan en vez de ganar: Devimon, Numemon, Sukamon y Nanimon (0x06, 0x0b, 0x27 y 0x35).
+  scaled_targets: [devi, nume, scum, nani]
+  # También escalan los destinos de nivel menor que este (bebé y entrenamiento).
+  scaled_below_level: 3
+  # Al llegar a definitivo sin objeto, la vida restante sube 96 horas.
+  ultimate_lifetime_hours: 96
+  # addTamerLevel(20, 1) al llegar a campeón y addTamerLevel(100, 1) a definitivo, con IS_SCRIPT_PAUSED.
+  champion_tamer_level_chance: 20
+  ultimate_tamer_level_chance: 100
+
+# evl.c: EVL_applyEvolution: la forma nueva aprende la técnica más débil de su primera especialidad.
+moves:
+  # Primera técnica del bloque de cada especialidad, de la 0 a la 6 (special[0] de la tabla de Digimon).
+  specialty_blocks: [0, 40, 8, 32, 16, 24, 49]
+  # Cada bloque ocupa 9 técnicas: de la primera a la primera + 8.
+  block_size: 9
+  # Por debajo de este nivel la primera ranura equipada es la primera de la lista (el ataque básico).
+  basic_slot_below_level: 3
+  # La cuarta ranura es la última técnica de la lista con índice desde 0x3a hasta antes de 0x71.
+  finisher_first: 58
+  finisher_end: 113
+
+# dooa.c: REINCARNATE_BABY_TYPE, con el huevo elegido al azar (rand() % 4); evolution.c: reincarnatePartner.
+rebirth:
+  babies: [bota, puni, poyo, yura]
+
+# Rarezas del original (docs/reference/evolution.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
+quirks:
+  # item.c: handleEvoItems pone HAS_USED_EVOITEM, que solo vuelve a 0 al arrancar el juego: las evoluciones
+  # naturales siguientes de la sesión se quedan sin ganancias de stats ni bonus de vida.
+  evolution_item_sticks: true
+  # evolution.c: getRookieEvolutionTarget y getChampionEvolutionTarget solo reinician la suma y la cuenta de stats
+  # cuando un candidato pasa a ser el mejor; si no, se arrastran a la media del siguiente.
+  selection_average_carries_over: true
+  # evolution.c: getFreshEvolutionTarget pone el contador a 0 también con un bebé que no está en su lista (y devuelve
+  # un valor sin inicializar, que aquí es "sin destino"). Decidido por el responsable de diseño (2026-10-20): fiel al
+  # original.
+  unlisted_baby_restarts_timer: true
+  # evolution.c: calculateRequirementScore: con stats empatados, el más alto es el último en el orden HP, MP, ataque,
+  # defensa, velocidad, inteligencia.
+  rookie_stat_tie_picks_last: true
+  # partner_impl.c: tickConditions: con el contador justo en 360 horas, el resultado de las especiales sustituye al
+  # de la evolución normal del campeón, también cuando no encuentra ninguna. Decidido por el responsable de diseño
+  # (2026-10-20): fiel al original.
+  timer_special_overrides_normal: true

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Evolution",
-  "description": "evolution.yaml: EVOLUTION_REQS, EVOLUTION_STATS_GAINS and EVOLUTION_PATHS of the executable (evl.h). Digimon references are ids of digimon.yaml.",
+  "description": "evolution.yaml: EVOLUTION_REQS, EVOLUTION_STATS_GAINS and EVOLUTION_PATHS of the executable (evl.h), and optionally EVOLUTION_ITEM_TARGET. Digimon references are ids of digimon.yaml.",
   "type": "object",
   "required": ["requirements", "stats_gains", "paths"],
   "additionalProperties": false,
@@ -65,6 +65,20 @@
           "index": { "type": "integer", "minimum": 0 },
           "from": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/reference" } },
           "to": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "$ref": "#/$defs/reference" } }
+        }
+      }
+    },
+    "item_targets": {
+      "description": "Optional, not extracted yet: EVOLUTION_ITEM_TARGET, the form each evolution item leads to (item.c: handleEvoItems). Items are ids of items.yaml.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "index", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "item": { "$ref": "#/$defs/reference" },
+          "index": { "type": "integer", "minimum": 0 },
+          "target": { "$ref": "#/$defs/reference" }
         }
       }
     }

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: evolution",
+  "description": "rules/<id>/evolution.yaml: when and into what the partner evolves (docs/reference/evolution.md, game/evolution). Hours are hours of the evolution counter; forms are ids of the digimon table, items ids of the items table.",
+  "type": "object",
+  "required": ["selection", "scoring", "check_hours", "baby_targets", "requirements", "fallback", "specials", "virus", "items", "stat_gains", "moves", "rebirth", "quirks"],
+  "additionalProperties": false,
+  "properties": {
+    "selection": { "description": "The strategy that picks the target among the candidates (game/evolution: original).", "$ref": "#/$defs/name" },
+    "scoring": { "description": "The strategy that scores a candidate against its requirements (game/evolution: original).", "$ref": "#/$defs/name" },
+    "check_hours": {
+      "description": "From how many hours of the counter the evolution is checked, by level.",
+      "type": "object",
+      "required": ["baby", "in_training", "rookie", "champion"],
+      "additionalProperties": false,
+      "properties": {
+        "baby": { "$ref": "#/$defs/hours" },
+        "in_training": { "$ref": "#/$defs/hours" },
+        "rookie": { "$ref": "#/$defs/hours" },
+        "champion": { "$ref": "#/$defs/hours" }
+      }
+    },
+    "baby_targets": {
+      "description": "The fixed in-training form of each baby.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/id" }
+    },
+    "requirements": {
+      "type": "object",
+      "required": ["pass_points", "weight_margin", "hp_mp_divisor"],
+      "additionalProperties": false,
+      "properties": {
+        "pass_points": { "description": "The points a candidate needs to pass.", "type": "integer", "minimum": 1 },
+        "weight_margin": { "description": "How far from the asked weight still scores.", "type": "integer", "minimum": 0 },
+        "hp_mp_divisor": { "description": "HP and MP are divided by this before comparing them.", "type": "integer", "minimum": 1 }
+      }
+    },
+    "fallback": {
+      "description": "Where a rookie with no candidate goes, and from how many hours.",
+      "type": "object",
+      "required": ["rookie_hours", "rookie_target"],
+      "additionalProperties": false,
+      "properties": {
+        "rookie_hours": { "$ref": "#/$defs/hours" },
+        "rookie_target": { "$ref": "#/$defs/id" }
+      }
+    },
+    "specials": {
+      "type": "object",
+      "required": ["roll_limit", "wake_up", "praise_scold", "praise_scold_on_timer"],
+      "additionalProperties": false,
+      "properties": {
+        "roll_limit": { "description": "The limit of the one roll each check shares among its rules.", "type": "integer", "minimum": 1 },
+        "wake_up": { "description": "Checked when the partner wakes up; the last rule that holds wins.", "type": "array", "items": { "$ref": "#/$defs/special" } },
+        "praise_scold": { "description": "Checked after praising or scolding; the last rule that holds wins.", "type": "array", "items": { "$ref": "#/$defs/special" } },
+        "praise_scold_on_timer": {
+          "description": "A partner of this level with the counter at exactly these hours also runs the praise and scold rules.",
+          "type": "object",
+          "required": ["level", "hours"],
+          "additionalProperties": false,
+          "properties": {
+            "level": { "$ref": "#/$defs/level" },
+            "hours": { "$ref": "#/$defs/hours" }
+          }
+        }
+      }
+    },
+    "virus": {
+      "type": "object",
+      "required": ["bar_limit", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "bar_limit": { "description": "With the virus bar at this, the partner turns into the target.", "type": "integer", "minimum": 1 },
+        "target": { "$ref": "#/$defs/id" }
+      }
+    },
+    "items": {
+      "type": "object",
+      "required": ["fixed", "level_step"],
+      "additionalProperties": false,
+      "properties": {
+        "fixed": {
+          "description": "Items that lead to a fixed form whatever the level.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/id" },
+          "additionalProperties": { "$ref": "#/$defs/id" }
+        },
+        "level_step": { "description": "An item of the item table works when its form is this many levels above the partner.", "type": "integer" }
+      }
+    },
+    "stat_gains": {
+      "type": "object",
+      "required": ["gain_divisor", "scale_divisor", "scaled_targets", "scaled_below_level", "ultimate_lifetime_hours", "champion_tamer_level_chance", "ultimate_tamer_level_chance"],
+      "additionalProperties": false,
+      "properties": {
+        "gain_divisor": { "description": "A stat that reaches the reference adds the reference divided by this.", "type": "integer", "minimum": 1 },
+        "scale_divisor": { "description": "The scale factor of the scaled targets is in units of 1 / this.", "type": "integer", "minimum": 1 },
+        "scaled_targets": { "description": "Targets whose stats are scaled instead of gained.", "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "scaled_below_level": { "description": "Targets below this level are scaled too.", "$ref": "#/$defs/level" },
+        "ultimate_lifetime_hours": { "description": "Hours of life added on reaching level 5 without an item.", "type": "integer", "minimum": 0 },
+        "champion_tamer_level_chance": { "description": "Percent chance of a tamer level on reaching level 4.", "$ref": "#/$defs/percent" },
+        "ultimate_tamer_level_chance": { "description": "Percent chance of a tamer level on reaching level 5.", "$ref": "#/$defs/percent" }
+      }
+    },
+    "moves": {
+      "type": "object",
+      "required": ["specialty_blocks", "block_size", "basic_slot_below_level", "finisher_first", "finisher_end"],
+      "additionalProperties": false,
+      "properties": {
+        "specialty_blocks": { "description": "The first move of each specialty's block, by specialty.", "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "block_size": { "description": "How many moves a block has.", "type": "integer", "minimum": 1 },
+        "basic_slot_below_level": { "description": "Below this level the first equipped slot is the first of the list.", "$ref": "#/$defs/level" },
+        "finisher_first": { "description": "The fourth equipped slot is the last move of the list from this index...", "type": "integer", "minimum": 0 },
+        "finisher_end": { "description": "...up to before this one.", "type": "integer", "minimum": 0 }
+      }
+    },
+    "rebirth": {
+      "type": "object",
+      "required": ["babies"],
+      "additionalProperties": false,
+      "properties": {
+        "babies": { "description": "The baby of each egg; the egg is picked at random.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "quirks": {
+      "description": "The original's oddities: true reproduces the original, false fixes it.",
+      "type": "object",
+      "required": ["evolution_item_sticks", "selection_average_carries_over", "unlisted_baby_restarts_timer", "rookie_stat_tie_picks_last", "timer_special_overrides_normal"],
+      "additionalProperties": false,
+      "properties": {
+        "evolution_item_sticks": { "description": "After an evolution item, every later evolution of the session has no stat gains and no life bonus.", "type": "boolean" },
+        "selection_average_carries_over": { "description": "The stat average of a passing candidate that does not become the best carries over to the next one.", "type": "boolean" },
+        "unlisted_baby_restarts_timer": { "description": "A baby with no fixed target has its counter set back to 0 at every check.", "type": "boolean" },
+        "rookie_stat_tie_picks_last": { "description": "With tied stats, the highest is the last one; false takes the first.", "type": "boolean" },
+        "timer_special_overrides_normal": { "description": "At the special counter hour, the special result replaces the normal one even when it finds nothing.", "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "name": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "id": { "description": "An id of a table of the packs.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "hours": { "type": "integer", "minimum": 0 },
+    "level": { "description": "1 baby, 2 in-training, 3 rookie, 4 champion, 5 ultimate.", "type": "integer", "minimum": 0, "maximum": 5 },
+    "percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "comparison": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "equals": { "type": "integer" },
+        "at_least": { "type": "integer" }
+      }
+    },
+    "special": {
+      "type": "object",
+      "required": ["target"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "$ref": "#/$defs/id" },
+        "roll_below": { "description": "The shared roll must be below this.", "type": "integer", "minimum": 0 },
+        "from": { "description": "The partner must be one of these forms.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } },
+        "scolded": { "description": "Only right after a scold.", "type": "boolean" },
+        "require": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": { "$ref": "#/$defs/comparison" },
+            "evolution_timer": { "$ref": "#/$defs/comparison" },
+            "discipline": { "$ref": "#/$defs/comparison" },
+            "happiness": { "$ref": "#/$defs/comparison" },
+            "tiredness": { "$ref": "#/$defs/comparison" },
+            "battles": { "$ref": "#/$defs/comparison" },
+            "defense": { "$ref": "#/$defs/comparison" },
+            "map": { "$ref": "#/$defs/comparison" },
+            "discipline_before": { "$ref": "#/$defs/comparison" },
+            "happiness_before": { "$ref": "#/$defs/comparison" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -14,6 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 #include <memory>
 #include <ostream>
@@ -84,6 +85,35 @@ TEST_CASE("the scenarios of dwe-sim register themselves") {
     const ScenarioRegistry& registry = builtInScenarios();
     CHECK(registry.find("clock") != nullptr);
     CHECK(registry.find("ruleset-diff") != nullptr);
+    CHECK(registry.find("raisings") != nullptr);
+}
+
+TEST_CASE("the raisings scenario needs the extracted tables and a known form") {
+    const auto empty = simulate(standInFiles(), builtInScenarios(), optionsFor("raisings"));
+    CHECK_FALSE(empty.has_value());
+}
+
+// Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
+TEST_CASE("the user's disc, extracted: the raisings scenario raises babies into later forms") {
+    const char* folder = std::getenv("DWE_CONTENT");
+    if (folder == nullptr || std::string_view{folder}.empty()) {
+        MESSAGE("DWE_CONTENT is not set: skipping the raisings on extracted content");
+        return;
+    }
+    const auto mounted = content::GameContent::mount(folder, {});
+    REQUIRE_MESSAGE(mounted.has_value(), errorOf(mounted));
+    SimOptions options = optionsFor("raisings");
+    options.runs = 40;
+    options.days = 30;
+    const auto report = simulate((*mounted)->files(), builtInScenarios(), options);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(reportHasRow(report->markdown, "| final_level | 40 |"));
+    CHECK(reportHasRow(report->markdown, "| evolutions | 40 |"));
+    CHECK(reportHasRow(report->markdown, "| agum | 40 |"));
+
+    options.parameters.insert_or_assign("from", "nobody");
+    const auto unknown = simulate((*mounted)->files(), builtInScenarios(), options);
+    CHECK(errorOf(unknown).contains("unknown form 'nobody'"));
 }
 
 TEST_CASE("the runs are the same on any number of threads, each with its own seed") {
@@ -246,7 +276,7 @@ TEST_CASE("--set changes the ruleset the scenarios see, without editing its file
 TEST_CASE("an unknown scenario names the known ones") {
     const auto report = simulate(standInFiles(), builtInScenarios(), optionsFor("battles"));
     REQUIRE_FALSE(report.has_value());
-    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: care, clock, ruleset-diff"));
+    CHECK(errorOf(report).contains("unknown scenario 'battles'; known: care, clock, raisings, ruleset-diff"));
 }
 
 TEST_CASE("the care scenario raises a partner and reports how the raisings went") {

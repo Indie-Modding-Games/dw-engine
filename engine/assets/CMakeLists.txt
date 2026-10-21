@@ -31,6 +31,9 @@ dwe_add_module(assets
         src/indexed_image.cpp
         src/map_images.cpp
         src/character_model.cpp
+        src/game_table_document.cpp
+        src/move_table.cpp
+        src/evolution_table.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf zstd::libzstd Opus::opus KTX::ktx
     TEST_LIBS lodepng Opus::opus KTX::ktx)

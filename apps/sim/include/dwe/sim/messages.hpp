@@ -28,6 +28,8 @@ inline constexpr std::string_view RunFailed = "run {} (seed {}): {}";
 inline constexpr std::string_view NoScenarioContext = "a headless session needs the scenario's files and ruleset";
 inline constexpr std::string_view ScenarioLine = "{}: {}\n";
 inline constexpr std::string_view NameSeparator = ", ";
+inline constexpr std::string_view UnknownFormParameter = "--param {}: unknown form '{}'";
+inline constexpr std::string_view BadScenarioCount = "--param {} must be a whole number above zero, not '{}'";
 
 // The scenarios' parameters and set-up.
 inline constexpr std::string_view UnknownParameter = "unknown parameter '{}'; known: {}";

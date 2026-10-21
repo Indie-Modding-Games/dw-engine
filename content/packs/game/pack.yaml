@@ -38,3 +38,5 @@ schemas:
     - rules/*/new_game
   ruleset_tamer:
     - rules/*/tamer
+  ruleset_evolution:
+    - rules/*/evolution
