@@ -20,12 +20,12 @@ namespace {
 constexpr std::string_view TwoMoves = R"(moves:
 - id: "spit_fire"
   index: 6
-  name: "Spit Fire"
-  distance: 160000
-  power: 66
-  mp_cost: 10
-  iframes: 1
-  range: 2
+  name: "Test spit_fire"
+  distance: 150000
+  power: 60
+  mp_cost: 12
+  iframes: 2
+  range: 1
   special: 0
   status: 0
   accuracy: 80
@@ -36,7 +36,7 @@ constexpr std::string_view TwoMoves = R"(moves:
   learn_chances: [25, 16, 11]
 - id: "giga_freeze"
   index: 60
-  name: "Giga Freeze"
+  name: "Test giga_freeze"
   distance: 0
   power: 400
   mp_cost: 0
@@ -59,8 +59,8 @@ TEST_CASE("the move table reads the battle's fields: flags and the learn chances
     REQUIRE(table->entries().size() == 2);
     const dwe::assets::MoveEntry* spit = table->find("spit_fire");
     REQUIRE(spit != nullptr);
-    CHECK(spit->distance == 160000);
-    CHECK(spit->mpCost == 10);
+    CHECK(spit->distance == 150000);
+    CHECK(spit->mpCost == 12);
     CHECK(spit->flags == 3);
     CHECK(spit->unknown0e == 0);
     CHECK(spit->learnChances == dwe::assets::LearnChances{25, 16, 11});

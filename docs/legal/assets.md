@@ -44,7 +44,9 @@ Lo que hay que tener claro:
 - **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) se pueden usar en rulesets,
   tests, fixtures y sustitutos; el nombre de la franquicia y sus logos no (nunca se pudieron), ni las tablas de datos
   (stats, efectos, textos), y los datos que acompañan a un id versionado son inventados, nunca copiados del disco ni
-  del decomp (decisión del usuario, 2026-10-21).
+  del decomp (decisión del usuario, 2026-10-21). Un id real nunca va en su número del original: donde un test necesita
+  una entrada en ese número, usa un id inventado. Las categorías y los comportamientos (categoría de orden, color del
+  objeto, tipo de manejador, banderas de uso en combate, si se puede tirar) pueden coincidir con el original.
 - **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
   misma regla.
 

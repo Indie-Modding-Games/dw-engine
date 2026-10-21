@@ -44,8 +44,8 @@ notes:
 - digimon: "agum"
   text: "orange"
 names:
-- "Agumon"
-- "Gabumon"
+- "Test agum"
+- "Test gabu"
 )";
 
 TableContribution contribution(std::string_view packId, Layer layer, std::string_view yaml) {
@@ -132,7 +132,7 @@ TEST_CASE("a pack's new entries go at the end with the next free indices") {
 
 TEST_CASE("a pack that has the whole table with the same entries gives that pack's table") {
     // What an editor that writes the whole table back leaves: every entry, a section changed.
-    const std::string whole = std::string{BaseTable}.replace(std::string{BaseTable}.find("Gabumon"), 7, "Gabu");
+    const std::string whole = std::string{BaseTable}.replace(std::string{BaseTable}.find("Test gabu"), 9, "Gabu");
     const YamlNode table =
         composed({contribution("base", Layer::Base, BaseTable), contribution("editor", Layer::Mods, whole)});
     CHECK(table == parsed(whole));
@@ -228,8 +228,8 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
   drop_chance: 0
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 )";
-    memory.addFile("packs/base/data/digimon.yaml",
-                   "digimon:\n- id: agum\n  index: 2\n" + std::vformat(row, std::make_format_args("Agumon", "AGUM")));
+    memory.addFile("packs/base/data/digimon.yaml", "digimon:\n- id: agum\n  index: 2\n" +
+                                                       std::vformat(row, std::make_format_args("Test agum", "AGUM")));
     memory.addFile("packs/my_mod/data/digimon.yaml",
                    "digimon:\n- id: my_mod:pebble\n" + std::vformat(row, std::make_format_args("Pebble", "PEBB")));
     const VirtualFileSystem vfs = mounted(memory, {"packs/base", "packs/my_mod"});

@@ -233,10 +233,10 @@ TEST_CASE("a pack's full copy of data/maps, as an editor saves it, composes with
     // The base's entries restated with their indices, the doors section with one door moved, and the pack's new map
     // without an index.
     std::string copy{dwe::assets::testing::FixtureTable};
-    const std::string door = "{model_id: 9, position: {x: 1925, y: 0, z: -915}, rotation: 1024}";
+    const std::string door = "{model_id: 4, position: {x: 1800, y: 0, z: -900}, rotation: 1024}";
     const std::size_t at = copy.find(door);
     REQUIRE(at != std::string::npos);
-    copy.replace(at, door.size(), "{model_id: 9, position: {x: 2000, y: 0, z: -915}, rotation: 1024}");
+    copy.replace(at, door.size(), "{model_id: 4, position: {x: 2000, y: 0, z: -900}, rotation: 1024}");
     const std::size_t doors = copy.find("doors:\n-");
     REQUIRE(doors != std::string::npos);
     copy.insert(doors, CaveRow);

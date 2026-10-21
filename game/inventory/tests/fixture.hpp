@@ -90,7 +90,7 @@ inline constexpr std::array<FixtureItem, 19> FixtureItems{{
     {.id = Bun, .index = 38, .value = 30, .sortingValue = 1, .itemColor = 0, .droppable = 1},
     {.id = Steak, .index = 39, .value = 120, .sortingValue = 1, .itemColor = 0, .droppable = 1},
     {.id = Crest, .index = 71, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
-    {.id = BigCrest, .index = 87, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
+    {.id = BigCrest, .index = 87, .value = 6000, .sortingValue = 4, .itemColor = 0, .droppable = 1},
     {.id = Rod, .index = 116, .value = 100, .sortingValue = 5, .itemColor = 0, .droppable = 0},
     {.id = GateKey, .index = 123, .value = 100, .sortingValue = 5, .itemColor = 255, .droppable = 0},
     {.id = Hidden, .index = 50, .value = 10, .sortingValue = 1, .itemColor = 0, .droppable = 1},

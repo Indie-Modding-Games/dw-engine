@@ -84,18 +84,18 @@ TEST_CASE("a map document keeps every field of the data as it is") {
     const auto map = dwe::assets::parseMapDocument(fixtureMap(FixtureObjects, FixtureNpc));
     REQUIRE_MESSAGE(map.has_value(), errorOf(map));
 
-    CHECK(map->camera.viewpoint == glm::ivec3{0, -4301, -5973});
-    CHECK(map->camera.reference == glm::ivec3{0, 0, -256});
-    CHECK(map->camera.projection == 1813);
-    CHECK(map->lights[0].direction == glm::ivec3{0, 170, 83});
-    CHECK(map->lights[0].color.g == 178);
+    CHECK(map->camera.viewpoint == glm::ivec3{0, -4200, -5900});
+    CHECK(map->camera.reference == glm::ivec3{0, 0, -250});
+    CHECK(map->camera.projection == 1800);
+    CHECK(map->lights[0].direction == glm::ivec3{0, 160, 90});
+    CHECK(map->lights[0].color.g == 170);
     CHECK(map->regions.b[3] == 4);
 
     CHECK(map->tiles.width == 3);
     CHECK(map->tiles.height == 2);
     CHECK(map->tiles.cells == std::vector<std::int32_t>{0, 1, -1, 2, 3, 4});
     REQUIRE(map->images.size() == 1);
-    CHECK(map->images[0].size == 66080);
+    CHECK(map->images[0].size == 66000);
 
     if (!map->objects) {
         FAIL("the map has no objects");
@@ -162,10 +162,10 @@ TEST_CASE("a broken map document says where") {
     }
     SUBCASE("a number that is not one") {
         std::string text = fixtureMap();
-        text.replace(text.find("1813"), 4, "18x3");
+        text.replace(text.find("1800"), 4, "18x0");
         const auto map = dwe::assets::parseMapDocument(text);
         REQUIRE_FALSE(map.has_value());
-        CHECK(map.error().message.find("'18x3'") != std::string::npos);
+        CHECK(map.error().message.find("'18x0'") != std::string::npos);
     }
 }
 

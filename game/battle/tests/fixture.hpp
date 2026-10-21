@@ -102,7 +102,7 @@ inline dwe::assets::MoveTable testMoveTable() {
         testMove("wide_blast", 6, Area, 35, 20, Near, 4),
         testMove("aqua_magic", 22, Self, 0, 10, 0, 0, 0, 0, 0),
         testMove("full_potential", 31, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("mass_morph", 35, Self, 0, 10, 0, 0, 0, 0, 0),
+        testMove("mass_morph", 35, Self, 0, 11, 0, 0, 0, 0, 0),
         testMove("muscle_charge", 40, Self, 0, 10, 0, 0, 0, 0, 0),
         testMove("war_cry", 43, Self, 0, 10, 0, 0, 0, 0, 0),
         // The ruleset names these moves by their ids, the numbered ones included (dynamite_kick_48,
@@ -114,7 +114,7 @@ inline dwe::assets::MoveTable testMoveTable() {
         testMove("horizontal_kick", 50, Melee, 45, 12, 0, 1),
         testMove("horizontal_kick_57", 51, Melee, 45, 12, 0, 1),
         testMove("big_finish", 60, Melee, 200, 0, 0, 1),
-        testMove("move_121", 119, Ranged, 10, 0, Near, 0),
+        testMove("move_121", 119, Ranged, 15, 0, Near, 0),
     };
     moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
     // The other numbers of the finisher range the ruleset names, which the catalog checks are moves of the original.
