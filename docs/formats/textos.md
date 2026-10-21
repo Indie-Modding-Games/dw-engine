@@ -165,14 +165,14 @@ con punto no entran en la VFS); lo lee `dwx validate` de la carpeta del paquete.
 ```yaml
 sources:
   main.map_names.0003: 0a1b...   # SHA-1 del texto inglés del que se tradujo
-kept_english: [main.digimon_names.0001, main.move_names.0012]
+kept_english: [main.digimon_names.0001, main.digimon_names.0002]
 kept_original: [main.tournament_grades.0000]
 ```
 
 - `sources`: clave completa de cada cadena traducida → SHA-1, en 40 cifras hexadecimales en minúscula, de su texto
   inglés tal como lo escribe `dwx extract`: el valor de la tabla en UTF-8, con sus etiquetas (`{color:1}`, `{br}`),
   sin comillas de YAML.
-- `kept_english`: las claves que se quedan en inglés y no están en la traducción (nombres de Digimon y de técnicas).
+- `kept_english`: las claves que se quedan en inglés y no están en la traducción (nombres de Digimon).
 - `kept_original`: opcional; las claves que no son palabras inglesas y se quedan tal cual (huecos, nombres de quien
   habla, letras de rango, restos en japonés, HP/MP/Bits). Separarlas de `kept_english` deja honesto el recuento de lo
   que queda en inglés.

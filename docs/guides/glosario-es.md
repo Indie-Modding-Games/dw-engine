@@ -18,14 +18,16 @@ Decisión del responsable de diseño, 2026-10-20:
    motor; los huecos del original se quedan con a–z.
 7. Cuando el inglés del original está roto (el aviso de batalla de una orden nueva), se traduce la intención, no el literal, y se conservan
    todos los códigos de control.
+8. Los nombres de las técnicas se traducen (2026-10-21), con palabras propias que describen el ataque, no con los
+   nombres de ninguna serie; una errata del original se traduce por su intención.
 
 ## Reglas generales
 
 - **Español latinoamericano neutro.** Sin voseo ni regionalismos marcados; ante la duda, la palabra que se entiende en
   toda la región («carnada», «banana», «refrigerador»).
 - **Se tutea al jugador**, como hace el inglés («¿Quieres guardar?»).
-- **Los nombres de los Digimon y de las técnicas se quedan en inglés**, tal como los escribe el original, erratas
-  incluidas (`Centarumon`, `Kokatorimon`). No se escriben en el paquete: se ven en inglés porque la clave falta.
+- **Los nombres de los Digimon se quedan en inglés**, tal como los escribe el original, erratas incluidas
+  (`Centarumon`, `Kokatorimon`). No se escriben en el paquete: se ven en inglés porque la clave falta.
   Cuando aparecen dentro de otro texto se copian letra por letra («¡Digievoluciona a Greymon!»).
 - **Se dejan como el original:** las siglas `HP` y `MP`, la moneda `Bits`, las letras de los grados del torneo, el
   nombre propio `Overdell` y las marcas `GOOD` y `BAD` del curling, que están dibujadas en la pista.

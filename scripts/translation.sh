@@ -20,7 +20,7 @@ slot_digits=4
 # kept_original: what is not English words and stays as extracted: whole blocks, single ids (source.block.slot), every
 # blank string and every string that is, but for its surrounding spaces, a name of kept_name_block (the speaker lines
 # of the curling hints).
-kept_english_blocks=(main.digimon_names main.move_names)
+kept_english_blocks=(main.digimon_names)
 kept_original_blocks=(
     main.tournament_grades
     main.script_menu_hiragana_ka_row main.script_menu_lowercase_rows main.singles

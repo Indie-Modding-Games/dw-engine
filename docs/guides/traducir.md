@@ -34,8 +34,8 @@ Una clave que falta se muestra en inglés.
 No se escriben, porque serían copias del original. El `.sources.lock` los lista, para que la cobertura distinga «se
 queda así a propósito» de «falta traducir»:
 
-- `kept_english`: los nombres de los Digimon (`main.digimon_names`) y de las técnicas (`main.move_names`), que se
-  quedan en inglés.
+- `kept_english`: los nombres de los Digimon (`main.digimon_names`), que se quedan en inglés. Los nombres de las
+  técnicas (`main.move_names`) sí se traducen (decisión del responsable de diseño, 2026-10-21).
 - `kept_original`: lo que no son palabras inglesas y se queda tal cual: las cadenas en blanco, las que, sin los
   espacios de los lados, son el nombre de un Digimon (la línea de quien habla en el curling), las letras sueltas, los
   restos en japonés que el US no muestra, las siglas `HP`, `MP` y `Bits` y el nombre propio `Overdell`.
@@ -76,6 +76,7 @@ capturas que caben:
 - las descripciones de objeto (una línea);
 - el texto de fin de batalla (dos líneas de unos 156 px: «soltó», «se lastimó», «¡aprendida!» y las órdenes);
 - los gritos y nombres de las órdenes de batalla;
+- los nombres de técnica en el menú de órdenes de batalla y en el cuadro de fin de batalla;
 - los nombres de mapa del transporte de Birdramon y los temas de la máquina de música (25 caracteres en el original);
 - las páginas de ayuda del curling y los cuadros de la pesca (líneas de unos 244 px);
 - los nombres y descripciones de las medallas, los títulos del domador y los menús de la tarjeta de memoria.
