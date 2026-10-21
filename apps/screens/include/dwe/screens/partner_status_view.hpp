@@ -1,0 +1,62 @@
+#pragma once
+
+#include <dwe/screens/name_keys.hpp>
+#include <dwe/screens/screen_settings.hpp>
+#include <dwe/session/partner_view.hpp>
+
+#include <array>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace dwe::screens {
+
+// The settings of the partner's status page (ui/partner_menu/document), which refreshes on PartnerRevisionSetting.
+inline constexpr std::string_view PartnerRevisionSetting = "partner.revision";
+inline constexpr std::string_view PartnerNameSetting = "partner.name";
+inline constexpr std::string_view PartnerAgeSetting = "partner.age";
+inline constexpr std::string_view PartnerWeightSetting = "partner.weight";
+inline constexpr std::string_view PartnerLivesSetting = "partner.lives";
+inline constexpr std::string_view PartnerHpSetting = "partner.hp";
+inline constexpr std::string_view PartnerMaxHpSetting = "partner.max_hp";
+inline constexpr std::string_view PartnerMpSetting = "partner.mp";
+inline constexpr std::string_view PartnerMaxMpSetting = "partner.max_mp";
+inline constexpr std::string_view PartnerStatList = "partner.stat";
+inline constexpr std::string_view PartnerMeterList = "partner.meter";
+inline constexpr std::string_view PartnerConditionList = "partner.condition";
+
+// A bar of the status page: its label, value and range.
+struct MeterView {
+    std::string labelKey;
+    std::int32_t value = 0;
+    std::int32_t min = 0;
+    std::int32_t max = 0;
+
+    friend bool operator==(const MeterView&, const MeterView&) = default;
+};
+
+// What the status page shows, in the original's order (game_menu.c: renderDigimonStatsView): the name, age and
+// weight; HP and MP, now and at most; offense, defense, speed and brain; the lives; the conditions; and the bars of
+// happiness, discipline and the virus.
+struct PartnerStatusView {
+    std::string nameKey;
+    std::int32_t ageDays = 0;
+    std::int32_t weight = 0;
+    std::int32_t lives = 0;
+    std::int32_t hp = 0;
+    std::int32_t maxHp = 0;
+    std::int32_t mp = 0;
+    std::int32_t maxMp = 0;
+    // Offense, defense, speed and brain, with the original's labels (main.stat_labels).
+    std::array<MeterView, 4> stats;
+    std::vector<MeterView> meters;
+    // The keys of the conditions it has (partner_menu.condition.<name>).
+    std::vector<std::string> conditionKeys;
+};
+
+[[nodiscard]] PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const NameKeys& names);
+
+[[nodiscard]] ScreenSettings settingsOf(const PartnerStatusView& view);
+
+} // namespace dwe::screens
