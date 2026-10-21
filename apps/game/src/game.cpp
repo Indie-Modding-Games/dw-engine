@@ -57,6 +57,7 @@
 #include "partner_tab.hpp"
 #include "session_start.hpp"
 #include "text_font_setting.hpp"
+#include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -128,7 +129,7 @@ struct Settings {
 
 // Applies a command of the UI's documents and publishes the resulting state. Returns false for quit.
 bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
-           LanguageChanger& language, TextFontChanger& textFont) {
+           LanguageChanger& language, TextFontChanger& textFont, UiSkinChanger& skin) {
     core::logInfo("game: command {} = {}", command.name, describe(command.value));
     if (command.name == "quit") {
         return false;
@@ -154,6 +155,8 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
         ui.setSetting("ui_scale", settings.uiScale);
     } else if (command.name == ui::TextFontSetting && std::holds_alternative<std::string>(command.value)) {
         textFont.change(std::get<std::string>(command.value));
+    } else if (command.name == ui::UiSkinSetting && std::holds_alternative<std::string>(command.value)) {
+        skin.change(std::get<std::string>(command.value));
     } else if (command.name == "vsync") {
         // The device picks its present mode when it is created (--no-vsync); the menu keeps showing the real one.
         core::logInfo("game: vsync cannot change while running yet");
@@ -440,6 +443,9 @@ int runGame(const Options& options) {
         core::logError("{}", ui.error().message);
         return EXIT_FAILURE;
     }
+    // The skin goes on before the documents load, so they are styled once.
+    applyStartUiSkin(**ui, startUiSkin(options.uiSkin, userSettings.uiSkin));
+    UiSkinChanger uiSkinChanger{**ui, userSettings, settingsFile};
     if (auto loaded = loadDocuments(**ui); !loaded) {
         core::logError("game: {}", loaded.error().message);
         return EXIT_FAILURE;
@@ -503,6 +509,10 @@ int runGame(const Options& options) {
     std::optional<std::string> consoleTextFont;
     (*scripts)->bindCommand(ui::TextFontSetting,
                             [&consoleTextFont](std::string_view name) { consoleTextFont = std::string{name}; });
+    // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
+    std::optional<std::string> consoleUiSkin;
+    (*scripts)->bindCommand(ui::UiSkinSetting,
+                            [&consoleUiSkin](std::string_view id) { consoleUiSkin = std::string{id}; });
 
     // The battle screen, and the console's and the scripts' battle("npcs") that starts one against the map's NPCs
     // (battle_trigger.hpp), applied between frames like the other commands.
@@ -677,7 +687,8 @@ int runGame(const Options& options) {
             if (battleScreen.handle(command) || partnerMenu.handle(command)) {
                 continue;
             }
-            running = apply(command, **ui, *window, settings, languageChanger, textFontChanger) && running;
+            running =
+                apply(command, **ui, *window, settings, languageChanger, textFontChanger, uiSkinChanger) && running;
         }
         if (pendingGift) {
             if (auto given = partnerMenu.giveItem(*std::exchange(pendingGift, std::nullopt)); !given) {
@@ -701,6 +712,9 @@ int runGame(const Options& options) {
             } else if (!*evolved) {
                 core::logWarning("{}", core::formatMessage(messages::EvolveRefused, form));
             }
+        }
+        if (consoleUiSkin) {
+            uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
         }
         if (consoleTextFont) {
             textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));

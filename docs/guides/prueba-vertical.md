@@ -38,6 +38,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--seed <n>` | La semilla de los números aleatorios de una partida nueva (el partner y los sistemas: combates, objetos, evolución), para que una ruta juegue igual cada vez. Sin ella, el juego toma una del reloj y la escribe en el log (`game: new game, seed <n>`), así una partida se puede repetir. Con `--load` no cambia nada: la partida cargada sigue con los números que guardó |
 | `--saves <carpeta>` | Dónde lee y guarda las partidas (por defecto la carpeta de datos del usuario). Un autotest solo guarda con ella |
 | `--text-font modern\|original` | La fuente del texto con aspecto original (el nombre del mapa), en vez de la elegida en el menú principal o la de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspecto-original)) |
+| `--ui-skin <id>` | El aspecto de la interfaz (`modern`, o uno de un mod), en vez del elegido en los menús o el de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspectos)) |
 | `--autotest <ruta.yaml>` | Recorre una ruta y sale con 0 si pasa (ver abajo) |
 | `--shots <carpeta>` | Dónde guarda las capturas de un autotest |
 | `--lang en\|es` | El idioma de esta ejecución, para autotests; no se guarda. Sin él, el juego usa el que se eligió en el menú principal o, la primera vez, el del sistema ([localización](../architecture/localizacion.md)) |
@@ -100,6 +101,10 @@ done
 - `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
+- `route-skins.yaml`: desde el menú principal cambia en vivo el aspecto de la interfaz al de prueba (el paquete
+  sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el del compañero y un
+  combate, y vuelve al moderno desde las opciones del menú de pausa, con capturas de cada pantalla. Necesita
+  `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
 
 - `route-mod-map.yaml`: con el mod de ejemplo montado ([`tests/mods/example_mod`](../../tests/mods/README.md)),
   empieza en el mapa que añade el mod por su id (`example_mod:meadow`), sin código propio, y sale por su salida a

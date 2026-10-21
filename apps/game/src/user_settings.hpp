@@ -15,6 +15,8 @@ struct UserSettings {
     std::optional<std::string> language;
     // The font of "original look" text (text_font: modern, original); the packs' default when not chosen yet.
     std::optional<std::string> textFont;
+    // The skin of the UI (ui_skin: the id of a skin the packs offer); the packs' default when not chosen yet.
+    std::optional<std::string> uiSkin;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

@@ -1,0 +1,53 @@
+# The skins route: the interface skin switched live from the main menu, then the screens that are already loaded (the
+# HUD, the pause menu and its options, the partner's menu, the battle screen) in the new skin, and back from the pause
+# menu's options. It needs the synthetic test skin's mod pack: --mods tests/mods/ui_skin. It runs once per language,
+# with --lang en and --lang es. How to run it: docs/guides/prueba-vertical.md.
+name: skins
+device: keyboard
+main_menu: true
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {ui_skin: modern}
+  - screenshot: main-menu-modern
+  # The skin entry moves to the next skin the packs offer: the test pack's.
+  - menu_select: ui-skin
+  - expect_setting: {ui_skin: test_contrast}
+  - wait: {seconds: 0.5}
+  - screenshot: main-menu-test-contrast
+  - menu_select: play
+  - wait: {menu_open: false, seconds: 0.5}
+  - screenshot: field
+  - menu: open
+  - screenshot: pause-menu
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - screenshot: partner-status
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}
+  - script: battle("")
+  - wait: {shown: battle, seconds: 1}
+  - screenshot: battle
+  # An order first, as route-battle-keyboard gives, then Run (the new game's partner's second command) ends the
+  # battle.
+  - expect_setting: {battle.phase: fight}
+  - menu_select: command-2
+  - wait: {seconds: 4}
+  - expect_setting: {battle.phase: fight}
+  - menu_select: command-1
+  - wait: {seconds: 3}
+  - expect_setting: {battle.phase: end}
+  - screenshot: battle-end
+  - menu_select: end-continue
+  - wait: {hidden: battle, timeout: 5}
+  # Back to the modern skin from the pause menu's options.
+  - menu: open
+  - menu_select: open-options
+  - screenshot: pause-options-test-contrast
+  - menu_select: ui-skin
+  - expect_setting: {ui_skin: modern}
+  - wait: {seconds: 0.5}
+  - screenshot: pause-options-modern
+  - menu: close
+  - wait: {menu_open: false}

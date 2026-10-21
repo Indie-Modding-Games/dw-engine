@@ -146,6 +146,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
         options.textFont = ui::textFontNamed(value);
         return options.textFont.has_value();
     }
+    if (argument == "--ui-skin") {
+        options.uiSkin = std::string{value};
+        return !value.empty();
+    }
     if (argument == "--focus") {
         const auto focus = parsePair(value, ',');
         if (!focus) {

@@ -57,6 +57,8 @@ struct Options {
     std::optional<render::TimeOfDay> time;
     // The font of "original look" text (--text-font modern|original), instead of the packs' default; for autotests.
     std::optional<ui::TextFont> textFont;
+    // The skin of the UI (--ui-skin <id>), instead of the saved or the packs' default; for autotests.
+    std::optional<std::string> uiSkin;
 
     // The language of the texts (--lang en|es...), instead of the saved one or the system's; for autotests.
     std::optional<std::string> language;
@@ -88,8 +90,8 @@ inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--saves <folder>] [--size "
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
-    "[--text-font modern|original] [--new-game | --load <slot>] [--clock-speed <x>] [--seed <n>] "
-    "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
+    "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] [--clock-speed <x>] "
+    "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 

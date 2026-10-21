@@ -5,6 +5,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/platform/platform.hpp>
+#include <dwe/ui/skin.hpp>
 
 #include <fstream>
 #include <iterator>
@@ -41,6 +42,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
         if (const core::YamlNode* textFont = tree->find(TextFontKey)) {
             settings.textFont = reader.text(*textFont);
         }
+        if (const core::YamlNode* uiSkin = tree->find(ui::UiSkinSetting)) {
+            settings.uiSkin = reader.text(*uiSkin);
+        }
     }
     return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -52,6 +56,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
     }
     if (settings.textFont) {
         root.set(std::string{TextFontKey}, core::YamlNode::scalar(*settings.textFont));
+    }
+    if (settings.uiSkin) {
+        root.set(std::string{ui::UiSkinSetting}, core::YamlNode::scalar(*settings.uiSkin));
     }
     return core::emitYaml(root);
 }

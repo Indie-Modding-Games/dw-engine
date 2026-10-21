@@ -34,6 +34,8 @@ inline constexpr std::string_view FromSystem = "system locale or default";
 // The player's text font (text_font_setting.cpp): a name that is neither modern nor original.
 inline constexpr std::string_view UnknownTextFont = "game: unknown text font '{}'; use modern or original";
 inline constexpr std::string_view UnknownSavedTextFont = "game: the saved text font '{}' is unknown; using the default";
+// The player's UI skin (ui_skin_setting.cpp): the id and why it cannot be put on.
+inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin '{}': {}";
 
 // Autotest: a wait for a map change's name that has not come yet (the map id).
 inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";
