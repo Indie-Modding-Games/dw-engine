@@ -1,6 +1,7 @@
 #include "field_scene.hpp"
 
 #include <dwe/animation/clip_sampling.hpp>
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/rules.hpp>
@@ -25,13 +26,14 @@ constexpr float ClipFadeSeconds = 0.1F;
 
 constexpr std::string_view PlayerCharacter = "models/tamer";
 constexpr std::string_view PartnerCharacter = "models/partner";
-// A species' model in the base pack is digimon/<species>/model (dwx: digimonSlug).
+// A species' model is digimon/<species>/model (dwx: digimonSlug), digimon/<pack>/<name>/model for a species a pack
+// adds (assets::ContentId::assetPath).
 constexpr std::string_view SpeciesModelFolder = "digimon/";
 constexpr std::string_view SpeciesModelName = "/model";
 
 std::string speciesModelOf(std::string_view species) {
     std::string id{SpeciesModelFolder};
-    id.append(species).append(SpeciesModelName);
+    id.append(assets::contentAssetPath(species)).append(SpeciesModelName);
     return id;
 }
 
@@ -245,7 +247,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     applyLighting();
     const auto done = Clock::now();
 
-    const auto dataId = assets::AssetId::parse(std::format("map/{}/data", mapId));
+    const auto dataId = assets::mapDataId(mapId);
     const assets::AssetSource* source = dataId ? files_->resolve(*dataId) : nullptr;
     MapChangeTiming timing{.from = map_.document.id,
                            .to = mapId,
@@ -271,6 +273,9 @@ std::string FieldScene::nameKeyOf(std::string_view mapId) const {
         return {};
     }
     const assets::MapEntry* entry = mapTable_->find(mapId);
+    if (auto added = assets::ContentId::parse(mapId); entry != nullptr && added && added->isNamespaced()) {
+        return localization::addedMapNameKey(*added);
+    }
     if (entry == nullptr || mapTable_->displayName(*entry).empty()) {
         return {};
     }

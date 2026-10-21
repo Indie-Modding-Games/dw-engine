@@ -27,7 +27,8 @@ inline constexpr std::string_view SortLabelsBlock = "inventory_sort_labels";
 inline constexpr std::string_view ConfirmLabelsBlock = "inventory_confirm_labels";
 inline constexpr std::string_view BitsLabelBlock = "battle_ui_bits_labels";
 
-// The text keys of the names of species, items and moves, from the tables that give their rows' indices. A name
+// The text keys of the names of species, items and moves, from the tables that give their rows' indices; a species a
+// pack adds has its own key (localization::addedEntryTextKey). A name
 // whose row is unknown (or whose table is missing) has an empty key, which the screens leave blank.
 class NameKeys {
 public:

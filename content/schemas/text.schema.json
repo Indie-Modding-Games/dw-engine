@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Game text",
-  "description": "text/<language>/<source>.yaml: the strings of the executable or of an overlay in one language, as a flat mapping of <block>.<slot> (the slot zero-padded to 4 digits) to texts; the full key is <source>.<block>.<slot>. dwx extract writes the English one (text_extractors.cpp), a translation pack the others with the same keys (docs/formats/textos.md). The original's control codes are tags in braces ({color:2}). A base extracted before the flat format has `source` and `strings` (a mapping of blocks to lists of strings or nulls), which the engine still reads.",
+  "description": "text/<language>/<source>.yaml: the strings of the executable or of an overlay in one language, as a flat mapping of <block>.<slot> (the slot zero-padded to 4 digits) to texts; the full key is <source>.<block>.<slot>. A pack's own table, text/<language>/<pack id>.yaml, names what the pack adds as <block>.<name>, the name of the entry's content id (docs/architecture/vfs.md#tablas-por-entradas). dwx extract writes the English one (text_extractors.cpp), a translation pack the others with the same keys (docs/formats/textos.md). The original's control codes are tags in braces ({color:2}). A base extracted before the flat format has `source` and `strings` (a mapping of blocks to lists of strings or nulls), which the engine still reads.",
   "type": "object",
-  "propertyNames": { "pattern": "^([a-z0-9_]+\\.[0-9]{4}|source|strings)$" },
+  "propertyNames": { "pattern": "^([a-z0-9_]+\\.([0-9]{4}|[a-z0-9_]+)|source|strings)$" },
   "additionalProperties": { "type": ["string", "object"] }
 }

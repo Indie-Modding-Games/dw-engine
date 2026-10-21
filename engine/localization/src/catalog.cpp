@@ -1,3 +1,4 @@
+#include <dwe/assets/text_table.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/localization/catalog.hpp>
 
@@ -215,7 +216,7 @@ std::string numberText(double value) {
 }
 
 std::string gameTextKey(std::string_view source, std::string_view block, std::size_t slot) {
-    return std::format("{}.{}", source, assets::gameTextEntryKey(block, slot));
+    return std::format("{}{}{}", source, assets::TextKeySeparator, assets::gameTextEntryKey(block, slot));
 }
 
 std::string mapNameKey(std::int32_t loadingName) {
@@ -223,6 +224,15 @@ std::string mapNameKey(std::int32_t loadingName) {
         return {};
     }
     return gameTextKey(MapNamesSource, MapNamesBlock, static_cast<std::size_t>(loadingName));
+}
+
+std::string addedEntryTextKey(const assets::ContentId& id, std::string_view block) {
+    return std::format("{}{}{}{}{}", id.packNamespace(), assets::TextKeySeparator, block, assets::TextKeySeparator,
+                       id.name());
+}
+
+std::string addedMapNameKey(const assets::ContentId& id) {
+    return addedEntryTextKey(id, MapNamesBlock);
 }
 
 std::vector<std::string> availableLanguages(const assets::VirtualFileSystem& files) {

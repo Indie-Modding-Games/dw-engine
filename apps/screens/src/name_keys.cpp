@@ -1,3 +1,4 @@
+#include <dwe/assets/content_id.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/screens/name_keys.hpp>
 
@@ -16,7 +17,13 @@ std::string keyOfIndex(std::string_view block, std::int32_t index) {
 
 std::string NameKeys::species(std::string_view id) const {
     const assets::DigimonRow* row = species_ == nullptr ? nullptr : species_->find(id);
-    return row == nullptr ? std::string{} : keyOfIndex(SpeciesNamesBlock, row->index);
+    if (row == nullptr) {
+        return {};
+    }
+    if (auto added = assets::ContentId::parse(row->id); added && added->isNamespaced()) {
+        return localization::addedEntryTextKey(*added, SpeciesNamesBlock);
+    }
+    return keyOfIndex(SpeciesNamesBlock, row->index);
 }
 
 std::string NameKeys::item(std::int32_t index) const {

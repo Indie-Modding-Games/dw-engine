@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
@@ -91,6 +92,13 @@ void useCatalog(const Catalog* catalog);
 // The key of the name the original shows for a map: slot `loadingName` of main.map_names (MapEntry::loadingName).
 // Empty when the map has none.
 [[nodiscard]] std::string mapNameKey(std::int32_t loadingName);
+
+// The key of a text of an entry a pack adds, such as the name of `mymod:newmon`: "<pack>.<block>.<name>", in the
+// pack's own table of the original's kind of text, text/<language>/<pack> (docs/architecture/vfs.md).
+[[nodiscard]] std::string addedEntryTextKey(const assets::ContentId& id, std::string_view block);
+
+// The key of the name of a map a pack adds (addedEntryTextKey, block map_names).
+[[nodiscard]] std::string addedMapNameKey(const assets::ContentId& id);
 
 // The language of the system's locale ("es" for es_ES) when the packs have it, else English.
 [[nodiscard]] std::string pickLanguage(std::span<const std::string> available, std::string_view systemLanguage);

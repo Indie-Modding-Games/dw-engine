@@ -96,8 +96,8 @@ public:
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
     // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
     [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }
-    // The key of a map's name among the texts (localization::mapNameKey of the base pack's map table), empty when the
-    // map has no name. The one place the app looks a map's name up.
+    // The key of a map's name among the texts (localization::mapNameKey of the map table, or addedMapNameKey for a
+    // map a pack adds), empty when the map has no name. The one place the app looks a map's name up.
     [[nodiscard]] std::string nameKeyOf(std::string_view mapId) const;
     // Grows by one on every map entered, so the app notices a change (minimap, autotests).
     [[nodiscard]] std::uint32_t mapSerial() const { return mapSerial_; }

@@ -2,6 +2,7 @@
 
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/content_check.hpp>
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/text_table.hpp>
@@ -76,7 +77,9 @@ core::Result<Reference> referenceOf(std::string_view annotation, std::string_vie
         return core::fail(
             std::format("the schema's {} '{}' must have one {}", AssetReferenceKeyword, annotation, Placeholder));
     }
-    std::string target = std::format("{}{}{}", annotation.substr(0, at), value, annotation.substr(at + 2));
+    // A namespaced content id names its folder per part: map/<pack>/<name>/data (assets::ContentId::assetPath).
+    std::string target =
+        std::format("{}{}{}", annotation.substr(0, at), assets::contentAssetPath(value), annotation.substr(at + 2));
     if (target.starts_with(SiblingPrefix)) {
         target = folderOf(document) + target.substr(SiblingPrefix.size());
     }
