@@ -37,6 +37,10 @@ Lo que hay que tener claro:
   no eliminarlo.
 - **El motor no es un "clean room".** Se escribe con el decomp como referencia. Por eso no se copia nada del decomp al
   repositorio: ni código ni **tablas de datos** (stats, evoluciones, textos). Todo eso sale del disco del usuario.
+- **Reglas sí, tablas no.** Los parámetros de reglas y mecánicas (topes, umbrales, divisores, temporizadores,
+  probabilidades) pueden estar en git, en los rulesets y con su cita al decomp; las tablas por entidad (por Digimon,
+  objeto, técnica o mapa) salen del disco del usuario (ejecutable y overlays) con `dwx`. «Decidido por el coordinador
+  (2026-10-21)». Detalle y clasificación de cada valor: [auditoría de los rulesets](auditoria-rulesets.md).
 - **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
   misma regla.
 
