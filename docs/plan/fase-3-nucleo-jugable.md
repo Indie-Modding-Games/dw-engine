@@ -92,6 +92,34 @@ Los rulesets del diseño nuevo vuelven al ciclo completo: diseño en el GDD, apr
 El bucle de criar, entrenar, combatir y evolucionar se juega con el ruleset `original`, y un autotest lo recorre
 entero con el reloj acelerado: criar, entrenar, combatir y evolucionar.
 
+### Cómo se comprueba
+
+Dos pruebas, las dos con el disco del usuario extraído (`DWE_CONTENT`):
+
+- **Prueba sin ventana** (`apps/sim/tests/loop_tests.cpp`, caso «raising, training and battling the first partner
+  evolves it as the original»). Empieza una partida nueva con `HeadlessSessions::startGame` (semilla fija, reloj a
+  ×60, ruleset `original`) y un cuidador sigue una política fija: cura, da de comer su comida favorita desde la
+  bolsa, lo lleva al baño, lo acuesta, lo entrena en el curso de la estadística que le falta, lo regaña cuando le
+  falta disciplina y combate con el primer NPC del mapa inicial. Comprueba el efecto de cada acción (las
+  estadísticas suben con el entrenamiento y con lo que da el combate, los valores de cuidado se mueven, el resultado
+  del combate se aplica) y que el rookie evoluciona por la regla normal, antes de la hora del recurso, al campeón que
+  apunta: el primero de la tabla de evoluciones del compañero inicial que se alcanza con buen cuidado (como mucho
+  los errores de cuidado que pide, una sola estadística y el bonus de disciplina o de combates; con el disco, cent).
+  Todo sale de las tablas y del ruleset (`evolution.c: calculateRequirementScore`, `evolution.yaml`), no de números
+  escritos en la prueba. Seis semillas, unos 2 s. Pasa en `check-full` con `DWE_CONTENT`; a mano:
+
+  ```sh
+  DWE_CONTENT=<contenido> PRESET=ci scripts/dev.sh shell -c \
+      'build/ci/apps/sim/dwe_sim_tests -tc="*evolves it as the original*"'
+  ```
+
+- **Ruta del juego** (`tests/autotest/route-loop-keyboard.yaml`). Recorre el mismo bucle en `dwe-game` con el
+  teclado, desde el menú principal: cría, entrena, combate y evoluciona con el reloj acelerado, comprueba en vivo el
+  estado del compañero tras cada paso (peso, disciplina, estados, inteligencia, PV, nombre y edad) y hace capturas de
+  cada etapa. La semilla de la partida es aleatoria, así que la forma a la que llega puede cambiar (casi siempre el
+  recurso del rookie, porque a tramos de reloj rápido pasa hambre); la forma exacta la comprueba la prueba sin
+  ventana. Cómo correrla, en los dos idiomas: `docs/guides/prueba-vertical.md`.
+
 ## Dependencias y riesgos
 
 - Depende de la fase 2.
