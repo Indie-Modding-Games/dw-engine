@@ -393,5 +393,4 @@ void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result
     evolutions_.push_back(result);
 }
 
-
 } // namespace dwe::session

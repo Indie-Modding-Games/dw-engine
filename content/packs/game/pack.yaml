@@ -42,5 +42,7 @@ schemas:
     - rules/*/tamer
   ruleset_item_use:
     - rules/*/item_use
+  ruleset_partner_moves:
+    - rules/*/partner_moves
   ruleset_evolution:
     - rules/*/evolution

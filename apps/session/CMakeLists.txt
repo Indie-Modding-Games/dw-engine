@@ -4,15 +4,17 @@
 dwe_add_module(session
     LAYER apps
     SOURCES
+        src/battle_adapter.cpp
         src/evolution_adapter.cpp
         src/game_session.cpp
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
+        src/partner_moves.cpp
         src/partner_view.cpp
         src/save_sections.cpp
         src/session_rules.cpp
         src/slot_names.cpp
-    DEPS core assets scene ruleset field partner save evolution inventory)
+    DEPS core assets scene ruleset field partner save evolution inventory battle)
 
 # The tests read the game pack from the source tree.
 if(TARGET dwe_session_tests)

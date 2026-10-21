@@ -75,6 +75,7 @@ de `clock` (con la velocidad que tenía).
 | `random` | `partner` y `session`: el estado del generador del partner y el de los sistemas, para que una partida cargada siga igual que la guardada; una partida de la versión 1 (solo `partner`) sigue los de los sistemas desde el del partner |
 | `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |
+| `moves` | Las técnicas del partner: `learned` (ids de `data/moves`) y `equipped` (cuatro posiciones de la lista de la especie o `null`; la cuarta es el remate) |
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
@@ -89,8 +90,7 @@ Cada sistema que llega después (evolución, batalla, inventario) se enchufa con
 partner (`routePartnerEvent`) y de las alabanzas y regañinas (`afterPraiseOrScold`, con la disciplina y la felicidad
 de antes). Para sus órdenes la partida les da `careContext()`, `currentPlace()`, `random()` (los números aleatorios
 de los sistemas, guardados con la partida), `addTamerLevel(probabilidad, niveles)` (`tamer.c: addTamerLevel`) y
-`afterSystemCommand()`, que reparte los eventos y escribe el autoguardado como las órdenes de la partida. Hasta que
-`game/battle` tenga el suyo, `finishBattle` hace de final de batalla.
+`afterSystemCommand()`, que reparte los eventos y escribe el autoguardado como las órdenes de la partida.
 
 ### Evolución (`EvolutionAdapter`)
 
@@ -142,6 +142,33 @@ rechaza el partner (`partner_impl.c: partnerWillRefuseItem`), cuáles responden 
 (`partner_impl.c: partnerHandleFoodFeed`), qué niveles tienen el descuento de bebé (`script_common.c: isPartnerBaby`)
 y el bit de cada stat en el refuerzo de entrenamiento (`trn_reward.c`).
 
+### Batalla (`BattleAdapter`)
+
+`BattleAdapter({.files = &files, .inventory = &inventario})` lee las secciones `battle` (`readBattleRules`, el
+catálogo de técnicas con `data/moves` y las estrategias) y `partner_moves`, con `data/digimon` y `data/moves` leídas
+una vez (los tests le dan las suyas). Registra las comprobaciones de las dos secciones y la sección de guardado
+`moves`: es dueño de las técnicas del partner (`PartnerMoves`).
+
+- **Técnicas**: como el original, las aprendidas por id (`utils2.c: learnMove`) y las equipadas por su posición en la
+  lista de la especie (`stats.base.moves`, `0x2E` + posición), así que tras una evolución cada posición nombra la
+  técnica de la nueva especie y una posición sin técnica queda vacía en combate (`btl.c`). En la partida nueva el
+  partner aprende y equipa la técnica de `partner_moves.new_game_slot` y equipa como remate la última de su lista que
+  es un remate (`partner_impl.c: initializePartner`); al renacer (`Reborn`) equipa solo `partner_moves.reborn_slot` y
+  conserva las aprendidas (`evolution.c: reincarnatePartner`). `equip(session, lugar, posición)` solo equipa técnicas
+  aprendidas (`utils2.c: hasMove`); el remate va con la especie.
+- **Empezar** (`start(session, BattleRequest)`): el luchador del partner (`partnerCombatant`: la fila de
+  `data/digimon`, sus stats, HP y MP y las técnicas equipadas), su estado (disciplina, cansancio, enfermo, herido y
+  las técnicas que ya sabe), el minuto del reloj y una semilla de `random()`. La partida decide el recluta que se une
+  si gana (`recruitOnVictory`).
+- **Acabar** (`finish(session, BattleResult)`): HP y MP del final (`setStats`), las subidas por `addStatGains`, y el
+  cuidado, la herida, las vidas y los minutos como los da la batalla por `Partner::applyBattle` (con la cuenta horaria
+  del partner si la batalla acaba una hora: `tamer.c: advanceBattleTime`; no se vuelve a contar con `finishBattle`);
+  las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
+  derrota, las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
+  (si se unió el recluta: `recruitJoined`) y `TournamentResult` (torneo o arena).
+
+La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_moves.schema.json)) es de la partida.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |
@@ -168,7 +195,12 @@ y el bit de cada stat en el refuerzo de entrenamiento (`trn_reward.c`).
 | Descuento de bebé en las tiendas | `script_common.c: isPartnerBaby` (`BABY_IDS`) | `item_use.shop_discount_levels` | `buying a key item asks ...` | Igual |
 | Probabilidad de las medicinas | `item.c: handleMedicineHealing` (`randomLimit(roll) < cure`) | `CureEffect` con `cure × 100 / roll` | — | Igual con los valores del original (3/3, 2/10, 10/10) |
 | Sección de guion de un chip | `item.c: handleChips` (0x16) | — | — | **Hueco** (fase 4) |
-| Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionInputs::learnedMoves = 0` | — | **Hueco** |
+| Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionInputs::learnedMoves = 0` | — | **Hueco**: las técnicas ya se guardan (`BattleAdapter`), falta pasarlas a la evolución |
+| Técnicas del primer partner: aprende y equipa una, y su remate | `partner_impl.c: initializePartner` | `partner_moves.new_game_slot`, `BattleAdapter::startNewGame` | `a new game's partner learns ...`, `the user's disc, extracted: the first partner ...` | Igual |
+| Las técnicas equipadas son posiciones de la lista de la especie | `stats.base.moves`, `btl.c`, `utils2.c: entityGetTechFromAnim` | `PartnerMoves::equipped`, `partnerCombatant` | `the partner fights with its stats, ...` | Igual |
+| El renacido equipa una técnica y conserva las aprendidas | `evolution.c: reincarnatePartner` | `partner_moves.reborn_slot`, `Reborn` | `a reborn partner equips one move again ...` | Igual |
+| Lo que deja una batalla al partner (stats, cuidado, herida, vidas, 20 minutos y la hora) | `battle_ui.c: battleStatsGainsAndDrops`, `tamer.c: startBattle/advanceBattleTime` | `BattleAdapter::finish` → `Partner::applyBattle` | `a won battle gives ...`, `a lost battle costs ...` | Igual |
+| Autoguardado al unirse un recluta y tras un torneo | El original no autoguarda | `save.autosave.on_recruit_join/on_tournament_result` | `a recruit that joins ...`, `a tournament's battle ...` | Desviación aprobada (2026-10-20) |
 
 ## Tests
 
@@ -182,7 +214,9 @@ horas y autoguardado, barra de virus, vuelta con los stats topados, objeto, guio
 sección), `tests/inventory_adapter_tests.cpp` (con los objetos inventados de `game/inventory/tests/fixture.hpp`: bolsa de
 partida nueva y su lista, curar, comer con refuerzo, chip, rechazos, objeto de evolución por nivel, compra con objeto
 clave y descuento, guardar y cargar, derrota con la misma semilla, comprobaciones de sección),
-`tests/system_hook_tests.cpp` (alabanza y regañina a los sistemas, nivel de domador con probabilidad) y `tests/rules_tests.cpp`
-(esquemas de `new_game`, `tamer` e `item_use`, valores del original y comprobaciones). Usan el
+`tests/battle_adapter_tests.cpp` (con las técnicas inventadas de `game/battle/tests/fixture.hpp`: técnicas de partida
+nueva, luchador, equipar, victoria y derrota, autoguardados, una batalla de principio a fin, renacer, guardar y cargar,
+comprobaciones de sección; con `DWE_CONTENT`, el primer partner del disco), `tests/system_hook_tests.cpp` (alabanza y regañina a los sistemas, nivel de domador con probabilidad) y `tests/rules_tests.cpp`
+(esquemas de `new_game`, `tamer`, `item_use` y `partner_moves`, valores del original y comprobaciones). Usan el
 paquete `game` del árbol de fuentes sobre un paquete base de sustitución con las tablas vacías, especies inventadas
 (no las del original) y `MemorySaveStorage`.

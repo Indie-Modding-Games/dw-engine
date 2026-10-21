@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/game/partner/care_rules.hpp>
 #include <dwe/game/partner/state.hpp>
 
 #include <cstdint>
@@ -79,6 +80,23 @@ struct BattleOutcome {
     BattleResult result = BattleResult::Won;
     // The partner was hit (HAS_TAKEN_DAMAGE): a won battle may leave it injured.
     bool tookDamage = false;
+};
+
+// A battle as the battle system settled it (tamer.c: startBattle, advanceBattleTime): the session gives its result to
+// the partner with this instead of a BattleOutcome, so the partner's own battle rules do not count it again.
+struct BattleConsequences {
+    BattleResult result = BattleResult::Won;
+    // It came out injured (battle_ui.c: handleBattleInjury).
+    bool injured = false;
+    // What the outcome does to the mood, the battles counted for the evolutions and the food level.
+    MoodChange mood;
+    std::int32_t battles = 0;
+    std::int32_t foodChange = 0;
+    std::int32_t livesLost = 0;
+    // The minutes the clock moves on, whether that ends an hour and the lifetime hours that costs.
+    std::int32_t elapsedMinutes = 0;
+    bool hourCrossed = false;
+    std::int32_t lifetimeHoursLost = 0;
 };
 
 // A session at a training place.

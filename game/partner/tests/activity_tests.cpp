@@ -112,6 +112,54 @@ TEST_CASE("care.md battles: a battle across midnight adds no day of age in the o
     CHECK(fixed.state().life.age == 1);
 }
 
+TEST_CASE("care.md battles: a battle the battle system settled applies its numbers, not the partner's rules") {
+    OriginalRuleset original;
+    Raising raising(original.rules());
+    raising.quiet();
+    const std::int32_t lifetime = raising.state().life.remainingLifetime;
+    raising.partner().applyBattle({.result = BattleResult::Won,
+                                   .injured = true,
+                                   .mood = {.happiness = 7, .discipline = -3, .tiredness = 4},
+                                   .battles = 1,
+                                   .foodChange = -9,
+                                   .livesLost = 0,
+                                   .elapsedMinutes = 30,
+                                   .hourCrossed = false,
+                                   .lifetimeHoursLost = 0},
+                                  raising.clock());
+    CHECK(raising.state().mood.happiness == 57);
+    CHECK(raising.state().mood.tiredness == 4);
+    CHECK(raising.state().evolution.battles == 1);
+    CHECK(raising.state().conditions.has(Condition::Injured));
+    CHECK(has(raising.partner().takeEvents(), EventKind::GotInjured));
+    CHECK(raising.clock().time().minute == 30);
+    CHECK(raising.state().hunger.foodLevel == 1'000'000 - 9 - 30);
+    CHECK(raising.state().life.remainingLifetime == lifetime);
+}
+
+TEST_CASE("care.md battles: a settled battle that ends an hour costs its lifetime hours and runs the hourly counters") {
+    OriginalRuleset original;
+    Raising raising(original.rules());
+    raising.quiet();
+    raising.skipTo(9, 50);
+    raising.edit([](PartnerState& state) { state.conditions.set(Condition::Injured); });
+    const PartnerState before = raising.state();
+    raising.partner().applyBattle({.result = BattleResult::Lost,
+                                   .injured = false,
+                                   .mood = {.happiness = -30, .discipline = -20, .tiredness = 0},
+                                   .battles = 0,
+                                   .foodChange = 0,
+                                   .livesLost = 1,
+                                   .elapsedMinutes = 20,
+                                   .hourCrossed = true,
+                                   .lifetimeHoursLost = 1},
+                                  raising.clock());
+    CHECK(raising.clock().time().hour == 10);
+    CHECK(raising.state().life.remainingLifetime == before.life.remainingLifetime - 1);
+    CHECK(raising.state().health.injuredHours == before.health.injuredHours + 1);
+    CHECK(raising.state().life.lives == before.life.lives - 1);
+}
+
 TEST_CASE("care.md rest: skipping hours spends them on the needs without moving the clock") {
     OriginalRuleset original;
     Raising raising(original.rules());

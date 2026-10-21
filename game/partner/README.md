@@ -36,6 +36,7 @@ partner.useToilet();
 partner.cure({.injuryPercent = 100, .sicknessPercent = 20});    // venda
 partner.skipHours(hours, clock);                                 // descansar; la sesión mueve el reloj después
 partner.finishBattle({.result = BattleResult::Won, .tookDamage = hit}, clock);   // +20 minutos
+partner.applyBattle(consecuencias, clock);  // la batalla ya lo calculó (BattleAdapter): sin las reglas de finishBattle
 auto gains = partner.train({.place = "trn", .course = "hp"}, clock);           // +1 hora
 partner.addStatGains(evolutionGains);                                           // cada ganancia, 999 como mucho
 ```
@@ -170,6 +171,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath` | `life_tests`: natural death | Igual |
 | Renacer y herencia | `evolution.c: reincarnatePartner`; `partner_impl.c: initializeReincarnatedPartner`; `dooa.c` | `rebirth`, `OriginalRebirthChoice` | `life_tests`: rebirth | Igual |
 | Combate: ánimo, cansancio, tiempo | `tamer.c: startBattle`, `advanceBattleTime`; `partner_impl.c: handlePostBattleTiredness` | `finishBattle`, `passBattleTime` | `activity_tests` | Igual |
+| Combate que ya resolvió `game/battle`: sus números y la cuenta horaria si acaba una hora | `tamer.c: startBattle`, `advanceBattleTime` | `applyBattle` (`BattleConsequences`), `passBattleTime` | `a battle the battle system settled ...`, `a settled battle that ends an hour ...` | Igual |
 | Herida en combate | `battle_ui.c: handleBattleInjury` | `rollBattleInjury` | `activity_tests`: hurt partner | Igual |
 | Saltar horas | `partner_impl.c: skipHours` | `skipHours` | `activity_tests`: rest | Igual |
 | Infelicidad al saltar horas | `partner_impl.c: skipHours` | `unhappyChecksWhileSkipping`, `care.quirks.skipped_hours_unhappiness_only_at_midnight` | `activity_tests`: rest, only at midnight | Igual (2026-10-20): la rareza queda por defecto; `false` resta por cada múltiplo de 4 horas cruzado |

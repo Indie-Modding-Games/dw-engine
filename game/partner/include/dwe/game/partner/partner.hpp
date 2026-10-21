@@ -89,6 +89,11 @@ public:
     // A battle ended (tamer.c: startBattle, advanceBattleTime): its effects on the care, and 20 minutes pass.
     void finishBattle(const BattleOutcome& outcome, ruleset::GameClock& clock);
 
+    // A battle the battle system settled ended: its care, injury, lives and minutes as it gives them, with the
+    // partner's hourly accounting when the battle ends an hour (tamer.c: advanceBattleTime). Its stats after the
+    // battle come in with setStats and addStatGains first.
+    void applyBattle(const BattleConsequences& battle, ruleset::GameClock& clock);
+
     // A training session: its gains, and an hour passes with its own accounting.
     core::Result<TrainingResult> train(const TrainingRequest& request, ruleset::GameClock& clock);
 
@@ -212,7 +217,13 @@ private:
     // Battles, skipped time and training.
     void addPostBattleTiredness();
     void rollBattleInjury();
-    void passBattleTime(ruleset::GameClock& clock);
+    // The minutes a battle takes, whether they end an hour and the lifetime hours that costs.
+    struct BattleTime {
+        std::int32_t minutes = 0;
+        bool hourCrossed = false;
+        std::int32_t lifetimeHours = 0;
+    };
+    void passBattleTime(ruleset::GameClock& clock, const BattleTime& time);
     void passHungerWindow(std::int32_t steps);
     // How many times a skip of hours from this hour checks the unhappiness (skipHours).
     [[nodiscard]] std::int32_t unhappyChecksWhileSkipping(std::int32_t hour, std::int32_t hours) const;

@@ -37,7 +37,28 @@ void Partner::finishBattle(const BattleOutcome& outcome, ruleset::GameClock& clo
         break;
     }
     clampBoundaries();
-    passBattleTime(clock);
+    const ruleset::GameTime before = clock.time();
+    passBattleTime(clock, {.minutes = rules.durationMinutes,
+                           .hourCrossed = before.minute + rules.durationMinutes >= constants::MinutesPerHour,
+                           .lifetimeHours = 1});
+}
+
+void Partner::applyBattle(const BattleConsequences& battle, ruleset::GameClock& clock) {
+    // tamer.c: startBattle, after the battle, with the numbers the battle system settled.
+    useClock(clock);
+    if (battle.injured && !state_.conditions.has(Condition::Injured)) {
+        setCondition(Condition::Injured, EventKind::GotInjured);
+    }
+    changeMood(battle.mood);
+    state_.evolution.battles += battle.battles;
+    state_.hunger.foodLevel += battle.foodChange;
+    for (std::int32_t life = 0; life < battle.livesLost && alive(); ++life) {
+        loseLife();
+    }
+    clampBoundaries();
+    passBattleTime(clock, {.minutes = battle.elapsedMinutes,
+                           .hourCrossed = battle.hourCrossed,
+                           .lifetimeHours = battle.lifetimeHoursLost});
 }
 
 void Partner::addPostBattleTiredness() {
@@ -78,17 +99,17 @@ void Partner::passHungerWindow(std::int32_t steps) {
     }
 }
 
-void Partner::passBattleTime(ruleset::GameClock& clock) {
+void Partner::passBattleTime(ruleset::GameClock& clock, const BattleTime& time) {
     // tamer.c: advanceBattleTime.
     const BattleCareRules& rules = care().battle;
     const ruleset::GameTime before = clock.time();
-    const std::int32_t minutes = (before.hour * constants::MinutesPerHour) + before.minute + rules.durationMinutes;
+    const std::int32_t minutes = (before.hour * constants::MinutesPerHour) + before.minute + time.minutes;
     const std::int32_t hour = (minutes / constants::MinutesPerHour) % constants::HoursPerDay;
     const ruleset::ClockAdvance advance = clock.jumpTo(hour, minutes % constants::MinutesPerHour);
     // The battle's midnight adds no age (battle_midnight_skips_age).
     addDays(advance.days, !care().quirks.battleMidnightSkipsAge);
-    if (hour != before.hour) {
-        spendLifetime(1);
+    if (time.hourCrossed) {
+        spendLifetime(time.lifetimeHours);
         if (state_.conditions.has(Condition::Sleepy)) {
             ++state_.sleep.sleepyHoursForSickness;
             ++state_.sleep.missedSleepHours;
@@ -100,12 +121,12 @@ void Partner::passBattleTime(ruleset::GameClock& clock) {
         state_.health.sickHours += state_.conditions.has(Condition::Sick) ? 1 : 0;
     }
     if (state_.conditions.has(Condition::Hungry)) {
-        passHungerWindow(windowSteps(rules.durationMinutes));
+        passHungerWindow(windowSteps(time.minutes));
     } else {
-        state_.hunger.foodLevel -= rules.durationMinutes;
+        state_.hunger.foodLevel -= time.minutes;
     }
     if (state_.conditions.has(Condition::NeedsToilet)) {
-        state_.toilet.urgeFrames -= static_cast<std::int32_t>(rules.durationMinutes * clockRules_.framesPerMinute);
+        state_.toilet.urgeFrames -= static_cast<std::int32_t>(time.minutes * clockRules_.framesPerMinute);
     } else {
         state_.toilet.poopLevel -= rules.poopSteps;
     }

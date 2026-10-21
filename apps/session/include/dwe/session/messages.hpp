@@ -21,6 +21,8 @@ inline constexpr std::string_view ItemUseSectionText = "the item_use section";
 inline constexpr std::string_view ItemRangeText = "an item range";
 inline constexpr std::string_view FixedLevelText = "a fixed-level evolution item";
 inline constexpr std::string_view ItemRangeReversed = "the range starts at {} and ends before it, at {}";
+inline constexpr std::string_view PartnerMovesSectionText = "the partner_moves section";
+inline constexpr std::string_view MoveSlotOutside = "move position {} is outside the species' list of {}";
 
 // Setting up a session.
 inline constexpr std::string_view NoFiles = "a session needs the packs";
@@ -62,5 +64,16 @@ inline constexpr std::string_view InventoryNeedsTables = "the inventory adapter 
 inline constexpr std::string_view InventoryNotRead = "the inventory rules have not been read";
 inline constexpr std::string_view UnknownStartingItem = "bag.new_game_items: item {} is not in data/items";
 inline constexpr std::string_view UnknownItem = "item {} is not in data/items";
+
+// The battle adapter and the partner's moves.
+inline constexpr std::string_view PartnerMovesStateText = "the partner's moves";
+inline constexpr std::string_view EquippedCount = "the partner's moves have {} equipped positions, not {}";
+inline constexpr std::string_view BattleNeedsTables = "the battle adapter needs the packs or its tables";
+inline constexpr std::string_view BattleNotRead = "the battle rules have not been read";
+inline constexpr std::string_view NoMoveTable = "the ruleset names no {} table";
+inline constexpr std::string_view UnknownPartnerSpecies = "battle: the partner's species '{}' is not in data/digimon";
+inline constexpr std::string_view MovePlaceOutside = "battle: place {} is not one of the {} equipped places";
+inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";
+inline constexpr std::string_view NoMoveAtSlot = "battle: '{}' has no move at position {}";
 
 } // namespace dwe::session::messages

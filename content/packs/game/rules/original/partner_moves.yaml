@@ -1,0 +1,12 @@
+# Las técnicas del partner al empezar y al renacer (apps/session: BattleAdapter, PartnerMoveRules,
+# apps/session/README.md). Una posición es el índice en la lista de técnicas de la especie (data/digimon: moves): el
+# original guarda las equipadas así (stats.base.moves = 0x2E + posición), de modo que tras una evolución cada posición
+# nombra la técnica de la nueva especie. El remate equipado es la última técnica de la lista que es un remate.
+
+# partner_impl.c: initializePartner: la especie 3 (agum) equipa la posición 0 (moves[0] = 0x2E) y aprende su técnica
+# (learnMove(2)); la 0x11 (gabu) equipa la posición 2 (moves[0] = 0x30, learnMove(0x2B)). Vale para el partner de
+# new_game.yaml.
+new_game_slot: 0
+# evolution.c: reincarnatePartner: el renacido equipa solo la posición 0 (moves[0] = 0x2E, el resto 0xFF) y conserva
+# las técnicas aprendidas.
+reborn_slot: 0
