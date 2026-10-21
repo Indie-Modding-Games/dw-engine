@@ -152,12 +152,15 @@ Un Digimon que añade un paquete (un id con espacio de nombres) tiene que traer 
 que se comprueba su modelo, porque no hay un original con el que compararlo. Sin él, el juego no carga la tabla
 (`loadDigimonTable`) y `dwx validate` da un problema (`requireNewSpeciesContracts`).
 
-### Límite: los guardados y el `index`
+### Los guardados, los rulesets y el `index`
 
-El `index` de una entrada nueva depende de qué mods hay montados y en qué orden. Lo que se guarda por id (la especie
-del compañero, el mapa, las técnicas aprendidas, las especies criadas) no se ve afectado, pero **el inventario aún
-guarda el `index` de cada objeto**: una partida con objetos de un mod puede cargar otros objetos si cambian los mods.
-Pasar el inventario y las demás referencias por número a ids es el trabajo siguiente de la fase 4.
+El `index` de una entrada nueva depende de qué mods hay montados y en qué orden, así que nada que sale de la sesión lo
+usa: los guardados (la especie del compañero, el mapa, las técnicas aprendidas, las especies criadas y, desde la
+versión 2 de su sección, los objetos de la bolsa), los rulesets, los scripts, las claves de texto y los registros
+nombran cada entrada por su id. Dentro de la sesión, el motor usa asas de la composición
+([IDs en la sesión](../../engine/assets/README.md#ids-en-la-sesión)). Los rangos de números de un ruleset solo cubren
+las entradas del original ([rangos e ids](rulesets.md#rangos-e-ids)), y un warp llega a un mapa de un paquete por su
+id ([destino de una salida](../formats/mapas.md#destino-de-una-salida)).
 
 Quitar un mod no deja la partida sin cargar: un montón de la bolsa cuyo objeto ya no está en ninguna tabla se tira,
 con un aviso en el registro que nombra su id y la cantidad ([inventario](../../game/inventory/README.md)).
