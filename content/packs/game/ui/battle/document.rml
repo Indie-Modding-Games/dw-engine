@@ -1,0 +1,98 @@
+<rml>
+<head>
+	<title>Battle</title>
+	<link type="text/rcss" href="../common/theme.rcss"/>
+	<link type="text/rcss" href="style.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="fight">
+		<div id="commands">
+			<div id="command-row">
+				<button id="command-0" class="command original-look hidden" onclick="choose(0)"></button>
+				<button id="command-1" class="command original-look hidden" onclick="choose(1)"></button>
+				<button id="command-2" class="command original-look hidden" onclick="choose(2)"></button>
+				<button id="command-3" class="command original-look hidden" onclick="choose(3)"></button>
+				<button id="command-4" class="command original-look hidden" onclick="choose(4)"></button>
+				<button id="command-5" class="command original-look hidden" onclick="choose(5)"></button>
+				<button id="command-6" class="command original-look hidden" onclick="choose(6)"></button>
+				<button id="command-7" class="command original-look hidden" onclick="choose(7)"></button>
+				<button id="command-8" class="command original-look hidden" onclick="choose(8)"></button>
+				<button id="command-9" class="command original-look hidden" onclick="choose(9)"></button>
+				<button id="command-10" class="command original-look hidden" onclick="choose(10)"></button>
+			</div>
+			<p id="command-name" class="original-look"></p>
+		</div>
+
+		<div id="enemies">
+			<div id="fighter-1" class="fighter enemy hidden">
+				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-1-name"></span><span class="fighter-status" id="fighter-1-status"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-1-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-1-hp-fill"></div></div><span class="bar-value original-look" id="fighter-1-hp"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-1-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-1-mp-fill"></div></div><span class="bar-value original-look" id="fighter-1-mp"></span></div>
+			</div>
+			<div id="fighter-2" class="fighter enemy hidden">
+				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-2-name"></span><span class="fighter-status" id="fighter-2-status"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-2-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-2-hp-fill"></div></div><span class="bar-value original-look" id="fighter-2-hp"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-2-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-2-mp-fill"></div></div><span class="bar-value original-look" id="fighter-2-mp"></span></div>
+			</div>
+			<div id="fighter-3" class="fighter enemy hidden">
+				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-3-name"></span><span class="fighter-status" id="fighter-3-status"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-3-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-3-hp-fill"></div></div><span class="bar-value original-look" id="fighter-3-hp"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-3-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-3-mp-fill"></div></div><span class="bar-value original-look" id="fighter-3-mp"></span></div>
+			</div>
+		</div>
+
+		<div id="partner-panel">
+			<div id="fighter-0" class="fighter partner hidden">
+				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-0-name"></span><span class="fighter-status" id="fighter-0-status"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-0-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-0-hp-fill"></div></div><span class="bar-value original-look" id="fighter-0-hp"></span></div>
+				<div class="bar-row"><span class="bar-label original-look" id="fighter-0-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-0-mp-fill"></div></div><span class="bar-value original-look" id="fighter-0-mp"></span></div>
+			</div>
+			<div id="finisher">
+				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>
+				<div id="finisher-segments"><div class="segment" id="finisher-0"></div><div class="segment" id="finisher-1"></div><div class="segment" id="finisher-2"></div><div class="segment" id="finisher-3"></div><div class="segment" id="finisher-4"></div><div class="segment" id="finisher-5"></div></div>
+			</div>
+		</div>
+
+		<div id="charge" class="hidden" onclick="charge()">
+			<p class="original-look" id="charge-title" text-key="battle.charge"></p>
+			<div class="bar charge"><div class="fill" id="charge-fill"></div></div>
+			<p class="charge-hint"><span class="key" id="prompt-charge"></span><span text-key="battle.charge_hint"></span></p>
+		</div>
+
+		<p id="revive" class="original-look hidden"></p>
+
+		<div id="prompts">
+			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
+		</div>
+	</div>
+
+	<div id="end" class="hidden">
+		<div id="end-panel">
+			<h1 id="end-title" class="original-look"></h1>
+				<p class="end-line original-look hidden" id="end-line-0"></p>
+				<p class="end-line original-look hidden" id="end-line-1"></p>
+				<p class="end-line original-look hidden" id="end-line-2"></p>
+				<p class="end-line original-look hidden" id="end-line-3"></p>
+				<p class="end-line original-look hidden" id="end-line-4"></p>
+				<p class="end-line original-look hidden" id="end-line-5"></p>
+				<p class="end-line original-look hidden" id="end-line-6"></p>
+				<p class="end-line original-look hidden" id="end-line-7"></p>
+				<p class="end-line original-look hidden" id="end-line-8"></p>
+				<p class="end-line original-look hidden" id="end-line-9"></p>
+			<div id="end-boxes">
+				<div id="gains">
+					<div class="gain"><span class="original-look gain-label" id="gain-0-label"></span><span class="original-look gain-value" id="gain-0"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-1-label"></span><span class="original-look gain-value" id="gain-1"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-2-label"></span><span class="original-look gain-value" id="gain-2"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-3-label"></span><span class="original-look gain-value" id="gain-3"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-4-label"></span><span class="original-look gain-value" id="gain-4"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-5-label"></span><span class="original-look gain-value" id="gain-5"></span></div>
+				</div>
+				<div id="bits"><span class="original-look" id="bits-label"></span><span class="original-look" id="bits-value"></span></div>
+			</div>
+			<button id="end-continue" onclick="close_end()" text-key="battle.continue"></button>
+		</div>
+	</div>
+</body>
+</rml>

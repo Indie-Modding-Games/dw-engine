@@ -2,6 +2,8 @@ dwe_add_app(game
     LAYER apps
     SOURCES
         src/autotest.cpp
+        src/battle_screen.cpp
+        src/battle_trigger.cpp
         src/common.cpp
         src/dev_views.cpp
         src/device_names.cpp
@@ -20,7 +22,7 @@ dwe_add_app(game
         src/text_font_setting.cpp
         src/ui_demo.cpp
         src/user_settings.cpp
-    DEPS core platform rhi assets localization animation render input script ui debug scene ruleset field partner save content session
+    DEPS core platform rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang)

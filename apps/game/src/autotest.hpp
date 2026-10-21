@@ -7,6 +7,7 @@
 #include <dwe/platform/platform.hpp>
 #include <dwe/platform/window.hpp>
 #include <dwe/render/renderer.hpp>
+#include <dwe/script/script_vm.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <atomic>
@@ -39,6 +40,9 @@ struct AutotestCondition {
     std::optional<glm::vec2> playerNear;
     float playerRadius = 100.0F;
     std::optional<bool> menuOpen;
+    // A document of the UI shown or hidden (shown: battle, hidden: battle).
+    std::optional<std::string> shown;
+    std::optional<std::string> hidden;
     // A map change under way that shows this map's name (its id): the only condition checked during a map change.
     std::optional<std::string> mapNameShown;
 };
@@ -56,8 +60,9 @@ struct AutotestStep {
         Press,         // press: <control>, release: <control>, tap: <control> (key or gamepad button names)
         Release,
         Tap,
-        Axis,  // axis: {axis, value}: a stick or trigger of the virtual gamepad
-        Click, // click: [x, z]: a mouse click on a ground point
+        Axis,   // axis: {axis, value}: a stick or trigger of the virtual gamepad
+        Click,  // click: [x, z]: a mouse click on a ground point
+        Script, // script: <lua>: runs a line of the game's scripts, as the console does (battle("0"))
     };
     Kind kind = Kind::Wait;
     std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -102,6 +107,7 @@ struct AutotestHost {
     const ui::Ui* ui = nullptr;
     const input::InputState* input = nullptr;
     FrameStats* stats = nullptr;
+    script::ScriptVm* scripts = nullptr;
 };
 
 class Autotest {
@@ -166,6 +172,7 @@ private:
     bool resizeStep(const AutotestHost& host, const AutotestStep& step, double now);
     bool controlStep(const AutotestHost& host, const AutotestStep& step);
     bool clickStep(const AutotestHost& host, const AutotestStep& step);
+    bool scriptStep(const AutotestHost& host, const AutotestStep& step);
 
     // Device helpers that queue actions.
     void key(platform::KeyCode code, bool down, int afterTicks = 0);

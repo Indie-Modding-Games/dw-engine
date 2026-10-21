@@ -61,9 +61,24 @@ constexpr std::string_view MenuDocument = "pause_menu";
 // The menu the game shows at start; menu_select picks its entries while it is open.
 constexpr std::string_view MainMenuDocument = "main_menu";
 
-// The menu menu_select picks from: the main menu while it is open, else the pause menu.
+// The other documents menu_select picks from while they are open: the battle screen and the partner's menu.
+constexpr std::array<std::string_view, 2> ScreenDocuments{"partner_menu", "battle"};
+
+// The menu menu_select picks from: the main menu while it is open, then the pause menu, then the battle screen or
+// the partner's menu; the pause menu when none is open, so the step says so.
 std::string_view shownMenu(const ui::Ui& ui) {
-    return ui.isVisible(MainMenuDocument) ? MainMenuDocument : MenuDocument;
+    if (ui.isVisible(MainMenuDocument)) {
+        return MainMenuDocument;
+    }
+    if (ui.isVisible(MenuDocument)) {
+        return MenuDocument;
+    }
+    for (const std::string_view document : ScreenDocuments) {
+        if (ui.isVisible(document)) {
+            return document;
+        }
+    }
+    return MenuDocument;
 }
 
 std::optional<AutotestDevice> deviceNamed(std::string_view name) {
@@ -92,9 +107,9 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 13> StepNames{
+constexpr std::array<std::string_view, 14> StepNames{
     "wait",       "walk_to", "menu",    "menu_select", "expect_setting", "screenshot", "resize",
-    "fullscreen", "press",   "release", "tap",         "axis",           "click"};
+    "fullscreen", "press",   "release", "tap",         "axis",           "click",      "script"};
 
 std::string_view kindName(Kind kind) {
     return StepNames.at(static_cast<std::size_t>(kind));
@@ -140,6 +155,12 @@ void readCondition(assets::YamlReader& reader, const core::YamlNode& node, Autot
     if (const core::YamlNode* named = node.find("map_name")) {
         step.until.mapNameShown = reader.text(*named);
     }
+    if (const core::YamlNode* shown = node.find("shown")) {
+        step.until.shown = reader.text(*shown);
+    }
+    if (const core::YamlNode* hidden = node.find("hidden")) {
+        step.until.hidden = reader.text(*hidden);
+    }
     if (const core::YamlNode* seconds = node.find("seconds")) {
         step.seconds = reader.number(*seconds);
     }
@@ -170,9 +191,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     const core::YamlNode& value = entries.front().value;
     if (kind == "wait") {
         step.kind = Kind::Wait;
-        reader.expectKeys(
-            value, "wait", {},
-            {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "map_name", "timeout"});
+        reader.expectKeys(value, "wait", {},
+                          {"seconds", "map", "partner_within", "player_near", "radius", "menu_open", "map_name",
+                           "shown", "hidden", "timeout"});
         readCondition(reader, value, step);
         readCommon(reader, value, step);
     } else if (kind == "walk_to") {
@@ -206,6 +227,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
             reader.fail(value, "menu is open or close");
         }
         step.flag = action == "open";
+    } else if (kind == "script") {
+        step.kind = Kind::Script;
+        step.text = reader.text(value);
     } else if (kind == "menu_select") {
         step.kind = Kind::MenuSelect;
         step.text = reader.text(value);
@@ -527,6 +551,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
         return controlStep(host, step);
     case Kind::Click:
         return clickStep(host, step);
+    case Kind::Script:
+        return scriptStep(host, step);
     }
     return true;
 }
@@ -535,7 +561,7 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     const AutotestCondition& until = step.until;
     const bool hasCondition = until.map.has_value() || until.partnerWithin.has_value() ||
                               until.playerNear.has_value() || until.menuOpen.has_value() ||
-                              until.mapNameShown.has_value();
+                              until.mapNameShown.has_value() || until.shown.has_value() || until.hidden.has_value();
     const double waited = now - progress_->start;
     if (waited < step.seconds) {
         return false;
@@ -562,6 +588,10 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
                             until.playerNear->x, until.playerNear->y);
     } else if (until.menuOpen && host.ui->isVisible(MenuDocument) != *until.menuOpen) {
         unmet = *until.menuOpen ? "the menu is closed" : "the menu is open";
+    } else if (until.shown && !host.ui->isVisible(*until.shown)) {
+        unmet = std::format("{} is not shown", *until.shown);
+    } else if (until.hidden && host.ui->isVisible(*until.hidden)) {
+        unmet = std::format("{} is still shown", *until.hidden);
     }
     if (unmet.empty()) {
         return true;
@@ -850,16 +880,39 @@ bool Autotest::menuSelectStep(const AutotestHost& host, const AutotestStep& step
         progress.phase = 1;
         return false;
     }
-    // Down through the page, then up if it does not wrap round.
+    // Down through the page, then up if it does not wrap round, then right and left through a row (the battle's
+    // commands).
     constexpr int DownTries = 8;
-    constexpr int MaxTries = 16;
+    constexpr int UpTries = 16;
+    constexpr int RightTries = 28;
+    constexpr int MaxTries = 40;
     if (progress.attempts >= MaxTries) {
         failStep(std::format("cannot focus it; the focus is on '{}'", host.ui->focusedElementId(menu)));
         return false;
     }
-    tapAction(device, progress.attempts < DownTries ? "down" : "up");
+    std::string_view direction = "left";
+    if (progress.attempts < DownTries) {
+        direction = "down";
+    } else if (progress.attempts < UpTries) {
+        direction = "up";
+    } else if (progress.attempts < RightTries) {
+        direction = "right";
+    }
+    tapAction(device, direction);
     ++progress.attempts;
     return false;
+}
+
+bool Autotest::scriptStep(const AutotestHost& host, const AutotestStep& step) {
+    if (host.scripts == nullptr) {
+        failStep("the game has no scripts");
+        return false;
+    }
+    if (auto ran = host.scripts->runString(step.text, "autotest"); !ran) {
+        failStep(ran.error().message);
+        return false;
+    }
+    return true;
 }
 
 bool Autotest::screenshotStep(const AutotestHost& host, const AutotestStep& step) {
@@ -1063,12 +1116,14 @@ void Autotest::tapAction(AutotestDevice device, std::string_view action) {
         platform::KeyCode key;
         GamepadButton button;
     };
-    constexpr std::array<Control, 5> Controls{{
+    constexpr std::array<Control, 7> Controls{{
         {.action = "menu", .key = keys::Tab, .button = GamepadButton::Start},
         {.action = "confirm", .key = keys::Return, .button = GamepadButton::South},
         {.action = "cancel", .key = keys::Escape, .button = GamepadButton::East},
         {.action = "up", .key = keys::Up, .button = GamepadButton::DpadUp},
         {.action = "down", .key = keys::Down, .button = GamepadButton::DpadDown},
+        {.action = "left", .key = keys::Left, .button = GamepadButton::DpadLeft},
+        {.action = "right", .key = keys::Right, .button = GamepadButton::DpadRight},
     }};
     const auto control = std::ranges::find(Controls, action, &Control::action);
     if (control == Controls.end()) {

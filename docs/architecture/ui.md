@@ -144,6 +144,11 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `language` | código de idioma (`en`, `es`) | `language` (y la UI vuelve a poner todos sus textos) |
 | `text_font` | `modern`, `original` | `text_font` (y la UI vuelve a componer los documentos con la fuente) |
 
+La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
+`battle_charge` (cada pulsación que carga el golpe final) y `battle_close` (cierra la caja del final). Lo que dibuja
+lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `fight` o `end`), y el menú del compañero
+con prefijos `partner.` y `bag.`; el contrato está en el [README de apps/screens](../../apps/screens/README.md).
+
 Otros ajustes los publica el juego sin que un menú los pida:
 
 | Ajuste | Valor | Qué es |

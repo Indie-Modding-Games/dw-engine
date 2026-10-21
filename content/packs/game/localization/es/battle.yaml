@@ -1,0 +1,40 @@
+# La pantalla de combate (ui/battle) y las claves del propio combate (game/battle: text_keys.hpp).
+command.none: "Nada"
+command.flee: "Huir"
+command.attack: "Atacar"
+command.your_call: "Tú decides"
+command.moderate: "Con calma"
+command.distance: "A distancia"
+command.defend: "Defender"
+command.change: "Cambiar"
+command.technique_1: "Técnica 1"
+command.technique_2: "Técnica 2"
+command.technique_3: "Técnica 3"
+command.finisher: "Golpe final"
+outcome.victory: "¡Victoria!"
+outcome.fled: "Habéis escapado."
+outcome.defeat: "Derrota..."
+status.poison: "Envenenado"
+status.confusion: "Confundido"
+status.stun: "Aturdido"
+status.flatten: "Aplastado"
+# {name} es el nombre del objeto y {amount} cuántos.
+result.item_dropped: "Has encontrado {name}."
+result.injured: "Tu compañero ha resultado herido."
+# {name} es el nombre de la técnica.
+result.move_learned: "¡Ha aprendido {name}!"
+# {amount} son los bits ganados.
+result.bits: "Has ganado {amount} bits."
+# {amount} es cuántas vidas ha perdido el compañero.
+result.lives_lost: "Tu compañero ha perdido {amount} vida."
+# {name} es el nombre del objeto y {amount} cuántos se han perdido.
+result.item_lost: "Has perdido {name} x{amount}."
+# {name} es el nombre de quien se une a la ciudad.
+result.recruit_joined: "¡{name} se mudará a la ciudad!"
+# {seconds} es el tiempo que queda para levantarse.
+revive_countdown: "¡Levántate! {seconds}"
+finisher: "Golpe final"
+charge: "¡Carga el golpe final!"
+charge_hint: "Pulsa una y otra vez"
+prompt.command: "Dar la orden"
+continue: "Continuar"

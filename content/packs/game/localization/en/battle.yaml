@@ -1,0 +1,41 @@
+# The battle screen (ui/battle) and the battle's own keys (game/battle: text_keys.hpp). The command row shows the
+# original's command names (btl.command_names) and move names; command.* is the engine's fallback for tools.
+command.none: "None"
+command.flee: "Run"
+command.attack: "Attack"
+command.your_call: "Your call"
+command.moderate: "Moderate"
+command.distance: "Distance"
+command.defend: "Defend"
+command.change: "Change"
+command.technique_1: "Technique 1"
+command.technique_2: "Technique 2"
+command.technique_3: "Technique 3"
+command.finisher: "Finisher"
+outcome.victory: "Victory!"
+outcome.fled: "Got away safely."
+outcome.defeat: "Defeated..."
+status.poison: "Poisoned"
+status.confusion: "Confused"
+status.stun: "Stunned"
+status.flatten: "Flattened"
+# {name} is the item's name and {amount} how many.
+result.item_dropped: "Found {name}."
+result.injured: "Your partner was injured."
+# {name} is the move's name.
+result.move_learned: "Learned {name}!"
+# {amount} is the bits won.
+result.bits: "Won {amount} bits."
+# {amount} is how many lives the partner lost.
+result.lives_lost: "Your partner lost {amount} life."
+# {name} is the item's name and {amount} how many were lost.
+result.item_lost: "Lost {name} x{amount}."
+# {name} is the name of who joined the city.
+result.recruit_joined: "{name} will move to the city!"
+# {seconds} is the time left to get back up.
+revive_countdown: "Get up! {seconds}"
+finisher: "Finisher"
+charge: "Charge the finisher!"
+charge_hint: "Press repeatedly"
+prompt.command: "Give the order"
+continue: "Continue"

@@ -1,0 +1,274 @@
+/* The battle screen over the field: the command row at the top (command_menu.c: BTL_renderCommandMenu), the
+   partner's bars and finisher gauge (battle_hud.c: BTL_renderPartnerStatusBars, BTL_renderFinisherGauge), the
+   enemies' bars, the revive countdown, and the end box (battle_ui.c: handleBattleEndBox). */
+
+#fight, #end {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* The command row: one entry per command the partner's brains allow, the focused one named below the row. */
+#commands {
+	position: absolute;
+	top: 18dp;
+	left: 0;
+	width: 100%;
+	text-align: center;
+}
+
+#command-row {
+	display: inline-block;
+	padding: 6dp 8dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+.command {
+	display: inline-block;
+	margin: 0 3dp;
+	padding: 6dp 10dp;
+	font-size: 22dp;
+}
+
+.command.current {
+	border: 2dp #6fc3ff;
+}
+
+.command.unavailable {
+	color: #6b7480;
+}
+
+#command-name {
+	margin-top: 6dp;
+	font-size: 22dp;
+}
+
+/* The fighters' panels: name, status, then HP and MP bars with four-digit values. */
+.fighter {
+	width: 330dp;
+	padding: 8dp 12dp;
+	margin-bottom: 8dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+.fighter.fainted {
+	color: #6b7480;
+}
+
+.fighter-head {
+	margin-bottom: 4dp;
+}
+
+.fighter-name {
+	font-size: 22dp;
+}
+
+.fighter-status {
+	float: right;
+	color: #e07ad0;
+	font-size: 16dp;
+}
+
+.bar-row {
+	display: flex;
+	align-items: center;
+	margin: 2dp 0;
+}
+
+.bar-label {
+	width: 40dp;
+	font-size: 22dp;
+}
+
+.bar {
+	flex: 1;
+	height: 10dp;
+	margin: 0 8dp;
+	background-color: #2a323d;
+	border-radius: 3dp;
+}
+
+.fill {
+	height: 100%;
+	width: 0%;
+	border-radius: 3dp;
+}
+
+.hp .fill { background-color: #54d16a; }
+.mp .fill { background-color: #4f9cff; }
+.charge .fill { background-color: #ffd34f; }
+
+.bar-value {
+	width: 60dp;
+	text-align: right;
+	font-size: 22dp;
+}
+
+#enemies {
+	position: absolute;
+	/* Below the HUD's minimap. */
+	top: 290dp;
+	right: 24dp;
+	width: 356dp;
+}
+
+#partner-panel {
+	position: absolute;
+	left: 24dp;
+	bottom: 56dp;
+}
+
+/* The finisher gauge: six segments that fill as the partner's gauge does, and lit when full. */
+#finisher {
+	padding: 6dp 12dp;
+	width: 330dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+#finisher-label {
+	font-size: 22dp;
+	margin-right: 10dp;
+}
+
+#finisher-segments {
+	display: inline-block;
+}
+
+.segment {
+	display: inline-block;
+	width: 30dp;
+	height: 12dp;
+	margin-right: 4dp;
+	background-color: #2a323d;
+	border-radius: 2dp;
+}
+
+.segment.filled { background-color: #ff9a3c; }
+#finisher.ready .segment { background-color: #ffd34f; }
+
+/* The finisher's charge: confirm or a click adds to it while the aura lasts (command_menu.c:
+   BTL_tickFinisherChargeup). */
+#charge {
+	position: absolute;
+	left: 50%;
+	top: 40%;
+	width: 360dp;
+	margin-left: -180dp;
+	padding: 12dp 16dp;
+	text-align: center;
+	background-color: #10161ef0;
+	border: 2dp #ffd34f;
+	border-radius: 8dp;
+}
+
+#charge-title {
+	font-size: 22dp;
+	margin-bottom: 8dp;
+}
+
+.charge-hint {
+	margin-top: 8dp;
+	font-size: 15dp;
+	color: #9aa7b6;
+}
+
+#revive {
+	position: absolute;
+	left: 0;
+	top: 45%;
+	width: 100%;
+	text-align: center;
+	font-size: 33dp;
+}
+
+#prompts {
+	position: absolute;
+	right: 24dp;
+	bottom: 16dp;
+	font-size: 15dp;
+	color: #9aa7b6;
+}
+
+/* The end box: the outcome, the lines of drops, injury and moves learned, then the stats and the bits. */
+#end {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #05080c80;
+}
+
+#end-panel {
+	width: 560dp;
+	padding: 18dp 24dp 14dp 24dp;
+	background-color: #151b24f0;
+	border: 1dp #2e3a4a;
+	border-radius: 14dp;
+}
+
+#end-title {
+	font-size: 33dp;
+	color: #f0a73a;
+	margin-bottom: 10dp;
+}
+
+.end-line {
+	font-size: 22dp;
+	margin: 2dp 0;
+}
+
+#end-boxes {
+	display: flex;
+	margin-top: 12dp;
+}
+
+#gains {
+	flex: 1;
+	padding: 8dp 12dp;
+	margin-right: 10dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+.gain {
+	display: inline-block;
+	width: 48%;
+	font-size: 22dp;
+}
+
+.gain-value {
+	float: right;
+	margin-right: 14dp;
+}
+
+#bits {
+	width: 160dp;
+	padding: 8dp 12dp;
+	font-size: 22dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+#bits-value {
+	display: block;
+	text-align: right;
+}
+
+#end-continue {
+	margin-top: 14dp;
+	text-align: center;
+}
+
+/* Hidden wins over the display of the elements above. */
+#fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .end-line.hidden, .fighter.hidden {
+	display: none;
+}

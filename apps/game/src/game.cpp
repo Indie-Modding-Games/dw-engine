@@ -41,6 +41,8 @@
 #include <vector>
 
 #include "autotest.hpp"
+#include "battle_screen.hpp"
+#include "battle_trigger.hpp"
 #include "common.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
@@ -161,10 +163,32 @@ ui::MinimapMarker markerOf(const game::field::CharacterState& character) {
             .facingZ = std::cos(character.yaw)};
 }
 
+// Starts the battle a battle("npcs") command asks for against the NPCs of the field's map.
+void startBattle(BattleScreen& screen, const assets::DigimonTable* species, const FieldScene& scene,
+                 std::string_view npcs) {
+    auto started = [&]() -> core::Result<void> {
+        if (species == nullptr) {
+            return core::fail(std::string{messages::NoSpeciesTable});
+        }
+        auto chosen = npcsOf(npcs);
+        if (!chosen) {
+            return std::unexpected{chosen.error()};
+        }
+        auto request = mapBattleRequest(scene.field(), scene.map(), *species, *chosen);
+        if (!request) {
+            return std::unexpected{request.error()};
+        }
+        return screen.start(std::move(*request));
+    }();
+    if (!started) {
+        core::logWarning("{}", core::formatMessage(messages::BattleStartFailed, started.error().message));
+    }
+}
+
 core::Result<void> loadDocuments(ui::Ui& ui) {
     for (const auto& [name, id] :
          {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
-          std::pair{"main_menu", "ui/main_menu/document"}}) {
+          std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"}}) {
         auto asset = assets::AssetId::parse(id);
         if (!asset) {
             return std::unexpected{asset.error()};
@@ -462,6 +486,21 @@ int runGame(const Options& options) {
     (*scripts)->bindCommand(ui::TextFontSetting,
                             [&consoleTextFont](std::string_view name) { consoleTextFont = std::string{name}; });
 
+    // The battle screen, and the console's and the scripts' battle("npcs") that starts one against the map's NPCs
+    // (battle_trigger.hpp), applied between frames like the other commands.
+    auto species = speciesTable(files, session.rules().current());
+    if (!species) {
+        core::logWarning("{}", core::formatMessage(messages::BattleStartFailed, species.error().message));
+    }
+    BattleScreen battleScreen{{.session = &session,
+                               .battle = game->systems.battle,
+                               .inventory = game->systems.inventory,
+                               .species = species ? &*species : nullptr,
+                               .ui = ui->get()}};
+    std::optional<std::string> pendingBattle;
+    (*scripts)->bindCommand(BattleCommand,
+                            [&pendingBattle](std::string_view npcs) { pendingBattle = std::string{npcs}; });
+
     FrameStats frameStats;
     const AutotestHost host{
         .platform = &*platform,
@@ -472,6 +511,7 @@ int runGame(const Options& options) {
         .ui = ui->get(),
         .input = &input,
         .stats = &frameStats,
+        .scripts = scripts->get(),
     };
 
     core::FixedStep step{TickSeconds, MaxFrameSeconds};
@@ -581,8 +621,12 @@ int runGame(const Options& options) {
             } else {
                 mouse.release();
             }
-            // The menus pause the field and the game time.
-            if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument)) {
+            // The menus pause the field and the game time; a battle runs instead of the field.
+            if (battleScreen.active()) {
+                if (!(*ui)->isVisible(MenuDocument)) {
+                    battleScreen.tick(TickSeconds);
+                }
+            } else if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument)) {
                 (*scene)->tick(intent, static_cast<float>(TickSeconds));
                 session.tick(TickSeconds);
                 (*scene)->finishTick();
@@ -592,7 +636,14 @@ int runGame(const Options& options) {
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
+            if (battleScreen.handle(command)) {
+                continue;
+            }
             running = apply(command, **ui, *window, settings, languageChanger, textFontChanger) && running;
+        }
+        if (pendingBattle) {
+            startBattle(battleScreen, species ? &*species : nullptr, **scene,
+                        *std::exchange(pendingBattle, std::nullopt));
         }
         if (consoleTextFont) {
             textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
@@ -610,7 +661,8 @@ int runGame(const Options& options) {
         screenFade->setDarkness(field.fadeLevel());
         mapChangeView.show(**scene);
 
-        const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument);
+        const bool paused =
+            (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) || battleScreen.active();
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
         (*ui)->update();
 

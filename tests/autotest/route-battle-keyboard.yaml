@@ -1,0 +1,25 @@
+# The battle screen with the keyboard: a battle against the first NPC of File City that can fight, started with the
+# debug trigger (battle("") in the console, apps/game/src/battle_trigger.hpp), an order from the command row, running
+# away and the end box. The new game's partner has three entries: its finisher (command-0, unavailable until the gauge
+# is full), Run (command-1) and Your Call (command-2). How to run it: docs/guides/prueba-vertical.md.
+name: battle-keyboard
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - script: battle("")
+  - wait: {shown: battle, seconds: 1}
+  - expect_setting: {battle.phase: fight}
+  - screenshot: battle-start
+  - menu_select: command-2
+  - wait: {seconds: 4}
+  - expect_setting: {battle.phase: fight}
+  - screenshot: battle-fight
+  - menu_select: command-1
+  - wait: {seconds: 3}
+  - expect_setting: {battle.phase: end}
+  - screenshot: battle-end
+  - menu_select: end-continue
+  - wait: {hidden: battle, timeout: 5}
+  - screenshot: battle-closed

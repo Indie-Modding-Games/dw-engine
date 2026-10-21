@@ -54,4 +54,20 @@ inline constexpr std::string_view EmptySlot = "{}: empty";
 inline constexpr std::string_view SavedSlot = "{}: \"{}\", {}:{:02} played, ruleset {}, saved {:%F %T} UTC by {}";
 inline constexpr std::string_view HasBackup = " (has a backup)";
 
+// The battle trigger and screen (battle_trigger.cpp, battle_screen.cpp).
+inline constexpr std::string_view NoMapNpc = "the map {} has no NPC {}";
+inline constexpr std::string_view NpcNotAFighter = "NPC {} of the map {} is no Digimon of the table";
+inline constexpr std::string_view NoMapFighter = "the map {} has no NPC to fight";
+inline constexpr std::string_view BadNpcList = "'{}' is not a list of NPC numbers";
+inline constexpr std::string_view BattleAlreadyRunning = "a battle is already under way";
+inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
+inline constexpr std::string_view BattleStarted = "game: battle against {} on {}";
+inline constexpr std::string_view BattleFinished = "game: battle over: {}";
+inline constexpr std::string_view NoSpeciesTable = "game: the ruleset names no Digimon table";
+inline constexpr std::string_view BattleCommandRefused = "game: battle: command {} refused: {}";
+
+// The partner's menu (partner_menu.cpp).
+inline constexpr std::string_view BagCommandFailed = "game: bag: {} failed: {}";
+inline constexpr std::string_view BadBagMove = "game: bag: '{}' is not two slots";
+
 } // namespace dwe::app::messages
