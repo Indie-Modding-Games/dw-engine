@@ -5,6 +5,7 @@
 #include <dwe/render/map_layers.hpp>
 #include <dwe/render/map_renderer.hpp>
 #include <dwe/render/map_scene.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -12,6 +13,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -229,13 +231,14 @@ TEST_CASE("the time-of-day fade steps like the original's") {
 }
 
 TEST_CASE("the user's disc, extracted: the route's maps load with their backgrounds, pages and depth layers") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
-    const auto packs = dwe::assets::findPacks(disk, std::filesystem::path{content});
+    const auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(packs.has_value(), errorOf(packs));
     const auto opened = dwe::assets::openPacks(disk, packs->packs);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));

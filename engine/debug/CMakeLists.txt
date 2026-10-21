@@ -10,8 +10,7 @@ dwe_add_module(debug
     DEPS core platform rhi input script assets ruleset
     PRIVATE_LIBS imgui::imgui)
 
-# Saving a tuned section writes to a pack on disk, in the temporary folder of the assets tests.
+# Saving a tuned section writes to a pack on disk, in a temporary folder (tests/support).
 if(TARGET dwe_debug_tests)
-    target_include_directories(dwe_debug_tests PRIVATE ${PROJECT_SOURCE_DIR}/engine/assets/tests)
     target_compile_definitions(dwe_debug_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 endif()

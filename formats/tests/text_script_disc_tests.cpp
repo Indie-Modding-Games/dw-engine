@@ -13,11 +13,13 @@
 #include <dwe/formats/text/font.hpp>
 #include <dwe/formats/text/game_text.hpp>
 #include <dwe/formats/text/string_manifest.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <set>
 #include <span>
@@ -87,11 +89,12 @@ struct DiscFiles {
 };
 
 std::optional<DiscFiles> openDisc() {
-    const char* path = std::getenv("DWE_DISC");
-    if (path == nullptr || std::string_view{path}.empty()) {
+    const std::optional<std::filesystem::path> mountedPath = dwe::test_support::userDisc();
+    if (!mountedPath) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return std::nullopt;
     }
+    const std::filesystem::path& path = *mountedPath;
     auto image = disc::DiscImage::open(path);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     auto volume = disc::readIsoVolume(*image);

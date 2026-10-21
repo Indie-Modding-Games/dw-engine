@@ -2,6 +2,7 @@
 #include <dwe/formats/exe/tables.hpp>
 #include <dwe/formats/image/tim.hpp>
 #include <dwe/formats/model/tmd.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <cgltf.h>
 #include <doctest/doctest.h>
@@ -18,7 +19,6 @@
 #include "model_extractors.hpp"
 #include "model_fixtures.hpp"
 #include "model_textures.hpp"
-#include "temp_folder.hpp"
 #include "tim_builder.hpp"
 #include "validate.hpp"
 
@@ -150,7 +150,7 @@ TEST_CASE("an animation that cannot be converted is left out of the model and se
     const auto contract = digimonContract("agumon", skeleton, *model);
     REQUIRE(contract.has_value());
     CHECK(contract->contains("unconverted_animations"));
-    const dwe::assets::testing::TempFolder temp;
+    const dwe::test_support::TempFolder temp;
     temp.write("base/pack.yaml",
                "id: base\nversion: 1.0.0\nlayer: base\nschemas:\n  model_contract: [digimon/*/contract]\n");
     temp.write("base/digimon/agumon/model.glb",

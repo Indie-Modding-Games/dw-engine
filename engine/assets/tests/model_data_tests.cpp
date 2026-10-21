@@ -2,6 +2,7 @@
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 #include <lodepng.h>
@@ -9,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <optional>
 #include <string>
@@ -328,11 +330,12 @@ TEST_CASE("loadModel reads a model by asset id") {
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it); the CI has none. Every extracted .glb
 // must load, and the clips as dwx writes them must keep the invariants the animation player relies on.
 TEST_CASE("the user's disc, extracted: every model loads") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     const auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE(packs.has_value());

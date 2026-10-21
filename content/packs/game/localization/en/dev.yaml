@@ -1,2 +1,4 @@
 # Texts of the development views.
 test_map: "Test map"
+# The banner shown while --dev-assets is on.
+assets_active: "Development assets in use (--dev-assets)"

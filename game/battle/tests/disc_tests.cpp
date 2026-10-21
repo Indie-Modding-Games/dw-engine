@@ -4,11 +4,13 @@
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/battle/simulation.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -28,11 +30,12 @@ struct ExtractedTables {
 
 // The moves and Digimon tables extracted from the user's disc, or nothing when DWE_CONTENT is not set.
 std::optional<ExtractedTables> extractedTables() {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return std::nullopt;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     const auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), found.error().message);

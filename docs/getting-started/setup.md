@@ -58,7 +58,10 @@ DWE_DISC="$HOME/juegos/Mi disco (USA).bin" scripts/dev.sh test
 
 `dev.sh` monta la carpeta de la imagen **solo lectura** en la misma ruta dentro del contenedor y le pasa `DWE_DISC`.
 Pon la ruta entre comillas si tiene espacios o paréntesis. Sin `DWE_DISC`, los tests que necesitan el disco se saltan
-(la CI nunca lo tiene).
+(la CI nunca lo tiene). Igual con `DWE_CONTENT` (una carpeta extraída con `dwx`) y `DWE_DECOMP` (una copia del
+decomp, para los tests que comparan con él); los tests los leen solo a través de `tests/support`
+([README](../../tests/support/README.md)). Para jugar con tus assets locales sin empaquetar nada, mira
+[assets de desarrollo](../architecture/assets-de-desarrollo.md).
 
 ## 3. Jugar
 

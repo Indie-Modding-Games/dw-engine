@@ -17,7 +17,8 @@
 namespace dwe::sim {
 
 inline constexpr std::string_view Usage =
-    "dwe-sim --scenario <name> [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--runs <n>] [--seed <n>] "
+    "dwe-sim --scenario <name> [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--runs <n>] "
+    "[--seed <n>] "
     "[--threads <n>] [--days <n>] [--speed <x>] [--set <section>.<path>=<value>]... [--param <key>=<value>]... "
     "[--out <folder>] | --list";
 
@@ -38,6 +39,8 @@ struct SimOptions {
     // As in the game: the content folder, the mods folders and the ruleset id.
     std::filesystem::path content = "content";
     std::vector<std::filesystem::path> mods;
+    // As in the game: --dev-assets also mounts the dev assets of the current folder's config. Never on by default.
+    bool devAssets = false;
     std::string ruleset{ruleset::OriginalRuleset};
     std::size_t runs = 100;
     std::uint64_t seed = 1;

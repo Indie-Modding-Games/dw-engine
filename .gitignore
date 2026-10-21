@@ -15,3 +15,6 @@ compile_commands.json
 CMakeUserPresets.json
 /.vscode/
 /.idea/
+
+# The dev assets config (--dev-assets): paths of one machine, never versioned
+dev-assets.yaml

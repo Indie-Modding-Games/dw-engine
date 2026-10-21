@@ -1,5 +1,6 @@
 #include "options.hpp"
 
+#include <dwe/content/dev_assets.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/session/slot_names.hpp>
 
@@ -174,6 +175,8 @@ bool readFlag(Options& options, std::string_view argument) {
         options.listSaves = true;
     } else if (argument == TuningOption) {
         options.tuning = true;
+    } else if (argument == content::DevAssetsOption) {
+        options.devAssets = true;
     } else {
         return false;
     }

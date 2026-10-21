@@ -1,3 +1,5 @@
+#include <dwe/assets/dev_asset_sources.hpp>
+#include <dwe/content/dev_assets.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/sim/messages.hpp>
@@ -7,9 +9,11 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <optional>
 #include <print>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -29,7 +33,17 @@ int runSimulation(std::span<char* const> arguments) {
         std::print("{}", sim::describeScenarios(registry));
         return EXIT_SUCCESS;
     }
-    auto content = dwe::content::GameContent::mount(options->content, options->mods);
+    assets::DevAssetSources devAssets;
+    if (options->devAssets) {
+        // dwe-sim has no user data folder: its config is the current folder's.
+        auto loaded = dwe::content::loadDevAssets(dwe::content::devAssetsConfigFolders(std::nullopt));
+        if (!loaded) {
+            core::logError("{}", loaded.error().message);
+            return EXIT_FAILURE;
+        }
+        devAssets = std::move(*loaded);
+    }
+    auto content = dwe::content::GameContent::mount(options->content, options->mods, devAssets);
     if (!content) {
         core::logError("{}", content.error().message);
         return EXIT_FAILURE;

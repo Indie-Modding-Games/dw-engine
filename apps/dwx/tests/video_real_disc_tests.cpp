@@ -5,11 +5,14 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -38,11 +41,12 @@ std::string textOf(std::span<const std::byte> bytes) {
 } // namespace
 
 TEST_CASE("the user's disc: every movie is extracted without unknowns") {
-    const char* path = std::getenv("DWE_DISC");
-    if (path == nullptr || std::string_view{path}.empty()) {
+    const std::optional<std::filesystem::path> mountedPath = dwe::test_support::userDisc();
+    if (!mountedPath) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& path = *mountedPath;
     auto image = dwe::formats::disc::DiscImage::open(path);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = dwe::formats::disc::readIsoVolume(*image);

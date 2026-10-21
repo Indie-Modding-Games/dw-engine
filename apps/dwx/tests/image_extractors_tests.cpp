@@ -1,6 +1,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -16,18 +17,17 @@
 #include "asset_names.hpp"
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
-#include "temp_folder.hpp"
 #include "tim_builder.hpp"
 #include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using namespace dwe::formats::image;
-using dwe::assets::testing::TempFolder;
 using dwe::formats::image::test::appendTim;
 using dwe::formats::image::test::bytesOf;
 using dwe::formats::image::test::directTim;
 using dwe::formats::image::test::indexedTim;
 using dwe::formats::image::test::TimSpec;
+using dwe::test_support::TempFolder;
 
 namespace {
 

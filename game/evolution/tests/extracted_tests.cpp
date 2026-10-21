@@ -6,12 +6,14 @@
 #include <dwe/game/evolution/evolution.hpp>
 #include <dwe/game/evolution/simulation.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -30,10 +32,11 @@ using testing::valueOf;
 
 // The extracted content with the game pack, or nothing when DWE_CONTENT is not set (scripts/dev.sh mounts it).
 std::optional<assets::VirtualFileSystem> mountContent(const assets::DiskFileSystem& disk) {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         return std::nullopt;
     }
+    const std::filesystem::path& content = *mountedContent;
     auto found = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));
     found->packs.push_back({.path = DWE_GAME_PACK, .kind = assets::FoundPack::Kind::Folder});

@@ -23,6 +23,9 @@ struct Options {
     std::filesystem::path content = "content";
     // Folders with more packs, such as mods (--mods, may repeat). The VFS stacks them by layer and priority.
     std::vector<std::filesystem::path> mods;
+    // Set by --dev-assets: also use the local assets of the dev assets config, with a banner on screen
+    // (docs/architecture/assets-de-desarrollo.md). Never on by default.
+    bool devAssets = false;
     // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
     std::string ruleset{dwe::ruleset::OriginalRuleset};
     // The folder of the save files (--saves); the user's data folder when not given.
@@ -82,7 +85,8 @@ struct Options {
 };
 
 inline constexpr std::string_view Usage =
-    "dwe-game [--content <folder>] [--mods <folder>]... [--ruleset <id>] [--saves <folder>] [--size <width>x<height>] "
+    "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--saves <folder>] [--size "
+    "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
     "[--text-font modern|original] [--new-game | --load <slot>] [--clock-speed <x>] [--seed <n>] "
     "[--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "

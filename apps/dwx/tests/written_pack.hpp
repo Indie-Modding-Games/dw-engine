@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -12,7 +13,6 @@
 #include <string>
 
 #include "base_pack.hpp"
-#include "temp_folder.hpp"
 #include "validate.hpp"
 
 namespace dwe::dwx::testing {
@@ -22,7 +22,7 @@ namespace dwe::dwx::testing {
 // "<file in the pack>: <message>" per problem. This is how CI checks, without the disc, that the engine loads what
 // dwx extract writes.
 inline std::string problemsOfWrittenPack(const ExtractionRun& run, const DiscInfo& info) {
-    const assets::testing::TempFolder temp;
+    const test_support::TempFolder temp;
     const std::filesystem::path folder = temp.path() / "base";
     REQUIRE(prepareOutputFolder(folder, false).has_value());
     REQUIRE(writeBasePack(folder, run, info).has_value());

@@ -5,6 +5,7 @@
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -22,7 +23,6 @@
 
 #include "editor_documents.hpp"
 #include "map_documents.hpp"
-#include "temp_folder.hpp"
 #include "validate.hpp"
 #include "yaml_edits.hpp"
 
@@ -31,7 +31,7 @@
 // over it by id.
 
 using namespace dwe::dwx::testing;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 

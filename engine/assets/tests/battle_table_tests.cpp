@@ -4,10 +4,13 @@
 #include <dwe/assets/move_table.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -83,11 +86,12 @@ TEST_CASE("the move table refuses a repeated index, a short learn_chances and an
 }
 
 TEST_CASE("the user's disc, extracted: every move has a battle range and every move a Digimon knows is listed") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     const auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), found.error().message);

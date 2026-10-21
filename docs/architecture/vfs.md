@@ -79,6 +79,8 @@ documento que genera (`names::documentSchemas` en `apps/dwx/src/asset_names.cpp`
 
 Al montar un conjunto de paquetes, el motor los apila de abajo arriba:
 
+0. Los paquetes que **rellenan huecos** (`PackLocation::fillsGaps`, los de los assets de desarrollo) van debajo de
+   todos los demás; entre ellos valen las reglas siguientes.
 1. Por **capa**: base (1), remaster (2), mods (3), usuario (4).
 2. Dentro de una capa, por **prioridad**, de menor a mayor.
 3. Si empatan en capa y prioridad, cada paquete va encima de los paquetes de ese empate de los que depende, y si no,
@@ -133,6 +135,14 @@ montar `content/base`, todo `content/` o un `content/` que mezcle carpetas y arc
 `openPacks(disco, encontrados)` abre cada archivo con `PakFileSystem` y devuelve las `PackLocation` para `mount`
 junto con los archivos abiertos, que deben vivir tanto como el sistema de ficheros virtual. El visor de assets del
 overlay de depuración lo usa así y dice en su estado qué archivos quedaron ocultos.
+
+## Assets de desarrollo
+
+Con `--dev-assets` (solo en desarrollo, nunca por defecto) `GameContent` monta también los paquetes de las carpetas
+extraídas que nombra el fichero de configuración de desarrollo, solo para rellenar lo que falta. Un paquete normal gana
+al paquete de desarrollo con su id, y una carpeta anterior a una posterior; los que quedan fuera se registran en el
+log. Los que entran rellenan huecos (`PackLocation::fillsGaps`): van debajo de todos los paquetes normales, digan lo
+que digan su capa y su prioridad, y el log los marca. Detalle en [assets de desarrollo](assets-de-desarrollo.md).
 
 ## Errores
 

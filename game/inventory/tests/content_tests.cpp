@@ -9,10 +9,13 @@
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/game/inventory/item_effects.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -24,11 +27,12 @@ using namespace dwe::game::inventory;
 using dwe::game::inventory::testing::errorOf;
 
 TEST_CASE("the user's disc, extracted: every item and shop loads and every item's effect resolves") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));

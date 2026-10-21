@@ -25,6 +25,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 |---|---|
 | `--content <carpeta>` | Paquetes del juego (por defecto `content`) |
 | `--mods <carpeta>` | Más paquetes, como mods; se puede repetir. La VFS los apila por capa y prioridad |
+| `--dev-assets` | Usa también los assets locales del fichero `dev-assets.yaml`, con un aviso en pantalla mientras está activo; solo para desarrollo ([assets de desarrollo](../architecture/assets-de-desarrollo.md)) |
 | `--ruleset <id>` | El ruleset con el que se juega, `rules/<id>/` de los paquetes (por defecto `original`, ver [rulesets](../architecture/rulesets.md)) |
 | `--size <ancho>x<alto>` | Tamaño de la ventana (por defecto 1280x720) |
 | `--fullscreen` | Empieza a pantalla completa |
@@ -96,6 +97,9 @@ done
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
   evoluciona. Cada paso comprueba su efecto en el estado del compañero; hace capturas de cada etapa. Tarda unos dos
   minutos con lavapipe. Se corre en los dos idiomas, como `route-language.yaml`.
+- `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
+  se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
+  carpeta actual; se corre en los dos idiomas.
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario.

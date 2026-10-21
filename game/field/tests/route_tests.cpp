@@ -5,6 +5,7 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/grid.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -211,11 +212,12 @@ void runRoute(const dwe::assets::VirtualFileSystem& vfs, Drive drive) {
 }
 
 std::optional<dwe::assets::VirtualFileSystem> mountContent(const dwe::assets::DiskFileSystem& disk) {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         return std::nullopt;
     }
-    auto packs = dwe::assets::findPacks(disk, std::filesystem::path{content});
+    const std::filesystem::path& content = *mountedContent;
+    auto packs = dwe::assets::findPacks(disk, content);
     if (!packs) {
         FAIL(errorOf(packs));
         return std::nullopt;

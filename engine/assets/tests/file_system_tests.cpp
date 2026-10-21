@@ -1,4 +1,5 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -9,11 +10,9 @@
 #include <system_error>
 #include <vector>
 
-#include "temp_folder.hpp"
-
 using dwe::assets::DiskFileSystem;
 using dwe::assets::MemoryFileSystem;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 

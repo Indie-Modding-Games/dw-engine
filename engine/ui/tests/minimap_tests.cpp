@@ -2,6 +2,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 #include <dwe/ui/minimap.hpp>
 
 #include <doctest/doctest.h>
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -159,13 +161,14 @@ TEST_CASE("a map's collision becomes a minimap grid") {
 }
 
 TEST_CASE("the user's disc, extracted: every map with a file gives a minimap") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const assets::DiskFileSystem disk;
-    const auto packs = assets::findPacks(disk, std::filesystem::path{content});
+    const auto packs = assets::findPacks(disk, content);
     REQUIRE(packs.has_value());
     const auto opened = assets::openPacks(disk, packs->packs);
     REQUIRE(opened.has_value());

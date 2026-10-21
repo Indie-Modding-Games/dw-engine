@@ -5,19 +5,22 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
+#include <dwe/test_support/temp_folder.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 
 #include "base_pack.hpp"
 #include "disc_description.hpp"
 #include "schema_check.hpp"
-#include "temp_folder.hpp"
 #include "validate.hpp"
 
 using namespace dwe::dwx;
@@ -33,11 +36,12 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 } // namespace
 
 TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates and opens") {
-    const char* path = std::getenv("DWE_DISC");
-    if (path == nullptr || std::string_view{path}.empty()) {
+    const std::optional<std::filesystem::path> mountedPath = dwe::test_support::userDisc();
+    if (!mountedPath) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& path = *mountedPath;
     auto image = dwe::formats::disc::DiscImage::open(path);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = dwe::formats::disc::readIsoVolume(*image);
@@ -148,7 +152,7 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
     // ALLTIM's 180 Digimon textures and CARD.ALL's 66 cards, with their metadata.
     CHECK(summary.outputs > (180 + 66) * 2);
 
-    const dwe::assets::testing::TempFolder temp;
+    const dwe::test_support::TempFolder temp;
     REQUIRE(prepareOutputFolder(temp.path() / "base", false).has_value());
     const auto written = writeBasePack(temp.path() / "base", *run, info);
     REQUIRE_MESSAGE(written.has_value(), errorOf(written));

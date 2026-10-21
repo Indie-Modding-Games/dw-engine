@@ -10,6 +10,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/partner_view.hpp>
 #include <dwe/session/slot_names.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -185,14 +186,15 @@ others: {offense: 1, defense: 2, speed: 3, brains: 4, max_hp: 50, max_mp: 60, hp
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: the partner starts with the stats the new-game script sets") {
-    const char* folder = std::getenv("DWE_CONTENT");
-    if (folder == nullptr || std::string_view{folder}.empty()) {
+    const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
+    if (!mountedFolder) {
         MESSAGE("DWE_CONTENT is not set: skipping the new game's stats on extracted content");
         return;
     }
+    const std::filesystem::path& folder = *mountedFolder;
     const dwe::assets::DiskFileSystem disk;
     const std::array<dwe::assets::PackLocation, 2> locations{
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = std::filesystem::path{folder} / "base"},
+        dwe::assets::PackLocation{.fileSystem = &disk, .root = folder / "base"},
         dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
     auto files = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(files.has_value(), errorOf(files));

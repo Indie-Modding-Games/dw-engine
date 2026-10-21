@@ -46,6 +46,8 @@
 #include "battle_trigger.hpp"
 #include "care_commands.hpp"
 #include "common.hpp"
+#include "content_mount.hpp"
+#include "dev_assets_banner.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "language.hpp"
@@ -374,7 +376,7 @@ int runGame(const Options& options) {
         core::logError("{}", renderer.error().message);
         return EXIT_FAILURE;
     }
-    auto content = dwe::content::GameContent::mount(options.content, options.mods);
+    auto content = mountGameContent(options);
     if (!content) {
         core::logError("game: {}", content.error().message);
         return EXIT_FAILURE;
@@ -457,6 +459,12 @@ int runGame(const Options& options) {
     MapChangeView mapChangeView{**ui};
     (*ui)->setMenuDocument(MenuDocument);
     (*ui)->show("hud");
+    if (options.devAssets) {
+        if (auto shown = showDevAssetsBanner(**ui); !shown) {
+            core::logError("game: {}", shown.error().message);
+            return EXIT_FAILURE;
+        }
+    }
     // The game starts at the main menu; an autotest only when its route asks for it, so the others start in the field.
     if (!autotest || autotest->startsAtMainMenu()) {
         (*ui)->show(MainMenuDocument, true);

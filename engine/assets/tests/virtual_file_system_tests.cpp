@@ -1,4 +1,5 @@
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -8,14 +9,12 @@
 #include <string_view>
 #include <vector>
 
-#include "temp_folder.hpp"
-
 using dwe::assets::AssetId;
 using dwe::assets::DiskFileSystem;
 using dwe::assets::FoundPack;
 using dwe::assets::MemoryFileSystem;
 using dwe::assets::VirtualFileSystem;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 
@@ -245,4 +244,27 @@ TEST_CASE(".pak archives are found next to folder packs, and a folder wins over 
     REQUIRE(single.has_value());
     CHECK(single->packs == std::vector{FoundPack{.path = "packs/base", .kind = FoundPack::Kind::Folder}});
     CHECK(single->hidden.empty());
+}
+
+TEST_CASE("a pack that fills gaps stacks under every other pack, whatever its layer and priority") {
+    MemoryFileSystem memory;
+    addPack(memory, "base", "base");
+    memory.addFile("packs/base/data/table.yaml", "base");
+    addPack(memory, "story", "mods");
+    memory.addFile("packs/story/data/story.yaml", "story");
+    addPack(memory, "dev", "user", 99);
+    memory.addFile("packs/dev/data/table.yaml", "dev");
+    memory.addFile("packs/dev/data/story.yaml", "dev");
+    memory.addFile("packs/dev/data/only_dev.yaml", "dev");
+    const std::vector<dwe::assets::PackLocation> locations{
+        {.fileSystem = &memory, .root = "packs/base", .fillsGaps = false},
+        {.fileSystem = &memory, .root = "packs/story", .fillsGaps = false},
+        {.fileSystem = &memory, .root = "packs/dev", .fillsGaps = true}};
+    auto vfs = VirtualFileSystem::mount(locations);
+    REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);
+    CHECK(packOrder(*vfs) == std::vector<std::string>{"dev", "base", "story"});
+    CHECK(vfs->resolve(idOf("data/table"))->packId == "base");
+    CHECK(vfs->resolve(idOf("data/story"))->packId == "story");
+    CHECK(vfs->resolve(idOf("data/only_dev"))->packId == "dev");
+    CHECK(vfs->packs().front().fillsGaps);
 }

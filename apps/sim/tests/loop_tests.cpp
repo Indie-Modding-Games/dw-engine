@@ -29,6 +29,7 @@
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/sim/headless_session.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -37,6 +38,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -411,11 +413,12 @@ double turnSeconds(const ruleset::ClockRules& clock) {
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: raising, training and battling the first partner evolves it as the original") {
-    const char* folder = std::getenv("DWE_CONTENT");
-    if (folder == nullptr || std::string_view{folder}.empty()) {
+    const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
+    if (!mountedFolder) {
         MESSAGE("DWE_CONTENT is not set: skipping the game loop on extracted content");
         return;
     }
+    const std::filesystem::path& folder = *mountedFolder;
     const auto mounted = content::GameContent::mount(folder, {});
     REQUIRE_MESSAGE(mounted.has_value(), errorOf(mounted));
     const assets::VirtualFileSystem& files = (*mounted)->files();

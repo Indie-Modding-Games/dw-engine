@@ -39,4 +39,16 @@ inline constexpr std::string_view UnhashedTranslation =
     "{} is translated, but the lock has no hash of its English text";
 inline constexpr std::string_view KeptAndTranslated = "{} is kept as it is, but the translation has it";
 
+// The development sources (dev_asset_sources.cpp, dev_pack_selection.cpp).
+inline constexpr std::string_view DiscImageKind = "disc image";
+inline constexpr std::string_view ExtractedContentKind = "extracted content folder";
+inline constexpr std::string_view DecompRootKind = "decomp root";
+inline constexpr std::string_view DevSourceMissing = "the dev assets' {} {} does not exist";
+inline constexpr std::string_view DevSourceNotFile = "the dev assets' {} {} is not a file";
+inline constexpr std::string_view DevSourceNotFolder = "the dev assets' {} {} is not a folder";
+inline constexpr std::string_view DevSourceNoPacks = "the dev assets' {} {} has no packs";
+inline constexpr std::string_view DevSourceNoDecompLayout =
+    "the dev assets' {} {} has no include/dw and src folders: it is not a checkout of the decompilation";
+inline constexpr std::string_view DevSourceUnreadable = "the dev assets' {} {} cannot be read: {}";
+
 } // namespace dwe::assets::messages

@@ -2,6 +2,7 @@
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
 #include <dwe/formats/exe/tables_yaml.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -17,7 +18,6 @@
 #include "disc_fixtures.hpp"
 #include "game_tables.hpp"
 #include "riff_reader.hpp"
-#include "temp_folder.hpp"
 #include "written_pack.hpp"
 
 using namespace dwe::dwx;
@@ -205,7 +205,7 @@ TEST_CASE("map sound slices come from the executable's table") {
     REQUIRE(maps.size() == 1);
     CHECK(maps[0].find("map")->text() == "0");
 
-    const dwe::assets::testing::TempFolder temp;
+    const dwe::test_support::TempFolder temp;
     REQUIRE(prepareOutputFolder(temp.path() / "base", false).has_value());
     REQUIRE(writeBasePack(temp.path() / "base", *run, fixture.info).has_value());
     CHECK(checkBasePack(temp.path() / "base", *run).has_value());

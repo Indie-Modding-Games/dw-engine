@@ -9,15 +9,14 @@
 #include <string_view>
 #include <system_error>
 
-namespace dwe::assets::testing {
+namespace dwe::test_support {
 
 // A folder under the system's temporary folder, with a unique name, removed with everything in it at the end.
 class TempFolder {
 public:
     TempFolder() {
         std::random_device random;
-        path_ =
-            std::filesystem::temp_directory_path() / std::format("dwe_assets_tests_{:08x}{:08x}", random(), random());
+        path_ = std::filesystem::temp_directory_path() / std::format("dwe_tests_{:08x}{:08x}", random(), random());
         std::error_code error;
         DWE_ASSERT(std::filesystem::create_directories(path_, error));
     }
@@ -47,4 +46,4 @@ private:
     std::filesystem::path path_;
 };
 
-} // namespace dwe::assets::testing
+} // namespace dwe::test_support

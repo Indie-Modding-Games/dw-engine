@@ -1,6 +1,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/indexed_image.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 #include <lodepng.h>
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -89,15 +91,16 @@ TEST_CASE("indices become colours of any palette") {
 }
 
 TEST_CASE("the user's disc, extracted: a map background decodes to indices that give the RGBA decoding back") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     for (const char* name : {"background_day.png", "texture8/000.png", "texture4/000.png"}) {
         CAPTURE(name);
-        const auto bytes = disk.readFile(std::filesystem::path{content} / "base/map/twna01" / name);
+        const auto bytes = disk.readFile(content / "base/map/twna01" / name);
         REQUIRE(bytes.has_value());
         const auto indexed = decodeIndexedPng(bytes.value());
         REQUIRE(indexed.has_value());

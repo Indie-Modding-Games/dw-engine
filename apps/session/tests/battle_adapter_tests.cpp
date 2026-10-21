@@ -10,6 +10,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/partner_moves.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -442,14 +443,15 @@ TEST_CASE("the battle adapter registers the battle and partner_moves sections' c
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: the first partner starts with its first technique and its finisher") {
-    const char* folder = std::getenv("DWE_CONTENT");
-    if (folder == nullptr || std::string_view{folder}.empty()) {
+    const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
+    if (!mountedFolder) {
         MESSAGE("DWE_CONTENT is not set: skipping the partner's moves on extracted content");
         return;
     }
+    const std::filesystem::path& folder = *mountedFolder;
     const dwe::assets::DiskFileSystem disk;
     const std::array<dwe::assets::PackLocation, 2> locations{
-        dwe::assets::PackLocation{.fileSystem = &disk, .root = std::filesystem::path{folder} / "base"},
+        dwe::assets::PackLocation{.fileSystem = &disk, .root = folder / "base"},
         dwe::assets::PackLocation{.fileSystem = &disk, .root = DWE_GAME_PACK}};
     auto files = dwe::assets::VirtualFileSystem::mount(locations);
     REQUIRE_MESSAGE(files.has_value(), errorOf(files));

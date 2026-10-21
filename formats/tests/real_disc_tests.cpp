@@ -6,11 +6,14 @@
 #include <dwe/formats/disc/file_table.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/known_releases.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -28,11 +31,12 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 } // namespace
 
 TEST_CASE("the user's disc: the executable's file table matches the volume") {
-    const char* disc = std::getenv("DWE_DISC");
-    if (disc == nullptr || std::string_view{disc}.empty()) {
+    const std::optional<std::filesystem::path> mountedDisc = dwe::test_support::userDisc();
+    if (!mountedDisc) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& disc = *mountedDisc;
     auto image = DiscImage::open(disc);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = readIsoVolume(*image);

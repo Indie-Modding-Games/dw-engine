@@ -3,11 +3,13 @@
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -21,13 +23,14 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 } // namespace
 
 TEST_CASE("the user's disc, extracted: every map of the table parses") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
-    const auto packs = dwe::assets::findPacks(disk, std::filesystem::path{content});
+    const auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(packs.has_value(), errorOf(packs));
     const auto opened = dwe::assets::openPacks(disk, packs->packs);
     REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));

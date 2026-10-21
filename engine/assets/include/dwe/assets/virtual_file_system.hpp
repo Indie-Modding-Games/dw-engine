@@ -20,6 +20,9 @@ namespace dwe::assets {
 struct PackLocation {
     const FileSystem* fileSystem = nullptr;
     std::filesystem::path root;
+    // A pack of the dev assets (findDevPacks): it stacks under every other pack, whatever its layer and priority, so
+    // it only provides the ids that no other pack has.
+    bool fillsGaps = false;
 };
 
 // A pack in the stack of the virtual file system.
@@ -27,6 +30,8 @@ struct MountedPack {
     PackManifest manifest;
     std::filesystem::path root;
     const FileSystem* fileSystem = nullptr;
+    // As in its PackLocation.
+    bool fillsGaps = false;
 };
 
 // A file of a pack and the asset id it gives.
@@ -40,6 +45,9 @@ struct AssetSource {
     std::string packId;
     std::filesystem::path file;
 };
+
+// Reads and checks the pack.yaml at a pack's root; the error names the file.
+core::Result<PackManifest> readPackManifest(const PackLocation& location);
 
 // The assets of a set of packs, stacked by layer and priority, by name. When several packs have the same asset id,
 // the one highest in the stack wins; an id that only one pack has is simply added.

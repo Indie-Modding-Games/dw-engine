@@ -1,0 +1,16 @@
+# The dev assets banner (docs/architecture/assets-de-desarrollo.md): with --dev-assets it shows over the main menu and
+# over the field. Unlike the other routes it needs the flag and a dev-assets.yaml in the current folder:
+#   scripts/dev.sh run --dev-assets --autotest tests/autotest/route-dev-assets.yaml --lang <en|es> ...
+name: dev_assets
+device: keyboard
+main_menu: true
+timeout: 120
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {dev_assets_banner: true}
+  - screenshot: main-menu
+  - menu_select: play
+  - wait: {menu_open: false, seconds: 0.5}
+  - expect_setting: {dev_assets_banner: true}
+  - screenshot: field

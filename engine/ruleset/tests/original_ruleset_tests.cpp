@@ -5,6 +5,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <format>
+#include <optional>
 #include <ostream>
 #include <span>
 #include <string>
@@ -70,11 +72,12 @@ TEST_CASE("the game pack's original ruleset loads, with the clock of the origina
 // it.
 TEST_CASE(
     "the user's disc, extracted: every table of the original ruleset is in the base pack and follows its schema") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const assets::DiskFileSystem disk;
     auto found = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));

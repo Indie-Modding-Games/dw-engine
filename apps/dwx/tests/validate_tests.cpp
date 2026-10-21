@@ -3,14 +3,16 @@
 #include <dwe/assets/text_table.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/test_support/temp_folder.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <array>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -22,12 +24,11 @@
 #include "glb_builder.hpp"
 #include "map_documents.hpp"
 #include "media_fixtures.hpp"
-#include "temp_folder.hpp"
 #include "validate.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::MemoryFileSystem;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 
@@ -416,12 +417,12 @@ TEST_CASE("every schema the base pack names compiles with the annotation keyword
 }
 
 TEST_CASE("the user's disc, extracted: dwx validate finds no problem in the game pack on the extracted base pack") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
+    if (!content) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
-    const std::array<std::filesystem::path, 1> with{std::filesystem::path{content} / "base"};
+    const std::array<std::filesystem::path, 1> with{*content / "base"};
     const auto report = validatePacks(dwe::assets::DiskFileSystem{}, DWE_GAME_PACK, DWE_SCHEMA_DIR, with);
     REQUIRE_MESSAGE(report.has_value(), errorOf(report));
     CHECK(report->packs == 2);

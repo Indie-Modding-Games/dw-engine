@@ -2,6 +2,7 @@
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
 #include <dwe/formats/exe/tables_yaml.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -15,7 +16,6 @@
 #include "disc_fixtures.hpp"
 #include "game_tables.hpp"
 #include "map_fixtures.hpp"
-#include "temp_folder.hpp"
 #include "tim_builder.hpp"
 #include "written_pack.hpp"
 
@@ -164,7 +164,7 @@ TEST_CASE("a map gives its data and its images") {
     CHECK(named.status == FileStatus::Partial);
     CHECK(mentions(named.unknowns, "is a record's id"));
 
-    const dwe::assets::testing::TempFolder temp;
+    const dwe::test_support::TempFolder temp;
     REQUIRE(prepareOutputFolder(temp.path() / "base", false).has_value());
     REQUIRE(writeBasePack(temp.path() / "base", *run, fixture.info).has_value());
     CHECK(checkBasePack(temp.path() / "base", *run).has_value());

@@ -5,6 +5,7 @@
 #include <dwe/ruleset/ruleset_store.hpp>
 #include <dwe/ruleset/ruleset_values.hpp>
 #include <dwe/ruleset/section_file.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -19,7 +20,6 @@
 #include <vector>
 
 #include "ruleset_fixture.hpp"
-#include "temp_folder.hpp"
 
 namespace dwe::ruleset {
 
@@ -127,7 +127,7 @@ TEST_CASE("a change of shape is not written back") {
 }
 
 TEST_CASE("a tuned section is saved to its file on disk, and the file loads with the tuned value") {
-    const assets::testing::TempFolder folder;
+    const test_support::TempFolder folder;
     folder.write("rules/pack.yaml", "id: rules\nversion: 1.0.0\nlayer: mods\n");
     folder.write("rules/data/digimon.yaml", "digimon: []\n");
     folder.write("rules/data/raise.yaml", "raise: []\n");

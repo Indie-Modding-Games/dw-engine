@@ -14,6 +14,19 @@ namespace {
 constexpr std::string_view ManifestName = "pack.yaml";
 
 core::Result<MountedPack> readPack(const PackLocation& location) {
+    auto manifest = readPackManifest(location);
+    if (!manifest) {
+        return std::unexpected{manifest.error()};
+    }
+    return MountedPack{.manifest = std::move(*manifest),
+                       .root = location.root,
+                       .fileSystem = location.fileSystem,
+                       .fillsGaps = location.fillsGaps};
+}
+
+} // namespace
+
+core::Result<PackManifest> readPackManifest(const PackLocation& location) {
     const std::filesystem::path manifestPath = location.root / ManifestName;
     const auto bytes = location.fileSystem->readFile(manifestPath);
     if (!bytes) {
@@ -24,8 +37,10 @@ core::Result<MountedPack> readPack(const PackLocation& location) {
     if (!manifest) {
         return core::fail(std::format("{}: {}", pathText(manifestPath), manifest.error().message));
     }
-    return MountedPack{.manifest = std::move(*manifest), .root = location.root, .fileSystem = location.fileSystem};
+    return manifest;
 }
+
+namespace {
 
 std::size_t indexOf(std::span<const MountedPack> packs, std::string_view id) {
     return static_cast<std::size_t>(
@@ -99,11 +114,11 @@ core::Result<void> checkCycles(std::span<const MountedPack> packs) {
 }
 
 auto stackKey(const MountedPack& pack) {
-    return std::tuple{pack.manifest.layer, pack.manifest.priority};
+    return std::tuple{!pack.fillsGaps, pack.manifest.layer, pack.manifest.priority};
 }
 
-// Orders packs sorted by id from the bottom of the stack up: by layer, then priority; packs that tie go after the
-// packs of the tie they depend on, and otherwise by id.
+// Orders packs sorted by id from the bottom of the stack up: the packs that fill gaps first, then by layer, then
+// priority; packs that tie go after the packs of the tie they depend on, and otherwise by id.
 std::vector<MountedPack> stack(std::vector<MountedPack> packs) {
     std::ranges::stable_sort(packs, {}, stackKey);
     std::vector<MountedPack> stacked;

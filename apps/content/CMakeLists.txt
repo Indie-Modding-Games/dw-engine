@@ -3,9 +3,15 @@
 dwe_add_module(content
     LAYER apps
     SOURCES
+        src/dev_assets.cpp
         src/game_content.cpp
     DEPS core assets)
 
 # The team's packs (game rules, menus, HUD, fonts) are read from the source tree when the content folder has no game
 # pack of its own, so editing them reloads them live.
 target_compile_definitions(dwe_content PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/content/packs")
+
+if(BUILD_TESTING)
+    # The banner's document and texts in the game pack name the banner key that content owns.
+    target_compile_definitions(dwe_content_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
+endif()

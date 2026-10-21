@@ -1,3 +1,4 @@
+#include <dwe/content/dev_assets.hpp>
 #include <dwe/ruleset/ruleset_values.hpp>
 #include <dwe/sim/messages.hpp>
 #include <dwe/sim/sim_options.hpp>
@@ -144,6 +145,10 @@ core::Result<SimOptions> parseSimOptions(std::span<const std::string_view> argum
         const std::string_view option = arguments[index];
         if (option == ListOption) {
             options.list = true;
+            continue;
+        }
+        if (option == content::DevAssetsOption) {
+            options.devAssets = true;
             continue;
         }
         if (index + 1 >= arguments.size()) {

@@ -3,13 +3,14 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -22,7 +23,6 @@
 
 #include "editor_documents.hpp"
 #include "script_listing_check.hpp"
-#include "temp_folder.hpp"
 #include "validate.hpp"
 #include "yaml_edits.hpp"
 
@@ -40,12 +40,12 @@ constexpr std::size_t ExtractedListingCount = 222;
 constexpr int ListingsWithTextCount = 212;
 
 std::optional<std::filesystem::path> extractedBasePack() {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
+    if (!content) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return std::nullopt;
     }
-    return std::filesystem::path{content} / BasePackId;
+    return *content / BasePackId;
 }
 
 std::string readText(const std::filesystem::path& file) {
@@ -170,7 +170,7 @@ TEST_CASE("the user's disc, extracted: a mods pack of edited copies passes dwx v
     if (!base) {
         return;
     }
-    const dwe::assets::testing::TempFolder folder;
+    const dwe::test_support::TempFolder folder;
     const std::filesystem::path pack = folder.path() / ToolPackId;
     writeToolPack(*base, pack);
 

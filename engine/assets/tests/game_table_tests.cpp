@@ -5,10 +5,13 @@
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -135,11 +138,12 @@ TEST_CASE("the evolution table reads requirements, stat rows, charts with raw re
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: the Digimon, raise, move and evolution tables read") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the tables on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     const auto found = dwe::assets::findPacks(disk, content);
     REQUIRE_MESSAGE(found.has_value(), errorOf(found));

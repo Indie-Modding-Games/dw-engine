@@ -7,6 +7,7 @@
 #include <dwe/game/partner/rules.hpp>
 #include <dwe/game/partner/species.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -14,6 +15,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <format>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -97,13 +99,14 @@ TEST_CASE("a species whose sleep pattern is not in the rules is refused") {
 }
 
 TEST_CASE("the user's disc, extracted: every partner species loads and each rookie can be raised for a day") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const assets::DiskFileSystem disk;
-    const auto packs = assets::findPacks(disk, std::filesystem::path{content});
+    const auto packs = assets::findPacks(disk, content);
     REQUIRE_MESSAGE(packs.has_value(), testing::errorOf(packs));
     const auto opened = assets::openPacks(disk, packs->packs);
     REQUIRE_MESSAGE(opened.has_value(), testing::errorOf(opened));

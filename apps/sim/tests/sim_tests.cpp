@@ -10,6 +10,7 @@
 #include <dwe/sim/scenario.hpp>
 #include <dwe/sim/sim_options.hpp>
 #include <dwe/sim/simulation.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -17,8 +18,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -99,11 +102,12 @@ TEST_CASE("the raisings scenario needs a known form") {
 
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: the raisings scenario raises babies into later forms") {
-    const char* folder = std::getenv("DWE_CONTENT");
-    if (folder == nullptr || std::string_view{folder}.empty()) {
+    const std::optional<std::filesystem::path> mountedFolder = dwe::test_support::userContent();
+    if (!mountedFolder) {
         MESSAGE("DWE_CONTENT is not set: skipping the raisings on extracted content");
         return;
     }
+    const std::filesystem::path& folder = *mountedFolder;
     const auto mounted = content::GameContent::mount(folder, {});
     REQUIRE_MESSAGE(mounted.has_value(), errorOf(mounted));
     SimOptions options = optionsFor("raisings");
@@ -221,6 +225,11 @@ TEST_CASE("the command line names the scenario, the runs, the seeds and the valu
     CHECK_FALSE(parseSimOptions(std::array<std::string_view, 1>{"--scenario"}).has_value());
     CHECK_FALSE(parseSimOptions(std::array<std::string_view, 0>{}).has_value());
     CHECK(parseSimOptions(std::array<std::string_view, 1>{"--list"}).has_value());
+    // The dev assets are off unless asked for.
+    CHECK_FALSE(options->devAssets);
+    const auto dev = parseSimOptions(std::array<std::string_view, 3>{"--dev-assets", "--scenario", "clock"});
+    REQUIRE_MESSAGE(dev.has_value(), errorOf(dev));
+    CHECK(dev->devAssets);
     CHECK_FALSE(parseValueOverride("care=45").has_value());
     CHECK_FALSE(parseValueOverride("care.hunger").has_value());
     CHECK_FALSE(parseValueOverride(".x=1").has_value());
@@ -344,11 +353,12 @@ TEST_CASE("the battle scenario needs its fighters, from the ruleset's Digimon ta
 }
 
 TEST_CASE("the user's disc, extracted: the battle scenario gives the win rates of a duel") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr || std::string_view{content}.empty()) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const auto mounted = content::GameContent::mount(content, {});
     REQUIRE_MESSAGE(mounted.has_value(), errorOf(mounted));
     const auto table = assets::loadDigimonTable((*mounted)->files(), *assets::AssetId::parse("data/digimon"));

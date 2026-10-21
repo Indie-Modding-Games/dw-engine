@@ -2,6 +2,7 @@
 #include <dwe/assets/media_headers.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 #include <lodepng.h>
@@ -15,7 +16,6 @@
 #include <vector>
 
 #include "media_fixtures.hpp"
-#include "temp_folder.hpp"
 
 using namespace dwe::assets;
 using dwe::assets::testing::ByteWriter;
@@ -161,7 +161,7 @@ TEST_CASE("the assets of a .pak layer are opened like those of a folder") {
     memory.addFile("base/sound/hit.wav", testing::wavFile());
     memory.addFile("mod/pack.yaml", "id: mod\nversion: 1.0.0\nlayer: mods\n");
     memory.addFile("mod/sound/hit.wav", bytesOf("RIFF"));
-    const testing::TempFolder folder;
+    const dwe::test_support::TempFolder folder;
     const auto archive = folder.path() / "base.pak";
     const auto written = writePak(memory, "base", archive);
     REQUIRE_MESSAGE(written.has_value(), errorOf(written));

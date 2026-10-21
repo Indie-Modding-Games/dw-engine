@@ -1,4 +1,5 @@
 #include <dwe/assets/pak.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -6,10 +7,9 @@
 #include <vector>
 
 #include "dwx.hpp"
-#include "temp_folder.hpp"
 
 using dwe::assets::PakFileSystem;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 TEST_CASE("dwx pack writes an archive with the pack's files") {
     const TempFolder folder;

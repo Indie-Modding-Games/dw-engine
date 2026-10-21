@@ -7,11 +7,14 @@
 #include <dwe/formats/video/mdec.hpp>
 #include <dwe/formats/video/str.hpp>
 #include <dwe/formats/video/xa_adpcm.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -32,11 +35,12 @@ constexpr std::size_t FramesToDecode = 12;
 } // namespace
 
 TEST_CASE("the user's disc: the first frames and audio of each movie decode") {
-    const char* disc = std::getenv("DWE_DISC");
-    if (disc == nullptr || std::string_view{disc}.empty()) {
+    const std::optional<std::filesystem::path> mountedDisc = dwe::test_support::userDisc();
+    if (!mountedDisc) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& disc = *mountedDisc;
     auto image = DiscImage::open(disc);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = readIsoVolume(*image);
@@ -92,11 +96,12 @@ TEST_CASE("the user's disc: the first frames and audio of each movie decode") {
 }
 
 TEST_CASE("the user's disc: a frame in the middle of each movie is a picture") {
-    const char* disc = std::getenv("DWE_DISC");
-    if (disc == nullptr || std::string_view{disc}.empty()) {
+    const std::optional<std::filesystem::path> mountedDisc = dwe::test_support::userDisc();
+    if (!mountedDisc) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& disc = *mountedDisc;
     auto image = DiscImage::open(disc);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = readIsoVolume(*image);

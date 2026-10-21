@@ -14,6 +14,7 @@
 #include <string>
 
 #include "common.hpp"
+#include "content_mount.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -49,7 +50,7 @@ core::Result<std::filesystem::path> savesFolder(const Options& options) {
 }
 
 int listSaves(const Options& options) {
-    const auto content = dwe::content::GameContent::mount(options.content, options.mods);
+    const auto content = mountGameContent(options);
     if (!content) {
         core::logError(messages::CannotMountContent, content.error().message);
         return EXIT_FAILURE;

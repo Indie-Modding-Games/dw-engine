@@ -15,6 +15,4 @@ if(TARGET dwe_ruleset_tests)
     target_compile_definitions(dwe_ruleset_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
         DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
-    # Saving a section writes to a pack on disk, in the temporary folder of the assets tests.
-    target_include_directories(dwe_ruleset_tests PRIVATE ${PROJECT_SOURCE_DIR}/engine/assets/tests)
 endif()

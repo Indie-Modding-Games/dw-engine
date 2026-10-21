@@ -5,6 +5,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/formats/audio/wav.hpp>
 #include <dwe/formats/image/png.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -15,11 +16,10 @@
 #include <vector>
 
 #include "cook.hpp"
-#include "temp_folder.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::DiskFileSystem;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 

@@ -4,6 +4,7 @@
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/ruleset/ruleset_store.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -19,7 +20,6 @@
 #include <string_view>
 #include <vector>
 
-#include "temp_folder.hpp"
 #include "tuning_model.hpp"
 
 namespace dwe::debug {
@@ -113,7 +113,7 @@ public:
     }
 
 private:
-    assets::testing::TempFolder folder_;
+    test_support::TempFolder folder_;
     assets::DiskFileSystem disk_;
     std::optional<assets::VirtualFileSystem> vfs_;
     std::optional<ruleset::RulesetStore> store_;

@@ -3,6 +3,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -22,16 +23,15 @@
 #include "asset_names.hpp"
 #include "base_pack.hpp"
 #include "disc_fixtures.hpp"
-#include "temp_folder.hpp"
 #include "written_pack.hpp"
 
 using namespace dwe::dwx;
 using dwe::assets::AssetId;
-using dwe::assets::testing::TempFolder;
 using dwe::formats::disc::IsoFile;
 using dwe::formats::disc::IsoVolume;
 using dwe::formats::disc::MemorySectorSource;
 using dwe::formats::disc::SectorLayout;
+using dwe::test_support::TempFolder;
 
 namespace {
 

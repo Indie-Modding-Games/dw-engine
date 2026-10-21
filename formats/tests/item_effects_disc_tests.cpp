@@ -8,11 +8,14 @@
 #include <dwe/formats/exe/executable_layout.hpp>
 #include <dwe/formats/exe/item_effects.hpp>
 #include <dwe/formats/exe/memory_image.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -35,11 +38,12 @@ constexpr std::size_t PortaPotty = 0x20;
 } // namespace
 
 TEST_CASE("the user's disc: every item has a known handler and every food and chip case but two is decoded") {
-    const char* path = std::getenv("DWE_DISC");
-    if (path == nullptr || std::string_view{path}.empty()) {
+    const std::optional<std::filesystem::path> mountedPath = dwe::test_support::userDisc();
+    if (!mountedPath) {
         MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
         return;
     }
+    const std::filesystem::path& path = *mountedPath;
     auto image = disc::DiscImage::open(path);
     REQUIRE_MESSAGE(image.has_value(), errorOf(image));
     const auto volume = disc::readIsoVolume(*image);

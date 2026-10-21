@@ -4,6 +4,7 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
@@ -242,11 +243,12 @@ TEST_CASE("the game pack's character models parse") {
 // checks the player and the starting partner against what the original does with them (docs/architecture/models.md):
 // every animation has its clip, and the walk and run cycles cover the ground at these speeds, in units per second.
 TEST_CASE("the user's disc, extracted: the characters' walk and run cycles move as in the original") {
-    const char* content = std::getenv("DWE_CONTENT");
-    if (content == nullptr) {
+    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+    if (!mountedContent) {
         MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
         return;
     }
+    const std::filesystem::path& content = *mountedContent;
     const dwe::assets::DiskFileSystem disk;
     auto packs = dwe::assets::findPacks(disk, content);
     REQUIRE(packs.has_value());

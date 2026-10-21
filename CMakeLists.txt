@@ -13,8 +13,10 @@ include(cmake/DweShaders.cmake)
 
 if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)
-    add_library(dwe_test_main STATIC tests/main.cpp)
+    add_library(dwe_test_main STATIC tests/main.cpp tests/support/src/user_assets.cpp)
     target_link_libraries(dwe_test_main PUBLIC doctest::doctest)
+    # What the tests of every module share (tests/support/README.md).
+    target_include_directories(dwe_test_main PUBLIC ${PROJECT_SOURCE_DIR}/tests/support/include)
     # doctest prints failed comparisons through std::ostream, which libc++ brings in with <string> but the MSVC STL
     # does not: USE_STD_HEADERS makes doctest include <ostream> itself.
     target_compile_definitions(dwe_test_main PUBLIC

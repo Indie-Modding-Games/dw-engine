@@ -1,5 +1,6 @@
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
 
@@ -11,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "temp_folder.hpp"
-
 using dwe::assets::AssetId;
 using dwe::assets::DiskFileSystem;
 using dwe::assets::FoundPack;
@@ -23,7 +22,7 @@ using dwe::assets::PakFileSystem;
 using dwe::assets::PakHeaderSize;
 using dwe::assets::VirtualFileSystem;
 using dwe::assets::writePak;
-using dwe::assets::testing::TempFolder;
+using dwe::test_support::TempFolder;
 
 namespace {
 

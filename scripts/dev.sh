@@ -49,6 +49,8 @@ Environment:
                       the same path, so the tools and the disc tests can read it
   DWE_CONTENT         Path to a content folder extracted with dwx (packs such as base/); it is mounted read-only in the
                       container at the same path, so the tests that need real content can read it
+  DWE_DECOMP          Path to a checkout of the decompilation; it is mounted read-only in the container at the same
+                      path, so the tests that compare with it can read it
 EOF
 }
 
@@ -93,6 +95,17 @@ if [[ -n "${DWE_CONTENT:-}" ]]; then
     DWE_CONTENT="$(cd "$DWE_CONTENT" && pwd)"
     export DWE_CONTENT
     disc_flags+=(-v "$DWE_CONTENT:$DWE_CONTENT:ro" -e DWE_CONTENT)
+fi
+
+# A checkout of the decompilation, the reference of behaviour for the parity tests: read-only, at the same path.
+if [[ -n "${DWE_DECOMP:-}" ]]; then
+    if [[ ! -d "$DWE_DECOMP" ]]; then
+        echo "dev.sh: DWE_DECOMP is not a folder: $DWE_DECOMP" >&2
+        exit 1
+    fi
+    DWE_DECOMP="$(cd "$DWE_DECOMP" && pwd)"
+    export DWE_DECOMP
+    disc_flags+=(-v "$DWE_DECOMP:$DWE_DECOMP:ro" -e DWE_DECOMP)
 fi
 
 # The host folder when one is given, otherwise the named volume.
