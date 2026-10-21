@@ -1,7 +1,7 @@
 # Made-up care parameters for the dwe-sim tests, in the shape of data/raise: not the original's data.
 raise:
 - digimon: "agum"
-  index: 3
+  index: 2
   hunger_times: [7, 12, 18, -1, -1, -1, -1, -1]
   energy_cap: 40
   energy_threshold: 10
@@ -16,7 +16,7 @@ raise:
   default_weight: 20
   view: { x: 0, y: 0, z: 0 }
 - digimon: "bota"
-  index: 1
+  index: 0
   hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
   energy_cap: 20
   energy_threshold: 5
@@ -31,7 +31,7 @@ raise:
   default_weight: 5
   view: { x: 0, y: 0, z: 0 }
 - digimon: "puni"
-  index: 15
+  index: 4
   hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
   energy_cap: 20
   energy_threshold: 5
@@ -46,7 +46,7 @@ raise:
   default_weight: 5
   view: { x: 0, y: 0, z: 0 }
 - digimon: "poyo"
-  index: 29
+  index: 5
   hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
   energy_cap: 20
   energy_threshold: 5
@@ -61,7 +61,7 @@ raise:
   default_weight: 5
   view: { x: 0, y: 0, z: 0 }
 - digimon: "yura"
-  index: 43
+  index: 6
   hunger_times: [-1, -1, -1, -1, -1, -1, -1, -1]
   energy_cap: 20
   energy_threshold: 5

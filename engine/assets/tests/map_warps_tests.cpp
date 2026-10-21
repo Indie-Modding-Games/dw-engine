@@ -34,7 +34,7 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 }
 
 // Exit 0 of the fixture map, whose trigger (110) is in its collision.
-constexpr std::string_view FixtureExit = "  target_map: 218\n  target_map_id: \"room08\"\n";
+constexpr std::string_view FixtureExit = "  target_map: 118\n  target_map_id: \"room08\"\n";
 
 // A pack's new map, which the engine numbers after the base's.
 constexpr std::string_view CaveRow = R"(- id: "my_mod:cave"
@@ -59,8 +59,8 @@ std::string mapWithExit(std::string_view exit) {
     return text;
 }
 
-// The base pack's maps (twna01 204, room08 218, map_219 219), the engine's own, and a mod that adds my_mod:cave
-// (220), whose map data is the fixture map with exit 0 as `caveExit` names it. `fakeBase` adds a mod that declares the
+// The base pack's maps (twna01 104, room08 118, map_119 119), the engine's own, and a mod that adds my_mod:cave
+// (120), whose map data is the fixture map with exit 0 as `caveExit` names it. `fakeBase` adds a mod that declares the
 // base layer and replaces twna01's data.
 class Packs {
 public:
@@ -123,7 +123,7 @@ TEST_CASE("the base pack's warps name their target both ways, and lead to it") {
     // An id with no index, or an index of a map with no id, is not what the extractor writes.
     CHECK(packs.baseExit("  target_map: -1\n  target_map_id: \"room08\"\n").front().problem ==
           WarpProblem::BaseNeedsBoth);
-    CHECK(packs.baseExit("  target_map: 218\n  target_map_id: null\n").front().problem == WarpProblem::BaseNeedsBoth);
+    CHECK(packs.baseExit("  target_map: 118\n  target_map_id: null\n").front().problem == WarpProblem::BaseNeedsBoth);
     // A raw index outside the table leads nowhere, as in the original.
     CHECK(packs.baseExit("  target_map: 300\n  target_map_id: null\n").empty());
     // An id next to an index outside the table, or an id of no map next to a good index, is a mistake.
@@ -131,7 +131,7 @@ TEST_CASE("the base pack's warps name their target both ways, and lead to it") {
     REQUIRE(outside.size() == 1);
     CHECK(outside.front().problem == WarpProblem::Disagree);
     CHECK(dwe::assets::warpIssueMessage("twna01", outside.front()).contains("300, no map of the original"));
-    const auto unknown = packs.baseExit("  target_map: 218\n  target_map_id: \"room09\"\n");
+    const auto unknown = packs.baseExit("  target_map: 118\n  target_map_id: \"room09\"\n");
     REQUIRE(unknown.size() == 1);
     CHECK(unknown.front().problem == WarpProblem::UnknownTarget);
     CHECK(dwe::assets::disablesWarp(unknown.front().problem));
@@ -157,34 +157,34 @@ TEST_CASE("a pack's warp may name its target by id alone, even a pack's map") {
 
 TEST_CASE("a pack's warp with the original's index alone leads to the base's map of that index") {
     SUBCASE("target_map_id null") {
-        const Packs packs{"  target_map: 218\n  target_map_id: null\n"};
+        const Packs packs{"  target_map: 118\n  target_map_id: null\n"};
         const auto [map, issues] = packs.resolved("my_mod:cave");
         CHECK(issues.empty());
         CHECK(map.warp(0)->targetMapId == "room08");
     }
     SUBCASE("target_map_id left out") {
-        const Packs packs{"  target_map: 218\n"};
+        const Packs packs{"  target_map: 118\n"};
         const auto [map, issues] = packs.resolved("my_mod:cave");
         CHECK(issues.empty());
         CHECK(map.warp(0)->targetMapId == "room08");
     }
     SUBCASE("never a pack's map, whose index is the engine's: that warp is dead") {
-        const Packs packs{"  target_map: 220\n  target_map_id: null\n"};
+        const Packs packs{"  target_map: 120\n  target_map_id: null\n"};
         const dwe::assets::MapEntry* cave = packs.maps().find("my_mod:cave");
         REQUIRE(cave != nullptr);
-        CHECK(cave->index == 220);
+        CHECK(cave->index == 120);
         CHECK_FALSE(cave->originalIndex);
         CHECK(packs.maps().findByOriginalIndex(cave->index) == nullptr);
         const auto [map, issues] = packs.resolved("my_mod:cave");
         REQUIRE(issues.size() == 1);
         CHECK(issues.front().problem == WarpProblem::Dead);
         CHECK_FALSE(map.warp(0)->targetMapId);
-        CHECK(dwe::assets::warpIssueMessage("my_mod:cave", issues.front()).contains("target_map (220)"));
+        CHECK(dwe::assets::warpIssueMessage("my_mod:cave", issues.front()).contains("target_map (120)"));
     }
 }
 
 TEST_CASE("a pack's warp with an id of no map and an index of the original leads there, and the id is reported") {
-    const Packs packs{"  target_map: 218\n  target_map_id: \"my_mod:nowhere\"\n"};
+    const Packs packs{"  target_map: 118\n  target_map_id: \"my_mod:nowhere\"\n"};
     const auto [map, issues] = packs.resolved("my_mod:cave");
     REQUIRE(issues.size() == 1);
     CHECK(issues.front().problem == WarpProblem::UnknownIdByIndex);
@@ -213,7 +213,7 @@ TEST_CASE("the editor's shape of a warp into a pack's map is a dead warp: named,
 
 TEST_CASE("a pack's warp whose id and index disagree, or whose id names no map, leads nowhere") {
     SUBCASE("disagree") {
-        const Packs packs{"  target_map: 204\n  target_map_id: \"room08\"\n"};
+        const Packs packs{"  target_map: 104\n  target_map_id: \"room08\"\n"};
         const auto [map, issues] = packs.resolved("my_mod:cave");
         REQUIRE(issues.size() == 1);
         CHECK(issues.front().problem == WarpProblem::Disagree);
@@ -255,7 +255,7 @@ TEST_CASE("a pack's full copy of data/maps, as an editor saves it, composes with
     const auto maps = dwe::assets::loadMapTable(*vfs);
     REQUIRE_MESSAGE(maps.has_value(), errorOf(maps));
     CHECK(maps->maps.size() == 4);
-    CHECK(maps->findByOriginalIndex(218)->id == "room08");
+    CHECK(maps->findByOriginalIndex(118)->id == "room08");
     CHECK_FALSE(maps->find("my_mod:cave")->originalIndex);
     CHECK(maps->doorsOf(*maps->find("room08"))->doors.at(1).position.x == 2000);
 }

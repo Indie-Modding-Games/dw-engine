@@ -1,6 +1,6 @@
 # Made-up items for the dwe-sim tests, in the shape of data/items: not the original's data. One item for each
-# number of the original, so the ranges of the original ruleset's item_use section cover items, and those it names
-# by id (the status items, revives, disks, chips and fixed evolutions) under that id.
+# number of the original, so the ranges of the original ruleset's item_use section cover items, and after them those
+# it names by id (the status items, revives, disks, chips and fixed evolutions) under that id, at made-up numbers.
 items:
 - id: "item_0"
   index: 0
@@ -82,9 +82,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "various"
+- id: "item_8"
   index: 8
-  name: "Test various"
+  name: "Test item_8"
   description: ""
   value: 10
   merit_value: 0
@@ -92,9 +92,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "omnipotent"
+- id: "item_9"
   index: 9
-  name: "Test omnipotent"
+  name: "Test item_9"
   description: ""
   value: 10
   merit_value: 0
@@ -102,9 +102,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "protection"
+- id: "item_10"
   index: 10
-  name: "Test protection"
+  name: "Test item_10"
   description: ""
   value: 10
   merit_value: 0
@@ -112,9 +112,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "restore"
+- id: "item_11"
   index: 11
-  name: "Test restore"
+  name: "Test item_11"
   description: ""
   value: 10
   merit_value: 0
@@ -122,9 +122,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "sup_restore"
+- id: "item_12"
   index: 12
-  name: "Test sup_restore"
+  name: "Test item_12"
   description: ""
   value: 10
   merit_value: 0
@@ -132,9 +132,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "bandage"
+- id: "item_13"
   index: 13
-  name: "Test bandage"
+  name: "Test item_13"
   description: ""
   value: 10
   merit_value: 0
@@ -142,9 +142,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "medicine"
+- id: "item_14"
   index: 14
-  name: "Test medicine"
+  name: "Test item_14"
   description: ""
   value: 10
   merit_value: 0
@@ -152,9 +152,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "off_disk"
+- id: "item_15"
   index: 15
-  name: "Test off_disk"
+  name: "Test item_15"
   description: ""
   value: 10
   merit_value: 0
@@ -162,9 +162,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "def_disk"
+- id: "item_16"
   index: 16
-  name: "Test def_disk"
+  name: "Test item_16"
   description: ""
   value: 10
   merit_value: 0
@@ -172,9 +172,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "hispeed_dsk"
+- id: "item_17"
   index: 17
-  name: "Test hispeed_dsk"
+  name: "Test item_17"
   description: ""
   value: 10
   merit_value: 0
@@ -182,9 +182,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "omni_disk"
+- id: "item_18"
   index: 18
-  name: "Test omni_disk"
+  name: "Test item_18"
   description: ""
   value: 10
   merit_value: 0
@@ -192,9 +192,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "s_off_disk"
+- id: "item_19"
   index: 19
-  name: "Test s_off_disk"
+  name: "Test item_19"
   description: ""
   value: 10
   merit_value: 0
@@ -202,9 +202,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "s_def_disk"
+- id: "item_20"
   index: 20
-  name: "Test s_def_disk"
+  name: "Test item_20"
   description: ""
   value: 10
   merit_value: 0
@@ -212,9 +212,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "s_speed_disk"
+- id: "item_21"
   index: 21
-  name: "Test s_speed_disk"
+  name: "Test item_21"
   description: ""
   value: 10
   merit_value: 0
@@ -222,9 +222,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "auto_pilot"
+- id: "item_22"
   index: 22
-  name: "Test auto_pilot"
+  name: "Test item_22"
   description: ""
   value: 10
   merit_value: 0
@@ -292,9 +292,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "dv_chip_a"
+- id: "item_29"
   index: 29
-  name: "Test dv_chip_a"
+  name: "Test item_29"
   description: ""
   value: 10
   merit_value: 0
@@ -302,9 +302,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "dv_chip_d"
+- id: "item_30"
   index: 30
-  name: "Test dv_chip_d"
+  name: "Test item_30"
   description: ""
   value: 10
   merit_value: 0
@@ -312,9 +312,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "dv_chip_e"
+- id: "item_31"
   index: 31
-  name: "Test dv_chip_e"
+  name: "Test item_31"
   description: ""
   value: 10
   merit_value: 0
@@ -322,9 +322,9 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "port_potty"
+- id: "item_32"
   index: 32
-  name: "Test port_potty"
+  name: "Test item_32"
   description: ""
   value: 10
   merit_value: 0
@@ -1252,8 +1252,228 @@ items:
   item_color: 0
   droppable: 1
   unknown_1e: 0
-- id: "giga_hand"
+- id: "item_125"
   index: 125
+  name: "Test item_125"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_126"
+  index: 126
+  name: "Test item_126"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_127"
+  index: 127
+  name: "Test item_127"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "various"
+  index: 128
+  name: "Test various"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "omnipotent"
+  index: 129
+  name: "Test omnipotent"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "protection"
+  index: 130
+  name: "Test protection"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "restore"
+  index: 131
+  name: "Test restore"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "sup_restore"
+  index: 132
+  name: "Test sup_restore"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "bandage"
+  index: 133
+  name: "Test bandage"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "medicine"
+  index: 134
+  name: "Test medicine"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "off_disk"
+  index: 135
+  name: "Test off_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "def_disk"
+  index: 136
+  name: "Test def_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "hispeed_dsk"
+  index: 137
+  name: "Test hispeed_dsk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "omni_disk"
+  index: 138
+  name: "Test omni_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_off_disk"
+  index: 139
+  name: "Test s_off_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_def_disk"
+  index: 140
+  name: "Test s_def_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_speed_disk"
+  index: 141
+  name: "Test s_speed_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "auto_pilot"
+  index: 142
+  name: "Test auto_pilot"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_a"
+  index: 143
+  name: "Test dv_chip_a"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_d"
+  index: 144
+  name: "Test dv_chip_d"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_e"
+  index: 145
+  name: "Test dv_chip_e"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "port_potty"
+  index: 146
+  name: "Test port_potty"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "giga_hand"
+  index: 147
   name: "Test giga_hand"
   description: ""
   value: 10
@@ -1263,7 +1483,7 @@ items:
   droppable: 1
   unknown_1e: 0
 - id: "noble_mane"
-  index: 126
+  index: 148
   name: "Test noble_mane"
   description: ""
   value: 10
@@ -1273,7 +1493,7 @@ items:
   droppable: 1
   unknown_1e: 0
 - id: "metalbanana"
-  index: 127
+  index: 149
   name: "Test metalbanana"
   description: ""
   value: 10

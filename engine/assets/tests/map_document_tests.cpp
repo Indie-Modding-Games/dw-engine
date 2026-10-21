@@ -235,7 +235,7 @@ TEST_CASE("a warp spawns in world space") {
                        .spawn = {-2500, 0, -2525},
                        .rotation = 3072,
                        .targetMap = 112,
-                       .targetMapId = "trai00",
+                       .targetMapId = "test_station",
                        .targetExit = 1};
     const dwe::assets::SpawnPoint spawn = dwe::assets::warpSpawn(warp);
     CHECK(spawn.position == glm::vec3{-2500.0F, 0.0F, 2525.0F});

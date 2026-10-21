@@ -19,7 +19,7 @@ namespace {
 
 constexpr std::string_view TwoMoves = R"(moves:
 - id: "spit_fire"
-  index: 2
+  index: 6
   name: "Spit Fire"
   distance: 160000
   power: 66
@@ -73,10 +73,10 @@ TEST_CASE("the move table reads the battle's fields: flags and the learn chances
 
 TEST_CASE("the move table refuses a repeated index, a short learn_chances and an unknown key") {
     std::string twice{TwoMoves};
-    twice.replace(twice.find("index: 60"), std::string_view{"index: 60"}.size(), "index: 2");
+    twice.replace(twice.find("index: 60"), std::string_view{"index: 60"}.size(), "index: 6");
     const auto repeated = dwe::assets::parseMoveTable(twice);
     REQUIRE_FALSE(repeated.has_value());
-    CHECK(repeated.error().message.contains("repeats the index 2"));
+    CHECK(repeated.error().message.contains("repeats the index 6"));
     std::string shortChances{TwoMoves};
     shortChances.replace(shortChances.find("[25, 16, 11]"), std::string_view{"[25, 16, 11]"}.size(), "[25, 16]");
     CHECK_FALSE(dwe::assets::parseMoveTable(shortChances).has_value());

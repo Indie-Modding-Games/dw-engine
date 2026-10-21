@@ -100,18 +100,21 @@ inline dwe::assets::MoveTable testMoveTable() {
         testMove("stun_slap", 4, Melee, 20, 5, 0, 1, 3, 100),
         testMove("squash", 5, Melee, 20, 5, 0, 6, 4, 100),
         testMove("wide_blast", 6, Area, 35, 20, Near, 4),
-        testMove("aqua_magic", 21, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("full_potential", 30, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("mass_morph", 34, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("muscle_charge", 41, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("war_cry", 42, Self, 0, 10, 0, 0, 0, 0, 0),
-        testMove("dynamite_kick", 44, Melee, 50, 15, 0, 1),
-        testMove("counter", 45, Melee, 40, 0, 0, 1),
-        testMove("dynamite_kick_48", 48, Melee, 50, 15, 0, 1),
-        testMove("horizontal_kick", 55, Melee, 45, 12, 0, 1),
-        testMove("horizontal_kick_57", 57, Melee, 45, 12, 0, 1),
+        testMove("aqua_magic", 22, Self, 0, 10, 0, 0, 0, 0, 0),
+        testMove("full_potential", 31, Self, 0, 10, 0, 0, 0, 0, 0),
+        testMove("mass_morph", 35, Self, 0, 10, 0, 0, 0, 0, 0),
+        testMove("muscle_charge", 40, Self, 0, 10, 0, 0, 0, 0, 0),
+        testMove("war_cry", 43, Self, 0, 10, 0, 0, 0, 0, 0),
+        // The ruleset names these moves by their ids, the numbered ones included (dynamite_kick_48,
+        // horizontal_kick_57, move_121): the number in such an id names a move of the original, not the made-up number
+        // here, which keeps the original's specialty block.
+        testMove("dynamite_kick", 46, Melee, 50, 15, 0, 1),
+        testMove("counter", 47, Melee, 40, 0, 0, 1),
+        testMove("dynamite_kick_48", 42, Melee, 50, 15, 0, 1),
+        testMove("horizontal_kick", 50, Melee, 45, 12, 0, 1),
+        testMove("horizontal_kick_57", 51, Melee, 45, 12, 0, 1),
         testMove("big_finish", 60, Melee, 200, 0, 0, 1),
-        testMove("move_121", 121, Ranged, 10, 0, Near, 0),
+        testMove("move_121", 119, Ranged, 10, 0, Near, 0),
     };
     moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
     // The other numbers of the finisher range the ruleset names, which the catalog checks are moves of the original.

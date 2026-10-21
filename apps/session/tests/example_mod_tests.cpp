@@ -89,7 +89,7 @@ std::string madeUpRaise(std::string_view id, int index) {
 // replaces a map's data whole, as the map editor writes it, leaves.
 std::string originalMapToNewMap() {
     std::string map = dwe::assets::testing::fixtureMap();
-    const std::string exit = "target_map: 218\n  target_map_id: \"room08\"\n  target_exit: 2";
+    const std::string exit = "target_map: 118\n  target_map_id: \"room08\"\n  target_exit: 2";
     map.replace(map.find(exit), exit.size(),
                 std::format("target_map: 0\n  target_map_id: \"{}\"\n  target_exit: 0", NewMap));
     return map;
@@ -199,8 +199,8 @@ TEST_CASE("the example mod adds its Digimon and its map to the base pack's table
     REQUIRE_MESSAGE(maps.has_value(), errorOf(maps));
     const dwe::assets::MapEntry* meadow = maps->find(NewMap);
     REQUIRE(meadow != nullptr);
-    CHECK(meadow->index == 220); // after the fixture's last map, 219
-    CHECK(maps->find(OriginalMap)->index == 204);
+    CHECK(meadow->index == 120); // after the fixture's last map, 119
+    CHECK(maps->find(OriginalMap)->index == 104);
 }
 
 TEST_CASE("the field enters the example mod's map by a warp of an original map and leaves it by its own") {

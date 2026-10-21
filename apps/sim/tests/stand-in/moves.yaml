@@ -1,6 +1,8 @@
 # Made-up moves for the dwe-sim tests, in the shape of data/moves: not the original's data. The moves the original
 # ruleset's battle section names (support moves, the counter, the flattened shot and the others it names), so the
-# session's battle adapter can build its catalog.
+# session's battle adapter can build its catalog. Those moves keep the ids the ruleset names them by, the numbered ones
+# (move_121, dynamite_kick_48, horizontal_kick_57) included: the number in such an id names a move of the original, not
+# this move's number, which is made up and in the same specialty block as the original's.
 moves:
 - id: "muscle_charge"
   index: 0
@@ -83,7 +85,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "move_121"
-  index: 121
+  index: 119
   name: "Test move_121"
   distance: 0
   power: 0
@@ -99,7 +101,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "counter"
-  index: 45
+  index: 46
   name: "Test counter"
   distance: 0
   power: 0
@@ -115,7 +117,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "dynamite_kick"
-  index: 44
+  index: 47
   name: "Test dynamite_kick"
   distance: 0
   power: 0
@@ -131,7 +133,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "dynamite_kick_48"
-  index: 48
+  index: 42
   name: "Test dynamite_kick_48"
   distance: 0
   power: 0
@@ -147,7 +149,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "horizontal_kick"
-  index: 55
+  index: 50
   name: "Test horizontal_kick"
   distance: 0
   power: 0
@@ -163,7 +165,7 @@ moves:
   unknown_0f: 0
   learn_chances: [0, 0, 0]
 - id: "horizontal_kick_57"
-  index: 57
+  index: 51
   name: "Test horizontal_kick_57"
   distance: 0
   power: 0
@@ -216,17 +218,17 @@ moves:
 - {id: "filler_39", index: 39, name: "Test filler_39", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_40", index: 40, name: "Test filler_40", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_41", index: 41, name: "Test filler_41", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_42", index: 42, name: "Test filler_42", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_43", index: 43, name: "Test filler_43", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_46", index: 46, name: "Test filler_46", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_47", index: 47, name: "Test filler_47", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_44", index: 44, name: "Test filler_44", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_45", index: 45, name: "Test filler_45", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_48", index: 48, name: "Test filler_48", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_49", index: 49, name: "Test filler_49", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_50", index: 50, name: "Test filler_50", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_51", index: 51, name: "Test filler_51", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_52", index: 52, name: "Test filler_52", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_53", index: 53, name: "Test filler_53", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_54", index: 54, name: "Test filler_54", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_55", index: 55, name: "Test filler_55", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_56", index: 56, name: "Test filler_56", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_57", index: 57, name: "Test filler_57", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_58", index: 58, name: "Test filler_58", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_59", index: 59, name: "Test filler_59", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_60", index: 60, name: "Test filler_60", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
@@ -288,5 +290,5 @@ moves:
 - {id: "filler_116", index: 116, name: "Test filler_116", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_117", index: 117, name: "Test filler_117", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_118", index: 118, name: "Test filler_118", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
-- {id: "filler_119", index: 119, name: "Test filler_119", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
 - {id: "filler_120", index: 120, name: "Test filler_120", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}
+- {id: "filler_121", index: 121, name: "Test filler_121", distance: 0, power: 0, mp_cost: 0, iframes: 0, range: 0, special: 0, status: 0, accuracy: 0, status_chance: 0, unknown_0d: 0, unknown_0e: 0, unknown_0f: 0, learn_chances: [0, 0, 0]}

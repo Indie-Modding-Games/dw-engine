@@ -192,7 +192,7 @@ TEST_CASE("the item effects are read by the ruleset's table id") {
     };
     const auto empty = loadWith("item_effects: []\n");
     CHECK_MESSAGE(empty.has_value(), errorOf(empty));
-    const auto unknown = loadWith("item_effects:\n  - {item: grey_claws, index: 71, handler: evolution, healing: null, "
+    const auto unknown = loadWith("item_effects:\n  - {item: test_claws, index: 71, handler: evolution, healing: null, "
                                   "evolves_to: nobody, values: null}\n");
     CHECK(errorOf(unknown).contains("item_effects: unknown digimon 'nobody'"));
     CHECK_FALSE(loadWith("item_effects: 3\n").has_value());

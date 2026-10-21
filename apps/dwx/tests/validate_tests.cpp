@@ -394,7 +394,7 @@ schemas:
   toilet: null
   loading_name: 0
 )");
-    const std::string_view fixtureExit = "  target_map: 218\n  target_map_id: \"room08\"\n";
+    const std::string_view fixtureExit = "  target_map: 118\n  target_map_id: \"room08\"\n";
     const auto withExit = [&](std::string_view exit) {
         std::string map = dwe::assets::testing::fixtureMap();
         map.replace(map.find(fixtureExit), fixtureExit.size(), exit);
@@ -435,11 +435,11 @@ schemas:
         CHECK_MESSAGE(textOf(*crlf).contains(std::format("meadow/data.yaml:{}:0: ", exitLine)), textOf(*crlf));
     }
     // An id of no map next to an index of the original leads there, but the id is reported.
-    CHECK(withExit("  target_map: 218\n  target_map_id: \"my_mod:nowhere\"\n").contains("'my_mod:nowhere' is no map"));
+    CHECK(withExit("  target_map: 118\n  target_map_id: \"my_mod:nowhere\"\n").contains("'my_mod:nowhere' is no map"));
     // By id alone, even to the mod's own map, or by the original's index alone, the warp leads somewhere.
     CHECK(withExit("  target_map: -1\n  target_map_id: \"my_mod:meadow\"\n").empty());
-    CHECK(withExit("  target_map: 218\n  target_map_id: null\n").empty());
-    CHECK(withExit("  target_map: 204\n  target_map_id: \"room08\"\n").contains("name different maps"));
+    CHECK(withExit("  target_map: 118\n  target_map_id: null\n").empty());
+    CHECK(withExit("  target_map: 104\n  target_map_id: \"room08\"\n").contains("name different maps"));
 }
 
 TEST_CASE("an id a schema says names a table's entry must be one, in the table as the packs compose it") {

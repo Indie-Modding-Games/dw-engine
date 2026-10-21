@@ -25,7 +25,7 @@ TEST_CASE("the map table reads every map and its tables") {
 
     const dwe::assets::MapEntry* town = table->find("twna01");
     REQUIRE(town != nullptr);
-    CHECK(town->index == 204);
+    CHECK(town->index == 104);
     CHECK(town->filename == "TWNA01");
     CHECK(town->flags == 140);
     CHECK_FALSE(town->fixedTimeOfDay);
@@ -34,7 +34,7 @@ TEST_CASE("the map table reads every map and its tables") {
     CHECK(table->displayName(*town) == "File City");
     CHECK(table->doorsOf(*town) == nullptr);
 
-    const dwe::assets::MapEntry* house = table->findByIndex(218);
+    const dwe::assets::MapEntry* house = table->findByIndex(118);
     REQUIRE(house != nullptr);
     CHECK(house->id == "room08");
     CHECK(house->fixedTimeOfDay);
@@ -45,7 +45,7 @@ TEST_CASE("the map table reads every map and its tables") {
     CHECK(doors->doors[1].modelId == std::optional<std::int32_t>{9});
     CHECK(doors->doors[5].rotation == -1024);
 
-    const dwe::assets::MapEntry* empty = table->find("map_219");
+    const dwe::assets::MapEntry* empty = table->find("map_119");
     REQUIRE(empty != nullptr);
     CHECK_FALSE(empty->hasFile());
     CHECK(table->displayName(*empty).empty());

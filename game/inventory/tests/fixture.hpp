@@ -42,8 +42,9 @@ T required(const std::optional<T>& value) {
 inline constexpr std::array<std::string_view, 8> TableRoles{"digimon", "evolution", "raise",        "training",
                                                             "moves",   "items",     "item_effects", "shops"};
 
-// The made-up items, by id. Those the original ruleset names keep the id it names them by (and the number of the
-// original, which its ranges count); the rest have made-up ids.
+// The made-up items, by id. Those the original ruleset names keep the id it names them by, at a made-up number that
+// its ranges put in the same classes as the original's number of that id (never that number itself), so its rules
+// treat them as they treat the original's; the rest have made-up ids, some at numbers its ranges count.
 struct FixtureItem {
     std::string_view id;
     std::int32_t index;
@@ -77,25 +78,25 @@ inline constexpr std::array<FixtureItem, 19> FixtureItems{{
     {.id = Tonic, .index = 0, .value = 100, .sortingValue = 0, .itemColor = 2, .droppable = 1},
     {.id = Ether, .index = 4, .value = 300, .sortingValue = 0, .itemColor = 1, .droppable = 1},
     {.id = Floppy, .index = 7, .value = 2000, .sortingValue = 0, .itemColor = 2, .droppable = 1},
-    {.id = Bandage, .index = 13, .value = 50, .sortingValue = 2, .itemColor = 0, .droppable = 1},
-    {.id = Revival, .index = 12, .value = 3000, .sortingValue = 0, .itemColor = 2, .droppable = 1},
-    {.id = PowerDisk, .index = 15, .value = 450, .sortingValue = 3, .itemColor = 1, .droppable = 1},
-    {.id = OmniDisk, .index = 18, .value = 900, .sortingValue = 3, .itemColor = 1, .droppable = 1},
-    {.id = ScriptChip, .index = 22, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
+    {.id = Bandage, .index = 1, .value = 50, .sortingValue = 2, .itemColor = 0, .droppable = 1},
+    {.id = Revival, .index = 2, .value = 3000, .sortingValue = 0, .itemColor = 2, .droppable = 1},
+    {.id = PowerDisk, .index = 3, .value = 450, .sortingValue = 3, .itemColor = 1, .droppable = 1},
+    {.id = OmniDisk, .index = 5, .value = 900, .sortingValue = 3, .itemColor = 1, .droppable = 1},
+    {.id = ScriptChip, .index = 6, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
     {.id = BrainChip, .index = 25, .value = 4000, .sortingValue = 4, .itemColor = 0, .droppable = 1},
-    {.id = DoubleChip, .index = 29, .value = 9000, .sortingValue = 4, .itemColor = 0, .droppable = 1},
-    {.id = Toilet, .index = 32, .value = 800, .sortingValue = 2, .itemColor = 0, .droppable = 1},
+    {.id = DoubleChip, .index = 23, .value = 9000, .sortingValue = 4, .itemColor = 0, .droppable = 1},
+    {.id = Toilet, .index = 24, .value = 800, .sortingValue = 2, .itemColor = 0, .droppable = 1},
     {.id = Charm, .index = 33, .value = 1000, .sortingValue = 5, .itemColor = 0, .droppable = 1},
     {.id = Bun, .index = 38, .value = 30, .sortingValue = 1, .itemColor = 0, .droppable = 1},
     {.id = Steak, .index = 39, .value = 120, .sortingValue = 1, .itemColor = 0, .droppable = 1},
     {.id = Crest, .index = 71, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
-    {.id = BigCrest, .index = 125, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
+    {.id = BigCrest, .index = 87, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
     {.id = Rod, .index = 116, .value = 100, .sortingValue = 5, .itemColor = 0, .droppable = 0},
     {.id = GateKey, .index = 123, .value = 100, .sortingValue = 5, .itemColor = 255, .droppable = 0},
     {.id = Hidden, .index = 50, .value = 10, .sortingValue = 1, .itemColor = 0, .droppable = 1},
 }};
 
-// The other items the original ruleset names, with the number its ranges count: plain items, so that every id the
+// The other items the original ruleset names, at made-up numbers outside its ranges: plain items, so that every id the
 // ruleset names is in the table (checkItemIds).
 struct RulesetItem {
     std::string_view id;
@@ -103,20 +104,20 @@ struct RulesetItem {
 };
 
 inline constexpr std::array<RulesetItem, 14> RulesetItems{{
-    {.id = "various", .index = 8},
-    {.id = "omnipotent", .index = 9},
-    {.id = "protection", .index = 10},
-    {.id = "restore", .index = 11},
-    {.id = "medicine", .index = 14},
-    {.id = "def_disk", .index = 16},
-    {.id = "hispeed_dsk", .index = 17},
-    {.id = "s_off_disk", .index = 19},
-    {.id = "s_def_disk", .index = 20},
-    {.id = "s_speed_disk", .index = 21},
-    {.id = "dv_chip_d", .index = 30},
-    {.id = "dv_chip_e", .index = 31},
-    {.id = "noble_mane", .index = 126},
-    {.id = "metalbanana", .index = 127},
+    {.id = "various", .index = 88},
+    {.id = "omnipotent", .index = 89},
+    {.id = "protection", .index = 90},
+    {.id = "restore", .index = 91},
+    {.id = "medicine", .index = 92},
+    {.id = "def_disk", .index = 93},
+    {.id = "hispeed_dsk", .index = 94},
+    {.id = "s_off_disk", .index = 95},
+    {.id = "s_def_disk", .index = 96},
+    {.id = "s_speed_disk", .index = 97},
+    {.id = "dv_chip_d", .index = 98},
+    {.id = "dv_chip_e", .index = 99},
+    {.id = "noble_mane", .index = 100},
+    {.id = "metalbanana", .index = 101},
 }};
 
 // The original has this many items: a plain item (`item_<n>`) stands in for each number no other item here has, so

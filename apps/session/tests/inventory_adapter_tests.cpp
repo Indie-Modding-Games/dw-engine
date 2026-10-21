@@ -1,17 +1,21 @@
+#include <dwe/assets/item_table.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/game/inventory/shop.hpp>
 #include <dwe/game/inventory/use.hpp>
+#include <dwe/game/partner/effects.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/item_use_rules.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -123,6 +127,52 @@ TEST_CASE("the session puts a ruleset's new-game items in the bag, and refuses a
                 .has_value());
     session->tick(dwe::session::testing::Tick);
     CHECK_FALSE(session->startNewGame().has_value());
+}
+
+TEST_CASE("each made-up item is in the original ruleset's refusal class of the original's item it stands in for") {
+    using dwe::game::partner::RefusalCheck;
+    struct Expected {
+        std::string_view id;
+        RefusalCheck check;
+    };
+    // Always: never taken; Discipline: below discipline_checked_below; FavoriteOnly: the rest.
+    constexpr std::array<Expected, 19> Classes{{
+        {.id = items::Tonic, .check = RefusalCheck::Discipline},
+        {.id = items::Ether, .check = RefusalCheck::Discipline},
+        {.id = items::Floppy, .check = RefusalCheck::Discipline},
+        {.id = items::Bandage, .check = RefusalCheck::Discipline},
+        {.id = items::Revival, .check = RefusalCheck::Discipline},
+        {.id = items::PowerDisk, .check = RefusalCheck::Discipline},
+        {.id = items::OmniDisk, .check = RefusalCheck::Discipline},
+        {.id = items::ScriptChip, .check = RefusalCheck::Discipline},
+        {.id = items::BrainChip, .check = RefusalCheck::Discipline},
+        {.id = items::DoubleChip, .check = RefusalCheck::Discipline},
+        {.id = items::Toilet, .check = RefusalCheck::Discipline},
+        {.id = items::Charm, .check = RefusalCheck::Always},
+        {.id = items::Bun, .check = RefusalCheck::FavoriteOnly},
+        {.id = items::Steak, .check = RefusalCheck::FavoriteOnly},
+        {.id = items::Crest, .check = RefusalCheck::FavoriteOnly},
+        {.id = items::BigCrest, .check = RefusalCheck::FavoriteOnly},
+        {.id = items::Rod, .check = RefusalCheck::Always},
+        {.id = items::GateKey, .check = RefusalCheck::Always},
+        {.id = items::Hidden, .check = RefusalCheck::FavoriteOnly},
+    }};
+    static_assert(Classes.size() == items::FixtureItems.size());
+    const TestPacks packs;
+    Adapters adapters;
+    auto session = sessionWithItems(packs, adapters);
+    const dwe::session::ItemRefusalRules& rules = adapters.inventory->itemUseRules().refusal;
+    for (const Expected& expected : Classes) {
+        CAPTURE(expected.id);
+        const dwe::assets::ItemEntry& item = items::fixtureItems().at(items::handleOf(expected.id));
+        if (rules.neverTaken.contains(item)) {
+            CHECK(expected.check == RefusalCheck::Always);
+        } else if (rules.disciplineChecked.contains(item)) {
+            CHECK(expected.check == RefusalCheck::Discipline);
+        } else {
+            CHECK(expected.check == RefusalCheck::FavoriteOnly);
+        }
+    }
 }
 
 TEST_CASE("a healing item heals the partner within its maximum and is used up") {

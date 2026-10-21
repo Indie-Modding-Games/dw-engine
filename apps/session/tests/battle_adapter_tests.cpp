@@ -86,7 +86,7 @@ DigimonRow madeUpRow(std::string id, std::int32_t index, std::vector<std::string
 DigimonTable madeUpDigimon() {
     DigimonTable table;
     table.digimon.push_back(madeUpRow(
-        "agum", 3, {"punch", "shot", "dynamite_kick", "war_cry", "big_finish", "", "big_finish", "", "poison_bite"}));
+        "agum", 8, {"punch", "shot", "dynamite_kick", "war_cry", "big_finish", "", "big_finish", "", "poison_bite"}));
     table.digimon.push_back(madeUpRow("foe", 90, {"punch"}));
     return table;
 }
@@ -205,7 +205,8 @@ TEST_CASE("the evolution requirements count the learned moves below the evolutio
     fixture.requirement("tyra").techs = 2;
     // The session composes one move table for both systems: the evolution's names the battle's moves alike.
     fixture.moves.at(0).id = "punch";
-    fixture.moves.at(44).id = "dynamite_kick";
+    fixture.moves.at(46).id = "dynamite_kick";
+    fixture.moves.at(119).id = "move_121";
     // The new game's technique and one more, but the second is past the 64 moves the original counts.
     const auto speciesAfterLearning = [&](const std::string& move) {
         const TestPacks packs;

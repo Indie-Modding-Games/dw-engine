@@ -34,7 +34,7 @@ inline std::string fixtureWarps() {
     for (int exit = 0; exit < 10; ++exit) {
         if (exit == 0) {
             text += "- exit: 0\n  spawn:\n    x: -2500\n    y: 0\n    z: -2525\n  rotation: 3072\n"
-                    "  target_map: 218\n  target_map_id: \"room08\"\n  target_exit: 2\n";
+                    "  target_map: 118\n  target_map_id: \"room08\"\n  target_exit: 2\n";
         } else {
             text += std::format("- exit: {}\n  spawn:\n    x: 0\n    y: 0\n    z: 0\n  rotation: 0\n"
                                 "  target_map: -1\n  target_map_id: null\n  target_exit: -1\n",
@@ -101,7 +101,7 @@ collision:
 // A map table with three maps, a door set and two toilets.
 inline constexpr std::string_view FixtureTable = R"(maps:
 - id: "twna01"
-  index: 204
+  index: 104
   filename: "TWNA01"
   images_8bpp: 2
   images_4bpp: 2
@@ -113,7 +113,7 @@ inline constexpr std::string_view FixtureTable = R"(maps:
   toilet: 1
   loading_name: 2
 - id: "room08"
-  index: 218
+  index: 118
   filename: "ROOM08"
   images_8bpp: 1
   images_4bpp: 0
@@ -124,8 +124,8 @@ inline constexpr std::string_view FixtureTable = R"(maps:
   doors: 0
   toilet: null
   loading_name: 1
-- id: "map_219"
-  index: 219
+- id: "map_119"
+  index: 119
   filename: ""
   images_8bpp: 0
   images_4bpp: 0

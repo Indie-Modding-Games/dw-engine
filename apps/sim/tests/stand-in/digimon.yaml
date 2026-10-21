@@ -3,7 +3,7 @@
 # forms the original ruleset's evolution section names, so the session's evolution adapter can resolve it.
 digimon:
 - id: "agum"
-  index: 3
+  index: 2
   name: "Test agum"
   file_name: null
   bone_count: 1
@@ -16,7 +16,7 @@ digimon:
   drop_chance: 0
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "bota"
-  index: 1
+  index: 0
   name: "Test bota"
   file_name: null
   bone_count: 1
@@ -29,7 +29,7 @@ digimon:
   drop_chance: 0
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "puni"
-  index: 15
+  index: 4
   name: "Test puni"
   file_name: null
   bone_count: 1
@@ -42,7 +42,7 @@ digimon:
   drop_chance: 0
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "poyo"
-  index: 29
+  index: 5
   name: "Test poyo"
   file_name: null
   bone_count: 1
@@ -55,7 +55,7 @@ digimon:
   drop_chance: 0
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 - id: "yura"
-  index: 43
+  index: 6
   name: "Test yura"
   file_name: null
   bone_count: 1

@@ -103,7 +103,7 @@ struct FixtureForm {
 
 // Every id the original section names, plus a few forms of the tests' own, with made-up indices and levels.
 inline constexpr std::array<FixtureForm, 33> FixtureForms{{
-    {.id = "boys", .level = 0}, {.id = "bota", .level = 1}, {.id = "puni", .level = 1}, {.id = "poyo", .level = 1},
+    {.id = "bota", .level = 1}, {.id = "boys", .level = 0}, {.id = "puni", .level = 1}, {.id = "poyo", .level = 1},
     {.id = "yura", .level = 1}, {.id = "koro", .level = 2}, {.id = "tuno", .level = 2}, {.id = "toko", .level = 2},
     {.id = "tane", .level = 2}, {.id = "agum", .level = 3}, {.id = "gabu", .level = 3}, {.id = "kune", .level = 3},
     {.id = "grey", .level = 4}, {.id = "tyra", .level = 4}, {.id = "nume", .level = 4}, {.id = "aird", .level = 4},
@@ -123,7 +123,9 @@ class TableFixture {
 public:
     TableFixture() {
         for (std::int32_t index = 0; index < FixtureMoveCount; ++index) {
-            moves.push_back({.id = std::format("move_{}", index), .index = index, .power = 10 + index});
+            // Made-up ids, never one of the original at its number (the original has a move_121).
+            const std::string_view prefix = index == FixtureMoveCount - 1 ? "fixture_move" : "move";
+            moves.push_back({.id = std::format("{}_{}", prefix, index), .index = index, .power = 10 + index});
         }
         for (std::size_t position = 0; position < FixtureForms.size(); ++position) {
             const FixtureForm& form = FixtureForms.at(position);

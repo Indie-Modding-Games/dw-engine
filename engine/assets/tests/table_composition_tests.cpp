@@ -35,7 +35,7 @@ constexpr TableComposition FixtureComposition{.sections = FixtureSections};
 
 constexpr std::string_view BaseTable = R"(rows:
 - id: "agum"
-  index: 3
+  index: 2
   power: 10
 - id: "gabu"
   index: 7
@@ -114,7 +114,7 @@ TEST_CASE("a pack's entry replaces the entry with its id in its place and keeps 
     const YamlNode table = composed({contribution("base", Layer::Base, BaseTable),
                                      contribution("tweak", Layer::Mods, "rows:\n- id: agum\n  power: 99\n")});
     CHECK(table.find("rows")->items().size() == 2);
-    CHECK(table.find("rows")->items()[0] == parsed("id: agum\nindex: 3\npower: 99"));
+    CHECK(table.find("rows")->items()[0] == parsed("id: agum\nindex: 2\npower: 99"));
     CHECK(table.find("rows")->items()[1] == parsed(BaseTable).find("rows")->items()[1]);
     CHECK(*table.find("names") == *parsed(BaseTable).find("names"));
 }
@@ -229,7 +229,7 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
   moves: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 )";
     memory.addFile("packs/base/data/digimon.yaml",
-                   "digimon:\n- id: agum\n  index: 3\n" + std::vformat(row, std::make_format_args("Agumon", "AGUM")));
+                   "digimon:\n- id: agum\n  index: 2\n" + std::vformat(row, std::make_format_args("Agumon", "AGUM")));
     memory.addFile("packs/my_mod/data/digimon.yaml",
                    "digimon:\n- id: my_mod:pebble\n" + std::vformat(row, std::make_format_args("Pebble", "PEBB")));
     const VirtualFileSystem vfs = mounted(memory, {"packs/base", "packs/my_mod"});
@@ -243,8 +243,8 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
     const auto table = dwe::assets::loadDigimonTable(withContract, idOf("data/digimon"));
     REQUIRE_MESSAGE(table.has_value(), table.error().message);
     REQUIRE(table->digimon.size() == 2);
-    CHECK(table->find("agum")->index == 3);
-    CHECK(table->find("my_mod:pebble")->index == 4);
+    CHECK(table->find("agum")->index == 2);
+    CHECK(table->find("my_mod:pebble")->index == 3);
     CHECK(table->find("my_mod:pebble")->name == "Pebble");
 }
 
@@ -286,12 +286,12 @@ TEST_CASE("a pack cannot empty an entry list with a null or a scalar") {
 
 TEST_CASE("a row keyed by another table keeps the base's index when replaced, and a new row gets none") {
     const YamlNode table =
-        composed({contribution("base", Layer::Base, "notes:\n- digimon: agum\n  index: 3\n  text: orange\n"),
+        composed({contribution("base", Layer::Base, "notes:\n- digimon: agum\n  index: 2\n  text: orange\n"),
                   contribution("my_mod", Layer::Mods,
                                "notes:\n- digimon: agum\n  text: red\n- digimon: my_mod:pebble\n  text: grey\n")});
     const auto notes = table.find("notes")->items();
     REQUIRE(notes.size() == 2);
-    CHECK(notes[0] == parsed("digimon: agum\nindex: 3\ntext: red"));
+    CHECK(notes[0] == parsed("digimon: agum\nindex: 2\ntext: red"));
     CHECK(notes[1] == parsed("digimon: my_mod:pebble\ntext: grey"));
     CHECK(
         failure({contribution("my_mod", Layer::Mods, "notes:\n- digimon: x\n  index: 2\n")}).contains("leave it out"));

@@ -260,29 +260,29 @@ TEST_CASE("a fixed evolution item works at any level and gives no stats") {
 
 TEST_CASE("an item of the item table works only one level below its form") {
     TableFixture fixture;
-    fixture.evolution.itemTargets.push_back({.item = "grey_claws", .index = 71, .target = "grey"});
+    fixture.evolution.itemTargets.push_back({.item = "test_claws", .index = 71, .target = "grey"});
     const Evolution evolution = fixture.makeEvolution();
-    const auto result = evolution.useItem(inputsOf("agum"), {}, "grey_claws");
+    const auto result = evolution.useItem(inputsOf("agum"), {}, "test_claws");
     REQUIRE(result);
     CHECK(valueOf(result).target == TableFixture::index("grey"));
-    CHECK_FALSE(evolution.useItem(inputsOf("koro"), {}, "grey_claws"));
-    CHECK_FALSE(evolution.useItem(inputsOf("tyra"), {}, "grey_claws"));
+    CHECK_FALSE(evolution.useItem(inputsOf("koro"), {}, "test_claws"));
+    CHECK_FALSE(evolution.useItem(inputsOf("tyra"), {}, "test_claws"));
     CHECK_FALSE(evolution.useItem(inputsOf("agum"), {}, "meat"));
 }
 
 TEST_CASE("the evolution items' targets come from the item effects, by id, and only the evolution handler's") {
     TableFixture fixture;
     fixture.itemEffects.effects = {
-        {.item = "grey_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
+        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
         {.item = "meat", .index = 0, .handler = assets::ItemHandler::Food, .evolvesTo = "grey"},
         // A raw number outside the Digimon table leads nowhere.
         {.item = "odd_charm", .index = 72, .handler = assets::ItemHandler::Evolution, .evolvesTo = "250"},
     };
     const Evolution evolution = fixture.makeEvolution();
-    CHECK(evolution.tables().itemTarget("grey_claws") == TableFixture::index("grey"));
+    CHECK(evolution.tables().itemTarget("test_claws") == TableFixture::index("grey"));
     CHECK_FALSE(evolution.tables().itemTarget("meat"));
     CHECK_FALSE(evolution.tables().itemTarget("odd_charm"));
-    const auto result = evolution.useItem(inputsOf("agum"), {}, "grey_claws");
+    const auto result = evolution.useItem(inputsOf("agum"), {}, "test_claws");
     REQUIRE(result);
     CHECK(valueOf(result).target == TableFixture::index("grey"));
     CHECK(valueOf(result).reason == EvolutionReason::Item);
@@ -291,12 +291,12 @@ TEST_CASE("the evolution items' targets come from the item effects, by id, and o
 TEST_CASE("data/evolution's item_targets override the item effects item by item") {
     TableFixture fixture;
     fixture.itemEffects.effects = {
-        {.item = "grey_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
+        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "grey"},
         {.item = "tyra_scale", .index = 73, .handler = assets::ItemHandler::Evolution, .evolvesTo = "tyra"},
     };
-    fixture.evolution.itemTargets.push_back({.item = "grey_claws", .index = 71, .target = "nume"});
+    fixture.evolution.itemTargets.push_back({.item = "test_claws", .index = 71, .target = "nume"});
     const EvolutionTables tables = fixture.build();
-    CHECK(tables.itemTarget("grey_claws") == TableFixture::index("nume"));
+    CHECK(tables.itemTarget("test_claws") == TableFixture::index("nume"));
     CHECK(tables.itemTarget("tyra_scale") == TableFixture::index("tyra"));
 }
 
@@ -315,7 +315,7 @@ TEST_CASE("a form's move that is no move of the table, by id or by the original'
 TEST_CASE("an item effect that names an unknown form is refused") {
     TableFixture fixture;
     fixture.itemEffects.effects = {
-        {.item = "grey_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "nobody"},
+        {.item = "test_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "nobody"},
     };
     const auto tables = EvolutionTables::build(fixture.digimon, fixture.raise, assets::MoveTable{fixture.moves},
                                                fixture.evolution, fixture.itemEffects);
