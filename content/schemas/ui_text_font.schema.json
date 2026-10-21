@@ -14,7 +14,7 @@
       "required": ["atlas", "meta", "baseline", "fallback_size"],
       "additionalProperties": false,
       "properties": {
-        "atlas": { "description": "Asset id of the bitmap font's atlas (font/main.png, written by dwx extract).", "type": "string", "minLength": 1 },
+        "atlas": { "description": "Asset id of the bitmap font's atlas (font/main.png, written by dwx extract). It must live under font/: the game reads its exact pixels, so dwx cook keeps the images there as PNG.", "type": "string", "pattern": "^font/[a-z0-9_]+$" },
         "meta": { "description": "Asset id of the atlas's glyphs (font/main_meta.yaml).", "type": "string", "minLength": 1 },
         "baseline": { "description": "The row under the capitals, from the top of a cell.", "type": "integer", "minimum": 1 },
         "fallback_size": { "description": "Size of the modern font that draws missing characters, as a fraction of the bitmap font's line height.", "type": "number", "exclusiveMinimum": 0 }

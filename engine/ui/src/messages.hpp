@@ -26,6 +26,8 @@ inline constexpr std::string_view NotOneCharacter = "must be one character";
 inline constexpr std::string_view OriginalLookContext = "ui/fonts/original_look";
 inline constexpr std::string_view UnknownTextFont = "the text font must be modern or original";
 inline constexpr std::string_view FallbackSizeNotPositive = "fallback_size must be above 0";
+inline constexpr std::string_view FontAtlasOutsideFonts =
+    "the game reads the font's exact pixels, so it must live under font/ (an id such as font/main)";
 
 // Loading the "original look" font: the asset id and the problem.
 inline constexpr std::string_view OriginalLookMissing = "ui: no {} in the packs; there is no original look font";

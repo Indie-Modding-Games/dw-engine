@@ -9,6 +9,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -173,8 +174,8 @@ TEST_CASE("cooking refuses folders it does not own and files that do not cook") 
 TEST_CASE("images whose palette is chosen at runtime pass through as PNG and sidecars set the colour space") {
     const TempFolder folder;
     writeSourcePack(folder);
-    // Indexed, with no sidecar, like a map background drawn with one of its palettes: it cooks.
-    folder.write("src/map/start/background_palette3.png", indexedPngText());
+    // Indexed, with no sidecar: a map background, whose palette the time of day picks.
+    folder.write("src/map/start/background_palette3.png", indexedPngText(0));
     // Indexed, and its CLUT has several rows for the same pixels.
     folder.write("src/card/001.png", indexedPngText());
     folder.write("src/card/001_meta.yaml", "mode: indexed4\nclut_rect: {x: 0, y: 480, width: 16, height: 2}\n"
@@ -189,11 +190,13 @@ TEST_CASE("images whose palette is chosen at runtime pass through as PNG and sid
 
     CookSummary summary = cooked(folder);
     CHECK(summary.assets == 10);
-    CHECK(summary.cooked == 4);
-    CHECK(summary.passed == 2);
+    CHECK(summary.cooked == 3);
+    CHECK(summary.passed == 3);
     CHECK(summary.copied == 4);
     const std::filesystem::path out = folder.path() / "out";
-    CHECK(std::filesystem::exists(out / "map/start/background_palette3.ktx2"));
+    CHECK(readOrEmpty(out / "map/start/background_palette3.png") ==
+          readOrEmpty(folder.path() / "src/map/start/background_palette3.png"));
+    CHECK_FALSE(std::filesystem::exists(out / "map/start/background_palette3.ktx2"));
     CHECK(readOrEmpty(out / "card/001.png") == readOrEmpty(folder.path() / "src/card/001.png"));
     CHECK_FALSE(std::filesystem::exists(out / "card/001.ktx2"));
     CHECK(readOrEmpty(out / "map/start/texture8/000.png") ==
@@ -215,6 +218,38 @@ TEST_CASE("images whose palette is chosen at runtime pass through as PNG and sid
     CHECK(cookError(folder).contains("mask_meta.yaml"));
     folder.write("src/ui/mask_meta.yaml", "color_space: hdr\n");
     CHECK(cookError(folder).contains("mask.png: its sidecar's color_space is not srgb or linear"));
+}
+
+TEST_CASE("cooking again replaces a texture an older cook made of an image the game reads from its PNG") {
+    const TempFolder folder;
+    writeSourcePack(folder);
+    folder.write("src/map/start/background_day.png", indexedPngText());
+    // Before the texture cooker knew such images, its plan only read sidecars, and a background had none.
+    std::vector<Cooker> older{cookers().begin(), cookers().end()};
+    std::ranges::find(older, std::string_view{"texture"}, &Cooker::name)->plan = nullptr;
+    REQUIRE(cookPack(older, folder.path() / "src", folder.path() / "out").has_value());
+    const std::filesystem::path out = folder.path() / "out";
+    REQUIRE(std::filesystem::exists(out / "map/start/background_day.ktx2"));
+
+    const CookSummary summary = cooked(folder);
+    CHECK(summary.passed == 1);
+    CHECK(summary.removed == 1);
+    CHECK_FALSE(std::filesystem::exists(out / "map/start/background_day.ktx2"));
+    CHECK(readOrEmpty(out / "map/start/background_day.png") ==
+          readOrEmpty(folder.path() / "src/map/start/background_day.png"));
+}
+
+TEST_CASE("a bitmap font atlas passes through as PNG, with its glyphs") {
+    const TempFolder folder;
+    writeSourcePack(folder);
+    folder.write("src/font/main.png", pngText(90));
+    folder.write("src/font/main_meta.yaml", "cell_width: 12\ncell_height: 12\nglyphs: []\n");
+    const CookSummary summary = cooked(folder);
+    CHECK(summary.passed == 1);
+    const std::filesystem::path out = folder.path() / "out";
+    CHECK(readOrEmpty(out / "font/main.png") == readOrEmpty(folder.path() / "src/font/main.png"));
+    CHECK_FALSE(std::filesystem::exists(out / "font/main.ktx2"));
+    CHECK(readOrEmpty(out / "font/main_meta.yaml") == readOrEmpty(folder.path() / "src/font/main_meta.yaml"));
 }
 
 TEST_CASE("a WAV in a pack cooks to Ogg Opus with the same id") {

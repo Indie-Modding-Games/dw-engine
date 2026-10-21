@@ -1,5 +1,7 @@
 #include "texture_cooker.hpp"
 
+#include <dwe/assets/png_only_images.hpp>
+
 #include <ktx.h>
 
 #include <algorithm>
@@ -264,17 +266,22 @@ std::vector<assets::Image> buildMipChain(const assets::Image& image, bool srgb) 
     return levels;
 }
 
-core::Result<CookOptions> planTexture(std::span<const std::byte> png, const core::YamlNode* sidecar) {
+core::Result<CookOptions> planTexture(const assets::AssetId& id, std::span<const std::byte> png,
+                                      const core::YamlNode* sidecar) {
     const auto header = assets::inspectPng(png);
     if (!header) {
         return std::unexpected{header.error()};
     }
     CookOptions options{.passThrough = false, .colorSpace = ColorSpace::Srgb};
-    if (sidecar == nullptr) {
+    if (sidecar != nullptr && !sidecar->isMapping()) {
+        return core::fail("its sidecar is not a mapping");
+    }
+    if (assets::pngReadingOf(id, sidecar)) {
+        options.passThrough = true;
         return options;
     }
-    if (!sidecar->isMapping()) {
-        return core::fail("its sidecar is not a mapping");
+    if (sidecar == nullptr) {
+        return options;
     }
     // Only an indexed PNG keeps a palette to choose; any other is cooked as the colours it shows.
     options.passThrough = header->indexed && paletteChosenAtRuntime(*sidecar);

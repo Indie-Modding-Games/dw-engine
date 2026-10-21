@@ -610,13 +610,14 @@ y `loadMapImages` (que solo lee PNG indexados) ya no puede leerlo, ni dar paleta
 mismo le pasaría a cualquier salida indexada de una sola paleta. Reglas:
 
 1. **Los fondos y las páginas de los mapas pasan siempre como PNG** al cocinar. Lo arregla en `main` la rama
-   `p4-cook-maps` (737eb70) con una regla **por ID de asset**, no por el YAML lateral: `assets::PngOnlyImages`
+   `p4-cook-maps` con una regla **por ID de asset**, no por el YAML lateral: `assets::PngOnlyImages`
    (`dwe/assets/png_only_images.hpp`) lista por patrón las imágenes que el juego lee de su PNG (`map/*/background_*`,
-   `map/*/*/background_*` para los mapas de un mod con espacio de nombres, `map/*/texture8/*`, `map/*/texture4/*` y
-   los atlas de la fuente). `planTexture` recibe el ID y las deja pasar diga lo que diga su lateral, y la comprobación
-   de contenido (`dwx validate`, `dwe-game --check-content`) rechaza para esos IDs cualquier cosa que no sea un PNG
-   indexado (`PngReading::Indexed`). Con un test que cocina y lee con `loadMapImages`. Es un **requisito previo de
-   W10b**.
+   `map/*/*/background_*` para los mapas de un mod con espacio de nombres, `map/*/texture8/*`, `map/*/texture4/*`, sus
+   equivalentes `map/*/*/...` y los atlas de la fuente, `font/*`). `planTexture` recibe el ID y las deja pasar diga lo
+   que diga su lateral, y la comprobación de contenido (`dwx validate`, `dwe-game --check-content`) rechaza para esos
+   IDs cualquier cosa que no sea un PNG que su lector lea: indexado para los de mapa (`PngReading::Indexed`); PNG de
+   píxeles exactos para la fuente (`PngReading::ExactPixels`). Con un test que cocina y lee con `loadMapImages`. Es un
+   **requisito previo de W10b**.
 2. **W10b extiende `PngOnlyImages` y la comprobación de contenido.** Para los IDs de esa lista, una imagen cuyo
    `_meta.yaml` declara `scale` y `color_space` y **no tiene `palettes`** es **RGBA**: se cocina a KTX2 y la
    comprobación acepta PNG RGBA o KTX2. Sin esas claves sigue la regla de hoy: PNG indexado obligatorio. Los IDs nuevos

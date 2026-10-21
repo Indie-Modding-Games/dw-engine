@@ -32,9 +32,10 @@ struct Cooker {
     std::uint32_t version = 1;
     std::string_view sourceExtension; // "png"
     std::string_view outputExtension; // "ktx2"
-    // Decides the options from the source and its sidecar, the YAML at the asset's id plus _meta (null if there is
-    // none). Fails if the sidecar says something the cooker does not take. Null: the default options.
-    core::Result<CookOptions> (*plan)(std::span<const std::byte> source, const core::YamlNode* sidecar) = nullptr;
+    // Decides the options from the asset's id, its source and its sidecar, the YAML at the asset's id plus _meta (null
+    // if there is none). Fails if the sidecar says something the cooker does not take. Null: the default options.
+    core::Result<CookOptions> (*plan)(const assets::AssetId& id, std::span<const std::byte> source,
+                                      const core::YamlNode* sidecar) = nullptr;
     core::Result<std::vector<std::byte>> (*cook)(std::span<const std::byte> source,
                                                  const CookOptions& options) = nullptr;
 };

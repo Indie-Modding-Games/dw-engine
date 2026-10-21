@@ -164,6 +164,11 @@ TEST_CASE("the game pack's original look reads the extracted font and defaults t
     CHECK_FALSE(parseOriginalLook(replaced(yaml, "default: modern", "default: retro")));
     CHECK_FALSE(parseOriginalLook(replaced(yaml, "fallback_size: ", "fallback_size: -")));
     CHECK_FALSE(parseOriginalLook(replaced(yaml, "family:", "familia:")));
+    // dwx cook keeps only the images under font/ as PNG, and the bitmap font reads their exact pixels.
+    const auto elsewhere = parseOriginalLook(replaced(yaml, "atlas: font/main", "atlas: texture/font"));
+    REQUIRE_FALSE(elsewhere.has_value());
+    CHECK(elsewhere.error().message.contains("it must live under font/"));
+    CHECK(parseOriginalLook(replaced(yaml, "atlas: font/main", "atlas: font/large")).has_value());
 }
 
 } // namespace dwe::ui

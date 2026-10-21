@@ -1,10 +1,10 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/file_system.hpp>
-#include <dwe/assets/image.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/formats/image/png.hpp>
 #include <dwe/test_support/temp_folder.hpp>
 
 #include <doctest/doctest.h>
@@ -65,9 +65,11 @@ std::string textOf(std::span<const std::byte> bytes) {
            std::ranges::to<std::string>();
 }
 
+// A background as the game reads it (loadMapImages): an indexed PNG, whose palette the time of day picks.
 std::string backgroundPng() {
-    const dwe::assets::Image image{.width = 1, .height = 1, .pixels = std::vector<std::byte>(4, std::byte{0x7F})};
-    const auto png = dwe::assets::encodePng(image);
+    const std::vector<std::uint8_t> indices{0};
+    const std::vector<dwe::formats::image::Rgba8> palette{{.r = 0x7F, .g = 0x7F, .b = 0x7F, .a = 0xFF}};
+    const auto png = dwe::formats::image::encodePngIndexed(1, 1, indices, palette);
     REQUIRE_MESSAGE(png.has_value(), errorOf(png));
     return textOf(png.value_or(std::vector<std::byte>{}));
 }

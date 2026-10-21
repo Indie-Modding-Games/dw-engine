@@ -47,6 +47,14 @@ inline constexpr std::string_view Ktx2LoadFailed = "cannot load the texels of th
 inline constexpr std::string_view Ktx2TranscodeFailed = "cannot transcode the KTX2 texture: {}";
 inline constexpr std::string_view Ktx2LevelOutOfData = "mip level {} of the KTX2 texture is out of its data";
 
+// Images the game reads from their PNG (png_only_images.cpp).
+inline constexpr std::string_view PngOnlyImageNotPng =
+    "the game reads this image from a PNG, as {}, so a .{} file cannot replace it: keep it as PNG";
+inline constexpr std::string_view PngOnlyImageNotIndexed = "the game reads this image's palette indices: {}";
+inline constexpr std::string_view PngOnlyImageUnreadable = "the game reads this image's exact pixels: {}";
+inline constexpr std::string_view IndexedReadingName = "palette indices";
+inline constexpr std::string_view ExactPixelsReadingName = "exact pixels";
+
 // Text tables (text_table.cpp).
 inline constexpr std::string_view TableContext = "text table {}";
 inline constexpr std::string_view GameTableWhat = "the text table";

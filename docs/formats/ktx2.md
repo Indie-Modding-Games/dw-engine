@@ -1,7 +1,7 @@
 # Texturas KTX2 de `dwx cook`
 
 `dwx cook` convierte los PNG de un paquete en texturas [KTX 2.0](https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html)
-con el mismo id (`map/start/background.png` → `map/start/background.ktx2`): **Basis Universal UASTC con
+con el mismo id (`ui/frame.png` → `ui/frame.ktx2`): **Basis Universal UASTC con
 supercompresión zstd**, que el motor transcodifica al cargarlas a **BC7**, o a RGBA8 si la GPU no muestrea BC7. KTX2
 es el contenedor estándar de Khronos para Vulkan y el que admite Basis Universal. El fichero lo escribe y lo lee
 libktx (KTX-Software 4.4.2, por vcpkg), que trae el codificador y el transcodificador de Basis Universal. La
@@ -9,10 +9,22 @@ decisión está en el [ADR 0017](../adr/0017-cocinado-y-archivos-pak.md).
 
 ## Qué PNG se convierten
 
-Un PNG se convierte salvo que su paleta la elija el juego mientras corre: entonces una textura de colores RGBA
-perdería los índices y el motor ya no podría dibujarla con otra paleta. Lo decide el YAML lateral (`<id>_meta.yaml`,
-el que escribe `dwx extract` para cada TIM), nunca el nombre. Un PNG **indexado** (tipo de color 3) se copia tal
-cual, como PNG, si su YAML lateral:
+Un PNG se convierte salvo que el juego lo lea de su PNG o elija su paleta mientras corre: entonces una textura de
+colores RGBA perdería los índices o los píxeles exactos y el lector del motor ya no podría usarla.
+
+Primero, por el tipo de asset: los IDs de la lista `assets::PngOnlyImages`
+(`engine/assets/include/dwe/assets/png_only_images.hpp`) se copian siempre como PNG. La regla es una sola función,
+`assets::pngReadingOf(id, meta)`, que comparten `dwx cook`, `dwx validate` y `dwe-game --check-content`: un tipo nuevo
+es una entrada más de la tabla, y lo que declare el `_meta` de la imagen solo puede eximir una imagen que la tabla
+nombra (hoy nada la exime), nunca añadirla. Son los fondos de mapa (`map/<id>/background_*`, sin YAML lateral: la hora
+del día elige su paleta y los sprites con `clut` −1 la usan), las páginas de textura de los mapas
+(`map/<id>/texture8/NNN`, `texture4/NNN`), también los de los mapas de un mod (`map/<paquete>/<nombre>/...`), y el atlas
+de la fuente de mapa de bits (`font/<nombre>`, del que la UI lee el alfa exacto de cada píxel). `dwx validate` y
+`dwe-game --check-content` rechazan para esos IDs cualquier fichero que no sea un PNG que su lector lea (indexado, para
+los de mapa).
+
+Después, por el YAML lateral (`<id>_meta.yaml`, el que escribe `dwx extract` para cada TIM). Un PNG **indexado**
+(tipo de color 3) se copia tal cual, como PNG, si su YAML lateral:
 
 - lista **más de una paleta** en `palettes`, es decir, la CLUT tiene varias filas para los mismos píxeles: las
   texturas de los Digimon (cada primitiva del modelo elige su fila), las de los efectos y los TIM de varias paletas;
@@ -21,9 +33,8 @@ cual, como PNG, si su YAML lateral:
   (`clut` en `data.yaml`; −1 es la fila 480, que cambia con la hora del día), así que aunque la CLUT del TIM tenga
   una sola fila se puede dibujar con otra.
 
-Todo lo demás se convierte: los PNG RGBA, los indexados con una sola paleta (cartas, la mayoría de las texturas
-sueltas), los fondos de mapa (`background_day`, `_dusk`, `_night`... ya compuestos uno por paleta, sin YAML lateral)
-y el atlas de la fuente. Es la interpretación del responsable de la integración y se puede revisar (ver el ADR).
+Todo lo demás se convierte: los PNG RGBA y los indexados con una sola paleta (cartas, la mayoría de las texturas
+sueltas). Es la interpretación del responsable de la integración y se puede revisar (ver el ADR).
 
 ## Color o datos
 

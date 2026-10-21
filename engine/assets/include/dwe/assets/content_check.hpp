@@ -31,9 +31,10 @@ struct ContentProblem {
 };
 
 // Reads every asset of the stack as the game reads it (the file that wins, or a content table composed entry by entry
-// from every pack that has it: each kind's table and the ones the rulesets name, table_kinds.hpp) and opens it with
-// openAsset by its id, a content table with the reader of its kind, and checks that the Digimon the packs add have
-// their model contracts. Several assets at a time, so the file systems of the packs are read from several threads.
+// from every pack that has it: each kind's table and the ones the rulesets name, table_kinds.hpp) and opens it: an
+// image the game reads from its PNG (pngReadingOf) with that reader, any other asset with openAsset
+// by its id, a content table with the reader of its kind; and checks that the Digimon the packs add have their model
+// contracts. Several assets at a time, so the file systems of the packs are read from several threads.
 // Returns the problems, by id.
 std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem);
 

@@ -35,20 +35,33 @@ dependencias que hacen falta para ellos.
     (frecuencia, canales, muestras) y el motor no la reproduce como los demás sonidos, así que cocinarla aparte
     adelantaría parte de esa decisión. Las películas son la mayor parte del tamaño del paquete (ver Medidas); cuando
     se decida el formato, será un cocinero más y una nueva versión de este ADR.
-- **Paletas que se eligen al jugar, tal cual.** Un PNG indexado se copia como PNG, con sus índices y su paleta,
-  solo si su YAML lateral muestra que el juego dibuja los mismos píxeles con más de una fila de CLUT:
+- **Imágenes que el juego lee de su PNG, tal cual.** Las que un lector del motor decodifica él mismo, y no como
+  textura, se copian como PNG: lo dice, por tipo de asset y no por el YAML lateral, la lista `assets::PngOnlyImages`
+  (`engine/assets/include/dwe/assets/png_only_images.hpp`). Hoy son los fondos de mapa (`map/<id>/background_*`) y las
+  páginas de textura (`map/<id>/texture8/NNN`, `texture4/NNN`), de los que `loadMapImages` lee los índices y la paleta
+  (la hora del día elige la paleta del fondo, y los sprites con `clut` −1 se dibujan con ella), y el atlas de la
+  fuente de mapa de bits (`font/<nombre>`), del que `ui::BitmapFont` lee el alfa exacto de cada píxel. `dwx validate`
+  y `dwe-game --check-content` rechazan cualquier otro fichero para esos IDs, así que un paquete cocinado que el juego
+  no puede leer falla antes de jugar.
+- **Paletas que se eligen al jugar, tal cual.** Un PNG indexado se copia también como PNG, con sus índices y su
+  paleta, si su YAML lateral muestra que el juego dibuja los mismos píxeles con más de una fila de CLUT:
   - lista **más de una paleta** (`palettes`): las texturas de los Digimon, cuyas primitivas eligen cada una su fila;
     las de los efectos; los TIM de varias paletas; o
   - es un **TIM de mapa con CLUT** (`source` acaba en `.MAP`): cada sprite del mapa elige su fila (`clut` en
     `data.yaml`); −1 es la fila 480, la de la hora del día, así que el mismo TIM se ve con la paleta de día, de
     atardecer o de noche.
 
-  Todo lo demás, también los PNG indexados de una sola paleta (cartas, texturas sueltas, la fuente) y los fondos de
-  mapa (ya compuestos uno por paleta, sin YAML lateral), se convierte a UASTC. **Esta regla es la interpretación del
-  responsable de la integración**, no una decisión del usuario: el usuario decidió que las texturas cocinadas son
-  UASTC, y qué imagen es una textura y cuál guarda una paleta que se elige al jugar lo decidió el responsable a
-  partir de los metadatos. El usuario la puede revisar; si el motor llega a dibujar las paletas de otra forma (por
-  ejemplo, componiendo cada variante al cocinar), cambia la regla y no el formato.
+  Todo lo demás, también los PNG indexados de una sola paleta (cartas, texturas sueltas), se convierte a UASTC.
+  **Corrección (2026-10-21):** la primera versión de esta regla convertía también los fondos de mapa y el atlas de la
+  fuente, pero `loadMapImages` y `ui::BitmapFont` los leen de su PNG, así que un paquete cocinado no cargaba ningún
+  mapa; desde entonces la regla parte del lector de cada tipo de asset. «Decidido por el manager, 2026-10-21»: se
+  mantiene que los PNG indexados de una sola paleta cuyo lector lee colores (cartas, texturas sueltas) se cocinen a
+  UASTC; una imagen sigue en PNG exactamente cuando su lector lee los índices o los píxeles exactos (`PngOnlyImages`),
+  y todas las demás pueden ser KTX2. **Esta regla es la interpretación del responsable de la integración**, no una
+  decisión del usuario: el usuario decidió que las texturas cocinadas son UASTC, y qué imagen es una textura y cuál
+  guarda una paleta que se elige al jugar lo decidió el responsable a partir de los metadatos. El usuario la puede
+  revisar; si el motor llega a dibujar las paletas de otra forma (por ejemplo, componiendo cada variante al cocinar),
+  cambia la regla y no el formato.
 - **Caché por contenido:** la carpeta de salida guarda en `.dwx-cook` el SHA-1 de la fuente, el nombre, la versión
   y las opciones del cocinero y el SHA-1 de la salida de cada fichero. Lo que no cambió no se vuelve a cocinar, y dos
   assets con los mismos bytes se cocinan una vez. El resultado es el mismo con caché o sin ella. El cocinero de

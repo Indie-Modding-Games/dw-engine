@@ -35,6 +35,7 @@ dwe_add_module(assets
         src/shop_table.cpp
         src/indexed_image.cpp
         src/map_images.cpp
+        src/png_only_images.cpp
         src/image_palettes.cpp
         src/character_model.cpp
         src/game_table_document.cpp

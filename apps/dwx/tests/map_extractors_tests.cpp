@@ -1,3 +1,9 @@
+#include <dwe/assets/content_check.hpp>
+#include <dwe/assets/file_system.hpp>
+#include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_images.hpp>
+#include <dwe/assets/pak.hpp>
+#include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
 #include <dwe/formats/disc/sector.hpp>
@@ -7,12 +13,16 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "base_pack.hpp"
+#include "cook.hpp"
 #include "disc_fixtures.hpp"
 #include "game_tables.hpp"
 #include "map_fixtures.hpp"
@@ -24,13 +34,13 @@ using dwe::formats::exe::MapEntry;
 using dwe::formats::image::Color15;
 using dwe::formats::image::TimPixelMode;
 using dwe::formats::image::test::buildTim;
-using dwe::formats::image::test::bytesOf;
 using dwe::formats::image::test::indexedTim;
 
 namespace {
 
 constexpr std::uint8_t HasNpcs = 0x80;
 constexpr std::uint8_t UnreadFlag = 0x20;
+constexpr std::size_t PageTexels = std::size_t{256} * 256;
 
 MapEntry entry(std::string filename, std::uint8_t flags) {
     MapEntry record;
@@ -49,13 +59,15 @@ struct MapDisc {
                                     entry("GONE", HasNpcs), entry("GLOW", HasNpcs)};
         tables.ids = dwe::formats::exe::makeTableIds(tables.tables);
 
+        // Full texture pages of 256 x 256 texels, as the game loads them: 128 and 64 halfwords wide. The 8-bit one is
+        // the second page, where the sprite's texels are (u 256).
         dwe::formats::test::MapParts parts;
-        parts.image8 = buildTim(indexedTim(TimPixelMode::Indexed8, {.x = 0, .y = 481, .width = 256, .height = 1},
-                                           std::vector<Color15>(256, 0x001F),
-                                           {.x = 640, .y = 0, .width = 1, .height = 1}, bytesOf({1, 2})));
-        parts.image4 = buildTim(indexedTim(TimPixelMode::Indexed4, {.x = 0, .y = 480, .width = 16, .height = 1},
-                                           std::vector<Color15>(16, 0x7C00),
-                                           {.x = 704, .y = 0, .width = 1, .height = 1}, bytesOf({0x10, 0x32})));
+        parts.image8 = buildTim(indexedTim(
+            TimPixelMode::Indexed8, {.x = 0, .y = 481, .width = 256, .height = 1}, std::vector<Color15>(256, 0x001F),
+            {.x = 512, .y = 0, .width = 128, .height = 256}, std::vector<std::byte>(PageTexels, std::byte{1})));
+        parts.image4 = buildTim(indexedTim(
+            TimPixelMode::Indexed4, {.x = 0, .y = 480, .width = 16, .height = 1}, std::vector<Color15>(16, 0x7C00),
+            {.x = 704, .y = 0, .width = 64, .height = 256}, std::vector<std::byte>(PageTexels / 2, std::byte{0x32})));
         fixtures::IsoBuilder builder;
         builder.addFile("MAP/MAP1/FIELD.MAP", dwe::formats::test::makeMap(parts));
         builder.addFile("MAP/MAP1/FIELD.TFS", dwe::formats::test::makeTfs(5, 1));
@@ -92,6 +104,38 @@ const FileReport& reportOf(const ExtractionRun& run, std::string_view path) {
     const auto found = std::ranges::find(run.files, path, [](const FileReport& report) { return report.file.path; });
     REQUIRE(found != run.files.end());
     return *found;
+}
+
+// Loads map "field" from a pack as the game does (render::MapScene: its data, then its images), after checking the
+// pack as dwx validate and dwe-game --check-content do.
+dwe::assets::MapImages loadedMap(const dwe::assets::FileSystem& files, const std::filesystem::path& root) {
+    const std::vector<std::filesystem::path> roots{root};
+    const auto vfs = dwe::assets::VirtualFileSystem::mount(files, roots);
+    REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);
+    for (const auto& problem : dwe::assets::checkContent(*vfs)) {
+        FAIL_CHECK(problem.file, ": ", problem.message);
+    }
+    const auto document = dwe::assets::loadMapDocument(*vfs, "field");
+    REQUIRE_MESSAGE(document.has_value(), document.error().message);
+    auto images = dwe::assets::loadMapImages(*vfs, *document);
+    REQUIRE_MESSAGE(images.has_value(), images.error().message);
+    return std::move(*images);
+}
+
+// What the game draws a map with: one palette per background, the tiles they colour, the texture pages and the
+// sprite that takes the time of day's palette (clut -1), which are the background palettes.
+void checkSameMap(const dwe::assets::MapImages& loaded, const dwe::assets::MapImages& extracted) {
+    CHECK(loaded.backgroundPalettes.size() == 5);
+    CHECK(loaded.backgroundPalettes == extracted.backgroundPalettes);
+    CHECK(loaded.background.indices == extracted.background.indices);
+    CHECK(loaded.backgroundVariants == extracted.backgroundVariants);
+    REQUIRE(loaded.pages.size() == 2);
+    CHECK(loaded.pages[0].image.indices == extracted.pages[0].image.indices);
+    CHECK(loaded.pages[1].cluts == extracted.pages[1].cluts);
+    REQUIRE(loaded.sprites.placements.size() == 1);
+    const std::size_t texture = loaded.sprites.placements[0].texture;
+    REQUIRE(texture != dwe::assets::MapSpriteSheet::NoTexture);
+    CHECK(loaded.sprites.textures.at(texture).timeOfDayPalette);
 }
 
 bool mentions(const std::vector<std::string>& texts, std::string_view text) {
@@ -168,6 +212,33 @@ TEST_CASE("a map gives its data and its images") {
     REQUIRE(prepareOutputFolder(temp.path() / "base", false).has_value());
     REQUIRE(writeBasePack(temp.path() / "base", *run, fixture.info).has_value());
     CHECK(checkBasePack(temp.path() / "base", *run).has_value());
+}
+
+TEST_CASE("a map loads from the pack dwx extract writes, from its cooked pack and from that pack's .pak") {
+    const MapDisc fixture;
+    const Disc disc{*fixture.source, fixture.volume, fixture.info, &fixture.tables};
+    const auto run = runExtractors(disc, extractors());
+    REQUIRE(run.has_value());
+    const dwe::test_support::TempFolder temp;
+    const std::filesystem::path base = temp.path() / "base";
+    REQUIRE(prepareOutputFolder(base, false).has_value());
+    REQUIRE(writeBasePack(base, *run, fixture.info).has_value());
+    const dwe::assets::DiskFileSystem disk;
+    const dwe::assets::MapImages extracted = loadedMap(disk, base);
+    checkSameMap(extracted, extracted);
+
+    // dwx cook keeps the backgrounds and texture pages as PNG: the game picks their palettes while it runs.
+    const std::filesystem::path cooked = temp.path() / "cooked";
+    const auto summary = cookPack(cookers(), base, cooked);
+    REQUIRE_MESSAGE(summary.has_value(), summary.error().message);
+    CHECK(std::filesystem::exists(cooked / "map/field/background_day.png"));
+    checkSameMap(loadedMap(disk, cooked), extracted);
+
+    const std::filesystem::path archive = temp.path() / "base.pak";
+    REQUIRE(dwe::assets::writePak(disk, cooked, archive).has_value());
+    const auto pak = dwe::assets::PakFileSystem::open(archive);
+    REQUIRE(pak.has_value());
+    checkSameMap(loadedMap(**pak, archive), extracted);
 }
 
 TEST_CASE("maps need the executable's tables") {

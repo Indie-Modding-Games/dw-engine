@@ -7,12 +7,14 @@
 #include <doctest/doctest.h>
 #include <lodepng.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "media_fixtures.hpp"
@@ -195,4 +197,56 @@ TEST_CASE("cooked textures are opened by transcoding them") {
     const auto opened = openAsset("ktx2", bytesOf("not a texture"));
     REQUIRE_FALSE(opened.has_value());
     CHECK_MESSAGE(opened.error().message.contains("KTX2"), opened.error().message);
+}
+
+// A 2 x 2 PNG of one colour type, as is: lodepng would otherwise pick a palette for so few colours.
+std::vector<std::byte> pngOfType(LodePNGColorType type) {
+    lodepng::State state;
+    std::vector<unsigned char> pixels(std::size_t{2} * 2 * 4, 0x80);
+    if (type == LCT_PALETTE) {
+        REQUIRE(lodepng_palette_add(&state.info_png.color, 0, 0, 0, 255) == 0);
+        REQUIRE(lodepng_palette_add(&state.info_raw, 0, 0, 0, 255) == 0);
+        state.info_raw.colortype = LCT_PALETTE;
+        pixels.assign(4, 0);
+    }
+    state.info_png.color.colortype = type;
+    state.info_png.color.bitdepth = 8;
+    state.encoder.auto_convert = 0;
+    std::vector<unsigned char> encoded;
+    REQUIRE(lodepng::encode(encoded, pixels, 2, 2, state) == 0);
+    std::vector<std::byte> bytes(encoded.size());
+    std::ranges::transform(encoded, bytes.begin(), [](unsigned char c) { return std::byte{c}; });
+    return bytes;
+}
+
+TEST_CASE("an image the game reads from its PNG must be a PNG it reads that way") {
+    const std::vector<std::byte> indexed = pngOfType(LCT_PALETTE);
+    const std::vector<std::byte> rgba = pngOfType(LCT_RGBA);
+    MemoryFileSystem memory;
+    memory.addFile("pack/pack.yaml", "id: test\nversion: 1.0.0\nlayer: mods\n");
+    memory.addFile("pack/map/field/background_day.png", indexed);
+    memory.addFile("pack/map/mod/town/texture8/000.png", indexed);
+    memory.addFile("pack/map/mod/town/texture8/000_meta.yaml", "palettes: []\n");
+    memory.addFile("pack/font/main.png", rgba);
+    memory.addFile("pack/font/main_meta.yaml", "glyphs: []\n");
+    // An older dwx cook turned map backgrounds and the font atlas into textures, which their readers cannot read.
+    memory.addFile("pack/map/field/background_night.ktx2", bytesOf("texture"));
+    memory.addFile("pack/font/small.ktx2", bytesOf("texture"));
+    memory.addFile("pack/map/field/texture4/001.png", rgba);
+    // Any other image may be a texture.
+    memory.addFile("pack/map/field/sky.png", rgba);
+    const std::vector<std::filesystem::path> roots{"pack"};
+    const auto vfs = VirtualFileSystem::mount(memory, roots);
+    REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+
+    const auto problems = checkContent(*vfs);
+    REQUIRE(problems.size() == 3);
+    CHECK(problems[0].id.str() == "font/small");
+    CHECK(problems[0].message.contains("as exact pixels"));
+    CHECK(problems[1].id.str() == "map/field/background_night");
+    CHECK(
+        problems[1].message ==
+        "the game reads this image from a PNG, as palette indices, so a .ktx2 file cannot replace it: keep it as PNG");
+    CHECK(problems[2].id.str() == "map/field/texture4/001");
+    CHECK(problems[2].message == "the game reads this image's palette indices: the PNG has no palette");
 }

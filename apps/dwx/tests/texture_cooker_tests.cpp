@@ -1,3 +1,4 @@
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/texture.hpp>
 #include <dwe/core/yaml.hpp>
@@ -9,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <string_view>
 #include <thread>
 #include <utility>
@@ -27,6 +29,18 @@ using dwe::formats::image::Rgba8;
 using dwe::formats::image::RgbaImage;
 
 namespace {
+
+dwe::assets::AssetId idOf(std::string_view text) {
+    auto id = dwe::assets::AssetId::parse(text);
+    REQUIRE(id.has_value());
+    return *id;
+}
+
+// The id of an image the game loads as any texture.
+const dwe::assets::AssetId& textureId() {
+    static const dwe::assets::AssetId id = idOf("texture/card/001");
+    return id;
+}
 
 Image imageOf(std::uint32_t width, std::uint32_t height, const std::vector<std::uint8_t>& rgba) {
     REQUIRE(rgba.size() == std::size_t{width} * height * 4);
@@ -197,33 +211,58 @@ TEST_CASE("only indexed images whose palette is chosen at runtime pass through")
     const auto rgba = encodePngRgba(RgbaImage{.width = 1, .height = 1, .pixels = {palette[1]}});
     REQUIRE(rgba.has_value());
 
-    // An indexed PNG with one palette, or with no sidecar (a map background, one per palette), cooks.
-    const auto bare = planTexture(*indexed, nullptr);
+    // An indexed PNG with one palette, or with no sidecar, cooks.
+    const auto bare = planTexture(textureId(), *indexed, nullptr);
     REQUIRE(bare.has_value());
     CHECK_FALSE(bare->passThrough);
     CHECK(bare->colorSpace == ColorSpace::Srgb);
     const YamlNode onePalette =
         yamlOf("source: \"CARD/CARD.ALL\"\nclut_rect: {x: 0, y: 480, width: 256, height: 1}\npng: indexed\n"
                "palettes:\n- \"0000 7fff\"\n");
-    CHECK_FALSE(planTexture(*indexed, &onePalette)->passThrough);
+    CHECK_FALSE(planTexture(textureId(), *indexed, &onePalette)->passThrough);
 
     // Several CLUT rows for the same pixels: the game picks one, so the indices stay.
     const YamlNode rows = yamlOf("source: \"CHDAT/ALLTIM.TIM\"\nclut_rect: {x: 0, y: 481, width: 16, height: 3}\n"
                                  "palettes:\n- \"0000 7fff\"\n- \"0000 001f\"\n- \"0000 03e0\"\n");
-    CHECK(planTexture(*indexed, &rows)->passThrough);
+    CHECK(planTexture(textureId(), *indexed, &rows)->passThrough);
     // A map TIM: its sprites pick the row, even when its CLUT has one.
     const YamlNode map = yamlOf("source: \"MAP/MAP1/MAYO06.MAP\"\nclut_rect: {x: 0, y: 480, width: 256, height: 1}\n"
                                 "palettes:\n- \"0000 7fff\"\n");
-    CHECK(planTexture(*indexed, &map)->passThrough);
+    CHECK(planTexture(textureId(), *indexed, &map)->passThrough);
     const YamlNode directMap = yamlOf("source: \"MAP/MAP1/MAYO06.MAP\"\nmode: direct16\n");
-    CHECK_FALSE(planTexture(*indexed, &directMap)->passThrough);
+    CHECK_FALSE(planTexture(textureId(), *indexed, &directMap)->passThrough);
 
     // An RGBA PNG has no palette left to choose.
-    CHECK_FALSE(planTexture(*rgba, nullptr)->passThrough);
-    CHECK_FALSE(planTexture(*rgba, &rows)->passThrough);
-    CHECK_FALSE(planTexture(*rgba, &map)->passThrough);
+    CHECK_FALSE(planTexture(textureId(), *rgba, nullptr)->passThrough);
+    CHECK_FALSE(planTexture(textureId(), *rgba, &rows)->passThrough);
+    CHECK_FALSE(planTexture(textureId(), *rgba, &map)->passThrough);
 
-    CHECK_FALSE(planTexture(std::vector<std::byte>(8), nullptr).has_value());
+    CHECK_FALSE(planTexture(textureId(), std::vector<std::byte>(8), nullptr).has_value());
+}
+
+TEST_CASE("images the game reads from their PNG pass through whatever their sidecar says") {
+    const std::array<std::uint8_t, 4> indices{0, 1, 1, 0};
+    const std::array palette{Rgba8{.r = 0, .g = 0, .b = 0, .a = 0}, Rgba8{.r = 255, .g = 255, .b = 255, .a = 255}};
+    const auto indexed = encodePngIndexed(2, 2, indices, palette);
+    REQUIRE(indexed.has_value());
+    const YamlNode onePalette = yamlOf("png: indexed\npalettes:\n- \"0000 7fff\"\ncolor_space: linear\n");
+
+    // A map background has no sidecar; a texture page's sidecar may come from a mod and name no .MAP; a font atlas's
+    // sidecar describes its glyphs.
+    for (const std::string_view id : {"map/field/background_day", "map/mod/town/background_night",
+                                      "map/field/texture8/000", "map/mod/town/texture4/002", "font/main"}) {
+        CAPTURE(id);
+        for (const YamlNode* sidecar : {static_cast<const YamlNode*>(nullptr), &onePalette}) {
+            const auto plan = planTexture(idOf(id), *indexed, sidecar);
+            REQUIRE(plan.has_value());
+            CHECK(plan->passThrough);
+        }
+    }
+    // Their metadata, and images of other folders, are not such images.
+    CHECK_FALSE(planTexture(idOf("map/field/background_day_meta"), *indexed, nullptr)->passThrough);
+    CHECK_FALSE(planTexture(idOf("map/field/sky"), *indexed, nullptr)->passThrough);
+    // A file that is not a PNG still fails.
+    CHECK_FALSE(planTexture(idOf("font/main"), std::vector<std::byte>(8), nullptr).has_value());
 }
 
 TEST_CASE("the colour space of a texture comes from its sidecar") {
@@ -232,16 +271,16 @@ TEST_CASE("the colour space of a texture comes from its sidecar") {
     REQUIRE(rgba.has_value());
     const YamlNode linear = yamlOf("color_space: linear\n");
     const YamlNode srgb = yamlOf("color_space: srgb\n");
-    CHECK(planTexture(*rgba, &linear)->colorSpace == ColorSpace::Linear);
-    CHECK(planTexture(*rgba, &srgb)->colorSpace == ColorSpace::Srgb);
+    CHECK(planTexture(textureId(), *rgba, &linear)->colorSpace == ColorSpace::Linear);
+    CHECK(planTexture(textureId(), *rgba, &srgb)->colorSpace == ColorSpace::Srgb);
 
     // A name no longer decides it.
-    CHECK(planTexture(*rgba, nullptr)->colorSpace == ColorSpace::Srgb);
+    CHECK(planTexture(textureId(), *rgba, nullptr)->colorSpace == ColorSpace::Srgb);
 
     const YamlNode unknown = yamlOf("color_space: gamma\n");
-    const auto wrong = planTexture(*rgba, &unknown);
+    const auto wrong = planTexture(textureId(), *rgba, &unknown);
     REQUIRE_FALSE(wrong.has_value());
     CHECK(wrong.error().message.contains("color_space"));
     const YamlNode list = yamlOf("- color_space\n");
-    CHECK_FALSE(planTexture(*rgba, &list).has_value());
+    CHECK_FALSE(planTexture(textureId(), *rgba, &list).has_value());
 }

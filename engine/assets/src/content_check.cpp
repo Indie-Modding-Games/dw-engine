@@ -11,6 +11,7 @@
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/move_table.hpp>
 #include <dwe/assets/new_game_stats.hpp>
+#include <dwe/assets/png_only_images.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/shop_table.hpp>
 #include <dwe/assets/sound.hpp>
@@ -166,6 +167,17 @@ constexpr std::array<std::pair<std::string_view, Opener>, 5> TableReaders = {{
     {"evolution", discardParsed<parseEvolutionTable>},
 }};
 
+// Opens an asset as the game reads it: an image the game reads from its PNG with that reader, else by its id.
+core::Result<void> openAssetAsGameReads(const AssetId& id, std::string_view extension,
+                                        std::span<const std::byte> bytes) {
+    // TODO(W10b): pass the image's _meta once a declaration in it can exempt the image, read from the same pack as
+    // the image so another pack's metadata cannot exempt it.
+    if (const std::optional<PngReading> reading = pngReadingOf(id, nullptr)) {
+        return openPngOnlyImage(*reading, extension, bytes);
+    }
+    return openAsset(id, extension, bytes);
+}
+
 using ComposedTables = std::vector<std::pair<AssetId, const TableKind*>>;
 
 const TableKind* kindOf(const ComposedTables& tables, const AssetId& id) {
@@ -253,9 +265,9 @@ std::vector<ContentProblem> checkContent(const VirtualFileSystem& fileSystem) {
             }
             const std::string extension = source->file.extension().string();
             const auto opened =
-                kind != nullptr
-                    ? openTable(fileSystem, *kind, *bytes)
-                    : openAsset(ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
+                kind != nullptr ? openTable(fileSystem, *kind, *bytes)
+                                : openAssetAsGameReads(
+                                      ids[i], std::string_view{extension}.substr(extension.empty() ? 0 : 1), *bytes);
             if (!opened) {
                 found[i] =
                     ContentProblem{.id = ids[i], .file = pathText(source->file), .message = opened.error().message};

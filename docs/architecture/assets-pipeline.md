@@ -92,6 +92,7 @@ fichero pasado por el **cocinero de su extensión**. Lo decide el [ADR 0017](../
 | Fuente | Cocinado | Cocinero |
 |---|---|---|
 | PNG | KTX2 con Basis Universal UASTC y supercompresión zstd, con todos los mipmaps, sRGB o lineal ([KTX2](../formats/ktx2.md)) | `texture` |
+| PNG que el juego lee de su PNG (`assets::PngOnlyImages`: fondos y páginas de textura de los mapas, atlas de la fuente) | El mismo PNG: su lector necesita los índices o los píxeles exactos | `texture` lo deja pasar |
 | PNG indexado cuyo YAML lateral lista más de una paleta, o TIM de mapa con CLUT | El mismo PNG: la paleta se elige al jugar | `texture` lo deja pasar |
 | GLB | El mismo GLB, con la cabecera comprobada | `glb` |
 | WAV | Ogg Opus a 48 kHz, con el bucle y la nota en comentarios ([Opus](../formats/opus.md)) | `audio` |
@@ -169,12 +170,13 @@ Qué comprueba:
    así que un modelo HD que lo cumple se puede animar como el original. Las animaciones del MMD que el extractor no
    pudo convertir van en `unconverted_animations`, que no se comprueba.
 7. **Lectura:** cada asset se abre con los lectores del motor (`assets::checkContent`), lo mismo que
-   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF, YAML, Ogg Opus (`.opus` y `.ogg`,
-   decodificado entero), y las cabeceras de WAV, SF2, MIDI e Y4M. Así un paquete cocinado se comprueba igual que uno
-   extraído. Los assets que el juego lee con un lector propio pasan también por ese lector: cada `.glb` por
-   `parseModel` (piel, pesos, articulaciones y `extras` de los clips), cada `map/<id>/data` por `parseMapDocument` y
-   `data/maps` por `parseMapTable`, que no admiten claves de más ni de menos. Un fallo se informa con el ID del asset
-   y el motivo.
+   `dwe-game --check-content`: PNG, KTX2 (transcodificada a BC7), glTF, YAML, Ogg Opus (`.opus` y `.ogg`, decodificado
+   entero), y las cabeceras de WAV, SF2, MIDI e Y4M. Así un paquete cocinado se comprueba igual que uno extraído. Los
+   assets que el juego lee con un lector propio pasan también por ese lector: las imágenes que el juego lee de su PNG
+   (`assets::PngOnlyImages`) tienen que ser un PNG que su lector lea, indexado para los mapas y de píxeles exactos para
+   la fuente, así que un paquete cocinado que convirtió un fondo de mapa a KTX2 no pasa; cada `.glb` por `parseModel`
+   (piel, pesos, articulaciones y `extras` de los clips), cada `map/<id>/data` por `parseMapDocument` y `data/maps` por
+   `parseMapTable`, que no admiten claves de más ni de menos. Un fallo se informa con el ID del asset y el motivo.
 
 Límite conocido: los operandos de los scripts (`script/…` y el `script.yaml` de cada efecto) se guardan tal como
 están en el disco, y el esquema solo comprueba su forma (un número, una variable, una dirección o una etiqueta), no lo

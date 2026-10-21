@@ -393,7 +393,7 @@ core::Result<CookSummary> cookPack(std::span<const Cooker> registry, const std::
                 job.result = std::unexpected{sidecar.error()};
                 return;
             }
-            auto options = job.cooker->plan(*source, *sidecar ? &**sidecar : nullptr);
+            auto options = job.cooker->plan(job.file->id, *source, *sidecar ? &**sidecar : nullptr);
             if (!options) {
                 job.result =
                     core::fail(std::format("{}: {}", (pack / job.file->path).string(), options.error().message));

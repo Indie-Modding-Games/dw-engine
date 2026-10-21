@@ -1,3 +1,5 @@
+#include <dwe/assets/asset_id.hpp>
+#include <dwe/assets/png_only_images.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/ui/text_font.hpp>
@@ -11,6 +13,12 @@ namespace {
 
 constexpr std::string_view ModernName = "modern";
 constexpr std::string_view OriginalName = "original";
+
+// dwx cook keeps the images under font/ as PNG (assets::PngOnlyImages), whose exact pixels BitmapFont reads.
+bool isFontAtlasId(std::string_view text) {
+    const auto id = assets::AssetId::parse(text);
+    return id && assets::matchesIdPattern(assets::FontAtlasPattern, *id);
+}
 
 } // namespace
 
@@ -46,7 +54,11 @@ core::Result<OriginalLook> parseOriginalLook(std::string_view yaml) {
     look.modernFamily = reader.text(reader.field(*tree, "modern"));
     const core::YamlNode& original = reader.field(*tree, "original");
     reader.expectKeys(original, "original", {"atlas", "meta", "baseline", "fallback_size"});
-    look.atlas = reader.text(reader.field(original, "atlas"));
+    const core::YamlNode& atlas = reader.field(original, "atlas");
+    look.atlas = reader.text(atlas);
+    if (reader.ok() && !isFontAtlasId(look.atlas)) {
+        reader.fail(atlas, messages::FontAtlasOutsideFonts);
+    }
     look.meta = reader.text(reader.field(original, "meta"));
     look.baseline = reader.integer<int>(reader.field(original, "baseline"));
     const core::YamlNode& fallbackSize = reader.field(original, "fallback_size");
