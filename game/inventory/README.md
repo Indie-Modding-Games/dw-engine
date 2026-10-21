@@ -23,6 +23,9 @@ auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partne
 - **Estado** (`InventoryState`): los 30 huecos (`std::optional<Stack>` con número de objeto y cantidad), cuántos se
   usan (`slotCount`) y el dinero. `toYaml` y `fromYaml` lo pasan a YAML para la sección de la partida guardada, con su versión en `SectionVersion`;
   la sesión los envuelve en un `SectionSerializer` de `game/save`.
+- **Partida nueva**: `bag.new_game_slots`, `bag.new_game_money` y `bag.new_game_items` (`StartingItem`: número de
+  objeto y cantidad, de 1 a `max_stack`). El inventario no los pone: la sesión crea la bolsa y añade la lista. En el
+  original la lista está vacía: el guion `dg 193` quita todo lo que deja `initializeDefaultSavegame`.
 - **Bolsa** (`Inventory`): `add`, `hasRoomFor`, `countOf`, `remove`, `move`, `discard`, `sort`, `setSlotCount`,
   `loseOnDefeat` (devuelve las pilas perdidas, para la tienda de reciclaje) y `addMoney`, `spendMoney`.
 - **Efectos** (`ItemEffect`): una descripción plana de lo que hace un objeto (curar, revivir, curar estados, proteger,
@@ -63,7 +66,8 @@ Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decid
 | Quitar deja hueco | `item.c: removeItem` | `Inventory::remove` | `bag_tests`: "a stack that runs out…" | Igual |
 | Contar la primera pila | `item.c: getItemCount` | `Inventory::countOf` | `bag_tests`: "items join…" | Igual |
 | Tamaños 10, 20 y 30 por guion | `script_interp.c: set_inventory_size`; `item.c: setInventorySize` | `Inventory::setSlotCount`; `bag.slot_counts` | `bag_tests`: "the story grows…" | Igual |
-| Partida nueva: 10 huecos y 0 de dinero | guion `dg 193`; `main_menu.c: initializeDefaultSavegame` | constructor de `Inventory`; `bag.new_game_*` | `bag_tests`: "a new game's bag…" | Igual (los objetos iniciales los da el guion: Hueco, fase 4) |
+| Partida nueva: 10 huecos y 0 de dinero | guion `dg 193`; `main_menu.c: initializeDefaultSavegame` | constructor de `Inventory`; `bag.new_game_*` | `bag_tests`: "a new game's bag…" | Igual |
+| Partida nueva: sin objetos | guion `dg 193` (`script_interp.c: remove_item` de los 29 huecos de `main_menu.c: initializeDefaultSavegame`, sin `give_item`) | `bag.new_game_items: []`; los pone la sesión (`InventoryAdapter::startNewGame`) | `rules_tests`: "the original starts with an empty bag…"; `apps/session` `inventory_adapter_tests` | Igual (cuando la máquina de guiones de la fase 4 corra `dg 193`, la lista queda como respaldo; decidido el 2026-10-20) |
 | Mover intercambia huecos | `inventory.c: selectOptionMenu` | `Inventory::move` | `bag_tests`: "moving swaps…" | Igual |
 | Tirar: campo, `droppable` 1, pila entera | `inventory.c: selectOptionMenu` | `Inventory::discard`; `use.discard_droppable` | `bag_tests`: "moving swaps…" | Igual |
 | Objeto clave: `droppable` 0, ni se vende ni se tira (sin marca propia) | `script_common.c: shopFillSellItemList`; `inventory.c: selectOptionMenu` | `isKeyItem`; `use.key_item_droppable`; `UseResult::keyItem`, `Purchase::keyItem` | `use_tests`: "using an item says…"; `shop_tests`: "buying a key item…" | Igual (el aviso es para el autoguardado, que no existe en el original) |

@@ -22,6 +22,7 @@
         "slot_counts",
         "new_game_slots",
         "new_game_money",
+        "new_game_items",
         "max_stack",
         "stacking"
       ],
@@ -50,6 +51,19 @@
           "type": "integer",
           "minimum": 0,
           "description": "Money in a new game."
+        },
+        "new_game_items": {
+          "description": "The items a new game starts with, which the session puts in the bag.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item", "count"],
+            "additionalProperties": false,
+            "properties": {
+              "item": { "description": "The item's number in data/items.", "type": "integer", "minimum": 0 },
+              "count": { "description": "How many, at most max_stack.", "type": "integer", "minimum": 1 }
+            }
+          }
         },
         "max_stack": {
           "type": "integer",

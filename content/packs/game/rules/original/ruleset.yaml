@@ -22,6 +22,7 @@ sections:
   - training
   - new_game
   - tamer
+  - item_use
   - inventory
   - evolution
   - battle

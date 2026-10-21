@@ -73,6 +73,7 @@ de `clock` (con la velocidad que tenía).
 | `tamer` | `level` |
 | `field` | `map`, `position` y `yaw` del jugador; vacío sin mapa |
 | `random` | `partner` y `session`: el estado del generador del partner y el de los sistemas, para que una partida cargada siga igual que la guardada; una partida de la versión 1 (solo `partner`) sigue los de los sistemas desde el del partner |
+| `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
@@ -114,6 +115,33 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
   `PartnerState::virusBackup`; `recordEvolution` y autoguardado `Evolution`. `takeEvolutions()` da las aplicadas
   para la UI.
 
+### Inventario (`InventoryAdapter`)
+
+`InventoryAdapter({.files = &files, .evolution = &evolucion})` es dueño de la bolsa (`game::inventory::Inventory`) y
+de los efectos (`ItemEffects`, con `data/items` y `data/item_effects`, leídos una vez; los tests le dan los suyos).
+Registra las comprobaciones de las secciones `inventory` e `item_use` y la sección de guardado `inventory`
+(`inventory::toYaml`, versión `SectionVersion`).
+
+- **Partida nueva**: la bolsa de la sección `inventory` con los objetos de `bag.new_game_items` (en el original
+  ninguno: el guion `dg 193` vacía la del arranque; ver `game/inventory`). Un objeto que no está en `data/items` es
+  un error.
+- **Usar** (`use(session, objeto)`, en el campo): el partner puede rechazarlo (`Partner::refuses` con la comprobación
+  que dice `item_use.refusal`: nunca, tirada de disciplina o solo la comida favorita; los objetos de evolución se
+  rechazan fuera de su nivel). Si lo toma: la comida va por `Partner::eat` (comida de verdad, que responde al hambre,
+  si está en `item_use.meals`; el refuerzo de entrenamiento con los bits de `item_use.training_boost_bits`); el resto
+  cura HP y MP dentro del máximo, revive, cura con la probabilidad de la medicina, sube stats por `addStatGains`, da
+  horas de vida (`addLifetime`), cambia el nivel de domador (`addTamerLevel`), alivia (`usePortableToilet`) o pasa el
+  objeto de evolución a `EvolutionAdapter::useItem`. Un objeto clave usado pide el autoguardado `KeyItem`.
+- **Comprar** (`buy(session, objeto, cantidad, disparadores)`): con el descuento de bebé si el nivel del partner está
+  en `item_use.shop_discount_levels`; un objeto clave pide el autoguardado `KeyItem`.
+- **Derrota** (`loseOnDefeat(session)`): las pilas perdidas, con los números aleatorios de la partida.
+- Lo que solo vale en combate (curar estados, proteger, discos) es del adaptador de batalla.
+
+La sección `item_use` ([esquema](../../content/schemas/ruleset_item_use.schema.json)) es de la partida: qué objetos
+rechaza el partner (`partner_impl.c: partnerWillRefuseItem`), cuáles responden al hambre
+(`partner_impl.c: partnerHandleFoodFeed`), qué niveles tienen el descuento de bebé (`script_common.c: isPartnerBaby`)
+y el bit de cada stat en el refuerzo de entrenamiento (`trn_reward.c`).
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |
@@ -135,6 +163,11 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
 | Lo que cambia al evolucionar | `evl.c: EVL_applyEvolution`, `EVL_clampBaseStats` | `EvolutionAdapter::apply` | `an evolution item turns ...`, `back from the virus form ...` | Igual (vuelta del virus: decisión del 2026-10-20) |
 | Nivel de domador al evolucionar a campeón o definitivo | `evl.c: EVL_applyEvolution` (`addTamerLevel(20/100, 1)` si no corre un guion) | `tamer.evolution_level_gain`, `GameSession::addTamerLevel` | `a tamer level chance of 100 ...` | Igual |
 | Barra de virus llena y evolución natural en la misma hora | `partner_impl.c: tickConditions` (gana el virus) | el partner reparte `VirusBarFull` después del `tick` del adaptador: se aplican las dos, la del virus la última | — | **Hueco**: pregunta abierta |
+| Qué objetos rechaza el partner | `partner_impl.c: partnerWillRefuseItem` | `item_use.refusal`, `InventoryAdapter` (`RefusalCheck`) | `the partner never takes some items ...`, `a fixed evolution item is refused ...` | Igual |
+| Solo la comida responde al hambre | `partner_impl.c: partnerHandleFoodFeed` | `item_use.meals` → `FoodEffect::meal` | `food feeds the partner ...` | Igual |
+| Descuento de bebé en las tiendas | `script_common.c: isPartnerBaby` (`BABY_IDS`) | `item_use.shop_discount_levels` | `buying a key item asks ...` | Igual |
+| Probabilidad de las medicinas | `item.c: handleMedicineHealing` (`randomLimit(roll) < cure`) | `CureEffect` con `cure × 100 / roll` | — | Igual con los valores del original (3/3, 2/10, 10/10) |
+| Sección de guion de un chip | `item.c: handleChips` (0x16) | — | — | **Hueco** (fase 4) |
 | Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionInputs::learnedMoves = 0` | — | **Hueco** |
 
 ## Tests
@@ -146,7 +179,10 @@ reloj de antes, el reloj parado en los fundidos a cualquier velocidad, autoguard
 guardado), `tests/save_migration_tests.cpp` (partidas con secciones de versiones anteriores),
 `tests/evolution_adapter_tests.cpp` (con las tablas inventadas de `game/evolution/tests/fixture.hpp`: evolución por
 horas y autoguardado, barra de virus, vuelta con los stats topados, objeto, guion, guardar y cargar, comprobación de
-sección), `tests/system_hook_tests.cpp` (alabanza y regañina a los sistemas, nivel de domador con probabilidad) y `tests/rules_tests.cpp`
-(esquemas de `new_game` y `tamer`, valores del original y comprobaciones). Usan el
+sección), `tests/inventory_adapter_tests.cpp` (con los objetos inventados de `game/inventory/tests/fixture.hpp`: bolsa de
+partida nueva y su lista, curar, comer con refuerzo, chip, rechazos, objeto de evolución por nivel, compra con objeto
+clave y descuento, guardar y cargar, derrota con la misma semilla, comprobaciones de sección),
+`tests/system_hook_tests.cpp` (alabanza y regañina a los sistemas, nivel de domador con probabilidad) y `tests/rules_tests.cpp`
+(esquemas de `new_game`, `tamer` e `item_use`, valores del original y comprobaciones). Usan el
 paquete `game` del árbol de fuentes sobre un paquete base de sustitución con las tablas vacías, especies inventadas
 (no las del original) y `MemorySaveStorage`.

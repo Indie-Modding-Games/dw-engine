@@ -1,3 +1,4 @@
+#include <dwe/core/yaml.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/game/inventory/rules.hpp>
 #include <dwe/game/inventory/stacking.hpp>
@@ -7,6 +8,8 @@
 #include <algorithm>
 #include <memory>
 #include <ostream>
+#include <string>
+#include <vector>
 
 #include "fixture.hpp"
 
@@ -109,4 +112,39 @@ TEST_CASE("without the overflow quirk the rest of a stack is refused, not lost")
     CHECK(added.added == 4);
     CHECK(added.lost == 0);
     CHECK(added.refused == 6);
+}
+
+namespace {
+
+// The original's inventory section with bag.new_game_items set to one item.
+dwe::ruleset::Section withStartingItem(std::int32_t item, std::int32_t count) {
+    using dwe::core::YamlNode;
+    dwe::ruleset::Section section = *originalRuleset().section(SectionName);
+    YamlNode entry = YamlNode::mapping();
+    entry.set("item", YamlNode::scalar(std::to_string(item)));
+    entry.set("count", YamlNode::scalar(std::to_string(count)));
+    YamlNode items = YamlNode::sequence();
+    items.append(entry);
+    const YamlNode* found = section.node.find("bag");
+    REQUIRE(found != nullptr);
+    YamlNode bag = *found;
+    bag.set("new_game_items", items);
+    section.node.set("bag", bag);
+    return section;
+}
+
+} // namespace
+
+TEST_CASE("the original starts with an empty bag: script dg 193 takes every item of the boot state away") {
+    CHECK(originalRules().bag.newGameItems.empty());
+}
+
+TEST_CASE("a ruleset's new-game items are read, each count from 1 to max_stack") {
+    const auto rules = parseInventoryRules(withStartingItem(Tonic, 3));
+    REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+    CHECK(rules->bag.newGameItems == std::vector<StartingItem>{{.item = Tonic, .count = 3}});
+    const auto tooMany = parseInventoryRules(withStartingItem(Tonic, 100));
+    REQUIRE_FALSE(tooMany.has_value());
+    CHECK(tooMany.error().message.find("max_stack") != std::string::npos);
+    CHECK_FALSE(parseInventoryRules(withStartingItem(Tonic, 0)).has_value());
 }

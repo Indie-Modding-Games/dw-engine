@@ -17,6 +17,10 @@ inline constexpr std::string_view NegativeValue = "{} cannot be negative";
 inline constexpr std::string_view InFile = "{}: {}";
 inline constexpr std::string_view LevelLimitsReversed = "level_min ({}) is above level_max ({})";
 inline constexpr std::string_view StartLevelOutside = "tamer_level {} is outside the tamer section's {} to {}";
+inline constexpr std::string_view ItemUseSectionText = "the item_use section";
+inline constexpr std::string_view ItemRangeText = "an item range";
+inline constexpr std::string_view FixedLevelText = "a fixed-level evolution item";
+inline constexpr std::string_view ItemRangeReversed = "the range starts at {} and ends before it, at {}";
 
 // Setting up a session.
 inline constexpr std::string_view NoFiles = "a session needs the packs";
@@ -52,5 +56,11 @@ inline constexpr std::string_view EvolutionNeedsTables = "the evolution adapter 
 inline constexpr std::string_view EvolutionNotRead = "the evolution rules have not been read";
 inline constexpr std::string_view EvolutionNotApplied = "evolution: the partner could not become '{}': {}";
 inline constexpr std::string_view UnknownEvolutionForm = "evolution: no form '{}' in the tables";
+
+// The inventory adapter.
+inline constexpr std::string_view InventoryNeedsTables = "the inventory adapter needs the packs or its tables";
+inline constexpr std::string_view InventoryNotRead = "the inventory rules have not been read";
+inline constexpr std::string_view UnknownStartingItem = "bag.new_game_items: item {} is not in data/items";
+inline constexpr std::string_view UnknownItem = "item {} is not in data/items";
 
 } // namespace dwe::session::messages

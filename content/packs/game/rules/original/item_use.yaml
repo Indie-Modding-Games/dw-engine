@@ -1,0 +1,32 @@
+# El partner y los objetos que le da el domador (apps/session: InventoryAdapter, ItemUseRules, apps/session/README.md).
+# Los números son los de los objetos en data/items.
+
+# partner_impl.c: partnerWillRefuseItem.
+refusal:
+  # Nunca los acepta (0x21 a 0x25; 0x73 a 0x7c salvo 0x79 y 0x7a).
+  never_taken:
+    - { from: 33, to: 37 }
+    - { from: 115, to: 120 }
+    - { from: 123, to: 124 }
+  # Los de número menor pasan la tirada de disciplina: randomLimit(100) < 110 - (disciplina + randomLimit(10) + 10).
+  discipline_checked_below: 38
+  # Objetos de evolución que solo acepta en un nivel (0x7d y 0x7f campeón, 0x7e novato).
+  fixed_level_evolutions:
+    - { item: 125, level: 4 }
+    - { item: 126, level: 3 }
+    - { item: 127, level: 4 }
+  # Los demás objetos de evolución los rechaza si el nivel de su destino menos el del partner es uno de estos.
+  refused_level_differences: [0, 2, -1]
+
+# partner_impl.c: partnerHandleFoodFeed: solo estos objetos responden al hambre (0x26 a 0x46, 0x79 y 0x7a).
+meals:
+  - { from: 38, to: 70 }
+  - { from: 121, to: 122 }
+
+# script_common.c: isPartnerBaby: las tiendas hacen el descuento de bebé a las 8 formas de BABY_IDS, que son todas las
+# de nivel 1 (bebé) y 2 (en entrenamiento).
+shop_discount_levels: [1, 2]
+
+# trn_reward.c: TRN_award*TrainingGains: el bit de cada stat en trainBoostFlag, que pone la comida
+# (item.c: setTrainingBoost).
+training_boost_bits: { hp: 16, mp: 32, offense: 1, defense: 2, speed: 4, brain: 8 }

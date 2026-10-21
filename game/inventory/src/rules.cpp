@@ -19,6 +19,10 @@ using core::YamlNode;
 
 constexpr std::int32_t FullPercent = 100;
 
+constexpr std::string_view NewGameItemsKey = "new_game_items";
+constexpr std::string_view StartingItemKey = "item";
+constexpr std::string_view StartingCountKey = "count";
+
 struct HandlerName {
     std::string_view name;
     assets::ItemHandler handler;
@@ -91,16 +95,36 @@ bool booleanOr(YamlReader& reader, const YamlNode& node, std::string_view key, b
     return value == nullptr ? fallback : reader.boolean(*value);
 }
 
+std::vector<StartingItem> readStartingItems(YamlReader& reader, const YamlNode& node, std::int32_t maxStack) {
+    std::vector<StartingItem> items;
+    for (const YamlNode& entry : reader.sequence(reader.field(node, NewGameItemsKey), NewGameItemsKey)) {
+        if (!reader.expectKeys(entry, messages::StartingItemText, {StartingItemKey, StartingCountKey})) {
+            return items;
+        }
+        const StartingItem item{.item = nonNegative(reader, entry, StartingItemKey),
+                                .count = integer(reader, entry, StartingCountKey)};
+        if (reader.ok() && (item.count < 1 || item.count > maxStack)) {
+            reader.fail(reader.field(entry, StartingCountKey),
+                        messages::formatMessage(messages::StartingCountRange, maxStack));
+        }
+        items.push_back(item);
+    }
+    return items;
+}
+
 BagRules readBag(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, "bag",
-                           {"max_slots", "slot_counts", "new_game_slots", "new_game_money", "max_stack", "stacking"})) {
+                           {"max_slots", "slot_counts", "new_game_slots", "new_game_money", NewGameItemsKey,
+                            "max_stack", "stacking"})) {
         return {};
     }
     BagRules bag{.maxSlots = positive(reader, node, "max_slots"),
                  .slotCounts = integers(reader, node, "slot_counts"),
                  .newGameSlots = positive(reader, node, "new_game_slots"),
                  .newGameMoney = nonNegative(reader, node, "new_game_money"),
+                 .newGameItems = {},
                  .maxStack = positive(reader, node, "max_stack")};
+    bag.newGameItems = readStartingItems(reader, node, bag.maxStack);
     const bool valid =
         !bag.slotCounts.empty() && bag.slotCounts.front() > 0 &&
         std::ranges::adjacent_find(bag.slotCounts, std::ranges::greater_equal{}) == bag.slotCounts.end() &&

@@ -6,11 +6,13 @@ dwe_add_module(session
     SOURCES
         src/evolution_adapter.cpp
         src/game_session.cpp
+        src/inventory_adapter.cpp
+        src/item_use_rules.cpp
         src/partner_view.cpp
         src/save_sections.cpp
         src/session_rules.cpp
         src/slot_names.cpp
-    DEPS core assets scene ruleset field partner save evolution)
+    DEPS core assets scene ruleset field partner save evolution inventory)
 
 # The tests read the game pack from the source tree.
 if(TARGET dwe_session_tests)

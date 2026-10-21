@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: item_use",
+  "description": "rules/<id>/item_use.yaml: how the partner takes the items the tamer gives it (apps/session: ItemUseRules, apps/session/README.md).",
+  "type": "object",
+  "required": ["refusal", "meals", "shop_discount_levels", "training_boost_bits"],
+  "additionalProperties": false,
+  "$defs": {
+    "item": { "type": "integer", "minimum": 0 },
+    "ranges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "$ref": "#/$defs/item", "description": "The first item of the range." },
+          "to": { "$ref": "#/$defs/item", "description": "The last item of the range, not before from." }
+        }
+      }
+    },
+    "bit": { "type": "integer", "minimum": 1 }
+  },
+  "properties": {
+    "refusal": {
+      "description": "Which items the partner refuses (partner_impl.c: partnerWillRefuseItem).",
+      "type": "object",
+      "required": ["never_taken", "discipline_checked_below", "fixed_level_evolutions", "refused_level_differences"],
+      "additionalProperties": false,
+      "properties": {
+        "never_taken": { "$ref": "#/$defs/ranges", "description": "Items it never takes." },
+        "discipline_checked_below": {
+          "description": "Items with a lower number go through the discipline roll.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "fixed_level_evolutions": {
+          "description": "Evolution items it takes only at one level.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item", "level"],
+            "additionalProperties": false,
+            "properties": {
+              "item": { "$ref": "#/$defs/item" },
+              "level": { "description": "The level of data/digimon.", "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "refused_level_differences": {
+          "description": "The other evolution items are refused when the target's level minus the partner's is one of these.",
+          "type": "array",
+          "items": { "type": "integer" }
+        }
+      }
+    },
+    "meals": { "$ref": "#/$defs/ranges", "description": "The items that answer hunger (partner_impl.c: partnerHandleFoodFeed)." },
+    "shop_discount_levels": {
+      "description": "The partner levels of data/digimon that get the shops' baby discount (script_common.c: isPartnerBaby).",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "training_boost_bits": {
+      "description": "The bit of each stat in a food's training boost flag (trn_reward.c).",
+      "type": "object",
+      "required": ["hp", "mp", "offense", "defense", "speed", "brain"],
+      "additionalProperties": false,
+      "properties": {
+        "hp": { "$ref": "#/$defs/bit" },
+        "mp": { "$ref": "#/$defs/bit" },
+        "offense": { "$ref": "#/$defs/bit" },
+        "defense": { "$ref": "#/$defs/bit" },
+        "speed": { "$ref": "#/$defs/bit" },
+        "brain": { "$ref": "#/$defs/bit" }
+      }
+    }
+  }
+}

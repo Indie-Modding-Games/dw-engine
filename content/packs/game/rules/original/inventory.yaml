@@ -9,9 +9,14 @@ bag:
   # suben a 20 y a 30.
   slot_counts: [10, 20, 30]
   # dg 193 (partida nueva): reduce_money 50000 sobre el estado de arranque (main_menu.c: initializeDefaultSavegame
-  # pone 50000) y set_inventory_size 10. Los objetos con los que se empieza los deja el guion (fase 4).
+  # pone 50000) y set_inventory_size 10.
   new_game_slots: 10
   new_game_money: 0
+  # Los objetos con los que empieza una partida nueva; los pone la sesión. main_menu.c: initializeDefaultSavegame
+  # llena 29 huecos (DEFAULT_INVENTORY_TYPES/AMOUNTS), pero el guion dg 193 (script_interp.c: remove_item, 0x0968 a
+  # 0x0a4c) quita 99 de cada uno y no da ninguno (no tiene give_item): el original empieza con la bolsa vacía. Cuando
+  # la máquina de guiones de la fase 4 corra dg 193, esta lista queda como respaldo para los rulesets sin guion.
+  new_game_items: []
   # item.c: giveItem: una pila llega a 99.
   max_stack: 99
   # Dónde va lo que entra en la bolsa. original: item.c: giveItem, a la primera pila de ese objeto aunque esté llena

@@ -31,12 +31,22 @@ inline constexpr std::string_view BabyDiscountLimitedByFullPrice = "baby_discoun
 inline constexpr std::string_view OmniDiskIgnoresLimit = "omni_disk_ignores_limit";
 inline constexpr std::string_view UselessItemsConsumed = "useless_items_consumed";
 
+// An item a new game starts with: its number in data/items and how many.
+struct StartingItem {
+    std::int32_t item = 0;
+    std::int32_t count = 0;
+
+    friend bool operator==(const StartingItem&, const StartingItem&) = default;
+};
+
 struct BagRules {
     std::int32_t maxSlots = 0;
     // The sizes the story can give the bag, smallest first.
     std::vector<std::int32_t> slotCounts;
     std::int32_t newGameSlots = 0;
     std::int32_t newGameMoney = 0;
+    // What the session puts in the bag on a new game (script dg 193 in the original, which leaves it empty).
+    std::vector<StartingItem> newGameItems;
     std::int32_t maxStack = 0;
 };
 
