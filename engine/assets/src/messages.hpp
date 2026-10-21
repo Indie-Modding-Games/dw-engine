@@ -15,6 +15,12 @@ inline constexpr std::string_view ModInEngineLayer =
 inline constexpr std::string_view IncompatibleApi = "the scripts need the Lua API {}, and this engine has {}";
 inline constexpr std::string_view PackNeedsOtherApi = "pack '{}': {}";
 
+// Palettes of extracted images (image_palettes.cpp, map_images.cpp).
+inline constexpr std::string_view PaletteColorNotHex =
+    "texture metadata: a palette colour is not a 16-bit hexadecimal number";
+inline constexpr std::string_view PaletteNotText = "texture metadata: a palette is not a string";
+inline constexpr std::string_view NoImagePalettes = "texture metadata: palettes is missing";
+
 // Text tables (text_table.cpp).
 inline constexpr std::string_view TableContext = "text table {}";
 inline constexpr std::string_view GameTableWhat = "the text table";

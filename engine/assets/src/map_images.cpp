@@ -1,3 +1,4 @@
+#include <dwe/assets/image_palettes.hpp>
 #include <dwe/assets/map_images.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/yaml.hpp>
@@ -8,6 +9,8 @@
 #include <format>
 #include <map>
 #include <utility>
+
+#include "messages.hpp"
 
 namespace dwe::assets {
 
@@ -29,20 +32,16 @@ core::Result<std::int32_t> readInt(const core::YamlNode& node, std::string_view 
 
 core::Result<std::vector<PaletteColor>> readClut(const core::YamlNode& node) {
     if (!node.isScalar()) {
-        return core::fail("texture metadata: a palette is not a string");
+        return core::fail(std::string{messages::PaletteNotText});
+    }
+    auto values = parseOriginalPalette(node.text());
+    if (!values) {
+        return std::unexpected{values.error()};
     }
     std::vector<PaletteColor> colors;
-    const std::string& text = node.text();
-    std::size_t start = 0;
-    while (start < text.size()) {
-        const std::size_t end = std::min(text.find(' ', start), text.size());
-        std::uint16_t value = 0;
-        const auto [last, error] = std::from_chars(text.data() + start, text.data() + end, value, 16);
-        if (error != std::errc{} || last != text.data() + end) {
-            return core::fail("texture metadata: a palette colour is not a 16-bit hexadecimal number");
-        }
+    colors.reserve(values->size());
+    for (const std::uint16_t value : *values) {
         colors.push_back(colorFromOriginal(value));
-        start = end + 1;
     }
     return colors;
 }
