@@ -46,12 +46,14 @@ struct SchemaReport {
 };
 
 // A JSON Schema, compiled once and used to check any number of YAML documents. Only a subset of draft 2020-12 is
-// supported: type, properties, required, additionalProperties, minProperties, propertyNames, items, $ref to "#" or
-// "#/$defs/<name>" with $defs at the root, minimum, maximum, exclusiveMinimum, exclusiveMaximum, minItems, maxItems,
-// minLength, maxLength, pattern, enum and const, plus the
-// annotations title, description, default, $schema and $id. Patterns take literals, escaped punctuation, []
-// classes with ranges, groups with |, the quantifiers ? * + {n} {n,} {n,m} and the anchors ^ and $. Anything else
-// is an error when compiling, so a schema never checks less than it says.
+// supported: type, properties, patternProperties, required, additionalProperties, minProperties, propertyNames, items,
+// $ref to "#" or "#/$defs/<name>" with $defs at the root, minimum, maximum, exclusiveMinimum, exclusiveMaximum,
+// minItems, maxItems, minLength, maxLength, pattern, enum and const, plus the annotations title, description, default,
+// $schema and $id. A property follows its entry in properties and every patternProperties entry whose pattern it
+// matches; additionalProperties takes only the properties that none of them describes. Patterns (pattern and the keys
+// of patternProperties) take literals, escaped punctuation, [] classes with ranges, groups with |, the quantifiers ?
+// * + {n} {n,} {n,m} and the anchors ^ and $, and match in time linear in the text. Anything else is an error when
+// compiling, so a schema never checks less than it says.
 class JsonSchema {
 public:
     // Compiles a schema read with parseYaml (JSON is YAML). The annotation keywords are extra keywords whose string

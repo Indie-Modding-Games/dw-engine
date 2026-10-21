@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -412,4 +413,18 @@ TEST_CASE("every schema the base pack names compiles with the annotation keyword
         const auto schema = dwe::core::JsonSchema::compile(*text, keywords);
         CHECK_MESSAGE(schema.has_value(), std::format("{}: {}", name, errorOf(schema)));
     }
+}
+
+TEST_CASE("the user's disc, extracted: dwx validate finds no problem in the game pack on the extracted base pack") {
+    const char* content = std::getenv("DWE_CONTENT");
+    if (content == nullptr || std::string_view{content}.empty()) {
+        MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
+        return;
+    }
+    const std::array<std::filesystem::path, 1> with{std::filesystem::path{content} / "base"};
+    const auto report = validatePacks(dwe::assets::DiskFileSystem{}, DWE_GAME_PACK, DWE_SCHEMA_DIR, with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK(report->packs == 2);
+    CHECK_MESSAGE(report->problems.empty(), textOf(*report));
+    MESSAGE(report->documents, " documents, ", report->assets, " assets, ", report->references, " references");
 }

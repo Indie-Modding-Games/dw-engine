@@ -12,8 +12,9 @@ así un esquema no comprueba menos de lo que dice.
 |---|---|
 | `type` | Un tipo o una lista de tipos: `object`, `array`, `string`, `integer`, `number`, `boolean`, `null` |
 | `properties` | El esquema de cada clave de un mapping |
+| `patternProperties` | El esquema de las claves que encajan en cada expresión regular (ver abajo) |
 | `required` | Las claves que tienen que estar |
-| `additionalProperties` | `false` (no se admiten otras claves), `true` o un esquema para las demás claves |
+| `additionalProperties` | `false` (no se admiten otras claves), `true` o un esquema para las claves que ni `properties` ni `patternProperties` describen |
 | `minProperties` | Cuántas claves tiene un mapping, como mínimo |
 | `propertyNames` | El esquema que cumple cada clave de un mapping, como texto |
 | `items` | El esquema de cada elemento de una lista (la forma de tupla, una lista de esquemas, no está) |
@@ -26,6 +27,11 @@ así un esquema no comprueba menos de lo que dice.
 | `$ref` | `#` (la raíz) o `#/$defs/<nombre>`; se aplica junto a las demás palabras clave del mismo esquema |
 | `$defs` | Definiciones reutilizables, solo en la raíz |
 | `title`, `description`, `default`, `$schema`, `$id` | Anotaciones para las personas y los editores; no comprueban nada |
+
+Como en 2020-12, una clave cumple su esquema de `properties` y, además, el de cada entrada de `patternProperties` cuya
+expresión encaje en ella (puede ser más de una). `additionalProperties` solo se aplica a las claves que ninguna de las
+dos describe. Así, `{"patternProperties": {"^[0-9]+$": {"type": "integer"}}, "additionalProperties": false}` admite
+`12: 3` y rechaza `x: 3`.
 
 Un ciclo de `$ref` que no baja por el documento (`a` → `b` → `a`) es un error al compilar.
 
@@ -70,8 +76,9 @@ Por eso un id que parece un número (`"001"`) tiene que ir entre comillas cuando
 
 ## Expresiones regulares
 
-`pattern` busca la expresión en cualquier parte del texto, como manda JSON Schema; para el texto entero hay que
-anclarla con `^` y `$`. Se admite:
+`pattern` y las claves de `patternProperties` usan el mismo subconjunto de las expresiones de ECMA-262. Buscan la
+expresión en cualquier parte del texto (o de la clave), como manda JSON Schema; para el texto entero hay que anclarla
+con `^` y `$`. Se admite:
 
 - caracteres ASCII imprimibles, y la puntuación escapada con `\` (`\.`, `\-`, `\\`);
 - clases con rangos: `[a-z0-9_]` (no negadas: `[^…]` no está);
@@ -84,7 +91,8 @@ referencias hacia atrás y caracteres que no sean ASCII. Un texto con caracteres
 que nunca encaja en una clase ASCII.
 
 La expresión se compila a una máquina virtual de Pike: todas las coincidencias posibles avanzan a la vez, así que el
-tiempo crece en línea con el texto, sin retroceso exponencial ni recursión, aunque el patrón sea hostil. El patrón
+tiempo crece en línea con el texto, sin retroceso exponencial ni recursión, aunque el patrón sea hostil (los de
+`patternProperties` también: pueden venir de un pack de terceros). El patrón
 tiene un límite de 1024 caracteres y su programa, de 20 000 instrucciones.
 
 ## Mensajes

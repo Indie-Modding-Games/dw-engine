@@ -1,4 +1,5 @@
 #include <dwe/core/json_schema.hpp>
+#include <dwe/core/messages.hpp>
 
 #include <algorithm>
 #include <array>
@@ -226,6 +227,7 @@ std::string typeMaskText(TypeMask mask) {
 struct SchemaNode {
     TypeMask types = 0; // 0 takes any type
     std::vector<std::pair<std::string, std::size_t>> properties;
+    std::vector<std::pair<std::size_t, std::size_t>> patternProperties; // a pattern, the schema of the keys it matches
     std::vector<std::string> required;
     bool additionalAllowed = true;
     std::optional<std::size_t> additional;
@@ -376,6 +378,28 @@ private:
         return {};
     }
 
+    // Each key of patternProperties is a pattern, compiled like the pattern keyword's, and its value the schema of the
+    // properties whose names it matches.
+    Result<void> readPatternProperties(SchemaNode& node, const YamlNode& value, const std::string& path) {
+        if (!value.isMapping()) {
+            return fail(formatMessage(messages::SchemaNotMapping, path));
+        }
+        for (const YamlEntry& property : value.entries()) {
+            const std::string propertyPath = std::format("{}/{}", path, property.key);
+            auto pattern = SchemaPattern::compile(property.key);
+            if (!pattern) {
+                return fail(formatMessage(messages::SchemaPatternInvalid, propertyPath, pattern.error().message));
+            }
+            auto child = compileNew(property.value, propertyPath);
+            if (!child) {
+                return std::unexpected{child.error()};
+            }
+            node.patternProperties.emplace_back(patterns_.size(), *child);
+            patterns_.push_back(std::move(*pattern));
+        }
+        return {};
+    }
+
     Result<void> readKeyword(SchemaNode& node, const YamlEntry& entry, const std::string& schemaPath) {
         const std::string& key = entry.key;
         const YamlNode& value = entry.value;
@@ -414,6 +438,9 @@ private:
                 node.properties.emplace_back(property.key, *child);
             }
             return {};
+        }
+        if (key == "patternProperties") {
+            return readPatternProperties(node, value, path);
         }
         if (key == "required") {
             if (!value.isSequence()) {
@@ -677,11 +704,10 @@ private:
             if (schema.propertyNames) {
                 checkKey(entry, *schema.propertyNames, childPath);
             }
-            const auto property =
-                std::ranges::find(schema.properties, entry.key, &std::pair<std::string, std::size_t>::first);
-            if (property != schema.properties.end()) {
-                check(entry.value, property->second, childPath);
-            } else if (schema.additional) {
+            if (checkDescribedProperty(entry, schema, childPath)) {
+                continue;
+            }
+            if (schema.additional) {
                 check(entry.value, *schema.additional, childPath);
             } else if (!schema.additionalAllowed) {
                 problem(entry.value, path, std::format("the key '{}' is not allowed", entry.key));
@@ -692,6 +718,26 @@ private:
                 problem(value, path, std::format("the key '{}' is missing", key));
             }
         }
+    }
+
+    // Checks a property against the schemas that describe its key: its entry in properties and, as in draft 2020-12,
+    // every entry of patternProperties whose pattern matches the key. Whether any did; additionalProperties takes the
+    // rest.
+    bool checkDescribedProperty(const YamlEntry& entry, const SchemaNode& schema, const std::string& path) {
+        bool described = false;
+        const auto property =
+            std::ranges::find(schema.properties, entry.key, &std::pair<std::string, std::size_t>::first);
+        if (property != schema.properties.end()) {
+            check(entry.value, property->second, path);
+            described = true;
+        }
+        for (const auto& [pattern, child] : schema.patternProperties) {
+            if (schema_->patterns[pattern].search(entry.key)) {
+                check(entry.value, child, path);
+                described = true;
+            }
+        }
+        return described;
     }
 
     // A key checked as the string it is, with its problems placed at its value (keys keep no position).

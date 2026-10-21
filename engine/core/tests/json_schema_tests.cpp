@@ -4,6 +4,7 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <format>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -100,6 +101,46 @@ TEST_CASE("a schema checks types, properties, required keys and extra keys") {
           std::vector<std::string>{"$: the key 'extra' is not allowed"});
     CHECK(problems(schema, "id: a\n") == std::vector<std::string>{"$: the key 'level' is missing"});
     CHECK(problems(schema, "- 1\n") == std::vector<std::string>{"$: expected object, found array"});
+}
+
+TEST_CASE("patternProperties check the keys their patterns match, next to properties and before extra keys") {
+    const JsonSchema schema = compiled(R"({
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {"name": {"type": "string"}, "10": {"maximum": 50}},
+        "patternProperties": {"^[0-9]+$": {"type": "integer"}, "^1": {"minimum": 10}}
+    })");
+    CHECK(problems(schema, "name: a\n1: 12\n7: 3\n10: 20\n").empty());
+    CHECK(problems(schema, "12: twelve\n") == std::vector<std::string>{"$.12: expected integer, found string"});
+    CHECK(problems(schema, "1: 5\n") == std::vector<std::string>{"$.1: 5 is less than the minimum, 10"});
+    CHECK(problems(schema, "10: 60\n") == std::vector<std::string>{"$.10: 60 is more than the maximum, 50"});
+    CHECK(problems(schema, "x1: 3\n") == std::vector<std::string>{"$: the key 'x1' is not allowed"});
+
+    const JsonSchema extra = compiled(R"({
+        "patternProperties": {"^a": {"type": "string"}},
+        "additionalProperties": {"type": "integer"}
+    })");
+    CHECK(problems(extra, "ab: x\nb: 1\n").empty());
+    CHECK(problems(extra, "ab: 1\nb: x\n") ==
+          std::vector<std::string>{"$.ab: expected string, found integer", "$.b: expected integer, found string"});
+
+    // Unanchored, a pattern matches anywhere in the key.
+    const JsonSchema unanchored = compiled(R"({"patternProperties": {"b": {"type": "integer"}}})");
+    CHECK(problems(unanchored, "ab: 1\nbc: 2\nac: x\n").empty());
+    CHECK(problems(unanchored, "ab: x\n") == std::vector<std::string>{"$.ab: expected integer, found string"});
+}
+
+TEST_CASE("patternProperties match in linear time and refuse what the patterns refuse") {
+    // YAML keeps a key under 1024 characters; a backtracking matcher would never finish these at a tenth of that.
+    const JsonSchema schema =
+        compiled(R"({"patternProperties": {"^(a*)*b$": {"type": "string"}, "^(a|aa)+$": {"type": "integer"}}})");
+    const std::string key(1000, 'a');
+    CHECK(problems(schema, key + ": x\n") ==
+          std::vector<std::string>{std::format("$.{}: expected integer, found string", key)});
+    CHECK(compileError(R"({"patternProperties": ["^a"]})") == "#/patternProperties: must be a mapping");
+    CHECK(compileError(R"({"patternProperties": {"a.c": {}}})").starts_with("#/patternProperties/a.c: "));
+    CHECK(compileError(R"({"patternProperties": {"^a": {"format": "uri"}}})") ==
+          "#/patternProperties/^a: the keyword 'format' is not supported");
 }
 
 TEST_CASE("a schema checks items, counts, limits, enums and constants") {

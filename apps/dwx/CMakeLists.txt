@@ -43,11 +43,14 @@ dwe_add_module(dwx
 
 if(BUILD_TESTING)
     # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the temporary folder and
-    # the media files of the assets tests and check the documents and the schemas of content/schemas.
+    # the media files of the assets tests and check the documents and the schemas of content/schemas, and the game pack
+    # on the extracted base pack.
     target_include_directories(dwe_dwx_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/formats/tests
         ${PROJECT_SOURCE_DIR}/engine/assets/tests)
-    target_compile_definitions(dwe_dwx_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas")
+    target_compile_definitions(dwe_dwx_tests PRIVATE
+        DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
+        DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 endif()
 
 dwe_add_app(dwx_cli
