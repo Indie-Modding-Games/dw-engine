@@ -5,6 +5,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "fixture.hpp"
 
@@ -43,6 +44,8 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     CHECK(rules.requirements.passPoints == 3);
     CHECK(rules.requirements.weightMargin == 5);
     CHECK(rules.requirements.hpMpDivisor == 10);
+    // evolution.c: getNumMasteredMoves.
+    CHECK(rules.requirements.masteredMovesBelow == 64);
     // evolution.c: getRookieEvolutionTarget.
     CHECK(rules.fallback.rookieHours == 96);
     CHECK(rules.fallback.rookieTarget == "nume");
@@ -65,6 +68,15 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
                                          RookieStatTiePicksLast, TimerSpecialOverridesNormal}) {
         CHECK_MESSAGE(rules.quirks.on(quirk), quirk);
     }
+}
+
+TEST_CASE("the moves requirement counts only the learned moves below the section's limit") {
+    // evolution.c: getNumMasteredMoves reads two 32-bit words: moves 64 and up never count.
+    RequirementRules rules = testing::originalRules().requirements;
+    const std::vector<std::int32_t> learned{0, 12, 63, 64, 90};
+    CHECK(countMasteredMoves(rules, learned) == 3);
+    rules.masteredMovesBelow = 100;
+    CHECK(countMasteredMoves(rules, learned) == 5);
 }
 
 TEST_CASE("the section check accepts the game pack's section") {

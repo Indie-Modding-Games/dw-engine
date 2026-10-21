@@ -97,6 +97,7 @@ hay que extraerlo de nuevo.
 | Bebé → entrenamiento fijo | `evolution.c`: `getFreshEvolutionTarget` | `OriginalSelection` (`babyTarget`), `baby_targets` | `a baby becomes its in-training form…` | Igual |
 | Bebé sin destino reinicia el contador | `evolution.c`: `getFreshEvolutionTarget` | `quirks.unlisted_baby_restarts_timer` | `quirk unlisted_baby_restarts_timer…` | Igual (el valor sin inicializar no se reproduce: no evoluciona); decidido por el responsable de diseño (2026-10-20): fiel al original |
 | Puntos de cuidado, peso, stats y bonus | `evolution.c`: `calculateRequirementScore` | `OriginalScoring`, `requirements` | `a target scores a point each…`, `the battles bonus…`, `the happiness and learned moves bonuses` | Igual |
+| Solo cuentan las técnicas aprendidas con índice menor que 64 | `evolution.c`: `getNumMasteredMoves` (dos palabras de 32 bits) | `requirements.mastered_moves_below`, `countMasteredMoves` | `the moves requirement counts only the learned moves below…` | Igual |
 | Stat favorecido de novato y empate | `evolution.c`: `calculateRequirementScore` | `OriginalScoring`, `quirks.rookie_stat_tie_picks_last` | `a rookie target scores…`, `quirk rookie_stat_tie_picks_last…` | Igual |
 | Preferencia por formas no criadas | `evolution.c`: `calculateRequirementScore` | `OriginalScoring` (`preferNew`) | `against a best candidate…` | Igual |
 | Entrenamiento: más puntos, primero en empate | `evolution.c`: `getInTrainingEvolutionTarget` | `OriginalSelection` (`bestScored`) | `an in-training partner takes…` | Igual |

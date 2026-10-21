@@ -28,12 +28,13 @@
     },
     "requirements": {
       "type": "object",
-      "required": ["pass_points", "weight_margin", "hp_mp_divisor"],
+      "required": ["pass_points", "weight_margin", "hp_mp_divisor", "mastered_moves_below"],
       "additionalProperties": false,
       "properties": {
         "pass_points": { "description": "The points a candidate needs to pass.", "type": "integer", "minimum": 1 },
         "weight_margin": { "description": "How far from the asked weight still scores.", "type": "integer", "minimum": 0 },
-        "hp_mp_divisor": { "description": "HP and MP are divided by this before comparing them.", "type": "integer", "minimum": 1 }
+        "hp_mp_divisor": { "description": "HP and MP are divided by this before comparing them.", "type": "integer", "minimum": 1 },
+        "mastered_moves_below": { "description": "Only the learned moves with an index of the move table below this count for the moves requirement.", "type": "integer", "minimum": 1 }
       }
     },
     "fallback": {

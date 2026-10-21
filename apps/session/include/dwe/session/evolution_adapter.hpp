@@ -20,6 +20,8 @@ class VirtualFileSystem;
 
 namespace dwe::session {
 
+class BattleAdapter;
+
 // The save section of the evolution state.
 inline constexpr std::string_view EvolutionSaveName = "evolution";
 
@@ -52,6 +54,11 @@ public:
     void routePartnerEvent(GameSession& session, const game::partner::PartnerEvent& event) override;
     void afterPraiseOrScold(GameSession& session, const PraiseOrScold& event) override;
 
+    // Where the partner's learned moves are: the session's battle adapter, which owns them and must outlive this
+    // adapter. The battle adapter is built after this one (it needs the inventory, which needs this), so it comes
+    // in here. Without it the requirements see no learned moves.
+    void setMoveSource(const BattleAdapter& battle) { battle_ = &battle; }
+
     // An evolution item used on the partner (item.c: handleEvoItems); the inventory's command calls it. Whether the
     // partner evolved.
     bool useItem(GameSession& session, std::string_view item);
@@ -79,7 +86,10 @@ private:
     // Applies the result to the partner (evl.c: EVL_applyEvolution's effects) and records it.
     void apply(GameSession& session, const game::evolution::EvolutionResult& result);
 
+    [[nodiscard]] std::int32_t masteredMoves() const;
+
     EvolutionAdapterDesc desc_;
+    const BattleAdapter* battle_ = nullptr;
     std::optional<game::evolution::Evolution> evolution_;
     std::optional<assets::MapTable> maps_;
     game::evolution::EvolutionState state_;

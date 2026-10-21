@@ -100,8 +100,11 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
 - **Entradas**: llena `EvolutionInputs` desde el partner: forma, stats, peso, errores de cuidado, disciplina,
   felicidad, cansancio, batallas, días, contador de evolución, barra de virus, la copia de la forma virus, el mapa
   (índice original de `data/maps`, `UnknownMapIndex` sin tabla de mapas), si el domador está libre
-  (`careContext().tamerIdle`) y si corre un guion (solo en las rutinas de guion). Las técnicas aprendidas van a 0
-  (**Hueco**: el partner aún no las guarda).
+  (`careContext().tamerIdle`), si corre un guion (solo en las rutinas de guion) y las técnicas aprendidas: las del
+  `BattleAdapter` (`learnedMoveIndices`), contadas con `countMasteredMoves` (solo las de índice menor que
+  `evolution.requirements.mastered_moves_below`, 64: `evolution.c: getNumMasteredMoves`). El adaptador de batalla se
+  crea después (necesita el inventario, que necesita la evolución), así que se le da con
+  `setMoveSource(batalla)`; sin él, la evolución no ve técnicas aprendidas.
 - **Cuándo mira**: en cada tick que cruza horas de juego, `checkNatural` con las horas cruzadas (el contador lo sube
   el partner; si no evoluciona, el adaptador deja el que devuelve). `VirusBarFull` → `fillVirusBar`; `Slept` →
   `wakeUp`; tras alabar o regañar → `praiseOrScold`; `Reborn` marca al bebé como criado
@@ -195,7 +198,7 @@ La sección `partner_moves` ([esquema](../../content/schemas/ruleset_partner_mov
 | Descuento de bebé en las tiendas | `script_common.c: isPartnerBaby` (`BABY_IDS`) | `item_use.shop_discount_levels` | `buying a key item asks ...` | Igual |
 | Probabilidad de las medicinas | `item.c: handleMedicineHealing` (`randomLimit(roll) < cure`) | `CureEffect` con `cure × 100 / roll` | — | Igual con los valores del original (3/3, 2/10, 10/10) |
 | Sección de guion de un chip | `item.c: handleChips` (0x16) | — | — | **Hueco** (fase 4) |
-| Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionInputs::learnedMoves = 0` | — | **Hueco**: las técnicas ya se guardan (`BattleAdapter`), falta pasarlas a la evolución |
+| Técnicas aprendidas en los requisitos | `evolution.c: getNumMasteredMoves` | `EvolutionAdapter::setMoveSource`, `BattleAdapter::learnedMoveIndices`, `evolution.requirements.mastered_moves_below` | `the evolution requirements count the learned moves below ...` | Igual |
 | Técnicas del primer partner: aprende y equipa una, y su remate | `partner_impl.c: initializePartner` | `partner_moves.new_game_slot`, `BattleAdapter::startNewGame` | `a new game's partner learns ...`, `the user's disc, extracted: the first partner ...` | Igual |
 | Las técnicas equipadas son posiciones de la lista de la especie | `stats.base.moves`, `btl.c`, `utils2.c: entityGetTechFromAnim` | `PartnerMoves::equipped`, `partnerCombatant` | `the partner fights with its stats, ...` | Igual |
 | El renacido equipa una técnica y conserva las aprendidas | `evolution.c: reincarnatePartner` | `partner_moves.reborn_slot`, `Reborn` | `a reborn partner equips one move again ...` | Igual |

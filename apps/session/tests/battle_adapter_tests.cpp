@@ -6,6 +6,7 @@
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/partner_moves.hpp>
@@ -45,6 +46,7 @@ using dwe::game::save::MemorySaveStorage;
 using dwe::session::BattleAdapter;
 using dwe::session::BattleAdapterDesc;
 using dwe::session::BattleRequest;
+using dwe::session::EvolutionAdapter;
 using dwe::session::GameSession;
 using dwe::session::InventoryAdapter;
 using dwe::session::InventoryAdapterDesc;
@@ -110,6 +112,28 @@ std::unique_ptr<GameSession> sessionWithBattle(const TestPacks& packs, Adapters&
     return newGameWith(packs, std::move(systems), storage);
 }
 
+// A session with the evolution adapter on `fixture`'s forms counting the battle adapter's learned moves.
+std::unique_ptr<GameSession> sessionWithEvolutionAndBattle(const TestPacks& packs,
+                                                           const dwe::game::evolution::testing::TableFixture& fixture,
+                                                           Adapters& adapters) {
+    auto evolution = dwe::session::testing::evolutionAdapter(packs, fixture);
+    auto inventory = std::make_unique<InventoryAdapter>(InventoryAdapterDesc{.files = &packs.files(),
+                                                                             .items = items::fixtureItems(),
+                                                                             .effects = items::fixtureEffects(),
+                                                                             .evolution = evolution.get()});
+    auto battle = std::make_unique<BattleAdapter>(BattleAdapterDesc{.files = &packs.files(),
+                                                                    .digimon = madeUpDigimon(),
+                                                                    .moves = battle_test::testMoveTable(),
+                                                                    .inventory = inventory.get()});
+    evolution->setMoveSource(*battle);
+    adapters = {.battle = battle.get(), .inventory = inventory.get()};
+    std::vector<std::unique_ptr<SessionSystem>> systems;
+    systems.push_back(std::move(evolution));
+    systems.push_back(std::move(inventory));
+    systems.push_back(std::move(battle));
+    return newGameWith(packs, std::move(systems));
+}
+
 template <typename Change>
 void changePartner(GameSession& session, Change change) {
     PartnerState state = session.partner().state();
@@ -168,6 +192,32 @@ TEST_CASE("a new game's partner learns and equips its first technique and equips
     CHECK_FALSE(moves.equipped.at(1).has_value());
     CHECK_FALSE(moves.equipped.at(2).has_value());
     CHECK(moves.equipped.at(dwe::game::battle::FinisherSlot) == FinisherPosition);
+}
+
+TEST_CASE("the evolution requirements count the learned moves below the evolution section's limit") {
+    // evolution.c: getNumMasteredMoves; the rookie's check hour is check_hours.rookie (72).
+    constexpr std::int32_t RookieHours = 72;
+    dwe::game::evolution::testing::TableFixture fixture;
+    fixture.setPath("agum", {"tyra"});
+    // A champion target asks for a stat (the rookie's pick averages them), and its bonus is two learned moves.
+    fixture.requirement("tyra").offense = 1;
+    fixture.requirement("tyra").techs = 2;
+    // The new game's technique and one more, but the second is past the 64 moves the original counts.
+    const auto speciesAfterLearning = [&](const std::string& move) {
+        const TestPacks packs;
+        Adapters adapters;
+        auto session = sessionWithEvolutionAndBattle(packs, fixture, adapters);
+        BattleResult result = victory();
+        result.learnedMoves = {move};
+        REQUIRE(adapters.battle->finish(*session, result).has_value());
+        REQUIRE(dwe::session::knows(adapters.battle->moves(), move));
+        changePartner(*session, [](PartnerState& state) { state.evolution.hours = RookieHours - 1; });
+        session->clock().setSpeed(dwe::session::testing::GameHourPerSecond);
+        session->tick(1.0);
+        return session->partner().state().species;
+    };
+    CHECK(speciesAfterLearning("move_121") == "agum");
+    CHECK(speciesAfterLearning("dynamite_kick") == "tyra");
 }
 
 TEST_CASE("the partner fights with its stats, HP, MP and the moves at its equipped positions") {

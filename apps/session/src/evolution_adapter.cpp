@@ -3,6 +3,7 @@
 #include <dwe/game/evolution/strategies.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
@@ -339,8 +340,7 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                            .happiness = partner.mood.happiness,
                            .tiredness = partner.mood.tiredness,
                            .battles = partner.evolution.battles,
-                           // Gap: the partner's learned moves are not kept yet (apps/session/README.md).
-                           .learnedMoves = 0,
+                           .learnedMoves = masteredMoves(),
                            .ageDays = partner.life.age,
                            .evolutionTimer = partner.evolution.hours,
                            .virusBar = partner.toilet.virusBar,
@@ -348,6 +348,13 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                            .tamerFree = session.careContext().tamerIdle,
                            .scriptPaused = !scriptRunning,
                            .virusBackup = backup};
+}
+
+std::int32_t EvolutionAdapter::masteredMoves() const {
+    if (battle_ == nullptr || !evolution_) {
+        return 0;
+    }
+    return game::evolution::countMasteredMoves(evolution_->rules().requirements, battle_->learnedMoveIndices());
 }
 
 std::int32_t EvolutionAdapter::mapIndexOf(const GameSession& session) const {

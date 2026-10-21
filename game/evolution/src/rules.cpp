@@ -34,6 +34,7 @@ constexpr std::string_view ChampionKey = "champion";
 constexpr std::string_view PassPointsKey = "pass_points";
 constexpr std::string_view WeightMarginKey = "weight_margin";
 constexpr std::string_view HpMpDivisorKey = "hp_mp_divisor";
+constexpr std::string_view MasteredMovesBelowKey = "mastered_moves_below";
 
 constexpr std::string_view RookieHoursKey = "rookie_hours";
 constexpr std::string_view RookieTargetKey = "rookie_target";
@@ -136,12 +137,14 @@ CheckHours readCheckHours(YamlReader& reader, const YamlNode& node) {
 }
 
 RequirementRules readRequirementRules(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, messages::RequirementsText, {PassPointsKey, WeightMarginKey, HpMpDivisorKey})) {
+    if (!reader.expectKeys(node, messages::RequirementsText,
+                           {PassPointsKey, WeightMarginKey, HpMpDivisorKey, MasteredMovesBelowKey})) {
         return {};
     }
     return {.passPoints = readNumber(reader, node, PassPointsKey),
             .weightMargin = readNumber(reader, node, WeightMarginKey),
-            .hpMpDivisor = readPositive(reader, node, HpMpDivisorKey)};
+            .hpMpDivisor = readPositive(reader, node, HpMpDivisorKey),
+            .masteredMovesBelow = readPositive(reader, node, MasteredMovesBelowKey)};
 }
 
 FallbackRules readFallback(YamlReader& reader, const YamlNode& node) {
@@ -320,6 +323,12 @@ core::Result<void> checkEvolutionSection(const ruleset::Section& section) {
         return selection;
     }
     return scoringStrategies().check(section, ScoringKey);
+}
+
+std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::int32_t> learned) {
+    // evolution.c: getNumMasteredMoves counts the bits of the two 32-bit words of learnedMoves.
+    return static_cast<std::int32_t>(std::ranges::count_if(
+        learned, [&](std::int32_t index) { return index >= 0 && index < rules.masteredMovesBelow; }));
 }
 
 } // namespace dwe::game::evolution

@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -42,6 +43,8 @@ struct RequirementRules {
     std::int32_t passPoints = 0;
     std::int32_t weightMargin = 0;
     std::int32_t hpMpDivisor = 1;
+    // Only the learned moves with an index below this count (evolution.c: getNumMasteredMoves).
+    std::int32_t masteredMovesBelow = 0;
 };
 
 // Where a rookie with no candidate goes.
@@ -159,5 +162,8 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
 
 // The check of the evolution section for RulesetStore: it reads the section and checks the strategy names.
 core::Result<void> checkEvolutionSection(const ruleset::Section& section);
+
+// How many of the learned moves (their indices in the move table) the requirements count.
+[[nodiscard]] std::int32_t countMasteredMoves(const RequirementRules& rules, std::span<const std::int32_t> learned);
 
 } // namespace dwe::game::evolution

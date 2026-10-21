@@ -347,6 +347,19 @@ core::Result<void> BattleAdapter::equip(const GameSession& session, std::size_t 
     return {};
 }
 
+std::vector<std::int32_t> BattleAdapter::learnedMoveIndices() const {
+    std::vector<std::int32_t> indices;
+    if (!desc_.moves) {
+        return indices;
+    }
+    for (const std::string& move : moves_.learned) {
+        if (const assets::MoveEntry* entry = desc_.moves->find(move)) {
+            indices.push_back(entry->index);
+        }
+    }
+    return indices;
+}
+
 const game::battle::BattleRules& BattleAdapter::rules() const {
     return *rules_;
 }

@@ -29,6 +29,9 @@ requirements:
   weight_margin: 5
   # HP y MP se comparan divididos entre 10, aquí y en la media de getRookieEvolutionTarget.
   hp_mp_divisor: 10
+  # evolution.c: getNumMasteredMoves: el requisito de técnicas cuenta los bits de las dos palabras de 32 bits de
+  # learnedMoves, así que solo las técnicas aprendidas con índice menor que 64.
+  mastered_moves_below: 64
 
 # evolution.c: getRookieEvolutionTarget: un novato sin candidato con el contador en 96 horas o más pasa a Numemon.
 fallback:

@@ -11,6 +11,7 @@
 #include <dwe/session/partner_moves.hpp>
 #include <dwe/session/session_system.hpp>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -98,6 +99,9 @@ public:
     core::Result<void> equip(const GameSession& session, std::size_t place, std::optional<MoveSlot> slot);
 
     [[nodiscard]] const PartnerMoves& moves() const { return moves_; }
+    // The move table indices of the learned moves (utils2.c: learnMove sets bit `index` of learnedMoves); a move
+    // the table does not have is left out.
+    [[nodiscard]] std::vector<std::int32_t> learnedMoveIndices() const;
     [[nodiscard]] const game::battle::BattleRules& rules() const;
     [[nodiscard]] const game::battle::MoveCatalog& catalog() const;
 
