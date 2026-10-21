@@ -3,7 +3,7 @@
   "title": "Ruleset: evolution",
   "description": "rules/<id>/evolution.yaml: when and into what the partner evolves (docs/reference/evolution.md, game/evolution). Hours are hours of the evolution counter; forms are ids of the digimon table, items ids of the items table.",
   "type": "object",
-  "required": ["selection", "scoring", "check_hours", "baby_targets", "requirements", "fallback", "specials", "virus", "items", "stat_gains", "moves", "rebirth", "quirks"],
+  "required": ["selection", "scoring", "check_hours", "baby_targets", "requirements", "fallback", "specials", "items", "stat_gains", "moves", "rebirth", "quirks"],
   "additionalProperties": false,
   "properties": {
     "selection": { "description": "The strategy that picks the target among the candidates (game/evolution: original).", "$ref": "#/$defs/name" },
@@ -65,15 +65,6 @@
             "hours": { "$ref": "#/$defs/hours" }
           }
         }
-      }
-    },
-    "virus": {
-      "type": "object",
-      "required": ["bar_limit", "target"],
-      "additionalProperties": false,
-      "properties": {
-        "bar_limit": { "description": "With the virus bar at this, the partner turns into the target.", "type": "integer", "minimum": 1 },
-        "target": { "$ref": "#/$defs/id" }
       }
     },
     "items": {

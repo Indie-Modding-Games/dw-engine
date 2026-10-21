@@ -522,8 +522,7 @@ CareChange readCareChange(ValueReader& in, const YamlNode& node, std::string_vie
 ConsequenceRules readConsequences(ValueReader& in, const YamlNode& node) {
     if (!in.group(node, "consequences",
                   {"victory", "flee", "defeat", "after_battle_tiredness", "after_battle_food",
-                   "mp_tiredness_below_percent", "mp_tiredness_scale", "defeat_lives", "defeat_item_loss_percent",
-                   "elapsed_minutes"})) {
+                   "mp_tiredness_below_percent", "mp_tiredness_scale", "defeat_lives", "elapsed_minutes"})) {
         return {};
     }
     return {.victory = readCareChange(in, in.field(node, "victory"), "victory"),
@@ -534,7 +533,6 @@ ConsequenceRules readConsequences(ValueReader& in, const YamlNode& node) {
             .mpTirednessBelowPercent = in.percent(node, "mp_tiredness_below_percent"),
             .mpTirednessScale = in.count(node, "mp_tiredness_scale"),
             .defeatLives = in.count(node, "defeat_lives"),
-            .defeatItemLossPercent = in.percent(node, "defeat_item_loss_percent"),
             .elapsedMinutes = in.count(node, "elapsed_minutes")};
 }
 

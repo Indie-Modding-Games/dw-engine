@@ -226,9 +226,10 @@ public:
     assets::ItemEffectTable itemEffects;
 };
 
-// Inputs of a form with the given stats, timer and nothing else.
+// Inputs of a form with the given timer and nothing else, but the virus form the care section names in the
+// original (care.toilet.virus_form).
 inline EvolutionInputs inputsOf(std::string_view id, std::int32_t timer = 0) {
-    return {.species = TableFixture::index(id), .evolutionTimer = timer};
+    return {.species = TableFixture::index(id), .evolutionTimer = timer, .virusForm = TableFixture::index("scum")};
 }
 
 } // namespace dwe::game::evolution::testing

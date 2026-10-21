@@ -171,18 +171,6 @@ struct TirednessRules {
     std::int32_t subTirednessThreshold = 0;
 };
 
-struct BattleCareRules {
-    std::int32_t wonHappiness = 0;
-    MoodChange fled;
-    MoodChange lost;
-    std::int32_t tiredness = 0;
-    std::int32_t lowMpPercent = 0;
-    std::int32_t lowMpTiredness = 0;
-    std::int32_t foodMinutes = 0;
-    std::int32_t durationMinutes = 0;
-    std::int32_t poopSteps = 0;
-};
-
 struct YearRules {
     std::int32_t happyHappiness = 0;
     std::int32_t happyTamerLevelPercent = 0;
@@ -197,7 +185,6 @@ struct CareQuirks {
     bool youngSleepWithoutVariation = true;
     bool battleMidnightSkipsAge = true;
     bool toiletDoublesPoopInterval = true;
-    bool postBattleMpTirednessTruncated = true;
     bool foodClearsTrainingBoost = true;
     bool skippedHungerWindowCountsTwice = true;
     bool skippedHoursAddSicknessTries = true;
@@ -221,7 +208,6 @@ struct CareRules {
     SicknessRules sickness;
     MoodRules mood;
     TirednessRules tiredness;
-    BattleCareRules battle;
     YearRules year;
     CareStrategyNames strategies;
     CareQuirks quirks;

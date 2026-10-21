@@ -13,36 +13,6 @@ namespace dwe::game::partner {
 
 using messages::formatMessage;
 
-void Partner::finishBattle(const BattleOutcome& outcome, ruleset::GameClock& clock) {
-    // tamer.c: startBattle, after the battle.
-    useClock(clock);
-    const BattleCareRules& rules = care().battle;
-    // battle_ui.c: the results of a won battle roll the injury before the tamer's accounting.
-    if (outcome.result == BattleResult::Won && outcome.tookDamage) {
-        rollBattleInjury();
-    }
-    switch (outcome.result) {
-    case BattleResult::Lost:
-        changeMood(rules.lost);
-        loseLife();
-        break;
-    case BattleResult::Fled:
-        changeMood(rules.fled);
-        addPostBattleTiredness();
-        break;
-    case BattleResult::Won:
-        state_.mood.happiness += rules.wonHappiness;
-        addPostBattleTiredness();
-        ++state_.evolution.battles;
-        break;
-    }
-    clampBoundaries();
-    const ruleset::GameTime before = clock.time();
-    passBattleTime(clock, {.minutes = rules.durationMinutes,
-                           .hourCrossed = before.minute + rules.durationMinutes >= constants::MinutesPerHour,
-                           .lifetimeHours = 1});
-}
-
 void Partner::applyBattle(const BattleConsequences& battle, ruleset::GameClock& clock) {
     // tamer.c: startBattle, after the battle, with the numbers the battle system settled.
     useClock(clock);
@@ -61,35 +31,6 @@ void Partner::applyBattle(const BattleConsequences& battle, ruleset::GameClock& 
                            .lifetimeHours = battle.lifetimeHoursLost});
 }
 
-void Partner::addPostBattleTiredness() {
-    // partner_impl.c: handlePostBattleTiredness. A battle that used much MP tires more.
-    const BattleCareRules& rules = care().battle;
-    MoodState& mood = state_.mood;
-    mood.tiredness += rules.tiredness;
-    const std::int32_t maxMp = state_.stats.base[Stat::Mp];
-    const std::int32_t used = maxMp - state_.stats.currentMp;
-    if (maxMp > 0 && state_.stats.currentMp < maxMp - (maxMp * rules.lowMpPercent / constants::Percent)) {
-        // The original divides before it multiplies, so only a battle that used all the MP adds anything
-        // (post_battle_mp_tiredness_truncated).
-        mood.tiredness += care().quirks.postBattleMpTirednessTruncated ? (used / maxMp) * rules.lowMpTiredness
-                                                                       : used * rules.lowMpTiredness / maxMp;
-    }
-    state_.hunger.foodLevel -= rules.foodMinutes;
-}
-
-void Partner::rollBattleInjury() {
-    // battle_ui.c: handleBattleInjury. A hurt partner may come out of a won battle injured: the more tired and the
-    // less HP, the likelier.
-    if (state_.conditions.has(Condition::Injured)) {
-        return;
-    }
-    const std::int32_t maxHp = std::max(state_.stats.base[Stat::Hp], 1);
-    const std::int32_t chance = state_.mood.tiredness - (constants::Percent * state_.stats.currentHp / maxHp);
-    if (random_.below(constants::Percent) < chance) {
-        setCondition(Condition::Injured, EventKind::GotInjured);
-    }
-}
-
 void Partner::passHungerWindow(std::int32_t steps) {
     // The time skips count down the hunger window without closing it: the frame rules close it later and count the
     // care mistake again (skipped_hunger_window_counts_twice).
@@ -101,7 +42,6 @@ void Partner::passHungerWindow(std::int32_t steps) {
 
 void Partner::passBattleTime(ruleset::GameClock& clock, const BattleTime& time) {
     // tamer.c: advanceBattleTime.
-    const BattleCareRules& rules = care().battle;
     const ruleset::GameTime before = clock.time();
     const std::int32_t minutes = (before.hour * constants::MinutesPerHour) + before.minute + time.minutes;
     const std::int32_t hour = (minutes / constants::MinutesPerHour) % constants::HoursPerDay;
@@ -128,7 +68,8 @@ void Partner::passBattleTime(ruleset::GameClock& clock, const BattleTime& time) 
     if (state_.conditions.has(Condition::NeedsToilet)) {
         state_.toilet.urgeFrames -= static_cast<std::int32_t>(time.minutes * clockRules_.framesPerMinute);
     } else {
-        state_.toilet.poopLevel -= rules.poopSteps;
+        // advanceBattleTime takes 2 steps for its 20 minutes: the steps of care.toilet.poop_step_minutes they cover.
+        state_.toilet.poopLevel -= time.minutes / care().toilet.poopStepMinutes;
     }
 }
 

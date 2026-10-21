@@ -103,11 +103,6 @@ struct SpecialRules {
     TimerSpecialRule praiseScoldOnTimer;
 };
 
-struct VirusRules {
-    std::int32_t barLimit = 0;
-    std::string target;
-};
-
 struct ItemRules {
     // Item id -> form, whatever the level.
     std::map<std::string, std::string, std::less<>> fixed;
@@ -149,7 +144,6 @@ struct EvolutionRules {
     RequirementRules requirements;
     FallbackRules fallback;
     SpecialRules specials;
-    VirusRules virus;
     ItemRules items;
     StatGainRules statGains;
     MoveRules moves;

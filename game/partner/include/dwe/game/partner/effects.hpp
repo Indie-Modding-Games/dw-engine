@@ -75,15 +75,8 @@ struct SleepContext {
 
 enum class BattleResult : std::uint8_t { Won, Fled, Lost };
 
-// How a battle ended for the partner; its stats after the battle come in with setStats first.
-struct BattleOutcome {
-    BattleResult result = BattleResult::Won;
-    // The partner was hit (HAS_TAKEN_DAMAGE): a won battle may leave it injured.
-    bool tookDamage = false;
-};
-
-// A battle as the battle system settled it (tamer.c: startBattle, advanceBattleTime): the session gives its result to
-// the partner with this instead of a BattleOutcome, so the partner's own battle rules do not count it again.
+// A battle as the battle system settled it (tamer.c: startBattle, advanceBattleTime): the battle section owns its
+// numbers, and the session gives them to the partner with this.
 struct BattleConsequences {
     BattleResult result = BattleResult::Won;
     // It came out injured (battle_ui.c: handleBattleInjury).

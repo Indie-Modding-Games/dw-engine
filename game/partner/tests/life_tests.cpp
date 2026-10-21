@@ -38,6 +38,20 @@ void dieNaturally(Raising& raising) {
     REQUIRE_FALSE(raising.partner().alive());
 }
 
+// A lost battle as the battle section settles it in the original (tamer.c: startBattle).
+void loseBattle(Raising& raising) {
+    raising.partner().applyBattle({.result = BattleResult::Lost,
+                                   .injured = false,
+                                   .mood = {.happiness = -30, .discipline = -20, .tiredness = 0},
+                                   .battles = 0,
+                                   .foodChange = 0,
+                                   .livesLost = 1,
+                                   .elapsedMinutes = 20,
+                                   .hourCrossed = false,
+                                   .lifetimeHoursLost = 0},
+                                  raising.clock());
+}
+
 } // namespace
 
 TEST_CASE("care.md life: a partner starts with 360 hours of life and 3 lives, and spends an hour each hour") {
@@ -107,10 +121,10 @@ TEST_CASE("care.md death: death waits while the tamer is busy and in the hour af
 TEST_CASE("care.md death: a lost battle costs a life; the last one kills the partner") {
     OriginalRuleset original;
     Raising raising(original.rules());
-    raising.partner().finishBattle({.result = BattleResult::Lost, .tookDamage = true}, raising.clock());
+    loseBattle(raising);
     CHECK(raising.state().life.lives == 2);
     raising.edit([](PartnerState& state) { state.life.lives = 1; });
-    raising.partner().finishBattle({.result = BattleResult::Lost, .tookDamage = true}, raising.clock());
+    loseBattle(raising);
     CHECK(raising.state().life.phase == LifePhase::DiedOtherwise);
 }
 
@@ -140,7 +154,7 @@ TEST_CASE("care.md rebirth: a partner that did not die naturally passes nothing 
     OriginalRuleset original;
     Raising raising(original.rules());
     raising.edit([](PartnerState& state) { state.life.lives = 1; });
-    raising.partner().finishBattle({.result = BattleResult::Lost, .tookDamage = true}, raising.clock());
+    loseBattle(raising);
     REQUIRE(raising.partner().rebirth(raising.clock(), 10).has_value());
     const std::int32_t reborn = testing::valueOf(raising.partner().takeEvents(), EventKind::Reborn);
     const RebirthBaby& baby = raising.rules().life.rebirth.babies.at(static_cast<std::size_t>(reborn));

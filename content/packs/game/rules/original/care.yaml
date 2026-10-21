@@ -1,7 +1,7 @@
-# Cuidado del partner (docs/reference/care.md): hambre, sueño, baño, enfermedad, ánimo, cansancio y los efectos de
-# los combates en el cuidado. Lo lee game/partner. Unidades en el nombre de cada clave: _frames son fotogramas del
-# original (20 por minuto de juego, ver clock.yaml), _minutes minutos de juego, _hours horas de juego y _percent
-# tantos por ciento. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
+# Cuidado del partner (docs/reference/care.md): hambre, sueño, baño, enfermedad, ánimo y cansancio. Los efectos de
+# los combates en el cuidado son de la sección battle (consequences). Lo lee game/partner. Unidades en el nombre de
+# cada clave: _frames son fotogramas del original (20 por minuto de juego, ver clock.yaml), _minutes minutos de juego,
+# _hours horas de juego y _percent tantos por ciento. Salvo que se diga otra cosa, todo está en src/main/partner_impl.c.
 limits:
   # tickConditionBoundaries: la felicidad va de -100 a 100; la disciplina y el cansancio, de 0 a 100; el peso, de 1 a
   # 99.
@@ -184,22 +184,6 @@ tiredness:
   # tickTirednessMechanics: subTiredness suma 1 de cansancio al llegar a 60. Nada lo sube en el original: es un
   # contador muerto que se guarda para un ruleset que lo use.
   sub_tiredness_threshold: 60
-battle:
-  # tamer.c: startBattle: ganar, felicidad +2; huir, felicidad -10, disciplina -6 y cansancio +2; perder, felicidad
-  # -30 y disciplina -20.
-  won_happiness: 2
-  fled: { happiness: -10, discipline: -6, tiredness: 2 }
-  lost: { happiness: -30, discipline: -20, tiredness: 0 }
-  # handlePostBattleTiredness: cansancio +5; con el MP por debajo del 80 %, + (gastado / máximo) × 10; comida -15
-  # minutos.
-  tiredness: 5
-  low_mp_percent: 20
-  low_mp_tiredness: 10
-  food_minutes: 15
-  # tamer.c: advanceBattleTime: un combate adelanta 20 minutos (400 fotogramas): la ventana de hambre baja 40 pasos,
-  # la comida 20 minutos, el baño 2 pasos y las ganas 400 fotogramas.
-  duration_minutes: 20
-  poop_steps: 2
 year:
   # clock.c: tickGameClock: al cambiar de año, con felicidad 100 addTamerLevel(5, 1); con felicidad negativa
   # addTamerLevel(10, -1).
@@ -233,8 +217,6 @@ quirks:
   # partner_impl.c: handleToilet y handleWildPoop: solo en la versión americana el siguiente aviso tarda el doble
   # (poopTimer + poopTimer).
   toilet_doubles_poop_interval: true
-  # handlePostBattleTiredness divide el MP gastado entre el máximo antes de multiplicar por 10: solo suma con el MP a 0.
-  post_battle_mp_tiredness_truncated: true
   # item.c: handleFood llama siempre a setTrainingBoost: una comida sin bonus de entrenamiento borra el que hubiera.
   food_clears_training_boost: true
   # TRN_advanceTrainingTime y skipHours cuentan el error de la ventana de hambre al saltar horas sin cerrarla; al

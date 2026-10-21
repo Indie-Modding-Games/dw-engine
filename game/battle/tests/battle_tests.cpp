@@ -132,7 +132,6 @@ TEST_CASE("a partner that falls loses the battle when the countdown ends, unless
     REQUIRE(battle.finished());
     CHECK(resultOf(battle).outcome == Outcome::Defeat);
     CHECK(resultOf(battle).livesLost == 1);
-    CHECK(resultOf(battle).itemLossPercent == 30);
     CHECK(resultOf(battle).care.happiness == -30);
 }
 
@@ -147,6 +146,29 @@ TEST_CASE("fleeing ends the battle after the flee frames") {
     CHECK(resultOf(battle).outcome == Outcome::Fled);
     CHECK(steps == 42);
     CHECK(resultOf(battle).care.happiness == -10);
+}
+
+TEST_CASE("fleeing costs happiness and discipline and tires more; a battle that ends without MP tires 10 more") {
+    // tamer.c: startBattle (a flight); partner_impl.c: handlePostBattleTiredness: +5, and with the MP under 80 %
+    // spent / max × 10, which the original divides first (broken_mp_tiredness): only an empty MP adds anything.
+    const auto fleeWithMp = [](std::int32_t mp, const BattleRules& rules) {
+        BattleSetup setup = duel(evenStats(300, 100), evenStats(300, 100));
+        setup.partner.mp = mp;
+        Battle battle = startBattle(setup, 2, rules);
+        REQUIRE(battle.command(Command::Flee));
+        runToEnd(battle);
+        REQUIRE(resultOf(battle).outcome == Outcome::Fled);
+        return resultOf(battle);
+    };
+    const BattleResult fled = fleeWithMp(500, originalRules());
+    CHECK(fled.care.happiness == -10);
+    CHECK(fled.care.discipline == -6);
+    CHECK(fled.care.tiredness == 2 + 5);
+    CHECK(fled.foodChange == -15);
+    CHECK(fleeWithMp(0, originalRules()).care.tiredness == 2 + 5 + 10);
+    CHECK(fleeWithMp(250, originalRules()).care.tiredness == 2 + 5);
+    const BattleRules exact = rulesOf(originalWith("broken_mp_tiredness: true", "broken_mp_tiredness: false"));
+    CHECK(fleeWithMp(250, exact).care.tiredness == 2 + 5 + 5);
 }
 
 TEST_CASE("the same seed replays the same battle, event by event") {

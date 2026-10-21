@@ -27,7 +27,6 @@ constexpr std::string_view ToiletKey = "toilet";
 constexpr std::string_view SicknessKey = "sickness";
 constexpr std::string_view MoodKey = "mood";
 constexpr std::string_view TirednessGroupKey = "tiredness";
-constexpr std::string_view BattleKey = "battle";
 constexpr std::string_view YearKey = "year";
 constexpr std::string_view StrategiesKey = "strategies";
 
@@ -155,17 +154,6 @@ constexpr std::string_view TiredHappinessKey = "tired_happiness";
 constexpr std::string_view TiredHappinessFramesKey = "tired_happiness_frames";
 constexpr std::string_view SubTirednessThresholdKey = "sub_tiredness_threshold";
 
-// battle
-constexpr std::string_view WonHappinessKey = "won_happiness";
-constexpr std::string_view FledKey = "fled";
-constexpr std::string_view LostKey = "lost";
-constexpr std::string_view BattleTirednessKey = "tiredness";
-constexpr std::string_view LowMpPercentKey = "low_mp_percent";
-constexpr std::string_view LowMpTirednessKey = "low_mp_tiredness";
-constexpr std::string_view FoodMinutesKey = "food_minutes";
-constexpr std::string_view DurationMinutesKey = "duration_minutes";
-constexpr std::string_view PoopStepsKey = "poop_steps";
-
 // year
 constexpr std::string_view HappyHappinessKey = "happy_happiness";
 constexpr std::string_view HappyTamerKey = "happy_tamer_level_percent";
@@ -183,7 +171,6 @@ constexpr std::string_view SicknessChanceWraps = "sickness_chance_wraps";
 constexpr std::string_view YoungSleepWithoutVariation = "young_sleep_without_variation";
 constexpr std::string_view BattleMidnightSkipsAge = "battle_midnight_skips_age";
 constexpr std::string_view ToiletDoublesPoopInterval = "toilet_doubles_poop_interval";
-constexpr std::string_view PostBattleMpTruncated = "post_battle_mp_tiredness_truncated";
 constexpr std::string_view FoodClearsTrainingBoost = "food_clears_training_boost";
 constexpr std::string_view SkippedHungerCountsTwice = "skipped_hunger_window_counts_twice";
 constexpr std::string_view SkippedHoursAddTries = "skipped_hours_add_sickness_tries";
@@ -471,25 +458,6 @@ TirednessRules readTiredness(YamlReader& reader, const YamlNode& root) {
             .subTirednessThreshold = positive(reader, *node, SubTirednessThresholdKey)};
 }
 
-BattleCareRules readBattle(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, BattleKey,
-               {WonHappinessKey, FledKey, LostKey, BattleTirednessKey, LowMpPercentKey, LowMpTirednessKey,
-                FoodMinutesKey, DurationMinutesKey, PoopStepsKey},
-               node)) {
-        return {};
-    }
-    return {.wonHappiness = integer(reader, *node, WonHappinessKey),
-            .fled = moodChange(reader, *node, FledKey),
-            .lost = moodChange(reader, *node, LostKey),
-            .tiredness = integer(reader, *node, BattleTirednessKey),
-            .lowMpPercent = nonNegative(reader, *node, LowMpPercentKey),
-            .lowMpTiredness = nonNegative(reader, *node, LowMpTirednessKey),
-            .foodMinutes = nonNegative(reader, *node, FoodMinutesKey),
-            .durationMinutes = positive(reader, *node, DurationMinutesKey),
-            .poopSteps = nonNegative(reader, *node, PoopStepsKey)};
-}
-
 YearRules readYear(YamlReader& reader, const YamlNode& root) {
     const YamlNode* node = nullptr;
     if (!group(reader, root, YearKey, {HappyHappinessKey, HappyTamerKey, UnhappyTamerKey}, node)) {
@@ -522,15 +490,14 @@ CareQuirks readCareQuirks(YamlReader& reader, const YamlNode& root) {
     const ruleset::Quirks quirks = ruleset::readQuirks(
         reader, node,
         {SleepingHungryKeepsWeight, SleepAddsDefaultHours, SicknessChanceWraps, YoungSleepWithoutVariation,
-         BattleMidnightSkipsAge, ToiletDoublesPoopInterval, PostBattleMpTruncated, FoodClearsTrainingBoost,
-         SkippedHungerCountsTwice, SkippedHoursAddTries, SkippedHoursUnhappyAtMidnight});
+         BattleMidnightSkipsAge, ToiletDoublesPoopInterval, FoodClearsTrainingBoost, SkippedHungerCountsTwice,
+         SkippedHoursAddTries, SkippedHoursUnhappyAtMidnight});
     return {.sleepingHungryKeepsWeight = quirks.on(SleepingHungryKeepsWeight),
             .sleepAddsDefaultHoursToEvolution = quirks.on(SleepAddsDefaultHours),
             .sicknessChanceWraps = quirks.on(SicknessChanceWraps),
             .youngSleepWithoutVariation = quirks.on(YoungSleepWithoutVariation),
             .battleMidnightSkipsAge = quirks.on(BattleMidnightSkipsAge),
             .toiletDoublesPoopInterval = quirks.on(ToiletDoublesPoopInterval),
-            .postBattleMpTirednessTruncated = quirks.on(PostBattleMpTruncated),
             .foodClearsTrainingBoost = quirks.on(FoodClearsTrainingBoost),
             .skippedHungerWindowCountsTwice = quirks.on(SkippedHungerCountsTwice),
             .skippedHoursAddSicknessTries = quirks.on(SkippedHoursAddTries),
@@ -544,7 +511,7 @@ core::Result<CareRules> readCareRules(const ruleset::Section& section) {
     const YamlNode& root = section.node;
     if (!reader.expectKeys(root, messages::CareSectionText,
                            {LimitsKey, StartKey, HungerKey, RefusalKey, SleepKey, ToiletKey, SicknessKey, MoodKey,
-                            TirednessGroupKey, BattleKey, YearKey, StrategiesKey, ruleset::QuirksKey})) {
+                            TirednessGroupKey, YearKey, StrategiesKey, ruleset::QuirksKey})) {
         return std::unexpected{reader.error(section.file)};
     }
     CareRules rules{.limits = readLimits(reader, root),
@@ -556,7 +523,6 @@ core::Result<CareRules> readCareRules(const ruleset::Section& section) {
                     .sickness = readSickness(reader, root),
                     .mood = readMood(reader, root),
                     .tiredness = readTiredness(reader, root),
-                    .battle = readBattle(reader, root),
                     .year = readYear(reader, root),
                     .strategies = readStrategyNames(reader, root),
                     .quirks = readCareQuirks(reader, root)};

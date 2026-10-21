@@ -568,10 +568,4 @@ core::Result<game::partner::TrainingResult> GameSession::train(const game::partn
     return trained;
 }
 
-void GameSession::finishBattle(const game::partner::BattleOutcome& outcome) {
-    state_->partner.finishBattle(outcome, state_->clock);
-    requestAutosave(AutosaveReason::BattleEnd);
-    afterCommand();
-}
-
 } // namespace dwe::session

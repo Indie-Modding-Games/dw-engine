@@ -82,9 +82,8 @@ struct BattleResult {
     // tamer.c: startBattle and partner_impl.c: handlePostBattleTiredness: what the outcome does to the care values.
     CareChange care;
     std::int32_t foodChange = 0;
-    // tamer.c: startBattle (a defeat): lives lost and the share of the items lost.
+    // tamer.c: startBattle (a defeat): lives lost. The items lost are the inventory section's (defeat.lost_percent).
     std::int32_t livesLost = 0;
-    std::int32_t itemLossPercent = 0;
     // tamer.c: advanceBattleTime: the minutes the clock moves on, and whether that ends an hour (an hour of lifetime
     // and the hourly care counters of the partner).
     std::int32_t elapsedMinutes = 0;

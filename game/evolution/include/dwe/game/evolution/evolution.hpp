@@ -43,12 +43,14 @@ public:
     // The periodic check (partner_impl.c: tickConditions), for the session to call while the partner is in its
     // normal state, the clock runs and no map change or time-of-day fade is under way. `inputs.evolutionTimer` is the
     // counter now and `hoursCrossed` the hours it went up since the last call: the counter values in between are
-    // checked one by one, so a fast-forward finds what playing would have.
+    // checked one by one, so a fast-forward finds what playing would have. The virus bar is not part of it: the
+    // partner reports a full bar and the session calls fillVirusBar, skipping this check in that tick.
     [[nodiscard]] NaturalCheck checkNatural(const EvolutionInputs& inputs, const EvolutionState& state,
                                             std::int64_t hoursCrossed, ruleset::Random& random) const;
 
-    // The partner's virus bar filled up (partner_impl.c: tickConditions): into the virus form, whatever the tamer
-    // does; nothing when the partner is in it already. The result keeps the form and stats to come back to.
+    // The partner's virus bar filled up (partner_impl.c: tickConditions; the care section owns the limit and the
+    // form, given in `inputs.virusForm`): into the virus form, whatever the tamer does; nothing when the partner is in
+    // it already or the inputs name no form. The result keeps the form and stats to come back to.
     [[nodiscard]] std::optional<EvolutionResult> fillVirusBar(const EvolutionInputs& inputs,
                                                               const EvolutionState& state) const;
 

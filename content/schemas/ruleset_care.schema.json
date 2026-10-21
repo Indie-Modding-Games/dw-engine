@@ -13,7 +13,6 @@
     "sickness",
     "mood",
     "tiredness",
-    "battle",
     "year",
     "strategies",
     "quirks"
@@ -693,74 +692,6 @@
         }
       }
     },
-    "battle": {
-      "type": "object",
-      "required": [
-        "won_happiness",
-        "fled",
-        "lost",
-        "tiredness",
-        "low_mp_percent",
-        "low_mp_tiredness",
-        "food_minutes",
-        "duration_minutes",
-        "poop_steps"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "won_happiness": {
-          "type": "integer"
-        },
-        "fled": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "happiness": {
-              "type": "integer"
-            },
-            "discipline": {
-              "type": "integer"
-            },
-            "tiredness": {
-              "type": "integer"
-            }
-          }
-        },
-        "lost": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "happiness": {
-              "type": "integer"
-            },
-            "discipline": {
-              "type": "integer"
-            },
-            "tiredness": {
-              "type": "integer"
-            }
-          }
-        },
-        "tiredness": {
-          "type": "integer"
-        },
-        "low_mp_percent": {
-          "type": "integer"
-        },
-        "low_mp_tiredness": {
-          "type": "integer"
-        },
-        "food_minutes": {
-          "type": "integer"
-        },
-        "duration_minutes": {
-          "type": "integer"
-        },
-        "poop_steps": {
-          "type": "integer"
-        }
-      }
-    },
     "year": {
       "type": "object",
       "required": [
@@ -813,7 +744,6 @@
         "young_sleep_without_variation",
         "battle_midnight_skips_age",
         "toilet_doubles_poop_interval",
-        "post_battle_mp_tiredness_truncated",
         "food_clears_training_boost",
         "skipped_hunger_window_counts_twice",
         "skipped_hours_add_sickness_tries",
@@ -837,9 +767,6 @@
           "type": "boolean"
         },
         "toilet_doubles_poop_interval": {
-          "type": "boolean"
-        },
-        "post_battle_mp_tiredness_truncated": {
           "type": "boolean"
         },
         "food_clears_training_boost": {

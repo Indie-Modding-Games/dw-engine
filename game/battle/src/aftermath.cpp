@@ -170,7 +170,6 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
     case Outcome::Defeat:
         result.care = consequences.defeat;
         result.livesLost = consequences.defeatLives;
-        result.itemLossPercent = consequences.defeatItemLossPercent;
         break;
     }
     result.elapsedMinutes = consequences.elapsedMinutes;

@@ -88,9 +88,6 @@ public:
     // Eats a poop pile of this size (handleEatingPoop).
     void eatPoop(std::int32_t pileSize);
 
-    // A battle ended (tamer.c: startBattle, advanceBattleTime): its effects on the care, and 20 minutes pass.
-    void finishBattle(const BattleOutcome& outcome, ruleset::GameClock& clock);
-
     // A battle the battle system settled ended: its care, injury, lives and minutes as it gives them, with the
     // partner's hourly accounting when the battle ends an hour (tamer.c: advanceBattleTime). Its stats after the
     // battle come in with setStats and addStatGains first.
@@ -217,8 +214,6 @@ private:
     [[nodiscard]] std::int32_t poopLevelAfterGoing() const;
 
     // Battles, skipped time and training.
-    void addPostBattleTiredness();
-    void rollBattleInjury();
     // The minutes a battle takes, whether they end an hour and the lifetime hours that costs.
     struct BattleTime {
         std::int32_t minutes = 0;

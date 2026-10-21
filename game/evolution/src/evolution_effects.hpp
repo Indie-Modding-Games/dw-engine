@@ -35,7 +35,8 @@ private:
     [[nodiscard]] BaseStats gainedStats(const BaseStats& stats, const BaseStats& reference) const;
     [[nodiscard]] std::int32_t gainedStat(std::int32_t stat, std::int32_t reference) const;
     [[nodiscard]] std::int32_t tamerLevelChance(Level level) const;
-    [[nodiscard]] Species virusForm() const;
+    // Whether the partner is in the virus form its inputs name.
+    [[nodiscard]] static bool inVirusForm(const EvolutionInputs& inputs);
 
     // The move the new form learns: the weakest of its first specialty's block.
     [[nodiscard]] std::optional<std::int32_t> learnedMove(const SpeciesData& form) const;

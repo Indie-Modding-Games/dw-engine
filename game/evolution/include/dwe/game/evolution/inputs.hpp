@@ -56,7 +56,8 @@ struct EvolutionInputs {
     std::int32_t ageDays = 0;
     // Hours of the evolution counter (evoTimer) since the last change of level.
     std::int32_t evolutionTimer = 0;
-    // Poop piles left on the floor since the last reset (virusBar).
+    // Poop piles left on the floor since the last reset (virusBar). The original's rules do not read it: a full bar
+    // comes as the partner's own event (fillVirusBar), on the care section's limit.
     std::int32_t virusBar = 0;
     // The original's index of the map the partner is on (CURRENT_SCREEN).
     std::int32_t map = 0;
@@ -65,6 +66,9 @@ struct EvolutionInputs {
     // The original's IS_SCRIPT_PAUSED flag, which gates the tamer level chance on evolving. What it stands for at
     // that moment is a supposition (docs/reference/evolution.md).
     bool scriptPaused = false;
+    // The form a full virus bar turns the partner into, which the care section owns (care.toilet.virus_form); none
+    // when the ruleset names none.
+    std::optional<Species> virusForm = std::nullopt;
     // What was kept on turning into the virus form, if anything: the way back and its stats rebuild read it.
     std::optional<VirusBackup> virusBackup = std::nullopt;
 };

@@ -20,7 +20,6 @@ constexpr std::string_view BabyTargetsKey = "baby_targets";
 constexpr std::string_view RequirementsKey = "requirements";
 constexpr std::string_view FallbackKey = "fallback";
 constexpr std::string_view SpecialsKey = "specials";
-constexpr std::string_view VirusKey = "virus";
 constexpr std::string_view ItemsKey = "items";
 constexpr std::string_view StatGainsKey = "stat_gains";
 constexpr std::string_view MovesKey = "moves";
@@ -53,7 +52,6 @@ constexpr std::string_view RequireKey = "require";
 constexpr std::string_view EqualsKey = "equals";
 constexpr std::string_view AtLeastKey = "at_least";
 
-constexpr std::string_view BarLimitKey = "bar_limit";
 constexpr std::string_view FixedKey = "fixed";
 constexpr std::string_view LevelStepKey = "level_step";
 
@@ -232,13 +230,6 @@ SpecialRules readSpecials(YamlReader& reader, const YamlNode& node) {
     return specials;
 }
 
-VirusRules readVirus(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, messages::VirusText, {BarLimitKey, TargetKey})) {
-        return {};
-    }
-    return {.barLimit = readNumber(reader, node, BarLimitKey), .target = reader.text(reader.field(node, TargetKey))};
-}
-
 ItemRules readItems(YamlReader& reader, const YamlNode& node) {
     if (!reader.expectKeys(node, messages::ItemsText, {FixedKey, LevelStepKey})) {
         return {};
@@ -293,7 +284,7 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
     const YamlNode& root = section.node;
     if (!reader.expectKeys(root, messages::SectionText,
                            {SelectionKey, ScoringKey, CheckHoursKey, BabyTargetsKey, RequirementsKey, FallbackKey,
-                            SpecialsKey, VirusKey, ItemsKey, StatGainsKey, MovesKey, RebirthKey, ruleset::QuirksKey})) {
+                            SpecialsKey, ItemsKey, StatGainsKey, MovesKey, RebirthKey, ruleset::QuirksKey})) {
         return std::unexpected{reader.error(section.file)};
     }
     EvolutionRules rules{
@@ -304,7 +295,6 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
         .requirements = readRequirementRules(reader, reader.field(root, RequirementsKey)),
         .fallback = readFallback(reader, reader.field(root, FallbackKey)),
         .specials = readSpecials(reader, reader.field(root, SpecialsKey)),
-        .virus = readVirus(reader, reader.field(root, VirusKey)),
         .items = readItems(reader, reader.field(root, ItemsKey)),
         .statGains = readStatGains(reader, reader.field(root, StatGainsKey)),
         .moves = readMoves(reader, reader.field(root, MovesKey)),

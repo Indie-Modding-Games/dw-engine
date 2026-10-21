@@ -144,12 +144,14 @@ TEST_CASE("the user's disc, extracted: every form runs every evolution check wit
     constexpr std::int32_t RaisingsPerForm = 40;
     ruleset::Random random{2024};
     const PraiseScold scold{.scolded = true, .disciplineBefore = 0, .happinessBefore = -100};
-    const std::optional<Species> virusForm = tables.find(evolution.rules().virus.target);
+    // The virus form the care section names in the original (care.toilet.virus_form).
+    const std::optional<Species> virusForm = tables.find("scum");
     REQUIRE(virusForm);
     for (const Species species : tables.allSpecies()) {
         CAPTURE(tables.idOf(species));
         for (std::int32_t i = 0; i < RaisingsPerForm; ++i) {
-            const EvolutionInputs inputs = randomInputs(species, random);
+            EvolutionInputs inputs = randomInputs(species, random);
+            inputs.virusForm = virusForm;
             const EvolutionState state;
             const auto checkTarget = [&](const std::optional<EvolutionResult>& result) {
                 if (result) {

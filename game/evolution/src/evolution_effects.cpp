@@ -61,7 +61,7 @@ EvolutionResult EvolutionEffects::apply(const EvolutionInputs& inputs, const Evo
                            .restartsVirusBar = reason == EvolutionReason::Virus,
                            .virusBackup = std::nullopt,
                            .evolutionItemUsed = false};
-    if (!suppressed && inputs.species == virusForm()) {
+    if (!suppressed && inVirusForm(inputs)) {
         result.restoredStats = rebuiltStats(inputs);
         result.restartsVirusBar = true;
     } else if (scales && !suppressed) {
@@ -113,7 +113,7 @@ bool EvolutionEffects::scalesStats(const EvolutionInputs& inputs, Species target
     const bool listed = std::ranges::any_of(rules_->statGains.scaledTargets,
                                             [&](const std::string& id) { return tables_->find(id) == target; });
     const bool lowLevel = static_cast<std::int32_t>(tables_->levelOf(target)) < rules_->statGains.scaledBelowLevel;
-    return listed || lowLevel || inputs.species == virusForm();
+    return listed || lowLevel || inVirusForm(inputs);
 }
 
 // evl.c: EVL_scaleBaseStats: back from the virus form, each stat is rebuilt from the one kept on entering it.
@@ -172,8 +172,8 @@ std::int32_t EvolutionEffects::tamerLevelChance(Level level) const {
     return 0;
 }
 
-Species EvolutionEffects::virusForm() const {
-    return tables_->find(rules_->virus.target).value_or(0);
+bool EvolutionEffects::inVirusForm(const EvolutionInputs& inputs) {
+    return inputs.virusForm && inputs.species == *inputs.virusForm;
 }
 
 // evl.c: EVL_applyEvolution: among the moves of the form's list in its first specialty's block, the first with the

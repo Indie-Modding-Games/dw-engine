@@ -94,12 +94,6 @@ specials:
     level: 4
     hours: 360
 
-# partner_impl.c: tickConditions y createPoopPile: cada caca en el suelo suma 1 a la barra; con 16 el partner pasa a
-# Sukamon, que guarda sus stats y su forma anterior.
-virus:
-  bar_limit: 16
-  target: scum
-
 # item.c: handleEvoItems.
 items:
   # Tres objetos llevan a una forma fija sin mirar el nivel.

@@ -354,6 +354,7 @@ std::optional<EvolutionInputs> EvolutionAdapter::inputsOf(const GameSession& ses
                            .map = mapIndexOf(session),
                            .tamerFree = session.careContext().tamerIdle,
                            .scriptPaused = !scriptRunning,
+                           .virusForm = tables.find(session.partnerRules().care.toilet.virusForm),
                            .virusBackup = backup};
 }
 

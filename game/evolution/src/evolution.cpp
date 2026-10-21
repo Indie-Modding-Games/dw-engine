@@ -48,7 +48,6 @@ std::optional<core::Error> checkRuleIds(const EvolutionRules& rules, const Evolu
             check.forms(special.from, messages::SpecialWhere);
         }
     }
-    check.form(rules.virus.target, messages::VirusWhere);
     for (const auto& [item, target] : rules.items.fixed) {
         check.form(target, messages::ItemsWhere);
     }
@@ -209,7 +208,6 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
     const std::int32_t timer = inputs.evolutionTimer;
     const std::int64_t earlierHours =
         std::min<std::int64_t>(std::max<std::int64_t>(hoursCrossed - 1, 0), std::max(timer, 0));
-    const Species virusForm = require(rules_.virus.target);
     for (auto hour = timer - static_cast<std::int32_t>(earlierHours); hour <= timer; ++hour) {
         EvolutionInputs atHour = inputs;
         atHour.evolutionTimer = hour;
@@ -221,11 +219,6 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
             if (target != normal) {
                 reason = EvolutionReason::Special;
             }
-        }
-        // partner_impl.c: tickConditions: the virus bar is checked last, wins, and does not wait for the tamer.
-        if (inputs.virusBar >= rules_.virus.barLimit && inputs.species != virusForm) {
-            target = virusForm;
-            reason = EvolutionReason::Virus;
         }
         if (target) {
             if (auto evolution = evolve(atHour, state, *target, reason); evolution) {
@@ -246,11 +239,10 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
 
 std::optional<EvolutionResult> Evolution::fillVirusBar(const EvolutionInputs& inputs,
                                                        const EvolutionState& state) const {
-    const Species virusForm = require(rules_.virus.target);
-    if (inputs.species == virusForm) {
+    if (!inputs.virusForm || inputs.species == *inputs.virusForm) {
         return std::nullopt;
     }
-    return evolve(inputs, state, virusForm, EvolutionReason::Virus);
+    return evolve(inputs, state, *inputs.virusForm, EvolutionReason::Virus);
 }
 
 std::optional<EvolutionResult> Evolution::wakeUp(const EvolutionInputs& inputs, const EvolutionState& state,

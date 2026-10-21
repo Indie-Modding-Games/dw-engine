@@ -56,8 +56,7 @@ TEST_CASE("the game pack's evolution section has the original's numbers") {
     CHECK(rules.specials.praiseScold.at(1).scolded);
     CHECK(rules.specials.praiseScoldOnTimer.level == 4);
     CHECK(rules.specials.praiseScoldOnTimer.hours == 360);
-    // partner_impl.c: tickConditions; item.c: handleEvoItems.
-    CHECK(rules.virus.barLimit == 16);
+    // item.c: handleEvoItems.
     CHECK(rules.items.fixed.size() == 3);
     CHECK(rules.items.levelStep == 1);
     // evl.c: EVL_applyEvolution.

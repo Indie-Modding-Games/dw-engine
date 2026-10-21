@@ -868,7 +868,6 @@
         "mp_tiredness_below_percent",
         "mp_tiredness_scale",
         "defeat_lives",
-        "defeat_item_loss_percent",
         "elapsed_minutes"
       ],
       "additionalProperties": false,
@@ -958,9 +957,6 @@
           "type": "integer"
         },
         "defeat_lives": {
-          "type": "integer"
-        },
-        "defeat_item_loss_percent": {
           "type": "integer"
         },
         "elapsed_minutes": {

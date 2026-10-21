@@ -307,7 +307,8 @@ ending:
   revive_countdown_shown_at: 20
 
 # Consecuencias para el cuidado (tamer.c: startBattle, advanceBattleTime; partner_impl.c: handlePostBattleTiredness;
-# battle_ui.c: handleBattleInjury; script_common.c: handleItemLoss).
+# battle_ui.c: handleBattleInjury). Esta sección es la dueña de estos números: el partner los recibe de la batalla
+# (Partner::applyBattle). Los objetos que se pierden al perder son de la sección inventory (defeat.lost_percent).
 consequences:
   victory: { happiness: 2, discipline: 0, tiredness: 0, battles: 1 }
   flee: { happiness: -10, discipline: -6, tiredness: 2, battles: 0 }
@@ -317,9 +318,8 @@ consequences:
   after_battle_food: -15
   mp_tiredness_below_percent: 80
   mp_tiredness_scale: 10
-  # Tras perder: se pierde una vida y el 30 % de los objetos.
+  # Tras perder: se pierde una vida (script_interp.c: SCRIPT_OP_START_BATTLE).
   defeat_lives: 1
-  defeat_item_loss_percent: 30
   # Cada combate adelanta el reloj 20 minutos.
   elapsed_minutes: 20
 

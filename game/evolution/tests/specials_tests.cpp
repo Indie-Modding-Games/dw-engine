@@ -172,26 +172,11 @@ TEST_CASE("quirk timer_special_overrides_normal: at the timer hours a failed spe
 
 // --- The virus form (partner_impl.c: tickConditions; partner.c: callDigimonRoutine) ---
 
-TEST_CASE("a full virus bar turns the partner into the virus form, even with the tamer busy") {
+TEST_CASE("the periodic check leaves a full virus bar to the partner's own event") {
     const Evolution evolution = TableFixture{}.makeEvolution();
     EvolutionInputs inputs = inputsOf("grey", 50);
-    inputs.stats = {.hp = 1000, .mp = 900, .offense = 100, .defense = 90, .speed = 80, .brains = 70};
-    inputs.virusBar = 15;
-    CHECK_FALSE(checkAt(evolution, inputs).evolution);
-    inputs.virusBar = 16;
+    inputs.virusBar = 100;
     inputs.tamerFree = false;
-    const NaturalCheck check = checkAt(evolution, inputs);
-    REQUIRE(check.evolution);
-    CHECK(valueOf(check.evolution).target == TableFixture::index("scum"));
-    CHECK(valueOf(check.evolution).reason == EvolutionReason::Virus);
-    CHECK(valueOf(check.evolution).restartsVirusBar);
-    REQUIRE(valueOf(check.evolution).virusBackup);
-    CHECK(valueOf(valueOf(check.evolution).virusBackup) ==
-          VirusBackup{.species = inputs.species, .stats = inputs.stats});
-    // Same level: the counter goes on.
-    CHECK(check.evolutionTimer == 50);
-
-    inputs.species = TableFixture::index("scum");
     CHECK_FALSE(checkAt(evolution, inputs).evolution);
 }
 
@@ -209,6 +194,10 @@ TEST_CASE("the partner's full virus bar turns it into the virus form, keeping it
     CHECK(valueOf(valueOf(result).virusBackup) == VirusBackup{.species = inputs.species, .stats = inputs.stats});
 
     inputs.species = TableFixture::index("scum");
+    CHECK_FALSE(evolution.fillVirusBar(inputs, {}));
+    // A ruleset whose care section names no virus form.
+    inputs = inputsOf("grey", 50);
+    inputs.virusForm = std::nullopt;
     CHECK_FALSE(evolution.fillVirusBar(inputs, {}));
 }
 

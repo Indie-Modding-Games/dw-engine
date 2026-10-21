@@ -289,7 +289,6 @@ struct ConsequenceRules {
     std::int32_t mpTirednessBelowPercent = 0;
     std::int32_t mpTirednessScale = 0;
     std::int32_t defeatLives = 0;
-    std::int32_t defeatItemLossPercent = 0;
     std::int32_t elapsedMinutes = 0;
 };
 

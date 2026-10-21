@@ -40,9 +40,9 @@ auto session = session::GameSession::create({.files = &files, .rulesetId = "orig
    (renacer da `Reborn`) se reparte también.
 6. Si hay una petición de autoguardado que el ruleset deja pasar, escribe la ranura de autoguardado siguiente.
 
-Las órdenes del jugador (`feed`, `cure`, `scold`, `praise`, `useToilet`, `sleep`, `train`, `finishBattle`) reparten
-también sus eventos y su autoguardado. `takePartnerEvents` da los eventos del último tick u orden para la UI, y
-`takeAutosaved` el autoguardado escrito (ranura y motivo).
+Las órdenes del jugador (`feed`, `cure`, `scold`, `praise`, `useToilet`, `sleep`, `train`) y el final de una batalla
+(`BattleAdapter::finish`) reparten también sus eventos y su autoguardado. `takePartnerEvents` da los eventos del
+último tick u orden para la UI, y `takeAutosaved` el autoguardado escrito (ranura y motivo).
 
 ### Lo que ve la UI
 
@@ -98,7 +98,8 @@ de los sistemas, guardados con la partida), `addTamerLevel(probabilidad, niveles
 le dan las suyas en `.tables`) y registra su comprobación de sección y la sección de guardado `evolution`.
 
 - **Entradas**: llena `EvolutionInputs` desde el partner: forma, stats, peso, errores de cuidado, disciplina,
-  felicidad, cansancio, batallas, días, contador de evolución, barra de virus, la copia de la forma virus, el mapa
+  felicidad, cansancio, batallas, días, contador de evolución, barra de virus, la forma virus
+  (`care.toilet.virus_form`), la copia de la forma virus, el mapa
   (índice original de `data/maps`, `UnknownMapIndex` sin tabla de mapas), si el domador está libre
   (`careContext().tamerIdle`), si corre un guion (solo en las rutinas de guion) y las técnicas aprendidas: las del
   `BattleAdapter` (`learnedMoveIndices`), contadas con `countMasteredMoves` (solo las de índice menor que
@@ -166,7 +167,7 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
   si gana (`recruitOnVictory`).
 - **Acabar** (`finish(session, BattleResult)`): HP y MP del final (`setStats`), las subidas por `addStatGains`, y el
   cuidado, la herida, las vidas y los minutos como los da la batalla por `Partner::applyBattle` (con la cuenta horaria
-  del partner si la batalla acaba una hora: `tamer.c: advanceBattleTime`; no se vuelve a contar con `finishBattle`);
+  del partner si la batalla acaba una hora: `tamer.c: advanceBattleTime`);
   las técnicas nuevas, los bits y los objetos ganados a la bolsa (los que no caben quedan en `dropsLeft`) y, en una
   derrota, las pilas perdidas por `InventoryAdapter::loseOnDefeat`. Pide los autoguardados `BattleEnd`, `RecruitJoin`
   (si se unió el recluta: `recruitJoined`) y `TournamentResult` (torneo o arena).

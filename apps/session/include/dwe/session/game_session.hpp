@@ -161,8 +161,6 @@ public:
     // Puts the partner to bed; the clock jumps to its wake hour. Fails if it is not sleepy.
     core::Result<void> sleep(const game::partner::SleepContext& context);
     core::Result<game::partner::TrainingResult> train(const game::partner::TrainingRequest& request);
-    // A battle ended; until game/battle lands its adapter calls this.
-    void finishBattle(const game::partner::BattleOutcome& outcome);
 
     // After a system's command changed the partner (an item, an evolution): routes the partner's events and writes a
     // requested autosave, as the session's own commands do.

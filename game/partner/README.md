@@ -35,8 +35,7 @@ if (partner.canSleep()) {
 partner.useToilet();
 partner.cure({.injuryPercent = 100, .sicknessPercent = 20});    // venda
 partner.skipHours(hours, clock);                                 // descansar; la sesión mueve el reloj después
-partner.finishBattle({.result = BattleResult::Won, .tookDamage = hit}, clock);   // +20 minutos
-partner.applyBattle(consecuencias, clock);  // la batalla ya lo calculó (BattleAdapter): sin las reglas de finishBattle
+partner.applyBattle(consecuencias, clock);  // la batalla ya lo calculó (BattleAdapter) con los números de `battle`
 auto gains = partner.train({.place = "trn", .course = "hp"}, clock);           // +1 hora
 partner.addStatGains(evolutionGains);                                           // cada ganancia, 999 como mucho
 ```
@@ -46,8 +45,8 @@ partner.addStatGains(evolutionGains);                                           
   Dormir, combatir y entrenar mueven el reloj con sus propias cuentas, como el original, y no recorren los
   fotogramas que saltan.
 - **Órdenes.** Comer (`FoodEffect`), curar (`CureEffect`), regañar, elogiar, dormir, baño y orinal portátil, comer
-  caca (`eatPoop`, para las especies que lo hacen), descansar (`skipHours`), combate (`BattleOutcome`) y
-  entrenamiento (`TrainingRequest`). El inventario es dueño de la tabla de objetos; la sesión traduce un objeto a su
+  caca (`eatPoop`, para las especies que lo hacen), descansar (`skipHours`), combate (`BattleConsequences`, con los
+  números de la sección `battle`) y entrenamiento (`TrainingRequest`). El inventario es dueño de la tabla de objetos; la sesión traduce un objeto a su
   efecto. Las ganancias de stats que vienen de fuera (evolución, combate) van por `addStatGains`, que aplica el tope de
   cada ganancia (`care.limits.stat_gain_max`) y el de cada stat; `setStats` pone los stats tal cual, sin tope (el HP
   y el MP tras un combate). La vida que dan o quitan los objetos va por `addLifetime`.
@@ -120,7 +119,6 @@ Cada rareza de la ficha que el juego nota va detrás de una bandera de `quirks:`
 | `young_sleep_without_variation` | El horario del bebé no varía (`randomLimit(1)`) |
 | `battle_midnight_skips_age` | Un combate que cruza la medianoche no suma edad |
 | `toilet_doubles_poop_interval` | Tras el baño o una caca en el suelo el aviso tarda el doble |
-| `post_battle_mp_tiredness_truncated` | El cansancio por MP divide antes de multiplicar |
 | `food_clears_training_boost` | Cualquier comida borra el bonus de entrenamiento |
 | `skipped_hunger_window_counts_twice` | Saltar horas cuenta el error de la ventana de hambre dos veces |
 | `skipped_hours_add_sickness_tries` | Saltar horas enfermo suma intentos de enfermar |
@@ -170,9 +168,8 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Vida por infelicidad | `partner_impl.c: tickConditions` | `tickUnhappyLifetime`, `loseUnhappyLifetime` | `life_tests`: unhappy | Igual |
 | Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath` | `life_tests`: natural death | Igual |
 | Renacer y herencia | `evolution.c: reincarnatePartner`; `partner_impl.c: initializeReincarnatedPartner`; `dooa.c` | `rebirth`, `OriginalRebirthChoice` | `life_tests`: rebirth | Igual |
-| Combate: ánimo, cansancio, tiempo | `tamer.c: startBattle`, `advanceBattleTime`; `partner_impl.c: handlePostBattleTiredness` | `finishBattle`, `passBattleTime` | `activity_tests` | Igual |
+| Combate: tiempo, comida y caca | `tamer.c: advanceBattleTime` | `passBattleTime` (los pasos de caca salen de `toilet.poop_step_minutes`) | `a battle's minutes bring the meal closer ...`, `a battle across midnight ...` | Igual |
 | Combate que ya resolvió `game/battle`: sus números y la cuenta horaria si acaba una hora | `tamer.c: startBattle`, `advanceBattleTime` | `applyBattle` (`BattleConsequences`), `passBattleTime` | `a battle the battle system settled ...`, `a settled battle that ends an hour ...` | Igual |
-| Herida en combate | `battle_ui.c: handleBattleInjury` | `rollBattleInjury` | `activity_tests`: hurt partner | Igual |
 | Saltar horas | `partner_impl.c: skipHours` | `skipHours` | `activity_tests`: rest | Igual |
 | Infelicidad al saltar horas | `partner_impl.c: skipHours` | `unhappyChecksWhileSkipping`, `care.quirks.skipped_hours_unhappiness_only_at_midnight` | `activity_tests`: rest, only at midnight | Igual (2026-10-20): la rareza queda por defecto; `false` resta por cada múltiplo de 4 horas cruzado |
 | Multiplicador de entrenamiento | `trn_reward.c: TRN_calculateTrainingMultiplier` | `OriginalGainFormula` | `training_tests` | Igual |
