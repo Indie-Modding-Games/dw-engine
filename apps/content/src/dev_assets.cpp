@@ -1,9 +1,12 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/content/dev_assets.hpp>
+#include <dwe/content/dev_disc.hpp>
+#include <dwe/content/user_data.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/platform/platform.hpp>
 
 #include <cstddef>
 #include <optional>
@@ -59,6 +62,16 @@ core::Result<std::string> readConfig(const std::filesystem::path& file) {
             core::formatMessage(messages::CannotReadDevAssetsConfig, assets::pathText(file), bytes.error().message));
     }
     return std::string{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
+}
+
+// The user's data folder of the game and dwe-sim, where the config is also looked for and the dev cache lives.
+std::optional<std::filesystem::path> devAssetsDataFolder() {
+    auto folder = platform::userDataFolder(UserDataOrganization, UserDataApplication);
+    if (!folder) {
+        core::logWarning("{}", core::formatMessage(messages::NoDevAssetsDataFolder, folder.error().message));
+        return std::nullopt;
+    }
+    return std::move(*folder);
 }
 
 void logSources(const std::filesystem::path& config, const assets::DevAssetSources& sources) {
@@ -132,6 +145,19 @@ core::Result<assets::DevAssetSources> loadDevAssets(std::span<const std::filesys
     }
     logSources(*config, *sources);
     return sources;
+}
+
+core::Result<assets::DevAssetSources> openDevAssets() {
+    const std::optional<std::filesystem::path> userData = devAssetsDataFolder();
+    auto sources = loadDevAssets(devAssetsConfigFolders(userData));
+    if (!sources || !sources->discImage) {
+        return sources;
+    }
+    auto extraction = discExtraction(userData);
+    if (!extraction) {
+        return std::unexpected{extraction.error()};
+    }
+    return withDiscContent(std::move(*sources), *extraction);
 }
 
 } // namespace dwe::content

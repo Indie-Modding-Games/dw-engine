@@ -215,7 +215,9 @@ Con `--dev-assets` (solo en desarrollo, nunca por defecto) `GameContent` monta t
 extraídas que nombra el fichero de configuración de desarrollo, solo para rellenar lo que falta. Un paquete normal gana
 al paquete de desarrollo con su id, y una carpeta anterior a una posterior; los que quedan fuera se registran en el
 log. Los que entran rellenan huecos (`PackLocation::fillsGaps`): van debajo de todos los paquetes normales, digan lo
-que digan su capa y su prioridad, y el log los marca. Detalle en [assets de desarrollo](assets-de-desarrollo.md).
+que digan su capa y su prioridad, y el log los marca. Una imagen del disco en ese fichero llega como una carpeta
+extraída más, la última: `dwx` la extrae a una caché de desarrollo. Detalle en
+[assets de desarrollo](assets-de-desarrollo.md).
 
 ## Errores
 

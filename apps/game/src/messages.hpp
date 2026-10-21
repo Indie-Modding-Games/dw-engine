@@ -14,8 +14,6 @@ inline constexpr std::string_view ListSeparator = ", ";
 
 // The dev assets banner (dev_assets_banner.cpp), logged in the player's language.
 inline constexpr std::string_view DevAssetsBanner = "game: {}";
-inline constexpr std::string_view NoDevAssetsDataFolder =
-    "dev assets: no user data folder ({}): only the current folder's config is read";
 
 // The user's settings (user_settings.cpp).
 inline constexpr std::string_view UserSettingsContext = "user settings";

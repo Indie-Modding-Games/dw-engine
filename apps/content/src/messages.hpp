@@ -28,4 +28,17 @@ inline constexpr std::string_view ListSeparator = ", ";
 inline constexpr std::string_view NoCurrentFolder =
     "dev assets: the current folder is unknown ({}): its config is not read";
 
+inline constexpr std::string_view NoDevAssetsDataFolder =
+    "dev assets: no user data folder ({}): only the current folder's config is read";
+inline constexpr std::string_view NoDevCacheFolder =
+    "dev assets: the disc image needs the user's data folder, which holds its dev cache, and there is none";
+inline constexpr std::string_view NoDwx = "dev assets: the disc image is read with dwx, which is in none of: {}";
+inline constexpr std::string_view ReadingDevDisc =
+    "dev assets: reading the disc image {} with {}; the first time for a disc, dwx extracts it into {}, which takes a "
+    "few minutes and about 1.5 GB for the whole game";
+inline constexpr std::string_view DwxFailed =
+    "dev assets: dwx could not give the extracted content of {} (exit code {}); its messages are above";
+inline constexpr std::string_view DwxGaveNoFolder = "dev assets: dwx did not print one content folder: \"{}\"";
+inline constexpr std::string_view DevDiscContent = "dev assets: disc image {} read as extracted content {}";
+
 } // namespace dwe::content::messages

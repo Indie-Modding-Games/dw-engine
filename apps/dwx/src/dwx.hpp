@@ -4,6 +4,7 @@
 #include <dwe/core/sha1.hpp>
 
 #include <cstddef>
+#include <cstdio>
 #include <filesystem>
 #include <span>
 
@@ -26,6 +27,11 @@ int verify(const std::filesystem::path& path);
 
 // dwx extract --list: lists every file of a disc image and checks it against the executable's file table.
 int listDisc(const std::filesystem::path& path, bool verifyImage);
+
+// Writes the base pack and its coverage report from a disc image into a folder, then checks that the engine mounts it.
+// Progress goes to report and warnings to the standard error.
+core::Result<void> extractBasePack(const std::filesystem::path& path, const std::filesystem::path& out, bool force,
+                                   std::FILE* report);
 
 // dwx extract: writes the base pack and its coverage report from a disc image into a folder, then checks that the
 // engine mounts it.

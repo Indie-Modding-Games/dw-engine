@@ -16,6 +16,7 @@ dwe_add_module(dwx
         src/audio_extractors.cpp
         src/base_pack.cpp
         src/cook.cpp
+        src/disc_cache.cpp
         src/disc_description.cpp
         src/effect_extractors.cpp
         src/extract.cpp
@@ -48,9 +49,6 @@ if(BUILD_TESTING)
     target_include_directories(dwe_dwx_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/formats/tests
         ${PROJECT_SOURCE_DIR}/engine/assets/tests)
-    target_compile_definitions(dwe_dwx_tests PRIVATE DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
-                                                     DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
-                                                     DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod")
 endif()
 
 dwe_add_app(dwx_cli
@@ -59,3 +57,14 @@ dwe_add_app(dwx_cli
         src/main.cpp
     DEPS dwx
     OUTPUT_NAME dwx)
+
+if(BUILD_TESTING)
+    target_compile_definitions(dwe_dwx_tests PRIVATE
+        DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
+        DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
+        DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod"
+        DWE_DWX="$<TARGET_FILE:dwx_cli>")
+    # The disc cache tests run the command line as the game does, through platform's process runner.
+    target_link_libraries(dwe_dwx_tests PRIVATE dwe::platform)
+    add_dependencies(dwe_dwx_tests dwx_cli)
+endif()

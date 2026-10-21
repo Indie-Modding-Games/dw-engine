@@ -27,6 +27,7 @@ if(BUILD_TESTING)
     add_executable(dwe_filter_guard_tests tests/filter_guard_tests.cpp)
     target_link_libraries(dwe_filter_guard_tests PRIVATE dwe_test_main)
     dwe_apply_options(dwe_filter_guard_tests)
+    dwe_use_utf8(dwe_filter_guard_tests)
     set(guarded_case "the filter guard's test case runs")
     add_test(NAME "filter guard: a filter that matches a test case runs it"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case}")

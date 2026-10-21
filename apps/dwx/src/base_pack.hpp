@@ -70,6 +70,9 @@ CoverageSummary summarize(const ExtractionRun& run);
 // unknowns and notes, and the groups of duplicate outputs. The same run gives the same text.
 core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo& info);
 
+// Whether dwx extract wrote the base pack in folder: it leaves a marker there.
+[[nodiscard]] bool writtenByExtract(const std::filesystem::path& folder);
+
 // Makes the output folder ready: creates it, or empties it if a previous extraction wrote it. A folder with other
 // files is refused unless force is set, and then nothing in it is deleted.
 core::Result<void> prepareOutputFolder(const std::filesystem::path& folder, bool force);

@@ -18,7 +18,7 @@ dwe-sim --scenario ruleset-diff --param against=original --set care.hunger.windo
 |---|---|---|
 | `--scenario <nombre>` | El escenario que se juega (`--list` los enumera) | Obligatoria |
 | `--content <carpeta>`, `--mods <carpeta>` | Los paquetes, montados igual que en el juego (`apps/content`) | `content` |
-| `--dev-assets` | Monta también los assets de desarrollo del `dev-assets.yaml` de la carpeta actual ([assets de desarrollo](../architecture/assets-de-desarrollo.md)) | Apagado |
+| `--dev-assets` | Monta también los assets de desarrollo del `dev-assets.yaml` de la carpeta actual o de la de datos del usuario, la misma que la del juego, con la imagen del disco a través de `dwx` ([assets de desarrollo](../architecture/assets-de-desarrollo.md)) | Apagado |
 | `--ruleset <id>` | El ruleset con el que se juega | `original` |
 | `--runs <n>` | Cuántas partidas | 100 |
 | `--seed <n>` | La semilla base: cada partida usa la suya, derivada de esta y de su número | 1 |

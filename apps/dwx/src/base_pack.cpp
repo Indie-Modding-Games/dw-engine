@@ -372,6 +372,11 @@ core::Result<std::string> coverageYaml(const ExtractionRun& run, const DiscInfo&
     return core::emitYaml(root);
 }
 
+bool writtenByExtract(const std::filesystem::path& folder) {
+    std::error_code error;
+    return std::filesystem::is_regular_file(folder / MarkerFile, error);
+}
+
 core::Result<void> prepareOutputFolder(const std::filesystem::path& folder, bool force) {
     std::error_code error;
     if (!std::filesystem::exists(folder, error)) {
@@ -387,7 +392,7 @@ core::Result<void> prepareOutputFolder(const std::filesystem::path& folder, bool
     if (std::filesystem::is_empty(folder, error)) {
         return {};
     }
-    if (!std::filesystem::exists(folder / MarkerFile, error)) {
+    if (!writtenByExtract(folder)) {
         if (force) {
             return {};
         }

@@ -16,6 +16,18 @@ if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_INCLUDE_SYSTEM_
     set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-imsvc ")
 endif()
 
+# On Windows a program's char strings (argv, paths made from std::string, the CRT's file functions) use the system's
+# ANSI code page unless its manifest asks for UTF-8 (Windows 10 1903 and later). Every program of the project embeds
+# this manifest, the tests too, so a path is UTF-8 on every system: one under %APPDATA% with a user name outside the
+# ANSI code page works.
+set(DWE_UTF8_MANIFEST "${CMAKE_CURRENT_LIST_DIR}/windows/utf8.manifest")
+
+function(dwe_use_utf8 target)
+    if(WIN32)
+        target_sources(${target} PRIVATE ${DWE_UTF8_MANIFEST})
+    endif()
+endfunction()
+
 option(DWE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 set(DWE_SANITIZERS "" CACHE STRING "Sanitizers to enable, separated by semicolons (address;undefined)")
 
@@ -147,6 +159,7 @@ function(dwe_add_module name)
         target_link_libraries(dwe_${name}_tests PRIVATE dwe::${name} dwe_test_main ${arg_TEST_LIBS})
         target_include_directories(dwe_${name}_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
         dwe_apply_options(dwe_${name}_tests)
+        dwe_use_utf8(dwe_${name}_tests)
         _dwe_add_tests(${name} dwe_${name}_tests ${test_sources})
     endif()
 endfunction()
@@ -167,4 +180,5 @@ function(dwe_add_app name)
         set_target_properties(${name} PROPERTIES OUTPUT_NAME ${arg_OUTPUT_NAME})
     endif()
     dwe_apply_options(${name})
+    dwe_use_utf8(${name})
 endfunction()

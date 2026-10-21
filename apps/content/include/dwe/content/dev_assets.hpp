@@ -31,4 +31,8 @@ devAssetsConfigFolders(const std::optional<std::filesystem::path>& userData);
 // assets are never in use in silence. Fails when no folder has a config.
 core::Result<assets::DevAssetSources> loadDevAssets(std::span<const std::filesystem::path> configFolders);
 
+// The dev assets of the game and dwe-sim: the config of the current folder or of the user's data folder, with the disc
+// image it names read through dwx (dev_disc.hpp). A user data folder that cannot be found is logged and left out.
+core::Result<assets::DevAssetSources> openDevAssets();
+
 } // namespace dwe::content

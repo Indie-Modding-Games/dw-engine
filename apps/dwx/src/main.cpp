@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "disc_cache.hpp"
 #include "dwx.hpp"
 #include "validate.hpp"
 
@@ -28,6 +29,12 @@ void printUsage() {
     std::println(stderr,
                  "      the engine mounts it and opens every asset. A folder that dwx did not write is refused");
     std::println(stderr, "      unless --force, which writes into it without deleting anything.");
+    std::println(stderr, "  dwx extract --cache <folder> <image.cue|image.bin|image.iso>");
+    std::println(stderr,
+                 "      Prints the content folder of the disc in a dev cache, extracting it there first when it is");
+    std::println(stderr,
+                 "      not there yet. Entries are named by the image's SHA-1 and the extractor version; nothing");
+    std::println(stderr, "      else goes to the standard output. The game uses it with --dev-assets.");
     std::println(stderr, "  dwx cook <pack folder> -o <folder>");
     std::println(stderr,
                  "      Cooks a pack into the forms the game loads: PNG to KTX2 with mipmaps, binary glTF checked,");
@@ -60,7 +67,8 @@ int main(int argc, char** argv) {
         bool list = false;
         bool verifyImage = false;
         bool force = false;
-        std::filesystem::path out = DefaultOutFolder;
+        std::optional<std::filesystem::path> out;
+        std::optional<std::filesystem::path> cache;
         std::vector<std::string_view> paths;
         const auto options = arguments.subspan(2);
         for (std::size_t i = 0; i < options.size(); ++i) {
@@ -73,13 +81,20 @@ int main(int argc, char** argv) {
                 force = true;
             } else if (option == "--out" && i + 1 < options.size()) {
                 out = options[++i];
+            } else if (option == "--cache" && i + 1 < options.size()) {
+                cache = options[++i];
             } else {
                 paths.push_back(option);
             }
         }
-        if (paths.size() == 1) {
-            return list ? listDisc(std::filesystem::path{paths.front()}, verifyImage)
-                        : extractDisc(std::filesystem::path{paths.front()}, out, force);
+        // --cache picks the folder itself and prints only it: it goes with no other option.
+        const bool optionsAgree = !cache || (!list && !verifyImage && !force && !out);
+        if (paths.size() == 1 && optionsAgree) {
+            const std::filesystem::path image{paths.front()};
+            if (cache) {
+                return extractToCache(image, *cache);
+            }
+            return list ? listDisc(image, verifyImage) : extractDisc(image, out.value_or(DefaultOutFolder), force);
         }
     }
     if ((command == "cook" || command == "pack") && arguments.size() == 5) {

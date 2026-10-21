@@ -4,8 +4,9 @@ dwe_add_module(content
     LAYER apps
     SOURCES
         src/dev_assets.cpp
+        src/dev_disc.cpp
         src/game_content.cpp
-    DEPS core assets)
+    DEPS core assets platform)
 
 # The team's packs (game rules, menus, HUD, fonts) are read from the source tree when the content folder has no game
 # pack of its own, so editing them reloads them live.

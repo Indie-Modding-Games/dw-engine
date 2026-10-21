@@ -30,8 +30,13 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
 | `apps/session` | `game/*`, servicios, sistemas y `core`; **no** `rhi`, `platform` ni `render` (corre sin ventana en `dwe-sim` y en los tests) |
 | `apps/screens` | `apps/session`, `game/*`, `ui`, `localization`, `assets` y `core`; **no** `rhi`, `platform` ni `render` (los modelos de vista de las pantallas, probados sin ventana) |
 | `apps/game` | Todo excepto `formats` |
+| `apps/content` | `assets`, `platform` y `core` (`platform` para la carpeta de datos del usuario y para ejecutar `dwx`) |
 | `apps/dwx` | `formats`, `assets` y `core` |
 | `formats` | `core` |
+
+Como `apps/content` usa `platform`, `dwe-sim` enlaza `platform` (y con él SDL3) a través de `apps/content`, aunque
+sigue sin abrir ventanas. Los tests de `apps/dwx` enlazan además `platform`, solo para ejecutar `dwx` como lo hace el
+juego (`platform::runProcess`); el programa `dwx` no lo enlaza.
 
 ## Cómo se hace cumplir
 

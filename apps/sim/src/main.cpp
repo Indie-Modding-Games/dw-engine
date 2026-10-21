@@ -35,8 +35,7 @@ int runSimulation(std::span<char* const> arguments) {
     }
     assets::DevAssetSources devAssets;
     if (options->devAssets) {
-        // dwe-sim has no user data folder: its config is the current folder's.
-        auto loaded = dwe::content::loadDevAssets(dwe::content::devAssetsConfigFolders(std::nullopt));
+        auto loaded = dwe::content::openDevAssets();
         if (!loaded) {
             core::logError("{}", loaded.error().message);
             return EXIT_FAILURE;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/content/user_data.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/platform/events.hpp>
 
@@ -16,10 +17,9 @@ inline constexpr double MaxFrameSeconds = 0.25;
 // text key of the name of the map it goes to while the original shows it (empty otherwise).
 inline constexpr std::string_view ScreenFadeSetting = "screen_fade";
 inline constexpr std::string_view MapTitleKeySetting = "map_title_key";
-// Where the game keeps the player's own files (settings, saves): <user data>/<organization>/<application>/
-// (platform::userDataFolder).
-inline constexpr std::string_view UserDataOrganization = "indie-modding-games";
-inline constexpr std::string_view UserDataApplication = "dwe";
+// Where the game keeps the player's own files (settings, saves), shared with dwe-sim (content/user_data.hpp).
+using content::UserDataApplication;
+using content::UserDataOrganization;
 // How long to sleep per loop while there is nothing to draw, about one display refresh.
 inline constexpr std::chrono::milliseconds IdleWait{16};
 
