@@ -41,6 +41,10 @@ Lo que hay que tener claro:
   probabilidades) pueden estar en git, en los rulesets y con su cita al decomp; las tablas por entidad (por Digimon,
   objeto, técnica o mapa) salen del disco del usuario (ejecutable y overlays) con `dwx`. «Decidido por el coordinador
   (2026-10-21)». Detalle y clasificación de cada valor: [auditoría de los rulesets](auditoria-rulesets.md).
+- **Los ids que vienen del nombre de un objeto o una técnica** (`bandage`, `giga_hand`) se pueden usar en rulesets,
+  tests, fixtures y sustitutos; el nombre de la franquicia y sus logos no (nunca se pudieron), ni las tablas de datos
+  (stats, efectos, textos), y los datos que acompañan a un id versionado son inventados, nunca copiados del disco ni
+  del decomp (decisión del usuario, 2026-10-21).
 - **Los Digimon de otros juegos** solo pueden llegar a través de un importador que lea el disco de ese juego, con la
   misma regla.
 

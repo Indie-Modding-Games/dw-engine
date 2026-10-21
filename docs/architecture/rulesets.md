@@ -52,7 +52,9 @@ scripts: [evolution.lua]     # opcional: ficheros Lua de la carpeta
 - **Ids y nombres:** letras minúsculas, dígitos y `_`. El id tiene que coincidir con la carpeta.
 - **Tablas:** las tablas por Digimon, técnica u objeto no se copian en el ruleset. El ruleset dice qué tabla de los
   paquetes cumple cada papel; `original` usa las del paquete base que extrae `dwx`, y otro ruleset puede traer las
-  suyas en su paquete. Cada tabla tiene que existir al cargar.
+  suyas en su paquete. Cada tabla tiene que existir al cargar. `dwx validate` comprueba los ids de un ruleset
+  (`entryReference`) contra la tabla de id por defecto de su papel (`data/items`, `data/moves`, `data/maps`), no contra
+  la que el ruleset pone en su lugar; esa la comprueba la sesión al cargar.
 - **Secciones:** cada una es `rules/<id>/<sección>.yaml` y tiene su esquema `ruleset_<sección>`, con su regla en
   `schemas:` del `pack.yaml` (`ruleset_care: [rules/*/care]`). Quien añade una sección añade los dos.
 

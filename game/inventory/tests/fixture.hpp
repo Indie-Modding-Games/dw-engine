@@ -79,7 +79,7 @@ inline constexpr std::array<FixtureItem, 19> FixtureItems{{
     {.id = Floppy, .index = 7, .value = 2000, .sortingValue = 0, .itemColor = 2, .droppable = 1},
     {.id = Bandage, .index = 13, .value = 50, .sortingValue = 2, .itemColor = 0, .droppable = 1},
     {.id = Revival, .index = 12, .value = 3000, .sortingValue = 0, .itemColor = 2, .droppable = 1},
-    {.id = PowerDisk, .index = 15, .value = 500, .sortingValue = 3, .itemColor = 1, .droppable = 1},
+    {.id = PowerDisk, .index = 15, .value = 450, .sortingValue = 3, .itemColor = 1, .droppable = 1},
     {.id = OmniDisk, .index = 18, .value = 900, .sortingValue = 3, .itemColor = 1, .droppable = 1},
     {.id = ScriptChip, .index = 22, .value = 0, .sortingValue = 4, .itemColor = 0, .droppable = 1},
     {.id = BrainChip, .index = 25, .value = 4000, .sortingValue = 4, .itemColor = 0, .droppable = 1},
