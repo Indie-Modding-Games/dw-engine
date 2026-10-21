@@ -91,8 +91,7 @@ constexpr std::int32_t Self = 4;
 constexpr std::int32_t Near = 250000;
 
 inline dwe::assets::MoveTable testMoveTable() {
-    dwe::assets::MoveTable table;
-    table.moves = {
+    std::vector<dwe::assets::MoveEntry> moves = {
         testMove("punch", 0, Melee, 30, 5, 0, 1),
         testMove("shot", 1, Ranged, 40, 10, Near, 0),
         testMove("poison_bite", 2, Melee, 20, 5, 0, 3, 1, 100),
@@ -113,8 +112,8 @@ inline dwe::assets::MoveTable testMoveTable() {
         testMove("big_finish", 60, Melee, 200, 0, 0, 1),
         testMove("move_121", 121, Ranged, 10, 0, Near, 0),
     };
-    table.moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
-    return table;
+    moves.at(12).learnChances = dwe::assets::LearnChances{100, 100, 100};
+    return dwe::assets::MoveTable{std::move(moves)};
 }
 
 inline const MoveCatalog& testCatalog() {

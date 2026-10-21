@@ -1,0 +1,35 @@
+# The inventory section's state at version 1, which named each item by its number in data/items: the made-up items
+# of game/inventory/tests/fixture.hpp, 39 the steak and 123 the gate key. Every slot of the 30 is written.
+slot_count: 20
+money: 1234
+slots:
+- {item: 0, count: 5}
+- {item: 39, count: 2}
+- null
+- {item: 123, count: 1}
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null
+- null

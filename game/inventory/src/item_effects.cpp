@@ -23,12 +23,12 @@ std::string_view nameOf(ItemHandler handler) {
 }
 
 template <typename Rule>
-const Rule* ruleFor(const std::vector<Rule>& rules, std::int32_t item) {
+const Rule* ruleFor(const std::vector<Rule>& rules, std::string_view item) {
     const auto found = std::ranges::find(rules, item, &Rule::item);
     return found == rules.end() ? nullptr : &*found;
 }
 
-core::Result<void> missingRule(std::int32_t item, ItemHandler handler) {
+core::Result<void> missingRule(std::string_view item, ItemHandler handler) {
     return core::fail(messages::formatMessage(messages::HandlerRuleMissing, item, nameOf(handler)));
 }
 
@@ -48,12 +48,12 @@ bool ItemEffect::doesSomething() const {
 ItemEffects::ItemEffects(assets::ItemEffectTable table, EffectRules rules, InventoryQuirks quirks)
     : table_(std::move(table)), rules_(std::move(rules)), quirks_(quirks) {}
 
-core::Result<ItemEffect> ItemEffects::resolve(std::int32_t item) const {
-    const assets::ItemEffectEntry* entry = table_.findByIndex(item);
+core::Result<ItemEffect> ItemEffects::resolve(std::string_view item) const {
+    const assets::ItemEffectEntry* entry = table_.find(item);
     if (entry == nullptr) {
         return core::fail(messages::formatMessage(messages::NoEffect, item));
     }
-    ItemEffect effect{.item = item,
+    ItemEffect effect{.item = std::string{item},
                       .handler = entry->handler,
                       .consciousOnly = std::ranges::contains(rules_.consciousOnly, entry->handler)};
     auto described = describe(*entry, effect);
@@ -70,7 +70,7 @@ core::Result<void> ItemEffects::describe(const assets::ItemEffectEntry& entry, I
     case ItemHandler::HpHealing:
     case ItemHandler::MpHealing:
         if (!entry.healing) {
-            return core::fail(messages::formatMessage(messages::HealingUnmapped, entry.index));
+            return core::fail(messages::formatMessage(messages::HealingUnmapped, entry.item));
         }
         (entry.handler == ItemHandler::HpHealing ? effect.healing.hp : effect.healing.mp) = *entry.healing;
         return {};
@@ -78,11 +78,11 @@ core::Result<void> ItemEffects::describe(const assets::ItemEffectEntry& entry, I
         effect.healing = {.hp = rules_.doubleFloppyHp, .mp = rules_.doubleFloppyMp};
         return {};
     case ItemHandler::Status:
-        return describeStatus(entry.index, effect);
+        return describeStatus(entry.item, effect);
     case ItemHandler::Revive:
-        return describeRevive(entry.index, effect);
+        return describeRevive(entry.item, effect);
     case ItemHandler::BattleDisk:
-        return describeDisk(entry.index, effect);
+        return describeDisk(entry.item, effect);
     case ItemHandler::Chip:
         return describeChip(entry, effect);
     case ItemHandler::Food:
@@ -93,7 +93,7 @@ core::Result<void> ItemEffects::describe(const assets::ItemEffectEntry& entry, I
     return {};
 }
 
-core::Result<void> ItemEffects::describeStatus(std::int32_t item, ItemEffect& effect) const {
+core::Result<void> ItemEffects::describeStatus(std::string_view item, ItemEffect& effect) const {
     const StatusItemRule* rule = ruleFor(rules_.status, item);
     if (rule == nullptr) {
         return missingRule(item, ItemHandler::Status);
@@ -110,7 +110,7 @@ core::Result<void> ItemEffects::describeStatus(std::int32_t item, ItemEffect& ef
     return {};
 }
 
-core::Result<void> ItemEffects::describeRevive(std::int32_t item, ItemEffect& effect) const {
+core::Result<void> ItemEffects::describeRevive(std::string_view item, ItemEffect& effect) const {
     const ReviveItemRule* rule = ruleFor(rules_.revive, item);
     if (rule == nullptr) {
         return missingRule(item, ItemHandler::Revive);
@@ -120,7 +120,7 @@ core::Result<void> ItemEffects::describeRevive(std::int32_t item, ItemEffect& ef
     return {};
 }
 
-core::Result<void> ItemEffects::describeDisk(std::int32_t item, ItemEffect& effect) const {
+core::Result<void> ItemEffects::describeDisk(std::string_view item, ItemEffect& effect) const {
     const BattleDiskRule* rule = ruleFor(rules_.disks, item);
     if (rule == nullptr) {
         return missingRule(item, ItemHandler::BattleDisk);
@@ -135,16 +135,16 @@ core::Result<void> ItemEffects::describeDisk(std::int32_t item, ItemEffect& effe
 }
 
 core::Result<void> ItemEffects::describeChip(const assets::ItemEffectEntry& entry, ItemEffect& effect) const {
-    if (const ScriptItemRule* script = ruleFor(rules_.scriptChips, entry.index)) {
+    if (const ScriptItemRule* script = ruleFor(rules_.scriptChips, entry.item)) {
         effect.scriptSection = script->section;
         return {};
     }
-    if (std::ranges::contains(rules_.toiletChips, entry.index)) {
+    if (std::ranges::contains(rules_.toiletChips, entry.item)) {
         effect.relievesToilet = true;
         return {};
     }
     if (!entry.chip) {
-        return core::fail(messages::formatMessage(messages::EffectUnmapped, entry.index, nameOf(entry.handler)));
+        return core::fail(messages::formatMessage(messages::EffectUnmapped, entry.item, nameOf(entry.handler)));
     }
     const assets::ChipValues& chip = *entry.chip;
     const StatGain gain{.maxHp = chip.maxHp,
@@ -161,7 +161,7 @@ core::Result<void> ItemEffects::describeChip(const assets::ItemEffectEntry& entr
     if (chip.lifetime != 0) {
         effect.care = CareChange{.lifetimeHours = chip.lifetime, .lifetimeStopsAtZero = true};
     }
-    if (std::ranges::contains(rules_.tamerLevel.items, entry.index)) {
+    if (std::ranges::contains(rules_.tamerLevel.items, entry.item)) {
         effect.tamerLevel =
             TamerLevelChange{.chancePercent = rules_.tamerLevel.chancePercent, .amount = rules_.tamerLevel.amount};
     }
@@ -170,7 +170,7 @@ core::Result<void> ItemEffects::describeChip(const assets::ItemEffectEntry& entr
 
 core::Result<void> ItemEffects::describeFood(const assets::ItemEffectEntry& entry, ItemEffect& effect) const {
     if (!entry.food) {
-        return core::fail(messages::formatMessage(messages::EffectUnmapped, entry.index, nameOf(entry.handler)));
+        return core::fail(messages::formatMessage(messages::EffectUnmapped, entry.item, nameOf(entry.handler)));
     }
     const assets::FoodValues& food = *entry.food;
     effect.healing = {.hp = food.hp, .mp = food.mp};
@@ -203,12 +203,12 @@ core::Result<void> ItemEffects::describeFood(const assets::ItemEffectEntry& entr
 }
 
 core::Result<void> ItemEffects::describeEvolution(const assets::ItemEffectEntry& entry, ItemEffect& effect) const {
-    if (const FixedEvolutionRule* fixed = ruleFor(rules_.fixedEvolutions, entry.index)) {
+    if (const FixedEvolutionRule* fixed = ruleFor(rules_.fixedEvolutions, entry.item)) {
         effect.evolution = Evolution{.digimon = fixed->evolvesTo, .requiresPreviousLevel = false};
         return {};
     }
     if (!entry.evolvesTo) {
-        return core::fail(messages::formatMessage(messages::EvolutionUnmapped, entry.index));
+        return core::fail(messages::formatMessage(messages::EvolutionUnmapped, entry.item));
     }
     effect.evolution =
         Evolution{.digimon = *entry.evolvesTo, .requiresPreviousLevel = rules_.evolutionRequiresPreviousLevel};

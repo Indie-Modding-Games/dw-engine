@@ -167,10 +167,10 @@ std::optional<Course> courseFor(const partner::TrainingRules& training, partner:
 
 // The item that surely cures the sickness or the injury: a medicine whose cure covers its whole roll (item.c:
 // handleMedicineHealing).
-std::optional<std::int32_t> sureCureOf(const assets::ItemTable& items, const game::inventory::ItemEffects& effects,
-                                       partner::Condition condition) {
-    for (const assets::ItemEntry& item : items.items) {
-        const auto effect = effects.resolve(item.index);
+std::optional<std::string> sureCureOf(const assets::ItemTable& items, const game::inventory::ItemEffects& effects,
+                                      partner::Condition condition) {
+    for (const assets::ItemEntry& item : items.entries()) {
+        const auto effect = effects.resolve(item.id);
         if (!effect || !effect->medicine) {
             continue;
         }
@@ -179,7 +179,7 @@ std::optional<std::int32_t> sureCureOf(const assets::ItemTable& items, const gam
                               ? medicine.sicknessRoll > 0 && medicine.sicknessCure >= medicine.sicknessRoll
                               : medicine.injuryRoll > 0 && medicine.injuryCure >= medicine.injuryRoll;
         if (sure) {
-            return item.index;
+            return item.id;
         }
     }
     return std::nullopt;
@@ -225,14 +225,14 @@ class LoopCarer {
 public:
     // The medicines that surely cure the sickness and the injury.
     struct Medicines {
-        std::int32_t sickness = 0;
-        std::int32_t injury = 0;
+        std::string sickness;
+        std::string injury;
     };
 
     LoopCarer(HeadlessGame& game, const AimedForm& aim, Course course, session::BattleRequest battle,
-              const Medicines& medicines)
+              Medicines medicines)
         : game_(&game), session_(game.session.get()), startSpecies_(game.session->partner().state().species), aim_(aim),
-          course_(std::move(course)), battle_(std::move(battle)), medicines_(medicines) {}
+          course_(std::move(course)), battle_(std::move(battle)), medicines_(std::move(medicines)) {}
 
     // One carer's turn: the clock moves a turn, then the carer does one thing, as a player would.
     void turn(double seconds) {
@@ -269,7 +269,13 @@ public:
 
 private:
     // Gives one of an item, putting a stack in the bag first if it has none.
-    [[nodiscard]] game::inventory::UseOutcome give(std::int32_t item) {
+    [[nodiscard]] game::inventory::UseOutcome give(std::string_view id) {
+        const std::optional<assets::ItemHandle> handle = game_->inventory->items().handleOf(id);
+        if (!handle) {
+            FAIL("no item ", id);
+            return game::inventory::UseOutcome::NotInBag;
+        }
+        const assets::ItemHandle item = *handle;
         if (game_->inventory->inventory().countOf(item) == 0) {
             static_cast<void>(game_->inventory->inventory().add(item, ItemStack));
         }
@@ -278,7 +284,7 @@ private:
         return used->outcome;
     }
 
-    void cure(partner::Condition condition, std::int32_t medicine) {
+    void cure(partner::Condition condition, std::string_view medicine) {
         // The partner may refuse it; the carer tries again next turn.
         if (give(medicine) == game::inventory::UseOutcome::Used) {
             CHECK_FALSE(session_->partner().state().conditions.has(condition));
@@ -292,7 +298,7 @@ private:
         REQUIRE(food.has_value());
         const assets::ItemEntry* item = game_->inventory->items().find(food.value_or(std::string{}));
         REQUIRE(item != nullptr);
-        REQUIRE(give(item->index) == game::inventory::UseOutcome::Used);
+        REQUIRE(give(item->id) == game::inventory::UseOutcome::Used);
         const partner::PartnerState& after = session_->partner().state();
         // A meal fills the partner up (partner_impl.c: partnerHandleFoodFeed).
         CHECK(after.hunger.energy > before.hunger.energy);

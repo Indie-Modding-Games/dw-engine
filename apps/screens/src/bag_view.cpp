@@ -32,9 +32,9 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot, const 
     if (!slot) {
         return {};
     }
-    const assets::ItemEntry* entry = items.findByIndex(slot->item);
+    const assets::ItemEntry* entry = &items.at(slot->item);
     return {.empty = false,
-            .item = slot->item,
+            .item = entry->id,
             .nameKey = names.item(slot->item),
             .descriptionKey = names.itemDescription(slot->item),
             .count = slot->count,

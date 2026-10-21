@@ -34,16 +34,16 @@ target_link_libraries(sim_cli PRIVATE dwe_sim_scenarios)
 if(BUILD_TESTING)
     target_link_libraries(dwe_sim_tests PRIVATE dwe_sim_scenarios)
     # The game pack depends on base; a stand-in base pack with the original ruleset's tables lets the tests and the
-    # smoke runs mount it without the disc. The tables are empty but digimon, raise and moves, which have a few
-    # made-up species and moves for the care scenario and the session's systems (tests/stand-in), and evolution, which
-    # has no rows.
+    # smoke runs mount it without the disc. The tables are empty but digimon, raise, moves and items, which have a few
+    # made-up species, moves and items for the care scenario and the session's systems (tests/stand-in), and
+    # evolution, which has no rows.
     set(stand_in ${CMAKE_CURRENT_BINARY_DIR}/stand-in-content)
     file(WRITE ${stand_in}/base/pack.yaml "id: base\nversion: 0.1.0\nlayer: base\n")
-    foreach(role training items item_effects shops)
+    foreach(role training item_effects shops)
         file(WRITE ${stand_in}/base/data/${role}.yaml "${role}: []\n")
     endforeach()
     file(WRITE ${stand_in}/base/data/evolution.yaml "requirements: []\nstats_gains: []\npaths: []\n")
-    foreach(role digimon raise moves)
+    foreach(role digimon raise moves items)
         configure_file(tests/stand-in/${role}.yaml ${stand_in}/base/data/${role}.yaml COPYONLY)
     endforeach()
     target_compile_definitions(dwe_sim_tests PRIVATE DWE_STAND_IN_CONTENT="${stand_in}")

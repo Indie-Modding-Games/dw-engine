@@ -1,5 +1,6 @@
 # El partner y los objetos que le da el domador (apps/session: InventoryAdapter, ItemUseRules, apps/session/README.md).
-# Los números son los de los objetos en data/items.
+# Cada objeto se nombra por su id de data/items. Los rangos y umbrales cuentan los números del original y solo cubren
+# los objetos del juego original; los objetos que añade un mod entran por id (docs/architecture/rulesets.md#rangos-e-ids).
 
 # partner_impl.c: partnerWillRefuseItem.
 refusal:
@@ -12,9 +13,9 @@ refusal:
   discipline_checked_below: 38
   # Objetos de evolución que solo acepta en un nivel (0x7d y 0x7f campeón, 0x7e novato).
   fixed_level_evolutions:
-    - { item: 125, level: 4 }
-    - { item: 126, level: 3 }
-    - { item: 127, level: 4 }
+    - { item: giga_hand, level: 4 }
+    - { item: noble_mane, level: 3 }
+    - { item: metalbanana, level: 4 }
   # Los demás objetos de evolución los rechaza si el nivel de su destino menos el del partner es uno de estos.
   refused_level_differences: [0, 2, -1]
 

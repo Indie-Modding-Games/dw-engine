@@ -53,23 +53,25 @@ TEST_CASE("the user's disc, extracted: every item and shop loads and every item'
     REQUIRE_MESSAGE(table.has_value(), errorOf(table));
     const auto shops = dwe::assets::loadShopTable(*vfs);
     REQUIRE_MESSAGE(shops.has_value(), errorOf(shops));
-    CHECK_FALSE(items->items.empty());
-    CHECK(table->effects.size() == items->items.size());
+    CHECK_FALSE(items->entries().empty());
+    CHECK(table->effects.size() == items->entries().size());
     CHECK_FALSE(shops->shopMaps.empty());
     CHECK_FALSE(shops->shopkeepers.empty());
+    const auto named = checkItemIds(inventory->rules(), *items);
+    CHECK_MESSAGE(named.has_value(), errorOf(named));
 
     const ItemEffects effects{*table, inventory->rules().effects, inventory->rules().quirks};
     std::size_t resolved = 0;
     std::vector<std::string> unmapped;
-    for (const dwe::assets::ItemEntry& item : items->items) {
-        auto effect = effects.resolve(item.index);
+    for (const dwe::assets::ItemEntry& item : items->entries()) {
+        auto effect = effects.resolve(item.id);
         if (effect) {
             ++resolved;
         } else {
             unmapped.push_back(effect.error().message);
         }
     }
-    MESSAGE(items->items.size(), " items, ", resolved, " effects resolved, ", unmapped.size(), " unmapped; ",
+    MESSAGE(items->entries().size(), " items, ", resolved, " effects resolved, ", unmapped.size(), " unmapped; ",
             shops->shopMaps.size(), " shop maps, ", shops->shopkeepers.size(), " shopkeepers");
     for (const std::string& problem : unmapped) {
         MESSAGE("unmapped: ", problem);

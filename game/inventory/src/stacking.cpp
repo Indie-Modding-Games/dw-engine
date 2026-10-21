@@ -14,7 +14,7 @@ constexpr std::string_view StackingWhat = "stacking rule";
 // stack, the first empty slot takes everything.
 class OriginalStackingRule final : public StackingRule {
 public:
-    [[nodiscard]] AddResult add(std::span<std::optional<Stack>> slots, std::int32_t item, std::int32_t count,
+    [[nodiscard]] AddResult add(std::span<std::optional<Stack>> slots, assets::ItemHandle item, std::int32_t count,
                                 std::int32_t maxStack, bool overflowIsLost) const override {
         for (std::optional<Stack>& slot : slots) {
             if (slot.has_value() && slot->item == item) {

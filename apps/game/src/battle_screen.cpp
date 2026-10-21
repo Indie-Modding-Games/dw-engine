@@ -123,7 +123,7 @@ void BattleScreen::throwItem(double slot) {
     if (!battle_) {
         return;
     }
-    const std::optional<std::int32_t> item = itemAt(desc_.inventory->inventory().slots(), slotOf(slot));
+    const std::optional<assets::ItemHandle> item = itemAt(desc_.inventory->inventory().slots(), slotOf(slot));
     if (!item) {
         core::logInfo("{}", core::formatMessage(messages::BattleThrowRefused, slot, messages::EmptyBagSlot));
         return;
@@ -134,7 +134,7 @@ void BattleScreen::throwItem(double slot) {
     } else if (thrown->outcome != game::inventory::UseOutcome::Used) {
         core::logInfo("{}", core::formatMessage(messages::BattleThrowRefused, slot, messages::ItemNotThrowable));
     } else {
-        core::logInfo("{}", core::formatMessage(messages::BattleItemThrown, *item));
+        core::logInfo("{}", core::formatMessage(messages::BattleItemThrown, desc_.inventory->items().at(*item).id));
     }
     publish();
 }

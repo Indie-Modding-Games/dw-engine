@@ -1,3 +1,4 @@
+#include <dwe/assets/content_id.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/inventory/rules.hpp>
@@ -70,6 +71,32 @@ std::int32_t percent(YamlReader& reader, const YamlNode& node, std::string_view 
     return value;
 }
 
+// An item's id in data/items, which the session checks against the table (checkItemIds).
+std::string itemId(YamlReader& reader, const YamlNode& node, std::string_view key) {
+    const YamlNode& field = reader.field(node, key);
+    std::string id = reader.text(field);
+    if (reader.ok()) {
+        if (auto parsed = assets::ContentId::parse(id); !parsed) {
+            reader.fail(field, parsed.error().message);
+        }
+    }
+    return id;
+}
+
+std::vector<std::string> itemIds(YamlReader& reader, const YamlNode& node, std::string_view key) {
+    std::vector<std::string> ids;
+    for (const YamlNode& item : reader.sequence(reader.field(node, key), key)) {
+        std::string id = reader.text(item);
+        if (reader.ok()) {
+            if (auto parsed = assets::ContentId::parse(id); !parsed) {
+                reader.fail(item, parsed.error().message);
+            }
+        }
+        ids.push_back(std::move(id));
+    }
+    return ids;
+}
+
 std::vector<std::int32_t> integers(YamlReader& reader, const YamlNode& node, std::string_view key) {
     std::vector<std::int32_t> values;
     for (const YamlNode& item : reader.sequence(reader.field(node, key), key)) {
@@ -101,13 +128,13 @@ std::vector<StartingItem> readStartingItems(YamlReader& reader, const YamlNode& 
         if (!reader.expectKeys(entry, messages::StartingItemText, {StartingItemKey, StartingCountKey})) {
             return items;
         }
-        const StartingItem item{.item = nonNegative(reader, entry, StartingItemKey),
-                                .count = integer(reader, entry, StartingCountKey)};
+        StartingItem item{.item = itemId(reader, entry, StartingItemKey),
+                          .count = integer(reader, entry, StartingCountKey)};
         if (reader.ok() && (item.count < 1 || item.count > maxStack)) {
             reader.fail(reader.field(entry, StartingCountKey),
                         messages::formatMessage(messages::StartingCountRange, maxStack));
         }
-        items.push_back(item);
+        items.push_back(std::move(item));
     }
     return items;
 }
@@ -206,7 +233,7 @@ std::vector<StatusItemRule> readStatus(YamlReader& reader, const YamlNode& node)
                                {"battle_status_cure", "hp", "mp", "protects", "injury_cure", "sickness_cure"})) {
             return rules;
         }
-        rules.push_back({.item = nonNegative(reader, item, "item"),
+        rules.push_back({.item = itemId(reader, item, "item"),
                          .battleStatusCure = optionalInteger(reader, item, "battle_status_cure"),
                          .hp = integerOr(reader, item, "hp", 0),
                          .mp = integerOr(reader, item, "mp", 0),
@@ -223,7 +250,7 @@ std::vector<ReviveItemRule> readRevive(YamlReader& reader, const YamlNode& node)
         if (!reader.expectKeys(item, "a revive item", {"item", "hp_percent"}, {"battle_status_cure"})) {
             return rules;
         }
-        rules.push_back({.item = nonNegative(reader, item, "item"),
+        rules.push_back({.item = itemId(reader, item, "item"),
                          .hpPercent = percent(reader, item, "hp_percent"),
                          .battleStatusCure = optionalInteger(reader, item, "battle_status_cure")});
     }
@@ -240,7 +267,7 @@ void readDisks(YamlReader& reader, const YamlNode& node, EffectRules& effects) {
         if (!reader.expectKeys(item, "a disk", {"item", "offense", "defense", "speed"}, {"omni"})) {
             return;
         }
-        effects.disks.push_back({.item = nonNegative(reader, item, "item"),
+        effects.disks.push_back({.item = itemId(reader, item, "item"),
                                  .offense = nonNegative(reader, item, "offense"),
                                  .defense = nonNegative(reader, item, "defense"),
                                  .speed = nonNegative(reader, item, "speed"),
@@ -255,13 +282,13 @@ void readChip(YamlReader& reader, const YamlNode& node, EffectRules& effects) {
     for (const YamlNode& item : reader.sequence(reader.field(node, "script"), "script")) {
         if (reader.expectKeys(item, "a script chip", {"item", "section"})) {
             effects.scriptChips.push_back(
-                {.item = nonNegative(reader, item, "item"), .section = nonNegative(reader, item, "section")});
+                {.item = itemId(reader, item, "item"), .section = nonNegative(reader, item, "section")});
         }
     }
-    effects.toiletChips = integers(reader, node, "toilet");
+    effects.toiletChips = itemIds(reader, node, "toilet");
     const YamlNode& tamer = reader.field(node, "tamer_level");
     if (reader.expectKeys(tamer, "tamer_level", {"items", "chance_percent", "amount"})) {
-        effects.tamerLevel = {.items = integers(reader, tamer, "items"),
+        effects.tamerLevel = {.items = itemIds(reader, tamer, "items"),
                               .chancePercent = percent(reader, tamer, "chance_percent"),
                               .amount = integer(reader, tamer, "amount")};
     }
@@ -283,8 +310,8 @@ void readEvolution(YamlReader& reader, const YamlNode& node, EffectRules& effect
     effects.evolutionRequiresPreviousLevel = reader.boolean(reader.field(node, "requires_previous_level"));
     for (const YamlNode& item : reader.sequence(reader.field(node, "fixed"), "fixed")) {
         if (reader.expectKeys(item, "a fixed evolution", {"item", "evolves_to"})) {
-            effects.fixedEvolutions.push_back({.item = nonNegative(reader, item, "item"),
-                                               .evolvesTo = reader.text(reader.field(item, "evolves_to"))});
+            effects.fixedEvolutions.push_back(
+                {.item = itemId(reader, item, "item"), .evolvesTo = reader.text(reader.field(item, "evolves_to"))});
         }
     }
 }
@@ -339,6 +366,44 @@ void checkUniqueItems(YamlReader& reader, const YamlNode& at, const std::vector<
 }
 
 } // namespace
+
+core::Result<void> checkItemIds(const InventoryRules& rules, const assets::ItemTable& items) {
+    const EffectRules& effects = rules.effects;
+    std::vector<std::pair<std::string_view, std::string_view>> named;
+    named.reserve(rules.bag.newGameItems.size() + effects.status.size() + effects.revive.size() + effects.disks.size() +
+                  effects.scriptChips.size() + effects.toiletChips.size() + effects.tamerLevel.items.size() +
+                  effects.fixedEvolutions.size());
+    for (const StartingItem& item : rules.bag.newGameItems) {
+        named.emplace_back("bag.new_game_items", item.item);
+    }
+    for (const StatusItemRule& rule : effects.status) {
+        named.emplace_back("effects.status", rule.item);
+    }
+    for (const ReviveItemRule& rule : effects.revive) {
+        named.emplace_back("effects.revive", rule.item);
+    }
+    for (const BattleDiskRule& rule : effects.disks) {
+        named.emplace_back("effects.battle_disk.disks", rule.item);
+    }
+    for (const ScriptItemRule& rule : effects.scriptChips) {
+        named.emplace_back("effects.chip.script", rule.item);
+    }
+    for (const std::string& item : effects.toiletChips) {
+        named.emplace_back("effects.chip.toilet", item);
+    }
+    for (const std::string& item : effects.tamerLevel.items) {
+        named.emplace_back("effects.chip.tamer_level.items", item);
+    }
+    for (const FixedEvolutionRule& rule : effects.fixedEvolutions) {
+        named.emplace_back("effects.evolution.fixed", rule.item);
+    }
+    for (const auto& [rule, item] : named) {
+        if (items.find(item) == nullptr) {
+            return core::fail(messages::formatMessage(messages::RuleItemUnknown, rule, item));
+        }
+    }
+    return {};
+}
 
 bool isKeyItem(const assets::ItemEntry& item, const UseRules& rules) {
     return item.droppable == rules.keyItemDroppable;

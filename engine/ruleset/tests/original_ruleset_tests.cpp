@@ -93,7 +93,7 @@ TEST_CASE(
     REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
     CHECK(ruleset->tables().size() == OriginalTables.size());
 
-    constexpr std::array<std::string_view, 1> Annotations{"assetReference"};
+    constexpr std::array<std::string_view, 2> Annotations{"assetReference", "entryReference"};
     for (const auto& [role, id] : ruleset->tables()) {
         CAPTURE(role);
         std::string schemaName;

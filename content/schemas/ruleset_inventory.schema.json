@@ -57,11 +57,23 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["item", "count"],
+            "required": [
+              "item",
+              "count"
+            ],
             "additionalProperties": false,
             "properties": {
-              "item": { "description": "The item's number in data/items.", "type": "integer", "minimum": 0 },
-              "count": { "description": "How many, at most max_stack.", "type": "integer", "minimum": 1 }
+              "item": {
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
+              },
+              "count": {
+                "description": "How many, at most max_stack.",
+                "type": "integer",
+                "minimum": 1
+              }
             }
           }
         },
@@ -273,9 +285,10 @@
             "additionalProperties": false,
             "properties": {
               "item": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "The item's number (data/items index)."
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
               },
               "battle_status_cure": {
                 "type": "integer",
@@ -329,9 +342,10 @@
             "additionalProperties": false,
             "properties": {
               "item": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "The item's number (data/items index)."
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
               },
               "hp_percent": {
                 "type": "integer",
@@ -378,9 +392,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "item": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "The item's number (data/items index)."
+                    "description": "The item's id in data/items.",
+                    "type": "string",
+                    "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                    "entryReference": "data/items"
                   },
                   "offense": {
                     "type": "integer",
@@ -426,9 +441,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "item": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "The item's number (data/items index)."
+                    "description": "The item's id in data/items.",
+                    "type": "string",
+                    "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                    "entryReference": "data/items"
                   },
                   "section": {
                     "type": "integer",
@@ -442,8 +458,10 @@
               "description": "Chips that let the partner relieve itself.",
               "type": "array",
               "items": {
-                "type": "integer",
-                "minimum": 0
+                "description": "The item's id in data/items.",
+                "type": "string",
+                "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                "entryReference": "data/items"
               }
             },
             "tamer_level": {
@@ -458,8 +476,10 @@
                 "items": {
                   "type": "array",
                   "items": {
-                    "type": "integer",
-                    "minimum": 0
+                    "description": "The item's id in data/items.",
+                    "type": "string",
+                    "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                    "entryReference": "data/items"
                   }
                 },
                 "chance_percent": {
@@ -523,9 +543,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "item": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "The item's number (data/items index)."
+                    "description": "The item's id in data/items.",
+                    "type": "string",
+                    "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+                    "entryReference": "data/items"
                   },
                   "evolves_to": {
                     "description": "Digimon id (data/digimon).",

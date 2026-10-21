@@ -68,23 +68,23 @@ effects:
   # item.c: handleStatusItems, por número de objeto.
   status:
     # case 8: BTL_healStatusEffect(1).
-    - item: 8
+    - item: various
       battle_status_cure: 1
     # case 9: BTL_healStatusEffect(0) en combate y luego handleDoubleFloppy.
-    - item: 9
+    - item: omnipotent
       battle_status_cure: 0
       hp: 1500
       mp: 1500
     # case 10: fighter[0].flags |= FIGHTER_FLAG_PROTECTED.
-    - item: 10
+    - item: protection
       protects: true
     # case 0xd: handleMedicineHealing(3, 2): cura la herida si randomLimit(3) < 3 y la enfermedad si
     # randomLimit(10) < 2.
-    - item: 13
+    - item: bandage
       injury_cure: 3
       sickness_cure: 2
     # case 0xe: handleMedicineHealing(3, 10).
-    - item: 14
+    - item: medicine
       injury_cure: 3
       sickness_cure: 10
   # item.c: handleMedicineHealing: las tiradas de la herida (randomLimit(3)) y de la enfermedad (randomLimit(10)).
@@ -93,10 +93,10 @@ effects:
   # item.c: handleRestore: revive; quita la cuenta atrás de muerte en combate (BTL_removeDeathCountdown).
   revive:
     # case 0xb: la mitad de los HP máximos.
-    - item: 11
+    - item: restore
       hp_percent: 50
     # case 0xc: 0x270f (todo, con el tope de los máximos) y BTL_healStatusEffect(0) en combate.
-    - item: 12
+    - item: sup_restore
       hp_percent: 100
       battle_status_cure: 0
   # main.c: handleBuffDisks: el tope es el valor del inicio del combate + × 3 / 10, como mucho 999.
@@ -104,24 +104,24 @@ effects:
     limit_percent: 130
     limit_cap: 999
     disks:
-      - { item: 15, offense: 20, defense: 0, speed: 0 }
-      - { item: 16, offense: 0, defense: 20, speed: 0 }
-      - { item: 17, offense: 0, defense: 0, speed: 20 }
+      - { item: off_disk, offense: 20, defense: 0, speed: 0 }
+      - { item: def_disk, offense: 0, defense: 20, speed: 0 }
+      - { item: hispeed_dsk, offense: 0, defense: 0, speed: 20 }
       # case 0x12: suma 20 a los tres sin mirar el tope (quirk omni_disk_ignores_limit).
-      - { item: 18, offense: 20, defense: 20, speed: 20, omni: true }
-      - { item: 19, offense: 50, defense: 0, speed: 0 }
-      - { item: 20, offense: 0, defense: 50, speed: 0 }
-      - { item: 21, offense: 0, defense: 0, speed: 50 }
+      - { item: omni_disk, offense: 20, defense: 20, speed: 20, omni: true }
+      - { item: s_off_disk, offense: 50, defense: 0, speed: 0 }
+      - { item: s_def_disk, offense: 0, defense: 50, speed: 0 }
+      - { item: s_speed_disk, offense: 0, defense: 0, speed: 50 }
   chip:
     # item.c: handleChips: case 0x16: con el guion en pausa (IS_SCRIPT_PAUSED) llama a la sección 0x4dd.
     script:
-      - item: 22
+      - item: auto_pilot
         section: 1245
     # case 0x20: handlePortaPotty: si el partner tiene ganas, el contador vuelve al de RAISE_DATA y adelgaza.
-    toilet: [32]
+    toilet: [port_potty]
     # 0x1c < chipId < 0x20: addTamerLevel(10, -1): un 10 % de bajar el nivel del domador 1.
     tamer_level:
-      items: [29, 30, 31]
+      items: [dv_chip_a, dv_chip_d, dv_chip_e]
       chance_percent: 10
       amount: -1
   food:
@@ -135,9 +135,9 @@ effects:
     requires_previous_level: true
     # item >= 0x7d: destino fijo, sin mirar el nivel.
     fixed:
-      - { item: 125, evolves_to: ggdr }
-      - { item: 126, evolves_to: panj }
-      - { item: 127, evolves_to: mtet }
+      - { item: giga_hand, evolves_to: ggdr }
+      - { item: noble_mane, evolves_to: panj }
+      - { item: metalbanana, evolves_to: mtet }
 # Rarezas del original (docs/reference/inventory.md, "Rarezas"). true reproduce el original.
 quirks:
   # item.c: giveItem: lo que pasa de 99 al apilar se pierde (y la tienda ya lo ha cobrado).

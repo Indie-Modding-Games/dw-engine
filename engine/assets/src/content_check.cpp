@@ -49,6 +49,15 @@ core::Result<void> discardValue(std::span<const std::byte> bytes) {
     return {};
 }
 
+// The item and move tables as a check reads them: the numbers the engine gave do not change what is checked.
+core::Result<ItemTable> parseItems(std::string_view yaml) {
+    return parseItemTable(yaml);
+}
+
+core::Result<MoveTable> parseMoves(std::string_view yaml) {
+    return parseMoveTable(yaml);
+}
+
 // Turns the result of a reader of text into success or its error, dropping what it read.
 template <auto Reader>
 core::Result<void> discardParsed(std::span<const std::byte> bytes) {
@@ -150,8 +159,8 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = 
     {"data/digimon", discardParsed<parseDigimonTable>},
     {"data/raise", discardParsed<parseRaiseTable>},
     {"data/maps", discardParsed<parseMapTable>},
-    {"data/items", discardParsed<parseItemTable>},
-    {"data/moves", discardParsed<parseMoveTable>},
+    {"data/items", discardParsed<parseItems>},
+    {"data/moves", discardParsed<parseMoves>},
     {"data/evolution", discardParsed<parseEvolutionTable>},
     {"data/item_effects", discardParsed<parseItemEffectTable>},
     {"data/shops", discardParsed<parseShopTable>},
@@ -162,8 +171,8 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = 
 constexpr std::array<std::pair<std::string_view, Opener>, 5> TableReaders = {{
     {"raise", discardParsed<parseRaiseTable>},
     {"maps", discardParsed<parseMapTable>},
-    {"items", discardParsed<parseItemTable>},
-    {"moves", discardParsed<parseMoveTable>},
+    {"items", discardParsed<parseItems>},
+    {"moves", discardParsed<parseMoves>},
     {"evolution", discardParsed<parseEvolutionTable>},
 }};
 

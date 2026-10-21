@@ -162,7 +162,7 @@ BattleResult victory() {
     result.partnerMp = 30;
     result.statGains = {10, 0, 3, 0, 0, 2};
     result.bits = Bits;
-    result.drops = {"item_0", "no_such_item"};
+    result.drops = {"tonic", "no_such_item"};
     result.learnedMoves = {"dynamite_kick", "punch"};
     result.care = {.happiness = 2, .discipline = 0, .tiredness = 5, .battles = 1};
     result.foodChange = -15;
@@ -276,7 +276,7 @@ TEST_CASE("a won battle gives the partner its HP, raises, care, minutes, moves, 
     CHECK(aftermath->learnedMoves == std::vector<std::string>{"dynamite_kick"});
     CHECK(dwe::session::knows(adapters.battle->moves(), "dynamite_kick"));
     CHECK(adapters.inventory->inventory().money() == money + Bits);
-    CHECK(adapters.inventory->inventory().countOf(items::Tonic) == 1);
+    CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 1);
     CHECK(aftermath->dropsLeft == std::vector<std::string>{"no_such_item"});
     CHECK(aftermath->recruitJoined == "foe");
     CHECK(autosavedFor(*session, AutosaveReason::BattleEnd));
@@ -286,8 +286,8 @@ TEST_CASE("a lost battle costs a life and items from the bag, and its hour costs
     const TestPacks packs;
     Adapters adapters;
     auto session = sessionWithBattle(packs, adapters);
-    for (const std::int32_t item : {items::Tonic, items::Ether, items::Bandage, items::Bun, items::Steak}) {
-        CHECK(adapters.inventory->inventory().add(item, 1).taken());
+    for (const std::string_view item : {items::Tonic, items::Ether, items::Bandage, items::Bun, items::Steak}) {
+        CHECK(adapters.inventory->inventory().add(items::handleOf(item), 1).taken());
     }
     const PartnerState before = session->partner().state();
     BattleResult result;
@@ -363,26 +363,26 @@ TEST_CASE("an item thrown in battle is consumed at once and lands with the throw
         state.stats.currentHp = FullHp;
     });
     dwe::game::inventory::Inventory& bag = adapters.inventory->inventory();
-    bag.add(items::Tonic, 2);
-    bag.add(items::Bandage, 1);
+    bag.add(items::handleOf(items::Tonic), 2);
+    bag.add(items::handleOf(items::Bandage), 1);
     auto battle = adapters.battle->start(*session, duelWithFoe());
     REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
 
     // inventory.c: selectOptionMenu: in battle only item_color 1 and 2.
-    const auto bandage = adapters.battle->throwItem(*battle, items::Bandage);
+    const auto bandage = adapters.battle->throwItem(*battle, items::handleOf(items::Bandage));
     REQUIRE_MESSAGE(bandage.has_value(), errorOf(bandage));
     CHECK(bandage->outcome == UseOutcome::NotUsableHere);
-    CHECK(bag.countOf(items::Bandage) == 1);
+    CHECK(bag.countOf(items::handleOf(items::Bandage)) == 1);
     CHECK_FALSE(battle->itemInFlight());
 
     // main.c: startThrowingItem: removeItem when thrown; one item on its way at a time.
-    const auto tonic = adapters.battle->throwItem(*battle, items::Tonic);
+    const auto tonic = adapters.battle->throwItem(*battle, items::handleOf(items::Tonic));
     REQUIRE_MESSAGE(tonic.has_value(), errorOf(tonic));
     CHECK(tonic->outcome == UseOutcome::Used);
-    CHECK(bag.countOf(items::Tonic) == 1);
+    CHECK(bag.countOf(items::handleOf(items::Tonic)) == 1);
     CHECK(battle->itemInFlight());
-    CHECK_FALSE(adapters.battle->throwItem(*battle, items::Tonic).has_value());
-    CHECK(bag.countOf(items::Tonic) == 1);
+    CHECK_FALSE(adapters.battle->throwItem(*battle, items::handleOf(items::Tonic)).has_value());
+    CHECK(bag.countOf(items::handleOf(items::Tonic)) == 1);
     bool landed = false;
     while (battle->itemInFlight() && !battle->finished()) {
         landed = battle_test::hasEvent(battle->step(), dwe::game::battle::EventKind::ItemLanded) || landed;

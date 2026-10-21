@@ -80,29 +80,28 @@ core::Result<void> PartnerMenu::giveItem(std::string_view argument) {
     if (!count || *count == 0) {
         return core::fail(core::formatMessage(messages::BadGiveItem, argument));
     }
-    const assets::ItemEntry* item = desc_.inventory->items().find(id);
-    if (item == nullptr) {
+    const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(id);
+    if (!item) {
         return core::fail(core::formatMessage(messages::UnknownItem, id));
     }
-    const game::inventory::AddResult added =
-        desc_.inventory->inventory().add(item->index, static_cast<std::int32_t>(*count));
+    const game::inventory::AddResult added = desc_.inventory->inventory().add(*item, static_cast<std::int32_t>(*count));
     core::logInfo("{}", core::formatMessage(messages::GaveItem, id, *count, added.added));
     publish();
     return {};
 }
 
 core::Result<void> PartnerMenu::useItem(std::string_view id) {
-    const assets::ItemEntry* item = desc_.inventory->items().find(id);
-    if (item == nullptr) {
+    const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(id);
+    if (!item) {
         return core::fail(core::formatMessage(messages::UnknownItem, id));
     }
-    auto used = desc_.inventory->use(*desc_.session, item->index);
+    auto used = desc_.inventory->use(*desc_.session, *item);
     if (!used) {
         return std::unexpected{used.error()};
     }
     const std::string_view outcome = keyOf(used->outcome);
     core::logInfo("{}", core::formatMessage(messages::UsedItem, id, outcome));
-    bagResult(outcome, item->index);
+    bagResult(outcome, item);
     return {};
 }
 
@@ -164,20 +163,20 @@ void PartnerMenu::publish() const {
         screens::BagRevisionSetting);
 }
 
-void PartnerMenu::bagResult(std::string_view key, std::int32_t item) const {
+void PartnerMenu::bagResult(std::string_view key, std::optional<assets::ItemHandle> item) const {
     const screens::NameKeys names{desc_.species, &desc_.inventory->items(), nullptr};
-    desc_.ui->setSetting(BagResultItemSetting, names.item(item));
+    desc_.ui->setSetting(BagResultItemSetting, item ? names.item(*item) : std::string{});
     desc_.ui->setSetting(screens::BagResultSetting, std::string{key});
     publish();
 }
 
 void PartnerMenu::use(double value) {
-    const std::optional<std::int32_t> inSlot = itemAt(desc_.inventory->inventory().slots(), slotOf(value));
+    const std::optional<assets::ItemHandle> inSlot = itemAt(desc_.inventory->inventory().slots(), slotOf(value));
     if (!inSlot) {
-        bagResult(NotInBagKey, -1);
+        bagResult(NotInBagKey, std::nullopt);
         return;
     }
-    const std::int32_t item = *inSlot;
+    const assets::ItemHandle item = *inSlot;
     auto used = desc_.inventory->use(*desc_.session, item);
     if (!used) {
         core::logWarning("{}", core::formatMessage(messages::BagCommandFailed, BagUseCommand, used.error().message));
@@ -195,10 +194,10 @@ void PartnerMenu::move(const std::string& text) {
         separator == std::string::npos ? std::nullopt : parseSlot(std::string_view{text}.substr(separator + 1));
     if (!from || !to) {
         core::logWarning("{}", core::formatMessage(messages::BadBagMove, text));
-        bagResult(FailedKey, -1);
+        bagResult(FailedKey, std::nullopt);
         return;
     }
-    const std::int32_t item = itemAt(desc_.inventory->inventory().slots(), from).value_or(-1);
+    const std::optional<assets::ItemHandle> item = itemAt(desc_.inventory->inventory().slots(), from);
     if (auto moved = desc_.inventory->inventory().move(*from, *to); !moved) {
         core::logWarning("{}", core::formatMessage(messages::BagCommandFailed, BagMoveCommand, moved.error().message));
         bagResult(FailedKey, item);
@@ -209,12 +208,12 @@ void PartnerMenu::move(const std::string& text) {
 
 void PartnerMenu::drop(double value) {
     const std::optional<std::size_t> slot = slotOf(value);
-    const std::optional<std::int32_t> inSlot = itemAt(desc_.inventory->inventory().slots(), slot);
+    const std::optional<assets::ItemHandle> inSlot = itemAt(desc_.inventory->inventory().slots(), slot);
     if (!slot || !inSlot) {
-        bagResult(NotInBagKey, -1);
+        bagResult(NotInBagKey, std::nullopt);
         return;
     }
-    const std::int32_t item = *inSlot;
+    const assets::ItemHandle item = *inSlot;
     if (auto dropped =
             desc_.inventory->inventory().discard(*slot, desc_.inventory->items(), game::inventory::UseContext::Field);
         !dropped) {
@@ -229,15 +228,15 @@ void PartnerMenu::drop(double value) {
 void PartnerMenu::sort(double value) {
     const std::optional<std::size_t> mode = slotOf(value);
     if (!mode) {
-        bagResult(FailedKey, -1);
+        bagResult(FailedKey, std::nullopt);
         return;
     }
     if (auto sorted = desc_.inventory->inventory().sort(*mode, desc_.inventory->items()); !sorted) {
         core::logWarning("{}", core::formatMessage(messages::BagCommandFailed, BagSortCommand, sorted.error().message));
-        bagResult(FailedKey, -1);
+        bagResult(FailedKey, std::nullopt);
         return;
     }
-    bagResult(SortedKey, -1);
+    bagResult(SortedKey, std::nullopt);
 }
 
 void PartnerMenu::care(bool scold) {

@@ -26,28 +26,34 @@ inline constexpr std::string_view DiskStatsCount = "a disk names offense, defens
 // The bag.
 inline constexpr std::string_view SlotOutOfRange = "slot {} is outside the bag's {} slots";
 inline constexpr std::string_view EmptySlot = "slot {} is empty";
-inline constexpr std::string_view NotDiscardable = "item {} cannot be thrown away";
+inline constexpr std::string_view NotDiscardable = "item '{}' cannot be thrown away";
 inline constexpr std::string_view DiscardOnlyInField = "items are thrown away only in the field";
 inline constexpr std::string_view UnknownSortMode = "sort mode {} is not one of the {} orders";
-inline constexpr std::string_view UnknownItem = "item {} is not in data/items";
+inline constexpr std::string_view RuleItemUnknown = "inventory rules: {} names item '{}', which is not in data/items";
 inline constexpr std::string_view BadCount = "a count must be from 1 to {}";
 inline constexpr std::string_view SlotCountTooSmall = "the bag cannot shrink to {} slots: slot {} holds an item";
 
+// The save.
+inline constexpr std::string_view SlotText = "a slot";
+inline constexpr std::string_view OldInventoryShape = "an inventory of version 1 has a list of slots";
+inline constexpr std::string_view OldItemNumberInvalid =
+    "an inventory of version 1 names item '{}', which is no number";
+
 // Effects.
-inline constexpr std::string_view NoEffect = "item {} has no entry in data/item_effects";
+inline constexpr std::string_view NoEffect = "item '{}' has no entry in data/item_effects";
 inline constexpr std::string_view EffectUnmapped =
-    "item {} ({}): the extractor did not decode its case and no rule covers it";
+    "item '{}' ({}): the extractor did not decode its case and no rule covers it";
 inline constexpr std::string_view EvolutionUnmapped =
-    "item {}: no evolution target in data/item_effects or the ruleset";
-inline constexpr std::string_view HealingUnmapped = "item {}: no healing value in data/item_effects";
-inline constexpr std::string_view HandlerRuleMissing = "item {} ({}): the ruleset has no rule for it";
+    "item '{}': no evolution target in data/item_effects or the ruleset";
+inline constexpr std::string_view HealingUnmapped = "item '{}': no healing value in data/item_effects";
+inline constexpr std::string_view HandlerRuleMissing = "item '{}' ({}): the ruleset has no rule for it";
 
 // Shops.
-inline constexpr std::string_view NotInStock = "item {} is not in stock";
-inline constexpr std::string_view CannotAfford = "{} of item {} cost {}, the player has {}";
-inline constexpr std::string_view TooMany = "at most {} of item {} can be bought now";
-inline constexpr std::string_view NotSellable = "item {} cannot be sold";
-inline constexpr std::string_view NotEnoughToSell = "the bag has {} of item {}, not {}";
+inline constexpr std::string_view NotInStock = "item '{}' is not in stock";
+inline constexpr std::string_view CannotAfford = "{} of item '{}' cost {}, the player has {}";
+inline constexpr std::string_view TooMany = "at most {} of item '{}' can be bought now";
+inline constexpr std::string_view NotSellable = "item '{}' cannot be sold";
+inline constexpr std::string_view NotEnoughToSell = "the bag has {} of item '{}', not {}";
 
 // Saves.
 inline constexpr std::string_view SaveContext = "inventory state";

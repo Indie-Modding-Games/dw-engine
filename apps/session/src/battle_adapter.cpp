@@ -325,8 +325,8 @@ void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result
     game::inventory::Inventory& bag = desc_.inventory->inventory();
     bag.addMoney(result.bits);
     for (const std::string& drop : result.drops) {
-        const assets::ItemEntry* item = desc_.inventory->items().find(drop);
-        if (item == nullptr || !bag.add(item->index, 1).taken()) {
+        const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(drop);
+        if (!item || !bag.add(*item, 1).taken()) {
             aftermath.dropsLeft.push_back(drop);
         }
     }
@@ -367,7 +367,7 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session, const 
 }
 
 core::Result<game::inventory::UseResult> BattleAdapter::throwItem(game::battle::Battle& battle,
-                                                                  std::int32_t item) const {
+                                                                  assets::ItemHandle item) const {
     if (desc_.inventory == nullptr) {
         return core::fail(std::string{messages::BattleWithoutBag});
     }

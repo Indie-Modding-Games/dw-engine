@@ -10,6 +10,8 @@ dwe_add_module(assets
         src/content_id.cpp
         src/table_composition.cpp
         src/table_kinds.cpp
+        src/table_handle.cpp
+        src/entry_class.cpp
         src/pack_manifest.cpp
         src/lua_api.cpp
         src/file_system.cpp

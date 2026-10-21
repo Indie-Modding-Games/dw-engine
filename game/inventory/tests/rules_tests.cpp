@@ -9,6 +9,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "fixture.hpp"
@@ -21,7 +22,7 @@ namespace {
 // Another stacking rule, to show that the section picks one: it fills every stack of the item and then new slots.
 class SpillStacking final : public StackingRule {
 public:
-    [[nodiscard]] AddResult add(std::span<std::optional<Stack>> slots, std::int32_t item, std::int32_t count,
+    [[nodiscard]] AddResult add(std::span<std::optional<Stack>> slots, dwe::assets::ItemHandle item, std::int32_t count,
                                 std::int32_t maxStack, bool /*overflowIsLost*/) const override {
         AddResult result;
         for (std::optional<Stack>& slot : slots) {
@@ -68,7 +69,7 @@ TEST_CASE("a changed ruleset value changes the bag: a stack of 50") {
     REQUIRE(dwe::ruleset::checkRuleset(ruleset, {{std::string{SectionName}, inventorySectionCheck()}}).has_value());
     auto inventory = Inventory::fromRuleset(ruleset);
     REQUIRE_MESSAGE(inventory.has_value(), errorOf(inventory));
-    const AddResult added = inventory->add(Tonic, 60);
+    const AddResult added = inventory->add(handleOf(Tonic), 60);
     CHECK(added.added == 50);
     CHECK(added.lost == 10);
 }
@@ -95,11 +96,14 @@ TEST_CASE("the section's stacking names the strategy: switching it to another on
     auto rules = parseInventoryRules(section);
     REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
     Inventory inventory{std::move(*rules), std::move(*stacking)};
-    const AddResult added = inventory.add(Tonic, 150);
+    const AddResult added = inventory.add(handleOf(Tonic), 150);
     CHECK(added.added == 150);
     CHECK(added.lost == 0);
-    CHECK(required(inventory.slots()[0]).count == 99);
-    CHECK(required(inventory.slots()[1]).count == 51);
+    const auto countIn = [&](std::size_t slot) {
+        return required(inventory.slots()[slot].transform([](const Stack& stack) { return stack.count; }));
+    };
+    CHECK(countIn(0) == 99);
+    CHECK(countIn(1) == 51);
 }
 
 TEST_CASE("without the overflow quirk the rest of a stack is refused, not lost") {
@@ -107,8 +111,8 @@ TEST_CASE("without the overflow quirk the rest of a stack is refused, not lost")
     InventoryRules rules = inventory.rules();
     rules.quirks.stackOverflowIsLost = false;
     inventory.setRules(rules, stackingRules().create(*originalRuleset().section(SectionName), StackingPath).value());
-    inventory.add(Tonic, 95);
-    const AddResult added = inventory.add(Tonic, 10);
+    inventory.add(handleOf(Tonic), 95);
+    const AddResult added = inventory.add(handleOf(Tonic), 10);
     CHECK(added.added == 4);
     CHECK(added.lost == 0);
     CHECK(added.refused == 6);
@@ -117,11 +121,11 @@ TEST_CASE("without the overflow quirk the rest of a stack is refused, not lost")
 namespace {
 
 // The original's inventory section with bag.new_game_items set to one item.
-dwe::ruleset::Section withStartingItem(std::int32_t item, std::int32_t count) {
+dwe::ruleset::Section withStartingItem(std::string_view item, std::int32_t count) {
     using dwe::core::YamlNode;
     dwe::ruleset::Section section = *originalRuleset().section(SectionName);
     YamlNode entry = YamlNode::mapping();
-    entry.set("item", YamlNode::scalar(std::to_string(item)));
+    entry.set("item", YamlNode::scalar(std::string{item}));
     entry.set("count", YamlNode::scalar(std::to_string(count)));
     YamlNode items = YamlNode::sequence();
     items.append(entry);
@@ -142,9 +146,24 @@ TEST_CASE("the original starts with an empty bag: script dg 193 takes every item
 TEST_CASE("a ruleset's new-game items are read, each count from 1 to max_stack") {
     const auto rules = parseInventoryRules(withStartingItem(Tonic, 3));
     REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
-    CHECK(rules->bag.newGameItems == std::vector<StartingItem>{{.item = Tonic, .count = 3}});
+    CHECK(rules->bag.newGameItems == std::vector<StartingItem>{{.item = std::string{Tonic}, .count = 3}});
     const auto tooMany = parseInventoryRules(withStartingItem(Tonic, 100));
     REQUIRE_FALSE(tooMany.has_value());
     CHECK(tooMany.error().message.find("max_stack") != std::string::npos);
     CHECK_FALSE(parseInventoryRules(withStartingItem(Tonic, 0)).has_value());
+}
+
+TEST_CASE("a ruleset names its items by id: a number, or an id the items table lacks, is refused") {
+    CHECK_FALSE(parseInventoryRules(withStartingItem("Not An Id", 1)).has_value());
+    // A number left from the old format reads as an id, which no item has.
+    const auto number = parseInventoryRules(withStartingItem("13", 1));
+    REQUIRE_MESSAGE(number.has_value(), errorOf(number));
+    CHECK(errorOf(checkItemIds(*number, fixtureItems())).find("'13'") != std::string::npos);
+    const auto unknown = parseInventoryRules(withStartingItem("mymod:lantern", 1));
+    REQUIRE_MESSAGE(unknown.has_value(), errorOf(unknown));
+    CHECK(errorOf(checkItemIds(*unknown, fixtureItems())).find("mymod:lantern") != std::string::npos);
+    const auto known = parseInventoryRules(withStartingItem(Tonic, 1));
+    REQUIRE_MESSAGE(known.has_value(), errorOf(known));
+    const auto checked = checkItemIds(*known, fixtureItems());
+    CHECK_MESSAGE(checked.has_value(), errorOf(checked));
 }

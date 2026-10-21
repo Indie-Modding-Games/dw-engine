@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/item_table.hpp>
 #include <dwe/ruleset/strategy.hpp>
 
 #include <cstdint>
@@ -15,7 +16,7 @@ inline constexpr std::string_view OriginalStacking = "original";
 
 // Some of one item in a slot of the bag.
 struct Stack {
-    std::int32_t item = 0;
+    assets::ItemHandle item;
     std::int32_t count = 0;
 
     friend bool operator==(const Stack&, const Stack&) = default;
@@ -44,8 +45,8 @@ public:
     StackingRule& operator=(StackingRule&&) = delete;
 
     // Puts `count` of `item` into the usable slots.
-    [[nodiscard]] virtual AddResult add(std::span<std::optional<Stack>> slots, std::int32_t item, std::int32_t count,
-                                        std::int32_t maxStack, bool overflowIsLost) const = 0;
+    [[nodiscard]] virtual AddResult add(std::span<std::optional<Stack>> slots, assets::ItemHandle item,
+                                        std::int32_t count, std::int32_t maxStack, bool overflowIsLost) const = 0;
 };
 
 // The stacking rules by name, with `original` registered (item.c: giveItem).

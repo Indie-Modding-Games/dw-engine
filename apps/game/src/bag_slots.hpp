@@ -20,8 +20,8 @@ inline std::optional<std::size_t> slotOf(double value) {
 }
 
 // The item in a slot of the bag, or nothing for an empty slot or one past the bag.
-inline std::optional<std::int32_t> itemAt(std::span<const std::optional<game::inventory::Stack>> slots,
-                                          std::optional<std::size_t> slot) {
+inline std::optional<assets::ItemHandle> itemAt(std::span<const std::optional<game::inventory::Stack>> slots,
+                                                std::optional<std::size_t> slot) {
     if (!slot || *slot >= slots.size()) {
         return std::nullopt;
     }

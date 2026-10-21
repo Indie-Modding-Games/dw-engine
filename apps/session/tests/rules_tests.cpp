@@ -38,7 +38,8 @@ TEST_CASE("the session's sections follow their schemas") {
         REQUIRE_MESSAGE(schemaBytes.has_value(), errorOf(schemaBytes));
         const auto schemaText = dwe::core::parseYaml(textOf(*schemaBytes));
         REQUIRE_MESSAGE(schemaText.has_value(), errorOf(schemaText));
-        const auto schema = dwe::core::JsonSchema::compile(*schemaText, {});
+        constexpr std::array<std::string_view, 1> Annotations{"entryReference"};
+        const auto schema = dwe::core::JsonSchema::compile(*schemaText, Annotations);
         REQUIRE_MESSAGE(schema.has_value(), errorOf(schema));
         const auto bytes =
             disk.readFile(std::filesystem::path{DWE_GAME_PACK} / std::format("rules/original/{}.yaml", section));

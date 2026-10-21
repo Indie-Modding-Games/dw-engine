@@ -123,7 +123,7 @@ class TableFixture {
 public:
     TableFixture() {
         for (std::int32_t index = 0; index < FixtureMoveCount; ++index) {
-            moves.moves.push_back({.id = std::format("move_{}", index), .index = index, .power = 10 + index});
+            moves.push_back({.id = std::format("move_{}", index), .index = index, .power = 10 + index});
         }
         for (std::size_t position = 0; position < FixtureForms.size(); ++position) {
             const FixtureForm& form = FixtureForms.at(position);
@@ -206,7 +206,7 @@ public:
     }
 
     [[nodiscard]] EvolutionTables build() const {
-        auto tables = EvolutionTables::build(digimon, raise, moves, evolution, itemEffects);
+        auto tables = EvolutionTables::build(digimon, raise, assets::MoveTable{moves}, evolution, itemEffects);
         REQUIRE_MESSAGE(tables.has_value(), errorOf(tables));
         return *tables;
     }
@@ -221,7 +221,7 @@ public:
 
     assets::DigimonTable digimon;
     assets::RaiseTable raise;
-    assets::MoveTable moves;
+    std::vector<assets::MoveEntry> moves;
     assets::EvolutionTable evolution;
     assets::ItemEffectTable itemEffects;
 };

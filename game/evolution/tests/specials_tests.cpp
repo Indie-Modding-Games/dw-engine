@@ -289,8 +289,8 @@ TEST_CASE("an item effect that names an unknown form is refused") {
     fixture.itemEffects.effects = {
         {.item = "grey_claws", .index = 71, .handler = assets::ItemHandler::Evolution, .evolvesTo = "nobody"},
     };
-    const auto tables =
-        EvolutionTables::build(fixture.digimon, fixture.raise, fixture.moves, fixture.evolution, fixture.itemEffects);
+    const auto tables = EvolutionTables::build(fixture.digimon, fixture.raise, assets::MoveTable{fixture.moves},
+                                               fixture.evolution, fixture.itemEffects);
     REQUIRE_FALSE(tables.has_value());
     CHECK(errorOf(tables).contains("item_effects: unknown digimon 'nobody'"));
 }

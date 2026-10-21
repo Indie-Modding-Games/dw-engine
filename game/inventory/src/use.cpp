@@ -2,8 +2,6 @@
 
 #include <algorithm>
 
-#include "messages.hpp"
-
 namespace dwe::game::inventory {
 
 namespace {
@@ -17,12 +15,9 @@ bool usableIn(const assets::ItemEntry& item, UseContext context, const UseRules&
 
 } // namespace
 
-core::Result<UseResult> useItem(Inventory& inventory, std::int32_t item, UseContext context,
+core::Result<UseResult> useItem(Inventory& inventory, assets::ItemHandle item, UseContext context,
                                 const assets::ItemTable& items, const ItemEffects& effects, ItemEffectTarget& target) {
-    const assets::ItemEntry* entry = items.findByIndex(item);
-    if (entry == nullptr) {
-        return core::fail(messages::formatMessage(messages::UnknownItem, item));
-    }
+    const assets::ItemEntry* entry = &items.at(item);
     const auto result = [&](UseOutcome outcome) {
         return UseResult{.outcome = outcome, .keyItem = isKeyItem(*entry, inventory.rules().use)};
     };
@@ -32,7 +27,7 @@ core::Result<UseResult> useItem(Inventory& inventory, std::int32_t item, UseCont
     if (!usableIn(*entry, context, inventory.rules().use)) {
         return result(UseOutcome::NotUsableHere);
     }
-    auto effect = effects.resolve(item);
+    auto effect = effects.resolve(entry->id);
     if (!effect) {
         return std::unexpected{effect.error()};
     }

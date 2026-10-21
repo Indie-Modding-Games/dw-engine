@@ -31,9 +31,9 @@ inline constexpr std::string_view BabyDiscountLimitedByFullPrice = "baby_discoun
 inline constexpr std::string_view OmniDiskIgnoresLimit = "omni_disk_ignores_limit";
 inline constexpr std::string_view UselessItemsConsumed = "useless_items_consumed";
 
-// An item a new game starts with: its number in data/items and how many.
+// An item a new game starts with: its id in data/items and how many.
 struct StartingItem {
-    std::int32_t item = 0;
+    std::string item;
     std::int32_t count = 0;
 
     friend bool operator==(const StartingItem&, const StartingItem&) = default;
@@ -69,7 +69,7 @@ struct ShopRules {
 
 // What a status item does (item.c: handleStatusItems).
 struct StatusItemRule {
-    std::int32_t item = 0;
+    std::string item;
     std::optional<std::int32_t> battleStatusCure = std::nullopt;
     std::int32_t hp = 0;
     std::int32_t mp = 0;
@@ -80,13 +80,13 @@ struct StatusItemRule {
 };
 
 struct ReviveItemRule {
-    std::int32_t item = 0;
+    std::string item;
     std::int32_t hpPercent = 0;
     std::optional<std::int32_t> battleStatusCure = std::nullopt;
 };
 
 struct BattleDiskRule {
-    std::int32_t item = 0;
+    std::string item;
     std::int32_t offense = 0;
     std::int32_t defense = 0;
     std::int32_t speed = 0;
@@ -95,18 +95,18 @@ struct BattleDiskRule {
 };
 
 struct ScriptItemRule {
-    std::int32_t item = 0;
+    std::string item;
     std::int32_t section = 0;
 };
 
 struct TamerLevelRule {
-    std::vector<std::int32_t> items;
+    std::vector<std::string> items;
     std::int32_t chancePercent = 0;
     std::int32_t amount = 0;
 };
 
 struct FixedEvolutionRule {
-    std::int32_t item = 0;
+    std::string item;
     std::string evolvesTo;
 };
 
@@ -125,7 +125,7 @@ struct EffectRules {
     std::int32_t diskLimitCap = 0;
     std::vector<BattleDiskRule> disks;
     std::vector<ScriptItemRule> scriptChips;
-    std::vector<std::int32_t> toiletChips;
+    std::vector<std::string> toiletChips;
     TamerLevelRule tamerLevel{};
     std::int32_t favouriteEnergyPercent = 0;
     std::int32_t favouriteHappiness = 0;
@@ -155,6 +155,9 @@ struct InventoryRules {
 
 // Reads the `inventory` section. Unknown and missing keys and values out of range are errors at their line.
 core::Result<InventoryRules> parseInventoryRules(const ruleset::Section& section);
+
+// Checks that every item the rules name by id is in the session's data/items; the error names the rule and the id.
+core::Result<void> checkItemIds(const InventoryRules& rules, const assets::ItemTable& items);
 
 // Whether the item is a key item: its droppable value is the ruleset's key_item_droppable.
 bool isKeyItem(const assets::ItemEntry& item, const UseRules& rules);

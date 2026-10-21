@@ -159,6 +159,9 @@ del compañero, el mapa, las técnicas aprendidas, las especies criadas) no se v
 guarda el `index` de cada objeto**: una partida con objetos de un mod puede cargar otros objetos si cambian los mods.
 Pasar el inventario y las demás referencias por número a ids es el trabajo siguiente de la fase 4.
 
+Quitar un mod no deja la partida sin cargar: un montón de la bolsa cuyo objeto ya no está en ninguna tabla se tira,
+con un aviso en el registro que nombra su id y la cantidad ([inventario](../../game/inventory/README.md)).
+
 ### Nombres de lo añadido
 
 Lo que se ve de una entrada nueva sale de la tabla de textos del paquete, `text/<idioma>/<id del paquete>.yaml`, con

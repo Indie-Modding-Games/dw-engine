@@ -56,7 +56,7 @@ constexpr std::string_view TwoMoves = R"(moves:
 TEST_CASE("the move table reads the battle's fields: flags and the learn chances when present") {
     const auto table = dwe::assets::parseMoveTable(TwoMoves);
     REQUIRE_MESSAGE(table.has_value(), table.error().message);
-    REQUIRE(table->moves.size() == 2);
+    REQUIRE(table->entries().size() == 2);
     const dwe::assets::MoveEntry* spit = table->find("spit_fire");
     REQUIRE(spit != nullptr);
     CHECK(spit->distance == 160000);
@@ -64,7 +64,7 @@ TEST_CASE("the move table reads the battle's fields: flags and the learn chances
     CHECK(spit->flags == 3);
     CHECK(spit->unknown0e == 0);
     CHECK(spit->learnChances == dwe::assets::LearnChances{25, 16, 11});
-    const dwe::assets::MoveEntry* freeze = table->findByIndex(60);
+    const dwe::assets::MoveEntry* freeze = table->findByOriginalIndex(60);
     REQUIRE(freeze != nullptr);
     CHECK(freeze->id == "giga_freeze");
     CHECK_FALSE(freeze->learnChances.has_value());
@@ -101,8 +101,8 @@ TEST_CASE("the user's disc, extracted: every move has a battle range and every m
     REQUIRE_MESSAGE(vfs.has_value(), vfs.error().message);
     const auto moves = dwe::assets::loadMoveTable(*vfs, *dwe::assets::AssetId::parse("data/moves"));
     REQUIRE_MESSAGE(moves.has_value(), moves.error().message);
-    CHECK(moves->moves.size() >= 100);
-    for (const dwe::assets::MoveEntry& move : moves->moves) {
+    CHECK(moves->entries().size() >= 100);
+    for (const dwe::assets::MoveEntry& move : moves->entries()) {
         CHECK(move.range >= 0);
         CHECK(move.range <= 4);
     }

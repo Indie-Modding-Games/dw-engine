@@ -110,6 +110,29 @@ Estas cuatro reglas del formato están aprobadas y son definitivas:
 3. Cada rareza que lee una sección se **declara en cada ruleset**; no hay valores por defecto.
 4. La velocidad del reloj es un **multiplicador real** (`setSpeed(x)`), no una lista de pasos.
 
+## Rangos e ids
+
+Un ruleset nombra cada objeto o técnica suelto **por su id** (`item: bandage`, `evolves_to: ggdr`), nunca por número:
+el número de una entrada que añade un mod lo pone el motor y depende de los paquetes montados.
+
+**Los rangos solo cubren el juego original; los mods usan ids.** Las clases que el decomp define por intervalos de
+números (las comidas de `item_use.meals`, `never_taken`, el umbral `discipline_checked_below`) siguen siendo rangos y
+umbrales de números del original, con su cita, pero solo casan con entradas del original, nunca con una que numeró el
+motor. Cada una admite además ids:
+
+```yaml
+meals:
+  - { from: 38, to: 70 }   # números del original
+  - example_mod:honey_bun  # una comida de un mod, por id
+refusal:
+  discipline_checked_below: 38
+  discipline_checked_ids: [example_mod:honey_bun]
+```
+
+Al cargar, cada número de un rango debe ser una entrada del original y cada id una entrada de la tabla compuesta; si
+no, la sesión no arranca y dice qué regla y qué número o id. `dwx validate` comprueba los ids con la anotación
+`entryReference` de los esquemas.
+
 ## Cómo lo usa un sistema
 
 1. **Su sección.** El sistema define su struct y lo lee de la sección con `assets::YamlReader`, con los errores

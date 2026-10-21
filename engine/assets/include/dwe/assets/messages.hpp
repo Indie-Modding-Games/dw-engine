@@ -57,4 +57,12 @@ inline constexpr std::string_view CompositionOriginalAdded =
 inline constexpr std::string_view CompositionForeignNamespace =
     "{}: '{}' is new in '{}', but its namespace is not the pack's id, '{}'";
 
+// Classes of entries of the rulesets (entry_class.hpp).
+inline constexpr std::string_view EntryRangeText = "a range or an id";
+inline constexpr std::string_view EntryRangeReversed = "the range starts at {} and ends before it, at {}";
+inline constexpr std::string_view EntryRangeNegative = "a range counts numbers from 0, not {}";
+inline constexpr std::string_view EntryClassNumberUnknown =
+    "{}: number {} is no {} of the original (a range covers only the original game; a pack's entry joins by id)";
+inline constexpr std::string_view EntryClassIdUnknown = "{}: '{}' is no {} of the packs mounted";
+
 } // namespace dwe::assets::messages

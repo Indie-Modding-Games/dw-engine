@@ -86,8 +86,8 @@ struct ItemEffectEntry {
 struct ItemEffectTable {
     std::vector<ItemEffectEntry> effects;
 
-    // The effect of the item with this original index, or nullptr.
-    [[nodiscard]] const ItemEffectEntry* findByIndex(std::int32_t index) const;
+    // The effect of the item with this id, or nullptr.
+    [[nodiscard]] const ItemEffectEntry* find(std::string_view item) const;
 };
 
 // Parses the text of `data/item_effects`. Unknown and missing keys are errors, and values must fit the handler.

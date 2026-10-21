@@ -145,7 +145,7 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
                                                      const assets::ItemEffectTable& itemEffects) {
     TableResolver resolver{digimon, moves};
     EvolutionTables tables;
-    for (const assets::MoveEntry& move : moves.moves) {
+    for (const assets::MoveEntry& move : moves.entries()) {
         tables.movePowers_.insert_or_assign(move.index, move.power);
     }
     for (const assets::DigimonRow& entry : digimon.digimon) {

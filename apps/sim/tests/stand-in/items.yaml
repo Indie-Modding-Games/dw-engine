@@ -1,0 +1,1284 @@
+# Made-up items for the dwe-sim tests, in the shape of data/items: not the original's data. One item for each
+# number of the original, so the ranges of the original ruleset's item_use section cover items, and those it names
+# by id (the status items, revives, disks, chips and fixed evolutions) under that id.
+items:
+- id: "item_0"
+  index: 0
+  name: "Test item_0"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_1"
+  index: 1
+  name: "Test item_1"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_2"
+  index: 2
+  name: "Test item_2"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_3"
+  index: 3
+  name: "Test item_3"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_4"
+  index: 4
+  name: "Test item_4"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_5"
+  index: 5
+  name: "Test item_5"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_6"
+  index: 6
+  name: "Test item_6"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_7"
+  index: 7
+  name: "Test item_7"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "various"
+  index: 8
+  name: "Test various"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "omnipotent"
+  index: 9
+  name: "Test omnipotent"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "protection"
+  index: 10
+  name: "Test protection"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "restore"
+  index: 11
+  name: "Test restore"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "sup_restore"
+  index: 12
+  name: "Test sup_restore"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "bandage"
+  index: 13
+  name: "Test bandage"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "medicine"
+  index: 14
+  name: "Test medicine"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "off_disk"
+  index: 15
+  name: "Test off_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "def_disk"
+  index: 16
+  name: "Test def_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "hispeed_dsk"
+  index: 17
+  name: "Test hispeed_dsk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "omni_disk"
+  index: 18
+  name: "Test omni_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_off_disk"
+  index: 19
+  name: "Test s_off_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_def_disk"
+  index: 20
+  name: "Test s_def_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "s_speed_disk"
+  index: 21
+  name: "Test s_speed_disk"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "auto_pilot"
+  index: 22
+  name: "Test auto_pilot"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_23"
+  index: 23
+  name: "Test item_23"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_24"
+  index: 24
+  name: "Test item_24"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_25"
+  index: 25
+  name: "Test item_25"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_26"
+  index: 26
+  name: "Test item_26"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_27"
+  index: 27
+  name: "Test item_27"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_28"
+  index: 28
+  name: "Test item_28"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_a"
+  index: 29
+  name: "Test dv_chip_a"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_d"
+  index: 30
+  name: "Test dv_chip_d"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "dv_chip_e"
+  index: 31
+  name: "Test dv_chip_e"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "port_potty"
+  index: 32
+  name: "Test port_potty"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_33"
+  index: 33
+  name: "Test item_33"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_34"
+  index: 34
+  name: "Test item_34"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_35"
+  index: 35
+  name: "Test item_35"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_36"
+  index: 36
+  name: "Test item_36"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_37"
+  index: 37
+  name: "Test item_37"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_38"
+  index: 38
+  name: "Test item_38"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_39"
+  index: 39
+  name: "Test item_39"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_40"
+  index: 40
+  name: "Test item_40"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_41"
+  index: 41
+  name: "Test item_41"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_42"
+  index: 42
+  name: "Test item_42"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_43"
+  index: 43
+  name: "Test item_43"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_44"
+  index: 44
+  name: "Test item_44"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_45"
+  index: 45
+  name: "Test item_45"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_46"
+  index: 46
+  name: "Test item_46"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_47"
+  index: 47
+  name: "Test item_47"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_48"
+  index: 48
+  name: "Test item_48"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_49"
+  index: 49
+  name: "Test item_49"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_50"
+  index: 50
+  name: "Test item_50"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_51"
+  index: 51
+  name: "Test item_51"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_52"
+  index: 52
+  name: "Test item_52"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_53"
+  index: 53
+  name: "Test item_53"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_54"
+  index: 54
+  name: "Test item_54"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_55"
+  index: 55
+  name: "Test item_55"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_56"
+  index: 56
+  name: "Test item_56"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_57"
+  index: 57
+  name: "Test item_57"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_58"
+  index: 58
+  name: "Test item_58"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_59"
+  index: 59
+  name: "Test item_59"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_60"
+  index: 60
+  name: "Test item_60"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_61"
+  index: 61
+  name: "Test item_61"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_62"
+  index: 62
+  name: "Test item_62"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_63"
+  index: 63
+  name: "Test item_63"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_64"
+  index: 64
+  name: "Test item_64"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_65"
+  index: 65
+  name: "Test item_65"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_66"
+  index: 66
+  name: "Test item_66"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_67"
+  index: 67
+  name: "Test item_67"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_68"
+  index: 68
+  name: "Test item_68"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_69"
+  index: 69
+  name: "Test item_69"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_70"
+  index: 70
+  name: "Test item_70"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_71"
+  index: 71
+  name: "Test item_71"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_72"
+  index: 72
+  name: "Test item_72"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_73"
+  index: 73
+  name: "Test item_73"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_74"
+  index: 74
+  name: "Test item_74"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_75"
+  index: 75
+  name: "Test item_75"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_76"
+  index: 76
+  name: "Test item_76"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_77"
+  index: 77
+  name: "Test item_77"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_78"
+  index: 78
+  name: "Test item_78"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_79"
+  index: 79
+  name: "Test item_79"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_80"
+  index: 80
+  name: "Test item_80"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_81"
+  index: 81
+  name: "Test item_81"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_82"
+  index: 82
+  name: "Test item_82"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_83"
+  index: 83
+  name: "Test item_83"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_84"
+  index: 84
+  name: "Test item_84"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_85"
+  index: 85
+  name: "Test item_85"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_86"
+  index: 86
+  name: "Test item_86"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_87"
+  index: 87
+  name: "Test item_87"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_88"
+  index: 88
+  name: "Test item_88"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_89"
+  index: 89
+  name: "Test item_89"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_90"
+  index: 90
+  name: "Test item_90"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_91"
+  index: 91
+  name: "Test item_91"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_92"
+  index: 92
+  name: "Test item_92"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_93"
+  index: 93
+  name: "Test item_93"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_94"
+  index: 94
+  name: "Test item_94"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_95"
+  index: 95
+  name: "Test item_95"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_96"
+  index: 96
+  name: "Test item_96"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_97"
+  index: 97
+  name: "Test item_97"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_98"
+  index: 98
+  name: "Test item_98"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_99"
+  index: 99
+  name: "Test item_99"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_100"
+  index: 100
+  name: "Test item_100"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_101"
+  index: 101
+  name: "Test item_101"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_102"
+  index: 102
+  name: "Test item_102"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_103"
+  index: 103
+  name: "Test item_103"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_104"
+  index: 104
+  name: "Test item_104"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_105"
+  index: 105
+  name: "Test item_105"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_106"
+  index: 106
+  name: "Test item_106"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_107"
+  index: 107
+  name: "Test item_107"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_108"
+  index: 108
+  name: "Test item_108"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_109"
+  index: 109
+  name: "Test item_109"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_110"
+  index: 110
+  name: "Test item_110"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_111"
+  index: 111
+  name: "Test item_111"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_112"
+  index: 112
+  name: "Test item_112"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_113"
+  index: 113
+  name: "Test item_113"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_114"
+  index: 114
+  name: "Test item_114"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_115"
+  index: 115
+  name: "Test item_115"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_116"
+  index: 116
+  name: "Test item_116"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_117"
+  index: 117
+  name: "Test item_117"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_118"
+  index: 118
+  name: "Test item_118"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_119"
+  index: 119
+  name: "Test item_119"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_120"
+  index: 120
+  name: "Test item_120"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_121"
+  index: 121
+  name: "Test item_121"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_122"
+  index: 122
+  name: "Test item_122"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_123"
+  index: 123
+  name: "Test item_123"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "item_124"
+  index: 124
+  name: "Test item_124"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "giga_hand"
+  index: 125
+  name: "Test giga_hand"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "noble_mane"
+  index: 126
+  name: "Test noble_mane"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0
+- id: "metalbanana"
+  index: 127
+  name: "Test metalbanana"
+  description: ""
+  value: 10
+  merit_value: 0
+  sorting_value: 0
+  item_color: 0
+  droppable: 1
+  unknown_1e: 0

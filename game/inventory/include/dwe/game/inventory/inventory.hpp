@@ -27,7 +27,8 @@ struct InventoryState {
     friend bool operator==(const InventoryState&, const InventoryState&) = default;
 };
 
-// The player's bag and money (item.c: Inventory; MONEY). Items are their original numbers (data/items `index`).
+// The player's bag and money (item.c: Inventory; MONEY). Items are handles of the session's data/items
+// (table_handle.hpp); a save names them by id.
 class Inventory {
 public:
     // A new game's inventory under these rules.
@@ -51,17 +52,17 @@ public:
     core::Result<void> restore(InventoryState state);
 
     // Gives items to the bag (item.c: giveItem), as a pickup, a chest, a reward or a purchase does.
-    AddResult add(std::int32_t item, std::int32_t count);
+    AddResult add(assets::ItemHandle item, std::int32_t count);
 
     // Whether one more of the item would go in: a pickup or a chest leaves the item where it is otherwise.
-    [[nodiscard]] bool hasRoomFor(std::int32_t item) const;
+    [[nodiscard]] bool hasRoomFor(assets::ItemHandle item) const;
 
     // How many of the item the bag holds: its first stack (item.c: getItemCount).
-    [[nodiscard]] std::int32_t countOf(std::int32_t item) const;
+    [[nodiscard]] std::int32_t countOf(assets::ItemHandle item) const;
 
     // Takes `count` of the item from every stack of it; a stack that runs out leaves its slot empty
     // (item.c: removeItem).
-    void remove(std::int32_t item, std::int32_t count);
+    void remove(assets::ItemHandle item, std::int32_t count);
 
     // Swaps two slots (inventory.c: the menu's move).
     core::Result<void> move(std::size_t from, std::size_t to);

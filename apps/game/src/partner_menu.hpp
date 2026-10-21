@@ -71,7 +71,7 @@ private:
     void drop(double value);
     void sort(double value);
     void care(bool scold);
-    void bagResult(std::string_view key, std::int32_t item) const;
+    void bagResult(std::string_view key, std::optional<assets::ItemHandle> item) const;
 
     PartnerMenuDesc desc_;
 };

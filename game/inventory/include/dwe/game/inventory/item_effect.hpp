@@ -99,7 +99,8 @@ struct Evolution {
 };
 
 struct ItemEffect {
-    std::int32_t item = 0;
+    // The item's id in data/items.
+    std::string item;
     assets::ItemHandler handler = assets::ItemHandler::None;
     // Whether nothing happens while the partner has 0 HP.
     bool consciousOnly = false;

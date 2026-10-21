@@ -5,6 +5,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -54,6 +55,18 @@ struct TableContribution {
 // `<its id>:<name>`.
 core::Result<core::YamlNode> composeTable(std::span<const TableContribution> contributions,
                                           const TableComposition& composition);
+
+// A table of the packs as composeTable leaves it, as YAML text.
+struct ComposedTableText {
+    std::string text;
+    // The ids of the entries of numbered sections whose index the engine gave (a pack added them without one): their
+    // index depends on the packs mounted, so a rule over the original's numbers never covers them.
+    std::set<std::string, std::less<>> engineNumbered;
+};
+
+// readComposedTable, with the entries the engine numbered.
+core::Result<ComposedTableText> readComposedTableText(const VirtualFileSystem& vfs, const AssetId& id,
+                                                      const TableComposition& composition);
 
 // The YAML text of a table of the packs, composed by composeTable from every pack that has it. With a single pack the
 // text is that pack's file as it is.

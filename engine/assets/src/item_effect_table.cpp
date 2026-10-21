@@ -119,8 +119,8 @@ ItemEffectEntry readEffect(YamlReader& reader, const YamlNode& node) {
 
 } // namespace
 
-const ItemEffectEntry* ItemEffectTable::findByIndex(std::int32_t index) const {
-    const auto found = std::ranges::find(effects, index, &ItemEffectEntry::index);
+const ItemEffectEntry* ItemEffectTable::find(std::string_view item) const {
+    const auto found = std::ranges::find(effects, item, &ItemEffectEntry::item);
     return found == effects.end() ? nullptr : &*found;
 }
 

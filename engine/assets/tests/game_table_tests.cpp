@@ -110,7 +110,7 @@ TEST_CASE("the move table reads power and the optional name") {
     REQUIRE(table->find("spark") != nullptr);
     CHECK(table->find("spark")->power == 50);
     CHECK(table->find("spark")->name == "Spark");
-    CHECK_FALSE(table->findByIndex(1)->name);
+    CHECK_FALSE(table->findByOriginalIndex(1)->name);
 }
 
 TEST_CASE("the evolution table reads requirements, stat rows, charts with raw references and item targets") {
@@ -166,7 +166,7 @@ TEST_CASE("the user's disc, extracted: the Digimon, raise, move and evolution ta
     REQUIRE_MESSAGE(evolution.has_value(), errorOf(evolution));
     CHECK(digimon->digimon.size() > 60);
     CHECK(raise->raise.size() > 60);
-    CHECK(moves->moves.size() > 100);
+    CHECK(moves->entries().size() > 100);
     CHECK(evolution->requirements.size() > 60);
     CHECK(evolution->paths.size() > 60);
     // Every form a chart names is in the Digimon table, or a raw number dwx could not resolve.

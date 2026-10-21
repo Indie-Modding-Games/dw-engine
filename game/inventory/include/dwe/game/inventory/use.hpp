@@ -33,7 +33,7 @@ struct UseResult {
 // Uses one of an item on the target: checks the context against its item_color, resolves its effect, lets the
 // partner refuse it in the field (partner.c: partner states 4 to 6), consumes one and applies it. In battle the item
 // is consumed when thrown and always lands (main.c: startThrowingItem, tickThrownItem).
-core::Result<UseResult> useItem(Inventory& inventory, std::int32_t item, UseContext context,
+core::Result<UseResult> useItem(Inventory& inventory, assets::ItemHandle item, UseContext context,
                                 const assets::ItemTable& items, const ItemEffects& effects, ItemEffectTarget& target);
 
 } // namespace dwe::game::inventory

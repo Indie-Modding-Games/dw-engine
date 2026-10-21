@@ -99,7 +99,7 @@ public:
     // Throws one of an item of the bag at the partner (inventory.c: selectOptionMenu, main.c: startThrowingItem): only
     // while the battle's bag is available; the item is consumed at once and its effect lands with the throw. The
     // outcome says when the item was not thrown (not in the bag, not usable in battle).
-    core::Result<game::inventory::UseResult> throwItem(game::battle::Battle& battle, std::int32_t item) const;
+    core::Result<game::inventory::UseResult> throwItem(game::battle::Battle& battle, assets::ItemHandle item) const;
 
     // Equips the species' move at `slot` in one of the four places, or empties it.
     core::Result<void> equip(const GameSession& session, std::size_t place, std::optional<MoveSlot> slot);

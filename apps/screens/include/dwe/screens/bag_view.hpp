@@ -23,7 +23,8 @@ inline constexpr std::string_view BagResultSetting = "bag.result";
 // A slot of the bag as the item list shows it (inventory.c: renderInventoryTop, renderInventoryBottom).
 struct BagSlotView {
     bool empty = true;
-    std::int32_t item = 0;
+    // The item's id in data/items; empty for an empty slot.
+    std::string item;
     std::string nameKey;
     std::string descriptionKey;
     std::int32_t count = 0;

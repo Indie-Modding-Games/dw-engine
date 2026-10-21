@@ -81,6 +81,18 @@ public:
         return {};
     }
 
+    // Adds the ids of the entries whose index the engine gave, in a numbered section.
+    void addEngineNumbered(std::set<std::string, std::less<>>& ids) const {
+        if (!rule_->numbered) {
+            return;
+        }
+        for (const auto& [id, position] : positions_) {
+            if (!original_[position]) {
+                ids.insert(id);
+            }
+        }
+    }
+
     [[nodiscard]] YamlNode node() const {
         YamlNode sequence = YamlNode::sequence();
         for (const YamlNode& entry : entries_) {
@@ -230,6 +242,14 @@ public:
         return {};
     }
 
+    [[nodiscard]] std::set<std::string, std::less<>> engineNumbered() const {
+        std::set<std::string, std::less<>> ids;
+        for (const auto& [section, composer] : composers_) {
+            composer.addEngineNumbered(ids);
+        }
+        return ids;
+    }
+
     [[nodiscard]] YamlNode result() const {
         YamlNode table = table_;
         for (const auto& [section, composer] : composers_) {
@@ -288,8 +308,8 @@ core::Result<core::YamlNode> composeTable(std::span<const TableContribution> con
     return composer.result();
 }
 
-core::Result<std::string> readComposedTable(const VirtualFileSystem& vfs, const AssetId& id,
-                                            const TableComposition& composition) {
+core::Result<ComposedTableText> readComposedTableText(const VirtualFileSystem& vfs, const AssetId& id,
+                                                      const TableComposition& composition) {
     const std::span<const AssetSource> sources = vfs.sources(id);
     if (sources.empty()) {
         auto missing = vfs.read(id);
@@ -303,19 +323,38 @@ core::Result<std::string> readComposedTable(const VirtualFileSystem& vfs, const 
         }
         contributions.push_back(std::move(*contribution));
     }
-    auto table = composeTable(contributions, composition);
-    if (!table) {
-        return std::unexpected{table.error()};
+    TableComposer composer{composition};
+    for (const TableContribution& contribution : contributions) {
+        if (auto added = composer.add(contribution); !added) {
+            return std::unexpected{added.error()};
+        }
     }
-    if (contributions.size() == 1 && *table == contributions.front().document) {
+    const YamlNode table = composer.result();
+    ComposedTableText composed{.text = {}, .engineNumbered = composer.engineNumbered()};
+    if (contributions.size() == 1 && table == contributions.front().document) {
         // Checked and unchanged: the file's own text, so the readers' errors point at its lines.
         auto bytes = vfs.read(id);
         if (!bytes) {
             return std::unexpected{bytes.error()};
         }
-        return textOf(*bytes);
+        composed.text = textOf(*bytes);
+        return composed;
     }
-    return core::emitYaml(*table);
+    auto text = core::emitYaml(table);
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
+    composed.text = std::move(*text);
+    return composed;
+}
+
+core::Result<std::string> readComposedTable(const VirtualFileSystem& vfs, const AssetId& id,
+                                            const TableComposition& composition) {
+    auto composed = readComposedTableText(vfs, id, composition);
+    if (!composed) {
+        return std::unexpected{composed.error()};
+    }
+    return std::move(composed->text);
 }
 
 } // namespace dwe::assets

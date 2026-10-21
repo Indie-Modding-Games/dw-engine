@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace dwe::assets {
-struct MoveTable;
+class MoveTable;
 } // namespace dwe::assets
 
 namespace dwe::game::battle {

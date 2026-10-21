@@ -1,3 +1,4 @@
+#include <dwe/core/assert.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 
 #include <algorithm>
@@ -77,16 +78,16 @@ core::Result<void> Inventory::restore(InventoryState state) {
     return {};
 }
 
-AddResult Inventory::add(std::int32_t item, std::int32_t count) {
+AddResult Inventory::add(assets::ItemHandle item, std::int32_t count) {
     return stacking_->add(usableSlots(), item, count, rules_.bag.maxStack, rules_.quirks.stackOverflowIsLost);
 }
 
-bool Inventory::hasRoomFor(std::int32_t item) const {
+bool Inventory::hasRoomFor(assets::ItemHandle item) const {
     std::vector<std::optional<Stack>> trial{slots().begin(), slots().end()};
     return stacking_->add(trial, item, 1, rules_.bag.maxStack, rules_.quirks.stackOverflowIsLost).added > 0;
 }
 
-std::int32_t Inventory::countOf(std::int32_t item) const {
+std::int32_t Inventory::countOf(assets::ItemHandle item) const {
     for (const std::optional<Stack>& slot : slots()) {
         if (slot && slot->item == item) {
             return slot->count;
@@ -95,7 +96,7 @@ std::int32_t Inventory::countOf(std::int32_t item) const {
     return 0;
 }
 
-void Inventory::remove(std::int32_t item, std::int32_t count) {
+void Inventory::remove(assets::ItemHandle item, std::int32_t count) {
     for (std::optional<Stack>& slot : usableSlots()) {
         if (!slot || slot->item != item) {
             continue;
@@ -130,12 +131,9 @@ core::Result<void> Inventory::discard(std::size_t slot, const assets::ItemTable&
     if (!stack) {
         return core::fail(messages::formatMessage(messages::EmptySlot, slot));
     }
-    const assets::ItemEntry* entry = items.findByIndex(stack->item);
-    if (entry == nullptr) {
-        return core::fail(messages::formatMessage(messages::UnknownItem, stack->item));
-    }
-    if (entry->droppable != rules_.use.discardDroppable) {
-        return core::fail(messages::formatMessage(messages::NotDiscardable, stack->item));
+    const assets::ItemEntry& entry = items.at(stack->item);
+    if (entry.droppable != rules_.use.discardDroppable) {
+        return core::fail(messages::formatMessage(messages::NotDiscardable, entry.id));
     }
     stack.reset();
     return {};
@@ -146,24 +144,24 @@ core::Result<void> Inventory::sort(std::size_t mode, const assets::ItemTable& it
         return core::fail(messages::formatMessage(messages::UnknownSortMode, mode, rules_.sortOrders.size()));
     }
     // The items of each category by number; items outside the six categories are left where the swaps put them.
-    std::array<std::vector<std::int32_t>, SortCategoryCount> categories;
+    // The items a pack adds have numbers after the original's, so they go after them.
+    std::array<std::vector<const assets::ItemEntry*>, SortCategoryCount> categories;
     for (const std::optional<Stack>& slot : slots()) {
         if (!slot) {
             continue;
         }
-        const assets::ItemEntry* entry = items.findByIndex(slot->item);
-        if (entry == nullptr) {
-            return core::fail(messages::formatMessage(messages::UnknownItem, slot->item));
-        }
-        if (entry->sortingValue >= 0 && std::cmp_less(entry->sortingValue, SortCategoryCount)) {
-            categories.at(static_cast<std::size_t>(entry->sortingValue)).push_back(slot->item);
+        const assets::ItemEntry& entry = items.at(slot->item);
+        if (entry.sortingValue >= 0 && std::cmp_less(entry.sortingValue, SortCategoryCount)) {
+            categories.at(static_cast<std::size_t>(entry.sortingValue)).push_back(&entry);
         }
     }
-    std::vector<std::int32_t> desired;
+    std::vector<assets::ItemHandle> desired;
     for (const std::int32_t category : rules_.sortOrders[mode]) {
-        std::vector<std::int32_t>& members = categories.at(static_cast<std::size_t>(category));
-        std::ranges::sort(members);
-        desired.insert(desired.end(), members.begin(), members.end());
+        std::vector<const assets::ItemEntry*>& members = categories.at(static_cast<std::size_t>(category));
+        std::ranges::sort(members, {}, &assets::ItemEntry::index);
+        for (const assets::ItemEntry* member : members) {
+            desired.push_back(items.handleOf(*member));
+        }
     }
     // inventory.c: sortItems swaps each wanted item into place from the first slot that holds it.
     std::span<std::optional<Stack>> usable = usableSlots();
@@ -204,9 +202,11 @@ std::vector<Stack> Inventory::loseOnDefeat(ruleset::Random& random) {
         const std::vector<std::size_t> occupied = occupiedSlots();
         const std::size_t slot =
             occupied[static_cast<std::size_t>(random.below(static_cast<std::int32_t>(occupied.size())))];
-        const Stack stack = state_.slots[slot].value_or(Stack{});
-        lost.push_back(stack);
-        remove(stack.item, rules_.bag.maxStack);
+        // occupiedSlots lists only the slots that hold a stack.
+        if (const std::optional<Stack> stack = state_.slots[slot]) {
+            lost.push_back(*stack);
+            remove(stack->item, rules_.bag.maxStack);
+        }
     }
     return lost;
 }

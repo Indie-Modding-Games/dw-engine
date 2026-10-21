@@ -335,6 +335,44 @@ schemas:
     CHECK(textOf(*unnamed).contains("'my_mod:<name>'"));
 }
 
+TEST_CASE("an id a schema says names a table's entry must be one, in the table as the packs compose it") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("content/schemas/trips.schema.json", R"({
+        "type": "object",
+        "properties": {
+            "stops": {"type": "array", "items": {"type": "string", "entryReference": "data/maps"}},
+            "rooms": {"type": "array", "items": {"type": "string", "entryReference": "data/rooms"}}}})");
+    files.addFile("packs/my_mod/pack.yaml", R"(id: my_mod
+version: 1.0.0
+layer: mods
+name: My mod
+schemas:
+  map: ["map/*/*/data"]
+  trips: ["rules/trips"]
+)");
+    files.addFile("packs/my_mod/data/maps.yaml",
+                  "maps:\n- id: \"my_mod:meadow\"\n  filename: \"MEADOW\"\n  images_8bpp: 0\n"
+                  "  images_4bpp: 0\n  flags: 64\n  sound_id: 0\n  fixed_time_of_day: true\n"
+                  "  has_npcs: false\n  doors: null\n  toilet: null\n  loading_name: 0\n");
+    files.addFile("packs/my_mod/map/my_mod/meadow/data.yaml", dwe::assets::testing::fixtureMap());
+    files.addFile("packs/my_mod/rules/trips.yaml", "stops: [twna01, \"my_mod:meadow\"]\n");
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/my_mod", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    CHECK_MESSAGE(textOf(*report).empty(), textOf(*report));
+
+    files.addFile("packs/my_mod/rules/trips.yaml", "stops: [twna01, \"my_mod:swamp\"]\nrooms: [hall]\n");
+    const auto unknown = validatePacks(files, "packs/my_mod", "content/schemas", with);
+    REQUIRE_MESSAGE(unknown.has_value(), errorOf(unknown));
+    const std::string text = textOf(*unknown);
+    CHECK(text.contains("rules/trips.yaml:1:"));
+    CHECK(text.contains("'my_mod:swamp' is no entry of data/maps"));
+    CHECK(text.contains("entryReference 'data/rooms' is no content table"));
+    CHECK_FALSE(text.contains("twna01"));
+}
+
 // Runs only when DWE_CONTENT names a content folder (scripts/dev.sh mounts it).
 TEST_CASE("the user's disc, extracted: the example mod passes dwx validate over the base and the game pack") {
     const std::optional<std::filesystem::path> content = dwe::test_support::userContent();
@@ -515,7 +553,7 @@ TEST_CASE("every schema the base pack names compiles with the annotation keyword
             CHECK_MESSAGE(dwe::assets::checkIdPattern(pattern).has_value(), pattern);
         }
     }
-    const std::array<std::string_view, 1> keywords{AssetReferenceKeyword};
+    const std::array<std::string_view, 2> keywords{AssetReferenceKeyword, EntryReferenceKeyword};
     for (const std::string_view name : schemas) {
         const auto text = dwe::core::parseYaml(readText(std::format("{}/{}.schema.json", DWE_SCHEMA_DIR, name)));
         REQUIRE_MESSAGE(text.has_value(), name);

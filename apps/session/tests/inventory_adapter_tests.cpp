@@ -1,8 +1,10 @@
+#include <dwe/core/yaml.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/game/inventory/shop.hpp>
 #include <dwe/game/inventory/use.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
+#include <dwe/game/save/save_file.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -10,9 +12,14 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -102,14 +109,16 @@ TEST_CASE("the session puts a ruleset's new-game items in the bag, and refuses a
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
     REQUIRE(session->rules()
-                .setValue("inventory", "bag.new_game_items", "[{item: 0, count: 3}, {item: 38, count: 2}]")
+                .setValue("inventory", "bag.new_game_items", "[{item: tonic, count: 3}, {item: bun, count: 2}]")
                 .has_value());
     session->tick(dwe::session::testing::Tick);
     REQUIRE(session->startNewGame().has_value());
-    CHECK(adapters.inventory->inventory().countOf(items::Tonic) == 3);
-    CHECK(adapters.inventory->inventory().countOf(items::Bun) == 2);
+    CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 3);
+    CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Bun)) == 2);
 
-    REQUIRE(session->rules().setValue("inventory", "bag.new_game_items", "[{item: 77, count: 1}]").has_value());
+    REQUIRE(session->rules()
+                .setValue("inventory", "bag.new_game_items", "[{item: 'mymod:lantern', count: 1}]")
+                .has_value());
     session->tick(dwe::session::testing::Tick);
     CHECK_FALSE(session->startNewGame().has_value());
 }
@@ -121,13 +130,13 @@ TEST_CASE("a healing item heals the partner within its maximum and is used up") 
     PartnerState state = session->partner().state();
     state.stats.currentHp = 1;
     REQUIRE(session->partner().restore(state).has_value());
-    adapters.inventory->inventory().add(items::Tonic, 1);
-    const auto used = adapters.inventory->use(*session, items::Tonic);
+    adapters.inventory->inventory().add(items::handleOf(items::Tonic), 1);
+    const auto used = adapters.inventory->use(*session, items::handleOf(items::Tonic));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));
     CHECK(used->outcome == UseOutcome::Used);
     const auto& stats = session->partner().state().stats;
     CHECK(stats.currentHp == std::min(1 + 500, stats.base[Stat::Hp]));
-    CHECK(adapters.inventory->inventory().countOf(items::Tonic) == 0);
+    CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 0);
 }
 
 TEST_CASE("food feeds the partner: energy, weight and the training boost of its flag's stats") {
@@ -135,8 +144,8 @@ TEST_CASE("food feeds the partner: energy, weight and the training boost of its 
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
     const PartnerState before = session->partner().state();
-    adapters.inventory->inventory().add(items::Steak, 1);
-    const auto used = adapters.inventory->use(*session, items::Steak);
+    adapters.inventory->inventory().add(items::handleOf(items::Steak), 1);
+    const auto used = adapters.inventory->use(*session, items::handleOf(items::Steak));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));
     REQUIRE(used->outcome == UseOutcome::Used);
     const PartnerState& after = session->partner().state();
@@ -152,8 +161,8 @@ TEST_CASE("a chip raises the stats through the partner's gains and may lower the
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
     const PartnerState before = session->partner().state();
-    adapters.inventory->inventory().add(items::BrainChip, 1);
-    const auto used = adapters.inventory->use(*session, items::BrainChip);
+    adapters.inventory->inventory().add(items::handleOf(items::BrainChip), 1);
+    const auto used = adapters.inventory->use(*session, items::handleOf(items::BrainChip));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));
     REQUIRE(used->outcome == UseOutcome::Used);
     CHECK(session->partner().state().stats.base[Stat::Brain] == before.stats.base[Stat::Brain] + 50);
@@ -163,27 +172,27 @@ TEST_CASE("the partner never takes some items, and nothing is used up") {
     const TestPacks packs;
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
-    adapters.inventory->inventory().add(items::Charm, 1);
-    const auto used = adapters.inventory->use(*session, items::Charm);
+    adapters.inventory->inventory().add(items::handleOf(items::Charm), 1);
+    const auto used = adapters.inventory->use(*session, items::handleOf(items::Charm));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));
     CHECK(used->outcome == UseOutcome::Refused);
-    CHECK(adapters.inventory->inventory().countOf(items::Charm) == 1);
+    CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Charm)) == 1);
 }
 
 TEST_CASE("a fixed evolution item is refused away from its level and evolves the partner at it") {
     const TestPacks packs;
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
-    // The partner starts as a rookie (level 3); item 125 asks for a champion (level 4).
-    adapters.inventory->inventory().add(items::BigCrest, 1);
-    const auto refused = adapters.inventory->use(*session, items::BigCrest);
+    // The partner starts as a rookie (level 3); giga_hand asks for a champion (level 4).
+    adapters.inventory->inventory().add(items::handleOf(items::BigCrest), 1);
+    const auto refused = adapters.inventory->use(*session, items::handleOf(items::BigCrest));
     REQUIRE_MESSAGE(refused.has_value(), errorOf(refused));
     CHECK(refused->outcome == UseOutcome::Refused);
 
     PartnerState state = session->partner().state();
     state.species = "grey";
     REQUIRE(session->partner().restore(state).has_value());
-    const auto used = adapters.inventory->use(*session, items::BigCrest);
+    const auto used = adapters.inventory->use(*session, items::handleOf(items::BigCrest));
     REQUIRE_MESSAGE(used.has_value(), errorOf(used));
     CHECK(used->outcome == UseOutcome::Used);
 }
@@ -195,7 +204,7 @@ TEST_CASE("buying a key item asks for the key item autosave; a baby buys at the 
     auto session = sessionWithItems(packs, adapters, &storage);
     adapters.inventory->inventory().addMoney(Bits);
     const AllInStock stock;
-    const auto bought = adapters.inventory->buy(*session, items::Rod, 1, stock);
+    const auto bought = adapters.inventory->buy(*session, items::handleOf(items::Rod), 1, stock);
     REQUIRE_MESSAGE(bought.has_value(), errorOf(bought));
     CHECK(bought->keyItem);
     CHECK(bought->saved == 0);
@@ -204,7 +213,7 @@ TEST_CASE("buying a key item asks for the key item autosave; a baby buys at the 
     PartnerState state = session->partner().state();
     state.species = "bota";
     REQUIRE(session->partner().restore(state).has_value());
-    const auto discounted = adapters.inventory->buy(*session, items::Tonic, 1, stock);
+    const auto discounted = adapters.inventory->buy(*session, items::handleOf(items::Tonic), 1, stock);
     REQUIRE_MESSAGE(discounted.has_value(), errorOf(discounted));
     CHECK(discounted->saved > 0);
 }
@@ -213,7 +222,7 @@ TEST_CASE("the bag goes in the save and comes back") {
     const TestPacks packs;
     Adapters saving;
     auto saved = sessionWithItems(packs, saving);
-    saving.inventory->inventory().add(items::Bun, 7);
+    saving.inventory->inventory().add(items::handleOf(items::Bun), 7);
     saving.inventory->inventory().addMoney(Bits);
     auto file = saved->saveFile();
     REQUIRE_MESSAGE(file.has_value(), errorOf(file));
@@ -226,15 +235,91 @@ TEST_CASE("the bag goes in the save and comes back") {
     CHECK(loading.inventory->inventory().state() == saving.inventory->inventory().state());
 }
 
+TEST_CASE("a save that names an item no pack mounted has, from a removed mod, loads without that stack") {
+    const TestPacks packs;
+    Adapters saving;
+    auto saved = sessionWithItems(packs, saving);
+    saving.inventory->inventory().add(items::handleOf(items::Bun), 7);
+    saving.inventory->inventory().add(items::handleOf(items::Steak), 1);
+    saving.inventory->inventory().addMoney(Bits);
+    auto file = saved->saveFile();
+    REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+    auto text = dwe::core::emitYaml(file->sections.at("inventory").state);
+    REQUIRE_MESSAGE(text.has_value(), errorOf(text));
+    const std::string steak = "item: \"steak\"";
+    REQUIRE(text->contains(steak));
+    text->replace(text->find(steak), steak.size(), "item: \"my_mod:pie\"");
+    auto state = dwe::core::parseYaml(*text);
+    REQUIRE_MESSAGE(state.has_value(), errorOf(state));
+    file->sections.at("inventory").state = std::move(*state);
+
+    Adapters loading;
+    auto loaded = sessionWithItems(packs, loading);
+    const auto read = loaded->loadFile(*file);
+    REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+    const auto& bag = loading.inventory->inventory();
+    CHECK(bag.countOf(items::handleOf(items::Bun)) == 7);
+    CHECK(bag.countOf(items::handleOf(items::Steak)) == 0);
+    CHECK(bag.money() == Bits);
+}
+
+TEST_CASE("a saved bag names its items by id: the section is at version 2, with no item number") {
+    const TestPacks packs;
+    Adapters adapters;
+    auto session = sessionWithItems(packs, adapters);
+    adapters.inventory->inventory().add(items::handleOf(items::Bun), 7);
+    adapters.inventory->inventory().add(items::handleOf(items::GateKey), 1);
+    const auto file = session->saveFile();
+    REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+    const dwe::game::save::SavedSection& section = file->sections.at("inventory");
+    CHECK(section.version == 2);
+    const dwe::core::YamlNode* slots = section.state.find("slots");
+    REQUIRE(slots != nullptr);
+    std::vector<std::string> named;
+    for (const dwe::core::YamlNode& slot : slots->items()) {
+        if (const dwe::core::YamlNode* item = slot.isMapping() ? slot.find("item") : nullptr) {
+            named.push_back(item->text());
+        }
+    }
+    CHECK(named == std::vector<std::string>{"bun", "gate_key"});
+}
+
+TEST_CASE("a save whose bag is at version 1, items by number, loads with the items' ids") {
+    std::ifstream stream{std::filesystem::path{DWE_SESSION_FIXTURES} / "inventory_v1.yaml", std::ios::binary};
+    const std::string text{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
+    const auto old = dwe::core::parseYaml(text);
+    REQUIRE_MESSAGE(old.has_value(), errorOf(old));
+    const TestPacks packs;
+    Adapters saving;
+    auto saved = sessionWithItems(packs, saving);
+    auto file = saved->saveFile();
+    REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+    file->sections.at("inventory") = {.version = 1, .state = *old};
+
+    Adapters loading;
+    auto loaded = sessionWithItems(packs, loading);
+    const auto read = loaded->loadFile(*file);
+    REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+    const auto& bag = loading.inventory->inventory();
+    CHECK(bag.slotCount() == 20);
+    CHECK(bag.money() == 1234);
+    CHECK(bag.countOf(items::handleOf(items::Tonic)) == 5);
+    CHECK(bag.countOf(items::handleOf(items::Steak)) == 2);
+    CHECK(bag.countOf(items::handleOf(items::GateKey)) == 1);
+    const auto again = loaded->saveFile();
+    REQUIRE_MESSAGE(again.has_value(), errorOf(again));
+    CHECK(again->sections.at("inventory").version == 2);
+}
+
 TEST_CASE("a defeat takes stacks with the session's random numbers: the same seed loses the same ones") {
     const TestPacks packs;
     Adapters first;
     Adapters second;
     auto one = sessionWithItems(packs, first);
     auto two = sessionWithItems(packs, second);
-    for (const std::int32_t item : {items::Tonic, items::Bun, items::Steak, items::BrainChip, items::Toilet}) {
-        first.inventory->inventory().add(item, 1);
-        second.inventory->inventory().add(item, 1);
+    for (const std::string_view item : {items::Tonic, items::Bun, items::Steak, items::BrainChip, items::Toilet}) {
+        first.inventory->inventory().add(items::handleOf(item), 1);
+        second.inventory->inventory().add(items::handleOf(item), 1);
     }
     const auto lost = first.inventory->loseOnDefeat(*one);
     CHECK_FALSE(lost.empty());
@@ -245,6 +330,6 @@ TEST_CASE("the inventory adapter registers the inventory and item_use sections' 
     const TestPacks packs;
     Adapters adapters;
     auto session = sessionWithItems(packs, adapters);
-    CHECK_FALSE(session->rules().setValue("inventory", "bag.new_game_items", "[{item: 0, count: 0}]").has_value());
+    CHECK_FALSE(session->rules().setValue("inventory", "bag.new_game_items", "[{item: tonic, count: 0}]").has_value());
     CHECK_FALSE(session->rules().setValue("item_use", "meals", "[{from: 70, to: 38}]").has_value());
 }

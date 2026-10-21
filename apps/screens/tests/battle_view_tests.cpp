@@ -37,9 +37,7 @@ dwe::assets::ItemTable fixtureItems() {
     dwe::assets::ItemEntry tonic;
     tonic.id = "tonic";
     tonic.index = 4;
-    dwe::assets::ItemTable table;
-    table.items.push_back(tonic);
-    return table;
+    return dwe::assets::ItemTable{{tonic}};
 }
 
 const dwe::screens::ScreenSetting* settingNamed(const dwe::screens::ScreenSettings& settings, std::string_view name) {
@@ -175,7 +173,9 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
     result.injured = false;
     result.livesLost = 1;
     aftermath.learnedMoves.clear();
-    aftermath.itemsLost = {{.item = 4, .count = 2}};
+    const dwe::assets::ItemEntry* tonic = items.find("tonic");
+    REQUIRE(tonic != nullptr);
+    aftermath.itemsLost = {{.item = items.handleOf(*tonic), .count = 2}};
     const auto defeat = dwe::screens::battleEndViewOf(result, aftermath, names);
     CHECK(defeat.outcomeKey == "battle.outcome.defeat");
     REQUIRE(defeat.lines.size() == 2);
@@ -189,7 +189,10 @@ TEST_CASE("a name whose row is unknown has no key") {
     CHECK(names.species("hero").empty());
     CHECK(names.move("punch").empty());
     CHECK(names.item(std::string_view{"tonic"}).empty());
-    CHECK(names.item(7).empty());
+    const auto items = fixtureItems();
+    const dwe::assets::ItemEntry* tonic = items.find("tonic");
+    REQUIRE(tonic != nullptr);
+    CHECK(names.item(items.handleOf(*tonic)).empty());
     CHECK(dwe::screens::commandLabelKey(Command::Change) == "btl.command_names.0006");
     CHECK(dwe::screens::commandLabelKey(Command::Technique1).empty());
 }

@@ -49,8 +49,8 @@ BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) 
 
 core::Result<MoveCatalog> MoveCatalog::build(const assets::MoveTable& table, const BattleRules& rules) {
     MoveCatalog catalog;
-    catalog.moves_.reserve(table.moves.size());
-    for (const assets::MoveEntry& entry : table.moves) {
+    catalog.moves_.reserve(table.entries().size());
+    for (const assets::MoveEntry& entry : table.entries()) {
         catalog.moves_.push_back(battleMoveOf(entry, rules.moves));
     }
     for (const BuffRule& buff : rules.moves.buffs) {

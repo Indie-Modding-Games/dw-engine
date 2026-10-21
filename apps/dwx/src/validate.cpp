@@ -6,9 +6,12 @@
 #include <dwe/assets/lua_api.hpp>
 #include <dwe/assets/model.hpp>
 #include <dwe/assets/pak.hpp>
+#include <dwe/assets/table_composition.hpp>
+#include <dwe/assets/table_kinds.hpp>
 #include <dwe/assets/text_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/json_schema.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -38,7 +41,7 @@ using assets::AssetId;
 using assets::VirtualFileSystem;
 using core::YamlNode;
 
-constexpr std::array<std::string_view, 1> AnnotationKeywords = {AssetReferenceKeyword};
+constexpr std::array<std::string_view, 2> AnnotationKeywords = {AssetReferenceKeyword, EntryReferenceKeyword};
 constexpr std::string_view ManifestFile = "pack.yaml";
 constexpr std::string_view MetaSuffix = "_meta";
 constexpr std::string_view Placeholder = "{}";
@@ -125,6 +128,9 @@ struct LoadedSchema {
     std::optional<core::JsonSchema> schema;
     std::string error;
 };
+
+// The ids of a content table's entries.
+using EntryIds = std::set<std::string, std::less<>>;
 
 // A schema rule of a mounted pack.
 struct Rule {
@@ -290,6 +296,10 @@ private:
             add(file, problem.line, problem.column, std::format("{}: {}", problem.path, problem.message));
         }
         for (const core::SchemaAnnotation& annotation : checked.annotations) {
+            if (annotation.keyword == EntryReferenceKeyword) {
+                checkEntryReference(file, annotation);
+                continue;
+            }
             const auto reference = referenceOf(annotation.annotation, annotation.value, id);
             if (!reference) {
                 add(file, annotation.line, annotation.column,
@@ -305,6 +315,60 @@ private:
         if (name == names::ContractSchema && checked.problems.empty()) {
             checkContract(id, file, *document);
         }
+    }
+
+    // An id that must be an entry of a content table.
+    void checkEntryReference(const std::string& file, const core::SchemaAnnotation& annotation) {
+        ++report_.references;
+        const auto kind =
+            std::ranges::find(assets::composedTableKinds(), annotation.annotation, &assets::TableKind::defaultId);
+        if (kind == assets::composedTableKinds().end()) {
+            add(file, annotation.line, annotation.column,
+                core::formatMessage(messages::EntryReferenceTable, annotation.path, annotation.annotation));
+            return;
+        }
+        const EntryIds* ids = entryIds(*kind);
+        if (ids != nullptr && !ids->contains(annotation.value)) {
+            add(file, annotation.line, annotation.column,
+                core::formatMessage(messages::EntryReferenceUnknown, annotation.path, annotation.value,
+                                    annotation.annotation));
+        }
+    }
+
+    // The ids of a content table's entries as the packs compose it, read the first time they are asked for; nullptr
+    // when the table cannot be read, which checkContent reports.
+    const EntryIds* entryIds(const assets::TableKind& kind) {
+        auto found = entryIds_.find(kind.defaultId);
+        if (found == entryIds_.end()) {
+            found = entryIds_.emplace(std::string{kind.defaultId}, readEntryIds(kind)).first;
+        }
+        return found->second ? &*found->second : nullptr;
+    }
+
+    [[nodiscard]] std::optional<EntryIds> readEntryIds(const assets::TableKind& kind) const {
+        const auto id = AssetId::parse(kind.defaultId);
+        if (!id || stack_->resolve(*id) == nullptr) {
+            return std::nullopt;
+        }
+        const auto text = assets::readComposedTable(*stack_, *id, *kind.composition);
+        const auto table = text ? core::parseYaml(*text) : core::Result<YamlNode>{std::unexpected{text.error()}};
+        if (!table || !table->isMapping()) {
+            return std::nullopt;
+        }
+        EntryIds ids;
+        for (const assets::EntrySection& section : kind.composition->sections) {
+            const YamlNode* entries = section.ownsIds ? table->find(section.section) : nullptr;
+            if (entries == nullptr || !entries->isSequence()) {
+                continue;
+            }
+            for (const YamlNode& entry : entries->items()) {
+                const YamlNode* key = entry.isMapping() ? entry.find(section.entryKey) : nullptr;
+                if (key != nullptr && key->isScalar()) {
+                    ids.insert(key->text());
+                }
+            }
+        }
+        return ids;
     }
 
     // Follows a reference; returns what is wrong with it, or nothing.
@@ -428,6 +492,7 @@ private:
     std::vector<Rule> rules_;
     std::map<std::string, LoadedSchema, std::less<>> schemas_;
     std::set<std::pair<std::string, std::string>> reportedSchemas_;
+    std::map<std::string, std::optional<EntryIds>, std::less<>> entryIds_;
     ValidationReport report_;
 };
 

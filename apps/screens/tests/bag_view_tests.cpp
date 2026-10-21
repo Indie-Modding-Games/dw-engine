@@ -11,9 +11,9 @@ using namespace dwe::game::inventory::testing;
 
 TEST_CASE("the bag view lists the usable slots with the items' names, counts and colour") {
     auto inventory = originalInventory();
-    const auto items = fixtureItems();
-    inventory.add(Tonic, 3);
-    inventory.add(GateKey, 1);
+    const auto& items = fixtureItems();
+    inventory.add(handleOf(Tonic), 3);
+    inventory.add(handleOf(GateKey), 1);
     inventory.addMoney(250);
     const dwe::screens::NameKeys names{nullptr, &items, nullptr};
 
@@ -21,7 +21,7 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
     CHECK(view.money == 250);
     REQUIRE(view.slots.size() == static_cast<std::size_t>(inventory.slotCount()));
     CHECK(view.slots[0] == dwe::screens::BagSlotView{.empty = false,
-                                                     .item = Tonic,
+                                                     .item = std::string{Tonic},
                                                      .nameKey = "main.item_names.0000",
                                                      .descriptionKey = "main.item_descs.0000",
                                                      .count = 3,
@@ -39,10 +39,10 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
 
 TEST_CASE("the bag view says which items are used where the bag is open, by their item colour") {
     auto inventory = originalInventory();
-    const auto items = fixtureItems();
-    inventory.add(Tonic, 1);
-    inventory.add(Ether, 1);
-    inventory.add(Bun, 1);
+    const auto& items = fixtureItems();
+    inventory.add(handleOf(Tonic), 1);
+    inventory.add(handleOf(Ether), 1);
+    inventory.add(handleOf(Bun), 1);
     const dwe::screens::NameKeys names{nullptr, &items, nullptr};
     using dwe::game::inventory::UseContext;
 

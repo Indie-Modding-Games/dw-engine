@@ -1,11 +1,15 @@
 #include <dwe/assets/messages.hpp>
 #include <dwe/assets/move_table.hpp>
 #include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/assert.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
+#include <set>
 #include <span>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "game_table_document.hpp"
 
@@ -56,51 +60,85 @@ MoveEntry readMove(YamlReader& reader, const YamlNode& node) {
             .learnChances = readLearnChances(reader, node)};
 }
 
-core::Result<MoveTable> readMoveTable(const YamlNode& root) {
+core::Result<MoveTable> readMoveTable(const YamlNode& root, const std::set<std::string, std::less<>>& engineNumbered) {
     YamlReader reader;
     if (!reader.expectKeys(root, messages::MoveTableText, {"moves"})) {
         return std::unexpected{reader.error(messages::MoveTableText)};
     }
-    MoveTable table;
+    std::vector<MoveEntry> moves;
     for (const YamlNode& item : reader.sequence(reader.field(root, "moves"), "moves")) {
-        table.moves.push_back(readMove(reader, item));
-        const MoveEntry& added = table.moves.back();
-        if (reader.ok() && table.find(added.id) != &added) {
+        MoveEntry added = readMove(reader, item);
+        added.originalIndex = !engineNumbered.contains(added.id);
+        if (reader.ok() && std::ranges::contains(moves, added.id, &MoveEntry::id)) {
             reader.fail(item, messages::formatMessage(messages::RepeatedEntry, messages::MoveText, added.id));
-        } else if (reader.ok() && table.findByIndex(added.index) != &added) {
+        } else if (reader.ok() && std::ranges::contains(moves, added.index, &MoveEntry::index)) {
             reader.fail(item,
                         messages::formatMessage(messages::RepeatedIndex, messages::MoveText, added.id, added.index));
         }
+        moves.push_back(std::move(added));
     }
-    return reader.finish(std::move(table), messages::MoveTableText);
+    auto read = reader.finish(std::move(moves), messages::MoveTableText);
+    if (!read) {
+        return std::unexpected{read.error()};
+    }
+    return MoveTable{std::move(*read)};
 }
 
 } // namespace
 
+MoveTable::MoveTable() : generation_{CompositionGeneration::next()} {}
+
+MoveTable::MoveTable(std::vector<MoveEntry> moves)
+    : moves_{std::move(moves)}, generation_{CompositionGeneration::next()} {}
+
 const MoveEntry* MoveTable::find(std::string_view id) const {
-    const auto found = std::ranges::find(moves, id, &MoveEntry::id);
-    return found == moves.end() ? nullptr : &*found;
+    const auto found = std::ranges::find(moves_, id, &MoveEntry::id);
+    return found == moves_.end() ? nullptr : &*found;
 }
 
-const MoveEntry* MoveTable::findByIndex(std::int32_t index) const {
-    const auto found = std::ranges::find(moves, index, &MoveEntry::index);
-    return found == moves.end() ? nullptr : &*found;
+std::optional<MoveHandle> MoveTable::handleOf(std::string_view id) const {
+    const MoveEntry* entry = find(id);
+    if (entry == nullptr) {
+        return std::nullopt;
+    }
+    return handleOf(*entry);
 }
 
-core::Result<MoveTable> parseMoveTable(std::string_view yaml) {
+MoveHandle MoveTable::handleOf(const MoveEntry& entry) const {
+    DWE_ASSERT(&entry >= moves_.data() && &entry < moves_.data() + moves_.size());
+    return MoveHandle{generation_, static_cast<std::uint32_t>(&entry - moves_.data())};
+}
+
+bool MoveTable::owns(MoveHandle handle) const {
+    return handle.generation_ == generation_ && handle.position_ < moves_.size();
+}
+
+const MoveEntry& MoveTable::at(MoveHandle handle) const {
+    DWE_ASSERT(owns(handle));
+    return moves_[handle.position_];
+}
+
+const MoveEntry* MoveTable::findByOriginalIndex(std::int32_t index) const {
+    const auto found = std::ranges::find_if(
+        moves_, [index](const MoveEntry& entry) { return entry.originalIndex && entry.index == index; });
+    return found == moves_.end() ? nullptr : &*found;
+}
+
+core::Result<MoveTable> parseMoveTable(std::string_view yaml,
+                                       const std::set<std::string, std::less<>>& engineNumbered) {
     auto tree = parseTableDocument(yaml, messages::MoveTableText);
     if (!tree) {
         return std::unexpected{tree.error()};
     }
-    return readMoveTable(*tree);
+    return readMoveTable(*tree, engineNumbered);
 }
 
 core::Result<MoveTable> loadMoveTable(const VirtualFileSystem& vfs, const AssetId& id) {
-    auto tree = readTableDocument(vfs, id, messages::MoveTableText, MoveComposition);
-    if (!tree) {
-        return std::unexpected{tree.error()};
+    auto composed = readComposedTableText(vfs, id, MoveComposition);
+    if (!composed) {
+        return std::unexpected{composed.error()};
     }
-    return readMoveTable(*tree);
+    return parseMoveTable(composed->text, composed->engineNumbered);
 }
 
 } // namespace dwe::assets

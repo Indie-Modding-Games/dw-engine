@@ -15,7 +15,7 @@
 namespace dwe::formats::test {
 
 // The annotation keywords content/schemas use; dwx validate reads them (apps/dwx/src/validate.cpp).
-inline constexpr std::array<std::string_view, 1> AnnotationKeywords = {"assetReference"};
+inline constexpr std::array<std::string_view, 2> AnnotationKeywords = {"assetReference", "entryReference"};
 
 inline std::string readSchemaText(std::string_view name) {
     std::ifstream file{std::format("{}/{}.schema.json", DWE_SCHEMA_DIR, name)};

@@ -6,16 +6,25 @@
   "required": ["refusal", "meals", "shop_discount_levels", "training_boost_bits"],
   "additionalProperties": false,
   "$defs": {
-    "item": { "type": "integer", "minimum": 0 },
-    "ranges": {
+    "item": {
+      "description": "The item's id in data/items.",
+      "type": "string",
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+      "entryReference": "data/items"
+    },
+    "number": { "description": "An item's number in the original game.", "type": "integer", "minimum": 0 },
+    "entries": {
+      "description": "Items by id, or ranges {from, to} of the original game's numbers: a range covers only the original's items, a pack's item joins by id.",
       "type": "array",
       "items": {
-        "type": "object",
+        "type": ["string", "object"],
+        "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+        "entryReference": "data/items",
         "required": ["from", "to"],
         "additionalProperties": false,
         "properties": {
-          "from": { "$ref": "#/$defs/item", "description": "The first item of the range." },
-          "to": { "$ref": "#/$defs/item", "description": "The last item of the range, not before from." }
+          "from": { "$ref": "#/$defs/number", "description": "The first item of the range." },
+          "to": { "$ref": "#/$defs/number", "description": "The last item of the range, not before from." }
         }
       }
     },
@@ -28,11 +37,16 @@
       "required": ["never_taken", "discipline_checked_below", "fixed_level_evolutions", "refused_level_differences"],
       "additionalProperties": false,
       "properties": {
-        "never_taken": { "$ref": "#/$defs/ranges", "description": "Items it never takes." },
+        "never_taken": { "$ref": "#/$defs/entries", "description": "Items it never takes." },
         "discipline_checked_below": {
-          "description": "Items with a lower number go through the discipline roll.",
+          "description": "The original's items with a lower number go through the discipline roll.",
           "type": "integer",
           "minimum": 0
+        },
+        "discipline_checked_ids": {
+          "description": "More items that go through the discipline roll, by id: those a pack adds.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/item" }
         },
         "fixed_level_evolutions": {
           "description": "Evolution items it takes only at one level.",
@@ -54,7 +68,7 @@
         }
       }
     },
-    "meals": { "$ref": "#/$defs/ranges", "description": "The items that answer hunger (partner_impl.c: partnerHandleFoodFeed)." },
+    "meals": { "$ref": "#/$defs/entries", "description": "The items that answer hunger (partner_impl.c: partnerHandleFoodFeed)." },
     "shop_discount_levels": {
       "description": "The partner levels of data/digimon that get the shops' baby discount (script_common.c: isPartnerBaby).",
       "type": "array",

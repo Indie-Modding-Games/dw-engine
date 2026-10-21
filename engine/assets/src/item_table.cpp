@@ -1,6 +1,7 @@
 #include <dwe/assets/item_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/assert.hpp>
 #include <dwe/core/yaml.hpp>
 
 #include <algorithm>
@@ -34,17 +35,46 @@ ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
 
 } // namespace
 
+ItemTable::ItemTable() : generation_{CompositionGeneration::next()} {}
+
+ItemTable::ItemTable(std::vector<ItemEntry> items)
+    : items_{std::move(items)}, generation_{CompositionGeneration::next()} {}
+
 const ItemEntry* ItemTable::find(std::string_view id) const {
-    const auto found = std::ranges::find(items, id, &ItemEntry::id);
-    return found == items.end() ? nullptr : &*found;
+    const auto found = std::ranges::find(items_, id, &ItemEntry::id);
+    return found == items_.end() ? nullptr : &*found;
 }
 
-const ItemEntry* ItemTable::findByIndex(std::int32_t index) const {
-    const auto found = std::ranges::find(items, index, &ItemEntry::index);
-    return found == items.end() ? nullptr : &*found;
+std::optional<ItemHandle> ItemTable::handleOf(std::string_view id) const {
+    const ItemEntry* entry = find(id);
+    if (entry == nullptr) {
+        return std::nullopt;
+    }
+    return handleOf(*entry);
 }
 
-core::Result<ItemTable> parseItemTable(std::string_view yaml) {
+ItemHandle ItemTable::handleOf(const ItemEntry& entry) const {
+    DWE_ASSERT(&entry >= items_.data() && &entry < items_.data() + items_.size());
+    return ItemHandle{generation_, static_cast<std::uint32_t>(&entry - items_.data())};
+}
+
+bool ItemTable::owns(ItemHandle handle) const {
+    return handle.generation_ == generation_ && handle.position_ < items_.size();
+}
+
+const ItemEntry& ItemTable::at(ItemHandle handle) const {
+    DWE_ASSERT(owns(handle));
+    return items_[handle.position_];
+}
+
+const ItemEntry* ItemTable::findByOriginalIndex(std::int32_t index) const {
+    const auto found = std::ranges::find_if(
+        items_, [index](const ItemEntry& entry) { return entry.originalIndex && entry.index == index; });
+    return found == items_.end() ? nullptr : &*found;
+}
+
+core::Result<ItemTable> parseItemTable(std::string_view yaml,
+                                       const std::set<std::string, std::less<>>& engineNumbered) {
     auto tree = core::parseYaml(yaml);
     if (!tree) {
         return std::unexpected{core::Error{std::format("{}: {}", Context, tree.error().message)}};
@@ -54,21 +84,25 @@ core::Result<ItemTable> parseItemTable(std::string_view yaml) {
     if (!reader.expectKeys(root, "the item table", {"items"})) {
         return std::unexpected{reader.error(Context)};
     }
-    ItemTable table;
+    std::vector<ItemEntry> entries;
     const std::span<const YamlNode> items = reader.sequence(reader.field(root, "items"), "items");
     for (const YamlNode& item : items) {
-        table.items.push_back(readItem(reader, item));
+        entries.push_back(readItem(reader, item));
+        entries.back().originalIndex = !engineNumbered.contains(entries.back().id);
     }
-    for (std::size_t i = 0; reader.ok() && i < table.items.size(); ++i) {
+    for (std::size_t i = 0; reader.ok() && i < entries.size(); ++i) {
         for (std::size_t j = 0; j < i; ++j) {
-            if (table.items[i].id == table.items[j].id || table.items[i].index == table.items[j].index) {
-                reader.fail(items[i],
-                            std::format("item '{}' ({}) is listed twice", table.items[i].id, table.items[i].index));
+            if (entries[i].id == entries[j].id || entries[i].index == entries[j].index) {
+                reader.fail(items[i], std::format("item '{}' ({}) is listed twice", entries[i].id, entries[i].index));
                 break;
             }
         }
     }
-    return reader.finish(std::move(table), Context);
+    auto read = reader.finish(std::move(entries), Context);
+    if (!read) {
+        return std::unexpected{read.error()};
+    }
+    return ItemTable{std::move(*read)};
 }
 
 core::Result<ItemTable> loadItemTable(const VirtualFileSystem& vfs) {
@@ -76,11 +110,11 @@ core::Result<ItemTable> loadItemTable(const VirtualFileSystem& vfs) {
     if (!id) {
         return std::unexpected{id.error()};
     }
-    auto text = readComposedTable(vfs, *id, ItemComposition);
-    if (!text) {
-        return std::unexpected{text.error()};
+    auto composed = readComposedTableText(vfs, *id, ItemComposition);
+    if (!composed) {
+        return std::unexpected{composed.error()};
     }
-    return parseItemTable(*text);
+    return parseItemTable(composed->text, composed->engineNumbered);
 }
 
 } // namespace dwe::assets

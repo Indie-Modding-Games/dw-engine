@@ -86,7 +86,7 @@ TEST_CASE("the user's disc, extracted: every move builds into the battle catalog
     }
     const auto catalog = MoveCatalog::build(tables->moves, originalRules());
     REQUIRE_MESSAGE(catalog, errorOf(catalog));
-    CHECK(catalog->size() == tables->moves.moves.size());
+    CHECK(catalog->size() == tables->moves.entries().size());
     std::int32_t finishers = 0;
     for (MoveRef ref = 0; ref < catalog->size(); ++ref) {
         finishers += catalog->at(ref).finisher ? 1 : 0;

@@ -1,5 +1,6 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/assert.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/inventory/inventory_yaml.hpp>
 #include <dwe/game/inventory/stacking.hpp>
 #include <dwe/game/partner/effects.hpp>
@@ -54,14 +55,22 @@ public:
         if (!adapter_->inventory_) {
             return core::fail(std::string{messages::InventoryNotRead});
         }
-        return game::inventory::toYaml(*adapter_->inventory_);
+        return game::inventory::toYaml(*adapter_->inventory_, adapter_->items());
     }
 
     core::Result<void> read(const core::YamlNode& state) override {
         if (!adapter_->inventory_) {
             return core::fail(std::string{messages::InventoryNotRead});
         }
-        return game::inventory::fromYaml(*adapter_->inventory_, state);
+        auto dropped = game::inventory::fromYaml(*adapter_->inventory_, adapter_->items(), state);
+        if (!dropped) {
+            return std::unexpected{dropped.error()};
+        }
+        // A removed mod's items leave the bag; the rest of the save loads.
+        for (const game::inventory::DroppedStack& stack : *dropped) {
+            core::logWarning("{}", formatMessage(messages::SavedStackDropped, stack.item, stack.count));
+        }
+        return {};
     }
 
 private:
@@ -74,7 +83,7 @@ public:
     PartnerTarget(GameSession& session, const InventoryAdapter& adapter) : session_(&session), adapter_(&adapter) {}
 
     bool accepts(const ItemEffect& effect, UseContext /*context*/) override {
-        return !session_->partner().refuses({.item = itemId(effect.item), .check = refusalCheck(effect)});
+        return !session_->partner().refuses({.item = effect.item, .check = refusalCheck(effect)});
     }
 
     void apply(const ItemEffect& effect, UseContext /*context*/) override {
@@ -106,15 +115,17 @@ public:
             partner.usePortableToilet();
         }
         if (effect.evolution && adapter_->desc_.evolution != nullptr) {
-            adapter_->desc_.evolution->useItem(*session_, itemId(effect.item));
+            adapter_->desc_.evolution->useItem(*session_, effect.item);
         }
         // Gap: a script chip's section waits for the script VM (phase 4).
     }
 
 private:
-    [[nodiscard]] std::string itemId(std::int32_t item) const {
-        const assets::ItemEntry* entry = adapter_->items().findByIndex(item);
-        return entry != nullptr ? entry->id : std::string{};
+    // The item of an effect, which resolve took from data/items.
+    [[nodiscard]] const assets::ItemEntry& itemOf(const ItemEffect& effect) const {
+        const assets::ItemEntry* entry = adapter_->items().find(effect.item);
+        DWE_ASSERT(entry != nullptr);
+        return *entry;
     }
 
     [[nodiscard]] std::int32_t partnerLevel() const {
@@ -124,10 +135,11 @@ private:
     // partner_impl.c: partnerWillRefuseItem.
     [[nodiscard]] RefusalCheck refusalCheck(const ItemEffect& effect) const {
         const ItemRefusalRules& rules = adapter_->itemUse_.refusal;
-        if (inRanges(rules.neverTaken, effect.item) || refusesEvolution(effect)) {
+        const assets::ItemEntry& item = itemOf(effect);
+        if (rules.neverTaken.contains(item) || refusesEvolution(effect)) {
             return RefusalCheck::Always;
         }
-        return effect.item < rules.disciplineCheckedBelow ? RefusalCheck::Discipline : RefusalCheck::FavoriteOnly;
+        return rules.disciplineChecked.contains(item) ? RefusalCheck::Discipline : RefusalCheck::FavoriteOnly;
     }
 
     [[nodiscard]] bool refusesEvolution(const ItemEffect& effect) const {
@@ -142,7 +154,7 @@ private:
         if (adapter_->desc_.evolution == nullptr) {
             return false;
         }
-        const auto target = adapter_->desc_.evolution->itemTargetLevel(itemId(effect.item));
+        const auto target = adapter_->desc_.evolution->itemTargetLevel(effect.item);
         if (!target) {
             return false;
         }
@@ -166,8 +178,8 @@ private:
     // item.c: handleFood, and partnerHandleFoodFeed for the meals.
     [[nodiscard]] game::partner::FoodEffect foodOf(const ItemEffect& effect) const {
         const game::inventory::CareChange care = effect.care.value_or(game::inventory::CareChange{});
-        return {.item = itemId(effect.item),
-                .meal = inRanges(adapter_->itemUse_.meals, effect.item),
+        return {.item = effect.item,
+                .meal = adapter_->itemUse_.meals.contains(itemOf(effect)),
                 .energy = care.energy,
                 .tirednessRelief = care.tirednessRelief,
                 .happiness = care.happiness,
@@ -254,6 +266,12 @@ core::Result<void> InventoryAdapter::readRules(const ruleset::Ruleset& rules) {
         return core::fail(std::string{messages::InventoryNeedsTables});
     }
     const game::inventory::InventoryRules& inventoryRules = fresh->rules();
+    if (auto checked = game::inventory::checkItemIds(inventoryRules, items()); !checked) {
+        return checked;
+    }
+    if (auto checked = checkItemUseItems(*itemUse, items()); !checked) {
+        return checked;
+    }
     effects_.emplace(*desc_.effects, inventoryRules.effects, inventoryRules.quirks);
     if (inventory_) {
         auto stacking = game::inventory::stackingRules().create(*section_, game::inventory::StackingPath);
@@ -284,8 +302,12 @@ core::Result<game::inventory::Inventory> InventoryAdapter::freshInventory() cons
 }
 
 core::Result<void> InventoryAdapter::addSaveSections(game::save::SaveSections& sections) {
-    static_assert(game::inventory::SectionVersion == 1, "the inventory section needs its migrations here");
-    return sections.add(std::string{InventorySaveName}, *serializer_, game::save::MigrationChain{});
+    static_assert(game::inventory::SectionVersion == 2, "the inventory section needs its migrations here");
+    game::save::MigrationChain migrations;
+    // Version 2 names the items by id instead of their number in data/items.
+    migrations.add(
+        [this](core::YamlNode state) { return game::inventory::itemNumbersToIds(std::move(state), items()); });
+    return sections.add(std::string{InventorySaveName}, *serializer_, std::move(migrations));
 }
 
 core::Result<void> InventoryAdapter::startNewGame(GameSession& /*session*/) {
@@ -298,16 +320,17 @@ core::Result<void> InventoryAdapter::startNewGame(GameSession& /*session*/) {
     }
     // Script dg 193 empties the boot state's bag; the ruleset's list is what a new game starts with.
     for (const game::inventory::StartingItem& item : fresh->rules().bag.newGameItems) {
-        if (items().findByIndex(item.item) == nullptr) {
+        const std::optional<assets::ItemHandle> handle = items().handleOf(item.item);
+        if (!handle) {
             return core::fail(formatMessage(messages::UnknownStartingItem, item.item));
         }
-        fresh->add(item.item, item.count);
+        fresh->add(*handle, item.count);
     }
     inventory_.emplace(std::move(*fresh));
     return {};
 }
 
-core::Result<game::inventory::UseResult> InventoryAdapter::use(GameSession& session, std::int32_t item) {
+core::Result<game::inventory::UseResult> InventoryAdapter::use(GameSession& session, assets::ItemHandle item) {
     if (!inventory_ || !effects_) {
         return core::fail(std::string{messages::InventoryNotRead});
     }
@@ -323,7 +346,7 @@ core::Result<game::inventory::UseResult> InventoryAdapter::use(GameSession& sess
     return used;
 }
 
-core::Result<game::inventory::UseResult> InventoryAdapter::useInBattle(std::int32_t item,
+core::Result<game::inventory::UseResult> InventoryAdapter::useInBattle(assets::ItemHandle item,
                                                                        game::inventory::ItemEffectTarget& target) {
     if (!inventory_ || !effects_) {
         return core::fail(std::string{messages::InventoryNotRead});
@@ -331,19 +354,15 @@ core::Result<game::inventory::UseResult> InventoryAdapter::useInBattle(std::int3
     return game::inventory::useItem(*inventory_, item, UseContext::Battle, items(), *effects_, target);
 }
 
-core::Result<game::inventory::Purchase> InventoryAdapter::buy(GameSession& session, std::int32_t item,
+core::Result<game::inventory::Purchase> InventoryAdapter::buy(GameSession& session, assets::ItemHandle item,
                                                               std::int32_t amount,
                                                               const game::inventory::StockTriggers& triggers) {
     if (!inventory_) {
         return core::fail(std::string{messages::InventoryNotRead});
     }
-    const assets::ItemEntry* entry = items().findByIndex(item);
-    if (entry == nullptr) {
-        return core::fail(formatMessage(messages::UnknownItem, item));
-    }
     const auto level = static_cast<std::int32_t>(session.partner().species().level);
     const game::inventory::Buyer buyer{.partnerIsBaby = std::ranges::contains(itemUse_.shopDiscountLevels, level)};
-    auto bought = game::inventory::buy(*inventory_, items(), *entry, amount, buyer, triggers);
+    auto bought = game::inventory::buy(*inventory_, items(), item, amount, buyer, triggers);
     if (!bought) {
         return bought;
     }

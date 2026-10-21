@@ -15,15 +15,21 @@ auto items = dwe::assets::loadItemTable(vfs);
 auto table = dwe::assets::loadItemEffectTable(vfs);
 dwe::game::inventory::ItemEffects effects{*table, inventory->rules().effects, inventory->rules().quirks};
 
+auto item = *items->handleOf("bandage");   // el handle del objeto en esta sesión (README de assets: ids en la sesión)
 inventory->add(item, 1);                    // recoger, premio, cofre: AddResult dice qué entró, qué se perdió y qué no
 if (!inventory->hasRoomFor(item)) { ... }   // el objeto se queda en el suelo o en el cofre
 auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partnerTarget);
 ```
 
-- **Estado** (`InventoryState`): los 30 huecos (`std::optional<Stack>` con número de objeto y cantidad), cuántos se
-  usan (`slotCount`) y el dinero. `toYaml` y `fromYaml` lo pasan a YAML para la sección de la partida guardada, con su versión en `SectionVersion`;
-  la sesión los envuelve en un `SectionSerializer` de `game/save`.
-- **Partida nueva**: `bag.new_game_slots`, `bag.new_game_money` y `bag.new_game_items` (`StartingItem`: número de
+- **Estado** (`InventoryState`): los 30 huecos (`std::optional<Stack>` con el handle del objeto y la cantidad),
+  cuántos se usan (`slotCount`) y el dinero. `toYaml` y `fromYaml` lo pasan a YAML para la sección de la partida
+  guardada, con cada objeto por su id y la versión en `SectionVersion` (2); la sesión los envuelve en un
+  `SectionSerializer` de `game/save`. La versión 1 guardaba el número del objeto: `itemNumbersToIds` la migra al id
+  del objeto del original con ese número. Un hueco cuyo objeto no está en ninguna tabla montada (el de un mod que ya
+  no está, o un número de la versión 1 que no es ningún objeto del original) se queda vacío: `fromYaml` devuelve esos
+  montones (`DroppedStack`, id y cantidad) y la sesión los nombra en el registro; el resto de la partida se carga. Los
+  ids se escriben entre comillas.
+- **Partida nueva**: `bag.new_game_slots`, `bag.new_game_money` y `bag.new_game_items` (`StartingItem`: id del
   objeto y cantidad, de 1 a `max_stack`). El inventario no los pone: la sesión crea la bolsa y añade la lista. En el
   original la lista está vacía: el guion `dg 193` quita todo lo que deja `initializeDefaultSavegame`.
 - **Bolsa** (`Inventory`): `add`, `hasRoomFor`, `countOf`, `remove`, `move`, `discard`, `sort`, `setSlotCount`,
@@ -40,7 +46,9 @@ auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partne
   `use.key_item_droppable` (0), que ni se venden ni se tiran. `useItem` y `buy` (`Purchase::keyItem`) lo dicen para que
   la sesión decida el autoguardado; el inventario nunca guarda.
 - **Tiendas** (`shop.hpp`): `shopStock` con los disparadores de la historia (`StockTriggers`), `buyPrice`, `sellPrice`,
-  `maxPurchase`, `canAfford`, `buy`, `saleOffers` y `sell`. `Buyer` dice si el partner es un bebé.
+  `maxPurchase`, `canAfford`, `buy`, `saleOffers` y `sell`. `Buyer` dice si el partner es un bebé. Los disparadores van
+  por el número del objeto en el original, así que un objeto que añade un mod aún no se vende en ninguna tienda.
+- **Ids**: la sección del ruleset nombra cada objeto por su id; `checkItemIds` comprueba que están en `data/items`.
 - **Apilar** (`StackingRule`): la estrategia que nombra `bag.stacking`; `stackingRules()` registra `original`.
 
 ## Rarezas

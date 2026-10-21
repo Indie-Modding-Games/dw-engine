@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <ostream>
+#include <string_view>
 
 #include "fixture.hpp"
 
@@ -12,7 +13,7 @@ using dwe::assets::ItemHandler;
 
 namespace {
 
-ItemEffect resolved(const ItemEffects& effects, std::int32_t item) {
+ItemEffect resolved(const ItemEffects& effects, std::string_view item) {
     auto effect = effects.resolve(item);
     REQUIRE_MESSAGE(effect.has_value(), errorOf(effect));
     return *effect;
@@ -116,7 +117,7 @@ TEST_CASE("evolution items lead to the table's target one level below, or to the
 
 TEST_CASE("an item missing from data/item_effects, or a case nobody decoded, is reported") {
     const ItemEffects effects = fixtureItemEffects(originalRules());
-    CHECK_FALSE(effects.resolve(99).has_value());
+    CHECK_FALSE(effects.resolve("nothing").has_value());
     const auto hidden = effects.resolve(Hidden);
     REQUIRE_FALSE(hidden.has_value());
     CHECK(hidden.error().message.find("food") != std::string::npos);

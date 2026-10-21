@@ -18,9 +18,12 @@ inline constexpr std::string_view InFile = "{}: {}";
 inline constexpr std::string_view LevelLimitsReversed = "level_min ({}) is above level_max ({})";
 inline constexpr std::string_view StartLevelOutside = "tamer_level {} is outside the tamer section's {} to {}";
 inline constexpr std::string_view ItemUseSectionText = "the item_use section";
-inline constexpr std::string_view ItemRangeText = "an item range";
+inline constexpr std::string_view NeverTakenRule = "item_use refusal.never_taken";
+inline constexpr std::string_view DisciplineCheckedRule = "item_use refusal.discipline_checked";
+inline constexpr std::string_view FixedLevelRule = "item_use refusal.fixed_level_evolutions";
+inline constexpr std::string_view MealsRule = "item_use meals";
+inline constexpr std::string_view ItemText = "item";
 inline constexpr std::string_view FixedLevelText = "a fixed-level evolution item";
-inline constexpr std::string_view ItemRangeReversed = "the range starts at {} and ends before it, at {}";
 inline constexpr std::string_view PartnerMovesSectionText = "the partner_moves section";
 inline constexpr std::string_view MoveSlotOutside = "move position {} is outside the species' list of {}";
 
@@ -63,8 +66,9 @@ inline constexpr std::string_view UnknownEvolutionForm = "evolution: no form '{}
 // The inventory adapter.
 inline constexpr std::string_view InventoryNeedsTables = "the inventory adapter needs the packs or its tables";
 inline constexpr std::string_view InventoryNotRead = "the inventory rules have not been read";
-inline constexpr std::string_view UnknownStartingItem = "bag.new_game_items: item {} is not in data/items";
-inline constexpr std::string_view UnknownItem = "item {} is not in data/items";
+inline constexpr std::string_view SavedStackDropped =
+    "inventory: the save names item '{}', which no pack mounted has: its stack of {} is dropped";
+inline constexpr std::string_view UnknownStartingItem = "bag.new_game_items: item '{}' is not in data/items";
 
 // The battle adapter and the partner's moves.
 inline constexpr std::string_view PartnerMovesStateText = "the partner's moves";

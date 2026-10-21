@@ -104,7 +104,7 @@ TEST_CASE("the form learns the weakest move of its specialty's block and equips 
     CHECK(result.equippedMoves == EquippedMoves{1, std::nullopt, std::nullopt, 2});
 
     SUBCASE("a move of power 0 is never the weakest") {
-        fixture.moves.moves.at(1).power = 0;
+        fixture.moves.at(1).power = 0;
         CHECK(evolveTo(fixture.makeEvolution(), inputsOf("agum"), "grey").learnedMove == 2);
     }
     SUBCASE("below the basic slot level the first slot holds the basic attack") {

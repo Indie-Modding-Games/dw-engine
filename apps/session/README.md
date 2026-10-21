@@ -133,7 +133,9 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
 `InventoryAdapter({.files = &files, .evolution = &evolucion})` es dueño de la bolsa (`game::inventory::Inventory`) y
 de los efectos (`ItemEffects`, con `data/items` y `data/item_effects`, leídos una vez; los tests le dan los suyos).
 Registra las comprobaciones de las secciones `inventory` e `item_use` y la sección de guardado `inventory`
-(`inventory::toYaml`, versión `SectionVersion`).
+(`inventory::toYaml`, versión `SectionVersion`; la migración de la versión 1, que guardaba números, a ids es
+`inventory::itemNumbersToIds`). Al leer las reglas comprueba que cada objeto que nombran está en `data/items` y que los
+rangos de `item_use` solo nombran objetos del original (`checkItemIds`, `checkItemUseItems`).
 
 - **Partida nueva**: la bolsa de la sección `inventory` con los objetos de `bag.new_game_items` (en el original
   ninguno: el guion `dg 193` vacía la del arranque; ver `game/inventory`). Un objeto que no está en `data/items` es

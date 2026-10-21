@@ -62,6 +62,28 @@ se componen y de qué clase son (las de siempre y las que nombran los rulesets p
 las mismas que el juego. `requireNewSpeciesContracts` (`digimon_table.hpp`) exige el contrato del modelo de cada Digimon
 que añade un paquete. Las reglas están en [tablas por entradas](../../docs/architecture/vfs.md#tablas-por-entradas).
 
+## IDs en la sesión
+
+En los bordes todo se nombra por id: las partidas guardadas, los rulesets y los ficheros de datos, los scripts y
+ganchos, las claves de texto y los logs. El `index` de una entrada es interno: el de un original es su número en el
+juego (lo da el paquete base) y el de una entrada que añade un paquete lo pone el motor al componer (el siguiente
+libre), así que cambia según los paquetes montados. `ComposedTableText::engineNumbered` dice qué entradas numeró el
+motor y `ItemEntry::originalIndex` / `MoveEntry::originalIndex` lo guardan en cada entrada.
+
+Dentro de la sesión el juego guarda un *handle* (`ItemHandle`, `MoveHandle`; `<dwe/assets/table_handle.hpp>`): el sitio
+de la entrada en la tabla compuesta. Son tipos distintos para cada tabla y solo la tabla los crea
+(`ItemTable::handleOf(id)`), nunca a partir de un número; un handle no sale nunca de la sesión. La composición es
+inmutable durante la sesión: montar otros paquetes es empezar una sesión nueva desde los ids. Cada tabla compuesta
+lleva su `CompositionGeneration` (sus copias comparten la misma) y cada handle la suya; `at(handle)` con un handle de
+otra composición es un error de programación (`DWE_ASSERT`), y `owns(handle)` lo pregunta sin fallar.
+`findByOriginalIndex` busca por el número del original y solo lo usan la migración de partidas antiguas y la
+comprobación de los rangos de los rulesets.
+
+`EntryClass` (`<dwe/assets/entry_class.hpp>`) es una clase de entradas que nombra un ruleset (las comidas, los
+remates): rangos y umbrales de números del original, que solo cubren entradas del original, más una lista de ids, por
+la que entran las de los mods. `checkEntryClass` comprueba al cargar que cada número de un rango es una entrada del
+original y que cada id existe ([rangos e ids](../../docs/architecture/rulesets.md#rangos-e-ids)).
+
 `YamlReader` (`<dwe/assets/yaml_reader.hpp>`) lee valores tipados de un documento YAML y guarda el primer error con
 su línea y columna; lo usan los lectores de documentos del motor.
 

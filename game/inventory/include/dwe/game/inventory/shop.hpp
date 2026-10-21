@@ -30,13 +30,13 @@ struct Buyer {
 };
 
 struct ShopOffer {
-    std::int32_t item = 0;
+    assets::ItemHandle item;
     // Whether it can be bought now: affordable and with room in the bag.
     bool buyable = false;
 };
 
 struct SaleOffer {
-    std::int32_t item = 0;
+    assets::ItemHandle item;
     std::int32_t count = 0;
     // Only items that can be thrown away are sold.
     bool sellable = false;
@@ -51,7 +51,8 @@ struct Purchase {
     bool keyItem = false;
 };
 
-// The items in stock, in item order, each marked buyable or not (script_common.c: shopFillBuyItemList).
+// The items in stock, in item number order, each marked buyable or not (script_common.c: shopFillBuyItemList). Only
+// the original's items have a stock trigger: an item a pack adds is never in stock.
 std::vector<ShopOffer> shopStock(const Inventory& inventory, const assets::ItemTable& items,
                                  const StockTriggers& triggers);
 
@@ -62,19 +63,21 @@ std::int32_t buyPrice(const Inventory& inventory, const assets::ItemEntry& item,
 std::int32_t sellPrice(const Inventory& inventory, const assets::ItemEntry& item);
 
 // The most of an item the buyer can buy at once (script_common.c: createItemMenuAmountBox).
-std::int32_t maxPurchase(const Inventory& inventory, const assets::ItemEntry& item, Buyer buyer);
+std::int32_t maxPurchase(const Inventory& inventory, const assets::ItemTable& items, assets::ItemHandle handle,
+                         Buyer buyer);
 
 // Whether the money covers `amount` of the item.
 bool canAfford(const Inventory& inventory, const assets::ItemEntry& item, std::int32_t amount, Buyer buyer);
 
 // Buys `amount` of an item in stock (script_common.c: tickItemMenuAmountBox).
-core::Result<Purchase> buy(Inventory& inventory, const assets::ItemTable& items, const assets::ItemEntry& item,
+core::Result<Purchase> buy(Inventory& inventory, const assets::ItemTable& items, assets::ItemHandle handle,
                            std::int32_t amount, Buyer buyer, const StockTriggers& triggers);
 
 // The bag's stacks as the shop's sell list shows them, in bag order (script_common.c: shopFillSellItemList).
 std::vector<SaleOffer> saleOffers(const Inventory& inventory, const assets::ItemTable& items);
 
 // Sells `amount` of an item and returns the money received.
-core::Result<std::int32_t> sell(Inventory& inventory, const assets::ItemEntry& item, std::int32_t amount);
+core::Result<std::int32_t> sell(Inventory& inventory, const assets::ItemTable& items, assets::ItemHandle handle,
+                                std::int32_t amount);
 
 } // namespace dwe::game::inventory

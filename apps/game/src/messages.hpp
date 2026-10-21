@@ -72,7 +72,7 @@ inline constexpr std::string_view NoSpeciesTable = "game: the ruleset names no D
 inline constexpr std::string_view BattleCommandRefused = "game: battle: command {} refused: {}";
 inline constexpr std::string_view BattleBagRefused = "game: battle: the bag did not open: {}";
 inline constexpr std::string_view BattleThrowRefused = "game: battle: no throw from bag slot {}: {}";
-inline constexpr std::string_view BattleItemThrown = "game: battle: threw item {}";
+inline constexpr std::string_view BattleItemThrown = "game: battle: threw item '{}'";
 inline constexpr std::string_view EmptyBagSlot = "the slot is empty";
 inline constexpr std::string_view ItemNotThrowable = "the item cannot be thrown in battle";
 

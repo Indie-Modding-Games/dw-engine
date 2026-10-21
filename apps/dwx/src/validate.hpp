@@ -22,6 +22,10 @@ namespace dwe::dwx {
 // any other result is an asset id ("digimon/{}/model").
 inline constexpr std::string_view AssetReferenceKeyword = "assetReference";
 
+// The annotation keyword of content/schemas that makes a string the id of an entry of a content table: its value is
+// the table's asset id ("data/items"). The id must be an entry of the table as the packs compose it.
+inline constexpr std::string_view EntryReferenceKeyword = "entryReference";
+
 // The schema pack.yaml follows.
 inline constexpr std::string_view ManifestSchema = "pack";
 

@@ -6,6 +6,7 @@
 #include <dwe/game/inventory/rules.hpp>
 
 #include <cstdint>
+#include <string_view>
 
 namespace dwe::game::inventory {
 
@@ -15,14 +16,15 @@ class ItemEffects {
 public:
     ItemEffects(assets::ItemEffectTable table, EffectRules rules, InventoryQuirks quirks);
 
-    // The effect of an item; an error names an item whose effect neither the table nor the ruleset gives.
-    [[nodiscard]] core::Result<ItemEffect> resolve(std::int32_t item) const;
+    // The effect of the item with this id; an error names an item whose effect neither the table nor the ruleset
+    // gives.
+    [[nodiscard]] core::Result<ItemEffect> resolve(std::string_view item) const;
 
 private:
     [[nodiscard]] core::Result<void> describe(const assets::ItemEffectEntry& entry, ItemEffect& effect) const;
-    [[nodiscard]] core::Result<void> describeStatus(std::int32_t item, ItemEffect& effect) const;
-    [[nodiscard]] core::Result<void> describeRevive(std::int32_t item, ItemEffect& effect) const;
-    [[nodiscard]] core::Result<void> describeDisk(std::int32_t item, ItemEffect& effect) const;
+    [[nodiscard]] core::Result<void> describeStatus(std::string_view item, ItemEffect& effect) const;
+    [[nodiscard]] core::Result<void> describeRevive(std::string_view item, ItemEffect& effect) const;
+    [[nodiscard]] core::Result<void> describeDisk(std::string_view item, ItemEffect& effect) const;
     [[nodiscard]] core::Result<void> describeChip(const assets::ItemEffectEntry& entry, ItemEffect& effect) const;
     [[nodiscard]] core::Result<void> describeFood(const assets::ItemEffectEntry& entry, ItemEffect& effect) const;
     [[nodiscard]] core::Result<void> describeEvolution(const assets::ItemEffectEntry& entry, ItemEffect& effect) const;

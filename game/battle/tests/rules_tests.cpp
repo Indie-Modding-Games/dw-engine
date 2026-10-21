@@ -100,7 +100,8 @@ TEST_CASE("the catalog reads the moves as the battle uses them") {
     CHECK(moves.learnedWith(refOf(moves, "dynamite_kick")).size() == 1);
     CHECK(moves.at(moves.flattenedShot()).id == "move_121");
 
-    dwe::assets::MoveTable missing = testMoveTable();
-    std::erase_if(missing.moves, [](const dwe::assets::MoveEntry& entry) { return entry.id == "counter"; });
-    CHECK(errorOf(MoveCatalog::build(missing, originalRules())).find("counter") != std::string::npos);
+    std::vector<dwe::assets::MoveEntry> kept{std::from_range, testMoveTable().entries()};
+    std::erase_if(kept, [](const dwe::assets::MoveEntry& entry) { return entry.id == "counter"; });
+    CHECK(errorOf(MoveCatalog::build(dwe::assets::MoveTable{std::move(kept)}, originalRules())).find("counter") !=
+          std::string::npos);
 }

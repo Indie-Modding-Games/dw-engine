@@ -13,6 +13,15 @@ std::string keyOfIndex(std::string_view block, std::int32_t index) {
     return index < 0 ? std::string{} : localization::gameTextKey(MainText, block, static_cast<std::size_t>(index));
 }
 
+// The key of an entry's text: an entry a pack adds has its own (localization::addedEntryTextKey), an original one the
+// slot of its number in the original's table.
+std::string keyOfEntry(std::string_view block, std::string_view id, std::int32_t index) {
+    if (auto added = assets::ContentId::parse(id); added && added->isNamespaced()) {
+        return localization::addedEntryTextKey(*added, block);
+    }
+    return keyOfIndex(block, index);
+}
+
 } // namespace
 
 std::string NameKeys::species(std::string_view id) const {
@@ -20,25 +29,28 @@ std::string NameKeys::species(std::string_view id) const {
     if (row == nullptr) {
         return {};
     }
-    if (auto added = assets::ContentId::parse(row->id); added && added->isNamespaced()) {
-        return localization::addedEntryTextKey(*added, SpeciesNamesBlock);
-    }
-    return keyOfIndex(SpeciesNamesBlock, row->index);
+    return keyOfEntry(SpeciesNamesBlock, row->id, row->index);
 }
 
-std::string NameKeys::item(std::int32_t index) const {
-    const assets::ItemEntry* entry = items_ == nullptr ? nullptr : items_->findByIndex(index);
-    return entry == nullptr ? std::string{} : keyOfIndex(ItemNamesBlock, entry->index);
+std::string NameKeys::item(assets::ItemHandle item) const {
+    if (items_ == nullptr) {
+        return {};
+    }
+    const assets::ItemEntry& entry = items_->at(item);
+    return keyOfEntry(ItemNamesBlock, entry.id, entry.index);
 }
 
 std::string NameKeys::item(std::string_view id) const {
     const assets::ItemEntry* entry = items_ == nullptr ? nullptr : items_->find(id);
-    return entry == nullptr ? std::string{} : keyOfIndex(ItemNamesBlock, entry->index);
+    return entry == nullptr ? std::string{} : keyOfEntry(ItemNamesBlock, entry->id, entry->index);
 }
 
-std::string NameKeys::itemDescription(std::int32_t index) const {
-    const assets::ItemEntry* entry = items_ == nullptr ? nullptr : items_->findByIndex(index);
-    return entry == nullptr ? std::string{} : keyOfIndex(ItemDescriptionsBlock, entry->index);
+std::string NameKeys::itemDescription(assets::ItemHandle item) const {
+    if (items_ == nullptr) {
+        return {};
+    }
+    const assets::ItemEntry& entry = items_->at(item);
+    return keyOfEntry(ItemDescriptionsBlock, entry.id, entry.index);
 }
 
 std::string NameKeys::move(std::string_view id) const {
@@ -50,7 +62,8 @@ std::string NameKeys::move(game::battle::MoveRef move) const {
     if (moves_ == nullptr || move >= moves_->size()) {
         return {};
     }
-    return keyOfIndex(MoveNamesBlock, moves_->at(move).index);
+    const game::battle::BattleMove& entry = moves_->at(move);
+    return keyOfEntry(MoveNamesBlock, entry.id, entry.index);
 }
 
 std::string commandLabelKey(game::battle::Command command) {

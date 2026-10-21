@@ -32,4 +32,11 @@ inline constexpr std::string_view CacheCannotWrite = "cannot write {}";
 inline constexpr std::string_view CacheCannotRename = "cannot move {} to {}: {}";
 inline constexpr std::string_view CacheCannotRemove = "cannot remove {}: {}";
 
+// dwx validate: an id that no entry of the table it names has (the schema's entryReference), with the path and the
+// table.
+inline constexpr std::string_view EntryReferenceUnknown = "{}: '{}' is no entry of {}, as the packs compose it";
+
+// dwx validate: a schema whose entryReference names no content table.
+inline constexpr std::string_view EntryReferenceTable = "{}: the schema's entryReference '{}' is no content table";
+
 } // namespace dwe::dwx::messages

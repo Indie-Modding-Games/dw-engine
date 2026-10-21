@@ -21,7 +21,8 @@ dwe_add_module(session
 if(TARGET dwe_session_tests)
     target_compile_definitions(dwe_session_tests PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
                                                          DWE_SCHEMA_DIR="${PROJECT_SOURCE_DIR}/content/schemas"
-                                                         DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod")
+                                                         DWE_EXAMPLE_MOD="${PROJECT_SOURCE_DIR}/tests/mods/example_mod"
+                                                         DWE_SESSION_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
     # The field's test maps and rules.
     target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/game/field/tests")
     # The made-up tables of the systems' tests, as "game/<system>/tests/fixture.hpp".
