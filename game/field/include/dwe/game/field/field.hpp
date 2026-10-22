@@ -112,6 +112,11 @@ public:
     // The id of the current map; empty before the first enterMap.
     [[nodiscard]] const std::string& mapId() const { return mapId_; }
 
+    // Whether stepping on a cell with this trigger changes the map now: an exit of the map's warp table with a
+    // destination (cells 110-119), or a step cell (51-79) whose script map change is decided taken. Click-to-move
+    // and the autotest's walks keep off these cells unless one is where they go.
+    [[nodiscard]] bool warpsOn(std::int32_t trigger) const;
+
     // The current map's collision grid, for the minimap.
     [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
 
@@ -162,7 +167,6 @@ private:
     void updateTrail();
     void movePartner(float seconds);
     void placePartnerNearPlayer();
-    [[nodiscard]] bool isWarpTrigger(std::int32_t value) const;
 
     scene::World* world_;
     FieldRules rules_;

@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/field/grid.hpp>
 #include <dwe/game/field/script_warps.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/test_support/script_warp_fixtures.hpp>
@@ -477,6 +478,59 @@ TEST_CASE("a click on a warp walks onto it") {
         return;
     }
     CHECK(change->map == "house");
+}
+
+TEST_CASE("a walk to a door keeps off the cells whose script changes the map") {
+    MapDocument house = roomMap("house");
+    constexpr std::uint8_t Door = 112;
+    constexpr std::uint8_t ScriptStep = 51;
+    constexpr std::uint8_t ExitWithoutMap = 113;
+    // A band of script step cells across the room between the player and the door, open at both ends.
+    fill(house, {.column = 40, .row = 50}, {.column = 59, .row = 51}, ScriptStep);
+    fill(house, {.column = 49, .row = 35}, {.column = 51, .row = 36}, Door);
+    fill(house, {.column = 35, .row = 60}, {.column = 36, .row = 61}, ExitWithoutMap);
+    house.warps[2].targetMapId = "town";
+    house.warps[2].targetExit = 0;
+    dwe::scene::World world;
+    Field field{world, originalRules(), {houseDoor()}, triggersSet({})};
+    field.enterMapAt(house, at(0.0F, 1000.0F));
+    CHECK(field.warpsOn(Door));
+    CHECK(field.warpsOn(ScriptStep));
+    CHECK_FALSE(field.warpsOn(ExitWithoutMap));
+    CHECK_FALSE(field.warpsOn(0));
+
+    // The autotest's walk_to plans like this: every cell that changes the map now is out, but the goal's.
+    std::vector<CollisionCell> goals;
+    for (std::int32_t column = 49; column <= 51; ++column) {
+        for (std::int32_t row = 35; row <= 36; ++row) {
+            goals.push_back({.column = column, .row = row});
+        }
+    }
+    const MapCollision& collision = field.collision();
+    const std::vector<glm::vec3> path = dwe::game::field::findPath(
+        collision, field.player().position, goals, field.rules().player.radius, [&](CollisionCell cell) {
+            const std::int32_t value = collision.trigger(cell).value_or(0);
+            return !field.warpsOn(value) || value == std::int32_t{Door};
+        });
+    REQUIRE_FALSE(path.empty());
+    CHECK(collision.trigger(dwe::assets::collisionCellAt(path.back())) == Door);
+    constexpr float SampleStep = 10.0F;
+    glm::vec3 from = field.player().position;
+    for (const glm::vec3& to : path) {
+        const auto samples = static_cast<int>(std::ceil(glm::distance(from, to) / SampleStep));
+        for (int i = 0; i <= samples; ++i) {
+            const float along = samples == 0 ? 0.0F : static_cast<float>(i) / static_cast<float>(samples);
+            CHECK(collision.trigger(dwe::assets::collisionCellAt(glm::mix(from, to, along))) != ScriptStep);
+        }
+        from = to;
+    }
+
+    // Once its triggers say the script does something else, the band is floor like any other.
+    dwe::scene::World later;
+    Field after{later, originalRules(), {houseDoor()}, triggersSet({203})};
+    after.enterMapAt(house, at(0.0F, 1000.0F));
+    CHECK_FALSE(after.warpsOn(ScriptStep));
+    CHECK(after.warpsOn(Door));
 }
 
 TEST_CASE("a warp fades out while the player walks on, and fades in on the new map") {

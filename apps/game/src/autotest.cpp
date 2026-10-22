@@ -435,12 +435,6 @@ std::vector<assets::CollisionCell> goalCells(const assets::MapCollision& collisi
     return goals;
 }
 
-bool isWarpTrigger(std::int32_t value) {
-    constexpr std::int32_t FirstWarp = 110;
-    constexpr std::int32_t WarpCount = 10;
-    return value >= FirstWarp && value < FirstWarp + WarpCount;
-}
-
 float groundDistance(glm::vec3 a, glm::vec3 b) {
     return std::hypot(a.x - b.x, a.z - b.z);
 }
@@ -773,7 +767,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
         progress.path = game::field::findPath(collision, position, goals, field.rules().player.radius,
                                               [&](assets::CollisionCell cell) {
                                                   const std::int32_t value = collision.trigger(cell).value_or(0);
-                                                  return !isWarpTrigger(value) || value == step.trigger;
+                                                  return !field.warpsOn(value) || value == step.trigger;
                                               });
         // A walk to a point ends on it, not on the centre of its cell.
         if (step.point && !progress.path.empty()) {

@@ -282,14 +282,14 @@ CharacterState Field::partner() const {
             .motion = world_->registry().get<AnimationIntent>(partner_).motion};
 }
 
-bool Field::isWarpTrigger(std::int32_t value) const {
-    if (value >= FirstWarpTrigger && value < FirstWarpTrigger + WarpTriggerCount) {
-        const auto warp = std::ranges::find(warps_, value - FirstWarpTrigger, &assets::MapWarp::exit);
+bool Field::warpsOn(std::int32_t trigger) const {
+    if (trigger >= FirstWarpTrigger && trigger < FirstWarpTrigger + WarpTriggerCount) {
+        const auto warp = std::ranges::find(warps_, trigger - FirstWarpTrigger, &assets::MapWarp::exit);
         if (warp != warps_.end() && warp->targetMapId) {
             return true;
         }
     }
-    return std::ranges::contains(warpingStepCells_, value);
+    return std::ranges::contains(warpingStepCells_, trigger);
 }
 
 std::optional<MapChange> Field::scriptWarpFor(WarpVia via, std::int32_t value) {
@@ -339,7 +339,7 @@ void Field::planPath(glm::vec3 target) {
     const CollisionCell clicked = assets::collisionCellAt(target);
     const glm::vec3 position = world_->registry().get<Transform>(player_).position;
     // Paths do not cross warps other than the one clicked.
-    const auto passable = [this](CollisionCell cell) { return !isWarpTrigger(collision_.trigger(cell).value_or(0)); };
+    const auto passable = [this](CollisionCell cell) { return !warpsOn(collision_.trigger(cell).value_or(0)); };
     // The clicked cell, or the nearest ring of cells around it with one the player can get to.
     for (int ring = 0; ring <= ClickSearchCells; ++ring) {
         std::vector<CollisionCell> goals;
