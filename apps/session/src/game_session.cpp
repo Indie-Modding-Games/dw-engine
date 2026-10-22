@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/game/partner/area_response.hpp>
 #include <dwe/game/partner/rules.hpp>
 #include <dwe/game/save/settings.hpp>
 #include <dwe/ruleset/random.hpp>
@@ -330,18 +331,20 @@ void GameSession::advanceGameTime(double realSeconds) {
 game::partner::CareContext GameSession::careContext() const {
     // The tamer is busy while a map change runs.
     const bool tamerIdle = state_->field == nullptr || !state_->field->mapChangePending();
-    return {.tamerIdle = tamerIdle, .area = game::partner::AreaResponse::Neutral};
+    return {.tamerIdle = tamerIdle, .area = area_};
 }
 
 void GameSession::attachField(const game::field::Field& field) {
     state_->field = &field;
     lastMap_ = field.mapId();
+    area_ = areaOfFieldMap();
 }
 
 void GameSession::detachField() {
     state_->savedPlace = state_->currentPlace();
     state_->field = nullptr;
     lastMap_.clear();
+    area_ = game::partner::AreaResponse::Neutral;
 }
 
 const std::optional<FieldPlace>& GameSession::savedPlace() const {
@@ -358,12 +361,23 @@ void GameSession::followMap() {
     }
     const bool changed = !lastMap_.empty();
     lastMap_ = state_->field->mapId();
+    // The original works the area out on every map load (map.c: loadMap), also when a script loads the map the player
+    // is on again; only a new map id gets here, so a species that changed on the map keeps the old response until the
+    // next different map.
+    area_ = areaOfFieldMap();
     if (!changed || !state_->playing) {
         return;
     }
     // partner.c: setupPartnerOnWarp starts the area effects again on every map.
     state_->partner.enterMap();
     requestAutosave(AutosaveReason::MapChange);
+}
+
+game::partner::AreaResponse GameSession::areaOfFieldMap() const {
+    if (state_->field == nullptr) {
+        return game::partner::AreaResponse::Neutral;
+    }
+    return game::partner::areaResponseOf(state_->field->regions(), state_->partner.species().favoredRegion);
 }
 
 void GameSession::routePartnerEvents() {
@@ -527,7 +541,9 @@ const game::partner::Partner& GameSession::partner() const {
 }
 
 PartnerView GameSession::partnerView() const {
-    return viewOf(state_->partner, state_->partnerRules.care);
+    PartnerView view = viewOf(state_->partner, state_->partnerRules.care);
+    view.area = area_;
+    return view;
 }
 
 const TamerState& GameSession::tamer() const {

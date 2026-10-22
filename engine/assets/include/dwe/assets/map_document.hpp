@@ -41,6 +41,8 @@ struct MapLight {
 
 // Compared with the partner's favored region.
 struct MapRegions {
+    // An unused slot of a list.
+    static constexpr std::int32_t NoRegion = -1;
     std::array<std::int32_t, 4> a{};
     std::array<std::int32_t, 4> b{};
 };

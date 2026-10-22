@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/partner/care_rules.hpp>
+#include <dwe/game/partner/effects.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/partner/species.hpp>
 #include <dwe/game/partner/state.hpp>
@@ -47,6 +48,8 @@ struct PartnerView {
     std::int32_t stepsToToilet = 0;
 
     game::partner::Conditions conditions;
+    // How the partner feels about the map it is on.
+    game::partner::AreaResponse area = game::partner::AreaResponse::Neutral;
     std::int32_t careMistakes = 0;
     std::int32_t battles = 0;
 };

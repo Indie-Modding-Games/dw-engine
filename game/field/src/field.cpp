@@ -115,6 +115,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
 void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn) {
     mapId_ = map.id;
     collision_ = map.collision;
+    regions_ = map.regions;
     warps_ = map.warps;
     const glm::vec3 view =
         assets::toWorldPosition(map.camera.reference) - assets::toWorldPosition(map.camera.viewpoint);

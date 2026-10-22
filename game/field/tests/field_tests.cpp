@@ -156,6 +156,22 @@ TEST_CASE("stepping on a warp trigger asks for a map change once") {
     CHECK_FALSE(field.enterMap(house, 12).has_value());
 }
 
+TEST_CASE("the field keeps the region lists of the map it entered, for how the partner feels about the map") {
+    constexpr std::int32_t NoRegion = dwe::assets::MapRegions::NoRegion;
+    MapDocument town = roomMap("town");
+    town.regions = {.a = {1, 2, NoRegion, NoRegion}, .b = {3, NoRegion, NoRegion, NoRegion}};
+    MapDocument house = roomMap("house");
+    house.regions = {.a = {4, NoRegion, NoRegion, NoRegion}, .b = {5, 6, NoRegion, NoRegion}};
+    dwe::scene::World world;
+    Field field{world, originalRules()};
+    field.enterMapAt(town, at(0.0F, 0.0F));
+    CHECK(field.regions().a == town.regions.a);
+    CHECK(field.regions().b == town.regions.b);
+    field.enterMapAt(house, at(0.0F, 0.0F));
+    CHECK(field.regions().a == house.regions.a);
+    CHECK(field.regions().b == house.regions.b);
+}
+
 TEST_CASE("a trigger fires when stepped onto, not while standing on it") {
     MapDocument town = roomMap("town");
     fill(town, {.column = 50, .row = 50}, {.column = 50, .row = 50}, 112);

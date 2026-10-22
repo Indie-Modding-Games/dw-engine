@@ -166,6 +166,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Límites | `partner_impl.c: tickConditionBoundaries` | `clampBoundaries` | `mood_tests`: within -100 and 100 | Igual |
 | Enfado | `partner_impl.c: tickUnhappinessMechanics` | `tickSulking` | `mood_tests`: sulking | Igual |
 | Zona que gusta o no | `partner_impl.c: tickTirednessMechanics` | `tickTiredness` | `mood_tests`: liked area | Igual |
+| Qué le parece la zona: las listas de regiones del mapa frente a la región favorita de la especie | `map.c: loadMapSetup` | `areaResponseOf` (`area_response.hpp`); la sesión lo calcula al entrar en cada mapa | `area_response_tests` | Igual |
 | Cansado | `partner_impl.c: tickTirednessMechanics` | `tickTiredness` | `mood_tests`: at 80 | Igual |
 | Vida por infelicidad | `partner_impl.c: tickConditions` | `tickUnhappyLifetime`, `loseUnhappyLifetime` | `life_tests`: unhappy | Igual |
 | Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath` | `life_tests`: natural death | Igual |

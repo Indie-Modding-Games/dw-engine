@@ -7,6 +7,7 @@ dwe_add_module(partner
         src/training_rules.cpp
         src/strategies.cpp
         src/rules.cpp
+        src/area_response.cpp
         src/species.cpp
         src/partner.cpp
         src/partner_tick.cpp

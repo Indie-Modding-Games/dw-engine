@@ -126,8 +126,13 @@ public:
     // Where the player is now: on the attached field's map, else where the loaded save left them.
     [[nodiscard]] std::optional<FieldPlace> currentPlace() const;
 
-    // What the care rules and the systems see of the rest of the game now (the tamer busy in a map change).
+    // What the care rules and the systems see of the rest of the game now (the tamer busy in a map change, how the
+    // partner feels about the map).
     [[nodiscard]] game::partner::CareContext careContext() const;
+
+    // How the partner feels about the attached field's map, worked out when the map is entered, as the original does
+    // on loading a map (map.c: loadMapSetup); neutral without a field.
+    [[nodiscard]] game::partner::AreaResponse areaResponse() const { return area_; }
 
     [[nodiscard]] ruleset::RulesetStore& rules() { return store_; }
     [[nodiscard]] ruleset::GameClock& clock();
@@ -186,6 +191,8 @@ private:
     core::Result<void> registerSaveSections();
     void advanceGameTime(double realSeconds);
     void followMap();
+    // How the partner feels about the attached field's map now.
+    [[nodiscard]] game::partner::AreaResponse areaOfFieldMap() const;
     void routePartnerEvents();
     void routePartnerEvent(const game::partner::PartnerEvent& event);
     void changeTamerLevel(std::int32_t change);
@@ -216,6 +223,7 @@ private:
     game::save::SaveFile file_;
     std::vector<game::partner::PartnerEvent> partnerEvents_;
     std::string lastMap_;
+    game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
     double playSeconds_ = 0.0;
 };
 

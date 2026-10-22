@@ -106,6 +106,9 @@ public:
     // The current map's collision grid, for the minimap.
     [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
 
+    // The current map's region lists, which say how the partner feels about the map.
+    [[nodiscard]] const assets::MapRegions& regions() const { return regions_; }
+
     [[nodiscard]] CharacterState player() const;
     [[nodiscard]] CharacterState partner() const;
     [[nodiscard]] scene::Entity playerEntity() const { return player_; }
@@ -156,6 +159,7 @@ private:
 
     std::string mapId_;
     assets::MapCollision collision_;
+    assets::MapRegions regions_;
     std::vector<assets::MapWarp> warps_;
     glm::vec3 cameraForward_{0.0F, 0.0F, -1.0F};
 

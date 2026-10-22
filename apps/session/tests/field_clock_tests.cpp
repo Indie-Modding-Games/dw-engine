@@ -205,3 +205,29 @@ TEST_CASE("a map change autosaves, and the save keeps where the player is") {
     CHECK(loadedPlace->map == "house");
     CHECK(loadedPlace->spawn.position == place->spawn.position);
 }
+
+TEST_CASE("how the partner feels about the map follows the map entered, for the care rules and the HUD") {
+    using dwe::game::partner::AreaResponse;
+    const TestPacks packs;
+    MemorySaveStorage storage;
+    const auto session = newGame(packs, &storage);
+    const std::int32_t favored = session->partner().species().favoredRegion;
+    constexpr std::int32_t NoRegion = dwe::assets::MapRegions::NoRegion;
+    Maps maps;
+    maps.town.regions = {.a = {favored, NoRegion, NoRegion, NoRegion}, .b = {NoRegion, NoRegion, NoRegion, NoRegion}};
+    maps.house.regions = {.a = {favored + 1, NoRegion, NoRegion, NoRegion},
+                          .b = {NoRegion, favored, NoRegion, NoRegion}};
+    CHECK(session->areaResponse() == AreaResponse::Neutral);
+    {
+        GameLoop loop(*session, maps);
+        // The first map counts too, though entering it is no map change.
+        CHECK(session->areaResponse() == AreaResponse::Liked);
+        CHECK(session->careContext().area == AreaResponse::Liked);
+        CHECK(session->partnerView().area == AreaResponse::Liked);
+        loop.walkIntoHouse();
+        CHECK(session->areaResponse() == AreaResponse::Disliked);
+        CHECK(session->careContext().area == AreaResponse::Disliked);
+        CHECK(session->partnerView().area == AreaResponse::Disliked);
+    }
+    CHECK(session->areaResponse() == AreaResponse::Neutral);
+}

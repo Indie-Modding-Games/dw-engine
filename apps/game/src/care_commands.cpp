@@ -53,7 +53,7 @@ core::Result<void> CareCommands::run(session::GameSession& session, const Queued
         if (!session.partner().canSleep()) {
             return core::fail(std::string{messages::CannotSleep});
         }
-        if (auto slept = session.sleep({}); !slept) {
+        if (auto slept = session.sleep({.hasPillow = false, .area = session.areaResponse()}); !slept) {
             return slept;
         }
         core::logInfo("{}", messages::CareSlept);
