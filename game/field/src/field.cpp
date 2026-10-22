@@ -372,21 +372,31 @@ std::optional<MapChange> Field::exploreScriptWarp(WarpVia via, std::int32_t valu
         return takeExplored(*places.front(), vanilla, value);
     }
     DestinationChoice choice{.map = mapId_, .cell = value, .places = {}, .vanilla = std::nullopt};
-    for (std::size_t index = 0; index < places.size(); ++index) {
-        choice.places.push_back(
-            MapChange{.map = *places[index]->targetMap, .exit = places[index]->targetExit, .trigger = value});
-        if (!choice.vanilla && samePlace(places[index], vanilla)) {
-            choice.vanilla = index;
+    std::vector<const ScriptWarp*> shown;
+    for (const ScriptWarp* place : places) {
+        if (!place->targetMap) {
+            continue; // explorationWarps gives none without a target; a place needs one to be shown
         }
+        choice.places.push_back(MapChange{.map = *place->targetMap, .exit = place->targetExit, .trigger = value});
+        if (!choice.vanilla && samePlace(place, vanilla)) {
+            choice.vanilla = shown.size();
+        }
+        shown.push_back(place);
     }
-    core::logInfo("{}", core::formatMessage(messages::ExplorationChoice, mapId_, value, places.size()));
+    if (shown.empty()) {
+        return std::nullopt;
+    }
+    core::logInfo("{}", core::formatMessage(messages::ExplorationChoice, mapId_, value, shown.size()));
     choice_ = std::move(choice);
-    choiceWarps_ = std::move(places);
+    choiceWarps_ = std::move(shown);
     choiceVanilla_ = vanilla;
     return std::nullopt;
 }
 
-MapChange Field::takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value) {
+std::optional<MapChange> Field::takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value) {
+    if (!warp.targetMap) {
+        return std::nullopt;
+    }
     const bool vanillaPlace =
         vanilla != nullptr && vanilla->targetMap == warp.targetMap && vanilla->targetExit == warp.targetExit;
     if (!vanillaPlace) {
@@ -421,8 +431,11 @@ void Field::chooseDestination(std::optional<std::size_t> place) {
     choice_.reset();
     choiceWarps_.clear();
     choiceVanilla_ = nullptr;
-    if (warp != nullptr) {
-        leave(takeExplored(*warp, vanilla, value));
+    if (warp == nullptr) {
+        return;
+    }
+    if (auto change = takeExplored(*warp, vanilla, value)) {
+        leave(std::move(*change));
     }
 }
 

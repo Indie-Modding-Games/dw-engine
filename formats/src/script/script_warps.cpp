@@ -143,8 +143,8 @@ public:
                 auto found = findMapChanges(script, section.id, *lookup_);
                 for (const GuardedInstruction& call : walkSection(script, section.id, *lookup_, &callsTransport)) {
                     for (auto& [change, pick] : transportPicks(call, transport_)) {
-                        found.push_back(std::move(change));
-                        picks_[{script, section.id}].push_back({found.size() - 1, pick});
+                        found.emplace_back(std::move(change));
+                        picks_[{script, section.id}].emplace_back(found.size() - 1, pick);
                     }
                 }
                 sections.emplace_back(section.id, std::move(found));

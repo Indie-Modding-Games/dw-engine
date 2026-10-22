@@ -33,7 +33,7 @@ public:
         if (!read) {
             return std::unexpected{read.error()};
         }
-        adapter_->state_ = std::move(*read);
+        adapter_->state_ = *read;
         return {};
     }
 
@@ -102,7 +102,9 @@ game::story::StoryState StoryAdapter::newGameState(std::string_view firstPartner
         for (std::int32_t trigger = 0; trigger < game::story::TriggerCount; ++trigger) {
             const std::optional<bool> set = start(trigger);
             if (set) {
-                static_cast<void>(state.setTrigger(trigger, *set));
+                if (auto written = state.setTrigger(trigger, *set); !written) {
+                    core::logWarning("{}", written.error().message);
+                }
             } else if (!isRaisedTrigger(trigger)) {
                 // The raised triggers are game code's (main.c: main), set below; any other is the document's doubt.
                 core::logInfo("{}", formatMessage(messages::StoryUnknownAtStart, trigger));
@@ -110,7 +112,9 @@ game::story::StoryState StoryAdapter::newGameState(std::string_view firstPartner
         }
     }
     if (raised) {
-        static_cast<void>(state.setTrigger(*raised, true));
+        if (auto written = state.setTrigger(*raised, true); !written) {
+            core::logWarning("{}", written.error().message);
+        }
     }
     return state;
 }

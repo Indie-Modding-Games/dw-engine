@@ -641,7 +641,10 @@ TEST_CASE("free exploration opens a cell the story keeps closed, and logs it") {
     dwe::scene::World world;
     Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({203}), .explore = true}};
     const auto change = walkSouth(field, house);
-    REQUIRE(change.has_value());
+    if (!change) {
+        FAIL("no map change");
+        return;
+    }
     CHECK(change->map == "town");
     CHECK(std::ranges::any_of(lines, [](const std::string& line) { return line.contains("free exploration opens"); }));
 
@@ -668,8 +671,12 @@ TEST_CASE("free exploration lets the player choose among a cell's places, starti
                  .writeTrigger = story.writer(),
                  .explore = true}};
     CHECK_FALSE(walkSouth(field, house).has_value());
-    REQUIRE(field.destinationChoice().has_value());
-    const auto& choice = *field.destinationChoice();
+    const auto& found = field.destinationChoice();
+    if (!found) {
+        FAIL("no destination choice");
+        return;
+    }
+    const auto& choice = *found;
     CHECK(choice.map == "house");
     CHECK(choice.cell == 51);
     REQUIRE(choice.places.size() == 2);
@@ -692,7 +699,10 @@ TEST_CASE("free exploration lets the player choose among a cell's places, starti
     field.chooseDestination(0);
     CHECK_FALSE(field.destinationChoice().has_value());
     const auto change = tickToChange(field);
-    REQUIRE(change.has_value());
+    if (!change) {
+        FAIL("no map change");
+        return;
+    }
     CHECK(change->map == "castle");
     CHECK(change->exit == 1);
     CHECK(story.writes == std::vector<std::pair<std::int32_t, bool>>{{9, true}});

@@ -592,7 +592,7 @@ TEST_CASE("free exploration gives each place of a cell once, whatever the guards
                                         warpTo("town", 2, 51), warpTo("cave", 0, 51),       warpTo("sea", 0, 52)};
     const auto places = dwe::game::field::explorationWarps(warps, "home", WarpVia::Step, 51, {});
     REQUIRE(places.size() == 3);
-    CHECK(places[0] == &warps[0]);
+    CHECK(places[0] == warps.data());
     CHECK(places[1] == &warps[3]);
     CHECK(places[2] == &warps[4]);
     const auto withData = dwe::game::field::explorationWarps(warps, "home", WarpVia::Step, 51,

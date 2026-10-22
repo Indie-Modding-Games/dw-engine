@@ -51,7 +51,7 @@ bool FreeExploration::handle(const ui::UiCommand& command) {
     return false;
 }
 
-void FreeExploration::update() {
+void FreeExploration::update() const {
     const auto& choice = desc_.scene->field().destinationChoice();
     const bool shown = desc_.ui->isVisible(DestinationChoiceDocument);
     if (!choice) {

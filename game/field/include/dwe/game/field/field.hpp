@@ -51,18 +51,20 @@ struct TriggerStep {
 
 // How the field takes the map changes of the scripts (field/script_warps).
 struct ScriptWarpSetup {
-    std::vector<ScriptWarp> warps{};
+    // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+    std::vector<ScriptWarp> warps = {};
     // What their guards read, live.
-    GuardFacts facts{};
+    // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+    GuardFacts facts = {};
     // Where the triggers a taken warp sets go; without it they go nowhere.
-    TriggerWriter writeTrigger{};
+    TriggerWriter writeTrigger = nullptr;
     // What the field does with a recursion or a trigger it is told it cannot know.
     UnknownPolicy unknownPolicy = VanillaUnknownPolicy;
     // Free exploration: the scripts' map changes go wherever they can go, whatever their guards (off: the original's
     // conditions, untouched).
     bool explore = false;
     // The maps the field can enter, for free exploration's places; empty: every map.
-    MapFilter hasMap{};
+    MapFilter hasMap = nullptr;
 };
 
 // Free exploration's choice on a cell whose scripts go to more than one place: the app shows it, and the player picks
@@ -211,7 +213,7 @@ private:
     // takeScriptWarp under free exploration, given what the original's conditions take (`cell`).
     std::optional<MapChange> exploreScriptWarp(WarpVia via, std::int32_t value, const CellWarp& cell);
     // The warp taken, as the map change it makes; logs what free exploration opened if the original would not take it.
-    MapChange takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value);
+    std::optional<MapChange> takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value);
     void walkOut(float seconds);
     // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
     // FADE_IN_CURRENT).

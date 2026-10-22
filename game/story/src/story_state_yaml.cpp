@@ -50,11 +50,11 @@ std::string triggerDigits(const StoryState& state) {
 
 // Sets the triggers the digits hold; false if they are not TriggerBytes bytes of hex digits.
 bool readTriggerDigits(std::string_view digits, StoryState& state) {
-    if (digits.size() != static_cast<std::size_t>(TriggerBytes * DigitsPerByte)) {
+    if (digits.size() != static_cast<std::size_t>(TriggerBytes) * static_cast<std::size_t>(DigitsPerByte)) {
         return false;
     }
     for (std::int32_t byte = 0; byte < TriggerBytes; ++byte) {
-        const auto at = static_cast<std::size_t>(byte * DigitsPerByte);
+        const std::size_t at = static_cast<std::size_t>(byte) * static_cast<std::size_t>(DigitsPerByte);
         const std::int32_t high = digitValue(digits[at]);
         const std::int32_t low = digitValue(digits[at + 1]);
         if (high < 0 || low < 0) {
@@ -62,7 +62,9 @@ bool readTriggerDigits(std::string_view digits, StoryState& state) {
         }
         const auto bits = static_cast<unsigned>((high * HexBase) + low);
         for (std::int32_t bit = 0; bit < BitsPerByte; ++bit) {
-            static_cast<void>(state.setTrigger((byte * BitsPerByte) + bit, ((bits >> bit) & 1U) != 0));
+            if (!state.setTrigger((byte * BitsPerByte) + bit, ((bits >> bit) & 1U) != 0)) {
+                return false;
+            }
         }
     }
     return true;
@@ -99,9 +101,12 @@ core::Result<StoryState> fromYaml(const YamlNode& node) {
             reader.fail(variables[index], core::formatMessage(messages::VariableNotAByte, value));
             break;
         }
-        static_cast<void>(state.setVariable(static_cast<std::int32_t>(index), static_cast<std::uint8_t>(value)));
+        if (auto set = state.setVariable(static_cast<std::int32_t>(index), static_cast<std::uint8_t>(value)); !set) {
+            reader.fail(variables[index], set.error().message);
+            break;
+        }
     }
-    return reader.finish(std::move(state), messages::StoryStateText);
+    return reader.finish(state, messages::StoryStateText);
 }
 
 } // namespace dwe::game::story

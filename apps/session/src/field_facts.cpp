@@ -1,4 +1,5 @@
 #include <dwe/assets/item_table.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/inventory/inventory.hpp>
 #include <dwe/game/partner/state.hpp>
 #include <dwe/session/field_facts.hpp>
@@ -137,7 +138,11 @@ game::field::GuardFacts fieldGuardFacts(const GameSession& session, const Invent
 }
 
 game::field::TriggerWriter fieldTriggerWriter(StoryAdapter& story) {
-    return [&story](std::int32_t trigger, bool set) { static_cast<void>(story.state().setTrigger(trigger, set)); };
+    return [&story](std::int32_t trigger, bool set) {
+        if (auto written = story.state().setTrigger(trigger, set); !written) {
+            core::logWarning("{}", written.error().message);
+        }
+    };
 }
 
 } // namespace dwe::session

@@ -48,7 +48,7 @@ public:
     bool handle(const ui::UiCommand& command);
 
     // Shows the chooser while the field waits for a choice, and hides it once answered.
-    void update();
+    void update() const;
 
 private:
     FreeExplorationDesc desc_;

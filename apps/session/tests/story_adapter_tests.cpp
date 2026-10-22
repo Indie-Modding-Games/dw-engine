@@ -48,12 +48,12 @@ std::string digimonRow(std::string_view id, std::int32_t index) {
                        id, index, id);
 }
 
-const std::string DigimonTable =
+const std::string digimonTable =
     "digimon:\n" + digimonRow("agum", FirstPartnerNumber) + digimonRow("other", OtherPartnerNumber);
 
 // The new game sets trigger 9; its opening, which field/warps' start (twna01 exit 1) skips, sets 54, 55 and 75; game
 // code may raise either starting partner.
-const std::string NewGameStory =
+const std::string newGameStory =
     std::format("map: twna01\nscript: 1\ntriggers_set: [{}]\ntriggers_unknown: [{}, {}]\n"
                 "opening: {{exit: 9, section: 54, to: {{map: topn01, exit: 9}}, sets: [54, 55, 75]}}\n",
                 NewGameTrigger, FirstRaisedTrigger + FirstPartnerNumber, FirstRaisedTrigger + OtherPartnerNumber);
@@ -79,7 +79,7 @@ bool isSet(const StoryAdapter& story, std::int32_t trigger) {
 
 TEST_CASE(
     "a new game's story sets what data/new_game_story and its skipped opening set, and raises the first partner") {
-    const TestPacks packs{{"data/digimon.yaml", DigimonTable}, {"data/new_game_story.yaml", NewGameStory}};
+    const TestPacks packs{{"data/digimon.yaml", digimonTable}, {"data/new_game_story.yaml", newGameStory}};
     const auto [session, story] = storySession(packs);
     CHECK(isSet(*story, NewGameTrigger));
     for (const std::int32_t opening : {54, 55, 75}) {
@@ -92,14 +92,14 @@ TEST_CASE(
 }
 
 TEST_CASE("without data/new_game_story a new game's story has only the first partner raised") {
-    const TestPacks packs{{"data/digimon.yaml", DigimonTable}};
+    const TestPacks packs{{"data/digimon.yaml", digimonTable}};
     const auto [session, story] = storySession(packs);
     CHECK(story->state().triggersSet() == 1);
     CHECK(isSet(*story, FirstRaisedTrigger + FirstPartnerNumber));
 }
 
 TEST_CASE("the story is saved in its section and loaded back") {
-    const TestPacks packs{{"data/digimon.yaml", DigimonTable}, {"data/new_game_story.yaml", NewGameStory}};
+    const TestPacks packs{{"data/digimon.yaml", digimonTable}, {"data/new_game_story.yaml", newGameStory}};
     const auto saved = storySession(packs);
     REQUIRE(saved.story->state().setTrigger(PlayedTrigger, true).has_value());
     auto file = saved.session->saveFile();
@@ -115,7 +115,7 @@ TEST_CASE("the story is saved in its section and loaded back") {
 }
 
 TEST_CASE("a save made before the story section loads, with the story as a new game leaves it") {
-    const TestPacks packs{{"data/digimon.yaml", DigimonTable}, {"data/new_game_story.yaml", NewGameStory}};
+    const TestPacks packs{{"data/digimon.yaml", digimonTable}, {"data/new_game_story.yaml", newGameStory}};
     const auto saved = storySession(packs);
     auto file = saved.session->saveFile();
     REQUIRE_MESSAGE(file.has_value(), errorOf(file));

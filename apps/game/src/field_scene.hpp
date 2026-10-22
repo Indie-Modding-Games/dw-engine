@@ -40,8 +40,9 @@ struct FieldSceneDesc {
     std::optional<render::TimeOfDay> time;
     // What the scripts' map changes read of the game, and where the triggers they set go (session/field_facts.hpp).
     // Without facts no script warp is taken.
-    game::field::GuardFacts facts{};
-    game::field::TriggerWriter writeTrigger{};
+    // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+    game::field::GuardFacts facts = {};
+    game::field::TriggerWriter writeTrigger = nullptr;
     // Start with free exploration on (game::field::ScriptWarpSetup::explore).
     bool explore = false;
 };

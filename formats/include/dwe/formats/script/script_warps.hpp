@@ -70,7 +70,7 @@ struct ScriptWarp {
     // For a transport pick, the path to the call_routine, with the entry's trigger, its cost and the pick as the
     // last terms, and the entry's map and exit.
     MapChange change;
-    std::optional<TransportPick> transport{};
+    std::optional<TransportPick> transport = std::nullopt;
 
     bool operator==(const ScriptWarp&) const = default;
 };

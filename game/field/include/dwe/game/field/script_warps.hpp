@@ -134,7 +134,7 @@ struct ScriptWarp {
     WarpGuard scriptGuard; // what loads the map's script
     WarpGuard guard;       // what the section takes to get to the map change
     std::vector<FlagEffect> setsFlags;
-    std::optional<TransportPick> transport{};
+    std::optional<TransportPick> transport = std::nullopt;
     std::string source; // "script 178, section 51, offset 0x0120"
 
     bool operator==(const ScriptWarp&) const = default;
