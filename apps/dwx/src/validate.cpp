@@ -17,6 +17,8 @@
 #include <dwe/core/message.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <lua.hpp>
+
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -24,6 +26,7 @@
 #include <cstdio>
 #include <format>
 #include <map>
+#include <memory>
 #include <optional>
 #include <print>
 #include <set>
@@ -187,6 +190,8 @@ public:
                 checkDocument(id, source);
             } else if (extension == "glb" || extension == "gltf") {
                 checkModelFiles(id, source);
+            } else if (extension == "lua") {
+                checkLua(id, source);
             }
             checkMetadata(id, source);
             checkContractExists(id, source);
@@ -287,6 +292,26 @@ private:
             for (const core::SchemaProblem& problem : manifestSchema->check(*document).problems) {
                 add(manifest, problem.line, problem.column, std::format("{}: {}", problem.path, problem.message));
             }
+        }
+    }
+
+    // A Lua file compiles: Lua reads it as text and nothing runs, in a state with no library.
+    void checkLua(const AssetId& id, const assets::AssetSource& source) {
+        const auto bytes = stack_->read(id);
+        if (!bytes) {
+            return; // checkContent reports it
+        }
+        const std::string_view text = textOf(*bytes);
+        const std::unique_ptr<lua_State, decltype(&lua_close)> state{luaL_newstate(), &lua_close};
+        if (!state) {
+            add(assets::pathText(source.file), 0, 0, "no Lua state to compile it in");
+            return;
+        }
+        const std::string chunk = "=" + id.str();
+        if (luaL_loadbufferx(state.get(), text.data(), text.size(), chunk.c_str(), "t") != LUA_OK) {
+            const char* message = lua_tostring(state.get(), -1);
+            add(assets::pathText(source.file), 0, 0,
+                std::format("the Lua does not compile: {}", message == nullptr ? "no message" : message));
         }
     }
 

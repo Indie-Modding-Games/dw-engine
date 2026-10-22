@@ -572,6 +572,28 @@ dependencies:
     CHECK(text.contains("extras.tickCount must not be 0"));
 }
 
+TEST_CASE("dwx validate compiles every Lua file of a pack and names the one that does not") {
+    MemoryFileSystem files;
+    addSchemas(files);
+    addBasePack(files);
+    files.addFile("packs/mod/pack.yaml", R"(id: mod
+version: 1.0.0
+layer: mods
+name: Mod
+dependencies:
+  - id: base
+    min_version: 1.0.0
+)");
+    files.addFile("packs/mod/story/900.lua", "local story <const> = story\nreturn { script = 900, sections = {} }\n");
+    files.addFile("packs/mod/story/901.lua", "return { script = 901, sections = {\n");
+    const std::array<std::filesystem::path, 1> with{"content/base"};
+    const auto report = validatePacks(files, "packs/mod", "content/schemas", with);
+    REQUIRE_MESSAGE(report.has_value(), errorOf(report));
+    const std::string text = textOf(*report);
+    CHECK_MESSAGE(report->problems.size() == 1, text);
+    CHECK(text.contains("packs/mod/story/901.lua: the Lua does not compile: story/901:"));
+}
+
 TEST_CASE("dwx validate checks every language against English") {
     MemoryFileSystem files;
     addSchemas(files);

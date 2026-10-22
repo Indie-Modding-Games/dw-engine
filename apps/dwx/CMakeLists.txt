@@ -1,5 +1,7 @@
 find_package(Opus CONFIG REQUIRED)
 find_package(Ktx CONFIG REQUIRED)
+# dwx validate compiles the Lua of the packs.
+find_package(Lua REQUIRED)
 # libopusenc ships no CMake package: its library and header, from the vcpkg tree.
 find_library(DWE_OPUSENC_LIBRARY NAMES opusenc REQUIRED)
 find_path(DWE_OPUSENC_INCLUDE_DIR opusenc.h PATH_SUFFIXES opus REQUIRED)
@@ -43,7 +45,7 @@ dwe_add_module(dwx
         src/verify.cpp
         src/video_extractors.cpp
     DEPS core formats assets
-    PRIVATE_LIBS dwe_opusenc KTX::ktx
+    PRIVATE_LIBS dwe_opusenc KTX::ktx ${LUA_LIBRARIES}
     TEST_LIBS dwe_cgltf)
 
 # The recipes dwx extract runs after the base pack (content/enhance), built into the tool so it needs no files beside
@@ -53,6 +55,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${DWE_UI_ORIGINAL
 file(READ ${DWE_UI_ORIGINAL_RECIPE_FILE} DWE_UI_ORIGINAL_RECIPE)
 configure_file(src/bundled_recipes.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/generated/bundled_recipes.hpp @ONLY)
 target_include_directories(dwe_dwx PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
+target_include_directories(dwe_dwx SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
 
 if(BUILD_TESTING)
     # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the media files of the
