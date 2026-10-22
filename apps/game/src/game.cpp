@@ -46,6 +46,7 @@
 #include "dev_assets_banner.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
+#include "game_audio.hpp"
 #include "language.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
@@ -299,6 +300,7 @@ int runGame(const Options& options) {
     core::logError("{}", platform.error().message);
     return EXIT_FAILURE;
   }
+  audio::Audio sound = openGameAudio();
   // After the platform, so its virtual gamepad is unplugged before the platform goes.
   std::unique_ptr<Autotest> autotest;
   if (options.autotest) {
@@ -582,6 +584,7 @@ int runGame(const Options& options) {
     }
 
     const int ticks = step.advance(frameSeconds);
+    sound.update(ticks * TickSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();

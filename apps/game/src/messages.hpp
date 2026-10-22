@@ -12,6 +12,9 @@ inline constexpr std::string_view RulesetActive = "game: ruleset {} {} ({}), sec
 inline constexpr std::string_view RulesetSection = "{} ({})";
 inline constexpr std::string_view ListSeparator = ", ";
 
+// The sound device (game_audio.cpp).
+inline constexpr std::string_view AudioSilent = "game: no sound: {}; the game goes on silent";
+
 // The dev assets banner (dev_assets_banner.cpp), logged in the player's language.
 inline constexpr std::string_view DevAssetsBanner = "game: {}";
 
