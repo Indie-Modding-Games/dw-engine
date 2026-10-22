@@ -68,6 +68,10 @@ void setTrigger(ScriptBuilder& script, unsigned trigger) {
     script.u8({0x1C, 0x00}).u16(trigger);
 }
 
+void unsetTrigger(ScriptBuilder& script, unsigned trigger) {
+    script.u8({0x1D, 0x00}).u16(trigger);
+}
+
 void setScript(ScriptBuilder& script, unsigned id, unsigned map) {
     script.u8({0xFB, 0x00}).u16(id).u16(map);
 }
@@ -667,6 +671,69 @@ TEST_CASE("a new game's spawn on a step cell makes the opening's map change at o
     CHECK(
         story->ends_with("opening:\n  exit: 9\n  section: 54\n  to:\n    map: opening01\n    exit: 9\n  sets:\n  - 54\n"
                          "  - 55\n"));
+}
+
+TEST_CASE("a new game's opening is left out when the walk cannot be sure of it") {
+    using dwe::formats::script::findNewGameOpening;
+    using dwe::formats::script::NewGameTriggers;
+    constexpr std::uint16_t MapScript = 1;
+    constexpr std::uint16_t SpawnSection = 54;
+    constexpr unsigned Opening = 7;
+    constexpr unsigned Elsewhere = 8;
+    constexpr unsigned Started = 9;
+    constexpr unsigned Partner = 0x203;
+    // Section 54 goes to the opening; 55 goes elsewhere once the partner's trigger is set; 56 clears a trigger the new
+    // game sets; 57 sets and clears one of its own.
+    ScriptBuilder mapScript{{{SpawnSection, 20}, {55, 26}, {56, 46}, {57, 56}}};
+    warpTo(mapScript, Opening, 1);                    // 20
+    endSection(mapScript);                            // 24
+    ifTriggerElseGoto(mapScript, Partner, false, 42); // 26
+    warpTo(mapScript, Elsewhere, 1);                  // 38
+    warpTo(mapScript, Opening, 1);                    // 42
+    unsetTrigger(mapScript, Started);                 // 46
+    warpTo(mapScript, Opening, 1);                    // 50
+    endSection(mapScript);                            // 54
+    setTrigger(mapScript, 3);                         // 56
+    unsetTrigger(mapScript, 3);                       // 60
+    warpTo(mapScript, Opening, 1);                    // 64
+    endSection(mapScript);                            // 68
+    const std::map<std::uint16_t, Prepared> scripts{{MapScript, prepare(mapScript)}};
+    const NewGameTriggers start{
+        .map = 0, .script = MapScript, .set = {Started}, .agreed = true, .unknown = {Partner, 0x211}, .opening = {}};
+    REQUIRE(findNewGameOpening(start, SpawnSection, lookupOf(scripts)).has_value());
+
+    // The paths of the new game end with different triggers set.
+    auto disagreed = start;
+    disagreed.agreed = false;
+    const auto notAgreed = findNewGameOpening(disagreed, SpawnSection, lookupOf(scripts));
+    REQUIRE_FALSE(notAgreed.has_value());
+    CHECK(notAgreed.error().message.contains("do not agree"));
+
+    // Where it goes depends on a trigger the walk does not know: the partner's.
+    const auto unknown = findNewGameOpening(start, 55, lookupOf(scripts));
+    REQUIRE_FALSE(unknown.has_value());
+    CHECK(unknown.error().message.contains("changes with the unknown triggers"));
+
+    // Too many unknown triggers to try each way.
+    auto many = start;
+    many.unknown.clear();
+    for (std::uint16_t trigger = 0x300; many.unknown.size() <= dwe::formats::script::MaximumOpeningUnknowns;
+         ++trigger) {
+        many.unknown.push_back(trigger);
+    }
+    const auto tooMany = findNewGameOpening(many, SpawnSection, lookupOf(scripts));
+    REQUIRE_FALSE(tooMany.has_value());
+    CHECK(tooMany.error().message.contains("more than the 8 tried each way"));
+
+    // Its path clears a trigger the new game set, which the field would keep set.
+    const auto clears = findNewGameOpening(start, 56, lookupOf(scripts));
+    REQUIRE_FALSE(clears.has_value());
+    CHECK(clears.error().message.contains("clears trigger 9"));
+
+    // A trigger the new game leaves clear may be set and cleared again: it is not among the sets.
+    const auto own = findNewGameOpening(start, 57, lookupOf(scripts));
+    REQUIRE(own.has_value());
+    CHECK(own.value_or(dwe::formats::script::NewGameOpening{}).sets.empty());
 }
 
 TEST_CASE("a map change behind a recursion the walk cut reaches field/script_warps with the routine's site") {

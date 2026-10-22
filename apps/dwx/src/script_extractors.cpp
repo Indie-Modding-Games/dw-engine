@@ -164,13 +164,21 @@ void addNewGameOpening(Extraction& extraction, const Disc& disc, formats::script
         return;
     }
     const auto cell = formats::map::collisionUnderSpawn(*file, formats::script::NewGameExit);
-    newGame.opening = cell ? formats::script::findNewGameOpening(newGame, *cell, lookup) : std::nullopt;
-    if (!newGame.opening) {
-        extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} makes no certain map change, so "
-                                               "data/{} has no opening",
+    if (!cell) {
+        extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} is on no cell, so data/{} has no "
+                                               "opening",
                                                map, formats::script::NewGameExit, NewGameStoryDocument));
         return;
     }
+    auto found = formats::script::findNewGameOpening(newGame, *cell, lookup);
+    if (!found) {
+        extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} makes no certain map change ({}), "
+                                               "so data/{} has no opening",
+                                               map, formats::script::NewGameExit, found.error().message,
+                                               NewGameStoryDocument));
+        return;
+    }
+    newGame.opening = std::move(*found);
     const formats::script::NewGameOpening& opening = *newGame.opening;
     extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} is on step cell {}, which goes to {} "
                                            "exit {} at once and sets {} triggers: data/{} keeps it as the opening",

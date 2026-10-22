@@ -161,14 +161,17 @@ puesto; desconocidos el 0x203 y el 0x211.
 
 `opening` (opcional): el cambio de mapa que hace la partida nueva antes de que el jugador se mueva. La partida nueva
 entra en el primer mapa por la salida 9 (`map.c: initializeMap` pone `CURRENT_EXIT`; `NewGameExit`), y las casillas de
-pisar corren su sección en cada tick que el jugador está encima (`tamer.c: checkMapInteraction`), así que si la
-llegada cae en una la corre enseguida. `dwx` lee la casilla bajo esa llegada en el `.MAP` del primer mapa (como
+pisar corren su sección en cada tick que el jugador está encima (`tamer.c: checkMapInteraction`), así que si la llegada
+cae en una la corre enseguida. `dwx` lee la casilla bajo esa llegada en el `.MAP` del primer mapa (como
 `map_collision.c: getTileTrigger`; `formats::map::collisionUnderSpawn`) y recorre su sección con el estado de partida
 nueva (`findNewGameOpening`); si hace un único cambio de mapa cierto, lo guarda: `exit`, `section`, `to` (mapa o
-pantalla y salida) y `sets`, los disparadores que deja puestos. En el disco americano la llegada cae en la casilla 54
-de `twna01`: con el 55 apagado salta al código de la 66 (la entrada «To Opening» de un menú de depuración, que el
-camino vivo se salta) y, con el 75 y el 54 apagados, pone 75, 54 y 55 y va a `topn01` salida 9, la apertura. Desde
-ahí, en vainilla no se vuelve a pisar `twna01` con esos disparadores apagados: la 54 es la puerta de `room08` y la
+pantalla y salida) y `sets`, los disparadores que deja puestos. Solo es cierto si todos los caminos de la partida nueva
+acaban con los mismos disparadores (`agreed`), si da lo mismo con cada combinación de los desconocidos (encendidos o
+apagados; como mucho `MaximumOpeningUnknowns`, 8) y si el camino no apaga ninguno de los que pone la partida nueva, que
+el campo dejaría puesto; si no, no hay `opening` y `dwx` lo explica en una nota. En el disco americano la llegada cae en
+la casilla 54 de `twna01`: con el 55 apagado salta al código de la 66 (la entrada «To Opening» de un menú de depuración,
+que el camino vivo se salta) y, con el 75 y el 54 apagados, pone 75, 54 y 55 y va a `topn01` salida 9, la apertura.
+Desde ahí, en vainilla no se vuelve a pisar `twna01` con esos disparadores apagados: la 54 es la puerta de `room08` y la
 66 no hace nada.
 
 ```yaml

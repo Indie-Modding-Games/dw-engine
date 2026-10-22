@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <format>
 #include <iterator>
 #include <map>
 #include <string>
@@ -310,33 +311,63 @@ std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup) {
     return result;
 }
 
-std::optional<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
-                                                 const ScriptLookup& lookup) {
+core::Result<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
+                                                const ScriptLookup& lookup) {
     if (warpViaOf(spawnCell) != WarpVia::Step) {
-        return std::nullopt;
+        return core::fail(std::format("cell {} is not a step cell", spawnCell));
     }
-    WalkOptions state{.knownTriggers = {}, .othersClear = true};
-    for (const std::uint16_t trigger : newGame.set) {
-        state.knownTriggers.push_back({.trigger = trigger, .set = true});
+    if (!newGame.agreed) {
+        return core::fail("the new game's paths do not agree on the triggers they set");
     }
-    const auto changes = findMapChanges(newGame.script, spawnCell, lookup, state);
-    if (changes.size() != 1 || !changes.front().screen || hasGuard(changes.front().path.guard)) {
-        return std::nullopt;
+    if (newGame.unknown.size() > MaximumOpeningUnknowns) {
+        return core::fail(std::format("{} triggers are unknown, more than the {} tried each way",
+                                      newGame.unknown.size(), MaximumOpeningUnknowns));
     }
-    const MapChange& change = changes.front();
-    NewGameOpening opening{.exit = NewGameExit,
-                           .section = spawnCell,
-                           .screen = static_cast<std::uint16_t>(*change.screen),
-                           .screenExit = change.exit.value_or(0),
-                           .sets = {}};
-    for (const TriggerEffect& effect : change.path.effects) {
-        std::erase(opening.sets, effect.trigger);
-        if (effect.set) {
-            opening.sets.push_back(effect.trigger);
+    // The walk takes every trigger it is not told about as clear, so the unknown ones are tried each way: the opening
+    // is certain only if it is the same in all.
+    std::optional<NewGameOpening> found;
+    for (std::size_t mask = 0; mask < (std::size_t{1} << newGame.unknown.size()); ++mask) {
+        WalkOptions state{.knownTriggers = {}, .othersClear = true};
+        for (const std::uint16_t trigger : newGame.set) {
+            state.knownTriggers.push_back({.trigger = trigger, .set = true});
         }
+        for (std::size_t i = 0; i < newGame.unknown.size(); ++i) {
+            state.knownTriggers.push_back({.trigger = newGame.unknown[i], .set = ((mask >> i) & 1U) != 0});
+        }
+        const auto changes = findMapChanges(newGame.script, spawnCell, lookup, state);
+        if (changes.size() != 1 || !changes.front().screen || hasGuard(changes.front().path.guard)) {
+            return core::fail(std::format("section {} makes no single map change to a screen that the new game's "
+                                          "triggers decide",
+                                          spawnCell));
+        }
+        const MapChange& change = changes.front();
+        NewGameOpening opening{.exit = NewGameExit,
+                               .section = spawnCell,
+                               .screen = static_cast<std::uint16_t>(*change.screen),
+                               .screenExit = change.exit.value_or(0),
+                               .sets = {}};
+        for (const TriggerEffect& effect : change.path.effects) {
+            // The field starts after the opening with the new game's triggers and `sets` set, so it would keep one
+            // the path clears.
+            if (!effect.set && std::ranges::binary_search(newGame.set, effect.trigger)) {
+                return core::fail(
+                    std::format("section {} clears trigger {}, which the new game sets", spawnCell, effect.trigger));
+            }
+            std::erase(opening.sets, effect.trigger);
+            if (effect.set) {
+                opening.sets.push_back(effect.trigger);
+            }
+        }
+        std::ranges::sort(opening.sets);
+        if (found && *found != opening) {
+            return core::fail(std::format("section {} changes with the unknown triggers", spawnCell));
+        }
+        found = std::move(opening);
     }
-    std::ranges::sort(opening.sets);
-    return opening;
+    if (!found) {
+        return core::fail(std::format("section {} was not walked", spawnCell));
+    }
+    return std::move(*found);
 }
 
 YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup, const MapName& mapName) {

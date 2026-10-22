@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/core/error.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/script/guarded_walk.hpp>
 #include <dwe/formats/script/map_changes.hpp>
@@ -91,11 +92,17 @@ struct NewGameTriggers {
 
 std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup);
 
+// How many triggers of NewGameTriggers::unknown findNewGameOpening tries each way (2^n walks); with more it finds no
+// opening.
+inline constexpr std::size_t MaximumOpeningUnknowns = 8;
+
 // The map change of the section that a spawn on a cell of value `spawnCell` runs, in the state the new game leaves
-// (`set`, every other trigger clear): nothing unless the cell is a step cell (51-79) and its section makes exactly one
-// map change to a screen, through IFs that state decides. `sets` holds the triggers set at the change.
-std::optional<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
-                                                 const ScriptLookup& lookup);
+// (`set`, every other trigger clear): a failure that says why unless the cell is a step cell (51-79), every path of
+// the new game agrees (`agreed`) and the section makes exactly one map change to a screen, through IFs that state
+// decides, the same whichever of the `unknown` triggers are set, and without clearing a trigger of `set`. `sets`
+// holds the triggers set at the change.
+core::Result<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
+                                                const ScriptLookup& lookup);
 
 // The raised triggers of the two partners a new game may start with (main.c: main raises one of them by pstat 0xfe
 // before it runs the new-game section; script_common.c: setDigimonRaised sets trigger 0x200 + its id).
