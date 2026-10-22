@@ -115,12 +115,13 @@ struct AutotestRoute {
 // Reads a route (the format is in docs/guides/prueba-vertical.md). Errors name the line and column.
 core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml);
 
-// What the driver reads and drives each frame. Everything outlives the driver.
+// What the driver reads and drives each frame. Everything but the scene outlives the driver.
 struct AutotestHost {
   platform::Platform* platform = nullptr;
   platform::Window* window = nullptr;
   render::Renderer* renderer = nullptr;
   rhi::Device* device = nullptr;
+  // The field of the game being played; nothing at the title screen.
   const FieldScene* scene = nullptr;
   const ui::Ui* ui = nullptr;
   const input::InputState* input = nullptr;
@@ -202,6 +203,9 @@ private:
   // What of the condition does not hold now, or empty if all of it does.
   [[nodiscard]] static std::string unmetCondition(const AutotestHost& host,
                                                   const AutotestCondition& until);
+  // The same for the parts of the condition on the UI, which also hold at the title screen.
+  [[nodiscard]] static std::string unmetInUi(const AutotestHost& host,
+                                             const AutotestCondition& until);
   bool rememberStep(const AutotestHost& host, const AutotestStep& step);
   bool expectChangeStep(const AutotestHost& host, const AutotestStep& step);
 

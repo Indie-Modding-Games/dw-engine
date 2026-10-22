@@ -17,6 +17,7 @@
 #include <span>
 #include <string>
 
+#include "app_flow.hpp"
 #include "autotest.hpp"
 #include "battle_screen.hpp"
 #include "care_commands.hpp"
@@ -59,6 +60,8 @@ struct SessionCommands {
   SaveCommand save;
 
   void bind(script::ScriptVm& scripts);
+  // Forgets what was queued with no game to apply it to.
+  void drop();
 };
 
 // What lives as long as one game (docs/architecture/guardar-y-cargar.md, 3.1): the session, the
@@ -66,7 +69,8 @@ struct SessionCommands {
 // and torn down whole.
 class PlaySession {
 public:
-  static core::Result<std::unique_ptr<PlaySession>> create(const PlayContext& context);
+  static core::Result<std::unique_ptr<PlaySession>> create(const PlayContext& context,
+                                                           const PlayStart& start);
 
   PlaySession(const PlaySession&) = delete;
   PlaySession& operator=(const PlaySession&) = delete;

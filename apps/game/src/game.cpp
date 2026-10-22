@@ -33,11 +33,13 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include "app_flow.hpp"
 #include "autotest.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
@@ -55,6 +57,8 @@
 namespace dwe::app {
 namespace {
 
+// The title screen's command that starts a new game.
+constexpr std::string_view PlayCommand = "play";
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
 
@@ -343,6 +347,9 @@ int runGame(const Options& options) {
     return EXIT_FAILURE;
   }
   const assets::VirtualFileSystem& files = (*content)->files();
+  if (options.tuning) {
+    (*debugUi)->openTuning();
+  }
   // An autotest neither reads nor writes the player's settings: its language is --lang or the
   // system's.
   const std::optional<std::filesystem::path> settingsFile =
@@ -412,17 +419,11 @@ int runGame(const Options& options) {
   (*ui)->setSetting(ui::TextFontSetting, std::string{ui::textFontName((*ui)->textFont())});
   MapChangeView mapChangeView{**ui};
   (*ui)->setMenuDocument(MenuDocument);
-  (*ui)->show("hud");
   if (options.devAssets) {
     if (auto shown = showDevAssetsBanner(**ui); !shown) {
       core::logError("game: {}", shown.error().message);
       return EXIT_FAILURE;
     }
-  }
-  // The game starts at the main menu; an autotest only when its route asks for it, so the others
-  // start in the field.
-  if (!autotest || autotest->startsAtMainMenu()) {
-    (*ui)->show(MainMenuDocument, true);
   }
   loadUserGamepadMappings();
 
@@ -451,30 +452,36 @@ int runGame(const Options& options) {
   // The partner's status for the autotest's checks, refreshed every frame of a run.
   screens::ScreenSettings partnerStatus;
 
-  auto play = PlaySession::create({.options = &options,
-                                   .keepsSaves = !autotest,
-                                   .files = &files,
-                                   .device = device->get(),
-                                   .renderer = renderer->get(),
-                                   .ui = ui->get(),
-                                   .debugUi = debugUi->get(),
-                                   .userSettings = &userSettings,
-                                   .settingsFile = settingsFile});
-  if (!play) {
-    core::logError("game: {}", play.error().message);
-    return EXIT_FAILURE;
-  }
-  if (options.tuning) {
-    (*debugUi)->openTuning();
+  AppFlow<PlaySession> flow{[&](const PlayStart& start) {
+    return PlaySession::create({.options = &options,
+                                .keepsSaves = !autotest,
+                                .files = &files,
+                                .device = device->get(),
+                                .renderer = renderer->get(),
+                                .ui = ui->get(),
+                                .debugUi = debugUi->get(),
+                                .userSettings = &userSettings,
+                                .settingsFile = settingsFile},
+                               start);
+  }};
+  // The game starts at the title screen, with no game; --load, --start and an autotest whose route
+  // does not ask for the main menu start playing.
+  if ((autotest && !autotest->startsAtMainMenu()) || options.load || options.startMap) {
+    if (auto started = flow.play({.load = options.load}); !started) {
+      core::logError("game: {}", started.error().message);
+      return EXIT_FAILURE;
+    }
+  } else {
+    (*ui)->show(MainMenuDocument, true);
   }
 
   FrameStats frameStats;
-  const AutotestHost host{
+  AutotestHost host{
       .platform = &*platform,
       .window = &*window,
       .renderer = renderer->get(),
       .device = device->get(),
-      .scene = &(*play)->scene(),
+      .scene = nullptr,
       .ui = ui->get(),
       .input = &input,
       .stats = &frameStats,
@@ -498,7 +505,9 @@ int runGame(const Options& options) {
   while (running) {
     events.clear();
     if (autotest) {
-      partnerStatus = (*play)->partnerStatus();
+      const PlaySession* play = flow.playing();
+      partnerStatus = play != nullptr ? play->partnerStatus() : screens::ScreenSettings{};
+      host.scene = play != nullptr ? &play->scene() : nullptr;
       autotest->frame(host, ticksRun, platform->nowSeconds(), events);
       if (autotest->finished()) {
         break;
@@ -544,8 +553,8 @@ int runGame(const Options& options) {
         continue;
       }
       input.handle(event);
-      if (!(*ui)->capturesInput()) {
-        mouse.handle(event, (*play)->scene());
+      if (!(*ui)->capturesInput() && flow.playing() != nullptr) {
+        mouse.handle(event, flow.playing()->scene());
       }
     }
 
@@ -576,17 +585,17 @@ int runGame(const Options& options) {
         (*debugUi)->toggle();
       }
       (*ui)->tick(input, TickSeconds);
+      PlaySession* play = flow.playing();
       game::field::FieldInput intent;
-      if (!(*ui)->capturesInput()) {
+      if (play != nullptr && !(*ui)->capturesInput()) {
         const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
         intent.stick = {move.x, -move.y};
         intent.run = !input.isDown("walk");
         intent.moveTarget = mouse.take();
-        if (const auto held =
-                mouse.steer((*play)->scene(),
-                            glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
-                                      static_cast<float>((*renderer)->targetExtent().height)});
+        if (const auto held = mouse.steer(
+                play->scene(), glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
+                                         static_cast<float>((*renderer)->targetExtent().height)});
             held && move.x == 0.0F && move.y == 0.0F) {
           intent.stick = *held;
         }
@@ -596,23 +605,37 @@ int runGame(const Options& options) {
       } else {
         mouse.release();
       }
-      (*play)->tick(intent);
+      if (play != nullptr) {
+        play->tick(intent);
+      }
       input.endTick();
       ++ticksRun;
     }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-      if ((*play)->handle(command)) {
+      if (flow.playing() != nullptr && flow.playing()->handle(command)) {
+        continue;
+      }
+      if (command.name == PlayCommand && flow.playing() == nullptr) {
+        core::logInfo("game: command {}", command.name);
+        if (auto started = flow.play({}); !started) {
+          core::logError("game: {}", started.error().message);
+          (*ui)->show(MainMenuDocument, true);
+        }
         continue;
       }
       running = apply(command, **ui, *window, settings, languageChanger, textFontChanger,
                       uiSkinChanger, minimapChanger) &&
                 running;
     }
-    (*play)->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
-                    static_cast<float>(step.alpha()));
-    screenFade->setDarkness((*play)->scene().field().fadeLevel());
-    mapChangeView.show((*play)->scene());
+    if (PlaySession* play = flow.playing()) {
+      play->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
+                   static_cast<float>(step.alpha()));
+      screenFade->setDarkness(play->scene().field().fadeLevel());
+      mapChangeView.show(play->scene());
+    } else {
+      sessionCommands.drop();
+    }
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
     }
@@ -632,7 +655,8 @@ int runGame(const Options& options) {
     const std::array<render::Drawer*, 2> uiDrawers{&*screenFade, uiRenderer->get()};
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
-        .scene = (*play)->scene().drawers(),
+        .scene = flow.playing() != nullptr ? flow.playing()->scene().drawers()
+                                           : std::span<render::Drawer* const>{},
         .ui = uiDrawers,
         .overlay = std::ref(drawOverlay),
     });
@@ -651,7 +675,7 @@ int runGame(const Options& options) {
   // use) counts: the scene and the UI release their textures into the renderer before it, and the
   // device goes last.
   const bool validationActive = (*device)->validationEnabled();
-  play->reset();
+  flow.toTitle();
   scripts->reset();
   ui->reset();
   uiRenderer->reset();

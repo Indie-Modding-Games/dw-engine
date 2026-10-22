@@ -289,6 +289,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | Comando | Valor | Ajuste que la app publica después |
 |---|---|---|
 | `quit` | — | — |
+| `play` | — | — (en la portada: empieza una partida nueva; ver [guardar-y-cargar.md](guardar-y-cargar.md)) |
 | `minimap` | `auto`, `on`, `off` | `minimap` |
 | `minimap_size` | `small`, `medium`, `large` | `minimap_size` |
 | `fullscreen` | booleano | `fullscreen` |

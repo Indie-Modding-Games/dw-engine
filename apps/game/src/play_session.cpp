@@ -117,9 +117,19 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   save.bind(scripts);
 }
 
-core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context) {
+void SessionCommands::drop() {
+  gift.reset();
+  use.reset();
+  battle.reset();
+  evolution.reset();
+  care = {};
+  save = {};
+}
+
+core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
+                                                               const PlayStart& start) {
   const Options& options = *context.options;
-  auto game = startGame(*context.files, options, context.keepsSaves);
+  auto game = startGame(*context.files, options, context.keepsSaves, start.load);
   if (!game) {
     return std::unexpected{game.error()};
   }
@@ -178,12 +188,18 @@ PlaySession::PlaySession(const PlayContext& context, GameStart game,
   context_.debugUi->attachTuning(
       {.files = context_.files, .store = &session.rules(), .clock = &session.clock()});
   context_.debugUi->addTuningTab(partnerTab(session));
+  context_.ui->show("hud");
 }
 
 PlaySession::~PlaySession() {
   // The frames in flight may still draw the field's textures.
   context_.device->waitIdle();
+  context_.debugUi->detachTuning();
   game_.session->detachField();
+  for (const std::string_view document :
+       {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument}) {
+    context_.ui->hide(document);
+  }
 }
 
 void PlaySession::tick(const game::field::FieldInput& intent) {

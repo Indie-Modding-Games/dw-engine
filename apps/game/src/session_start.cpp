@@ -41,7 +41,7 @@ std::uint64_t newSeed() {
 } // namespace
 
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves) {
+                                  bool keepsSaves, const std::optional<game::save::SlotId>& load) {
   GameStart start{.storage = storageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
@@ -59,12 +59,12 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
     return core::fail(core::formatMessage(messages::SessionFailed, session.error().message));
   }
   start.session = std::move(*session);
-  if (options.load) {
-    if (auto loaded = start.session->load(*options.load); !loaded) {
+  if (load) {
+    if (auto loaded = start.session->load(*load); !loaded) {
       return core::fail(core::formatMessage(messages::SessionFailed, loaded.error().message));
     }
-    core::logInfo("{}", core::formatMessage(messages::SessionLoaded,
-                                            game::save::slotFileName(*options.load)));
+    core::logInfo("{}",
+                  core::formatMessage(messages::SessionLoaded, game::save::slotFileName(*load)));
   } else {
     if (auto started = start.session->startNewGame(); !started) {
       return core::fail(core::formatMessage(messages::SessionFailed, started.error().message));

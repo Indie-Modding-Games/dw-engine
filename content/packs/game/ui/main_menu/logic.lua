@@ -1,5 +1,5 @@
--- The main menu, shown when the game starts: play, choose the language, the text font and the
--- interface skin, quit. Like the pause menu it never changes a setting itself: it sends the
+-- The title screen's menu, with no game behind it: play (a new game), the language, the text
+-- font, the skin, quit. Like the pause menu it never changes a setting itself: it sends the
 -- language, text_font and ui_skin commands and shows what the game reports back (ui.setting). The
 -- skin entry is common/ui_skin_choice.lua, shared with the pause menu.
 
@@ -35,6 +35,7 @@ end
 
 function play()
   ui.hide(document_name)
+  ui.send("play")
 end
 
 function change_language(step)

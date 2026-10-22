@@ -2,11 +2,13 @@
 
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/game_systems.hpp>
 
 #include <memory>
+#include <optional>
 
 #include "options.hpp"
 
@@ -21,10 +23,10 @@ struct GameStart {
   session::GameSystems systems;
 };
 
-// Starts the game the command line asks for (--new-game, --load, --clock-speed, --ruleset) on the
-// packs, which must outlive it. `keepsSaves` is false for an autotest, which writes no save unless
-// --saves names a folder.
+// Starts a new game, or loads the one in `load`, with the command line's --clock-speed, --ruleset
+// and --seed on the packs, which must outlive it. `keepsSaves` is false for an autotest, which
+// writes no save unless --saves names a folder.
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves);
+                                  bool keepsSaves, const std::optional<game::save::SlotId>& load);
 
 } // namespace dwe::app

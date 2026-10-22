@@ -65,7 +65,11 @@ public:
   // Adds a system's tab to the tuning panel, after attachTuning.
   void addTuningTab(TuningTab tab);
 
-  // Shows the overlay with the tuning panel open, after attachTuning.
+  // Removes the tuning panel before what it tunes goes; the panel stays open for the next
+  // attachTuning.
+  void detachTuning();
+
+  // Shows the overlay with the tuning panel open, now or once attachTuning gives it one.
   void openTuning();
 
   // Builds the overlay for this frame and records it into the frame, which must be inside

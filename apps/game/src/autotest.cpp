@@ -447,8 +447,14 @@ float groundDistance(glm::vec3 a, glm::vec3 b) {
   return std::hypot(a.x - b.x, a.z - b.z);
 }
 
-std::string where(const FieldScene& scene) {
-  const game::field::Field& field = scene.field();
+// The field's steps and conditions wait for a game; at the title screen there is none.
+constexpr std::string_view NoGamePlayed = "no game is being played";
+
+std::string where(const FieldScene* scene) {
+  if (scene == nullptr) {
+    return "at the title screen";
+  }
+  const game::field::Field& field = scene->field();
   const glm::vec3 player = field.player().position;
   return std::format("map {}, player at ({:.0f}, {:.0f}), partner {:.0f} away", field.mapId(),
                      player.x, player.z, groundDistance(player, field.partner().position));
@@ -599,10 +605,12 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
     if (!progress_) {
       progress_ = std::make_unique<Progress>();
       progress_->start = now;
-      progress_->mapSerial = host.scene->mapSerial();
+      progress_->mapSerial = host.scene != nullptr ? host.scene->mapSerial() : 0;
     }
-    if (now - progress_->start > step.timeout && step.kind != Kind::Wait) {
-      failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(*host.scene)));
+    if (host.scene == nullptr && (step.kind == Kind::WalkTo || step.kind == Kind::Click)) {
+      failStep(NoGamePlayed);
+    } else if (now - progress_->start > step.timeout && step.kind != Kind::Wait) {
+      failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
     } else if (runStep(host, step, now)) {
       finishStep(now);
     }
@@ -720,7 +728,7 @@ bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, doub
     return true;
   }
   if (waited > step.timeout) {
-    failStep(std::format("{} after {:.0f} s; {}", unmet, step.timeout, where(*host.scene)));
+    failStep(std::format("{} after {:.0f} s; {}", unmet, step.timeout, where(host.scene)));
   }
   return false;
 }
@@ -733,6 +741,13 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
                             until.setting.has_value() || until.partnerModel.has_value();
   if (!hasCondition) {
     return {};
+  }
+  if (host.scene == nullptr) {
+    if (until.mapNameShown || until.map || until.partnerWithin || until.playerNear ||
+        until.partnerModel) {
+      return std::string{NoGamePlayed};
+    }
+    return unmetInUi(host, until);
   }
   const game::field::Field& field = host.scene->field();
   const glm::vec3 player = field.player().position;
@@ -752,7 +767,16 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
                                             player.z - until.playerNear->y) > until.playerRadius) {
     unmet = std::format("the player is not within {:.0f} of ({:.0f}, {:.0f})", until.playerRadius,
                         until.playerNear->x, until.playerNear->y);
-  } else if (until.menuOpen && host.ui->isVisible(MenuDocument) != *until.menuOpen) {
+  } else if (until.partnerModel && host.scene->partnerModel().str() != *until.partnerModel) {
+    unmet = std::format("the partner is drawn as {}, not {}", host.scene->partnerModel().str(),
+                        *until.partnerModel);
+  }
+  return unmet.empty() ? unmetInUi(host, until) : unmet;
+}
+
+std::string Autotest::unmetInUi(const AutotestHost& host, const AutotestCondition& until) {
+  std::string unmet;
+  if (until.menuOpen && host.ui->isVisible(MenuDocument) != *until.menuOpen) {
     unmet = *until.menuOpen ? "the menu is closed" : "the menu is open";
   } else if (until.shown && !host.ui->isVisible(*until.shown)) {
     unmet = std::format("{} is not shown", *until.shown);
@@ -763,9 +787,6 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
   } else if (until.setting && settingText(host, until.setting->first) != until.setting->second) {
     unmet = std::format("{} is {}, not {}", until.setting->first,
                         settingText(host, until.setting->first), until.setting->second);
-  } else if (until.partnerModel && host.scene->partnerModel().str() != *until.partnerModel) {
-    unmet = std::format("the partner is drawn as {}, not {}", host.scene->partnerModel().str(),
-                        *until.partnerModel);
   }
   return unmet;
 }
@@ -810,7 +831,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
   if (!step.trigger && step.point) {
     // A walk to a point stays on its map: the same point on the map behind an exit is not it.
     if (arrived) {
-      failStep(std::format("left the map on the way to the point; {}", where(*host.scene)));
+      failStep(std::format("left the map on the way to the point; {}", where(host.scene)));
       return false;
     }
     arrived = std::hypot(position.x - step.point->x, position.z - step.point->y) <= step.radius;
@@ -842,7 +863,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     plan();
   }
   if (progress.path.empty()) {
-    failStep(std::format("no path any more; {}", where(*host.scene)));
+    failStep(std::format("no path any more; {}", where(host.scene)));
     return false;
   }
   // The next waypoint is done when reached, or when the one after it is nearer than it is to that

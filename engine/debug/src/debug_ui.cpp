@@ -194,9 +194,13 @@ void DebugUi::addTuningTab(TuningTab tab) {
   }
 }
 
+void DebugUi::detachTuning() {
+  impl_->tuning.reset();
+}
+
 void DebugUi::openTuning() {
   impl_->visible = true;
-  impl_->tuningOpen = impl_->tuning != nullptr;
+  impl_->tuningOpen = true;
 }
 
 void DebugUi::draw(const rhi::Frame& frame, const FrameStats& stats, const input::InputState& input,
