@@ -1,7 +1,7 @@
 # Audio
 
 Estado: **diseño aprobado** (VAN-01; decidido por el coordinador el 2026-10-22: las 11 preguntas, como se
-recomienda, más un tramo de reverberación tras el 3). El tramo 1 está implementado.
+recomienda, más un tramo de reverberación tras el 3; y Q12–Q14 del tramo 2). El tramo 1 está implementado.
 
 Este documento dice cómo suena el juego: el módulo `engine/audio` (salida al dispositivo, mezclador, voces y
 volúmenes), cómo llegan a él los efectos (WAV u Opus) y la música (MIDI + SF2), cómo los piden los scripts y qué ve un
@@ -304,7 +304,7 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | `pack.yaml` | — | Sin claves nuevas | Ninguno |
 | `story.play_sound(banco, sonido)` | Lo emite `dwx` en el Lua convertido; S7 lo registra como orden ausente | Se publica en el tramo 2b, en la rama dueña de la API `story` (Q14) | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
 | `story.set_bgm(pista)`, `story.stop_bgm(...)` | Ídem | Se publican en el tramo 3 | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
-| Qué sonido toca cada aviso de los menús | — | Q12: opción 1, un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | Opción 1: **CAMBIO DE CONTRATO** (aditivo): documento nuevo del paquete `game` con su esquema |
+| Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2a): documento nuevo del paquete `game` con su esquema |
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
 | Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la lista de la fase 5 / 4b | — |
 
@@ -326,6 +326,13 @@ Decidido por el coordinador el 2026-10-22: en cada pregunta, la opción recomend
 CONTRATO** aditivo (claves nuevas en `data/music.yaml`, `ExtractorVersion` y el esquema `music`): si S2 tramo 4 sube
 `ExtractorVersion` antes, el tramo 3 toma el número siguiente. El `SoundPort` de `game/story` lo añade el tramo 2. La
 licencia de TinySoundFont va a los avisos de terceros. Se conservan las opciones para que se vea qué se descartó.
+
+Tramo 2 (Q12–Q14), decidido por el coordinador el 2026-10-22: la opción recomendada en las tres. Q14: 2a ahora; 2b,
+rama pequeña desde `main` cuando entre el tramo 3 de S2, con `story.play_sound` y la subida menor de `LuaApiVersion`
+(si la subida del tramo 4 de S2 entra antes, 2b toma el número siguiente). Q12: `ui/ui_sounds.yaml` y su esquema
+entran en 2a, **CAMBIO DE CONTRATO** aditivo; una entrada que falta o no vale deja ese aviso en silencio con un aviso
+en el log, y el juego nunca falla por ello; si 2a se pasa mucho de unas 800 líneas, los avisos de los menús pasan a
+2b. Q13: la tabla tipo → entrada va al paquete de los gritos y del combate.
 
 **Q1. Cómo entra el sintetizador SF2 (tramo 3).**
 1. *(Recomendada)* TinySoundFont (MIT) como **port de overlay de vcpkg** en el repositorio
