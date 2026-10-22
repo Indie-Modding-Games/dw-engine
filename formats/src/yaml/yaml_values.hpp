@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <string>
+#include <string_view>
 #include <utility>
 
 // Scalars and small nodes shared by the YAML converters of formats.
@@ -18,8 +19,11 @@ core::YamlNode number(T value) {
     return core::YamlNode::scalar(std::to_string(value));
 }
 
+inline constexpr std::string_view TrueText = "true";
+inline constexpr std::string_view FalseText = "false";
+
 inline core::YamlNode boolean(bool value) {
-    return core::YamlNode::scalar(value ? "true" : "false");
+    return core::YamlNode::scalar(std::string{value ? TrueText : FalseText});
 }
 
 inline core::YamlNode quoted(std::string text) {

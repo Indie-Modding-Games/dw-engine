@@ -9,6 +9,8 @@
 #include <dwe/formats/exe/memory_image.hpp>
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/scn_file.hpp>
+#include <dwe/formats/script/script_listing.hpp>
+#include <dwe/formats/script/script_yaml.hpp>
 #include <dwe/formats/text/charset.hpp>
 #include <dwe/formats/text/font.hpp>
 #include <dwe/formats/text/game_text.hpp>
@@ -129,6 +131,28 @@ TEST_CASE("the user's disc: every event script decodes and its texts encode back
     CHECK(counts.scripts == slots->size());
     CHECK(counts.unknowns == 0);
     CHECK(counts.textMismatches == 0);
+}
+
+TEST_CASE("the user's disc: every event script's listing YAML reads back as the listing of its disassembly") {
+    auto files = openDisc();
+    if (!files) {
+        return;
+    }
+    const auto pack = files->read("SCN/DG.SCN");
+    const auto slots = script::readScriptTable(pack);
+    REQUIRE_MESSAGE(slots.has_value(), errorOf(slots));
+    std::size_t mismatches = 0;
+    for (const auto& slot : *slots) {
+        const auto disassembly = script::disassembleScript(std::span{pack}.subspan(slot.offset, slot.size));
+        REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+        const auto read = script::readScriptListing(script::scriptToYaml(*disassembly));
+        REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+        if (*read != script::listingOf(*disassembly)) {
+            ++mismatches;
+        }
+    }
+    MESSAGE("scripts ", slots->size(), ", listings that differ ", mismatches);
+    CHECK(mismatches == 0);
 }
 
 TEST_CASE("the user's disc: the executable's strings and font read and encode back") {

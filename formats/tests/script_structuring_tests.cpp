@@ -132,10 +132,18 @@ public:
     }
 
 private:
+    // An instruction with every operand its op has set to 0, but the labels, which the caller sets.
     static YamlNode instruction(std::uint32_t at, std::string name) {
         YamlNode node = YamlNode::mapping();
         node.set("at", hexNumber(at));
+        const auto opcode = dwe::formats::script::opcodeNamed(name);
         node.set("op", text(std::move(name)));
+        for (const auto& field : opcode ? dwe::formats::script::opcodeOperands(*opcode)
+                                        : std::vector<dwe::formats::script::OperandField>{}) {
+            if (field.kind != dwe::formats::script::ArgumentKind::Label) {
+                node.set(std::string{field.name}, text("0"));
+            }
+        }
         return node;
     }
 

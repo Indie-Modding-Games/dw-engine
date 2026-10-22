@@ -125,7 +125,7 @@ constexpr std::array Opcodes = {
     op(0x48, "unload_entity", FlowRole::Plain, {entity()}),
     op(0x49, "call_digimon_routine", FlowRole::Plain, {u8("routine")}),
     op(0x4A, "wait_for_entity", FlowRole::Plain, {entity()}),
-    op(0x4B, "warp_to", FlowRole::Plain, {u8("screen"), u8("exit"), u8("section")}),
+    op(0x4B, "warp_to", FlowRole::MapChange, {u8("screen"), u8("exit"), u8("section")}),
     op(0x4C, "entity_look_at_entity", FlowRole::Plain, {pad(), entity(), entity("target_entity")}),
     op(0x4D, "entity_set_rotation", FlowRole::Plain, {entity(), s16("rotation")}),
     op(0x4E, "entity_walk_to", FlowRole::Plain, {entity(), s16("x"), s16("z"), u8("animation"), u8("unknown07")}),
@@ -140,7 +140,7 @@ constexpr std::array Opcodes = {
     op(0x55, "set_textbox_origin", FlowRole::Plain, {pad(), s16("x"), s16("y"), s16("z")}),
     op(0x56, "play_animation", FlowRole::Plain, {pad(), entity(), u8("animation")}),
     op(0x57, "set_obj_visibility", FlowRole::Plain, {pad(), u8("object"), u8("visible")}),
-    op(0x58, "teleport", FlowRole::Plain, {pstat()}),
+    op(0x58, "teleport", FlowRole::MapChange, {pstat()}),
     op(0x5A, "play_sound", FlowRole::Plain, {pad(), u8("bank"), u8("sound")}),
     op(0x5B, "unused_5b", FlowRole::Plain, {u8("unknown01")}),
     op(0x5C, "unused_5c", FlowRole::Plain, {u8("unknown01")}),
@@ -205,6 +205,9 @@ constexpr bool fallsThrough(FlowRole role) {
     case FlowRole::EndSection:
     case FlowRole::EndScript:
         return false;
+    case FlowRole::MapChange:
+        // Nothing after a map change runs, but the sweep counted the code after it as reachable before the role
+        // existed, and that count is in the listing (unreachable_instructions), which must not change.
     default:
         return true;
     }
@@ -290,6 +293,55 @@ private:
 
 constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge", "le", "gt", "lt"};
 
+// The test of an IF entry by its code: bits 3-5 pick the kind and, for the extended kind 0x20, the low bits the test.
+std::optional<ConditionTest> conditionTestOf(std::uint8_t code) {
+    constexpr std::array<ConditionTest, 4> Kinds = {ConditionTest::Trigger, ConditionTest::Pstat,
+                                                    ConditionTest::GotoIfTrue, ConditionTest::GotoIfFalse};
+    constexpr std::array<ConditionTest, 6> Extended = {ConditionTest::Stat,      ConditionTest::Card,
+                                                       ConditionTest::Move,      ConditionTest::Condition,
+                                                       ConditionTest::ItemCount, ConditionTest::Money};
+    constexpr unsigned KindShift = 3;
+    constexpr unsigned KindMask = 0x07U;
+    constexpr unsigned ExtendedKind = 4;
+    constexpr unsigned LowMask = 0x07U;
+    const unsigned kind = (code >> KindShift) & KindMask;
+    if (kind < Kinds.size()) {
+        return Kinds.at(kind);
+    }
+    const unsigned low = code & LowMask;
+    if (kind == ExtendedKind && low < Extended.size()) {
+        return Extended.at(low);
+    }
+    return std::nullopt;
+}
+
+// The fields of an IF entry after its code and pad (script_interp.c: scriptIfInstruction, script_value.c:
+// scriptCompare*).
+std::vector<Field> conditionPayload(ConditionTest test) {
+    switch (test) {
+    case ConditionTest::Trigger:
+        return {trigger()};
+    case ConditionTest::Pstat:
+        return {pstat(), u8("value")};
+    case ConditionTest::GotoIfTrue:
+    case ConditionTest::GotoIfFalse:
+        return {label()};
+    case ConditionTest::Stat:
+        return {u8("stat"), u8("compare"), u16("value")};
+    case ConditionTest::Card:
+        return {u8("card"), u8("compare"), u16("value")};
+    case ConditionTest::Move:
+        return {u8("move"), u8("negate")};
+    case ConditionTest::Condition:
+        return {u8("mask"), u8("negate")};
+    case ConditionTest::ItemCount:
+        return {u8("item"), u8("compare"), u16("value")};
+    case ConditionTest::Money:
+        return {pad(), u8("compare"), s32("value")};
+    }
+    return {};
+}
+
 // Reads the entries of an IF after its pad(), up to the 0x19 entry that ends it.
 std::optional<DecodeError> decodeIf(Reader& reader, Instruction& instruction) {
     while (true) {
@@ -312,57 +364,12 @@ std::optional<DecodeError> decodeIf(Reader& reader, Instruction& instruction) {
             condition.combine = Combine::Or;
         }
         const unsigned low = *code & 0x07U;
-        std::vector<Field> payload;
-        switch (*code & 0x38U) {
-        case 0x00:
-            condition.test = ConditionTest::Trigger;
-            payload = {trigger()};
-            break;
-        case 0x08:
-            condition.test = ConditionTest::Pstat;
-            payload = {pstat(), u8("value")};
-            break;
-        case 0x10:
-            condition.test = ConditionTest::GotoIfTrue;
-            payload = {label()};
-            break;
-        case 0x18:
-            condition.test = ConditionTest::GotoIfFalse;
-            payload = {label()};
-            break;
-        case 0x20:
-            switch (low) {
-            case 0:
-                condition.test = ConditionTest::Stat;
-                payload = {u8("stat"), u8("compare"), u16("value")};
-                break;
-            case 1:
-                condition.test = ConditionTest::Card;
-                payload = {u8("card"), u8("compare"), u16("value")};
-                break;
-            case 2:
-                condition.test = ConditionTest::Move;
-                payload = {u8("move"), u8("negate")};
-                break;
-            case 3:
-                condition.test = ConditionTest::Condition;
-                payload = {u8("mask"), u8("negate")};
-                break;
-            case 4:
-                condition.test = ConditionTest::ItemCount;
-                payload = {u8("item"), u8("compare"), u16("value")};
-                break;
-            case 5:
-                condition.test = ConditionTest::Money;
-                payload = {pad(), u8("compare"), s32("value")};
-                break;
-            default:
-                return DecodeError{std::format("IF test {:#04x} is not one the interpreter has", *code)};
-            }
-            break;
-        default:
+        const auto test = conditionTestOf(*code);
+        if (!test) {
             return DecodeError{std::format("IF test {:#04x} is not one the interpreter has", *code)};
         }
+        condition.test = *test;
+        const std::vector<Field> payload = conditionPayload(*test);
         if (condition.test == ConditionTest::Pstat && low >= CompareNames.size()) {
             return DecodeError{std::format("IF test {:#04x} compares with operator {}, which has no case", *code, low)};
         }
@@ -537,6 +544,16 @@ std::size_t countUnreachable(const Disassembly& disassembly) {
     return static_cast<std::size_t>(std::ranges::count(reached, false));
 }
 
+std::vector<OperandField> namedFields(std::span<const Field> fields) {
+    std::vector<OperandField> named;
+    for (const Field& field : fields) {
+        if (field.kind != Pad) {
+            named.push_back({.name = field.name, .kind = field.kind});
+        }
+    }
+    return named;
+}
+
 } // namespace
 
 std::string_view opcodeName(std::uint8_t opcode) {
@@ -547,6 +564,23 @@ std::string_view opcodeName(std::uint8_t opcode) {
 std::optional<std::uint8_t> opcodeNamed(std::string_view name) {
     const auto found = std::ranges::find(Opcodes, name, &OpcodeInfo::name);
     return found == Opcodes.end() ? std::nullopt : std::optional{found->code};
+}
+
+std::vector<OperandField> opcodeOperands(std::uint8_t opcode) {
+    const OpcodeInfo* info = findOpcode(opcode);
+    if (info == nullptr) {
+        return {};
+    }
+    std::span<const Field> layout = info->layout();
+    // The last field of SET_SELECTION and SWITCH is how many targets follow, which the targets imply.
+    if (opcode == SetSelection || opcode == Switch) {
+        layout = layout.first(layout.size() - 1);
+    }
+    return namedFields(layout);
+}
+
+std::vector<OperandField> conditionOperands(ConditionTest test) {
+    return namedFields(conditionPayload(test));
 }
 
 FlowRole opcodeFlowRole(std::uint8_t opcode) {

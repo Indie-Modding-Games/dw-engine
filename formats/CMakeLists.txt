@@ -48,6 +48,8 @@ dwe_add_module(formats
         src/script/control_flow.cpp
         src/script/disassembly.cpp
         src/script/dominance.cpp
+        src/script/guarded_walk.cpp
+        src/script/map_changes.cpp
         src/script/new_game_stats.cpp
         src/script/routine_graph.cpp
         src/script/scn_file.cpp

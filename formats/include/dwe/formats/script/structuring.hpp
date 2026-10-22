@@ -29,9 +29,9 @@ struct Statement;
 using StatementList = std::vector<Statement>;
 
 // Instructions that run in order: listing indices [first, first + count). An exit instruction (end_section,
-// end_script, jump_return, jump_to_file) is always the last statement of its path. For the emitter: end_section and
-// end_script end the whole script even inside a jump_and_link subroutine (they unwind the whole call stack), so they
-// cannot become a plain return from the subroutine's function.
+// end_script, jump_return, jump_to_file, warp_to, teleport) is always the last statement of its path. For the
+// emitter: end_section and end_script end the whole script even inside a jump_and_link subroutine (they unwind the
+// whole call stack), so they cannot become a plain return from the subroutine's function.
 struct RunStatement {
     std::size_t first = 0;
     std::size_t count = 0;

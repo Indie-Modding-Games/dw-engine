@@ -111,6 +111,7 @@ enum class FlowRole : std::uint8_t {
     FileCall,   // jump_to_file_and_link: runs a section of another script, then goes on
     FileJump,   // jump_to_file: leaves this script for a section of another one
     LoadScript, // set_script: loads another script and map, then goes on
+    MapChange,  // warp_to, teleport: starts a map change; nothing after it runs (scriptInstruction46to58)
     If,         // goes to the target of a jump entry whose test holds, else on
     Switch,     // goes to the case a variable selects
     Selection,  // goes to the option the player picks
@@ -123,6 +124,16 @@ enum class FlowRole : std::uint8_t {
 std::string_view opcodeName(std::uint8_t opcode);
 // The opcode with a name, if the interpreter dispatches one by that name.
 std::optional<std::uint8_t> opcodeNamed(std::string_view name);
+// An operand as the listing names it.
+struct OperandField {
+    std::string_view name;
+    ArgumentKind kind = ArgumentKind::U8;
+};
+// The operands of an opcode in their order, without pads; empty for one the interpreter does not dispatch. The
+// variable parts (IF entries, SWITCH cases, SET_SELECTION options, text, DATA) are not in it.
+std::vector<OperandField> opcodeOperands(std::uint8_t opcode);
+// The operands of an IF entry with this test, in their order, without pads.
+std::vector<OperandField> conditionOperands(ConditionTest test);
 // How an opcode moves the flow; Plain for one the interpreter does not dispatch.
 FlowRole opcodeFlowRole(std::uint8_t opcode);
 

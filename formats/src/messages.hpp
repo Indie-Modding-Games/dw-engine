@@ -32,6 +32,8 @@ inline constexpr std::string_view ListingNotMapping = "the listing is not a mapp
 inline constexpr std::string_view ListingMissingKey = "instruction {}: `{}` is missing";
 inline constexpr std::string_view ListingBadNumber = "instruction {}: `{}` is not a number: {}";
 inline constexpr std::string_view ListingBadLabel = "`{}` is not a label (l_<hex>)";
+inline constexpr std::string_view ListingUnknownTest = "instruction {}: `{}` is not an IF test";
+inline constexpr std::string_view ListingBadWord = "instruction {}: `{}` is not one of the words it takes: {}";
 inline constexpr std::string_view ListingOutOfOrder = "the instruction at {:#06x} does not come after the one before";
 inline constexpr std::string_view ListingNoInstruction = "{} {:#06x} is not the start of an instruction";
 

@@ -1,13 +1,18 @@
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/script_listing.hpp>
 
+#include <yaml/yaml_values.hpp>
+
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <limits>
+#include <span>
 #include <string_view>
 #include <utility>
 
 #include "../messages.hpp"
+#include "listing_vocabulary.hpp"
 
 namespace dwe::formats::script {
 
@@ -23,13 +28,10 @@ constexpr std::string_view AtKey = "at";
 constexpr std::string_view OpKey = "op";
 constexpr std::string_view TargetKey = "target";
 constexpr std::string_view ConditionsKey = "conditions";
-constexpr std::string_view TestKey = "test";
 constexpr std::string_view CasesKey = "cases";
 constexpr std::string_view OptionsKey = "options";
 constexpr std::string_view ScriptKey = "script";
 constexpr std::string_view SectionKey = "section";
-constexpr std::string_view GotoIfTrueTest = "goto_if_true";
-constexpr std::string_view GotoIfFalseTest = "goto_if_false";
 constexpr std::string_view LabelPrefix = "l_";
 constexpr std::string_view HexPrefix = "0x";
 constexpr int HexBase = 16;
@@ -89,62 +91,215 @@ core::Result<std::vector<std::uint32_t>> readLabels(const YamlNode* list) {
     return labels;
 }
 
-core::Result<std::vector<ConditionalJump>> readConditionalJumps(const YamlNode* conditions) {
-    std::vector<ConditionalJump> jumps;
-    if (conditions == nullptr) {
-        return jumps;
+// A number as the listing writes it, with a minus sign for a negative operand.
+std::optional<std::int32_t> parseSigned(std::string_view text) {
+    const bool negative = text.starts_with('-');
+    const auto magnitude = parseNumber(negative ? text.substr(1) : text);
+    if (!magnitude || *magnitude > static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max())) {
+        return std::nullopt;
     }
-    const auto entries = conditions->items();
-    for (std::size_t entry = 0; entry < entries.size(); ++entry) {
-        const YamlNode* test = entries[entry].find(TestKey);
-        const std::string_view name = test != nullptr && test->isScalar() ? std::string_view{test->text()} : "";
-        if (name != GotoIfTrueTest && name != GotoIfFalseTest) {
-            continue;
+    const auto value = static_cast<std::int32_t>(*magnitude);
+    return negative ? -value : value;
+}
+
+std::optional<std::int32_t> wordIndex(std::span<const std::string_view> words, std::string_view text) {
+    const auto found = std::ranges::find(words, text);
+    return found == words.end() ? std::nullopt : std::optional{static_cast<std::int32_t>(found - words.begin())};
+}
+
+// An operand, read the way scriptToYaml writes its kind: a label, an entity's word or number, a comparison's word
+// (in an IF entry) or a number.
+core::Result<std::int32_t> readOperand(const YamlNode& mapping, const OperandField& field, bool inCondition,
+                                       std::size_t index) {
+    const YamlNode* node = mapping.find(field.name);
+    if (node == nullptr || !node->isScalar()) {
+        return core::fail(messages::formatMessage(messages::ListingMissingKey, index, field.name));
+    }
+    const std::string_view text = node->text();
+    if (field.kind == ArgumentKind::Label) {
+        const auto label = parseLabel(*node);
+        return label ? core::Result<std::int32_t>{static_cast<std::int32_t>(*label)} : std::unexpected{label.error()};
+    }
+    if (field.kind == ArgumentKind::Entity && text == vocabulary::TamerName) {
+        return vocabulary::TamerEntity;
+    }
+    if (field.kind == ArgumentKind::Entity && text == vocabulary::PartnerName) {
+        return vocabulary::PartnerEntity;
+    }
+    if (inCondition && field.name == vocabulary::CompareKey) {
+        if (const auto compare = wordIndex(vocabulary::CompareNames, text)) {
+            return *compare;
         }
-        const YamlNode* targetNode = entries[entry].find(TargetKey);
-        const auto target = targetNode != nullptr ? parseLabel(*targetNode) : parseLabel(YamlNode::scalar(""));
-        if (!target) {
-            return std::unexpected{target.error()};
+    }
+    const auto value = parseSigned(text);
+    if (!value) {
+        return core::fail(messages::formatMessage(messages::ListingBadNumber, index, field.name, text));
+    }
+    return *value;
+}
+
+core::Result<std::vector<Argument>> readArguments(const YamlNode& node, std::span<const OperandField> fields,
+                                                  bool inCondition, std::size_t index) {
+    std::vector<Argument> arguments;
+    for (const OperandField& field : fields) {
+        const auto value = readOperand(node, field, inCondition, index);
+        if (!value) {
+            return std::unexpected{value.error()};
         }
-        jumps.push_back({.entry = entry, .whenTrue = name == GotoIfTrueTest, .target = *target});
+        arguments.push_back({.name = field.name, .kind = field.kind, .value = *value});
+    }
+    return arguments;
+}
+
+// The position in `words` of the word under `key`.
+core::Result<std::int32_t> readWord(const YamlNode& node, std::string_view key, std::span<const std::string_view> words,
+                                    std::size_t index) {
+    const YamlNode* word = node.find(key);
+    const std::string_view text = word != nullptr && word->isScalar() ? std::string_view{word->text()} : "";
+    const auto position = wordIndex(words, text);
+    if (!position) {
+        return core::fail(messages::formatMessage(messages::ListingBadWord, index, key, text));
+    }
+    return *position;
+}
+
+core::Result<Combine> readCombine(const YamlNode& entry, std::size_t index) {
+    if (entry.find(vocabulary::CombineKey) == nullptr) {
+        return Combine::Replace;
+    }
+    constexpr std::array<std::string_view, 2> Words = {vocabulary::AndName, vocabulary::OrName};
+    const auto word = readWord(entry, vocabulary::CombineKey, Words, index);
+    if (!word) {
+        return std::unexpected{word.error()};
+    }
+    return Words.at(static_cast<std::size_t>(*word)) == vocabulary::AndName ? Combine::And : Combine::Or;
+}
+
+// What sets the low bits of an entry's code besides its test: whether a trigger test is for a clear trigger, or a
+// variable test's comparison.
+core::Result<std::uint8_t> readVariant(const YamlNode& entry, ConditionTest test, std::size_t index) {
+    if (test == ConditionTest::Trigger) {
+        const YamlNode* clear = entry.find(vocabulary::ClearKey);
+        return clear != nullptr && clear->isScalar() && clear->text() == yaml::TrueText ? vocabulary::ClearBit
+                                                                                        : std::uint8_t{0};
+    }
+    if (test != ConditionTest::Pstat) {
+        return std::uint8_t{0};
+    }
+    const auto word = readWord(entry, vocabulary::CompareKey, vocabulary::CompareNames, index);
+    if (!word) {
+        return std::unexpected{word.error()};
+    }
+    return static_cast<std::uint8_t>(*word);
+}
+
+core::Result<Condition> readCondition(const YamlNode& entry, std::size_t index) {
+    const YamlNode* name = entry.find(vocabulary::TestKey);
+    const std::string_view text = name != nullptr && name->isScalar() ? std::string_view{name->text()} : "";
+    const auto test = std::ranges::find(vocabulary::Tests, text,
+                                        [](ConditionTest candidate) { return vocabulary::testInfo(candidate).name; });
+    if (test == vocabulary::Tests.end()) {
+        return core::fail(messages::formatMessage(messages::ListingUnknownTest, index, text));
+    }
+    const auto combine = readCombine(entry, index);
+    const auto variant = combine ? readVariant(entry, *test, index) : core::Result<std::uint8_t>{0};
+    auto arguments =
+        variant ? readArguments(entry, conditionOperands(*test), true, index) : core::Result<std::vector<Argument>>{};
+    if (!combine) {
+        return std::unexpected{combine.error()};
+    }
+    if (!variant) {
+        return std::unexpected{variant.error()};
+    }
+    if (!arguments) {
+        return std::unexpected{arguments.error()};
+    }
+    std::uint32_t code = vocabulary::entryCode(*test, *variant, *combine);
+    if (entry.find(vocabulary::CodeKey) != nullptr) {
+        const auto written = readNumber(entry, vocabulary::CodeKey, index);
+        if (!written) {
+            return std::unexpected{written.error()};
+        }
+        code = *written;
+    }
+    return Condition{.code = static_cast<std::uint8_t>(code),
+                     .test = *test,
+                     .combine = *combine,
+                     .arguments = std::move(*arguments)};
+}
+
+core::Result<std::vector<Condition>> readConditions(const YamlNode* list, std::size_t index) {
+    std::vector<Condition> conditions;
+    if (list == nullptr) {
+        return conditions;
+    }
+    for (const YamlNode& entry : list->items()) {
+        auto condition = readCondition(entry, index);
+        if (!condition) {
+            return std::unexpected{condition.error()};
+        }
+        conditions.push_back(std::move(*condition));
+    }
+    return conditions;
+}
+
+std::optional<std::int32_t> argumentOf(std::span<const Argument> arguments, std::string_view name) {
+    const auto found = std::ranges::find(arguments, name, &Argument::name);
+    return found == arguments.end() ? std::nullopt : std::optional{found->value};
+}
+
+// The jump entries of an IF.
+std::vector<ConditionalJump> jumpsOf(std::span<const Condition> conditions) {
+    std::vector<ConditionalJump> jumps;
+    for (std::size_t entry = 0; entry < conditions.size(); ++entry) {
+        const Condition& condition = conditions[entry];
+        const auto target = argumentOf(condition.arguments, TargetKey);
+        if ((condition.test == ConditionTest::GotoIfTrue || condition.test == ConditionTest::GotoIfFalse) && target) {
+            jumps.push_back({.entry = entry,
+                             .whenTrue = condition.test == ConditionTest::GotoIfTrue,
+                             .target = static_cast<std::uint32_t>(*target)});
+        }
     }
     return jumps;
 }
 
-core::Result<std::optional<ScriptReference>> readReference(const YamlNode& node, FlowRole role, std::size_t index) {
-    if (role != FlowRole::FileCall && role != FlowRole::FileJump) {
-        return std::nullopt;
+// Fills in what the instruction does to the flow from its operands, its IF entries and, for a SWITCH or a
+// SET_SELECTION, its cases or options.
+ListingInstruction withFlow(ListingInstruction instruction, std::vector<std::uint32_t> choices) {
+    const auto argument = [&](std::string_view name) { return argumentOf(instruction.arguments, name); };
+    switch (instruction.role) {
+    case FlowRole::Jump:
+    case FlowRole::Call:
+        if (const auto target = argument(TargetKey)) {
+            instruction.targets = {static_cast<std::uint32_t>(*target)};
+        }
+        break;
+    case FlowRole::Switch:
+    case FlowRole::Selection:
+        instruction.targets = std::move(choices);
+        break;
+    case FlowRole::FileCall:
+    case FlowRole::FileJump:
+        if (const auto script = argument(ScriptKey), section = argument(SectionKey); script && section) {
+            instruction.reference = ScriptReference{.script = static_cast<std::uint16_t>(*script),
+                                                    .section = static_cast<std::uint16_t>(*section)};
+        }
+        break;
+    default:
+        break;
     }
-    const auto script = readNumber(node, ScriptKey, index);
-    const auto section = script ? readNumber(node, SectionKey, index) : script;
-    if (!section) {
-        return std::unexpected{section.error()};
-    }
-    return ScriptReference{.script = static_cast<std::uint16_t>(*script),
-                           .section = static_cast<std::uint16_t>(*section)};
+    instruction.conditionalJumps = jumpsOf(instruction.conditions);
+    return instruction;
 }
 
-core::Result<std::vector<std::uint32_t>> readTargets(const YamlNode& node, FlowRole role) {
-    switch (role) {
-    case FlowRole::Jump:
-    case FlowRole::Call: {
-        const YamlNode* target = node.find(TargetKey);
-        if (target == nullptr) {
-            return core::fail(messages::formatMessage(messages::ListingBadLabel, ""));
-        }
-        const auto label = parseLabel(*target);
-        if (!label) {
-            return std::unexpected{label.error()};
-        }
-        return std::vector<std::uint32_t>{*label};
-    }
-    case FlowRole::Switch:
+core::Result<std::vector<std::uint32_t>> readChoices(const YamlNode& node, FlowRole role) {
+    if (role == FlowRole::Switch) {
         return readLabels(node.find(CasesKey));
-    case FlowRole::Selection:
-        return readLabels(node.find(OptionsKey));
-    default:
-        return std::vector<std::uint32_t>{};
     }
+    if (role == FlowRole::Selection) {
+        return readLabels(node.find(OptionsKey));
+    }
+    return std::vector<std::uint32_t>{};
 }
 
 core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size_t index) {
@@ -156,28 +311,31 @@ core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size
     if (op == nullptr || !op->isScalar()) {
         return core::fail(messages::formatMessage(messages::ListingMissingKey, index, OpKey));
     }
-    ListingInstruction instruction{.offset = *offset,
-                                   .op = op->text(),
-                                   .role = flowRoleOf(op->text()),
-                                   .targets = {},
-                                   .conditionalJumps = {},
-                                   .reference = std::nullopt};
-    auto targets = readTargets(node, instruction.role);
-    auto jumps = readConditionalJumps(node.find(ConditionsKey));
-    auto reference = readReference(node, instruction.role, index);
-    if (!targets) {
-        return std::unexpected{targets.error()};
+    const auto opcode = opcodeNamed(op->text());
+    const FlowRole role = opcode ? opcodeFlowRole(*opcode) : FlowRole::Plain;
+    auto arguments =
+        opcode ? readArguments(node, opcodeOperands(*opcode), false, index) : core::Result<std::vector<Argument>>{};
+    auto conditions =
+        arguments ? readConditions(node.find(ConditionsKey), index) : core::Result<std::vector<Condition>>{};
+    auto choices = conditions ? readChoices(node, role) : core::Result<std::vector<std::uint32_t>>{};
+    if (!arguments) {
+        return std::unexpected{arguments.error()};
     }
-    if (!jumps) {
-        return std::unexpected{jumps.error()};
+    if (!conditions) {
+        return std::unexpected{conditions.error()};
     }
-    if (!reference) {
-        return std::unexpected{reference.error()};
+    if (!choices) {
+        return std::unexpected{choices.error()};
     }
-    instruction.targets = std::move(*targets);
-    instruction.conditionalJumps = std::move(*jumps);
-    instruction.reference = *reference;
-    return instruction;
+    return withFlow({.offset = *offset,
+                     .op = op->text(),
+                     .role = role,
+                     .targets = {},
+                     .conditionalJumps = {},
+                     .reference = std::nullopt,
+                     .arguments = std::move(*arguments),
+                     .conditions = std::move(*conditions)},
+                    std::move(*choices));
 }
 
 core::Result<std::vector<ListingSection>> readSections(const YamlNode& sections) {
@@ -226,6 +384,10 @@ std::optional<std::size_t> ScriptListing::indexAt(std::uint32_t offset) const {
     return static_cast<std::size_t>(found - instructions.begin());
 }
 
+std::optional<std::int32_t> ListingInstruction::argument(std::string_view name) const {
+    return argumentOf(arguments, name);
+}
+
 FlowRole flowRoleOf(std::string_view op) {
     const auto opcode = opcodeNamed(op);
     return opcode ? opcodeFlowRole(*opcode) : FlowRole::Plain;
@@ -257,6 +419,26 @@ core::Result<ScriptListing> readScriptListing(const core::YamlNode& listing) {
         return std::unexpected{checked.error()};
     }
     return result;
+}
+
+ScriptListing listingOf(const Disassembly& disassembly) {
+    ScriptListing listing;
+    for (const ScriptSection& section : disassembly.header.sections) {
+        listing.sections.push_back({.id = section.id, .entry = section.offset});
+    }
+    for (const Instruction& instruction : disassembly.instructions) {
+        std::vector<std::uint32_t> choices(instruction.targets.begin(), instruction.targets.end());
+        listing.instructions.push_back(withFlow({.offset = instruction.offset,
+                                                 .op = std::string{opcodeName(instruction.opcode)},
+                                                 .role = opcodeFlowRole(instruction.opcode),
+                                                 .targets = {},
+                                                 .conditionalJumps = {},
+                                                 .reference = std::nullopt,
+                                                 .arguments = instruction.arguments,
+                                                 .conditions = instruction.conditions},
+                                                std::move(choices)));
+    }
+    return listing;
 }
 
 } // namespace dwe::formats::script

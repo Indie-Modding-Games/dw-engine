@@ -35,8 +35,9 @@ constexpr std::string_view DgFolder = "dg";
 // What the US disc gives (docs/reference/scripts.md, "Forma del control de flujo").
 constexpr std::size_t ExpectedSections = 1553;
 constexpr std::size_t ExpectedMultiJumpIfs = 0; // IFs with more than one jump entry
-constexpr std::size_t ExpectedStateMachines = 4;
-constexpr std::size_t ExpectedIrreducible = 3;
+// warp_to ends the flow (nothing after it runs), which leaves one two-entry loop with a single way in.
+constexpr std::size_t ExpectedStateMachines = 3;
+constexpr std::size_t ExpectedIrreducible = 2;
 constexpr std::size_t ExpectedNestedExits = 1;
 constexpr std::size_t ExpectedStructuredSections = ExpectedSections - ExpectedStateMachines;
 

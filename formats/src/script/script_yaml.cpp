@@ -6,17 +6,17 @@
 #include <array>
 #include <format>
 
+#include "listing_vocabulary.hpp"
+
 namespace dwe::formats::script {
 
 namespace {
 
 using core::YamlNode;
 
-constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge", "le", "gt", "lt"};
-
-// scriptIdToEntityId: these ids are not NPCs.
-constexpr std::int32_t PartnerEntity = 0xFC;
-constexpr std::int32_t TamerEntity = 0xFD;
+using vocabulary::CompareNames;
+using vocabulary::PartnerEntity;
+using vocabulary::TamerEntity;
 
 YamlNode hex(std::uint32_t value, int digits) {
     return YamlNode::scalar(std::format("{:#0{}x}", value, digits + 2));
@@ -28,14 +28,14 @@ YamlNode argumentToYaml(const Argument& argument, bool isCondition) {
         return YamlNode::scalar(labelName(static_cast<std::uint32_t>(argument.value)));
     case ArgumentKind::Entity:
         if (argument.value == TamerEntity) {
-            return YamlNode::scalar("tamer");
+            return YamlNode::scalar(std::string{vocabulary::TamerName});
         }
         if (argument.value == PartnerEntity) {
-            return YamlNode::scalar("partner");
+            return YamlNode::scalar(std::string{vocabulary::PartnerName});
         }
         break;
     default:
-        if (isCondition && argument.name == "compare" && argument.value < std::ssize(CompareNames)) {
+        if (isCondition && argument.name == vocabulary::CompareKey && argument.value < std::ssize(CompareNames)) {
             return YamlNode::scalar(std::string{CompareNames[static_cast<std::size_t>(argument.value)]});
         }
         break;
@@ -49,62 +49,27 @@ void setArguments(YamlNode& node, const std::vector<Argument>& arguments, bool i
     }
 }
 
-struct TestInfo {
-    std::string_view name;
-    std::uint8_t kind = 0; // the cond & 0x38 bits
-    std::uint8_t low = 0;  // the low bits of an extended test
-};
-
-TestInfo testInfo(ConditionTest test) {
-    switch (test) {
-    case ConditionTest::Trigger:
-        return {.name = "trigger", .kind = 0x00};
-    case ConditionTest::Pstat:
-        return {.name = "pstat", .kind = 0x08};
-    case ConditionTest::GotoIfTrue:
-        return {.name = "goto_if_true", .kind = 0x10};
-    case ConditionTest::GotoIfFalse:
-        return {.name = "goto_if_false", .kind = 0x18};
-    case ConditionTest::Stat:
-        return {.name = "stat", .kind = 0x20, .low = 0};
-    case ConditionTest::Card:
-        return {.name = "card", .kind = 0x20, .low = 1};
-    case ConditionTest::Move:
-        return {.name = "move", .kind = 0x20, .low = 2};
-    case ConditionTest::Condition:
-        return {.name = "condition", .kind = 0x20, .low = 3};
-    case ConditionTest::ItemCount:
-        return {.name = "item_count", .kind = 0x20, .low = 4};
-    case ConditionTest::Money:
-        return {.name = "money", .kind = 0x20, .low = 5};
-    }
-    return {};
-}
-
 YamlNode conditionToYaml(const Condition& condition) {
-    const TestInfo info = testInfo(condition.test);
+    const vocabulary::TestInfo info = vocabulary::testInfo(condition.test);
     YamlNode node = YamlNode::mapping();
-    node.set("test", YamlNode::scalar(std::string{info.name}));
-    std::uint8_t canonical = info.kind | info.low;
-    const unsigned low = condition.code & 0x07U;
+    node.set(std::string{vocabulary::TestKey}, YamlNode::scalar(std::string{info.name}));
+    const std::uint8_t low = condition.code & vocabulary::LowBits;
+    std::uint8_t variant = 0;
     if (condition.test == ConditionTest::Trigger && low != 0) {
-        node.set("clear", yaml::boolean(true));
-        canonical |= 0x01U;
+        node.set(std::string{vocabulary::ClearKey}, yaml::boolean(true));
+        variant = vocabulary::ClearBit;
     }
     if (condition.test == ConditionTest::Pstat) {
-        node.set("compare", YamlNode::scalar(std::string{CompareNames[low]}));
-        canonical |= low;
+        node.set(std::string{vocabulary::CompareKey}, YamlNode::scalar(std::string{CompareNames.at(low)}));
+        variant = low;
     }
-    if (condition.combine == Combine::And) {
-        node.set("combine", YamlNode::scalar("and"));
-        canonical |= 0x80U;
-    } else if (condition.combine == Combine::Or) {
-        node.set("combine", YamlNode::scalar("or"));
-        canonical |= 0x40U;
+    if (condition.combine != Combine::Replace) {
+        node.set(std::string{vocabulary::CombineKey},
+                 YamlNode::scalar(std::string{vocabulary::combineName(condition.combine)}));
     }
     setArguments(node, condition.arguments, true);
-    if (condition.code != canonical) {
-        node.set("code", hex(condition.code, 2));
+    if (condition.code != vocabulary::entryCode(condition.test, variant, condition.combine)) {
+        node.set(std::string{vocabulary::CodeKey}, hex(condition.code, 2));
     }
     return node;
 }

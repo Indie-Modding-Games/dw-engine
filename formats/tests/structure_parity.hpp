@@ -110,7 +110,7 @@ struct Trace {
 inline bool isExit(const ScriptListing& listing, std::size_t instruction) {
     const FlowRole role = listing.instructions[instruction].role;
     return role == FlowRole::Return || role == FlowRole::FileJump || role == FlowRole::EndSection ||
-           role == FlowRole::EndScript || role == FlowRole::Data;
+           role == FlowRole::EndScript || role == FlowRole::Data || role == FlowRole::MapChange;
 }
 
 // Walks the graph from a block until an exit, the end of the stream, `limit` instructions or StepsPerInstruction

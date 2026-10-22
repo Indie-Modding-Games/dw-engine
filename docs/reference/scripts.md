@@ -496,19 +496,21 @@ a la vez, demasiadas copias) se vuelve una máquina de estados: un bucle que des
 Cuentas sobre el disco americano (test lento `the user's disc, extracted: every event script routine structures and runs like its graph`):
 
 <!-- Las cifras las da el test lento; se actualizan al cambiar el análisis. -->
-- **222 scripts** (`MAPHEAD` y 221 de `DG.SCN`), **1553 secciones**, 7 subrutinas de `jump_and_link` y 375 colas
+- **222 scripts** (`MAPHEAD` y 221 de `DG.SCN`), **1553 secciones**, 7 subrutinas de `jump_and_link` y 353 colas
   compartidas: código al que saltan varias rutinas (un final común, un bucle en el que entran varias secciones), que se
   convierte una vez y se llama como última orden.
-- **1549 de 1553 secciones (99,7 %) quedan anidadas sin máquina de estados.** Las 4 que no: 3 con un bucle de dos
+- **1550 de 1553 secciones (99,8 %) quedan anidadas sin máquina de estados.** Las 3 que no: 2 con un bucle de dos
   entradas (menús largos de diálogo que vuelven a mitad de una conversación) y 1 menú por páginas que salta de cada
   página a cualquiera de las anteriores (salidas de varios bucles a la vez). Todas convierten igual: la máquina de estados es el
   último recurso y vale para cualquier grafo, así que el 100 % de las secciones se convierte sin saltos.
-- 3569 `if`, 104 bucles, 127 `break`, 372 elecciones (`SWITCH`/`SET_SELECTION`) y 1285 llamadas a colas. Anidamiento
+- 3569 `if`, 104 bucles, 127 `break`, 372 elecciones (`SWITCH`/`SET_SELECTION`) y 1247 llamadas a colas. Anidamiento
   máximo 9 contando cada `elseif` al nivel de su primer `if`.
-- **Copias**: 45 rutinas llevan algún trozo copiado (colas cortas, de menos de 3 órdenes, que se repiten en vez de
-  llamarse). En total se emiten 31623 órdenes para 28728 distintas (1,10 veces).
+- **Copias**: 48 rutinas llevan algún trozo copiado (colas cortas, de menos de 3 órdenes, que se repiten en vez de
+  llamarse). En total se emiten 31174 órdenes para 28282 distintas (1,10 veces).
 - **Ningún `IF` del disco tiene más de un salto**; 0 `jump_to_file_and_link`, 135 `jump_to_file`, 255 `set_script`;
-  ninguna referencia a una sección que no exista; 140 secciones comparten código con otra.
+  ninguna referencia a una sección que no exista; 122 secciones comparten código con otra.
+- `warp_to` y `teleport` acaban el flujo como `end_section` (nada de lo que les sigue corre): el código muerto tras
+  ellos ya no cuenta, y un bucle de dos entradas que solo lo era por ese código pasa a anidarse.
 - Cada rutina corre las mismas órdenes que su grafo para varias secuencias de resultados de condiciones (comprobación
   de paridad del test).
 

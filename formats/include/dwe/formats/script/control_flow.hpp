@@ -21,7 +21,7 @@ enum class TerminatorKind : std::uint8_t {
     Jump,        // jump_to
     Branch,      // an IF jump entry: successors are {its target, the next block}
     Choice,      // SWITCH or SET_SELECTION: successors are the cases or options, then the next instruction
-    Exit,        // the last instruction of the run ends the flow: return, end, jump to another script, DATA
+    Exit,        // the last instruction of the run ends the flow: return, end, jump to another script, map change, DATA
 };
 
 struct Terminator {

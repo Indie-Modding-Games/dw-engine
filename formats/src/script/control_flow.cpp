@@ -19,7 +19,7 @@ bool runsOn(FlowRole role) {
 
 bool endsFlow(FlowRole role) {
     return role == FlowRole::Return || role == FlowRole::FileJump || role == FlowRole::EndSection ||
-           role == FlowRole::EndScript || role == FlowRole::Data;
+           role == FlowRole::EndScript || role == FlowRole::Data || role == FlowRole::MapChange;
 }
 
 // The listing indices where a block must start: the entry points, every destination, and the instruction after
