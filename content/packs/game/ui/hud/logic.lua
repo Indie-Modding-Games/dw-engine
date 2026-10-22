@@ -11,7 +11,8 @@
 -- battle stops the field: the panel loses its class "shown" and each skin decides how it leaves. Every skin draws
 -- this same document and script and differs only in its style sheets: a bar with the class "pips" fills in the
 -- original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin
--- that draws the original's clock.
+-- that draws the original's clock. #field-partner-bubble hangs over the partner's head (hud.partner.*) with the class
+-- of the need the original's bubble would show.
 
 local sizes = { small = true, medium = true, large = true }
 local minimap_modes = { auto = true, on = true, off = true }
@@ -182,6 +183,75 @@ local function draw_field_pool(document, index)
 	document:get("field-pool-" .. index .. "-value"):set_text(current .. " / " .. maximum)
 end
 
+-- The need bubble over the partner (bubble.c), one need at a time. The original picks it in this order, highest
+-- first (partner_impl.c: handleConditionBubble checks them from the lowest and the last match wins), and while a
+-- bubble has shown for 50 of its 20-a-second frames it swaps to the highest other need the partner has, if any, so
+-- two needs take turns; a third waits until one of them goes.
+local bubble_priority = { "sleep", "hunger", "toilet" }
+local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2 }
+local bubble_swap_seconds = 50 / 20
+local bubble_need = nil
+local bubble_seconds = 0
+
+local function need_active(need)
+	return ui.setting("hud.need." .. bubble_need_index[need] .. ".active") == true
+end
+
+-- The highest need the partner has other than `except`, or nil.
+local function highest_need(except)
+	for _, need in ipairs(bubble_priority) do
+		if need ~= except and need_active(need) then
+			return need
+		end
+	end
+	return nil
+end
+
+-- A coordinate of the partner's head, in percent of the window.
+local function place(name)
+	local value = ui.setting(name)
+	if type(value) ~= "number" then
+		return 0
+	end
+	return value
+end
+
+local function draw_bubble(document)
+	local bubble = document:get("field-partner-bubble")
+	local visible = ui.setting("hud.partner.visible") == true
+	bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
+	bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
+	bubble:set_class("shown", visible and bubble_need ~= nil)
+	for need in pairs(bubble_need_index) do
+		bubble:set_class(need, need == bubble_need)
+	end
+end
+
+-- The needs changed: a bubble whose need went gives way to the highest one left.
+local function pick_bubble(document)
+	if bubble_need == nil or not need_active(bubble_need) then
+		bubble_need = highest_need(nil)
+		bubble_seconds = 0
+	end
+	draw_bubble(document)
+end
+
+local function tick_bubble(document, seconds)
+	if bubble_need == nil or ui.setting("hud.partner.visible") ~= true then
+		return
+	end
+	bubble_seconds = bubble_seconds + seconds
+	if bubble_seconds < bubble_swap_seconds then
+		return
+	end
+	bubble_seconds = 0
+	local other = highest_need(bubble_need)
+	if other ~= nil then
+		bubble_need = other
+		draw_bubble(document)
+	end
+end
+
 local function draw_field(document)
 	document:get("field-status"):set_class("shown", ui.setting("hud.shown") == true)
 	draw_field_clock(document)
@@ -194,6 +264,7 @@ local function draw_field(document)
 	for index = 0, field_pools - 1 do
 		draw_field_pool(document, index)
 	end
+	pick_bubble(document)
 end
 
 function on_show(document)
@@ -225,6 +296,8 @@ function on_setting(document, name)
 		refresh_title(document)
 	elseif name == "hud.revision" then
 		draw_field(document)
+	elseif name == "hud.partner.revision" then
+		draw_bubble(document)
 	elseif string.find(name, "^hud%.") then
 		if string.find(name, "%.label$") then
 			draw_field_labels(document)
@@ -232,4 +305,8 @@ function on_setting(document, name)
 	else
 		refresh(document)
 	end
+end
+
+function on_tick(document, seconds)
+	tick_bubble(document, seconds)
 end

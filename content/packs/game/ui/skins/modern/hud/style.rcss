@@ -214,3 +214,8 @@ body {
 	color: #12161c;
 	font-weight: bold;
 }
+
+/* The needs panel already shows every need, so this skin leaves out the bubble over the partner. */
+#field-partner-bubble {
+	display: none;
+}

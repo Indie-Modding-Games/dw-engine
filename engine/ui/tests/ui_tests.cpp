@@ -727,6 +727,79 @@ TEST_CASE("the HUD draws the field status on each revision, with the bars' low h
     CHECK_FALSE(ui->elementHasClass("hud", "field-status", "shown"));
 }
 
+namespace {
+
+void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet) {
+    ui.setSetting("hud.need.0.active", hunger);
+    ui.setSetting("hud.need.1.active", sleep);
+    ui.setSetting("hud.need.2.active", toilet);
+    bumpFieldRevision(ui);
+}
+
+void placePartner(Ui& ui, bool visible) {
+    ui.setSetting("hud.partner.visible", visible);
+    ui.setSetting("hud.partner.x", visible ? 40.0 : 0.0);
+    ui.setSetting("hud.partner.y", visible ? 30.0 : 0.0);
+    const UiValue current = ui.setting("hud.partner.revision");
+    const double* count = std::get_if<double>(&current);
+    ui.setSetting("hud.partner.revision", (count == nullptr ? 0.0 : *count) + 1.0);
+    ui.update();
+}
+
+// The need class the bubble has, or an empty string.
+std::string bubbleNeed(const Ui& ui) {
+    for (const std::string_view need : {"hunger", "sleep", "toilet"}) {
+        if (ui.elementHasClass("hud", "field-partner-bubble", need)) {
+            return std::string{need};
+        }
+    }
+    return {};
+}
+
+} // namespace
+
+TEST_CASE("the need bubble shows the need the original's bubble would, over the partner's head") {
+    Content content;
+    auto ui = createUi(content.mount());
+    input::InputState input{input::defaultActionMap()};
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    placePartner(*ui, true);
+    setFieldNeeds(*ui, false, false, false);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK(ui->styleProperty("hud", "field-partner-bubble", "left") == "40%");
+    CHECK(ui->styleProperty("hud", "field-partner-bubble", "top") == "30%");
+
+    // Each need alone.
+    setFieldNeeds(*ui, true, false, false);
+    CHECK(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+    CHECK(bubbleNeed(*ui) == "hunger");
+    setFieldNeeds(*ui, false, true, false);
+    CHECK(bubbleNeed(*ui) == "sleep");
+    setFieldNeeds(*ui, false, false, true);
+    CHECK(bubbleNeed(*ui) == "toilet");
+
+    // Several: the highest first (partner_impl.c: handleConditionBubble: sleep, then hunger, then the toilet)...
+    setFieldNeeds(*ui, false, false, false);
+    setFieldNeeds(*ui, true, true, true);
+    CHECK(bubbleNeed(*ui) == "sleep");
+    // ...and after 50 frames at 20 a second the highest other one, so the two highest take turns.
+    ui->tick(input, 2.0);
+    CHECK(bubbleNeed(*ui) == "sleep");
+    ui->tick(input, 0.6);
+    CHECK(bubbleNeed(*ui) == "hunger");
+    ui->tick(input, 2.6);
+    CHECK(bubbleNeed(*ui) == "sleep");
+    setFieldNeeds(*ui, true, false, true);
+    CHECK(bubbleNeed(*ui) == "hunger");
+    ui->tick(input, 2.6);
+    CHECK(bubbleNeed(*ui) == "toilet");
+
+    // Hidden while the partner is not on the screen.
+    placePartner(*ui, false);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-partner-bubble", "shown"));
+}
+
 TEST_CASE("the HUD leaves the minimap to the skin on auto, and shows or hides it on on and off") {
     Content content;
     auto ui = createUi(content.mount());

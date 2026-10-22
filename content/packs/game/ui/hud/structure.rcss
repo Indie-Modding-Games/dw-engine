@@ -1,0 +1,8 @@
+/* How the HUD behaves whatever the skin: the need bubble hangs from the point the script places it at (the partner's
+   head, hud.partner.x and hud.partner.y), by the middle of its bottom edge, so a skin only gives it a size and a
+   look (docs/architecture/ui.md#estado-del-campo). */
+
+#field-partner-bubble {
+	position: absolute;
+	transform: translate(-50%, -100%);
+}

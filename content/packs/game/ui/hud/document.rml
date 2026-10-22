@@ -2,6 +2,7 @@
 <head>
 	<title>HUD</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -32,6 +33,7 @@
 			<div class="field-pool"><span class="label" id="field-pool-1-label"></span><div class="bar" id="field-pool-1-bar"><div class="fill" id="field-pool-1-fill"></div></div><span class="value" id="field-pool-1-value"></span></div>
 		</div>
 	</div>
+	<div id="field-partner-bubble"></div>
 	<div id="map-title" class="original-look"></div>
 </body>
 </rml>
