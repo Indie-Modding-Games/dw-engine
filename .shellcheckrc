@@ -1,7 +1,9 @@
-# shellcheck's settings for the scripts in scripts/ (scripts/dev.sh lint), run from the repository's root.
+# shellcheck's settings for the scripts in scripts/ (scripts/dev.sh lint), run from the repository's
+# root.
 shell=bash
 external-sources=true
 source-path=SCRIPTDIR
-# The optional checks the scripts follow; require-variable-braces and the masked return codes of set -e are left out.
+# The optional checks the scripts follow; require-variable-braces and the masked return codes of set
+# -e are left out.
 enable=add-default-case,avoid-negated-conditions,avoid-nullary-conditions,check-unassigned-uppercase
 enable=deprecate-which,quote-safe-variables,require-double-brackets,useless-use-of-cat

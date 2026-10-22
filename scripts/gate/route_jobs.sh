@@ -2,7 +2,11 @@
 # job's runs are run and summed up. Sourced; scripts/gate/tests/test_follow_up.sh sources it too. It
 # needs from its caller: root, logs, DWE_CONTENT, cooked_archive, routes_extra, die, and run_game
 # <display> <log> <arguments separated by tabs>.
-# shellcheck disable=SC2154 # the variables above, which the caller sets
+
+# The caller's variables the job lists read: an unset one stops the gate here, not halfway through.
+caller_variables() {
+  : "${root:?}" "${logs:?}" "${DWE_CONTENT:?}" "${cooked_archive:?}" "${routes_extra?}"
+}
 
 route_dir="tests/autotest"
 # The smoke routes of the short tier, in en: boot, the main menu, a new game and the first map; the
@@ -104,6 +108,7 @@ route_job() {
 
 write_short_jobs() {
   local suffix="$1" route route_file lang
+  caller_variables
   for route in "${smoke_routes[@]}"; do
     route_job "$route" "$smoke_lang" "$suffix"
   done
@@ -118,6 +123,7 @@ write_short_jobs() {
 
 write_daily_jobs() {
   local suffix="$1" route route_file lang
+  caller_variables
   for lang in "${languages[@]}"; do
     for route_file in "$root/$route_dir"/route-*.yaml; do
       route="$(basename "$route_file" .yaml)"

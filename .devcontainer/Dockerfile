@@ -83,10 +83,11 @@ RUN for tool in clang-cl lld-link llvm-lib llvm-rc llvm-mt; do \
         | tar -xz -C /usr/local/bin --strip-components=1 "xwin-${XWIN_VERSION}-x86_64-unknown-linux-musl/xwin" \
     && xwin --version
 
-# The formatters and linters of Lua and shell (scripts/dev.sh format and lint), from the official releases, pinned by
-# version and checksum, and clangd for the editors in the dev container (.devcontainer/devcontainer.json). luacheck's
-# release binary aborts in a container (its threads ask for a scheduling policy), so it runs from its source rock on
-# the release's Lua 5.4 with the two libraries it needs.
+# The formatters and linters of Lua and shell (scripts/dev.sh format and lint), from the official
+# releases, pinned by version and checksum, and clangd for the editors in the dev container
+# (.devcontainer/devcontainer.json). luacheck's release binary aborts in a container (its threads
+# ask for a scheduling policy), so it runs from its source rock on the release's Lua 5.4 with the
+# two libraries it needs.
 ARG STYLUA_VERSION=2.6.0
 ARG STYLUA_SHA256=48ee7db28346f96f4bd545e190ab080a88a7b5a664e97649cf5d5c60426f402d
 ARG LUACHECK_VERSION=1.2.0

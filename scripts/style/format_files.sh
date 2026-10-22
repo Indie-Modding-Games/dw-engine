@@ -17,7 +17,8 @@ check_tools() {
   local tool
   for tool in "${required_tools[@]}"; do
     if ! command -v "$tool" >/dev/null; then
-      echo "format_files.sh: the image has no $tool; build it again with scripts/dev.sh image" >&2
+      echo "format_files.sh: the image has no $tool; set DWE_IMAGE to an image that has it," \
+        "or build one with scripts/dev.sh image" >&2
       return 1
     fi
   done

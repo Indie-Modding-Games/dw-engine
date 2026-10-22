@@ -58,8 +58,6 @@ bad_gate_mode_message="dev.sh: DWE_GATE_TIDY and DWE_GATE_COOK must be full or i
 style_dir="$root/scripts/style"
 hooks_dir="scripts/hooks"
 style_runner_direct="direct"
-restage_message="dev.sh: formatting changed a file that also has changes not staged; look at it \
-and stage it again"
 
 usage() {
   cat <<EOF
@@ -309,19 +307,24 @@ ensure_caches() {
   ensure_cache "$xwin_dir" "$xwin_volume"
 }
 
+# git with the paths as they are, not quoted, non-ASCII names too.
+git_paths() {
+  git -C "$root" -c core.quotePath=false "$@"
+}
+
 sources() {
-  git -C "$root" ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp'
+  git_paths ls-files --cached --others --exclude-standard -- '*.cpp' '*.hpp'
 }
 
 # The engine's own Lua: the game's scripts and the packs' (the extracted story is dwx's output, not
 # a source).
 lua_sources() {
-  git -C "$root" ls-files --cached --others --exclude-standard -- \
+  git_paths ls-files --cached --others --exclude-standard -- \
     ':(glob)apps/**/*.lua' ':(glob)content/packs/**/*.lua'
 }
 
 shell_sources() {
-  git -C "$root" ls-files --cached --others --exclude-standard \
+  git_paths ls-files --cached --others --exclude-standard \
     -- ':(glob)scripts/**/*.sh' "$hooks_dir/*"
 }
 
@@ -331,10 +334,23 @@ style_sources() {
   shell_sources
 }
 
-# The style sources in the index, added or changed.
+# The style sources in the index, added or changed, that the working tree has as staged: a file
+# with changes not staged, or deleted, is left out (named on stderr with --report), so the hook
+# never touches the working tree's own changes.
 staged_style_sources() {
-  comm -12 <(git -C "$root" diff --cached --name-only --diff-filter=ACMR | sort) \
-    <(style_sources | sort)
+  local file
+  while IFS= read -r file; do
+    if [[ ! -e "$root/$file" ]]; then
+      [[ "${1:-}" != "--report" ]] || echo "pre-commit: $file is deleted in the working tree;" \
+        "not formatted or linted, the gate checks it" >&2
+    elif ! git -C "$root" --literal-pathspecs diff --quiet -- "$file"; then
+      [[ "${1:-}" != "--report" ]] || echo "pre-commit: $file has unstaged changes;" \
+        "not formatted or linted, the gate checks it" >&2
+    else
+      echo "$file"
+    fi
+  done < <(comm -12 <(git_paths diff --cached --name-only --diff-filter=ACMR | sort) \
+    <(style_sources | sort))
 }
 
 # Runs a formatter or linter of scripts/style from the root, in the image or, with
@@ -348,29 +364,14 @@ run_style() {
   fi
 }
 
-# Formats the staged style sources and stages them again. A file that also has changes not staged is
-# not staged again, since that would add those changes: if formatting changed it, it fails so its
-# author looks at it.
+# Formats the staged style sources and stages them again; staged_style_sources leaves out the files
+# whose working tree differs from the index, so staging them adds only the formatting.
 format_staged() {
-  local files=() file status=0
-  declare -A partly_staged
-  mapfile -t files < <(staged_style_sources)
+  local files=()
+  mapfile -t files < <(staged_style_sources --report)
   ((${#files[@]} > 0)) || return 0
-  for file in "${files[@]}"; do
-    if ! git -C "$root" diff --quiet -- "$file"; then
-      partly_staged["$file"]="$(git -C "$root" hash-object -- "$file")"
-    fi
-  done
   run_style "$style_dir/format_files.sh" --jobs "$jobs" -- "${files[@]}" || return 1
-  for file in "${files[@]}"; do
-    if [[ -z "${partly_staged[$file]+set}" ]]; then
-      git -C "$root" add -- "$file"
-    elif [[ "$(git -C "$root" hash-object -- "$file")" != "${partly_staged[$file]}" ]]; then
-      echo "$restage_message: $file" >&2
-      status=1
-    fi
-  done
-  return "$status"
+  git -C "$root" --literal-pathspecs add -- "${files[@]}"
 }
 
 # Fails when any C++ or Lua source of the repository uses goto (project rule: structured control

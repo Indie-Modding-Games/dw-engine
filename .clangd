@@ -1,4 +1,5 @@
-# clangd (VS Code, CLion, Neovim and other editors) formats with .clang-format and runs the checks of .clang-tidy
-# by itself; it needs the compile commands of a configured preset (scripts/dev.sh configure).
+# clangd (VS Code, CLion, Neovim and other editors) formats with .clang-format and runs the checks
+# of .clang-tidy by itself; it needs the compile commands of a configured preset (scripts/dev.sh
+# configure).
 CompileFlags:
   CompilationDatabase: build/linux-clang-debug

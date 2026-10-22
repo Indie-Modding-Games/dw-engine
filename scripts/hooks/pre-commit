@@ -1,35 +1,65 @@
 #!/usr/bin/env bash
 # git's pre-commit hook, which scripts/dev.sh setup-hooks installs: formats the staged C++, Lua and
-# shell files with the image's formatters and stages them again, then lints them. A file left
-# unformatted or a lint error stops the commit. Without Docker it only warns: the gate checks the
-# same.
+# shell files with the image's formatters and stages them again, then lints them. A lint error stops
+# the commit. A file with changes not staged, or deleted in the working tree, is left as it is.
+# Without Docker it only warns: the gate checks the same. DWE_SKIP_HOOK=1 skips it for one commit.
+#
+# The formatters may rewrite this file while it runs, and bash reads a script as it goes: all of it
+# is in main, which the block at the end reads whole before it runs anything.
 set -uo pipefail
 
-root="$(git rev-parse --show-toplevel)"
-dev="$root/scripts/dev.sh"
+# Seconds a docker command may take before Docker counts as not reachable.
+docker_timeout="${DWE_HOOK_DOCKER_TIMEOUT:-5}"
 
 stop() {
   echo "pre-commit: $1. The commit stops: fix it, stage it and commit again." >&2
   exit 1
 }
 
-if [[ "${DWE_HOOK_RUNNER:-}" != "direct" ]]; then
-  if ! docker info >/dev/null 2>&1; then
-    # A session started before its user joined the docker group reaches Docker only through sg.
-    if [[ -z "${DWE_HOOK_IN_SG:-}" ]] && command -v sg >/dev/null \
-      && sg docker -c 'docker info' >/dev/null 2>&1; then
-      exec sg docker -c "DWE_HOOK_IN_SG=1 $(printf '%q' "$0")"
-    fi
-    echo "pre-commit: Docker is not reachable, so the staged files are not formatted or linted;" \
+docker_reachable() {
+  timeout "$docker_timeout" docker info </dev/null >/dev/null 2>&1
+}
+
+# The user is in the docker group, but this session started before they joined it: only sg reaches
+# Docker.
+docker_group_pending() {
+  local user
+  user="$(id -un 2>/dev/null)" && [[ -n "$user" ]] || return 1
+  getent group docker | cut -d: -f4 | tr ',' '\n' | grep -qxF -- "$user" \
+    && ! id -nG | tr ' ' '\n' | grep -qxF docker
+}
+
+main() {
+  local root dev image
+  if [[ "${DWE_SKIP_HOOK:-}" == "1" ]]; then
+    echo "pre-commit: DWE_SKIP_HOOK=1, so the staged files are not formatted or linted;" \
       "the gate checks them" >&2
     exit 0
   fi
-  if ! docker image inspect "$("$dev" image-name)" >/dev/null 2>&1; then
-    echo "pre-commit: there is no image $("$dev" image-name) (scripts/dev.sh image builds it)," \
-      "so the staged files are not formatted or linted; the gate checks them" >&2
-    exit 0
+  root="$(git rev-parse --show-toplevel)"
+  dev="$root/scripts/dev.sh"
+  if [[ "${DWE_HOOK_RUNNER:-}" != "direct" ]]; then
+    if ! docker_reachable; then
+      if [[ -z "${DWE_HOOK_IN_SG:-}" ]] && command -v sg >/dev/null && docker_group_pending \
+        && timeout "$docker_timeout" sg docker -c 'docker info' </dev/null >/dev/null 2>&1; then
+        exec sg docker -c "DWE_HOOK_IN_SG=1 $(printf '%q' "$0")"
+      fi
+      echo "pre-commit: Docker is not reachable, so the staged files are not formatted or linted;" \
+        "the gate checks them" >&2
+      exit 0
+    fi
+    image="$("$dev" image-name)"
+    if ! timeout "$docker_timeout" docker image inspect "$image" </dev/null >/dev/null 2>&1; then
+      echo "pre-commit: there is no image $image (scripts/dev.sh image builds it)," \
+        "so the staged files are not formatted or linted; the gate checks them" >&2
+      exit 0
+    fi
   fi
-fi
+  "$dev" format --staged || stop "a staged file could not be formatted (see above)"
+  "$dev" lint --staged || stop "the linters found the errors above"
+}
 
-"$dev" format --staged || stop "a staged file could not be formatted (see above)"
-"$dev" lint --staged || stop "the linters found the errors above"
+{
+  main "$@"
+  exit "$?"
+}

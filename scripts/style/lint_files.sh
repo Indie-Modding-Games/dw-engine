@@ -30,7 +30,8 @@ done
 
 for tool in luacheck shellcheck; do
   if ! command -v "$tool" >/dev/null; then
-    echo "lint_files.sh: the image has no $tool; build it again with scripts/dev.sh image" >&2
+    echo "lint_files.sh: the image has no $tool; set DWE_IMAGE to an image that has it," \
+      "or build one with scripts/dev.sh image" >&2
     exit 1
   fi
 done

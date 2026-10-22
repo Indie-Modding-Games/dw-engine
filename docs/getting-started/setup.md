@@ -164,7 +164,7 @@ El estilo es el mismo en todo el repositorio: 2 espacios, nunca tabuladores, 100
   StyLua, shell-format y ShellCheck descargan su propio programa; StyLua descarga la versión fijada. La de luacheck
   necesita `luacheck` en el `PATH`.
 - **CLion, Neovim y otros.** clangd lee `.clangd`, `.clang-format` y `.clang-tidy`; para Lua y shell, configura
-  StyLua y shfmt sin opciones: los dos leen su estilo del repositorio.
+  StyLua y shfmt sin opciones: StyLua lee `stylua.toml` y shfmt lee `.editorconfig`.
 
 clangd necesita los comandos de compilación de un preset configurado (`scripts/dev.sh configure`).
 
@@ -173,7 +173,12 @@ pasa nada: el hook de pre-commit y el gate usan las versiones de la imagen y lo 
 
 **Hook de pre-commit.** `scripts/dev.sh setup-hooks` hace que git use `scripts/hooks/` en este clon (y en sus
 worktrees). Antes de cada commit, el hook formatea los ficheros de C++, Lua y shell que están en el commit, los
-vuelve a añadir y les pasa luacheck y shellcheck. Si queda un error, el commit se para y dice por qué. Si el fichero
-tenía además cambios sin añadir, no lo vuelve a añadir: te pide que lo revises y lo añadas tú. Sin Docker, o sin la
-imagen, avisa y deja pasar el commit, porque el gate comprueba lo mismo. clang-tidy no corre en el hook, solo en el
-gate.
+vuelve a añadir y les pasa luacheck y shellcheck. Si queda un error, el commit se para y dice por qué. Un fichero
+con cambios sin añadir, o borrado en el árbol de trabajo, no se toca: el hook lo nombra y el gate lo comprueba. Sin
+Docker, o sin la imagen, avisa y deja pasar el commit, porque el gate comprueba lo mismo. clang-tidy no corre en el
+hook, solo en el gate. Para saltarte el hook en un commit, `DWE_SKIP_HOOK=1 git commit ...`: avisa en una línea y
+deja pasar el commit sin formatear.
+
+Con `git commit <rutas>`, git confirma esas rutas desde un índice temporal: el commit sale formateado, pero tu índice
+se queda con la versión sin formatear. Mejor `git add <rutas>` y después `git commit` sin rutas; si ya lo hiciste,
+vuelve a añadir esas rutas con `git add <rutas>`.
