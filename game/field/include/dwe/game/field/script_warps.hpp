@@ -8,6 +8,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -31,12 +32,33 @@ WarpVia warpViaOf(std::int32_t value);
 // How an IF entry joins the result of the ones before it (script_interp.c: scriptIfInstruction).
 enum class TestCombine : std::uint8_t { Replace, And, Or };
 
-// An IF entry. The field reads trigger tests; any other test is kept by its name and is never decided.
+// How a comparison test compares what it reads with its value (script_interp.c: scriptCompareValue).
+enum class Comparison : std::uint8_t { Equal, NotEqual, AtLeast, AtMost, Greater, Less };
+
+// The IF entries the field reads besides triggers (script_value.c: scriptCompareItemCount, scriptCompareMoney,
+// scriptCompareStat, scriptCompareCondition). Every other test is kept by its name and never decided.
+inline constexpr std::string_view TriggerTestName = "trigger";
+inline constexpr std::string_view ItemCountTestName = "item_count";
+inline constexpr std::string_view MoneyTestName = "money";
+inline constexpr std::string_view StatTestName = "stat";
+inline constexpr std::string_view ConditionTestName = "condition";
+
+// The script's stat whose value the original compares as signed (script_value.c: scriptCompareStat, the happiness).
+inline constexpr std::int32_t SignedScriptStat = 9;
+
+// An IF entry. The field reads trigger tests, the bag's item counts, the money and the partner's stats and
+// conditions; any other test is kept by its name and is never decided.
 struct GuardTest {
-    std::string test; // the listing's name: "trigger", "pstat", "item"...
+    std::string test; // the listing's name: "trigger", "pstat", "item_count"...
     TestCombine combine = TestCombine::Replace;
     std::int32_t trigger = 0; // a trigger test: the trigger
     bool clear = false;       // a trigger test: whether it asks for the trigger to be clear
+    // An item count, money or stat test: what it reads (the item, the stat; nothing for money), how it compares and
+    // with what. A condition test: the mask of conditions in `operand` and `negate`.
+    std::int32_t operand = 0;
+    Comparison compare = Comparison::Equal;
+    std::int64_t value = 0;
+    bool negate = false; // a condition test: whether it asks for none of the mask's conditions
 
     bool operator==(const GuardTest&) const = default;
 };
@@ -112,13 +134,36 @@ enum class Truth : std::uint8_t { False, True, Unknown };
 // Whether a trigger is set; nothing when it is not known.
 using TriggerState = std::function<std::optional<bool>(std::int32_t trigger)>;
 
-// The decision of a guard, in three values: every term must hold. A recursion and a test of a trigger the state does
-// not know, or that game code before it on the path may have written, are Unknown.
-Truth evaluate(const WarpGuard& guard, const TriggerState& triggers);
+// What the guards read of the rest of the game besides the triggers. A reader that is empty, or gives nothing, leaves
+// its tests Unknown.
+using ItemCountReader = std::function<std::optional<std::int64_t>(std::int32_t item)>; // the bag's count of an item
+using MoneyReader = std::function<std::optional<std::int64_t>()>;
+// A stat by the script's number (script.h: SCRIPT_STAT_*): the partner's stats, needs and lifetime, the merit...
+using StatReader = std::function<std::optional<std::int64_t>(std::int32_t stat)>;
+// The partner's conditions as the original's bits (params.h: CONDITION_*).
+using ConditionReader = std::function<std::optional<std::uint32_t>()>;
+
+// Everything a guard reads, live: the field asks when it decides.
+struct GuardFacts {
+    GuardFacts() = default;
+    // Facts that know only the triggers.
+    GuardFacts(TriggerState triggerState) : triggers(std::move(triggerState)) {}
+
+    TriggerState triggers;
+    ItemCountReader itemCount;
+    MoneyReader money;
+    StatReader stat;
+    ConditionReader conditions;
+};
+
+// The decision of a guard, in three values: every term must hold. A recursion, a test of a trigger the state does
+// not know, or that game code before it on the path may have written, and a test whose reader gives nothing are
+// Unknown.
+Truth evaluate(const WarpGuard& guard, const GuardFacts& facts);
 
 // Whether a warp is taken now: its script is loaded and its section gets to it. A warp without a target is never
 // True.
-Truth evaluate(const ScriptWarp& warp, const TriggerState& triggers);
+Truth evaluate(const ScriptWarp& warp, const GuardFacts& facts);
 
 // What the field does with the things it is told it cannot know: a recursion the extraction's walk cut, a trigger
 // the game code on the path may have written (GuardForget), and a trigger the new game's paths do not agree on. Every
@@ -138,7 +183,7 @@ struct WarpDecision {
     std::vector<std::string> allowed;
 };
 
-WarpDecision decide(const ScriptWarp& warp, const TriggerState& triggers, UnknownPolicy policy);
+WarpDecision decide(const ScriptWarp& warp, const GuardFacts& facts, UnknownPolicy policy);
 
 // The warp the field takes on a map's cell: of that map, way and section, the warps whose decision is True. Under
 // Allow two paths that part at an unknown trigger can both be True, while the original runs the section, which takes
@@ -154,7 +199,7 @@ struct CellWarp {
 };
 
 CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, WarpVia via, std::int32_t section,
-                    const TriggerState& triggers, UnknownPolicy policy);
+                    const GuardFacts& facts, UnknownPolicy policy);
 
 // The triggers as a new game leaves them: set those the story lists and clear the rest; when its paths do not agree,
 // the rest is unknown. A field that starts on `startMap` at `startExit` anywhere but the opening's spawn (the story's

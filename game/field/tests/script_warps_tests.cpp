@@ -12,16 +12,19 @@
 #include <variant>
 #include <vector>
 
+using dwe::game::field::Comparison;
 using dwe::game::field::decide;
 using dwe::game::field::evaluate;
 using dwe::game::field::GuardBranch;
 using dwe::game::field::GuardChoice;
+using dwe::game::field::GuardFacts;
 using dwe::game::field::GuardForget;
 using dwe::game::field::GuardRecursion;
 using dwe::game::field::GuardTest;
 using dwe::game::field::newGameTriggers;
 using dwe::game::field::parseScriptWarps;
 using dwe::game::field::ScriptWarp;
+using dwe::game::field::SignedScriptStat;
 using dwe::game::field::TestCombine;
 using dwe::game::field::TriggerState;
 using dwe::game::field::Truth;
@@ -473,4 +476,99 @@ TEST_CASE("after game code that may write a trigger, a test of it is unknown and
     WarpGuard before = ifTests({trigger(5, false)}, false);
     before.terms.emplace_back(writesFive);
     CHECK(decide(guardedWarp(before), knownTriggers, UnknownPolicy::Allow).truth == Truth::False);
+}
+
+TEST_CASE("field script warps read the operands of item count, money, stat and condition tests") {
+    const auto warps = parseScriptWarps(R"(warps:
+- map: a
+  via: step
+  section: 51
+  to: {map: b, exit: 0}
+  guard:
+    terms:
+    - if:
+      - {test: item_count, item: 115, compare: ge, value: 1}
+      - {test: money, compare: lt, value: 400, combine: and}
+      - {test: stat, stat: 8, compare: eq, value: 3, combine: or}
+      - {test: condition, mask: 64, negate: 1, combine: and}
+      - {test: pstat, pstat: 3, compare: eq, value: 1, combine: and}
+      holds: true
+  source: {script: 1, section: 51}
+)");
+    REQUIRE_MESSAGE(warps.has_value(), errorOf(warps));
+    const auto& tests = std::get<GuardBranch>(warps->front().guard.terms.front()).tests;
+    REQUIRE(tests.size() == 5);
+    CHECK(tests[0].operand == 115);
+    CHECK(tests[0].compare == Comparison::AtLeast);
+    CHECK(tests[0].value == 1);
+    CHECK(tests[1].compare == Comparison::Less);
+    CHECK(tests[1].value == 400);
+    CHECK(tests[1].combine == TestCombine::And);
+    CHECK(tests[2].operand == 8);
+    CHECK(tests[2].combine == TestCombine::Or);
+    CHECK(tests[3].operand == 64);
+    CHECK(tests[3].negate);
+    CHECK(tests[4].test == "pstat");
+
+    const auto badCompare = parseScriptWarps(R"(warps:
+- map: a
+  via: step
+  section: 51
+  guard: {terms: [{if: [{test: money, compare: about, value: 1}], holds: true}]}
+  source: {script: 1, section: 51}
+)");
+    CHECK_FALSE(badCompare.has_value());
+}
+
+TEST_CASE("a guard reads the bag, the money and the partner as the original compares them") {
+    GuardFacts facts{knownTriggers};
+    facts.itemCount = [](std::int32_t item) -> std::optional<std::int64_t> {
+        return item == 115 ? std::optional<std::int64_t>{2} : std::optional<std::int64_t>{0};
+    };
+    facts.money = []() -> std::optional<std::int64_t> { return 350; };
+    facts.stat = [](std::int32_t stat) -> std::optional<std::int64_t> {
+        if (stat == 8) {
+            return 3;
+        }
+        return stat == SignedScriptStat ? std::optional<std::int64_t>{-5} : std::nullopt;
+    };
+    facts.conditions = []() -> std::optional<std::uint32_t> { return 0x20; };
+    const auto test = [](std::string_view name, std::int32_t operand, Comparison compare, std::int64_t value) {
+        return GuardTest{.test = std::string{name},
+                         .combine = TestCombine::Replace,
+                         .trigger = 0,
+                         .clear = false,
+                         .operand = operand,
+                         .compare = compare,
+                         .value = value,
+                         .negate = false};
+    };
+    CHECK(evaluate(ifTests({test("item_count", 115, Comparison::AtLeast, 1)}, true), facts) == Truth::True);
+    CHECK(evaluate(ifTests({test("item_count", 116, Comparison::AtLeast, 1)}, true), facts) == Truth::False);
+    CHECK(evaluate(ifTests({test("money", 0, Comparison::Less, 400)}, true), facts) == Truth::True);
+    // Money compares unsigned: a value the listing writes negative is a huge one.
+    CHECK(evaluate(ifTests({test("money", 0, Comparison::Less, -1)}, true), facts) == Truth::True);
+    CHECK(evaluate(ifTests({test("stat", 8, Comparison::Equal, 3)}, true), facts) == Truth::True);
+    // Stat 9 compares signed, the others as unsigned 16-bit values.
+    CHECK(evaluate(ifTests({test("stat", SignedScriptStat, Comparison::Less, 0)}, true), facts) == Truth::True);
+    CHECK(evaluate(ifTests({test("stat", SignedScriptStat, Comparison::Less, 0xFFF0)}, true), facts) == Truth::False);
+    // A stat the reader does not give is not known.
+    CHECK(evaluate(ifTests({test("stat", 6, Comparison::Equal, 1)}, true), facts) == Truth::Unknown);
+
+    GuardTest injured = test("condition", 0x20, Comparison::Equal, 0);
+    CHECK(evaluate(ifTests({injured}, true), facts) == Truth::True);
+    injured.negate = true;
+    CHECK(evaluate(ifTests({injured}, true), facts) == Truth::False);
+    GuardTest sick = test("condition", 0x40, Comparison::Equal, 0);
+    CHECK(evaluate(ifTests({sick}, false), facts) == Truth::True);
+
+    // Folded with a trigger test as the interpreter folds an IF.
+    GuardTest moneyAnd = test("money", 0, Comparison::AtLeast, 1000);
+    moneyAnd.combine = TestCombine::And;
+    CHECK(evaluate(ifTests({trigger(5, false), moneyAnd}, true), facts) == Truth::False);
+
+    // Without readers they are never decided, and no policy lets them through.
+    const ScriptWarp warp = guardedWarp(ifTests({test("money", 0, Comparison::Less, 400)}, true));
+    CHECK(decide(warp, knownTriggers, UnknownPolicy::Allow).truth == Truth::Unknown);
+    CHECK(decide(warp, facts, UnknownPolicy::Allow).truth == Truth::True);
 }

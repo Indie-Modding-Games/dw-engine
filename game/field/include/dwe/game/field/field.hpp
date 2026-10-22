@@ -63,10 +63,10 @@ struct CharacterState {
 class Field {
 public:
     // Creates the player and the partner in the world. The world must outlive the field. The scripts' map changes
-    // fire on stepping on (or confirming on) their cells when `triggers` decides them taken, under `unknownPolicy`
+    // fire on stepping on (or confirming on) their cells when `facts` decide them taken, under `unknownPolicy`
     // for a recursion or a trigger it is told it cannot know (logged once per warp); the ones it cannot decide are
     // logged once and not taken.
-    Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps = {}, TriggerState triggers = {},
+    Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps = {}, GuardFacts facts = {},
           UnknownPolicy unknownPolicy = VanillaUnknownPolicy);
 
     // Enters a map through one of its exits: the player appears at the exit's spawn and the partner next to it
@@ -171,7 +171,7 @@ private:
     scene::World* world_;
     FieldRules rules_;
     std::vector<ScriptWarp> scriptWarps_;
-    TriggerState triggers_;
+    GuardFacts facts_;
     UnknownPolicy unknownPolicy_;
     // The step cells of the current map whose map change is taken.
     std::vector<std::int32_t> warpingStepCells_;

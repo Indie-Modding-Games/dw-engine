@@ -84,9 +84,9 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 
 } // namespace
 
-Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps, TriggerState triggers,
+Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps, GuardFacts facts,
              UnknownPolicy unknownPolicy)
-    : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps)), triggers_(std::move(triggers)),
+    : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps)), facts_(std::move(facts)),
       unknownPolicy_(unknownPolicy), player_(world.create()), partner_(world.create()) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
@@ -129,7 +129,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
             continue;
         }
         if (warp.via == WarpVia::Step && !std::ranges::contains(warpingStepCells_, warp.section) &&
-            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, triggers_, unknownPolicy_).warp != nullptr) {
+            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, facts_, unknownPolicy_).warp != nullptr) {
             warpingStepCells_.push_back(warp.section);
         }
     }
@@ -293,7 +293,7 @@ bool Field::warpsOn(std::int32_t trigger) const {
 }
 
 std::optional<MapChange> Field::scriptWarpFor(WarpVia via, std::int32_t value) {
-    const CellWarp cell = warpOnCell(scriptWarps_, mapId_, via, value, triggers_, unknownPolicy_);
+    const CellWarp cell = warpOnCell(scriptWarps_, mapId_, via, value, facts_, unknownPolicy_);
     if (cell.warp != nullptr && cell.warp->targetMap) {
         const auto index = static_cast<std::size_t>(cell.warp - scriptWarps_.data());
         if (!cell.decision.allowed.empty() && !std::ranges::contains(allowedReported_, index)) {

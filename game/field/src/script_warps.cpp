@@ -26,7 +26,6 @@ using core::YamlNode;
 
 constexpr std::string_view ScriptWarpsId = "field/script_warps";
 constexpr std::string_view Context = "script warps";
-constexpr std::string_view TriggerTest = "trigger";
 constexpr std::array<std::string_view, 4> ViaNames = {"step", "confirm", "enter", "other"};
 
 Truth both(Truth a, Truth b) {
@@ -43,8 +42,76 @@ Truth either(Truth a, Truth b) {
     return a == Truth::False && b == Truth::False ? Truth::False : Truth::Unknown;
 }
 
-Truth testValue(const GuardTest& test, const TriggerState& triggers) {
-    if (test.test != TriggerTest || !triggers) {
+constexpr std::array<std::string_view, 6> ComparisonNames = {"eq", "ne", "ge", "le", "gt", "lt"};
+// What the original compares of each value (script_value.c): a byte of an item count, the script's 16-bit value of
+// a stat and an item count, the 32 bits of money.
+constexpr std::int64_t ByteMask = 0xFF;
+constexpr std::int64_t Unsigned16Mask = 0xFFFF;
+constexpr std::int64_t Unsigned32Mask = 0xFFFFFFFF;
+
+Truth truthOf(bool holds) {
+    return holds ? Truth::True : Truth::False;
+}
+
+bool compares(Comparison compare, std::int64_t read, std::int64_t value) {
+    switch (compare) {
+    case Comparison::Equal:
+        return read == value;
+    case Comparison::NotEqual:
+        return read != value;
+    case Comparison::AtLeast:
+        return read >= value;
+    case Comparison::AtMost:
+        return read <= value;
+    case Comparison::Greater:
+        return read > value;
+    case Comparison::Less:
+        return read < value;
+    }
+    return false;
+}
+
+std::int64_t signed16(std::int64_t value) {
+    return static_cast<std::int16_t>(static_cast<std::uint16_t>(value & Unsigned16Mask));
+}
+
+// A test of the bag, the money or the partner: Unknown when its reader gives nothing.
+Truth factValue(const GuardTest& test, const GuardFacts& facts) {
+    if (test.test == ItemCountTestName) {
+        const auto count = facts.itemCount ? facts.itemCount(test.operand) : std::nullopt;
+        return count ? truthOf(compares(test.compare, *count & ByteMask, test.value & Unsigned16Mask)) : Truth::Unknown;
+    }
+    if (test.test == MoneyTestName) {
+        const auto money = facts.money ? facts.money() : std::nullopt;
+        return money ? truthOf(compares(test.compare, *money & Unsigned32Mask, test.value & Unsigned32Mask))
+                     : Truth::Unknown;
+    }
+    if (test.test == StatTestName) {
+        const auto stat = facts.stat ? facts.stat(test.operand) : std::nullopt;
+        if (!stat) {
+            return Truth::Unknown;
+        }
+        if (test.operand == SignedScriptStat) {
+            return truthOf(compares(test.compare, signed16(*stat), signed16(test.value)));
+        }
+        return truthOf(compares(test.compare, *stat & Unsigned16Mask, test.value & Unsigned16Mask));
+    }
+    if (test.test == ConditionTestName) {
+        const auto conditions = facts.conditions ? facts.conditions() : std::nullopt;
+        if (!conditions) {
+            return Truth::Unknown;
+        }
+        const bool any = (*conditions & static_cast<std::uint32_t>(test.operand)) != 0;
+        return truthOf(any != test.negate);
+    }
+    return Truth::Unknown;
+}
+
+Truth testValue(const GuardTest& test, const TriggerState& triggers, const GuardFacts& facts) {
+    if (test.test != TriggerTestName) {
+        return factValue(test, facts);
+    }
+    if (!triggers) {
         return Truth::Unknown;
     }
     const std::optional<bool> set = triggers(test.trigger);
@@ -90,15 +157,16 @@ struct Forgotten {
 
 // An IF's decision. Under Allow, one whose tests are all trigger tests and read a trigger the state does not know
 // holds whichever way it goes, and says so in `allowed`.
-Truth branchValue(const GuardBranch& branch, const TriggerState& known, const Forgotten& forgotten,
-                  UnknownPolicy policy, std::vector<std::string>& allowed) {
+Truth branchValue(const GuardBranch& branch, const GuardFacts& facts, const Forgotten& forgotten, UnknownPolicy policy,
+                  std::vector<std::string>& allowed) {
+    const TriggerState& known = facts.triggers;
     const TriggerState triggers = known ? TriggerState{[&](std::int32_t trigger) -> std::optional<bool> {
         return forgotten.siteOf(trigger) ? std::nullopt : known(trigger);
     }}
                                         : known;
     Truth result = Truth::False;
     for (const GuardTest& test : branch.tests) {
-        const Truth value = testValue(test, triggers);
+        const Truth value = testValue(test, triggers, facts);
         switch (test.combine) {
         case TestCombine::Replace:
             result = value;
@@ -113,7 +181,7 @@ Truth branchValue(const GuardBranch& branch, const TriggerState& known, const Fo
     }
     if (result == Truth::Unknown) {
         const bool onlyTriggers = triggers && std::ranges::all_of(branch.tests, [](const GuardTest& test) {
-                                      return test.test == TriggerTest;
+                                      return test.test == TriggerTestName;
                                   });
         if (policy != UnknownPolicy::Allow || !onlyTriggers) {
             return Truth::Unknown;
@@ -135,13 +203,13 @@ Truth branchValue(const GuardBranch& branch, const TriggerState& known, const Fo
 
 // A guard's decision. `forgotten` is what the game code before it on the path made it forget (in the script guard,
 // for the section's guard): the trigger tests do not read those triggers from the state.
-Truth guardValue(const WarpGuard& guard, const TriggerState& triggers, UnknownPolicy policy,
+Truth guardValue(const WarpGuard& guard, const GuardFacts& facts, UnknownPolicy policy,
                  std::vector<std::string>& allowed, Forgotten& forgotten) {
     Truth result = Truth::True;
     for (const auto& term : guard.terms) {
         Truth value = Truth::Unknown;
         if (const auto* branch = std::get_if<GuardBranch>(&term)) {
-            value = branchValue(*branch, triggers, forgotten, policy, allowed);
+            value = branchValue(*branch, facts, forgotten, policy, allowed);
         } else if (const auto* recursion = std::get_if<GuardRecursion>(&term)) {
             if (!forgotten.all) {
                 forgotten = Forgotten{.all = true,
@@ -173,9 +241,55 @@ std::string siteOf(YamlReader& reader, const YamlNode& node) {
     return site;
 }
 
+Comparison readComparison(YamlReader& reader, const YamlNode& node) {
+    const std::string name = reader.text(reader.field(node, "compare"));
+    const auto named = std::ranges::find(ComparisonNames, name);
+    if (named == ComparisonNames.end()) {
+        reader.fail(reader.field(node, "compare"), "compare is eq, ne, ge, le, gt or lt");
+        return Comparison::Equal;
+    }
+    return static_cast<Comparison>(named - ComparisonNames.begin());
+}
+
+// The operands of a test the field reads; the keys of any other test are not read.
+void readOperands(YamlReader& reader, const YamlNode& node, GuardTest& test) {
+    if (test.test == TriggerTestName &&
+        reader.expectKeys(node, "a trigger test", {"test", "trigger"}, {"clear", "combine", "code"})) {
+        test.trigger = reader.integer<std::int32_t>(reader.field(node, "trigger"));
+        if (const YamlNode* clear = node.find("clear"); clear != nullptr) {
+            test.clear = reader.boolean(*clear);
+        }
+    } else if (test.test == ItemCountTestName &&
+               reader.expectKeys(node, "an item count test", {"test", "item", "compare", "value"},
+                                 {"combine", "code"})) {
+        test.operand = reader.integer<std::int32_t>(reader.field(node, "item"));
+        test.compare = readComparison(reader, node);
+        test.value = reader.integer<std::int64_t>(reader.field(node, "value"));
+    } else if (test.test == MoneyTestName &&
+               reader.expectKeys(node, "a money test", {"test", "compare", "value"}, {"combine", "code"})) {
+        test.compare = readComparison(reader, node);
+        test.value = reader.integer<std::int64_t>(reader.field(node, "value"));
+    } else if (test.test == StatTestName &&
+               reader.expectKeys(node, "a stat test", {"test", "stat", "compare", "value"}, {"combine", "code"})) {
+        test.operand = reader.integer<std::int32_t>(reader.field(node, "stat"));
+        test.compare = readComparison(reader, node);
+        test.value = reader.integer<std::int64_t>(reader.field(node, "value"));
+    } else if (test.test == ConditionTestName &&
+               reader.expectKeys(node, "a condition test", {"test", "mask", "negate"}, {"combine", "code"})) {
+        test.operand = reader.integer<std::int32_t>(reader.field(node, "mask"));
+        test.negate = reader.integer<std::int32_t>(reader.field(node, "negate")) != 0;
+    }
+}
+
 GuardTest readTest(YamlReader& reader, const YamlNode& node) {
-    GuardTest test{
-        .test = reader.text(reader.field(node, "test")), .combine = TestCombine::Replace, .trigger = 0, .clear = false};
+    GuardTest test{.test = reader.text(reader.field(node, "test")),
+                   .combine = TestCombine::Replace,
+                   .trigger = 0,
+                   .clear = false,
+                   .operand = 0,
+                   .compare = Comparison::Equal,
+                   .value = 0,
+                   .negate = false};
     if (const YamlNode* combine = node.isMapping() ? node.find("combine") : nullptr; combine != nullptr) {
         const std::string word = reader.text(*combine);
         if (word == "and") {
@@ -186,13 +300,7 @@ GuardTest readTest(YamlReader& reader, const YamlNode& node) {
             reader.fail(*combine, "combine is and or or");
         }
     }
-    if (test.test == TriggerTest &&
-        reader.expectKeys(node, "a trigger test", {"test", "trigger"}, {"clear", "combine", "code"})) {
-        test.trigger = reader.integer<std::int32_t>(reader.field(node, "trigger"));
-        if (const YamlNode* clear = node.find("clear"); clear != nullptr) {
-            test.clear = reader.boolean(*clear);
-        }
-    }
+    readOperands(reader, node, test);
     return test;
 }
 
@@ -308,23 +416,23 @@ WarpVia warpViaOf(std::int32_t value) {
     return value >= FirstConfirmTrigger && value < FirstWarpTrigger ? WarpVia::Confirm : WarpVia::Other;
 }
 
-Truth evaluate(const WarpGuard& guard, const TriggerState& triggers) {
+Truth evaluate(const WarpGuard& guard, const GuardFacts& facts) {
     std::vector<std::string> allowed;
     Forgotten forgotten;
-    return guardValue(guard, triggers, UnknownPolicy::Deny, allowed, forgotten);
+    return guardValue(guard, facts, UnknownPolicy::Deny, allowed, forgotten);
 }
 
-Truth evaluate(const ScriptWarp& warp, const TriggerState& triggers) {
-    return decide(warp, triggers, UnknownPolicy::Deny).truth;
+Truth evaluate(const ScriptWarp& warp, const GuardFacts& facts) {
+    return decide(warp, facts, UnknownPolicy::Deny).truth;
 }
 
-WarpDecision decide(const ScriptWarp& warp, const TriggerState& triggers, UnknownPolicy policy) {
+WarpDecision decide(const ScriptWarp& warp, const GuardFacts& facts, UnknownPolicy policy) {
     WarpDecision decision;
     // The script guard's path runs before the section's (MAPHEAD loads the script), so what the game code there may
     // write the section's trigger tests do not read either.
     Forgotten forgotten;
-    const Truth scriptGuard = guardValue(warp.scriptGuard, triggers, policy, decision.allowed, forgotten);
-    const Truth taken = both(scriptGuard, guardValue(warp.guard, triggers, policy, decision.allowed, forgotten));
+    const Truth scriptGuard = guardValue(warp.scriptGuard, facts, policy, decision.allowed, forgotten);
+    const Truth taken = both(scriptGuard, guardValue(warp.guard, facts, policy, decision.allowed, forgotten));
     decision.truth = taken == Truth::True && !warp.targetMap ? Truth::Unknown : taken;
     if (decision.truth != Truth::True) {
         decision.allowed.clear();
@@ -360,14 +468,14 @@ TriggerState newGameTriggers(const assets::NewGameStory& story, std::string_view
 }
 
 CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, WarpVia via, std::int32_t section,
-                    const TriggerState& triggers, UnknownPolicy policy) {
+                    const GuardFacts& facts, UnknownPolicy policy) {
     CellWarp cell;
     std::vector<std::pair<const ScriptWarp*, WarpDecision>> taken;
     for (const ScriptWarp& warp : warps) {
         if (warp.map != map || warp.via != via || warp.section != section) {
             continue;
         }
-        WarpDecision decision = decide(warp, triggers, policy);
+        WarpDecision decision = decide(warp, facts, policy);
         if (decision.truth == Truth::True) {
             taken.emplace_back(&warp, std::move(decision));
         } else if (taken.empty()) {
