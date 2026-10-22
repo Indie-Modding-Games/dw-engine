@@ -84,4 +84,16 @@ inline constexpr std::string_view MovePlaceOutside = "battle: place {} is not on
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";
 inline constexpr std::string_view NoMoveAtSlot = "battle: '{}' has no move at position {}";
 
+// The story state (StoryAdapter).
+inline constexpr std::string_view StoryNewGame = "story: a new game starts with {} triggers set";
+// A trigger data/new_game_story does not know at the new game's start, besides the first partner's raised one.
+inline constexpr std::string_view StoryUnknownAtStart =
+    "story: trigger {} is not known at the new game's start (data/new_game_story); it starts clear";
+inline constexpr std::string_view StoryMissingInSave =
+    "story: the save has no story section (made before it existed); the story starts as a new game's";
+inline constexpr std::string_view StoryDocumentFailed = "story: {}";
+// No digimon table to number the first partner by (the species), so its raised trigger stays clear.
+inline constexpr std::string_view StoryPartnerUnnumbered =
+    "story: partner '{}' has no number in the digimon table; its raised trigger stays clear";
+
 } // namespace dwe::session::messages

@@ -5,6 +5,7 @@
 #include <dwe/session/game_systems.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <string_view>
 #include <utility>
@@ -68,10 +69,16 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                                     .inventory = inventory.get()});
     // The evolution requirements read the partner's learned moves from the battle adapter.
     evolution->setMoveSource(*battle);
-    GameSystems game{.systems = {}, .evolution = evolution.get(), .inventory = inventory.get(), .battle = battle.get()};
+    auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &files});
+    GameSystems game{.systems = {},
+                     .evolution = evolution.get(),
+                     .inventory = inventory.get(),
+                     .battle = battle.get(),
+                     .story = story.get()};
     game.systems.push_back(std::move(evolution));
     game.systems.push_back(std::move(inventory));
     game.systems.push_back(std::move(battle));
+    game.systems.push_back(std::move(story));
     return game;
 }
 
