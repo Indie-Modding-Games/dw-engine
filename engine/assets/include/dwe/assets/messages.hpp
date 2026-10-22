@@ -8,7 +8,8 @@ namespace dwe::assets::messages {
 
 using core::formatMessage;
 
-// What the readers of the base pack's game tables call each part in their errors ("a raise row: ...").
+// What the readers of the base pack's game tables call each part in their errors ("a raise row:
+// ...").
 inline constexpr std::string_view DigimonTableText = "the digimon table";
 inline constexpr std::string_view DigimonRowText = "a digimon row";
 inline constexpr std::string_view RaiseTableText = "the raise table";
@@ -33,21 +34,26 @@ inline constexpr std::string_view RepeatedIndex = "{} '{}' repeats the index {}"
 
 // Content ids (content_id.cpp).
 inline constexpr std::string_view ContentIdEmpty = "a content id cannot be empty";
-inline constexpr std::string_view ContentIdTooLong = "content id '{}' has a name longer than {} characters";
+inline constexpr std::string_view ContentIdTooLong =
+    "content id '{}' has a name longer than {} characters";
 inline constexpr std::string_view ContentIdCharacters =
     "content id '{}' may only use a-z, 0-9 and '_', with one ':' after a pack's namespace";
 inline constexpr std::string_view ContentIdNamespace = "content id '{}': {}";
 
 // Tables composed entry by entry (table_composition.cpp). The first argument is the pack's file.
-inline constexpr std::string_view CompositionNotMapping = "{}: a table must be a mapping of sections";
-inline constexpr std::string_view CompositionNotEntry = "{}: every entry of '{}' must be a mapping with its '{}'";
+inline constexpr std::string_view CompositionNotMapping =
+    "{}: a table must be a mapping of sections";
+inline constexpr std::string_view CompositionNotEntry =
+    "{}: every entry of '{}' must be a mapping with its '{}'";
 inline constexpr std::string_view CompositionBadKey = "{}: '{}' of '{}': {}";
 inline constexpr std::string_view CompositionRepeatedKey = "{}: '{}' lists '{}' twice";
 inline constexpr std::string_view NewSpeciesWithoutContract =
     "the new Digimon '{}' has no model contract: a pack that adds a Digimon adds {}.yaml with it";
 inline constexpr std::string_view CompositionNotList = "{}: '{}' must be a list of entries";
-inline constexpr std::string_view CompositionIndexTaken = "{}: '{}' of '{}' has the index {}, which '{}' already has";
-inline constexpr std::string_view CompositionBadIndex = "{}: '{}' of '{}' has the index '{}', which is no number";
+inline constexpr std::string_view CompositionIndexTaken =
+    "{}: '{}' of '{}' has the index {}, which '{}' already has";
+inline constexpr std::string_view CompositionBadIndex =
+    "{}: '{}' of '{}' has the index '{}', which is no number";
 inline constexpr std::string_view CompositionIndexChanged =
     "{}: '{}' of '{}' has the index {}, but it is {}: an entry that replaces another keeps its index";
 inline constexpr std::string_view CompositionIndexOfNewEntry =
@@ -59,7 +65,8 @@ inline constexpr std::string_view CompositionForeignNamespace =
 
 // Classes of entries of the rulesets (entry_class.hpp).
 inline constexpr std::string_view EntryRangeText = "a range or an id";
-inline constexpr std::string_view EntryRangeReversed = "the range starts at {} and ends before it, at {}";
+inline constexpr std::string_view EntryRangeReversed =
+    "the range starts at {} and ends before it, at {}";
 inline constexpr std::string_view EntryRangeNegative = "a range counts numbers from 0, not {}";
 inline constexpr std::string_view EntryClassNumberUnknown =
     "{}: number {} is no {} of the original (a range covers only the original game; a pack's entry joins by id)";

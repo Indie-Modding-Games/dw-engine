@@ -1,6 +1,7 @@
 #pragma once
 
-// The names of the metatable fields that the engine reads and sets. C strings: Lua takes them without a size.
+// The names of the metatable fields that the engine reads and sets. C strings: Lua takes them
+// without a size.
 namespace dwe::script::detail {
 
 inline constexpr const char* MetatableField = "__metatable";

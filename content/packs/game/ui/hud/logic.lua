@@ -19,46 +19,46 @@ local sizes = { small = true, medium = true, large = true }
 local minimap_modes = { auto = true, on = true, off = true }
 
 local function refresh(document)
-	local minimap = document:get("minimap")
-	local mode = ui.setting("minimap")
-	if not minimap_modes[mode] then
-		mode = "auto"
-	end
-	-- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off hides it.
-	minimap:set_class("auto", mode == "auto")
-	minimap:set_class("hidden", mode == "off")
-	local size = ui.setting("minimap_size")
-	if not sizes[size] then
-		size = "medium"
-	end
-	for name in pairs(sizes) do
-		minimap:set_class("size-" .. name, name == size)
-	end
+  local minimap = document:get("minimap")
+  local mode = ui.setting("minimap")
+  if not minimap_modes[mode] then
+    mode = "auto"
+  end
+  -- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off hides it.
+  minimap:set_class("auto", mode == "auto")
+  minimap:set_class("hidden", mode == "off")
+  local size = ui.setting("minimap_size")
+  if not sizes[size] then
+    size = "medium"
+  end
+  for name in pairs(sizes) do
+    minimap:set_class("size-" .. name, name == size)
+  end
 end
 
 local function refresh_prompts(document)
-	document:get("prompt-menu"):set_text(ui.prompt("menu"))
+  document:get("prompt-menu"):set_text(ui.prompt("menu"))
 end
 
 local panels = { "minimap", "menu-button", "field-status" }
 
 local function refresh_fade(document)
-	local level = ui.setting("screen_fade")
-	if type(level) ~= "number" then
-		level = 0
-	end
-	local opacity = string.format("%.3f", 1 - math.min(math.max(level, 0), 1))
-	for _, id in ipairs(panels) do
-		document:get(id):set_property("opacity", opacity)
-	end
+  local level = ui.setting("screen_fade")
+  if type(level) ~= "number" then
+    level = 0
+  end
+  local opacity = string.format("%.3f", 1 - math.min(math.max(level, 0), 1))
+  for _, id in ipairs(panels) do
+    document:get(id):set_property("opacity", opacity)
+  end
 end
 
 local function refresh_title(document)
-	local key = ui.setting("map_title_key")
-	local shown = type(key) == "string" and key ~= ""
-	local element = document:get("map-title")
-	element:set_text(shown and t(key) or "")
-	element:set_class("shown", shown)
+  local key = ui.setting("map_title_key")
+  local shown = type(key) == "string" and key ~= ""
+  local element = document:get("map-title")
+  element:set_text(shown and t(key) or "")
+  element:set_class("shown", shown)
 end
 
 local field_meters = 2
@@ -69,26 +69,26 @@ local field_pools = 2
 local area_classes = { [1] = "area-liked", [2] = "area-disliked" }
 
 local function field_number(name)
-	local value = ui.setting(name)
-	if type(value) ~= "number" then
-		return 0
-	end
-	return math.floor(value)
+  local value = ui.setting(name)
+  if type(value) ~= "number" then
+    return 0
+  end
+  return math.floor(value)
 end
 
 local function field_label(name)
-	local key = ui.setting(name)
-	if type(key) ~= "string" or key == "" then
-		return ""
-	end
-	return t(key)
+  local key = ui.setting(name)
+  if type(key) ~= "string" or key == "" then
+    return ""
+  end
+  return t(key)
 end
 
 local function percent(value, minimum, maximum)
-	if maximum <= minimum then
-		return 0
-	end
-	return math.max(0, math.min(100, (value - minimum) * 100 / (maximum - minimum)))
+  if maximum <= minimum then
+    return 0
+  end
+  return math.max(0, math.min(100, (value - minimum) * 100 / (maximum - minimum)))
 end
 
 -- The original's field bars are 25 squares of 2 pixels (partner_impl.c: renderStatusBars), so a bar with the class
@@ -105,42 +105,49 @@ local night_ends_hour = 6
 local night_starts_hour = 17
 
 local function two_digits(value)
-	return string.format("%02d", value)
+  return string.format("%02d", value)
 end
 
 local function draw_field_labels(document)
-	for index = 0, field_meters - 1 do
-		document:get("field-meter-" .. index .. "-label"):set_text(field_label("hud.meter." .. index .. ".label"))
-	end
-	for index = 0, field_needs - 1 do
-		document:get("field-need-" .. index):set_text(field_label("hud.need." .. index .. ".label"))
-	end
-	for index = 0, field_pools - 1 do
-		document:get("field-pool-" .. index .. "-label"):set_text(field_label("hud.pool." .. index .. ".label"))
-	end
+  for index = 0, field_meters - 1 do
+    document
+      :get("field-meter-" .. index .. "-label")
+      :set_text(field_label("hud.meter." .. index .. ".label"))
+  end
+  for index = 0, field_needs - 1 do
+    document:get("field-need-" .. index):set_text(field_label("hud.need." .. index .. ".label"))
+  end
+  for index = 0, field_pools - 1 do
+    document
+      :get("field-pool-" .. index .. "-label")
+      :set_text(field_label("hud.pool." .. index .. ".label"))
+  end
 end
 
 local function draw_field_dial(document, hour, minute)
-	document:get("field-clock"):set_class("night", hour < night_ends_hour or hour >= night_starts_hour)
-	document:get("field-clock-minute-hand"):set_property("transform",
-		string.format("rotate(%ddeg)", minute * minute_hand_degrees))
-	local angle = math.rad(hour * hour_dot_degrees)
-	local dot = document:get("field-clock-hour-dot")
-	dot:set_property("left", string.format("%.2f%%", 50 + hour_dot_radius_percent * math.sin(angle)))
-	dot:set_property("top", string.format("%.2f%%", 50 - hour_dot_radius_percent * math.cos(angle)))
+  document
+    :get("field-clock")
+    :set_class("night", hour < night_ends_hour or hour >= night_starts_hour)
+  document
+    :get("field-clock-minute-hand")
+    :set_property("transform", string.format("rotate(%ddeg)", minute * minute_hand_degrees))
+  local angle = math.rad(hour * hour_dot_degrees)
+  local dot = document:get("field-clock-hour-dot")
+  dot:set_property("left", string.format("%.2f%%", 50 + hour_dot_radius_percent * math.sin(angle)))
+  dot:set_property("top", string.format("%.2f%%", 50 - hour_dot_radius_percent * math.cos(angle)))
 end
 
 local function draw_field_clock(document)
-	local hour, minute = field_number("hud.clock.hour"), field_number("hud.clock.minute")
-	draw_field_dial(document, hour, minute)
-	document:get("field-time"):set_text(t("hud.clock.time", {
-		hour = two_digits(hour),
-		minute = two_digits(minute),
-	}))
-	document:get("field-date"):set_text(t("hud.clock.date", {
-		day = field_number("hud.clock.day"),
-		year = field_number("hud.clock.year"),
-	}))
+  local hour, minute = field_number("hud.clock.hour"), field_number("hud.clock.minute")
+  draw_field_dial(document, hour, minute)
+  document:get("field-time"):set_text(t("hud.clock.time", {
+    hour = two_digits(hour),
+    minute = two_digits(minute),
+  }))
+  document:get("field-date"):set_text(t("hud.clock.date", {
+    day = field_number("hud.clock.day"),
+    year = field_number("hud.clock.year"),
+  }))
 end
 
 -- A two-tone bar fills from the minimum to the middle of its range, then again in its second colour from the middle
@@ -149,42 +156,45 @@ end
 -- turns sad below 0 and the discipline icon changes below 50 (partner_impl.c: renderStatusBars), so a skin draws its
 -- icons on the class "low" of the bar's row.
 local function in_low_half(value, minimum, maximum)
-	return value < (minimum + maximum) / 2
+  return value < (minimum + maximum) / 2
 end
 
 -- A bar's fill in percent; in whole pips when the bar has the class "pips", rounding down as the original does.
 local function bar_fill(bar, value, minimum, maximum)
-	local fill = percent(value, minimum, maximum)
-	if bar:has_class("pips") then
-		local step = 100 / pips_per_bar
-		fill = math.floor(fill / step + 1e-9) * step
-	end
-	return fill
+  local fill = percent(value, minimum, maximum)
+  if bar:has_class("pips") then
+    local step = 100 / pips_per_bar
+    fill = math.floor(fill / step + 1e-9) * step
+  end
+  return fill
 end
 
 local function draw_field_meter(document, index)
-	local base = "hud.meter." .. index .. "."
-	local prefix = "field-meter-" .. index
-	local bar = document:get(prefix .. "-bar")
-	local value, low, top = field_number(base .. "value"), field_number(base .. "min"), field_number(base .. "max")
-	local fill, high = bar_fill(bar, value, low, top), 0
-	if ui.setting(base .. "two_tone") == true then
-		local middle = (low + top) / 2
-		fill = bar_fill(bar, value, low, middle)
-		high = bar_fill(bar, value, middle, top)
-	end
-	document:get(prefix .. "-fill"):set_property("width", fill .. "%")
-	document:get(prefix .. "-high"):set_property("width", high .. "%")
-	document:get(prefix):set_class("low", in_low_half(value, low, top))
-	document:get(prefix .. "-value"):set_text(tostring(value))
+  local base = "hud.meter." .. index .. "."
+  local prefix = "field-meter-" .. index
+  local bar = document:get(prefix .. "-bar")
+  local value, low, top =
+    field_number(base .. "value"), field_number(base .. "min"), field_number(base .. "max")
+  local fill, high = bar_fill(bar, value, low, top), 0
+  if ui.setting(base .. "two_tone") == true then
+    local middle = (low + top) / 2
+    fill = bar_fill(bar, value, low, middle)
+    high = bar_fill(bar, value, middle, top)
+  end
+  document:get(prefix .. "-fill"):set_property("width", fill .. "%")
+  document:get(prefix .. "-high"):set_property("width", high .. "%")
+  document:get(prefix):set_class("low", in_low_half(value, low, top))
+  document:get(prefix .. "-value"):set_text(tostring(value))
 end
 
 local function draw_field_pool(document, index)
-	local base = "hud.pool." .. index .. "."
-	local current, maximum = field_number(base .. "value"), field_number(base .. "max")
-	local bar = document:get("field-pool-" .. index .. "-bar")
-	document:get("field-pool-" .. index .. "-fill"):set_property("width", bar_fill(bar, current, 0, maximum) .. "%")
-	document:get("field-pool-" .. index .. "-value"):set_text(current .. " / " .. maximum)
+  local base = "hud.pool." .. index .. "."
+  local current, maximum = field_number(base .. "value"), field_number(base .. "max")
+  local bar = document:get("field-pool-" .. index .. "-bar")
+  document
+    :get("field-pool-" .. index .. "-fill")
+    :set_property("width", bar_fill(bar, current, 0, maximum) .. "%")
+  document:get("field-pool-" .. index .. "-value"):set_text(current .. " / " .. maximum)
 end
 
 -- The need bubble over the partner (bubble.c), one need at a time. The original picks it in this order, highest
@@ -199,132 +209,134 @@ local bubble_need = nil
 local bubble_seconds = 0
 
 local function need_active(need)
-	return ui.setting("hud.need." .. bubble_need_index[need] .. ".active") == true
+  return ui.setting("hud.need." .. bubble_need_index[need] .. ".active") == true
 end
 
 -- The highest need the partner has other than `except`, or nil.
 local function highest_need(except)
-	for _, need in ipairs(bubble_priority) do
-		if need ~= except and need_active(need) then
-			return need
-		end
-	end
-	return nil
+  for _, need in ipairs(bubble_priority) do
+    if need ~= except and need_active(need) then
+      return need
+    end
+  end
+  return nil
 end
 
 -- A coordinate of the partner's head, in percent of the window.
 local function place(name)
-	local value = ui.setting(name)
-	if type(value) ~= "number" then
-		return 0
-	end
-	return value
+  local value = ui.setting(name)
+  if type(value) ~= "number" then
+    return 0
+  end
+  return value
 end
 
 local function draw_bubble(document)
-	local bubble = document:get("field-partner-bubble")
-	local visible = ui.setting("hud.partner.visible") == true
-	bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
-	bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
-	bubble:set_class("shown", visible and bubble_need ~= nil)
-	for need in pairs(bubble_need_index) do
-		bubble:set_class(need, need == bubble_need)
-	end
+  local bubble = document:get("field-partner-bubble")
+  local visible = ui.setting("hud.partner.visible") == true
+  bubble:set_property("left", string.format("%.2f%%", place("hud.partner.x")))
+  bubble:set_property("top", string.format("%.2f%%", place("hud.partner.y")))
+  bubble:set_class("shown", visible and bubble_need ~= nil)
+  for need in pairs(bubble_need_index) do
+    bubble:set_class(need, need == bubble_need)
+  end
 end
 
 -- The needs changed: a bubble whose need went gives way to the highest one left.
 local function pick_bubble(document)
-	if bubble_need == nil or not need_active(bubble_need) then
-		bubble_need = highest_need(nil)
-		bubble_seconds = 0
-	end
-	draw_bubble(document)
+  if bubble_need == nil or not need_active(bubble_need) then
+    bubble_need = highest_need(nil)
+    bubble_seconds = 0
+  end
+  draw_bubble(document)
 end
 
 local function tick_bubble(document, seconds)
-	if bubble_need == nil or ui.setting("hud.partner.visible") ~= true then
-		return
-	end
-	bubble_seconds = bubble_seconds + seconds
-	if bubble_seconds < bubble_swap_seconds then
-		return
-	end
-	bubble_seconds = 0
-	local other = highest_need(bubble_need)
-	if other ~= nil then
-		bubble_need = other
-		draw_bubble(document)
-	end
+  if bubble_need == nil or ui.setting("hud.partner.visible") ~= true then
+    return
+  end
+  bubble_seconds = bubble_seconds + seconds
+  if bubble_seconds < bubble_swap_seconds then
+    return
+  end
+  bubble_seconds = 0
+  local other = highest_need(bubble_need)
+  if other ~= nil then
+    bubble_need = other
+    draw_bubble(document)
+  end
 end
 
 local function draw_partner_area(status)
-	local area = ui.setting("hud.partner.area")
-	for value, class in pairs(area_classes) do
-		status:set_class(class, area == value)
-	end
+  local area = ui.setting("hud.partner.area")
+  for value, class in pairs(area_classes) do
+    status:set_class(class, area == value)
+  end
 end
 
 local function draw_field(document)
-	local status = document:get("field-status")
-	status:set_class("shown", ui.setting("hud.shown") == true)
-	draw_partner_area(status)
-	draw_field_clock(document)
-	for index = 0, field_meters - 1 do
-		draw_field_meter(document, index)
-	end
-	for index = 0, field_needs - 1 do
-		document:get("field-need-" .. index):set_class("active", ui.setting("hud.need." .. index .. ".active") == true)
-	end
-	for index = 0, field_pools - 1 do
-		draw_field_pool(document, index)
-	end
-	pick_bubble(document)
+  local status = document:get("field-status")
+  status:set_class("shown", ui.setting("hud.shown") == true)
+  draw_partner_area(status)
+  draw_field_clock(document)
+  for index = 0, field_meters - 1 do
+    draw_field_meter(document, index)
+  end
+  for index = 0, field_needs - 1 do
+    document
+      :get("field-need-" .. index)
+      :set_class("active", ui.setting("hud.need." .. index .. ".active") == true)
+  end
+  for index = 0, field_pools - 1 do
+    draw_field_pool(document, index)
+  end
+  pick_bubble(document)
 end
 
 function on_show(document)
-	refresh(document)
-	refresh_fade(document)
-	refresh_title(document)
-	refresh_prompts(document)
-	draw_field_labels(document)
-	draw_field(document)
+  refresh(document)
+  refresh_fade(document)
+  refresh_title(document)
+  refresh_prompts(document)
+  draw_field_labels(document)
+  draw_field(document)
 end
 
 function on_device(document)
-	refresh_prompts(document)
+  refresh_prompts(document)
 end
 
 -- The language changed: the elements with a text-key are already in the new one; the prompts, the map's name and the
 -- field status's texts are written here.
 function on_language(document)
-	refresh_title(document)
-	refresh_prompts(document)
-	draw_field_labels(document)
-	draw_field_clock(document)
+  refresh_title(document)
+  refresh_prompts(document)
+  draw_field_labels(document)
+  draw_field_clock(document)
 end
 
 function on_setting(document, name)
-	if name == "screen_fade" then
-		refresh_fade(document)
-	elseif name == "map_title_key" then
-		refresh_title(document)
-	elseif name == "hud.revision" then
-		draw_field(document)
-	elseif name == "hud.partner.revision" then
-		draw_bubble(document)
-	elseif name == "ui_skin" then
-		-- A new skin may set or clear classes the drawing reads (pips): draw the field status and the bubble again.
-		refresh(document)
-		draw_field(document)
-	elseif string.find(name, "^hud%.") then
-		if string.find(name, "%.label$") then
-			draw_field_labels(document)
-		end
-	else
-		refresh(document)
-	end
+  if name == "screen_fade" then
+    refresh_fade(document)
+  elseif name == "map_title_key" then
+    refresh_title(document)
+  elseif name == "hud.revision" then
+    draw_field(document)
+  elseif name == "hud.partner.revision" then
+    draw_bubble(document)
+  elseif name == "ui_skin" then
+    -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the bubble again.
+    refresh(document)
+    draw_field(document)
+  elseif string.find(name, "^hud%.") then
+    if string.find(name, "%.label$") then
+      draw_field_labels(document)
+    end
+  else
+    refresh(document)
+  end
 end
 
 function on_tick(document, seconds)
-	tick_bubble(document, seconds)
+  tick_bubble(document, seconds)
 end

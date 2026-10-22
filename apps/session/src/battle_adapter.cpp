@@ -33,96 +33,101 @@ constexpr std::string_view MoveTableRole = "moves";
 
 constexpr unsigned SeedHalfBits = 32;
 
-// The battle's stat raises, in the partner's order (both go HP, MP, offense, defense, speed, brain).
+// The battle's stat raises, in the partner's order (both go HP, MP, offense, defense, speed,
+// brain).
 StatBlock statBlockOf(const game::battle::StatValues& gains) {
-    StatBlock block;
-    for (std::size_t index = 0; index < gains.size(); ++index) {
-        block[game::partner::AllStats.at(index)] = gains.at(index);
-    }
-    return block;
+  StatBlock block;
+  for (std::size_t index = 0; index < gains.size(); ++index) {
+    block[game::partner::AllStats.at(index)] = gains.at(index);
+  }
+  return block;
 }
 
 // What an item of the inventory does once thrown in battle (item.c, with GAME_STATE 1).
 game::battle::ThrownItem thrownItemOf(const game::inventory::ItemEffect& effect) {
-    game::battle::ThrownItem item;
-    item.hp = effect.healing.hp;
-    item.mp = effect.healing.mp;
-    if (effect.revive) {
-        item.reviveHpPercent = effect.revive->hpPercent;
-    }
-    item.curesStatus = effect.battleStatusCure.has_value();
-    item.protects = effect.protects;
-    if (effect.battleBoost) {
-        const game::inventory::BattleBoost& boost = *effect.battleBoost;
-        item.boost = game::battle::StatBoost{.offense = boost.offense,
-                                             .defense = boost.defense,
-                                             .speed = boost.speed,
-                                             .limitPercent = boost.limitPercent,
-                                             .limitCap = boost.limitCap,
-                                             .ignoresLimit = boost.ignoresLimit};
-    }
-    item.consciousOnly = effect.consciousOnly;
-    return item;
+  game::battle::ThrownItem item;
+  item.hp = effect.healing.hp;
+  item.mp = effect.healing.mp;
+  if (effect.revive) {
+    item.reviveHpPercent = effect.revive->hpPercent;
+  }
+  item.curesStatus = effect.battleStatusCure.has_value();
+  item.protects = effect.protects;
+  if (effect.battleBoost) {
+    const game::inventory::BattleBoost& boost = *effect.battleBoost;
+    item.boost = game::battle::StatBoost{.offense = boost.offense,
+                                         .defense = boost.defense,
+                                         .speed = boost.speed,
+                                         .limitPercent = boost.limitPercent,
+                                         .limitCap = boost.limitCap,
+                                         .ignoresLimit = boost.ignoresLimit};
+  }
+  item.consciousOnly = effect.consciousOnly;
+  return item;
 }
 
-// The partner in battle as the inventory sees it: it never refuses, and the effect goes with the tamer's throw.
+// The partner in battle as the inventory sees it: it never refuses, and the effect goes with the
+// tamer's throw.
 class ThrowTarget final : public game::inventory::ItemEffectTarget {
 public:
-    explicit ThrowTarget(game::battle::Battle& battle) : battle_(&battle) {}
+  explicit ThrowTarget(game::battle::Battle& battle) : battle_(&battle) {}
 
-    bool accepts(const game::inventory::ItemEffect& /*effect*/, game::inventory::UseContext /*context*/) override {
-        return true;
-    }
+  bool accepts(const game::inventory::ItemEffect& /*effect*/,
+               game::inventory::UseContext /*context*/) override {
+    return true;
+  }
 
-    void apply(const game::inventory::ItemEffect& effect, game::inventory::UseContext /*context*/) override {
-        thrown_ = battle_->throwItem(thrownItemOf(effect));
-    }
+  void apply(const game::inventory::ItemEffect& effect,
+             game::inventory::UseContext /*context*/) override {
+    thrown_ = battle_->throwItem(thrownItemOf(effect));
+  }
 
-    [[nodiscard]] const core::Result<void>& thrown() const { return thrown_; }
+  [[nodiscard]] const core::Result<void>& thrown() const { return thrown_; }
 
 private:
-    game::battle::Battle* battle_;
-    core::Result<void> thrown_;
+  game::battle::Battle* battle_;
+  core::Result<void> thrown_;
 };
 
 game::partner::BattleResult partnerResultOf(Outcome outcome) {
-    switch (outcome) {
-    case Outcome::Victory:
-        return game::partner::BattleResult::Won;
-    case Outcome::Fled:
-        return game::partner::BattleResult::Fled;
-    case Outcome::Defeat:
-        break;
-    }
-    return game::partner::BattleResult::Lost;
+  switch (outcome) {
+  case Outcome::Victory:
+    return game::partner::BattleResult::Won;
+  case Outcome::Fled:
+    return game::partner::BattleResult::Fled;
+  case Outcome::Defeat:
+    break;
+  }
+  return game::partner::BattleResult::Lost;
 }
 
 game::partner::BattleConsequences consequencesOf(const BattleResult& result) {
-    return {.result = partnerResultOf(result.outcome),
-            .injured = result.injured,
-            .mood = {.happiness = result.care.happiness,
-                     .discipline = result.care.discipline,
-                     .tiredness = result.care.tiredness},
-            .battles = result.care.battles,
-            .foodChange = result.foodChange,
-            .livesLost = result.livesLost,
-            .elapsedMinutes = result.elapsedMinutes,
-            .hourCrossed = result.hourCrossed,
-            .lifetimeHoursLost = result.lifetimeHoursLost};
+  return {.result = partnerResultOf(result.outcome),
+          .injured = result.injured,
+          .mood = {.happiness = result.care.happiness,
+                   .discipline = result.care.discipline,
+                   .tiredness = result.care.tiredness},
+          .battles = result.care.battles,
+          .foodChange = result.foodChange,
+          .livesLost = result.livesLost,
+          .elapsedMinutes = result.elapsedMinutes,
+          .hourCrossed = result.hourCrossed,
+          .lifetimeHoursLost = result.lifetimeHoursLost};
 }
 
 template <typename Table>
 core::Result<Table> loadTable(const assets::VirtualFileSystem* files, const ruleset::Ruleset& rules,
                               std::string_view role,
-                              core::Result<Table> (*load)(const assets::VirtualFileSystem&, const assets::AssetId&)) {
-    if (files == nullptr) {
-        return core::fail(std::string{messages::BattleNeedsTables});
-    }
-    const assets::AssetId* id = rules.table(role);
-    if (id == nullptr) {
-        return core::fail(formatMessage(messages::NoMoveTable, role));
-    }
-    return load(*files, *id);
+                              core::Result<Table> (*load)(const assets::VirtualFileSystem&,
+                                                          const assets::AssetId&)) {
+  if (files == nullptr) {
+    return core::fail(std::string{messages::BattleNeedsTables});
+  }
+  const assets::AssetId* id = rules.table(role);
+  if (id == nullptr) {
+    return core::fail(formatMessage(messages::NoMoveTable, role));
+  }
+  return load(*files, *id);
 }
 
 } // namespace
@@ -130,21 +135,23 @@ core::Result<Table> loadTable(const assets::VirtualFileSystem* files, const rule
 // Writes and reads the partner's moves.
 class BattleAdapter::Serializer final : public game::save::SectionSerializer {
 public:
-    explicit Serializer(BattleAdapter& adapter) : adapter_(&adapter) {}
+  explicit Serializer(BattleAdapter& adapter) : adapter_(&adapter) {}
 
-    [[nodiscard]] core::Result<core::YamlNode> write() const override { return toYaml(adapter_->moves_); }
+  [[nodiscard]] core::Result<core::YamlNode> write() const override {
+    return toYaml(adapter_->moves_);
+  }
 
-    core::Result<void> read(const core::YamlNode& state) override {
-        auto moves = partnerMovesFromYaml(state);
-        if (!moves) {
-            return std::unexpected{moves.error()};
-        }
-        adapter_->moves_ = std::move(*moves);
-        return {};
+  core::Result<void> read(const core::YamlNode& state) override {
+    auto moves = partnerMovesFromYaml(state);
+    if (!moves) {
+      return std::unexpected{moves.error()};
     }
+    adapter_->moves_ = std::move(*moves);
+    return {};
+  }
 
 private:
-    BattleAdapter* adapter_;
+  BattleAdapter* adapter_;
 };
 
 BattleAdapter::BattleAdapter(BattleAdapterDesc desc)
@@ -153,267 +160,278 @@ BattleAdapter::BattleAdapter(BattleAdapterDesc desc)
 BattleAdapter::~BattleAdapter() = default;
 
 ruleset::SectionChecks BattleAdapter::sectionChecks() const {
-    return {{std::string{game::battle::SectionName}, game::battle::checkBattleSection},
-            {std::string{PartnerMovesSection}, checkPartnerMovesSection}};
+  return {{std::string{game::battle::SectionName}, game::battle::checkBattleSection},
+          {std::string{PartnerMovesSection}, checkPartnerMovesSection}};
 }
 
 core::Result<void> BattleAdapter::loadTables(const ruleset::Ruleset& rules) {
-    if (!desc_.digimon) {
-        auto digimon = loadTable<assets::DigimonTable>(desc_.files, rules, DigimonTableRole, assets::loadDigimonTable);
-        if (!digimon) {
-            return std::unexpected{digimon.error()};
-        }
-        desc_.digimon = std::move(*digimon);
+  if (!desc_.digimon) {
+    auto digimon = loadTable<assets::DigimonTable>(desc_.files, rules, DigimonTableRole,
+                                                   assets::loadDigimonTable);
+    if (!digimon) {
+      return std::unexpected{digimon.error()};
     }
-    if (!desc_.moves) {
-        auto moves = loadTable<assets::MoveTable>(desc_.files, rules, MoveTableRole, assets::loadMoveTable);
-        if (!moves) {
-            return std::unexpected{moves.error()};
-        }
-        desc_.moves = std::move(*moves);
+    desc_.digimon = std::move(*digimon);
+  }
+  if (!desc_.moves) {
+    auto moves =
+        loadTable<assets::MoveTable>(desc_.files, rules, MoveTableRole, assets::loadMoveTable);
+    if (!moves) {
+      return std::unexpected{moves.error()};
     }
-    return {};
+    desc_.moves = std::move(*moves);
+  }
+  return {};
 }
 
 core::Result<void> BattleAdapter::readRules(const ruleset::Ruleset& rules) {
-    if (auto loaded = loadTables(rules); !loaded) {
-        return loaded;
-    }
-    auto section = rules.requireSection(game::battle::SectionName);
-    if (!section) {
-        return std::unexpected{section.error()};
-    }
-    auto battleRules = game::battle::readBattleRules(**section);
-    if (!battleRules) {
-        return std::unexpected{battleRules.error()};
-    }
-    if (!desc_.moves) {
-        return core::fail(std::string{messages::BattleNeedsTables});
-    }
-    auto catalog = game::battle::MoveCatalog::build(*desc_.moves, *battleRules);
-    if (!catalog) {
-        return std::unexpected{catalog.error()};
-    }
-    auto movesSection = rules.requireSection(PartnerMovesSection);
-    if (!movesSection) {
-        return std::unexpected{movesSection.error()};
-    }
-    auto moveRules = readPartnerMoveRules(**movesSection);
-    if (!moveRules) {
-        return std::unexpected{moveRules.error()};
-    }
-    section_ = **section;
-    rules_ = std::make_unique<game::battle::BattleRules>(std::move(*battleRules));
-    catalog_ = std::make_unique<game::battle::MoveCatalog>(std::move(*catalog));
-    moveRules_ = *moveRules;
-    return {};
+  if (auto loaded = loadTables(rules); !loaded) {
+    return loaded;
+  }
+  auto section = rules.requireSection(game::battle::SectionName);
+  if (!section) {
+    return std::unexpected{section.error()};
+  }
+  auto battleRules = game::battle::readBattleRules(**section);
+  if (!battleRules) {
+    return std::unexpected{battleRules.error()};
+  }
+  if (!desc_.moves) {
+    return core::fail(std::string{messages::BattleNeedsTables});
+  }
+  auto catalog = game::battle::MoveCatalog::build(*desc_.moves, *battleRules);
+  if (!catalog) {
+    return std::unexpected{catalog.error()};
+  }
+  auto movesSection = rules.requireSection(PartnerMovesSection);
+  if (!movesSection) {
+    return std::unexpected{movesSection.error()};
+  }
+  auto moveRules = readPartnerMoveRules(**movesSection);
+  if (!moveRules) {
+    return std::unexpected{moveRules.error()};
+  }
+  section_ = **section;
+  rules_ = std::make_unique<game::battle::BattleRules>(std::move(*battleRules));
+  catalog_ = std::make_unique<game::battle::MoveCatalog>(std::move(*catalog));
+  moveRules_ = *moveRules;
+  return {};
 }
 
 core::Result<void> BattleAdapter::addSaveSections(game::save::SaveSections& sections) {
-    return sections.add(std::string{MovesSaveName}, *serializer_, game::save::MigrationChain{});
+  return sections.add(std::string{MovesSaveName}, *serializer_, game::save::MigrationChain{});
 }
 
 const assets::DigimonRow* BattleAdapter::rowOf(std::string_view species) const {
-    return desc_.digimon ? desc_.digimon->find(species) : nullptr;
+  return desc_.digimon ? desc_.digimon->find(species) : nullptr;
 }
 
 std::optional<MoveSlot> BattleAdapter::finisherSlot(const assets::DigimonRow& row) const {
-    // partner_impl.c: initializePartner: the last move of the species' list that is a finisher.
-    for (std::size_t slot = row.moves.size(); slot-- > 0;) {
-        const std::optional<std::string>& move = row.moves.at(slot);
-        if (!move) {
-            continue;
-        }
-        if (const auto ref = catalog_->find(*move); ref && catalog_->at(*ref).finisher) {
-            return static_cast<MoveSlot>(slot);
-        }
+  // partner_impl.c: initializePartner: the last move of the species' list that is a finisher.
+  for (std::size_t slot = row.moves.size(); slot-- > 0;) {
+    const std::optional<std::string>& move = row.moves.at(slot);
+    if (!move) {
+      continue;
     }
-    return std::nullopt;
+    if (const auto ref = catalog_->find(*move); ref && catalog_->at(*ref).finisher) {
+      return static_cast<MoveSlot>(slot);
+    }
+  }
+  return std::nullopt;
 }
 
 core::Result<void> BattleAdapter::startNewGame(GameSession& session) {
-    moves_ = {};
-    if (!catalog_) {
-        return core::fail(std::string{messages::BattleNotRead});
-    }
-    const std::string& species = session.partner().state().species;
-    const assets::DigimonRow* row = rowOf(species);
-    if (row == nullptr) {
-        return core::fail(formatMessage(messages::UnknownPartnerSpecies, species));
-    }
-    // partner_impl.c: initializePartner: it equips and learns one technique and equips its finisher.
-    const auto slot = static_cast<std::size_t>(moveRules_.newGameSlot);
-    if (const std::optional<std::string>& move = row->moves.at(slot)) {
-        learn(moves_, *move);
-        moves_.equipped.at(0) = moveRules_.newGameSlot;
-    }
-    moves_.equipped.at(game::battle::FinisherSlot) = finisherSlot(*row);
-    return {};
+  moves_ = {};
+  if (!catalog_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  const std::string& species = session.partner().state().species;
+  const assets::DigimonRow* row = rowOf(species);
+  if (row == nullptr) {
+    return core::fail(formatMessage(messages::UnknownPartnerSpecies, species));
+  }
+  // partner_impl.c: initializePartner: it equips and learns one technique and equips its finisher.
+  const auto slot = static_cast<std::size_t>(moveRules_.newGameSlot);
+  if (const std::optional<std::string>& move = row->moves.at(slot)) {
+    learn(moves_, *move);
+    moves_.equipped.at(0) = moveRules_.newGameSlot;
+  }
+  moves_.equipped.at(game::battle::FinisherSlot) = finisherSlot(*row);
+  return {};
 }
 
-void BattleAdapter::routePartnerEvent(GameSession& /*session*/, const game::partner::PartnerEvent& event) {
-    if (event.kind == game::partner::EventKind::Reborn) {
-        // evolution.c: reincarnatePartner: moves[0] = 0x2E, the others 0xFF; the learned moves stay.
-        moves_.equipped = {};
-        moves_.equipped.at(0) = moveRules_.rebornSlot;
-    }
+void BattleAdapter::routePartnerEvent(GameSession& /*session*/,
+                                      const game::partner::PartnerEvent& event) {
+  if (event.kind == game::partner::EventKind::Reborn) {
+    // evolution.c: reincarnatePartner: moves[0] = 0x2E, the others 0xFF; the learned moves stay.
+    moves_.equipped = {};
+    moves_.equipped.at(0) = moveRules_.rebornSlot;
+  }
 }
 
-core::Result<game::battle::Combatant> BattleAdapter::partnerCombatant(const GameSession& session) const {
-    const game::partner::PartnerState& partner = session.partner().state();
-    const assets::DigimonRow* row = rowOf(partner.species);
-    if (row == nullptr) {
-        return core::fail(formatMessage(messages::UnknownPartnerSpecies, partner.species));
+core::Result<game::battle::Combatant>
+BattleAdapter::partnerCombatant(const GameSession& session) const {
+  const game::partner::PartnerState& partner = session.partner().state();
+  const assets::DigimonRow* row = rowOf(partner.species);
+  if (row == nullptr) {
+    return core::fail(formatMessage(messages::UnknownPartnerSpecies, partner.species));
+  }
+  game::battle::Combatant fighter = game::battle::combatantOf(*row);
+  const StatBlock& base = partner.stats.base;
+  fighter.stats = {.maxHp = base[Stat::Hp],
+                   .maxMp = base[Stat::Mp],
+                   .offense = base[Stat::Offense],
+                   .defense = base[Stat::Defense],
+                   .speed = base[Stat::Speed],
+                   .brain = base[Stat::Brain]};
+  fighter.hp = partner.stats.currentHp;
+  fighter.mp = partner.stats.currentMp;
+  // btl.c: a position the species has no move at is left empty.
+  for (std::size_t place = 0; place < moves_.equipped.size(); ++place) {
+    if (const std::optional<MoveSlot> slot = moves_.equipped.at(place)) {
+      fighter.moves.at(place) = row->moves.at(static_cast<std::size_t>(*slot));
     }
-    game::battle::Combatant fighter = game::battle::combatantOf(*row);
-    const StatBlock& base = partner.stats.base;
-    fighter.stats = {.maxHp = base[Stat::Hp],
-                     .maxMp = base[Stat::Mp],
-                     .offense = base[Stat::Offense],
-                     .defense = base[Stat::Defense],
-                     .speed = base[Stat::Speed],
-                     .brain = base[Stat::Brain]};
-    fighter.hp = partner.stats.currentHp;
-    fighter.mp = partner.stats.currentMp;
-    // btl.c: a position the species has no move at is left empty.
-    for (std::size_t place = 0; place < moves_.equipped.size(); ++place) {
-        if (const std::optional<MoveSlot> slot = moves_.equipped.at(place)) {
-            fighter.moves.at(place) = row->moves.at(static_cast<std::size_t>(*slot));
-        }
-    }
-    return fighter;
+  }
+  return fighter;
 }
 
-core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session, BattleRequest request) {
-    if (!rules_ || !section_) {
-        return core::fail(std::string{messages::BattleNotRead});
-    }
-    auto partner = partnerCombatant(session);
-    if (!partner) {
-        return std::unexpected{partner.error()};
-    }
-    auto strategies = game::battle::createStrategies(*section_);
-    if (!strategies) {
-        return std::unexpected{strategies.error()};
-    }
-    const game::partner::PartnerState& state = session.partner().state();
-    game::battle::BattleSetup setup{.partner = std::move(*partner),
-                                    .condition = {.discipline = state.mood.discipline,
-                                                  .tiredness = state.mood.tiredness,
-                                                  .sick = state.conditions.has(game::partner::Condition::Sick),
-                                                  .injured = state.conditions.has(game::partner::Condition::Injured),
-                                                  .knownMoves = moves_.learned},
-                                    .enemies = std::move(request.enemies),
-                                    .scripted = request.scripted,
-                                    .tamerless = request.tamerless,
-                                    .map = std::move(request.map),
-                                    .startMinute = session.clock().time().minute,
-                                    .tamer = request.tamer,
-                                    .kind = request.kind,
-                                    .recruitOnVictory = std::move(request.recruitOnVictory)};
-    ruleset::Random& random = session.random();
-    const std::uint64_t high = random.next();
-    const std::uint64_t seed = (high << SeedHalfBits) | random.next();
-    return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies), seed);
+core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
+                                                        BattleRequest request) {
+  if (!rules_ || !section_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  auto partner = partnerCombatant(session);
+  if (!partner) {
+    return std::unexpected{partner.error()};
+  }
+  auto strategies = game::battle::createStrategies(*section_);
+  if (!strategies) {
+    return std::unexpected{strategies.error()};
+  }
+  const game::partner::PartnerState& state = session.partner().state();
+  game::battle::BattleSetup setup{
+      .partner = std::move(*partner),
+      .condition = {.discipline = state.mood.discipline,
+                    .tiredness = state.mood.tiredness,
+                    .sick = state.conditions.has(game::partner::Condition::Sick),
+                    .injured = state.conditions.has(game::partner::Condition::Injured),
+                    .knownMoves = moves_.learned},
+      .enemies = std::move(request.enemies),
+      .scripted = request.scripted,
+      .tamerless = request.tamerless,
+      .map = std::move(request.map),
+      .startMinute = session.clock().time().minute,
+      .tamer = request.tamer,
+      .kind = request.kind,
+      .recruitOnVictory = std::move(request.recruitOnVictory)};
+  ruleset::Random& random = session.random();
+  const std::uint64_t high = random.next();
+  const std::uint64_t seed = (high << SeedHalfBits) | random.next();
+  return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
+                                     seed);
 }
 
-void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result, BattleAftermath& aftermath) const {
-    if (desc_.inventory == nullptr) {
-        aftermath.dropsLeft = result.drops;
-        return;
+void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result,
+                                BattleAftermath& aftermath) const {
+  if (desc_.inventory == nullptr) {
+    aftermath.dropsLeft = result.drops;
+    return;
+  }
+  game::inventory::Inventory& bag = desc_.inventory->inventory();
+  bag.addMoney(result.bits);
+  for (const std::string& drop : result.drops) {
+    const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(drop);
+    if (!item || !bag.add(*item, 1).taken()) {
+      aftermath.dropsLeft.push_back(drop);
     }
-    game::inventory::Inventory& bag = desc_.inventory->inventory();
-    bag.addMoney(result.bits);
-    for (const std::string& drop : result.drops) {
-        const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(drop);
-        if (!item || !bag.add(*item, 1).taken()) {
-            aftermath.dropsLeft.push_back(drop);
-        }
-    }
-    if (result.outcome == Outcome::Defeat) {
-        aftermath.itemsLost = desc_.inventory->loseOnDefeat(session);
-    }
+  }
+  if (result.outcome == Outcome::Defeat) {
+    aftermath.itemsLost = desc_.inventory->loseOnDefeat(session);
+  }
 }
 
-core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session, const BattleResult& result) {
-    if (!rules_) {
-        return core::fail(std::string{messages::BattleNotRead});
+core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session,
+                                                    const BattleResult& result) {
+  if (!rules_) {
+    return core::fail(std::string{messages::BattleNotRead});
+  }
+  game::partner::Partner& partner = session.partner();
+  BattleAftermath aftermath;
+  // battle_ui.c: battleStatsGainsAndDrops: the HP and MP it ends with, then the raises.
+  game::partner::PartnerStats stats = partner.state().stats;
+  stats.currentHp = result.partnerHp;
+  stats.currentMp = result.partnerMp;
+  partner.setStats(stats);
+  aftermath.statGains = partner.addStatGains(statBlockOf(result.statGains));
+  partner.applyBattle(consequencesOf(result), session.clock());
+  for (const std::string& move : result.learnedMoves) {
+    if (learn(moves_, move)) {
+      aftermath.learnedMoves.push_back(move);
     }
-    game::partner::Partner& partner = session.partner();
-    BattleAftermath aftermath;
-    // battle_ui.c: battleStatsGainsAndDrops: the HP and MP it ends with, then the raises.
-    game::partner::PartnerStats stats = partner.state().stats;
-    stats.currentHp = result.partnerHp;
-    stats.currentMp = result.partnerMp;
-    partner.setStats(stats);
-    aftermath.statGains = partner.addStatGains(statBlockOf(result.statGains));
-    partner.applyBattle(consequencesOf(result), session.clock());
-    for (const std::string& move : result.learnedMoves) {
-        if (learn(moves_, move)) {
-            aftermath.learnedMoves.push_back(move);
-        }
-    }
-    giveRewards(session, result, aftermath);
-    aftermath.recruitJoined = result.recruitJoined;
-    session.requestAutosave(AutosaveReason::BattleEnd);
-    if (aftermath.recruitJoined) {
-        session.requestAutosave(AutosaveReason::RecruitJoin);
-    }
-    if (result.kind != game::battle::BattleKind::Normal) {
-        session.requestAutosave(AutosaveReason::TournamentResult);
-    }
-    session.afterSystemCommand();
-    return aftermath;
+  }
+  giveRewards(session, result, aftermath);
+  aftermath.recruitJoined = result.recruitJoined;
+  session.requestAutosave(AutosaveReason::BattleEnd);
+  if (aftermath.recruitJoined) {
+    session.requestAutosave(AutosaveReason::RecruitJoin);
+  }
+  if (result.kind != game::battle::BattleKind::Normal) {
+    session.requestAutosave(AutosaveReason::TournamentResult);
+  }
+  session.afterSystemCommand();
+  return aftermath;
 }
 
 core::Result<game::inventory::UseResult> BattleAdapter::throwItem(game::battle::Battle& battle,
                                                                   assets::ItemHandle item) const {
-    if (desc_.inventory == nullptr) {
-        return core::fail(std::string{messages::BattleWithoutBag});
-    }
-    if (!battle.bagAvailable()) {
-        return core::fail(std::string{game::battle::messages::BagUnavailable});
-    }
-    ThrowTarget target{battle};
-    auto used = desc_.inventory->useInBattle(item, target);
-    if (used && !target.thrown()) {
-        return std::unexpected{target.thrown().error()};
-    }
-    return used;
+  if (desc_.inventory == nullptr) {
+    return core::fail(std::string{messages::BattleWithoutBag});
+  }
+  if (!battle.bagAvailable()) {
+    return core::fail(std::string{game::battle::messages::BagUnavailable});
+  }
+  ThrowTarget target{battle};
+  auto used = desc_.inventory->useInBattle(item, target);
+  if (used && !target.thrown()) {
+    return std::unexpected{target.thrown().error()};
+  }
+  return used;
 }
 
-core::Result<void> BattleAdapter::equip(const GameSession& session, std::size_t place, std::optional<MoveSlot> slot) {
-    if (place >= moves_.equipped.size()) {
-        return core::fail(formatMessage(messages::MovePlaceOutside, place, moves_.equipped.size()));
+core::Result<void> BattleAdapter::equip(const GameSession& session, std::size_t place,
+                                        std::optional<MoveSlot> slot) {
+  if (place >= moves_.equipped.size()) {
+    return core::fail(formatMessage(messages::MovePlaceOutside, place, moves_.equipped.size()));
+  }
+  if (slot) {
+    const std::string& species = session.partner().state().species;
+    const assets::DigimonRow* row = rowOf(species);
+    if (row == nullptr) {
+      return core::fail(formatMessage(messages::UnknownPartnerSpecies, species));
     }
-    if (slot) {
-        const std::string& species = session.partner().state().species;
-        const assets::DigimonRow* row = rowOf(species);
-        if (row == nullptr) {
-            return core::fail(formatMessage(messages::UnknownPartnerSpecies, species));
-        }
-        const std::optional<std::string>* move = nullptr;
-        if (*slot >= 0 && std::cmp_less(*slot, row->moves.size())) {
-            move = &row->moves.at(static_cast<std::size_t>(*slot));
-        }
-        if (move == nullptr || !move->has_value()) {
-            return core::fail(formatMessage(messages::NoMoveAtSlot, species, *slot));
-        }
-        // The menu offers only the techniques it learned (utils2.c: hasMove); the finisher comes with the species.
-        if (place != game::battle::FinisherSlot && !knows(moves_, **move)) {
-            return core::fail(formatMessage(messages::MoveNotLearned, **move));
-        }
+    const std::optional<std::string>* move = nullptr;
+    if (*slot >= 0 && std::cmp_less(*slot, row->moves.size())) {
+      move = &row->moves.at(static_cast<std::size_t>(*slot));
     }
-    moves_.equipped.at(place) = slot;
-    return {};
+    if (move == nullptr || !move->has_value()) {
+      return core::fail(formatMessage(messages::NoMoveAtSlot, species, *slot));
+    }
+    // The menu offers only the techniques it learned (utils2.c: hasMove); the finisher comes with
+    // the species.
+    if (place != game::battle::FinisherSlot && !knows(moves_, **move)) {
+      return core::fail(formatMessage(messages::MoveNotLearned, **move));
+    }
+  }
+  moves_.equipped.at(place) = slot;
+  return {};
 }
 
 const game::battle::BattleRules& BattleAdapter::rules() const {
-    return *rules_;
+  return *rules_;
 }
 
 const game::battle::MoveCatalog& BattleAdapter::catalog() const {
-    return *catalog_;
+  return *catalog_;
 }
 
 } // namespace dwe::session

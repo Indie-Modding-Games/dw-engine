@@ -17,163 +17,170 @@
 
 namespace dwe::render {
 
-// An upright, camera-facing marker standing on a world point, drawn with depth like a model: for debugging the
-// camera and the depth layers before the models exist.
+// An upright, camera-facing marker standing on a world point, drawn with depth like a model: for
+// debugging the camera and the depth layers before the models exist.
 struct MapMarker {
-    glm::vec3 feet{0.0F};
-    float width = 60.0F;
-    float height = 160.0F;
-    glm::vec4 color{1.0F, 0.2F, 0.6F, 1.0F};
+  glm::vec3 feet{0.0F};
+  float width = 60.0F;
+  float height = 160.0F;
+  glm::vec4 color{1.0F, 0.2F, 0.6F, 1.0F};
 };
 
-// How long the original fades the background palette when the time of day changes: 25 frames of its 20 per second
-// (map.c: tickDaytimeTransition).
+// How long the original fades the background palette when the time of day changes: 25 frames of its
+// 20 per second (map.c: tickDaytimeTransition).
 inline constexpr double TimeOfDayFadeSeconds = 25.0 / MapDepthLayers::FramesPerSecond;
 
-// How far toward the new palette the original shows a fade that is `progress` (0 to 1) through: map.c:
-// tickDaytimeTransition moves each colour A - (A - B) / (6 - frame / 5) of the way from the old palette, so the fade
-// steps through 1/6, 1/5, 1/4, 1/3 and 1/2, five frames each, and jumps to the new palette at the end.
+// How far toward the new palette the original shows a fade that is `progress` (0 to 1) through:
+// map.c: tickDaytimeTransition moves each colour A - (A - B) / (6 - frame / 5) of the way from the
+// old palette, so the fade steps through 1/6, 1/5, 1/4, 1/3 and 1/2, five frames each, and jumps to
+// the new palette at the end.
 double timeOfDayFadeShown(double progress);
 
-// Draws a field map (docs/formats/mapas.md, ADR 0020): the prerendered background of the current time of day, then,
-// after the models drawn with camera(), the depth-layer sprites with depth so they cover the models behind them, and
-// black bars where the background does not reach. Put background() first in the scene pass, the models next and
-// layers() last.
+// Draws a field map (docs/formats/mapas.md, ADR 0020): the prerendered background of the current
+// time of day, then, after the models drawn with camera(), the depth-layer sprites with depth so
+// they cover the models behind them, and black bars where the background does not reach. Put
+// background() first in the scene pass, the models next and layers() last.
 class MapRenderer {
 public:
-    // The renderer must outlive the map renderer.
-    static core::Result<std::unique_ptr<MapRenderer>> create(Renderer& renderer);
+  // The renderer must outlive the map renderer.
+  static core::Result<std::unique_ptr<MapRenderer>> create(Renderer& renderer);
 
-    MapRenderer(const MapRenderer&) = delete;
-    MapRenderer& operator=(const MapRenderer&) = delete;
-    MapRenderer(MapRenderer&&) = delete;
-    MapRenderer& operator=(MapRenderer&&) = delete;
-    ~MapRenderer();
+  MapRenderer(const MapRenderer&) = delete;
+  MapRenderer& operator=(const MapRenderer&) = delete;
+  MapRenderer(MapRenderer&&) = delete;
+  MapRenderer& operator=(MapRenderer&&) = delete;
+  ~MapRenderer();
 
-    // Queues the uploads of a map's background, palettes and sprite textures and sets up its camera and depth
-    // layers, showing the palette variant `variant` (MapSceneData::backgroundVariant). Nothing waits for the GPU: call
-    // it between frames, and the map draws in the next one. Fails, keeping no map, when the map has no background
-    // palette or a texture cannot be made.
-    core::Result<void> setMap(const MapSceneData& scene, std::size_t variant);
+  // Queues the uploads of a map's background, palettes and sprite textures and sets up its camera
+  // and depth layers, showing the palette variant `variant` (MapSceneData::backgroundVariant).
+  // Nothing waits for the GPU: call it between frames, and the map draws in the next one. Fails,
+  // keeping no map, when the map has no background palette or a texture cannot be made.
+  core::Result<void> setMap(const MapSceneData& scene, std::size_t variant);
 
-    // Switches to another palette variant, fading over fadeSeconds (0 switches at once). A switch during a fade
-    // continues from the colours shown at that moment.
-    void setVariant(std::size_t variant, double fadeSeconds = TimeOfDayFadeSeconds);
+  // Switches to another palette variant, fading over fadeSeconds (0 switches at once). A switch
+  // during a fade continues from the colours shown at that moment.
+  void setVariant(std::size_t variant, double fadeSeconds = TimeOfDayFadeSeconds);
 
-    // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game may pause one
-    // and not the other), and sets the world point the camera centres on. The camera takes the size of the frame's
-    // targets when backgroundDrawer() prepares, before the drawers after it.
-    void update(double animationSeconds, double fadeSeconds, glm::vec3 worldFocus);
+  // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game
+  // may pause one and not the other), and sets the world point the camera centres on. The camera
+  // takes the size of the frame's targets when backgroundDrawer() prepares, before the drawers
+  // after it.
+  void update(double animationSeconds, double fadeSeconds, glm::vec3 worldFocus);
 
-    // Markers drawn by layerDrawer() before the depth layers, so the layers cover them as they cover models.
-    void setMarkers(std::span<const MapMarker> markers) { markers_.assign(markers.begin(), markers.end()); }
+  // Markers drawn by layerDrawer() before the depth layers, so the layers cover them as they cover
+  // models.
+  void setMarkers(std::span<const MapMarker> markers) {
+    markers_.assign(markers.begin(), markers.end());
+  }
 
-    [[nodiscard]] bool hasMap() const { return hasMap_; }
+  [[nodiscard]] bool hasMap() const { return hasMap_; }
 
-    // The map's camera: the view and projection models must be drawn with. Only valid with a map; sized to the frame
-    // being drawn once backgroundDrawer() has prepared it.
-    [[nodiscard]] const MapCamera& camera() const { return camera_; }
+  // The map's camera: the view and projection models must be drawn with. Only valid with a map;
+  // sized to the frame being drawn once backgroundDrawer() has prepared it.
+  [[nodiscard]] const MapCamera& camera() const { return camera_; }
 
-    [[nodiscard]] MapDepthLayers& layers() { return layers_; }
+  [[nodiscard]] MapDepthLayers& layers() { return layers_; }
 
-    [[nodiscard]] Drawer& backgroundDrawer() { return background_; }
-    [[nodiscard]] Drawer& layerDrawer() { return foreground_; }
+  [[nodiscard]] Drawer& backgroundDrawer() { return background_; }
+  [[nodiscard]] Drawer& layerDrawer() { return foreground_; }
 
 private:
-    class BackgroundDrawer final : public Drawer {
-    public:
-        explicit BackgroundDrawer(MapRenderer& owner) : owner_(&owner) {}
-        void prepare(PrepareContext& context) override { owner_->prepare(context); }
-        void draw(DrawContext& context) override { owner_->drawBackground(context); }
+  class BackgroundDrawer final : public Drawer {
+  public:
+    explicit BackgroundDrawer(MapRenderer& owner) : owner_(&owner) {}
+    void prepare(PrepareContext& context) override { owner_->prepare(context); }
+    void draw(DrawContext& context) override { owner_->drawBackground(context); }
 
-    private:
-        MapRenderer* owner_;
-    };
+  private:
+    MapRenderer* owner_;
+  };
 
-    class LayerDrawer final : public Drawer {
-    public:
-        explicit LayerDrawer(MapRenderer& owner) : owner_(&owner) {}
-        void draw(DrawContext& context) override { owner_->drawLayers(context); }
+  class LayerDrawer final : public Drawer {
+  public:
+    explicit LayerDrawer(MapRenderer& owner) : owner_(&owner) {}
+    void draw(DrawContext& context) override { owner_->drawLayers(context); }
 
-    private:
-        MapRenderer* owner_;
-    };
+  private:
+    MapRenderer* owner_;
+  };
 
-    struct Pipelines {
-        rhi::GraphicsPipeline background;
-        rhi::GraphicsPipeline opaque;
-        rhi::GraphicsPipeline alpha;
-        rhi::GraphicsPipeline additive;
-        rhi::GraphicsPipeline subtractive;
-    };
+  struct Pipelines {
+    rhi::GraphicsPipeline background;
+    rhi::GraphicsPipeline opaque;
+    rhi::GraphicsPipeline alpha;
+    rhi::GraphicsPipeline additive;
+    rhi::GraphicsPipeline subtractive;
+  };
 
-    // A texture of the sprite sheet: its id, its size, and whether its texels index the background's palettes.
-    struct SpriteTexture {
-        TextureId id;
-        glm::vec2 size{0.0F};
-        bool timeOfDayPalette = false;
-    };
+  // A texture of the sprite sheet: its id, its size, and whether its texels index the background's
+  // palettes.
+  struct SpriteTexture {
+    TextureId id;
+    glm::vec2 size{0.0F};
+    bool timeOfDayPalette = false;
+  };
 
-    // One vertex of map.slang.
-    struct Vertex {
-        glm::vec4 position;
-        glm::vec2 uv;
-        glm::uvec2 textures;
-        glm::vec4 color;
-    };
+  // One vertex of map.slang.
+  struct Vertex {
+    glm::vec4 position;
+    glm::vec2 uv;
+    glm::uvec2 textures;
+    glm::vec4 color;
+  };
 
-    // How a semi-transparent sprite's texels are drawn (map.slang): all drawn ones, those without STP or those with.
-    enum class TexelFilter : std::uint8_t { All = 0, Plain = 1, SemiTransparent = 2 };
+  // How a semi-transparent sprite's texels are drawn (map.slang): all drawn ones, those without STP
+  // or those with.
+  enum class TexelFilter : std::uint8_t { All = 0, Plain = 1, SemiTransparent = 2 };
 
-    // A run of layer quads drawn with one pipeline and texel filter.
-    struct Run {
-        assets::SpriteBlend blend;
-        TexelFilter texels;
-        std::uint32_t first;
-        std::uint32_t count;
-    };
+  // A run of layer quads drawn with one pipeline and texel filter.
+  struct Run {
+    assets::SpriteBlend blend;
+    TexelFilter texels;
+    std::uint32_t first;
+    std::uint32_t count;
+  };
 
-    MapRenderer(Renderer& renderer, Pipelines pipelines, TextureId black);
+  MapRenderer(Renderer& renderer, Pipelines pipelines, TextureId black);
 
-    core::Result<TextureId> makeTexture(rhi::Extent extent, std::span<const std::byte> pixels);
-    void releaseMap();
-    // Writes the colours shown now to the snapshot row of the palette texture, to fade from them.
-    bool snapshotPalette();
-    void prepare(PrepareContext& context);
-    void drawBackground(DrawContext& context);
-    void drawLayers(DrawContext& context);
-    void addToRun(assets::SpriteBlend blend, TexelFilter texels, std::uint32_t first);
-    void warnUploadFailure(std::size_t bytes);
+  core::Result<TextureId> makeTexture(rhi::Extent extent, std::span<const std::byte> pixels);
+  void releaseMap();
+  // Writes the colours shown now to the snapshot row of the palette texture, to fade from them.
+  bool snapshotPalette();
+  void prepare(PrepareContext& context);
+  void drawBackground(DrawContext& context);
+  void drawLayers(DrawContext& context);
+  void addToRun(assets::SpriteBlend blend, TexelFilter texels, std::uint32_t first);
+  void warnUploadFailure(std::size_t bytes);
 
-    Renderer* renderer_;
-    Pipelines pipelines_;
-    TextureId black_;
-    BackgroundDrawer background_{*this};
-    LayerDrawer foreground_{*this};
+  Renderer* renderer_;
+  Pipelines pipelines_;
+  TextureId black_;
+  BackgroundDrawer background_{*this};
+  LayerDrawer foreground_{*this};
 
-    // The default camera until a map is set; hasMap_ says whether it is one.
-    MapCamera camera_{MapCameraDesc{}};
-    glm::vec3 focus_{0.0F};
-    bool hasMap_ = false;
-    MapDepthLayers layers_;
-    // The background's palette indices; the palette texture has a row of 256 colours per variant and a last row,
-    // the snapshot, with the colours of an interrupted fade.
-    TextureId backgroundIndices_{};
-    TextureId palettes_{};
-    std::vector<std::vector<assets::PaletteColor>> paletteRows_;
-    std::vector<SpriteTexture> spriteTextures_;
-    std::vector<assets::MapSpriteSheet::Placement> placements_;
-    std::vector<MapMarker> markers_;
-    glm::vec2 backgroundSize_{0.0F};
-    // The palette rows faded between: fade_ 0 shows fromRow_, 1 toRow_.
-    std::uint32_t fromRow_ = 0;
-    std::uint32_t toRow_ = 0;
-    double fade_ = 1.0;
-    double fadeSeconds_ = 0.0;
-    // Per-frame buffers, kept to draw without allocating.
-    std::vector<Vertex> vertices_;
-    std::vector<Run> runs_;
-    bool uploadWarned_ = false;
+  // The default camera until a map is set; hasMap_ says whether it is one.
+  MapCamera camera_{MapCameraDesc{}};
+  glm::vec3 focus_{0.0F};
+  bool hasMap_ = false;
+  MapDepthLayers layers_;
+  // The background's palette indices; the palette texture has a row of 256 colours per variant and
+  // a last row, the snapshot, with the colours of an interrupted fade.
+  TextureId backgroundIndices_{};
+  TextureId palettes_{};
+  std::vector<std::vector<assets::PaletteColor>> paletteRows_;
+  std::vector<SpriteTexture> spriteTextures_;
+  std::vector<assets::MapSpriteSheet::Placement> placements_;
+  std::vector<MapMarker> markers_;
+  glm::vec2 backgroundSize_{0.0F};
+  // The palette rows faded between: fade_ 0 shows fromRow_, 1 toRow_.
+  std::uint32_t fromRow_ = 0;
+  std::uint32_t toRow_ = 0;
+  double fade_ = 1.0;
+  double fadeSeconds_ = 0.0;
+  // Per-frame buffers, kept to draw without allocating.
+  std::vector<Vertex> vertices_;
+  std::vector<Run> runs_;
+  bool uploadWarned_ = false;
 };
 
 } // namespace dwe::render

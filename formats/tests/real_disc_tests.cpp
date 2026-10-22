@@ -1,4 +1,5 @@
-// Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has one.
+// Runs only when DWE_DISC names the user's disc image (scripts/dev.sh mounts it); the CI never has
+// one.
 
 #include <dwe/core/sha1.hpp>
 #include <dwe/formats/disc/boot.hpp>
@@ -22,59 +23,63 @@ using namespace dwe::formats::disc;
 
 namespace {
 
-// The message of a failed result. doctest builds a message even when the check passes, so it cannot call error().
+// The message of a failed result. doctest builds a message even when the check passes, so it cannot
+// call error().
 template <typename T>
 std::string errorOf(const dwe::core::Result<T>& result) {
-    return result ? std::string{} : result.error().message;
+  return result ? std::string{} : result.error().message;
 }
 
 } // namespace
 
 TEST_CASE("the user's disc: the executable's file table matches the volume") {
-    const std::optional<std::filesystem::path> mountedDisc = dwe::test_support::userDisc();
-    if (!mountedDisc) {
-        MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
-        return;
-    }
-    const std::filesystem::path& disc = *mountedDisc;
-    auto image = DiscImage::open(disc);
-    REQUIRE_MESSAGE(image.has_value(), errorOf(image));
-    const auto volume = readIsoVolume(*image);
-    REQUIRE_MESSAGE(volume.has_value(), errorOf(volume));
-    CHECK(volume->files.size() > 500);
+  const std::optional<std::filesystem::path> mountedDisc = dwe::test_support::userDisc();
+  if (!mountedDisc) {
+    MESSAGE("DWE_DISC is not set: skipping the test on the user's disc");
+    return;
+  }
+  const std::filesystem::path& disc = *mountedDisc;
+  auto image = DiscImage::open(disc);
+  REQUIRE_MESSAGE(image.has_value(), errorOf(image));
+  const auto volume = readIsoVolume(*image);
+  REQUIRE_MESSAGE(volume.has_value(), errorOf(volume));
+  CHECK(volume->files.size() > 500);
 
-    const auto executable = findBootExecutable(*image, *volume);
-    REQUIRE_MESSAGE(executable.has_value(), errorOf(executable));
-    const auto bytes = readIsoFile(*image, *executable);
-    REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
-    const auto release = findKnownRelease(dwe::core::sha1(*bytes));
-    if (!release) {
-        FAIL("the executable is not a known release");
-        return;
-    }
-    CHECK(release->file == ReleaseFile::Executable);
-    MESSAGE("version ", release->version, ", executable ", executable->path, ", ", volume->files.size(), " files");
+  const auto executable = findBootExecutable(*image, *volume);
+  REQUIRE_MESSAGE(executable.has_value(), errorOf(executable));
+  const auto bytes = readIsoFile(*image, *executable);
+  REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
+  const auto release = findKnownRelease(dwe::core::sha1(*bytes));
+  if (!release) {
+    FAIL("the executable is not a known release");
+    return;
+  }
+  CHECK(release->file == ReleaseFile::Executable);
+  MESSAGE("version ", release->version, ", executable ", executable->path, ", ",
+          volume->files.size(), " files");
 
-    const auto location = findFileTableLocation(release->version);
-    if (!location) {
-        FAIL("no file table location for version ", release->version);
-        return;
-    }
-    const auto table = readFileTable(*bytes, *location);
-    REQUIRE_MESSAGE(table.has_value(), errorOf(table));
-    CHECK(table->size() + 1 == location->capacity);
+  const auto location = findFileTableLocation(release->version);
+  if (!location) {
+    FAIL("no file table location for version ", release->version);
+    return;
+  }
+  const auto table = readFileTable(*bytes, *location);
+  REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+  CHECK(table->size() + 1 == location->capacity);
 
-    const auto check = checkFileTable(*table, volume->files);
-    for (const auto& line : check.mismatches) {
-        MESSAGE(line);
-    }
-    for (const auto& line : check.aliases) {
-        MESSAGE("alias: ", line);
-    }
-    CHECK(check.mismatches.empty());
-    for (const auto& entry : check.tableOnly) {
-        MESSAGE("in the table only: ", entry.filename, " at sector ", entry.sector);
-        CHECK(std::cmp_less_equal(entry.sector + 1, image->sectorCount()));
-    }
-    CHECK(static_cast<std::size_t>(std::ranges::count(check.inTable, true)) + check.tableOnly.size() == table->size());
+  const auto check = checkFileTable(*table, volume->files);
+  for (const auto& line : check.mismatches) {
+    MESSAGE(line);
+  }
+  for (const auto& line : check.aliases) {
+    MESSAGE("alias: ", line);
+  }
+  CHECK(check.mismatches.empty());
+  for (const auto& entry : check.tableOnly) {
+    MESSAGE("in the table only: ", entry.filename, " at sector ", entry.sector);
+    CHECK(std::cmp_less_equal(entry.sector + 1, image->sectorCount()));
+  }
+  CHECK(static_cast<std::size_t>(std::ranges::count(check.inTable, true)) +
+            check.tableOnly.size() ==
+        table->size());
 }

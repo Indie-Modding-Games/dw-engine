@@ -15,35 +15,37 @@ namespace {
 constexpr std::string_view TextFunction = "t";
 constexpr std::string_view TextsTable = "texts";
 
-// The placeholders' values a script passes: a table of names to texts or numbers. Other entries are left out.
+// The placeholders' values a script passes: a table of names to texts or numbers. Other entries are
+// left out.
 std::vector<localization::TextArgument> argumentsOf(const sol::optional<sol::table>& table) {
-    std::vector<localization::TextArgument> arguments;
-    if (!table) {
-        return arguments;
-    }
-    for (const auto& [name, value] : *table) {
-        if (name.get_type() != sol::type::string) {
-            continue;
-        }
-        if (value.get_type() == sol::type::string) {
-            arguments.push_back({.name = name.as<std::string_view>(), .value = value.as<std::string>()});
-        } else if (value.get_type() == sol::type::number) {
-            arguments.push_back(
-                {.name = name.as<std::string_view>(), .value = localization::numberText(value.as<double>())});
-        }
-    }
+  std::vector<localization::TextArgument> arguments;
+  if (!table) {
     return arguments;
+  }
+  for (const auto& [name, value] : *table) {
+    if (name.get_type() != sol::type::string) {
+      continue;
+    }
+    if (value.get_type() == sol::type::string) {
+      arguments.push_back({.name = name.as<std::string_view>(), .value = value.as<std::string>()});
+    } else if (value.get_type() == sol::type::number) {
+      arguments.push_back({.name = name.as<std::string_view>(),
+                           .value = localization::numberText(value.as<double>())});
+    }
+  }
+  return arguments;
 }
 
 } // namespace
 
 void ScriptVm::bindTexts(const localization::Catalog& catalog) {
-    const localization::Catalog* texts = &catalog;
-    vm_->lua.set_function(TextFunction, [texts](const std::string& key, const sol::optional<sol::table>& arguments) {
+  const localization::Catalog* texts = &catalog;
+  vm_->lua.set_function(
+      TextFunction, [texts](const std::string& key, const sol::optional<sol::table>& arguments) {
         return texts->text(key, argumentsOf(arguments));
-    });
-    sol::table api = vm_->lua.create_named_table(TextsTable);
-    api["language"] = [texts]() { return texts->language(); };
+      });
+  sol::table api = vm_->lua.create_named_table(TextsTable);
+  api["language"] = [texts]() { return texts->language(); };
 }
 
 } // namespace dwe::script

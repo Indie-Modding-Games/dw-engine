@@ -7,10 +7,10 @@ namespace dwe::formats::disc {
 
 namespace {
 
-// Only the retail releases are supported: US, EU and JP (original and revision 1). The executables' digests are the
-// `sha1` of config/<version>/main.yaml in the decomp (dw_decomp), which checks its build against them. The digests of
-// whole disc images (Redump's track hashes) are still missing: they must come from a verified dump or the Redump
-// entry, never from a guess.
+// Only the retail releases are supported: US, EU and JP (original and revision 1). The executables'
+// digests are the `sha1` of config/<version>/main.yaml in the decomp (dw_decomp), which checks its
+// build against them. The digests of whole disc images (Redump's track hashes) are still missing:
+// they must come from a verified dump or the Redump entry, never from a guess.
 constexpr std::array KnownReleases = {
     KnownRelease{.sha1 = "31ec666b987d5b007dec40eecc4092d27ed9085b",
                  .version = "us",
@@ -33,27 +33,27 @@ constexpr std::array KnownReleases = {
 } // namespace
 
 std::span<const KnownRelease> knownReleases() {
-    return KnownReleases;
+  return KnownReleases;
 }
 
 std::optional<KnownRelease> findKnownRelease(const core::Sha1Digest& digest) {
-    const std::string hex = core::toHex(digest);
-    for (const auto& release : KnownReleases) {
-        if (release.sha1 == hex) {
-            return release;
-        }
+  const std::string hex = core::toHex(digest);
+  for (const auto& release : KnownReleases) {
+    if (release.sha1 == hex) {
+      return release;
     }
-    return std::nullopt;
+  }
+  return std::nullopt;
 }
 
 std::string_view releaseFileName(ReleaseFile file) {
-    switch (file) {
-    case ReleaseFile::DiscImage:
-        return "disc image";
-    case ReleaseFile::Executable:
-        return "executable";
-    }
-    return "unknown";
+  switch (file) {
+  case ReleaseFile::DiscImage:
+    return "disc image";
+  case ReleaseFile::Executable:
+    return "executable";
+  }
+  return "unknown";
 }
 
 } // namespace dwe::formats::disc

@@ -7,8 +7,8 @@
 
 namespace dwe::game::battle {
 
-// The localisation keys of what the battle shows the player; the UI looks them up in the text packs. The battle
-// itself never holds player-facing text.
+// The localisation keys of what the battle shows the player; the UI looks them up in the text
+// packs. The battle itself never holds player-facing text.
 
 // The menu label of a command: battle.command.<name>.
 std::string_view commandTextKey(Command command);

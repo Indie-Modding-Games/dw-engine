@@ -9,43 +9,44 @@
 // Valid documents of the map readers, for the tests of the engine and of dwx validate.
 namespace dwe::assets::testing {
 
-// The collision rows of the fixture: blocked border, a trigger 'A' (110) at column 10 of row 20 and a trigger 'B'
-// (51) at column 11 of row 20.
+// The collision rows of the fixture: blocked border, a trigger 'A' (110) at column 10 of row 20 and
+// a trigger 'B' (51) at column 11 of row 20.
 inline std::string fixtureCollision() {
-    std::string text;
-    for (int row = 0; row < MapCollision::Size; ++row) {
-        std::string cells(MapCollision::Size, '.');
-        cells.front() = '#';
-        cells.back() = '#';
-        if (row == 0 || row == MapCollision::Size - 1) {
-            cells.assign(MapCollision::Size, '#');
-        }
-        if (row == 20) {
-            cells[10] = 'A';
-            cells[11] = 'B';
-        }
-        text += std::format("  - \"{}\"\n", cells);
+  std::string text;
+  for (int row = 0; row < MapCollision::Size; ++row) {
+    std::string cells(MapCollision::Size, '.');
+    cells.front() = '#';
+    cells.back() = '#';
+    if (row == 0 || row == MapCollision::Size - 1) {
+      cells.assign(MapCollision::Size, '#');
     }
-    return text;
+    if (row == 20) {
+      cells[10] = 'A';
+      cells[11] = 'B';
+    }
+    text += std::format("  - \"{}\"\n", cells);
+  }
+  return text;
 }
 
 inline std::string fixtureWarps() {
-    std::string text;
-    for (int exit = 0; exit < 10; ++exit) {
-        if (exit == 0) {
-            text += "- exit: 0\n  spawn:\n    x: -2400\n    y: 0\n    z: -2425\n  rotation: 3072\n"
-                    "  target_map: 118\n  target_map_id: \"room08\"\n  target_exit: 2\n";
-        } else {
-            text += std::format("- exit: {}\n  spawn:\n    x: 0\n    y: 0\n    z: 0\n  rotation: 0\n"
-                                "  target_map: -1\n  target_map_id: null\n  target_exit: -1\n",
-                                exit);
-        }
+  std::string text;
+  for (int exit = 0; exit < 10; ++exit) {
+    if (exit == 0) {
+      text += "- exit: 0\n  spawn:\n    x: -2400\n    y: 0\n    z: -2425\n  rotation: 3072\n"
+              "  target_map: 118\n  target_map_id: \"room08\"\n  target_exit: 2\n";
+    } else {
+      text += std::format("- exit: {}\n  spawn:\n    x: 0\n    y: 0\n    z: 0\n  rotation: 0\n"
+                          "  target_map: -1\n  target_map_id: null\n  target_exit: -1\n",
+                          exit);
     }
-    return text;
+  }
+  return text;
 }
 
-inline std::string fixtureMap(std::string_view objects = "null", std::string_view extraNpcs = "[]") {
-    return std::format(R"(camera:
+inline std::string fixtureMap(std::string_view objects = "null",
+                              std::string_view extraNpcs = "[]") {
+  return std::format(R"(camera:
   viewpoint:
     x: 0
     y: -4200
@@ -95,7 +96,7 @@ collision:
     value: 128
   rows:
 {})",
-                       objects, fixtureWarps(), extraNpcs, fixtureCollision());
+                     objects, fixtureWarps(), extraNpcs, fixtureCollision());
 }
 
 // A map table with three maps, a door set and two toilets.

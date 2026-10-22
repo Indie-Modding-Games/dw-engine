@@ -4,10 +4,11 @@
 
 namespace dwe::test_support {
 
-// The `field/script_warps` that the extraction gives for a synthetic map script, and that the field reads: map 5,
-// named "house", loads script 1, whose step section 51 calls a routine that calls itself before it changes the map to
-// exit 2 of screen 7, named "town". The formats tests check that the walk gives this text; the field tests, that the
-// field takes the warp under the vanilla policy and logs it once.
+// The `field/script_warps` that the extraction gives for a synthetic map script, and that the field
+// reads: map 5, named "house", loads script 1, whose step section 51 calls a routine that calls
+// itself before it changes the map to exit 2 of screen 7, named "town". The formats tests check
+// that the walk gives this text; the field tests, that the field takes the warp under the vanilla
+// policy and logs it once.
 inline constexpr std::string_view RecursionWarpHouse = "house";
 inline constexpr std::string_view RecursionWarpTown = "town";
 inline constexpr std::string_view RecursionWarpSite = "script 1, offset 0x000e";
@@ -29,11 +30,12 @@ inline constexpr std::string_view RecursionWarpYaml = R"(warps:
     offset: 18
 )";
 
-// The `field/script_warps` of a synthetic map script with the transport menu and an NPC: map 5, named "house", loads
-// script 1, whose confirm section 81 calls the transport routine over a two-entry table (to exit 9 of "farm", map 8,
-// behind trigger 300 and 1000 of money; to exit 0 of "town", map 7, behind 301 and 1500), and whose section 3, which
-// an NPC runs, changes the map to exit 2 of "town". The formats tests check that the walk gives this text; the field
-// tests, that the field reads the talk warp and the transport records.
+// The `field/script_warps` of a synthetic map script with the transport menu and an NPC: map 5,
+// named "house", loads script 1, whose confirm section 81 calls the transport routine over a
+// two-entry table (to exit 9 of "farm", map 8, behind trigger 300 and 1000 of money; to exit 0 of
+// "town", map 7, behind 301 and 1500), and whose section 3, which an NPC runs, changes the map to
+// exit 2 of "town". The formats tests check that the walk gives this text; the field tests, that
+// the field reads the talk warp and the transport records.
 inline constexpr std::string_view TransportWarpHouse = "house";
 inline constexpr std::string_view TransportWarpTown = "town";
 inline constexpr std::string_view TransportWarpFarm = "farm";

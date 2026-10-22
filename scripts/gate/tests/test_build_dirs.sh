@@ -5,19 +5,22 @@ source "$(dirname "${BASH_SOURCE[0]}")/../build_dirs.sh"
 
 failures=0
 check() {
-    local description="$1"
-    shift
-    if "$@"; then echo "ok: $description"; else echo "FAILED: $description"; failures=$((failures + 1)); fi
+  local description="$1"
+  shift
+  if "$@"; then echo "ok: $description"; else
+    echo "FAILED: $description"
+    failures=$((failures + 1))
+  fi
 }
 
 # check_refused <description> <folder>: remove_build_dir must fail on it.
 check_refused() {
-    if remove_build_dir "$root" "$2" 2>/dev/null; then
-        echo "FAILED: $1"
-        failures=$((failures + 1))
-    else
-        echo "ok: $1"
-    fi
+  if remove_build_dir "$root" "$2" 2>/dev/null; then
+    echo "FAILED: $1"
+    failures=$((failures + 1))
+  else
+    echo "ok: $1"
+  fi
 }
 
 scratch="$(mktemp -d)"
@@ -45,12 +48,15 @@ linked_root="$scratch/linked"
 mkdir -p "$linked_root" "$outside/elsewhere/windows-cross"
 ln -s "$outside/elsewhere" "$linked_root/build"
 if remove_build_dir "$linked_root" "$linked_root/build/windows-cross" 2>/dev/null; then
-    echo "FAILED: a folder under a build/ that is a symbolic link is refused"
-    failures=$((failures + 1))
+  echo "FAILED: a folder under a build/ that is a symbolic link is refused"
+  failures=$((failures + 1))
 else
-    echo "ok: a folder under a build/ that is a symbolic link is refused"
+  echo "ok: a folder under a build/ that is a symbolic link is refused"
 fi
 check "  and its target is kept" test -d "$outside/elsewhere/windows-cross"
 
-((failures == 0)) || { echo "$failures failed"; exit 1; }
+((failures == 0)) || {
+  echo "$failures failed"
+  exit 1
+}
 echo "all passed"

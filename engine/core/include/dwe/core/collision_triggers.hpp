@@ -2,8 +2,9 @@
 
 #include <cstdint>
 
-// The collision values of a map cell that make the player's cell do something (tamer.c: checkMapInteraction), shared
-// by the extraction (formats) and the field (game) so the two read the cells the same way.
+// The collision values of a map cell that make the player's cell do something (tamer.c:
+// checkMapInteraction), shared by the extraction (formats) and the field (game) so the two read the
+// cells the same way.
 namespace dwe::core::collision {
 
 // 51-79: stepping on the cell runs the section of that number of the map's script.

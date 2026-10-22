@@ -14,12 +14,12 @@ enum class ReleaseFile : std::uint8_t { DiscImage, Executable };
 
 // A file of a published release, identified by its SHA-1.
 struct KnownRelease {
-    std::string_view sha1;    // 40 lowercase hex digits
-    std::string_view version; // the version id the decomp uses: us, eu, jp...
-    ReleaseFile file;
-    std::string_view description; // what the user has, in words
+  std::string_view sha1;    // 40 lowercase hex digits
+  std::string_view version; // the version id the decomp uses: us, eu, jp...
+  ReleaseFile file;
+  std::string_view description; // what the user has, in words
 
-    bool operator==(const KnownRelease&) const = default;
+  bool operator==(const KnownRelease&) const = default;
 };
 
 // Returns every file the tools can recognise.

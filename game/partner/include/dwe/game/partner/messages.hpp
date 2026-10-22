@@ -35,7 +35,8 @@ inline constexpr std::string_view GainFormulaText = "training gain formula";
 // Values.
 inline constexpr std::string_view NotPositive = "{} must be more than zero";
 inline constexpr std::string_view Negative = "{} must not be negative";
-inline constexpr std::string_view UnknownStat = "unknown stat '{}'; known: hp, mp, offense, defense, speed, brain";
+inline constexpr std::string_view UnknownStat =
+    "unknown stat '{}'; known: hp, mp, offense, defense, speed, brain";
 inline constexpr std::string_view MinAboveMax = "{} must not be above {}";
 inline constexpr std::string_view NoneListed = "{} must list at least one";
 inline constexpr std::string_view RepeatedId = "{} '{}' is listed twice";
@@ -45,8 +46,10 @@ inline constexpr std::string_view EatingNotRising = "the eating tiers must rise 
 inline constexpr std::string_view RaiseWithoutDigimon = "the raise row of '{}' has no digimon row";
 inline constexpr std::string_view NoTableRole = "ruleset {} names no '{}' table";
 inline constexpr std::string_view UnknownSpecies = "'{}' has no raise row";
-inline constexpr std::string_view BadSleepPattern = "'{}' has sleep cycle {}, but the care section has {} patterns";
-inline constexpr std::string_view BadTrainingAptitude = "'{}' has training type {}, but there are {} tiers";
+inline constexpr std::string_view BadSleepPattern =
+    "'{}' has sleep cycle {}, but the care section has {} patterns";
+inline constexpr std::string_view BadTrainingAptitude =
+    "'{}' has training type {}, but there are {} tiers";
 
 // Commands.
 inline constexpr std::string_view UnknownPlace = "unknown training place '{}'";

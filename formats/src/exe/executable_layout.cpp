@@ -9,38 +9,42 @@ namespace {
 
 // A version the tools know whose tables have not been located yet.
 constexpr ExecutableLayout unlocated(std::string_view version, bool inlineNames) {
-    ExecutableLayout layout;
-    layout.version = version;
-    layout.inlineNames = inlineNames;
-    return layout;
+  ExecutableLayout layout;
+  layout.version = version;
+  layout.inlineNames = inlineNames;
+  return layout;
 }
 
 using Reg = MipsRegister;
 
-// Where handleFood keeps each local when its cases join (US build: the arguments of addEnergy, reduceTiredness,
-// addHappiness, addDiscipline, addWeight, setTrainingBoost, handleItemSickness and the addWithLimit calls after the
-// switch), in FoodValue order.
+// Where handleFood keeps each local when its cases join (US build: the arguments of addEnergy,
+// reduceTiredness, addHappiness, addDiscipline, addWeight, setTrainingBoost, handleItemSickness and
+// the addWithLimit calls after the switch), in FoodValue order.
 constexpr std::array<ValueLocation, FoodValueCount> UsFoodValues{
-    ValueLocation::inRegister(Reg::V0), ValueLocation::inRegister(Reg::S2), ValueLocation::inRegister(Reg::S0),
-    ValueLocation::onStack(56),         ValueLocation::inRegister(Reg::S1), ValueLocation::onStack(60),
-    ValueLocation::inRegister(Reg::S8), ValueLocation::inRegister(Reg::S7), ValueLocation::inRegister(Reg::S5),
-    ValueLocation::inRegister(Reg::S4), ValueLocation::onStack(64),         ValueLocation::onStack(68),
-    ValueLocation::onStack(72),         ValueLocation::onStack(76),         ValueLocation::onStack(80),
-    ValueLocation::onStack(84),         ValueLocation::inRegister(Reg::S6), ValueLocation::inRegister(Reg::S3),
+    ValueLocation::inRegister(Reg::V0), ValueLocation::inRegister(Reg::S2),
+    ValueLocation::inRegister(Reg::S0), ValueLocation::onStack(56),
+    ValueLocation::inRegister(Reg::S1), ValueLocation::onStack(60),
+    ValueLocation::inRegister(Reg::S8), ValueLocation::inRegister(Reg::S7),
+    ValueLocation::inRegister(Reg::S5), ValueLocation::inRegister(Reg::S4),
+    ValueLocation::onStack(64),         ValueLocation::onStack(68),
+    ValueLocation::onStack(72),         ValueLocation::onStack(76),
+    ValueLocation::onStack(80),         ValueLocation::onStack(84),
+    ValueLocation::inRegister(Reg::S6), ValueLocation::inRegister(Reg::S3),
 };
 
-// Where handleChips keeps each local when its cases join (US build: the addWithLimit and modifyLifetime calls after
-// the switch), in ChipValue order.
+// Where handleChips keeps each local when its cases join (US build: the addWithLimit and
+// modifyLifetime calls after the switch), in ChipValue order.
 constexpr std::array<ValueLocation, ChipValueCount> UsChipValues{
-    ValueLocation::inRegister(Reg::S1), ValueLocation::inRegister(Reg::S3), ValueLocation::inRegister(Reg::S2),
-    ValueLocation::inRegister(Reg::S4), ValueLocation::inRegister(Reg::S5), ValueLocation::inRegister(Reg::S6),
+    ValueLocation::inRegister(Reg::S1), ValueLocation::inRegister(Reg::S3),
+    ValueLocation::inRegister(Reg::S2), ValueLocation::inRegister(Reg::S4),
+    ValueLocation::inRegister(Reg::S5), ValueLocation::inRegister(Reg::S6),
     ValueLocation::inRegister(Reg::S0),
 };
 
-// US addresses: dw_decomp config/us/symbols.txt. Counts: the array declarations (evolution.c, partner.h, model.c,
-// map_object.h, tournament.c, sound.c, shop/script_menu.c) or, where there is none, the symbol's size divided by the
-// struct size. EU and JP are known but not located yet; their readers fail until someone fills them from
-// config/<version>/symbols.txt.
+// US addresses: dw_decomp config/us/symbols.txt. Counts: the array declarations (evolution.c,
+// partner.h, model.c, map_object.h, tournament.c, sound.c, shop/script_menu.c) or, where there is
+// none, the symbol's size divided by the struct size. EU and JP are known but not located yet;
+// their readers fail until someone fills them from config/<version>/symbols.txt.
 constexpr std::array Layouts = {
     ExecutableLayout{
         .version = "us",
@@ -109,16 +113,16 @@ constexpr std::array Layouts = {
 } // namespace
 
 std::span<const ExecutableLayout> executableLayouts() {
-    return Layouts;
+  return Layouts;
 }
 
 std::optional<ExecutableLayout> findExecutableLayout(std::string_view version) {
-    for (const auto& layout : Layouts) {
-        if (layout.version == version) {
-            return layout;
-        }
+  for (const auto& layout : Layouts) {
+    if (layout.version == version) {
+      return layout;
     }
-    return std::nullopt;
+  }
+  return std::nullopt;
 }
 
 } // namespace dwe::formats::exe

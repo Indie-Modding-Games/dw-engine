@@ -6,28 +6,28 @@ skin_choice = {}
 
 -- The skin after the current one in the list, step entries away, wrapping around.
 function skin_choice.next(step)
-	local skins = ui.skins()
-	if #skins == 0 then
-		return nil
-	end
-	local current = 1
-	for index, skin in ipairs(skins) do
-		if skin == ui.setting("ui_skin") then
-			current = index
-		end
-	end
-	return skins[((current - 1 + step) % #skins) + 1]
+  local skins = ui.skins()
+  if #skins == 0 then
+    return nil
+  end
+  local current = 1
+  for index, skin in ipairs(skins) do
+    if skin == ui.setting("ui_skin") then
+      current = index
+    end
+  end
+  return skins[((current - 1 + step) % #skins) + 1]
 end
 
 -- The current skin's name in the player's language.
 function skin_choice.name()
-	local key = ui.skin_name_key(ui.setting("ui_skin") or "")
-	return key ~= "" and t(key) or ""
+  local key = ui.skin_name_key(ui.setting("ui_skin") or "")
+  return key ~= "" and t(key) or ""
 end
 
 function skin_choice.change(step)
-	local skin = skin_choice.next(step)
-	if skin ~= nil then
-		ui.send("ui_skin", skin)
-	end
+  local skin = skin_choice.next(step)
+  if skin ~= nil then
+    ui.send("ui_skin", skin)
+  end
 end

@@ -22,214 +22,221 @@ using core::YamlNode;
 
 // A distance, speed or time: zero or more.
 float readNonNegative(YamlReader& reader, const YamlNode& node) {
-    const float value = reader.number(node);
-    if (value < 0.0F) {
-        reader.fail(node, "the value cannot be negative");
-    }
-    return value;
+  const float value = reader.number(node);
+  if (value < 0.0F) {
+    reader.fail(node, "the value cannot be negative");
+  }
+  return value;
 }
 
 // A size that must be more than zero.
 float readPositive(YamlReader& reader, const YamlNode& node) {
-    const float value = reader.number(node);
-    if (reader.ok() && value <= 0.0F) {
-        reader.fail(node, "the value must be more than zero");
-    }
-    return value;
+  const float value = reader.number(node);
+  if (reader.ok() && value <= 0.0F) {
+    reader.fail(node, "the value must be more than zero");
+  }
+  return value;
 }
 
 MoverRules readMover(YamlReader& reader, const YamlNode& node, std::string_view what,
                      std::initializer_list<std::string_view> extraKeys = {}) {
-    std::vector<std::string_view> keys{"model", "radius", "walk_speed", "run_speed", "turn_speed"};
-    keys.insert(keys.end(), extraKeys.begin(), extraKeys.end());
-    if (!node.isMapping()) {
-        reader.fail(node, std::format("{} must be a mapping", what));
-        return {};
+  std::vector<std::string_view> keys{"model", "radius", "walk_speed", "run_speed", "turn_speed"};
+  keys.insert(keys.end(), extraKeys.begin(), extraKeys.end());
+  if (!node.isMapping()) {
+    reader.fail(node, std::format("{} must be a mapping", what));
+    return {};
+  }
+  for (const core::YamlEntry& entry : node.entries()) {
+    if (std::ranges::find(keys, entry.key) == keys.end()) {
+      reader.fail(entry.value, std::format("unknown key '{}' in {}", entry.key, what));
+      return {};
     }
-    for (const core::YamlEntry& entry : node.entries()) {
-        if (std::ranges::find(keys, entry.key) == keys.end()) {
-            reader.fail(entry.value, std::format("unknown key '{}' in {}", entry.key, what));
-            return {};
-        }
-    }
-    MoverRules mover{.model = reader.text(reader.field(node, "model")),
-                     .radius = readPositive(reader, reader.field(node, "radius")),
-                     .walkSpeed = readPositive(reader, reader.field(node, "walk_speed")),
-                     .runSpeed = readPositive(reader, reader.field(node, "run_speed")),
-                     .turnSpeed = readNonNegative(reader, reader.field(node, "turn_speed"))};
-    if (reader.ok() && mover.runSpeed < mover.walkSpeed) {
-        reader.fail(node, std::format("{}: run_speed cannot be less than walk_speed", what));
-    }
-    return mover;
+  }
+  MoverRules mover{.model = reader.text(reader.field(node, "model")),
+                   .radius = readPositive(reader, reader.field(node, "radius")),
+                   .walkSpeed = readPositive(reader, reader.field(node, "walk_speed")),
+                   .runSpeed = readPositive(reader, reader.field(node, "run_speed")),
+                   .turnSpeed = readNonNegative(reader, reader.field(node, "turn_speed"))};
+  if (reader.ok() && mover.runSpeed < mover.walkSpeed) {
+    reader.fail(node, std::format("{}: run_speed cannot be less than walk_speed", what));
+  }
+  return mover;
 }
 
 PartnerRules readPartner(YamlReader& reader, const YamlNode& node) {
-    PartnerRules partner{.mover = readMover(reader, node, "partner",
-                                            {"run_distance", "walk_distance", "spawn_distance", "trail_length",
-                                             "sight_half_width", "stuck_seconds", "teleport_distance"})};
-    if (!reader.ok()) {
-        return partner;
-    }
-    partner.runDistance = readPositive(reader, reader.field(node, "run_distance"));
-    partner.walkDistance = readPositive(reader, reader.field(node, "walk_distance"));
-    partner.spawnDistance = readNonNegative(reader, reader.field(node, "spawn_distance"));
-    partner.trailLength = reader.integer<std::int32_t>(reader.field(node, "trail_length"));
-    partner.sightHalfWidth = readNonNegative(reader, reader.field(node, "sight_half_width"));
-    partner.stuckSeconds = readPositive(reader, reader.field(node, "stuck_seconds"));
-    partner.teleportDistance = readPositive(reader, reader.field(node, "teleport_distance"));
-    if (reader.ok() && partner.runDistance < partner.walkDistance) {
-        reader.fail(node, "partner: run_distance cannot be less than walk_distance");
-    }
-    if (reader.ok() && partner.trailLength < 1) {
-        reader.fail(node, "partner: trail_length must be at least 1");
-    }
+  PartnerRules partner{
+      .mover = readMover(reader, node, "partner",
+                         {"run_distance", "walk_distance", "spawn_distance", "trail_length",
+                          "sight_half_width", "stuck_seconds", "teleport_distance"})};
+  if (!reader.ok()) {
     return partner;
+  }
+  partner.runDistance = readPositive(reader, reader.field(node, "run_distance"));
+  partner.walkDistance = readPositive(reader, reader.field(node, "walk_distance"));
+  partner.spawnDistance = readNonNegative(reader, reader.field(node, "spawn_distance"));
+  partner.trailLength = reader.integer<std::int32_t>(reader.field(node, "trail_length"));
+  partner.sightHalfWidth = readNonNegative(reader, reader.field(node, "sight_half_width"));
+  partner.stuckSeconds = readPositive(reader, reader.field(node, "stuck_seconds"));
+  partner.teleportDistance = readPositive(reader, reader.field(node, "teleport_distance"));
+  if (reader.ok() && partner.runDistance < partner.walkDistance) {
+    reader.fail(node, "partner: run_distance cannot be less than walk_distance");
+  }
+  if (reader.ok() && partner.trailLength < 1) {
+    reader.fail(node, "partner: trail_length must be at least 1");
+  }
+  return partner;
 }
 
 InputRules readInput(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, "input", {"dead_zone", "arrive_distance"})) {
-        return {};
-    }
-    InputRules input{.deadZone = readNonNegative(reader, reader.field(node, "dead_zone")),
-                     .arriveDistance = readPositive(reader, reader.field(node, "arrive_distance"))};
-    if (reader.ok() && input.deadZone >= 1.0F) {
-        reader.fail(node, "input: dead_zone must be less than 1");
-    }
-    return input;
+  if (!reader.expectKeys(node, "input", {"dead_zone", "arrive_distance"})) {
+    return {};
+  }
+  InputRules input{.deadZone = readNonNegative(reader, reader.field(node, "dead_zone")),
+                   .arriveDistance = readPositive(reader, reader.field(node, "arrive_distance"))};
+  if (reader.ok() && input.deadZone >= 1.0F) {
+    reader.fail(node, "input: dead_zone must be less than 1");
+  }
+  return input;
 }
 
 TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, "transition",
-                           {"frame_seconds", "fade_out_frames", "fade_in_frames", "shade_step", "shade_max",
-                            "shade_full", "name_frame"})) {
-        return {};
+  if (!reader.expectKeys(node, "transition",
+                         {"frame_seconds", "fade_out_frames", "fade_in_frames", "shade_step",
+                          "shade_max", "shade_full", "name_frame"})) {
+    return {};
+  }
+  const auto count = [&](std::string_view key) {
+    const YamlNode& value = reader.field(node, key);
+    const auto number = reader.integer<std::int32_t>(value);
+    if (reader.ok() && number < 1) {
+      reader.fail(value, core::formatMessage(messages::TransitionCountTooLow, key));
     }
-    const auto count = [&](std::string_view key) {
-        const YamlNode& value = reader.field(node, key);
-        const auto number = reader.integer<std::int32_t>(value);
-        if (reader.ok() && number < 1) {
-            reader.fail(value, core::formatMessage(messages::TransitionCountTooLow, key));
-        }
-        return number;
-    };
-    TransitionRules transition{.frameSeconds = readPositive(reader, reader.field(node, "frame_seconds")),
-                               .fadeOutFrames = count("fade_out_frames"),
-                               .fadeInFrames = count("fade_in_frames"),
-                               .shadeStep = count("shade_step"),
-                               .shadeMax = count("shade_max"),
-                               .shadeFull = count("shade_full"),
-                               .nameFrame = count("name_frame")};
-    if (reader.ok() && (transition.shadeMax > MaxShade || transition.shadeFull > MaxShade)) {
-        reader.fail(node, core::formatMessage(messages::TransitionShadeTooHigh, MaxShade));
-    }
-    return transition;
+    return number;
+  };
+  TransitionRules transition{.frameSeconds =
+                                 readPositive(reader, reader.field(node, "frame_seconds")),
+                             .fadeOutFrames = count("fade_out_frames"),
+                             .fadeInFrames = count("fade_in_frames"),
+                             .shadeStep = count("shade_step"),
+                             .shadeMax = count("shade_max"),
+                             .shadeFull = count("shade_full"),
+                             .nameFrame = count("name_frame")};
+  if (reader.ok() && (transition.shadeMax > MaxShade || transition.shadeFull > MaxShade)) {
+    reader.fail(node, core::formatMessage(messages::TransitionShadeTooHigh, MaxShade));
+  }
+  return transition;
 }
 
 glm::vec3 readLight(YamlReader& reader, const YamlNode& node, std::string_view what) {
-    const auto items = reader.sequence(node, what, 3);
-    if (items.size() != 3) {
-        return glm::vec3{1.0F};
-    }
-    const glm::vec3 light{reader.number(items[0]), reader.number(items[1]), reader.number(items[2])};
-    if (reader.ok() &&
-        (glm::any(glm::lessThan(light, glm::vec3{0.0F})) || glm::any(glm::greaterThan(light, glm::vec3{1.0F})))) {
-        reader.fail(node, std::format("time_of_day: {} must be three numbers from 0 to 1", what));
-    }
-    return light;
+  const auto items = reader.sequence(node, what, 3);
+  if (items.size() != 3) {
+    return glm::vec3{1.0F};
+  }
+  const glm::vec3 light{reader.number(items[0]), reader.number(items[1]), reader.number(items[2])};
+  if (reader.ok() && (glm::any(glm::lessThan(light, glm::vec3{0.0F})) ||
+                      glm::any(glm::greaterThan(light, glm::vec3{1.0F})))) {
+    reader.fail(node, std::format("time_of_day: {} must be three numbers from 0 to 1", what));
+  }
+  return light;
 }
 
 TimeOfDayRules readTimeOfDay(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(node, "time_of_day",
-                           {"day_start", "dusk_start", "night_start", "dusk_light", "night_light"})) {
-        return {};
-    }
-    TimeOfDayRules time{.dayStart = reader.integer<std::int32_t>(reader.field(node, "day_start")),
-                        .duskStart = reader.integer<std::int32_t>(reader.field(node, "dusk_start")),
-                        .nightStart = reader.integer<std::int32_t>(reader.field(node, "night_start")),
-                        .duskLight = readLight(reader, reader.field(node, "dusk_light"), "dusk_light"),
-                        .nightLight = readLight(reader, reader.field(node, "night_light"), "night_light")};
-    constexpr std::int32_t HoursPerDay = 24;
-    if (reader.ok() && (time.dayStart < 0 || time.dayStart >= time.duskStart || time.duskStart >= time.nightStart ||
-                        time.nightStart >= HoursPerDay)) {
-        reader.fail(node, "time_of_day: the hours must go 0 <= day_start < dusk_start < night_start <= 23");
-    }
-    return time;
+  if (!reader.expectKeys(node, "time_of_day",
+                         {"day_start", "dusk_start", "night_start", "dusk_light", "night_light"})) {
+    return {};
+  }
+  TimeOfDayRules time{
+      .dayStart = reader.integer<std::int32_t>(reader.field(node, "day_start")),
+      .duskStart = reader.integer<std::int32_t>(reader.field(node, "dusk_start")),
+      .nightStart = reader.integer<std::int32_t>(reader.field(node, "night_start")),
+      .duskLight = readLight(reader, reader.field(node, "dusk_light"), "dusk_light"),
+      .nightLight = readLight(reader, reader.field(node, "night_light"), "night_light")};
+  constexpr std::int32_t HoursPerDay = 24;
+  if (reader.ok() && (time.dayStart < 0 || time.dayStart >= time.duskStart ||
+                      time.duskStart >= time.nightStart || time.nightStart >= HoursPerDay)) {
+    reader.fail(node,
+                "time_of_day: the hours must go 0 <= day_start < dusk_start < night_start <= 23");
+  }
+  return time;
 }
 
 template <typename T>
 core::Result<T> loadDocument(const assets::VirtualFileSystem& vfs, std::string_view idText,
                              core::Result<T> (*parse)(std::string_view)) {
-    auto id = assets::AssetId::parse(idText);
-    if (!id) {
-        return std::unexpected{id.error()};
-    }
-    auto bytes = vfs.read(*id);
-    if (!bytes) {
-        return std::unexpected{bytes.error()};
-    }
-    return parse(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  auto id = assets::AssetId::parse(idText);
+  if (!id) {
+    return std::unexpected{id.error()};
+  }
+  auto bytes = vfs.read(*id);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  return parse(std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
 }
 
 } // namespace
 
 std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame) {
-    // fade.c: renderFadeOut adds the step to FADE_PROGRESS, which still holds the last fade in's final shade.
-    const std::int32_t start = fadeInShade(rules, rules.fadeInFrames);
-    return std::min(rules.shadeMax, start + (rules.shadeStep * std::max(frame, 0)));
+  // fade.c: renderFadeOut adds the step to FADE_PROGRESS, which still holds the last fade in's
+  // final shade.
+  const std::int32_t start = fadeInShade(rules, rules.fadeInFrames);
+  return std::min(rules.shadeMax, start + (rules.shadeStep * std::max(frame, 0)));
 }
 
 std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame) {
-    // fade.c: renderFadeIn draws shadeMax - step * FADE_IN_CURRENT.
-    return std::clamp(rules.shadeMax - (rules.shadeStep * std::max(frame, 0)), 0, rules.shadeMax);
+  // fade.c: renderFadeIn draws shadeMax - step * FADE_IN_CURRENT.
+  return std::clamp(rules.shadeMax - (rules.shadeStep * std::max(frame, 0)), 0, rules.shadeMax);
 }
 
 float shadeDarkness(const TransitionRules& rules, std::int32_t shade) {
-    // fade.c: renderFade's texel (ETCTIM entry 4, palette 6: 0xFFFF) is white, with the semi-transparency bit set;
-    // the console multiplies it by shade / 128 and subtracts the result (FADE_MODE 2, B - F), saturating at white.
-    return std::clamp(static_cast<float>(shade) / static_cast<float>(rules.shadeFull), 0.0F, 1.0F);
+  // fade.c: renderFade's texel (ETCTIM entry 4, palette 6: 0xFFFF) is white, with the
+  // semi-transparency bit set; the console multiplies it by shade / 128 and subtracts the result
+  // (FADE_MODE 2, B - F), saturating at white.
+  return std::clamp(static_cast<float>(shade) / static_cast<float>(rules.shadeFull), 0.0F, 1.0F);
 }
 
 core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
-    auto tree = core::parseYaml(yaml);
-    if (!tree) {
-        return std::unexpected{core::Error{std::format("field rules: {}", tree.error().message)}};
-    }
-    YamlReader reader;
-    if (!reader.expectKeys(*tree, "the field rules", {"player", "partner", "input", "transition", "time_of_day"})) {
-        return std::unexpected{reader.error("field rules")};
-    }
-    FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
-                     .partner = readPartner(reader, reader.field(*tree, "partner")),
-                     .input = readInput(reader, reader.field(*tree, "input")),
-                     .transition = readTransition(reader, reader.field(*tree, "transition")),
-                     .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day"))};
-    return reader.finish(std::move(rules), "field rules");
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{core::Error{std::format("field rules: {}", tree.error().message)}};
+  }
+  YamlReader reader;
+  if (!reader.expectKeys(*tree, "the field rules",
+                         {"player", "partner", "input", "transition", "time_of_day"})) {
+    return std::unexpected{reader.error("field rules")};
+  }
+  FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
+                   .partner = readPartner(reader, reader.field(*tree, "partner")),
+                   .input = readInput(reader, reader.field(*tree, "input")),
+                   .transition = readTransition(reader, reader.field(*tree, "transition")),
+                   .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day"))};
+  return reader.finish(std::move(rules), "field rules");
 }
 
 core::Result<FieldWarps> parseFieldWarps(std::string_view yaml) {
-    auto tree = core::parseYaml(yaml);
-    if (!tree) {
-        return std::unexpected{core::Error{std::format("field warps: {}", tree.error().message)}};
-    }
-    YamlReader reader;
-    if (!reader.expectKeys(*tree, "the field warps", {"start"})) {
-        return std::unexpected{reader.error("field warps")};
-    }
-    FieldWarps warps;
-    const YamlNode& start = reader.field(*tree, "start");
-    if (reader.expectKeys(start, "start", {"map", "exit"})) {
-        warps.startMap = reader.text(reader.field(start, "map"));
-        warps.startExit = reader.integer<std::int32_t>(reader.field(start, "exit"));
-    }
-    return reader.finish(std::move(warps), "field warps");
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{core::Error{std::format("field warps: {}", tree.error().message)}};
+  }
+  YamlReader reader;
+  if (!reader.expectKeys(*tree, "the field warps", {"start"})) {
+    return std::unexpected{reader.error("field warps")};
+  }
+  FieldWarps warps;
+  const YamlNode& start = reader.field(*tree, "start");
+  if (reader.expectKeys(start, "start", {"map", "exit"})) {
+    warps.startMap = reader.text(reader.field(start, "map"));
+    warps.startExit = reader.integer<std::int32_t>(reader.field(start, "exit"));
+  }
+  return reader.finish(std::move(warps), "field warps");
 }
 
 core::Result<FieldRules> loadFieldRules(const assets::VirtualFileSystem& vfs) {
-    return loadDocument<FieldRules>(vfs, "field/rules", &parseFieldRules);
+  return loadDocument<FieldRules>(vfs, "field/rules", &parseFieldRules);
 }
 
 core::Result<FieldWarps> loadFieldWarps(const assets::VirtualFileSystem& vfs) {
-    return loadDocument<FieldWarps>(vfs, "field/warps", &parseFieldWarps);
+  return loadDocument<FieldWarps>(vfs, "field/warps", &parseFieldWarps);
 }
 
 } // namespace dwe::game::field

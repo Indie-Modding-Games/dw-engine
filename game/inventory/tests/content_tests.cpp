@@ -26,55 +26,57 @@
 using namespace dwe::game::inventory;
 using dwe::game::inventory::testing::errorOf;
 
-TEST_CASE("the user's disc, extracted: every item and shop loads and every item's effect resolves") {
-    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
-    if (!mountedContent) {
-        MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
-        return;
-    }
-    const std::filesystem::path& content = *mountedContent;
-    const dwe::assets::DiskFileSystem disk;
-    auto found = dwe::assets::findPacks(disk, content);
-    REQUIRE_MESSAGE(found.has_value(), errorOf(found));
-    found->packs.push_back({.path = DWE_GAME_PACK, .kind = dwe::assets::FoundPack::Kind::Folder});
-    const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
-    REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
-    const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
-    REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
-    const dwe::ruleset::SectionChecks checks{{std::string{SectionName}, inventorySectionCheck()}};
-    const auto ruleset = dwe::ruleset::loadRuleset(*vfs, dwe::ruleset::OriginalRuleset, checks);
-    REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
-    const auto inventory = Inventory::fromRuleset(*ruleset);
-    REQUIRE_MESSAGE(inventory.has_value(), errorOf(inventory));
+TEST_CASE(
+    "the user's disc, extracted: every item and shop loads and every item's effect resolves") {
+  const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+  if (!mountedContent) {
+    MESSAGE("DWE_CONTENT is not set: skipping the test on the extracted content");
+    return;
+  }
+  const std::filesystem::path& content = *mountedContent;
+  const dwe::assets::DiskFileSystem disk;
+  auto found = dwe::assets::findPacks(disk, content);
+  REQUIRE_MESSAGE(found.has_value(), errorOf(found));
+  found->packs.push_back({.path = DWE_GAME_PACK, .kind = dwe::assets::FoundPack::Kind::Folder});
+  const auto opened = dwe::assets::openPacks(disk, found->packs, dwe::assets::PackOrigin::Engine);
+  REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
+  const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+  const dwe::ruleset::SectionChecks checks{{std::string{SectionName}, inventorySectionCheck()}};
+  const auto ruleset = dwe::ruleset::loadRuleset(*vfs, dwe::ruleset::OriginalRuleset, checks);
+  REQUIRE_MESSAGE(ruleset.has_value(), errorOf(ruleset));
+  const auto inventory = Inventory::fromRuleset(*ruleset);
+  REQUIRE_MESSAGE(inventory.has_value(), errorOf(inventory));
 
-    const auto items = dwe::assets::loadItemTable(*vfs);
-    REQUIRE_MESSAGE(items.has_value(), errorOf(items));
-    const auto table = dwe::assets::loadItemEffectTable(*vfs);
-    REQUIRE_MESSAGE(table.has_value(), errorOf(table));
-    const auto shops = dwe::assets::loadShopTable(*vfs);
-    REQUIRE_MESSAGE(shops.has_value(), errorOf(shops));
-    CHECK_FALSE(items->entries().empty());
-    CHECK(table->effects.size() == items->entries().size());
-    CHECK_FALSE(shops->shopMaps.empty());
-    CHECK_FALSE(shops->shopkeepers.empty());
-    const auto named = checkItemIds(inventory->rules(), *items);
-    CHECK_MESSAGE(named.has_value(), errorOf(named));
+  const auto items = dwe::assets::loadItemTable(*vfs);
+  REQUIRE_MESSAGE(items.has_value(), errorOf(items));
+  const auto table = dwe::assets::loadItemEffectTable(*vfs);
+  REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+  const auto shops = dwe::assets::loadShopTable(*vfs);
+  REQUIRE_MESSAGE(shops.has_value(), errorOf(shops));
+  CHECK_FALSE(items->entries().empty());
+  CHECK(table->effects.size() == items->entries().size());
+  CHECK_FALSE(shops->shopMaps.empty());
+  CHECK_FALSE(shops->shopkeepers.empty());
+  const auto named = checkItemIds(inventory->rules(), *items);
+  CHECK_MESSAGE(named.has_value(), errorOf(named));
 
-    const ItemEffects effects{*table, inventory->rules().effects, inventory->rules().quirks};
-    std::size_t resolved = 0;
-    std::vector<std::string> unmapped;
-    for (const dwe::assets::ItemEntry& item : items->entries()) {
-        auto effect = effects.resolve(item.id);
-        if (effect) {
-            ++resolved;
-        } else {
-            unmapped.push_back(effect.error().message);
-        }
+  const ItemEffects effects{*table, inventory->rules().effects, inventory->rules().quirks};
+  std::size_t resolved = 0;
+  std::vector<std::string> unmapped;
+  for (const dwe::assets::ItemEntry& item : items->entries()) {
+    auto effect = effects.resolve(item.id);
+    if (effect) {
+      ++resolved;
+    } else {
+      unmapped.push_back(effect.error().message);
     }
-    MESSAGE(items->entries().size(), " items, ", resolved, " effects resolved, ", unmapped.size(), " unmapped; ",
-            shops->shopMaps.size(), " shop maps, ", shops->shopkeepers.size(), " shopkeepers");
-    for (const std::string& problem : unmapped) {
-        MESSAGE("unmapped: ", problem);
-    }
-    CHECK(unmapped.empty());
+  }
+  MESSAGE(items->entries().size(), " items, ", resolved, " effects resolved, ", unmapped.size(),
+          " unmapped; ", shops->shopMaps.size(), " shop maps, ", shops->shopkeepers.size(),
+          " shopkeepers");
+  for (const std::string& problem : unmapped) {
+    MESSAGE("unmapped: ", problem);
+  }
+  CHECK(unmapped.empty());
 }

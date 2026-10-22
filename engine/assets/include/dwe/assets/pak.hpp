@@ -16,8 +16,9 @@
 
 namespace dwe::assets {
 
-// The .pak archive: one pack in a single file, laid out in docs/formats/pak.md. Version 2 compresses each entry with
-// zstd when that makes it smaller; version 1 stores every file as is, and is still read.
+// The .pak archive: one pack in a single file, laid out in docs/formats/pak.md. Version 2
+// compresses each entry with zstd when that makes it smaller; version 1 stores every file as is,
+// and is still read.
 inline constexpr std::uint32_t PakVersion = 2;
 inline constexpr std::uint32_t PakOldestVersion = 1;
 inline constexpr std::size_t PakHeaderSize = 64;
@@ -27,80 +28,90 @@ inline constexpr std::uint32_t PakAlignment = 16;
 
 // How the bytes of an entry are stored: the low 8 bits of its flags.
 enum class PakCompression : std::uint8_t {
-    None = 0, // as is
-    Zstd = 1, // one zstd frame (version 2)
+  None = 0, // as is
+  Zstd = 1, // one zstd frame (version 2)
 };
 
-// The zstd level writePak uses. Fixed, with every other setting, so the same files give the same archive.
+// The zstd level writePak uses. Fixed, with every other setting, so the same files give the same
+// archive.
 inline constexpr int PakZstdLevel = 9;
-// The largest entry a compressed entry may expand to, so a forged size cannot ask for more memory than this.
+// The largest entry a compressed entry may expand to, so a forged size cannot ask for more memory
+// than this.
 inline constexpr std::uint64_t PakMaxEntrySize = std::uint64_t{1} << 31U;
 
 // A file in a .pak archive.
 struct PakEntry {
-    std::string path; // relative to the pack's root, with '/' between folders
-    std::uint64_t offset = 0;
-    std::uint64_t size = 0;       // of the file
-    std::uint64_t storedSize = 0; // in the archive: size unless compressed
-    PakCompression compression = PakCompression::None;
-    core::Sha1Digest sha1{}; // of the file's bytes, before compression
+  std::string path; // relative to the pack's root, with '/' between folders
+  std::uint64_t offset = 0;
+  std::uint64_t size = 0;       // of the file
+  std::uint64_t storedSize = 0; // in the archive: size unless compressed
+  PakCompression compression = PakCompression::None;
+  core::Sha1Digest sha1{}; // of the file's bytes, before compression
 
-    friend bool operator==(const PakEntry&, const PakEntry&) = default;
+  friend bool operator==(const PakEntry&, const PakEntry&) = default;
 };
 
-// A .pak archive on disk seen as a file system with one folder, the archive's own path: listing it gives pack.yaml
-// and every entry, and reading <archive>/<entry> reads that entry, decompresses it and checks its SHA-1. Mount it with
-// a PackLocation whose root is the archive's path.
+// A .pak archive on disk seen as a file system with one folder, the archive's own path: listing it
+// gives pack.yaml and every entry, and reading <archive>/<entry> reads that entry, decompresses it
+// and checks its SHA-1. Mount it with a PackLocation whose root is the archive's path.
 class PakFileSystem final : public FileSystem {
-    // Only open() builds one.
-    struct OpenKey {
-        explicit OpenKey() = default;
-    };
+  // Only open() builds one.
+  struct OpenKey {
+    explicit OpenKey() = default;
+  };
 
 public:
-    PakFileSystem(OpenKey /*key*/, std::filesystem::path archive, std::vector<std::byte> manifest,
-                  std::vector<PakEntry> entries)
-        : archive_(std::move(archive)), manifest_(std::move(manifest)), entries_(std::move(entries)) {}
+  PakFileSystem(OpenKey /*key*/, std::filesystem::path archive, std::vector<std::byte> manifest,
+                std::vector<PakEntry> entries)
+      : archive_(std::move(archive)), manifest_(std::move(manifest)), entries_(std::move(entries)) {
+  }
 
-    // Opens an archive and reads its table of contents and manifest; the entries are read when asked for.
-    static core::Result<std::unique_ptr<PakFileSystem>> open(const std::filesystem::path& archive);
+  // Opens an archive and reads its table of contents and manifest; the entries are read when asked
+  // for.
+  static core::Result<std::unique_ptr<PakFileSystem>> open(const std::filesystem::path& archive);
 
-    [[nodiscard]] const std::filesystem::path& archive() const { return archive_; }
+  [[nodiscard]] const std::filesystem::path& archive() const { return archive_; }
 
-    // The entries, sorted by asset id.
-    [[nodiscard]] std::span<const PakEntry> entries() const { return entries_; }
+  // The entries, sorted by asset id.
+  [[nodiscard]] std::span<const PakEntry> entries() const { return entries_; }
 
-    [[nodiscard]] core::Result<std::vector<std::string>> listFiles(const std::filesystem::path& folder) const override;
-    [[nodiscard]] core::Result<std::vector<std::byte>> readFile(const std::filesystem::path& file) const override;
-    [[nodiscard]] core::Result<std::uint64_t> fileSize(const std::filesystem::path& file) const override;
+  [[nodiscard]] core::Result<std::vector<std::string>>
+  listFiles(const std::filesystem::path& folder) const override;
+  [[nodiscard]] core::Result<std::vector<std::byte>>
+  readFile(const std::filesystem::path& file) const override;
+  [[nodiscard]] core::Result<std::uint64_t>
+  fileSize(const std::filesystem::path& file) const override;
 
 private:
-    // The entry a path names: nullptr for pack.yaml, an error for a path outside the archive or with no entry.
-    [[nodiscard]] core::Result<const PakEntry*> entryOf(const std::filesystem::path& file) const;
+  // The entry a path names: nullptr for pack.yaml, an error for a path outside the archive or with
+  // no entry.
+  [[nodiscard]] core::Result<const PakEntry*> entryOf(const std::filesystem::path& file) const;
 
-    std::filesystem::path archive_;
-    std::vector<std::byte> manifest_;
-    std::vector<PakEntry> entries_;
+  std::filesystem::path archive_;
+  std::vector<std::byte> manifest_;
+  std::vector<PakEntry> entries_;
 };
 
-// Writes the pack at a root of a file system as a version 2 .pak archive: its pack.yaml, which must be a valid
-// manifest, and every asset file, which must give valid and distinct ids. Each file is compressed with zstd at
-// PakZstdLevel, on several threads, and stored as is when that does not make it smaller. The pack's dependencies
-// need not be there. The same files give the same archive, byte for byte. Returns the entries written.
-core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem, const std::filesystem::path& packRoot,
+// Writes the pack at a root of a file system as a version 2 .pak archive: its pack.yaml, which must
+// be a valid manifest, and every asset file, which must give valid and distinct ids. Each file is
+// compressed with zstd at PakZstdLevel, on several threads, and stored as is when that does not
+// make it smaller. The pack's dependencies need not be there. The same files give the same archive,
+// byte for byte. Returns the entries written.
+core::Result<std::vector<PakEntry>> writePak(const FileSystem& fileSystem,
+                                             const std::filesystem::path& packRoot,
                                              const std::filesystem::path& archive);
 
 // The packs that findPacks found, ready to mount.
 struct OpenedPacks {
-    // Open while this lives: a VirtualFileSystem mounted from locations must not outlive it.
-    std::vector<std::unique_ptr<PakFileSystem>> archives;
-    // One per pack, in the order given.
-    std::vector<PackLocation> locations;
+  // Open while this lives: a VirtualFileSystem mounted from locations must not outlive it.
+  std::vector<std::unique_ptr<PakFileSystem>> archives;
+  // One per pack, in the order given.
+  std::vector<PackLocation> locations;
 };
 
-// Opens packs for mounting, all with one origin: a folder pack is read through the given file system, which must
-// outlive the result, and an archive is opened from disk with PakFileSystem. Fails on the first archive that does not
-// open.
+// Opens packs for mounting, all with one origin: a folder pack is read through the given file
+// system, which must outlive the result, and an archive is opened from disk with PakFileSystem.
+// Fails on the first archive that does not open.
 core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const FoundPack> packs,
                                     PackOrigin origin = PackOrigin::Mod);
 

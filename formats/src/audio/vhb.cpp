@@ -11,17 +11,18 @@ namespace {
 constexpr std::uint32_t BankHeaderSize = 12;
 constexpr std::uint32_t FontHeaderSize = 16;
 
-// The sound files, from sound.c and sound_async.c. ESALL's 22 slices come from the executable's MAP_SOUND_PARA.
+// The sound files, from sound.c and sound_async.c. ESALL's 22 slices come from the executable's
+// MAP_SOUND_PARA.
 constexpr SoundFile singleBank(std::string_view path, std::string_view name, std::uint8_t vabSlot,
                                std::string_view loader) {
-    return SoundFile{.path = path,
-                     .name = name,
-                     .layout = SoundFileLayout::Single,
-                     .entrySectors = 0,
-                     .entryCount = 0,
-                     .firstVabSlot = vabSlot,
-                     .lastVabSlot = vabSlot,
-                     .loader = loader};
+  return SoundFile{.path = path,
+                   .name = name,
+                   .layout = SoundFileLayout::Single,
+                   .entrySectors = 0,
+                   .entryCount = 0,
+                   .firstVabSlot = vabSlot,
+                   .lastVabSlot = vabSlot,
+                   .loader = loader};
 }
 
 constexpr std::array SoundFiles = {
@@ -65,91 +66,94 @@ constexpr std::array SoundFiles = {
 } // namespace
 
 core::Result<Vhb> readVhb(std::span<const std::byte> bytes) {
-    const ByteReader reader{bytes};
-    const auto vhOffset = reader.u32(0);
-    const auto vbOffset = reader.u32(4);
-    const auto third = reader.u32(8);
-    if (!vhOffset || !vbOffset || !third) {
-        return core::fail(std::format("VHB of {} bytes is shorter than its header", bytes.size()));
+  const ByteReader reader{bytes};
+  const auto vhOffset = reader.u32(0);
+  const auto vbOffset = reader.u32(4);
+  const auto third = reader.u32(8);
+  if (!vhOffset || !vbOffset || !third) {
+    return core::fail(std::format("VHB of {} bytes is shorter than its header", bytes.size()));
+  }
+  const bool musicFont = *vhOffset == FontHeaderSize;
+  if (*vhOffset != BankHeaderSize && !musicFont) {
+    return core::fail(
+        std::format("VHB header says the VH starts at {}; it is 12 or 16", *vhOffset));
+  }
+  if (*vbOffset < *vhOffset || *vbOffset > bytes.size()) {
+    return core::fail(
+        std::format("VHB VB offset {} is outside a file of {} bytes", *vbOffset, bytes.size()));
+  }
+  auto vab = readVab(bytes.subspan(*vhOffset, *vbOffset - *vhOffset));
+  if (!vab) {
+    return std::unexpected{vab.error()};
+  }
+  if (*vbOffset - *vhOffset != vab->size()) {
+    return core::fail(std::format("VHB holds {} bytes between VH and VB, but the VH is {} bytes",
+                                  *vbOffset - *vhOffset, vab->size()));
+  }
+  const std::size_t vbSize = vab->vbSize();
+  if (vbSize > bytes.size() - *vbOffset) {
+    return core::fail(std::format("VHB VB of {} bytes at {} runs past a file of {} bytes", vbSize,
+                                  *vbOffset, bytes.size()));
+  }
+  const std::size_t vbEnd = *vbOffset + vbSize;
+  Vhb vhb{.vhOffset = *vhOffset,
+          .vbOffset = *vbOffset,
+          .end = *third,
+          .musicFont = musicFont,
+          .vab = std::move(*vab),
+          .vb = bytes.subspan(*vbOffset, vbSize),
+          .seqBank = {}};
+  if (*third != vbEnd) {
+    return core::fail(std::format("VHB says the {} ends at {}; the VB ends at {}",
+                                  musicFont ? "VB" : "bank", *third, vbEnd));
+  }
+  if (musicFont) {
+    const auto seqEnd = reader.u32(12);
+    if (!seqEnd || *seqEnd < *third || *seqEnd > bytes.size()) {
+      return core::fail(
+          std::format("VHB music font's SEQs end outside a file of {} bytes", bytes.size()));
     }
-    const bool musicFont = *vhOffset == FontHeaderSize;
-    if (*vhOffset != BankHeaderSize && !musicFont) {
-        return core::fail(std::format("VHB header says the VH starts at {}; it is 12 or 16", *vhOffset));
-    }
-    if (*vbOffset < *vhOffset || *vbOffset > bytes.size()) {
-        return core::fail(std::format("VHB VB offset {} is outside a file of {} bytes", *vbOffset, bytes.size()));
-    }
-    auto vab = readVab(bytes.subspan(*vhOffset, *vbOffset - *vhOffset));
-    if (!vab) {
-        return std::unexpected{vab.error()};
-    }
-    if (*vbOffset - *vhOffset != vab->size()) {
-        return core::fail(std::format("VHB holds {} bytes between VH and VB, but the VH is {} bytes",
-                                      *vbOffset - *vhOffset, vab->size()));
-    }
-    const std::size_t vbSize = vab->vbSize();
-    if (vbSize > bytes.size() - *vbOffset) {
-        return core::fail(
-            std::format("VHB VB of {} bytes at {} runs past a file of {} bytes", vbSize, *vbOffset, bytes.size()));
-    }
-    const std::size_t vbEnd = *vbOffset + vbSize;
-    Vhb vhb{.vhOffset = *vhOffset,
-            .vbOffset = *vbOffset,
-            .end = *third,
-            .musicFont = musicFont,
-            .vab = std::move(*vab),
-            .vb = bytes.subspan(*vbOffset, vbSize),
-            .seqBank = {}};
-    if (*third != vbEnd) {
-        return core::fail(
-            std::format("VHB says the {} ends at {}; the VB ends at {}", musicFont ? "VB" : "bank", *third, vbEnd));
-    }
-    if (musicFont) {
-        const auto seqEnd = reader.u32(12);
-        if (!seqEnd || *seqEnd < *third || *seqEnd > bytes.size()) {
-            return core::fail(std::format("VHB music font's SEQs end outside a file of {} bytes", bytes.size()));
-        }
-        vhb.end = *seqEnd;
-        vhb.seqBank = bytes.subspan(*third, *seqEnd - *third);
-    }
-    return vhb;
+    vhb.end = *seqEnd;
+    vhb.seqBank = bytes.subspan(*third, *seqEnd - *third);
+  }
+  return vhb;
 }
 
 std::span<const SoundFile> soundFiles() {
-    return SoundFiles;
+  return SoundFiles;
 }
 
 const SoundFile* findSoundFile(std::string_view path) {
-    for (const auto& file : SoundFiles) {
-        if (file.path == path) {
-            return &file;
-        }
+  for (const auto& file : SoundFiles) {
+    if (file.path == path) {
+      return &file;
     }
-    return nullptr;
+  }
+  return nullptr;
 }
 
 std::vector<SectorRange> fixedStrideEntries(const SoundFile& file) {
-    std::vector<SectorRange> entries;
-    entries.reserve(file.entryCount);
-    for (std::uint32_t i = 0; i < file.entryCount; ++i) {
-        entries.push_back(SectorRange{.first = i * file.entrySectors, .count = file.entrySectors});
-    }
-    return entries;
+  std::vector<SectorRange> entries;
+  entries.reserve(file.entryCount);
+  for (std::uint32_t i = 0; i < file.entryCount; ++i) {
+    entries.push_back(SectorRange{.first = i * file.entrySectors, .count = file.entrySectors});
+  }
+  return entries;
 }
 
-core::Result<std::vector<std::span<const std::byte>>> splitSoundFile(std::span<const std::byte> bytes,
-                                                                     std::span<const SectorRange> entries) {
-    std::vector<std::span<const std::byte>> parts;
-    for (const auto& entry : entries) {
-        const std::size_t offset = std::size_t{entry.first} * SoundSectorSize;
-        const std::size_t size = std::size_t{entry.count} * SoundSectorSize;
-        if (!ByteReader{bytes}.contains(offset, size)) {
-            return core::fail(std::format("sound entry {} (sectors {}+{}) is outside a file of {} bytes", parts.size(),
-                                          entry.first, entry.count, bytes.size()));
-        }
-        parts.push_back(bytes.subspan(offset, size));
+core::Result<std::vector<std::span<const std::byte>>>
+splitSoundFile(std::span<const std::byte> bytes, std::span<const SectorRange> entries) {
+  std::vector<std::span<const std::byte>> parts;
+  for (const auto& entry : entries) {
+    const std::size_t offset = std::size_t{entry.first} * SoundSectorSize;
+    const std::size_t size = std::size_t{entry.count} * SoundSectorSize;
+    if (!ByteReader{bytes}.contains(offset, size)) {
+      return core::fail(std::format("sound entry {} (sectors {}+{}) is outside a file of {} bytes",
+                                    parts.size(), entry.first, entry.count, bytes.size()));
     }
-    return parts;
+    parts.push_back(bytes.subspan(offset, size));
+  }
+  return parts;
 }
 
 } // namespace dwe::formats::audio

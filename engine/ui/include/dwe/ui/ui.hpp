@@ -24,18 +24,20 @@ namespace dwe::ui {
 // A value passed between the menus and the app: nothing, a switch, a number or a text.
 using UiValue = std::variant<std::monostate, bool, double, std::string>;
 
-// Something a menu asks the app to do, such as {"quit"} or {"fullscreen", true}. The app decides what each means.
+// Something a menu asks the app to do, such as {"quit"} or {"fullscreen", true}. The app decides
+// what each means.
 struct UiCommand {
-    std::string name;
-    UiValue value;
+  std::string name;
+  UiValue value;
 };
 
-// The HUD contract: the ids of the elements the UI fills in every document that has them (docs/architecture/ui.md).
+// The HUD contract: the ids of the elements the UI fills in every document that has them
+// (docs/architecture/ui.md).
 namespace hud {
 // An <img> that shows the current map's minimap.
 inline constexpr std::string_view MinimapImage = "minimap-image";
-// The box around the image, sized and centred by the UI to keep the map's proportions in its square panel; the
-// markers are positioned in percent of it.
+// The box around the image, sized and centred by the UI to keep the map's proportions in its square
+// panel; the markers are positioned in percent of it.
 inline constexpr std::string_view MinimapFrame = "minimap-frame";
 // The current map's name, as text in the player's language.
 inline constexpr std::string_view MinimapName = "minimap-name";
@@ -44,179 +46,192 @@ inline constexpr std::string_view MinimapPlayer = "minimap-player";
 inline constexpr std::string_view MinimapPartner = "minimap-partner";
 } // namespace hud
 
-// The attribute that gives an element its text by key, in the player's language: <span text-key="hud.menu"/>. The UI
-// fills the element when the document loads and again when the language changes (Ui::refreshTexts).
+// The attribute that gives an element its text by key, in the player's language: <span
+// text-key="hud.menu"/>. The UI fills the element when the document loads and again when the
+// language changes (Ui::refreshTexts).
 inline constexpr std::string_view TextKeyAttribute = "text-key";
 
-// Draws the UI's geometry. The headless UI (tests, tools) draws nothing; the game passes one built on render.
+// Draws the UI's geometry. The headless UI (tests, tools) draws nothing; the game passes one built
+// on render.
 class UiRenderer;
 
 struct UiDesc {
-    // Where documents, styles, scripts and fonts are read from, by asset id. Must outlive the UI.
-    const assets::VirtualFileSystem* files = nullptr;
-    // Draws the UI; nullptr for a UI that only lays out (tests). Must outlive the UI.
-    UiRenderer* renderer = nullptr;
-    // The player-facing texts in the player's language. Must outlive the UI. When null, the UI reads the packs'
-    // English texts itself (tests, tools).
-    const localization::Catalog* texts = nullptr;
-    // The size of the area the UI covers, in pixels.
-    int width = 1280;
-    int height = 720;
-    // The player's UI scale option, 1 = the default size; see Ui::setScale.
-    float scale = 1.0F;
-    // Re-reads documents, styles and scripts when their files change (development builds).
-    bool hotReload = false;
-    // Seconds from a monotonic clock, for animations and transitions; a steady clock when empty.
-    std::function<double()> clock;
-    // What the documents' scripts may use. A call from the UI and everything it causes (handlers of the elements
-    // it clicks, documents it shows) share one instruction budget.
-    script::ScriptLimits scripts;
+  // Where documents, styles, scripts and fonts are read from, by asset id. Must outlive the UI.
+  const assets::VirtualFileSystem* files = nullptr;
+  // Draws the UI; nullptr for a UI that only lays out (tests). Must outlive the UI.
+  UiRenderer* renderer = nullptr;
+  // The player-facing texts in the player's language. Must outlive the UI. When null, the UI reads
+  // the packs' English texts itself (tests, tools).
+  const localization::Catalog* texts = nullptr;
+  // The size of the area the UI covers, in pixels.
+  int width = 1280;
+  int height = 720;
+  // The player's UI scale option, 1 = the default size; see Ui::setScale.
+  float scale = 1.0F;
+  // Re-reads documents, styles and scripts when their files change (development builds).
+  bool hotReload = false;
+  // Seconds from a monotonic clock, for animations and transitions; a steady clock when empty.
+  std::function<double()> clock;
+  // What the documents' scripts may use. A call from the UI and everything it causes (handlers of
+  // the elements it clicks, documents it shows) share one instruction budget.
+  script::ScriptLimits scripts;
 };
 
 // A marker on the minimap, in world space: a position on the ground and the direction it faces.
 struct MinimapMarker {
-    float x = 0.0F;
-    float z = 0.0F;
-    float facingX = 0.0F;
-    float facingZ = -1.0F;
+  float x = 0.0F;
+  float z = 0.0F;
+  float facingX = 0.0F;
+  float facingZ = -1.0F;
 };
 
-// The game's UI: RmlUi documents (RML and RCSS) with their logic in sandboxed Lua, a menu opened with the `menu`
-// action, and the HUD with the minimap. There may be one Ui at a time, because RmlUi's state is global.
+// The game's UI: RmlUi documents (RML and RCSS) with their logic in sandboxed Lua, a menu opened
+// with the `menu` action, and the HUD with the minimap. There may be one Ui at a time, because
+// RmlUi's state is global.
 //
-// Per frame the app: passes every platform event to handleEvent (and keeps from the game those it takes); calls
-// tick once per logic tick, before the game's own tick, and skips the game's input while capturesInput(); applies
-// takeCommands(); updates the minimap markers; and draws.
+// Per frame the app: passes every platform event to handleEvent (and keeps from the game those it
+// takes); calls tick once per logic tick, before the game's own tick, and skips the game's input
+// while capturesInput(); applies takeCommands(); updates the minimap markers; and draws.
 class Ui {
 public:
-    static core::Result<std::unique_ptr<Ui>> create(const UiDesc& desc);
+  static core::Result<std::unique_ptr<Ui>> create(const UiDesc& desc);
 
-    Ui(const Ui&) = delete;
-    Ui& operator=(const Ui&) = delete;
-    Ui(Ui&&) = delete;
-    Ui& operator=(Ui&&) = delete;
-    ~Ui();
+  Ui(const Ui&) = delete;
+  Ui& operator=(const Ui&) = delete;
+  Ui(Ui&&) = delete;
+  Ui& operator=(Ui&&) = delete;
+  ~Ui();
 
-    // Loads a document (an .rml asset) under a name, hidden. Its <script> elements run in its own Lua environment.
-    core::Result<void> loadDocument(std::string_view name, const assets::AssetId& document);
+  // Loads a document (an .rml asset) under a name, hidden. Its <script> elements run in its own Lua
+  // environment.
+  core::Result<void> loadDocument(std::string_view name, const assets::AssetId& document);
 
-    // Shows a loaded document. A modal one takes the input: the game must not see it while it is shown.
-    void show(std::string_view name, bool modal = false);
-    void hide(std::string_view name);
-    [[nodiscard]] bool isVisible(std::string_view name) const;
+  // Shows a loaded document. A modal one takes the input: the game must not see it while it is
+  // shown.
+  void show(std::string_view name, bool modal = false);
+  void hide(std::string_view name);
+  [[nodiscard]] bool isVisible(std::string_view name) const;
 
-    // The document the `menu` action opens, modal, when no other modal document is shown.
-    void setMenuDocument(std::string_view name);
+  // The document the `menu` action opens, modal, when no other modal document is shown.
+  void setMenuDocument(std::string_view name);
 
-    // Passes a platform event to the UI. Returns true when the UI took it, and the game must not see it: clicks and
-    // wheel turns over the UI or while a modal document is shown, and the first pointer position after a resize or
-    // a focus loss (the player did not move the mouse). A focus loss releases the buttons held over the UI.
-    bool handleEvent(const platform::Event& event);
+  // Passes a platform event to the UI. Returns true when the UI took it, and the game must not see
+  // it: clicks and wheel turns over the UI or while a modal document is shown, and the first
+  // pointer position after a resize or a focus loss (the player did not move the mouse). A focus
+  // loss releases the buttons held over the UI.
+  bool handleEvent(const platform::Event& event);
 
-    // Navigates the shown modal document with the input's actions, once per logic tick, and runs the documents'
-    // on_tick handlers. Call it before the game's tick, so a `menu` press that opens the menu is not also the game's.
-    void tick(const input::InputState& input, double seconds);
+  // Navigates the shown modal document with the input's actions, once per logic tick, and runs the
+  // documents' on_tick handlers. Call it before the game's tick, so a `menu` press that opens the
+  // menu is not also the game's.
+  void tick(const input::InputState& input, double seconds);
 
-    // True while a modal document is shown: the game must ignore the input's actions.
-    [[nodiscard]] bool capturesInput() const;
+  // True while a modal document is shown: the game must ignore the input's actions.
+  [[nodiscard]] bool capturesInput() const;
 
-    // The commands the menus sent since the last call, oldest first.
-    [[nodiscard]] std::vector<UiCommand> takeCommands();
+  // The commands the menus sent since the last call, oldest first.
+  [[nodiscard]] std::vector<UiCommand> takeCommands();
 
-    // Publishes a value the menus can read with ui.setting(name), such as the current window mode. Shown documents
-    // are told through their on_setting handler when it changes.
-    void setSetting(std::string_view name, UiValue value);
-    [[nodiscard]] UiValue setting(std::string_view name) const;
+  // Publishes a value the menus can read with ui.setting(name), such as the current window mode.
+  // Shown documents are told through their on_setting handler when it changes.
+  void setSetting(std::string_view name, UiValue value);
+  [[nodiscard]] UiValue setting(std::string_view name) const;
 
-    // Resizes the UI to the window, in pixels.
-    void resize(int width, int height);
+  // Resizes the UI to the window, in pixels.
+  void resize(int width, int height);
 
-    // The range of the player's UI scale option.
-    static constexpr float MinScale = 0.5F;
-    static constexpr float MaxScale = 3.0F;
+  // The range of the player's UI scale option.
+  static constexpr float MinScale = 0.5F;
+  static constexpr float MaxScale = 3.0F;
 
-    // Changes the player's UI scale option (1 = default). Values outside [MinScale, MaxScale] are clamped to it; a
-    // value that is not a number is ignored.
-    void setScale(float scale);
-    [[nodiscard]] float scale() const;
+  // Changes the player's UI scale option (1 = default). Values outside [MinScale, MaxScale] are
+  // clamped to it; a value that is not a number is ignored.
+  void setScale(float scale);
+  [[nodiscard]] float scale() const;
 
-    // Pixels per dp: the window's height against the 720 pixels the UI is designed at (its width against 960 when that
-    // is smaller), times the scale option.
-    [[nodiscard]] float dpRatio() const;
+  // Pixels per dp: the window's height against the 720 pixels the UI is designed at (its width
+  // against 960 when that is smaller), times the scale option.
+  [[nodiscard]] float dpRatio() const;
 
-    // Changes what "original look" text (font-family original-look, ui/fonts/original_look.yaml) draws with, and lays
-    // out and draws the documents again with it. Without the original bitmap font in the packs, the original choice
-    // draws with the modern font.
-    void setTextFont(TextFont font);
-    // The player's choice; the packs' default until one is made.
-    [[nodiscard]] TextFont textFont() const;
+  // Changes what "original look" text (font-family original-look, ui/fonts/original_look.yaml)
+  // draws with, and lays out and draws the documents again with it. Without the original bitmap
+  // font in the packs, the original choice draws with the modern font.
+  void setTextFont(TextFont font);
+  // The player's choice; the packs' default until one is made.
+  [[nodiscard]] TextFont textFont() const;
 
-    // The skins the packs offer (ui/skins/<id>/skin.yaml); a mod adds one by adding its folder.
-    [[nodiscard]] const SkinCatalog& skins() const;
+  // The skins the packs offer (ui/skins/<id>/skin.yaml); a mod adds one by adding its folder.
+  [[nodiscard]] const SkinCatalog& skins() const;
 
-    // Gives every document the look of a skin at once: documents keep their state, focus and scripts, and only a
-    // screen whose document the skin replaces loads again. Starts with the packs' default (ui/ui_skin.yaml). Fails,
-    // keeping the look, for a skin the packs do not offer.
-    core::Result<void> setSkin(std::string_view id);
-    // The skin shown; empty when the packs offer none.
-    [[nodiscard]] std::string_view skin() const;
-    // The documents the skin shown puts classes on (document_classes) that are not loaded, each logged as a warning.
-    // The game calls it once its documents are loaded; a switch checks again, unless no document is loaded yet.
-    [[nodiscard]] std::vector<std::string> checkSkinDocuments() const;
+  // Gives every document the look of a skin at once: documents keep their state, focus and scripts,
+  // and only a screen whose document the skin replaces loads again. Starts with the packs' default
+  // (ui/ui_skin.yaml). Fails, keeping the look, for a skin the packs do not offer.
+  core::Result<void> setSkin(std::string_view id);
+  // The skin shown; empty when the packs offer none.
+  [[nodiscard]] std::string_view skin() const;
+  // The documents the skin shown puts classes on (document_classes) that are not loaded, each
+  // logged as a warning. The game calls it once its documents are loaded; a switch checks again,
+  // unless no document is loaded yet.
+  [[nodiscard]] std::vector<std::string> checkSkinDocuments() const;
 
-    // Replaces the minimap with a new map's: its walkable area and the key of its name (localization::mapNameKey; empty
-    // for none), shown in the hud:: elements.
-    void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey);
+  // Replaces the minimap with a new map's: its walkable area and the key of its name
+  // (localization::mapNameKey; empty for none), shown in the hud:: elements.
+  void setMinimap(const MinimapGrid& grid, std::string_view mapNameKey);
 
-    // Shows every text again after the catalog's language changed: the elements with a TextKeyAttribute, the map's
-    // name, and whatever the shown documents' on_language handlers write.
-    void refreshTexts();
+  // Shows every text again after the catalog's language changed: the elements with a
+  // TextKeyAttribute, the map's name, and whatever the shown documents' on_language handlers write.
+  void refreshTexts();
 
-    // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner), every frame. Markers that did not move
-    // cost nothing.
-    void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner);
+  // Moves the minimap markers (hud::MinimapPlayer and hud::MinimapPartner), every frame. Markers
+  // that did not move cost nothing.
+  void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner);
 
-    // Lays out the documents and records their geometry for the renderer. Once per frame, before drawing.
-    void update();
+  // Lays out the documents and records their geometry for the renderer. Once per frame, before
+  // drawing.
+  void update();
 
-    // Re-reads the documents whose files changed, when hot reload is on. Cheap enough to call every frame; it checks
-    // twice a second.
-    void reloadChanged();
+  // Re-reads the documents whose files changed, when hot reload is on. Cheap enough to call every
+  // frame; it checks twice a second.
+  void reloadChanged();
 
-    // Calls a global function of a document's Lua environment with string arguments, for tests and tools.
-    core::Result<void> callScript(std::string_view document, std::string_view function,
-                                  std::span<const std::string> arguments = {});
+  // Calls a global function of a document's Lua environment with string arguments, for tests and
+  // tools.
+  core::Result<void> callScript(std::string_view document, std::string_view function,
+                                std::span<const std::string> arguments = {});
 
-    // The id of the element that has the focus in a document, or an empty string.
-    [[nodiscard]] std::string focusedElementId(std::string_view document) const;
+  // The id of the element that has the focus in a document, or an empty string.
+  [[nodiscard]] std::string focusedElementId(std::string_view document) const;
 
-    // The value of a style property of an element of a document (its body for an empty id) as RCSS writes it, or an
-    // empty string when it has none, for tests.
-    [[nodiscard]] std::string styleProperty(std::string_view document, std::string_view elementId,
-                                            std::string_view property) const;
+  // The value of a style property of an element of a document (its body for an empty id) as RCSS
+  // writes it, or an empty string when it has none, for tests.
+  [[nodiscard]] std::string styleProperty(std::string_view document, std::string_view elementId,
+                                          std::string_view property) const;
 
-    // The text inside an element of a document, for tests.
-    [[nodiscard]] std::string elementText(std::string_view document, std::string_view elementId) const;
+  // The text inside an element of a document, for tests.
+  [[nodiscard]] std::string elementText(std::string_view document,
+                                        std::string_view elementId) const;
 
-    // Whether an element of a document has a class, as its scripts set it, for tests.
-    [[nodiscard]] bool elementHasClass(std::string_view document, std::string_view elementId,
-                                       std::string_view className) const;
+  // Whether an element of a document has a class, as its scripts set it, for tests.
+  [[nodiscard]] bool elementHasClass(std::string_view document, std::string_view elementId,
+                                     std::string_view className) const;
 
-    // The centre of an element of a document in pixels, as laid out by the last update(), for tests and scripted runs
-    // that click on it; nullopt if there is no such element. It leaves out RCSS transforms, which also move where
-    // the pointer hits an element: menus that tests click should not move their buttons with transforms.
-    struct Point {
-        float x;
-        float y;
-    };
-    [[nodiscard]] std::optional<Point> elementCenter(std::string_view document, std::string_view elementId) const;
+  // The centre of an element of a document in pixels, as laid out by the last update(), for tests
+  // and scripted runs that click on it; nullopt if there is no such element. It leaves out RCSS
+  // transforms, which also move where the pointer hits an element: menus that tests click should
+  // not move their buttons with transforms.
+  struct Point {
+    float x;
+    float y;
+  };
+  [[nodiscard]] std::optional<Point> elementCenter(std::string_view document,
+                                                   std::string_view elementId) const;
 
 private:
-    struct Impl;
+  struct Impl;
 
-    explicit Ui(std::unique_ptr<Impl> impl);
+  explicit Ui(std::unique_ptr<Impl> impl);
 
-    std::unique_ptr<Impl> impl_;
+  std::unique_ptr<Impl> impl_;
 };
 
 } // namespace dwe::ui

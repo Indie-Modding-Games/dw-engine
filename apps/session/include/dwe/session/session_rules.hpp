@@ -16,19 +16,19 @@ inline constexpr std::string_view TamerSection = "tamer";
 
 // How a new game starts (rules/<id>/new_game.yaml).
 struct NewGameRules {
-    // The Digimon id the partner starts as.
-    std::string partner;
-    // Its maximum stats; current HP and MP start full.
-    game::partner::StatBlock stats;
-    std::int32_t tamerLevel = 0;
+  // The Digimon id the partner starts as.
+  std::string partner;
+  // Its maximum stats; current HP and MP start full.
+  game::partner::StatBlock stats;
+  std::int32_t tamerLevel = 0;
 };
 
 // The tamer's rules (rules/<id>/tamer.yaml).
 struct TamerRules {
-    std::int32_t levelMin = 0;
-    std::int32_t levelMax = 0;
-    // Levels gained when an evolution's tamer chance succeeds (evl.c: EVL_applyEvolution).
-    std::int32_t evolutionLevelGain = 0;
+  std::int32_t levelMin = 0;
+  std::int32_t levelMax = 0;
+  // Levels gained when an evolution's tamer chance succeeds (evl.c: EVL_applyEvolution).
+  std::int32_t evolutionLevelGain = 0;
 };
 
 // Reads the sections; errors name the file, line and column.
@@ -37,8 +37,8 @@ core::Result<TamerRules> readTamerRules(const ruleset::Section& section);
 
 // Reads both from a ruleset, which must have them, and checks the start level against the limits.
 struct SessionRules {
-    NewGameRules newGame;
-    TamerRules tamer;
+  NewGameRules newGame;
+  TamerRules tamer;
 };
 core::Result<SessionRules> readSessionRules(const ruleset::Ruleset& ruleset);
 

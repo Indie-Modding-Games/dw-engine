@@ -174,361 +174,377 @@ constexpr std::string_view ToiletDoublesPoopInterval = "toilet_doubles_poop_inte
 constexpr std::string_view FoodClearsTrainingBoost = "food_clears_training_boost";
 constexpr std::string_view SkippedHungerCountsTwice = "skipped_hunger_window_counts_twice";
 constexpr std::string_view SkippedHoursAddTries = "skipped_hours_add_sickness_tries";
-constexpr std::string_view SkippedHoursUnhappyAtMidnight = "skipped_hours_unhappiness_only_at_midnight";
+constexpr std::string_view SkippedHoursUnhappyAtMidnight =
+    "skipped_hours_unhappiness_only_at_midnight";
 constexpr std::string_view WakeSearchesFromLastMeal = "wake_searches_from_last_meal";
 
 CareLimits readLimits(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, LimitsKey,
-               {HappinessMinKey, HappinessMaxKey, DisciplineMaxKey, TirednessMaxKey, WeightMinKey, WeightMaxKey,
-                HpMpMaxKey, StatMaxKey, StatMinKey, StatGainMaxKey},
-               node)) {
-        return {};
-    }
-    CareLimits limits{.happinessMin = integer(reader, *node, HappinessMinKey),
-                      .happinessMax = integer(reader, *node, HappinessMaxKey),
-                      .disciplineMax = positive(reader, *node, DisciplineMaxKey),
-                      .tirednessMax = positive(reader, *node, TirednessMaxKey),
-                      .weightMin = positive(reader, *node, WeightMinKey),
-                      .weightMax = positive(reader, *node, WeightMaxKey),
-                      .hpMpMax = positive(reader, *node, HpMpMaxKey),
-                      .statMax = positive(reader, *node, StatMaxKey),
-                      .statMin = positive(reader, *node, StatMinKey),
-                      .statGainMax = positive(reader, *node, StatGainMaxKey)};
-    if (reader.ok() && limits.happinessMin > limits.happinessMax) {
-        reader.fail(*node, formatMessage(messages::MinAboveMax, HappinessMinKey, HappinessMaxKey));
-    }
-    if (reader.ok() && limits.weightMin > limits.weightMax) {
-        reader.fail(*node, formatMessage(messages::MinAboveMax, WeightMinKey, WeightMaxKey));
-    }
-    if (reader.ok() && limits.statMin > limits.statMax) {
-        reader.fail(*node, formatMessage(messages::MinAboveMax, StatMinKey, StatMaxKey));
-    }
-    return limits;
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, LimitsKey,
+             {HappinessMinKey, HappinessMaxKey, DisciplineMaxKey, TirednessMaxKey, WeightMinKey,
+              WeightMaxKey, HpMpMaxKey, StatMaxKey, StatMinKey, StatGainMaxKey},
+             node)) {
+    return {};
+  }
+  CareLimits limits{.happinessMin = integer(reader, *node, HappinessMinKey),
+                    .happinessMax = integer(reader, *node, HappinessMaxKey),
+                    .disciplineMax = positive(reader, *node, DisciplineMaxKey),
+                    .tirednessMax = positive(reader, *node, TirednessMaxKey),
+                    .weightMin = positive(reader, *node, WeightMinKey),
+                    .weightMax = positive(reader, *node, WeightMaxKey),
+                    .hpMpMax = positive(reader, *node, HpMpMaxKey),
+                    .statMax = positive(reader, *node, StatMaxKey),
+                    .statMin = positive(reader, *node, StatMinKey),
+                    .statGainMax = positive(reader, *node, StatGainMaxKey)};
+  if (reader.ok() && limits.happinessMin > limits.happinessMax) {
+    reader.fail(*node, formatMessage(messages::MinAboveMax, HappinessMinKey, HappinessMaxKey));
+  }
+  if (reader.ok() && limits.weightMin > limits.weightMax) {
+    reader.fail(*node, formatMessage(messages::MinAboveMax, WeightMinKey, WeightMaxKey));
+  }
+  if (reader.ok() && limits.statMin > limits.statMax) {
+    reader.fail(*node, formatMessage(messages::MinAboveMax, StatMinKey, StatMaxKey));
+  }
+  return limits;
 }
 
 CareStart readStart(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, StartKey, {DisciplineKey, HappinessKey}, node)) {
-        return {};
-    }
-    return {.discipline = integer(reader, *node, DisciplineKey), .happiness = integer(reader, *node, HappinessKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, StartKey, {DisciplineKey, HappinessKey}, node)) {
+    return {};
+  }
+  return {.discipline = integer(reader, *node, DisciplineKey),
+          .happiness = integer(reader, *node, HappinessKey)};
 }
 
 HungerRules readHunger(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, HungerKey,
-               {BabyIntervalKey, InTrainingIntervalKey, WindowMinutesKey, WindowStepFramesKey, StarvingWeightLossKey,
-                TiredHungerTirednessKey, TiredHungerFramesKey, TiredHungerMinutesKey, FedHappinessKey, FedDisciplineKey,
-                OverfedHappinessKey, OverfedDisciplineKey, FavoriteEnergyKey, FavoriteHappinessKey},
-               node)) {
-        return {};
-    }
-    return {.babyIntervalHours = positive(reader, *node, BabyIntervalKey),
-            .inTrainingIntervalHours = positive(reader, *node, InTrainingIntervalKey),
-            .windowMinutes = positive(reader, *node, WindowMinutesKey),
-            .windowStepFrames = positive(reader, *node, WindowStepFramesKey),
-            .starvingWeightLossMinutes = positive(reader, *node, StarvingWeightLossKey),
-            .tiredHungerTiredness = nonNegative(reader, *node, TiredHungerTirednessKey),
-            .tiredHungerFrames = nonNegative(reader, *node, TiredHungerFramesKey),
-            .tiredHungerMinutes = nonNegative(reader, *node, TiredHungerMinutesKey),
-            .fed = {.happiness = integer(reader, *node, FedHappinessKey),
-                    .discipline = integer(reader, *node, FedDisciplineKey)},
-            .overfed = {.happiness = integer(reader, *node, OverfedHappinessKey),
-                        .discipline = integer(reader, *node, OverfedDisciplineKey)},
-            .favoriteEnergyPercent = nonNegative(reader, *node, FavoriteEnergyKey),
-            .favoriteHappiness = integer(reader, *node, FavoriteHappinessKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, HungerKey,
+             {BabyIntervalKey, InTrainingIntervalKey, WindowMinutesKey, WindowStepFramesKey,
+              StarvingWeightLossKey, TiredHungerTirednessKey, TiredHungerFramesKey,
+              TiredHungerMinutesKey, FedHappinessKey, FedDisciplineKey, OverfedHappinessKey,
+              OverfedDisciplineKey, FavoriteEnergyKey, FavoriteHappinessKey},
+             node)) {
+    return {};
+  }
+  return {.babyIntervalHours = positive(reader, *node, BabyIntervalKey),
+          .inTrainingIntervalHours = positive(reader, *node, InTrainingIntervalKey),
+          .windowMinutes = positive(reader, *node, WindowMinutesKey),
+          .windowStepFrames = positive(reader, *node, WindowStepFramesKey),
+          .starvingWeightLossMinutes = positive(reader, *node, StarvingWeightLossKey),
+          .tiredHungerTiredness = nonNegative(reader, *node, TiredHungerTirednessKey),
+          .tiredHungerFrames = nonNegative(reader, *node, TiredHungerFramesKey),
+          .tiredHungerMinutes = nonNegative(reader, *node, TiredHungerMinutesKey),
+          .fed = {.happiness = integer(reader, *node, FedHappinessKey),
+                  .discipline = integer(reader, *node, FedDisciplineKey)},
+          .overfed = {.happiness = integer(reader, *node, OverfedHappinessKey),
+                      .discipline = integer(reader, *node, OverfedDisciplineKey)},
+          .favoriteEnergyPercent = nonNegative(reader, *node, FavoriteEnergyKey),
+          .favoriteHappiness = integer(reader, *node, FavoriteHappinessKey)};
 }
 
 RefusalRules readRefusal(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, RefusalKey,
-               {DisciplineBaseKey, DisciplineBonusMinKey, DisciplineBonusRangeKey, FavoriteRefusalKey}, node)) {
-        return {};
-    }
-    return {.disciplineBase = integer(reader, *node, DisciplineBaseKey),
-            .disciplineBonusMin = integer(reader, *node, DisciplineBonusMinKey),
-            .disciplineBonusRange = nonNegative(reader, *node, DisciplineBonusRangeKey),
-            .favoriteRefusalPercent = nonNegative(reader, *node, FavoriteRefusalKey)};
+  const YamlNode* node = nullptr;
+  if (!group(
+          reader, root, RefusalKey,
+          {DisciplineBaseKey, DisciplineBonusMinKey, DisciplineBonusRangeKey, FavoriteRefusalKey},
+          node)) {
+    return {};
+  }
+  return {.disciplineBase = integer(reader, *node, DisciplineBaseKey),
+          .disciplineBonusMin = integer(reader, *node, DisciplineBonusMinKey),
+          .disciplineBonusRange = nonNegative(reader, *node, DisciplineBonusRangeKey),
+          .favoriteRefusalPercent = nonNegative(reader, *node, FavoriteRefusalKey)};
 }
 
 SleepPattern readPattern(YamlReader& reader, const YamlNode& node) {
-    if (!reader.expectKeys(
-            node, messages::SleepPatternText,
-            {SleepyHourKey, SleepyMinuteKey, WakeHourKey, WakeMinuteKey, AwakeHoursKey, AsleepHoursKey})) {
-        return {};
-    }
-    return {.sleepyHour = nonNegative(reader, node, SleepyHourKey),
-            .sleepyMinute = nonNegative(reader, node, SleepyMinuteKey),
-            .wakeHour = nonNegative(reader, node, WakeHourKey),
-            .wakeMinute = nonNegative(reader, node, WakeMinuteKey),
-            .awakeHours = positive(reader, node, AwakeHoursKey),
-            .asleepHours = positive(reader, node, AsleepHoursKey)};
+  if (!reader.expectKeys(node, messages::SleepPatternText,
+                         {SleepyHourKey, SleepyMinuteKey, WakeHourKey, WakeMinuteKey, AwakeHoursKey,
+                          AsleepHoursKey})) {
+    return {};
+  }
+  return {.sleepyHour = nonNegative(reader, node, SleepyHourKey),
+          .sleepyMinute = nonNegative(reader, node, SleepyMinuteKey),
+          .wakeHour = nonNegative(reader, node, WakeHourKey),
+          .wakeMinute = nonNegative(reader, node, WakeMinuteKey),
+          .awakeHours = positive(reader, node, AwakeHoursKey),
+          .asleepHours = positive(reader, node, AsleepHoursKey)};
 }
 
 SleepyPenalty readPenalty(YamlReader& reader, const YamlNode& parent, std::string_view key) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, parent, key, {EveryFramesKey, HappinessKey, DisciplineKey}, node)) {
-        return {};
-    }
-    return {.everyFrames = positive(reader, *node, EveryFramesKey),
-            .happiness = integer(reader, *node, HappinessKey),
-            .discipline = integer(reader, *node, DisciplineKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, parent, key, {EveryFramesKey, HappinessKey, DisciplineKey}, node)) {
+    return {};
+  }
+  return {.everyFrames = positive(reader, *node, EveryFramesKey),
+          .happiness = integer(reader, *node, HappinessKey),
+          .discipline = integer(reader, *node, DisciplineKey)};
 }
 
 SleepRegeneration readRegeneration(YamlReader& reader, const YamlNode& parent) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, parent, RegenerationKey,
-               {HpMpPercentKey, HpMpRangeKey, TirednessPercentKey, TirednessRangeKey, WeightDivisorKey, PillowKey,
-                LikedAreaPercentKey, DislikedAreaPercentKey},
-               node)) {
-        return {};
-    }
-    return {.hpMpPercent = nonNegative(reader, *node, HpMpPercentKey),
-            .hpMpPercentRange = nonNegative(reader, *node, HpMpRangeKey),
-            .tirednessPercent = nonNegative(reader, *node, TirednessPercentKey),
-            .tirednessPercentRange = nonNegative(reader, *node, TirednessRangeKey),
-            .weightDivisor = positive(reader, *node, WeightDivisorKey),
-            .pillowPercent = nonNegative(reader, *node, PillowKey),
-            .likedAreaPercent = nonNegative(reader, *node, LikedAreaPercentKey),
-            .dislikedAreaPercent = nonNegative(reader, *node, DislikedAreaPercentKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, parent, RegenerationKey,
+             {HpMpPercentKey, HpMpRangeKey, TirednessPercentKey, TirednessRangeKey,
+              WeightDivisorKey, PillowKey, LikedAreaPercentKey, DislikedAreaPercentKey},
+             node)) {
+    return {};
+  }
+  return {.hpMpPercent = nonNegative(reader, *node, HpMpPercentKey),
+          .hpMpPercentRange = nonNegative(reader, *node, HpMpRangeKey),
+          .tirednessPercent = nonNegative(reader, *node, TirednessPercentKey),
+          .tirednessPercentRange = nonNegative(reader, *node, TirednessRangeKey),
+          .weightDivisor = positive(reader, *node, WeightDivisorKey),
+          .pillowPercent = nonNegative(reader, *node, PillowKey),
+          .likedAreaPercent = nonNegative(reader, *node, LikedAreaPercentKey),
+          .dislikedAreaPercent = nonNegative(reader, *node, DislikedAreaPercentKey)};
 }
 
 SleepRules readSleep(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, SleepKey,
-               {TirednessPerMinuteKey, TirednessThresholdKey, AwakeCutMinutesKey, BabyAwakeKey, InTrainingAwakeKey,
-                YoungVariationKey, PatternsKey, BabyPenaltyKey, InTrainingPenaltyKey, AdultPenaltyKey,
-                MissedSleepTamerKey, RegenerationKey, SickPenaltyKey, InjuredPenaltyKey, HungryWeightLossKey},
-               node)) {
-        return {};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, SleepKey,
+             {TirednessPerMinuteKey, TirednessThresholdKey, AwakeCutMinutesKey, BabyAwakeKey,
+              InTrainingAwakeKey, YoungVariationKey, PatternsKey, BabyPenaltyKey,
+              InTrainingPenaltyKey, AdultPenaltyKey, MissedSleepTamerKey, RegenerationKey,
+              SickPenaltyKey, InjuredPenaltyKey, HungryWeightLossKey},
+             node)) {
+    return {};
+  }
+  SleepRules rules;
+  rules.tirednessPercentPerMinute = nonNegative(reader, *node, TirednessPerMinuteKey);
+  rules.tirednessThreshold = positive(reader, *node, TirednessThresholdKey);
+  rules.awakeCutMinutes = positive(reader, *node, AwakeCutMinutesKey);
+  rules.babyAwakeHours = nonNegative(reader, *node, BabyAwakeKey);
+  rules.inTrainingAwakeHours = nonNegative(reader, *node, InTrainingAwakeKey);
+  rules.youngAwakeVariationHours = nonNegative(reader, *node, YoungVariationKey);
+  const YamlNode& patterns = reader.field(*node, PatternsKey);
+  if (reader.ok()) {
+    for (const YamlNode& pattern : reader.sequence(patterns, PatternsKey)) {
+      rules.patterns.push_back(readPattern(reader, pattern));
     }
-    SleepRules rules;
-    rules.tirednessPercentPerMinute = nonNegative(reader, *node, TirednessPerMinuteKey);
-    rules.tirednessThreshold = positive(reader, *node, TirednessThresholdKey);
-    rules.awakeCutMinutes = positive(reader, *node, AwakeCutMinutesKey);
-    rules.babyAwakeHours = nonNegative(reader, *node, BabyAwakeKey);
-    rules.inTrainingAwakeHours = nonNegative(reader, *node, InTrainingAwakeKey);
-    rules.youngAwakeVariationHours = nonNegative(reader, *node, YoungVariationKey);
-    const YamlNode& patterns = reader.field(*node, PatternsKey);
-    if (reader.ok()) {
-        for (const YamlNode& pattern : reader.sequence(patterns, PatternsKey)) {
-            rules.patterns.push_back(readPattern(reader, pattern));
-        }
-        if (reader.ok() && rules.patterns.empty()) {
-            reader.fail(patterns, formatMessage(messages::NoneListed, PatternsKey));
-        }
+    if (reader.ok() && rules.patterns.empty()) {
+      reader.fail(patterns, formatMessage(messages::NoneListed, PatternsKey));
     }
-    rules.babySleepyPenalty = readPenalty(reader, *node, BabyPenaltyKey);
-    rules.inTrainingSleepyPenalty = readPenalty(reader, *node, InTrainingPenaltyKey);
-    rules.adultSleepyPenalty = readPenalty(reader, *node, AdultPenaltyKey);
-    rules.missedSleepTamerLevelPercent = nonNegative(reader, *node, MissedSleepTamerKey);
-    rules.regeneration = readRegeneration(reader, *node);
-    rules.sickPenalty = moodChange(reader, *node, SickPenaltyKey);
-    rules.injuredPenalty = moodChange(reader, *node, InjuredPenaltyKey);
-    rules.hungryWeightLoss = nonNegative(reader, *node, HungryWeightLossKey);
-    return rules;
+  }
+  rules.babySleepyPenalty = readPenalty(reader, *node, BabyPenaltyKey);
+  rules.inTrainingSleepyPenalty = readPenalty(reader, *node, InTrainingPenaltyKey);
+  rules.adultSleepyPenalty = readPenalty(reader, *node, AdultPenaltyKey);
+  rules.missedSleepTamerLevelPercent = nonNegative(reader, *node, MissedSleepTamerKey);
+  rules.regeneration = readRegeneration(reader, *node);
+  rules.sickPenalty = moodChange(reader, *node, SickPenaltyKey);
+  rules.injuredPenalty = moodChange(reader, *node, InjuredPenaltyKey);
+  rules.hungryWeightLoss = nonNegative(reader, *node, HungryWeightLossKey);
+  return rules;
 }
 
 PoopMeal readMeal(YamlReader& reader, const YamlNode& node, bool largest) {
-    if (largest) {
-        if (!reader.expectKeys(node, messages::PoopMealText, {HpDivisorKey, MpDivisorKey, WeightKey, CurePercentKey})) {
-            return {};
-        }
-    } else if (!reader.expectKeys(node, messages::PoopMealText,
-                                  {BelowSizeKey, HpDivisorKey, MpDivisorKey, WeightKey, CurePercentKey})) {
-        return {};
+  if (largest) {
+    if (!reader.expectKeys(node, messages::PoopMealText,
+                           {HpDivisorKey, MpDivisorKey, WeightKey, CurePercentKey})) {
+      return {};
     }
-    return {.belowSize = largest ? 0 : positive(reader, node, BelowSizeKey),
-            .hpDivisor = positive(reader, node, HpDivisorKey),
-            .mpDivisor = positive(reader, node, MpDivisorKey),
-            .weight = integer(reader, node, WeightKey),
-            .curePercent = nonNegative(reader, node, CurePercentKey)};
+  } else if (!reader.expectKeys(
+                 node, messages::PoopMealText,
+                 {BelowSizeKey, HpDivisorKey, MpDivisorKey, WeightKey, CurePercentKey})) {
+    return {};
+  }
+  return {.belowSize = largest ? 0 : positive(reader, node, BelowSizeKey),
+          .hpDivisor = positive(reader, node, HpDivisorKey),
+          .mpDivisor = positive(reader, node, MpDivisorKey),
+          .weight = integer(reader, node, WeightKey),
+          .curePercent = nonNegative(reader, node, CurePercentKey)};
 }
 
-std::vector<std::string> readNames(YamlReader& reader, const YamlNode& parent, std::string_view key) {
-    std::vector<std::string> names;
-    const YamlNode& node = reader.field(parent, key);
-    if (!reader.ok()) {
-        return names;
-    }
-    for (const YamlNode& item : reader.sequence(node, key)) {
-        names.push_back(reader.text(item));
-    }
+std::vector<std::string> readNames(YamlReader& reader, const YamlNode& parent,
+                                   std::string_view key) {
+  std::vector<std::string> names;
+  const YamlNode& node = reader.field(parent, key);
+  if (!reader.ok()) {
     return names;
+  }
+  for (const YamlNode& item : reader.sequence(node, key)) {
+    names.push_back(reader.text(item));
+  }
+  return names;
 }
 
 ToiletRules readToilet(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, ToiletKey,
-               {PoopStepKey, UrgeOffsetKey, UrgeFramesKey, ToiletHappinessKey, ToiletDisciplineKey, WildHappinessKey,
-                WildDisciplineKey, WildTamerKey, WeightLossRollKey, WeightLossDivisorKey, VirusBarLimitKey,
-                VirusFormKey, PoopEatersKey, EatingKey, EatingLargestKey, PilesPerMapKey, PilesTotalKey},
-               node)) {
-        return {};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, ToiletKey,
+             {PoopStepKey, UrgeOffsetKey, UrgeFramesKey, ToiletHappinessKey, ToiletDisciplineKey,
+              WildHappinessKey, WildDisciplineKey, WildTamerKey, WeightLossRollKey,
+              WeightLossDivisorKey, VirusBarLimitKey, VirusFormKey, PoopEatersKey, EatingKey,
+              EatingLargestKey, PilesPerMapKey, PilesTotalKey},
+             node)) {
+    return {};
+  }
+  ToiletRules rules;
+  rules.poopStepMinutes = positive(reader, *node, PoopStepKey);
+  rules.urgeDisciplineOffset = integer(reader, *node, UrgeOffsetKey);
+  rules.urgeFramesPerHundred = nonNegative(reader, *node, UrgeFramesKey);
+  rules.toilet = {.happiness = integer(reader, *node, ToiletHappinessKey),
+                  .discipline = integer(reader, *node, ToiletDisciplineKey)};
+  rules.wild = {.happiness = integer(reader, *node, WildHappinessKey),
+                .discipline = integer(reader, *node, WildDisciplineKey)};
+  rules.wildTamerLevelPercent = nonNegative(reader, *node, WildTamerKey);
+  rules.weightLossRoll = nonNegative(reader, *node, WeightLossRollKey);
+  rules.weightLossDivisor = positive(reader, *node, WeightLossDivisorKey);
+  rules.virusBarLimit = positive(reader, *node, VirusBarLimitKey);
+  const YamlNode& form = reader.field(*node, VirusFormKey);
+  rules.virusForm = reader.ok() ? reader.text(form) : std::string{};
+  rules.poopEaters = readNames(reader, *node, PoopEatersKey);
+  const YamlNode& eating = reader.field(*node, EatingKey);
+  if (reader.ok()) {
+    for (const YamlNode& meal : reader.sequence(eating, EatingKey)) {
+      rules.eating.push_back(readMeal(reader, meal, false));
+      if (reader.ok() && rules.eating.size() > 1 &&
+          rules.eating.back().belowSize <= rules.eating[rules.eating.size() - 2].belowSize) {
+        reader.fail(meal, messages::EatingNotRising);
+      }
     }
-    ToiletRules rules;
-    rules.poopStepMinutes = positive(reader, *node, PoopStepKey);
-    rules.urgeDisciplineOffset = integer(reader, *node, UrgeOffsetKey);
-    rules.urgeFramesPerHundred = nonNegative(reader, *node, UrgeFramesKey);
-    rules.toilet = {.happiness = integer(reader, *node, ToiletHappinessKey),
-                    .discipline = integer(reader, *node, ToiletDisciplineKey)};
-    rules.wild = {.happiness = integer(reader, *node, WildHappinessKey),
-                  .discipline = integer(reader, *node, WildDisciplineKey)};
-    rules.wildTamerLevelPercent = nonNegative(reader, *node, WildTamerKey);
-    rules.weightLossRoll = nonNegative(reader, *node, WeightLossRollKey);
-    rules.weightLossDivisor = positive(reader, *node, WeightLossDivisorKey);
-    rules.virusBarLimit = positive(reader, *node, VirusBarLimitKey);
-    const YamlNode& form = reader.field(*node, VirusFormKey);
-    rules.virusForm = reader.ok() ? reader.text(form) : std::string{};
-    rules.poopEaters = readNames(reader, *node, PoopEatersKey);
-    const YamlNode& eating = reader.field(*node, EatingKey);
-    if (reader.ok()) {
-        for (const YamlNode& meal : reader.sequence(eating, EatingKey)) {
-            rules.eating.push_back(readMeal(reader, meal, false));
-            if (reader.ok() && rules.eating.size() > 1 &&
-                rules.eating.back().belowSize <= rules.eating[rules.eating.size() - 2].belowSize) {
-                reader.fail(meal, messages::EatingNotRising);
-            }
-        }
-    }
-    const YamlNode& largest = reader.field(*node, EatingLargestKey);
-    if (reader.ok()) {
-        rules.eatingLargest = readMeal(reader, largest, true);
-    }
-    rules.pilesPerMap = positive(reader, *node, PilesPerMapKey);
-    rules.pilesTotal = positive(reader, *node, PilesTotalKey);
-    return rules;
+  }
+  const YamlNode& largest = reader.field(*node, EatingLargestKey);
+  if (reader.ok()) {
+    rules.eatingLargest = readMeal(reader, largest, true);
+  }
+  rules.pilesPerMap = positive(reader, *node, PilesPerMapKey);
+  rules.pilesTotal = positive(reader, *node, PilesTotalKey);
+  return rules;
 }
 
 SicknessRules readSickness(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, SicknessKey,
-               {MissedSleepHoursKey, TriesOffsetKey, TriesPercentKey, TirednessOffsetKey, DislikedAreaHoursKey,
-                InjuryHoursKey, UntreatedHoursKey, OnSickHappinessKey, HourlyPenaltyKey},
-               node)) {
-        return {};
-    }
-    return {.missedSleepHours = positive(reader, *node, MissedSleepHoursKey),
-            .triesOffset = integer(reader, *node, TriesOffsetKey),
-            .triesPercent = nonNegative(reader, *node, TriesPercentKey),
-            .tirednessOffset = integer(reader, *node, TirednessOffsetKey),
-            .dislikedAreaHours = positive(reader, *node, DislikedAreaHoursKey),
-            .injuryHours = positive(reader, *node, InjuryHoursKey),
-            .untreatedHours = positive(reader, *node, UntreatedHoursKey),
-            .onSickHappiness = integer(reader, *node, OnSickHappinessKey),
-            .hourlyPenalty = moodChange(reader, *node, HourlyPenaltyKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, SicknessKey,
+             {MissedSleepHoursKey, TriesOffsetKey, TriesPercentKey, TirednessOffsetKey,
+              DislikedAreaHoursKey, InjuryHoursKey, UntreatedHoursKey, OnSickHappinessKey,
+              HourlyPenaltyKey},
+             node)) {
+    return {};
+  }
+  return {.missedSleepHours = positive(reader, *node, MissedSleepHoursKey),
+          .triesOffset = integer(reader, *node, TriesOffsetKey),
+          .triesPercent = nonNegative(reader, *node, TriesPercentKey),
+          .tirednessOffset = integer(reader, *node, TirednessOffsetKey),
+          .dislikedAreaHours = positive(reader, *node, DislikedAreaHoursKey),
+          .injuryHours = positive(reader, *node, InjuryHoursKey),
+          .untreatedHours = positive(reader, *node, UntreatedHoursKey),
+          .onSickHappiness = integer(reader, *node, OnSickHappinessKey),
+          .hourlyPenalty = moodChange(reader, *node, HourlyPenaltyKey)};
 }
 
 MoodRules readMood(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, MoodKey,
-               {ScoldDisciplineKey, ScoldHappinessKey, BoostedScoldDisciplineKey, BoostedScoldHappinessKey,
-                PraiseDisciplineKey, PraiseHappinessKey, PraiseDivisorKey, SulkCheckKey, SulkRecoveryKey,
-                SulkStatLossFramesKey, SulkStatLossPercentKey, AreaEffectFramesKey, LikedAreaKey, DislikedAreaKey,
-                AreaTimerLimitKey},
-               node)) {
-        return {};
-    }
-    return {.scold = {.happiness = integer(reader, *node, ScoldHappinessKey),
-                      .discipline = integer(reader, *node, ScoldDisciplineKey)},
-            .boostedScold = {.happiness = integer(reader, *node, BoostedScoldHappinessKey),
-                             .discipline = integer(reader, *node, BoostedScoldDisciplineKey)},
-            .praise = {.happiness = integer(reader, *node, PraiseHappinessKey),
-                       .discipline = integer(reader, *node, PraiseDisciplineKey)},
-            .praiseDisciplineDivisor = positive(reader, *node, PraiseDivisorKey),
-            .sulkCheckFrames = positive(reader, *node, SulkCheckKey),
-            .sulkRecoveryFrames = positive(reader, *node, SulkRecoveryKey),
-            .sulkStatLossFrames = positive(reader, *node, SulkStatLossFramesKey),
-            .sulkStatLossPercent = nonNegative(reader, *node, SulkStatLossPercentKey),
-            .areaEffectFrames = positive(reader, *node, AreaEffectFramesKey),
-            .likedArea = moodChange(reader, *node, LikedAreaKey),
-            .dislikedArea = moodChange(reader, *node, DislikedAreaKey),
-            .areaTimerLimitFrames = positive(reader, *node, AreaTimerLimitKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, MoodKey,
+             {ScoldDisciplineKey, ScoldHappinessKey, BoostedScoldDisciplineKey,
+              BoostedScoldHappinessKey, PraiseDisciplineKey, PraiseHappinessKey, PraiseDivisorKey,
+              SulkCheckKey, SulkRecoveryKey, SulkStatLossFramesKey, SulkStatLossPercentKey,
+              AreaEffectFramesKey, LikedAreaKey, DislikedAreaKey, AreaTimerLimitKey},
+             node)) {
+    return {};
+  }
+  return {.scold = {.happiness = integer(reader, *node, ScoldHappinessKey),
+                    .discipline = integer(reader, *node, ScoldDisciplineKey)},
+          .boostedScold = {.happiness = integer(reader, *node, BoostedScoldHappinessKey),
+                           .discipline = integer(reader, *node, BoostedScoldDisciplineKey)},
+          .praise = {.happiness = integer(reader, *node, PraiseHappinessKey),
+                     .discipline = integer(reader, *node, PraiseDisciplineKey)},
+          .praiseDisciplineDivisor = positive(reader, *node, PraiseDivisorKey),
+          .sulkCheckFrames = positive(reader, *node, SulkCheckKey),
+          .sulkRecoveryFrames = positive(reader, *node, SulkRecoveryKey),
+          .sulkStatLossFrames = positive(reader, *node, SulkStatLossFramesKey),
+          .sulkStatLossPercent = nonNegative(reader, *node, SulkStatLossPercentKey),
+          .areaEffectFrames = positive(reader, *node, AreaEffectFramesKey),
+          .likedArea = moodChange(reader, *node, LikedAreaKey),
+          .dislikedArea = moodChange(reader, *node, DislikedAreaKey),
+          .areaTimerLimitFrames = positive(reader, *node, AreaTimerLimitKey)};
 }
 
 TirednessRules readTiredness(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, TirednessGroupKey,
-               {TiredThresholdKey, TiredHappinessKey, TiredHappinessFramesKey, SubTirednessThresholdKey}, node)) {
-        return {};
-    }
-    return {.tiredThreshold = nonNegative(reader, *node, TiredThresholdKey),
-            .tiredHappiness = integer(reader, *node, TiredHappinessKey),
-            .tiredHappinessFrames = positive(reader, *node, TiredHappinessFramesKey),
-            .subTirednessThreshold = positive(reader, *node, SubTirednessThresholdKey)};
+  const YamlNode* node = nullptr;
+  if (!group(
+          reader, root, TirednessGroupKey,
+          {TiredThresholdKey, TiredHappinessKey, TiredHappinessFramesKey, SubTirednessThresholdKey},
+          node)) {
+    return {};
+  }
+  return {.tiredThreshold = nonNegative(reader, *node, TiredThresholdKey),
+          .tiredHappiness = integer(reader, *node, TiredHappinessKey),
+          .tiredHappinessFrames = positive(reader, *node, TiredHappinessFramesKey),
+          .subTirednessThreshold = positive(reader, *node, SubTirednessThresholdKey)};
 }
 
 YearRules readYear(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, YearKey, {HappyHappinessKey, HappyTamerKey, UnhappyTamerKey}, node)) {
-        return {};
-    }
-    return {.happyHappiness = integer(reader, *node, HappyHappinessKey),
-            .happyTamerLevelPercent = nonNegative(reader, *node, HappyTamerKey),
-            .unhappyTamerLevelPercent = nonNegative(reader, *node, UnhappyTamerKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, YearKey, {HappyHappinessKey, HappyTamerKey, UnhappyTamerKey}, node)) {
+    return {};
+  }
+  return {.happyHappiness = integer(reader, *node, HappyHappinessKey),
+          .happyTamerLevelPercent = nonNegative(reader, *node, HappyTamerKey),
+          .unhappyTamerLevelPercent = nonNegative(reader, *node, UnhappyTamerKey)};
 }
 
 CareStrategyNames readStrategyNames(YamlReader& reader, const YamlNode& root) {
-    const YamlNode* node = nullptr;
-    if (!group(reader, root, StrategiesKey, {CareMistakesKey, SicknessRollKey, ItemRefusalKey}, node)) {
-        return {};
-    }
-    const auto name = [&](std::string_view key) {
-        const YamlNode& value = reader.field(*node, key);
-        return reader.ok() ? reader.text(value) : std::string{};
-    };
-    return {.careMistakes = name(CareMistakesKey),
-            .sicknessRoll = name(SicknessRollKey),
-            .itemRefusal = name(ItemRefusalKey)};
+  const YamlNode* node = nullptr;
+  if (!group(reader, root, StrategiesKey, {CareMistakesKey, SicknessRollKey, ItemRefusalKey},
+             node)) {
+    return {};
+  }
+  const auto name = [&](std::string_view key) {
+    const YamlNode& value = reader.field(*node, key);
+    return reader.ok() ? reader.text(value) : std::string{};
+  };
+  return {.careMistakes = name(CareMistakesKey),
+          .sicknessRoll = name(SicknessRollKey),
+          .itemRefusal = name(ItemRefusalKey)};
 }
 
 CareQuirks readCareQuirks(YamlReader& reader, const YamlNode& root) {
-    const YamlNode& node = reader.field(root, ruleset::QuirksKey);
-    if (!reader.ok()) {
-        return {};
-    }
-    const ruleset::Quirks quirks = ruleset::readQuirks(
-        reader, node,
-        {SleepingHungryKeepsWeight, SleepAddsDefaultHours, SicknessChanceWraps, YoungSleepWithoutVariation,
-         BattleMidnightSkipsAge, ToiletDoublesPoopInterval, FoodClearsTrainingBoost, SkippedHungerCountsTwice,
-         SkippedHoursAddTries, SkippedHoursUnhappyAtMidnight, WakeSearchesFromLastMeal});
-    return {.sleepingHungryKeepsWeight = quirks.on(SleepingHungryKeepsWeight),
-            .sleepAddsDefaultHoursToEvolution = quirks.on(SleepAddsDefaultHours),
-            .sicknessChanceWraps = quirks.on(SicknessChanceWraps),
-            .youngSleepWithoutVariation = quirks.on(YoungSleepWithoutVariation),
-            .battleMidnightSkipsAge = quirks.on(BattleMidnightSkipsAge),
-            .toiletDoublesPoopInterval = quirks.on(ToiletDoublesPoopInterval),
-            .foodClearsTrainingBoost = quirks.on(FoodClearsTrainingBoost),
-            .skippedHungerWindowCountsTwice = quirks.on(SkippedHungerCountsTwice),
-            .skippedHoursAddSicknessTries = quirks.on(SkippedHoursAddTries),
-            .skippedHoursUnhappinessOnlyAtMidnight = quirks.on(SkippedHoursUnhappyAtMidnight),
-            .wakeSearchesFromLastMeal = quirks.on(WakeSearchesFromLastMeal)};
+  const YamlNode& node = reader.field(root, ruleset::QuirksKey);
+  if (!reader.ok()) {
+    return {};
+  }
+  const ruleset::Quirks quirks = ruleset::readQuirks(
+      reader, node,
+      {SleepingHungryKeepsWeight, SleepAddsDefaultHours, SicknessChanceWraps,
+       YoungSleepWithoutVariation, BattleMidnightSkipsAge, ToiletDoublesPoopInterval,
+       FoodClearsTrainingBoost, SkippedHungerCountsTwice, SkippedHoursAddTries,
+       SkippedHoursUnhappyAtMidnight, WakeSearchesFromLastMeal});
+  return {.sleepingHungryKeepsWeight = quirks.on(SleepingHungryKeepsWeight),
+          .sleepAddsDefaultHoursToEvolution = quirks.on(SleepAddsDefaultHours),
+          .sicknessChanceWraps = quirks.on(SicknessChanceWraps),
+          .youngSleepWithoutVariation = quirks.on(YoungSleepWithoutVariation),
+          .battleMidnightSkipsAge = quirks.on(BattleMidnightSkipsAge),
+          .toiletDoublesPoopInterval = quirks.on(ToiletDoublesPoopInterval),
+          .foodClearsTrainingBoost = quirks.on(FoodClearsTrainingBoost),
+          .skippedHungerWindowCountsTwice = quirks.on(SkippedHungerCountsTwice),
+          .skippedHoursAddSicknessTries = quirks.on(SkippedHoursAddTries),
+          .skippedHoursUnhappinessOnlyAtMidnight = quirks.on(SkippedHoursUnhappyAtMidnight),
+          .wakeSearchesFromLastMeal = quirks.on(WakeSearchesFromLastMeal)};
 }
 
 } // namespace
 
 core::Result<CareRules> readCareRules(const ruleset::Section& section) {
-    YamlReader reader;
-    const YamlNode& root = section.node;
-    if (!reader.expectKeys(root, messages::CareSectionText,
-                           {LimitsKey, StartKey, HungerKey, RefusalKey, SleepKey, ToiletKey, SicknessKey, MoodKey,
-                            TirednessGroupKey, YearKey, StrategiesKey, ruleset::QuirksKey})) {
-        return std::unexpected{reader.error(section.file)};
-    }
-    CareRules rules{.limits = readLimits(reader, root),
-                    .start = readStart(reader, root),
-                    .hunger = readHunger(reader, root),
-                    .refusal = readRefusal(reader, root),
-                    .sleep = readSleep(reader, root),
-                    .toilet = readToilet(reader, root),
-                    .sickness = readSickness(reader, root),
-                    .mood = readMood(reader, root),
-                    .tiredness = readTiredness(reader, root),
-                    .year = readYear(reader, root),
-                    .strategies = readStrategyNames(reader, root),
-                    .quirks = readCareQuirks(reader, root)};
-    return reader.finish(std::move(rules), section.file);
+  YamlReader reader;
+  const YamlNode& root = section.node;
+  if (!reader.expectKeys(root, messages::CareSectionText,
+                         {LimitsKey, StartKey, HungerKey, RefusalKey, SleepKey, ToiletKey,
+                          SicknessKey, MoodKey, TirednessGroupKey, YearKey, StrategiesKey,
+                          ruleset::QuirksKey})) {
+    return std::unexpected{reader.error(section.file)};
+  }
+  CareRules rules{.limits = readLimits(reader, root),
+                  .start = readStart(reader, root),
+                  .hunger = readHunger(reader, root),
+                  .refusal = readRefusal(reader, root),
+                  .sleep = readSleep(reader, root),
+                  .toilet = readToilet(reader, root),
+                  .sickness = readSickness(reader, root),
+                  .mood = readMood(reader, root),
+                  .tiredness = readTiredness(reader, root),
+                  .year = readYear(reader, root),
+                  .strategies = readStrategyNames(reader, root),
+                  .quirks = readCareQuirks(reader, root)};
+  return reader.finish(std::move(rules), section.file);
 }
 
 } // namespace dwe::game::partner

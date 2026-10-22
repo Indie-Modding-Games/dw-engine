@@ -17,169 +17,180 @@ constexpr std::int32_t MinutesPerHour = 60;
 constexpr std::int32_t LifetimeHoursPerHour = 1;
 
 StatValues statsOf(const CombatStats& stats) {
-    return {stats.maxHp, stats.maxMp, stats.offense, stats.defense, stats.speed, stats.brain};
+  return {stats.maxHp, stats.maxMp, stats.offense, stats.defense, stats.speed, stats.brain};
 }
 
-// battle_ui.c: battleStatsGainsAndDrops: each stat gains by how strong the strongest enemy was, and when that gives
-// nothing, by a chance from what the partner did.
+// battle_ui.c: battleStatsGainsAndDrops: each stat gains by how strong the strongest enemy was, and
+// when that gives nothing, by a chance from what the partner did.
 StatValues statGains(const BattleState& state, const BattleRules& rules, ruleset::Random& random) {
-    const RewardRules& rewards = rules.rewards;
-    const Fighter& partner = state.partner();
-    const StatValues partnerStats = statsOf(partner.startStats);
-    const std::size_t enemies = state.enemyCount();
-    const std::int32_t factor = rewards.enemyFactors.at(enemies - 1);
-    StatValues gains{};
-    for (std::size_t stat = 0; stat < StatCount; ++stat) {
-        std::int32_t strongest = 0;
-        for (FighterId id = 1; id <= enemies; ++id) {
-            strongest = std::max(strongest, statsOf(state.fighters[id].startStats).at(stat));
-        }
-        const std::int32_t mine = partnerStats.at(stat);
-        const std::int32_t scale = mine == 0 ? rewards.partnerScale : mine * rewards.partnerScale;
-        if (strongest >= mine) {
-            gains.at(stat) = (scale + (strongest * factor) - 1) / scale;
-        } else if (random.below(Hundred) < strongest * factor * Hundred / scale) {
-            gains.at(stat) = 1;
-        }
+  const RewardRules& rewards = rules.rewards;
+  const Fighter& partner = state.partner();
+  const StatValues partnerStats = statsOf(partner.startStats);
+  const std::size_t enemies = state.enemyCount();
+  const std::int32_t factor = rewards.enemyFactors.at(enemies - 1);
+  StatValues gains{};
+  for (std::size_t stat = 0; stat < StatCount; ++stat) {
+    std::int32_t strongest = 0;
+    for (FighterId id = 1; id <= enemies; ++id) {
+      strongest = std::max(strongest, statsOf(state.fighters[id].startStats).at(stat));
     }
-    const StatGainFallback& fallback = rewards.fallback;
-    const BattleCounters& counters = state.counters;
-    const std::int32_t maxHp = std::max(partner.stats.maxHp, 1);
-    const std::int32_t hpLost = partner.combatant.hp - partner.hp;
-    const StatValues chances{hpLost * fallback.hpLostPercent / maxHp,
-                             counters.attacks * fallback.attacks,
-                             counters.attacks * fallback.attacks,
-                             counters.bigHits * fallback.bigHits,
-                             (counters.blocks * fallback.blocks) + (hpLost * fallback.speedHpLostPercent / maxHp),
-                             (counters.attacks * fallback.brainAttacks) + (counters.bigHits * fallback.brainBigHits)};
-    for (std::size_t stat = 0; stat < StatCount; ++stat) {
-        if (gains.at(stat) == 0 && random.below(Hundred) < chances.at(stat)) {
-            gains.at(stat) = 1;
-        }
+    const std::int32_t mine = partnerStats.at(stat);
+    const std::int32_t scale = mine == 0 ? rewards.partnerScale : mine * rewards.partnerScale;
+    if (strongest >= mine) {
+      gains.at(stat) = (scale + (strongest * factor) - 1) / scale;
+    } else if (random.below(Hundred) < strongest * factor * Hundred / scale) {
+      gains.at(stat) = 1;
     }
-    return gains;
+  }
+  const StatGainFallback& fallback = rewards.fallback;
+  const BattleCounters& counters = state.counters;
+  const std::int32_t maxHp = std::max(partner.stats.maxHp, 1);
+  const std::int32_t hpLost = partner.combatant.hp - partner.hp;
+  const StatValues chances{
+      hpLost * fallback.hpLostPercent / maxHp,
+      counters.attacks * fallback.attacks,
+      counters.attacks * fallback.attacks,
+      counters.bigHits * fallback.bigHits,
+      (counters.blocks * fallback.blocks) + (hpLost * fallback.speedHpLostPercent / maxHp),
+      (counters.attacks * fallback.brainAttacks) + (counters.bigHits * fallback.brainBigHits)};
+  for (std::size_t stat = 0; stat < StatCount; ++stat) {
+    if (gains.at(stat) == 0 && random.below(Hundred) < chances.at(stat)) {
+      gains.at(stat) = 1;
+    }
+  }
+  return gains;
 }
 
-std::vector<std::string> drops(const BattleSetup& setup, const RewardRules& rules, ruleset::Random& random) {
-    std::vector<std::string> items;
-    if (std::ranges::find(rules.noDropMaps, setup.map) != rules.noDropMaps.end()) {
-        return items;
-    }
-    for (const Combatant& enemy : setup.enemies) {
-        if (enemy.dropChance > random.below(Hundred) && enemy.dropItem) {
-            items.push_back(*enemy.dropItem);
-        }
-    }
+std::vector<std::string> drops(const BattleSetup& setup, const RewardRules& rules,
+                               ruleset::Random& random) {
+  std::vector<std::string> items;
+  if (std::ranges::find(rules.noDropMaps, setup.map) != rules.noDropMaps.end()) {
     return items;
+  }
+  for (const Combatant& enemy : setup.enemies) {
+    if (enemy.dropChance > random.below(Hundred) && enemy.dropItem) {
+      items.push_back(*enemy.dropItem);
+    }
+  }
+  return items;
 }
 
 // battle_ui.c: handleBattleEndBox, handleBattleInjury.
-bool injured(const BattleSetup& setup, const BattleState& state, const BattleRules& rules, ruleset::Random& random) {
-    const bool hit = rules.quirks.on(quirk::InjuryCountsAnyHit) ? state.counters.anyoneHit : state.counters.partnerHit;
-    if (setup.condition.injured || !hit) {
-        return false;
-    }
-    const Fighter& partner = state.partner();
-    const std::int32_t hpPercent = Hundred * partner.hp / std::max(partner.stats.maxHp, 1);
-    return random.below(Hundred) < setup.condition.tiredness - hpPercent;
+bool injured(const BattleSetup& setup, const BattleState& state, const BattleRules& rules,
+             ruleset::Random& random) {
+  const bool hit = rules.quirks.on(quirk::InjuryCountsAnyHit) ? state.counters.anyoneHit
+                                                              : state.counters.partnerHit;
+  if (setup.condition.injured || !hit) {
+    return false;
+  }
+  const Fighter& partner = state.partner();
+  const std::int32_t hpPercent = Hundred * partner.hp / std::max(partner.stats.maxHp, 1);
+  return random.below(Hundred) < setup.condition.tiredness - hpPercent;
 }
 
-// battle_ui.c: battleMoveLearning: one of the enemy techniques seen, of the partner's specials and in its species'
-// list, by the move's chance for that special.
-std::vector<std::string> learnedMoves(const BattleSetup& setup, const BattleState& state, const MoveCatalog& moves,
-                                      ruleset::Random& random) {
-    const Combatant& partner = setup.partner;
-    const std::vector<std::string>& known = setup.condition.knownMoves;
-    std::vector<MoveRef> candidates;
-    for (const MoveRef ref : state.seenMoves) {
-        const BattleMove& move = moves.at(ref);
-        if (std::ranges::find(known, move.id) != known.end()) {
-            continue;
-        }
-        const auto special = std::ranges::find(partner.specials, std::optional<std::int32_t>{move.special});
-        if (special == partner.specials.end()) {
-            continue;
-        }
-        if (std::ranges::find(partner.speciesMoves, std::optional<std::string>{move.id}) ==
-            partner.speciesMoves.end()) {
-            continue;
-        }
-        const auto slot = static_cast<std::size_t>(std::distance(partner.specials.begin(), special));
-        const std::int32_t chance = move.learnChances ? move.learnChances->at(slot) : 0;
-        if (chance > random.below(Hundred)) {
-            candidates.push_back(ref);
-        }
+// battle_ui.c: battleMoveLearning: one of the enemy techniques seen, of the partner's specials and
+// in its species' list, by the move's chance for that special.
+std::vector<std::string> learnedMoves(const BattleSetup& setup, const BattleState& state,
+                                      const MoveCatalog& moves, ruleset::Random& random) {
+  const Combatant& partner = setup.partner;
+  const std::vector<std::string>& known = setup.condition.knownMoves;
+  std::vector<MoveRef> candidates;
+  for (const MoveRef ref : state.seenMoves) {
+    const BattleMove& move = moves.at(ref);
+    if (std::ranges::find(known, move.id) != known.end()) {
+      continue;
     }
-    if (candidates.empty()) {
-        return {};
+    const auto special =
+        std::ranges::find(partner.specials, std::optional<std::int32_t>{move.special});
+    if (special == partner.specials.end()) {
+      continue;
     }
-    const MoveRef learned =
-        candidates.at(static_cast<std::size_t>(random.below(static_cast<std::int32_t>(candidates.size()))));
-    std::vector<std::string> ids{moves.at(learned).id};
-    for (const MoveRef paired : moves.learnedWith(learned)) {
-        if (std::ranges::find(known, moves.at(paired).id) == known.end()) {
-            ids.push_back(moves.at(paired).id);
-        }
+    if (std::ranges::find(partner.speciesMoves, std::optional<std::string>{move.id}) ==
+        partner.speciesMoves.end()) {
+      continue;
     }
-    return ids;
+    const auto slot = static_cast<std::size_t>(std::distance(partner.specials.begin(), special));
+    const std::int32_t chance = move.learnChances ? move.learnChances->at(slot) : 0;
+    if (chance > random.below(Hundred)) {
+      candidates.push_back(ref);
+    }
+  }
+  if (candidates.empty()) {
+    return {};
+  }
+  const MoveRef learned = candidates.at(
+      static_cast<std::size_t>(random.below(static_cast<std::int32_t>(candidates.size()))));
+  std::vector<std::string> ids{moves.at(learned).id};
+  for (const MoveRef paired : moves.learnedWith(learned)) {
+    if (std::ranges::find(known, moves.at(paired).id) == known.end()) {
+      ids.push_back(moves.at(paired).id);
+    }
+  }
+  return ids;
 }
 
 // partner_impl.c: handlePostBattleTiredness: after a victory or a flight.
-void addPostBattleTiredness(BattleResult& result, const Fighter& partner, const BattleRules& rules) {
-    const ConsequenceRules& rule = rules.consequences;
-    result.care.tiredness += rule.afterBattleTiredness;
-    const std::int32_t maxMp = partner.stats.maxMp;
-    if (maxMp > 0 && partner.mp < maxMp - (maxMp * (Hundred - rule.mpTirednessBelowPercent) / Hundred)) {
-        const std::int32_t spent = maxMp - partner.mp;
-        result.care.tiredness += rules.quirks.on(quirk::BrokenMpTiredness) ? spent / maxMp * rule.mpTirednessScale
-                                                                           : spent * rule.mpTirednessScale / maxMp;
-    }
-    result.foodChange += rule.afterBattleFood;
+void addPostBattleTiredness(BattleResult& result, const Fighter& partner,
+                            const BattleRules& rules) {
+  const ConsequenceRules& rule = rules.consequences;
+  result.care.tiredness += rule.afterBattleTiredness;
+  const std::int32_t maxMp = partner.stats.maxMp;
+  if (maxMp > 0 &&
+      partner.mp < maxMp - (maxMp * (Hundred - rule.mpTirednessBelowPercent) / Hundred)) {
+    const std::int32_t spent = maxMp - partner.mp;
+    result.care.tiredness += rules.quirks.on(quirk::BrokenMpTiredness)
+                                 ? spent / maxMp * rule.mpTirednessScale
+                                 : spent * rule.mpTirednessScale / maxMp;
+  }
+  result.foodChange += rule.afterBattleFood;
 }
 
 } // namespace
 
-BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const BattleState& state, const BattleRules& rules,
-                          const MoveCatalog& moves, ruleset::Random& random) {
-    const Fighter& partner = state.partner();
-    const ConsequenceRules& consequences = rules.consequences;
-    BattleResult result;
-    result.outcome = outcome;
-    result.frames = state.frame;
-    result.partnerHp = partner.hp;
-    result.partnerMp = partner.mp;
-    result.counters = state.counters;
-    result.kind = setup.kind;
-    switch (outcome) {
-    case Outcome::Victory:
-        for (const Combatant& enemy : setup.enemies) {
-            result.bits += enemy.bits;
-        }
-        result.statGains = statGains(state, rules, random);
-        result.drops = drops(setup, rules.rewards, random);
-        result.injured = injured(setup, state, rules, random);
-        result.learnedMoves = learnedMoves(setup, state, moves, random);
-        result.care = consequences.victory;
-        result.recruitJoined = setup.recruitOnVictory;
-        addPostBattleTiredness(result, partner, rules);
-        break;
-    case Outcome::Fled:
-        result.care = consequences.flee;
-        addPostBattleTiredness(result, partner, rules);
-        break;
-    case Outcome::Defeat:
-        result.care = consequences.defeat;
-        result.livesLost = consequences.defeatLives;
-        // The defeat takes the partner to the death map, whose script (dg 212, section 0x48) adds to the current HP
-        // and MP and script_value.c: enforceStatsLimits caps them at the maximums.
-        result.partnerHp = std::min(result.partnerHp + consequences.defeatRestore.hp, partner.stats.maxHp);
-        result.partnerMp = std::min(result.partnerMp + consequences.defeatRestore.mp, partner.stats.maxMp);
-        break;
+BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const BattleState& state,
+                          const BattleRules& rules, const MoveCatalog& moves,
+                          ruleset::Random& random) {
+  const Fighter& partner = state.partner();
+  const ConsequenceRules& consequences = rules.consequences;
+  BattleResult result;
+  result.outcome = outcome;
+  result.frames = state.frame;
+  result.partnerHp = partner.hp;
+  result.partnerMp = partner.mp;
+  result.counters = state.counters;
+  result.kind = setup.kind;
+  switch (outcome) {
+  case Outcome::Victory:
+    for (const Combatant& enemy : setup.enemies) {
+      result.bits += enemy.bits;
     }
-    result.elapsedMinutes = consequences.elapsedMinutes;
-    result.hourCrossed = setup.startMinute + consequences.elapsedMinutes >= MinutesPerHour;
-    result.lifetimeHoursLost = result.hourCrossed ? LifetimeHoursPerHour : 0;
-    return result;
+    result.statGains = statGains(state, rules, random);
+    result.drops = drops(setup, rules.rewards, random);
+    result.injured = injured(setup, state, rules, random);
+    result.learnedMoves = learnedMoves(setup, state, moves, random);
+    result.care = consequences.victory;
+    result.recruitJoined = setup.recruitOnVictory;
+    addPostBattleTiredness(result, partner, rules);
+    break;
+  case Outcome::Fled:
+    result.care = consequences.flee;
+    addPostBattleTiredness(result, partner, rules);
+    break;
+  case Outcome::Defeat:
+    result.care = consequences.defeat;
+    result.livesLost = consequences.defeatLives;
+    // The defeat takes the partner to the death map, whose script (dg 212, section 0x48) adds to
+    // the current HP and MP and script_value.c: enforceStatsLimits caps them at the maximums.
+    result.partnerHp =
+        std::min(result.partnerHp + consequences.defeatRestore.hp, partner.stats.maxHp);
+    result.partnerMp =
+        std::min(result.partnerMp + consequences.defeatRestore.mp, partner.stats.maxMp);
+    break;
+  }
+  result.elapsedMinutes = consequences.elapsedMinutes;
+  result.hourCrossed = setup.startMinute + consequences.elapsedMinutes >= MinutesPerHour;
+  result.lifetimeHoursLost = result.hourCrossed ? LifetimeHoursPerHour : 0;
+  return result;
 }
 
 } // namespace dwe::game::battle

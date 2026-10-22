@@ -2,7 +2,8 @@
 
 #include <string_view>
 
-// The log and error messages of ui. Templates take their arguments in the order of their placeholders.
+// The log and error messages of ui. Templates take their arguments in the order of their
+// placeholders.
 namespace dwe::ui::messages {
 
 // Lua that documents bring (code_trust.cpp, scripting.cpp).
@@ -16,9 +17,11 @@ inline constexpr const char* EventAttributeFromScript =
 inline constexpr std::string_view NoTexts = "cannot read the texts of the packs: {}";
 // Bitmap font meta (font/main_meta.yaml).
 inline constexpr std::string_view BitmapFontContext = "bitmap font";
-inline constexpr std::string_view CellSizeTooSmall = "the cells must be at least one pixel wide and high";
+inline constexpr std::string_view CellSizeTooSmall =
+    "the cells must be at least one pixel wide and high";
 inline constexpr std::string_view BaselineOutsideCell = "the baseline is outside the cells";
-inline constexpr std::string_view AtlasPixelsMismatch = "the atlas has not as many pixels as its size says";
+inline constexpr std::string_view AtlasPixelsMismatch =
+    "the atlas has not as many pixels as its size says";
 inline constexpr std::string_view GlyphOutsideAtlas = "the glyph's cell is outside the atlas";
 inline constexpr std::string_view NotOneCharacter = "must be one character";
 
@@ -30,16 +33,20 @@ inline constexpr std::string_view FontAtlasOutsideFonts =
     "the game reads the font's exact pixels, so it must live under font/ (an id such as font/main)";
 
 // Loading the "original look" font: the asset id and the problem.
-inline constexpr std::string_view OriginalLookMissing = "ui: no {} in the packs; there is no original look font";
+inline constexpr std::string_view OriginalLookMissing =
+    "ui: no {} in the packs; there is no original look font";
 inline constexpr std::string_view BitmapFontUnavailable =
     "ui: the original bitmap font ({}) cannot be read: {}; original look text uses the modern font";
-inline constexpr std::string_view BitmapFontLoaded = "ui: original bitmap font {}: {} characters, {}x{} cells";
+inline constexpr std::string_view BitmapFontLoaded =
+    "ui: original bitmap font {}: {} characters, {}x{} cells";
 inline constexpr std::string_view TextFontChanged = "ui: original look text font: {}";
 
-// Images named by documents and style sheets (image_reference.cpp): the asset id, then the problem's values.
+// Images named by documents and style sheets (image_reference.cpp): the asset id, then the
+// problem's values.
 inline constexpr std::string_view BadPaletteNumber = "'{}' is not a palette number";
 inline constexpr std::string_view NoImage = "no image {} in the packs";
-inline constexpr std::string_view ImageTooLarge = "the image {} is {}x{}, larger than {} on a side for the UI";
+inline constexpr std::string_view ImageTooLarge =
+    "the image {} is {}x{}, larger than {} on a side for the UI";
 inline constexpr std::string_view UiImageOverBudget =
     "it takes {} bytes decoded over its {} levels, more than the {} the UI allows for one image";
 inline constexpr std::string_view ImageFileTooLarge =
@@ -48,7 +55,8 @@ inline constexpr std::string_view ImageUnusable = "the image {} cannot be used: 
 inline constexpr std::string_view NotAnImage = "{} is a {} file, not a PNG or a KTX2 image";
 inline constexpr std::string_view PaletteNeedsPng =
     "a palette of {} is asked for, but it is a {} file, not an indexed PNG";
-inline constexpr std::string_view NoImageMeta = "a palette of {} is asked for, but it has no metadata with palettes";
+inline constexpr std::string_view NoImageMeta =
+    "a palette of {} is asked for, but it has no metadata with palettes";
 inline constexpr std::string_view PaletteOutOfRange = "{} has no palette {}: it has {}";
 
 // skin.yaml and ui/ui_skin.yaml (skin.cpp).
@@ -64,20 +72,25 @@ inline constexpr std::string_view SpriteRectangleWhat = "a sprite: [x, y, width,
 inline constexpr std::string_view OriginalSizeWhat = "original_size: [width, height]";
 inline constexpr std::string_view DocumentClassesNotMapping =
     "must map each name to its entries (document_classes: <document>: <element id>: [classes])";
-inline constexpr std::string_view BadElementId = "must be 1 to 64 letters, digits, underscores and hyphens";
+inline constexpr std::string_view BadElementId =
+    "must be 1 to 64 letters, digits, underscores and hyphens";
 inline constexpr std::string_view ElementClassesWhat = "the classes of an element";
 inline constexpr std::string_view NoElementClasses = "must name at least one class";
 inline constexpr std::string_view SkinClassesUnknownElement =
     "ui: the skin {} puts classes on #{} of the document {}, which has no such element";
 inline constexpr std::string_view SkinClassesUnknownDocument =
     "ui: the skin {} puts classes on elements of the document {}, which the game does not load";
-inline constexpr std::string_view BadSkinName = "must be 1 to 64 lowercase letters, digits and underscores";
+inline constexpr std::string_view BadSkinName =
+    "must be 1 to 64 lowercase letters, digits and underscores";
 inline constexpr std::string_view BadStyleName =
     "must be 1 to 64 lowercase letters, digits, underscores and hyphens, starting with a letter";
-inline constexpr std::string_view ScreensNotMapping = "screens must map screen names to their styles";
+inline constexpr std::string_view ScreensNotMapping =
+    "screens must map screen names to their styles";
 inline constexpr std::string_view EmptySprite = "a sprite must be at least one pixel wide and high";
-inline constexpr std::string_view EmptyOriginalSize = "the original size must be at least one pixel wide and high";
-inline constexpr std::string_view DpPerPixelOutOfRange = "dp_per_pixel must be a number from {} to {}";
+inline constexpr std::string_view EmptyOriginalSize =
+    "the original size must be at least one pixel wide and high";
+inline constexpr std::string_view DpPerPixelOutOfRange =
+    "dp_per_pixel must be a number from {} to {}";
 inline constexpr std::string_view NoSprites = "sprites must map sprite names to rectangles";
 
 // The skins of the packs (skin_catalog.cpp): the skin's folder or id, then the problem.
@@ -85,26 +98,34 @@ inline constexpr std::string_view SkinLeftOut = "ui: the skin {} is left out: {}
 inline constexpr std::string_view SkinIdNotFolder = "its id is {}, not {}, the name of its folder";
 inline constexpr std::string_view SkinAssetMissing = "the packs have no {} of the type it needs";
 inline constexpr std::string_view SkinBaseMissing = "it extends '{}', which is not offered";
-inline constexpr std::string_view SkinExtendsLoop = "it extends '{}', which comes back to it through extends";
-inline constexpr std::string_view NoSkinChoice = "ui: no {} in the packs; the UI starts without a skin";
-inline constexpr std::string_view BadSkinChoice = "ui: {} cannot be read: {}; the UI starts without a skin";
+inline constexpr std::string_view SkinExtendsLoop =
+    "it extends '{}', which comes back to it through extends";
+inline constexpr std::string_view NoSkinChoice =
+    "ui: no {} in the packs; the UI starts without a skin";
+inline constexpr std::string_view BadSkinChoice =
+    "ui: {} cannot be read: {}; the UI starts without a skin";
 inline constexpr std::string_view DefaultSkinFallback =
     "ui: the packs start with the skin {}, which is not offered; the UI starts with its fallback, {}";
-inline constexpr std::string_view DefaultSkinNotOffered = "ui: the packs start with the skin {}, which is not offered";
+inline constexpr std::string_view DefaultSkinNotOffered =
+    "ui: the packs start with the skin {}, which is not offered";
 
 // Sprite sheets of a skin (sprite_sheet_rcss.cpp, skin_styler.cpp).
 inline constexpr std::string_view SpriteSheetSizeMismatch =
     "the sprite sheet {} is {}x{} pixels: not its original size times a whole number";
-inline constexpr std::string_view SpriteOutsideImage = "the sprite {} is outside the image of the sprite sheet {}";
-inline constexpr std::string_view SpriteSheetUnusable = "ui: the sprite sheet {} of the skin {} is left out: {}";
+inline constexpr std::string_view SpriteOutsideImage =
+    "the sprite {} is outside the image of the sprite sheet {}";
+inline constexpr std::string_view SpriteSheetUnusable =
+    "ui: the sprite sheet {} of the skin {} is left out: {}";
 inline constexpr std::string_view DuplicateSprite =
     "ui: the skin {} names the sprite {} in the sprite sheets {} and {}; the one in {} is used";
-inline constexpr std::string_view SkinStyleUnreadable = "ui: the style sheet {} of the skin {} cannot be read";
+inline constexpr std::string_view SkinStyleUnreadable =
+    "ui: the style sheet {} of the skin {} cannot be read";
 
 // Switching skins (ui.cpp).
 inline constexpr std::string_view UnknownSkin = "no skin '{}' in the packs";
 inline constexpr std::string_view SkinChanged = "ui: skin {}";
-inline constexpr std::string_view SkinSwitchFailed = "the skin '{}' cannot be used: {}; the UI keeps '{}'";
+inline constexpr std::string_view SkinSwitchFailed =
+    "the skin '{}' cannot be used: {}; the UI keeps '{}'";
 inline constexpr std::string_view DocumentReloadFailed = "could not reload {}: {}";
 inline constexpr std::string_view DocumentReloaded = "ui: reloaded {}";
 

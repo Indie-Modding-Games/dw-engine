@@ -17,56 +17,56 @@ constexpr std::int32_t HighestType = static_cast<std::int32_t>(DigimonType::Viru
 } // namespace
 
 Combatant combatantOf(const assets::DigimonRow& species) {
-    Combatant combatant;
-    combatant.species = species.id;
-    combatant.level = species.level;
-    combatant.type = static_cast<DigimonType>(std::clamp(species.type, 0, HighestType));
-    combatant.radius = species.radius;
-    combatant.dropItem = species.dropItem;
-    combatant.dropChance = species.dropChance;
-    for (std::size_t slot = 0; slot < SpeciesSpecials; ++slot) {
-        combatant.specials.at(slot) = species.special.at(slot);
-    }
-    for (std::size_t slot = 0; slot < SpeciesMoves; ++slot) {
-        combatant.speciesMoves.at(slot) = species.moves.at(slot);
-    }
-    return combatant;
+  Combatant combatant;
+  combatant.species = species.id;
+  combatant.level = species.level;
+  combatant.type = static_cast<DigimonType>(std::clamp(species.type, 0, HighestType));
+  combatant.radius = species.radius;
+  combatant.dropItem = species.dropItem;
+  combatant.dropChance = species.dropChance;
+  for (std::size_t slot = 0; slot < SpeciesSpecials; ++slot) {
+    combatant.specials.at(slot) = species.special.at(slot);
+  }
+  for (std::size_t slot = 0; slot < SpeciesMoves; ++slot) {
+    combatant.speciesMoves.at(slot) = species.moves.at(slot);
+  }
+  return combatant;
 }
 
-// overworld.c: loadMapDigimon: the NPC record gives the enemy its stats, its moves as animations, its priorities,
-// charge mode, bits and the flag that makes it only target the partner.
+// overworld.c: loadMapDigimon: the NPC record gives the enemy its stats, its moves as animations,
+// its priorities, charge mode, bits and the flag that makes it only target the partner.
 core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const assets::MapNpc& npc) {
-    Combatant enemy = combatantOf(species);
-    enemy.stats = {.maxHp = npc.hp,
-                   .maxMp = npc.mp,
-                   .offense = npc.off,
-                   .defense = npc.def,
-                   .speed = npc.speed,
-                   .brain = npc.brain};
-    enemy.hp = npc.currentHp > 0 ? std::min(npc.currentHp, npc.hp) : npc.hp;
-    enemy.mp = npc.currentMp > 0 ? std::min(npc.currentMp, npc.mp) : npc.mp;
-    enemy.chargeMode = static_cast<ChargeMode>(std::clamp(npc.chargeMode, 0, HighestChargeMode));
-    enemy.focusesPartner = npc.unknown2A == 1;
-    enemy.bits = npc.bits;
-    enemy.position = {.x = npc.position.x, .z = npc.position.z};
-    if (enemy.stats.maxHp < 1) {
-        return std::unexpected{core::Error{messages::formatMessage(messages::NoMaxHp, species.id)}};
+  Combatant enemy = combatantOf(species);
+  enemy.stats = {.maxHp = npc.hp,
+                 .maxMp = npc.mp,
+                 .offense = npc.off,
+                 .defense = npc.def,
+                 .speed = npc.speed,
+                 .brain = npc.brain};
+  enemy.hp = npc.currentHp > 0 ? std::min(npc.currentHp, npc.hp) : npc.hp;
+  enemy.mp = npc.currentMp > 0 ? std::min(npc.currentMp, npc.mp) : npc.mp;
+  enemy.chargeMode = static_cast<ChargeMode>(std::clamp(npc.chargeMode, 0, HighestChargeMode));
+  enemy.focusesPartner = npc.unknown2A == 1;
+  enemy.bits = npc.bits;
+  enemy.position = {.x = npc.position.x, .z = npc.position.z};
+  if (enemy.stats.maxHp < 1) {
+    return std::unexpected{core::Error{messages::formatMessage(messages::NoMaxHp, species.id)}};
+  }
+  for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
+    enemy.movePriorities.at(slot) = npc.movesPriority.at(slot);
+    const std::int32_t animation = npc.moves.at(slot);
+    if (animation == EmptyMoveAnimation) {
+      continue;
     }
-    for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
-        enemy.movePriorities.at(slot) = npc.movesPriority.at(slot);
-        const std::int32_t animation = npc.moves.at(slot);
-        if (animation == EmptyMoveAnimation) {
-            continue;
-        }
-        const std::int32_t index = animation - FirstMoveAnimation;
-        if (index < 0 || std::cmp_greater_equal(index, SpeciesMoves) ||
-            !species.moves.at(static_cast<std::size_t>(index)).has_value()) {
-            return std::unexpected{
-                core::Error{messages::formatMessage(messages::NoSpeciesMove, species.id, index, animation)}};
-        }
-        enemy.moves.at(slot) = species.moves.at(static_cast<std::size_t>(index));
+    const std::int32_t index = animation - FirstMoveAnimation;
+    if (index < 0 || std::cmp_greater_equal(index, SpeciesMoves) ||
+        !species.moves.at(static_cast<std::size_t>(index)).has_value()) {
+      return std::unexpected{core::Error{
+          messages::formatMessage(messages::NoSpeciesMove, species.id, index, animation)}};
     }
-    return enemy;
+    enemy.moves.at(slot) = species.moves.at(static_cast<std::size_t>(index));
+  }
+  return enemy;
 }
 
 } // namespace dwe::game::battle

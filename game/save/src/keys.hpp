@@ -5,8 +5,8 @@
 // The YAML keys of game/save's documents.
 namespace dwe::game::save {
 
-// The keys of a save file, in the order they are written. `complete` goes last so that a file cut short anywhere
-// lacks it.
+// The keys of a save file, in the order they are written. `complete` goes last so that a file cut
+// short anywhere lacks it.
 namespace save_key {
 inline constexpr std::string_view Format = "format";
 inline constexpr std::string_view FormatVersion = "format_version";

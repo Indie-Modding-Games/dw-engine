@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-// The localisation keys of what the player sees about saving (docs/architecture/localizacion.md). The texts live in
-// the localisation files of the `save` area, never in code.
+// The localisation keys of what the player sees about saving (docs/architecture/localizacion.md).
+// The texts live in the localisation files of the `save` area, never in code.
 namespace dwe::game::save::text_key {
 
 // The toast after an autosave.

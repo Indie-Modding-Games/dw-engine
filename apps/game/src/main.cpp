@@ -8,26 +8,26 @@
 #include "ui_demo.hpp"
 
 int main(int argc, char** argv) {
-    using namespace dwe::app;
-    const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
-    if (!options) {
-        return EXIT_FAILURE;
+  using namespace dwe::app;
+  const auto options = parseOptions(std::span{argv, static_cast<std::size_t>(argc)});
+  if (!options) {
+    return EXIT_FAILURE;
+  }
+  if (options->listSaves) {
+    return listSaves(*options);
+  }
+  if (options->checkContent) {
+    return checkContentFolder(options->content);
+  }
+  if (options->uiDemo) {
+    UiDemoOptions demo{.content = options->content,
+                       .width = options->width,
+                       .height = options->height,
+                       .virtualGamepad = options->virtualGamepad};
+    if (!options->maps.empty()) {
+      demo.map = options->maps.front();
     }
-    if (options->listSaves) {
-        return listSaves(*options);
-    }
-    if (options->checkContent) {
-        return checkContentFolder(options->content);
-    }
-    if (options->uiDemo) {
-        UiDemoOptions demo{.content = options->content,
-                           .width = options->width,
-                           .height = options->height,
-                           .virtualGamepad = options->virtualGamepad};
-        if (!options->maps.empty()) {
-            demo.map = options->maps.front();
-        }
-        return runUiDemo(demo);
-    }
-    return wantsDevView(*options) ? runDevView(*options) : runGame(*options);
+    return runUiDemo(demo);
+  }
+  return wantsDevView(*options) ? runDevView(*options) : runGame(*options);
 }

@@ -2,8 +2,8 @@
 
 #include <dwe/platform/events.hpp>
 
-// Keyboard keys by position, as USB HID usage IDs (the values SDL scancodes use). Named after the key on a US
-// layout; on other layouts the binding stays at the same physical place.
+// Keyboard keys by position, as USB HID usage IDs (the values SDL scancodes use). Named after the
+// key on a US layout; on other layouts the binding stays at the same physical place.
 namespace dwe::input::keys {
 
 using platform::KeyCode;

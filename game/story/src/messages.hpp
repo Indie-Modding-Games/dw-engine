@@ -8,7 +8,8 @@ namespace dwe::game::story::messages {
 
 using core::formatMessage;
 
-// The error and log messages of the story runtime, as std::format templates for core::formatMessage.
+// The error and log messages of the story runtime, as std::format templates for
+// core::formatMessage.
 
 // A trigger or a variable outside the state (the number, the last valid one).
 inline constexpr std::string_view TriggerOutOfRange = "story: trigger {} is outside 0-{}";
@@ -23,17 +24,21 @@ inline constexpr std::string_view VariableNotAByte = "a variable must be 0-255, 
 
 // The orders.
 inline constexpr std::string_view NoSuchTrigger = "trigger {} is outside the story's {} triggers";
-inline constexpr std::string_view NoSuchVariable = "variable {} is outside the story's {} variables";
+inline constexpr std::string_view NoSuchVariable =
+    "variable {} is outside the story's {} variables";
 
 // The runner.
-inline constexpr std::string_view NoTicksPerFrame = "a frame of the original must last at least one tick";
-inline constexpr std::string_view RequestDropped = "story: section {:#x} of script {} dropped: script {} is running";
+inline constexpr std::string_view NoTicksPerFrame =
+    "a frame of the original must last at least one tick";
+inline constexpr std::string_view RequestDropped =
+    "story: section {:#x} of script {} dropped: script {} is running";
 inline constexpr std::string_view SectionFailedLog = "story: script {} section {:#x} failed: {}";
 inline constexpr std::string_view SectionMissing = "story: script {} has no section {:#x}: {}";
 inline constexpr std::string_view TooDeep =
     "story: script {} section {:#x} jumps from {} subroutine calls deep, past the guard of {}";
 inline constexpr std::string_view ReturnWithNothing =
     "story: script {} section {:#x} returns with nothing to return to";
-inline constexpr std::string_view NeverWaits = "story: script {} section {:#x} resumed {} times in one frame";
+inline constexpr std::string_view NeverWaits =
+    "story: script {} section {:#x} resumed {} times in one frame";
 
 } // namespace dwe::game::story::messages

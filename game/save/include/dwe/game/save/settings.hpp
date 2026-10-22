@@ -18,13 +18,14 @@ inline constexpr std::string_view SettingsAssetId = "save/settings";
 inline constexpr std::int32_t MaxSlots = 99;
 
 // How many save slots there are, read from `save/settings` in the game pack
-// (content/schemas/save_settings.schema.json). When the game autosaves is the ruleset's (AutosaveRules).
+// (content/schemas/save_settings.schema.json). When the game autosaves is the ruleset's
+// (AutosaveRules).
 struct SaveSettings {
-    // Slots the player saves to from the save menu. The original had up to 15 files per memory card, one per slot
-    // (main_menu.c: SAVEGAME_SLOT_INFO).
-    std::int32_t manualSlots = 15;
-    // Slots the autosave writes to in turn, overwriting the oldest; 0 turns the autosave off.
-    std::int32_t autosaveSlots = 0;
+  // Slots the player saves to from the save menu. The original had up to 15 files per memory card,
+  // one per slot (main_menu.c: SAVEGAME_SLOT_INFO).
+  std::int32_t manualSlots = 15;
+  // Slots the autosave writes to in turn, overwriting the oldest; 0 turns the autosave off.
+  std::int32_t autosaveSlots = 0;
 };
 
 // Reads the save settings.

@@ -16,7 +16,8 @@ inline constexpr std::string_view StatsText = "stats";
 inline constexpr std::string_view NegativeValue = "{} cannot be negative";
 inline constexpr std::string_view InFile = "{}: {}";
 inline constexpr std::string_view LevelLimitsReversed = "level_min ({}) is above level_max ({})";
-inline constexpr std::string_view StartLevelOutside = "tamer_level {} is outside the tamer section's {} to {}";
+inline constexpr std::string_view StartLevelOutside =
+    "tamer_level {} is outside the tamer section's {} to {}";
 inline constexpr std::string_view ItemUseSectionText = "the item_use section";
 inline constexpr std::string_view NeverTakenRule = "item_use refusal.never_taken";
 inline constexpr std::string_view DisciplineCheckedRule = "item_use refusal.discipline_checked";
@@ -25,7 +26,8 @@ inline constexpr std::string_view MealsRule = "item_use meals";
 inline constexpr std::string_view ItemText = "item";
 inline constexpr std::string_view FixedLevelText = "a fixed-level evolution item";
 inline constexpr std::string_view PartnerMovesSectionText = "the partner_moves section";
-inline constexpr std::string_view MoveSlotOutside = "move position {} is outside the species' list of {}";
+inline constexpr std::string_view MoveSlotOutside =
+    "move position {} is outside the species' list of {}";
 
 // Setting up a session.
 inline constexpr std::string_view NoFiles = "a session needs the packs";
@@ -58,35 +60,45 @@ inline constexpr std::string_view NotARandomState = "'{}' is not a random state"
 inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";
 
 // The evolution adapter.
-inline constexpr std::string_view EvolutionNeedsTables = "the evolution adapter needs the packs or its tables";
+inline constexpr std::string_view EvolutionNeedsTables =
+    "the evolution adapter needs the packs or its tables";
 inline constexpr std::string_view EvolutionNotRead = "the evolution rules have not been read";
-inline constexpr std::string_view EvolutionNotApplied = "evolution: the partner could not become '{}': {}";
+inline constexpr std::string_view EvolutionNotApplied =
+    "evolution: the partner could not become '{}': {}";
 inline constexpr std::string_view UnknownEvolutionForm = "evolution: no form '{}' in the tables";
 inline constexpr std::string_view UnknownEvolutionMap =
     "evolution: the special evolution to '{}' asks for map '{}', which is no map of data/maps: the rule never holds";
 
 // The inventory adapter.
-inline constexpr std::string_view InventoryNeedsTables = "the inventory adapter needs the packs or its tables";
+inline constexpr std::string_view InventoryNeedsTables =
+    "the inventory adapter needs the packs or its tables";
 inline constexpr std::string_view InventoryNotRead = "the inventory rules have not been read";
 inline constexpr std::string_view SavedStackDropped =
     "inventory: the save names item '{}', which no pack mounted has: its stack of {} is dropped";
-inline constexpr std::string_view UnknownStartingItem = "bag.new_game_items: item '{}' is not in data/items";
+inline constexpr std::string_view UnknownStartingItem =
+    "bag.new_game_items: item '{}' is not in data/items";
 
 // The battle adapter and the partner's moves.
 inline constexpr std::string_view PartnerMovesStateText = "the partner's moves";
-inline constexpr std::string_view EquippedCount = "the partner's moves have {} equipped positions, not {}";
-inline constexpr std::string_view BattleNeedsTables = "the battle adapter needs the packs or its tables";
+inline constexpr std::string_view EquippedCount =
+    "the partner's moves have {} equipped positions, not {}";
+inline constexpr std::string_view BattleNeedsTables =
+    "the battle adapter needs the packs or its tables";
 inline constexpr std::string_view BattleNotRead = "the battle rules have not been read";
-inline constexpr std::string_view BattleWithoutBag = "the battle adapter has no inventory to throw items from";
+inline constexpr std::string_view BattleWithoutBag =
+    "the battle adapter has no inventory to throw items from";
 inline constexpr std::string_view NoMoveTable = "the ruleset names no {} table";
-inline constexpr std::string_view UnknownPartnerSpecies = "battle: the partner's species '{}' is not in data/digimon";
-inline constexpr std::string_view MovePlaceOutside = "battle: place {} is not one of the {} equipped places";
+inline constexpr std::string_view UnknownPartnerSpecies =
+    "battle: the partner's species '{}' is not in data/digimon";
+inline constexpr std::string_view MovePlaceOutside =
+    "battle: place {} is not one of the {} equipped places";
 inline constexpr std::string_view MoveNotLearned = "battle: the partner has not learned '{}'";
 inline constexpr std::string_view NoMoveAtSlot = "battle: '{}' has no move at position {}";
 
 // The story state (StoryAdapter).
 inline constexpr std::string_view StoryNewGame = "story: a new game starts with {} triggers set";
-// A trigger data/new_game_story does not know at the new game's start, besides the first partner's raised one.
+// A trigger data/new_game_story does not know at the new game's start, besides the first partner's
+// raised one.
 inline constexpr std::string_view StoryUnknownAtStart =
     "story: trigger {} is not known at the new game's start (data/new_game_story); it starts clear";
 inline constexpr std::string_view StoryMissingInSave =

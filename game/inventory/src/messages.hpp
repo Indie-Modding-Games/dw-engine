@@ -15,9 +15,11 @@ inline constexpr std::string_view NotPositive = "the value must be more than zer
 inline constexpr std::string_view Negative = "the value cannot be negative";
 inline constexpr std::string_view SlotCountsOrder = "slot counts must grow and end at max_slots";
 inline constexpr std::string_view NotASlotCount = "{} is not one of slot_counts";
-inline constexpr std::string_view StartingCountRange = "a new game's item count must be from 1 to max_stack ({})";
+inline constexpr std::string_view StartingCountRange =
+    "a new game's item count must be from 1 to max_stack ({})";
 inline constexpr std::string_view StartingItemText = "a new game's item";
-inline constexpr std::string_view SortOrderNotPermutation = "a sort order must list each category 0 to 5 once";
+inline constexpr std::string_view SortOrderNotPermutation =
+    "a sort order must list each category 0 to 5 once";
 inline constexpr std::string_view UnknownHandler = "unknown item handler '{}'";
 inline constexpr std::string_view PercentRange = "the value must be from 0 to 100";
 inline constexpr std::string_view RuleItemTwice = "item {} has two rules";
@@ -29,13 +31,16 @@ inline constexpr std::string_view EmptySlot = "slot {} is empty";
 inline constexpr std::string_view NotDiscardable = "item '{}' cannot be thrown away";
 inline constexpr std::string_view DiscardOnlyInField = "items are thrown away only in the field";
 inline constexpr std::string_view UnknownSortMode = "sort mode {} is not one of the {} orders";
-inline constexpr std::string_view RuleItemUnknown = "inventory rules: {} names item '{}', which is not in data/items";
+inline constexpr std::string_view RuleItemUnknown =
+    "inventory rules: {} names item '{}', which is not in data/items";
 inline constexpr std::string_view BadCount = "a count must be from 1 to {}";
-inline constexpr std::string_view SlotCountTooSmall = "the bag cannot shrink to {} slots: slot {} holds an item";
+inline constexpr std::string_view SlotCountTooSmall =
+    "the bag cannot shrink to {} slots: slot {} holds an item";
 
 // The save.
 inline constexpr std::string_view SlotText = "a slot";
-inline constexpr std::string_view OldInventoryShape = "an inventory of version 1 has a list of slots";
+inline constexpr std::string_view OldInventoryShape =
+    "an inventory of version 1 has a list of slots";
 inline constexpr std::string_view OldItemNumberInvalid =
     "an inventory of version 1 names item '{}', which is no number";
 
@@ -45,8 +50,10 @@ inline constexpr std::string_view EffectUnmapped =
     "item '{}' ({}): the extractor did not decode its case and no rule covers it";
 inline constexpr std::string_view EvolutionUnmapped =
     "item '{}': no evolution target in data/item_effects or the ruleset";
-inline constexpr std::string_view HealingUnmapped = "item '{}': no healing value in data/item_effects";
-inline constexpr std::string_view HandlerRuleMissing = "item '{}' ({}): the ruleset has no rule for it";
+inline constexpr std::string_view HealingUnmapped =
+    "item '{}': no healing value in data/item_effects";
+inline constexpr std::string_view HandlerRuleMissing =
+    "item '{}' ({}): the ruleset has no rule for it";
 
 // Shops.
 inline constexpr std::string_view NotInStock = "item '{}' is not in stock";

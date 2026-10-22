@@ -8,8 +8,9 @@
 
 namespace dwe::ui::fixture {
 
-// A small bitmap font laid out like the one dwx extracts (docs/formats/textos.md): cells of 6 x 11 in one row, a
-// full-width character with its ASCII equivalent per glyph, and one glyph with no ASCII equivalent.
+// A small bitmap font laid out like the one dwx extracts (docs/formats/textos.md): cells of 6 x 11
+// in one row, a full-width character with its ASCII equivalent per glyph, and one glyph with no
+// ASCII equivalent.
 inline constexpr int CellWidth = 6;
 inline constexpr int CellHeight = 11;
 inline constexpr int Baseline = 10;
@@ -46,21 +47,22 @@ glyphs:
   width: 6
 )yaml";
 
-// The atlas: in every cell, ink in the first column from row `glyph + 2` down to the row above the baseline, so each
-// glyph's ink starts at a different row.
+// The atlas: in every cell, ink in the first column from row `glyph + 2` down to the row above the
+// baseline, so each glyph's ink starts at a different row.
 inline assets::Image atlas() {
-    assets::Image image{.width = CellWidth * Cells, .height = CellHeight, .pixels = {}};
-    image.pixels.resize(std::size_t{image.width} * image.height * 4);
-    for (int glyph = 0; glyph < Cells; ++glyph) {
-        for (int row = glyph + 2; row < Baseline; ++row) {
-            const std::size_t at =
-                ((static_cast<std::size_t>(row) * image.width) + static_cast<std::size_t>(glyph * CellWidth)) * 4;
-            for (std::size_t channel = 0; channel < 4; ++channel) {
-                image.pixels[at + channel] = std::byte{0xFF};
-            }
-        }
+  assets::Image image{.width = CellWidth * Cells, .height = CellHeight, .pixels = {}};
+  image.pixels.resize(std::size_t{image.width} * image.height * 4);
+  for (int glyph = 0; glyph < Cells; ++glyph) {
+    for (int row = glyph + 2; row < Baseline; ++row) {
+      const std::size_t at = ((static_cast<std::size_t>(row) * image.width) +
+                              static_cast<std::size_t>(glyph * CellWidth)) *
+                             4;
+      for (std::size_t channel = 0; channel < 4; ++channel) {
+        image.pixels[at + channel] = std::byte{0xFF};
+      }
     }
-    return image;
+  }
+  return image;
 }
 
 } // namespace dwe::ui::fixture

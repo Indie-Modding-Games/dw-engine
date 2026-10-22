@@ -5,9 +5,9 @@
 
 #include <string>
 
-// Conversion of the overlay tables to YAML documents, one per overlay: fishing, stadium, versus and training. Each
-// has a JSON Schema in content/schemas/<name>.schema.json. References to the executable's tables (items, maps,
-// moves, Digimon types) become their ids, as in tablesToYaml.
+// Conversion of the overlay tables to YAML documents, one per overlay: fishing, stadium, versus and
+// training. Each has a JSON Schema in content/schemas/<name>.schema.json. References to the
+// executable's tables (items, maps, moves, Digimon types) become their ids, as in tablesToYaml.
 namespace dwe::formats::exe {
 
 TablesYaml fishingToYaml(const FishingTables& tables, const TableIds& ids);

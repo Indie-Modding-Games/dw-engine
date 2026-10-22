@@ -12,22 +12,23 @@
 
 namespace dwe::ruleset {
 
-// Joins the keys of a value path: "hunger" and "window_minutes" give "hunger.window_minutes", the paths
-// Ruleset::setValue and findValue take.
+// Joins the keys of a value path: "hunger" and "window_minutes" give "hunger.window_minutes", the
+// paths Ruleset::setValue and findValue take.
 std::string joinPath(std::string_view parent, std::string_view key);
 
-// A value written as YAML on one line, the way emitYaml writes it inside a document: `90`, `"Original"`, `[]`. Fails
-// on text that is not valid UTF-8, or on a value that does not fit on one line.
+// A value written as YAML on one line, the way emitYaml writes it inside a document: `90`,
+// `"Original"`, `[]`. Fails on text that is not valid UTF-8, or on a value that does not fit on one
+// line.
 core::Result<std::string> inlineYaml(const core::YamlNode& value);
 
 // A value of a ruleset: a scalar, or an empty sequence or mapping, at a path of a section.
 struct RulesetValue {
-    std::string section;
-    std::string path;
-    // The value as YAML, as emitYaml writes it without the final newline: `90`, `"Original"`, `[]`.
-    std::string yaml;
+  std::string section;
+  std::string path;
+  // The value as YAML, as emitYaml writes it without the final newline: `90`, `"Original"`, `[]`.
+  std::string yaml;
 
-    friend bool operator==(const RulesetValue&, const RulesetValue&) = default;
+  friend bool operator==(const RulesetValue&, const RulesetValue&) = default;
 };
 
 // The values of a section's document, in the order of the document.
@@ -38,12 +39,12 @@ std::vector<RulesetValue> listValues(const Ruleset& ruleset);
 
 // A value that two rulesets do not share: missing on one side, or different.
 struct ValueDifference {
-    std::string section;
-    std::string path;
-    std::optional<std::string> before;
-    std::optional<std::string> after;
+  std::string section;
+  std::string path;
+  std::optional<std::string> before;
+  std::optional<std::string> after;
 
-    friend bool operator==(const ValueDifference&, const ValueDifference&) = default;
+  friend bool operator==(const ValueDifference&, const ValueDifference&) = default;
 };
 
 // The values that differ between two rulesets, by section and path, sorted.

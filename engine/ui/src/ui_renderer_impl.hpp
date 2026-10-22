@@ -16,31 +16,32 @@
 
 namespace dwe::ui {
 
-// Geometry RmlUi compiled, in GPU buffers made once when it is compiled. Dropping it goes through the device's
-// deferred destruction, so frames in flight can still draw it.
+// Geometry RmlUi compiled, in GPU buffers made once when it is compiled. Dropping it goes through
+// the device's deferred destruction, so frames in flight can still draw it.
 struct UiGeometry {
-    rhi::Buffer vertices;
-    rhi::Buffer indices;
-    std::uint32_t indexCount = 0;
+  rhi::Buffer vertices;
+  rhi::Buffer indices;
+  std::uint32_t indexCount = 0;
 };
 
 // One RenderGeometry call, recorded by Ui::update() and replayed by UiRenderer::draw().
 struct UiDraw {
-    std::shared_ptr<const UiGeometry> geometry;
-    glm::vec2 translation{0.0F};
-    render::TextureId texture;
-    // Whether the texture is the disc's pixel art, drawn with sharp texel edges at any size (rml.slang: sharpUv).
-    bool sharp = false;
-    // In pixels from the top left; nothing for the whole target.
-    std::optional<rhi::Rect> scissor;
-    // RmlUi's transform of the element, in pixels.
-    glm::mat4 transform{1.0F};
+  std::shared_ptr<const UiGeometry> geometry;
+  glm::vec2 translation{0.0F};
+  render::TextureId texture;
+  // Whether the texture is the disc's pixel art, drawn with sharp texel edges at any size
+  // (rml.slang: sharpUv).
+  bool sharp = false;
+  // In pixels from the top left; nothing for the whole target.
+  std::optional<rhi::Rect> scissor;
+  // RmlUi's transform of the element, in pixels.
+  glm::mat4 transform{1.0F};
 };
 
 struct UiRenderer::Impl {
-    render::Renderer* renderer = nullptr;
-    rhi::GraphicsPipeline pipeline;
-    std::vector<UiDraw> draws;
+  render::Renderer* renderer = nullptr;
+  rhi::GraphicsPipeline pipeline;
+  std::vector<UiDraw> draws;
 };
 
 } // namespace dwe::ui

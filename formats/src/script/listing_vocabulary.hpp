@@ -10,18 +10,19 @@
 // script_listing.cpp reads them back).
 namespace dwe::formats::script::vocabulary {
 
-// The opcodes whose instruction carries a text, which the listing writes under TextKey (script_interp.c:
-// scriptShowSelection, showTextbox).
+// The opcodes whose instruction carries a text, which the listing writes under TextKey
+// (script_interp.c: scriptShowSelection, showTextbox).
 inline constexpr std::uint8_t SetSelectionOpcode = 0x10;
 inline constexpr std::uint8_t ShowTextboxOpcode = 0x1A;
 inline constexpr std::string_view TextKey = "text";
 
 constexpr bool carriesText(std::uint8_t opcode) {
-    return opcode == SetSelectionOpcode || opcode == ShowTextboxOpcode;
+  return opcode == SetSelectionOpcode || opcode == ShowTextboxOpcode;
 }
 
 // script_value.c: scriptCompareValue, by the low bits of a variable test or a "compare" operand.
-inline constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge", "le", "gt", "lt"};
+inline constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge",
+                                                                 "le", "gt", "lt"};
 
 // scriptIdToEntityId: these ids are not NPCs.
 inline constexpr std::int32_t PartnerEntity = 0xFC;
@@ -33,43 +34,45 @@ inline constexpr std::string_view TamerName = "tamer";
 inline constexpr std::uint8_t AndBit = 0x80;
 inline constexpr std::uint8_t OrBit = 0x40;
 inline constexpr std::uint8_t LowBits = 0x07;
-inline constexpr std::uint8_t ClearBit = 0x01; // a trigger test with low bits set tests that it is clear
+inline constexpr std::uint8_t ClearBit =
+    0x01; // a trigger test with low bits set tests that it is clear
 
 struct TestInfo {
-    std::string_view name;
-    std::uint8_t kind = 0; // the code & 0x38 bits
-    std::uint8_t low = 0;  // the low bits of an extended test
+  std::string_view name;
+  std::uint8_t kind = 0; // the code & 0x38 bits
+  std::uint8_t low = 0;  // the low bits of an extended test
 };
 
 inline constexpr std::array<ConditionTest, 10> Tests = {
-    ConditionTest::Trigger,   ConditionTest::Pstat, ConditionTest::GotoIfTrue, ConditionTest::GotoIfFalse,
-    ConditionTest::Stat,      ConditionTest::Card,  ConditionTest::Move,       ConditionTest::Condition,
-    ConditionTest::ItemCount, ConditionTest::Money};
+    ConditionTest::Trigger,     ConditionTest::Pstat,     ConditionTest::GotoIfTrue,
+    ConditionTest::GotoIfFalse, ConditionTest::Stat,      ConditionTest::Card,
+    ConditionTest::Move,        ConditionTest::Condition, ConditionTest::ItemCount,
+    ConditionTest::Money};
 
 constexpr TestInfo testInfo(ConditionTest test) {
-    switch (test) {
-    case ConditionTest::Trigger:
-        return {.name = "trigger", .kind = 0x00};
-    case ConditionTest::Pstat:
-        return {.name = "pstat", .kind = 0x08};
-    case ConditionTest::GotoIfTrue:
-        return {.name = "goto_if_true", .kind = 0x10};
-    case ConditionTest::GotoIfFalse:
-        return {.name = "goto_if_false", .kind = 0x18};
-    case ConditionTest::Stat:
-        return {.name = "stat", .kind = 0x20, .low = 0};
-    case ConditionTest::Card:
-        return {.name = "card", .kind = 0x20, .low = 1};
-    case ConditionTest::Move:
-        return {.name = "move", .kind = 0x20, .low = 2};
-    case ConditionTest::Condition:
-        return {.name = "condition", .kind = 0x20, .low = 3};
-    case ConditionTest::ItemCount:
-        return {.name = "item_count", .kind = 0x20, .low = 4};
-    case ConditionTest::Money:
-        return {.name = "money", .kind = 0x20, .low = 5};
-    }
-    return {};
+  switch (test) {
+  case ConditionTest::Trigger:
+    return {.name = "trigger", .kind = 0x00};
+  case ConditionTest::Pstat:
+    return {.name = "pstat", .kind = 0x08};
+  case ConditionTest::GotoIfTrue:
+    return {.name = "goto_if_true", .kind = 0x10};
+  case ConditionTest::GotoIfFalse:
+    return {.name = "goto_if_false", .kind = 0x18};
+  case ConditionTest::Stat:
+    return {.name = "stat", .kind = 0x20, .low = 0};
+  case ConditionTest::Card:
+    return {.name = "card", .kind = 0x20, .low = 1};
+  case ConditionTest::Move:
+    return {.name = "move", .kind = 0x20, .low = 2};
+  case ConditionTest::Condition:
+    return {.name = "condition", .kind = 0x20, .low = 3};
+  case ConditionTest::ItemCount:
+    return {.name = "item_count", .kind = 0x20, .low = 4};
+  case ConditionTest::Money:
+    return {.name = "money", .kind = 0x20, .low = 5};
+  }
+  return {};
 }
 
 // The keys of an IF entry.
@@ -82,28 +85,29 @@ inline constexpr std::string_view AndName = "and";
 inline constexpr std::string_view OrName = "or";
 
 constexpr std::string_view combineName(Combine combine) {
-    switch (combine) {
-    case Combine::And:
-        return AndName;
-    case Combine::Or:
-        return OrName;
-    case Combine::Replace:
-        break;
-    }
-    return {};
+  switch (combine) {
+  case Combine::And:
+    return AndName;
+  case Combine::Or:
+    return OrName;
+  case Combine::Replace:
+    break;
+  }
+  return {};
 }
 
-// The code an IF entry has when nothing but its fields sets it: the test, `variant` (ClearBit for a trigger test
-// of a clear trigger, the comparison of a variable test, 0 otherwise) and the combination.
+// The code an IF entry has when nothing but its fields sets it: the test, `variant` (ClearBit for a
+// trigger test of a clear trigger, the comparison of a variable test, 0 otherwise) and the
+// combination.
 constexpr std::uint8_t entryCode(ConditionTest test, std::uint8_t variant, Combine combine) {
-    const TestInfo info = testInfo(test);
-    std::uint8_t code = info.kind | info.low | variant;
-    if (combine == Combine::And) {
-        code |= AndBit;
-    } else if (combine == Combine::Or) {
-        code |= OrBit;
-    }
-    return code;
+  const TestInfo info = testInfo(test);
+  std::uint8_t code = info.kind | info.low | variant;
+  if (combine == Combine::And) {
+    code |= AndBit;
+  } else if (combine == Combine::Or) {
+    code |= OrBit;
+  }
+  return code;
 }
 
 } // namespace dwe::formats::script::vocabulary

@@ -24,22 +24,22 @@ std::string_view logLevelName(LogLevel level);
 
 template <typename... Args>
 void logDebug(std::format_string<Args...> format, Args&&... args) {
-    writeLog(LogLevel::Debug, std::format(format, std::forward<Args>(args)...));
+  writeLog(LogLevel::Debug, std::format(format, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
 void logInfo(std::format_string<Args...> format, Args&&... args) {
-    writeLog(LogLevel::Info, std::format(format, std::forward<Args>(args)...));
+  writeLog(LogLevel::Info, std::format(format, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
 void logWarning(std::format_string<Args...> format, Args&&... args) {
-    writeLog(LogLevel::Warning, std::format(format, std::forward<Args>(args)...));
+  writeLog(LogLevel::Warning, std::format(format, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
 void logError(std::format_string<Args...> format, Args&&... args) {
-    writeLog(LogLevel::Error, std::format(format, std::forward<Args>(args)...));
+  writeLog(LogLevel::Error, std::format(format, std::forward<Args>(args)...));
 }
 
 } // namespace dwe::core

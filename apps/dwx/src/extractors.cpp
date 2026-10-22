@@ -24,9 +24,13 @@ constexpr std::array Registry = {
     Extractor{.name = "executable", .handles = handlesExecutable, .extract = extractExecutable},
     Extractor{.name = "boot_config", .handles = handlesBootConfig, .extract = extractBootConfig},
     Extractor{.name = "map", .handles = handlesMapFile, .extract = extractMapFile},
-    Extractor{.name = "map_background", .handles = handlesMapBackground, .extract = extractMapBackground},
-    Extractor{.name = "arena_collision", .handles = handlesArenaCollision, .extract = extractArenaCollision},
-    Extractor{.name = "digimon_model", .handles = handlesDigimonModel, .extract = extractDigimonModel},
+    Extractor{
+        .name = "map_background", .handles = handlesMapBackground, .extract = extractMapBackground},
+    Extractor{.name = "arena_collision",
+              .handles = handlesArenaCollision,
+              .extract = extractArenaCollision},
+    Extractor{
+        .name = "digimon_model", .handles = handlesDigimonModel, .extract = extractDigimonModel},
     Extractor{.name = "static_model", .handles = handlesStaticModel, .extract = extractStaticModel},
     Extractor{.name = "sound_bank", .handles = handlesSoundFile, .extract = extractSoundFile},
     Extractor{.name = "event_script", .handles = handlesScriptFile, .extract = extractScriptFile},
@@ -39,20 +43,20 @@ constexpr std::array Registry = {
 } // namespace
 
 std::string outputPath(const OutputFile& output) {
-    return output.id.str() + "." + output.extension;
+  return output.id.str() + "." + output.extension;
 }
 
 std::span<const Extractor> extractors() {
-    return Registry;
+  return Registry;
 }
 
 const Extractor* findExtractor(std::span<const Extractor> registry, std::string_view path) {
-    for (const auto& extractor : registry) {
-        if (extractor.handles(path)) {
-            return &extractor;
-        }
+  for (const auto& extractor : registry) {
+    if (extractor.handles(path)) {
+      return &extractor;
     }
-    return nullptr;
+  }
+  return nullptr;
 }
 
 } // namespace dwe::dwx

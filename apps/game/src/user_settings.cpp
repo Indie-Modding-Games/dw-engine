@@ -29,93 +29,98 @@ constexpr std::string_view FreeExplorationKey = "free_exploration";
 } // namespace
 
 core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
-    auto tree = core::parseYaml(yaml);
-    if (!tree) {
-        return std::unexpected{tree.error()};
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{tree.error()};
+  }
+  assets::YamlReader reader;
+  UserSettings settings;
+  if (!tree->isMapping()) {
+    reader.fail(*tree, messages::UserSettingsWhat);
+  } else {
+    if (const core::YamlNode* language = tree->find(LanguageKey)) {
+      settings.language = reader.text(*language);
     }
-    assets::YamlReader reader;
-    UserSettings settings;
-    if (!tree->isMapping()) {
-        reader.fail(*tree, messages::UserSettingsWhat);
-    } else {
-        if (const core::YamlNode* language = tree->find(LanguageKey)) {
-            settings.language = reader.text(*language);
-        }
-        if (const core::YamlNode* textFont = tree->find(TextFontKey)) {
-            settings.textFont = reader.text(*textFont);
-        }
-        if (const core::YamlNode* uiSkin = tree->find(ui::UiSkinSetting)) {
-            settings.uiSkin = reader.text(*uiSkin);
-        }
-        if (const core::YamlNode* minimap = tree->find(MinimapKey)) {
-            settings.minimap = reader.text(*minimap);
-        }
-        if (const core::YamlNode* explore = tree->find(FreeExplorationKey)) {
-            settings.freeExploration = reader.boolean(*explore);
-        }
+    if (const core::YamlNode* textFont = tree->find(TextFontKey)) {
+      settings.textFont = reader.text(*textFont);
     }
-    return reader.finish(std::move(settings), messages::UserSettingsContext);
+    if (const core::YamlNode* uiSkin = tree->find(ui::UiSkinSetting)) {
+      settings.uiSkin = reader.text(*uiSkin);
+    }
+    if (const core::YamlNode* minimap = tree->find(MinimapKey)) {
+      settings.minimap = reader.text(*minimap);
+    }
+    if (const core::YamlNode* explore = tree->find(FreeExplorationKey)) {
+      settings.freeExploration = reader.boolean(*explore);
+    }
+  }
+  return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
 
 core::Result<std::string> formatUserSettings(const UserSettings& settings) {
-    core::YamlNode root = core::YamlNode::mapping();
-    if (settings.language) {
-        root.set(std::string{LanguageKey}, core::YamlNode::scalar(*settings.language));
-    }
-    if (settings.textFont) {
-        root.set(std::string{TextFontKey}, core::YamlNode::scalar(*settings.textFont));
-    }
-    if (settings.uiSkin) {
-        root.set(std::string{ui::UiSkinSetting}, core::YamlNode::scalar(*settings.uiSkin));
-    }
-    if (settings.minimap) {
-        root.set(std::string{MinimapKey}, core::YamlNode::scalar(*settings.minimap));
-    }
-    if (settings.freeExploration) {
-        root.set(std::string{FreeExplorationKey}, core::YamlNode::scalar(*settings.freeExploration ? "true" : "false"));
-    }
-    return core::emitYaml(root);
+  core::YamlNode root = core::YamlNode::mapping();
+  if (settings.language) {
+    root.set(std::string{LanguageKey}, core::YamlNode::scalar(*settings.language));
+  }
+  if (settings.textFont) {
+    root.set(std::string{TextFontKey}, core::YamlNode::scalar(*settings.textFont));
+  }
+  if (settings.uiSkin) {
+    root.set(std::string{ui::UiSkinSetting}, core::YamlNode::scalar(*settings.uiSkin));
+  }
+  if (settings.minimap) {
+    root.set(std::string{MinimapKey}, core::YamlNode::scalar(*settings.minimap));
+  }
+  if (settings.freeExploration) {
+    root.set(std::string{FreeExplorationKey},
+             core::YamlNode::scalar(*settings.freeExploration ? "true" : "false"));
+  }
+  return core::emitYaml(root);
 }
 
 std::optional<std::filesystem::path> userSettingsFile() {
-    auto folder = platform::userDataFolder(UserDataOrganization, UserDataApplication);
-    if (!folder) {
-        core::logWarning(messages::NoUserSettingsFolder, folder.error().message);
-        return std::nullopt;
-    }
-    return *folder / SettingsFileName;
+  auto folder = platform::userDataFolder(UserDataOrganization, UserDataApplication);
+  if (!folder) {
+    core::logWarning(messages::NoUserSettingsFolder, folder.error().message);
+    return std::nullopt;
+  }
+  return *folder / SettingsFileName;
 }
 
 UserSettings loadUserSettings(const std::filesystem::path& file) {
-    std::error_code error;
-    if (!std::filesystem::exists(file, error)) {
-        return {};
-    }
-    std::ifstream stream{file, std::ios::binary};
-    const std::string text{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
-    if (!stream) {
-        core::logWarning(messages::CannotReadUserSettings, assets::pathText(file), messages::CannotOpenFile);
-        return {};
-    }
-    auto settings = parseUserSettings(text);
-    if (!settings) {
-        core::logWarning(messages::CannotReadUserSettings, assets::pathText(file), settings.error().message);
-        return {};
-    }
-    return std::move(*settings);
+  std::error_code error;
+  if (!std::filesystem::exists(file, error)) {
+    return {};
+  }
+  std::ifstream stream{file, std::ios::binary};
+  const std::string text{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
+  if (!stream) {
+    core::logWarning(messages::CannotReadUserSettings, assets::pathText(file),
+                     messages::CannotOpenFile);
+    return {};
+  }
+  auto settings = parseUserSettings(text);
+  if (!settings) {
+    core::logWarning(messages::CannotReadUserSettings, assets::pathText(file),
+                     settings.error().message);
+    return {};
+  }
+  return std::move(*settings);
 }
 
 void saveUserSettings(const std::filesystem::path& file, const UserSettings& settings) {
-    auto text = formatUserSettings(settings);
-    if (!text) {
-        core::logWarning(messages::CannotWriteUserSettings, assets::pathText(file), text.error().message);
-        return;
-    }
-    std::ofstream stream{file, std::ios::binary | std::ios::trunc};
-    stream << *text;
-    if (!stream) {
-        core::logWarning(messages::CannotWriteUserSettings, assets::pathText(file), messages::CannotOpenFile);
-    }
+  auto text = formatUserSettings(settings);
+  if (!text) {
+    core::logWarning(messages::CannotWriteUserSettings, assets::pathText(file),
+                     text.error().message);
+    return;
+  }
+  std::ofstream stream{file, std::ios::binary | std::ios::trunc};
+  stream << *text;
+  if (!stream) {
+    core::logWarning(messages::CannotWriteUserSettings, assets::pathText(file),
+                     messages::CannotOpenFile);
+  }
 }
 
 } // namespace dwe::app

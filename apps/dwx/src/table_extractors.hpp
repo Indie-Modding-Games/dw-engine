@@ -9,7 +9,8 @@
 
 namespace dwe::dwx {
 
-// The boot executable (SLUS_010.32 and the like): the documents of its tables. Its code is not an asset.
+// The boot executable (SLUS_010.32 and the like): the documents of its tables. Its code is not an
+// asset.
 bool handlesExecutable(std::string_view path);
 core::Result<Extraction> extractExecutable(const Disc& disc, const formats::disc::IsoFile& file);
 

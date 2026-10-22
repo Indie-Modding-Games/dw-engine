@@ -10,101 +10,109 @@ namespace dwe::game::battle {
 
 namespace {
 
-constexpr std::string_view FinishersRule = "battle moves.finisher_first_index to finisher_last_index, finisher_ids";
+constexpr std::string_view FinishersRule =
+    "battle moves.finisher_first_index to finisher_last_index, finisher_ids";
 constexpr std::string_view LearnableRule = "battle moves.learnable_ids";
 constexpr std::string_view MoveText = "move";
 
 core::Result<MoveRef> requireMove(const MoveCatalog& catalog, std::string_view id) {
-    const auto found = catalog.find(id);
-    if (!found) {
-        return std::unexpected{core::Error{messages::formatMessage(messages::RuleMoveMissing, id)}};
-    }
-    return *found;
+  const auto found = catalog.find(id);
+  if (!found) {
+    return std::unexpected{core::Error{messages::formatMessage(messages::RuleMoveMissing, id)}};
+  }
+  return *found;
 }
 
 BattleMove battleMoveOf(const assets::MoveEntry& entry, const MoveRules& rules) {
-    BattleMove move{.id = entry.id,
-                    .index = entry.index,
-                    .power = entry.power,
-                    .mpCost = entry.mpCost * rules.mpCostMultiplier,
-                    .distanceSquared = entry.distance,
-                    .range = static_cast<MoveRange>(std::clamp(entry.range, 0, static_cast<int>(MoveRange::Self))),
-                    .special = entry.special,
-                    .status =
-                        static_cast<StatusEffect>(std::clamp(entry.status, 0, static_cast<int>(StatusEffect::Flatten))),
-                    .accuracy = entry.accuracy,
-                    .statusChance = entry.statusChance,
-                    .iframes = entry.iframes,
-                    .needsTarget = (entry.flags & NeedsTargetFlag) != 0,
-                    .sharedCooldown = (entry.flags & SharedCooldownFlag) != 0,
-                    .finisher = rules.finishers.contains(entry),
-                    .counter = entry.id == rules.counter,
-                    .learnable = rules.learnable.contains(entry),
-                    .learnChances = entry.learnChances,
-                    .buff = std::nullopt};
-    const auto buff = std::ranges::find(rules.buffs, entry.id, &BuffRule::move);
-    if (buff != rules.buffs.end()) {
-        move.buff = BuffPercents{.offense = buff->offense, .defense = buff->defense, .speed = buff->speed};
-    }
-    return move;
+  BattleMove move{.id = entry.id,
+                  .index = entry.index,
+                  .power = entry.power,
+                  .mpCost = entry.mpCost * rules.mpCostMultiplier,
+                  .distanceSquared = entry.distance,
+                  .range = static_cast<MoveRange>(
+                      std::clamp(entry.range, 0, static_cast<int>(MoveRange::Self))),
+                  .special = entry.special,
+                  .status = static_cast<StatusEffect>(
+                      std::clamp(entry.status, 0, static_cast<int>(StatusEffect::Flatten))),
+                  .accuracy = entry.accuracy,
+                  .statusChance = entry.statusChance,
+                  .iframes = entry.iframes,
+                  .needsTarget = (entry.flags & NeedsTargetFlag) != 0,
+                  .sharedCooldown = (entry.flags & SharedCooldownFlag) != 0,
+                  .finisher = rules.finishers.contains(entry),
+                  .counter = entry.id == rules.counter,
+                  .learnable = rules.learnable.contains(entry),
+                  .learnChances = entry.learnChances,
+                  .buff = std::nullopt};
+  const auto buff = std::ranges::find(rules.buffs, entry.id, &BuffRule::move);
+  if (buff != rules.buffs.end()) {
+    move.buff =
+        BuffPercents{.offense = buff->offense, .defense = buff->defense, .speed = buff->speed};
+  }
+  return move;
 }
 
 } // namespace
 
-core::Result<MoveCatalog> MoveCatalog::build(const assets::MoveTable& table, const BattleRules& rules) {
-    if (auto finishers = assets::checkEntryClass(rules.moves.finishers, table, FinishersRule, MoveText); !finishers) {
-        return std::unexpected{finishers.error()};
+core::Result<MoveCatalog> MoveCatalog::build(const assets::MoveTable& table,
+                                             const BattleRules& rules) {
+  if (auto finishers =
+          assets::checkEntryClass(rules.moves.finishers, table, FinishersRule, MoveText);
+      !finishers) {
+    return std::unexpected{finishers.error()};
+  }
+  if (auto learnable =
+          assets::checkEntryClass(rules.moves.learnable, table, LearnableRule, MoveText);
+      !learnable) {
+    return std::unexpected{learnable.error()};
+  }
+  MoveCatalog catalog;
+  catalog.moves_.reserve(table.entries().size());
+  for (const assets::MoveEntry& entry : table.entries()) {
+    catalog.moves_.push_back(battleMoveOf(entry, rules.moves));
+  }
+  for (const BuffRule& buff : rules.moves.buffs) {
+    if (auto found = requireMove(catalog, buff.move); !found) {
+      return std::unexpected{found.error()};
     }
-    if (auto learnable = assets::checkEntryClass(rules.moves.learnable, table, LearnableRule, MoveText); !learnable) {
-        return std::unexpected{learnable.error()};
+  }
+  if (auto counter = requireMove(catalog, rules.moves.counter); !counter) {
+    return std::unexpected{counter.error()};
+  }
+  auto shot = requireMove(catalog, rules.moves.flattenedShot);
+  if (!shot) {
+    return std::unexpected{shot.error()};
+  }
+  catalog.flattenedShot_ = *shot;
+  for (const auto& [first, second] : rules.moves.learnedTogether) {
+    auto a = requireMove(catalog, first);
+    auto b = requireMove(catalog, second);
+    if (!a || !b) {
+      return std::unexpected{!a ? a.error() : b.error()};
     }
-    MoveCatalog catalog;
-    catalog.moves_.reserve(table.entries().size());
-    for (const assets::MoveEntry& entry : table.entries()) {
-        catalog.moves_.push_back(battleMoveOf(entry, rules.moves));
-    }
-    for (const BuffRule& buff : rules.moves.buffs) {
-        if (auto found = requireMove(catalog, buff.move); !found) {
-            return std::unexpected{found.error()};
-        }
-    }
-    if (auto counter = requireMove(catalog, rules.moves.counter); !counter) {
-        return std::unexpected{counter.error()};
-    }
-    auto shot = requireMove(catalog, rules.moves.flattenedShot);
-    if (!shot) {
-        return std::unexpected{shot.error()};
-    }
-    catalog.flattenedShot_ = *shot;
-    for (const auto& [first, second] : rules.moves.learnedTogether) {
-        auto a = requireMove(catalog, first);
-        auto b = requireMove(catalog, second);
-        if (!a || !b) {
-            return std::unexpected{!a ? a.error() : b.error()};
-        }
-        catalog.learnedTogether_.emplace_back(*a, *b);
-    }
-    return catalog;
+    catalog.learnedTogether_.emplace_back(*a, *b);
+  }
+  return catalog;
 }
 
 std::optional<MoveRef> MoveCatalog::find(std::string_view id) const {
-    const auto found = std::ranges::find(moves_, id, &BattleMove::id);
-    if (found == moves_.end()) {
-        return std::nullopt;
-    }
-    return static_cast<MoveRef>(found - moves_.begin());
+  const auto found = std::ranges::find(moves_, id, &BattleMove::id);
+  if (found == moves_.end()) {
+    return std::nullopt;
+  }
+  return static_cast<MoveRef>(found - moves_.begin());
 }
 
 std::vector<MoveRef> MoveCatalog::learnedWith(MoveRef move) const {
-    std::vector<MoveRef> together;
-    for (const auto& [first, second] : learnedTogether_) {
-        if (first == move) {
-            together.push_back(second);
-        } else if (second == move) {
-            together.push_back(first);
-        }
+  std::vector<MoveRef> together;
+  for (const auto& [first, second] : learnedTogether_) {
+    if (first == move) {
+      together.push_back(second);
+    } else if (second == move) {
+      together.push_back(first);
     }
-    return together;
+  }
+  return together;
 }
 
 } // namespace dwe::game::battle

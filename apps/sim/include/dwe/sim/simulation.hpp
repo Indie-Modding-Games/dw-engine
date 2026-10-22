@@ -13,17 +13,19 @@ namespace dwe::sim {
 
 // A finished simulation: its report as Markdown and CSV.
 struct SimulationReport {
-    std::string markdown;
-    std::string runsCsv;
-    std::string summaryCsv;
+  std::string markdown;
+  std::string runsCsv;
+  std::string summaryCsv;
 };
 
-// Runs the scenario the options name on the packs: loads the ruleset, applies the --set values, sets the scenario up
-// and runs it.
-core::Result<SimulationReport> simulate(const assets::VirtualFileSystem& files, const ScenarioRegistry& registry,
+// Runs the scenario the options name on the packs: loads the ruleset, applies the --set values,
+// sets the scenario up and runs it.
+core::Result<SimulationReport> simulate(const assets::VirtualFileSystem& files,
+                                        const ScenarioRegistry& registry,
                                         const SimOptions& options);
 
-// Writes the report's files into a folder: <scenario>.md, <scenario>-runs.csv and <scenario>-summary.csv.
+// Writes the report's files into a folder: <scenario>.md, <scenario>-runs.csv and
+// <scenario>-summary.csv.
 core::Result<void> writeReport(const SimulationReport& report, const std::filesystem::path& folder,
                                std::string_view scenario);
 

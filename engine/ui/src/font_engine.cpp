@@ -18,216 +18,235 @@ constexpr int UnderlinePixels = 1;
 // The lowercase letter whose height is the font's x-height.
 constexpr char32_t XHeightLetter = U'x';
 
-// How many times larger than its atlas the bitmap font draws at a font size: the whole multiple nearest to the size
-// over the cell height, so each atlas pixel is a square of screen pixels and stays crisp.
+// How many times larger than its atlas the bitmap font draws at a font size: the whole multiple
+// nearest to the size over the cell height, so each atlas pixel is a square of screen pixels and
+// stays crisp.
 int bitmapScale(int size, int cellHeight) {
-    return std::max(1, static_cast<int>(std::lround(static_cast<double>(size) / cellHeight)));
+  return std::max(1, static_cast<int>(std::lround(static_cast<double>(size) / cellHeight)));
 }
 
 Rml::Span<const Rml::byte> bytesOf(const assets::Image& image) {
-    return {reinterpret_cast<const Rml::byte*>(image.pixels.data()), image.pixels.size()};
+  return {reinterpret_cast<const Rml::byte*>(image.pixels.data()), image.pixels.size()};
 }
 
 } // namespace
 
-FontEngine::FontEngine(Rml::FontEngineInterface& freeType, OriginalLook look, std::optional<BitmapFont> bitmap)
-    : freeType_{&freeType}, look_{std::move(look)}, bitmap_{std::move(bitmap)}, textFont_{look_.defaultFont} {
-    // RmlUi hands families to the engine in lowercase, as RCSS compares them, and its own engine expects them so.
-    look_.family = Rml::StringUtilities::ToLower(look_.family);
-    look_.modernFamily = Rml::StringUtilities::ToLower(look_.modernFamily);
+FontEngine::FontEngine(Rml::FontEngineInterface& freeType, OriginalLook look,
+                       std::optional<BitmapFont> bitmap)
+    : freeType_{&freeType}, look_{std::move(look)}, bitmap_{std::move(bitmap)},
+      textFont_{look_.defaultFont} {
+  // RmlUi hands families to the engine in lowercase, as RCSS compares them, and its own engine
+  // expects them so.
+  look_.family = Rml::StringUtilities::ToLower(look_.family);
+  look_.modernFamily = Rml::StringUtilities::ToLower(look_.modernFamily);
 }
 
 void FontEngine::Initialize() {
-    freeType_->Initialize();
+  freeType_->Initialize();
 }
 
 void FontEngine::Shutdown() {
-    faces_.clear();
-    freeType_->Shutdown();
+  faces_.clear();
+  freeType_->Shutdown();
 }
 
 bool FontEngine::LoadFontFace(const Rml::String& fileName, int faceIndex, bool fallbackFace,
                               Rml::Style::FontWeight weight) {
-    return freeType_->LoadFontFace(fileName, faceIndex, fallbackFace, weight);
+  return freeType_->LoadFontFace(fileName, faceIndex, fallbackFace, weight);
 }
 
 bool FontEngine::LoadFontFace(const Rml::String& fileName, int faceIndex, const Rml::String& family,
-                              Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackFace) {
-    return freeType_->LoadFontFace(fileName, faceIndex, family, style, weight, fallbackFace);
+                              Rml::Style::FontStyle style, Rml::Style::FontWeight weight,
+                              bool fallbackFace) {
+  return freeType_->LoadFontFace(fileName, faceIndex, family, style, weight, fallbackFace);
 }
 
-bool FontEngine::LoadFontFace(Rml::Span<const Rml::byte> data, int faceIndex, const Rml::String& family,
-                              Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackFace) {
-    return freeType_->LoadFontFace(data, faceIndex, family, style, weight, fallbackFace);
+bool FontEngine::LoadFontFace(Rml::Span<const Rml::byte> data, int faceIndex,
+                              const Rml::String& family, Rml::Style::FontStyle style,
+                              Rml::Style::FontWeight weight, bool fallbackFace) {
+  return freeType_->LoadFontFace(data, faceIndex, family, style, weight, fallbackFace);
 }
 
-Rml::FontFaceHandle FontEngine::GetFontFaceHandle(const Rml::String& family, Rml::Style::FontStyle style,
+Rml::FontFaceHandle FontEngine::GetFontFaceHandle(const Rml::String& family,
+                                                  Rml::Style::FontStyle style,
                                                   Rml::Style::FontWeight weight, int size) {
-    if (!isOriginalLook(family)) {
-        return freeType_->GetFontFaceHandle(family, style, weight, size);
-    }
-    if (textFont_ == TextFont::Original && bitmap_) {
-        return bitmapFaceHandle(*bitmap_, style, weight, size);
-    }
-    return freeType_->GetFontFaceHandle(look_.modernFamily, style, weight, size);
+  if (!isOriginalLook(family)) {
+    return freeType_->GetFontFaceHandle(family, style, weight, size);
+  }
+  if (textFont_ == TextFont::Original && bitmap_) {
+    return bitmapFaceHandle(*bitmap_, style, weight, size);
+  }
+  return freeType_->GetFontFaceHandle(look_.modernFamily, style, weight, size);
 }
 
 Rml::FontEffectsHandle FontEngine::PrepareFontEffects(Rml::FontFaceHandle handle,
                                                       const Rml::FontEffectList& fontEffects) {
-    // The effects (shadows, outlines) apply to what the modern face draws; the bitmap glyphs have none.
-    const BitmapFace* face = bitmapFace(handle);
-    return freeType_->PrepareFontEffects(face != nullptr ? face->fallback : handle, fontEffects);
+  // The effects (shadows, outlines) apply to what the modern face draws; the bitmap glyphs have
+  // none.
+  const BitmapFace* face = bitmapFace(handle);
+  return freeType_->PrepareFontEffects(face != nullptr ? face->fallback : handle, fontEffects);
 }
 
 const Rml::FontMetrics& FontEngine::GetFontMetrics(Rml::FontFaceHandle handle) {
-    if (const BitmapFace* face = bitmapFace(handle)) {
-        return face->metrics;
-    }
-    return freeType_->GetFontMetrics(handle);
+  if (const BitmapFace* face = bitmapFace(handle)) {
+    return face->metrics;
+  }
+  return freeType_->GetFontMetrics(handle);
 }
 
 int FontEngine::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringView string,
-                               const Rml::TextShapingContext& shaping, Rml::Character priorCharacter) {
-    const BitmapFace* face = bitmapFace(handle);
-    if (face == nullptr) {
-        return freeType_->GetStringWidth(handle, string, shaping, priorCharacter);
-    }
-    float width = 0.0F;
-    for (const TextRun& run : face->font->splitRuns({string.begin(), string.size()})) {
-        const Rml::StringView text{run.text.data(), run.text.data() + run.text.size()};
-        width +=
-            run.bitmap
-                ? bitmapRunWidth(*face, text, shaping.letter_spacing)
-                : static_cast<float>(freeType_->GetStringWidth(face->fallback, text, shaping, Rml::Character::Null));
-    }
-    return static_cast<int>(std::lround(width));
+                               const Rml::TextShapingContext& shaping,
+                               Rml::Character priorCharacter) {
+  const BitmapFace* face = bitmapFace(handle);
+  if (face == nullptr) {
+    return freeType_->GetStringWidth(handle, string, shaping, priorCharacter);
+  }
+  float width = 0.0F;
+  for (const TextRun& run : face->font->splitRuns({string.begin(), string.size()})) {
+    const Rml::StringView text{run.text.data(), run.text.data() + run.text.size()};
+    width += run.bitmap ? bitmapRunWidth(*face, text, shaping.letter_spacing)
+                        : static_cast<float>(freeType_->GetStringWidth(
+                              face->fallback, text, shaping, Rml::Character::Null));
+  }
+  return static_cast<int>(std::lround(width));
 }
 
 int FontEngine::GenerateString(Rml::RenderManager& renderManager, Rml::FontFaceHandle faceHandle,
-                               Rml::FontEffectsHandle effectsHandle, Rml::StringView string, Rml::Vector2f position,
-                               Rml::ColourbPremultiplied colour, float opacity, const Rml::TextShapingContext& shaping,
+                               Rml::FontEffectsHandle effectsHandle, Rml::StringView string,
+                               Rml::Vector2f position, Rml::ColourbPremultiplied colour,
+                               float opacity, const Rml::TextShapingContext& shaping,
                                Rml::TexturedMeshList& meshList) {
-    const BitmapFace* face = bitmapFace(faceHandle);
-    if (face == nullptr) {
-        return freeType_->GenerateString(renderManager, faceHandle, effectsHandle, string, position, colour, opacity,
-                                         shaping, meshList);
+  const BitmapFace* face = bitmapFace(faceHandle);
+  if (face == nullptr) {
+    return freeType_->GenerateString(renderManager, faceHandle, effectsHandle, string, position,
+                                     colour, opacity, shaping, meshList);
+  }
+  // Whole pixels, so every atlas pixel covers whole screen pixels.
+  const float startX = std::round(position.x);
+  const float baseline = std::round(position.y);
+  float penX = startX;
+  Rml::TexturedMesh glyphs{.mesh = {}, .texture = face->texture.GetTexture(renderManager)};
+  for (const TextRun& run : face->font->splitRuns({string.begin(), string.size()})) {
+    const Rml::StringView text{run.text.data(), run.text.data() + run.text.size()};
+    if (run.bitmap) {
+      addBitmapRun(*face, text, colour * opacity, baseline, shaping.letter_spacing, penX,
+                   glyphs.mesh);
+      continue;
     }
-    // Whole pixels, so every atlas pixel covers whole screen pixels.
-    const float startX = std::round(position.x);
-    const float baseline = std::round(position.y);
-    float penX = startX;
-    Rml::TexturedMesh glyphs{.mesh = {}, .texture = face->texture.GetTexture(renderManager)};
-    for (const TextRun& run : face->font->splitRuns({string.begin(), string.size()})) {
-        const Rml::StringView text{run.text.data(), run.text.data() + run.text.size()};
-        if (run.bitmap) {
-            addBitmapRun(*face, text, colour * opacity, baseline, shaping.letter_spacing, penX, glyphs.mesh);
-            continue;
-        }
-        Rml::TexturedMeshList fallbackMeshes;
-        penX +=
-            static_cast<float>(freeType_->GenerateString(renderManager, face->fallback, effectsHandle, text,
-                                                         {penX, baseline}, colour, opacity, shaping, fallbackMeshes));
-        std::ranges::move(fallbackMeshes, std::back_inserter(meshList));
-    }
-    if (glyphs.mesh) {
-        meshList.push_back(std::move(glyphs));
-    }
-    return static_cast<int>(std::lround(penX - startX));
+    Rml::TexturedMeshList fallbackMeshes;
+    penX += static_cast<float>(freeType_->GenerateString(renderManager, face->fallback,
+                                                         effectsHandle, text, {penX, baseline},
+                                                         colour, opacity, shaping, fallbackMeshes));
+    std::ranges::move(fallbackMeshes, std::back_inserter(meshList));
+  }
+  if (glyphs.mesh) {
+    meshList.push_back(std::move(glyphs));
+  }
+  return static_cast<int>(std::lround(penX - startX));
 }
 
 int FontEngine::GetVersion(Rml::FontFaceHandle handle) {
-    // The modern face adds glyphs to its textures as text asks for them; the bitmap atlas never changes.
-    const BitmapFace* face = bitmapFace(handle);
-    return freeType_->GetVersion(face != nullptr ? face->fallback : handle);
+  // The modern face adds glyphs to its textures as text asks for them; the bitmap atlas never
+  // changes.
+  const BitmapFace* face = bitmapFace(handle);
+  return freeType_->GetVersion(face != nullptr ? face->fallback : handle);
 }
 
 void FontEngine::ReleaseFontResources() {
-    faces_.clear();
-    freeType_->ReleaseFontResources();
+  faces_.clear();
+  freeType_->ReleaseFontResources();
 }
 
 bool FontEngine::isOriginalLook(const Rml::String& family) const {
-    return family == look_.family;
+  return family == look_.family;
 }
 
-Rml::FontFaceHandle FontEngine::bitmapFaceHandle(const BitmapFont& font, Rml::Style::FontStyle style,
+Rml::FontFaceHandle FontEngine::bitmapFaceHandle(const BitmapFont& font,
+                                                 Rml::Style::FontStyle style,
                                                  Rml::Style::FontWeight weight, int size) {
-    const auto same = [&](const std::unique_ptr<BitmapFace>& face) {
-        return face->style == style && face->weight == weight && face->size == size;
-    };
-    if (auto found = std::ranges::find_if(faces_, same); found != faces_.end()) {
-        return std::bit_cast<Rml::FontFaceHandle>(found->get());
-    }
-    const int scale = bitmapScale(size, font.cellHeight());
-    const int fallbackSize =
-        std::max(1, static_cast<int>(std::lround(static_cast<float>(font.cellHeight() * scale) * look_.fallbackSize)));
-    const Rml::FontFaceHandle fallback = freeType_->GetFontFaceHandle(look_.modernFamily, style, weight, fallbackSize);
-    if (fallback == 0) {
-        return 0;
-    }
-    assets::Image atlas = font.inkAtlas(scale);
-    const Rml::Vector2i atlasSize{static_cast<int>(atlas.width), static_cast<int>(atlas.height)};
-    auto face = std::make_unique<BitmapFace>(BitmapFace{
-        .font = &font,
-        .style = style,
-        .weight = weight,
-        .size = size,
-        .scale = scale,
-        .fallback = fallback,
-        .metrics = bitmapMetrics(font, size, scale),
-        .atlasSize = Rml::Vector2f{atlasSize},
-        .texture = Rml::CallbackTextureSource{[atlas = std::move(atlas),
-                                               atlasSize](const Rml::CallbackTextureInterface& texture) {
-            return texture.GenerateTexture(bytesOf(atlas), atlasSize);
-        }},
-    });
-    faces_.push_back(std::move(face));
-    return std::bit_cast<Rml::FontFaceHandle>(faces_.back().get());
+  const auto same = [&](const std::unique_ptr<BitmapFace>& face) {
+    return face->style == style && face->weight == weight && face->size == size;
+  };
+  if (auto found = std::ranges::find_if(faces_, same); found != faces_.end()) {
+    return std::bit_cast<Rml::FontFaceHandle>(found->get());
+  }
+  const int scale = bitmapScale(size, font.cellHeight());
+  const int fallbackSize =
+      std::max(1, static_cast<int>(std::lround(static_cast<float>(font.cellHeight() * scale) *
+                                               look_.fallbackSize)));
+  const Rml::FontFaceHandle fallback =
+      freeType_->GetFontFaceHandle(look_.modernFamily, style, weight, fallbackSize);
+  if (fallback == 0) {
+    return 0;
+  }
+  assets::Image atlas = font.inkAtlas(scale);
+  const Rml::Vector2i atlasSize{static_cast<int>(atlas.width), static_cast<int>(atlas.height)};
+  auto face = std::make_unique<BitmapFace>(BitmapFace{
+      .font = &font,
+      .style = style,
+      .weight = weight,
+      .size = size,
+      .scale = scale,
+      .fallback = fallback,
+      .metrics = bitmapMetrics(font, size, scale),
+      .atlasSize = Rml::Vector2f{atlasSize},
+      .texture = Rml::CallbackTextureSource{[atlas = std::move(atlas), atlasSize](
+                                                const Rml::CallbackTextureInterface& texture) {
+        return texture.GenerateTexture(bytesOf(atlas), atlasSize);
+      }},
+  });
+  faces_.push_back(std::move(face));
+  return std::bit_cast<Rml::FontFaceHandle>(faces_.back().get());
 }
 
 Rml::FontMetrics FontEngine::bitmapMetrics(const BitmapFont& font, int size, int scale) {
-    const int baseline = font.baseline();
-    const BitmapGlyph* letter = font.glyph(XHeightLetter);
-    const int xHeight = letter != nullptr ? baseline - font.inkTop(*letter) : baseline;
-    return Rml::FontMetrics{
-        .size = size,
-        .ascent = static_cast<float>(baseline * scale),
-        .descent = static_cast<float>((font.cellHeight() - baseline) * scale),
-        .line_spacing = static_cast<float>(font.cellHeight() * scale),
-        .x_height = static_cast<float>(xHeight * scale),
-        .underline_position = static_cast<float>(UnderlinePixels * scale),
-        .underline_thickness = static_cast<float>(UnderlinePixels * scale),
-        .has_ellipsis = false,
-    };
+  const int baseline = font.baseline();
+  const BitmapGlyph* letter = font.glyph(XHeightLetter);
+  const int xHeight = letter != nullptr ? baseline - font.inkTop(*letter) : baseline;
+  return Rml::FontMetrics{
+      .size = size,
+      .ascent = static_cast<float>(baseline * scale),
+      .descent = static_cast<float>((font.cellHeight() - baseline) * scale),
+      .line_spacing = static_cast<float>(font.cellHeight() * scale),
+      .x_height = static_cast<float>(xHeight * scale),
+      .underline_position = static_cast<float>(UnderlinePixels * scale),
+      .underline_thickness = static_cast<float>(UnderlinePixels * scale),
+      .has_ellipsis = false,
+  };
 }
 
 FontEngine::BitmapFace* FontEngine::bitmapFace(Rml::FontFaceHandle handle) const {
-    auto found = std::ranges::find_if(
-        faces_, [handle](const auto& face) { return std::bit_cast<Rml::FontFaceHandle>(face.get()) == handle; });
-    return found == faces_.end() ? nullptr : found->get();
+  auto found = std::ranges::find_if(faces_, [handle](const auto& face) {
+    return std::bit_cast<Rml::FontFaceHandle>(face.get()) == handle;
+  });
+  return found == faces_.end() ? nullptr : found->get();
 }
 
 float FontEngine::bitmapRunWidth(const BitmapFace& face, Rml::StringView run, float letterSpacing) {
-    float width = 0.0F;
-    for (Rml::StringIteratorU8 it{run}; it; ++it) {
-        width += static_cast<float>(face.font->glyph(static_cast<char32_t>(*it))->advance * face.scale) + letterSpacing;
-    }
-    return width;
+  float width = 0.0F;
+  for (Rml::StringIteratorU8 it{run}; it; ++it) {
+    width +=
+        static_cast<float>(face.font->glyph(static_cast<char32_t>(*it))->advance * face.scale) +
+        letterSpacing;
+  }
+  return width;
 }
 
-void FontEngine::addBitmapRun(const BitmapFace& face, Rml::StringView run, Rml::ColourbPremultiplied tint,
-                              float baseline, float letterSpacing, float& penX, Rml::Mesh& mesh) {
-    const auto cellWidth = static_cast<float>(face.font->cellWidth() * face.scale);
-    const auto cellHeight = static_cast<float>(face.font->cellHeight() * face.scale);
-    const float top = baseline - face.metrics.ascent;
-    for (Rml::StringIteratorU8 it{run}; it; ++it) {
-        const BitmapGlyph& glyph = *face.font->glyph(static_cast<char32_t>(*it));
-        const Rml::Vector2f cell{static_cast<float>(glyph.x * face.scale), static_cast<float>(glyph.y * face.scale)};
-        Rml::MeshUtilities::GenerateQuad(mesh, {std::round(penX), top}, {cellWidth, cellHeight}, tint,
-                                         cell / face.atlasSize,
-                                         (cell + Rml::Vector2f{cellWidth, cellHeight}) / face.atlasSize);
-        penX += static_cast<float>(glyph.advance * face.scale) + letterSpacing;
-    }
+void FontEngine::addBitmapRun(const BitmapFace& face, Rml::StringView run,
+                              Rml::ColourbPremultiplied tint, float baseline, float letterSpacing,
+                              float& penX, Rml::Mesh& mesh) {
+  const auto cellWidth = static_cast<float>(face.font->cellWidth() * face.scale);
+  const auto cellHeight = static_cast<float>(face.font->cellHeight() * face.scale);
+  const float top = baseline - face.metrics.ascent;
+  for (Rml::StringIteratorU8 it{run}; it; ++it) {
+    const BitmapGlyph& glyph = *face.font->glyph(static_cast<char32_t>(*it));
+    const Rml::Vector2f cell{static_cast<float>(glyph.x * face.scale),
+                             static_cast<float>(glyph.y * face.scale)};
+    Rml::MeshUtilities::GenerateQuad(
+        mesh, {std::round(penX), top}, {cellWidth, cellHeight}, tint, cell / face.atlasSize,
+        (cell + Rml::Vector2f{cellWidth, cellHeight}) / face.atlasSize);
+    penX += static_cast<float>(glyph.advance * face.scale) + letterSpacing;
+  }
 }
 
 } // namespace dwe::ui

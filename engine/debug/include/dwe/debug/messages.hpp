@@ -8,7 +8,8 @@ namespace dwe::debug::messages {
 
 using core::formatMessage;
 
-// The messages of the debug overlay's tuning panel, as std::format templates for core::formatMessage.
+// The messages of the debug overlay's tuning panel, as std::format templates for
+// core::formatMessage.
 inline constexpr std::string_view NotANumber = "{}: '{}' is not a number";
 inline constexpr std::string_view NotAFlag = "{}: '{}' must be true or false";
 inline constexpr std::string_view NotAValue = "{} is a group, not a value";
