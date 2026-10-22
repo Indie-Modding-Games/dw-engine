@@ -94,6 +94,9 @@ public:
     // The pixels of a source as RmlUi names it, or an error.
     [[nodiscard]] core::Result<assets::Image> load(std::string_view source) const;
 
+    // Whether a source is the disc's pixel art (isPixelArt of its reference); a generated image never is.
+    [[nodiscard]] static bool isPixelArt(std::string_view source);
+
 private:
     const assets::VirtualFileSystem* files_;
     std::map<std::string, assets::Image, std::less<>> generated_;

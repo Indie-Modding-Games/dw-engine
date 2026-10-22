@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 
 #include "rml_interfaces.hpp"
 #include "ui_renderer_impl.hpp"
@@ -38,6 +39,10 @@ public:
     void SetScissorRegion(Rml::Rectanglei region) override;
     void SetTransform(const Rml::Matrix4f* transform) override;
 
+    // Whether a texture draws with sharp texel edges (rml.slang: sharpUv): only one LoadTexture read from a source
+    // TextureSources::isPixelArt names. Generated textures (font atlases, minimaps) never do.
+    [[nodiscard]] bool drawsSharp(Rml::TextureHandle texture) const { return sharpTextures_.contains(texture); }
+
 private:
     // A texture for premultiplied RGBA pixels: a renderer texture, or a plain handle when headless.
     Rml::TextureHandle createTexture(Rml::Vector2i dimensions, std::span<const std::byte> pixels);
@@ -46,6 +51,8 @@ private:
     UiRenderer::Impl* gpu_;
     std::uintptr_t nextHandle_ = 1;
     std::map<Rml::CompiledGeometryHandle, std::shared_ptr<const UiGeometry>> geometries_;
+    // The textures of the disc's pixel art (TextureSources::isPixelArt), drawn with sharp texel edges.
+    std::set<Rml::TextureHandle> sharpTextures_;
     bool scissorEnabled_ = false;
     rhi::Rect scissor_;
     glm::mat4 transform_{1.0F};

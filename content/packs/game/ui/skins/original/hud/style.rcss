@@ -1,0 +1,310 @@
+/* The field HUD in the original look: the dial clock at the top left, the happiness and discipline bars at the bottom
+   right, the need bubble over the partner and the map's name; nothing else, as the original.
+
+   Positions are the captures' (field_hud_day, field_clock_day, field_partner_bars): the decompilation's screen
+   coordinates plus 6 lines, the constant offset between where the original draws and the picture it shows. On a
+   wide screen the clock keeps to the left edge and the bars to the right one, at the original's distances.
+
+   The panels the original lacks are hidden here: the time and date in figures, the bars' numbers and labels, the
+   needs panel, HP and MP. The menu button and the minimap stay as documented deltas: the button is how the pointer
+   opens the menu, and the minimap is the player's choice (hidden by default with this skin, see below). */
+
+body {
+	pointer-events: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The clock (clock.c: renderGameClock). The dial (48 x 40) at (25, 32), the bells at (23, 30) and (59, 30), the sun or
+   the moon (32 x 16) at (33, 20), the minute hand turning on its pixel (3, 13) at the dial's centre (48, 54), and the
+   hour dot (6 x 6) on a ring round it. All from the clock's box at (23, 26): 6 lines added to the decompilation's
+   (23, 20). The script turns the hand (rotate) and places the dot (left and top in percent of #field-clock-dial);
+   the ring is 34 pixels across, measured on field_clock_day, centred on the hand's pivot. */
+
+#field-status {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: auto;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+	font-size: 33dp;
+}
+
+#field-clock {
+	display: block;
+	position: absolute;
+	left: 69dp;
+	top: 78dp;
+	width: 156dp;
+	height: 156dp;
+	margin: 0;
+	decorator: image(clock-sun scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom);
+	animation: 0.8s linear infinite clock-sun-turn;
+	transition: left 0.1s linear-in-out;
+}
+
+#field-clock.night {
+	decorator: image(clock-moon scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom);
+	animation: 0.8s linear infinite clock-moon-turn;
+}
+
+/* The sun and the moon turn through four frames, one every 4 of the original's 20 frames a second, so a turn takes
+   0.8 s (clock.c: renderGameClock, frame = (CURRENT_FRAME % 16) / 4 into CLOCK_TEXCOORD_U and CLOCK_TEXCOORD_V): the
+   sun shows its frames 0, 1, 2, 1 and the moon 0, 1, 0, 1. A decorator does not blend between two images, so each
+   frame holds until the next keyframe, which starts a hair after the last one ends. */
+@keyframes clock-sun-turn {
+	0%, 24.9% { decorator: image(clock-sun scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom); }
+	25%, 49.9% { decorator: image(clock-sun-1 scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom); }
+	50%, 74.9% { decorator: image(clock-sun-2 scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom); }
+	75%, 100% { decorator: image(clock-sun-1 scale-none center top), image(clock-bell-left scale-none left 27.78%),
+		image(clock-bell-right scale-none right 27.78%), image(clock-dial scale-none center bottom); }
+}
+
+@keyframes clock-moon-turn {
+	0%, 24.9%, 50%, 74.9% { decorator: image(clock-moon scale-none center top),
+		image(clock-bell-left scale-none left 27.78%), image(clock-bell-right scale-none right 27.78%),
+		image(clock-dial scale-none center bottom); }
+	25%, 49.9%, 75%, 100% { decorator: image(clock-moon-1 scale-none center top),
+		image(clock-bell-left scale-none left 27.78%), image(clock-bell-right scale-none right 27.78%),
+		image(clock-dial scale-none center bottom); }
+}
+
+#field-clock-dial {
+	display: block;
+	position: absolute;
+	left: 24dp;
+	top: 51dp;
+	width: 102dp;
+	height: 102dp;
+}
+
+#field-clock-hour-dot {
+	position: absolute;
+	width: 18dp;
+	height: 18dp;
+	margin-left: -9dp;
+	margin-top: -9dp;
+	decorator: image(clock-hour-dot);
+}
+
+#field-clock-minute-hand {
+	position: absolute;
+	left: 42dp;
+	top: 12dp;
+	width: 24dp;
+	height: 48dp;
+	transform-origin: 9dp 39dp;
+	decorator: image(clock-minute-hand);
+}
+
+#field-time, #field-date {
+	display: none;
+}
+
+/* While a menu or a battle stops the field, the original slides the clock out to the left and the bars out to the
+   right, 50 pixels a frame each, and back when the field runs again. The clock (clock.c: renderGameClock) moves
+   CLOCK_OFFSET_X between -135, where it shows (its left bell at screen x 23, 69dp), and -220, 85 pixels further left
+   (-186dp): about
+   2 frames, 0.1 s. The bars (partner_impl.c: renderStatusBars) move STATUS_UI_OFFSET_X between 75, where they show
+   (screen x 235, 30dp from the right edge), and 240, 165 pixels further right (right: -465dp): about 3 frames,
+   0.17 s. On a wide screen they leave from the edges they keep to. */
+#field-status #field-clock {
+	left: -186dp;
+}
+
+#field-status.shown #field-clock {
+	left: 69dp;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The bars (partner_impl.c: renderStatusBars). Each is the 75 x 8 frame of SYSTEM_W at x 235, y 211 and 223 (the
+   decompilation's 205 and 217 plus 6), the icon (11 x 11) at the frame's (3, -2), and 25 pips of 2 pixels from the
+   frame's (18, 3), 2 pixels tall: their top line light, their bottom line dark. Pink (#f0b8d0 over #e05890) fills to
+   the middle of the range, blue (#90c8f0 over #0080d0) over it from the middle: the script sizes both in whole pips
+   (the class pips, which this skin puts on the bars in skin.yaml) and marks the row "low" below the middle, where the
+   icon changes. On a wide screen the bars keep the original's 10 pixels to the right edge. */
+
+.field-meter {
+	display: block;
+	position: absolute;
+	right: 30dp;
+	width: 225dp;
+	height: 24dp;
+	margin: 0;
+	decorator: image(field-bar-frame);
+	transition: right 0.17s linear-in-out;
+}
+
+#field-meter-0 { bottom: 63dp; }
+#field-meter-1 { bottom: 27dp; }
+
+#field-status .field-meter {
+	right: -465dp;
+}
+
+#field-status.shown .field-meter {
+	right: 30dp;
+}
+
+/* The icon hangs over the frame's left end; the label and the number are not drawn. */
+#field-status .field-meter .label {
+	display: block;
+	position: absolute;
+	left: 9dp;
+	top: -6dp;
+	width: 33dp;
+	height: 33dp;
+	font-size: 0;
+	color: transparent;
+}
+
+#field-meter-0 .label { decorator: image(face-happy); }
+#field-meter-0.low .label { decorator: image(face-sad); }
+#field-meter-1 .label { decorator: image(discipline-high); }
+#field-meter-1.low .label { decorator: image(discipline-low); }
+
+#field-status .field-meter .value {
+	display: none;
+}
+
+#field-status .field-meter .bar {
+	position: absolute;
+	left: 54dp;
+	top: 9dp;
+	width: 150dp;
+	height: 6dp;
+	margin: 0;
+	border-radius: 0;
+	background-color: transparent;
+}
+
+#field-status .field-meter .fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 3dp;
+	border-radius: 0;
+	border-top: 3dp #f0b8d0;
+	background-color: #e05890;
+}
+
+#field-status .field-meter .fill.high {
+	border-top-color: #90c8f0;
+	background-color: #0080d0;
+}
+
+/* HP, MP and the needs panel are not on the original's field: the needs show as the bubble below. */
+#field-needs, #field-pools {
+	display: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The need bubble over the partner (bubble.c: the 32 x 32 balloon of FEEL_EF and the need's sprite in it: the meal,
+   the toilet, the sleep "Z" or the tiredness). The shared view places #field-partner-bubble where the original's
+   bubble settles, anchored at its bottom centre (ui/hud/structure.rcss; the balloon's pivot is its pixel (16, 31)),
+   gives it "shown" while the partner shows a need and one class for the need, sleep before tiredness before hunger
+   before toilet (partner_impl.c: handleConditionBubble). Each sprite sits by its pivot against the balloon's
+   (CONDITION_SPRITES): the meal and the toilet (pivot y 26) 5 pixels under the balloon's top, the tiredness (y 23 + 9
+   in its first frame) 1 pixel over it, the low "Z" (pivot 0, 13) 18 pixels down from the top and from the middle
+   to the right. Only the first frame of each need's animation is drawn, and only the low "Z" of the three.
+
+   The blink (bubble.c: tickConditionBubble): the balloon grows from nothing over 10 frames, stays, and once its
+   frame count passes 50 it is removed; the game makes it again about 10 frames later. So in every 60 frames (3 s at
+   the original's 20 a second) it grows for 0.5 s, shows for 2 s and is gone for 0.5 s. Its bob of 12 units while it
+   stays is not imitated. RmlUi draws an element's decorators with the first listed on top (seen on this bubble), so
+   the need comes first and the balloon under it.
+
+   Each scale is spelt long on purpose: RmlUi 6.3 compares a transform's last function against its longest names
+   (11 characters) without checking the string's end, so a short "scale(1)" at the end reads past it. The shift that
+   hangs the bubble by its bottom centre (ui/hud/structure.rcss) is repeated in dp, half the width and the height:
+   RmlUi does not carry a translate in percent through an animation. */
+
+@keyframes need-bubble-blink {
+	0% { opacity: 1; transform: translate(-48dp, -96dp) scale(0.000, 0.000); }
+	16.7% { opacity: 1; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
+	83.3% { opacity: 1; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
+	83.4% { opacity: 0; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
+	100% { opacity: 0; transform: translate(-48dp, -96dp) scale(1.000, 1.000); }
+}
+
+#field-partner-bubble {
+	display: none;
+	width: 96dp;
+	height: 96dp;
+	transform-origin: 50% 100%;
+}
+
+#field-partner-bubble.shown {
+	display: block;
+	animation: 3s linear infinite need-bubble-blink;
+}
+
+#field-partner-bubble.hunger { decorator: image(need-hunger scale-none center 31.25%), image(need-bubble); }
+#field-partner-bubble.toilet { decorator: image(need-toilet scale-none center 31.25%), image(need-bubble); }
+#field-partner-bubble.tired { decorator: image(need-tired scale-none center -6.25%), image(need-bubble); }
+#field-partner-bubble.sleep { decorator: image(need-sleep scale-none 66.67% 75%), image(need-bubble); }
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The map's name over the fade (map.c: renderMapName): the ink colour, centred on line 114, no box. */
+
+#map-title {
+	top: 342dp;
+	height: 36dp;
+	margin-top: -18dp;
+	line-height: 36dp;
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   Deltas of this skin. The original has no minimap: with the setting "auto" (the class auto) this skin hides it; with
+   it on, it is one of the original's boxes. The menu button is a small box with the prompt. */
+
+#minimap {
+	border-radius: 0;
+	padding: 9dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d384080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#minimap.auto {
+	display: none;
+}
+
+#minimap-name {
+	font-size: 22dp;
+	font-weight: normal;
+	color: #d0d0d0;
+}
+
+#minimap-player { image-color: #fff371; }
+#minimap-partner { image-color: #90d9fa; }
+
+#menu-button {
+	left: 30dp;
+	top: auto;
+	bottom: 27dp;
+	padding: 0 9dp;
+	font-size: 22dp;
+	line-height: 30dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d384080;
+}
+
+#menu-button:hover {
+	background-color: #2d3840c0;
+}

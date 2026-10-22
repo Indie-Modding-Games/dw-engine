@@ -1,0 +1,180 @@
+# El aspecto original: la UI con la maquetación, los colores y las proporciones del juego original, redibujada nítida
+# a cualquier resolución y adaptada a pantalla ancha (docs/architecture/ui.md#aspecto-original). Las formas (cajas,
+# barras, textos) son RCSS; los iconos y sprites salen de las imágenes que dwx extract saca del disco del usuario y
+# agranda x4 con la receta ui_original (content/enhance/ui_original.recipe.yaml). Sin esas imágenes este aspecto se
+# queda fuera y el juego arranca con el de reserva (ui/ui_skin.yaml: fallback).
+#
+# Extiende el moderno para lo que no es aspecto (qué se esconde con .hidden, qué es flex) y reescribe todo lo que se
+# ve. Las medidas van en dp: un píxel del original son 3 dp (240 líneas sobre 720 dp). Cada valor cita su fuente en el
+# RCSS: un archivo y una función de la decompilación, o una captura de referencia.
+id: original
+name: ui_skin.original
+extends: modern
+theme:
+  - ui/skins/original/theme
+screens:
+  hud:
+    styles: [ui/skins/original/hud/style]
+  pause_menu:
+    styles: [ui/skins/original/pause_menu/style]
+  main_menu:
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/main_menu/style]
+  partner_menu:
+    styles: [ui/skins/original/partner_menu/style]
+  battle:
+    styles: [ui/skins/original/battle/style]
+# Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
+document_classes:
+  hud:
+    field-meter-0-bar: [pips]
+    field-meter-1-bar: [pips]
+    field-pool-0-bar: [pips]
+    field-pool-1-bar: [pips]
+# Una hoja por imagen y paleta: el original elige la paleta de cada sprite al dibujarlo. Rectángulos en píxeles del
+# original (los de la decompilación); la copia x4 de ui_original los multiplica sola.
+sprite_sheets:
+  # La esquina redondeada de las cajas (ui.c: renderUIBoxBorder, paleta 4).
+  - name: ow-box
+    image: texture/etcdat/system_w
+    palette: 4
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      box-tl: [120, 16, 4, 4]
+      box-tr: [124, 16, 4, 4]
+      box-bl: [120, 20, 4, 4]
+      box-br: [124, 20, 4, 4]
+  # El marco de las barras de felicidad y disciplina del campo (partner_impl.c: renderStatusBars, paleta 12).
+  - name: ow-field-bar
+    image: texture/etcdat/system_w
+    palette: 12
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      field-bar-frame: [0, 108, 75, 8]
+  # La cara de la felicidad, contenta y triste (paleta 15).
+  - name: ow-face
+    image: texture/etcdat/system_w
+    palette: 15
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      face-happy: [64, 116, 11, 11]
+      face-sad: [97, 116, 11, 11]
+  # El icono de la disciplina, por encima y por debajo de 50 (paleta 10).
+  - name: ow-discipline
+    image: texture/etcdat/system_w
+    palette: 10
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      discipline-high: [22, 116, 11, 11]
+      discipline-low: [33, 116, 11, 11]
+  # Los iconos de los parámetros en el menú del compañero (renderDigimonStatsView, paleta 11).
+  - name: ow-stat
+    image: texture/etcdat/system_w
+    palette: 11
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      stat-hp: [147, 58, 11, 11]
+      stat-mp: [158, 58, 11, 11]
+      stat-off: [169, 58, 11, 11]
+      stat-def: [180, 58, 11, 11]
+      stat-speed: [191, 58, 11, 11]
+      stat-brains: [202, 58, 11, 11]
+  # El reloj del campo (clock.c: renderGameClock): la esfera (paleta 0), las campanas y el punto de las horas
+  # (paleta 1), el sol y la luna (paleta 2) y la aguja de los minutos (paleta 3).
+  - name: ow-clock-dial
+    image: texture/etcdat/fi_info
+    palette: 0
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      clock-dial: [208, 23, 48, 40]
+  - name: ow-clock-bells
+    image: texture/etcdat/fi_info
+    palette: 1
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      clock-bell-left: [192, 32, 16, 16]
+      clock-bell-right: [192, 48, 16, 16]
+      clock-hour-dot: [203, 24, 6, 6]
+  - name: ow-clock-sky
+    image: texture/etcdat/fi_info
+    palette: 2
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      # The sun's frames 0, 1 and 2 and the moon's 0 and 1 (clock.c: CLOCK_TEXCOORD_U and CLOCK_TEXCOORD_V, v less 192).
+      clock-sun: [128, 0, 32, 16]
+      clock-sun-1: [160, 0, 32, 16]
+      clock-sun-2: [128, 16, 32, 16]
+      clock-moon: [160, 16, 32, 16]
+      clock-moon-1: [128, 32, 32, 16]
+  - name: ow-clock-hand
+    image: texture/etcdat/fi_info
+    palette: 3
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      clock-minute-hand: [120, 0, 8, 16]
+  # Las barras de PV y PM del compañero en combate (BI_IN: el marco con la paleta 12, los iconos con la 11).
+  - name: ow-battle-bar
+    image: texture/etcdat/bi_in
+    palette: 12
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      battle-bar-frame: [128, 40, 104, 8]
+  - name: ow-battle-icons
+    image: texture/etcdat/bi_in
+    palette: 11
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      battle-hp: [144, 48, 11, 11]
+      battle-mp: [155, 48, 11, 11]
+  # El bocadillo de las necesidades sobre el compañero (bubble.c: el globo con la paleta 4; hambre y baño con la 3;
+  # sueño con la 2).
+  - name: ow-bubble
+    image: texture/etcdat/feel_ef
+    palette: 4
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      need-bubble: [160, 16, 32, 32]
+  - name: ow-need
+    image: texture/etcdat/feel_ef
+    palette: 3
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      need-hunger: [144, 0, 16, 16]
+      need-toilet: [208, 16, 16, 16]
+  - name: ow-sleep
+    image: texture/etcdat/feel_ef
+    palette: 2
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      need-sleep: [128, 48, 8, 8]
+  # El cansancio (bubble.c: CONDITION_SPRITES[6], u 0xC0 y v 0x80 con la CLUT de la fila 0x1E1; su primer cuadro).
+  - name: ow-tired
+    image: texture/etcdat/feel_ef
+    palette: 1
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      need-tired: [192, 0, 16, 16]
+  # La portada detrás del menú principal (main_menu.c: renderInitialMenu dibuja sobre TITLE2). Es indexada con su única
+  # CLUT (main.c carga ETCNA\TITLE2.TIM con loadTIMFile, que la sube con la imagen; clut_rect (0, 480)): la paleta 0
+  # de sus metadatos, así se dibuja nítida como el resto del arte del disco.
+  - name: ow-title
+    image: texture/etcna/title2
+    palette: 0
+    original_size: [320, 240]
+    dp_per_pixel: 3
+    sprites:
+      title-screen: [0, 0, 320, 240]

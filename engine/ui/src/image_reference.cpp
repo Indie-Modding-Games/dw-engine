@@ -103,6 +103,10 @@ core::Result<ImageReference> parseImageReference(std::string_view path) {
     return ImageReference{.asset = std::move(*asset), .palette = palette};
 }
 
+bool isPixelArt(const ImageReference& reference) {
+    return reference.palette.has_value();
+}
+
 std::string imageReferenceText(const ImageReference& reference) {
     std::string text = "/" + reference.asset.str();
     if (reference.palette) {

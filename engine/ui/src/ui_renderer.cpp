@@ -31,7 +31,7 @@ struct RmlPush {
     glm::mat4 transform;
     glm::vec2 translation;
     std::uint32_t texture;
-    std::uint32_t padding;
+    std::uint32_t sharp;
 };
 
 // A scissor rectangle kept inside the target, as Vulkan requires.
@@ -93,7 +93,7 @@ void UiRenderer::draw(render::DrawContext& context) {
         commands.pushConstants(RmlPush{.transform = projection * draw.transform,
                                        .translation = draw.translation,
                                        .texture = draw.texture.index,
-                                       .padding = 0});
+                                       .sharp = draw.sharp ? 1U : 0U});
         commands.bindVertexBuffer(geometry.vertices);
         commands.bindIndexBuffer(geometry.indices, rhi::IndexType::Uint32);
         commands.drawIndexed(geometry.indexCount);

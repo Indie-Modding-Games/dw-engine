@@ -206,9 +206,11 @@ está.
 - Abajo a la derecha, solo las barras de felicidad y disciplina, cada una con su icono (felicidad: cara contenta con
   0 o más, triste por debajo; disciplina: un icono con 50 o más y otro por debajo). Cada barra son 25 cuadritos de
   2 píxeles: 4 puntos por cuadrito en la felicidad y 2 en la disciplina, en dos tonos como arriba.
-- Reloj y barras entran y salen deslizándose (50 píxeles por frame) cuando la hora del juego anda o se para. HP, MP,
-  el día y las necesidades no se ven en el campo: HP y MP están en el menú del compañero y el día en el menú del
-  domador.
+- Reloj y barras entran y salen deslizándose (50 píxeles por frame) cuando la hora del juego anda o se para: el reloj
+  hacia la izquierda (`clock.c: renderGameClock`, `CLOCK_OFFSET_X` entre -135 y -220) y las barras hacia la derecha
+  (`partner_impl.c: renderStatusBars`, `STATUS_UI_OFFSET_X` entre 75 y 240). El sol y la luna pasan por sus cuatro
+  cuadros, uno cada 4 frames (`(CURRENT_FRAME % 16) / 4`). HP, MP, el día y las necesidades no se ven en el campo:
+  HP y MP están en el menú del compañero y el día en el menú del domador.
 
 **Diferencia visible conocida: el parpadeo del icono de la felicidad.** En una zona que al compañero le gusta o le
 disgusta, el original alterna el icono de la felicidad con otra cara, 5 frames sí y 5 no (`partner_impl.c:
@@ -234,8 +236,12 @@ aspecto lo dibuje a su manera:
 (`partner_impl.c: handleConditionBubble` las mira de menor a mayor y gana la última), y cuando una burbuja lleva 50
 de sus frames (a 20 por segundo, 2,5 s) cambia a la necesidad más alta de las demás que tenga, si hay alguna: con dos
 necesidades se turnan, y una tercera espera a que se vaya una de ellas. El script hace lo mismo con su `on_tick`
-(`bubble_priority`, `bubble_swap_seconds`), y el tiempo solo cuenta mientras la burbuja se ve. Lo que no imita es que
-el original vuelve a hacer aparecer la misma burbuja cada 60 frames: eso es animación del aspecto.
+(`bubble_priority`, `bubble_swap_seconds`), y el tiempo solo cuenta mientras la burbuja se ve. Lo que no imita es el
+parpadeo: el original quita la burbuja cuando pasa de 50 frames (`bubble.c: tickConditionBubble`) y la vuelve a
+crear unos 10 frames después, así que en cada 60 frames no se ve durante unos 10 (y crece durante los 10 primeros).
+El contrato no lo publica: `shown` sigue puesta mientras dura la necesidad, y el hueco lo dibuja el aspecto. El
+original lo hace con una animación RCSS (`need-bubble-blink`, 3 s: 0,5 s creciendo, 2 s quieta, 0,5 s sin verse);
+el moderno no enseña la burbuja.
 
 **Hueco conocido: herida y enfermedad.** El original tiene también burbujas para un compañero herido y uno enfermo,
 por debajo del baño en la prioridad (`partner_impl.c: handleConditionBubble`: bits `0x20` y `0x40` de la condición,
@@ -472,11 +478,13 @@ el color 1 de su CLUT, `0x6B5A`). Cualquier documento puede usarla para otro tex
   Sin la fuente extraída, `original` dibuja con la moderna (con un aviso en el log).
 - **El ajuste `text_font`** (`modern` u `original`) es del jugador: `Ui::setTextFont` lo cambia y vuelve a componer y
   dibujar en el momento todos los documentos abiertos (`Rml::ReleaseFontResources`). El valor por defecto es dato
-  (`default` en `original_look.yaml`). El jugador lo elige en el menú principal (entrada «Fuente del texto», junto al
-  idioma, con los textos `main_menu.text_font`, `main_menu.text_font.modern` y `main_menu.text_font.original` de
-  `localization/<idioma>/main_menu.yaml`), que manda el comando `text_font`; la app lo guarda junto al idioma en
-  `settings.yaml` de los datos del usuario y lo publica como ajuste `text_font`. También lo ponen `--text-font`
-  (autotests, que no leen ni escriben los ajustes del jugador) y `text_font("original")` en la consola de depuración.
+  (`default` en `original_look.yaml`). El jugador lo elige en el menú principal: la entrada «Texto con aspecto
+  original», con los valores «Sí» y «No», junto al idioma (se llamaba «Fuente del texto» hasta que llegó el aspecto
+  original, como se decidió el 2026-10-21), con los textos `main_menu.text_font`, `main_menu.text_font.modern` y
+  `main_menu.text_font.original` de `localization/<idioma>/main_menu.yaml`. La entrada manda el comando `text_font`;
+  la app lo guarda junto al idioma en `settings.yaml` de los datos del usuario y lo publica como ajuste `text_font`.
+  También lo ponen `--text-font` (autotests, que no leen ni escriben los ajustes del jugador) y
+  `text_font("original")` en la consola de depuración.
 
 Decisiones del responsable de diseño sobre el nombre del mapa (ver la [ficha del campo](../reference/campo.md)):
 
@@ -485,6 +493,68 @@ Decisiones del responsable de diseño sobre el nombre del mapa (ver la [ficha de
 | La fuente del nombre del mapa es un ajuste del jugador: la de mapa de bits del original o la moderna. Por defecto, la moderna (decisión del responsable de diseño, 2026-10-20) | Ajuste `text_font`; `default: modern` en `original_look.yaml` |
 | El HUD del motor se desvanece con alfa durante el cambio de mapa. El original no tiene HUD fijo en el campo: lo que dibuja (personajes, barras de estado de `partner_impl.c: renderStatusBars`, ventanas) queda detrás del rectángulo del fundido (capa 1 del orden, `fade.c: renderFade`) y se oscurece restándole el mismo gris; solo el nombre del mapa va delante (capa 0). Desviación aprobada (decisión del responsable de diseño, 2026-10-20) | `screen_fade` en el HUD, que baja la opacidad de sus paneles |
 | El nombre del mapa va centrado exacto, sin imitar el desvío de unos píxeles del original (`x = 12 − (largo / 2) × 8` con los espacios de relleno), y sin opción para imitarlo (decisión del responsable de diseño, 2026-10-20) | `text-align: center` en `#map-title` |
+
+### El aspecto `original`
+
+`content/packs/game/ui/skins/original/` extiende el moderno y redibuja cada pantalla con la disposición, los colores
+y las proporciones del original, nítida a cualquier resolución: un píxel del original son 3dp (sus 240 líneas sobre
+los 720dp de la UI), así que cada medida es un número entero de píxeles por 3. Las primitivas (marcos, barras,
+degradados, rellenos) son RCSS; los iconos y sprites salen de las imágenes que extrae `dwx extract` y agranda su
+receta incluida `ui_original` (×4, `index_scale` en modo `edge`, en la máquina del jugador), por sus asset ids y
+paletas, sin arte original en el repositorio. Cada constante de las hojas cita su origen en un comentario: la
+función de la descompilación (`clock.c: renderGameClock`, `partner_impl.c: renderStatusBars`,
+`game_menu.c: renderDigimonStatsView`, `inventory.c: renderInventoryTop`, `command_menu.c: BTL_renderCommandMenu`,
+`main_menu.c: renderInitialMenu`, `ui.c: renderUIBoxBorder`, `bubble.c`, `map.c: renderMapName`) o la captura de
+referencia en la que se midió.
+
+Esas imágenes (las indexadas que se dibujan con una de sus paletas, `?palette=n`; `isPixelArt` en
+`image_reference.hpp`) se muestrean nítidas: cada texel es un cuadrado plano y solo el píxel de pantalla que cruza su
+borde mezcla los dos texels (`rml.slang: sharpUv`). Con muestreo lineal sin más, cada borde se emborrona; con el más
+cercano sin más, a una proporción que no es entera (3dp por píxel del original, a 1,5 o 2 píxeles por dp, dibujan un texel de la copia
+×4 de 1,125 o 1,5 píxeles) los texels salen de uno o dos píxeles a turnos y la imagen tiembla al moverse o al crecer
+la burbuja. Se comprobó con capturas a 1920 × 1080 (1,5) y 2560 × 1440 (2), fuera del repositorio porque llevan arte
+del disco; el resto de imágenes de la UI se siguen filtrando.
+
+| Pantalla | Qué dibuja | Fuente |
+|---|---|---|
+| Menú principal | La portada (TITLE2) en 4:3 en el centro, sobre negro, y el cuadro del menú de inicio con su degradado y el selector amarillo de 1 píxel | `main_menu.c: renderInitialMenu`, captura del título |
+| Menú de pausa | Un cuadro del original (borde cian, esquinas de SYSTEM_W, relleno #2D3840 a media opacidad) sobre el campo sin oscurecer | `ui.c: renderUIBoxBorder`, `game_menu.c: renderGameMenu` |
+| Menú del compañero | La ficha (cuadro opaco, recuadros hundidos, iconos de parámetros, barras de felicidad, disciplina y virus) y la bolsa (dos columnas de filas de 18 píxeles, el selector claro arriba y oscuro abajo, el cuadro de opciones, los de orden y de tirar) | `game_menu.c: renderDigimonStatsView`, `inventory.c`; capturas de la ficha y de la bolsa |
+| HUD del campo | El reloj de esfera (esfera, campanas, martillo, minutero y punto de la hora), las barras de felicidad y disciplina a cuadritos (`pips`) con sus iconos, la burbuja de la necesidad sobre el compañero y el nombre del mapa | `clock.c`, `partner_impl.c`, `bubble.c`, `map.c`; capturas del campo |
+| Combate | Las barras de HP y MP del compañero (BI_IN), los segmentos del remate, la tira de órdenes, las barras de los enemigos y los cuadros del final | `command_menu.c`; capturas del combate y de sus cuadros finales |
+| Minimapa | Solo con el ajuste `minimap` en `on`: un cuadro del original. Con `auto` no se ve (el original no tiene) | Diferencia opcional |
+
+**Captura frente a descompilación.** En las capturas de referencia el campo sale 6 líneas más abajo que las
+coordenadas de la descompilación y el combate 6 más arriba; las hojas usan lo que se ve (la captura) y lo dicen. La
+rejilla de la bolsa con varias filas sale de la descompilación (`createInventoryView`) y sus medidas de la captura con
+un objeto.
+
+**En pantalla ancha** cada panel guarda su distancia al borde del original (el reloj a la izquierda, las barras a la
+derecha); los menús van en un escenario de 960 × 720dp en el centro.
+
+**Orden de los decoradores.** RmlUi dibuja los decoradores de un elemento con el primero de la lista encima
+(comprobado con la burbuja del campo): el que tapa va antes. Su alineación solo admite px, % o palabras clave, no dp:
+las posiciones dentro de un elemento van en %.
+
+**Elecciones documentadas** (diferencias con el original, todas a propósito):
+
+| Diferencia | Por qué |
+|---|---|
+| Los bordes de los cuadros pierden las líneas negras de fuera y de dentro: queda el cian (la derecha, #4A9FC5) | RCSS sin shaders da un solo color por lado |
+| El degradado de cuatro esquinas del menú de inicio es uno vertical de los promedios (#000060 a #000020) | Lo mismo |
+| El selector mide 12 píxeles de alto en vez de 14 | Con 14 se solapa con las filas vecinas y el teclado no puede pasar de una a otra |
+| El menú de pausa es más ancho (184 píxeles) y lista opciones con texto | Tiene más entradas que el del original, con valores en el idioma del jugador |
+| El menú del compañero tiene cuatro pestañas; las barras de HP y MP de su ficha miden 82 píxeles en vez de 104 | El menú tiene más páginas; los valores «800 / 800» necesitan sitio |
+| Las órdenes del combate son texto, no los iconos de BTLCOMND | Los ajustes del combate nombran el texto de una orden, no su icono |
+| Las barras de los enemigos van en columna arriba en el centro | El combate no publica dónde está cada enemigo en la pantalla |
+| Las filas de la bolsa dejan el hueco del icono vacío | Los ajustes de los objetos no dicen qué icono tiene cada uno |
+| Las ganancias del final dicen «+n» en vez de la flecha azul; «Continuar» cierra el tercer cuadro | El original avanza con un botón sin nada en pantalla |
+| Los avisos de botones y el botón del menú del HUD | El juego también se usa con teclado y ratón |
+| El icono de la felicidad no alterna con otra cara en las zonas que al compañero le gustan o le disgustan (`partner_impl.c: renderStatusBars`, ±11 en u cada 5 frames según `MAP_TILE_DATA.partnerAreaResponse`) | El contrato del HUD no publica lo que le parece la zona al compañero (ver la diferencia conocida del estado del campo); el aspecto lo dibujará cuando se publique |
+| La burbuja parpadea con su propio reloj de 3 s, no con el de la burbuja del original, y sin su vaivén de 12 unidades; solo se dibuja el primer cuadro de la animación de cada necesidad y la «Z» baja del sueño | El contrato no publica los frames de la burbuja; el vaivén y los cuadros son animación opcional |
+
+**Pendiente:** el cuadro de texto llega con el intérprete de historia, que lo trae; el aspecto lo dibujará entonces
+(`docs/plan/fase-4-contenido-y-modos.md`).
 
 ## Scripts
 

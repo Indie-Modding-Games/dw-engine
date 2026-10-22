@@ -12,6 +12,9 @@ content/packs/game/ui/
   skins/modern/skin.yaml     el aspecto moderno: qué hojas pone sobre cada pantalla
   skins/modern/theme.rcss    su estilo común: fuente, botones, avisos de botones
   skins/modern/<pantalla>/style.rcss
+  skins/original/skin.yaml   el aspecto original: extiende el moderno, sus hojas de sprites (imágenes del disco
+                             por asset id y paleta) y document_classes
+  skins/original/<pantalla>/style.rcss
   fonts/                     fuentes (.ttf/.otf) y sus licencias; se cargan todas. original_look.yaml
                              describe la familia original-look (ver docs/architecture/ui.md)
   pause_menu/document.rml    el menú de pausa
@@ -27,7 +30,19 @@ del mismo id en su paquete, o añadir un aspecto entero con su `ui/skins/<id>/sk
 [Aspectos](../architecture/ui.md#aspectos)). Un aspecto que necesita marcar elementos de un documento compartido (por
 ejemplo, que las barras del HUD se llenen a cuadritos con la clase `pips`) no copia el documento: lo dice en
 `document_classes` de su `skin.yaml`, por documento e id de elemento, y el juego pone y quita esas clases al
-cambiar de aspecto. El estilo va en el aspecto, no en el documento: un documento solo
+cambiar de aspecto.
+
+Las hojas de sprites de un aspecto nombran imágenes del paquete base por su asset id (`texture/etcdat/system_w`), su
+paleta y su tamaño en el original (`original_size`); si un paquete de capa remaster trae la misma imagen más grande
+(su `_meta.yaml` dice `scale`), el aspecto la usa sin cambiar nada y se ve más nítida. Así llegan las del aspecto
+original: `dwx extract` las agranda ×4 con la receta incluida `content/enhance/ui_original.recipe.yaml`. Un aspecto
+de un mod que quiere sus propias imágenes agrandadas escribe una receta igual (las imágenes que dibuja, `scale` y el
+modo de `index_scale`) y la pasa a mano por `dwx upscale <receta> <paquetes> -o <carpeta>`, que escribe un paquete
+remaster para montar al lado ([README de dwx](../../apps/dwx/README.md#dwx-upscale-y-las-recetas-incluidas)). Nunca
+se reparte arte del original: cada jugador lo saca de su disco. Las medidas del aspecto original están en
+[UI](../architecture/ui.md#el-aspecto-original).
+
+El estilo va en el aspecto, no en el documento: un documento solo
 enlaza `../common/base.rcss` y, si la pantalla tiene un comportamiento propio que no cambia con el aspecto (por
 ejemplo, que una lista dé la vuelta), su `structure.rcss`.
 

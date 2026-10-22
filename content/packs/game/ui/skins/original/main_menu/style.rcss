@@ -1,0 +1,41 @@
+/* The main menu in the original look, over the pause menu's (../pause_menu/style.rcss): the title screen with the
+   original's start menu box (main_menu.c: renderInitialMenu; capture title_menu).
+
+   The title image (TITLE2, 320 x 240) keeps its 4:3 proportions in the middle of a wide screen, on black. The box is
+   at (72, 50), 176 pixels wide; its rows start at x 82 and are 12 pixels apart, and the selector is a 152-pixel
+   outline from x 78. The original fills the box with a gradient from four corners (#000070, #000050, #000030,
+   #000010); a gradient from top to bottom of the corners' averages (#000060 to #000020) stands in for it, since a
+   four-corner gradient needs shaders the UI does not have. The box is as tall as its entries: this menu has five and
+   the prompt, the original four. Its own title stays hidden: the title image carries the game's name. */
+
+#scrim {
+	background-color: #000000;
+	decorator: image(title-screen contain center center);
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 150dp;
+	width: 528dp;
+	margin-left: -264dp;
+	padding: 12dp 0 12dp 18dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: transparent;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#title {
+	display: none;
+}
+
+#panel button {
+	width: 456dp;
+}
+
+#prompts {
+	margin-right: 18dp;
+}

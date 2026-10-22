@@ -1,0 +1,473 @@
+/* The battle in the original look: the partner's HP and MP at the top right, the finisher gauge under them, the
+   tamer's commands at the top left, the enemies' HP bars and the end boxes, all over the undimmed arena.
+
+   Positions are the captures' (battle_hud, battle_hud_enemy_hp_bar, battle_hud_finisher_ready, battle_end_box*):
+   the decompilation's screen coordinates less 6 lines in battle. On a wide screen the panels keep to their edges at
+   the original's distances; the end boxes stay in the middle. */
+
+#fight {
+	background-color: transparent;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The partner's bars (BI_IN; command_menu.c and the battle HUD): each the 104 x 8 frame at x 206, y 14 and 26 (the
+   decompilation's 20 and 32), the icon (11 x 11) at the frame's (4, -2), the fill from the frame's (18, 3), 50 pixels
+   at most and 2 tall (HP #f8d8c8 over #d04848, MP #c8e0f0 over #0068b8), and the value's four digits from the frame's
+   x 73 to x 99 (the capture's x 305), in the original's small digits, 8 pixels tall (24dp). The panel ends 10 pixels from the right edge. The partner's name and status are not shown, as the original. */
+
+#partner-panel {
+	position: absolute;
+	right: 30dp;
+	top: 42dp;
+	left: auto;
+	bottom: auto;
+	width: 312dp;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.fighter {
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.partner .fighter-head {
+	display: none;
+}
+
+.partner .bar-row {
+	display: block;
+	position: relative;
+	width: 312dp;
+	height: 24dp;
+	margin: 0 0 12dp 0;
+	decorator: image(battle-bar-frame);
+}
+
+.partner .bar-label {
+	position: absolute;
+	left: 12dp;
+	top: -6dp;
+	width: 33dp;
+	height: 33dp;
+	font-size: 0;
+	color: transparent;
+}
+
+#fighter-0-hp-label { decorator: image(battle-hp); }
+#fighter-0-mp-label { decorator: image(battle-mp); }
+
+.partner .bar {
+	position: absolute;
+	left: 54dp;
+	top: 9dp;
+	width: 150dp;
+	height: 6dp;
+	margin: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.partner .fill {
+	height: 3dp;
+	border-radius: 0;
+}
+
+.partner .hp .fill {
+	border-top: 3dp #f8d8c8;
+	background-color: #d04848;
+}
+
+.partner .mp .fill {
+	border-top: 3dp #c8e0f0;
+	background-color: #0068b8;
+}
+
+.partner .bar-value {
+	position: absolute;
+	left: 219dp;
+	top: 0;
+	width: 78dp;
+	font-size: 24dp;
+	line-height: 24dp;
+	text-align: right;
+	color: #d0d0d0;
+}
+
+.fighter.fainted {
+	opacity: 0.5;
+}
+
+/* The finisher (command_menu.c: 8 segments from x 215, y 35, in the yellows #f8e058 to #c8b028): the original fills
+   the letters of its word one by one (capture battle_hud_finisher_ready, "FIN"); its 8 segments are blocks here, the
+   word's letters being part of the sprite. */
+#finisher {
+	width: auto;
+	margin: 0 0 0 27dp;
+	padding: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+#finisher-label {
+	display: none;
+}
+
+.segment {
+	width: 18dp;
+	height: 21dp;
+	margin: 0;
+	border-radius: 0;
+	background-color: transparent;
+}
+
+.segment.filled, #finisher.ready .segment {
+	background-color: transparent;
+	decorator: vertical-gradient(#f8e058 #c8b028);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The tamer's commands (command_menu.c: BTL_renderCommandMenu): a strip at the top left from x 17, y 14, the
+   current command's name under it at (20, 48) in the ink colour, the cursor a yellow outline (#f8d000). The original
+   draws each command as a 16 x 16 icon of BTLCOMND; the battle's settings name a command's text, not its icon, so
+   the strip shows the names, smaller. */
+
+#commands {
+	position: absolute;
+	left: 51dp;
+	top: 42dp;
+	width: auto;
+	text-align: left;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+#command-row {
+	display: block;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.command {
+	display: inline-block;
+	margin: 0 6dp 6dp 0;
+	padding: 0 9dp;
+	font-size: 22dp;
+	line-height: 30dp;
+	border: 3dp transparent;
+	background-color: #00000080;
+}
+
+.command:focus, .command.current {
+	border-color: #f8d000;
+	background-color: #00000080;
+	color: #d0d0d0;
+}
+
+.command.unavailable {
+	color: #828282;
+}
+
+#command-name {
+	margin: 6dp 0 0 9dp;
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The enemies' HP (capture battle_hud_enemy_hp_bar): a 54 x 6 outline in green (#0AB40A) round a light green fill 3
+   pixels tall, the value above its right end. The original hangs each bar beside its enemy; the battle does not yet
+   publish where an enemy is on the screen, so the bars stand in a column at the top middle (a documented gap). */
+
+#enemies {
+	position: absolute;
+	right: auto;
+	left: 50%;
+	top: 120dp;
+	width: 240dp;
+	margin-left: -120dp;
+	padding: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.enemy {
+	width: 240dp;
+	margin: 0 0 18dp 0;
+}
+
+.enemy .fighter-head {
+	font-size: 22dp;
+	color: #d0d0d0;
+}
+
+.enemy .fighter-status {
+	margin-left: 9dp;
+	font-size: 22dp;
+	color: #fff371;
+}
+
+.enemy .bar-row {
+	display: block;
+	position: relative;
+	height: 48dp;
+}
+
+.enemy .bar-label {
+	display: none;
+}
+
+.enemy .bar {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 156dp;
+	height: 12dp;
+	margin: 0;
+	border-radius: 0;
+	border: 3dp #0ab40a;
+	background-color: transparent;
+}
+
+.enemy .fill {
+	height: 9dp;
+	border-radius: 0;
+	decorator: horizontal-gradient(#a0e8a0 #e8ffe8);
+}
+
+.enemy .bar-value {
+	position: absolute;
+	left: 96dp;
+	top: 0;
+	width: 66dp;
+	font-size: 33dp;
+	line-height: 30dp;
+	text-align: right;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The finisher's charge and the revive countdown: one of the original's boxes and the ink colour. */
+
+#charge {
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d384080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#charge-title {
+	font-size: 33dp;
+	color: #fff371;
+}
+
+#charge .bar {
+	height: 9dp;
+	border-radius: 0;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+#charge .fill {
+	border-radius: 0;
+	decorator: vertical-gradient(#f8e058 #c8b028);
+}
+
+.charge-hint {
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+#revive {
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+#prompts {
+	right: 30dp;
+	bottom: 18dp;
+	padding: 0;
+	border-radius: 0;
+	font-size: 22dp;
+	color: #b2b2b2;
+	background-color: transparent;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The bag in battle: the field bag's box (inventory.c; capture field_item_bag_1item) at the top, with the
+   description under it in grey. */
+
+#bag {
+	left: 27dp;
+	top: 27dp;
+	width: 906dp;
+	padding: 18dp 15dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#bag h2 {
+	font-size: 33dp;
+	color: #fff371;
+}
+
+.bag-slot {
+	width: 414dp;
+	height: 54dp;
+	margin: 0 18dp 0 0;
+	padding: 0 9dp 0 66dp;
+	font-size: 33dp;
+	line-height: 48dp;
+	border: 3dp transparent;
+}
+
+.bag-slot:focus {
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.bag-slot.unusable {
+	color: #828282;
+}
+
+#bag-description {
+	font-size: 33dp;
+	color: #b2b2b2;
+}
+
+#item-in-flight {
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+.bag-slot:focus .original-look {
+	color: #d0d0d0;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The end boxes (capture battle_end_box_stats, battle_end_box, battle_end_box_drop): from (73, 36), 174 pixels
+   wide, the stat gains in a box 102 tall, the names in yellow (#fff371); the bits in a box under it; the outcome and
+   the lines of drops, injury and moves learned in a third box under that. The boxes are black at half opacity. The
+   original marks a gain with a blue arrow and the count; here it is "+n". */
+
+#end {
+	display: block;
+	background-color: transparent;
+}
+
+#end-panel {
+	position: absolute;
+	left: 50%;
+	top: 108dp;
+	width: 522dp;
+	margin-left: -261dp;
+	padding: 393dp 0 0 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+#end-boxes {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 522dp;
+	margin: 0;
+}
+
+#gains, #bits {
+	margin: 0 0 3dp 0;
+	padding: 6dp 18dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+}
+
+#gains {
+	height: 288dp;
+}
+
+.gain {
+	display: block;
+	width: auto;
+	font-size: 33dp;
+	line-height: 45dp;
+}
+
+.gain-label {
+	color: #fff371;
+}
+
+.gain-value {
+	float: right;
+	margin-right: 18dp;
+	color: #90c8f0;
+}
+
+#bits {
+	width: auto;
+	height: 81dp;
+	font-size: 33dp;
+	line-height: 81dp;
+}
+
+#bits-value {
+	display: inline;
+	margin-left: 60dp;
+	text-align: left;
+}
+
+#end-title {
+	margin: 0;
+	padding: 6dp 18dp 0 18dp;
+	font-size: 33dp;
+	color: #fff371;
+	border: 3dp #90d9fa;
+	border-bottom-width: 0;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+}
+
+.end-line {
+	margin: 0;
+	padding: 0 18dp;
+	font-size: 33dp;
+	border: 3dp #90d9fa;
+	border-top-width: 0;
+	border-bottom-width: 0;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+}
+
+/* The original goes on at a button press with nothing on the screen for it; here the "continue" entry closes the
+   third box at its bottom right, always focused, so it needs no selector of its own. */
+#end-continue, #end-continue:focus {
+	margin: 0;
+	padding: 0 18dp;
+	text-align: right;
+	color: #b2b2b2;
+	border: 3dp #90d9fa;
+	border-top-width: 0;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+}

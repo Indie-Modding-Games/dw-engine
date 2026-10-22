@@ -1,0 +1,54 @@
+/* The original look shared by every document: the original's text, its menu cursor and its button prompts.
+
+   Scale: one pixel of the original is 3dp (its 240 lines over the UI's 720 dp), so every size below is a whole
+   number of original pixels times 3. The text is the original-look family (the bitmap font or the modern one, as the
+   player's text_font setting picks), whose 11-pixel cells keep their shape at 33dp, three times.
+
+   Sources: the colours of the text are the font's CLUT and TEXT_COLORS (font.c: drawString): #d0d0d0 the ink,
+   #fff371 the yellow of headings, #288ad0 blue, #b2b2b2 the grey of descriptions. */
+
+body {
+	font-family: original-look;
+	font-weight: normal;
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+/* An entry of a menu: plain text with the original's selector, a 1-pixel outline round the focused row
+   (main_menu.c: renderInitialMenu, #A0A000). No hover fill and no animation: the original has neither. The rows are
+   the original's 12 pixels apart (36dp); its selector is 14 pixels tall and overlaps the rows next to it, which
+   would let a focused row overlap its neighbours and stop the keyboard's up and down from reaching them, so here the
+   outline is the row's own 12 pixels: a documented delta of 2 pixels. */
+button {
+	padding: 0 9dp;
+	margin: 0;
+	border-radius: 0;
+	border: 3dp transparent;
+	color: #d0d0d0;
+	background-color: transparent;
+	line-height: 30dp;
+	transition: none;
+}
+
+button:focus {
+	border-color: #a0a000;
+	background-color: transparent;
+	color: #d0d0d0;
+}
+
+button:active {
+	background-color: transparent;
+}
+
+/* A button prompt. The original has none (it names no buttons on screen); they stay, small and in the description
+   grey, because the game is also played with a keyboard and a mouse. A documented delta of this skin. */
+.key {
+	min-width: 18dp;
+	padding: 0 6dp;
+	margin-right: 6dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	font-weight: normal;
+	font-size: 22dp;
+	color: #d0d0d0;
+}

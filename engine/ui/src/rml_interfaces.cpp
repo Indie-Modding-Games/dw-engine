@@ -210,6 +210,14 @@ bool FileInterface::LoadFile(const Rml::String& path, Rml::String& data) {
     return true;
 }
 
+bool TextureSources::isPixelArt(std::string_view source) {
+    if (source.starts_with(GeneratedPrefix)) {
+        return false;
+    }
+    const auto reference = parseImageReference(source);
+    return reference && ui::isPixelArt(*reference);
+}
+
 core::Result<assets::Image> TextureSources::load(std::string_view source) const {
     if (source.starts_with(GeneratedPrefix)) {
         auto found = generated_.find(source.substr(GeneratedPrefix.size()));

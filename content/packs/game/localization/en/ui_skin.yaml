@@ -1,3 +1,4 @@
 # The names of the game pack's UI skins in the menus (ui/skins/<id>/skin.yaml names its key). A mod's skin keeps its
 # name in a localization file of its own: one named ui_skin.yaml would replace this one whole.
 modern: "Modern"
+original: "Original"

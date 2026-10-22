@@ -93,6 +93,7 @@ void RenderBridge::RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vec
         .geometry = found->second,
         .translation = {translation.x, translation.y},
         .texture = texture == 0 ? gpu_->renderer->whiteTexture() : textureOf(texture),
+        .sharp = sharpTextures_.contains(texture),
         .scissor = scissorEnabled_ ? std::optional{scissor_} : std::nullopt,
         .transform = transform_,
     });
@@ -129,7 +130,11 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
     }
     dimensions = {static_cast<int>(image->width), static_cast<int>(image->height)};
     const std::vector<std::byte> pixels = premultiplied(std::span<const std::byte>{image->pixels});
-    return createTexture(dimensions, pixels);
+    const Rml::TextureHandle texture = createTexture(dimensions, pixels);
+    if (texture != 0 && TextureSources::isPixelArt(source)) {
+        sharpTextures_.insert(texture);
+    }
+    return texture;
 }
 
 Rml::TextureHandle RenderBridge::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) {
@@ -137,6 +142,7 @@ Rml::TextureHandle RenderBridge::GenerateTexture(Rml::Span<const Rml::byte> sour
 }
 
 void RenderBridge::ReleaseTexture(Rml::TextureHandle texture) {
+    sharpTextures_.erase(texture);
     if (gpu_ != nullptr && texture != 0) {
         gpu_->renderer->destroyTexture(textureOf(texture));
     }

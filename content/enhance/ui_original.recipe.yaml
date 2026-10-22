@@ -10,11 +10,8 @@ select:
   include:
     - texture/etcdat/system_w
     - texture/etcdat/fi_info
-    - texture/etcdat/item
-    - texture/etcdat/btlcomnd
     - texture/etcdat/bi_in
     - texture/etcdat/feel_ef
-    - texture/etcdat/sboy
     - texture/etcna/title2
 scale: 4
 steps:

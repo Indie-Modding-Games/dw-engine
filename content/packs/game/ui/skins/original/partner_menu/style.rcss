@@ -1,0 +1,414 @@
+/* The partner's menu in the original look: the stats view (game_menu.c: renderDigimonStatsView) and the bag
+   (inventory.c: renderInventoryTop, renderInventoryBottom), over the field, which stays undimmed.
+
+   The original's screen is 320 x 240; here it is a 960 x 720dp stage in the middle of the screen, so a wide screen
+   only adds field to the sides. Positions are in the original's pixels times 3, from the decompilation, or measured on
+   the captures partner_status, field_item_bag_1item and field_item_option_box where they say so.
+
+   The tabs (x 15, 76 wide, and x 90, 64 wide, 16 tall at y 16) carry the active tab's text in the ink colour and the
+   others' in blue (#288ad0). This menu has four tabs where the original has two; each is as wide as its text. */
+
+#scrim {
+	background-color: transparent;
+	display: block;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 48dp;
+	width: 900dp;
+	margin-left: -450dp;
+	padding: 0;
+	border-radius: 0;
+	border-width: 0;
+	background-color: transparent;
+}
+
+#tabs {
+	height: 45dp;
+	margin: 0 0 0 15dp;
+	padding: 0;
+	border-width: 0;
+}
+
+.tab {
+	display: inline-block;
+	height: 39dp;
+	margin: 0 3dp 0 0;
+	padding: 0 18dp;
+	line-height: 36dp;
+	font-size: 33dp;
+	color: #288ad0;
+	border: 3dp #80e8f8;
+	border-bottom-width: 0;
+	background-color: #2d3840;
+}
+
+.tab.selected, .tab.selected:focus {
+	color: #d0d0d0;
+}
+
+.tab:focus {
+	border-color: #a0a000;
+}
+
+#close {
+	float: right;
+	color: #b2b2b2;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The stats view: an opaque box (10, 31), 300 x 190, its fill #2D3840. */
+
+#page-status {
+	position: relative;
+	height: 552dp;
+	padding: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d3840;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The profile (insets with lines #020202 at the top and left, #6987A0 at the bottom and right, fill #354B5C): the
+   name at y 52, the conditions on the row under it (the original's inset at y 68, 244 wide), the age and the weight
+   on the row at y 84 (insets at x 50 and 122), and the lives at (76, 154), here as text in the yellow of headings. */
+#status-head {
+	position: absolute;
+	left: 30dp;
+	top: 60dp;
+	width: 840dp;
+	font-size: 33dp;
+	margin: 0;
+}
+
+#status-name {
+	display: inline-block;
+	width: 294dp;
+	padding: 0 9dp;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+#status-lives {
+	position: absolute;
+	left: 168dp;
+	top: 309dp;
+	font-size: 33dp;
+	color: #fff371;
+}
+
+.status-line {
+	display: block;
+	position: absolute;
+	left: 30dp;
+	top: 156dp;
+	width: 360dp;
+	font-size: 33dp;
+	margin: 0;
+}
+
+#page-status > div:nth-child(3) {
+	left: 396dp;
+}
+
+.line-value {
+	float: none;
+	margin: 0 0 0 18dp;
+	padding: 0 9dp;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+#conditions {
+	position: absolute;
+	left: 30dp;
+	top: 108dp;
+	margin: 0;
+	font-size: 33dp;
+	color: #d0d0d0;
+}
+
+/* The parameters (from x 142, y 108; rows 15 pixels apart from the HP bar at y 130): the icon of 11 x 11 with no
+   name, as the original, the bar inset whose fill is 2 pixels of #32C8C8 and the value. The original's HP and MP
+   bars are 104 pixels and the others' 54; HP and MP keep room for their "800 / 800" here, so theirs are 82 pixels, a
+   documented delta. */
+#page-status > div:nth-child(4) {
+	position: absolute;
+	left: 396dp;
+	top: 280dp;
+	width: 492dp;
+	margin: 0;
+}
+
+/* The condition (from x 10): happiness, discipline and the virus bar at y 173, 188 and 202, with the icons at x 22
+   and the names (small: the bars start at x 76, 54 pixels after the icons), the bars 50 x 6 (150dp), the pink #e04080 to #f0c0e8 under the blue #3060a0 to #b0d0e0, and the
+   virus bar #C8C83C. The original shows no number for them, nor does this skin. */
+#page-status > div:nth-child(5) {
+	position: absolute;
+	left: 30dp;
+	top: 412dp;
+	width: 330dp;
+	margin: 0;
+}
+
+.bar-row {
+	display: flex;
+	align-items: center;
+	height: 45dp;
+	margin: 0;
+	font-size: 33dp;
+}
+
+.bar-row .label {
+	flex: none;
+	width: 123dp;
+	padding-left: 39dp;
+	font-size: 22dp;
+	color: #fff371;
+}
+
+#page-status > div:nth-child(4) .label {
+	width: 48dp;
+	padding: 0;
+	height: 45dp;
+	font-size: 0;
+	color: transparent;
+}
+
+#pool-0-label { decorator: image(stat-hp scale-none left center); }
+#pool-1-label { decorator: image(stat-mp scale-none left center); }
+#stat-0-label { decorator: image(stat-off scale-none left center); }
+#stat-1-label { decorator: image(stat-def scale-none left center); }
+#stat-2-label { decorator: image(stat-speed scale-none left center); }
+#stat-3-label { decorator: image(stat-brains scale-none left center); }
+#meter-0-label { decorator: image(face-happy scale-none left center); }
+#meter-1-label { decorator: image(discipline-high scale-none left center); }
+
+.bar {
+	flex: none;
+	width: 162dp;
+	height: 9dp;
+	margin: 0 9dp;
+	border-radius: 0;
+	border: 3dp #020202;
+	border-right-color: #6987a0;
+	border-bottom-color: #6987a0;
+	background-color: #354b5c;
+}
+
+.pool .bar {
+	flex: 1;
+	width: auto;
+}
+
+.fill {
+	height: 6dp;
+	border-radius: 0;
+}
+
+.stat .fill { background-color: #32c8c8; }
+
+.meter {
+	width: 150dp;
+	height: 18dp;
+	border-width: 0;
+	decorator: vertical-gradient(#e04080 #f0c0e8);
+}
+
+.meter .fill {
+	height: 18dp;
+	decorator: vertical-gradient(#3060a0 #b0d0e0);
+}
+
+.meter .fill.high {
+	decorator: vertical-gradient(#3060a0 #b0d0e0);
+}
+
+#meter-2-fill {
+	decorator: none;
+	background-color: #c8c83c;
+}
+
+.bar-row .value {
+	flex: 1;
+	text-align: right;
+}
+
+.pool .value {
+	flex: none;
+	width: 180dp;
+}
+
+#page-status > div:nth-child(5) .value {
+	display: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The bag (field_item_bag_1item): the list in a box at half opacity over black, 2 columns of rows 18 pixels tall
+   (138 wide, 144 apart), the name 22 pixels in and the count at its right; the selector an outline light at the top
+   and left (#B0B0B0) and dark at the bottom and right (#121212) round a grey fill at half opacity (#808080). The
+   description in its own box at the bottom, in grey (#b2b2b2). The original's list starts at y 9; here it starts
+   under the tabs, at y 31. The original draws each item's icon in the gap before its name; the bag's settings do not
+   say which icon, so the gap stays empty. */
+
+#page-items {
+	position: relative;
+	height: 618dp;
+}
+
+#bag-grid {
+	min-height: 348dp;
+	padding: 18dp 15dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.slot {
+	display: inline-block;
+	box-sizing: border-box;
+	width: 414dp;
+	height: 54dp;
+	margin: 0 18dp 0 0;
+	padding: 0 9dp 0 66dp;
+	font-size: 33dp;
+	line-height: 48dp;
+	border: 3dp transparent;
+}
+
+.slot:focus {
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.slot.dimmed {
+	color: #828282;
+}
+
+.slot.moving {
+	border: 3dp #f14a5d;
+}
+
+#bag-description {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 498dp;
+	min-height: 48dp;
+	margin: 0;
+	padding: 9dp 60dp;
+	font-size: 33dp;
+	color: #b2b2b2;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #00000080;
+}
+
+#bag-foot {
+	position: absolute;
+	left: 18dp;
+	right: 18dp;
+	top: 462dp;
+	margin: 0;
+	font-size: 22dp;
+}
+
+/* The care page, in the stats view's box. */
+#page-care {
+	height: 552dp;
+	padding: 18dp 30dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d3840;
+}
+
+#page-care button {
+	width: 300dp;
+}
+
+.care-hint {
+	margin-top: 9dp;
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+#care-result {
+	margin-top: 9dp;
+	font-size: 33dp;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The boxes over the bag (field_item_option_box): the options box at (19, 35), 56 x 88, rows 19 pixels apart, the
+   focused row a filled grey bar; the sort orders and the drop's question as boxes of the same look (inventory.c: 72 x
+   66 and 128 x 53, the question at (96, 82)). The boxes are beside the panel, not in it: they place themselves from
+   the middle of the screen, where the panel's left edge is 450dp to the left, and the panel's top is 48dp; the
+   panel's origin is the original's (10, 16). */
+
+.box {
+	position: absolute;
+	left: 50%;
+	top: 105dp;
+	width: 168dp;
+	margin: 0 0 0 -423dp;
+	padding: 12dp 6dp;
+	font-size: 33dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d3840;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.box button {
+	height: 51dp;
+	margin: 0 0 6dp 0;
+	padding: 0 9dp;
+	line-height: 51dp;
+}
+
+.box button:focus {
+	border-color: transparent;
+	background-color: #808080;
+}
+
+#sort-box {
+	width: 216dp;
+}
+
+#confirm-box {
+	top: 246dp;
+	margin-left: -192dp;
+	width: 384dp;
+}
+
+#confirm-box button {
+	display: inline-block;
+	width: 150dp;
+}
+
+#prompts {
+	position: absolute;
+	right: 0;
+	top: 624dp;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	font-size: 22dp;
+	color: #b2b2b2;
+}
+
+/* The focused entry keeps the ink colour: the original marks it with the outline or the grey bar, not with colour. */
+button:focus .original-look, button.original-look:focus {
+	color: #d0d0d0;
+}

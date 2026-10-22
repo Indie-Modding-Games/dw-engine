@@ -2,3 +2,4 @@
 # Un aspecto de un mod guarda su nombre en un archivo de textos propio: uno llamado ui_skin.yaml reemplazaría este
 # entero.
 modern: "Moderno"
+original: "Original"

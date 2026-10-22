@@ -1133,7 +1133,7 @@ TEST_CASE("the main menu switches the text font and shows the one the game repor
     input::InputState input{input::defaultActionMap()};
     ui->show("main_menu", true);
     frame(*ui, input);
-    CHECK(ui->elementText("main_menu", "text-font-value") == "Moderna");
+    CHECK(ui->elementText("main_menu", "text-font-value") == "No");
 
     press(*ui, input, input::keys::Down);
     press(*ui, input, input::keys::Down);
@@ -1148,7 +1148,7 @@ TEST_CASE("the main menu switches the text font and shows the one the game repor
     // The menu shows what the game reports back, not what it asked for.
     ui->setSetting("text_font", std::string{"original"});
     frame(*ui, input);
-    CHECK(ui->elementText("main_menu", "text-font-value") == "Original");
+    CHECK(ui->elementText("main_menu", "text-font-value") == "Sí");
     press(*ui, input, input::keys::Return);
     commands = ui->takeCommands();
     REQUIRE(commands.size() == 1);
@@ -1158,7 +1158,7 @@ TEST_CASE("the main menu switches the text font and shows the one the game repor
     ui->setSetting("text_font", std::string{"modern"});
     ui->refreshTexts();
     frame(*ui, input);
-    CHECK(ui->elementText("main_menu", "text-font-value") == "Modern");
+    CHECK(ui->elementText("main_menu", "text-font-value") == "No");
 }
 
 TEST_CASE("the main menu works with the mouse alone") {

@@ -4,6 +4,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/ui/image_reference.hpp>
 
+#include <RmlUi/Core/Types.h>
 #include <doctest/doctest.h>
 #include <ktx.h>
 #include <lodepng.h>
@@ -19,6 +20,9 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "render_bridge.hpp"
+#include "rml_interfaces.hpp"
 
 namespace dwe::ui {
 namespace {
@@ -130,6 +134,8 @@ struct Packs {
         memory.addFile("packs/base/texture/sheet_meta.yaml", IndexedMeta);
         memory.addFile("packs/base/texture/plain.png", indexedPng());
         memory.addFile("packs/base/texture/frame.png", indexedPng());
+        memory.addFile("packs/base/ui/skins/modern/frame.png", rgbaPng(Side, Side));
+        memory.addFile("packs/remaster/ui/user_frame.png", rgbaPng(Side, Side));
         memory.addFile("packs/remaster/texture/frame.ktx2", basisKtx2());
         memory.addFile("packs/base/texture/wide.png", rgbaPng(MaxUiImageSide + 1, 1));
         memory.addFile("packs/remaster/texture/wide_texture.ktx2", rgbaKtx2(MaxUiImageSide + 1, 1));
@@ -178,6 +184,50 @@ TEST_CASE("an image reference names an asset, with or without an extension, and 
     CHECK_FALSE(parseImageReference("texture/time.png?palette=").has_value());
     CHECK_FALSE(parseImageReference("texture/time.png?palette=x").has_value());
     CHECK_FALSE(parseImageReference("Texture/Time.png").has_value());
+}
+
+TEST_CASE("the disc's pixel art, an indexed image drawn with a palette, is drawn sharp; any other image is filtered") {
+    const auto sprite = parseImageReference("/texture/etcdat/feel_ef?palette=1");
+    REQUIRE(sprite.has_value());
+    CHECK(isPixelArt(*sprite));
+    const auto modern = parseImageReference("ui/skins/modern/frame.png");
+    REQUIRE(modern.has_value());
+    CHECK_FALSE(isPixelArt(*modern));
+    // Never guessed from the image: the same indexed sprite named without a palette is filtered.
+    const auto unnamed = parseImageReference("/texture/etcdat/feel_ef");
+    REQUIRE(unnamed.has_value());
+    CHECK_FALSE(isPixelArt(*unnamed));
+}
+
+TEST_CASE("only a texture named with a palette draws sharp; font, skin and user images stay linear") {
+    const Packs packs;
+    TextureSources sources{*packs.files};
+    RenderBridge bridge{sources, nullptr};
+    Rml::Vector2i size;
+
+    const Rml::TextureHandle sprite = bridge.LoadTexture(size, "/texture/sheet.png?palette=1");
+    REQUIRE(sprite != 0);
+    CHECK(bridge.drawsSharp(sprite));
+
+    // The same indexed image, with metadata and palettes, named without a palette: the reference decides, not the file.
+    const Rml::TextureHandle ownPalette = bridge.LoadTexture(size, "/texture/sheet.png");
+    REQUIRE(ownPalette != 0);
+    CHECK_FALSE(bridge.drawsSharp(ownPalette));
+    for (const std::string_view source : {"/ui/skins/modern/frame.png", "/ui/user_frame.png", "/texture/frame"}) {
+        CAPTURE(source);
+        const Rml::TextureHandle texture = bridge.LoadTexture(size, Rml::String{source});
+        REQUIRE(texture != 0);
+        CHECK_FALSE(bridge.drawsSharp(texture));
+    }
+
+    // Font atlases (FontEngine) and minimaps come through GenerateTexture.
+    const std::vector<Rml::byte> atlas(std::size_t{Side} * Side * 4, Rml::byte{255});
+    const Rml::TextureHandle font = bridge.GenerateTexture(atlas, {static_cast<int>(Side), static_cast<int>(Side)});
+    REQUIRE(font != 0);
+    CHECK_FALSE(bridge.drawsSharp(font));
+
+    bridge.ReleaseTexture(sprite);
+    CHECK_FALSE(bridge.drawsSharp(sprite));
 }
 
 TEST_CASE("a remaster's KTX2 texture answers the references to the PNG it replaces") {

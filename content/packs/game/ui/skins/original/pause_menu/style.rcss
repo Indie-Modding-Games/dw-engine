@@ -1,0 +1,59 @@
+/* The pause menu in the original look: one of the original's boxes over the field, which stays undimmed.
+
+   The box (ui.c: renderUIBoxBorder; capture field_pause_start and menu_main): a light cyan rim (#90D9FA, the right
+   side's inner line the darker #4A9FC5), the rounded corner sprites of SYSTEM_W, and the fill #2D3840 at half
+   opacity (the box's semi-transparent mode). The original draws each side as three or four 1-pixel lines, black, cyan,
+   black; RCSS without shaders gives an element one border colour per side, so the black lines are left out. A
+   documented limit of this skin.
+
+   Placement: the original's menu box (game_menu.c: renderGameMenu) is centred and 40 pixels from the top. Its 132
+   pixels hold six icons; this menu holds options with values in the player's language, so it is 184 pixels wide
+   (552dp), a documented widening. The header is the original's yellow (#fff371) over a rule, as the menu's
+   Year/Day line. */
+
+#scrim {
+	background-color: transparent;
+	display: block;
+}
+
+#panel {
+	position: absolute;
+	left: 50%;
+	top: 120dp;
+	width: 552dp;
+	margin-left: -276dp;
+	padding: 6dp 9dp 9dp 9dp;
+	border-radius: 0;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d384080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+#title {
+	font-size: 33dp;
+	font-weight: normal;
+	color: #fff371;
+	margin: 0 0 6dp 0;
+	padding: 0 12dp 3dp 12dp;
+	border-bottom: 3dp #90d9fa;
+}
+
+.option .value {
+	font-weight: normal;
+	color: #fff371;
+}
+
+.back {
+	margin-top: 6dp;
+	color: #b2b2b2;
+}
+
+#prompts {
+	margin-top: 12dp;
+	padding-top: 6dp;
+	border-top: 3dp #90d9fa;
+	font-size: 22dp;
+	color: #b2b2b2;
+}

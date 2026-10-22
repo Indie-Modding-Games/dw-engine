@@ -64,6 +64,10 @@ struct ImageReference {
 // `/texture/stddat/time?palette=3`.
 core::Result<ImageReference> parseImageReference(std::string_view path);
 
+// Whether the UI draws an image as the disc's pixel art, with sharp texel edges at any size (rml.slang: sharpUv): an
+// indexed image drawn with one of its palettes, as the original look's sprites are. Any other image is filtered.
+bool isPixelArt(const ImageReference& reference);
+
 // The text of a reference, as a style sheet writes it: `/texture/stddat/time?palette=3`.
 std::string imageReferenceText(const ImageReference& reference);
 

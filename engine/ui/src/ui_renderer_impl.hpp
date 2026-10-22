@@ -29,6 +29,8 @@ struct UiDraw {
     std::shared_ptr<const UiGeometry> geometry;
     glm::vec2 translation{0.0F};
     render::TextureId texture;
+    // Whether the texture is the disc's pixel art, drawn with sharp texel edges at any size (rml.slang: sharpUv).
+    bool sharp = false;
     // In pixels from the top left; nothing for the whole target.
     std::optional<rhi::Rect> scissor;
     // RmlUi's transform of the element, in pixels.
