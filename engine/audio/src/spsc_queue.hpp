@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <new>
 #include <optional>
+#include <type_traits>
 
 namespace dwe::audio {
 
@@ -13,6 +14,9 @@ namespace dwe::audio {
 // of a batch or none of it.
 template <typename Item, std::size_t Capacity>
 class SpscQueue {
+  // Items are copied in and out of the slots while the other thread may read the indices.
+  static_assert(std::is_trivially_copyable_v<Item>);
+
 public:
   // Producer: adds an item the consumer cannot see until publish. False when the queue is full.
   bool stage(const Item& item) {
@@ -24,7 +28,6 @@ public:
     return true;
   }
 
-  // Producer: whether stage would take one more item.
   [[nodiscard]] bool hasRoom() const {
     return staged_ - read_.load(std::memory_order_acquire) < Capacity;
   }
@@ -32,7 +35,6 @@ public:
   // Producer: lets the consumer see every staged item.
   void publish() { published_.store(staged_, std::memory_order_release); }
 
-  // Producer: stages and publishes one item.
   bool push(const Item& item) {
     if (!stage(item)) {
       return false;
@@ -41,7 +43,6 @@ public:
     return true;
   }
 
-  // Consumer: the oldest published item, if any.
   std::optional<Item> pop() {
     const std::size_t read = read_.load(std::memory_order_relaxed);
     if (read == published_.load(std::memory_order_acquire)) {

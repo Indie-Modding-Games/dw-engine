@@ -39,8 +39,12 @@ struct VoiceEnded {
 };
 
 using OrderQueue = SpscQueue<Order, CommandQueueCapacity>;
-// Every voice id ends exactly once. Between two updates at most MaxVoices voices play and one full
-// queue of orders replaces or ends others; twice that leaves room for an update that comes late.
+// Every voice id ends exactly once, and the mixer takes an order only while the end it may cause
+// fits, so a full queue delays orders and never loses an end. The game empties this queue at every
+// update. Between two updates the ends that can arrive are those of the voices playing at the first
+// (at most MaxVoices) and of the voices started by the orders it published (at most one full order
+// queue): MaxVoices + CommandQueueCapacity. Twice that keeps an update that comes late from
+// delaying orders.
 using EndQueue = SpscQueue<VoiceEnded, 2 * (MaxVoices + CommandQueueCapacity)>;
 
 } // namespace dwe::audio

@@ -22,13 +22,15 @@ public:
   // Starts output pulling from a new mixer, with every volume at 1.
   explicit Audio(std::unique_ptr<Output> output);
   Audio(Audio&&) noexcept;
-  Audio& operator=(Audio&&) noexcept;
+  // Assigning would release the old mixer while its output may still be pulling from it.
+  Audio& operator=(Audio&&) = delete;
   Audio(const Audio&) = delete;
   Audio& operator=(const Audio&) = delete;
   ~Audio();
 
   // Plays a clip; with every slot in use the oldest voice gives up its slot. Fails when the clip is
-  // not playable or this tick's orders are full.
+  // not playable, the pitch is outside [MinPitch, MaxPitch], the pan is not finite or this tick's
+  // orders are full.
   core::Result<VoiceId> play(const PlayRequest& request);
   // Fades a voice out and releases it. A voice that already ended is ignored.
   void stop(VoiceId voice);

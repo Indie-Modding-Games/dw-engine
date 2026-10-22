@@ -218,3 +218,52 @@ TEST_CASE("a render longer than one pass is mixed in pieces without a seam") {
   CHECK(left(out, MaxRenderFrames) == doctest::Approx(Half * centreGain));
   CHECK(left(out, (MaxRenderFrames * 2) + 6) == doctest::Approx(Half * centreGain));
 }
+
+TEST_CASE("a NaN that reaches the mix becomes silence, not noise for every voice") {
+  auto rig = makeRig();
+  const auto clip = steadyClip(16384, 8);
+  rig->send(
+      PlayOrder{.voice = {.slot = 0, .generation = 1}, .clip = clip.get(), .pan = std::nanf("")});
+  rig->play({.slot = 1, .generation = 1}, *clip);
+  const auto out = rig->render(2);
+  CHECK(left(out, 0) == 0.0F);
+  CHECK(right(out, 1) == 0.0F);
+}
+
+TEST_CASE("an end that does not fit is reported on a later pass") {
+  auto rig = makeRig();
+  const auto clip = steadyClip(16384, 4);
+  const VoiceId voice{.slot = 2, .generation = 1};
+  rig->play(voice, *clip);
+  rig->render(1);
+  std::size_t filler = 0;
+  while (rig->ends.push(VoiceEnded{.voice = {.slot = 9, .generation = 9}})) {
+    ++filler;
+  }
+  rig->render(8);
+  REQUIRE(rig->ended().size() == filler);
+  rig->render(1);
+  CHECK(rig->ended() == std::vector{voice});
+}
+
+TEST_CASE("orders wait while the end they may cause would not fit") {
+  auto rig = makeRig();
+  while (rig->ends.push(VoiceEnded{})) {
+  }
+  const auto clip = steadyClip(16384, 8);
+  rig->play({.slot = 0, .generation = 1}, *clip);
+  CHECK(left(rig->render(1), 0) == 0.0F);
+  rig->ended();
+  CHECK(left(rig->render(1), 0) == doctest::Approx(Half * centreGain));
+}
+
+TEST_CASE("staged items stay out of sight until they are published") {
+  auto queue = std::make_unique<EndQueue>();
+  REQUIRE(queue->stage(VoiceEnded{.voice = {.slot = 1, .generation = 1}}));
+  REQUIRE(queue->stage(VoiceEnded{.voice = {.slot = 2, .generation = 1}}));
+  CHECK_FALSE(queue->pop());
+  queue->publish();
+  CHECK(queue->pop().value_or(VoiceEnded{}).voice.slot == 1);
+  CHECK(queue->pop().value_or(VoiceEnded{}).voice.slot == 2);
+  CHECK_FALSE(queue->pop());
+}

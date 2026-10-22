@@ -18,6 +18,8 @@ TEST_CASE("a playable clip has one or two channels, a rate, whole frames and a l
 
   CHECK_FALSE(checkClip(*clipOf({1, 2, 3}, 3)));
   CHECK_FALSE(checkClip(*clipOf({1, 2}, 1, 0)));
+  CHECK(checkClip(*clipOf({1, 2}, 1, MaxClipSampleRate)));
+  CHECK_FALSE(checkClip(*clipOf({1, 2}, 1, MaxClipSampleRate + 1)));
   CHECK_FALSE(checkClip(*clipOf({1, 2, 3}, 2)));
   CHECK_FALSE(checkClip(*clipOf({}, 1)));
   CHECK_FALSE(checkClip(*clipOf({1, 2}, 1, 48000, ClipLoop{.start = 1, .length = 0})));

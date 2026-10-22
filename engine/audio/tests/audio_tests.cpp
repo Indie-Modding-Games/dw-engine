@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -110,11 +111,17 @@ TEST_CASE("one frame's orders are capped and the next frame takes orders again")
   CHECK(rig.audio.play({.clip = steadyClip(1000, 10)}));
 }
 
-TEST_CASE("a voice needs a playable clip and a positive pitch") {
+TEST_CASE("a voice needs a playable clip, a pitch inside the guard and a finite pan") {
   NullAudio rig;
   CHECK_FALSE(rig.audio.play({}));
   CHECK_FALSE(rig.audio.play({.clip = clipOf({}, 1)}));
   CHECK_FALSE(rig.audio.play({.clip = steadyClip(1000, 4), .pitch = 0.0F}));
+  CHECK_FALSE(rig.audio.play({.clip = steadyClip(1000, 4), .pitch = MinPitch / 2.0F}));
+  CHECK_FALSE(rig.audio.play({.clip = steadyClip(1000, 4), .pitch = MaxPitch * 2.0F}));
+  CHECK_FALSE(rig.audio.play({.clip = steadyClip(1000, 4), .pitch = std::nanf("")}));
+  CHECK_FALSE(rig.audio.play({.clip = steadyClip(1000, 4), .pan = std::nanf("")}));
+  CHECK_FALSE(
+      rig.audio.play({.clip = steadyClip(1000, 4), .pan = std::numeric_limits<float>::infinity()}));
   CHECK_FALSE(rig.audio.play(
       {.clip = steadyClip(1000, 4), .pitch = std::numeric_limits<float>::infinity()}));
   CHECK(rig.audio.activeVoiceCount() == 0);
@@ -131,6 +138,9 @@ TEST_CASE("volumes start whole and are kept between 0 and 1") {
   CHECK(rig.audio.volume(VolumeControl::Master) == 0.0F);
 }
 
+// Assigning would free the old mixer while its output could still pull from it.
+static_assert(!std::is_move_assignable_v<Audio>);
+
 TEST_CASE("an Audio keeps working after a move") {
   NullAudio rig;
   Audio moved = std::move(rig.audio);
@@ -139,4 +149,35 @@ TEST_CASE("an Audio keeps working after a move") {
   moved.update(Tick);
   moved.update(Tick);
   CHECK_FALSE(moved.isActive(*voice));
+}
+
+TEST_CASE("stopping a voice that lost its slot leaves the voice that took it playing") {
+  NullAudio rig;
+  std::vector<VoiceId> voices;
+  for (std::size_t i = 0; i < MaxVoices; ++i) {
+    const auto voice = rig.audio.play({.clip = loopingClip()});
+    REQUIRE(voice);
+    voices.push_back(*voice);
+  }
+  rig.audio.update(Tick);
+  const auto newest = rig.audio.play({.clip = loopingClip()});
+  REQUIRE(newest);
+  rig.audio.stop(voices.front());
+  rig.audio.update(Tick);
+  rig.audio.update(Tick);
+  rig.audio.update(Tick);
+  CHECK(rig.audio.isActive(*newest));
+  CHECK(rig.audio.activeVoiceCount() == MaxVoices);
+}
+
+TEST_CASE("a looping voice at the highest rate and pitch plays for a second") {
+  NullAudio rig;
+  const auto clip = clipOf({1000, 2000}, 1, MaxClipSampleRate, ClipLoop{.start = 0, .length = 1});
+  const auto voice = rig.audio.play({.clip = clip, .pitch = MaxPitch});
+  REQUIRE(voice);
+  for (int tick = 0; tick < 60; ++tick) {
+    rig.audio.update(Tick);
+  }
+  CHECK(rig.audio.isActive(*voice));
+  CHECK(rig.output->renderedFrames() == MixSampleRate);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/audio/mixing.hpp>
 #include <dwe/core/error.hpp>
 
 #include <cstdint>
@@ -24,8 +25,8 @@ struct Clip {
   [[nodiscard]] std::uint64_t frameCount() const;
 };
 
-// Whether the mixer can play a clip: one or two channels, a rate, whole frames, at least one frame,
-// and a non-empty loop inside the clip. Fails with the reason.
+// Whether the mixer can play a clip: one or two channels, a rate up to MaxClipSampleRate, whole
+// frames, at least one frame, and a non-empty loop inside the clip. Fails with the reason.
 core::Result<void> checkClip(const Clip& clip);
 
 } // namespace dwe::audio

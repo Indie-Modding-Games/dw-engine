@@ -47,7 +47,7 @@ void VoicePlayer::release() {
   clip_ = nullptr;
 }
 
-void VoicePlayer::mixInto(std::span<float> frames, std::span<const float> busGains) {
+void VoicePlayer::mixInto(std::span<float> frames, std::span<const float> busGains) noexcept {
   const std::size_t frameCount = frames.size() / OutputChannels;
   const auto lastChannel = static_cast<std::uint16_t>(clip_->channels - 1);
   for (std::size_t i = 0; i < frameCount && state_ == State::Playing; ++i) {
@@ -72,7 +72,6 @@ float VoicePlayer::sampleAt(std::uint64_t frame, std::uint16_t channel) const {
   return static_cast<float>(clip_->pcm[(frame * clip_->channels) + channel]) * SampleScale;
 }
 
-// The frame after this one, back at the loop's start at its end.
 std::uint64_t VoicePlayer::nextFrame(std::uint64_t frame) const {
   if (clip_->loop && frame + 1 == clip_->loop->start + clip_->loop->length) {
     return clip_->loop->start;
@@ -84,8 +83,13 @@ void VoicePlayer::advance() {
   position_ += step_;
   if (const auto& loop = clip_->loop) {
     const auto loopEnd = static_cast<double>(loop->start + loop->length);
-    while (position_ >= loopEnd) {
-      position_ -= static_cast<double>(loop->length);
+    if (position_ >= loopEnd) {
+      const auto loopStart = static_cast<double>(loop->start);
+      position_ = loopStart + std::fmod(position_ - loopStart, static_cast<double>(loop->length));
+      // Rounding can land exactly on the end when the loop starts far into the clip.
+      if (position_ >= loopEnd) {
+        position_ = loopStart;
+      }
     }
   } else if (position_ >= static_cast<double>(clip_->frameCount())) {
     state_ = State::Ended;

@@ -19,7 +19,7 @@ class Mixer final : public MixSource {
 public:
   Mixer(OrderQueue& orders, EndQueue& ends);
 
-  void render(std::span<float> frames) override;
+  void render(std::span<float> frames) noexcept override;
 
 private:
   // The volumes as they sound now and where they are going.
@@ -28,10 +28,10 @@ private:
     float target = 1.0F;
   };
 
-  void applyOrders();
-  void apply(const PlayOrder& order);
-  void apply(const StopOrder& order);
-  void apply(const VolumeOrder& order);
+  void applyOrders() noexcept;
+  void apply(const PlayOrder& order) noexcept;
+  void apply(const StopOrder& order) noexcept;
+  void apply(const VolumeOrder& order) noexcept;
   void renderPass(std::span<float> frames);
   // The gain of each bus for each frame of the pass, master included.
   void rampBusGains(std::size_t frameCount);

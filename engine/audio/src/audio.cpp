@@ -43,7 +43,6 @@ Audio::Audio(std::unique_ptr<Output> output)
 }
 
 Audio::Audio(Audio&&) noexcept = default;
-Audio& Audio::operator=(Audio&&) noexcept = default;
 
 Audio::~Audio() {
   // The output goes first, so the device stops pulling before the mixer goes.
@@ -57,8 +56,12 @@ core::Result<VoiceId> Audio::play(const PlayRequest& request) {
   if (auto playable = checkClip(*request.clip); !playable) {
     return std::unexpected{playable.error()};
   }
-  if (!(request.pitch > 0.0F) || !std::isfinite(request.pitch)) {
-    return core::fail(core::formatMessage(messages::PlayBadPitch, request.pitch));
+  if (std::isnan(request.pitch) || request.pitch < MinPitch || request.pitch > MaxPitch) {
+    return core::fail(
+        core::formatMessage(messages::PlayBadPitch, MinPitch, MaxPitch, request.pitch));
+  }
+  if (!std::isfinite(request.pan)) {
+    return core::fail(core::formatMessage(messages::PlayBadPan, request.pan));
   }
   if (!shared_->orders.hasRoom()) {
     ++droppedOrders_;

@@ -15,6 +15,11 @@ inline constexpr std::size_t OutputChannels = 2;
 inline constexpr std::size_t MaxVoices = 256;
 // A guard too: the orders one tick may send to the audio thread.
 inline constexpr std::size_t CommandQueueCapacity = 1024;
+// Guards, not limits of the original: a clip's rate and a voice's pitch, so a voice never skips
+// more than a few hundred frames of its clip per frame of output.
+inline constexpr std::uint32_t MaxClipSampleRate = 192000;
+inline constexpr float MinPitch = 1.0F / 64.0F;
+inline constexpr float MaxPitch = 64.0F;
 // The most frames the mixer renders in one pass; longer requests are rendered in pieces.
 inline constexpr std::size_t MaxRenderFrames = 1024;
 

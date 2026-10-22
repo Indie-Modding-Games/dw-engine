@@ -13,8 +13,8 @@ core::Result<void> checkClip(const Clip& clip) {
   if (clip.channels != 1 && clip.channels != 2) {
     return core::fail(core::formatMessage(messages::ClipChannels, clip.channels));
   }
-  if (clip.sampleRate == 0) {
-    return core::fail(std::string{messages::ClipNoRate});
+  if (clip.sampleRate == 0 || clip.sampleRate > MaxClipSampleRate) {
+    return core::fail(core::formatMessage(messages::ClipRate, clip.sampleRate, MaxClipSampleRate));
   }
   if (clip.pcm.size() % clip.channels != 0) {
     return core::fail(

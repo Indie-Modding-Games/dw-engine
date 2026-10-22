@@ -43,7 +43,6 @@ public:
   void advance(double /*seconds*/) override {}
 
 private:
-  // SDL's audio thread asks for more bytes.
   static void SDLCALL feed(void* output, SDL_AudioStream* stream, int additionalBytes,
                            int /*totalBytes*/) {
     static_cast<SdlOutput*>(output)->fill(stream, additionalBytes);

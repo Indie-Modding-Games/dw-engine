@@ -130,6 +130,14 @@ cuando las necesita, cada pocos milisegundos).
   **guardia no original**, generosa, contra un script o un mod que pidan sonidos sin parar; el disco no se acerca. Al
   llegar al límite, la voz nueva sustituye a la **más antigua** (el original, sin prioridades, roba por turno, que es
   lo más parecido) y se registra un aviso, una vez por tick. Está probado.
+- **Guardias del tono y la frecuencia (no originales).** Un clip suena a una frecuencia de 1 a 192 000 Hz
+  (`MaxClipSampleRate`) y una voz con un tono de 1/64 a 64 (`MinPitch`, `MaxPitch`); un panorama tiene que ser un
+  número finito. Fuera de eso `Audio::play` falla con el motivo, así una voz nunca salta más de unos cientos de
+  fotogramas de su clip por fotograma de salida, y la vuelta del bucle se calcula de una vez (`fmod`). Si aun así
+  llega un NaN a la mezcla, la salida lo convierte en silencio. Están probadas.
+- **Ningún fin se pierde.** El mezclador solo toma una orden si cabe el aviso de fin que puede causar (la voz que
+  sustituye); si no cabe, la orden espera a la siguiente pasada. Una voz acabada cuyo aviso no cupo lo reintenta en
+  cada pasada, y su hueco no se reutiliza antes.
 - **Coste.** 256 voces con interpolación lineal son unos pocos millones de operaciones por segundo: muy por debajo de
   un núcleo. El sintetizador del tramo 3 tiene su propio límite de voces (§6.3).
 

@@ -1,6 +1,7 @@
 #include "mixer.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <utility>
 #include <variant>
@@ -28,7 +29,7 @@ constexpr std::size_t busVolume(Bus bus) {
 
 Mixer::Mixer(OrderQueue& orders, EndQueue& ends) : orders_{orders}, ends_{ends} {}
 
-void Mixer::render(std::span<float> frames) {
+void Mixer::render(std::span<float> frames) noexcept {
   applyOrders();
   constexpr std::size_t PassSamples = MaxRenderFrames * OutputChannels;
   while (!frames.empty()) {
@@ -38,13 +39,19 @@ void Mixer::render(std::span<float> frames) {
   }
 }
 
-void Mixer::applyOrders() {
-  while (const auto order = orders_.pop()) {
+// An order may end the voice it replaces, so it waits while that end would not fit: a voice's end
+// is never lost and its slot is never taken before the game hears of it.
+void Mixer::applyOrders() noexcept {
+  while (ends_.hasRoom()) {
+    const auto order = orders_.pop();
+    if (!order) {
+      return;
+    }
     std::visit([this](const auto& known) { apply(known); }, *order);
   }
 }
 
-void Mixer::apply(const PlayOrder& order) {
+void Mixer::apply(const PlayOrder& order) noexcept {
   VoicePlayer& voice = voices_[order.voice.slot];
   if (voice.state() != VoicePlayer::State::Idle) {
     reportEnd(voice);
@@ -52,14 +59,14 @@ void Mixer::apply(const PlayOrder& order) {
   voice.start(order);
 }
 
-void Mixer::apply(const StopOrder& order) {
+void Mixer::apply(const StopOrder& order) noexcept {
   VoicePlayer& voice = voices_[order.voice.slot];
   if (voice.state() == VoicePlayer::State::Playing && voice.voice() == order.voice) {
     voice.stop();
   }
 }
 
-void Mixer::apply(const VolumeOrder& order) {
+void Mixer::apply(const VolumeOrder& order) noexcept {
   volumes_[std::to_underlying(order.control)].target = order.volume;
 }
 
@@ -76,9 +83,10 @@ void Mixer::renderPass(std::span<float> frames) {
       reportEnd(voice);
     }
   }
-  // The original's sound chip saturates at 16 bits, so a hard clip is the faithful limit.
+  // The original's sound chip saturates at 16 bits, so a hard clip is the faithful limit. A NaN
+  // that got this far becomes silence instead of reaching the device.
   for (float& sample : frames) {
-    sample = std::clamp(sample, -1.0F, 1.0F);
+    sample = std::isnan(sample) ? 0.0F : std::clamp(sample, -1.0F, 1.0F);
   }
 }
 

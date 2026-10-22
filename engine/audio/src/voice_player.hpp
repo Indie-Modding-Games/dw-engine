@@ -32,13 +32,11 @@ public:
   };
 
   void start(const PlayOrder& order);
-  // Starts the fade out; the voice ends when it reaches silence.
   void stop();
-  // The game was told the voice ended.
   void release();
 
   // Adds the voice to frames (interleaved stereo), scaled by its bus's gain at each frame.
-  void mixInto(std::span<float> frames, std::span<const float> busGains);
+  void mixInto(std::span<float> frames, std::span<const float> busGains) noexcept;
 
   [[nodiscard]] State state() const { return state_; }
   [[nodiscard]] VoiceId voice() const { return voice_; }

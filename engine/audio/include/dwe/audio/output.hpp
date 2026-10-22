@@ -21,7 +21,7 @@ public:
   virtual ~MixSource() = default;
 
   // Writes frames.size() / OutputChannels frames. Runs on the audio thread when there is one.
-  virtual void render(std::span<float> frames) = 0;
+  virtual void render(std::span<float> frames) noexcept = 0;
 };
 
 // Where the mix goes: the sound device, or nowhere.
@@ -48,7 +48,6 @@ public:
   void start(MixSource& source) override;
   void advance(double seconds) override;
 
-  // The frames rendered since the start.
   [[nodiscard]] std::uint64_t renderedFrames() const { return renderedFrames_; }
 
 private:
