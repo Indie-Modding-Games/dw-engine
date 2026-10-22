@@ -737,10 +737,11 @@ TEST_CASE("the HUD draws the field status on each revision, with the bars' low h
 
 namespace {
 
-void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet) {
+void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet, bool tired = false) {
     ui.setSetting("hud.need.0.active", hunger);
     ui.setSetting("hud.need.1.active", sleep);
     ui.setSetting("hud.need.2.active", toilet);
+    ui.setSetting("hud.need.3.active", tired);
     bumpFieldRevision(ui);
 }
 
@@ -756,7 +757,7 @@ void placePartner(Ui& ui, bool visible) {
 
 // The need class the bubble has, or an empty string.
 std::string bubbleNeed(const Ui& ui) {
-    for (const std::string_view need : {"hunger", "sleep", "toilet"}) {
+    for (const std::string_view need : {"hunger", "sleep", "toilet", "tired"}) {
         if (ui.elementHasClass("hud", "field-partner-bubble", need)) {
             return std::string{need};
         }
@@ -802,6 +803,21 @@ TEST_CASE("the need bubble shows the need the original's bubble would, over the 
     CHECK(bubbleNeed(*ui) == "hunger");
     ui->tick(input, 2.6);
     CHECK(bubbleNeed(*ui) == "toilet");
+
+    // Tiredness goes between sleep and hunger (partner_impl.c: handleConditionBubble: condition bit 0x02, bubble 4).
+    setFieldNeeds(*ui, false, false, false);
+    setFieldNeeds(*ui, false, false, false, true);
+    CHECK(bubbleNeed(*ui) == "tired");
+    setFieldNeeds(*ui, false, false, false);
+    setFieldNeeds(*ui, true, false, true, true);
+    CHECK(bubbleNeed(*ui) == "tired");
+    ui->tick(input, 2.6);
+    CHECK(bubbleNeed(*ui) == "hunger");
+    setFieldNeeds(*ui, false, false, false);
+    setFieldNeeds(*ui, true, true, false, true);
+    CHECK(bubbleNeed(*ui) == "sleep");
+    ui->tick(input, 2.6);
+    CHECK(bubbleNeed(*ui) == "tired");
 
     // Hidden while the partner is not on the screen.
     placePartner(*ui, false);

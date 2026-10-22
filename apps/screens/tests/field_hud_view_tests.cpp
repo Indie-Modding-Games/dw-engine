@@ -23,6 +23,7 @@ dwe::session::PartnerView partner() {
     view.conditions.set(Condition::Hungry);
     view.conditions.set(Condition::NeedsToilet);
     view.conditions.set(Condition::Sick);
+    view.conditions.set(Condition::Tired);
     return view;
 }
 
@@ -44,10 +45,11 @@ TEST_CASE("the field HUD shows the clock, the two bars, the needs and HP and MP 
     CHECK(view.clock.year == 1);
     CHECK(view.meters.at(0) == dwe::screens::FieldMeterView{.value = -30, .min = -100, .max = 100});
     CHECK(view.meters.at(1) == dwe::screens::FieldMeterView{.value = 70, .min = 0, .max = 100});
-    // Hunger and toilet; sickness is not one of the needs.
+    // Hunger, toilet and tiredness; sickness is not one of the needs.
     CHECK(view.needs.at(0));
     CHECK_FALSE(view.needs.at(1));
     CHECK(view.needs.at(2));
+    CHECK(view.needs.at(3));
     CHECK(view.pools.at(0) == dwe::screens::FieldPoolView{.current = 650, .max = 900});
     CHECK(view.pools.at(1) == dwe::screens::FieldPoolView{.current = 120, .max = 400});
 }
@@ -77,6 +79,7 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
     CHECK(*find(settings, "hud.meter.1.max") == dwe::ui::UiValue{100.0});
     CHECK(*find(settings, "hud.need.0.active") == dwe::ui::UiValue{true});
     CHECK(*find(settings, "hud.need.1.active") == dwe::ui::UiValue{false});
+    CHECK(*find(settings, "hud.need.3.active") == dwe::ui::UiValue{true});
     CHECK(*find(settings, "hud.pool.0.value") == dwe::ui::UiValue{650.0});
     CHECK(*find(settings, "hud.pool.1.max") == dwe::ui::UiValue{400.0});
     // The labels go apart, once: the values never carry text.
@@ -89,6 +92,7 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
     CHECK(*find(labels, "hud.need.0.label") == dwe::ui::UiValue{std::string{"hud.need.hunger"}});
     CHECK(*find(labels, "hud.need.1.label") == dwe::ui::UiValue{std::string{"hud.need.sleep"}});
     CHECK(*find(labels, "hud.need.2.label") == dwe::ui::UiValue{std::string{"hud.need.toilet"}});
+    CHECK(*find(labels, "hud.need.3.label") == dwe::ui::UiValue{std::string{"hud.need.tired"}});
     // The original's labels of HP and MP (main.stat_labels).
     CHECK(*find(labels, "hud.pool.0.label") == dwe::ui::UiValue{std::string{"main.stat_labels.0000"}});
     CHECK(*find(labels, "hud.pool.1.label") == dwe::ui::UiValue{std::string{"main.stat_labels.0001"}});

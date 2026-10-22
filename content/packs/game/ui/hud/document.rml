@@ -26,7 +26,7 @@
 		<div class="field-meter" id="field-meter-0"><span class="label" id="field-meter-0-label"></span><div class="bar" id="field-meter-0-bar"><div class="fill" id="field-meter-0-fill"></div><div class="fill high" id="field-meter-0-high"></div></div><span class="value" id="field-meter-0-value"></span></div>
 		<div class="field-meter" id="field-meter-1"><span class="label" id="field-meter-1-label"></span><div class="bar" id="field-meter-1-bar"><div class="fill" id="field-meter-1-fill"></div><div class="fill high" id="field-meter-1-high"></div></div><span class="value" id="field-meter-1-value"></span></div>
 		<div id="field-needs">
-			<span class="need" id="field-need-0"></span><span class="need" id="field-need-1"></span><span class="need" id="field-need-2"></span>
+			<span class="need" id="field-need-0"></span><span class="need" id="field-need-1"></span><span class="need" id="field-need-2"></span><span class="need" id="field-need-3"></span>
 		</div>
 		<div id="field-pools">
 			<div class="field-pool"><span class="label" id="field-pool-0-label"></span><div class="bar" id="field-pool-0-bar"><div class="fill" id="field-pool-0-fill"></div></div><span class="value" id="field-pool-0-value"></span></div>

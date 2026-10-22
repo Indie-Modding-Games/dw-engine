@@ -45,7 +45,7 @@ El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_
 ## HUD del campo
 
 `fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,
-sueño y baño, y HP y MP, solo con números y booleanos para que el juego la compare en cada frame sin construir textos.
+sueño, baño y cansancio, y HP y MP, solo con números y booleanos para que el juego la compare en cada frame sin construir textos.
 `fieldHudLabelSettings()` da las etiquetas, que se publican una vez. Los ajustes `hud.*`, sus unidades y cuándo se
 actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../../docs/architecture/ui.md#estado-del-campo).
 

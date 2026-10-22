@@ -24,8 +24,8 @@ inline constexpr std::string_view FieldHudMeterList = "hud.meter";
 inline constexpr std::string_view FieldHudNeedList = "hud.need";
 inline constexpr std::string_view FieldHudPoolList = "hud.pool";
 
-// The needs the field HUD shows, in the order of the hud.need list: hunger, sleep and toilet.
-inline constexpr std::size_t NeedCount = 3;
+// The needs the field HUD shows, in the order of the hud.need list: hunger, sleep, toilet and tiredness.
+inline constexpr std::size_t NeedCount = 4;
 
 // The game time as the player reads it: the hour (0-23) and minute, and the day of the year and the year counted from
 // 1, as the original's menu shows them (game_menu.c: renderDateDigits writes DAY + 1 and YEAR + 1).
@@ -64,8 +64,8 @@ struct FieldHudView {
     FieldClockView clock;
     // Happiness (0) and discipline (1), the two bars the original draws on the field.
     std::array<FieldMeterView, 2> meters;
-    // Hunger, sleep and toilet: whether the partner has that need now (its condition, which the original shows as a
-    // bubble over the partner: partner_impl.c: handleConditionBubble).
+    // Hunger, sleep, toilet and tiredness: whether the partner has that need now (its condition, which the original
+    // shows as a bubble over the partner: partner_impl.c: handleConditionBubble).
     std::array<bool, NeedCount> needs{};
     // HP (0) and MP (1).
     std::array<FieldPoolView, 2> pools;
