@@ -15,14 +15,18 @@ public:
     // Publishes the labels, which never change.
     FieldHud(ui::Ui& ui, const session::GameSession& session);
 
-    // Publishes the view when it changed; once per frame. `fieldRunning` is false while a menu or a battle stops the
-    // field.
-    void update(bool fieldRunning);
+    // Publishes the views when they changed; once per frame. `fieldRunning` is false while a menu or a battle stops
+    // the field; `partnerHead` is where the partner's head is in the window, if it projects.
+    void update(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead);
 
 private:
+    void publishStatus(bool fieldRunning);
+    void publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead);
+
     ui::Ui* ui_;
     const session::GameSession* session_;
     std::optional<screens::FieldHudView> published_;
+    std::optional<screens::FieldPartnerView> publishedPartner_;
 };
 
 } // namespace dwe::app

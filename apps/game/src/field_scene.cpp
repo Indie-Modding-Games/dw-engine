@@ -413,4 +413,12 @@ std::optional<glm::vec2> FieldScene::worldToWindow(glm::vec3 world) const {
     return mapRenderer_->camera().worldToWindow(world);
 }
 
+std::optional<glm::vec2> FieldScene::worldToWindowFraction(glm::vec3 world) const {
+    const std::optional<glm::vec2> pixel = worldToWindow(world);
+    if (!pixel) {
+        return std::nullopt;
+    }
+    return *pixel / mapRenderer_->camera().viewportSize();
+}
+
 } // namespace dwe::app

@@ -1,6 +1,7 @@
 #include <dwe/screens/field_hud_view.hpp>
 #include <dwe/screens/name_keys.hpp>
 
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -40,6 +41,18 @@ double number(std::int32_t value) {
     return static_cast<double>(value);
 }
 
+constexpr double Percent = 100.0;
+// The partner's place is published in hundredths of a percent.
+constexpr double PlaceSteps = 100.0;
+
+double percentOf(double fraction) {
+    return std::round(fraction * Percent * PlaceSteps) / PlaceSteps;
+}
+
+bool onScreen(const WindowFraction& point) {
+    return point.x >= 0.0 && point.x <= 1.0 && point.y >= 0.0 && point.y <= 1.0;
+}
+
 } // namespace
 
 FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::PartnerView& partner, bool shown) {
@@ -57,6 +70,21 @@ FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::Partne
     view.pools = {FieldPoolView{.current = partner.currentHp, .max = partner.stats[Stat::Hp]},
                   FieldPoolView{.current = partner.currentMp, .max = partner.stats[Stat::Mp]}};
     return view;
+}
+
+FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> head, bool fieldRunning) {
+    if (!fieldRunning || !head || !onScreen(*head)) {
+        return {};
+    }
+    return {.visible = true, .x = percentOf(head->x), .y = percentOf(head->y)};
+}
+
+ScreenSettings settingsOf(const FieldPartnerView& view) {
+    return {
+        {.name = std::string{FieldPartnerVisibleSetting}, .value = view.visible},
+        {.name = std::string{FieldPartnerXSetting}, .value = view.x},
+        {.name = std::string{FieldPartnerYSetting}, .value = view.y},
+    };
 }
 
 ScreenSettings fieldHudLabelSettings() {

@@ -84,6 +84,8 @@ public:
     [[nodiscard]] std::optional<glm::vec3> pickGround(glm::vec2 windowPixel) const;
     // Where a world point appears in the window, in drawable pixels; nothing if it is behind the camera.
     [[nodiscard]] std::optional<glm::vec2> worldToWindow(glm::vec3 world) const;
+    // The same point as fractions of the window's width and height from its top-left corner.
+    [[nodiscard]] std::optional<glm::vec2> worldToWindowFraction(glm::vec3 world) const;
 
     // Draws the partner as this species (its model in the base pack, digimon/<species>/model) with models/partner's
     // animations, which are the same ids for every partner; nothing changes if it is drawn so already. On a failure

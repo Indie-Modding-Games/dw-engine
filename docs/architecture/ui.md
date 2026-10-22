@@ -167,6 +167,9 @@ con valor entero.
 | `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet` |
 | `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
 | `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
+| `hud.partner.revision` | número | Sube en uno cada vez que cambia alguno de los tres de abajo. Va aparte de `hud.revision` porque cambia mientras el compañero anda, y así el resto del estado no se redibuja con él |
+| `hud.partner.x`, `hud.partner.y` | 0–100, centésimas | Dónde está la cabeza del compañero en la ventana, en porcentaje de su ancho y alto desde la esquina de arriba a la izquierda, redondeado a centésimas: el punto donde el original cuelga sus burbujas, a la altura de su especie menos 20 unidades sobre su posición (`bubble.c: addConditionBubble`, `renderConditionBubble`; la altura es `height` de `data/digimon`) |
+| `hud.partner.visible` | booleano | `false` con el campo parado (como `hud.shown`; el original no dibuja las burbujas en un menú) o con la cabeza fuera de la ventana o detrás de la cámara; entonces `x` e `y` valen 0 |
 
 **Cuándo cuenta una necesidad.** En el original una necesidad está o no está: no hay grados de urgencia. Está desde
 que se pone su condición y hasta que se atiende o se acaba su plazo, y mientras está el original lo enseña con una

@@ -166,6 +166,24 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     return true;
 }
 
+// How far below the top of its species' height the original hangs the partner's need bubbles, in world units
+// (bubble.c: addConditionBubble: baseHeight = -height + 20).
+constexpr float BubbleDrop = 20.0F;
+
+// Where the partner's head is in the window, where the original draws its need bubbles; nothing off the map's camera.
+std::optional<screens::WindowFraction> partnerHeadOf(const FieldScene& scene, const assets::DigimonTable* species,
+                                                     std::string_view partnerSpecies) {
+    const assets::DigimonRow* row = species != nullptr ? species->find(partnerSpecies) : nullptr;
+    const float height = row != nullptr ? static_cast<float>(row->height) - BubbleDrop : 0.0F;
+    glm::vec3 head = scene.field().partner().position;
+    head.y += height;
+    const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(head);
+    if (!fraction) {
+        return std::nullopt;
+    }
+    return screens::WindowFraction{.x = fraction->x, .y = fraction->y};
+}
+
 ui::MinimapMarker markerOf(const game::field::CharacterState& character) {
     return {.x = character.position.x,
             .z = character.position.z,
@@ -739,7 +757,7 @@ int runGame(const Options& options) {
 
         const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
                             (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();
-        fieldHud.update(!paused);
+        fieldHud.update(!paused, partnerHeadOf(**scene, species ? &*species : nullptr, session.partnerView().species));
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
         (*ui)->update();
 

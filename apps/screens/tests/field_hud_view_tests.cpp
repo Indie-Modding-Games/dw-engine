@@ -96,3 +96,20 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
         CHECK(find(settings, label.name) == nullptr);
     }
 }
+
+TEST_CASE("the partner's head goes to the field HUD in percent of the window, only while it is on the screen") {
+    using dwe::screens::FieldPartnerView;
+    using dwe::screens::WindowFraction;
+    const auto view = dwe::screens::fieldPartnerViewOf(WindowFraction{.x = 0.25, .y = 0.123456}, true);
+    CHECK(view == FieldPartnerView{.visible = true, .x = 25.0, .y = 12.35});
+    // A move under a hundredth of a percent is no change.
+    CHECK(dwe::screens::fieldPartnerViewOf(WindowFraction{.x = 0.250001, .y = 0.123457}, true) == view);
+    CHECK(dwe::screens::fieldPartnerViewOf(WindowFraction{.x = 0.25, .y = 0.5}, false) == FieldPartnerView{});
+    CHECK(dwe::screens::fieldPartnerViewOf(WindowFraction{.x = 1.2, .y = 0.5}, true) == FieldPartnerView{});
+    CHECK(dwe::screens::fieldPartnerViewOf(std::nullopt, true) == FieldPartnerView{});
+
+    const auto settings = dwe::screens::settingsOf(view);
+    CHECK(*find(settings, "hud.partner.visible") == dwe::ui::UiValue{true});
+    CHECK(*find(settings, "hud.partner.x") == dwe::ui::UiValue{25.0});
+    CHECK(*find(settings, "hud.partner.y") == dwe::ui::UiValue{12.35});
+}
