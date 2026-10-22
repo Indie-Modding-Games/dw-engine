@@ -81,6 +81,7 @@ constexpr std::array Layouts = {
         .itemFunctions = {.address = 0x80127C88, .count = 128},
         .healingValues = {.address = 0x8013435C, .count = 4},
         .evolutionItemTargets = {.address = 0x80127C5C, .count = 44},
+        .transportTargets = {.address = 0x8013024C, .count = 6},
         .itemCode =
             {
                 .handlers = {.hpHealing = 0x800C4AC0,

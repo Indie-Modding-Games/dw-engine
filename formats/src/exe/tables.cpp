@@ -294,6 +294,14 @@ core::Result<std::vector<ToiletData>> readToiletData(const MemoryImage& image, c
     });
 }
 
+core::Result<std::vector<TransportTarget>> readTransportTargets(const MemoryImage& image,
+                                                                const ExecutableLayout& layout) {
+    return readRecords<TransportTarget>(
+        image, layout.transportTargets, "BIRDRA_TRANSPORT_TARGETS", 8, [](ByteCursor& c) {
+            return TransportTarget{.mapId = c.u8(), .exit = c.u8(), .trigger = c.u16(), .cost = c.u32()};
+        });
+}
+
 core::Result<std::vector<MapLightUpdateData>> readMapLightUpdateData(const MemoryImage& image,
                                                                      const ExecutableLayout& layout) {
     return readRecords<MapLightUpdateData>(
@@ -365,7 +373,8 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image, co
               tables.digimonVballSoundIds, error) &&
         store(readMapSoundPara(image, layout), tables.mapSoundPara, error) &&
         store(readJukeboxTracks(image, layout), tables.jukeboxTracks, error) &&
-        store(readItemEffects(image, layout), tables.itemEffects, error);
+        store(readItemEffects(image, layout), tables.itemEffects, error) &&
+        store(readTransportTargets(image, layout), tables.transportTargets, error);
     if (!read) {
         return std::unexpected{std::move(error)};
     }

@@ -23,8 +23,9 @@ struct NewGameStory;
 namespace dwe::game::field {
 
 // What runs the section (tamer.c: checkMapInteraction): stepping on a cell of value 51-79, pressing confirm on one
-// of 80-109, entering the map, or anything else (an NPC, another section).
-enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other };
+// of 80-109, entering the map, talking to an NPC of the map whose script id is the section (Talk; the field has no
+// NPCs yet), or anything else (another section).
+enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other, Talk };
 
 // What runs the section a cell of this collision value runs: Step, Confirm, or Other for a value that runs none.
 WarpVia warpViaOf(std::int32_t value);
@@ -112,6 +113,17 @@ struct FlagEffect {
     bool operator==(const FlagEffect&) const = default;
 };
 
+// A pick of the transport menu (shop/script_menu.c: tickBirdraTransport): the entry of the executable's table and
+// what it costs. The warp's guard ends with the entry's trigger, the money it costs and the pick; the menu hands the
+// script over to MAPHEAD's section `handOff`, which teleports to the entry's map.
+struct TransportPick {
+    std::int32_t entry = 0;
+    std::int64_t cost = 0;
+    std::int32_t handOff = 0;
+
+    bool operator==(const TransportPick&) const = default;
+};
+
 struct ScriptWarp {
     std::string map; // the map whose script runs it
     WarpVia via = WarpVia::Other;
@@ -122,6 +134,7 @@ struct ScriptWarp {
     WarpGuard scriptGuard; // what loads the map's script
     WarpGuard guard;       // what the section takes to get to the map change
     std::vector<FlagEffect> setsFlags;
+    std::optional<TransportPick> transport{};
     std::string source; // "script 178, section 51, offset 0x0120"
 
     bool operator==(const ScriptWarp&) const = default;

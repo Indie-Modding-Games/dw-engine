@@ -142,6 +142,11 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
     CHECK(tables->doorMapData[0].modelId[1] == -1);
     CHECK(tables->doorMapData[0].posX[0] == -100);
     CHECK(tables->toiletData[0].posX1 == 10);
+    REQUIRE(tables->transportTargets.size() == 2);
+    CHECK(tables->transportTargets[0] ==
+          dwe::formats::exe::TransportTarget{.mapId = 1, .exit = 3, .trigger = 0x51, .cost = 500});
+    CHECK(tables->transportTargets[1].mapId == 2);
+    CHECK(tables->transportTargets[1].cost == 1000);
     CHECK(tables->mapLightUpdateData[0].trigger == 0xFFFF);
     CHECK(tables->digimonVlallSoundIds == std::vector<std::uint8_t>{0, 4, 0});
     CHECK(tables->digimonVballSoundIds == std::vector<std::uint8_t>{0, 0, 9});

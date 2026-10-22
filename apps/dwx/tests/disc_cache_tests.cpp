@@ -35,16 +35,20 @@ namespace {
 
 // What dwx extract writes from the synthetic disc, one row per extractor version. The table only grows: when the output
 // changes, bump ExtractorVersion (disc_cache.hpp) and append a row with the new version and fingerprint, never edit
-// one, so a version never names two outputs.
+// one, so a version never names two outputs. A version whose change only reaches extractors the synthetic disc does not
+// run (they need a known executable's tables) keeps the previous fingerprint and says so with unseenBySyntheticDisc.
 struct FingerprintRow {
     int version = 0;
     std::string_view fingerprint;
+    bool unseenBySyntheticDisc = false;
 };
 constexpr std::array Fingerprints{
     FingerprintRow{.version = 1, .fingerprint = "bb77f40dc5892b246c1467fef107ffa30bb73fdc"},
     FingerprintRow{.version = 2, .fingerprint = "d86dbc6ff1eda81d846b98db571eb01f522c36ef"},
     FingerprintRow{.version = 3, .fingerprint = "9cbf4dbabde49fd3e75f98157d5c8cb3f3392d15"},
     FingerprintRow{.version = 4, .fingerprint = "a15a1611f17e6b57f42ccbf97dfc45003f671101"},
+    FingerprintRow{
+        .version = 5, .fingerprint = "a15a1611f17e6b57f42ccbf97dfc45003f671101", .unseenBySyntheticDisc = true},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {
@@ -402,6 +406,10 @@ TEST_CASE("the extractor's output for the synthetic disc matches the fingerprint
 TEST_CASE("the fingerprint table only grows: rising versions, each with its own output") {
     for (std::size_t row = 1; row < Fingerprints.size(); ++row) {
         CHECK(Fingerprints.at(row - 1).version < Fingerprints.at(row).version);
+        if (Fingerprints.at(row).unseenBySyntheticDisc) {
+            CHECK(Fingerprints.at(row - 1).fingerprint == Fingerprints.at(row).fingerprint);
+            continue;
+        }
         for (std::size_t earlier = 0; earlier < row; ++earlier) {
             CHECK(Fingerprints.at(earlier).fingerprint != Fingerprints.at(row).fingerprint);
         }

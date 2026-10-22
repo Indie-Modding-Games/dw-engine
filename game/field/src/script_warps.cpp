@@ -26,7 +26,7 @@ using core::YamlNode;
 
 constexpr std::string_view ScriptWarpsId = "field/script_warps";
 constexpr std::string_view Context = "script warps";
-constexpr std::array<std::string_view, 4> ViaNames = {"step", "confirm", "enter", "other"};
+constexpr std::array<std::string_view, 5> ViaNames = {"step", "confirm", "enter", "other", "talk"};
 
 Truth both(Truth a, Truth b) {
     if (a == Truth::False || b == Truth::False) {
@@ -364,14 +364,14 @@ WarpGuard readGuard(YamlReader& reader, const YamlNode* node) {
 ScriptWarp readWarp(YamlReader& reader, const YamlNode& item) {
     ScriptWarp warp;
     if (!reader.expectKeys(item, "a script warp", {"map", "via", "section", "source"},
-                           {"to", "teleport", "arrival_section", "script_guard", "guard", "sets_flags"})) {
+                           {"to", "teleport", "arrival_section", "script_guard", "guard", "sets_flags", "transport"})) {
         return warp;
     }
     warp.map = reader.text(reader.field(item, "map"));
     const std::string via = reader.text(reader.field(item, "via"));
     const auto named = std::ranges::find(ViaNames, via);
     if (named == ViaNames.end()) {
-        reader.fail(reader.field(item, "via"), "via is step, confirm, enter or other");
+        reader.fail(reader.field(item, "via"), "via is step, confirm, enter, other or talk");
     } else {
         warp.via = static_cast<WarpVia>(named - ViaNames.begin());
     }
@@ -392,6 +392,12 @@ ScriptWarp readWarp(YamlReader& reader, const YamlNode& item) {
                                           .set = reader.boolean(reader.field(effect, "set"))});
             }
         }
+    }
+    if (const YamlNode* transport = item.find("transport");
+        transport != nullptr && reader.expectKeys(*transport, "transport", {"entry", "cost", "hand_off"})) {
+        warp.transport = TransportPick{.entry = reader.integer<std::int32_t>(reader.field(*transport, "entry")),
+                                       .cost = reader.integer<std::int64_t>(reader.field(*transport, "cost")),
+                                       .handOff = reader.integer<std::int32_t>(reader.field(*transport, "hand_off"))};
     }
     const YamlNode& source = reader.field(item, "source");
     if (reader.expectKeys(source, "the source", {"script", "section"}, {"offset"})) {

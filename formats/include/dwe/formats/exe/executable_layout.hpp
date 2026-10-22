@@ -86,6 +86,7 @@ struct ExecutableLayout {
     TableLocation itemFunctions;         // ItemFunction[]: ITEM_FUNCTIONS, one per item
     TableLocation healingValues;         // int16[]: HEALING_VALUES
     TableLocation evolutionItemTargets;  // u8[]: EVOLUTION_ITEM_TARGET
+    TableLocation transportTargets;      // TransportTarget[]: BIRDRA_TRANSPORT_TARGETS
     ItemCodeLayout itemCode;
 };
 

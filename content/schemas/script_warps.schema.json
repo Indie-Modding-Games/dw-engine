@@ -146,12 +146,13 @@
             ]
           },
           "via": {
-            "description": "What runs the section: step (a cell of value 51-79), confirm (80-109), enter (entering the map) or other (an NPC, another section).",
+            "description": "What runs the section: step (a cell of value 51-79), confirm (80-109), enter (entering the map), talk (talking to an NPC of the map whose script id is the section) or other (another section).",
             "enum": [
               "step",
               "confirm",
               "enter",
-              "other"
+              "other",
+              "talk"
             ]
           },
           "section": {
@@ -209,6 +210,30 @@
           "guard": {
             "$ref": "#/$defs/guard",
             "description": "What the section takes to reach the map change."
+          },
+          "transport": {
+            "description": "A pick of the transport menu that a call_routine 0x0A of the section opens (shop/script_menu.c: tickBirdraTransport): the entry of the executable's transport table, what it costs, and the MAPHEAD section the menu hands the script over to, which teleports to the entry's map (to). The guard ends with the entry's trigger, the money and the pick (a selection of the entry).",
+            "type": "object",
+            "required": [
+              "entry",
+              "cost",
+              "hand_off"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "entry": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cost": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "hand_off": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
           },
           "sets_flags": {
             "description": "The SET_TRIGGER (set: true) and UNSET_TRIGGER on the way, in order.",

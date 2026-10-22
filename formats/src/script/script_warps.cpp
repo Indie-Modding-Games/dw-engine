@@ -1,4 +1,5 @@
 #include <dwe/core/collision_triggers.hpp>
+#include <dwe/formats/script/routine_writes.hpp>
 #include <dwe/formats/script/script_warps.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
 
@@ -14,6 +15,8 @@
 #include <utility>
 #include <variant>
 
+#include "listing_vocabulary.hpp"
+
 namespace dwe::formats::script {
 
 namespace {
@@ -23,7 +26,10 @@ constexpr std::string_view OffsetKey = "offset";
 constexpr std::string_view RecursionKey = "recursion";
 constexpr std::string_view ForgetKey = "forget";
 constexpr std::string_view TriggersKey = "triggers";
-constexpr std::array<std::string_view, 4> ViaNames = {"step", "confirm", "enter", "other"};
+constexpr std::array<std::string_view, 5> ViaNames = {"step", "confirm", "enter", "other", "talk"};
+constexpr std::string_view RoutineOperand = "routine";
+// The comparison of the money test of a transport pick: MONEY must reach the cost (CompareNames: ge).
+constexpr std::int32_t AtLeastComparison = 2;
 constexpr std::string_view MapOperand = "map";
 
 bool loadsScript(const ListingInstruction& instruction) {
@@ -62,10 +68,68 @@ std::optional<Load> loadOf(const ScriptLookup& lookup, const GuardedInstruction&
     return Load{.script = static_cast<std::uint16_t>(*script), .map = static_cast<std::uint16_t>(*map)};
 }
 
+bool callsTransport(const ListingInstruction& instruction) {
+    return instruction.op == CallRoutineOp && instruction.argument(RoutineOperand) == TransportRoutine;
+}
+
+// The listing's IF entry for a test the game code makes: a trigger set, or MONEY at least an amount.
+Condition triggerSetTest(std::uint16_t trigger) {
+    return {.code = vocabulary::entryCode(ConditionTest::Trigger, 0, Combine::Replace),
+            .test = ConditionTest::Trigger,
+            .combine = Combine::Replace,
+            .arguments = {Argument{.name = "trigger", .kind = ArgumentKind::Trigger, .value = trigger}}};
+}
+
+Condition moneyAtLeastTest(std::uint32_t amount) {
+    return {.code = vocabulary::entryCode(ConditionTest::Money, 0, Combine::Replace),
+            .test = ConditionTest::Money,
+            .combine = Combine::Replace,
+            .arguments = {
+                Argument{.name = vocabulary::CompareKey, .kind = ArgumentKind::U8, .value = AtLeastComparison},
+                Argument{.name = "value", .kind = ArgumentKind::S32, .value = static_cast<std::int32_t>(amount)}}};
+}
+
+// The transport menu's picks a call that opens it makes: one per entry of the table, each behind the entry's trigger
+// (birdraFillTargetList lists it), its cost (it must be affordable) and the player's pick of it.
+std::vector<std::pair<MapChange, TransportPick>> transportPicks(const GuardedInstruction& call,
+                                                                std::span<const TransportDestination> table) {
+    std::vector<std::pair<MapChange, TransportPick>> picks;
+    for (std::size_t entry = 0; entry < table.size(); ++entry) {
+        const TransportDestination& destination = table[entry];
+        GuardedInstruction path = call;
+        path.guard.terms.push_back(
+            {.decision =
+                 BranchTerm{.place = call.place, .tests = {triggerSetTest(destination.trigger)}, .holds = true}});
+        path.guard.terms.push_back(
+            {.decision =
+                 BranchTerm{.place = call.place, .tests = {moneyAtLeastTest(destination.cost)}, .holds = true}});
+        path.guard.terms.push_back({.decision = ChoiceTerm{.place = call.place, .arm = entry, .selection = true}});
+        picks.emplace_back(MapChange{.path = std::move(path),
+                                     .screen = destination.map,
+                                     .exit = destination.exit,
+                                     .arrivalSection = std::nullopt,
+                                     .screenVariable = std::nullopt},
+                           TransportPick{.entry = static_cast<std::uint8_t>(entry), .cost = destination.cost});
+    }
+    return picks;
+}
+
 // The map changes of every section of a script the game can run, by section, walked once per script.
 class SectionChanges {
 public:
-    explicit SectionChanges(const ScriptLookup& lookup) : lookup_(&lookup) {}
+    SectionChanges(const ScriptLookup& lookup, std::span<const TransportDestination> transport)
+        : lookup_(&lookup), transport_(transport) {}
+
+    // The transport pick of a section's change, by its index among the section's changes.
+    [[nodiscard]] std::optional<TransportPick> pickOf(std::uint16_t script, std::uint16_t section,
+                                                      std::size_t change) const {
+        const auto found = picks_.find({script, section});
+        if (found == picks_.end()) {
+            return std::nullopt;
+        }
+        const auto pick = std::ranges::find(found->second, change, &std::pair<std::size_t, TransportPick>::first);
+        return pick != found->second.end() ? std::optional{pick->second} : std::nullopt;
+    }
 
     const std::vector<std::pair<std::uint16_t, std::vector<MapChange>>>& of(std::uint16_t script) {
         const auto cached = cache_.find(script);
@@ -76,7 +140,14 @@ public:
         const auto code = (*lookup_)(script);
         if (code && code->listing != nullptr) {
             for (const ListingSection& section : code->listing->runnableSections()) {
-                sections.emplace_back(section.id, findMapChanges(script, section.id, *lookup_));
+                auto found = findMapChanges(script, section.id, *lookup_);
+                for (const GuardedInstruction& call : walkSection(script, section.id, *lookup_, &callsTransport)) {
+                    for (auto& [change, pick] : transportPicks(call, transport_)) {
+                        found.push_back(std::move(change));
+                        picks_[{script, section.id}].push_back({found.size() - 1, pick});
+                    }
+                }
+                sections.emplace_back(section.id, std::move(found));
             }
         }
         return sections;
@@ -84,7 +155,9 @@ public:
 
 private:
     const ScriptLookup* lookup_;
+    std::span<const TransportDestination> transport_;
     std::map<std::uint16_t, std::vector<std::pair<std::uint16_t, std::vector<MapChange>>>> cache_;
+    std::map<std::pair<std::uint16_t, std::uint16_t>, std::vector<std::pair<std::size_t, TransportPick>>> picks_;
 };
 
 using core::YamlNode;
@@ -179,6 +252,13 @@ YamlNode warpToYaml(const ScriptWarp& warp, const ScriptLookup& lookup, const Ma
     if (hasGuard(change.path.guard)) {
         node.set("guard", guardToYaml(change.path.guard, lookup));
     }
+    if (warp.transport) {
+        YamlNode transport = YamlNode::mapping();
+        transport.set("entry", yaml::number(warp.transport->entry));
+        transport.set("cost", yaml::number(warp.transport->cost));
+        transport.set("hand_off", yaml::number(TransportSection));
+        node.set("transport", std::move(transport));
+    }
     if (!change.path.effects.empty()) {
         YamlNode effects = YamlNode::sequence();
         for (const TriggerEffect& effect : change.path.effects) {
@@ -214,13 +294,13 @@ WarpVia warpViaOf(std::uint16_t section) {
     return WarpVia::Other;
 }
 
-ScriptWarps findScriptWarps(const ScriptLookup& lookup) {
+ScriptWarps findScriptWarps(const ScriptLookup& lookup, const ScriptWarpSources& sources) {
     ScriptWarps result;
     const auto mapHead = lookup(MapHeadScript);
     if (!mapHead || mapHead->listing == nullptr) {
         return result;
     }
-    SectionChanges changes{lookup};
+    SectionChanges changes{lookup, sources.transport};
     for (const ListingSection& section : mapHead->listing->runnableSections()) {
         const auto loads = walkSection(MapHeadScript, section.id, lookup, &loadsScript);
         if (loads.empty()) {
@@ -233,7 +313,8 @@ ScriptWarps findScriptWarps(const ScriptLookup& lookup) {
                                     .section = section.id,
                                     .script = MapHeadScript,
                                     .scriptGuard = {},
-                                    .change = std::move(change)});
+                                    .change = std::move(change),
+                                    .transport = std::nullopt});
         }
         for (const GuardedInstruction& found : loads) {
             const auto load = loadOf(lookup, found);
@@ -241,13 +322,18 @@ ScriptWarps findScriptWarps(const ScriptLookup& lookup) {
                 continue;
             }
             for (const auto& [scriptSection, sectionChanges] : changes.of(load->script)) {
-                for (const MapChange& change : sectionChanges) {
+                WarpVia via = warpViaOf(scriptSection);
+                if (via == WarpVia::Other && sources.talks && sources.talks(load->map, scriptSection)) {
+                    via = WarpVia::Talk;
+                }
+                for (std::size_t index = 0; index < sectionChanges.size(); ++index) {
                     result.warps.push_back({.map = load->map,
-                                            .via = warpViaOf(scriptSection),
+                                            .via = via,
                                             .section = scriptSection,
                                             .script = load->script,
                                             .scriptGuard = found.guard,
-                                            .change = change});
+                                            .change = sectionChanges[index],
+                                            .transport = changes.pickOf(load->script, scriptSection, index)});
                 }
             }
         }

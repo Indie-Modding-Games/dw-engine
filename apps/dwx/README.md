@@ -38,7 +38,9 @@ imágenes TIM, colisión de arenas, guiones, efectos, modelos) y compara la huel
    tiene su propia huella, así que una versión nunca nombra dos salidas distintas.
 
 El disco sintético no tiene las tablas de un ejecutable conocido, así que los extractores que las necesitan (mapas,
-modelos de Digimon, textos del ejecutable...) no cambian la huella: si cambias uno de ellos, sube la versión igual.
+modelos de Digimon, textos del ejecutable...) no cambian la huella: si cambias uno de ellos, sube la versión igual
+y añade la fila con la huella anterior y `.unseenBySyntheticDisc = true` (la versión 5, los warps de conversación y
+de transporte, es así). El test de la tabla acepta esa huella repetida solo en una fila marcada.
 
 ## `dwx upscale` y las recetas incluidas
 

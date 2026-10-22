@@ -183,6 +183,17 @@ struct ToiletData {
     bool operator==(const ToiletData&) const = default;
 };
 
+// An entry of the transport menu (script.h: BattleEntry, BIRDRA_TRANSPORT_TARGETS; shop/script_menu.c:
+// tickBirdraTransport): where a pick goes, the trigger that lists it and what it costs.
+struct TransportTarget {
+    std::uint8_t mapId = 0;
+    std::uint8_t exit = 0;
+    std::uint16_t trigger = 0;
+    std::uint32_t cost = 0;
+
+    bool operator==(const TransportTarget&) const = default;
+};
+
 // map.h: MapLightUpdateData (utils2.c: updateMapLightState).
 struct MapLightUpdateData {
     std::uint8_t mapId = 0;
@@ -248,6 +259,7 @@ struct ExecutableTables {
     std::vector<MapSoundPara> mapSoundPara;
     std::vector<JukeboxTrack> jukeboxTracks;
     std::vector<ItemEffectCode> itemEffects; // one per item of itemPara
+    std::vector<TransportTarget> transportTargets;
 };
 
 // Reads a table of char* pointers to NUL-terminated strings. A null pointer reads as an empty string.

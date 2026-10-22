@@ -28,10 +28,36 @@ inline constexpr std::uint16_t EnterSection = 0xFE;
 
 // What runs a section of a map's script (tamer.c: checkMapInteraction): stepping on a cell whose collision value is
 // the section (51-79), pressing confirm on one (80-109), entering the map (EnterSection, and the map's own MAPHEAD
-// section), or anything else: an NPC whose script id it is, or another section.
-enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other };
+// section), talking to an NPC of the map whose script id it is (Talk), or anything else: another section, or an NPC
+// the extraction was not told of.
+enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other, Talk };
 
 WarpVia warpViaOf(std::uint16_t section);
+
+// The transport menu (shop/script_menu.c: tickBirdraTransport): call_routine TransportRoutine opens it, it lists the
+// entries of the executable's table whose trigger is set (birdraFillTargetList), and a pick of one the money pays for
+// writes its map and exit to pstats 247 and 248 and hands the script over to MAPHEAD's TransportSection, which
+// teleports there; a cancel goes back to the calling script (ACTIVE_INSTRUCTION = 0).
+inline constexpr std::uint8_t TransportRoutine = 0x0A;
+inline constexpr std::uint16_t TransportSection = 0x4E3;
+
+// An entry of the transport table (script.h: BIRDRA_TRANSPORT_TARGETS), as the executable has it.
+struct TransportDestination {
+    std::uint16_t map = 0;
+    std::uint8_t exit = 0;
+    std::uint16_t trigger = 0; // listed while it is set
+    std::uint32_t cost = 0;    // picked only when MONEY reaches it
+
+    bool operator==(const TransportDestination&) const = default;
+};
+
+// The transport menu's pick that makes a map change: the table's entry and its cost.
+struct TransportPick {
+    std::uint8_t entry = 0;
+    std::uint32_t cost = 0;
+
+    bool operator==(const TransportPick&) const = default;
+};
 
 // A map change a section run on a map makes.
 struct ScriptWarp {
@@ -41,7 +67,10 @@ struct ScriptWarp {
     std::uint16_t script = 0; // the map's script, or MapHeadScript for the map's MAPHEAD section
     // What MAPHEAD takes to load that script on entering the map; empty for the MAPHEAD section itself.
     PathGuard scriptGuard;
+    // For a transport pick, the path to the call_routine, with the entry's trigger, its cost and the pick as the
+    // last terms, and the entry's map and exit.
     MapChange change;
+    std::optional<TransportPick> transport{};
 
     bool operator==(const ScriptWarp&) const = default;
 };
@@ -52,9 +81,18 @@ struct ScriptWarps {
     std::vector<std::uint16_t> otherMapHeadSections;
 };
 
-// Every map change of every section of every map's script, and of the MAPHEAD sections that load a script. The
-// lookup must know MAPHEAD as MapHeadScript.
-ScriptWarps findScriptWarps(const ScriptLookup& lookup);
+// Whether an NPC of a map (by its id) has a section of the map's script as its script id.
+using SectionTalks = std::function<bool(std::uint16_t map, std::uint16_t section)>;
+
+// What findScriptWarps knows besides the scripts: which sections NPCs run, and the transport table.
+struct ScriptWarpSources {
+    SectionTalks talks;
+    std::vector<TransportDestination> transport;
+};
+
+// Every map change of every section of every map's script, and of the MAPHEAD sections that load a script, with the
+// transport menu's picks of every call that opens it. The lookup must know MAPHEAD as MapHeadScript.
+ScriptWarps findScriptWarps(const ScriptLookup& lookup, const ScriptWarpSources& sources = {});
 
 // The exit of the first map a new game puts the player at (map.c: initializeMap sets CURRENT_EXIT).
 inline constexpr std::int32_t NewGameExit = 9;
@@ -114,8 +152,9 @@ using MapName = std::function<std::optional<std::string>(std::uint16_t map)>;
 // field/script_warps (content/schemas/script_warps.schema.json): one entry per warp with the map, what runs it
 // (`via`), the section, where it goes (`to`: a map and exit, or `screen` for a number no map has; `teleport`: the
 // variable that holds it), the guards (`script_guard`, `guard`: IF terms with the listing's conditions and the
-// result they must give, choice terms with the arm), the triggers it sets on the way (`sets_flags`) and where it is
-// (`source`). The lookup gives the offsets of the sources.
+// result they must give, choice terms with the arm), the triggers it sets on the way (`sets_flags`), the transport
+// menu's entry and cost for a pick of it (`transport`) and where it is (`source`). The lookup gives the offsets of the
+// sources.
 core::YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup, const MapName& mapName);
 
 // data/new_game_story (content/schemas/new_game_story.schema.json): the map, its script, the triggers set and the

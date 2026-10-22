@@ -236,6 +236,14 @@ inline ExecutableFixture makeExecutableFixture() {
     layout.mapSoundPara = {.address = image.place(8), .count = 2};
     image.u16(layout.mapSoundPara.address + 4, 6);
     image.u16(layout.mapSoundPara.address + 6, 10);
+    layout.transportTargets = {.address = image.place(16), .count = 2};
+    image.u8(layout.transportTargets.address, 1);
+    image.u8(layout.transportTargets.address + 1, 3);
+    image.u16(layout.transportTargets.address + 2, 0x51);
+    image.u32(layout.transportTargets.address + 4, 500);
+    image.u8(layout.transportTargets.address + 8, 2);
+    image.u16(layout.transportTargets.address + 10, 0x52);
+    image.u32(layout.transportTargets.address + 12, 1000);
     layout.jukeboxTracks = {.address = image.place(4), .count = 2};
     image.u8(layout.jukeboxTracks.address, 0x1D);
     image.u8(layout.jukeboxTracks.address + 3, 2);

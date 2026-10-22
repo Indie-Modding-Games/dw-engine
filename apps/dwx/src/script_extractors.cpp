@@ -16,6 +16,7 @@
 #include <format>
 #include <map>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
 #include <utility>
@@ -235,14 +236,46 @@ core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
         }
         return tables->ids.maps[map];
     };
-    const auto warps = formats::script::findScriptWarps(lookup);
+    // The sections NPCs run, by map: the script ids of each map's NPCs (overworld.c: loadMapDigimon). A map whose file
+    // cannot be read has none.
+    std::set<std::pair<std::uint16_t, std::uint16_t>> talks;
+    std::size_t unreadMaps = 0;
+    for (std::size_t map = 0; map < tables->tables.mapEntries.size(); ++map) {
+        if (tables->tables.mapEntries[map].filename.empty()) {
+            continue;
+        }
+        const auto file = readMapOf(disc, map);
+        if (!file) {
+            ++unreadMaps;
+            continue;
+        }
+        for (const formats::map::MapNpc& npc : file->entities.npcs) {
+            if (npc.scriptId >= 0) {
+                talks.emplace(static_cast<std::uint16_t>(map), static_cast<std::uint16_t>(npc.scriptId));
+            }
+        }
+    }
+    if (unreadMaps != 0) {
+        extraction.notes.push_back(std::format("{} maps cannot be read, so their NPCs' sections are not told apart "
+                                               "from other sections in field/{}",
+                                               unreadMaps, ScriptWarpsDocument));
+    }
+    formats::script::ScriptWarpSources sources{
+        .talks = [&talks](std::uint16_t map, std::uint16_t section) { return talks.contains({map, section}); },
+        .transport = {}};
+    for (const formats::exe::TransportTarget& target : tables->tables.transportTargets) {
+        sources.transport.push_back(
+            {.map = target.mapId, .exit = target.exit, .trigger = target.trigger, .cost = target.cost});
+    }
+    const auto warps = formats::script::findScriptWarps(lookup, sources);
     auto output = yamlOutput(names::fieldDocument(ScriptWarpsDocument),
                              formats::script::scriptWarpsToYaml(warps, lookup, mapName));
     if (!output) {
         return std::unexpected{output.error()};
     }
     extraction.outputs.push_back(std::move(*output));
-    std::array<std::size_t, 4> byVia{};
+    std::array<std::size_t, 5> byVia{};
+    std::size_t transportPicks = 0;
     std::size_t unguarded = 0;
     std::size_t teleports = 0;
     std::size_t unnamed = 0;
@@ -253,14 +286,16 @@ core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
                          ? 1
                          : 0;
         teleports += warp.change.screenVariable ? 1 : 0;
+        transportPicks += warp.transport ? 1 : 0;
         unnamed += warp.change.screen && !mapName(static_cast<std::uint16_t>(*warp.change.screen)) ? 1 : 0;
     }
-    extraction.notes.push_back(std::format("{} map changes in the maps' scripts: {} on stepping on a cell, {} on "
-                                           "confirm, {} on entering, {} from NPCs or other sections; {} without a "
-                                           "condition, {} teleports (the map is in a variable), {} to a screen no map "
-                                           "has",
-                                           warps.warps.size(), byVia[0], byVia[1], byVia[2], byVia[3], unguarded,
-                                           teleports, unnamed));
+    extraction.notes.push_back(
+        std::format("{} map changes in the maps' scripts: {} on stepping on a cell, {} on "
+                    "confirm, {} on entering, {} on talking to an NPC, {} from other sections; {} "
+                    "without a condition, {} teleports (the map is in a variable), {} to a "
+                    "screen no map has; {} are picks of the transport menu ({} entries)",
+                    warps.warps.size(), byVia[0], byVia[1], byVia[2], byVia[4], byVia[3], unguarded, teleports, unnamed,
+                    transportPicks, sources.transport.size()));
     extraction.notes.push_back(std::format("{} MAPHEAD sections load no map's script (new game, death, transport...); "
                                            "their map changes are not in field/{}",
                                            warps.otherMapHeadSections.size(), ScriptWarpsDocument));
