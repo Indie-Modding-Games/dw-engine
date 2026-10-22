@@ -24,6 +24,11 @@ inline constexpr std::string_view FieldHudMeterList = "hud.meter";
 inline constexpr std::string_view FieldHudNeedList = "hud.need";
 inline constexpr std::string_view FieldHudPoolList = "hud.pool";
 
+// The bars of the field HUD, in the order of the hud.meter list: happiness and discipline.
+inline constexpr std::size_t MeterCount = 2;
+// The pools of the field HUD, in the order of the hud.pool list: HP and MP.
+inline constexpr std::size_t PoolCount = 2;
+
 // The needs the field HUD shows, in the order of the hud.need list: hunger, sleep, toilet and tiredness.
 inline constexpr std::size_t NeedCount = 4;
 
@@ -63,12 +68,12 @@ struct FieldHudView {
     bool shown = false;
     FieldClockView clock;
     // Happiness (0) and discipline (1), the two bars the original draws on the field.
-    std::array<FieldMeterView, 2> meters;
+    std::array<FieldMeterView, MeterCount> meters;
     // Hunger, sleep, toilet and tiredness: whether the partner has that need now (its condition, which the original
     // shows as a bubble over the partner: partner_impl.c: handleConditionBubble).
     std::array<bool, NeedCount> needs{};
     // HP (0) and MP (1).
-    std::array<FieldPoolView, 2> pools;
+    std::array<FieldPoolView, PoolCount> pools;
 
     friend bool operator==(const FieldHudView&, const FieldHudView&) = default;
 };
@@ -87,7 +92,7 @@ struct WindowFraction {
 };
 
 // The point over the partner where the original's need bubble settles, on the screen: x and y in percent of the
-// window from its top-left corner, rounded to hundredths so that it changes only when the point moves; `visible` is
+// window from its top-left corner, rounded to tenths so that it changes only when the point moves; `visible` is
 // false while the field is stopped or the point is off the screen or behind the camera.
 struct FieldPartnerView {
     bool visible = false;

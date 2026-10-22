@@ -179,7 +179,7 @@ con valor entero.
 | `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
 | `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
 | `hud.partner.revision` | número | Sube en uno cada vez que cambia alguno de los tres de abajo. Va aparte de `hud.revision` porque cambia mientras el compañero anda, y así el resto del estado no se redibuja con él |
-| `hud.partner.x`, `hud.partner.y` | 0–100, centésimas | Dónde se asienta la burbuja del original sobre el compañero, en porcentaje del ancho y el alto de la ventana desde la esquina de arriba a la izquierda, redondeado a centésimas. La burbuja nace a la altura de la especie menos 20 unidades sobre la posición del compañero (`bubble.c: addConditionBubble`; la altura es `height` de `data/digimon`) y en sus 10 primeros frames sube 65 más, donde se queda (`bubble.c: tickConditionBubble`); ese es el punto publicado (`BubbleDrop` y `BubbleRise` en `apps/game/src/game.cpp: partnerBubbleOf`). Su vaivén de 12 unidades arriba y abajo alrededor de él es animación del aspecto y no se publica |
+| `hud.partner.x`, `hud.partner.y` | 0–100, décimas | Dónde se asienta la burbuja del original sobre el compañero, en porcentaje del ancho y el alto de la ventana desde la esquina de arriba a la izquierda, redondeado a décimas (menos de un píxel en una ventana de 1000). La burbuja nace a la altura de la especie menos 20 unidades sobre la posición del compañero (`bubble.c: addConditionBubble`; la altura es `height` de `data/digimon`) y en sus 10 primeros frames sube 65 más, donde se queda (`bubble.c: tickConditionBubble`); ese es el punto publicado (`BubbleDrop` y `BubbleRise` en `apps/game/src/game.cpp: partnerBubbleOf`). Su vaivén de 12 unidades arriba y abajo alrededor de él es animación del aspecto y no se publica |
 | `hud.partner.visible` | booleano | `false` con el campo parado (como `hud.shown`; el original no dibuja las burbujas en un menú) o con el punto fuera de la ventana o detrás de la cámara; entonces `x` e `y` valen 0 |
 
 **Cuándo cuenta una necesidad.** En el original una necesidad está o no está: no hay grados de urgencia. Está desde
@@ -209,6 +209,12 @@ está.
 - Reloj y barras entran y salen deslizándose (50 píxeles por frame) cuando la hora del juego anda o se para. HP, MP,
   el día y las necesidades no se ven en el campo: HP y MP están en el menú del compañero y el día en el menú del
   domador.
+
+**Diferencia visible conocida: el parpadeo del icono de la felicidad.** En una zona que al compañero le gusta o le
+disgusta, el original alterna el icono de la felicidad con otra cara, 5 frames sí y 5 no (`partner_impl.c:
+renderStatusBars`: `PLAYTIME_FRAMES % 10 < 5` y `MAP_TILE_DATA.partnerAreaResponse`). Lo que le parece la zona no
+está en el estado de la sesión, así que el contrato no lo publica y ningún aspecto puede dibujar ese parpadeo, tampoco
+el de aspecto original: en esas zonas se ve distinto del original hasta que se publique.
 
 **La vista compartida.** Todos los aspectos del juego dibujan el estado del campo con el mismo documento
 (`ui/hud/document.rml`) y el mismo `logic.lua`, y solo cambian sus hojas RCSS. Lo que el script deja para que cada

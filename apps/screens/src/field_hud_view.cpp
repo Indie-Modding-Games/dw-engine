@@ -15,7 +15,7 @@ using game::partner::Stat;
 constexpr std::int32_t FirstShownDay = 1;
 constexpr std::int32_t FirstShownYear = 1;
 
-constexpr std::array<std::string_view, 2> MeterLabels{"partner_menu.happiness", "partner_menu.discipline"};
+constexpr std::array<std::string_view, MeterCount> MeterLabels{"partner_menu.happiness", "partner_menu.discipline"};
 
 // Each need with the condition that is it and its label.
 constexpr std::array<std::pair<Condition, std::string_view>, NeedCount> NeedLabels{{
@@ -25,7 +25,7 @@ constexpr std::array<std::pair<Condition, std::string_view>, NeedCount> NeedLabe
     {Condition::Tired, "hud.need.tired"},
 }};
 
-constexpr std::array<Stat, 2> PoolStats{Stat::Hp, Stat::Mp};
+constexpr std::array<Stat, PoolCount> PoolStats{Stat::Hp, Stat::Mp};
 
 // The lists by shorter names, which also keep the "Field" prefix away from listEntryName's `field` parameter.
 constexpr std::string_view MeterList = FieldHudMeterList;
@@ -48,8 +48,9 @@ double number(std::int32_t value) {
 }
 
 constexpr double Percent = 100.0;
-// The partner's place is published in hundredths of a percent.
-constexpr double PlaceSteps = 100.0;
+// The partner's place is published in tenths of a percent: finer than a pixel on a 1000-pixel window, and the
+// published value does not change on every sub-pixel step of the partner's walk.
+constexpr double PlaceSteps = 10.0;
 
 double percentOf(double fraction) {
     return std::round(fraction * Percent * PlaceSteps) / PlaceSteps;
