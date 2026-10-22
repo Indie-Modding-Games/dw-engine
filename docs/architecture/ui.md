@@ -131,6 +131,83 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del marco), `transform: rotate(...)`, y `display: none` sin marcador |
 
+## Estado del campo
+
+El HUD enseña en el campo la hora del juego y el estado del compañero. Los datos y su dibujo van separados: un modelo
+de datos que no sabe nada de aspectos, y cada aspecto es una vista de él (el moderno ahora; el de aspecto original
+dibuja los mismos datos con su propio documento).
+
+- **Modelo:** `FieldHudView` (`apps/screens`: `field_hud_view.hpp`), solo números y booleanos. Lo construye
+  `fieldHudViewOf(hora, compañero, shown)` desde `GameSession::clock().time()` (`ruleset::GameTime`) y
+  `GameSession::partnerView()` (`apps/session`: `partner_view.cpp: viewOf`), sin decidir ninguna regla: los rangos
+  salen del ruleset (`care.yaml`: `limits`) y las necesidades son las condiciones que ya tiene el compañero.
+- **Enlace:** `FieldHud` (`apps/game/src/field_hud.*`) publica las etiquetas una vez al crearse
+  (`fieldHudLabelSettings`) y, en cada frame, construye la vista y la compara con la última que publicó. Solo si
+  cambió la convierte en ajustes (`settingsOf`) y la publica con `screens::publish`, que cambia solo los ajustes que
+  cambian y después sube `hud.revision` en uno. Un frame en el que no cambia nada no construye ningún texto ni toca
+  la UI.
+- **Vista:** el documento redibuja el estado entero cuando cambia `hud.revision` (`on_setting`), así nunca lee media
+  vista; las etiquetas, cuando cambia un ajuste `*.label` y al cambiar de idioma (`on_language`). El documento del
+  aspecto moderno es `ui/hud/document` con su `logic.lua`; uno de otro aspecto (`screens.hud.document` en
+  `skin.yaml`) lee los mismos ajustes y pone sus propios ids.
+
+**Contrato de datos.** Estos ajustes son el contrato entre el juego y cualquier vista del estado del campo (un
+aspecto del juego o de un mod). Los nombres son constantes de `field_hud_view.hpp`; los números van como `double`
+con valor entero.
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `hud.revision` | número | Sube en uno cada vez que cambia algún valor de abajo; el documento redibuja con él |
+| `hud.shown` | booleano | `false` mientras el campo está parado: un menú (pausa, principal, compañero) o un combate, o sin partida. El original saca el reloj y las barras de la pantalla cuando para la hora del juego (`clock.c: renderGameClock`, `stopGameTime`) |
+| `hud.clock.hour`, `hud.clock.minute` | 0–23, 0–59 | La hora del juego. Un minuto de juego dura 20 frames del original, un segundo real a velocidad normal (`clock.c: tickGameClock`; sección `clock` del ruleset) |
+| `hud.clock.day`, `hud.clock.year` | desde 1 | El día del año (1–30 con `days_per_year: 30`) y el año, contados desde 1 como los enseña el menú del original (`game_menu.c: renderDateDigits`: `DAY + 1`, `YEAR + 1`); el reloj los guarda desde 0 |
+| `hud.meter.<i>.{value,min,max}` | números | Felicidad (0) y disciplina (1), con su rango del ruleset: −100 a 100 y 0 a 100 en `original` (`partner_impl.c: tickConditionBoundaries`) |
+| `hud.meter.<i>.{label,two_tone}` | clave, booleano | Una vez: las claves `partner_menu.happiness` y `partner_menu.discipline`, y `true`: las dos son barras de dos tonos, que se llenan del mínimo a la mitad del rango y otra vez, en otro color, de la mitad al máximo (`partner_impl.c: renderStatusBars`) |
+| `hud.need.<i>.active` | booleano | Hambre (0), sueño (1) y baño (2): si el compañero tiene ahora esa necesidad, es decir, la condición `hungry`, `sleepy` o `needs_toilet` (ver abajo cuándo) |
+| `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet` |
+| `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
+| `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
+
+**Cuándo cuenta una necesidad.** En el original una necesidad está o no está: no hay grados de urgencia. Está desde
+que se pone su condición y hasta que se atiende o se acaba su plazo, y mientras está el original lo enseña con una
+burbuja sobre el compañero (`bubble.c`; por prioridad, sueño, cansancio, hambre, baño, herida y enfermedad:
+`partner_impl.c: handleConditionBubble`), no en un HUD.
+
+| Necesidad | Empieza | Acaba sola (falta de cuidado) |
+|---|---|---|
+| Hambre | Cuando el contador de la siguiente comida llega a 0 (`partner_impl.c: tickHungerMechanics`) | A los 90 minutos de juego sin comer |
+| Sueño | Al entrar en su franja de sueño (`partner_impl.c: tickSleepMechanics`) | A la hora de despertar |
+| Baño | Cuando el contador del baño llega a 0 (`partner_impl.c: tickPoopingMechanic`) | Tras `(disciplina + 20) × 0,6` minutos de juego, haciéndolo donde está |
+
+Estos plazos son reglas del compañero (`game/partner`, ruleset `original`); el contrato solo publica si la necesidad
+está.
+
+**Lo que dibuja el original en el campo**, como referencia para las vistas (`clock.c: renderGameClock`,
+`partner_impl.c: renderStatusBars`), en la pantalla de 320×240:
+
+- Arriba a la izquierda, un reloj de esfera: una aguja de minutos que da una vuelta por hora y un punto que da una
+  vuelta al día por un anillo de 24 horas (la hora 0 arriba), con un sol o una luna encima (luna con la hora antes de
+  las 6 o desde las 17). Sin cifras y sin el día.
+- Abajo a la derecha, solo las barras de felicidad y disciplina, cada una con su icono (felicidad: cara contenta con
+  0 o más, triste por debajo; disciplina: un icono con 50 o más y otro por debajo). Cada barra son 25 cuadritos de
+  2 píxeles: 4 puntos por cuadrito en la felicidad y 2 en la disciplina, en dos tonos como arriba.
+- Reloj y barras entran y salen deslizándose (50 píxeles por frame) cuando la hora del juego anda o se para. HP, MP,
+  el día y las necesidades no se ven en el campo: HP y MP están en el menú del compañero y el día en el menú del
+  domador.
+
+**El aspecto moderno** (abajo a la izquierda, `ui/skins/modern/hud/style.rcss`) dibuja todo el contrato. Lo que
+cambia frente al original es solo de presentación y es opcional, porque es del aspecto: con el aspecto original se
+ve lo que enseña el original. Las diferencias, todas del aspecto moderno:
+
+| Diferencia | Por qué |
+|---|---|
+| La hora en cifras (`HH:MM`, 24 horas) en vez de la esfera | Se lee de un vistazo a cualquier escala |
+| El día y el año en el campo | El original solo los enseña en el menú del domador |
+| Las barras se llenan de forma continua, con su número, en vez de cuadritos | Más legible en pantallas grandes |
+| Las necesidades en un panel, siempre a la vista, resaltadas cuando están | El original solo tiene la burbuja sobre el compañero, que se pierde si no se le ve |
+| HP y MP con su barra (lo que queda sobre el máximo) | El original solo los enseña en el menú del compañero |
+| Al cambiar de mapa el panel se desvanece con `screen_fade`, como el resto del HUD, en vez de deslizarse | Igual que los otros paneles del HUD (decisión de 2026-10-20 en la tabla del aspecto original) |
+
 ## Comandos y ajustes
 
 Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El primer menú usa:

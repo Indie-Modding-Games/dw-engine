@@ -1,7 +1,7 @@
 # screens
 
-Los modelos de vista de las pantallas del juego (`dwe::screens`): qué enseñan la pantalla de combate y el menú del
-compañero, sacado de la partida (`apps/session`) y de los sistemas (`game/*`) sin decidir ninguna regla. Corre sin
+Los modelos de vista de las pantallas del juego (`dwe::screens`): qué enseñan la pantalla de combate, el HUD del campo
+y el menú del compañero, sacado de la partida (`apps/session`) y de los sistemas (`game/*`) sin decidir ninguna regla. Corre sin
 ventana, así que sus tests no abren nada. El juego (`apps/game`) los publica a la UI y los documentos (`ui/battle`,
 `ui/partner_menu` del paquete `game`) solo los dibujan.
 
@@ -41,6 +41,13 @@ de abajo): `usable` dice qué objetos se pueden lanzar en combate.
 El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_command` (el número del comando),
 `battle_charge`, `battle_close`, `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
 ([ui.md](../../docs/architecture/ui.md)).
+
+## HUD del campo
+
+`fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,
+sueño y baño, y HP y MP, solo con números y booleanos para que el juego la compare en cada frame sin construir textos.
+`fieldHudLabelSettings()` da las etiquetas, que se publican una vez. Los ajustes `hud.*`, sus unidades y cuándo se
+actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../../docs/architecture/ui.md#estado-del-campo).
 
 ## Menú del compañero
 

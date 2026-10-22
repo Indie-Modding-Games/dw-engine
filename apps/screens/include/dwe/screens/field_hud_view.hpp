@@ -1,0 +1,84 @@
+#pragma once
+
+#include <dwe/ruleset/game_clock.hpp>
+#include <dwe/screens/screen_settings.hpp>
+#include <dwe/session/partner_view.hpp>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+
+namespace dwe::screens {
+
+// The settings of the field HUD (ui/hud/document), which redraws its field status on FieldHudRevisionSetting. The
+// labels never change and go once (fieldHudLabelSettings); the values go on every change (settingsOf).
+inline constexpr std::string_view FieldHudRevisionSetting = "hud.revision";
+inline constexpr std::string_view FieldHudShownSetting = "hud.shown";
+inline constexpr std::string_view FieldHudHourSetting = "hud.clock.hour";
+inline constexpr std::string_view FieldHudMinuteSetting = "hud.clock.minute";
+inline constexpr std::string_view FieldHudDaySetting = "hud.clock.day";
+inline constexpr std::string_view FieldHudYearSetting = "hud.clock.year";
+inline constexpr std::string_view FieldHudMeterList = "hud.meter";
+inline constexpr std::string_view FieldHudNeedList = "hud.need";
+inline constexpr std::string_view FieldHudPoolList = "hud.pool";
+
+// The needs the field HUD shows, in the order of the hud.need list: hunger, sleep and toilet.
+inline constexpr std::size_t NeedCount = 3;
+
+// The game time as the player reads it: the hour (0-23) and minute, and the day of the year and the year counted from
+// 1, as the original's menu shows them (game_menu.c: renderDateDigits writes DAY + 1 and YEAR + 1).
+struct FieldClockView {
+    std::int32_t hour = 0;
+    std::int32_t minute = 0;
+    std::int32_t day = 0;
+    std::int32_t year = 0;
+
+    friend bool operator==(const FieldClockView&, const FieldClockView&) = default;
+};
+
+// A two-tone bar of the field: its value in the ruleset's range. It fills once from the minimum to the middle of the
+// range and again, in a second colour, from the middle to the maximum (partner_impl.c: renderStatusBars).
+struct FieldMeterView {
+    std::int32_t value = 0;
+    std::int32_t min = 0;
+    std::int32_t max = 0;
+
+    friend bool operator==(const FieldMeterView&, const FieldMeterView&) = default;
+};
+
+// HP or MP: what is left and the maximum.
+struct FieldPoolView {
+    std::int32_t current = 0;
+    std::int32_t max = 0;
+
+    friend bool operator==(const FieldPoolView&, const FieldPoolView&) = default;
+};
+
+// What the field HUD shows of the world and the partner, as plain numbers, so the game compares it each frame without
+// building any text. `shown` is false while game time stands still (menus, battles, no game), when the original
+// slides its clock and status bars off the screen (clock.c: renderGameClock, stopGameTime).
+struct FieldHudView {
+    bool shown = false;
+    FieldClockView clock;
+    // Happiness (0) and discipline (1), the two bars the original draws on the field.
+    std::array<FieldMeterView, 2> meters;
+    // Hunger, sleep and toilet: whether the partner has that need now (its condition, which the original shows as a
+    // bubble over the partner: partner_impl.c: handleConditionBubble).
+    std::array<bool, NeedCount> needs{};
+    // HP (0) and MP (1).
+    std::array<FieldPoolView, 2> pools;
+
+    friend bool operator==(const FieldHudView&, const FieldHudView&) = default;
+};
+
+// The field HUD's view of the game time and the partner; `shown` says whether the field's game time runs.
+[[nodiscard]] FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::PartnerView& partner,
+                                          bool shown);
+
+// The labels of the field HUD's bars, needs and pools, as text keys, and which bars are two-tone. They never change.
+[[nodiscard]] ScreenSettings fieldHudLabelSettings();
+
+[[nodiscard]] ScreenSettings settingsOf(const FieldHudView& view);
+
+} // namespace dwe::screens

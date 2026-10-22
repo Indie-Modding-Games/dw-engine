@@ -1,1 +1,8 @@
 menu: "Menu"
+# The field status. {hour} and {minute} are the game time with two digits each (00-23 and 00-59).
+clock.time: "{hour}:{minute}"
+# {day} is the day of the year (1-30 in the original's calendar) and {year} the year, both counted from 1.
+clock.date: "Day {day}, Year {year}"
+need.hunger: "Hunger"
+need.sleep: "Sleep"
+need.toilet: "Toilet"

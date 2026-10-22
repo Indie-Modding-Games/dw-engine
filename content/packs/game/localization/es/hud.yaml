@@ -1,1 +1,8 @@
 menu: "Menú"
+# El estado del campo. {hour} y {minute} son la hora del juego, con dos cifras cada una (00-23 y 00-59).
+clock.time: "{hour}:{minute}"
+# {day} es el día del año (1-30 en el calendario del original) y {year} el año, los dos contados desde 1.
+clock.date: "Día {day}, año {year}"
+need.hunger: "Hambre"
+need.sleep: "Sueño"
+need.toilet: "Baño"

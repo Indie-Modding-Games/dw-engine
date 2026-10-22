@@ -48,6 +48,7 @@
 #include "common.hpp"
 #include "content_mount.hpp"
 #include "dev_assets_banner.hpp"
+#include "field_hud.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "language.hpp"
@@ -529,6 +530,7 @@ int runGame(const Options& options) {
                              .inventory = game->systems.inventory,
                              .species = species ? &*species : nullptr,
                              .ui = ui->get()}};
+    FieldHud fieldHud{**ui, session};
     std::optional<std::string> pendingBattle;
     std::optional<std::string> pendingGift;
     (*scripts)->bindCommand(GiveItemCommand,
@@ -737,6 +739,7 @@ int runGame(const Options& options) {
 
         const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
                             (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();
+        fieldHud.update(!paused);
         (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
         (*ui)->update();
 
