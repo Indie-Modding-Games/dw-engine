@@ -1,0 +1,365 @@
+# Guardar y cargar
+
+Estado: **diseño aprobado** (save-load-ui, tramo 1; decidido por el coordinador el 2026-10-22: las 11 preguntas,
+como se recomienda). La implementación empieza cuando la parte (b) de los warps de script esté en `main`, porque la
+partida que se guarda ya lleva su sección `story`.
+
+Este documento dice cómo guarda y carga el jugador: dónde puede guardar, cómo se elige la ranura, cómo se vuelve a la
+portada y cómo se carga desde ella. El formato del fichero, las migraciones y el autoguardado ya están en
+[save.md](save.md); aquí solo se cambia lo que la interfaz necesita. Las citas son al decomp (`dw_decomp`,
+`src/main/`, versión `us`) como `fichero.c: función: línea`, para leer, nunca para copiar código ni tablas.
+
+## 1. Cómo lo hace el original
+
+### 1.1 Lo esencial
+
+En el original **el jugador nunca elige ranura al guardar**. La ranura (tarjeta y bloque) se elige una vez, al empezar
+una partida nueva o al continuar una, y cada guardado posterior escribe encima de ese fichero sin preguntar dónde
+(`main_menu.c: tickMainMenu: 3929-3953`, que busca el fichero de la ranura ya elegida). Si al empezar se eligió «sin
+tarjeta», ningún guardado de la partida ocurre (`main_menu.c: tickMainMenu: 3646-3647`; `partner.c: partnerTickSleep:
+330-334`; `main_menu.c: openSaveMachine: 5284-5286`).
+
+### 1.2 Dónde se guarda
+
+| Sitio | Cómo se llega | Condiciones | Localizador |
+|---|---|---|---|
+| **Dormir** | Menú de triángulo, opción de dormir (`partnerSetState(3)`) | Solo si el partner tiene sueño (`condition & 1`); en cualquier sitio, sin cama; el menú de triángulo solo se abre andando, sin script, fundido ni cuadro de texto | `game_menu.c: handleGameMenuSelection: 2178-2185`, `game_menu.c: addGameMenu: 1319-1323`, `tamer.c: tamerTickWalkingState: 517-528` |
+| | Tras el fundido a negro se cuenta la noche (`sleepRegen`, `handleSleeping`: el reloj salta a la hora de despertar) y **después** sale el menú «Dormir / Guardar y dormir»; lo guardado es ya la mañana | Sin tarjeta no sale el menú | `partner.c: partnerTickSleep: 278-366` (326-340) |
+| | «Dormir» cierra; «Guardar y dormir» guarda; cancelar no hace nada | | `main_menu.c: tickMainMenu: 3881-3898` |
+| | Al cerrar: fundido de entrada, hora del día, evoluciones especiales del despertar, el reloj sigue | | `partner.c: partnerTickSleep: 346-361` |
+| **Máquina de guardado** | Rutina 48 (`call_routine` 0x30) de un script de mapa: se pulsa la acción ante la máquina, sale un sí/no y luego la rutina | Scripts 165 y 178, mapas 205 (`ROOM10`) y 218 (`ROOM08`), los dos la casa del anciano de la ciudad. Sin coste | `script_interp.c: scriptInstruction64to7E: 1826-1830`, `script_interp.c: tickScript: 496-500`, `main_menu.c: openSaveMachine: 5273-5286` |
+| | Primero ofrece **registrar el partner para el modo versus** (40 huecos); después «¿Quieres guardar?» | Si el partner es de nivel menor que 3 no se registra (aviso) y pasa a la pregunta de guardar | `main_menu.c: tickMainMenu: 4204-4451`, `main_menu.c: registerBattleData: 5230-5245` |
+| **Fin del juego** | Rutina 54 (`call_routine` 0x36) del script 192 (mapas 236 y 237, el final) | Guarda con la ciudad como mapa de vuelta y el estado «juego acabado», y regala un registro de versus fijo en el hueco 39 | `script_interp.c: scriptInstruction64to7E: 1832-1836`, `main_menu.c: gameClearSave: 5318-5329`, `main_menu.c: awardMachinedramonData: 5299-5316` |
+
+No hay más sitios: solo `partner.c` y `script_interp.c` abren estos menús. El reloj del juego está parado mientras
+están abiertos (`partner.c: partnerTickSleep: 282`; `script_interp.c: scriptPauseGame: 2736-2738`), y la partida se
+escribe con el reloj en marcha para que corra al cargarla (`main_menu.c: writeSavegame: 5080-5083, 5131-5133`).
+
+### 1.3 El guardado en sí
+
+`main_menu.c: tickMainMenu: 3900-4057` (y su copia para la máquina, 4259-4416):
+
+1. Comprueba la tarjeta (`0x29`). Si falta, está cambiada, sin formato o sin el fichero, enseña el error con
+   «Se sobrescribirá el fichero / ¿guardar?» (`0x30`) y deja reintentar; **en partida nunca se formatea ni se crea un
+   fichero** (4405-4413, 4046-4054).
+2. Escribe (`0x2B`): `writeSavegame` llena la copia 0, se calcula la suma, se duplica en la copia 1 y se escribe el
+   bloque (`main_menu.c: tickMainMenu: 3955-4011`; `main_menu.c: writeSavegame: 5071-5134`;
+   `main_menu.c: createSavegameChecksum: 5004-5014`).
+3. Si va bien, el menú se cierra **sin mensaje** (`main_menu.c: tickMainMenu: 3448-3452`). Si falla, error y vuelta al
+   menú de dormir o a la pregunta de la máquina (`main_menu.c: setMemoryCardReadError: 4732-4737`).
+
+### 1.4 La portada
+
+| Paso | Qué hace | Localizador |
+|---|---|---|
+| Menú 0 | NEW GAME, CONTINUE GAME, DELETE GAME, BATTLE MODE; continuar y borrar en gris sin tarjeta | `main_menu.c: tickMainMenu: 3349-3385`, `main_menu.c: renderInitialMenu: 5359-5363` |
+| Partida nueva | Tarjeta 1, tarjeta 2 o **sin tarjeta** (aviso: no se podrá guardar). Una tarjeta sin formato se puede formatear aquí | `main_menu.c: tickMainMenu: 3454-3507` |
+| | Con 15 bloques usados: error «no hay bloque libre» | `main_menu.c: tickMainMenu: 3509-3520`, `main_menu.c: getCardUsedBlockCount: 4757-4790` |
+| | Solo se elige una ranura **vacía** (no se sobrescribe una partida) y se confirma «¿Empezar nueva aventura?» | `main_menu.c: tickMainMenu: 3522-3556` |
+| | Se crea el fichero ya, con una partida por defecto en estado «partida nueva» | `main_menu.c: tickMainMenu: 3558-3636`, `main_menu.c: initializeDefaultSavegame: 4911` |
+| Continuar | Tarjeta, lista de ranuras (solo las válidas se eligen), «¿Continuar la aventura?», leer | `main_menu.c: tickMainMenu: 3659-3776` |
+| Comprobación | Copia 0 si su suma cuadra; si no, la copia 1; si ninguna, «error de datos» y vuelta a la portada | `main_menu.c: tickMainMenu: 3758-3774` |
+| Tarjeta quitada | Durante las listas, vuelta a la portada | `main_menu.c: getMenuOnCardChange: 4708-4730` |
+
+**La lista de ranuras** lee solo la cabecera de la tarjeta de cada fichero, no la partida
+(`main_menu.c: loadSaveSlotData: 4792-4863`): número de ranura, nombre del domador, **especie** del partner (no su
+mote) y una línea de lugar (`main_menu.c: drawSaveSlotText: 3193-3198`). La versión `us` deja el lugar vacío; `jp` y
+`eu` escriben el mapa (`main_menu.c: tickMainMenu: 3982-3994`). Una ranura vacía dice «Sin usar»
+(`main_menu.c: renderSaveSlotBox: 1750-1775`). No enseña tiempo de juego, fecha ni dinero. Hay 15 ranuras por tarjeta
+(`main_menu.c: SAVEGAME_SLOT_INFO: 208`) y dos tarjetas.
+
+### 1.5 Volver al campo al cargar
+
+`main.c: main: 3411-3529`. Tras la portada, según el estado guardado: 0 es la escena de partida nueva (un fichero que
+se creó y nunca se guardó en partida, 3439-3458), 1 es una partida normal y 2 una partida acabada, que pone antes un
+vídeo (3459-3491). En los dos últimos se crea el domador, el partner con su especie, el mapa guardado con su script de
+cabecera (y su música), el reloj, y se colocan domador y partner donde estaban
+(`main.c: initializeLoadedMap: 3791-3899`). Si el partner choca con ciertos NPC al aparecer, los dos van a la salida
+guardada (3821-3857). Luego fundido desde negro (3494).
+
+### 1.6 Volver a la portada
+
+**No existe.** Ni opción de menú, ni combinación de botones (`main.c: pollInputGame: 4035-4054`,
+`main.c: gameLoop: 3933-3962`); la pausa solo congela (`utils2.c: handlePause: 402-432`) y la muerte del partner lleva
+a renacer, no a «fin del juego». La única vuelta es tras los créditos: la rutina 53 pone el estado 3, el bucle sale y
+vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
+
+## 2. Lo que hay hoy en el motor
+
+- El formato, las ranuras (`slot_01`…`slot_15`, `autosave_01`…), la copia `.bak`, el estado «dañada» de la lista y las
+  migraciones: [save.md](save.md), `game/save` (`SaveSlots::list`, `SlotInfo`).
+- `GameSession` ([apps/session](../../apps/session/README.md)) guarda y carga, pero **solo se carga al arrancar**
+  (`--load`): `FieldScene` se crea una vez (`apps/game/src/game.cpp: runGame`) y no hay vuelta a la portada ni
+  máquina de estados de la app. `GameSession::loadFile` no es transaccional: si una sección falla, el estado queda a
+  medias.
+- La portada (`content/packs/game/ui/main_menu`) se pinta **encima de una partida ya empezada** (nueva o `--load`): su
+  «Jugar» solo la oculta. No hay «Continuar».
+- El menú de pausa (`content/packs/game/ui/pause_menu`) no tiene «Dormir»: dormir es un comando de depuración
+  (`apps/game/src/care_commands.hpp`, `sleep`). Su «Salir» cierra el programa.
+- No hay intérprete de los scripts de historia: las rutinas 48 y 54 no corren en ningún sitio (solo el extractor las
+  conoce, `formats/src/script/routine_writes.cpp`).
+- Guardar desde una ruta: el comando de depuración `save("slot_NN")` (`apps/game/src/save_command.hpp`) y el par
+  `route-save-load` + `route-save-load-check`, dos ejecuciones unidas por `scripts/gate/route_jobs.sh`.
+- Parte (b): `StoryState` y su sección `story` (versión 1, disparadores y las 35 variables que guardaba el original;
+  `readMissing` empieza de partida nueva y marca criadas las especies de la sección `evolution`). Esta parte no la
+  cambia; al recrear la sesión se recrea también su adaptador.
+
+## 3. El diseño
+
+### 3.1 Las piezas y sus dueños
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| `SaveSummary` (cabecera) | `game/save` | Lo que enseña la lista: domador, especie y mote del partner, mapa. Ver [3.3](#33-las-ranuras) |
+| `SaveSlots` | `game/save` (existe) | Lista, carga, carga de la copia, guarda. Sin cambios de comportamiento |
+| `AppFlow` | `apps/game` (nuevo, `app_flow.{hpp,cpp}`) | La máquina de estados de la app: `Title` → `Playing` → `Title`. Crea y destruye la partida en juego |
+| `PlaySession` | `apps/game` (nuevo, `play_session.{hpp,cpp}`) | Todo lo que vive lo que dura una partida: `GameSession`, `FieldScene`, la VM de scripts con sus comandos, la batalla, el menú del partner, el HUD. Se construye entero desde una `SaveFile` o desde partida nueva y se destruye entero; sale de lo que hoy hace `runGame` de seguido |
+| `SaveFlow` | `apps/game` (nuevo, `save_flow.{hpp,cpp}`) | La **ranura de la partida** (la que se eligió al empezar o al continuar, o ninguna) y los guardados del jugador: dormir, máquina, fin del juego. Publica el resultado para la interfaz |
+| Documentos | `content/packs/game/ui/` | `main_menu` (la portada, existe), `save_slots` (lista de ranuras, nuevo), `dialog` (sí/no y avisos, nuevo y común), `sleep_menu` (nuevo), `pause_menu` (añade «Dormir» y «Volver a la portada») |
+| Textos | `content/packs/game/localization/{en,es}/` | `save.yaml` (amplía), `main_menu.yaml`, `pause_menu.yaml` |
+| Rutas | `tests/autotest/`, `apps/game/src/autotest.cpp` | La ruta de un solo proceso ([sección 6](#6-rutas-y-tests)) |
+
+`game/save` sigue sin conocer los sistemas ([regla 4](dependency-rules.md)): el resumen lo rellena la app al guardar.
+La interfaz habla con la app como ya lo hace, con `ui.send` y ajustes publicados (`ui.md`, «Comandos y ajustes»).
+
+### 3.2 Los estados de la app
+
+```text
+arranque ──► Title ──(Nueva partida / Continuar)──► Playing ──(Volver a la portada)──► Title
+   │                                                   ▲
+   └── --load, --start, ruta sin main_menu ────────────┘
+```
+
+- **Title**: sin partida. La portada se pinta sobre negro, como el original (`ui.md`, tabla del aspecto original). No
+  hay `GameSession` ni `FieldScene`.
+- **Playing**: una `PlaySession`. Entrar en `Playing` es siempre construir una `PlaySession` nueva; salir es
+  destruirla. Así **recargar en mitad de la partida** es salir a `Title` y entrar otra vez: no hace falta un «warp a
+  un sitio cualquiera» ni deshacer estado a mano, y lo que haya dejado la partida anterior (scripts en cola, batalla,
+  eventos) desaparece con ella.
+- **Carga transaccional**: la `PlaySession` nueva se crea y carga la partida **antes** de soltar nada. Si la carga
+  falla, se destruye la nueva, se enseña el error y se sigue en `Title`. Esto arregla también que `loadFile` deje
+  estado a medias: nadie usa esa sesión.
+- `--load`, `--start` y las rutas sin `main_menu: true` siguen entrando directas en `Playing`, como hoy.
+
+**Volver al campo** al cargar: `FieldScene::create` con el mapa y la posición guardados, como ya hace el arranque con
+`--load` (`apps/game/src/game.cpp: runGame`). El partner aparece donde estaba. La recolocación del original cuando el
+partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace en este paquete (pregunta 7).
+
+### 3.3 Las ranuras
+
+- **Cuántas**: las 15 manuales de `save/settings` (como una tarjeta del original) y las de autoguardado, que siguen
+  como en [save.md](save.md). Una sola carpeta, no dos tarjetas (desviación, [sección 5](#5-diferencias-con-el-original)).
+- **La ranura de la partida** (`SaveFlow`): se elige al empezar (ranura vacía o «sin guardar») o al continuar (la
+  ranura que se carga). Todo guardado del jugador va a ella, sin preguntar, como en el original. `--load slot_NN` la
+  fija a esa ranura; `--load autosave_NN`, a la que diga el autoguardado (abajo); una ruta sin carpeta de partidas
+  (`SessionDesc::storage` nulo) juega «sin guardar».
+- **Autoguardado y ranura**: cada autoguardado apunta a la ranura manual de su partida (`summary.slot`), así que
+  continuar desde un autoguardado sigue guardando en la ranura de esa partida. Si no tiene (partida «sin guardar»),
+  queda sin ranura.
+- **La lista** (`save_slots`, publicada como ajustes `save.slot.<n>.*`):
+
+| Columna | De dónde | Original |
+|---|---|---|
+| Número de ranura | El nombre del fichero | Igual |
+| Nombre del domador | `summary.tamer` | Igual |
+| Especie del partner | `summary.species` (un ID; la interfaz pone el nombre en el idioma) | Igual (`us` enseña la especie, no el mote) |
+| Lugar | `summary.map` (un ID de mapa, con su nombre traducido) | Como `jp`/`eu`; `us` lo dejaba vacío |
+| «Sin usar» | Ranura vacía | Igual |
+| «Dañada» / «Hay copia» | `SlotInfo::Damaged`, `hasBackup` | Nuevo (el original no la listaba como válida) |
+| Tiempo de juego y fecha de guardado | `play_seconds`, `updated` | **Mejora** documentada, de la cabecera que ya existe |
+
+Las de autoguardado van en un grupo aparte debajo, solo al continuar (al empezar no se eligen).
+
+**Cabecera nueva** (pregunta 1, CONTRACT): `format_version: 3` añade a la cabecera
+
+```yaml
+summary:
+  slot: "slot_03"          # la ranura manual de la partida; "" si se juega sin guardar
+  tamer: "Juan"
+  species: "base:<especie>"  # el ID de la especie, no el nombre
+  nickname: "Chispa"
+  map: "base:<mapa>"         # el ID del mapa
+```
+
+con su paso de migración `2 → 3`, que lee lo que pueda de las secciones `tamer`, `partner` y `field` de la propia
+partida y deja vacío lo demás (la lista enseña entonces solo número y fecha). `label` se queda como está. Los IDs siguen
+la regla de la fase 4 (IDs, no índices).
+
+### 3.4 Partida nueva
+
+`Nueva partida` → lista de ranuras con **solo las vacías** elegibles y una entrada final «Jugar sin guardar» →
+«¿Empezar una nueva aventura?» (sí/no) → se crea la `PlaySession` de partida nueva y **se guarda ya en la ranura**,
+como el original crea el fichero al empezar. Con las 15 ocupadas: aviso «No hay ranuras libres» y solo «Jugar sin
+guardar» o volver. «Jugar sin guardar» avisa de que no se podrá guardar (como «sin tarjeta»).
+
+Sin carpeta de partidas (las rutas de humo de hoy) `Nueva partida` entra directo, sin lista: es el camino «sin
+tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `play`.
+
+### 3.5 Continuar
+
+`Continuar` (en gris si no hay ninguna partida, como sin tarjeta) → lista con las ranuras guardadas elegibles →
+«¿Continuar la aventura?» → carga transaccional ([3.2](#32-los-estados-de-la-app)) → `Playing` con fundido desde negro.
+
+### 3.6 Dormir
+
+`pause_menu` gana **«Dormir»**, activo solo si `Partner::canSleep()` (el original lo pone en gris igual). Al elegirlo:
+
+1. Se cierra el menú, fundido a negro, `GameSession::sleep` (el reloj salta a la mañana; ya existe).
+2. Si la partida tiene ranura, `sleep_menu`: «Dormir» / «Guardar y dormir». Cancelar no hace nada, como el original.
+   Sin ranura no sale nada.
+3. «Guardar y dormir» guarda en la ranura (`SaveFlow`). Si falla, aviso con el error y vuelta al paso 2.
+4. Fundido de entrada; el reloj sigue. Lo que el original hace al despertar (evoluciones especiales) es del sistema de
+   evolución, que ya escucha `Slept`.
+
+El reloj está parado mientras el menú está abierto (el bucle ya pausa con documentos modales). Al acabar bien no hay
+mensaje, como el original; el aviso de autoguardado, si salta, es aparte.
+
+### 3.7 Máquina de guardado y fin del juego
+
+`SaveFlow` expone `openSaveMachine()` y `gameClearSave()`: el diálogo «¿Quieres guardar?» y el guardado a la ranura
+(el de fin del juego, con la ciudad como mapa de vuelta). **Nadie los llama todavía**: los llamará el intérprete de los
+scripts de historia (R4.1) cuando corra las rutinas 48 y 54; hasta entonces un test los cubre. El registro para el
+modo versus de la máquina (y el regalo del fin del juego) **queda fuera**: es del modo versus, que no está en 4a
+(pregunta 3).
+
+### 3.8 Volver a la portada
+
+`pause_menu` gana **«Volver a la portada»** (encima de «Salir del juego») → `dialog`: «Se perderá lo que no hayas
+guardado. ¿Volver a la portada?» → `AppFlow` destruye la `PlaySession` y vuelve a `Title`. No guarda nada. Es una
+**mejora** (el original no tiene), de interfaz y no de reglas.
+
+### 3.9 Textos (en/es)
+
+Claves nuevas; los textos son nuestros, no los del disco.
+
+| Clave | en | es |
+|---|---|---|
+| `main_menu.new_game` | New game | Nueva partida |
+| `main_menu.continue` | Continue | Continuar |
+| `save.slots.title_new` | Choose a slot for your new adventure | Elige una ranura para tu nueva aventura |
+| `save.slots.title_continue` | Choose an adventure to continue | Elige la aventura que quieres continuar |
+| `save.slots.slot` | Slot {0} | Ranura {0} |
+| `save.slots.empty` | Not used | Sin usar |
+| `save.slots.damaged` | Damaged save | Partida dañada |
+| `save.slots.autosaves` | Autosaves | Autoguardados |
+| `save.slots.no_save` | Play without saving | Jugar sin guardar |
+| `save.slots.no_save_warning` | You won't be able to save this game. | No podrás guardar esta partida. |
+| `save.slots.full` | There are no free slots. | No hay ranuras libres. |
+| `save.confirm_new` | Start a new adventure? | ¿Empezar una nueva aventura? |
+| `save.confirm_continue` | Continue this adventure? | ¿Continuar esta aventura? |
+| `save.sleep` | Go to sleep | Dormir |
+| `save.sleep_and_save` | Save and go to sleep | Guardar y dormir |
+| `save.ask_save` | Do you want to save? | ¿Quieres guardar? |
+| `save.saving` | Saving… | Guardando… |
+| `save.failed` | The game could not be saved: {0} | No se ha podido guardar la partida: {0} |
+| `save.load_failed` | The game could not be loaded: {0} | No se ha podido cargar la partida: {0} |
+| `save.damaged_use_backup` | This save is damaged. Load the previous copy? | Esta partida está dañada. ¿Cargar la copia anterior? |
+| `save.damaged_no_backup` | This save is damaged and has no copy. | Esta partida está dañada y no tiene copia. |
+| `save.too_new` | This save is from a newer version of the game. | Esta partida es de una versión más nueva del juego. |
+| `pause_menu.sleep` | Sleep | Dormir |
+| `pause_menu.to_title` | Back to title | Volver a la portada |
+| `pause_menu.to_title_confirm` | Anything you haven't saved will be lost. Back to the title? | Se perderá lo que no hayas guardado. ¿Volver a la portada? |
+| `common.yes`, `common.no` | Yes, No | Sí, No |
+
+El detalle técnico del error (`{0}`) va en inglés al log; la interfaz enseña el texto traducido y, si hace falta, el
+nombre del fichero.
+
+## 4. Errores
+
+| Caso | Original | Motor |
+|---|---|---|
+| Partida dañada (no se lee, cortada, suma o YAML mal) | Copia 1 si la 0 falla; si las dos, «error de datos» y a la portada (`main_menu.c: tickMainMenu: 3758-3774`) | La lista la marca «dañada». Elegirla: si hay `.bak`, «¿cargar la copia anterior?» → `loadBackup`; si no, aviso y se queda en la lista. Nunca se borra ni se sobrescribe sola |
+| Una sección no se puede leer o migrar | — | Error de carga, carga transaccional: se sigue en la portada, la ranura no cambia |
+| Versión más nueva que el juego | — | La lista la enseña como «de una versión más nueva» (el `problem` de `SlotInfo`), no se puede cargar ni sobrescribir al empezar |
+| Versión más antigua | — | Se migra al cargar sin preguntar ([save.md](save.md)); el fichero del disco no cambia hasta el siguiente guardado, que deja la versión vieja en `.bak` |
+| Partida sin una sección nueva (p. ej. `story` antes de la parte b) | — | El `readMissing` de su sistema ([save.md](save.md)); para `story`, partida nueva más las especies criadas |
+| Todas las ranuras ocupadas al empezar | «No hay bloque libre», o jugar sin tarjeta (`main_menu.c: tickMainMenu: 3509-3520`) | «No hay ranuras libres»: jugar sin guardar o volver. No se ofrece sobrescribir (el original tampoco; para borrar, pregunta 4) |
+| Falla la escritura en partida (disco lleno, permisos) | Error y vuelta al menú de dormir o a la pregunta (`main_menu.c: tickMainMenu: 4001-4009`) | Igual: `save.failed` y vuelta a `sleep_menu` o a la pregunta. La escritura atómica deja la partida anterior intacta |
+| El fichero de la ranura desapareció durante la partida | «El fichero no existe», no se crea (`main_menu.c: tickMainMenu: 3929-3953`) | Se escribe de nuevo en la ranura (desviación menor: no hay tarjeta que cambiar) |
+
+## 5. Diferencias con el original
+
+| Qué | Tipo | Por qué |
+|---|---|---|
+| Elegir ranura solo al empezar o continuar, guardar sin preguntar dónde | Vanilla | |
+| Dormir → «Dormir / Guardar y dormir» tras contar la noche, sin cancelar | Vanilla | |
+| Máquina de guardado y fin del juego (diálogo y guardado) | Vanilla | Llegan con el intérprete de historia |
+| Partida nueva solo en ranura vacía; «sin guardar» como «sin tarjeta» | Vanilla | |
+| Lista: domador, especie, «Sin usar» | Vanilla | |
+| Lista: lugar | Vanilla (`jp`/`eu`) | `us` lo dejaba vacío |
+| Una carpeta de 15 ranuras, no dos tarjetas | Mejora documentada | No hay tarjetas en un PC; el número sale de `save/settings` |
+| Lista: tiempo de juego, fecha, «dañada», «hay copia», grupo de autoguardados | Mejora documentada | Datos que el formato ya tiene; el autoguardado es la desviación aprobada de [save.md](save.md) |
+| Copia anterior en `.bak` en vez de dos copias en el fichero | Mejora documentada | Ya en [save.md](save.md); cubre el mismo caso |
+| Volver a la portada desde la pausa | Mejora documentada | El original no tiene; es interfaz, sin efecto en las reglas |
+| Sin formatear tarjetas, sin «quitar la tarjeta» | Sin equivalente | No hay tarjetas |
+| Fichero de la ranura borrado fuera del juego: se reescribe | Mejora menor | |
+| Sin registro para el modo versus en la máquina | Pendiente (fuera de 4a) | Pregunta 3 |
+| Borrar partida en la portada | Pendiente | Pregunta 4 |
+| Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
+
+## 6. Rutas y tests
+
+**La ruta de un solo proceso** sustituye al par `route-save-load` / `route-save-load-check` y deja el comando
+`save("slot_NN")` solo para depurar. `route-save-load.yaml` (`main_menu: true`, carpeta de partidas vacía):
+
+1. Portada → `new-game` → ranura 1 → sí. Esperar el mapa inicial.
+2. Lo de hoy: `give_item("meat 3")`, ir a `room08`, ir al punto `[-95, -900]`.
+3. `clock_speed` hasta que el partner tenga sueño (`pause_menu.sleep_enabled` = sí), `clock_speed("0")`.
+4. Pausa → `sleep` → `sleep-and-save`. Esperar `save.last_result` = `saved`; recordar la hora (`remember`).
+5. Pausa → `to-title` → sí. Esperar la portada.
+6. `continue` → ranura 1 → sí. Esperar `room08` cerca de `[-95, -900]`.
+7. `expect_setting`: especie y edad del partner, día y la hora de después de dormir, dinero y la carne del inventario;
+   `save.slot.1.state` = `saved`, `save.slot.1.species` la del partner. Capturas en cada pantalla nueva.
+
+Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/autotest.cpp`) conoce `save_slots`,
+`dialog` y `sleep_menu`; nada más, porque todo lo demás se comprueba con ajustes publicados. En el gate,
+`scripts/gate/route_jobs.sh` pasa una carpeta de partidas vacía a las rutas que la piden (una lista, como hoy
+`follow_up_routes`) y se quitan la segunda ejecución y `route-save-load-check.yaml` (pregunta 8).
+
+**Tests unitarios** (ninguno cuenta para el límite de líneas):
+
+- `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen sacado
+  de sus secciones; con secciones que faltan, resumen vacío.
+- `SaveFlow`: ranura de la partida al empezar, al continuar, desde un autoguardado y sin guardar; guardado al dormir
+  con y sin ranura; fallo de escritura (`MemorySaveStorage::failNextWrite`) vuelve al menú; máquina y fin del juego
+  con su mapa de vuelta.
+- `AppFlow`: Title → Playing → Title → Playing con otra ranura no deja nada de la primera partida (reloj, inventario,
+  `story`); una carga que falla deja la app en Title y la ranura sin tocar; partida dañada con y sin copia.
+- La lista de ranuras: vacías, guardadas, dañadas, más nuevas, autoguardados, llena.
+
+## 7. Plan de tramos
+
+Cada tramo cabe en unas 800 líneas cambiadas sin contar tests ni documentos (el contenido `.rml`, `.rcss`, `.lua` y
+`.yaml` de la interfaz **sí** cuenta), pasa su gate corto y se sube solo. Del tramo 2 en adelante, después de que la
+parte (b) esté en `main`.
+
+| Tramo | Contenido | Termina cuando | Líneas (estim.) |
+|---|---|---|---|
+| 1 | Este documento | Commit del documento | 0 de código |
+| 2 | Cabecera v3 (`summary`, migración 2 → 3), la app la rellena al guardar y al autoguardar, `--list-saves` la enseña | Tests de formato y migración en verde; las partidas de hoy cargan | ~250 |
+| 3 | `AppFlow` + `PlaySession`: sacar de `runGame` lo que dura una partida, Title sin partida, carga transaccional, `--load`/`--start`/rutas sin portada como hoy. La portada aún solo tiene «Jugar» (sin ranuras) | Las rutas de humo pasan igual; test de Title → Playing → Title | ~650 |
+| 4 | Portada: «Nueva partida» con lista de ranuras vacías y «sin guardar», «Continuar» con lista y errores (dañada, copia, más nueva), documentos `save_slots` y `dialog`, `SaveFlow` con la ranura de la partida, textos en/es | Partida nueva en ranura y continuar a mano y con test; las rutas de humo siguen (sin carpeta = sin lista) | ~750 |
+| 5 | En partida: «Dormir» en la pausa, `sleep_menu`, guardar al dormir, `openSaveMachine`/`gameClearSave` (sin llamadas), «Volver a la portada» con su diálogo, textos en/es | Test de `SaveFlow`; dormir y volver a la portada a mano | ~550 |
+| 6 | La ruta de un solo proceso, `shownMenu()`, la carpeta vacía en `route_jobs.sh`, fuera el par y `route-save-load-check`; docs (`save.md`, `ui.md`, `prueba-vertical.md`, `gate.md`) | La ruta pasa en en y es en el gate corto | ~200 |
+
+Si el tramo 3 o el 4 pasa de 800 al hacerlo, se parte en el sitio marcado: el 3 en «sacar `PlaySession`» y «`AppFlow`»;
+el 4 en «nueva partida» y «continuar».
+
+## 8. Preguntas (decididas)
+
+El coordinador aceptó el 2026-10-22 todas las recomendaciones; la columna «Recomendación» es la decisión. La 1 es un
+cambio de contrato del formato de la partida. Las 3 y 4 van a la lista de 4b y la 7 a la de fase 5.
+
+| # | Pregunta | Tipo | Recomendación |
+|---|---|---|---|
+| 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
+| 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar |
+| 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | No: va a la lista de 4b con el modo versus; la máquina pregunta solo «¿Quieres guardar?», documentado como pendiente |
+| 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | A la lista de 4b (alcance congelado). Sin él no se libera una ranura salvo borrando el fichero; «sin guardar» cubre el caso lleno |
+| 5 | ¿«Volver a la portada» siempre, o detrás de un ajuste por ser una mejora? | FIDELITY | Siempre: es interfaz como «Salir del juego», no cambia reglas; queda en la tabla de desviaciones |
+| 6 | Una partida recién creada y nunca guardada en el juego: el original repite la escena de partida nueva al cargarla; ¿aquí? | minor | Cargar en el mapa de inicio con el estado de partida nueva; repetir la escena cuando la escena de inicio sea del intérprete de historia |
+| 7 | ¿Recolocar al partner en la salida guardada si aparece encima de un NPC (`main.c: initializeLoadedMap: 3821-3857`)? | FIDELITY | A la lista de fase 5: necesita los NPC del campo, que aún no existen |
+| 8 | ¿La lista «rutas que piden carpeta vacía» en `route_jobs.sh` cuenta como infraestructura nueva del gate (regla 5 de 4a)? | minor | No: sustituye a `follow_up_routes` y quita código; el manager lo confirma |
+| 9 | ¿El comando `save("slot_NN")` se queda? | minor | Sí, para depurar, hasta la decisión de fase 5 sobre la consola en las versiones de jugador |
+| 10 | ¿Se enseña tiempo de juego y fecha en la lista (mejora)? | minor | Sí: ya están en la cabecera y ayudan a elegir; documentado como mejora |
+| 11 | ¿Quién llama a `openSaveMachine`/`gameClearSave` antes del intérprete de historia (p. ej. una tabla de máquinas extraída por `dwx`)? | CONTRACT (extracción) | Nadie en 4a: una tabla nueva cambiaría la extracción; esperar al intérprete (R4.1) |

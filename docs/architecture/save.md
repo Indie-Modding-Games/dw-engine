@@ -4,6 +4,9 @@ Cómo guarda el motor una partida, cómo se versiona y cómo un sistema añade l
 [`game/save`](../../game/save/README.md) y cumple el requisito R3.6 de la
 [fase 3](../plan/fase-3-nucleo-jugable.md): una partida guardada se carga igual tras actualizar el juego, o se migra.
 
+Cómo guarda y carga el jugador desde la interfaz (dónde se guarda, la portada, las ranuras, volver a la portada):
+[guardar-y-cargar.md](guardar-y-cargar.md).
+
 ## El fichero
 
 Una partida es un documento YAML legible, escrito con `core::emitYaml`: la misma partida da siempre el mismo texto, y
