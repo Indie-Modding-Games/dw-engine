@@ -26,8 +26,9 @@ default_daily_cook="full"
 # The short tier does not cook (check-short has no cook step).
 short_cook="none"
 all_steps=(check windows routes)
-# The parallel routes become the default once a sequential and a parallel run of one tip agree (docs/guides/gate.md).
-default_routes="sequential"
+# Parallel since two sequential and parallel pairs of one tip agreed, 2.9 to 3 times faster (docs/guides/gate.md);
+# sequential stays for a bisect or a busy host.
+default_routes="parallel"
 default_displays=4
 max_displays=4
 # Displays the runner may take, and those it never takes: :71 is the reference emulator rig's, :61-:66 are assigned
@@ -39,7 +40,13 @@ xvfb_screen="2560x1440x24"
 xvfb_start_seconds=10
 route_timeout_seconds=900
 lock_poll_seconds=20
-min_free_gb=15
+# The free space each step needs, in GB, added up over the chosen steps (docs/guides/gate.md has the measurements): the
+# check a fresh build/ci (7.3) with the cook (2.0) and its cache entry (2.0); Windows little more than its folder holds
+# already, as the short tier reuses it and the daily one deletes it before building again (4.4); the routes their logs
+# and saves (under 0.1).
+check_free_gb=12
+windows_free_gb=2
+routes_free_gb=1
 lavapipe_icd="/usr/share/vulkan/icd.d/lvp_icd.json"
 route_preset="ci"
 game_binary="build/$route_preset/apps/game/dwe-game"
@@ -70,7 +77,8 @@ Usage: scripts/gate.sh [options]
                             DWE_DISC); check-short's full ctest runs with DWE_DISC and DWE_CONTENT unset, so the
                             other tests on the disc and the content skip
   --routes sequential|parallel
-                            The runs one after another on one display, or on several at once (default $default_routes)
+                            The runs on several displays at once, or one after another on one display, as for a
+                            bisect (default $default_routes)
   --displays N              Displays of the parallel routes, 1-$max_displays (default $default_displays), taken from
                             :$display_pool_first-:$display_pool_last when free
   --lp-threads N            LP_NUM_THREADS of every run (lavapipe's threads); unset by default
@@ -246,7 +254,8 @@ lock_taken=false
 take_lock() {
     mkdir -p "$(dirname "$lock_dir")"
     echo "gate: waiting for the lock $lock_dir"
-    until ! ls "$(dirname "$lock_dir")"/full-* >/dev/null 2>&1 && claim_lock; do
+    # Another kind of gate lock next to it (a folder full-<name>) also holds the machine; files there are only files.
+    until ! ls -d "$(dirname "$lock_dir")"/full-*/ >/dev/null 2>&1 && claim_lock; do
         sleep "$lock_poll_seconds"
     done
 }
@@ -388,15 +397,6 @@ run_game() {
     return "$rc"
 }
 
-# A worker takes the next job nobody has claimed (mkdir is atomic) until none is left.
-worker() {
-    local display="$1" index
-    while read -r index; do
-        mkdir "$logs/claims/$index" 2>/dev/null || continue
-        run_job "$index" "$display"
-    done <"$logs/order.txt"
-}
-
 write_dev_assets() {
     [[ ! -e "$dev_assets_file" ]] || die "$dev_assets_file exists; move it away, the gate writes its own"
     printf 'extracted_content:\n  - %s\n' "$DWE_CONTENT" >"$dev_assets_file"
@@ -409,13 +409,14 @@ remove_dev_assets() {
 }
 
 run_routes() {
-    local display pid workers=() count
+    local display pid workers=() count display_list
     mkdir -p "$logs/claims" "$logs/results" "$logs/seconds"
     write_jobs >"$logs/jobs.txt"
     take_displays
     job_order >"$logs/order.txt"
     count="$(wc -l <"$logs/jobs.txt")"
-    echo "gate: routes=$routes_mode jobs=$count runs=$(count_runs "$logs/jobs.txt") displays=$(printf ':%s,' "${displays[@]}" | sed 's/,$//')" \
+    display_list="$(printf ':%s,' "${displays[@]}" | sed 's/,$//')"
+    echo "gate: routes=$routes_mode jobs=$count runs=$(count_runs "$logs/jobs.txt") displays=$display_list" \
         "lp-threads=${lp_threads:-unset}" | tee -a "$summary"
     if grep -q -- '--dev-assets' "$logs/jobs.txt"; then write_dev_assets; fi
     for display in "${displays[@]}"; do
@@ -678,9 +679,13 @@ check_environment() {
         [[ -f "${DWE_DISC:-}" ]] || die "DWE_DISC must name the user's disc image for the disc tests"
     fi
     [[ -z "$(git -C "$root" status --porcelain)" ]] || die "the working tree has changes; a gate runs on a commit"
-    local free_gb
+    local free_gb needed_gb=0 step_name floor
+    for step_name in "${all_steps[@]}"; do
+        floor="${step_name}_free_gb"
+        has_step "$step_name" && needed_gb=$((needed_gb + ${!floor}))
+    done
     free_gb="$(df --output=avail -BG "$root" | tail -1 | tr -dc 0-9)"
-    ((free_gb >= min_free_gb)) || die "only $free_gb GB free, under $min_free_gb GB"
+    ((free_gb >= needed_gb)) || die "only $free_gb GB free, under the $needed_gb GB that the steps $steps need"
 }
 
 default_logs_dir() {

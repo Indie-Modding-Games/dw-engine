@@ -25,18 +25,27 @@ DWE_CONTENT="$scratch/content"
 cooked_archive="build/gate-cooked/archive"
 routes_extra=""
 
-# The routes whose run fails, by route name (the stub's answer); every other run passes.
+# The routes whose run fails, by route name (the stub's answer); every other run passes. Each log names the display
+# its run had, and a run takes run_seconds, so the workers of a parallel test overlap.
 failing_routes=""
+run_seconds=0
 run_game() {
-    local log="$2" route
+    local display="$1" log="$2" route
     route="$(basename "$log" .log)"
     mkdir -p "$(dirname "$logs/$log")"
+    sleep "$run_seconds"
     if [[ " $failing_routes " == *" $route "* ]]; then
-        echo "[error] autotest: FAIL: step 1 of 2 (wait) failed" >"$logs/$log"
+        printf '%s\n' "display :$display" "[error] autotest: FAIL: step 1 of 2 (wait) failed" >"$logs/$log"
         return 1
     fi
-    printf '%s\n' "validation layer on, 0 messages" "autotest: 0 [error] lines in the log" "autotest: PASS" >"$logs/$log"
+    printf '%s\n' "display :$display" "validation layer on, 0 messages" "autotest: 0 [error] lines in the log" \
+        "autotest: PASS" >"$logs/$log"
     return 0
+}
+
+# The display a run's log names.
+run_display() {
+    sed -n 's/^display ://p' "$logs/$1"
 }
 
 # new_logs <name>: a fresh logs folder of a gate, with the folders run_job writes into.
@@ -115,6 +124,32 @@ check "  that did not pass" test "$(grep -cE ' rc=0 \| autotest: PASS' "$logs/su
 check "  and the check never ran" test ! -e "$logs/en/route-save-load-check.log"
 failing_routes=""
 
+# The parallel routes: workers on three displays take the daily list's jobs, the longest first as the gate orders
+# them, and each pair still runs on one display, the check right after its save.
+new_logs parallel
+mkdir -p "$logs/claims"
+write_daily_jobs "" >"$logs/jobs.txt"
+job_count="$(wc -l <"$logs/jobs.txt")"
+# The pairs first, as if they were the longest, so they start while the other workers are busy too.
+{ grep -n '^route-save-load-' "$logs/jobs.txt" | cut -d: -f1; grep -vn '^route-save-load-' "$logs/jobs.txt" |
+    cut -d: -f1; } >"$logs/order.txt"
+run_seconds=0.05
+for display in 97 98 99; do
+    worker "$display" &
+done
+wait
+run_seconds=0
+check "every job of the list ran once" test "$(find "$logs/claims" -mindepth 1 | wc -l)" == "$job_count"
+check "  and gave its runs' lines" test "$(cat "$logs/results/"* | grep -c ' rc=0 | autotest: PASS')" == \
+    "$(count_runs "$logs/jobs.txt")"
+check "  on more than one display" test "$(cut -d"$field_separator" -f3 "$logs/seconds/"* | sort -u | wc -l)" -gt 1
+for lang in en es; do
+    check "the $lang save and its check ran on one display" test "$(run_display "$lang/route-save-load.log")" == \
+        "$(run_display "$lang/route-save-load-check.log")"
+    check "  the check after the save" test "$logs/$lang/route-save-load-check.log" -nt \
+        "$logs/$lang/route-save-load.log"
+done
+
 # The saves folder that is emptied: only a pair's folder inside this gate's logs.
 new_logs guard
 mkdir -p "$logs/en/route-save-load/saves" "$scratch/saves-play" "$logs/en/saves-play/saves"
@@ -130,6 +165,25 @@ check "the logs folder itself is refused and kept" refused "$logs"
 check "a path climbing out with .. is refused" bash -c "! (logs='$logs'; source '$root/scripts/gate/route_jobs.sh'; \
     empty_saves_folder '$logs/en/../../saves-play')"
 check "  and keeps it" test -d "$scratch/saves-play"
+# Links: a saves folder that is a link, or a link to a folder on the way to it, is refused, wherever it leads.
+mkdir -p "$scratch/elsewhere/route-x/saves" "$logs/es/route-y/saves" "$logs/en/route-z"
+ln -s "$scratch/elsewhere/route-x/saves" "$logs/en/route-z/saves"
+check "a saves folder that is a link is refused" bash -c "! (logs='$logs'; source '$root/scripts/gate/route_jobs.sh'; \
+    empty_saves_folder '$logs/en/route-z/saves')"
+check "  and keeps the folder it leads to" test -d "$scratch/elsewhere/route-x/saves"
+ln -s "$scratch/elsewhere/route-x" "$logs/en/route-out"
+check "a link on the way, out of the logs, is refused" bash -c "! (logs='$logs'; \
+    source '$root/scripts/gate/route_jobs.sh'; empty_saves_folder '$logs/en/route-out/saves')"
+check "  and keeps the folder it leads to" test -d "$scratch/elsewhere/route-x/saves"
+ln -s "$logs/es/route-y" "$logs/en/route-in"
+check "a link on the way, to another route's folder in the logs, is refused" bash -c "! (logs='$logs'; \
+    source '$root/scripts/gate/route_jobs.sh'; empty_saves_folder '$logs/en/route-in/saves')"
+check "  and keeps that folder" test -d "$logs/es/route-y/saves"
+ln -s "$logs" "$scratch/logs-link"
+check "a link above the logs folder, the logs reached through it, is not a link inside them" bash -c \
+    "logs='$scratch/logs-link'; source '$root/scripts/gate/route_jobs.sh'; \
+    empty_saves_folder '$scratch/logs-link/es/route-y/saves'"
+check "  and empties the pair's folder" test ! -e "$logs/es/route-y/saves"
 logs=""
 check "no logs folder refuses everything" bash -c "! (logs=''; source '$root/scripts/gate/route_jobs.sh'; \
     empty_saves_folder '$scratch/guard/en/route-save-load/saves')"

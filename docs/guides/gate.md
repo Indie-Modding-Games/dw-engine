@@ -29,7 +29,7 @@ Al acabar escribe `summary.txt` en su carpeta de logs y sale con 0 solo si todo 
 | `--cook full\|incremental` | `daily`: cocinar desde cero (por defecto) o reutilizar la caché |
 | `--routes-extra a,b` | `short`: rutas de `tests/autotest` (sin `.yaml`) que también se corren, en `en` y `es` |
 | `--disc-tests <regex>` | `short`: los tests del disco que se corren con el disco, una expresión de ctest; si no coincide con ninguno, falla. Necesita `DWE_DISC`. Los demás tests del disco se saltan |
-| `--routes sequential\|parallel` | Las rutas una detrás de otra o en varias pantallas a la vez (por defecto `sequential`) |
+| `--routes parallel\|sequential` | Las rutas en varias pantallas a la vez (por defecto `parallel`) o una detrás de otra en una sola. Usa `sequential` para un bisect o si la máquina va muy cargada |
 | `--displays N` | Cuántas pantallas usa el modo paralelo, de 1 a 4 (por defecto 4) |
 | `--lp-threads N` | Fija `LP_NUM_THREADS` (los hilos de lavapipe) en cada ejecución |
 | `--steps check,windows,routes` | Solo algunos pasos. Cada paso que se salta deja `gate: <paso>=skipped reason=--steps ...`, y el resultado es `PASS (partial: ... skipped)`: eso no es un gate |
@@ -40,9 +40,21 @@ Al acabar escribe `summary.txt` en su carpeta de logs y sale con 0 solo si todo 
 ## Los pasos
 
 **El lock.** Antes de nada, el gate espera al lock con un `mkdir` atómico y escribe en `owner` la rama, el tip, la
-hora y su PID. Mientras crea la carpeta y escribe `owner`, retiene las señales, así que una interrupción en ese
-momento no deja un lock sin dueño. Al salir lo suelta, también si falla o lo interrumpes, y solo si `owner` sigue
+hora y su PID. También espera mientras haya junto a él otra carpeta de lock `full-*` (por ejemplo `full-otro.d`); un
+fichero que se llame así, como un log, no cuenta. Mientras crea la carpeta y escribe `owner`, retiene las señales, así
+que una interrupción en ese momento no deja un lock sin dueño. Al salir lo suelta, también si falla o lo interrumpes, y solo si `owner` sigue
 siendo suyo o no llegó a escribirse.
+
+**El espacio libre.** Antes del lock, el gate pide espacio libre en el disco del worktree según los pasos que vas a
+correr, y se para si no lo hay:
+
+| Paso | GB | Por qué (medido el 2026-10-22) |
+|---|---|---|
+| check | 12 | `build/ci` desde cero ocupa 7,3 GB, el cocinado 2,0 GB y su entrada en la caché otros 2,0 GB |
+| windows | 2 | El corto reutiliza `build/windows-cross` (4,4 GB) y el diario lo borra antes de compilar otra vez: crece poco |
+| routes | 1 | Los logs y capturas de las 42 ejecuciones del diario del 2026-10-22 ocupaban unos 80 MB |
+
+Un gate completo pide 15 GB; solo las rutas (`--steps routes`), 1 GB.
 
 **Las interrupciones.** Los pasos en Docker corren en segundo plano y el gate los espera con `wait`. Así, un
 `SIGTERM` o un `Ctrl+C` en mitad de un check de una hora para el gate al momento: bash no atiende una señal hasta que
@@ -134,7 +146,7 @@ hay uno, no lo pisa y se para: muévelo tú.
 
 ## Rutas en paralelo
 
-Con `--routes parallel`, el gate:
+Las rutas corren en paralelo por defecto, en todos los niveles. El gate:
 
 1. Busca pantallas libres entre `:72` y `:79`. Una pantalla está libre si no existe ni `/tmp/.X<n>-lock` ni
    `/tmp/.X11-unix/X<n>`.
@@ -143,8 +155,11 @@ Con `--routes parallel`, el gate:
    socket existe.
 3. Nunca usa `:71` (la del emulador de referencia) ni `:61` a `:66`. Si hay menos pantallas libres de las pedidas,
    corre con las que hay y lo dice.
-4. Cada pantalla tiene un trabajador que toma la siguiente ejecución que nadie ha tomado (un `mkdir` atómico por
-   ejecución). El orden es el de más larga a más corta, según los tiempos del gate anterior, para que las largas no
+4. Cada pantalla tiene un trabajador (`worker` en `scripts/gate/route_jobs.sh`) que toma el siguiente trabajo que
+   nadie ha tomado (un `mkdir` atómico por trabajo). Una pareja de rutas que siguen a otra (ver arriba) es una sola
+   línea de la lista, un solo trabajo: sus dos ejecuciones corren una detrás de otra en la misma pantalla, nunca
+   repartidas. `test_follow_up.sh` lo comprueba con tres trabajadores a la vez. El orden es el de más largo a más
+   corto, según los tiempos del gate anterior (el de una pareja cuenta sus dos ejecuciones), para que los largos no
    queden al final.
 5. Cada ejecución escribe su línea de resumen en un fichero propio. Al acabar se juntan en el orden fijo de la lista,
    así que `summary.txt` tiene las mismas líneas, en el mismo orden, que en secuencial. Puedes compararlos con
@@ -164,8 +179,10 @@ El gate solo para lo que arrancó, y nunca por nombre:
 `dev.sh` pone nombre a todos sus contenedores: `DWE_CONTAINER_NAME` (o `dwe-<carpeta del worktree>`), el comando, el
 PID de la shell que lo arranca y un contador. Así cualquiera que vea un contenedor sabe de quién es y qué hace.
 
-El modo paralelo pasa a ser el de por defecto cuando, sobre un mismo tip, una ejecución secuencial y una paralela
-dan resúmenes idénticos, con `--lp-threads` y sin él.
+El modo paralelo es el de por defecto desde que dos pares de ejecuciones, secuencial y paralela sobre un mismo tip,
+dieron resúmenes idénticos, sin fallos intermitentes, uno con `--lp-threads` y otro sin él (2026-10-22, 42 ejecuciones
+cada una): de 1096 s a 380 s y de 1123 s a 373 s, unas 3 veces más rápido en 4 pantallas. `--lp-threads` no cambió
+nada medible, así que queda sin fijar.
 
 ## clang-tidy incremental
 
@@ -276,7 +293,7 @@ sube. `DWE_GATE_STATE_DIR` la cambia.
    - la clave del cocinado con todas sus partes, y si fue acierto o fallo: `gate: cook=` y `gate: cook-key`.
 4. En todos los niveles son obligatorios el build de Windows con 0 warnings y las rutas.
 5. Las rutas en paralelo solo pasan a ser las de por defecto con la prueba de paridad: los resúmenes secuencial y
-   paralelo idénticos sobre un mismo tip.
+   paralelo idénticos sobre un mismo tip. Se cumplió el 2026-10-22 y son las de por defecto.
 
 ## Windows
 

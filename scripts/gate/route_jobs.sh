@@ -42,15 +42,20 @@ follow_up() {
     echo "$field_separator$log$field_separator$*"
 }
 
-# empty_saves_folder <folder>: deletes a pair's saves folder before its job runs, so a slot an earlier run left can never
-# pass the check. Only a folder named saves inside this gate's logs (logs/<lang>/<route>/saves) is deleted; anything
-# else, the player's saves among them, is refused with status 1.
+# empty_saves_folder <folder>: deletes a pair's saves folder before its job runs, so a slot an earlier run left can
+# never pass the check. Only a folder named saves inside this gate's logs (logs/<lang>/<route>/saves) is deleted, and
+# only when no link inside the logs leads to it; anything else, the player's saves among them, is refused with status 1.
 empty_saves_folder() {
-    local folder="$1" logs_root resolved
+    local folder="$1" logs_root resolved logs_as_written as_written
     [[ -n "${logs:-}" && -n "$folder" ]] || return 1
     logs_root="$(realpath -m "$logs")"
     resolved="$(realpath -m "$folder")"
     [[ "$resolved" == "$logs_root"/*/*/saves && "$resolved" != *saves-play* && ! -L "$folder" ]] || return 1
+    # The same path with its links left as they are: a link anywhere below the logs folder makes the two differ.
+    logs_as_written="$(realpath -ms "$logs")"
+    as_written="$(realpath -ms "$folder")"
+    [[ "$as_written" == "$logs_as_written"/* && "${as_written#"$logs_as_written"}" == "${resolved#"$logs_root"}" ]] ||
+        return 1
     rm -rf "$resolved"
 }
 
@@ -138,6 +143,16 @@ run_job() {
         fi
     fi
     echo "$name$field_separator$((SECONDS - start))$field_separator:$display" >"$logs/seconds/$index"
+}
+
+# worker <display>: takes the next job of logs/order.txt that nobody has claimed (mkdir in logs/claims is atomic) and
+# runs it on its display, until none is left. A job is one line with its follow-up, so a pair runs on one display.
+worker() {
+    local display="$1" index
+    while read -r index; do
+        mkdir "$logs/claims/$index" 2>/dev/null || continue
+        run_job "$index" "$display"
+    done <"$logs/order.txt"
 }
 
 # The runs a job list makes: one per job, and one more for each job with a follow-up.
