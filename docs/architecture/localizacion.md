@@ -70,7 +70,7 @@ Hay una sola búsqueda, por clave, igual en todas partes:
 | Desde | Cómo |
 |---|---|
 | C++ | `localization::tr("pause_menu.title.main")` o `catalog.text(clave, argumentos)`, con `TextArgument{.name = "percent", .value = "150"}` |
-| RML | `<span text-key="main_menu.play"></span>`: la UI pone el texto al cargar el documento y otra vez al cambiar de idioma |
+| RML | `<span text-key="main_menu.new_game"></span>`: la UI pone el texto al cargar el documento y otra vez al cambiar de idioma |
 | Lua de la UI | `t("pause_menu.ui_scale.value", {percent = 150})`; `ui.languages()` da los idiomas que hay |
 | Lua del juego (`ScriptVm`) | `t(clave[, argumentos])` y `texts.language()`, tras `bindTexts(catalog)` |
 | Minimapa | `ui.setMinimap(rejilla, claveDelNombre)`: la UI busca el nombre y lo vuelve a buscar al cambiar de idioma |

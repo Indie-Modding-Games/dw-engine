@@ -19,3 +19,8 @@ screens:
   # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
   destination_choice:
     styles: [ui/skins/modern/pause_menu/style]
+  # La lista de ranuras y el diálogo de la portada, también.
+  save_slots:
+    styles: [ui/skins/modern/pause_menu/style]
+  dialog:
+    styles: [ui/skins/modern/pause_menu/style]

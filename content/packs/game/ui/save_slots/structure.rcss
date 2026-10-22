@@ -1,0 +1,6 @@
+/* How the title screen's slot list behaves whatever the skin: the list wraps around, up from the first entry to the
+   last and down from the last to the first. The look is the pause menu's (the skins' pause_menu style). */
+
+#slot-1 { nav-up: #back; }
+#back { nav-down: #slot-1; }
+#full { margin: 0 0 12dp 18dp; }

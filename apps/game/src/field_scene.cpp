@@ -312,19 +312,20 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   return {};
 }
 
-std::string FieldScene::nameKeyOf(std::string_view mapId) const {
-  if (!mapTable_) {
-    return {};
-  }
-  const assets::MapEntry* entry = mapTable_->find(mapId);
+std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId) {
+  const assets::MapEntry* entry = table.find(mapId);
   if (auto added = assets::ContentId::parse(mapId);
       entry != nullptr && added && added->isNamespaced()) {
     return localization::addedMapNameKey(*added);
   }
-  if (entry == nullptr || mapTable_->displayName(*entry).empty()) {
+  if (entry == nullptr || table.displayName(*entry).empty()) {
     return {};
   }
   return localization::mapNameKey(entry->loadingName);
+}
+
+std::string FieldScene::nameKeyOf(std::string_view mapId) const {
+  return mapTable_ ? mapNameKeyOf(*mapTable_, mapId) : std::string{};
 }
 
 void FieldScene::tick(const game::field::FieldInput& input, float seconds) {

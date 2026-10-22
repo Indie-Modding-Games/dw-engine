@@ -1,7 +1,8 @@
-# The save smoke, first run: a new game from the main menu, a few items in the bag, a walk into the elder's house, the
-# clock moved on to one in the afternoon and stopped, and a save to slot_01 with the debug save command. The gate runs
-# it with --saves in the run's own folder, then route-save-load-check, which loads the slot from that folder and checks
-# what this run left (scripts/gate.sh, follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
+# The save smoke, first run: a new game from the main menu in slot_01 (the slot list, its question, the save as the game
+# starts), a few items in the bag, a walk into the elder's house, the clock moved on to one in the afternoon and
+# stopped, and a save to slot_01 with the debug save command. The gate runs it with --saves in the run's own folder,
+# then route-save-load-check, which loads the slot from that folder and checks what this run left (scripts/gate.sh,
+# follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
 name: save-load
 device: keyboard
 timeout: 300
@@ -10,7 +11,13 @@ steps:
   - wait: {shown: main_menu, seconds: 1}
   - resize: [1280, 720]
   - menu_select: play
-  - wait: {map: twna01, hidden: main_menu, seconds: 1}
+  - wait: {shown: save_slots, seconds: 0.5}
+  - screenshot: slots-new
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5}
+  - screenshot: confirm-new
+  - menu_select: yes
+  - wait: {map: twna01, hidden: dialog, seconds: 1}
   - script: give_item("meat 3")
   - walk_to: {trigger: 112}
   - wait: {map: room08, seconds: 0.5}

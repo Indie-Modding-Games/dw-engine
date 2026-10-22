@@ -1,6 +1,7 @@
 # The menu shown when the game starts.
 title: "Main menu"
-play: "Play"
+new_game: "New game"
+continue: "Continue"
 language: "Language"
 # The font of the text that looks like the original's (the map name): the original's bitmap font or a modern one.
 text_font: "Original-look text"

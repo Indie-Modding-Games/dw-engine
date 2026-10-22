@@ -10,7 +10,8 @@
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title" text-key="main_menu.title"></h1>
-			<button id="play" autofocus="autofocus" onclick="play()" text-key="main_menu.play"></button>
+			<button id="play" autofocus="autofocus" onclick="play()" text-key="main_menu.new_game"></button>
+			<button id="continue" onclick="continue_game()" text-key="main_menu.continue"></button>
 			<button id="language" class="option" onclick="change_language(1)">
 				<span class="label" text-key="main_menu.language"></span><span class="value" id="language-value"></span>
 			</button>

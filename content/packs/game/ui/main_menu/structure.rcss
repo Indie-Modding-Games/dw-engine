@@ -3,3 +3,5 @@
 
 #play { nav-up: #quit; }
 #quit { nav-down: #play; }
+/* Continue with no save to continue, greyed in any skin and skipped, as the original greys it with no memory card. */
+#continue.unavailable { opacity: 0.45; focus: none; tab-index: none; }

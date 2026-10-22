@@ -52,14 +52,13 @@
 #include "minimap_setting.hpp"
 #include "play_session.hpp"
 #include "text_font_setting.hpp"
+#include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
 namespace {
 
-// The title screen's command that starts a new game.
-constexpr std::string_view PlayCommand = "play";
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
 
@@ -168,7 +167,9 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
        {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
         std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"},
         std::pair{"partner_menu", "ui/partner_menu/document"},
-        std::pair{"destination_choice", "ui/destination_choice/document"}}) {
+        std::pair{"destination_choice", "ui/destination_choice/document"},
+        std::pair{"save_slots", "ui/save_slots/document"},
+        std::pair{"dialog", "ui/dialog/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};
@@ -466,6 +467,7 @@ int runGame(const Options& options) {
                                 .settingsFile = settingsFile},
                                start);
   }};
+  TitleScreen title{files, options, !autotest, **ui};
   // The game starts at the title screen, with no game; --new-game, --load, --start and an autotest
   // whose route does not ask for the main menu start playing.
   if ((autotest && !autotest->startsAtMainMenu()) || options.newGame || options.load ||
@@ -477,7 +479,7 @@ int runGame(const Options& options) {
       return EXIT_FAILURE;
     }
   } else {
-    (*ui)->show(MainMenuDocument, true);
+    title.show();
   }
 
   FrameStats frameStats;
@@ -622,16 +624,17 @@ int runGame(const Options& options) {
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
         continue;
       }
-      if (command.name == PlayCommand && flow.playing() == nullptr) {
-        core::logInfo("game: command {}", command.name);
-        sessionCommands.drop(autotest.get());
-        if (auto started = flow.play({}); !started) {
-          core::logError("game: {}", started.error().message);
-          (*ui)->show(MainMenuDocument, true);
-        } else {
-          // The load is not game time: the next frame must not run it as a burst of ticks.
-          step.reset();
-          previous = platform->nowSeconds();
+      if (flow.playing() == nullptr && title.handle(command)) {
+        if (const auto start = title.takeStart()) {
+          sessionCommands.drop(autotest.get());
+          if (auto started = flow.play(*start); !started) {
+            core::logError("game: {}", started.error().message);
+            title.startFailed(*start, flow.saveFailed());
+          } else {
+            // The load is not game time: the next frame must not run it as a burst of ticks.
+            step.reset();
+            previous = platform->nowSeconds();
+          }
         }
         continue;
       }

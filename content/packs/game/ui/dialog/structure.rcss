@@ -1,0 +1,6 @@
+/* How the title screen's dialog behaves whatever the skin: yes and no wrap around. The look is the pause menu's (the
+   skins' pause_menu style). */
+
+#yes { nav-up: #no; }
+#no { nav-down: #yes; }
+#text, #file { margin: 0 0 12dp 18dp; }

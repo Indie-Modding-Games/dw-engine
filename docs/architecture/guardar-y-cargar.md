@@ -169,7 +169,7 @@ partner choca con un NPC (`main.c: initializeLoadedMap: 3821-3857`) no se hace e
 | «Dañada» / «Hay copia» | `SlotInfo::Damaged`, `hasBackup` | Nuevo (el original no la listaba como válida) |
 | Tiempo de juego y fecha de guardado | `play_seconds`, `updated` | **Mejora** documentada, de la cabecera que ya existe |
 
-Las de autoguardado van en un grupo aparte debajo, solo al continuar (al empezar no se eligen).
+Las de autoguardado van debajo de las manuales («Autoguardado N»), solo al continuar (al empezar no se eligen).
 
 **Cabecera nueva** (pregunta 1, CONTRACT): `format_version: 3` añade a la cabecera
 
@@ -240,12 +240,13 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `main_menu.continue` | Continue | Continuar |
 | `save.slots.title_new` | Choose a slot for your new adventure | Elige una ranura para tu nueva aventura |
 | `save.slots.title_continue` | Choose an adventure to continue | Elige la aventura que quieres continuar |
-| `save.slots.slot` | Slot {0} | Ranura {0} |
+| `save.slots.slot` | Slot {number} | Ranura {number} |
 | `save.slots.empty` | Not used | Sin usar |
 | `save.slots.damaged` | Damaged save | Partida dañada |
-| `save.slots.autosaves` | Autosaves | Autoguardados |
+| `save.slots.newer` | From a newer version | De una versión más nueva |
+| `save.slots.autosave` | Autosave {number} | Autoguardado {number} |
 | `save.slots.no_save` | Play without saving | Jugar sin guardar |
-| `save.slots.no_save_warning` | You won't be able to save this game. | No podrás guardar esta partida. |
+| `save.slots.no_save_warning` | You won't be able to save this game. Start anyway? | No podrás guardar esta partida. ¿Empezar igualmente? |
 | `save.slots.full` | There are no free slots. | No hay ranuras libres. |
 | `save.confirm_new` | Start a new adventure? | ¿Empezar una nueva aventura? |
 | `save.confirm_continue` | Continue this adventure? | ¿Continuar esta aventura? |
@@ -253,8 +254,9 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.sleep_and_save` | Save and go to sleep | Guardar y dormir |
 | `save.ask_save` | Do you want to save? | ¿Quieres guardar? |
 | `save.saving` | Saving… | Guardando… |
-| `save.failed` | The game could not be saved: {0} | No se ha podido guardar la partida: {0} |
-| `save.load_failed` | The game could not be loaded: {0} | No se ha podido cargar la partida: {0} |
+| `save.failed` | The game could not be saved. | No se ha podido guardar la partida. |
+| `save.load_failed` | The game could not be loaded. | No se ha podido cargar la partida. |
+| `save.start_failed` | The game could not start. | No se ha podido empezar la partida. |
 | `save.damaged_use_backup` | This save is damaged. Load the previous copy? | Esta partida está dañada. ¿Cargar la copia anterior? |
 | `save.damaged_no_backup` | This save is damaged and has no copy. | Esta partida está dañada y no tiene copia. |
 | `save.too_new` | This save is from a newer version of the game. | Esta partida es de una versión más nueva del juego. |
@@ -263,8 +265,8 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `pause_menu.to_title_confirm` | Anything you haven't saved will be lost. Back to the title? | Se perderá lo que no hayas guardado. ¿Volver a la portada? |
 | `common.yes`, `common.no` | Yes, No | Sí, No |
 
-El detalle técnico del error (`{0}`) va en inglés al log; la interfaz enseña el texto traducido y, si hace falta, el
-nombre del fichero.
+El detalle técnico del error va en inglés al log; la interfaz enseña el texto traducido y, debajo, el nombre del
+fichero (`dialog.file`).
 
 ## 4. Errores
 
@@ -304,14 +306,14 @@ nombre del fichero.
 **La ruta de un solo proceso** sustituye al par `route-save-load` / `route-save-load-check` y deja el comando
 `save("slot_NN")` solo para depurar. `route-save-load.yaml` (`main_menu: true`, carpeta de partidas vacía):
 
-1. Portada → `new-game` → ranura 1 → sí. Esperar el mapa inicial.
+1. Portada → `play` → `slot-1` → `yes`. Esperar el mapa inicial.
 2. Lo de hoy: `give_item("meat 3")`, ir a `room08`, ir al punto `[-95, -900]`.
 3. `clock_speed` hasta que el partner tenga sueño (`pause_menu.sleep_enabled` = sí), `clock_speed("0")`.
 4. Pausa → `sleep` → `sleep-and-save`. Esperar `save.last_result` = `saved`; recordar la hora (`remember`).
 5. Pausa → `to-title` → sí. Esperar la portada.
-6. `continue` → ranura 1 → sí. Esperar `room08` cerca de `[-95, -900]`.
+6. `continue` → `slot-1` → `yes`. Esperar `room08` cerca de `[-95, -900]`.
 7. `expect_setting`: especie y edad del partner, día y la hora de después de dormir, dinero y la carne del inventario;
-   `save.slot.1.state` = `saved`, `save.slot.1.species` la del partner. Capturas en cada pantalla nueva.
+   `save.slot.0.state` = `saved`, `save.slot.0.species` la del partner. Capturas en cada pantalla nueva.
 
 Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/autotest.cpp`) conoce `save_slots`,
 `dialog` y `sleep_menu`; nada más, porque todo lo demás se comprueba con ajustes publicados. En el gate,
@@ -347,6 +349,14 @@ parte (b) esté en `main`.
 
 Si el tramo 3 o el 4 pasa de 800 al hacerlo, se parte en el sitio marcado: el 3 en «sacar `PlaySession`» y «`AppFlow`»;
 el 4 en «nueva partida» y «continuar».
+
+**Notas para el tramo 5** (de la revisión del 4):
+
+- Antes de «Guardar y dormir», comprobar el estado de la ranura de la partida (`SaveSlots::list`): si ya no está como
+  la dejó la partida (borrada fuera del juego, dañada o de un juego más nuevo), avisar en vez de escribir encima.
+- Al volver a la portada, `TitleScreen::show()` (no `ui.show` del menú a secas), para que «Continuar» y la lista se
+  vuelvan a leer.
+- Partir el tramo al diseñarlo para que cada gate quede en unas 800 líneas: el 4 llegó a 960 y fue la última excepción.
 
 ## 8. Preguntas (decididas)
 

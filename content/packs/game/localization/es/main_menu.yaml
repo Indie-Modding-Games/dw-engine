@@ -1,6 +1,7 @@
 # El menú que se muestra al arrancar el juego.
 title: "Menú principal"
-play: "Jugar"
+new_game: "Nueva partida"
+continue: "Continuar"
 language: "Idioma"
 # La fuente del texto con el aspecto del original (el nombre del mapa): la de mapa de bits del original o una moderna.
 text_font: "Texto con aspecto original"

@@ -62,9 +62,9 @@ constexpr int PartialExitCode = 2;
 constexpr int StableFrames = 5;
 
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
-// menu and free exploration's chooser.
-constexpr std::array<std::string_view, 3> ScreenDocuments{"partner_menu", "battle",
-                                                          "destination_choice"};
+// menu, free exploration's chooser and the title screen's slot list and dialog.
+constexpr std::array<std::string_view, 5> ScreenDocuments{
+    "partner_menu", "battle", "destination_choice", "dialog", "save_slots"};
 
 // The menu menu_select picks from: the main menu while it is open, then the pause menu, then the
 // battle screen or the partner's menu; the pause menu when none is open, so the step says so.

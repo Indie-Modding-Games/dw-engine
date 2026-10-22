@@ -1159,7 +1159,7 @@ TEST_CASE("the main menu changes the language with the keyboard and starts the g
   ui->show("main_menu", true);
   frame(*ui, input);
   CHECK(ui->focusedElementId("main_menu") == "play");
-  CHECK(ui->elementText("main_menu", "play") == "Jugar");
+  CHECK(ui->elementText("main_menu", "play") == "Nueva partida");
   CHECK(ui->elementText("main_menu", "language-value") == "Español");
 
   press(*ui, input, input::keys::Down);

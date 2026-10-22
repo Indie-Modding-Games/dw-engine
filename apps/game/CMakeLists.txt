@@ -32,6 +32,7 @@ dwe_add_app(game
         src/session_start.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
+        src/title_screen.cpp
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp

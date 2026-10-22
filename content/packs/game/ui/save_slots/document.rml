@@ -1,0 +1,32 @@
+<rml>
+<head>
+	<title>Save slots</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title"></h1>
+			<p id="full" text-key="save.slots.full"></p>
+			<button id="slot-1" class="slot" onclick="choose(1)"></button>
+			<button id="slot-2" class="slot" onclick="choose(2)"></button>
+			<button id="slot-3" class="slot" onclick="choose(3)"></button>
+			<button id="slot-4" class="slot" onclick="choose(4)"></button>
+			<button id="slot-5" class="slot" onclick="choose(5)"></button>
+			<button id="slot-6" class="slot" onclick="choose(6)"></button>
+			<p id="page"></p>
+			<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="exploration.previous"></button>
+			<button id="next" class="page-turn" onclick="turn(document, 1)" text-key="exploration.next"></button>
+			<button id="no-save" onclick="play_without_saving()" text-key="save.slots.no_save"></button>
+			<button id="back" class="back" onclick="back()" text-key="common.back"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

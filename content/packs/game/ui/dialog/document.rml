@@ -1,0 +1,23 @@
+<rml>
+<head>
+	<title>Dialog</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<p id="text"></p>
+			<p id="file"></p>
+			<button id="yes" onclick="answer(true)" text-key="common.yes"></button>
+			<button id="no" onclick="answer(false)" text-key="common.no"></button>
+			<button id="ok" onclick="answer(false)" text-key="common.accept"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

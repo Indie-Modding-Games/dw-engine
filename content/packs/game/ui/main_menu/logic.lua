@@ -1,7 +1,8 @@
--- The title screen's menu, with no game behind it: play (a new game), the language, the text
--- font, the skin, quit. Like the pause menu it never changes a setting itself: it sends the
--- language, text_font and ui_skin commands and shows what the game reports back (ui.setting). The
--- skin entry is common/ui_skin_choice.lua, shared with the pause menu.
+-- The title screen's menu, with no game behind it: play (a new game), continue (greyed unless
+-- the game publishes save.can_continue), the language, the text font, the skin, quit. Like the
+-- pause menu it never changes a setting itself: it sends the language, text_font and ui_skin
+-- commands and shows what the game reports back (ui.setting). The skin entry is
+-- common/ui_skin_choice.lua, shared with the pause menu.
 
 -- The language after the current one in the list the packs offer, step entries away, wrapping
 -- around.
@@ -23,6 +24,7 @@ local function other_text_font()
 end
 
 local function refresh(document)
+  document:get("continue"):set_class("unavailable", ui.setting("save.can_continue") ~= true)
   document:get("language-value"):set_text(t("language.name"))
   local font = ui.setting("text_font") == "original" and "original" or "modern"
   document:get("text-font-value"):set_text(t("main_menu.text_font." .. font))
@@ -36,6 +38,13 @@ end
 function play()
   ui.hide(document_name)
   ui.send("play")
+end
+
+function continue_game()
+  if ui.setting("save.can_continue") == true then
+    ui.hide(document_name)
+    ui.send("continue")
+  end
 end
 
 function change_language(step)

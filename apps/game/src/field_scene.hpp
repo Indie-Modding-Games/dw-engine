@@ -61,6 +61,11 @@ struct MapChangeTiming {
 // The app feeds it intents once per logic tick and draws its drawers in this order: background,
 // models (opaque), map depth layers, models (translucent). It knows nothing of input devices or of
 // the UI: the app reads its state for those.
+// The key of a map's name among the texts (localization::mapNameKey of the map table, or
+// addedMapNameKey for a map a pack adds), empty when the map has no name. The one place the app
+// looks a map's name up.
+[[nodiscard]] std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId);
+
 class FieldScene {
 public:
   // Loads the field rules, the characters (models/tamer and models/partner) and the start map from
@@ -120,9 +125,7 @@ public:
   [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
   // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
   [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }
-  // The key of a map's name among the texts (localization::mapNameKey of the map table, or
-  // addedMapNameKey for a map a pack adds), empty when the map has no name. The one place the app
-  // looks a map's name up.
+  // The key of a map's name among the texts (mapNameKeyOf with the scene's map table).
   [[nodiscard]] std::string nameKeyOf(std::string_view mapId) const;
   // Grows by one on every map entered, so the app notices a change (minimap, autotests).
   [[nodiscard]] std::uint32_t mapSerial() const { return mapSerial_; }
