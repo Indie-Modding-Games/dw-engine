@@ -93,6 +93,12 @@ for lang in en es; do
 done
 ```
 
+- `route-field-hud.yaml`: el estado del campo del HUD ([contrato](../architecture/ui.md#estado-del-campo)): la hora y
+  el día de una partida nueva, el reloj que avanza, los rangos de felicidad y disciplina del ruleset, el hambre que
+  aparece con el reloj acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a
+  800x600, 1280x720 y 2560x1080 y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
+  `route-language.yaml`. Con ella, el paso de rutas es de 17 rutas: 34 ejecuciones sobre el contenido extraído, más
+  las 4 del `.pak` cocinado, 38 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que

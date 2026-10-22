@@ -96,3 +96,121 @@ body {
 #map-title.shown {
 	display: block;
 }
+
+/* The field status (the hud.* settings, docs/architecture/ui.md#estado-del-campo): the game time and the partner's
+   state, at the bottom left, in from the edges as far as the other panels. Next to the original's field, which shows
+   only a dial clock and the happiness and discipline bars, this skin adds the day, the bars' numbers, the needs and
+   HP and MP, and fills the bars continuously (no "pips" class); the whole panel is this skin's look. */
+#field-status {
+	position: absolute;
+	left: 20dp;
+	bottom: 20dp;
+	width: 300dp;
+	padding: 10dp 12dp;
+	border-radius: 12dp;
+	background-color: #0d121ab8;
+	border: 1dp #2e3a4a;
+	color: #c9d3de;
+	font-size: 15dp;
+}
+
+/* While a menu or a battle stops the field the panel is gone at once, as the minimap is when hidden. */
+#field-status {
+	display: none;
+}
+
+#field-status.shown {
+	display: block;
+}
+
+/* This skin tells the time in figures: the original's dial is for the original-look skin. */
+#field-clock-dial {
+	display: none;
+}
+
+#field-clock {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6dp;
+}
+
+#field-time {
+	font-size: 24dp;
+	font-weight: bold;
+	color: #f2f5f8;
+}
+
+#field-date {
+	font-size: 14dp;
+}
+
+.field-meter, .field-pool {
+	display: flex;
+	align-items: center;
+	margin: 3dp 0;
+}
+
+#field-status .label {
+	width: 92dp;
+}
+
+/* Happiness and discipline fill in two tones, as the original's bars: the first colour to the middle of the range,
+   the second over it from the middle on. HP and MP fill with what is left over the maximum. */
+#field-status .bar {
+	position: relative;
+	flex: 1;
+	height: 8dp;
+	margin: 0 8dp;
+	background-color: #2a323d;
+	border-radius: 3dp;
+}
+
+#field-status .fill {
+	height: 100%;
+	width: 0%;
+	border-radius: 3dp;
+}
+
+.field-meter .fill { background-color: #6fc3ff; }
+
+.field-meter .fill.high {
+	position: absolute;
+	left: 0;
+	top: 0;
+	background-color: #ffd34f;
+}
+
+#field-pool-0-fill { background-color: #6fd38a; }
+#field-pool-1-fill { background-color: #b58cff; }
+
+#field-status .value {
+	width: 40dp;
+	text-align: right;
+}
+
+#field-status .field-pool .value {
+	width: 92dp;
+}
+
+/* The needs: always in place, dim while the partner does not have them; one it has stands out with a light box and
+   dark text, so it reads without telling colours apart. */
+#field-needs {
+	display: flex;
+	justify-content: space-between;
+	margin: 6dp 0 4dp 0;
+}
+
+.need {
+	padding: 2dp 8dp;
+	border-radius: 6dp;
+	border: 1dp #2e3a4a;
+	color: #6b7785;
+}
+
+.need.active {
+	background-color: #f0a73a;
+	border-color: #f0a73a;
+	color: #12161c;
+	font-weight: bold;
+}

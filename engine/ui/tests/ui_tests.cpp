@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "bitmap_font_fixture.hpp"
@@ -666,6 +667,64 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
     input.handle(platform::GamepadConnected{.id = Pad, .family = platform::GamepadFamily::Xbox, .name = "pad"});
     press(*ui, input, GamepadButton::South);
     CHECK(ui->elementText("hud", "prompt-menu") != "Tab");
+}
+
+namespace {
+
+// One field bar of the hud.* contract (docs/architecture/ui.md#estado-del-campo).
+void setFieldMeter(Ui& ui, int index, double value, double minimum, double maximum) {
+    const std::string base = "hud.meter." + std::to_string(index) + ".";
+    ui.setSetting(base + "value", value);
+    ui.setSetting(base + "min", minimum);
+    ui.setSetting(base + "max", maximum);
+    ui.setSetting(base + "two_tone", true);
+}
+
+void bumpFieldRevision(Ui& ui) {
+    const UiValue current = ui.setting("hud.revision");
+    const double* count = std::get_if<double>(&current);
+    ui.setSetting("hud.revision", (count == nullptr ? 0.0 : *count) + 1.0);
+    ui.update();
+}
+
+} // namespace
+
+TEST_CASE("the HUD draws the field status on each revision, with the bars' low half marked as the original's icons") {
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->update();
+    CHECK_FALSE(ui->elementHasClass("hud", "field-status", "shown"));
+
+    ui->setSetting("hud.shown", true);
+    ui->setSetting("hud.clock.hour", 7.0);
+    ui->setSetting("hud.clock.minute", 5.0);
+    // Happiness from -100 to 100 and discipline from 0 to 100: the middle is 0 and 50 (partner_impl.c:
+    // renderStatusBars swaps the happiness face below 0 and the discipline icon below 50).
+    setFieldMeter(*ui, 0, -1.0, -100.0, 100.0);
+    setFieldMeter(*ui, 1, 50.0, 0.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->elementHasClass("hud", "field-status", "shown"));
+    CHECK(ui->elementText("hud", "field-time") == "07:05");
+    CHECK(ui->elementHasClass("hud", "field-meter-0", "low"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-1", "low"));
+    // Two tones: discipline 50 fills the first colour and none of the second.
+    CHECK(ui->styleProperty("hud", "field-meter-1-fill", "width") == "100%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "0%");
+
+    setFieldMeter(*ui, 0, 0.0, -100.0, 100.0);
+    setFieldMeter(*ui, 1, 49.0, 0.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0", "low"));
+    CHECK(ui->elementHasClass("hud", "field-meter-1", "low"));
+
+    // Only the revision redraws: a value alone changes nothing until the game bumps it.
+    ui->setSetting("hud.shown", false);
+    ui->update();
+    CHECK(ui->elementHasClass("hud", "field-status", "shown"));
+    bumpFieldRevision(*ui);
+    CHECK_FALSE(ui->elementHasClass("hud", "field-status", "shown"));
 }
 
 TEST_CASE("the HUD shows the minimap of the current map and its markers") {

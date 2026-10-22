@@ -4,6 +4,14 @@
 -- (screen_fade, 0 to 1): the panels fade out with it, as the original's fade covers its HUD. The name of the map it
 -- goes to shows in front of the fade, in the player's language: the game reports its text key (map_title_key, empty
 -- when none).
+--
+-- The field status shows the game time and the partner's state, which the game publishes as hud.* settings
+-- (apps/screens: field_hud_view.hpp): it bumps hud.revision once per change, and only then this script redraws, so a
+-- frame where nothing changed writes nothing. The labels come once, as text keys. hud.shown is false while a menu or a
+-- battle stops the field: the panel loses its class "shown" and each skin decides how it leaves. Every skin draws
+-- this same document and script and differs only in its style sheets: a bar with the class "pips" fills in the
+-- original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin
+-- that draws the original's clock.
 
 local sizes = { small = true, medium = true, large = true }
 
@@ -23,7 +31,7 @@ local function refresh_prompts(document)
 	document:get("prompt-menu"):set_text(ui.prompt("menu"))
 end
 
-local panels = { "minimap", "menu-button" }
+local panels = { "minimap", "menu-button", "field-status" }
 
 local function refresh_fade(document)
 	local level = ui.setting("screen_fade")
@@ -44,22 +52,163 @@ local function refresh_title(document)
 	element:set_class("shown", shown)
 end
 
+local field_meters = 2
+local field_needs = 3
+local field_pools = 2
+
+local function field_number(name)
+	local value = ui.setting(name)
+	if type(value) ~= "number" then
+		return 0
+	end
+	return math.floor(value)
+end
+
+local function field_label(name)
+	local key = ui.setting(name)
+	if type(key) ~= "string" or key == "" then
+		return ""
+	end
+	return t(key)
+end
+
+local function percent(value, minimum, maximum)
+	if maximum <= minimum then
+		return 0
+	end
+	return math.max(0, math.min(100, (value - minimum) * 100 / (maximum - minimum)))
+end
+
+-- The original's field bars are 25 squares of 2 pixels (partner_impl.c: renderStatusBars), so a bar with the class
+-- "pips" fills in whole squares.
+local pips_per_bar = 25
+
+-- The original's dial (clock.c: renderGameClock): the minute hand turns once an hour, 6 degrees a minute; the hour
+-- dot goes once a day round a 24-hour ring, 15 degrees an hour, hour 0 at the top; the moon replaces the sun before
+-- 6:00 and from 17:00.
+local minute_hand_degrees = 6
+local hour_dot_degrees = 15
+local hour_dot_radius_percent = 50
+local night_ends_hour = 6
+local night_starts_hour = 17
+
+local function two_digits(value)
+	return string.format("%02d", value)
+end
+
+local function draw_field_labels(document)
+	for index = 0, field_meters - 1 do
+		document:get("field-meter-" .. index .. "-label"):set_text(field_label("hud.meter." .. index .. ".label"))
+	end
+	for index = 0, field_needs - 1 do
+		document:get("field-need-" .. index):set_text(field_label("hud.need." .. index .. ".label"))
+	end
+	for index = 0, field_pools - 1 do
+		document:get("field-pool-" .. index .. "-label"):set_text(field_label("hud.pool." .. index .. ".label"))
+	end
+end
+
+local function draw_field_dial(document, hour, minute)
+	document:get("field-clock"):set_class("night", hour < night_ends_hour or hour >= night_starts_hour)
+	document:get("field-clock-minute-hand"):set_property("transform",
+		string.format("rotate(%ddeg)", minute * minute_hand_degrees))
+	local angle = math.rad(hour * hour_dot_degrees)
+	local dot = document:get("field-clock-hour-dot")
+	dot:set_property("left", string.format("%.2f%%", 50 + hour_dot_radius_percent * math.sin(angle)))
+	dot:set_property("top", string.format("%.2f%%", 50 - hour_dot_radius_percent * math.cos(angle)))
+end
+
+local function draw_field_clock(document)
+	local hour, minute = field_number("hud.clock.hour"), field_number("hud.clock.minute")
+	draw_field_dial(document, hour, minute)
+	document:get("field-time"):set_text(t("hud.clock.time", {
+		hour = two_digits(hour),
+		minute = two_digits(minute),
+	}))
+	document:get("field-date"):set_text(t("hud.clock.date", {
+		day = field_number("hud.clock.day"),
+		year = field_number("hud.clock.year"),
+	}))
+end
+
+-- A two-tone bar fills from the minimum to the middle of its range, then again in its second colour from the middle
+-- to the maximum, as the original's field bars (partner_impl.c: renderStatusBars).
+-- Whether a bar's value is below the middle of its range. The original swaps the bar's icon there: the happiness face
+-- turns sad below 0 and the discipline icon changes below 50 (partner_impl.c: renderStatusBars), so a skin draws its
+-- icons on the class "low" of the bar's row.
+local function in_low_half(value, minimum, maximum)
+	return value < (minimum + maximum) / 2
+end
+
+-- A bar's fill in percent; in whole pips when the bar has the class "pips", rounding down as the original does.
+local function bar_fill(bar, value, minimum, maximum)
+	local fill = percent(value, minimum, maximum)
+	if bar:has_class("pips") then
+		local step = 100 / pips_per_bar
+		fill = math.floor(fill / step + 1e-9) * step
+	end
+	return fill
+end
+
+local function draw_field_meter(document, index)
+	local base = "hud.meter." .. index .. "."
+	local prefix = "field-meter-" .. index
+	local bar = document:get(prefix .. "-bar")
+	local value, low, top = field_number(base .. "value"), field_number(base .. "min"), field_number(base .. "max")
+	local fill, high = bar_fill(bar, value, low, top), 0
+	if ui.setting(base .. "two_tone") == true then
+		local middle = (low + top) / 2
+		fill = bar_fill(bar, value, low, middle)
+		high = bar_fill(bar, value, middle, top)
+	end
+	document:get(prefix .. "-fill"):set_property("width", fill .. "%")
+	document:get(prefix .. "-high"):set_property("width", high .. "%")
+	document:get(prefix):set_class("low", in_low_half(value, low, top))
+	document:get(prefix .. "-value"):set_text(tostring(value))
+end
+
+local function draw_field_pool(document, index)
+	local base = "hud.pool." .. index .. "."
+	local current, maximum = field_number(base .. "value"), field_number(base .. "max")
+	local bar = document:get("field-pool-" .. index .. "-bar")
+	document:get("field-pool-" .. index .. "-fill"):set_property("width", bar_fill(bar, current, 0, maximum) .. "%")
+	document:get("field-pool-" .. index .. "-value"):set_text(current .. " / " .. maximum)
+end
+
+local function draw_field(document)
+	document:get("field-status"):set_class("shown", ui.setting("hud.shown") == true)
+	draw_field_clock(document)
+	for index = 0, field_meters - 1 do
+		draw_field_meter(document, index)
+	end
+	for index = 0, field_needs - 1 do
+		document:get("field-need-" .. index):set_class("active", ui.setting("hud.need." .. index .. ".active") == true)
+	end
+	for index = 0, field_pools - 1 do
+		draw_field_pool(document, index)
+	end
+end
+
 function on_show(document)
 	refresh(document)
 	refresh_fade(document)
 	refresh_title(document)
 	refresh_prompts(document)
+	draw_field_labels(document)
+	draw_field(document)
 end
 
 function on_device(document)
 	refresh_prompts(document)
 end
 
--- The language changed: the elements with a text-key are already in the new one; the prompts and the map's name are
--- written here.
+-- The language changed: the elements with a text-key are already in the new one; the prompts, the map's name and the
+-- field status's texts are written here.
 function on_language(document)
 	refresh_title(document)
 	refresh_prompts(document)
+	draw_field_labels(document)
+	draw_field_clock(document)
 end
 
 function on_setting(document, name)
@@ -67,6 +216,12 @@ function on_setting(document, name)
 		refresh_fade(document)
 	elseif name == "map_title_key" then
 		refresh_title(document)
+	elseif name == "hud.revision" then
+		draw_field(document)
+	elseif string.find(name, "^hud%.") then
+		if string.find(name, "%.label$") then
+			draw_field_labels(document)
+		end
 	else
 		refresh(document)
 	end

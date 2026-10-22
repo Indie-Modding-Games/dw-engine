@@ -1,0 +1,49 @@
+# The field HUD's status (docs/architecture/ui.md#estado-del-campo): the new game's clock and day, the clock running,
+# the happiness and discipline ranges of the ruleset, a need showing as it comes, the panel leaving while the pause
+# menu stops the field and coming back after, and captures at several window sizes and UI scales. Run it in both
+# languages, each with its own capture folder (docs/guides/prueba-vertical.md).
+name: field-hud
+device: keyboard
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {hud.shown: true}
+  # A new game starts at 8:00 on day 0 of year 0 (the ruleset's clock section), shown as day 1 of year 1.
+  - expect_setting: {hud.clock.hour: 8}
+  - expect_setting: {hud.clock.day: 1}
+  - expect_setting: {hud.clock.year: 1}
+  - remember: hud.clock.minute
+  - expect_change: {hud.clock.minute: up, timeout: 5}
+  - expect_setting: {hud.meter.0.min: -100}
+  - expect_setting: {hud.meter.0.max: 100}
+  - expect_setting: {hud.meter.1.min: 0}
+  - expect_setting: {hud.meter.1.max: 100}
+  - expect_setting: {hud.need.0.active: false}
+  - screenshot: field-status
+  # Two game hours a real second until the partner is hungry; the HUD shows the need on the same change.
+  - script: clock_speed("120")
+  - wait: {partner_has: partner_menu.condition.hungry, timeout: 60}
+  - script: clock_speed("1")
+  - expect_setting: {hud.need.0.active: true}
+  - screenshot: hungry
+  # The pause menu stops the field: the panel goes, and comes back when it closes.
+  - menu: open
+  - expect_setting: {hud.shown: false}
+  - screenshot: menu-open
+  - menu: close
+  - expect_setting: {hud.shown: true}
+  - resize: [800, 600]
+  - screenshot: small
+  - resize: [2560, 1080]
+  - screenshot: wide
+  - resize: [1280, 720]
+  # A larger UI scale from the options, which scales the panel with the rest of the HUD.
+  - menu: open
+  - menu_select: open-options
+  - remember: ui_scale
+  - menu_select: ui-scale
+  - expect_change: {ui_scale: up}
+  - menu: close
+  - expect_setting: {hud.shown: true}
+  - screenshot: scaled

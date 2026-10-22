@@ -1140,6 +1140,12 @@ std::string Ui::elementText(std::string_view document, std::string_view elementI
     return element != nullptr ? element->GetInnerRML() : std::string{};
 }
 
+bool Ui::elementHasClass(std::string_view document, std::string_view elementId, std::string_view className) const {
+    const Impl::Document* found = impl_->find(document);
+    Rml::Element* element = found != nullptr ? found->element->GetElementById(std::string{elementId}) : nullptr;
+    return element != nullptr && element->IsClassSet(std::string{className});
+}
+
 } // namespace dwe::ui
 
 namespace dwe::ui {

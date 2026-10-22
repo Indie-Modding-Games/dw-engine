@@ -195,6 +195,10 @@ public:
     // The text inside an element of a document, for tests.
     [[nodiscard]] std::string elementText(std::string_view document, std::string_view elementId) const;
 
+    // Whether an element of a document has a class, as its scripts set it, for tests.
+    [[nodiscard]] bool elementHasClass(std::string_view document, std::string_view elementId,
+                                       std::string_view className) const;
+
     // The centre of an element of a document in pixels, as laid out by the last update(), for tests and scripted runs
     // that click on it; nullopt if there is no such element. It leaves out RCSS transforms, which also move where
     // the pointer hits an element: menus that tests click should not move their buttons with transforms.
