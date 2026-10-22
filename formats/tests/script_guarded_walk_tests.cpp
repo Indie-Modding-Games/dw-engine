@@ -766,3 +766,75 @@ TEST_CASE("a map change behind a recursion the walk cut reaches field/script_war
     REQUIRE(yaml.has_value());
     CHECK(*yaml == dwe::test_support::RecursionWarpYaml);
 }
+
+TEST_CASE("a call of the transport routine gives a map change per table entry, and an NPC's section is talk") {
+    using dwe::formats::script::WarpVia;
+    constexpr std::uint16_t House = 5;
+    constexpr std::uint16_t MapScript = 1;
+    constexpr std::uint16_t ConfirmSection = 81;
+    constexpr std::uint16_t NpcSection = 3;
+    constexpr std::uint16_t Town = 7;
+    ScriptBuilder mapHead{{{House, CodeStart}}};
+    setScript(mapHead, MapScript, House); // 8
+    endSection(mapHead);                  // 14
+    ScriptBuilder mapScript{{{ConfirmSection, 12}, {NpcSection, 16}}};
+    callRoutine(mapScript, dwe::formats::script::TransportRoutine); // 12
+    endSection(mapScript);                                          // 14
+    warpTo(mapScript, Town, 2);                                     // 16
+    endSection(mapScript);                                          // 20
+    const std::map<std::uint16_t, Prepared> scripts{{dwe::formats::script::MapHeadScript, prepare(mapHead)},
+                                                    {MapScript, prepare(mapScript)}};
+    const dwe::formats::script::ScriptWarpSources sources{
+        .talks = [](std::uint16_t map, std::uint16_t section) { return map == House && section == NpcSection; },
+        .transport = {{.map = 8, .exit = 9, .trigger = 300, .cost = 1000},
+                      {.map = Town, .exit = 0, .trigger = 301, .cost = 1500}}};
+    const auto found = dwe::formats::script::findScriptWarps(lookupOf(scripts), sources);
+    // By section: the NPC's first, then the transport's picks in table order.
+    REQUIRE(found.warps.size() == 3);
+    CHECK(found.warps[0].via == WarpVia::Talk);
+    CHECK(found.warps[0].section == NpcSection);
+    CHECK_FALSE(found.warps[0].transport.has_value());
+    for (std::size_t entry = 0; entry < 2; ++entry) {
+        const auto& warp = found.warps[entry + 1];
+        CHECK(warp.via == WarpVia::Confirm);
+        CHECK(warp.section == ConfirmSection);
+        REQUIRE(warp.transport.has_value());
+        CHECK(warp.transport.value_or(dwe::formats::script::TransportPick{}).entry == entry);
+        const auto& destination = sources.transport.at(entry);
+        CHECK(warp.change.screen == destination.map);
+        CHECK(warp.change.exit == destination.exit);
+        const auto& terms = warp.change.path.guard.terms;
+        REQUIRE(terms.size() == 3);
+        const BranchTerm& trigger = branchOf(terms[0]);
+        REQUIRE(trigger.tests.size() == 1);
+        CHECK(trigger.tests[0].test == dwe::formats::script::ConditionTest::Trigger);
+        CHECK(trigger.holds);
+        const BranchTerm& money = branchOf(terms[1]);
+        REQUIRE(money.tests.size() == 1);
+        CHECK(money.tests[0].test == dwe::formats::script::ConditionTest::Money);
+        REQUIRE(std::holds_alternative<ChoiceTerm>(terms[2].decision));
+        CHECK(std::get<ChoiceTerm>(terms[2].decision) ==
+              ChoiceTerm{.place = trigger.place, .arm = entry, .selection = true});
+    }
+    CHECK(found.warps[1].transport.value_or(dwe::formats::script::TransportPick{}).cost == 1000);
+    CHECK(found.warps[2].transport.value_or(dwe::formats::script::TransportPick{}).cost == 1500);
+
+    const dwe::formats::script::MapName mapName = [](std::uint16_t map) -> std::optional<std::string> {
+        switch (map) {
+        case House:
+            return std::string{dwe::test_support::TransportWarpHouse};
+        case Town:
+            return std::string{dwe::test_support::TransportWarpTown};
+        case 8:
+            return std::string{dwe::test_support::TransportWarpFarm};
+        default:
+            return std::nullopt;
+        }
+    };
+    const auto document = dwe::formats::script::scriptWarpsToYaml(found, lookupOf(scripts), mapName);
+    const auto problems = dwe::formats::test::checkAgainstSchema(document, "script_warps");
+    CHECK_MESSAGE(problems.empty(), (problems.empty() ? std::string{} : problems.front()));
+    const auto yaml = dwe::core::emitYaml(document);
+    REQUIRE(yaml.has_value());
+    CHECK(*yaml == dwe::test_support::TransportWarpYaml);
+}

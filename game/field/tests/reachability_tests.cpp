@@ -50,6 +50,11 @@ constexpr std::size_t ExpectedOpenWithWayBack = 233;
 // recursion the extraction cut, and on the maps a new game reaches none is taken only by the policy nor hidden by an
 // unstructured path. A change here changes what a new game can reach: report it before changing the number.
 constexpr std::size_t ExpectedWarpsWithRecursion = 0;
+// What runs the script warps of extractor version 5 (docs/architecture/warps-de-script.md): every section that is
+// not a cell's or an entry's is an NPC's, and the transport routine's 6 calls give one pick per table entry each.
+constexpr std::size_t ExpectedTalkWarps = 100;
+constexpr std::size_t ExpectedOtherWarps = 0;
+constexpr std::size_t ExpectedTransportPicks = 36;
 constexpr std::size_t ExpectedAllowedInNewGame = 0;
 constexpr std::size_t ExpectedUnstructuredInNewGame = 0;
 // The warps of the maps a new game reaches that the vanilla policy takes only because game code on their path
@@ -170,6 +175,14 @@ TEST_CASE("the user's disc, extracted: a new game reaches its maps and back, and
                     "the content has no field/script_warps or data/new_game_story: extract it again with this dwx");
     const dwe::game::field::TriggerState newGame =
         dwe::game::field::newGameTriggers(**story, warps->startMap, warps->startExit);
+    const auto countVia = [&scriptWarps](dwe::game::field::WarpVia via) {
+        return static_cast<std::size_t>(std::ranges::count(*scriptWarps, via, &dwe::game::field::ScriptWarp::via));
+    };
+    CHECK(countVia(dwe::game::field::WarpVia::Talk) == ExpectedTalkWarps);
+    CHECK(countVia(dwe::game::field::WarpVia::Other) == ExpectedOtherWarps);
+    CHECK(static_cast<std::size_t>(std::ranges::count_if(*scriptWarps, [](const dwe::game::field::ScriptWarp& warp) {
+              return warp.transport.has_value();
+          })) == ExpectedTransportPicks);
 
     // The cells of each map with data, and the edges of its warp table that a cell fires.
     std::map<std::string, std::set<std::int32_t>> cells;

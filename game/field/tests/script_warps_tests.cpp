@@ -1,5 +1,6 @@
 #include <dwe/assets/new_game_story.hpp>
 #include <dwe/game/field/script_warps.hpp>
+#include <dwe/test_support/script_warp_fixtures.hpp>
 
 #include <doctest/doctest.h>
 
@@ -599,4 +600,27 @@ TEST_CASE("free exploration gives each place of a cell once, whatever the guards
                                                              [](std::string_view map) { return map != "cave"; });
     CHECK(withData.size() == 2);
     CHECK(dwe::game::field::explorationWarps(warps, "home", WarpVia::Confirm, 51, {}).empty());
+}
+
+TEST_CASE("the field reads a talk warp and the transport menu's picks with their records") {
+    const auto warps = parseScriptWarps(dwe::test_support::TransportWarpYaml);
+    REQUIRE_MESSAGE(warps.has_value(), (warps ? std::string{} : warps.error().message));
+    REQUIRE(warps->size() == 3);
+    const ScriptWarp& talk = warps->at(0);
+    CHECK(talk.via == dwe::game::field::WarpVia::Talk);
+    CHECK(talk.targetMap == std::optional<std::string>{dwe::test_support::TransportWarpTown});
+    CHECK_FALSE(talk.transport.has_value());
+    for (std::size_t entry = 0; entry < 2; ++entry) {
+        const ScriptWarp& pick = warps->at(entry + 1);
+        CHECK(pick.via == dwe::game::field::WarpVia::Confirm);
+        REQUIRE(pick.transport.has_value());
+        const auto record = pick.transport.value_or(dwe::game::field::TransportPick{});
+        CHECK(record.entry == static_cast<std::int32_t>(entry));
+        CHECK(record.handOff == 0x4E3);
+        REQUIRE(pick.guard.terms.size() == 3);
+        CHECK(std::holds_alternative<GuardChoice>(pick.guard.terms[2]));
+    }
+    CHECK(warps->at(1).transport.value_or(dwe::game::field::TransportPick{}).cost == 1000);
+    CHECK(warps->at(2).transport.value_or(dwe::game::field::TransportPick{}).cost == 1500);
+    CHECK(warps->at(1).targetMap == std::optional<std::string>{dwe::test_support::TransportWarpFarm});
 }
