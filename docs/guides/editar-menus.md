@@ -12,8 +12,8 @@ content/packs/game/ui/
   skins/modern/skin.yaml     el aspecto moderno: qué hojas pone sobre cada pantalla
   skins/modern/theme.rcss    su estilo común: fuente, botones, avisos de botones
   skins/modern/<pantalla>/style.rcss
-  skins/original/skin.yaml   el aspecto original: extiende el moderno, sus hojas de sprites (imágenes del disco
-                             por asset id y paleta) y document_classes
+  skins/original/skin.yaml   el aspecto original (el de por defecto): extiende el moderno, sus hojas de sprites
+                             (imágenes del disco por asset id y paleta) y document_classes
   skins/original/<pantalla>/style.rcss
   fonts/                     fuentes (.ttf/.otf) y sus licencias; se cargan todas. original_look.yaml
                              describe la familia original-look (ver docs/architecture/ui.md)

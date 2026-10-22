@@ -323,7 +323,25 @@ Otros ajustes los publica el juego sin que un menú los pida:
 
 Un **aspecto** (skin) es el estilo de toda la UI: colores, tipos, tamaños, marcos e imágenes de cada pantalla. Hay
 un solo ajuste global, `ui_skin`, que vale para todas las pantallas y se cambia en vivo; por defecto, el aspecto
-moderno (`modern`). Los mods pueden añadir aspectos: este es su contrato, y es estable.
+original (`original`), y el moderno (`modern`) es una opción en «Aspecto de la interfaz». Los mods pueden añadir
+aspectos: este es su contrato, y es estable.
+
+**CAMBIO DE CONTRATO: el juego se ve como el original por defecto.** Decidido por el usuario (2026-10-21). Hasta
+ahora `ui/ui_skin.yaml` decía `default: modern`; ahora dice `default: original` con `fallback: modern`. Lo que
+cambia y lo que no:
+
+- Un jugador que ya eligió un aspecto lo conserva: el `ui_skin` guardado en `settings.yaml` manda sobre el de los
+  paquetes. Solo quien no ha elegido ninguno (sin `ui_skin` guardado) empieza con el original. Lo prueban
+  `apps/game/tests/ui_skin_setting_tests.cpp` (los dos casos) y `engine/ui/tests/skin_switch_tests.cpp`.
+- El original necesita las imágenes que extrae `dwx extract` desde la versión 2 del extractor (el paquete
+  `ui_original` y las imágenes de la base que agranda). Con un contenido extraído antes, o sin él (los tests sin
+  disco), el original no se ofrece y el juego empieza con el moderno, el de reserva, con un aviso en el log.
+- `--ui-skin` y la consola siguen igual. Las rutas de autotest no leen los ajustes del jugador, así que corren con
+  el original salvo que pidan otro; `route-skins.yaml` empieza ahora en el original y pasa al de prueba y al moderno.
+- Un mod que reemplaza `ui/ui_skin.yaml` sigue mandando sobre el del paquete `game`.
+
+El cambio llegó con el aspecto original completo (todas las pantallas que hay hoy; el cuadro de texto llegará con el
+intérprete de historia), como se pidió.
 
 **Lo que es de cada documento y lo que es del aspecto.** Un documento (`ui/<pantalla>/document.rml`) solo enlaza
 hojas de estructura, lo que no depende del aspecto: `ui/common/base.rcss` (los `display` por defecto, el tamaño del

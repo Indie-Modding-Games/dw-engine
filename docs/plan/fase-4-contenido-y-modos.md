@@ -71,8 +71,8 @@ al GDD.
 | Modos | `game/modes`: cada modo declara su ruleset y sus sistemas; «Historia original» y un segundo modo sencillo aprobado por diseño | R4.5 |
 | Contrato con el editor | Tests de ida y vuelta del formato que escribe `dw1fe` | R4.7 |
 | Documentación de modding | `docs/modding/`: API, formatos de paquete, IDs, modos, aspectos, tutorial | R4.6 |
-| Aspectos de la interfaz (9a) | Mecanismo de aspectos (skins) de la UI, ajuste global en vivo, aspecto moderno por defecto | Petición del responsable de diseño |
-| Aspectos de la interfaz (9b) | Aspecto de estilo original en todas las pantallas, reloj y barras del campo, cuadro de texto; receta de escalado en `dwx` | Petición del responsable de diseño |
+| Aspectos de la interfaz (9a) | Mecanismo de aspectos (skins) de la UI, ajuste global en vivo; el moderno era el aspecto por defecto hasta 9b | Petición del responsable de diseño |
+| Aspectos de la interfaz (9b) | Aspecto de estilo original en todas las pantallas, reloj y barras del campo, cuadro de texto; receta de escalado en `dwx`; **el original pasa a ser el aspecto por defecto** y el moderno una opción (CAMBIO DE CONTRATO; Decidido por el usuario (2026-10-21)) | Petición del responsable de diseño; el cambio de aspecto por defecto, del usuario |
 
 **Estructura prevista** (se revisa con quien lo implementa antes de empezar; cada módulo sigue las
 [reglas de dependencias](../architecture/dependency-rules.md): API pública en `include/`, detalles en `src/`, una
@@ -124,7 +124,12 @@ rama pasa una revisión independiente contra la guía de código y las reglas de
     los iconos y sprites salen de un escalador de pixel art determinista (tipo xBRZ) aplicado como receta de `dwx` al
     extraer, en la máquina del usuario. Sin IA y sin distribuir arte original.
   - Un solo ajuste global de aspecto para todas las pantallas; por defecto la UI moderna y el estilo original como
-    opción.
+    opción. **CAMBIO DE CONTRATO** (Decidido por el usuario (2026-10-21)): el juego se ve como el original por defecto
+    y el moderno pasa a ser la opción, en «Aspecto de la interfaz». Se cambia en el paquete del aspecto original
+    (9b), solo cuando cubre todas las pantallas. Un aspecto que el jugador ya guardó se respeta; quien no eligió
+    ninguno recibe el nuevo por defecto. Sin las imágenes que extrae `dwx` (versión 2 del extractor) el original no
+    se ofrece y el juego empieza con el moderno (`fallback`). Detalle en
+    [UI](../architecture/ui.md#aspectos).
   - Los mods pueden añadir aspectos: el contrato de un aspecto es estable y se documenta en `docs/modding/`.
   - Entra en la fase 4a: el mecanismo (9a) ya, en paralelo; el aspecto original (9b) justo después del intérprete de
     historia, que trae el cuadro de texto.
@@ -165,10 +170,16 @@ rama pasa una revisión independiente contra la guía de código y las reglas de
   - Un modelo nuevo debe traer su fichero de contrato.
   - Objetos, técnicas, puertas y baños también pasan a IDs en la fase 4a.
   - El mod de ejemplo sustituye el mapa de inicio del campo como ejemplo de sustitución de un asset (solo en tests).
-- *Aspectos de la interfaz:* la opción se llama «Aspecto de la interfaz». La opción de fuente pasa a llamarse «Texto con
-  aspecto original» cuando llegue el aspecto original. La recarga en caliente de `skin.yaml` llega con la documentación
-  de modding. La clase `.original-look` vive en la hoja base común. Un mod nombra su aspecto en su propio fichero de
-  localización.
+- *Aspectos de la interfaz:* la opción se llama «Aspecto de la interfaz». La opción de fuente pasa a llamarse «Texto
+  con aspecto original» cuando llegue el aspecto original (hecho con el aspecto original: valores «Sí» y «No»). La
+  recarga en caliente de `skin.yaml` llega con la documentación de modding. La clase `.original-look` vive en la hoja
+  base común. Un mod nombra su aspecto en su propio fichero de localización.
+- *Aspecto original (9b)* (Decidido por el manager (2026-10-21)): `dwx extract` ejecuta al final la receta incluida
+  `ui_original` (sube la versión del extractor a 2; `dwx upscale` sigue como orden suelta); el escalado es ×4 en modo
+  `edge`; las placas de texto del original (PROFILE, CONDITION...) son RCSS con texto traducido; el minimapa es una
+  diferencia opcional con el ajuste `minimap` (`auto`, `on`, `off`; con `auto` el original lo esconde); y
+  `ui/ui_skin.yaml` gana `fallback`, el aspecto con el que se arranca si el de `default` no se ofrece. Un aspecto
+  marca elementos de un documento compartido con `document_classes` en vez de copiarlo.
 - *Reparto de los mods por ID:* tres ramas que se integran una tras otra: composición de tablas por entradas con IDs con
   espacio de nombres y el mod de ejemplo; referencias por ID en objetos, técnicas, puertas, baños y partidas guardadas;
   y la migración al prefijo `base:`.

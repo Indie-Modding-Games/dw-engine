@@ -38,7 +38,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--seed <n>` | La semilla de los números aleatorios de una partida nueva (el partner y los sistemas: combates, objetos, evolución), para que una ruta juegue igual cada vez. Sin ella, el juego toma una del reloj y la escribe en el log (`game: new game, seed <n>`), así una partida se puede repetir. Con `--load` no cambia nada: la partida cargada sigue con los números que guardó |
 | `--saves <carpeta>` | Dónde lee y guarda las partidas (por defecto la carpeta de datos del usuario). Un autotest solo guarda con ella |
 | `--text-font modern\|original` | La fuente del texto con aspecto original (el nombre del mapa), en vez de la elegida en el menú principal o la de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspecto-original)) |
-| `--ui-skin <id>` | El aspecto de la interfaz (`modern`, o uno de un mod), en vez del elegido en los menús o el de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspectos)) |
+| `--ui-skin <id>` | El aspecto de la interfaz (`original`, el de por defecto, `modern`, o uno de un mod), en vez del elegido en los menús o el de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspectos)) |
 | `--autotest <ruta.yaml>` | Recorre una ruta y sale con 0 si pasa (ver abajo) |
 | `--shots <carpeta>` | Dónde guarda las capturas de un autotest |
 | `--lang en\|es` | El idioma de esta ejecución, para autotests; no se guarda. Sin él, el juego usa el que se eligió en el menú principal o, la primera vez, el del sistema ([localización](../architecture/localizacion.md)) |
@@ -97,8 +97,8 @@ done
   el día de una partida nueva, el reloj que avanza, los rangos de felicidad y disciplina del ruleset, el hambre que
   aparece con el reloj acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a
   800x600, 1280x720 y 2560x1080 y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
-  `route-language.yaml`. Con ella, el paso de rutas es de 17 rutas: 34 ejecuciones sobre el contenido extraído, más
-  las 4 del `.pak` cocinado, 38 en total.
+  `route-language.yaml`. Con ella y `route-skin-original.yaml`, el paso de rutas es de 18 rutas: 36 ejecuciones sobre el
+  contenido extraído, más las 4 del `.pak` cocinado, 40 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
@@ -107,10 +107,19 @@ done
 - `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
-- `route-skins.yaml`: desde el menú principal cambia en vivo el aspecto de la interfaz al de prueba (el paquete
-  sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el del compañero y un
-  combate, y vuelve al moderno desde las opciones del menú de pausa, con capturas de cada pantalla. Necesita
-  `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
+- `route-skins.yaml`: empieza con el aspecto original (el de por defecto), desde el menú principal cambia en vivo al
+  de prueba (el paquete sintético `tests/mods/ui_skin/test_contrast`), recorre con él el campo, el menú de pausa, el
+  del compañero y un combate, y pasa al moderno desde las opciones del menú de pausa, con capturas de cada pantalla.
+  Necesita `--mods tests/mods/ui_skin` y se corre en los dos idiomas, como `route-language.yaml`.
+- `route-skin-original.yaml`: el aspecto original en cada pantalla que dibuja, con una captura de cada una: el
+  título y su menú, el reloj y las barras del campo, el menú de pausa y sus opciones, la ficha y la bolsa del
+  compañero (con las opciones de un objeto y los órdenes), un combate y sus cuadros finales, y la burbuja del hambre
+  sobre el compañero a 1920x1080. Se corre en los dos idiomas.
+
+Todas las rutas corren con el aspecto original, el de por defecto, salvo que pidan otro. Las dos de aspectos (y el
+aspecto original en todas) necesitan contenido extraído con `dwx` de la versión 2 del extractor o posterior, que
+trae las imágenes del aspecto original; con uno anterior el juego empieza con el moderno y esas dos rutas fallan en
+su primer paso.
 
 - `route-mod-map.yaml`: con el mod de ejemplo montado ([`tests/mods/example_mod`](../../tests/mods/README.md)),
   empieza en el mapa que añade el mod por su id (`example_mod:meadow`), sin código propio, y sale por su salida a
@@ -220,14 +229,14 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (17) sobre el contenido extraído, en `en` y en `es`: 34
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (18) sobre el contenido extraído, en `en` y en `es`: 36
   ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod` y
   `route-skins` con `--mods tests/mods/ui_skin`.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
   las dos comprobaciones.
 - [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
 
-En total, **38 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+En total, **40 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
 `autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
 añades una ruta, súmala aquí.
 

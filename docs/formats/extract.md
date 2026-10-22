@@ -54,6 +54,11 @@ DWE_DISC="/ruta/al/disco.bin" scripts/dev.sh test -R dwx   # incluye la prueba c
    ([tubería del remaster](../architecture/remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)). Para volver a hacerlo a
    mano con otra receta está `dwx upscale` ([README de dwx](../../apps/dwx/README.md#dwx-upscale-y-las-recetas-incluidas)).
 
+   **Para el jugador:** el juego se ve como el original por defecto (Decidido por el usuario (2026-10-21)), y ese
+   aspecto dibuja sus iconos con estas imágenes. Un contenido extraído con una versión anterior de `dwx` (sin el
+   paquete `ui_original`) sigue valiendo, pero el juego empieza con el aspecto moderno y lo dice en el log: hay que
+   extraer otra vez para ver el original. Con el contenido nuevo, el moderno sigue en «Aspecto de la interfaz»
+   (menú principal u opciones del menú de pausa), y quien ya lo había elegido lo conserva.
 
 La salida es **determinista**: dos extracciones del mismo disco dan los mismos bytes en todos los ficheros, también
 los del paquete `ui_original`. No hay

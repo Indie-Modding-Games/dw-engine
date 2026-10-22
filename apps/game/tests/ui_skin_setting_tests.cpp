@@ -1,4 +1,5 @@
 #include <dwe/assets/file_system.hpp>
+#include <dwe/assets/image.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/test_support/temp_folder.hpp>
@@ -7,6 +8,8 @@
 
 #include <doctest/doctest.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -22,6 +25,9 @@
 namespace dwe::app {
 namespace {
 
+// Whether the stand-in base pack has the images dwx extracts from the disc, which the original skin needs.
+enum class DiscArt : std::uint8_t { Missing, Extracted };
+
 // The game pack and the test skin's pack from the source tree over a stand-in base pack, in memory.
 struct Content {
     assets::MemoryFileSystem memory;
@@ -29,10 +35,13 @@ struct Content {
     std::unique_ptr<localization::Catalog> texts;
     std::unique_ptr<ui::Ui> ui;
 
-    Content() {
+    explicit Content(DiscArt art = DiscArt::Missing) {
         copyPack(DWE_GAME_PACK, "packs/game");
         copyPack(DWE_SKIN_TEST_PACK, "packs/test_contrast");
         memory.addFile("packs/base/pack.yaml", "id: base\nversion: 0.1.0\nlayer: base\npriority: 0\n");
+        if (art == DiscArt::Extracted) {
+            addOriginalArt();
+        }
         // The engine's own packs and the test skin's mod pack, as the game mounts them.
         const auto location = [this](std::string_view root, assets::PackOrigin origin) {
             return assets::PackLocation{.fileSystem = &memory, .root = std::string{root}, .origin = origin};
@@ -50,6 +59,27 @@ struct Content {
             .files = files.get(), .texts = texts.get(), .width = 1280, .height = 720, .clock = {}, .scripts = {}});
         REQUIRE_MESSAGE(created.has_value(), created.error().message);
         ui = std::move(*created);
+    }
+
+    // Blank stand-ins, of the disc's sizes, for the images dwx extracts that the original skin draws from.
+    void addOriginalArt() {
+        struct Stand {
+            std::string_view path;
+            std::uint32_t width;
+            std::uint32_t height;
+        };
+        for (const Stand& image : {Stand{.path = "texture/etcdat/system_w.png", .width = 256, .height = 128},
+                                   Stand{.path = "texture/etcdat/fi_info.png", .width = 256, .height = 64},
+                                   Stand{.path = "texture/etcdat/bi_in.png", .width = 256, .height = 64},
+                                   Stand{.path = "texture/etcdat/feel_ef.png", .width = 256, .height = 64},
+                                   Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240}}) {
+            const assets::Image blank{.width = image.width,
+                                      .height = image.height,
+                                      .pixels = std::vector<std::byte>(std::size_t{image.width} * image.height * 4)};
+            auto png = assets::encodePng(blank);
+            REQUIRE_MESSAGE(png.has_value(), png.error().message);
+            memory.addFile(std::filesystem::path{"packs/base"} / image.path, *png);
+        }
     }
 
     void copyPack(const std::filesystem::path& folder, const std::filesystem::path& into) {
@@ -81,18 +111,50 @@ TEST_CASE("the start skin is --ui-skin, else the saved one, else the packs' defa
         CHECK(content.ui->skin() == "test_contrast");
         CHECK(content.published() == ui::UiValue{std::string{"test_contrast"}});
     }
-    // Nothing chosen keeps the packs' default; a skin the packs do not offer too, with a warning.
+    // Nothing chosen keeps the packs' default: the original look, or the modern one when the disc's art is missing;
+    // a skin the packs do not offer keeps it too, with a warning.
     {
-        Content defaults;
+        Content defaults{DiscArt::Extracted};
         applyStartUiSkin(*defaults.ui, startUiSkin(none, none));
-        CHECK(defaults.ui->skin() == "modern");
-        CHECK(defaults.published() == ui::UiValue{std::string{"modern"}});
+        CHECK(defaults.ui->skin() == "original");
+        CHECK(defaults.published() == ui::UiValue{std::string{"original"}});
+    }
+    {
+        Content withoutArt;
+        applyStartUiSkin(*withoutArt.ui, startUiSkin(none, none));
+        CHECK(withoutArt.ui->skin() == "modern");
+        CHECK(withoutArt.published() == ui::UiValue{std::string{"modern"}});
     }
     {
         Content unknown;
         applyStartUiSkin(*unknown.ui, startUiSkin(std::string{"missing"}, std::string{"test_contrast"}));
         CHECK(unknown.ui->skin() == "modern");
         CHECK(unknown.published() == ui::UiValue{std::string{"modern"}});
+    }
+}
+
+TEST_CASE("a skin the player saved stays theirs when the packs' default changes; an unset one takes the default") {
+    const test_support::TempFolder folder;
+    const std::filesystem::path file = folder.path() / "ui_skin.yaml";
+    // Before the default became the original look, a player chose the modern one and it was saved.
+    saveUserSettings(
+        file,
+        UserSettings{.language = std::nullopt, .textFont = std::nullopt, .uiSkin = "modern", .minimap = std::nullopt});
+    {
+        Content content{DiscArt::Extracted};
+        applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, loadUserSettings(file).uiSkin));
+        CHECK(content.ui->skin() == "modern");
+    }
+    // A player who never chose one gets the new default.
+    saveUserSettings(
+        file,
+        UserSettings{.language = "es", .textFont = std::nullopt, .uiSkin = std::nullopt, .minimap = std::nullopt});
+    {
+        Content content{DiscArt::Extracted};
+        const UserSettings unset = loadUserSettings(file);
+        CHECK_FALSE(unset.uiSkin.has_value());
+        applyStartUiSkin(*content.ui, startUiSkin(std::nullopt, unset.uiSkin));
+        CHECK(content.ui->skin() == "original");
     }
 }
 

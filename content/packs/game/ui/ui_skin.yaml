@@ -1,3 +1,6 @@
 # El aspecto de la UI con el que empieza el juego hasta que el jugador elige otro (ajuste ui_skin): el id de uno de
-# los aspectos de ui/skins/ (docs/architecture/ui.md#aspectos).
-default: modern
+# los aspectos de ui/skins/ (docs/architecture/ui.md#aspectos). El juego se ve como el original salvo que el jugador
+# elija otro aspecto (decidido por el usuario, 2026-10-21). El aspecto original pide los dibujos que dwx extrae del
+# disco; sin ellos no se ofrece y el juego empieza con el de respaldo, el moderno.
+default: original
+fallback: modern

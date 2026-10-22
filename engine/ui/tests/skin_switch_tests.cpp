@@ -119,6 +119,23 @@ std::vector<std::byte> whitePng(unsigned width, unsigned height) {
     return {begin, begin + png.size()};
 }
 
+// White stand-ins, of the disc's sizes, for the images dwx extracts that the original skin draws its sprites from: the
+// skin is offered only when the packs have them.
+void addOriginalArt(Content& content) {
+    struct Stand {
+        std::string_view path;
+        unsigned width;
+        unsigned height;
+    };
+    for (const Stand& image : {Stand{.path = "texture/etcdat/system_w.png", .width = 256, .height = 128},
+                               Stand{.path = "texture/etcdat/fi_info.png", .width = 256, .height = 64},
+                               Stand{.path = "texture/etcdat/bi_in.png", .width = 256, .height = 64},
+                               Stand{.path = "texture/etcdat/feel_ef.png", .width = 256, .height = 64},
+                               Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240}}) {
+        content.memory.addFile(std::filesystem::path{"packs/base"} / image.path, whitePng(image.width, image.height));
+    }
+}
+
 void loadScreens(Ui& ui) {
     for (const std::string_view screen : Screens) {
         REQUIRE(ui.loadDocument(screen, idOf(std::format("ui/{}/document", screen))));
@@ -203,6 +220,8 @@ public:
         return std::ranges::any_of(warnings_, [text](const std::string& line) { return line.contains(text); });
     }
 
+    [[nodiscard]] const std::vector<std::string>& all() const { return warnings_; }
+
 private:
     static inline WarningCapture* current = nullptr;
     std::vector<std::string> warnings_;
@@ -227,18 +246,47 @@ std::vector<std::filesystem::path> shippedSkinFiles() {
 
 } // namespace
 
-TEST_CASE("the packs offer the modern skin, a mod pack adds one, and the UI starts with the packs' default") {
+TEST_CASE("without the disc's art the UI starts with the fallback, modern, and a mod pack adds a skin") {
     Content content;
     const assets::VirtualFileSystem& files = content.mount();
     const localization::Catalog texts = catalogIn(files, "es");
+    const WarningCapture warnings;
     auto ui = createUi(files, texts);
     CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "test_contrast"});
+    CHECK(warnings.has("the skin original is left out"));
     CHECK(ui->skins().defaultSkin() == "modern");
     CHECK(ui->skin() == "modern");
     const Skin* added = ui->skins().find("test_contrast");
     REQUIRE(added != nullptr);
     CHECK(texts.text(added->nameKey) == "Contraste de prueba");
     CHECK(texts.text(ui->skins().find("modern")->nameKey) == "Moderno");
+}
+
+TEST_CASE("with the disc's art the UI starts with the original skin, and every screen loads under it cleanly") {
+    Content content;
+    addOriginalArt(content);
+    const assets::VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "es");
+    const WarningCapture warnings;
+    auto ui = createUi(files, texts);
+    CHECK(skinIds(*ui) == std::vector<std::string>{"modern", "original", "test_contrast"});
+    CHECK(ui->skins().defaultSkin() == "original");
+    CHECK(ui->skin() == "original");
+    CHECK(texts.text(ui->skins().find("original")->nameKey) == "Original");
+    loadScreens(*ui);
+    CHECK(ui->checkSkinDocuments().empty());
+    // The skin marks the field bars to fill in whole pips, as the original.
+    CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+    // Nothing in the skin is refused (RmlUi's own complaints come as warnings too). The stand-in packs have no bitmap
+    // font, which is warned about whatever the skin.
+    for (const std::string& line : warnings.all()) {
+        CHECK_MESSAGE(line.contains("font/main"), line);
+    }
+    // A switch away takes the classes off, and back puts them on again.
+    REQUIRE(ui->setSkin("modern"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+    REQUIRE(ui->setSkin("original"));
+    CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
 }
 
 TEST_CASE("a live switch restyles every document in place and keeps its state") {
