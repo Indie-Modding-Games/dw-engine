@@ -837,3 +837,61 @@ TEST_CASE("up on the stick follows the map's camera rounded to an eighth of a tu
     CHECK(std::abs(field.cameraForward().x) < 1e-5F);
     CHECK(std::abs(std::abs(field.cameraForward().z) - 1.0F) < 1e-5F);
 }
+
+TEST_CASE("free exploration takes the story's place by the original's warp, with its triggers") {
+    using dwe::game::field::GuardBranch;
+    using dwe::game::field::GuardTest;
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    // Two paths to the town: the first, which the chooser shows, behind trigger 7, which is clear; the second the
+    // original takes.
+    dwe::game::field::ScriptWarp blocked = houseDoor();
+    blocked.guard.terms = {GuardBranch{.tests = {GuardTest{.test = "trigger", .trigger = 7}}, .holds = true}};
+    blocked.setsFlags = {{.trigger = 11, .set = true}};
+    dwe::game::field::ScriptWarp original = houseDoor();
+    original.setsFlags = {{.trigger = 12, .set = true}};
+    TestStory story;
+    dwe::scene::World world;
+    Field field{world,
+                originalRules(),
+                {.warps = {castleDoor(), blocked, original},
+                 .facts = story.reader(),
+                 .writeTrigger = story.writer(),
+                 .explore = true}};
+    CHECK_FALSE(walkSouth(field, house).has_value());
+    const auto& found = field.destinationChoice();
+    if (!found) {
+        FAIL("no destination choice");
+        return;
+    }
+    REQUIRE(found->places.size() == 2);
+    CHECK(found->vanilla == std::optional<std::size_t>{1});
+    field.chooseDestination(1);
+    const auto change = tickToChange(field);
+    if (!change) {
+        FAIL("no map change");
+        return;
+    }
+    CHECK(change->map == "town");
+    CHECK(story.writes == std::vector<std::pair<std::int32_t, bool>>{{12, true}});
+}
+
+TEST_CASE("click-to-move from a spawn on a script warp's cells walks off them without changing the map") {
+    MapDocument house = roomMap("house");
+    constexpr std::uint8_t ScriptStep = 51;
+    // The player arrives inside a block of step cells whose warp is on: every cell around is the same warp.
+    fill(house, {.column = 47, .row = 47}, {.column = 53, .row = 53}, ScriptStep);
+    dwe::scene::World world;
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({})}};
+    field.enterMapAt(house, {.position = dwe::assets::collisionCellCenter({.column = 50, .row = 50}), .yaw = 0.0F});
+    const glm::vec3 target = dwe::assets::collisionCellCenter({.column = 50, .row = 40});
+    field.setInput({.moveTarget = target});
+    REQUIRE(field.hasMoveTarget());
+    field.setInput({});
+    for (int i = 0; i < 60 * 10 && field.hasMoveTarget(); ++i) {
+        field.tick(Tick);
+        CHECK_FALSE(field.mapChangePending());
+    }
+    CHECK_FALSE(field.hasMoveTarget());
+    CHECK(glm::distance(field.player().position, target) <= field.rules().input.arriveDistance + 1.0F);
+}

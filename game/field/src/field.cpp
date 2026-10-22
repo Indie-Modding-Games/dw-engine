@@ -403,7 +403,9 @@ std::optional<MapChange> Field::takeExplored(const ScriptWarp& warp, const Scrip
         core::logInfo("{}", core::formatMessage(messages::ExplorationOpened, mapId_, value, *warp.targetMap,
                                                 warp.targetExit, warp.source));
     }
-    writeTriggersOf(warp);
+    // The story's own place is taken by the warp the original takes, so its sets_flags are the original's (the first
+    // warp of a place, which the chooser shows, may be another path to it).
+    writeTriggersOf(vanillaPlace ? *vanilla : warp);
     return MapChange{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
 }
 
