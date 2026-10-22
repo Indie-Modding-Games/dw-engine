@@ -162,7 +162,7 @@ aspecto original en todas) necesitan contenido extraído con `dwx` de la versió
 trae las imágenes del aspecto original; con uno anterior el juego empieza con el moderno y esas dos rutas fallan en
 su primer paso.
 
-- `route-mod-map.yaml`: con el mod de ejemplo montado ([`tests/mods/example_mod`](../../tests/mods/README.md)),
+- `route-mod-map.yaml`: con el mod de ejemplo montado ([`tests/mods/example_mod`](../modulos/tests/mods.md)),
   empieza en el mapa que añade el mod por su id (`example_mod:meadow`), sin código propio, y sale por su salida a
   File City. Se corre en los dos idiomas:
 

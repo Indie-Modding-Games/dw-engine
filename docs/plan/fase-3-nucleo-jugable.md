@@ -29,11 +29,11 @@ funciona (decisión del responsable de diseño, 2026-10-20).
 
 ## Cómo se especifica cada sistema
 
-Para el ruleset original, la especificación de cada sistema es su [ficha de referencia](../reference/README.md) y el
+Para el ruleset original, la especificación de cada sistema es su [ficha de referencia](../reference/index.md) y el
 decomp. Cada sistema sigue el [ciclo de diseño](../conventions/design-cycle.md), con el paso del GDD sustituido por la
 ficha:
 
-1. ficha de referencia del original en [`docs/reference/`](../reference/README.md);
+1. ficha de referencia del original en [`docs/reference/`](../reference/index.md);
 2. implementación con las reglas en el ruleset `original`;
 3. tests escritos a partir de la ficha;
 4. ajuste en vivo y pruebas de juego.
@@ -83,7 +83,7 @@ Los rulesets del diseño nuevo vuelven al ciclo completo: diseño en el GDD, apr
   declara una interfaz y el ruleset dice qué implementación usar por nombre. `original` es la del juego original; un
   diseño nuevo añade la suya, en C++ o en Lua, sin tocar el resto del sistema.
 - Las constantes del ruleset `original` sí se escriben en el paquete, con la referencia al decomp, como las de
-  `field/rules.yaml` ([fichas de referencia](../reference/README.md#reglas)).
+  `field/rules.yaml` ([fichas de referencia](../reference/index.md#reglas)).
 - Un reloj de juego con avance rápido, para los tests, el autotest y las simulaciones.
 - La interfaz de estos sistemas usa RmlUi, como en la fase 2.
 

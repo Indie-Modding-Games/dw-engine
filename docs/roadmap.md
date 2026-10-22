@@ -3,7 +3,7 @@
 Cada fase tiene un criterio de cierre que se puede comprobar. Una fase no se da por terminada hasta que se cumple.
 
 Este documento es el resumen con el estado del día. Lo que hace cada fase, sus requisitos y cómo se comprueban
-están en las [especificaciones por fase](plan/README.md).
+están en las [especificaciones por fase](plan/index.md).
 
 | Fase | Nombre | Tamaño | Estado |
 |---|---|---|---|
@@ -57,7 +57,7 @@ CI pasa.
 - Sistema de ficheros virtual con capas y manifiestos de paquete.
 - Esquemas de cada tipo en `content/schemas/` y documentación de los formatos en `docs/formats/`.
 - Visor ImGui de modelos y mapas.
-- Primeras fichas de referencia ([`docs/reference/`](reference/README.md)): cuidado, evolución y batalla.
+- Primeras fichas de referencia ([`docs/reference/`](reference/index.md)): cuidado, evolución y batalla.
 
 **Hecho cuando:** cada fichero del disco US se extrae y el motor carga el resultado. El informe de cobertura está a
 cero pendientes.

@@ -21,7 +21,7 @@ struct PraiseOrScold {
 
 // A game system the session drives besides its core (clock, field, partner, save). Evolution,
 // battle and inventory each plug in as one adapter file that implements this and turns the system's
-// own structs into the partner's and back (docs: apps/session/README.md), so adding one changes no
+// own structs into the partner's and back (docs/modulos/apps/session.md), so adding one changes no
 // other system.
 class SessionSystem {
 public:

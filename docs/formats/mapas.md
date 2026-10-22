@@ -152,7 +152,7 @@ disparador, `encoding` pasa de `legend` a `hex` y cada celda son dos cifras hexa
 ## En el motor
 
 El motor no lee el `.MAP` ni el `.TFS`: lee lo que deja `dwx` por el VFS. `assets::MapDocument` es `map/<id>/data`
-y `assets::MapTable` es `data/maps` (ver el [README de `assets`](../../engine/assets/README.md#mapas)). Guardan los
+y `assets::MapTable` es `data/maps` (ver el [página de `assets`](../modulos/engine/assets.md#mapas)). Guardan los
 números como están; las conversiones al [espacio del mundo](../architecture/world-space.md) se hacen en
 `map_document.hpp` y en ningún otro sitio:
 
@@ -219,7 +219,7 @@ paquete, y `dwx validate` lo da como error.
 ## Cómo se dibuja
 
 Lo que hace el original para dibujar un mapa de campo, que es la especificación del render de mapas del motor
-([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [`engine/render`](../../engine/render/README.md)).
+([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [`engine/render`](../modulos/engine/render.md)).
 `W` y `H` son el ancho y el alto del fondo en tiles de 128 píxeles.
 
 ### Cámara

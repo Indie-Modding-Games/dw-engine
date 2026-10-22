@@ -6,7 +6,7 @@ batalla, economía, un modo de juego…) sigue este ciclo.
 
 | Paso | Qué | Dónde | Quién |
 |---|---|---|---|
-| 1. Ficha de referencia | Cómo funcionaba el original, sacado del decomp | [`docs/reference/`](../reference/README.md) | Programación |
+| 1. Ficha de referencia | Cómo funcionaba el original, sacado del decomp | [`docs/reference/`](../reference/index.md) | Programación |
 | 2. Diseño | Cómo funcionará ahora, justificado contra los pilares de diseño | GDD (repositorio de diseño) | Diseño |
 | 3. Aprobación | La persona responsable de diseño lo aprueba | PR en el repositorio de diseño | Responsable de diseño |
 | 4. Implementación | El sistema en C++; sus reglas y valores, en el ruleset (YAML o Lua), nunca fijos en el código | `game/` + `content/packs/` | Programación |

@@ -847,7 +847,7 @@ BTL_REL. Una versión sin localizar falla con un error claro, como hoy.
      `battleStatsGainsAndDrops`;
    - las decisiones D1, D2, D5, D6 y D7.
 
-   Vive en `formats/exe` junto a `constant_switch`, con su README y sus tests.
+   Vive en `formats/exe` junto a `constant_switch`, con su página en `docs/modulos/` y sus tests.
 
 ### 2. Formato en el paquete base
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: new_game",
-  "description": "rules/<id>/new_game.yaml: how a new game starts (apps/session: NewGameRules, apps/session/README.md): the partner's species and stats and the tamer's level.",
+  "description": "rules/<id>/new_game.yaml: how a new game starts (apps/session: NewGameRules, docs/modulos/apps/session.md): the partner's species and stats and the tamer's level.",
   "type": "object",
   "required": ["partner", "stats", "tamer_level"],
   "additionalProperties": false,

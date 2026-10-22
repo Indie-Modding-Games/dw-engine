@@ -8,7 +8,7 @@
 - **Cada commit pasa `scripts/dev.sh check-commit`**, y el último de una entrega, `check-full`.
 - El mensaje es una frase en **inglés**, en imperativo, que dice qué cambia: `Add the virtual file system`,
   `Load map collision from packs`.
-- Cada commit lleva `Signed-off-by` (`git commit -s`) según el DCO (ver [CONTRIBUTING.md](../../CONTRIBUTING.md)).
+- Cada commit lleva `Signed-off-by` (`git commit -s`) según el DCO (ver [Cómo contribuir](../contribuir.md)).
 - Sin nombres de la franquicia, de consolas ni de empresas en los mensajes de commit ni en los títulos de los PR. Se
   usan términos genéricos.
 

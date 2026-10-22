@@ -1,7 +1,7 @@
 # Partidas guardadas
 
 Cómo guarda el motor una partida, cómo se versiona y cómo un sistema añade lo suyo. El código está en
-[`game/save`](../../game/save/README.md) y cumple el requisito R3.6 de la
+[`game/save`](../modulos/game/save.md) y cumple el requisito R3.6 de la
 [fase 3](../plan/fase-3-nucleo-jugable.md): una partida guardada se carga igual tras actualizar el juego, o se migra.
 
 Cómo guarda y carga el jugador desde la interfaz (dónde se guarda, la portada, las ranuras, volver a la portada):
@@ -129,7 +129,7 @@ Para cambiar el formato de una sección:
 3. Se añade un test con un fichero de la versión anterior que se carga con el resultado esperado (como
    `game/save/tests/fixtures/partner_v1.yaml` y `partner_v2.yaml`).
 
-En el juego esa unión es la partida, `session::GameSession` ([apps/session](../../apps/session/README.md)): registra
+En el juego esa unión es la partida, `session::GameSession` ([apps/session](../modulos/apps/session.md)): registra
 `clock`, `partner`, `tamer`, `field` y `random`, y cada sistema que se enchufa como adaptador añade las suyas. También
 pide los autoguardados: el partner se duerme, día nuevo, cambio de mapa, fin de batalla; `AutosaveRequests` los junta
 en uno y el ruleset dice cuáles cuentan.
@@ -140,8 +140,8 @@ no chocar con los del juego.
 ## Ranuras, autoguardado y copias
 
 Cuántas ranuras hay lo dice `save/settings` del paquete `game`
-([esquema](../../content/schemas/save_settings.schema.json)), y cuándo guarda el juego solo, la sección `save` del
-ruleset ([esquema](../../content/schemas/ruleset_save.schema.json), [rulesets](rulesets.md)). Las ranuras son una
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/save_settings.schema.json)), y cuándo guarda el juego solo, la sección `save` del
+ruleset ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_save.schema.json), [rulesets](rulesets.md)). Las ranuras son una
 preferencia del juego y no cambian las reglas; el autoguardado sí es una regla, así que cada ruleset lo decide.
 
 ```yaml

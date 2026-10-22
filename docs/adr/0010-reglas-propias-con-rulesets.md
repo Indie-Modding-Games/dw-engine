@@ -20,7 +20,7 @@ El objetivo es reinventar el juego, no reproducirlo. Había que decidir entre do
 - **El primer ruleset parte de los valores del original**, sacados de las tablas del disco y de las fichas de
   referencia. No se verifica que sea fiel: solo sirve como punto de partida del balance.
 - **El ruleset del mod** es la reinvención, y cada modo de juego puede traer el suyo.
-- **Cada sistema tiene una ficha de referencia** en [`docs/reference/`](../reference/README.md) que resume cómo
+- **Cada sistema tiene una ficha de referencia** en [`docs/reference/`](../reference/index.md) que resume cómo
   funcionaba el original, para que diseño decida a conciencia qué conservar y qué cambiar.
 - **La especificación es el GDD.** Cada sistema sigue el [ciclo de diseño](../conventions/design-cycle.md).
 

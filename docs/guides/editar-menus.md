@@ -42,7 +42,7 @@ paleta y su tamaño en el original (`original_size`); si un paquete de capa rema
 original: `dwx extract` las agranda ×4 con la receta incluida `content/enhance/ui_original.recipe.yaml`. Un aspecto
 de un mod que quiere sus propias imágenes agrandadas escribe una receta igual (las imágenes que dibuja, `scale` y el
 modo de `index_scale`) y la pasa a mano por `dwx upscale <receta> <paquetes> -o <carpeta>`, que escribe un paquete
-remaster para montar al lado ([README de dwx](../../apps/dwx/README.md#dwx-upscale-y-las-recetas-incluidas)). Nunca
+remaster para montar al lado ([página de dwx](../modulos/apps/dwx.md#dwx-upscale-y-las-recetas-incluidas)). Nunca
 se reparte arte del original: cada jugador lo saca de su disco. Las medidas del aspecto original están en
 [UI](../architecture/ui.md#el-aspecto-original).
 

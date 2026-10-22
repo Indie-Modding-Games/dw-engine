@@ -161,7 +161,7 @@ pulling: un binding basta mientras la animación es por CPU y deja que `rhi::val
   el primero de `FrameDesc::ui`: resta de la escena y la UI queda encima (el nombre del mapa delante del fundido).
 - `render::MapCamera` y `render::MapRenderer`: la cámara fija de un mapa de campo, con proyección descentrada sobre
   su fondo, y el dibujo del fondo y sus capas de profundidad
-  ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [README](../../engine/render/README.md)).
+  ([ADR 0020](../adr/0020-camara-de-mapa-y-capas-de-profundidad.md), [página del módulo](../modulos/engine/render.md)).
 
 ## Samplers
 

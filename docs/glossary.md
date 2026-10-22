@@ -5,7 +5,7 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | Término | Significado | En el código |
 |---|---|---|
 | Acción | Lo que el jugador quiere hacer (`confirm`, `move`…), independiente del dispositivo ([ADR 0014](adr/0014-mandos-y-entrada.md)) | `dwe::input` |
-| ADR | Registro de una decisión de arquitectura ([adr/](adr/README.md)) | — |
+| ADR | Registro de una decisión de arquitectura ([adr/](adr/index.md)) | — |
 | Asset | Cualquier pieza de contenido: modelo, textura, mapa, texto, script, sonido | `dwe::assets` |
 | Base | La capa de contenido que se genera a partir del disco del usuario | `content/base/` |
 | Cocinar | Convertir un asset fuente al formato que carga la GPU | `dwx cook` |
@@ -13,7 +13,7 @@ Términos del proyecto y su nombre en el código. Si un término no está aquí,
 | Decomp | El proyecto que reconstruyó el código C del juego original. Aquí es la referencia | — |
 | Delta / receta | Lo que se distribuye en lugar de un asset derivado del original; se aplica sobre la base del usuario | — |
 | ECS | Entidades, componentes y sistemas: el modelo del mundo ([ADR 0012](adr/0012-ecs-con-entt.md)) | `dwe::scene` |
-| Ficha de referencia | Resumen de cómo funcionaba un sistema del original ([reference/](reference/README.md)) | `docs/reference/` |
+| Ficha de referencia | Resumen de cómo funcionaba un sistema del original ([reference/](reference/index.md)) | `docs/reference/` |
 | Fuente (estado) | Asset en formato abierto y editable | — |
 | ID de asset | Nombre estable de un asset, como `digimon/agumon/model` | — |
 | Modo de juego | Combinación de sistemas con sus propias reglas | `dwe::game::modes` |

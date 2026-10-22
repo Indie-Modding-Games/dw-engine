@@ -76,7 +76,7 @@ al GDD.
 
 **Estructura prevista** (se revisa con quien lo implementa antes de empezar; cada módulo sigue las
 [reglas de dependencias](../architecture/dependency-rules.md): API pública en `include/`, detalles en `src/`, una
-responsabilidad por fichero y clase, tests junto al comportamiento y un README en español; sin ficheros «dios» ni
+responsabilidad por fichero y clase, tests junto al comportamiento y una página en español en `docs/modulos/`; sin ficheros «dios» ni
 cajones de utilidades):
 
 | Paquete | Dónde |

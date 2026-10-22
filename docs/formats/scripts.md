@@ -191,7 +191,7 @@ listado (que no cambia: sigue siendo el formato que edita `dw1fe`):
 | Fichero | Qué es |
 |---|---|
 | `story/<n>.lua` | El módulo: devuelve `{ script = <n>, sections = { [0x0051] = <función>, ... } }` |
-| `story/<n>_lines.yaml` | Por cada línea que ejecuta una orden, su offset en el listado ([esquema](../../content/schemas/story_lines.schema.json)) |
+| `story/<n>_lines.yaml` | Por cada línea que ejecuta una orden, su offset en el listado ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/story_lines.schema.json)) |
 | `text/en/story_<n>.yaml` | Los textos de `show_textbox` y `set_selection`, con la clave `story_<n>.text.<offset>` |
 
 `<n>` es el id del script con tres cifras, el mismo número que usan los NPC de los mapas (`script_id`): `000` es
@@ -241,7 +241,7 @@ introducción. Guarda el tipo del partner en una variable (`store_digimon_type`)
 concreto y, en cada rama, una serie de `set_stat` pone los ocho valores (ataque, defensa, velocidad, inteligencia, HP y
 MP máximos, HP y MP actuales); la primera rama acaba con un `jump_to` que salta la otra. `findNewGameStats`
 (`formats/script/new_game_stats.hpp`) busca ese bloque en el listado y `dwx` lo escribe en `data/new_game_stats`
-([esquema](../../content/schemas/new_game_stats.schema.json)): `script`, `at` (el offset del `if`), `partners` (el
+([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/new_game_stats.schema.json)): `script`, `at` (el offset del `if`), `partners` (el
 Digimon por el que pregunta, por su id, y sus stats) y `others` (los de cualquier otro partner). Si el script no tiene el
 bloque, se anota y no se escribe el documento. La sesión lo lee al empezar una partida (`apps/session`).
 

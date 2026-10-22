@@ -394,7 +394,7 @@ plataformas (a diferencia de los mipmaps del cocinado, que usan `pow`). Cada uno
 2× y 3× del escalado de pixel art clásico (familia AdvMAME) aplicadas a índices de paleta, con el píxel del borde
 repetido fuera de la imagen. `dwx upscale` ejecuta un subconjunto de las recetas: un paso `index_scale` y nada más
 (sin proveedores ni caché), y escribe un paquete `remaster` con el id de la receta
-([README de dwx](../../apps/dwx/README.md#dwx-upscale-y-las-recetas-incluidas)). `dwx extract` ejecuta las recetas
+([página de dwx](../modulos/apps/dwx.md#dwx-upscale-y-las-recetas-incluidas)). `dwx extract` ejecuta las recetas
 incluidas en `content/enhance/` al terminar el paquete base: hoy `ui_original`, ×4 en `edge`, para los sprites del
 aspecto original de la UI (Decidido por el manager (2026-10-21): la receta va incluida y la ejecuta `dwx extract`,
 ×4 `edge`; `dwx upscale` sigue disponible a mano).
@@ -1037,8 +1037,8 @@ se comprueban ni los parámetros declarados ni la clase del proveedor (`weights.
 
 | Dónde | Qué | Dependencias |
 |---|---|---|
-| `apps/remaster_rules` (nueva librería de app `dwe::remaster_rules`, sin red, README en español) | Lectura de recetas y de la configuración de proveedores, parámetros declarados, escáner de secretos, lista de licencias, reglas del paquete remaster y `RemasterMapTextureBudgetBytes` | `assets`, `core` |
-| `apps/enhance` (nuevo: librería `dwe::enhance` y ejecutable `dwe-enhance`, README en español) | `ImageProvider` y sus tres clases, pasos integrados, caché, plan de coste y libro de gastos, revisión, `CredentialStore`, `SecretRedactor`, línea de órdenes; ejecuta `dwx` para extraer y cocinar | `remaster_rules`, `assets`, `platform`, `core` |
+| `apps/remaster_rules` (nueva librería de app `dwe::remaster_rules`, sin red, con su página en `docs/modulos/`) | Lectura de recetas y de la configuración de proveedores, parámetros declarados, escáner de secretos, lista de licencias, reglas del paquete remaster y `RemasterMapTextureBudgetBytes` | `assets`, `core` |
+| `apps/enhance` (nuevo: librería `dwe::enhance` y ejecutable `dwe-enhance`, con su página en `docs/modulos/`) | `ImageProvider` y sus tres clases, pasos integrados, caché, plan de coste y libro de gastos, revisión, `CredentialStore`, `SecretRedactor`, línea de órdenes; ejecuta `dwx` para extraer y cocinar | `remaster_rules`, `assets`, `platform`, `core` |
 | `apps/enhance` (target `dwe::enhance_curl`) | La única implementación real de `HttpTransport` | `enhance`; libcurl (vcpkg), solo aquí |
 | `apps/dwx` | Las reglas nuevas de `dwx validate` (recetas y paquete remaster); nada de red | + `remaster_rules` |
 | `apps/game` | El panel de revisión del overlay de depuración (ejecuta `dwe-enhance review`) | Sin dependencias nuevas |
@@ -1125,7 +1125,7 @@ salida que guarda el principio, muerte del árbol, entorno explícito); y los l�
 
 ### W10b: proveedor local, caché y `dwe-enhance` para fondos
 
-- `apps/remaster_rules` y `apps/enhance` (con `dwe-enhance`) con sus README; recetas y configuración de proveedores
+- `apps/remaster_rules` y `apps/enhance` (con `dwe-enhance`) con sus páginas en `docs/modulos/`; recetas y configuración de proveedores
   con sus esquemas y parámetros declarados; `ImageProvider`; comando local (`.exe` en Windows, `weights.sha256`
   obligatorio); la caché (claves completas, `.partial-`, registros, cerrojos del sistema, huella de
   `EnhanceCacheVersion`, limpieza, `cache --report/--prune`, carpetas de caché de Windows y Linux); `dwe-enhance`

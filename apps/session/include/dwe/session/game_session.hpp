@@ -92,7 +92,7 @@ namespace sections {
 struct SessionSerializers;
 } // namespace sections
 
-// One game session (docs: apps/session/README.md): the ruleset store, the game clock, the partner,
+// One game session (docs/modulos/apps/session.md): the ruleset store, the game clock, the partner,
 // the save and the systems that plug in, glued together, as the game and dwe-sim play it. Each tick
 // it advances the clock (only while the field runs game time, at the clock's fast-forward speed),
 // runs the partner's care and the systems, routes their events (autosaves, the tamer's level,

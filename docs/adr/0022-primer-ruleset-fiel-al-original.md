@@ -15,7 +15,7 @@ cada sistema sin él daría criterios distintos en cada uno.
 ## Decisión
 
 - **El primer ruleset, `original`, reproduce las reglas del juego original tal como están en el decomp y en las
-  tablas del disco.** Su especificación son las [fichas de referencia](../reference/README.md); el código cita la
+  tablas del disco.** Su especificación son las [fichas de referencia](../reference/index.md); el código cita la
   función del decomp que reproduce.
 - **El diseño nuevo llega como otros rulesets** sobre los mismos sistemas. Por eso las reglas que son lógica, y no
   números, van detrás de una estrategia que elige el ruleset.

@@ -38,10 +38,10 @@ dependencies:
 | `name`, `description` | No | Texto para las personas |
 | `dependencies` | No | Lista de `id` y `min_version` |
 | `schemas` | No | Qué esquema sigue cada documento YAML del paquete (ver abajo) |
-| `api` | No | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.3` (la 1.3 o posterior) ([script](../../engine/script/README.md)). Prevista como obligatoria para `mods` y `user` cuando llegue docs/modding |
+| `api` | No | Versión de la API de Lua que piden sus scripts: `1.x` (cualquier 1.y) o `1.3` (la 1.3 o posterior) ([script](../modulos/engine/script.md)). Prevista como obligatoria para `mods` y `user` cuando llegue docs/modding |
 
 Una clave desconocida es un error, para que una errata no pase desapercibida. El formato también está como JSON
-Schema en [`content/schemas/pack.schema.json`](../../content/schemas/pack.schema.json), para editores y herramientas.
+Schema en [`content/schemas/pack.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/pack.schema.json), para editores y herramientas.
 
 ### Esquemas de los documentos
 
@@ -148,7 +148,7 @@ su fichero sigue estando.
 ### Un Digimon nuevo trae su contrato
 
 Un Digimon que añade un paquete (un id con espacio de nombres) tiene que traer el contrato de su modelo,
-`digimon/<paquete>/<nombre>/contract.yaml` ([esquema](../../content/schemas/model_contract.schema.json)): es contra lo
+`digimon/<paquete>/<nombre>/contract.yaml` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/model_contract.schema.json)): es contra lo
 que se comprueba su modelo, porque no hay un original con el que compararlo. Sin él, el juego no carga la tabla
 (`loadDigimonTable`) y `dwx validate` da un problema (`requireNewSpeciesContracts`).
 
@@ -158,12 +158,12 @@ El `index` de una entrada nueva depende de qué mods hay montados y en qué orde
 usa: los guardados (la especie del compañero, el mapa, las técnicas aprendidas, las especies criadas y, desde la
 versión 2 de su sección, los objetos de la bolsa), los rulesets, los scripts, las claves de texto y los registros
 nombran cada entrada por su id. Dentro de la sesión, el motor usa asas de la composición
-([IDs en la sesión](../../engine/assets/README.md#ids-en-la-sesión)). Los rangos de números de un ruleset solo cubren
+([IDs en la sesión](../modulos/engine/assets.md#ids-en-la-sesión)). Los rangos de números de un ruleset solo cubren
 las entradas del original ([rangos e ids](rulesets.md#rangos-e-ids)), y un warp llega a un mapa de un paquete por su
 id ([destino de una salida](../formats/mapas.md#destino-de-una-salida)).
 
 Quitar un mod no deja la partida sin cargar: un montón de la bolsa cuyo objeto ya no está en ninguna tabla se tira,
-con un aviso en el registro que nombra su id y la cantidad ([inventario](../../game/inventory/README.md)).
+con un aviso en el registro que nombra su id y la cantidad ([inventario](../modulos/game/inventory.md)).
 
 ### Nombres de lo añadido
 
@@ -171,7 +171,7 @@ Lo que se ve de una entrada nueva sale de la tabla de textos del paquete, `text/
 la clave `<bloque>.<nombre>`: `digimon_names.pebblemon`, `map_names.meadow` (`addedEntryTextKey`,
 `engine/localization/include/dwe/localization/catalog.hpp`). Los originales siguen con sus claves numeradas.
 
-Un ejemplo completo está en [`tests/mods/example_mod`](../../tests/mods/README.md).
+Un ejemplo completo está en [`tests/mods/example_mod`](../modulos/tests/mods.md).
 
 ## Dependencias
 

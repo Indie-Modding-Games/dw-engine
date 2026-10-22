@@ -2,13 +2,14 @@
 
 ```
 engine/
-├─ .devcontainer/           imagen Docker de desarrollo: Clang, libc++, CMake, vcpkg (ADR 0015)
+├─ .devcontainer/           imagen Docker de desarrollo: Clang, libc++, CMake, vcpkg, Node y VitePress (ADR 0015)
 ├─ .github/
 │  ├─ workflows/            ci.yml (build, tests, formato, docs), release.yml
 │  └─ CODEOWNERS
 ├─ cmake/                   funciones propias: dwe_add_module, dwe_add_shaders, warnings, sanitizers
 │  └─ toolchains/           compilador y biblioteca estándar de cada plataforma
-├─ docs/                    esta documentación
+├─ docs/                    esta documentación: el sitio de VitePress (dev.sh docs) y la página de cada módulo
+│                           (modulos/)
 ├─ engine/                  módulos del motor
 │  ├─ core/
 │  ├─ platform/
@@ -56,7 +57,7 @@ engine/
 ├─ CMakePresets.json        linux-clang-debug, linux-clang-release, ci (windows-clang llegará después)
 ├─ vcpkg.json               dependencias con versiones fijadas
 ├─ .clang-format · .clang-tidy · .editorconfig · .gitattributes · .gitignore
-└─ README.md · CONTRIBUTING.md · CHANGELOG.md · LICENSE · THIRD_PARTY.md
+└─ README.md · CHANGELOG.md · LICENSE · THIRD_PARTY.md
 ```
 
 `content/base/` no aparece porque **nunca está en el repositorio**: se genera a partir del disco de cada usuario y
@@ -69,12 +70,13 @@ Todos los módulos, del motor y del juego, tienen la misma forma:
 ```
 engine/render/
 ├─ CMakeLists.txt           dwe_add_module(render LAYER systems DEPS core rhi)
-├─ README.md                qué hace el módulo y enlace a su página de documentación
 ├─ include/dwe/render/      API pública: lo único que ven los demás módulos
 ├─ src/                     implementación y headers privados
 └─ tests/                   tests unitarios del módulo
 ```
 
+- Su documentación es una página del sitio, `docs/modulos/<capa>/<módulo>.md` (aquí
+  `docs/modulos/engine/render.md`), no un README en la carpeta.
 - Otro módulo solo puede incluir `<dwe/render/...>`. Lo que está en `src/` es privado.
 - Los namespaces siguen la carpeta: `dwe::render`, `dwe::game::battle`.
 - Un módulo nuevo se declara con `dwe_add_module`, que aplica los warnings, los sanitizers y el chequeo de

@@ -16,7 +16,7 @@ juego porque todo lo demás necesita estos datos.
 ## Alcance
 
 - Librería `formats/`: lectores de los formatos del disco (CD e ISO9660, TIM, TMD/MMD, mapas, ALLTIM, textos,
-  bytecode de eventos, VAB/SEQ, STR y las tablas del ejecutable). Documentados en [`docs/formats/`](../formats/README.md).
+  bytecode de eventos, VAB/SEQ, STR y las tablas del ejecutable). Documentados en [`docs/formats/`](../formats/index.md).
 - La CLI `dwx` con `extract`, `validate`, `cook` y `pack`.
 - El sistema de ficheros virtual (VFS) con capas y manifiestos de paquete ([VFS](../architecture/vfs.md)).
 - Esquemas de cada tipo de dato en `content/schemas/`.
@@ -96,7 +96,7 @@ cocinado, en carpeta y en `.pak`.
 | R1.2 | Cumple | `coverage.yaml`: 0 pendientes y 0 parciales. Lo que no es un asset va con su motivo en las notas: relleno (`MMM.DAT`, todo ceros), datos de efectos a los que nada llega (590 bytes de `EFEDAT.EFE`, marcados `unused`), el overlay que es el build `jp_rev1` y el mapa que nada carga |
 | R1.3 | Cumple | Test de extracción repetida con un disco sintético. Con el disco US, dos extracciones seguidas dan los mismos bytes en los 4814 ficheros del paquete |
 | R1.4 | Cumple | IDs por nombre: criaturas por el nombre de su modelo, mapas por su fichero, técnicas por su nombre. Tests de `assets` |
-| R1.5 | Cumple | Cada documento que escribe `dwx extract` tiene su regla de esquema, y `dwx validate` comprueba 2078 documentos con 0 problemas. Cada formato tiene su página en [`docs/formats/`](../formats/README.md) |
+| R1.5 | Cumple | Cada documento que escribe `dwx extract` tiene su regla de esquema, y `dwx validate` comprueba 2078 documentos con 0 problemas. Cada formato tiene su página en [`docs/formats/`](../formats/index.md) |
 | R1.6 | Cumple | Tests de `validate`. Con el disco US: 4813 assets, 2078 documentos, 9271 referencias y 178 contratos de modelo, 0 problemas, en el paquete extraído y en el cocinado |
 | R1.7 | Cumple | Tests de `cook`: caché, salida idéntica al repetir, ida y vuelta UASTC → BC7/RGBA8. Medido sin vídeos: de 351,7 MB a 421,6 MB; con vídeos, de 1523,5 a 1593,5 MB. Unos 4 min sin caché en release ([ADR 0017](../adr/0017-cocinado-y-archivos-pak.md)) |
 | R1.8 | Cumple | Test de `.pak` (versión 2 con zstd). `dwe-game --content` monta el `.pak` cocinado con sus 4813 assets, y `--check-content` los abre todos |

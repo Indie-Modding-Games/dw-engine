@@ -1,4 +1,4 @@
-# La partida nueva (apps/session: NewGameRules, apps/session/README.md): con qué partner y qué domador empieza.
+# La partida nueva (apps/session: NewGameRules, docs/modulos/apps/session.md): con qué partner y qué domador empieza.
 # Los stats son los del partner (ataque, defensa, velocidad, cerebro, PV y PM máximos); el resto del partner lo pone
 # game/partner al empezar (care.yaml, life.yaml).
 # main.c: main: una partida nueva cría al partner inicial (initializePartner(3)); la respuesta de la introducción puede

@@ -79,7 +79,7 @@ Las funciones de `clip_sampling.hpp` son puras y el `AnimationPlayer` las usa po
 ## Jugador y compañero
 
 Los datos están en el paquete `game` (`content/packs/game/models/`, esquema
-[`character_model.schema.json`](../../content/schemas/character_model.schema.json)):
+[`character_model.schema.json`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/character_model.schema.json)):
 
 ```yaml
 model: digimon/boys/model
@@ -100,7 +100,7 @@ El campo pide animaciones por nombre (`idle`, `walk`, `run`) y `CharacterModel::
 Los ids del compañero son los mismos para cualquier Digimon: cambiar de compañero es cambiar `model`. Así lo hace el
 juego cuando el compañero cambia de especie (evolución, forma virus o renacer, y al cargar una partida):
 `FieldScene::showPartnerSpecies` lo dibuja con `digimon/<especie>/model` del paquete base y las animaciones de
-`models/partner` (ver el [README de apps/game](../../apps/game/README.md)).
+`models/partner` (ver el [página de apps/game](../modulos/apps/game.md)).
 
 En el original el movimiento sale de la animación (movimiento raíz). Medido sobre los modelos extraídos (lo comprueba
 el test de `animation` con `DWE_CONTENT`), en unidades por segundo (100 = una casilla):

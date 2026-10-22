@@ -83,7 +83,7 @@ Cada incremento informa del número de mapas que alcanza **medido con una ruta d
 El intérprete de la IR **sí existe, pero solo en los tests**: un intérprete de referencia sobre el **grafo de
 bloques** (no sobre el árbol estructurado), con un mundo falso, es el oráculo de paridad del Lua generado
 ([pruebas](#6-incrementos-y-pruebas)). Es una extensión del recorredor de referencia que ya propone
-[warps de script](warps-de-script.md#pruebas-de-paridad).
+[warps de script](warps-de-script.md#la-representación-formatsscript).
 
 ### Pasos
 

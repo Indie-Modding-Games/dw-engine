@@ -9,10 +9,10 @@ dónde está el código que lo lee y cómo lo usa cada sistema.
 
 | Qué | Dónde |
 |---|---|
-| Código | [`engine/ruleset`](../../engine/ruleset/README.md) (`dwe::ruleset`), capa de servicios |
-| Ruleset `original` | [`content/packs/game/rules/original/`](../../content/packs/game/rules/original) |
+| Código | [`engine/ruleset`](../modulos/engine/ruleset.md) (`dwe::ruleset`), capa de servicios |
+| Ruleset `original` | [`content/packs/game/rules/original/`](https://github.com/Indie-Modding-Games/dw-engine/tree/main/content/packs/game/rules/original) |
 | Esquemas | `content/schemas/ruleset.schema.json` (manifiesto) y `ruleset_<sección>.schema.json` (una por sección) |
-| Reglas de esquema | `schemas:` de [`content/packs/game/pack.yaml`](../../content/packs/game/pack.yaml) |
+| Reglas de esquema | `schemas:` de [`content/packs/game/pack.yaml`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/packs/game/pack.yaml) |
 
 **Por qué un módulo de servicios y no `game/ruleset`.** Todos los sistemas del juego (partner, batalla, inventario,
 guardado) leen su sección del ruleset, y la regla 4 de las [reglas de dependencias](dependency-rules.md) prohíbe que
@@ -235,7 +235,7 @@ cada 20 fotogramas, 30 días por año, el año vuelve a 0 en 100, y una partida 
 La VFS lee los ficheros cada vez, así que editar una sección y recargar basta. Un fichero nuevo necesita volver a
 montar los paquetes.
 
-El [panel de ajuste](../../engine/debug/README.md#panel-de-ajuste-r34) del overlay de depuración usa todo esto: elige
+El [panel de ajuste](../modulos/engine/debug.md#panel-de-ajuste-r34) del overlay de depuración usa todo esto: elige
 el ruleset, edita sus valores, enseña qué cambiaría una recarga, controla el reloj y guarda una sección en su fichero.
 Guardar no reescribe el documento con `emitYaml`, que perdería los comentarios (el árbol de YAML no los guarda):
 `saveSection` cambia solo el texto de cada valor que difiere del fichero, en su línea, así que las citas del decomp y

@@ -6,7 +6,7 @@ se escribe y cómo se mantiene al día cuando cambia el inglés extraído. Los t
 
 ## Dónde vive
 
-En el paquete [`content/packs/es-translation`](../../content/packs/es-translation/pack.yaml) (id `es_translation`),
+En el paquete [`content/packs/es-translation`](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/packs/es-translation/pack.yaml) (id `es_translation`),
 que depende de `base`. Es un **delta**: solo lleva el español. El inglés sale del disco de cada usuario
 (`dwx extract`), y ningún texto del original entra en git ([política legal](../legal/assets.md)).
 

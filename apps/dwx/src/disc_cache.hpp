@@ -16,7 +16,7 @@ namespace dwe::dwx {
 
 // The version of what dwx extract writes from a disc. Bump it whenever the base pack written from
 // the same disc changes, so a dev cache extracts the disc again instead of serving the old output.
-// The fingerprint test of the disc cache fails until it is bumped (apps/dwx/README.md).
+// The fingerprint test of the disc cache fails until it is bumped (docs/modulos/apps/dwx.md).
 inline constexpr int ExtractorVersion = 6;
 
 // The folder of an entry that holds the base pack, as in an extracted content folder.

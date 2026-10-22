@@ -13,7 +13,7 @@ modificable a largo plazo: si se rompen, cambiar una pieza obliga a tocar muchas
    interfaces declaradas en el módulo que las necesita. Así `battle` no se rompe cuando cambia `partner`.
    Lo que comparten todos (el ruleset, sus estrategias y el reloj de juego) está en el servicio `ruleset`
    ([rulesets](rulesets.md)). El único sitio que los junta es la librería de app `apps/session`
-   ([README](../../apps/session/README.md)): la partida, que el juego y `dwe-sim` usan igual.
+   ([página del módulo](../modulos/apps/session.md)): la partida, que el juego y `dwe-sim` usan igual.
 5. **Lua solo ve lo que `script` expone.** La API de Lua es un contrato versionado con semver: los cambios
    incompatibles suben la versión mayor.
 6. **Solo se incluyen headers públicos**: `<dwe/<módulo>/...>`. Nunca `src/` de otro módulo.

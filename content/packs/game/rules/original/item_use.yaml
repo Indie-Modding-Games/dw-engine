@@ -1,4 +1,4 @@
-# El partner y los objetos que le da el domador (apps/session: InventoryAdapter, ItemUseRules, apps/session/README.md).
+# El partner y los objetos que le da el domador (apps/session: InventoryAdapter, ItemUseRules, docs/modulos/apps/session.md).
 # Cada objeto se nombra por su id de data/items. Los rangos y umbrales cuentan los números del original y solo cubren
 # los objetos del juego original; los objetos que añade un mod entran por id (docs/architecture/rulesets.md#rangos-e-ids).
 

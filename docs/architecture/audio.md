@@ -71,7 +71,7 @@ voz por tono) y `src/envelope.{hpp,cpp}` (la envolvente ADSR del chip). En `asse
 `Audio::update` con el tiempo de los ticks que avanzó. Desde el tramo 2a la sesión recibe el `audio::Audio` para sus
 ranuras (`session::SessionSound`, el `SoundPort`); en el 2b, `MenuSounds` toca los sonidos de los menús.
 
-Mientras `docs/modulos/` no exista (p4-docs-site), este documento hace de página del módulo.
+La API pública y su uso, en resumen, están en la [página del módulo](../modulos/engine/audio.md).
 
 ## 3. Hilos
 

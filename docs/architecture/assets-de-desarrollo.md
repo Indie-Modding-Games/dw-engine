@@ -69,11 +69,11 @@ el `base` de una carpeta extraída) sin copiar ni empaquetar nada.
 | `apps/content/dev_assets.hpp` | La opción, el nombre del fichero, la clave del aviso, `devAssetsConfigFolders`, `parseDevAssetsConfig`, `loadDevAssets` (busca, lee, comprueba y registra) y `openDevAssets` (todo eso más el disco, para el juego y `dwe-sim`) |
 | `apps/content/dev_disc.hpp` | La imagen del disco a través de `dwx`: dónde se busca `dwx` (`dwxCandidates`, `findDwx`), `extractedDiscContent` (ejecuta `dwx extract --cache`) y `withDiscContent` |
 | `apps/content/user_data.hpp` | La organización y la aplicación de la carpeta de datos del usuario, comunes al juego y a `dwe-sim` |
-| `apps/dwx/disc_cache.hpp` | La caché: `ExtractorVersion`, la clave, la entrada que se escribe aparte y se renombra, las entradas viejas y `dwx extract --cache` ([README](../../apps/dwx/README.md)) |
+| `apps/dwx/disc_cache.hpp` | La caché: `ExtractorVersion`, la clave, la entrada que se escribe aparte y se renombra, las entradas viejas y `dwx extract --cache` ([página del módulo](../modulos/apps/dwx.md)) |
 | `engine/platform/process.hpp` | `runProcess` (ejecuta un programa sin shell y recoge su salida), `executableFolder` y `executableFileName` |
 | `apps/content/game_content.hpp` | `GameContent::mount(..., devAssets)` monta y etiqueta los paquetes de desarrollo |
 | `apps/game` | `content_mount` (monta con `openDevAssets`) y `dev_assets_banner` (el aviso, y el ajuste `dev_assets_banner` que comprueba `tests/autotest/route-dev-assets.yaml`) |
-| `tests/support` | El único dueño de `DWE_DISC`, `DWE_CONTENT` y `DWE_DECOMP` en los tests, y la carpeta temporal `TempFolder` ([README](../../tests/support/README.md)) |
+| `tests/support` | El único dueño de `DWE_DISC`, `DWE_CONTENT` y `DWE_DECOMP` en los tests, y la carpeta temporal `TempFolder` ([página del módulo](../modulos/tests/support.md)) |
 
 Los tests usan las variables de `scripts/dev.sh`, no `--dev-assets`. En el contenedor solo se ven las rutas que
 `dev.sh` monta (`DWE_DISC`, `DWE_CONTENT`, `DWE_DECOMP`), así que un `dev-assets.yaml` con otras rutas falla dentro de
@@ -138,7 +138,7 @@ el test de la huella (`apps/dwx/tests/disc_cache_tests.cpp`) extrae un disco sin
 falla, diciendo «bump ExtractorVersion and update the fingerprint», hasta que se sube y se añade la fila de la versión
 nueva a su tabla de huellas, que solo crece (las versiones suben y cada una tiene su propia huella). El
 test solo ve lo que ese disco sintético recorre: un cambio en un extractor que no toca (los que necesitan las tablas
-del ejecutable, por ejemplo) también obliga a subir la versión, y eso lo recuerda el [README de dwx](../../apps/dwx/README.md).
+del ejecutable, por ejemplo) también obliga a subir la versión, y eso lo recuerda el [página de dwx](../modulos/apps/dwx.md).
 
 **Limpieza.** Tras escribir una entrada nueva, `dwx` borra las entradas del mismo disco de versiones **anteriores**
 que escribió él (las que tienen la marca de `dwx extract` en `base/`). Las de versiones posteriores se quedan: son de

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: item_use",
-  "description": "rules/<id>/item_use.yaml: how the partner takes the items the tamer gives it (apps/session: ItemUseRules, apps/session/README.md).",
+  "description": "rules/<id>/item_use.yaml: how the partner takes the items the tamer gives it (apps/session: ItemUseRules, docs/modulos/apps/session.md).",
   "type": "object",
   "required": ["refusal", "meals", "shop_discount_levels", "training_boost_bits"],
   "additionalProperties": false,

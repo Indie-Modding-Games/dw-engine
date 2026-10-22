@@ -88,7 +88,7 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 
 - El formato, las ranuras (`slot_01`…`slot_15`, `autosave_01`…), la copia `.bak`, el estado «dañada» de la lista y las
   migraciones: [save.md](save.md), `game/save` (`SaveSlots::list`, `SlotInfo`).
-- `GameSession` ([apps/session](../../apps/session/README.md)) guarda y carga, pero **solo se carga al arrancar**
+- `GameSession` ([apps/session](../modulos/apps/session.md)) guarda y carga, pero **solo se carga al arrancar**
   (`--load`): `FieldScene` se crea una vez (`apps/game/src/game.cpp: runGame`) y no hay vuelta a la portada ni
   máquina de estados de la app. `GameSession::loadFile` no es transaccional: si una sección falla, el estado queda a
   medias.
