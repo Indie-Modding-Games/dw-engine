@@ -42,8 +42,8 @@ Al acabar escribe `summary.txt` en su carpeta de logs y sale con 0 solo si todo 
 **El lock.** Antes de nada, el gate espera al lock con un `mkdir` atómico y escribe en `owner` la rama, el tip, la
 hora y su PID. También espera mientras haya junto a él otra carpeta de lock `full-*` (por ejemplo `full-otro.d`); un
 fichero que se llame así, como un log, no cuenta. Mientras crea la carpeta y escribe `owner`, retiene las señales, así
-que una interrupción en ese momento no deja un lock sin dueño. Al salir lo suelta, también si falla o lo interrumpes, y solo si `owner` sigue
-siendo suyo o no llegó a escribirse.
+que una interrupción en ese momento no deja un lock sin dueño. Al salir lo suelta, también si falla o lo interrumpes,
+y solo si `owner` sigue siendo suyo o no llegó a escribirse.
 
 **El espacio libre.** Antes del lock, el gate pide espacio libre en el disco del worktree según los pasos que vas a
 correr, y se para si no lo hay:
@@ -52,7 +52,7 @@ correr, y se para si no lo hay:
 |---|---|---|
 | check | 12 | `build/ci` desde cero ocupa 7,3 GB, el cocinado 2,0 GB y su entrada en la caché otros 2,0 GB |
 | windows | 2 | El corto reutiliza `build/windows-cross` (4,4 GB) y el diario lo borra antes de compilar otra vez: crece poco |
-| routes | 1 | Los logs y capturas de las 42 ejecuciones del diario del 2026-10-22 ocupaban unos 80 MB |
+| routes | 1 | Los logs y capturas de las 42 ejecuciones del diario del 2026-10-22, antes de la pareja de guardar y cargar, ocupaban unos 80 MB |
 
 Un gate completo pide 15 GB; solo las rutas (`--steps routes`), 1 GB.
 
@@ -181,8 +181,8 @@ PID de la shell que lo arranca y un contador. Así cualquiera que vea un contene
 
 El modo paralelo es el de por defecto desde que dos pares de ejecuciones, secuencial y paralela sobre un mismo tip,
 dieron resúmenes idénticos, sin fallos intermitentes, uno con `--lp-threads` y otro sin él (2026-10-22, 42 ejecuciones
-cada una): de 1096 s a 380 s y de 1123 s a 373 s, unas 3 veces más rápido en 4 pantallas. `--lp-threads` no cambió
-nada medible, así que queda sin fijar.
+cada una, antes de la pareja de guardar y cargar): de 1096 s a 380 s y de 1123 s a 373 s, unas 3 veces más rápido en
+4 pantallas. `--lp-threads` no cambió nada medible, así que queda sin fijar.
 
 ## clang-tidy incremental
 
