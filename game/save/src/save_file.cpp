@@ -278,6 +278,16 @@ core::Result<SaveFile> parseSaveFile(std::string_view text, const MigrationChain
   return reader.finish(std::move(file), messages::SaveFileContext);
 }
 
+bool isNewerSave(std::string_view text) {
+  auto tree = core::parseYaml(text);
+  if (!tree || !isSave(*tree)) {
+    return false;
+  }
+  YamlReader reader;
+  const auto version = reader.integer<std::int32_t>(reader.field(*tree, save_key::FormatVersion));
+  return reader.ok() && version > formatMigrations().current();
+}
+
 core::Result<std::string> writeSaveFile(const SaveFile& file) {
   for (const std::string& name : file.header.autosaveReasons) {
     if (!isValidName(name)) {

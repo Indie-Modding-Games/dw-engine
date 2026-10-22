@@ -15,8 +15,39 @@
 namespace dwe::app {
 namespace {
 
-// The save storage of the game, or nothing when it is not saved.
-std::unique_ptr<game::save::DiskSaveStorage> storageFor(const Options& options, bool keepsSaves) {
+std::chrono::sys_seconds wallClock() {
+  return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+}
+
+// A new playthrough's seed when --seed gives none; the log keeps it, so a bug report's playthrough
+// can be played again with --seed.
+std::uint64_t newSeed() {
+  return static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
+}
+
+// Starts the playthrough itself: the slot's save, or a new game (AppFlow saves it to its slot).
+core::Result<void> begin(session::GameSession& session, const PlayStart& start,
+                         std::uint64_t seed) {
+  if (start.load) {
+    if (auto loaded = session.load(*start.load, start.backup); !loaded) {
+      return loaded;
+    }
+    core::logInfo("{}", core::formatMessage(messages::SessionLoaded,
+                                            start.backup ? game::save::slotBackupName(*start.load)
+                                                         : game::save::slotFileName(*start.load)));
+    return {};
+  }
+  if (auto started = session.startNewGame(); !started) {
+    return started;
+  }
+  core::logInfo("{}", core::formatMessage(messages::SessionStarted, seed));
+  return {};
+}
+
+} // namespace
+
+std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& options,
+                                                            bool keepsSaves) {
   if (!keepsSaves && !options.saves) {
     return nullptr;
   }
@@ -28,21 +59,9 @@ std::unique_ptr<game::save::DiskSaveStorage> storageFor(const Options& options, 
   return std::make_unique<game::save::DiskSaveStorage>(std::move(*folder));
 }
 
-std::chrono::sys_seconds wallClock() {
-  return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-}
-
-// A new playthrough's seed when --seed gives none; the log keeps it, so a bug report's playthrough
-// can be played again with --seed.
-std::uint64_t newSeed() {
-  return static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
-}
-
-} // namespace
-
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves, const std::optional<game::save::SlotId>& load) {
-  GameStart start{.storage = storageFor(options, keepsSaves),
+                                  bool keepsSaves, const PlayStart& play) {
+  GameStart start{.storage = saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
   const std::uint64_t seed = options.seed ? *options.seed : newSeed();
@@ -59,17 +78,8 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
     return core::fail(core::formatMessage(messages::SessionFailed, session.error().message));
   }
   start.session = std::move(*session);
-  if (load) {
-    if (auto loaded = start.session->load(*load); !loaded) {
-      return core::fail(core::formatMessage(messages::SessionFailed, loaded.error().message));
-    }
-    core::logInfo("{}",
-                  core::formatMessage(messages::SessionLoaded, game::save::slotFileName(*load)));
-  } else {
-    if (auto started = start.session->startNewGame(); !started) {
-      return core::fail(core::formatMessage(messages::SessionFailed, started.error().message));
-    }
-    core::logInfo("{}", core::formatMessage(messages::SessionStarted, seed));
+  if (auto begun = begin(*start.session, play, seed); !begun) {
+    return core::fail(core::formatMessage(messages::SessionFailed, begun.error().message));
   }
   if (options.clockSpeed) {
     start.session->clock().setSpeed(*options.clockSpeed);

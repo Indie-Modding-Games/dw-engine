@@ -18,6 +18,10 @@ int autosavePriority(const SlotInfo& info) {
     return 1;
   case SlotInfo::State::Saved:
     break;
+  case SlotInfo::State::Newer:
+    // A newer game's save is the player's; an autosave writes over it only when nothing else is
+    // left.
+    return 3;
   }
   return 2;
 }
@@ -73,7 +77,8 @@ SlotInfo SaveSlots::readInfo(SlotId slot) const {
   auto file =
       text.and_then([](const std::optional<std::string>& saved) { return parseSaveFile(*saved); });
   if (!file) {
-    info.state = SlotInfo::State::Damaged;
+    const bool newer = text && text->has_value() && isNewerSave(**text);
+    info.state = newer ? SlotInfo::State::Newer : SlotInfo::State::Damaged;
     info.problem = std::format(messages::InFile, slotFileName(slot), file.error().message);
     return info;
   }
@@ -114,7 +119,10 @@ core::Result<void> SaveSlots::save(SlotId slot, const SaveFile& file) {
   if (!text) {
     return std::unexpected{text.error()};
   }
-  return storage_->write(slotFileName(slot), *text, slotBackupName(slot));
+  // A damaged save never replaces a good backup: the backup may be all that is left of the slot.
+  const SlotInfo current = readInfo(slot);
+  const bool keepBackup = current.state == SlotInfo::State::Damaged && current.hasBackup;
+  return storage_->write(slotFileName(slot), *text, keepBackup ? "" : slotBackupName(slot));
 }
 
 core::Result<SaveFile> SaveSlots::readFile(SlotId slot, const std::string& name) const {

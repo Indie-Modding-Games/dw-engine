@@ -39,13 +39,14 @@ std::string slotBackupName(SlotId slot);
 
 // What the slot list shows of one slot.
 struct SlotInfo {
-  enum class State : std::uint8_t { Empty, Saved, Damaged };
+  // Newer: written by a newer game, so it can be neither loaded nor written over.
+  enum class State : std::uint8_t { Empty, Saved, Damaged, Newer };
 
   SlotId slot;
   State state = State::Empty;
   // The header of a saved slot.
   std::optional<SaveHeader> header;
-  // Why a damaged slot cannot be read.
+  // Why a damaged or newer slot cannot be read.
   std::string problem;
   // Whether the slot has a backup of its previous save, which loadBackup reads.
   bool hasBackup = false;
@@ -71,7 +72,8 @@ public:
   // summary.
   void setSummaryReader(SummaryReader reader);
 
-  // Writes a save to a slot, keeping the slot's previous save as its backup.
+  // Writes a save to a slot, keeping the slot's previous save as its backup; a damaged one is not
+  // kept over a backup it already has.
   core::Result<void> save(SlotId slot, const SaveFile& file);
 
   // Reads a slot's save, its header already migrated; SaveSections::read loads the systems from it.

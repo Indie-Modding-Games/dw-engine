@@ -249,14 +249,15 @@ core::Result<void> GameSession::startNewGame() {
   return {};
 }
 
-core::Result<void> GameSession::load(game::save::SlotId slot) {
+core::Result<void> GameSession::load(game::save::SlotId slot, bool fromBackup) {
   if (!slots_) {
     return core::fail(std::string{messages::NoStorage});
   }
-  auto file = slots_->load(slot);
+  auto file = fromBackup ? slots_->loadBackup(slot) : slots_->load(slot);
   if (!file) {
-    return core::fail(
-        formatMessage(messages::LoadFailed, game::save::slotFileName(slot), file.error().message));
+    const std::string name =
+        fromBackup ? game::save::slotBackupName(slot) : game::save::slotFileName(slot);
+    return core::fail(formatMessage(messages::LoadFailed, name, file.error().message));
   }
   if (auto loaded = loadFile(*file); !loaded) {
     return loaded;

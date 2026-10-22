@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 
+#include "app_flow.hpp"
 #include "options.hpp"
 
 namespace dwe::app {
@@ -23,10 +24,14 @@ struct GameStart {
   session::GameSystems systems;
 };
 
-// Starts a new game, or loads the one in `load`, with the command line's --clock-speed, --ruleset
-// and --seed on the packs, which must outlive it. `keepsSaves` is false for an autotest, which
-// writes no save unless --saves names a folder.
+// The folder the game saves to, or nothing when it is not saved. `keepsSaves` is false for an
+// autotest, which writes no save unless --saves names a folder.
+std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& options,
+                                                            bool keepsSaves);
+
+// Starts the game `play` asks for with the command line's --clock-speed, --ruleset and --seed on
+// the packs, which must outlive it.
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves, const std::optional<game::save::SlotId>& load);
+                                  bool keepsSaves, const PlayStart& play);
 
 } // namespace dwe::app

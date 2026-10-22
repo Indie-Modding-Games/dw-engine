@@ -94,6 +94,10 @@ core::Result<SaveFile> parseSaveFile(std::string_view text);
 // As above with other format migrations; for tests.
 core::Result<SaveFile> parseSaveFile(std::string_view text, const MigrationChain& format);
 
+// Whether a text is a save written by a newer game, in a format this one cannot read or write
+// over.
+[[nodiscard]] bool isNewerSave(std::string_view text);
+
 // Writes a save file. The same SaveFile always gives the same text, and a file read and written
 // again is byte-identical.
 core::Result<std::string> writeSaveFile(const SaveFile& file);

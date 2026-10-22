@@ -471,7 +471,8 @@ int runGame(const Options& options) {
   if ((autotest && !autotest->startsAtMainMenu()) || options.newGame || options.load ||
       options.startMap) {
     sessionCommands.drop(autotest.get());
-    if (auto started = flow.play({.load = options.load}); !started) {
+    if (auto started = flow.play({.load = options.load, .backup = false, .saveTo = std::nullopt});
+        !started) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
     }

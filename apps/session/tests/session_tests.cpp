@@ -319,6 +319,17 @@ TEST_CASE("a game saved to a slot loads from it") {
   CHECK_FALSE(file->header.summary.species.empty());
   CHECK_FALSE(loaded->load({.kind = SlotKind::Manual, .index = 5}).has_value());
 
+  // A second save keeps the first as the backup, which a damaged slot loads from.
+  REQUIRE(session->save(slot).has_value());
+  storage.put("slot_02.yaml", "format: dwe-save\n");
+  const auto restored = newGame(packs, &storage, 4);
+  CHECK_FALSE(restored->load(slot).has_value());
+  const auto fromBackup = restored->load(slot, true);
+  REQUIRE_MESSAGE(fromBackup.has_value(), errorOf(fromBackup));
+  CHECK(restored->homeSlot() == slot);
+  CHECK(errorOf(restored->load({.kind = SlotKind::Manual, .index = 1}, true))
+            .contains("slot_01.yaml.bak"));
+
   const auto unsaved = newGame(packs, nullptr);
   CHECK_FALSE(unsaved->save(slot).has_value());
 }

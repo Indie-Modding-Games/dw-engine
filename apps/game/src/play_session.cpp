@@ -149,7 +149,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
 core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
                                                                const PlayStart& start) {
   const Options& options = *context.options;
-  auto game = startGame(*context.files, options, context.keepsSaves, start.load);
+  auto game = startGame(*context.files, options, context.keepsSaves, start);
   if (!game) {
     return std::unexpected{game.error()};
   }

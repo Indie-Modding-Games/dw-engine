@@ -35,7 +35,7 @@ public:
 
   // Replaces a file so that it holds either its old text or the new one, never a part of either,
   // even if the game stops halfway. The old text, if there was one, is kept in `backup` (replacing
-  // an earlier backup).
+  // an earlier backup); an empty `backup` keeps no copy and leaves any earlier backup alone.
   virtual core::Result<void> write(std::string_view name, std::string_view text,
                                    std::string_view backup) = 0;
 };

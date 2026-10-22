@@ -161,7 +161,8 @@ autosave:
   tarjeta de memoria (`main_menu.c: SAVEGAME_SLOT_INFO`).
 - **Autoguardado**: `autosave_01.yaml`... Cuántas hay es dato (`autosave_slots`, 3 en el paquete `game`). Se escribe
   por turnos: la primera ranura vacía, si no una dañada, si no la guardada hace más tiempo (por `updated`), así que
-  tras la tercera vuelve a la primera. `autosave_slots: 0` lo apaga.
+  tras la tercera vuelve a la primera; una de un juego más nuevo, solo si todas lo son (queda en su `.bak`).
+  `autosave_slots: 0` lo apaga. Guardar sobre una ranura dañada que ya tiene copia no la cambia por la dañada.
 
 ### Cuándo autoguarda
 

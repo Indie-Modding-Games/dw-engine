@@ -20,6 +20,12 @@ core::Result<void> checkName(std::string_view name) {
   return {};
 }
 
+// A file name, and a backup name unless it is empty (no backup).
+core::Result<void> checkNames(std::string_view name, std::string_view backup) {
+  return checkName(name).and_then(
+      [&] { return backup.empty() ? core::Result<void>{} : checkName(backup); });
+}
+
 core::Result<void> writeWhole(const std::filesystem::path& file, std::string_view text) {
   std::ofstream stream{file, std::ios::binary | std::ios::trunc};
   stream.write(text.data(), static_cast<std::streamsize>(text.size()));
@@ -86,7 +92,7 @@ core::Result<std::optional<std::string>> DiskSaveStorage::read(std::string_view 
 
 core::Result<void> DiskSaveStorage::write(std::string_view name, std::string_view text,
                                           std::string_view backup) {
-  if (auto valid = checkName(name).and_then([&] { return checkName(backup); }); !valid) {
+  if (auto valid = checkNames(name, backup); !valid) {
     return valid;
   }
   std::error_code error;
@@ -97,9 +103,12 @@ core::Result<void> DiskSaveStorage::write(std::string_view name, std::string_vie
   }
   const std::filesystem::path file = folder_ / name;
   const std::filesystem::path temporary = folder_ / std::format("{}{}", name, TemporarySuffix);
-  auto written = writeWhole(temporary, text)
-                     .and_then([&] { return backUp(file, folder_ / backup); })
-                     .and_then([&] { return replace(temporary, file); });
+  auto written =
+      writeWhole(temporary, text)
+          .and_then([&] {
+            return backup.empty() ? core::Result<void>{} : backUp(file, folder_ / backup);
+          })
+          .and_then([&] { return replace(temporary, file); });
   if (!written) {
     std::filesystem::remove(temporary, error);
   }
@@ -119,7 +128,7 @@ core::Result<std::optional<std::string>> MemorySaveStorage::read(std::string_vie
 
 core::Result<void> MemorySaveStorage::write(std::string_view name, std::string_view text,
                                             std::string_view backup) {
-  if (auto valid = checkName(name).and_then([&] { return checkName(backup); }); !valid) {
+  if (auto valid = checkNames(name, backup); !valid) {
     return valid;
   }
   if (failNextWrite_) {
@@ -127,7 +136,7 @@ core::Result<void> MemorySaveStorage::write(std::string_view name, std::string_v
     return core::fail(std::format(messages::StorageFull, name));
   }
   const auto found = files_.find(name);
-  if (found != files_.end()) {
+  if (found != files_.end() && !backup.empty()) {
     files_.insert_or_assign(std::string{backup}, found->second);
   }
   files_.insert_or_assign(std::string{name}, std::string{text});

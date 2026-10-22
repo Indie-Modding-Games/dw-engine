@@ -103,9 +103,10 @@ public:
   // tamer.
   core::Result<void> startNewGame();
 
-  // Loads a slot, or a save already read, switching to its ruleset if it is another one. The place
-  // it was saved at is in savedPlace() for whoever enters the map.
-  core::Result<void> load(game::save::SlotId slot);
+  // Loads a slot (or its backup, for a damaged save), or a save already read, switching to its
+  // ruleset if it is another one. The place it was saved at is in savedPlace() for whoever enters
+  // the map.
+  core::Result<void> load(game::save::SlotId slot, bool fromBackup = false);
   core::Result<void> loadFile(const game::save::SaveFile& file);
 
   // The playthrough as a save file: the loaded file's sections with every system's written over

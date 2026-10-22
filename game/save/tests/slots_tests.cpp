@@ -84,6 +84,9 @@ TEST_CASE("the disk storage replaces a file and keeps the old one as backup") {
   CHECK(storage.read("slot_01.yaml").value() == "second\n");
   CHECK(storage.read("slot_01.yaml.bak").value() == "first\n");
   CHECK_FALSE(std::filesystem::exists(folder.path() / "saves" / "slot_01.yaml.tmp"));
+  REQUIRE(storage.write("slot_01.yaml", "third\n", ""));
+  CHECK(storage.read("slot_01.yaml").value() == "third\n");
+  CHECK(storage.read("slot_01.yaml.bak").value() == "first\n");
 
   CHECK(errorOf(storage.read("../escape")).contains("not a save file name"));
   CHECK_FALSE(storage.write(".hidden", "x", "slot_01.yaml.bak"));
@@ -136,6 +139,7 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   REQUIRE(slots.save(second, fileLabelled("first", at(8))));
   REQUIRE(slots.save(second, fileLabelled("second", at(9))));
   storage.put("slot_03.yaml", "format: dwe-save\nformat_version: 1\n");
+  storage.put("autosave_01.yaml", "format: dwe-save\nformat_version: 99\n");
 
   const auto infos = slots.list();
   REQUIRE(infos.size() == 5);
@@ -145,6 +149,8 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   CHECK(infos[1].hasBackup);
   CHECK(infos[2].state == SlotInfo::State::Damaged);
   CHECK(infos[2].problem.starts_with("slot_03.yaml: save file: "));
+  CHECK(infos[3].state == SlotInfo::State::Newer);
+  CHECK(infos[4].state == SlotInfo::State::Empty);
 
   CHECK(slots.load(second).value().header.label == "second");
   CHECK(slots.loadBackup(second).value().header.label == "first");
@@ -187,6 +193,35 @@ TEST_CASE("a failed save leaves the slot as it was") {
   CHECK_FALSE(slots.save(first, fileLabelled("lost", at(9))));
   CHECK(slots.load(first).value().header.label == "kept");
   CHECK_FALSE(slots.list()[0].hasBackup);
+}
+
+TEST_CASE("a save over a damaged slot keeps its good backup") {
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, parseSaveSettings(Settings).value()};
+  const SlotId first{.kind = SlotKind::Manual, .index = 1};
+  REQUIRE(slots.save(first, fileLabelled("good", at(8))));
+  REQUIRE(slots.save(first, fileLabelled("later", at(9))));
+  storage.put("slot_01.yaml", "damaged");
+  REQUIRE(slots.save(first, fileLabelled("new", at(10))));
+  CHECK(slots.load(first).value().header.label == "new");
+  CHECK(slots.loadBackup(first).value().header.label == "good");
+}
+
+TEST_CASE("the autosave writes over a newer game's save only when nothing else is left") {
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, parseSaveSettings(Settings).value()};
+  const SlotId first{.kind = SlotKind::Autosave, .index = 1};
+  const SlotId second{.kind = SlotKind::Autosave, .index = 2};
+  const std::string newer = "format: dwe-save\nformat_version: 99\n";
+  storage.put("autosave_01.yaml", newer);
+  REQUIRE(slots.save(second, fileLabelled("saved", at(8))));
+  CHECK(slots.autosave(fileLabelled("a", at(9))).value() == second);
+  CHECK(storage.read("autosave_01.yaml").value() == newer);
+
+  storage.put("autosave_02.yaml", newer);
+  CHECK(slots.autosave(fileLabelled("b", at(10))).value() == first);
+  CHECK(slots.load(first).value().header.label == "b");
+  CHECK(storage.read("autosave_01.yaml.bak").value() == newer);
 }
 
 TEST_CASE("the autosave rotates over its slots") {

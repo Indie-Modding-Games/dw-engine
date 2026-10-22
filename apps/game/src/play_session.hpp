@@ -101,6 +101,11 @@ public:
   void update(SessionCommands& commands, Autotest* autotest, FrameStats& stats, double frameSeconds,
               float alpha);
 
+  // Saves the game to a slot (AppFlow, for a new game's slot).
+  [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {
+    return game_.session->save(slot);
+  }
+
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
 
