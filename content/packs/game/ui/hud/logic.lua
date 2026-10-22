@@ -298,6 +298,10 @@ function on_setting(document, name)
 		draw_field(document)
 	elseif name == "hud.partner.revision" then
 		draw_bubble(document)
+	elseif name == "ui_skin" then
+		-- A new skin may set or clear classes the drawing reads (pips): draw the field status and the bubble again.
+		refresh(document)
+		draw_field(document)
 	elseif string.find(name, "^hud%.") then
 		if string.find(name, "%.label$") then
 			draw_field_labels(document)

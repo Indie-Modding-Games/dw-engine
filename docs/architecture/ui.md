@@ -229,7 +229,9 @@ necesidades se turnan, y una tercera espera a que se vaya una de ellas. El scrip
 el original vuelve a hacer aparecer la misma burbuja cada 60 frames: eso es animación del aspecto.
 
 Las constantes (25 cuadritos, 6° por minuto, 15° por hora, las 6 y las 17) están con nombre al principio del
-script, con su referencia a `clock.c` o `partner_impl.c`. El aspecto moderno esconde la esfera
+script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto (el ajuste `ui_skin`) el script vuelve a
+dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede poner o quitar clases que
+lee (`pips`). El aspecto moderno esconde la esfera
 (`#field-clock-dial`) y no pone `pips`.
 
 **El aspecto moderno** (abajo a la izquierda, `ui/skins/modern/hud/style.rcss`) dibuja todo el contrato. Lo que

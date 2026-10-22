@@ -725,6 +725,14 @@ TEST_CASE("the HUD draws the field status on each revision, with the bars' low h
     CHECK(ui->elementHasClass("hud", "field-status", "shown"));
     bumpFieldRevision(*ui);
     CHECK_FALSE(ui->elementHasClass("hud", "field-status", "shown"));
+
+    // A skin switch redraws too, without a new revision: the new skin may change how the bars fill (pips).
+    ui->setSetting("hud.shown", true);
+    ui->setSetting("hud.clock.minute", 6.0);
+    ui->setSetting("ui_skin", std::string{"another"});
+    ui->update();
+    CHECK(ui->elementHasClass("hud", "field-status", "shown"));
+    CHECK(ui->elementText("hud", "field-time") == "07:06");
 }
 
 namespace {
