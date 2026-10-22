@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "llvm-vs-code-extensions.vscode-clangd",
+    "JohnnyMorganz.stylua",
+    "foxundermoon.shell-format",
+    "timonwong.shellcheck",
+    "dwenegar.vscode-luacheck",
+    "EditorConfig.EditorConfig"
+  ]
+}

@@ -141,7 +141,9 @@ PRESET=windows-cross scripts/dev.sh build
 | Comando | Qué hace |
 |---|---|
 | `scripts/dev.sh shell` | Abre una terminal dentro del contenedor |
-| `scripts/dev.sh format` | Formatea el código con clang-format (`--check` solo comprueba) |
+| `scripts/dev.sh format` | Formatea el C++ (clang-format), el Lua (StyLua) y el shell (shfmt), y ajusta sus comentarios a 100 columnas (`--check` solo comprueba) |
+| `scripts/dev.sh lint` | Pasa luacheck al Lua y shellcheck al shell |
+| `scripts/dev.sh setup-hooks` | Instala el hook de pre-commit, que formatea y revisa lo que vas a commitear |
 | `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
 | `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco o el contenido extraído |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
@@ -151,4 +153,27 @@ PRESET=windows-cross scripts/dev.sh build
 
 ## Editor
 
-Abre la carpeta con VS Code o CLion y elige "Reopen in Container": usa el mismo `.devcontainer/`.
+El estilo es el mismo en todo el repositorio: 2 espacios, nunca tabuladores, 100 columnas. Lo fijan
+`.editorconfig`, `.clang-format`, `stylua.toml`, `.luacheckrc` y `.shellcheckrc`, y el editor formatea al guardar.
+
+- **VS Code, en el contenedor (lo recomendado).** Abre la carpeta y elige "Reopen in Container". El contenedor usa
+  la imagen de desarrollo, con las versiones fijadas de clang-format, clangd, StyLua, shfmt, luacheck y shellcheck,
+  así que lo que formatea al guardar es exactamente lo que comprueba el gate. Instala solas las extensiones.
+- **VS Code, fuera del contenedor.** Al abrir la carpeta, acepta las extensiones recomendadas
+  (`.vscode/extensions.json`): clangd, StyLua, shell-format, ShellCheck, luacheck y EditorConfig. Las de clangd,
+  StyLua, shell-format y ShellCheck descargan su propio programa; StyLua descarga la versión fijada. La de luacheck
+  necesita `luacheck` en el `PATH`.
+- **CLion, Neovim y otros.** clangd lee `.clangd`, `.clang-format` y `.clang-tidy`; para Lua y shell, configura
+  StyLua y shfmt sin opciones: los dos leen su estilo del repositorio.
+
+clangd necesita los comandos de compilación de un preset configurado (`scripts/dev.sh configure`).
+
+**Versiones.** Fuera del contenedor, un clang-format o un shfmt de otra versión puede formatear algo distinto. No
+pasa nada: el hook de pre-commit y el gate usan las versiones de la imagen y lo corrigen o lo señalan.
+
+**Hook de pre-commit.** `scripts/dev.sh setup-hooks` hace que git use `scripts/hooks/` en este clon (y en sus
+worktrees). Antes de cada commit, el hook formatea los ficheros de C++, Lua y shell que están en el commit, los
+vuelve a añadir y les pasa luacheck y shellcheck. Si queda un error, el commit se para y dice por qué. Si el fichero
+tenía además cambios sin añadir, no lo vuelve a añadir: te pide que lo revises y lo añadas tú. Sin Docker, o sin la
+imagen, avisa y deja pasar el commit, porque el gate comprueba lo mismo. clang-tidy no corre en el hook, solo en el
+gate.

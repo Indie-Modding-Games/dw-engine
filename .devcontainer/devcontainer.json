@@ -5,7 +5,21 @@
   "remoteUser": "ubuntu",
   "customizations": {
     "vscode": {
-      "extensions": ["llvm-vs-code-extensions.vscode-clangd", "ms-vscode.cmake-tools"]
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools",
+        "JohnnyMorganz.stylua",
+        "foxundermoon.shell-format",
+        "timonwong.shellcheck",
+        "dwenegar.vscode-luacheck",
+        "EditorConfig.EditorConfig"
+      ],
+      "settings": {
+        "clangd.path": "/usr/local/bin/clangd",
+        "stylua.styluaPath": "/usr/local/bin/stylua",
+        "shellformat.path": "/usr/local/bin/shfmt",
+        "shellcheck.executablePath": "/usr/local/bin/shellcheck"
+      }
     }
   }
 }

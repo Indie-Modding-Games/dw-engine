@@ -13,7 +13,10 @@ compile_commands.json
 
 # Local settings
 CMakeUserPresets.json
-/.vscode/
+# The editor settings of the repository (format on save) are versioned; anyone's own are not.
+/.vscode/*
+!/.vscode/settings.json
+!/.vscode/extensions.json
 /.idea/
 
 # The dev assets config (--dev-assets): paths of one machine, never versioned

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# git's pre-commit hook, which scripts/dev.sh setup-hooks installs: formats the staged C++, Lua and
+# shell files with the image's formatters and stages them again, then lints them. A file left
+# unformatted or a lint error stops the commit. Without Docker it only warns: the gate checks the
+# same.
+set -uo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+dev="$root/scripts/dev.sh"
+
+stop() {
+  echo "pre-commit: $1. The commit stops: fix it, stage it and commit again." >&2
+  exit 1
+}
+
+if [[ "${DWE_HOOK_RUNNER:-}" != "direct" ]]; then
+  if ! docker info >/dev/null 2>&1; then
+    # A session started before its user joined the docker group reaches Docker only through sg.
+    if [[ -z "${DWE_HOOK_IN_SG:-}" ]] && command -v sg >/dev/null \
+      && sg docker -c 'docker info' >/dev/null 2>&1; then
+      exec sg docker -c "DWE_HOOK_IN_SG=1 $(printf '%q' "$0")"
+    fi
+    echo "pre-commit: Docker is not reachable, so the staged files are not formatted or linted;" \
+      "the gate checks them" >&2
+    exit 0
+  fi
+  if ! docker image inspect "$("$dev" image-name)" >/dev/null 2>&1; then
+    echo "pre-commit: there is no image $("$dev" image-name) (scripts/dev.sh image builds it)," \
+      "so the staged files are not formatted or linted; the gate checks them" >&2
+    exit 0
+  fi
+fi
+
+"$dev" format --staged || stop "a staged file could not be formatted (see above)"
+"$dev" lint --staged || stop "the linters found the errors above"

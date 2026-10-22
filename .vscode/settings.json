@@ -1,0 +1,16 @@
+{
+  "editor.formatOnSave": true,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "editor.rulers": [100],
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[cpp]": { "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd" },
+  "[lua]": { "editor.defaultFormatter": "JohnnyMorganz.stylua" },
+  "[shellscript]": { "editor.defaultFormatter": "foxundermoon.shell-format" },
+  "[python]": { "editor.tabSize": 4 },
+  "stylua.targetReleaseVersion": "v2.6.0",
+  "shellformat.useEditorConfig": true
+}
