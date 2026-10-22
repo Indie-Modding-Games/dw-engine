@@ -1,8 +1,9 @@
--- Free exploration's chooser: the places the scripts of the cell the player stepped on lead to, whatever the story
--- (docs/architecture/warps-de-script.md). The game publishes them as settings (exploration_places, the count;
--- exploration_story, the place the story takes now, from 0, or -1; exploration_place_name.<n> and
--- exploration_place_map.<n>, from 0) and shows this document; it sends choose_destination with the place, from 0, or
--- stay_here. Pages of eight places, turned with left and right or the page buttons.
+-- Free exploration's chooser: the places the scripts of the cell the player stepped on lead to,
+-- whatever the story (docs/architecture/warps-de-script.md). The game publishes them as settings
+-- (exploration_places, the count; exploration_story, the place the story takes now, from 0, or -1;
+-- exploration_place_name.<n> and exploration_place_map.<n>, from 0) and shows this document; it
+-- sends choose_destination with the place, from 0, or stay_here. Pages of eight places, turned with
+-- left and right or the page buttons.
 
 local PageSize = 8
 local page = 1
@@ -74,7 +75,8 @@ function turn(document, step)
 end
 
 function on_show(document)
-  -- The page of the story's place, which the choice starts on; the first place when the story takes none.
+  -- The page of the story's place, which the choice starts on; the first place when the story takes
+  -- none.
   local story = math.floor(ui.setting("exploration_story") or -1)
   page = story >= 0 and math.floor(story / PageSize) + 1 or 1
   refresh(document)
@@ -83,7 +85,7 @@ function on_show(document)
   document:get("place-" .. slot):focus()
 end
 
-function on_setting(document, name)
+function on_setting(document, _name)
   refresh(document)
 end
 

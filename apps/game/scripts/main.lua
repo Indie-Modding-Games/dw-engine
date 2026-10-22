@@ -1,5 +1,5 @@
--- Phase 0 sample: a marker the player moves with any keyboard or gamepad. Edit and save this file while the game
--- runs to see it reload.
+-- Phase 0 sample: a marker the player moves with any keyboard or gamepad. Edit and save this file
+-- while the game runs to see it reload.
 
 marker = marker or { x = 640, y = 360, radius = 24 }
 

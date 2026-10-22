@@ -1,19 +1,22 @@
--- The HUD follows the minimap settings the game reports: auto, on or off (minimap), and its size. Its menu button
--- asks the game to open the pause menu (the open_menu command) and shows the control that opens it with the last
--- device used. On a map change the game subtracts its fade from the scene under the HUD and reports how much it takes
--- away (screen_fade, 0 to 1): the panels fade out with it, as the original's fade covers its HUD. The name of the map
--- it goes to shows in front of the fade, in the player's language: the game reports its text key (map_title_key,
--- empty when none).
+-- The HUD follows the minimap settings the game reports: auto, on or off (minimap), and its size.
+-- Its menu button asks the game to open the pause menu (the open_menu command) and shows the
+-- control that opens it with the last device used. On a map change the game subtracts its fade from
+-- the scene under the HUD and reports how much it takes away (screen_fade, 0 to 1): the panels fade
+-- out with it, as the original's fade covers its HUD. The name of the map it goes to shows in front
+-- of the fade, in the player's language: the game reports its text key (map_title_key, empty when
+-- none).
 --
--- The field status shows the game time and the partner's state, which the game publishes as hud.* settings
--- (apps/screens: field_hud_view.hpp): it bumps hud.revision once per change, and only then this script redraws, so a
--- frame where nothing changed writes nothing. The labels come once, as text keys. hud.shown is false while a menu or a
--- battle stops the field: the panel loses its class "shown" and each skin decides how it leaves. Every skin draws
--- this same document and script and differs only in its style sheets: a bar with the class "pips" fills in the
--- original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin
--- that draws the original's clock. #field-partner-bubble hangs over the partner's head (hud.partner.*) with the class
--- of the need the original's bubble would show. How the partner feels about the map (hud.partner.area) puts the class
--- "area-liked" or "area-disliked" on #field-status, where a skin can swap the happiness face as the original does.
+-- The field status shows the game time and the partner's state, which the game publishes as hud.*
+-- settings (apps/screens: field_hud_view.hpp): it bumps hud.revision once per change, and only then
+-- this script redraws, so a frame where nothing changed writes nothing. The labels come once, as
+-- text keys. hud.shown is false while a menu or a battle stops the field: the panel loses its class
+-- "shown" and each skin decides how it leaves. Every skin draws this same document and script and
+-- differs only in its style sheets: a bar with the class "pips" fills in the original's 25 steps,
+-- and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin that
+-- draws the original's clock. #field-partner-bubble hangs over the partner's head (hud.partner.*)
+-- with the class of the need the original's bubble would show. How the partner feels about the map
+-- (hud.partner.area) puts the class "area-liked" or "area-disliked" on #field-status, where a skin
+-- can swap the happiness face as the original does.
 
 local sizes = { small = true, medium = true, large = true }
 local minimap_modes = { auto = true, on = true, off = true }
@@ -24,7 +27,8 @@ local function refresh(document)
   if not minimap_modes[mode] then
     mode = "auto"
   end
-  -- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off hides it.
+  -- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off
+  -- hides it.
   minimap:set_class("auto", mode == "auto")
   minimap:set_class("hidden", mode == "off")
   local size = ui.setting("minimap_size")
@@ -64,8 +68,8 @@ end
 local field_meters = 2
 local field_needs = 4
 local field_pools = 2
--- The classes of hud.partner.area's values, the original's numbers: 1 the partner likes the area, 2 it dislikes it, 0
--- (no class) neither.
+-- The classes of hud.partner.area's values, the original's numbers: 1 the partner likes the area, 2
+-- it dislikes it, 0 (no class) neither.
 local area_classes = { [1] = "area-liked", [2] = "area-disliked" }
 
 local function field_number(name)
@@ -91,13 +95,13 @@ local function percent(value, minimum, maximum)
   return math.max(0, math.min(100, (value - minimum) * 100 / (maximum - minimum)))
 end
 
--- The original's field bars are 25 squares of 2 pixels (partner_impl.c: renderStatusBars), so a bar with the class
--- "pips" fills in whole squares.
+-- The original's field bars are 25 squares of 2 pixels (partner_impl.c: renderStatusBars), so a bar
+-- with the class "pips" fills in whole squares.
 local pips_per_bar = 25
 
--- The original's dial (clock.c: renderGameClock): the minute hand turns once an hour, 6 degrees a minute; the hour
--- dot goes once a day round a 24-hour ring, 15 degrees an hour, hour 0 at the top; the moon replaces the sun before
--- 6:00 and from 17:00.
+-- The original's dial (clock.c: renderGameClock): the minute hand turns once an hour, 6 degrees a
+-- minute; the hour dot goes once a day round a 24-hour ring, 15 degrees an hour, hour 0 at the top;
+-- the moon replaces the sun before 6:00 and from 17:00.
 local minute_hand_degrees = 6
 local hour_dot_degrees = 15
 local hour_dot_radius_percent = 50
@@ -150,16 +154,17 @@ local function draw_field_clock(document)
   }))
 end
 
--- A two-tone bar fills from the minimum to the middle of its range, then again in its second colour from the middle
--- to the maximum, as the original's field bars (partner_impl.c: renderStatusBars).
--- Whether a bar's value is below the middle of its range. The original swaps the bar's icon there: the happiness face
--- turns sad below 0 and the discipline icon changes below 50 (partner_impl.c: renderStatusBars), so a skin draws its
--- icons on the class "low" of the bar's row.
+-- A two-tone bar fills from the minimum to the middle of its range, then again in its second colour
+-- from the middle to the maximum, as the original's field bars (partner_impl.c: renderStatusBars).
+-- Whether a bar's value is below the middle of its range. The original swaps the bar's icon there:
+-- the happiness face turns sad below 0 and the discipline icon changes below 50 (partner_impl.c:
+-- renderStatusBars), so a skin draws its icons on the class "low" of the bar's row.
 local function in_low_half(value, minimum, maximum)
   return value < (minimum + maximum) / 2
 end
 
--- A bar's fill in percent; in whole pips when the bar has the class "pips", rounding down as the original does.
+-- A bar's fill in percent; in whole pips when the bar has the class "pips", rounding down as the
+-- original does.
 local function bar_fill(bar, value, minimum, maximum)
   local fill = percent(value, minimum, maximum)
   if bar:has_class("pips") then
@@ -197,11 +202,12 @@ local function draw_field_pool(document, index)
   document:get("field-pool-" .. index .. "-value"):set_text(current .. " / " .. maximum)
 end
 
--- The need bubble over the partner (bubble.c), one need at a time. The original picks it in this order, highest
--- first (partner_impl.c: handleConditionBubble checks them from the lowest and the last match wins), and while a
--- bubble has shown for 50 of its 20-a-second frames it swaps to the highest other need the partner has, if any, so
--- two needs take turns; a third waits until one of them goes. The original's bubbles for an injured or sick partner,
--- below the toilet, are not here: the contract does not publish those conditions as needs (docs/architecture/ui.md).
+-- The need bubble over the partner (bubble.c), one need at a time. The original picks it in this
+-- order, highest first (partner_impl.c: handleConditionBubble checks them from the lowest and the
+-- last match wins), and while a bubble has shown for 50 of its 20-a-second frames it swaps to the
+-- highest other need the partner has, if any, so two needs take turns; a third waits until one of
+-- them goes. The original's bubbles for an injured or sick partner, below the toilet, are not here:
+-- the contract does not publish those conditions as needs (docs/architecture/ui.md).
 local bubble_priority = { "sleep", "tired", "hunger", "toilet" }
 local bubble_need_index = { hunger = 0, sleep = 1, toilet = 2, tired = 3 }
 local bubble_swap_seconds = 50 / 20
@@ -306,8 +312,8 @@ function on_device(document)
   refresh_prompts(document)
 end
 
--- The language changed: the elements with a text-key are already in the new one; the prompts, the map's name and the
--- field status's texts are written here.
+-- The language changed: the elements with a text-key are already in the new one; the prompts, the
+-- map's name and the field status's texts are written here.
 function on_language(document)
   refresh_title(document)
   refresh_prompts(document)
@@ -325,7 +331,8 @@ function on_setting(document, name)
   elseif name == "hud.partner.revision" then
     draw_bubble(document)
   elseif name == "ui_skin" then
-    -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the bubble again.
+    -- A new skin may set or clear classes the drawing reads (pips): draw the field status and the
+    -- bubble again.
     refresh(document)
     draw_field(document)
   elseif string.find(name, "^hud%.") then

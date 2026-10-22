@@ -20,8 +20,9 @@
 #include <string_view>
 
 namespace sol {
-class state; // NOLINT(readability-identifier-naming): a third-party type, named by its library.
-}
+// NOLINTNEXTLINE(readability-identifier-naming): a third-party type, named by its library.
+class state;
+} // namespace sol
 
 namespace dwe::input {
 class InputState;

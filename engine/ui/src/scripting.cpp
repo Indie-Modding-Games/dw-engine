@@ -292,7 +292,8 @@ public:
   // RmlUi hands listeners made by an instancer to the element, which detaches them when it no
   // longer needs them.
   void OnDetach(Rml::Element* /*element*/) override {
-    delete this; // NOLINT(cppcoreguidelines-owning-memory): RmlUi's ownership of instanced listeners.
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): RmlUi's ownership of instanced listeners.
+    delete this;
   }
 
 private:
@@ -452,7 +453,8 @@ Scripting::DocumentInstancer::InstanceElement(Rml::Element* /*parent*/, const Rm
 }
 
 void Scripting::DocumentInstancer::ReleaseElement(Rml::Element* element) {
-  delete element; // NOLINT(cppcoreguidelines-owning-memory): the other half of InstanceElement.
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): the other half of InstanceElement.
+  delete element;
 }
 
 Rml::EventListener* Scripting::ListenerInstancer::InstanceEventListener(const Rml::String& value,
@@ -476,7 +478,8 @@ Rml::EventListener* Scripting::ListenerInstancer::InstanceEventListener(const Rm
     }
     return nullptr;
   }
-  return new LuaListener{value}; // NOLINT(cppcoreguidelines-owning-memory): deleted by OnDetach.
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): deleted by OnDetach.
+  return new LuaListener{value};
 }
 
 void Scripting::registerApi() {

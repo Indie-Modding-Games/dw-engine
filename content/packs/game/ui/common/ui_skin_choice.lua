@@ -1,6 +1,7 @@
--- The interface skin entry the main menu and the pause menu share. Like every option it never changes the setting
--- itself: it sends the ui_skin command and shows what the game reports back (ui.setting("ui_skin")). The skins are the
--- ones the mounted packs offer (ui.skins()), so a mod's skin shows up here without touching this file.
+-- The interface skin entry the main menu and the pause menu share. Like every option it never
+-- changes the setting itself: it sends the ui_skin command and shows what the game reports back
+-- (ui.setting("ui_skin")). The skins are the ones the mounted packs offer (ui.skins()), so a mod's
+-- skin shows up here without touching this file.
 
 skin_choice = {}
 

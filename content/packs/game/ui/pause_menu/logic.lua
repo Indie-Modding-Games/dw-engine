@@ -1,6 +1,7 @@
--- The pause menu: three pages (main, minimap, options). The menu never changes a setting itself: it sends a command to
--- the game with ui.send and shows what the game reports back through ui.setting, so the labels always tell the truth.
--- Every text the player sees comes from the texts in the player's language: t(key) here, text-key in the document.
+-- The pause menu: three pages (main, minimap, options). The menu never changes a setting itself: it
+-- sends a command to the game with ui.send and shows what the game reports back through ui.setting,
+-- so the labels always tell the truth. Every text the player sees comes from the texts in the
+-- player's language: t(key) here, text-key in the document.
 
 local pages = { "main", "minimap", "options" }
 local first_entry = { main = "continue", minimap = "minimap-mode", options = "display-mode" }
@@ -52,21 +53,22 @@ local options = {
     local index = index_of(minimap_sizes, ui.setting("minimap_size")) or 2
     ui.send("minimap_size", minimap_sizes[cycle(minimap_sizes, index, step)])
   end,
-  ["display-mode"] = function(step)
+  ["display-mode"] = function(_step)
     ui.send("fullscreen", not ui.setting("fullscreen"))
   end,
   ["ui-scale"] = function(step)
     local index = nearest_scale(ui.setting("ui_scale") or 1.0)
     ui.send("ui_scale", ui_scales[math.max(1, math.min(#ui_scales, index + step))])
   end,
-  ["vsync"] = function(step)
+  ["vsync"] = function(_step)
     ui.send("vsync", not ui.setting("vsync"))
   end,
   ["ui-skin"] = function(step)
     skin_choice.change(step)
   end,
-  -- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by default).
-  ["free-exploration"] = function(step)
+  -- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by
+  -- default).
+  ["free-exploration"] = function(_step)
     ui.send("free_exploration", not ui.setting("free_exploration"))
   end,
 }
@@ -120,7 +122,7 @@ function resume()
   ui.hide(document_name)
 end
 
-function adjust(document, id, step)
+function adjust(_document, id, step)
   options[id](step)
 end
 
@@ -130,7 +132,7 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, name)
+function on_setting(document, _name)
   refresh(document)
 end
 
@@ -138,15 +140,16 @@ function on_device(document)
   refresh_prompts(document)
 end
 
--- The language changed: the elements with a text-key are already in the new one; the rest are written here.
+-- The language changed: the elements with a text-key are already in the new one; the rest are
+-- written here.
 function on_language(document)
   document:get("title"):set_text(t("pause_menu.title." .. current))
   refresh(document)
   refresh_prompts(document)
 end
 
--- Navigation steps arrive here first. Returning true means the step was handled here and suppresses the default
--- (moving the focus, confirming, closing); returning false lets the default run.
+-- Navigation steps arrive here first. Returning true means the step was handled here and suppresses
+-- the default (moving the focus, confirming, closing); returning false lets the default run.
 function on_action(document, action)
   if action == "cancel" then
     back(document)

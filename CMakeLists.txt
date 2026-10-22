@@ -53,6 +53,10 @@ if(BUILD_TESTING)
             COMMAND ${DWE_BASH} ${gate_tests_dir}/test_build_dirs.sh)
         add_test(NAME "gate scripts: a follow-up route runs only after its route, in the same job"
             COMMAND ${DWE_BASH} ${gate_tests_dir}/test_follow_up.sh)
+        # The formatters and linters of scripts/style.
+        set(style_tests_dir ${PROJECT_SOURCE_DIR}/scripts/style/tests)
+        add_test(NAME "style scripts: comments past the column limit are wrapped"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_wrap_comments WORKING_DIRECTORY ${style_tests_dir})
     endif()
 endif()
 

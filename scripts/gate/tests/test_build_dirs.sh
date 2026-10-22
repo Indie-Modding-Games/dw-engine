@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tests of remove_build_dir (scripts/gate/build_dirs.sh): it deletes only folders inside the worktree's build/.
+# Tests of remove_build_dir (scripts/gate/build_dirs.sh): it deletes only folders inside the
+# worktree's build/.
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/../build_dirs.sh"
 
@@ -32,7 +33,8 @@ ln -s "$outside" "$root/build/escape"
 
 check "a folder inside build/ is deleted" remove_build_dir "$root" "$root/build/windows-cross"
 check "  and is gone" test ! -e "$root/build/windows-cross"
-check "a missing folder inside build/ is nothing to do" remove_build_dir "$root" "$root/build/missing"
+check "a missing folder inside build/ is nothing to do" \
+  remove_build_dir "$root" "$root/build/missing"
 check_refused "build/ itself is refused" "$root/build"
 check "  and kept" test -d "$root/build"
 check_refused "a folder outside build/ is refused" "$root/src"

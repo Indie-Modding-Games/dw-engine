@@ -82,3 +82,42 @@ RUN for tool in clang-cl lld-link llvm-lib llvm-rc llvm-mt; do \
     && curl -fsSL "https://github.com/Jake-Shadle/xwin/releases/download/${XWIN_VERSION}/xwin-${XWIN_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
         | tar -xz -C /usr/local/bin --strip-components=1 "xwin-${XWIN_VERSION}-x86_64-unknown-linux-musl/xwin" \
     && xwin --version
+
+# The formatters and linters of Lua and shell (scripts/dev.sh format and lint), from the official releases, pinned by
+# version and checksum, and clangd for the editors in the dev container (.devcontainer/devcontainer.json). luacheck's
+# release binary aborts in a container (its threads ask for a scheduling policy), so it runs from its source rock on
+# the release's Lua 5.4 with the two libraries it needs.
+ARG STYLUA_VERSION=2.6.0
+ARG STYLUA_SHA256=48ee7db28346f96f4bd545e190ab080a88a7b5a664e97649cf5d5c60426f402d
+ARG LUACHECK_VERSION=1.2.0
+ARG LUACHECK_SHA256=4bad582d6c70cbb948fa79bc362786d8c86633fe0c26ed7383c8a134a83d3c46
+ARG SHFMT_VERSION=3.14.1
+ARG SHFMT_SHA256=76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf
+ARG SHELLCHECK_VERSION=0.11.0
+ARG SHELLCHECK_SHA256=b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6
+RUN apt-get update && apt-get install -y --no-install-recommends lua5.4 lua-argparse lua-filesystem \
+        clangd-${LLVM_VERSION} \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/clangd-${LLVM_VERSION} /usr/local/bin/clangd
+RUN release="https://github.com" && cd /tmp \
+    && curl -fsSLo stylua.zip \
+        "${release}/JohnnyMorganz/StyLua/releases/download/v${STYLUA_VERSION}/stylua-linux-x86_64-musl.zip" \
+    && echo "${STYLUA_SHA256}  stylua.zip" | sha256sum -c - \
+    && unzip -q stylua.zip stylua -d /usr/local/bin \
+    && curl -fsSLo luacheck.rock \
+        "${release}/lunarmodules/luacheck/releases/download/v${LUACHECK_VERSION}/luacheck-${LUACHECK_VERSION}-1.src.rock" \
+    && echo "${LUACHECK_SHA256}  luacheck.rock" | sha256sum -c - \
+    && unzip -q luacheck.rock 'luacheck/src/luacheck/*' \
+    && mkdir -p /usr/local/share/lua/5.4 \
+    && cp -r luacheck/src/luacheck /usr/local/share/lua/5.4/ \
+    && printf '#!/usr/bin/lua5.4\nrequire "luacheck.main"\n' > /usr/local/bin/luacheck \
+    && curl -fsSLo /usr/local/bin/shfmt \
+        "${release}/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_amd64" \
+    && echo "${SHFMT_SHA256}  /usr/local/bin/shfmt" | sha256sum -c - \
+    && curl -fsSLo shellcheck.tar.gz \
+        "${release}/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.gz" \
+    && echo "${SHELLCHECK_SHA256}  shellcheck.tar.gz" | sha256sum -c - \
+    && tar -xzf shellcheck.tar.gz --strip-components=1 -C /usr/local/bin "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" \
+    && rm -r stylua.zip luacheck.rock luacheck shellcheck.tar.gz \
+    && chmod 755 /usr/local/bin/stylua /usr/local/bin/luacheck /usr/local/bin/shfmt /usr/local/bin/shellcheck \
+    && stylua --version && luacheck --version && shfmt --version && shellcheck --version

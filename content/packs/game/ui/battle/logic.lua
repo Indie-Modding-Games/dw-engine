@@ -1,6 +1,7 @@
--- The battle screen. The game publishes the battle's view as settings (apps/screens: battle_view.hpp) and bumps
--- battle.revision once per change; this script only draws them and sends the player's choices back with ui.send.
--- No rule of the battle lives here: which commands exist, which are available and what they do is the game's.
+-- The battle screen. The game publishes the battle's view as settings (apps/screens:
+-- battle_view.hpp) and bumps battle.revision once per change; this script only draws them and sends
+-- the player's choices back with ui.send. No rule of the battle lives here: which commands exist,
+-- which are available and what they do is the game's.
 
 local max_fighters = 4
 local max_commands = 11
@@ -9,7 +10,8 @@ local max_end_lines = 10
 local stat_count = 6
 local max_bag_slots = 30
 
--- The original's labels (main.stat_labels: HP, MP, offense, defense, speed, brain; main.battle_ui_bits_labels).
+-- The original's labels (main.stat_labels: HP, MP, offense, defense, speed, brain;
+-- main.battle_ui_bits_labels).
 local stat_label_keys = {}
 for index = 0, stat_count - 1 do
   stat_label_keys[index] = string.format("main.stat_labels.%04d", index)
@@ -165,13 +167,14 @@ local function slot_filled(index)
   return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
 end
 
--- Only the items of a battle colour can be thrown (inventory.c: selectOptionMenu); the others show greyed out.
+-- Only the items of a battle colour can be thrown (inventory.c: selectOptionMenu); the others show
+-- greyed out.
 local function slot_usable(index)
   return slot_filled(index) and setting(slot_setting(index, "usable"), false)
 end
 
--- The tamer's bag: open with its own button while the battle goes on (battle_tick.c: tamerTickBattle); the command
--- row waits meanwhile (handleCommands returns while it is open).
+-- The tamer's bag: open with its own button while the battle goes on (battle_tick.c:
+-- tamerTickBattle); the command row waits meanwhile (handleCommands returns while it is open).
 local function draw_bag(document)
   document:get("commands"):set_class("hidden", bag_open)
   document:get("bag"):set_class("hidden", not bag_open)
@@ -334,9 +337,10 @@ function on_language(document)
   draw(document)
 end
 
--- The battle cannot be left with cancel or the pause button: cancel opens the tamer's bag (the original's own button)
--- and closes it again; up and down move through the open bag; confirm charges the finisher while its aura lasts.
-function on_action(document, action)
+-- The battle cannot be left with cancel or the pause button: cancel opens the tamer's bag (the
+-- original's own button) and closes it again; up and down move through the open bag; confirm
+-- charges the finisher while its aura lasts.
+function on_action(_document, action)
   if phase == "end" then
     if action == "cancel" or action == "menu" then
       close_end()

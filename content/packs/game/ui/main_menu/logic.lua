@@ -1,8 +1,10 @@
--- The main menu, shown when the game starts: play, choose the language, the text font and the interface skin, quit.
--- Like the pause menu it never changes a setting itself: it sends the language, text_font and ui_skin commands and shows
--- what the game reports back (ui.setting). The skin entry is common/ui_skin_choice.lua, shared with the pause menu.
+-- The main menu, shown when the game starts: play, choose the language, the text font and the
+-- interface skin, quit. Like the pause menu it never changes a setting itself: it sends the
+-- language, text_font and ui_skin commands and shows what the game reports back (ui.setting). The
+-- skin entry is common/ui_skin_choice.lua, shared with the pause menu.
 
--- The language after the current one in the list the packs offer, step entries away, wrapping around.
+-- The language after the current one in the list the packs offer, step entries away, wrapping
+-- around.
 local function next_language(step)
   local languages = ui.languages()
   local current = 1
@@ -14,7 +16,8 @@ local function next_language(step)
   return languages[((current - 1 + step) % #languages) + 1]
 end
 
--- The fonts "original look" text can draw with (text_font): two, so left and right both switch to the other one.
+-- The fonts "original look" text can draw with (text_font): two, so left and right both switch to
+-- the other one.
 local function other_text_font()
   return ui.setting("text_font") == "original" and "modern" or "original"
 end
@@ -48,7 +51,7 @@ function on_show(document)
   refresh_prompts(document)
 end
 
-function on_setting(document, name)
+function on_setting(document, _name)
   refresh(document)
 end
 
@@ -61,8 +64,8 @@ function on_device(document)
   refresh_prompts(document)
 end
 
--- Navigation steps arrive here first; returning true suppresses the default. Cancel and menu do not close the main
--- menu: the player leaves it with Play or Quit.
+-- Navigation steps arrive here first; returning true suppresses the default. Cancel and menu do not
+-- close the main menu: the player leaves it with Play or Quit.
 function on_action(document, action)
   if action == "cancel" or action == "menu" then
     return true

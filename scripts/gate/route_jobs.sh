@@ -1,13 +1,16 @@
-# The gate's route jobs (scripts/gate.sh): which routes each tier runs, with what options, and how a job's runs are
-# run and summed up. Sourced; scripts/gate/tests/test_follow_up.sh sources it too. It needs from its caller: root,
-# logs, DWE_CONTENT, cooked_archive, routes_extra, die, and run_game <display> <log> <arguments separated by tabs>.
+# The gate's route jobs (scripts/gate.sh): which routes each tier runs, with what options, and how a
+# job's runs are run and summed up. Sourced; scripts/gate/tests/test_follow_up.sh sources it too. It
+# needs from its caller: root, logs, DWE_CONTENT, cooked_archive, routes_extra, die, and run_game
+# <display> <log> <arguments separated by tabs>.
+# shellcheck disable=SC2154 # the variables above, which the caller sets
 
 route_dir="tests/autotest"
-# The smoke routes of the short tier, in en: boot, the main menu, a new game and the first map; the field and the menu;
-# a save and its load.
+# The smoke routes of the short tier, in en: boot, the main menu, a new game and the first map; the
+# field and the menu; a save and its load.
 smoke_routes=(route-loop-keyboard route-keyboard route-save-load)
-# Routes that check what another one left, run right after it in the same job, so they stay together on one display
-# when the routes run in parallel: the load of the save route's slot, from that run's own saves folder.
+# Routes that check what another one left, run right after it in the same job, so they stay together
+# on one display when the routes run in parallel: the load of the save route's slot, from that run's
+# own saves folder.
 declare -gA follow_up_routes=(["route-save-load"]=route-save-load-check)
 saved_slot="slot_01"
 smoke_lang="en"
@@ -23,7 +26,8 @@ route_summary() {
   validation=$(grep -o 'validation layer on, [0-9]* messages' "$log" | tail -1)
   errors=$(grep -o 'autotest: [0-9]* \[error\] lines' "$log" | tail -1 | grep -o '[0-9]*')
   warnings=$(grep -c '\[warning\]' "$log")
-  echo "$name rc=$rc | ${result:-autotest: NO RESULT} | ${validation:-validation: NONE} | errors=${errors:-?} | warnings=$warnings"
+  echo "$name rc=$rc | ${result:-autotest: NO RESULT} | ${validation:-validation: NONE}" \
+    "| errors=${errors:-?} | warnings=$warnings"
 }
 
 # job <name> <log> <arguments...>
@@ -42,20 +46,23 @@ follow_up() {
   echo "$field_separator$log$field_separator$*"
 }
 
-# empty_saves_folder <folder>: deletes a pair's saves folder before its job runs, so a slot an earlier run left can
-# never pass the check. Only a folder named saves inside this gate's logs (logs/<lang>/<route>/saves) is deleted, and
-# only when no link inside the logs leads to it; anything else, the player's saves among them, is refused with status 1.
+# empty_saves_folder <folder>: deletes a pair's saves folder before its job runs, so a slot an
+# earlier run left can never pass the check. Only a folder named saves inside this gate's logs
+# (logs/<lang>/<route>/saves) is deleted, and only when no link inside the logs leads to it;
+# anything else, the player's saves among them, is refused with status 1.
 empty_saves_folder() {
   local folder="$1" logs_root resolved logs_as_written as_written
   [[ -n "${logs:-}" && -n "$folder" ]] || return 1
   logs_root="$(realpath -m "$logs")"
   resolved="$(realpath -m "$folder")"
-  [[ "$resolved" == "$logs_root"/*/*/saves && "$resolved" != *saves-play* && ! -L "$folder" ]] || return 1
-  # The same path with its links left as they are: a link anywhere below the logs folder makes the two differ.
+  [[ "$resolved" == "$logs_root"/*/*/saves && "$resolved" != *saves-play* && ! -L "$folder" ]] \
+    || return 1
+  # The same path with its links left as they are: a link anywhere below the logs folder makes the
+  # two differ.
   logs_as_written="$(realpath -ms "$logs")"
   as_written="$(realpath -ms "$folder")"
-  [[ "$as_written" == "$logs_as_written"/* && "${as_written#"$logs_as_written"}" == "${resolved#"$logs_root"}" ]] \
-    || return 1
+  [[ "$as_written" == "$logs_as_written"/* ]] || return 1
+  [[ "${as_written#"$logs_as_written"}" == "${resolved#"$logs_root"}" ]] || return 1
   rm -rf "$resolved"
 }
 
@@ -77,24 +84,26 @@ route_job() {
     route-dev-assets) flags=(--dev-assets) ;;
     route-skins) flags+=(--mods tests/mods/ui_skin) ;;
     route-mod-map) flags+=(--mods tests/mods/example_mod) ;;
+    *) ;;
   esac
   local follow="${follow_up_routes[$route]:-}" saves="$logs/$lang$suffix/$route/saves" line
   if [[ -n "$follow" ]]; then
     empty_saves_folder "$saves" || die "refusing to empty the saves folder $saves"
     flags+=(--saves "$saves")
   fi
-  line="$(job "$route-$lang$suffix" "$lang$suffix/$route.log" "${flags[@]}" --lang "$lang" --skip-steps fullscreen \
-    --autotest "$route_dir/$route.yaml" --shots "$logs/$lang$suffix/$route")"
+  line="$(job "$route-$lang$suffix" "$lang$suffix/$route.log" "${flags[@]}" --lang "$lang" \
+    --skip-steps fullscreen --autotest "$route_dir/$route.yaml" \
+    --shots "$logs/$lang$suffix/$route")"
   if [[ -n "$follow" ]]; then
-    line+="$(follow_up "$lang$suffix/$follow.log" --content "$DWE_CONTENT" --saves "$saves" --load "$saved_slot" \
-      --lang "$lang" --skip-steps fullscreen --autotest "$route_dir/$follow.yaml" \
-      --shots "$logs/$lang$suffix/$follow")"
+    line+="$(follow_up "$lang$suffix/$follow.log" --content "$DWE_CONTENT" --saves "$saves" \
+      --load "$saved_slot" --lang "$lang" --skip-steps fullscreen \
+      --autotest "$route_dir/$follow.yaml" --shots "$logs/$lang$suffix/$follow")"
   fi
   echo "$line"
 }
 
 write_short_jobs() {
-  local suffix="$1" route lang
+  local suffix="$1" route route_file lang
   for route in "${smoke_routes[@]}"; do
     route_job "$route" "$smoke_lang" "$suffix"
   done
@@ -108,27 +117,31 @@ write_short_jobs() {
 }
 
 write_daily_jobs() {
-  local suffix="$1" route lang
+  local suffix="$1" route route_file lang
   for lang in "${languages[@]}"; do
-    for route in $(cd "$root/$route_dir" && ls route-*.yaml | sed 's/\.yaml$//'); do
+    for route_file in "$root/$route_dir"/route-*.yaml; do
+      route="$(basename "$route_file" .yaml)"
       is_follow_up "$route" && continue
       route_job "$route" "$lang" "$suffix"
     done
   done
   for lang in "${languages[@]}"; do
-    job "cooked-route-mod-map-$lang$suffix" "cooked-mod-map-$lang$suffix.log" --content "$cooked_archive" \
-      --mods tests/mods/example_mod --lang "$lang" --autotest "$route_dir/route-mod-map.yaml" \
-      --skip-steps fullscreen
-    job "cooked-route-fade-$lang$suffix" "cooked-fade-$lang$suffix.log" --content "$cooked_archive" \
-      --text-font original --lang "$lang" --autotest "$route_dir/route-fade.yaml" --skip-steps fullscreen
+    job "cooked-route-mod-map-$lang$suffix" "cooked-mod-map-$lang$suffix.log" \
+      --content "$cooked_archive" --mods tests/mods/example_mod --lang "$lang" \
+      --autotest "$route_dir/route-mod-map.yaml" --skip-steps fullscreen
+    job "cooked-route-fade-$lang$suffix" "cooked-fade-$lang$suffix.log" \
+      --content "$cooked_archive" --text-font original --lang "$lang" \
+      --autotest "$route_dir/route-fade.yaml" --skip-steps fullscreen
   done
 }
 
-# A job: its run and, when the route has one (follow_up_routes), the run that follows it, only after a pass. Each run
-# has its own summary line; a follow-up that could not run counts as one that did not pass.
+# A job: its run and, when the route has one (follow_up_routes), the run that follows it, only after
+# a pass. Each run has its own summary line; a follow-up that could not run counts as one that did
+# not pass.
 run_job() {
   local index="$1" display="$2" name log rest follow_log follow_rest start rc follow_name
-  IFS="$field_separator" read -r name log rest follow_log follow_rest < <(sed -n "${index}p" "$logs/jobs.txt")
+  IFS="$field_separator" read -r name log rest follow_log follow_rest \
+    < <(sed -n "${index}p" "$logs/jobs.txt")
   start=$SECONDS
   run_game "$display" "$log" "$rest"
   rc=$?
@@ -145,8 +158,9 @@ run_job() {
   echo "$name$field_separator$((SECONDS - start))$field_separator:$display" >"$logs/seconds/$index"
 }
 
-# worker <display>: takes the next job of logs/order.txt that nobody has claimed (mkdir in logs/claims is atomic) and
-# runs it on its display, until none is left. A job is one line with its follow-up, so a pair runs on one display.
+# worker <display>: takes the next job of logs/order.txt that nobody has claimed (mkdir in
+# logs/claims is atomic) and runs it on its display, until none is left. A job is one line with its
+# follow-up, so a pair runs on one display.
 worker() {
   local display="$1" index
   while read -r index; do

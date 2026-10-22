@@ -1,7 +1,7 @@
--- The partner's menu. The game publishes the partner's status and the bag as settings (apps/screens:
--- partner_status_view.hpp, bag_view.hpp) and bumps partner.revision and bag.revision once per change; this script
--- draws them and sends the player's choices with ui.send. What an item does, whether the partner takes it, how the
--- bag sorts: all of it is the game's.
+-- The partner's menu. The game publishes the partner's status and the bag as settings
+-- (apps/screens: partner_status_view.hpp, bag_view.hpp) and bumps partner.revision and bag.revision
+-- once per change; this script draws them and sends the player's choices with ui.send. What an item
+-- does, whether the partner takes it, how the bag sorts: all of it is the game's.
 
 local pages = { "status", "items", "care" }
 local first_entry = { status = "tab-status", items = "slot-0", care = "care-praise" }
@@ -11,8 +11,9 @@ local stat_bars = 4
 local meters = 3
 local max_conditions = 7
 
--- The original's labels: the item options (main.item_menu_labels: use, move, sort, drop), the sort orders
--- (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and bits.
+-- The original's labels: the item options (main.item_menu_labels: use, move, sort, drop), the sort
+-- orders (main.inventory_sort_labels), the drop's question (main.inventory_confirm_labels) and
+-- bits.
 local option_names = { "use", "move", "sort", "drop" }
 local sort_orders = 3
 local bits_label_key = "main.battle_ui_bits_labels.0000"
@@ -77,8 +78,9 @@ local function draw_bar(document, prefix, list, index)
     :set_property("width", percent(value, number(base .. "min"), number(base .. "max")) .. "%")
 end
 
--- A care meter. A two-tone one fills the bar from the minimum to the middle of its range, then fills it again in
--- its second colour from the middle to the maximum (game_menu.c: renderDigimonStatsView: happiness, discipline).
+-- A care meter. A two-tone one fills the bar from the minimum to the middle of its range, then
+-- fills it again in its second colour from the middle to the maximum (game_menu.c:
+-- renderDigimonStatsView: happiness, discipline).
 local function draw_meter(document, index)
   local prefix = "meter-" .. index
   local base = "partner.meter." .. index .. "."
@@ -102,7 +104,8 @@ local function draw_status(document)
   document
     :get("status-weight")
     :set_text(t("partner_menu.weight.value", { weight = number("partner.weight") }))
-  -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c: renderDigimonStatsView).
+  -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c:
+  -- renderDigimonStatsView).
   local pool_now = { number("partner.hp"), number("partner.mp") }
   for index = 0, pool_bars - 1 do
     draw_bar(document, "pool-" .. index, "partner.pool", index)

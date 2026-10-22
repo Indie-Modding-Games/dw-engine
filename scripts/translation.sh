@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Keeps the team's translation of the original's text in step with the user's extracted English
-# (docs/guides/traducir.md). It reads the extracted text/en and the translation pack, prints what is missing, stale or
-# broken, and writes the pack's .sources.lock. It never writes the English anywhere: what it prints is for the
-# translator's terminal only.
+# (docs/guides/traducir.md). It reads the extracted text/en and the translation pack, prints what is
+# missing, stale or broken, and writes the pack's .sources.lock. It never writes the English
+# anywhere: what it prints is for the translator's terminal only.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,11 +15,11 @@ sources=(main btl std vs kar fish trn)
 # The slot of a key, zero-padded: main.move_names.0012.
 slot_digits=4
 
-# What is never written to the translation (docs/guides/traducir.md); the lock lists these ids so coverage tells them
-# from what is not translated yet. kept_english: the names that stay in English, whole blocks (source.block).
-# kept_original: what is not English words and stays as extracted: whole blocks, single ids (source.block.slot), every
-# blank string and every string that is, but for its surrounding spaces, a name of kept_name_block (the speaker lines
-# of the curling hints).
+# What is never written to the translation (docs/guides/traducir.md); the lock lists these ids so
+# coverage tells them from what is not translated yet. kept_english: the names that stay in English,
+# whole blocks (source.block). kept_original: what is not English words and stays as extracted:
+# whole blocks, single ids (source.block.slot), every blank string and every string that is, but for
+# its surrounding spaces, a name of kept_name_block (the speaker lines of the curling hints).
 kept_english_blocks=(main.digimon_names)
 kept_original_blocks=(
   main.tournament_grades
@@ -40,18 +40,23 @@ usage() {
   cat <<EOF
 Usage: scripts/translation.sh <command> [args]
 
-  status              Per source: strings, translated, kept in English, kept as the original, missing, stale
+  status              Per source: strings, translated, kept in English, kept as the original,
+                      missing, stale
   missing [source]    The ids with no translation and not kept, with their English (terminal only)
-  stale               The translated ids whose English changed since they were translated, with the new English
-  check               Every problem: keys the English does not have, tags that differ, kept ids that are translated,
-                      stale ids; exits with 1 if there is any
-  long                The translations longer than their English, with both lengths, to check that they fit
-  lock                Write $lock_file: the hash of each translated id's English (an id
-                      already in the lock keeps its hash, so a stale one stays stale) and the kept ids
-  accept <id>...      Mark the given ids as revised: their hash in the lock becomes the current English's
+  stale               The translated ids whose English changed since they were translated, with the
+                      new English
+  check               Every problem: keys the English does not have, tags that differ, kept ids that
+                      are translated, stale ids; exits with 1 if there is any
+  long                The translations longer than their English, with both lengths, to check that
+                      they fit
+  lock                Write $lock_file: the hash of each translated id's English (an id already in
+                      the lock keeps its hash, so a stale one stays stale) and the kept ids
+  accept <id>...      Mark the given ids as revised: their hash in the lock becomes the current
+                      English's
 
 Environment:
-  DWE_CONTENT                 Content folder extracted with dwx (its base/text/$reference_language is read; required)
+  DWE_CONTENT                 Content folder extracted with dwx (its
+                              base/text/$reference_language is read; required)
   DWE_TRANSLATION_LANGUAGE    Language of the translation (default es)
   DWE_TRANSLATION_PACK        The translation pack (default content/packs/es-translation)
 EOF
@@ -69,18 +74,23 @@ english_dir() {
   echo "$dir"
 }
 
-# Prints "id<TAB>quoted text" for every string of a flat text table ("block.slot": "text", docs/formats/textos.md), in
-# file order; the text stays as YAML wrote it between the quotes.
+# Prints "id<TAB>quoted text" for every string of a flat text table ("block.slot": "text",
+# docs/formats/textos.md), in file order; the text stays as YAML wrote it between the quotes.
 read_text_file() {
   local source="$1" file="$2"
   awk -v source="$source" -v digits="$slot_digits" '
-        function fail(message) { printf "translation.sh: %s:%d: %s\n", FILENAME, FNR, message > "/dev/stderr"; exit 2 }
+        function fail(message) {
+            printf "translation.sh: %s:%d: %s\n", FILENAME, FNR, message > "/dev/stderr"
+            exit 2
+        }
         function quoted(text) {
             if (text !~ /^".*"$/) fail("expected a double-quoted string")
             return substr(text, 2, length(text) - 2)
         }
         /^[[:space:]]*(#|$)/ { next }
-        /^(source|strings):/ { fail("the extraction format before flat tables: extract the disc again") }
+        /^(source|strings):/ {
+            fail("the extraction format before flat tables: extract the disc again")
+        }
         /^"?[a-z0-9_]+\.[0-9]+"?: / {
             key = $1; sub(/:$/, "", key); gsub(/"/, "", key)
             split(key, parts, ".")
@@ -105,11 +115,14 @@ english_strings() {
 translated_strings() {
   local source
   for source in "${sources[@]}"; do
-    if [[ -f "$translation_dir/$source.yaml" ]]; then read_text_file "$source" "$translation_dir/$source.yaml"; fi
+    if [[ -f "$translation_dir/$source.yaml" ]]; then
+      read_text_file "$source" "$translation_dir/$source.yaml"
+    fi
   done
 }
 
-# An awk function that undoes the escapes of a YAML double-quoted string, and fails on one the extraction never writes.
+# An awk function that undoes the escapes of a YAML double-quoted string, and fails on one the
+# extraction never writes.
 awk_unquote='
     function unquote(text,    out, at, code) {
         out = ""
@@ -144,22 +157,25 @@ english_hashes() {
 locked_hashes() {
   [[ -f "$lock_file" ]] || return 0
   awk '/^sources:/ { inside = 1; next } /^[a-z_]+:/ { inside = 0 }
-         inside && /^  "/ { key = $1; sub(/:$/, "", key); gsub(/"/, "", key); value = $2; gsub(/"/, "", value)
-                            print key "\t" value }' "$lock_file"
+         inside && /^  "/ {
+             key = $1; sub(/:$/, "", key); gsub(/"/, "", key)
+             value = $2; gsub(/"/, "", value)
+             print key "\t" value
+         }' "$lock_file"
 }
 
 # The pattern of the ids of some blocks (source.block).
 blocks_pattern() {
-  echo "^($(
-    IFS="|"
-    echo "$*" | sed "s/[.]/[.]/g"
-  ))[.][0-9]+$"
+  local IFS="|"
+  local blocks="$*"
+  echo "^(${blocks//./[.]})[.][0-9]+$"
 }
 
 # The kept ids, as kind<TAB>id with kind english or original (see kept_english_blocks).
 kept_ids() {
   english_strings | awk -F '\t' -v english_pattern="$(blocks_pattern "${kept_english_blocks[@]}")" \
-    -v original_pattern="$(blocks_pattern "${kept_original_blocks[@]}")" -v name_block="$kept_name_block." \
+    -v original_pattern="$(blocks_pattern "${kept_original_blocks[@]}")" \
+    -v name_block="$kept_name_block." \
     -v ids="${kept_original_ids[*]}" '
         function trimmed(text) { gsub(/^ +| +$/, "", text); return text }
         BEGIN { split(ids, list, " "); for (i in list) original_id[list[i]] = 1 }
@@ -168,13 +184,15 @@ kept_ids() {
             for (i = 1; i <= NR; i++) {
                 name = trimmed(text[i])
                 if (id[i] ~ english_pattern) print "english\t" id[i]
-                else if (id[i] ~ original_pattern || id[i] in original_id || name == "" || name in kept_name)
+                else if (id[i] ~ original_pattern || id[i] in original_id || name == "" \
+                    || name in kept_name)
                     print "original\t" id[i]
             }
         }'
 }
 
-# Prints the ids of id<TAB>translation<TAB>English rows whose sets of {tags} and placeholders differ.
+# Prints the ids of id<TAB>translation<TAB>English rows whose sets of {tags} and placeholders
+# differ.
 ids_with_other_codes() {
   awk -F '\t' "$awk_unquote"'
         function codes(text,    list, code, sorted, i, j, n) {
@@ -198,15 +216,17 @@ ids_with_other_codes() {
         codes($2) != codes($3) { print $1 }'
 }
 
-# Prints id<TAB>characters of the translation > of the English for the id<TAB>translation<TAB>English rows whose
-# translation is longer.
+# Prints id<TAB>characters of the translation > of the English for the
+# id<TAB>translation<TAB>English rows whose translation is longer.
 longer_translations() {
   awk -F '\t' "$awk_unquote"'
         function characters(text,    bytes) {
             text = unquote(text); bytes = length(text)
             return bytes - gsub(/[\200-\277]/, "", text)
         }
-        characters($2) > characters($3) { printf "%s\t%d > %d\n", $1, characters($2), characters($3) }'
+        characters($2) > characters($3) {
+            printf "%s\t%d > %d\n", $1, characters($2), characters($3)
+        }'
 }
 
 # The rows of the left file whose id is not in the right file (both id<TAB>... and sorted by id).
@@ -284,7 +304,9 @@ command_check() {
   while IFS=$'\t' read -r id _; do
     echo "kept but translated: $id"
     problems=$((problems + 1))
-  done < <(LC_ALL=C join -t $'\t' <(LC_ALL=C sort "$scratch/translated") <(LC_ALL=C sort "$scratch/kept"))
+  done < <(
+    LC_ALL=C join -t $'\t' <(LC_ALL=C sort "$scratch/translated") <(LC_ALL=C sort "$scratch/kept")
+  )
   while read -r id; do
     echo "tags differ from the English: $id"
     problems=$((problems + 1))
@@ -310,15 +332,19 @@ command_long() {
 write_kept_list() {
   local kind="$1"
   cut -f1 "$scratch/$kind" | LC_ALL=C sort \
-    | awk -v kind="$kind" 'NR == 1 { print kind ":" } { printf "  - \"%s\"\n", $1 } END { if (NR == 0) print kind ": []" }'
+    | awk -v kind="$kind" 'NR == 1 { print kind ":" }
+                           { printf "  - \"%s\"\n", $1 }
+                           END { if (NR == 0) print kind ": []" }'
 }
 
 write_lock() {
   local hashes="$1"
   {
     echo "# Written by scripts/translation.sh lock; do not edit by hand."
-    echo "# sources: the hex SHA-1 of the $reference_language text each translation was written from."
-    LC_ALL=C join -t $'\t' <(cut -f1 "$scratch/translated" | LC_ALL=C sort) <(LC_ALL=C sort "$hashes") \
+    echo "# sources: the hex SHA-1 of the $reference_language text each translation was written" \
+      "from."
+    LC_ALL=C join -t $'\t' <(cut -f1 "$scratch/translated" | LC_ALL=C sort) \
+      <(LC_ALL=C sort "$hashes") \
       | awk -F '\t' 'NR == 1 { print "sources:" } { printf "  \"%s\": \"%s\"\n", $1, $2 }
                          END { if (NR == 0) print "sources: {}" }'
     write_kept_list kept_english
