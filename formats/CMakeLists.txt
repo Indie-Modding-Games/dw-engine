@@ -1,4 +1,6 @@
 find_package(lodepng CONFIG REQUIRED)
+# The Lua emitter's tests run the modules it writes.
+find_package(Lua REQUIRED)
 
 dwe_add_module(formats
     LAYER base
@@ -50,6 +52,8 @@ dwe_add_module(formats
         src/script/dominance.cpp
         src/script/guarded_walk.cpp
         src/script/routine_writes.cpp
+        src/script/lua_emitter.cpp
+        src/script/story_api_names.cpp
         src/script/map_changes.cpp
         src/script/new_game_stats.cpp
         src/script/routine_graph.cpp
@@ -70,7 +74,11 @@ dwe_add_module(formats
         src/video/xa_adpcm.cpp
     DEPS core
     PRIVATE_LIBS lodepng dwe_cgltf
-    TEST_LIBS lodepng dwe_cgltf)
+    TEST_LIBS lodepng dwe_cgltf ${LUA_LIBRARIES})
+
+if(TARGET dwe_formats_tests)
+    target_include_directories(dwe_formats_tests SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
+endif()
 
 # lodepng compresses every image dwx writes, and its debug build is three times slower; nobody steps into it, so
 # debug builds link its release build. Not on Windows, where debug and release code use different C runtimes.
