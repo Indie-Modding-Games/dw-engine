@@ -39,6 +39,7 @@ SaveFile sampleFile() {
                  .updated = sys_days{2026y / October / 2} + 21h + 30min + 15s,
                  .playSeconds = 5400,
                  .label = "File City",
+                 .summary = {},
                  .autosaveReasons = {}};
   return file;
 }
@@ -53,7 +54,7 @@ TEST_CASE("a save file is written and read back byte-identical") {
   file.sections.emplace("partner", SavedSection{.version = 3, .state = state});
   const auto text = writeSaveFile(file);
   REQUIRE(text);
-  CHECK(text->starts_with("format: dwe-save\nformat_version: 2\n"));
+  CHECK(text->starts_with("format: dwe-save\nformat_version: 3\n"));
   CHECK(text->ends_with("complete: true\n"));
 
   const auto read = parseSaveFile(*text);
@@ -178,12 +179,17 @@ TEST_CASE("a missing section is an error unless its system starts fresh") {
 }
 
 TEST_CASE("the header is migrated by the format's chain") {
-  // A made-up format 1 that called the label `title` and had no autosave reasons; format 2 is the
-  // current layout.
+  // A made-up format 1 that called the label `title` and had no autosave reasons nor summary; its
+  // one step gives the current layout.
   MigrationChain format;
   format.add([](const YamlNode& root) -> dwe::core::Result<YamlNode> {
     YamlNode renamed = renamedKey(root, "title", "label");
     renamed.set("autosave_reasons", YamlNode::sequence());
+    YamlNode summary = YamlNode::mapping();
+    for (const char* key : {"slot", "tamer", "species", "nickname", "map"}) {
+      summary.set(key, YamlNode::scalar(""));
+    }
+    renamed.set("summary", summary);
     return renamed;
   });
   const std::string old = replaced(readFixture("format_v1.yaml"), "label:", "title:");
@@ -193,8 +199,8 @@ TEST_CASE("the header is migrated by the format's chain") {
   CHECK(read->header.label == "File City");
 
   const auto newer = parseSaveFile(
-      replaced(readFixture("partner_v1.yaml"), "format_version: 2", "format_version: 3"));
-  CHECK(errorOf(newer).contains("the save format is version 3, newer than this game reads (2)"));
+      replaced(readFixture("partner_v1.yaml"), "format_version: 3", "format_version: 4"));
+  CHECK(errorOf(newer).contains("the save format is version 4, newer than this game reads (3)"));
 }
 
 TEST_CASE("format 1 saves load with no autosave reasons, and autosaves list theirs") {
@@ -219,6 +225,34 @@ TEST_CASE("format 1 saves load with no autosave reasons, and autosaves list thei
             .starts_with("save file: "));
   autosaved.header.autosaveReasons = {"Bad Name"};
   CHECK(errorOf(writeSaveFile(autosaved)).contains("'Bad Name' is not an autosave reason"));
+}
+
+TEST_CASE("the summary is written and read back, and format 2 saves load with an empty one") {
+  SaveFile file = sampleFile();
+  file.header.summary = {.slot = "slot_03",
+                         .tamer = "Juan",
+                         .species = "base:sp_01",
+                         .nickname = "Spark",
+                         .map = "base:map_01"};
+  const auto text = writeSaveFile(file);
+  REQUIRE(text);
+  CHECK(text->contains(
+      "label: \"File City\"\nsummary:\n  slot: \"slot_03\"\n  tamer: \"Juan\"\n"
+      "  species: \"base:sp_01\"\n  nickname: \"Spark\"\n  map: \"base:map_01\"\ncreated:"));
+  const auto read = parseSaveFile(*text);
+  REQUIRE_MESSAGE(read, errorOf(read));
+  CHECK(read->header == file.header);
+  CHECK(writeSaveFile(*read).value() == *text);
+
+  // format_v2.yaml is partner_v1.yaml as format 2 wrote it: the same save with an empty summary.
+  const auto old = parseSaveFile(readFixture("format_v2.yaml"));
+  REQUIRE_MESSAGE(old, errorOf(old));
+  CHECK(old->header.summary == SaveSummary{});
+  CHECK(old->header == sampleFile().header);
+  CHECK(writeSaveFile(*old).value() == readFixture("partner_v1.yaml"));
+
+  CHECK(errorOf(parseSaveFile(replaced(*text, "  map: \"base:map_01\"\n", ""))).contains("map"));
+  CHECK(errorOf(parseSaveFile(replaced(*text, "  tamer:", "  name:"))).starts_with("save file: "));
 }
 
 TEST_CASE("corrupt and truncated files are errors") {

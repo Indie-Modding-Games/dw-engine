@@ -5,6 +5,7 @@
 #include <dwe/ruleset/random.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -234,6 +235,7 @@ core::Result<void> GameSession::startNewGame() {
   state_->savedPlace.reset();
   file_ = {};
   file_.header.created = now();
+  homeSlot_.reset();
   playSeconds_ = 0.0;
   partnerEvents_.clear();
   state_->playing = true;
@@ -256,7 +258,13 @@ core::Result<void> GameSession::load(game::save::SlotId slot) {
     return core::fail(
         formatMessage(messages::LoadFailed, game::save::slotFileName(slot), file.error().message));
   }
-  return loadFile(*file);
+  if (auto loaded = loadFile(*file); !loaded) {
+    return loaded;
+  }
+  if (slot.kind == game::save::SlotKind::Manual) {
+    homeSlot_ = slot;
+  }
+  return {};
 }
 
 core::Result<void> GameSession::loadFile(const game::save::SaveFile& file) {
@@ -272,6 +280,7 @@ core::Result<void> GameSession::loadFile(const game::save::SaveFile& file) {
     return read;
   }
   file_ = file;
+  homeSlot_ = manualSlotFromName(file.header.summary.slot);
   playSeconds_ = static_cast<double>(file.header.playSeconds);
   partnerEvents_.clear();
   state_->playing = true;
@@ -294,12 +303,18 @@ core::Result<void> GameSession::save(game::save::SlotId slot) {
   if (!slots_) {
     return core::fail(std::string{messages::NoStorage});
   }
+  const std::optional<game::save::SlotId> previousHome = homeSlot_;
+  if (slot.kind == game::save::SlotKind::Manual) {
+    homeSlot_ = slot;
+  }
   auto file = saveFile();
   if (!file) {
+    homeSlot_ = previousHome;
     return core::fail(
         formatMessage(messages::SaveFailed, game::save::slotFileName(slot), file.error().message));
   }
   if (auto saved = slots_->save(slot, *file); !saved) {
+    homeSlot_ = previousHome;
     return core::fail(
         formatMessage(messages::SaveFailed, game::save::slotFileName(slot), saved.error().message));
   }
@@ -509,8 +524,15 @@ void GameSession::writeRequestedAutosave() {
 }
 
 game::save::SaveHeader GameSession::headerNow() const {
-  std::string label = state_->partner.state().species;
-  if (const std::optional<FieldPlace> place = state_->currentPlace()) {
+  const std::optional<FieldPlace> place = state_->currentPlace();
+  // The engine has no tamer name and no partner nickname yet: they stay empty until it does.
+  game::save::SaveSummary summary{.slot = homeSlot_ ? slotName(*homeSlot_) : std::string{},
+                                  .tamer = {},
+                                  .species = state_->partner.state().species,
+                                  .nickname = {},
+                                  .map = place ? place->map : std::string{}};
+  std::string label = summary.species;
+  if (place) {
     label += LabelSeparator;
     label += place->map;
   }
@@ -520,6 +542,7 @@ game::save::SaveHeader GameSession::headerNow() const {
           .updated = now(),
           .playSeconds = static_cast<std::int64_t>(std::floor(playSeconds_)),
           .label = std::move(label),
+          .summary = std::move(summary),
           .autosaveReasons = {}};
 }
 

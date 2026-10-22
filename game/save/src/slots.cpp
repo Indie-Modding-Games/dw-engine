@@ -78,6 +78,9 @@ SlotInfo SaveSlots::readInfo(SlotId slot) const {
     return info;
   }
   info.state = SlotInfo::State::Saved;
+  if (file->header.summary == SaveSummary{} && summaryReader_) {
+    file->header.summary = summaryReader_(*file);
+  }
   info.header = std::move(file->header);
   return info;
 }
@@ -88,6 +91,10 @@ std::vector<SlotInfo> SaveSlots::list() const {
     infos.push_back(readInfo(slot));
   }
   return infos;
+}
+
+void SaveSlots::setSummaryReader(SummaryReader reader) {
+  summaryReader_ = std::move(reader);
 }
 
 core::Result<void> SaveSlots::checkSlot(SlotId slot) const {

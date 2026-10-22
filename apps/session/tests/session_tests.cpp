@@ -39,7 +39,10 @@ using dwe::game::save::SlotId;
 using dwe::game::save::SlotKind;
 using dwe::session::Autosave;
 using dwe::session::GameSession;
+using dwe::session::manualSlotFromName;
 using dwe::session::slotFromName;
+using dwe::session::slotName;
+using dwe::session::summaryFromSections;
 using dwe::session::testing::careFor;
 using dwe::session::testing::errorOf;
 using dwe::session::testing::newGame;
@@ -301,10 +304,19 @@ TEST_CASE("a game saved to a slot loads from it") {
   REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
   REQUIRE(storage.read("slot_02.yaml").value().has_value());
 
+  CHECK(session->homeSlot() == slot);
+
   const auto loaded = newGame(packs, &storage, 3);
+  CHECK_FALSE(loaded->homeSlot().has_value());
   const auto read = loaded->load(slot);
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(loaded->partner().state() == session->partner().state());
+  CHECK(loaded->homeSlot() == slot);
+  const auto file = loaded->saveFile();
+  REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+  CHECK(file->header.summary.slot == "slot_02");
+  CHECK(file->header.summary.species == session->partner().state().species);
+  CHECK_FALSE(file->header.summary.species.empty());
   CHECK_FALSE(loaded->load({.kind = SlotKind::Manual, .index = 5}).has_value());
 
   const auto unsaved = newGame(packs, nullptr);
@@ -337,6 +349,53 @@ TEST_CASE("the partner going to sleep autosaves") {
   const auto read = loaded->load(autosave->slot);
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(loaded->partner().state() == session->partner().state());
+}
+
+TEST_CASE("an autosave keeps its playthrough's slot, and loading it goes on saving there") {
+  const TestPacks packs;
+  MemorySaveStorage storage;
+  const auto session = newGame(packs, &storage);
+  const SlotId third{.kind = SlotKind::Manual, .index = 3};
+  REQUIRE(session->save(third).has_value());
+  session->clock().setSpeed(SixtyGameHoursPerSecond);
+  playUntilSleepy(*session);
+  REQUIRE(session->sleep({}).has_value());
+  const std::optional<Autosave> autosave = waitForAutosave(*session);
+  if (!autosave) {
+    FAIL("no autosave");
+    return;
+  }
+  const auto loaded = newGame(packs, &storage, 5);
+  REQUIRE(loaded->load(autosave->slot).has_value());
+  CHECK(loaded->homeSlot() == third);
+
+  // A new game has no slot until it is saved to one; an autosave of it has none either.
+  const auto fresh = newGame(packs, &storage, 7);
+  CHECK_FALSE(fresh->homeSlot().has_value());
+  CHECK(fresh->saveFile().value().header.summary.slot.empty());
+  // A failed save does not move the playthrough to the slot.
+  CHECK_FALSE(fresh->save({.kind = SlotKind::Manual, .index = 99}).has_value());
+  CHECK_FALSE(fresh->homeSlot().has_value());
+}
+
+TEST_CASE("a save from before the summary gets one from its sections") {
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  SaveFile file = session->saveFile().value();
+  file.header.summary = {};
+  dwe::core::YamlNode field = dwe::core::YamlNode::mapping();
+  field.set("map", dwe::core::YamlNode::scalar("base:map_01"));
+  file.sections.at("field").state = field;
+
+  const dwe::game::save::SaveSummary summary = summaryFromSections(throughText(file));
+  CHECK(summary.species == session->partner().state().species);
+  CHECK(summary.map == "base:map_01");
+  CHECK(summary.slot.empty());
+
+  // A section missing or of another shape gives an empty text, never an error.
+  file.sections.erase("partner");
+  file.sections.at("field").state = dwe::core::YamlNode::sequence();
+  CHECK(summaryFromSections(file) == dwe::game::save::SaveSummary{});
 }
 
 TEST_CASE("a new day autosaves only when the ruleset says so") {
@@ -420,4 +479,10 @@ TEST_CASE("slot names read as slots") {
   CHECK_FALSE(slotFromName("slot_x1").has_value());
   CHECK_FALSE(slotFromName("save_01").has_value());
   CHECK_FALSE(slotFromName("").has_value());
+
+  CHECK(slotName({.kind = SlotKind::Manual, .index = 3}) == "slot_03");
+  CHECK(slotName({.kind = SlotKind::Autosave, .index = 12}) == "autosave_12");
+  CHECK(manualSlotFromName("slot_03") == SlotId{.kind = SlotKind::Manual, .index = 3});
+  CHECK_FALSE(manualSlotFromName("autosave_01").has_value());
+  CHECK_FALSE(manualSlotFromName("").has_value());
 }

@@ -13,6 +13,7 @@ inline constexpr std::string_view FormatVersion = "format_version";
 inline constexpr std::string_view GameVersion = "game_version";
 inline constexpr std::string_view Ruleset = "ruleset";
 inline constexpr std::string_view Label = "label";
+inline constexpr std::string_view Summary = "summary";
 inline constexpr std::string_view Created = "created";
 inline constexpr std::string_view Updated = "updated";
 inline constexpr std::string_view PlaySeconds = "play_seconds";
@@ -22,6 +23,15 @@ inline constexpr std::string_view Complete = "complete";
 inline constexpr std::string_view Version = "version";
 inline constexpr std::string_view State = "state";
 } // namespace save_key
+
+// The keys of a save's summary, in the order they are written.
+namespace summary_key {
+inline constexpr std::string_view Slot = "slot";
+inline constexpr std::string_view Tamer = "tamer";
+inline constexpr std::string_view Species = "species";
+inline constexpr std::string_view Nickname = "nickname";
+inline constexpr std::string_view Map = "map";
+} // namespace summary_key
 
 // The keys of the save settings.
 namespace settings_key {

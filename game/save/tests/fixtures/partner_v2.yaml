@@ -1,8 +1,14 @@
 format: dwe-save
-format_version: 2
+format_version: 3
 game_version: "0.1.0"
 ruleset: "original"
 label: "File City"
+summary:
+  slot: ""
+  tamer: ""
+  species: ""
+  nickname: ""
+  map: ""
 created: "2026-10-01T08:00:00Z"
 updated: "2026-10-02T21:30:15Z"
 play_seconds: 5400

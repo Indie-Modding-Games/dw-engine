@@ -6,6 +6,7 @@
 #include <dwe/game/save/storage.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -50,6 +51,10 @@ struct SlotInfo {
   bool hasBackup = false;
 };
 
+// Reads the summary of a save that has none (one written before format 3) from its sections.
+// game/save does not know the sections, so the game gives it (session::summaryFromSections).
+using SummaryReader = std::function<SaveSummary(const SaveFile&)>;
+
 // The save slots of the game in a storage: the manual ones and the autosave ones, written in turn.
 class SaveSlots {
 public:
@@ -61,6 +66,10 @@ public:
 
   // Every slot with its state; a slot that cannot be read is Damaged with the reason, not an error.
   [[nodiscard]] std::vector<SlotInfo> list() const;
+
+  // Fills, in list(), the summary of the saves that have none. Without one they list with an empty
+  // summary.
+  void setSummaryReader(SummaryReader reader);
 
   // Writes a save to a slot, keeping the slot's previous save as its backup.
   core::Result<void> save(SlotId slot, const SaveFile& file);
@@ -86,6 +95,7 @@ private:
   SaveStorage* storage_;
   std::int32_t manualSlots_;
   std::int32_t autosaveSlots_;
+  SummaryReader summaryReader_;
 };
 
 } // namespace dwe::game::save

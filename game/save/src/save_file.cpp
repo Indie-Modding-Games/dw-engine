@@ -105,6 +105,19 @@ std::vector<std::string> readAutosaveReasons(YamlReader& reader, const YamlNode&
   return names;
 }
 
+SaveSummary readSummary(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, messages::SummaryWhat,
+                         {summary_key::Slot, summary_key::Tamer, summary_key::Species,
+                          summary_key::Nickname, summary_key::Map})) {
+    return {};
+  }
+  return {.slot = reader.text(reader.field(node, summary_key::Slot)),
+          .tamer = reader.text(reader.field(node, summary_key::Tamer)),
+          .species = reader.text(reader.field(node, summary_key::Species)),
+          .nickname = reader.text(reader.field(node, summary_key::Nickname)),
+          .map = reader.text(reader.field(node, summary_key::Map))};
+}
+
 SaveHeader readHeader(YamlReader& reader, const YamlNode& root) {
   SaveHeader header{.gameVersion = reader.text(reader.field(root, save_key::GameVersion)),
                     .rulesetId = reader.text(reader.field(root, save_key::Ruleset)),
@@ -113,6 +126,7 @@ SaveHeader readHeader(YamlReader& reader, const YamlNode& root) {
                     .playSeconds =
                         reader.integer<std::int64_t>(reader.field(root, save_key::PlaySeconds)),
                     .label = reader.text(reader.field(root, save_key::Label)),
+                    .summary = readSummary(reader, reader.field(root, save_key::Summary)),
                     .autosaveReasons =
                         readAutosaveReasons(reader, reader.field(root, save_key::AutosaveReasons))};
   if (reader.ok() && header.playSeconds < 0) {
@@ -180,6 +194,24 @@ core::Result<YamlNode> addAutosaveReasons(YamlNode root) {
   return root;
 }
 
+YamlNode writeSummary(const SaveSummary& summary) {
+  YamlNode node = YamlNode::mapping();
+  node.set(std::string{summary_key::Slot}, quoted(summary.slot));
+  node.set(std::string{summary_key::Tamer}, quoted(summary.tamer));
+  node.set(std::string{summary_key::Species}, quoted(summary.species));
+  node.set(std::string{summary_key::Nickname}, quoted(summary.nickname));
+  node.set(std::string{summary_key::Map}, quoted(summary.map));
+  return node;
+}
+
+// Format 3 adds the header's summary. game/save does not know the sections it would come from, so a
+// format 2 save gets an empty one; the game can fill it from the sections
+// (session::summaryFromSections) and does on its next save.
+core::Result<YamlNode> addSummary(YamlNode root) {
+  root.set(std::string{save_key::Summary}, writeSummary({}));
+  return root;
+}
+
 YamlNode writeSections(const SaveFile& file) {
   YamlNode sections = YamlNode::mapping();
   for (const auto& [name, section] : file.sections) {
@@ -204,6 +236,7 @@ const MigrationChain& formatMigrations() {
   static const MigrationChain chain = [] {
     MigrationChain steps;
     steps.add(addAutosaveReasons); // 1 -> 2
+    steps.add(addSummary);         // 2 -> 3
     return steps;
   }();
   return chain;
@@ -232,9 +265,9 @@ core::Result<SaveFile> parseSaveFile(std::string_view text, const MigrationChain
   }
   if (!reader.expectKeys(*root, messages::SaveWhat,
                          {save_key::Format, save_key::FormatVersion, save_key::GameVersion,
-                          save_key::Ruleset, save_key::Label, save_key::Created, save_key::Updated,
-                          save_key::PlaySeconds, save_key::AutosaveReasons, save_key::Sections,
-                          save_key::Complete})) {
+                          save_key::Ruleset, save_key::Label, save_key::Summary, save_key::Created,
+                          save_key::Updated, save_key::PlaySeconds, save_key::AutosaveReasons,
+                          save_key::Sections, save_key::Complete})) {
     return std::unexpected{reader.error(messages::SaveFileContext)};
   }
   checkComplete(reader, *root);
@@ -264,6 +297,7 @@ core::Result<std::string> writeSaveFile(const SaveFile& file) {
   root.set(std::string{save_key::GameVersion}, quoted(file.header.gameVersion));
   root.set(std::string{save_key::Ruleset}, quoted(file.header.rulesetId));
   root.set(std::string{save_key::Label}, quoted(file.header.label));
+  root.set(std::string{save_key::Summary}, writeSummary(file.header.summary));
   root.set(std::string{save_key::Created}, quoted(formatTime(file.header.created)));
   root.set(std::string{save_key::Updated}, quoted(formatTime(file.header.updated)));
   root.set(std::string{save_key::PlaySeconds}, plain(std::to_string(file.header.playSeconds)));

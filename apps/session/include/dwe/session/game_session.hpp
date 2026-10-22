@@ -112,8 +112,14 @@ public:
   // them.
   [[nodiscard]] core::Result<game::save::SaveFile> saveFile() const;
 
-  // Writes the playthrough to a slot.
+  // Writes the playthrough to a slot. A manual slot becomes the playthrough's slot.
   core::Result<void> save(game::save::SlotId slot);
+
+  // The manual slot the playthrough saves to (docs/architecture/guardar-y-cargar.md): the one it
+  // was loaded from or last saved to; loaded from an autosave, the one the autosave names; nothing
+  // for a new game until it is saved. Each save's summary keeps it, so an autosave knows its
+  // playthrough's slot.
+  [[nodiscard]] const std::optional<game::save::SlotId>& homeSlot() const { return homeSlot_; }
 
   // Whether a game was started or loaded.
   [[nodiscard]] bool playing() const;
@@ -233,6 +239,7 @@ private:
   std::unique_ptr<sections::SessionSerializers> serializers_;
   game::save::SaveSections sections_;
   game::save::SaveFile file_;
+  std::optional<game::save::SlotId> homeSlot_;
   std::vector<game::partner::PartnerEvent> partnerEvents_;
   std::string lastMap_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;

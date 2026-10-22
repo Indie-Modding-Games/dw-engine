@@ -82,6 +82,7 @@ SaveFile autosaveAt(std::int64_t second, std::vector<AutosaveReason> reasons) {
                      .updated = std::chrono::sys_seconds{std::chrono::seconds{second}},
                      .playSeconds = second,
                      .label = "File City",
+                     .summary = {},
                      .autosaveReasons = autosaveReasonNames(reasons)},
           .sections = {}};
 }

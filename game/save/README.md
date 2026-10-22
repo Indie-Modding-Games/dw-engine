@@ -29,7 +29,7 @@ if (file) {
 }
 
 // Guardar.
-current.header.updated = now;                // y label, playSeconds...
+current.header.updated = now;                // y label, summary, playSeconds...
 sections.write(current);
 slots.save({.kind = save::SlotKind::Manual, .index = 1}, current);
 

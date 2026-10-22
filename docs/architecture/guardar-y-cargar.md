@@ -181,8 +181,9 @@ summary:
   map: "base:<mapa>"         # el ID del mapa
 ```
 
-con su paso de migración `2 → 3`, que lee lo que pueda de las secciones `tamer`, `partner` y `field` de la propia
-partida y deja vacío lo demás (la lista enseña entonces solo número y fecha). `label` se queda como está. Los IDs siguen
+con su paso de migración `2 → 3`, que pone un `summary` vacío (`game/save` no conoce las secciones). La lista
+rellena el de una partida así con lo que lee de sus secciones `partner` y `field` (`session::summaryFromSections`,
+que la app da a `SaveSlots::setSummaryReader`), y el siguiente guardado lo escribe entero. `label` se queda como está. Los IDs siguen
 la regla de la fase 4 (IDs, no índices).
 
 ### 3.4 Partida nueva
@@ -318,8 +319,9 @@ Corre en `en` y `es`. Cambios en el ejecutor: `shownMenu()` (`apps/game/src/auto
 
 **Tests unitarios** (ninguno cuenta para el límite de líneas):
 
-- `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen sacado
-  de sus secciones; con secciones que faltan, resumen vacío.
+- `game/save`: la cabecera v3 se escribe y se lee igual byte a byte; una partida v2 migra a v3 con el resumen vacío,
+  y la lista lo rellena con el lector del juego. `apps/session`: el resumen sacado de las secciones; con secciones
+  que faltan, vacío.
 - `SaveFlow`: ranura de la partida al empezar, al continuar, desde un autoguardado y sin guardar; guardado al dormir
   con y sin ranura; fallo de escritura (`MemorySaveStorage::failNextWrite`) vuelve al menú; máquina y fin del juego
   con su mapa de vuelta.

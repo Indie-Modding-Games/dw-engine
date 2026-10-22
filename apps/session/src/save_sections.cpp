@@ -3,6 +3,7 @@
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/game/partner/state_yaml.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/slot_names.hpp>
 
 #include <charconv>
 #include <cstdint>
@@ -28,6 +29,8 @@ constexpr std::string_view YawKey = "yaw";
 constexpr std::string_view PartnerKey = "partner";
 constexpr std::string_view SystemsKey = "session";
 constexpr std::size_t PositionAxes = 3;
+// The partner section's species key, as game/partner writes it (state_yaml.cpp).
+constexpr std::string_view SpeciesKey = "species";
 
 // Numbers are written in their shortest form that reads back exactly.
 template <typename T>
@@ -81,6 +84,18 @@ game::save::MigrationChain randomMigrations() {
   game::save::MigrationChain chain;
   chain.add(addSystemsRandom);
   return chain;
+}
+
+// A text of a section's state, or empty if the save has no such section or key: a summary is shown,
+// never trusted.
+std::string sectionText(const game::save::SaveFile& file, std::string_view section,
+                        std::string_view key) {
+  const auto found = file.sections.find(section);
+  if (found == file.sections.end() || !found->second.state.isMapping()) {
+    return {};
+  }
+  const YamlNode* value = found->second.state.find(key);
+  return value != nullptr && value->isScalar() ? value->text() : std::string{};
 }
 
 } // namespace
@@ -215,3 +230,15 @@ core::Result<void> SessionSerializers::addTo(game::save::SaveSections& sections)
 }
 
 } // namespace dwe::session::sections
+
+namespace dwe::session {
+
+game::save::SaveSummary summaryFromSections(const game::save::SaveFile& file) {
+  return {.slot = {},
+          .tamer = {},
+          .species = sections::sectionText(file, sections::PartnerName, sections::SpeciesKey),
+          .nickname = {},
+          .map = sections::sectionText(file, sections::FieldName, sections::MapKey)};
+}
+
+} // namespace dwe::session

@@ -7,6 +7,7 @@
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
 #include <dwe/platform/platform.hpp>
+#include <dwe/session/slot_names.hpp>
 
 #include <chrono>
 #include <cstdlib>
@@ -24,6 +25,11 @@ namespace {
 // The saves folder in the game's user data folder (common.hpp).
 constexpr std::string_view SavesFolderName = "saves";
 
+// What the slot list will show of a saved slot (its summary); messages.hpp holds the rest of the
+// line.
+constexpr std::string_view SummaryText =
+    R"(; playthrough slot "{}", tamer "{}", partner "{}" "{}", map "{}")";
+
 std::string describeSlot(const game::save::SlotInfo& info) {
   using game::save::SlotInfo;
   const std::string name = game::save::slotFileName(info.slot);
@@ -35,9 +41,12 @@ std::string describeSlot(const game::save::SlotInfo& info) {
   }
   const game::save::SaveHeader& header = *info.header;
   const std::chrono::hh_mm_ss played{std::chrono::seconds{header.playSeconds}};
+  const game::save::SaveSummary& summary = header.summary;
   return std::format(messages::SavedSlot, name, header.label, played.hours().count(),
                      played.minutes().count(), header.rulesetId, header.updated,
-                     header.gameVersion);
+                     header.gameVersion) +
+         std::format(SummaryText, summary.slot, summary.tamer, summary.species, summary.nickname,
+                     summary.map);
 }
 
 } // namespace
@@ -67,7 +76,8 @@ int listSaves(const Options& options) {
     return EXIT_FAILURE;
   }
   game::save::DiskSaveStorage storage{*folder};
-  const game::save::SaveSlots slots{storage, *settings};
+  game::save::SaveSlots slots{storage, *settings};
+  slots.setSummaryReader(session::summaryFromSections);
   core::logInfo(messages::SavesFolder, assets::pathText(*folder), settings->manualSlots,
                 settings->autosaveSlots);
   for (const game::save::SlotInfo& info : slots.list()) {

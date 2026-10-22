@@ -14,10 +14,16 @@ un fichero leído y escrito otra vez sale idéntico byte a byte.
 
 ```yaml
 format: dwe-save
-format_version: 2
+format_version: 3
 game_version: "0.1.0"
 ruleset: "original"
 label: "File City"
+summary:
+  slot: "slot_03"
+  tamer: ""
+  species: "base:<especie>"
+  nickname: ""
+  map: "base:<mapa>"
 created: "2026-10-01T08:00:00Z"
 updated: "2026-10-02T21:30:15Z"
 play_seconds: 5400
@@ -43,6 +49,7 @@ complete: true
 | `game_version` | La versión del juego que la escribió, para las personas y los informes de errores |
 | `ruleset` | El ruleset con el que se juega |
 | `label` | El texto de la lista de ranuras (el mapa, el nombre del partner...) |
+| `summary` | Lo que enseña la lista de ranuras ([guardar y cargar](guardar-y-cargar.md#33-las-ranuras)): `slot`, la ranura manual de la partida (la que guarda también cada autoguardado suyo; `""` si no tiene); `tamer`, el nombre del domador; `species`, el ID de la especie del partner; `nickname`, su mote; `map`, el ID del mapa. Lo rellena el juego al guardar; un texto que el juego aún no tiene va vacío (hoy `tamer` y `nickname`) |
 | `created`, `updated` | Cuándo empezó la partida y cuándo se guardó por última vez, en UTC (`YYYY-MM-DDTHH:MM:SSZ`) |
 | `play_seconds` | Tiempo de juego en segundos |
 | `autosave_reasons` | Por qué se autoguardó, con el nombre de cada motivo en el orden en que se pidió (ver [abajo](#cuándo-autoguarda)); `[]` si la pidió el jugador. Son nombres y no números, así que un motivo de un juego más nuevo se lista igual |
@@ -59,8 +66,11 @@ Hay dos niveles de versión, y cada uno tiene su **cadena de migraciones** (`Mig
 se puede subir una versión sin escribir su paso.
 
 - **El formato** (`format_version`): sus pasos están en `formatMigrations()` en `game/save` y se aplican al leer el
-  fichero, sobre el documento entero. Hoy es la versión 2; el paso 1 → 2 añade `autosave_reasons: []` (una partida de
-  la versión 1 nunca fue un autoguardado con motivos).
+  fichero, sobre el documento entero. Hoy es la versión 3; el paso 1 → 2 añade `autosave_reasons: []` (una partida de
+  la versión 1 nunca fue un autoguardado con motivos) y el 2 → 3 un `summary` vacío: `game/save` no conoce las
+  secciones de las que saldría. La lista lo rellena al leerla con lo que el juego le da
+  (`SaveSlots::setSummaryReader`; el juego da `session::summaryFromSections`, que lee la especie y el mapa de las
+  secciones `partner` y `field`), y el siguiente guardado lo escribe entero.
 - **Cada sección** (`sections.<nombre>.version`): la cadena la registra el sistema dueño de la sección y se aplica al
   cargar, sobre el `state` de la sección. Cada sistema versiona lo suyo sin tocar a los demás.
 

@@ -34,6 +34,7 @@ SaveFile fileLabelled(std::string label, std::chrono::sys_seconds updated) {
                  .updated = updated,
                  .playSeconds = 60,
                  .label = std::move(label),
+                 .summary = {},
                  .autosaveReasons = {}};
   return file;
 }
@@ -151,6 +152,30 @@ TEST_CASE("slots are listed, saved, loaded and backed up") {
   CHECK(errorOf(slots.save({.kind = SlotKind::Manual, .index = 4}, fileLabelled("x", at(8)))) ==
         "there is no save slot 4");
   CHECK_FALSE(slots.load({.kind = SlotKind::Autosave, .index = 3}));
+}
+
+TEST_CASE("the list fills the summary of saves that have none with the game's reader") {
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, parseSaveSettings(Settings).value()};
+  const SlotId first{.kind = SlotKind::Manual, .index = 1};
+  const SlotId second{.kind = SlotKind::Manual, .index = 2};
+  REQUIRE(slots.save(first, fileLabelled("old", at(8))));
+  SaveFile summarized = fileLabelled("new", at(9));
+  summarized.header.summary = {
+      .slot = "slot_02", .tamer = "", .species = "base:sp_02", .nickname = "", .map = ""};
+  REQUIRE(slots.save(second, summarized));
+
+  CHECK(slots.list()[0].header.value_or(SaveHeader{}).summary == SaveSummary{});
+  slots.setSummaryReader([](const SaveFile& file) {
+    return SaveSummary{
+        .slot = "", .tamer = "", .species = file.header.label, .nickname = "", .map = "read"};
+  });
+  const auto infos = slots.list();
+  CHECK(infos[0].header.value_or(SaveHeader{}).summary.species == "old");
+  CHECK(infos[0].header.value_or(SaveHeader{}).summary.map == "read");
+  CHECK(infos[1].header.value_or(SaveHeader{}).summary == summarized.header.summary);
+  // Loading gives the file as saved: the summary is only for the list.
+  CHECK(slots.load(first).value().header.summary == SaveSummary{});
 }
 
 TEST_CASE("a failed save leaves the slot as it was") {

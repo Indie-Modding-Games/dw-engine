@@ -18,13 +18,32 @@ namespace dwe::game::save {
 // The version of the file layout (the header keys and how sections are stored), written as
 // `format_version`. Each section has its own version on top of this one
 // (docs/architecture/save.md).
-inline constexpr std::int32_t FormatVersion = 2;
+inline constexpr std::int32_t FormatVersion = 3;
 
 // The value of the `format` key, which tells a save apart from any other YAML document.
 inline constexpr std::string_view FormatName = "dwe-save";
 
 // The longest section name.
 inline constexpr std::size_t MaxNameLength = 64;
+
+// What the slot list shows of a playthrough (docs/architecture/guardar-y-cargar.md). The game fills
+// it each time it saves; game/save only keeps it. A text the game does not have yet is empty, and
+// so is every text of a save written before format 3.
+struct SaveSummary {
+  // The manual slot the playthrough saves to (`slot_03`), which an autosave keeps too; empty when
+  // it has none.
+  std::string slot;
+  // The tamer's name.
+  std::string tamer;
+  // The partner's species and its nickname: an ID, which the interface shows by its name, and a
+  // text.
+  std::string species;
+  std::string nickname;
+  // The ID of the map the player is on.
+  std::string map;
+
+  friend bool operator==(const SaveSummary&, const SaveSummary&) = default;
+};
 
 // What a save says about itself, readable without reading its sections: enough to list the slots.
 struct SaveHeader {
@@ -40,6 +59,8 @@ struct SaveHeader {
   std::int64_t playSeconds = 0;
   // A text for the slot list, such as the map and the partner's name.
   std::string label;
+  // What the slot list shows.
+  SaveSummary summary;
   // Why an autosave was written, by reason name (autosaveReasonNames); empty for a save the player
   // asked for. Kept as names so that a reason from a newer game still lists.
   std::vector<std::string> autosaveReasons;

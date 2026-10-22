@@ -28,6 +28,7 @@ inline constexpr std::string_view SectionsNotMapping =
 inline constexpr std::string_view BadSectionName = "'{}' is not a section name (a-z, 0-9 and _)";
 inline constexpr std::string_view BadSectionVersion = "a section version is 1 or more";
 inline constexpr std::string_view AutosaveReasonsWhat = "autosave_reasons";
+inline constexpr std::string_view SummaryWhat = "the summary";
 inline constexpr std::string_view BadAutosaveReason =
     "'{}' is not an autosave reason name (a-z, 0-9 and _)";
 

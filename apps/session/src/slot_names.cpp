@@ -3,6 +3,7 @@
 
 #include <charconv>
 #include <cstdint>
+#include <format>
 #include <system_error>
 
 namespace dwe::session {
@@ -40,6 +41,21 @@ std::optional<game::save::SlotId> slotFromName(std::string_view name) {
     return std::nullopt;
   }
   return game::save::SlotId{.kind = *kind, .index = index};
+}
+
+std::optional<game::save::SlotId> manualSlotFromName(std::string_view name) {
+  std::optional<game::save::SlotId> slot = slotFromName(name);
+  if (slot && slot->kind != game::save::SlotKind::Manual) {
+    return std::nullopt;
+  }
+  return slot;
+}
+
+std::string slotName(game::save::SlotId slot) {
+  const std::string_view prefix = slot.kind == game::save::SlotKind::Manual
+                                      ? game::save::ManualSlotPrefix
+                                      : game::save::AutosaveSlotPrefix;
+  return std::format("{}{}{:02}", prefix, IndexSeparator, slot.index);
 }
 
 } // namespace dwe::session
