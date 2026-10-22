@@ -44,6 +44,7 @@ constexpr std::array Fingerprints{
     FingerprintRow{.version = 1, .fingerprint = "bb77f40dc5892b246c1467fef107ffa30bb73fdc"},
     FingerprintRow{.version = 2, .fingerprint = "d86dbc6ff1eda81d846b98db571eb01f522c36ef"},
     FingerprintRow{.version = 3, .fingerprint = "9cbf4dbabde49fd3e75f98157d5c8cb3f3392d15"},
+    FingerprintRow{.version = 4, .fingerprint = "a15a1611f17e6b57f42ccbf97dfc45003f671101"},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {

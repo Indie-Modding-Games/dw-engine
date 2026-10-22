@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Story line map",
+  "description": "story/<n>_lines.yaml, with <n> the script id in 3 digits (000 for MAPHEAD): for each line of the Lua module next to it (story/<n>.lua) that runs an instruction of the original script, the offset of that instruction in the script's listing (script/maphead.yaml, script/dg/<n>.yaml). dwx extract writes it with the module (formats/src/script/lua_emitter.cpp); error messages and parity traces read it, the game does not run it.",
+  "type": "object",
+  "propertyNames": { "pattern": "^[1-9][0-9]*$" },
+  "additionalProperties": { "description": "The offset, written in hexadecimal (0x04c0).", "type": "integer", "minimum": 0, "maximum": 65535 }
+}

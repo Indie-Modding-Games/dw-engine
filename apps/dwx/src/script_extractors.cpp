@@ -3,6 +3,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/map/map_file.hpp>
 #include <dwe/formats/script/disassembly.hpp>
+#include <dwe/formats/script/lua_emitter.hpp>
 #include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
 #include <dwe/formats/script/script_listing.hpp>
@@ -22,6 +23,7 @@
 
 #include "asset_names.hpp"
 #include "map_extractors.hpp"
+#include "story_conversion.hpp"
 
 namespace dwe::dwx {
 
@@ -34,6 +36,9 @@ constexpr std::string_view NewGameStatsDocument = "new_game_stats";
 // field/script_warps: the map changes of the event scripts; data/new_game_story: the triggers a new game sets.
 constexpr std::string_view ScriptWarpsDocument = "script_warps";
 constexpr std::string_view NewGameStoryDocument = "new_game_story";
+// The language of the story's text catalogs: the script texts decode with the US release's charset
+// (text::decodeScriptText).
+constexpr std::string_view StoryLanguage = "en";
 
 // What the listings of a file add up to, for the notes.
 struct Totals {
@@ -42,6 +47,8 @@ struct Totals {
     std::size_t texts = 0;
     std::size_t unreachable = 0;
     std::size_t padding = 0; // bytes after the end of the code
+    std::size_t modules = 0; // Lua modules
+    std::size_t luaBytes = 0;
 };
 
 core::Result<OutputFile> yamlOutput(const core::Result<assets::AssetId>& id, const core::YamlNode& node) {
@@ -54,6 +61,41 @@ core::Result<OutputFile> yamlOutput(const core::Result<assets::AssetId>& id, con
     }
     const auto bytes = std::as_bytes(std::span{*text});
     return OutputFile{.id = *id, .extension = "yaml", .bytes = std::vector<std::byte>(bytes.begin(), bytes.end())};
+}
+
+// The Lua module of a script (formats::script::convertScriptToLua), its line map and its English texts: story/<n>,
+// story/<n>_lines and text/en/story_<n>. A script that does not convert is an unknown; its listing is still written.
+core::Result<void> addStory(Extraction& extraction, Totals& totals, std::optional<std::size_t> id,
+                            const formats::script::Disassembly& disassembly) {
+    const formats::script::LuaModuleName name = storyModuleName(id);
+    const auto module = formats::script::convertScriptToLua(formats::script::listingOf(disassembly), name);
+    if (!module) {
+        extraction.unknowns.push_back(std::format("{}: no Lua module: {}", name.source, module.error().message));
+        return {};
+    }
+    const auto moduleId = names::storyModule(name.script);
+    if (!moduleId) {
+        return std::unexpected{moduleId.error()};
+    }
+    const auto code = std::as_bytes(std::span{module->code});
+    extraction.outputs.push_back(
+        OutputFile{.id = *moduleId, .extension = "lua", .bytes = std::vector<std::byte>(code.begin(), code.end())});
+    auto lines = yamlOutput(names::storyLines(name.script), formats::script::luaLinesToYaml(*module));
+    if (!lines) {
+        return std::unexpected{lines.error()};
+    }
+    extraction.outputs.push_back(std::move(*lines));
+    if (!module->texts.empty()) {
+        auto texts =
+            yamlOutput(names::textTable(StoryLanguage, name.textSource), formats::script::luaTextsToYaml(*module));
+        if (!texts) {
+            return std::unexpected{texts.error()};
+        }
+        extraction.outputs.push_back(std::move(*texts));
+    }
+    ++totals.modules;
+    totals.luaBytes += module->code.size();
+    return {};
 }
 
 // Disassembles one script and adds its listing. Every byte up to the end of the code must decode; what follows it
@@ -74,6 +116,9 @@ core::Result<void> addScript(Extraction& extraction, Totals& totals, std::string
         return std::unexpected{output.error()};
     }
     extraction.outputs.push_back(std::move(*output));
+    if (auto added = addStory(extraction, totals, id, *disassembly); !added) {
+        return added;
+    }
     ++totals.scripts;
     totals.instructions += disassembly->instructions.size();
     totals.texts += static_cast<std::size_t>(std::ranges::count_if(
@@ -235,6 +280,7 @@ core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
 void noteTotals(Extraction& extraction, const Totals& totals) {
     extraction.notes.push_back(
         std::format("{} scripts, {} instructions, {} texts", totals.scripts, totals.instructions, totals.texts));
+    extraction.notes.push_back(std::format("{} Lua modules in story/, {} bytes", totals.modules, totals.luaBytes));
     extraction.notes.push_back(std::format("{} instructions are not reached from any section; they are kept in the "
                                            "listings (most are an unreachable jump after an END_SECTION)",
                                            totals.unreachable));
@@ -276,8 +322,13 @@ core::Result<Extraction> extractScriptPack(const Disc& disc, std::span<const std
     for (std::size_t id = 0; id < slots->size(); ++id) {
         const auto script = file.subspan((*slots)[id].offset, (*slots)[id].size);
         scripts[static_cast<std::uint16_t>(id)] = id == 0 && mapHead ? std::span<const std::byte>{*mapHead} : script;
-        if (id == 0 && mapHead && script.size() >= mapHead->size() &&
-            std::ranges::equal(script.first(mapHead->size()), *mapHead)) {
+        // Both would be story/000. A slot runs up to the next script, so the copy is followed by its slot's padding.
+        if (id == 0 && mapHead) {
+            if (script.size() < mapHead->size() || !std::ranges::equal(script.first(mapHead->size()), *mapHead)) {
+                return core::fail(std::format("script 0 is not a copy of {}: both would be script 0 of the story, "
+                                              "and the game only loads {}",
+                                              MapHeadPath, MapHeadPath));
+            }
             extraction.notes.push_back(std::format("script 0 is a copy of {}, which the game loads instead; it is "
                                                    "extracted from that file",
                                                    MapHeadPath));

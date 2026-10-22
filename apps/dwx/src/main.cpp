@@ -8,6 +8,7 @@
 
 #include "disc_cache.hpp"
 #include "dwx.hpp"
+#include "story_conversion.hpp"
 #include "upscale.hpp"
 #include "validate.hpp"
 
@@ -42,6 +43,11 @@ void printUsage() {
     std::println(stderr,
                  "      everything else copied. A folder from an earlier cook is updated: only what changed is");
     std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
+    std::println(stderr, "  dwx convert-script <script/dg/<n>.yaml|script/maphead.yaml> -o <folder>");
+    std::println(stderr,
+                 "      Converts a script listing, such as one a mod edited, to the Lua module that dwx extract");
+    std::println(stderr,
+                 "      writes for it: <name>.lua, its line map <name>_lines.yaml and its texts <name>_texts.yaml.");
     std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
     std::println(stderr, "      Writes a pack as a single .pak archive and checks that it reads back.");
     std::println(stderr, "  dwx upscale <recipe.yaml> <pack folder|content folder> -o <folder>");
@@ -123,6 +129,12 @@ int main(int argc, char** argv) {
         const std::string_view option{arguments[4]};
         if (option == "-o" || option == "--out") {
             return upscale(arguments[2], arguments[3], arguments[5]);
+        }
+    }
+    if (command == "convert-script" && arguments.size() == 5) {
+        const std::string_view option{arguments[3]};
+        if (option == "-o" || option == "--out") {
+            return convertScript(std::filesystem::path{arguments[2]}, std::filesystem::path{arguments[4]});
         }
     }
     if (command == "validate") {

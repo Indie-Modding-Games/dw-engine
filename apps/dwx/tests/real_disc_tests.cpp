@@ -95,6 +95,16 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
         REQUIRE(found != run->files.end());
         return found->status;
     };
+    // DG.SCN's script 0 is a copy of MAPHEAD.SCN, so the map header alone is story/000.
+    const auto pack =
+        std::ranges::find(run->files, "SCN/DG.SCN", [](const FileReport& report) { return report.file.path; });
+    REQUIRE(pack != run->files.end());
+    CHECK(std::ranges::any_of(
+        pack->notes, [](const std::string& note) { return note.contains("script 0 is a copy of SCN/MAPHEAD.SCN"); }));
+    CHECK(std::ranges::none_of(pack->unknowns,
+                               [](const std::string& unknown) { return unknown.contains("is not a copy"); }));
+    CHECK(has("story/000"));
+    CHECK(has("story/001"));
     CHECK(taken("padding") == 1);
     CHECK(statusOf("MMM.DAT") == FileStatus::Extracted);
     CHECK(taken("movie") == 4);

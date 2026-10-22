@@ -138,6 +138,18 @@ core::Result<assets::AssetId> scriptListing(std::string_view volumePath, std::op
     return assets::AssetId::parse(text);
 }
 
+core::Result<assets::AssetId> storyModule(std::size_t script) {
+    return assets::AssetId::parse("story/" + number(script));
+}
+
+core::Result<assets::AssetId> storyLines(std::size_t script) {
+    const auto module = storyModule(script);
+    if (!module) {
+        return module;
+    }
+    return assets::AssetId::parse(module->str() + "_lines");
+}
+
 core::Result<assets::AssetId> textTable(std::string_view language, std::string_view source) {
     return assets::AssetId::parse(std::format("text/{}/{}", segment(language), segment(source)));
 }
@@ -186,6 +198,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = ContractSchema, .ids = {"digimon/*/contract"}},
         {.schema = "sound_bank", .ids = {"sound/*/bank_meta", "sound/*/*/bank_meta", "music/*/font_meta"}},
         {.schema = "script", .ids = {"script/maphead", "script/*/*"}},
+        {.schema = "story_lines", .ids = {"story/*_lines"}},
         {.schema = "text", .ids = {"text/*/*"}},
         {.schema = "font", .ids = {"font/main_meta"}},
         {.schema = "effect", .ids = {"effect/*/effect"}},

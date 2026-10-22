@@ -79,6 +79,11 @@ core::Result<assets::AssetId> metadataOf(const assets::AssetId& image);
 // script/dg/012.
 core::Result<assets::AssetId> scriptListing(std::string_view volumePath, std::optional<std::size_t> id);
 
+// story/<script>: the Lua module of an event script, by its script id in 3 digits (story/012; story/000 for MAPHEAD,
+// which the game loads as script 0). Its line map is <module>_lines.
+core::Result<assets::AssetId> storyModule(std::size_t script);
+core::Result<assets::AssetId> storyLines(std::size_t script);
+
 // text/<language>/<source>: the strings of the executable ("main") or of an overlay ("btl" for BTL_REL.BIN).
 core::Result<assets::AssetId> textTable(std::string_view language, std::string_view source);
 

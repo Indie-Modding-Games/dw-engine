@@ -39,13 +39,15 @@ std::vector<std::byte> script(std::initializer_list<unsigned> code) {
     return bytes;
 }
 
-// A disc with MAPHEAD.SCN and a DG.SCN whose script 0 is a copy of it, script 1 shows a text and, when asked,
-// script 2 has an opcode the interpreter does not have. Each script has a slot of its own, padded with junk.
+// A disc with MAPHEAD.SCN and a DG.SCN whose script 0 is a copy of it unless asked otherwise, script 1 shows a text
+// and, when asked, script 2 has an opcode the interpreter does not have. Each script has a slot of its own, padded
+// with junk.
 struct ScriptDisc {
-    explicit ScriptDisc(bool withUnknownOpcode) {
+    explicit ScriptDisc(bool withUnknownOpcode, bool scriptZeroCopiesMapHead = true) {
         const auto mapHead = script({0xFE, 0x00, 0xFF, 0x00});
         std::vector<std::vector<std::byte>> scripts{
-            mapHead, script({0x1A, 0x00, 0x82, 0x60, 0x0D, 0x00, 0x00, 0x00, 0xFF, 0x00})};
+            scriptZeroCopiesMapHead ? mapHead : script({0xFE, 0x00, 0xFE, 0x00, 0xFF, 0x00}),
+            script({0x1A, 0x00, 0x82, 0x60, 0x0D, 0x00, 0x00, 0x00, 0xFF, 0x00})};
         if (withUnknownOpcode) {
             scripts.push_back(script({0x40, 0x00, 0xFF, 0x00}));
         }
@@ -100,15 +102,17 @@ TEST_CASE("both script files become one listing per script") {
     const auto& mapHead = reportOf(*run, "SCN/MAPHEAD.SCN");
     CHECK(mapHead.extractor == "event_script");
     CHECK(mapHead.status == FileStatus::Extracted);
-    CHECK(mapHead.outputs == std::vector<std::string>{"script/maphead.yaml"});
+    CHECK(mapHead.outputs == std::vector<std::string>{"script/maphead.yaml", "story/000.lua", "story/000_lines.yaml"});
 
     const auto& pack = reportOf(*run, "SCN/DG.SCN");
     CHECK(pack.status == FileStatus::Extracted);
-    CHECK(pack.outputs == std::vector<std::string>{"script/dg/001.yaml"});
+    CHECK(pack.outputs == std::vector<std::string>{"script/dg/001.yaml", "story/001.lua", "story/001_lines.yaml",
+                                                   "text/en/story_001.yaml"});
     CHECK(hasNote(pack, "script 0 is a copy of SCN/MAPHEAD.SCN"));
     CHECK(hasNote(pack, "1 scripts, 2 instructions, 1 texts"));
     CHECK(hasNote(pack, "bytes after the end of the scripts' code are the padding"));
     CHECK(hasNote(pack, "1 of the"));
+    CHECK(hasNote(pack, "1 Lua modules in story/"));
 
     const auto listing = std::ranges::find(run->outputs, std::string{"script/dg/001"},
                                            [](const OutputFile& output) { return output.id.str(); });
@@ -124,9 +128,25 @@ TEST_CASE("a script that does not decode leaves its file partial") {
     REQUIRE(run.has_value());
     const auto& pack = reportOf(*run, "SCN/DG.SCN");
     CHECK(pack.status == FileStatus::Partial);
-    CHECK(pack.outputs.size() == 2);
-    REQUIRE(pack.unknowns.size() == 1);
+    // Script 2's listing is written; it has no Lua module, since its section starts where nothing decoded.
+    CHECK(pack.outputs.size() == 5);
+    REQUIRE(pack.unknowns.size() == 2);
     CHECK(pack.unknowns[0].starts_with("script 2: 0x0008: opcode 0x40"));
     // Its section starts on no instruction, so the walk of the maps' scripts leaves it out instead of structuring it.
     CHECK(hasNote(pack, "script 2 does not structure"));
+    CHECK(pack.unknowns[1].starts_with("script/dg/002: no Lua module: section 0x0008"));
+}
+
+TEST_CASE("a script 0 of the pack that is not a copy of the map header is not extracted") {
+    const ScriptDisc fixture{false, false};
+    const Disc disc{*fixture.source, fixture.volume, fixture.info};
+    const auto run = runExtractors(disc, extractors());
+    REQUIRE(run.has_value());
+    // It would be story/000 like the map header, which is what the game loads as script 0.
+    const auto& pack = reportOf(*run, "SCN/DG.SCN");
+    CHECK(pack.status == FileStatus::Partial);
+    CHECK(pack.outputs.empty());
+    REQUIRE(pack.unknowns.size() == 1);
+    CHECK(pack.unknowns[0].contains("script 0 is not a copy of SCN/MAPHEAD.SCN"));
+    CHECK(reportOf(*run, "SCN/MAPHEAD.SCN").status == FileStatus::Extracted);
 }
