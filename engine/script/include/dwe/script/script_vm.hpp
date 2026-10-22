@@ -68,6 +68,10 @@ struct ScriptLimits {
   // it is spent, the pack's handlers are skipped until the next frame.
   std::uint64_t hookInstructionsPerFrame = 500'000;
   std::chrono::milliseconds hookTimePerFrame{40};
+  // A story section runs a few thousand instructions between two waits: one that never waits must
+  // stop within a frame, not after a call's second.
+  std::uint64_t instructionsPerResume = 200'000;
+  std::chrono::milliseconds resumeDeadline{20};
 };
 
 // A sandboxed Lua 5.5 state. Scripts get the safe standard libraries (base without file loading,

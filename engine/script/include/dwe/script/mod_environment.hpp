@@ -3,6 +3,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/script/script_coroutine.hpp>
 
 #include <cstddef>
 #include <string_view>
@@ -31,6 +32,11 @@ public:
   // ScriptVm::reloadChanged() runs the pack's scripts again when one changes. The file system must
   // outlive the VM.
   core::Result<void> runAsset(const assets::VirtualFileSystem& files, const assets::AssetId& id);
+
+  // Not remembered for reloadChanged(): whoever steps the module's coroutines decides when to load
+  // it again.
+  core::Result<ScriptModule> loadModule(const assets::VirtualFileSystem& files,
+                                        const assets::AssetId& id);
 
 private:
   detail::VmState* vm_;

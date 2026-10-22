@@ -27,4 +27,8 @@ void copyGlobals(lua_State* state, int source, int environment);
 core::Result<void> runInEnvironment(VmState& vm, const ModTables& tables, MemoryOwner owner,
                                     std::string_view source, std::string_view chunkName);
 
+// As runInEnvironment, keeping what the chunk returns as a reference in the Lua registry.
+core::Result<int> loadInEnvironment(VmState& vm, const ModTables& tables, MemoryOwner owner,
+                                    std::string_view source, std::string_view chunkName);
+
 } // namespace dwe::script::detail

@@ -120,6 +120,17 @@ inline constexpr std::string_view BooleanKind = "a boolean";
 inline constexpr std::string_view IntegerKind = "an integer";
 inline constexpr std::string_view NumberKind = "a number";
 inline constexpr std::string_view TextKind = "a text";
+inline constexpr std::string_view WaitOutsideStep =
+    " waits, so only a section the engine runs can call it, outside any coroutine of its own";
+
+// Coroutines the engine steps (script_coroutine.cpp).
+inline constexpr std::string_view NoModuleFunction = "{} has no function at {}";
+inline constexpr std::string_view YieldWithoutWait =
+    "the coroutine yielded without a waiting function; only the engine's waiting functions may yield it";
+inline constexpr std::string_view BadReturnValue =
+    "the coroutine returned a {}; it may return nil, a boolean, a number or a text";
+inline constexpr std::string_view CoroutineOver = "the coroutine already finished";
+inline constexpr std::string_view ResumeOutOfMemory = "not enough memory to resume the coroutine";
 
 // Hooks (hook_registry.cpp).
 inline constexpr std::string_view BadEventName =

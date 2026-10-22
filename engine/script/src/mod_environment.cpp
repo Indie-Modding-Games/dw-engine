@@ -1,6 +1,8 @@
 #include <dwe/core/message.hpp>
 #include <dwe/script/mod_environment.hpp>
 
+#include <format>
+
 #include "messages.hpp"
 #include "mod_tables.hpp"
 #include "script_assets.hpp"
@@ -31,6 +33,25 @@ core::Result<void> ModEnvironment::runAsset(const assets::VirtualFileSystem& fil
   detail::rememberAsset(mod.assets, files, id, script->text);
   return detail::runInEnvironment(*vm_, mod.tables, mod.memoryOwner, script->text,
                                   detail::assetChunkName(mod.pack, id));
+}
+
+core::Result<ScriptModule> ModEnvironment::loadModule(const assets::VirtualFileSystem& files,
+                                                      const assets::AssetId& id) {
+  auto script = detail::readScriptAsset(files, id);
+  if (!script) {
+    return std::unexpected{script.error()};
+  }
+  const detail::ModState& mod = vm_->mods[index_];
+  if (script->pack != mod.pack) {
+    return core::fail(
+        core::formatMessage(messages::AssetOfAnotherPack, id.str(), script->pack, mod.pack));
+  }
+  auto reference = detail::loadInEnvironment(*vm_, mod.tables, mod.memoryOwner, script->text,
+                                             detail::assetChunkName(mod.pack, id));
+  if (!reference) {
+    return std::unexpected{reference.error()};
+  }
+  return ScriptModule{*vm_, index_, *reference, std::format("{}:{}", mod.pack, id.str())};
 }
 
 } // namespace dwe::script

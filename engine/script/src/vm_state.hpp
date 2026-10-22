@@ -40,6 +40,8 @@ struct WatchedAsset {
   std::size_t textHash = 0;
 };
 
+enum class PublishedKind : std::uint8_t { Function, WaitingFunction, Value };
+
 // A function of the API, at a stable address: the Lua closures that call it point to it.
 struct PublishedFunction {
   std::string apiNamespace;
@@ -47,6 +49,8 @@ struct PublishedFunction {
   // apiNamespace.name, as errors name it.
   std::string qualifiedName;
   ApiFunction run;
+  PublishedKind kind = PublishedKind::Function;
+  ApiValue value;
 };
 
 // The Lua side of a pack's environment, as references in the Lua registry.
@@ -106,6 +110,7 @@ struct VmState {
   // What the hook handlers of a pack may spend per fired event and per frame.
   CallBudget hookBudget;
   CallBudget hookFrameBudget;
+  CallBudget resumeBudget;
   // The frame running now; HookRegistry::beginFrame starts the next one. It starts at 1, so a new
   // pack's FrameBudget, of frame 0, is refilled before its first hook runs.
   std::uint64_t frameNumber = 1;

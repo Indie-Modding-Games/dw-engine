@@ -88,7 +88,6 @@ void Budget::chargeAllocation(std::size_t bytes) {
   }
   left -= stepsForBytes(bytes);
   if (left <= 0) {
-    // A coroutine resumed from C++ is not `running`: its own count check stops it (see budget.hpp).
     arm(running);
   }
 }

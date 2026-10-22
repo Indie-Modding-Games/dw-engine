@@ -128,6 +128,37 @@ core::Result<std::string_view> ApiCall::text(std::size_t index) const {
 
 core::Result<void> ApiRegistry::publish(std::string_view apiNamespace, std::string_view name,
                                         ApiFunction function) {
+  return publishEntry(detail::PublishedFunction{.apiNamespace = std::string{apiNamespace},
+                                                .name = std::string{name},
+                                                .qualifiedName = {},
+                                                .run = std::move(function),
+                                                .kind = detail::PublishedKind::Function,
+                                                .value = {}});
+}
+
+core::Result<void> ApiRegistry::publishWaiting(std::string_view apiNamespace, std::string_view name,
+                                               ApiFunction function) {
+  return publishEntry(detail::PublishedFunction{.apiNamespace = std::string{apiNamespace},
+                                                .name = std::string{name},
+                                                .qualifiedName = {},
+                                                .run = std::move(function),
+                                                .kind = detail::PublishedKind::WaitingFunction,
+                                                .value = {}});
+}
+
+core::Result<void> ApiRegistry::publishValue(std::string_view apiNamespace, std::string_view name,
+                                             ApiValue value) {
+  return publishEntry(detail::PublishedFunction{.apiNamespace = std::string{apiNamespace},
+                                                .name = std::string{name},
+                                                .qualifiedName = {},
+                                                .run = {},
+                                                .kind = detail::PublishedKind::Value,
+                                                .value = std::move(value)});
+}
+
+core::Result<void> ApiRegistry::publishEntry(detail::PublishedFunction entry) {
+  const std::string_view apiNamespace = entry.apiNamespace;
+  const std::string_view name = entry.name;
   if (!detail::isApiName(apiNamespace) || !detail::isApiName(name)) {
     return core::fail(core::formatMessage(messages::BadApiName, apiNamespace, name));
   }
@@ -146,15 +177,11 @@ core::Result<void> ApiRegistry::publish(std::string_view apiNamespace, std::stri
   if (check.taken) {
     return core::fail(core::formatMessage(messages::NamespaceTakesGlobal, apiNamespace));
   }
+  entry.qualifiedName = detail::qualifiedApiName(apiNamespace, name);
   // Listed before Lua gets closures that point to it, so it lives as long as they do even if adding
   // fails halfway.
-  detail::PublishedFunction& published = *vm_->functions.emplace_back(
-      std::make_unique<detail::PublishedFunction>(detail::PublishedFunction{
-          .apiNamespace = std::string{apiNamespace},
-          .name = std::string{name},
-          .qualifiedName = detail::qualifiedApiName(apiNamespace, name),
-          .run = std::move(function),
-      }));
+  detail::PublishedFunction& published =
+      *vm_->functions.emplace_back(std::make_unique<detail::PublishedFunction>(std::move(entry)));
   Publication publication{.vm = vm_, .function = &published};
   if (auto added = detail::runProtected(vm_->state(), publishInLua, &publication); !added) {
     return core::fail(core::formatMessage(messages::CannotPublish, published.qualifiedName,

@@ -90,6 +90,7 @@ struct ChunkRun {
   std::string_view source;
   const char* chunkName;
   int environment;
+  int* result = nullptr;
 };
 
 int runChunk(lua_State* state) {
@@ -102,7 +103,10 @@ int runChunk(lua_State* state) {
   // A main chunk's only upvalue is its _ENV.
   lua_rawgeti(state, LUA_REGISTRYINDEX, chunk->environment);
   lua_setupvalue(state, -2, 1);
-  lua_call(state, 0, 0);
+  lua_call(state, 0, chunk->result != nullptr ? 1 : 0);
+  if (chunk->result != nullptr) {
+    *chunk->result = luaL_ref(state, LUA_REGISTRYINDEX);
+  }
   return 0;
 }
 
@@ -128,6 +132,21 @@ core::Result<void> runInEnvironment(VmState& vm, const ModTables& tables, Memory
   ChunkRun chunk{.source = source, .chunkName = name.c_str(), .environment = tables.environment};
   const CallScope scope{vm, owner};
   return runProtected(vm.state(), runChunk, &chunk);
+}
+
+core::Result<int> loadInEnvironment(VmState& vm, const ModTables& tables, MemoryOwner owner,
+                                    std::string_view source, std::string_view chunkName) {
+  const std::string name{chunkName};
+  int result = LUA_NOREF;
+  ChunkRun chunk{.source = source,
+                 .chunkName = name.c_str(),
+                 .environment = tables.environment,
+                 .result = &result};
+  const CallScope scope{vm, owner};
+  if (auto ran = runProtected(vm.state(), runChunk, &chunk); !ran) {
+    return std::unexpected{ran.error()};
+  }
+  return result;
 }
 
 } // namespace dwe::script::detail

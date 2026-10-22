@@ -14,7 +14,8 @@ namespace dwe::script {
 
 namespace detail {
 struct VmState;
-}
+struct PublishedFunction;
+} // namespace detail
 
 // A value passed between C++ and the scripts through the API: nil, a boolean, an integer, a number
 // or a text.
@@ -63,9 +64,20 @@ public:
   core::Result<void> publish(std::string_view apiNamespace, std::string_view name,
                              ApiFunction function);
 
+  // A waiting function yields after it runs: its result goes to ScriptCoroutine::resume and the
+  // next resume's value is what the script gets back. Only a coroutine the engine steps may call
+  // it, so a mod cannot skip the wait.
+  core::Result<void> publishWaiting(std::string_view apiNamespace, std::string_view name,
+                                    ApiFunction function);
+
+  core::Result<void> publishValue(std::string_view apiNamespace, std::string_view name,
+                                  ApiValue value);
+
   [[nodiscard]] bool isPublished(std::string_view apiNamespace, std::string_view name) const;
 
 private:
+  core::Result<void> publishEntry(detail::PublishedFunction entry);
+
   detail::VmState* vm_;
 };
 

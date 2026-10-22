@@ -12,6 +12,11 @@
 // that hold them. These functions may raise Lua errors, so they run inside protected calls.
 namespace dwe::script::detail {
 
+bool isApiType(int type);
+
+// Another type reads as nil.
+ApiValue readApiValue(lua_State* state, int index);
+
 void pushApiValue(lua_State* state, const ApiValue& value);
 
 // Adds a published function to an environment, as seen by the scripts of a pack (empty for the

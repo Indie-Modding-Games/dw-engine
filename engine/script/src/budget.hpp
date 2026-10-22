@@ -23,6 +23,10 @@ struct Budget {
   std::int64_t sinceClockCheck = 0;
   // The thread running now: the main one, or the coroutine it resumed.
   lua_State* running = nullptr;
+  // Kept here because API closures reach the VM only through the state's extra space. Only this
+  // coroutine may yield from a waiting function: a script's own coroutine would skip the wait.
+  lua_State* stepped = nullptr;
+  bool waited = false;
   // True while an engine call into Lua runs: only then do allocations cost budget.
   bool chargesAllocations = false;
   // Lines the call printed, to keep a looping script from flooding the log.
@@ -54,10 +58,9 @@ struct Budget {
   // Charges the bytes the allocator reserves, so C functions that build big strings or tables
   // (string.rep, table.concat, `..`) pay for them. It never raises, since the allocator may run
   // anywhere: when the budget runs out, the next instruction of the running thread stops the
-  // script. Only `running` is armed, and only coroutine.resume sets it to a coroutine; reset() and
-  // a nested CallScope (a hook's handlers) point it back at the main thread. A coroutine resumed
-  // from C++ (the story runner, S2) runs while `running` is the main thread, so it stops at its own
-  // next count check instead, at most InstructionCheckInterval instructions later.
+  // script. Only `running` is armed, and only coroutine.resume and ScriptCoroutine::resume set it
+  // to a coroutine; reset() and a nested CallScope (a hook's handlers) point it back at the main
+  // thread.
   void chargeAllocation(std::size_t bytes);
 
   // Sets the hook of a thread about to run: every instruction stops it if the budget ran out, else

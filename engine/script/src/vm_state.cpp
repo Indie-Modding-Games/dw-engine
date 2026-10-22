@@ -23,6 +23,8 @@ VmState::VmState(const ScriptLimits& limits)
              .deadline = {},
              .sinceClockCheck = 0,
              .running = nullptr,
+             .stepped = nullptr,
+             .waited = false,
              .chargesAllocations = false,
              .linesPrinted = 0,
              .stopped = false,
@@ -32,7 +34,9 @@ VmState::VmState(const ScriptLimits& limits)
       hookBudget{.instructions = static_cast<std::int64_t>(limits.instructionsPerHook),
                  .time = limits.hookDeadline},
       hookFrameBudget{.instructions = static_cast<std::int64_t>(limits.hookInstructionsPerFrame),
-                      .time = limits.hookTimePerFrame} {
+                      .time = limits.hookTimePerFrame},
+      resumeBudget{.instructions = static_cast<std::int64_t>(limits.instructionsPerResume),
+                   .time = limits.resumeDeadline} {
   budget.state = lua.lua_state();
   budget.attach();
   budget.reset();
@@ -101,8 +105,6 @@ CallScope::~CallScope() {
     current.deadline = outer_->deadline;
     // Only this call was stopped: the outer one goes on.
     current.stopped = false;
-    // Re-arms the thread the outer call knows as running; a coroutine resumed from C++ is not it
-    // and keeps its own count (Budget::chargeAllocation).
     current.arm(current.running);
     if (inCoroutine) {
       current.arm(current.state);

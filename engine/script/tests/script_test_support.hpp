@@ -30,15 +30,18 @@ namespace dwe::script::testing {
 inline constexpr std::chrono::milliseconds TestDeadline{60'000};
 
 // The engine's limits, with the test deadline for calls and hooks.
-inline constexpr ScriptLimits TestLimits{
-    .callDeadline = TestDeadline, .hookDeadline = TestDeadline, .hookTimePerFrame = TestDeadline};
+inline constexpr ScriptLimits TestLimits{.callDeadline = TestDeadline,
+                                         .hookDeadline = TestDeadline,
+                                         .hookTimePerFrame = TestDeadline,
+                                         .resumeDeadline = TestDeadline};
 
 // A VM with small limits, so the tests that exhaust them finish quickly.
 inline constexpr ScriptLimits SmallLimits{.memoryBytes = std::size_t{16} * 1024 * 1024,
                                           .instructionsPerCall = 1'000'000,
                                           .callDeadline = TestDeadline,
                                           .hookDeadline = TestDeadline,
-                                          .hookTimePerFrame = TestDeadline};
+                                          .hookTimePerFrame = TestDeadline,
+                                          .resumeDeadline = TestDeadline};
 
 // Instructions no call of a test runs, so that only a time ceiling stops it.
 inline constexpr std::uint64_t UnreachableInstructions = 100'000'000'000;

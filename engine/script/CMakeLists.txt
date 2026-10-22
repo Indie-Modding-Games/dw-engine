@@ -28,6 +28,7 @@ dwe_add_module(script
         src/pattern_matcher.cpp
         src/print_to_log.cpp
         src/script_assets.cpp
+        src/script_coroutine.cpp
         src/script_vm.cpp
         src/string_patterns.cpp
         src/text_bindings.cpp
