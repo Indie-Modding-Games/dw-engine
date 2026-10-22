@@ -16,6 +16,8 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dev="$root/scripts/dev.sh"
 # shellcheck source=gate/build_dirs.sh
 source "$root/scripts/gate/build_dirs.sh"
+# shellcheck source=gate/route_jobs.sh
+source "$root/scripts/gate/route_jobs.sh"
 
 default_tier="short"
 # The short tier's clang-tidy is incremental and the daily one's full; the daily cook is from scratch unless asked.
@@ -28,10 +30,6 @@ all_steps=(check windows routes)
 default_routes="sequential"
 default_displays=4
 max_displays=4
-# The smoke routes of the short tier, in en: boot, the main menu, a new game and the first map; the field and the menu.
-smoke_routes=(route-loop-keyboard route-keyboard)
-smoke_lang="en"
-languages=(en es)
 # Displays the runner may take, and those it never takes: :71 is the reference emulator rig's, :61-:66 are assigned
 # to other work.
 display_pool_first=72
@@ -55,14 +53,10 @@ check_tools=(cmake ninja ctest ccache clang++ clang-format clang-tidy python3)
 windows_tools=(cmake ninja clang-cl lld-link llvm-lib llvm-rc llvm-mt)
 routes_host_programs=(Xvfb timeout)
 main_branch="main"
-route_dir="tests/autotest"
 dev_assets_file="$root/dev-assets.yaml"
 cooked_archive="build/gate-cooked/archive"
 cooked_font_line="ui: original bitmap font font/main"
 pack_folders=(base ui_original)
-# The job list's separators: fields, and the arguments of a run.
-field_separator="|"
-argument_separator=$'\t'
 
 usage() {
     cat <<USAGE
@@ -346,16 +340,6 @@ take_displays() {
 
 # --- routes -------------------------------------------------------------------------------------------------------
 
-# One summary line per run, in the team's format (errors= is the count the autotest prints).
-route_summary() {
-    local name="$1" rc="$2" log="$3" result validation errors warnings
-    result=$(grep -o 'autotest: \(PASS\|FAIL\).*' "$log" | tail -1 | cut -c1-100)
-    validation=$(grep -o 'validation layer on, [0-9]* messages' "$log" | tail -1)
-    errors=$(grep -o 'autotest: [0-9]* \[error\] lines' "$log" | tail -1 | grep -o '[0-9]*')
-    warnings=$(grep -c '\[warning\]' "$log")
-    echo "$name rc=$rc | ${result:-autotest: NO RESULT} | ${validation:-validation: NONE} | errors=${errors:-?} | warnings=$warnings"
-}
-
 # The job list, one per line: <name>|<log>|<arguments separated by tabs>, in the summary's fixed order.
 write_jobs() {
     local pass suffix
@@ -367,57 +351,6 @@ write_jobs() {
         else
             write_daily_jobs "$suffix"
         fi
-    done
-}
-
-# job <name> <log> <arguments...>
-job() {
-    local name="$1" log="$2"
-    shift 2
-    local IFS="$argument_separator"
-    echo "$name$field_separator$log$field_separator$*"
-}
-
-# route_job <route> <lang> <suffix>: a route on the extracted content, with the flags it needs
-# (docs/guides/prueba-vertical.md, "Las ejecuciones del gate").
-route_job() {
-    local route="$1" lang="$2" suffix="$3"
-    local flags=(--content "$DWE_CONTENT")
-    case "$route" in
-        route-dev-assets) flags=(--dev-assets) ;;
-        route-skins) flags+=(--mods tests/mods/ui_skin) ;;
-        route-mod-map) flags+=(--mods tests/mods/example_mod) ;;
-    esac
-    job "$route-$lang$suffix" "$lang$suffix/$route.log" "${flags[@]}" --lang "$lang" --skip-steps fullscreen \
-        --autotest "$route_dir/$route.yaml" --shots "$logs/$lang$suffix/$route"
-}
-
-write_short_jobs() {
-    local suffix="$1" route lang
-    for route in "${smoke_routes[@]}"; do
-        route_job "$route" "$smoke_lang" "$suffix"
-    done
-    for route in ${routes_extra//,/ }; do
-        for lang in "${languages[@]}"; do
-            [[ "$lang" == "$smoke_lang" && " ${smoke_routes[*]} " == *" $route "* ]] && continue
-            route_job "$route" "$lang" "$suffix"
-        done
-    done
-}
-
-write_daily_jobs() {
-    local suffix="$1" route lang
-    for lang in "${languages[@]}"; do
-        for route in $(cd "$root/$route_dir" && ls route-*.yaml | sed 's/\.yaml$//'); do
-            route_job "$route" "$lang" "$suffix"
-        done
-    done
-    for lang in "${languages[@]}"; do
-        job "cooked-route-mod-map-$lang$suffix" "cooked-mod-map-$lang$suffix.log" --content "$cooked_archive" \
-            --mods tests/mods/example_mod --lang "$lang" --autotest "$route_dir/route-mod-map.yaml" \
-            --skip-steps fullscreen
-        job "cooked-route-fade-$lang$suffix" "cooked-fade-$lang$suffix.log" --content "$cooked_archive" \
-            --text-font original --lang "$lang" --autotest "$route_dir/route-fade.yaml" --skip-steps fullscreen
     done
 }
 
@@ -439,12 +372,11 @@ job_order() {
         sort -k1,1nr -k2,2n | cut -d' ' -f2
 }
 
-run_job() {
-    local index="$1" display="$2" name log rest arguments=() start rc pid
-    IFS="$field_separator" read -r name log rest < <(sed -n "${index}p" "$logs/jobs.txt")
-    IFS="$argument_separator" read -ra arguments <<<"$rest"
+# run_game <display> <log> <arguments separated by tabs>: one run of the game; returns its exit code.
+run_game() {
+    local display="$1" log="$2" arguments=() pid rc
+    IFS="$argument_separator" read -ra arguments <<<"$3"
     mkdir -p "$(dirname "$logs/$log")"
-    start=$SECONDS
     env DISPLAY=":$display" VK_ICD_FILENAMES="$lavapipe_icd" PRESET="$route_preset" \
         ${lp_threads:+"LP_NUM_THREADS=$lp_threads"} \
         timeout "$route_timeout_seconds" "$dev" run "${arguments[@]}" >"$logs/$log" 2>&1 </dev/null &
@@ -453,8 +385,7 @@ run_job() {
     wait "$pid"
     rc=$?
     forget_pid run "$pid"
-    route_summary "$name" "$rc" "$logs/$log" >"$logs/results/$index"
-    echo "$name$field_separator$((SECONDS - start))$field_separator:$display" >"$logs/seconds/$index"
+    return "$rc"
 }
 
 # A worker takes the next job nobody has claimed (mkdir is atomic) until none is left.
@@ -484,7 +415,7 @@ run_routes() {
     take_displays
     job_order >"$logs/order.txt"
     count="$(wc -l <"$logs/jobs.txt")"
-    echo "gate: routes=$routes_mode runs=$count displays=$(printf ':%s,' "${displays[@]}" | sed 's/,$//')" \
+    echo "gate: routes=$routes_mode jobs=$count runs=$(count_runs "$logs/jobs.txt") displays=$(printf ':%s,' "${displays[@]}" | sed 's/,$//')" \
         "lp-threads=${lp_threads:-unset}" | tee -a "$summary"
     if grep -q -- '--dev-assets' "$logs/jobs.txt"; then write_dev_assets; fi
     for display in "${displays[@]}"; do

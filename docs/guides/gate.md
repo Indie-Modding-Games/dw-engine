@@ -6,7 +6,7 @@ corre en uno de dos niveles, bajo el lock del gate de toda la máquina:
 | Nivel | Cuándo | Qué corre |
 |---|---|---|
 | `short` (por defecto) | Antes de subir un paquete o un tren de paquetes | `dev.sh check-short`, el build cruzado de Windows y las rutas de humo, más las rutas propias del paquete |
-| `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 19 en `en` y `es` (38 ejecuciones) sobre el contenido extraído y 4 sobre el `.pak` cocinado, 42 en total |
+| `daily` | Una vez al día sobre `main`, o por tren | `dev.sh check-gate` en modo completo (los pasos de `check-full`), el build cruzado de Windows y todas las rutas: hoy 21 en `en` y `es` (42 ejecuciones; la pareja de guardar y cargar cuenta como dos) sobre el contenido extraído y 4 sobre el `.pak` cocinado, 46 en total |
 
 Solo funciona en un Linux con Docker, Xvfb y lavapipe. En Windows no hay gate: los pasos a mano siguen en la
 [guía de la prueba vertical](prueba-vertical.md).
@@ -104,15 +104,30 @@ marca.
 
 **Las rutas.**
 
-- `short` corre las rutas de humo de `smoke_routes`, al principio de `scripts/gate.sh` (ahora `route-loop-keyboard` y
-  `route-keyboard`), en `en`. Entre las dos cubren el arranque, el menú principal,
-  una partida nueva, el primer mapa, el campo y el menú. Después corre las de `--routes-extra` en `en` y `es`.
+- `short` corre las rutas de humo de `smoke_routes`, al principio de `scripts/gate/route_jobs.sh` (ahora `route-loop-keyboard`,
+  `route-keyboard` y `route-save-load`), en `en`. Entre las tres cubren el arranque, el menú principal,
+  una partida nueva, el primer mapa, el campo, el menú y guardar y cargar una partida. Después corre las de
+  `--routes-extra` en `en` y `es`.
 - `daily` corre todas las de `tests/autotest/route-*.yaml` (no hay una cuenta fija: una ruta nueva entra sola), con
   las opciones que necesita cada una:
   - `route-dev-assets` con `--dev-assets`;
   - `route-mod-map` con el mod de ejemplo;
   - `route-skins` con `tests/mods/ui_skin`;
+  - `route-save-load` con `--saves <carpeta de la ejecución>/saves`, y en el mismo trabajo, solo si pasa,
+    `route-save-load-check` con la misma carpeta y `--load slot_01` (ver abajo);
   - las 4 del `.pak` cocinado, en las que además comprueba que se cargó la fuente de mapa de bits.
+
+**Rutas que siguen a otra.** Algunas rutas comprueban lo que dejó otra y nunca corren solas: están en
+`follow_up_routes`, al principio de `scripts/gate/route_jobs.sh`. Ahora es una: `route-save-load` guarda con el comando de
+depuración `save("slot_01")` en una carpeta de partidas nueva dentro de la suya (`<idioma>/route-save-load/saves`), y
+`route-save-load-check` arranca con `--load slot_01` desde esa carpeta y comprueba el mapa, el sitio del jugador, el
+compañero, el reloj y la bolsa. Las dos van en un mismo trabajo, una detrás de otra en la misma pantalla, así que
+siguen juntas cuando las rutas corren en paralelo. Cada una tiene su línea en el resumen; si la primera no pasa, la
+segunda sale como `NOT RUN` y cuenta como fallo. `--routes-extra route-save-load` corre la pareja; la segunda sola
+no se puede pedir. Al escribir la lista de trabajos, el gate vacía esa carpeta de partidas, para que un hueco que dejó
+otra ejecución no pueda pasar la comprobación; solo borra una carpeta `saves` dentro de sus propios logs, nunca otra
+(ni `_work/saves-play`). La cabecera de las rutas en el resumen dice `jobs=` (trabajos) y `runs=` (ejecuciones: una
+más por cada pareja). `scripts/gate/tests/test_follow_up.sh` lo comprueba con ejecuciones simuladas.
 
 Antes de las rutas escribe `dev-assets.yaml` (en forma de lista) en la raíz del repositorio y después lo borra. Si ya
 hay uno, no lo pisa y se para: muévelo tú.

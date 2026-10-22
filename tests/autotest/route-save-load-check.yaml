@@ -1,0 +1,27 @@
+# The save smoke, second run: it starts with --load slot_01 from the saves folder route-save-load wrote, and checks
+# that the game is where and as that run saved it: the map and the player's place, the partner, the clock and the bag.
+# It never runs alone (scripts/gate.sh, follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
+name: save-load-check
+device: keyboard
+timeout: 120
+steps:
+  # A new game starts in File City; a loaded one where it was saved.
+  - wait: {map: room08, player_near: [-95, -900], radius: 80, seconds: 0.5}
+  - resize: [1280, 720]
+  - screenshot: loaded
+  # The partner's name and age, the day and the money are still those of a new game (no debug command changes them):
+  # they check that the load keeps them, not that it read them. The map, the place, the hour and the bag tell a loaded
+  # game from a new one.
+  - expect_setting: {partner.name: main.digimon_names.0003}
+  - expect_setting: {partner.age: "0"}
+  - expect_setting: {hud.clock.day: "1"}
+  - expect_setting: {hud.clock.hour: "13"}
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - menu_select: tab-items
+  - expect_setting: {bag.money: "0"}
+  - expect_setting: {bag.slot.0.count: "3"}
+  - screenshot: loaded-bag
+  - menu_select: close
+  - wait: {hidden: partner_menu, timeout: 5}

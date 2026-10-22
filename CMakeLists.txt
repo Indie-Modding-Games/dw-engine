@@ -51,6 +51,8 @@ if(BUILD_TESTING)
         find_program(DWE_BASH bash REQUIRED)
         add_test(NAME "gate scripts: only build folders of the worktree are deleted"
             COMMAND ${DWE_BASH} ${gate_tests_dir}/test_build_dirs.sh)
+        add_test(NAME "gate scripts: a follow-up route runs only after its route, in the same job"
+            COMMAND ${DWE_BASH} ${gate_tests_dir}/test_follow_up.sh)
     endif()
 endif()
 

@@ -57,6 +57,7 @@
 #include "partner_events.hpp"
 #include "partner_menu.hpp"
 #include "partner_tab.hpp"
+#include "save_command.hpp"
 #include "session_start.hpp"
 #include "text_font_setting.hpp"
 #include "ui_skin_setting.hpp"
@@ -567,6 +568,9 @@ int runGame(const Options& options) {
     // The care debug commands (toilet, sleep, scold, train, clock_speed), applied between frames like the others.
     CareCommands careCommands;
     careCommands.bind(**scripts);
+    // The debug save("slot_NN"), applied between frames like the others.
+    SaveCommand saveCommand;
+    saveCommand.bind(**scripts);
     // The partner's status for the autotest's checks, refreshed every frame of a run.
     screens::ScreenSettings partnerStatus;
     std::optional<std::string> pendingEvolution;
@@ -734,6 +738,14 @@ int runGame(const Options& options) {
                         *std::exchange(pendingBattle, std::nullopt));
         }
         careCommands.apply(session);
+        // Before a queued evolve, so a script that saves and then evolves saves the form it had when it asked.
+        if (auto saved = saveCommand.apply(session); !saved) {
+            core::logWarning("{}", saved.error().message);
+            // A route that saves checks what it saved: a save that did not happen is the route's failure.
+            if (autotest) {
+                autotest->fail(saved.error().message);
+            }
+        }
         if (pendingEvolution) {
             const std::string form = *std::exchange(pendingEvolution, std::nullopt);
             if (auto evolved = game->systems.evolution->evolveByScript(session, form); !evolved) {

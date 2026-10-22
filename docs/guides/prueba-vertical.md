@@ -98,13 +98,32 @@ done
   no le parece nada especial el mapa de inicio (`hud.partner.area` a 0), el hambre que aparece con el reloj
   acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a 800x600, 1280x720 y 2560x1080
   y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
-  `route-language.yaml`. Con ella, `route-skin-original.yaml` y `route-scripted-loop.yaml`, el paso de rutas es de 19
-  rutas: 38 ejecuciones sobre el contenido extraído, más las 4 del `.pak` cocinado, 42 en total.
+  `route-language.yaml`. Con ella, `route-skin-original.yaml` y `route-scripted-loop.yaml`, el paso de rutas es de 21
+  rutas (con la pareja de `route-save-load`): 42 ejecuciones sobre el contenido extraído, más las 4 del `.pak`
+  cocinado, 46 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
   evoluciona. Cada paso comprueba su efecto en el estado del compañero; hace capturas de cada etapa. Tarda unos dos
   minutos con lavapipe. Se corre en los dos idiomas, como `route-language.yaml`.
+- `route-save-load.yaml` y `route-save-load-check.yaml`: guardar y cargar una partida, en dos ejecuciones. La
+  primera empieza una partida nueva desde el menú principal, pone tres objetos en la bolsa, entra en la casa del
+  anciano y cruza la sala, adelanta el reloj hasta la una de la tarde y lo para, y guarda en `slot_01` con el comando
+  de depuración `save("slot_01")` (solo guarda si `--saves` nombra una carpeta). La segunda arranca con
+  `--load slot_01` desde esa misma carpeta y comprueba que la partida está como se guardó: el mapa y el sitio del
+  jugador, el nombre y la edad del compañero, el día y la hora, el dinero y los objetos de la bolsa. Todavía no
+  comprueba la historia, que no se guarda. Es una ruta de humo: el gate corto la corre en `en`, y el diario en los
+  dos idiomas. La segunda nunca corre sola; a mano:
+
+```sh
+saves=<capturas>/saves
+scripts/dev.sh run --content <carpeta> --lang en --saves $saves --autotest tests/autotest/route-save-load.yaml \
+    --shots <capturas>/save-load
+scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
+    --autotest tests/autotest/route-save-load-check.yaml --shots <capturas>/save-load-check
+```
+
+  Cuando exista la pantalla de guardar del juego, la ruta la usará en vez del comando y cargará desde el título.
 - `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
@@ -236,18 +255,19 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (19) sobre el contenido extraído, en `en` y en `es`: 38
-  ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod` y
-  `route-skins` con `--mods tests/mods/ui_skin`.
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (21) sobre el contenido extraído, en `en` y en `es`: 42
+  ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod`,
+  `route-skins` con `--mods tests/mods/ui_skin` y la pareja `route-save-load` → `route-save-load-check` con una
+  carpeta de partidas propia.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
   las dos comprobaciones.
 - [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
 
-En total, **42 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+En total, **46 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
 `autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
 añades una ruta, súmala aquí.
 
-`scripts/gate.sh --tier daily` corre todo esto por ti: el check, el build de Windows y las 42 ejecuciones, una detrás
+`scripts/gate.sh --tier daily` corre todo esto por ti: el check, el build de Windows y las 46 ejecuciones, una detrás
 de otra o en varias pantallas de Xvfb a la vez. El gate de subida de cada paquete es el corto
 (`scripts/gate.sh`): las rutas de humo y las del paquete. Los dos están en [pasar el gate](gate.md). Si añades una
 ruta que necesita opciones propias (`--mods`, `--dev-assets`), añádelas también en `route_job` de `scripts/gate.sh`.
@@ -306,3 +326,4 @@ fase 4:
 | `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |
 | `train("<lugar> <curso>")` | Una sesión de entrenamiento (`train("trn brain")`) |
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
+| `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`), hasta que exista la pantalla de guardar; los huecos de autoguardado no se escriben a mano. Un autotest solo guarda con `--saves` |

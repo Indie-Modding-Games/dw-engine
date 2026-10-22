@@ -23,6 +23,7 @@ dwe_add_app(game
         src/partner_events.cpp
         src/partner_menu.cpp
         src/partner_tab.cpp
+        src/save_command.cpp
         src/saves.cpp
         src/session_start.cpp
         src/test_scene.cpp
@@ -47,14 +48,16 @@ target_compile_definitions(game PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/co
 target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
-# settings (settings.yaml), how the UI skin is chosen at start and changed, and the minimap mode.
+# settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode and the save debug command.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/minimap_setting.cpp src/ui_skin_setting.cpp
-                                  src/user_settings.cpp)
+    add_executable(dwe_game_tests ${game_test_sources} src/minimap_setting.cpp src/save_command.cpp
+                                  src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
-                                                 dwe_test_main)
-    target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+                                                 dwe::script dwe::save dwe::partner dwe::session dwe_test_main)
+    # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
+    target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+                                                      ${PROJECT_SOURCE_DIR}/apps/session/tests)
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")

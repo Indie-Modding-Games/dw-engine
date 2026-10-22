@@ -102,6 +102,11 @@ inline constexpr std::string_view CareSlept = "game: the partner slept";
 inline constexpr std::string_view CareTrained = "game: the partner trained {} {}";
 inline constexpr std::string_view ClockSpeedSet = "game: clock speed {}";
 
+// The save debug command (save_command.cpp).
+inline constexpr std::string_view NotAManualSlot = "'{}' is not a save slot such as slot_01";
+inline constexpr std::string_view SaveCommandFailed = "game: save: {}";
+inline constexpr std::string_view SavedToSlot = "game: saved to {}";
+
 // The partner's events and the debug evolve command (partner_events.cpp, game.cpp).
 inline constexpr std::string_view PartnerModelNotShown = "game: the partner cannot be drawn as {}: {}";
 inline constexpr std::string_view PartnerEventNotShown = "game: partner event {} (value {}) is not shown yet";

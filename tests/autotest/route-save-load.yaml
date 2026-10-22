@@ -1,0 +1,25 @@
+# The save smoke, first run: a new game from the main menu, a few items in the bag, a walk into the elder's house, the
+# clock moved on to one in the afternoon and stopped, and a save to slot_01 with the debug save command. The gate runs
+# it with --saves in the run's own folder, then route-save-load-check, which loads the slot from that folder and checks
+# what this run left (scripts/gate.sh, follow_up_routes). How to run it: docs/guides/prueba-vertical.md.
+name: save-load
+device: keyboard
+timeout: 300
+main_menu: true
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - menu_select: play
+  - wait: {map: twna01, hidden: main_menu, seconds: 1}
+  - script: give_item("meat 3")
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, seconds: 0.5}
+  # Across the room, away from the door the map is entered by: only the save puts the player back here.
+  - walk_to: {point: [-95, -900], radius: 80}
+  # Two game hours a real second until one in the afternoon, then the clock stops, so the check knows the hour.
+  - script: clock_speed("120")
+  - wait: {setting: {hud.clock.hour: "13"}, timeout: 30}
+  - script: clock_speed("0")
+  - screenshot: before-save
+  - script: save("slot_01")
+  - wait: {seconds: 1}
