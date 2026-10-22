@@ -16,12 +16,12 @@ public:
     FieldHud(ui::Ui& ui, const session::GameSession& session);
 
     // Publishes the views when they changed; once per frame. `fieldRunning` is false while a menu or a battle stops
-    // the field; `partnerHead` is where the partner's head is in the window, if it projects.
-    void update(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead);
+    // the field; `partnerBubble` is where the partner's need bubble settles in the window, if it projects.
+    void update(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble);
 
 private:
     void publishStatus(bool fieldRunning);
-    void publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead);
+    void publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble);
 
     ui::Ui* ui_;
     const session::GameSession* session_;

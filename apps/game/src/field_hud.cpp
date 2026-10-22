@@ -10,13 +10,13 @@ FieldHud::FieldHud(ui::Ui& ui, const session::GameSession& session) : ui_(&ui), 
     }
 }
 
-void FieldHud::update(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead) {
+void FieldHud::update(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble) {
     publishStatus(fieldRunning);
-    publishPartner(fieldRunning && session_->playing(), partnerHead);
+    publishPartner(fieldRunning && session_->playing(), partnerBubble);
 }
 
-void FieldHud::publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerHead) {
-    const screens::FieldPartnerView view = screens::fieldPartnerViewOf(partnerHead, fieldRunning);
+void FieldHud::publishPartner(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble) {
+    const screens::FieldPartnerView view = screens::fieldPartnerViewOf(partnerBubble, fieldRunning);
     if (publishedPartner_ == view) {
         return;
     }

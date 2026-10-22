@@ -97,7 +97,7 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
     }
 }
 
-TEST_CASE("the partner's head goes to the field HUD in percent of the window, only while it is on the screen") {
+TEST_CASE("the partner's bubble point goes to the field HUD in percent of the window, only while it is on the screen") {
     using dwe::screens::FieldPartnerView;
     using dwe::screens::WindowFraction;
     const auto view = dwe::screens::fieldPartnerViewOf(WindowFraction{.x = 0.25, .y = 0.123456}, true);

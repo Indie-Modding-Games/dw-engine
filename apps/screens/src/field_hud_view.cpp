@@ -77,11 +77,11 @@ FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::Partne
     return view;
 }
 
-FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> head, bool fieldRunning) {
-    if (!fieldRunning || !head || !onScreen(*head)) {
+FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> bubble, bool fieldRunning) {
+    if (!fieldRunning || !bubble || !onScreen(*bubble)) {
         return {};
     }
-    return {.visible = true, .x = percentOf(head->x), .y = percentOf(head->y)};
+    return {.visible = true, .x = percentOf(bubble->x), .y = percentOf(bubble->y)};
 }
 
 ScreenSettings settingsOf(const FieldPartnerView& view) {

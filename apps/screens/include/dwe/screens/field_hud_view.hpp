@@ -73,8 +73,8 @@ struct FieldHudView {
     friend bool operator==(const FieldHudView&, const FieldHudView&) = default;
 };
 
-// Where the partner's head is on the screen, for what a skin draws over the partner (the original's need bubbles,
-// bubble.c), with its own revision: it moves with the partner, apart from the rest of the field status.
+// Where the partner's need bubble settles on the screen, for what a skin draws over the partner (the original's need
+// bubbles, bubble.c), with its own revision: it moves with the partner, apart from the rest of the field status.
 inline constexpr std::string_view FieldPartnerRevisionSetting = "hud.partner.revision";
 inline constexpr std::string_view FieldPartnerXSetting = "hud.partner.x";
 inline constexpr std::string_view FieldPartnerYSetting = "hud.partner.y";
@@ -86,9 +86,9 @@ struct WindowFraction {
     double y = 0.0;
 };
 
-// The partner's head on the screen: x and y in percent of the window from its top-left corner, rounded to
-// hundredths so that it changes only when the point moves; `visible` is false while the field is stopped or the head
-// is off the screen or behind the camera.
+// The point over the partner where the original's need bubble settles, on the screen: x and y in percent of the
+// window from its top-left corner, rounded to hundredths so that it changes only when the point moves; `visible` is
+// false while the field is stopped or the point is off the screen or behind the camera.
 struct FieldPartnerView {
     bool visible = false;
     double x = 0.0;
@@ -97,8 +97,8 @@ struct FieldPartnerView {
     friend bool operator==(const FieldPartnerView&, const FieldPartnerView&) = default;
 };
 
-// The partner's view from where its head projects (nothing when it does not) and whether the field runs.
-[[nodiscard]] FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> head, bool fieldRunning);
+// The partner's view from where its bubble's point projects (nothing when it does not) and whether the field runs.
+[[nodiscard]] FieldPartnerView fieldPartnerViewOf(std::optional<WindowFraction> bubble, bool fieldRunning);
 
 [[nodiscard]] ScreenSettings settingsOf(const FieldPartnerView& view);
 
