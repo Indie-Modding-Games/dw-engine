@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/game/partner/effects.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/partner_view.hpp>
@@ -23,6 +24,9 @@ inline constexpr std::string_view FieldHudYearSetting = "hud.clock.year";
 inline constexpr std::string_view FieldHudMeterList = "hud.meter";
 inline constexpr std::string_view FieldHudNeedList = "hud.need";
 inline constexpr std::string_view FieldHudPoolList = "hud.pool";
+// How the partner feels about the map, as the original's numbers (map.c: MAP_TILE_DATA.partnerAreaResponse): 0
+// neutral, 1 it likes the area, 2 it dislikes it. It goes with the field status, on FieldHudRevisionSetting.
+inline constexpr std::string_view FieldHudPartnerAreaSetting = "hud.partner.area";
 
 // The bars of the field HUD, in the order of the hud.meter list: happiness and discipline.
 inline constexpr std::size_t MeterCount = 2;
@@ -74,6 +78,9 @@ struct FieldHudView {
     std::array<bool, NeedCount> needs{};
     // HP (0) and MP (1).
     std::array<FieldPoolView, PoolCount> pools;
+    // How the partner feels about the map: the original's happiness icon alternates with another face in an area the
+    // partner likes or dislikes (partner_impl.c: renderStatusBars).
+    game::partner::AreaResponse area = game::partner::AreaResponse::Neutral;
 
     friend bool operator==(const FieldHudView&, const FieldHudView&) = default;
 };

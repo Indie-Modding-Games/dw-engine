@@ -12,7 +12,8 @@
 -- this same document and script and differs only in its style sheets: a bar with the class "pips" fills in the
 -- original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin
 -- that draws the original's clock. #field-partner-bubble hangs over the partner's head (hud.partner.*) with the class
--- of the need the original's bubble would show.
+-- of the need the original's bubble would show. How the partner feels about the map (hud.partner.area) puts the class
+-- "area-liked" or "area-disliked" on #field-status, where a skin can swap the happiness face as the original does.
 
 local sizes = { small = true, medium = true, large = true }
 local minimap_modes = { auto = true, on = true, off = true }
@@ -63,6 +64,9 @@ end
 local field_meters = 2
 local field_needs = 4
 local field_pools = 2
+-- The classes of hud.partner.area's values, the original's numbers: 1 the partner likes the area, 2 it dislikes it, 0
+-- (no class) neither.
+local area_classes = { [1] = "area-liked", [2] = "area-disliked" }
 
 local function field_number(name)
 	local value = ui.setting(name)
@@ -253,8 +257,17 @@ local function tick_bubble(document, seconds)
 	end
 end
 
+local function draw_partner_area(status)
+	local area = ui.setting("hud.partner.area")
+	for value, class in pairs(area_classes) do
+		status:set_class(class, area == value)
+	end
+end
+
 local function draw_field(document)
-	document:get("field-status"):set_class("shown", ui.setting("hud.shown") == true)
+	local status = document:get("field-status")
+	status:set_class("shown", ui.setting("hud.shown") == true)
+	draw_partner_area(status)
 	draw_field_clock(document)
 	for index = 0, field_meters - 1 do
 		draw_field_meter(document, index)

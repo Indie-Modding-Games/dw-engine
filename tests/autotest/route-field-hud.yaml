@@ -1,7 +1,7 @@
 # The field HUD's status (docs/architecture/ui.md#estado-del-campo): the new game's clock and day, the clock running,
-# the happiness and discipline ranges of the ruleset, a need showing as it comes, the panel leaving while the pause
-# menu stops the field and coming back after, and captures at several window sizes and UI scales. Run it in both
-# languages, each with its own capture folder (docs/guides/prueba-vertical.md).
+# the happiness and discipline ranges of the ruleset, how the partner feels about the map, a need showing as it comes,
+# the panel leaving while the pause menu stops the field and coming back after, and captures at several window sizes
+# and UI scales. Run it in both languages, each with its own capture folder (docs/guides/prueba-vertical.md).
 name: field-hud
 device: keyboard
 timeout: 300
@@ -20,6 +20,8 @@ steps:
   - expect_setting: {hud.meter.1.min: 0}
   - expect_setting: {hud.meter.1.max: 100}
   - expect_setting: {hud.need.0.active: false}
+  # twna01 lists no region, so no partner likes or dislikes it (map.c: loadMapSetup): the area is 0 and the face holds.
+  - expect_setting: {hud.partner.area: 0}
   - screenshot: field-status
   # Two game hours a real second until the partner is hungry; the HUD shows the need on the same change.
   - script: clock_speed("120")

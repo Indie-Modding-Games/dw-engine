@@ -170,6 +170,35 @@ body {
 
 #field-meter-0 .label { decorator: image(face-happy); }
 #field-meter-0.low .label { decorator: image(face-sad); }
+
+/* In an area the partner likes or dislikes (hud.partner.area, which the script puts on the status as the class
+   area-liked or area-disliked), the face alternates with the one 11 pixels to its left (liked) or right (disliked) in
+   SYSTEM_W: that face for 5 of every 10 of the original's 20 frames a second, then the usual one for the other 5
+   (partner_impl.c: renderStatusBars, PLAYTIME_FRAMES % 10 < 5). */
+#field-status.area-liked #field-meter-0 .label { animation: 0.5s linear infinite face-happy-liked-flicker; }
+#field-status.area-liked #field-meter-0.low .label { animation: 0.5s linear infinite face-sad-liked-flicker; }
+#field-status.area-disliked #field-meter-0 .label { animation: 0.5s linear infinite face-happy-disliked-flicker; }
+#field-status.area-disliked #field-meter-0.low .label { animation: 0.5s linear infinite face-sad-disliked-flicker; }
+
+@keyframes face-happy-liked-flicker {
+	0%, 49.9% { decorator: image(face-happy-liked); }
+	50%, 100% { decorator: image(face-happy); }
+}
+
+@keyframes face-sad-liked-flicker {
+	0%, 49.9% { decorator: image(face-sad-liked); }
+	50%, 100% { decorator: image(face-sad); }
+}
+
+@keyframes face-happy-disliked-flicker {
+	0%, 49.9% { decorator: image(face-happy-disliked); }
+	50%, 100% { decorator: image(face-happy); }
+}
+
+@keyframes face-sad-disliked-flicker {
+	0%, 49.9% { decorator: image(face-sad-disliked); }
+	50%, 100% { decorator: image(face-sad); }
+}
 #field-meter-1 .label { decorator: image(discipline-high); }
 #field-meter-1.low .label { decorator: image(discipline-low); }
 

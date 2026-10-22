@@ -178,6 +178,7 @@ con valor entero.
 | `hud.need.<i>.label` | clave | Una vez: `hud.need.hunger`, `hud.need.sleep`, `hud.need.toilet`, `hud.need.tired` |
 | `hud.pool.<i>.{value,max}` | números | HP (0) y MP (1): lo que le queda y su máximo |
 | `hud.pool.<i>.label` | clave | Una vez: las etiquetas del original, `main.stat_labels.0000` (HP) y `.0001` (MP) |
+| `hud.partner.area` | 0, 1, 2 | Lo que le parece al compañero el mapa en el que está, con los números del original (`MAP_TILE_DATA.partnerAreaResponse`): 0 nada en especial, 1 le gusta, 2 no le gusta. Va con `hud.revision`, como el resto del estado. El original lo calcula al cargar el mapa (`map.c: loadMapSetup`): recorre a la vez, casilla a casilla, las dos listas de regiones del mapa (`regions.a` y `regions.b` de `map/<id>/data.yaml`) y la primera casilla de cualquiera de las dos que tenga la región favorita de la especie (`favored_region` de `data/raise`) decide: la lista `a` da 1 y la `b` da 2. La sesión lo calcula igual al entrar en cada mapa (`game/partner`: `areaResponseOf`; `GameSession::areaResponse`), y lo usan también las reglas del cuidado (`CareContext::area`, `SleepContext::area`) |
 | `hud.partner.revision` | número | Sube en uno cada vez que cambia alguno de los tres de abajo. Va aparte de `hud.revision` porque cambia mientras el compañero anda, y así el resto del estado no se redibuja con él |
 | `hud.partner.x`, `hud.partner.y` | 0–100, décimas | Dónde se asienta la burbuja del original sobre el compañero, en porcentaje del ancho y el alto de la ventana desde la esquina de arriba a la izquierda, redondeado a décimas (menos de un píxel en una ventana de 1000). La burbuja nace a la altura de la especie menos 20 unidades sobre la posición del compañero (`bubble.c: addConditionBubble`; la altura es `height` de `data/digimon`) y en sus 10 primeros frames sube 65 más, donde se queda (`bubble.c: tickConditionBubble`); ese es el punto publicado (`BubbleDrop` y `BubbleRise` en `apps/game/src/game.cpp: partnerBubbleOf`). Su vaivén de 12 unidades arriba y abajo alrededor de él es animación del aspecto y no se publica |
 | `hud.partner.visible` | booleano | `false` con el campo parado (como `hud.shown`; el original no dibuja las burbujas en un menú) o con el punto fuera de la ventana o detrás de la cámara; entonces `x` e `y` valen 0 |
@@ -212,11 +213,17 @@ está.
   cuadros, uno cada 4 frames (`(CURRENT_FRAME % 16) / 4`). HP, MP, el día y las necesidades no se ven en el campo:
   HP y MP están en el menú del compañero y el día en el menú del domador.
 
-**Diferencia visible conocida: el parpadeo del icono de la felicidad.** En una zona que al compañero le gusta o le
-disgusta, el original alterna el icono de la felicidad con otra cara, 5 frames sí y 5 no (`partner_impl.c:
-renderStatusBars`: `PLAYTIME_FRAMES % 10 < 5` y `MAP_TILE_DATA.partnerAreaResponse`). Lo que le parece la zona no
-está en el estado de la sesión, así que el contrato no lo publica y ningún aspecto puede dibujar ese parpadeo, tampoco
-el de aspecto original: en esas zonas se ve distinto del original hasta que se publique.
+**El parpadeo del icono de la felicidad.** En una zona que al compañero le gusta o le disgusta, el original alterna
+el icono de la felicidad con otra cara: mientras `PLAYTIME_FRAMES % 10 < 5`, 5 de cada 10 frames, dibuja la cara que
+está 11 píxeles a la izquierda en SYSTEM_W si le gusta y 11 a la derecha si no (`partner_impl.c: renderStatusBars`);
+los otros 5 frames, la de siempre. El script pone en `#field-status` la clase `area-liked` o `area-disliked` según
+`hud.partner.area`, y el aspecto original alterna la cara con una animación de 0,5 s: la otra cara la primera mitad
+y la de siempre la segunda.
+
+**Diferencia visible conocida: la fase del parpadeo.** La animación empieza cuando se pone la clase (al entrar en la
+zona o al cambiar la cara), no al compás del contador de frames de juego del original (`PLAYTIME_FRAMES`): el ritmo
+es el mismo, pero la fase puede ir desplazada hasta 0,25 s. El contrato no publica ese contador porque publicarlo
+obligaría a redibujar el estado del campo 20 veces por segundo (ver la tabla de elecciones del aspecto original).
 
 **La vista compartida.** Todos los aspectos del juego dibujan el estado del campo con el mismo documento
 (`ui/hud/document.rml`) y el mismo `logic.lua`, y solo cambian sus hojas RCSS. Lo que el script deja para que cada
@@ -226,6 +233,7 @@ aspecto lo dibuje a su manera:
 |---|---|---|
 | clase `shown` en `#field-status` | La pone con `hud.shown` y la quita sin él | Cada aspecto decide cómo se va el panel: el moderno lo quita (`display: none`); el original puede deslizarlo, como `clock.c` (50 píxeles por frame) |
 | clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
+| clase `area-liked` o `area-disliked` en `#field-status` | Pone `area-liked` con `hud.partner.area` a 1, `area-disliked` con 2, y ninguna con 0 | La cara de la felicidad que alterna con otra en una zona que le gusta o le disgusta al compañero (ver arriba); el moderno no la usa |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
 | `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet` o `tired` | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
 | `#field-clock-minute-hand` | `transform: rotate(minuto × 6deg)` | La aguja de minutos de `clock.c: renderGameClock`, una vuelta por hora |
@@ -568,7 +576,7 @@ las posiciones dentro de un elemento van en %.
 | Las filas de la bolsa dejan el hueco del icono vacío | Los ajustes de los objetos no dicen qué icono tiene cada uno |
 | Las ganancias del final dicen «+n» en vez de la flecha azul; «Continuar» cierra el tercer cuadro | El original avanza con un botón sin nada en pantalla |
 | Los avisos de botones y el botón del menú del HUD | El juego también se usa con teclado y ratón |
-| El icono de la felicidad no alterna con otra cara en las zonas que al compañero le gustan o le disgustan (`partner_impl.c: renderStatusBars`, ±11 en u cada 5 frames según `MAP_TILE_DATA.partnerAreaResponse`) | El contrato del HUD no publica lo que le parece la zona al compañero (ver la diferencia conocida del estado del campo); el aspecto lo dibujará cuando se publique |
+| El parpadeo de la cara de la felicidad empieza cuando el compañero entra en una zona que le gusta o le disgusta (o cuando cambia la cara), no al compás del contador de tiempo de juego del original (`PLAYTIME_FRAMES % 10`): el ritmo es el mismo, 5 frames y 5 frames, pero la fase puede ir hasta 0,25 s desplazada | La animación del aspecto (RCSS) empieza al ponerse la clase; el contrato no publica el contador de frames, y publicarlo cada frame obligaría a redibujar el estado del campo 20 veces por segundo |
 | La burbuja parpadea con su propio reloj de 3 s, no con el de la burbuja del original, y sin su vaivén de 12 unidades; solo se dibuja el primer cuadro de la animación de cada necesidad y la «Z» baja del sueño | El contrato no publica los frames de la burbuja; el vaivén y los cuadros son animación opcional |
 
 **Pendiente:** el cuadro de texto llega con el intérprete de historia, que lo trae; el aspecto lo dibujará entonces

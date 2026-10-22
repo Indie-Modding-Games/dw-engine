@@ -27,6 +27,11 @@ constexpr std::array<std::pair<Condition, std::string_view>, NeedCount> NeedLabe
 
 constexpr std::array<Stat, PoolCount> PoolStats{Stat::Hp, Stat::Mp};
 
+// hud.partner.area publishes the original's numbers, which the response's values are.
+static_assert(static_cast<int>(game::partner::AreaResponse::Neutral) == 0);
+static_assert(static_cast<int>(game::partner::AreaResponse::Liked) == 1);
+static_assert(static_cast<int>(game::partner::AreaResponse::Disliked) == 2);
+
 // The lists by shorter names, which also keep the "Field" prefix away from listEntryName's `field` parameter.
 constexpr std::string_view MeterList = FieldHudMeterList;
 constexpr std::string_view NeedList = FieldHudNeedList;
@@ -70,7 +75,8 @@ FieldHudView fieldHudViewOf(const ruleset::GameTime& time, const session::Partne
                                 .year = time.year + FirstShownYear},
                       .meters = {meterOf(partner.happiness), meterOf(partner.discipline)},
                       .needs = {},
-                      .pools = {}};
+                      .pools = {},
+                      .area = partner.area};
     for (std::size_t index = 0; index < NeedLabels.size(); ++index) {
         view.needs.at(index) = partner.conditions.has(NeedLabels.at(index).first);
     }
@@ -119,6 +125,7 @@ ScreenSettings settingsOf(const FieldHudView& view) {
         {.name = std::string{FieldHudMinuteSetting}, .value = number(view.clock.minute)},
         {.name = std::string{FieldHudDaySetting}, .value = number(view.clock.day)},
         {.name = std::string{FieldHudYearSetting}, .value = number(view.clock.year)},
+        {.name = std::string{FieldHudPartnerAreaSetting}, .value = number(static_cast<std::int32_t>(view.area))},
     };
     for (std::size_t index = 0; index < view.meters.size(); ++index) {
         const FieldMeterView& meter = view.meters.at(index);

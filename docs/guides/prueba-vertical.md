@@ -94,9 +94,10 @@ done
 ```
 
 - `route-field-hud.yaml`: el estado del campo del HUD ([contrato](../architecture/ui.md#estado-del-campo)): la hora y
-  el día de una partida nueva, el reloj que avanza, los rangos de felicidad y disciplina del ruleset, el hambre que
-  aparece con el reloj acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a
-  800x600, 1280x720 y 2560x1080 y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
+  el día de una partida nueva, el reloj que avanza, los rangos de felicidad y disciplina del ruleset, que al compañero
+  no le parece nada especial el mapa de inicio (`hud.partner.area` a 0), el hambre que aparece con el reloj
+  acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a 800x600, 1280x720 y 2560x1080
+  y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
   `route-language.yaml`. Con ella y `route-skin-original.yaml`, el paso de rutas es de 18 rutas: 36 ejecuciones sobre el
   contenido extraído, más las 4 del `.pak` cocinado, 40 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero

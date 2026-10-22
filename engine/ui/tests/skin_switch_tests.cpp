@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 namespace dwe::ui {
@@ -287,6 +288,96 @@ TEST_CASE("with the disc's art the UI starts with the original skin, and every s
     CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
     REQUIRE(ui->setSkin("original"));
     CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+}
+
+namespace {
+
+// The happiness face the original skin draws now: the sprite named in the icon's decorator.
+std::string happinessFace(const Ui& ui) {
+    return ui.styleProperty("hud", "field-meter-0-label", "decorator");
+}
+
+void showFieldStatus(Ui& ui, double happiness, double area) {
+    ui.setSetting("hud.shown", true);
+    ui.setSetting("hud.meter.0.value", happiness);
+    ui.setSetting("hud.meter.0.min", -100.0);
+    ui.setSetting("hud.meter.0.max", 100.0);
+    ui.setSetting("hud.partner.area", area);
+    const UiValue current = ui.setting("hud.revision");
+    const double* count = std::get_if<double>(&current);
+    ui.setSetting("hud.revision", (count == nullptr ? 0.0 : *count) + 1.0);
+    ui.update();
+}
+
+} // namespace
+
+TEST_CASE(
+    "in an area the partner likes or dislikes, the original skin's face alternates every 0.25 s as the original's") {
+    // partner_impl.c: renderStatusBars: while PLAYTIME_FRAMES % 10 < 5, 5 of the original's 20 frames a second, the
+    // face is the one 11 pixels to the left (liked) or to the right (disliked); then the usual one for 5 frames.
+    constexpr double FlickerHalf = 5.0 / 20.0;
+    constexpr double Inside = 0.1;
+    Content content;
+    addOriginalArt(content);
+    const assets::VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "en");
+    FakeClock clock;
+    UiDesc desc{.files = &files, .texts = &texts, .width = 1280, .height = 720, .clock = {}, .scripts = {}};
+    desc.clock = [&clock] { return clock.now; };
+    auto created = Ui::create(desc);
+    REQUIRE_MESSAGE(created.has_value(), created.error().message);
+    Ui& ui = **created;
+    REQUIRE(ui.skin() == "original");
+    REQUIRE(ui.loadDocument("hud", idOf("ui/hud/document")));
+    ui.show("hud");
+    ui.update();
+
+    // The face after running the UI frame by frame, as the game does, up to `seconds`.
+    const auto faceAt = [&](double seconds) {
+        while (clock.now < seconds) {
+            clock.now = std::min(seconds, clock.now + Tick);
+            ui.update();
+        }
+        return happinessFace(ui);
+    };
+    struct Case {
+        double happiness;
+        double area;
+        std::string_view shown;
+        std::string_view usual;
+    };
+    for (const Case& area :
+         {Case{.happiness = 10.0, .area = 1.0, .shown = "face-happy-liked", .usual = "face-happy"},
+          Case{.happiness = -10.0, .area = 1.0, .shown = "face-sad-liked", .usual = "face-sad"},
+          Case{.happiness = 10.0, .area = 2.0, .shown = "face-happy-disliked", .usual = "face-happy"},
+          Case{.happiness = -10.0, .area = 2.0, .shown = "face-sad-disliked", .usual = "face-sad"}}) {
+        CAPTURE(area.shown);
+        const double start = clock.now + 1.0;
+        static_cast<void>(faceAt(start));
+        showFieldStatus(ui, area.happiness, area.area);
+        // The animation starts on the frame after the script sets the class, a frame after `start`.
+        CHECK(faceAt(start + Inside).contains(area.shown));
+        const std::string usual = faceAt(start + FlickerHalf + Inside);
+        CHECK(usual.contains(area.usual));
+        CHECK_FALSE(usual.contains(area.shown));
+        CHECK(faceAt(start + (2 * FlickerHalf) + Inside).contains(area.shown));
+        CHECK_FALSE(faceAt(start + (3 * FlickerHalf) + Inside).contains(area.shown));
+        // The script marks the status with the area; the skin swaps the face on that class.
+        CHECK(ui.elementHasClass("hud", "field-status", area.area == 1.0 ? "area-liked" : "area-disliked"));
+        CHECK_FALSE(ui.elementHasClass("hud", "field-status", area.area == 1.0 ? "area-disliked" : "area-liked"));
+    }
+
+    // In an area it neither likes nor dislikes, the face holds still.
+    const double start = clock.now + 1.0;
+    static_cast<void>(faceAt(start));
+    showFieldStatus(ui, 10.0, 0.0);
+    CHECK_FALSE(ui.elementHasClass("hud", "field-status", "area-liked"));
+    CHECK_FALSE(ui.elementHasClass("hud", "field-status", "area-disliked"));
+    for (const double later : {Inside, FlickerHalf + Inside, (2 * FlickerHalf) + Inside}) {
+        const std::string face = faceAt(start + later);
+        CHECK(face.contains("face-happy"));
+        CHECK_FALSE(face.contains("liked"));
+    }
 }
 
 TEST_CASE("a live switch restyles every document in place and keeps its state") {

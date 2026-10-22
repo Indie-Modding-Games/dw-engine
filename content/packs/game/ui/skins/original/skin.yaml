@@ -52,7 +52,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       field-bar-frame: [0, 108, 75, 8]
-  # La cara de la felicidad, contenta y triste (paleta 15).
+  # La cara de la felicidad, contenta y triste (paleta 15), y la cara con la que alterna en una zona que al compañero
+  # le gusta (11 píxeles a la izquierda) o le disgusta (11 a la derecha): partner_impl.c: renderStatusBars.
   - name: ow-face
     image: texture/etcdat/system_w
     palette: 15
@@ -61,6 +62,10 @@ sprite_sheets:
     sprites:
       face-happy: [64, 116, 11, 11]
       face-sad: [97, 116, 11, 11]
+      face-happy-liked: [53, 116, 11, 11]
+      face-happy-disliked: [75, 116, 11, 11]
+      face-sad-liked: [86, 116, 11, 11]
+      face-sad-disliked: [108, 116, 11, 11]
   # El icono de la disciplina, por encima y por debajo de 50 (paleta 10).
   - name: ow-discipline
     image: texture/etcdat/system_w

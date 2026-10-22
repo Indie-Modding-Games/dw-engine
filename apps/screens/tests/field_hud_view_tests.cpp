@@ -101,6 +101,25 @@ TEST_CASE("the field HUD's settings name each value and each label once") {
     }
 }
 
+TEST_CASE("the field HUD publishes how the partner feels about the map as the original's number, 0, 1 or 2") {
+    using dwe::game::partner::AreaResponse;
+    const dwe::ruleset::GameTime time{.year = 0, .day = 0, .hour = 8, .minute = 0};
+    auto liked = partner();
+    liked.area = AreaResponse::Liked;
+    auto disliked = partner();
+    disliked.area = AreaResponse::Disliked;
+    const auto neutralView = dwe::screens::fieldHudViewOf(time, partner(), true);
+    const auto likedView = dwe::screens::fieldHudViewOf(time, liked, true);
+    const auto dislikedView = dwe::screens::fieldHudViewOf(time, disliked, true);
+    CHECK(likedView.area == AreaResponse::Liked);
+    // The face changes with it, so the view does too.
+    CHECK_FALSE(likedView == neutralView);
+    // map.c: MAP_TILE_DATA.partnerAreaResponse.
+    CHECK(*find(dwe::screens::settingsOf(neutralView), "hud.partner.area") == dwe::ui::UiValue{0.0});
+    CHECK(*find(dwe::screens::settingsOf(likedView), "hud.partner.area") == dwe::ui::UiValue{1.0});
+    CHECK(*find(dwe::screens::settingsOf(dislikedView), "hud.partner.area") == dwe::ui::UiValue{2.0});
+}
+
 TEST_CASE("the partner's bubble point goes to the field HUD in percent of the window, only while it is on the screen") {
     using dwe::screens::FieldPartnerView;
     using dwe::screens::WindowFraction;
