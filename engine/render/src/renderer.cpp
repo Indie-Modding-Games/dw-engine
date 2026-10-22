@@ -12,6 +12,13 @@
 
 namespace dwe::render {
 
+namespace {
+
+// The alignment of a texture copy's source in the upload memory: one RGBA8 pixel.
+constexpr std::size_t PixelAlignment = 4;
+
+} // namespace
+
 core::Result<std::unique_ptr<Renderer>> Renderer::create(rhi::Device& device, const RendererDesc& desc) {
     auto bindless = rhi::BindlessTable::create(device, desc.maxTextures);
     if (!bindless) {
@@ -233,10 +240,15 @@ void Renderer::applyPendingWrites(rhi::CommandList& commands) {
         if (write.pixels.empty()) {
             continue;
         }
-        // Once one copy waits, the ones after it wait too, so updates of a texture keep their order.
+        // Once one copy waits, the ones after it wait too, so updates of a texture keep their order. A copy that does
+        // not fit in this frame's upload memory waits for the next frame: many textures made at once (a skin's sprite
+        // sheets on its first frame) are not an error. One larger than a whole frame's memory never fits: the upload
+        // says so.
         std::optional<rhi::UploadAllocation> staging;
-        if (later.empty()) {
-            staging = upload_.upload(std::span<const std::byte>{write.pixels}, 4);
+        const bool fits =
+            upload_.fits(write.pixels.size(), PixelAlignment) || write.pixels.size() > upload_.bytesPerFrame();
+        if (later.empty() && fits) {
+            staging = upload_.upload(std::span<const std::byte>{write.pixels}, PixelAlignment);
         }
         if (!staging) {
             later.push_back(std::move(write));

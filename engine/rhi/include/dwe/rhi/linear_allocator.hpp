@@ -25,6 +25,15 @@ public:
         return offset;
     }
 
+    // Whether allocate(size, alignment) would succeed, without allocating.
+    [[nodiscard]] bool fits(std::size_t size, std::size_t alignment) const {
+        if (!std::has_single_bit(alignment)) {
+            return false;
+        }
+        const std::size_t offset = (used_ + alignment - 1) & ~(alignment - 1);
+        return offset <= capacity_ && size <= capacity_ - offset;
+    }
+
     // Makes the whole capacity free again.
     void reset() { used_ = 0; }
 

@@ -57,6 +57,12 @@ public:
         return allocation;
     }
 
+    // Whether allocate(size, alignment) would find room in the current frame's part, for a caller that waits for the
+    // next frame instead of failing.
+    [[nodiscard]] bool fits(std::size_t size, std::size_t alignment = DefaultAlignment) const {
+        return frames_[slot_].fits(size, alignment);
+    }
+
     [[nodiscard]] std::size_t bytesPerFrame() const { return bytesPerFrame_; }
     // Bytes allocated so far in the current frame.
     [[nodiscard]] std::size_t used() const { return frames_[slot_].used(); }

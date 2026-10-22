@@ -30,6 +30,18 @@ TEST_CASE("the linear allocator refuses what does not fit, even after padding") 
     CHECK_FALSE(allocator.allocate(1, 3));
 }
 
+TEST_CASE("the linear allocator says whether a range fits without taking it") {
+    LinearAllocator allocator{64};
+    CHECK(allocator.allocate(10, 1) == 0);
+    // 10 rounds up to 16, which leaves 48.
+    CHECK(allocator.fits(48, 16));
+    CHECK_FALSE(allocator.fits(49, 16));
+    CHECK_FALSE(allocator.fits(1, 3));
+    CHECK(allocator.used() == 10);
+    CHECK(allocator.allocate(48, 16) == 16);
+    CHECK_FALSE(allocator.fits(1, 1));
+}
+
 TEST_CASE("the linear allocator starts over after a reset") {
     LinearAllocator allocator{32};
     CHECK(allocator.allocate(32, 4) == 0);
