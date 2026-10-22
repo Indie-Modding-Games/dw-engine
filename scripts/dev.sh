@@ -367,6 +367,8 @@ tidy_version() {
 # check-gate's clang-tidy: the scope gate_tool.py plans (logged in tidy-plan.log and at the top of tidy.log), every
 # source when it says full, as check-full, or only the sources it lists.
 gate_tidy() {
+    # Also run on its own (dev.sh gate-tidy), not only inside a check that made the folder.
+    mkdir -p "$log_dir"
     python3 "$gate_tool" tidy-plan --repo "$root" --state "$(gate_state_dir)" \
         --compile-commands "$root/build/$preset/compile_commands.json" --image-id "$(image_id)" \
         --tool-version "$(tidy_version)" --mode "$gate_tidy_mode" --list-out "$log_dir/tidy-files.txt" \
