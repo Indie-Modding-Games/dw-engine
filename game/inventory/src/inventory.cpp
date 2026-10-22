@@ -195,18 +195,39 @@ std::vector<std::size_t> Inventory::occupiedSlots() const {
     return occupied;
 }
 
-std::vector<Stack> Inventory::loseOnDefeat(ruleset::Random& random) {
-    const auto lose = static_cast<std::int32_t>(occupiedSlots().size()) * rules_.defeatLostPercent / FullPercent;
-    std::vector<Stack> lost;
-    for (std::int32_t i = 0; i < lose; ++i) {
-        const std::vector<std::size_t> occupied = occupiedSlots();
-        const std::size_t slot =
-            occupied[static_cast<std::size_t>(random.below(static_cast<std::int32_t>(occupied.size())))];
-        // occupiedSlots lists only the slots that hold a stack.
-        if (const std::optional<Stack> stack = state_.slots[slot]) {
-            lost.push_back(*stack);
-            remove(stack->item, rules_.bag.maxStack);
+std::int32_t Inventory::defeatLossCount() const {
+    return static_cast<std::int32_t>(occupiedSlots().size()) * rules_.defeatLostPercent / FullPercent;
+}
+
+std::optional<Stack> Inventory::pickOccupiedStack(ruleset::Random& random) const {
+    const std::vector<std::size_t> occupied = occupiedSlots();
+    if (occupied.empty()) {
+        return std::nullopt;
+    }
+    const auto pick = static_cast<std::size_t>(random.below(static_cast<std::int32_t>(occupied.size())));
+    return state_.slots[occupied[pick]];
+}
+
+void Inventory::removeEveryStackOf(assets::ItemHandle item) {
+    for (std::optional<Stack>& slot : usableSlots()) {
+        if (slot && slot->item == item) {
+            slot.reset();
         }
+    }
+}
+
+// script_common.c: handleItemLoss. Once the bag is empty the original's remaining picks find an empty slot and
+// change nothing (item.c: removeItem ignores it), so stopping there loses the same.
+std::vector<Stack> Inventory::loseOnDefeat(ruleset::Random& random) {
+    const std::int32_t losses = defeatLossCount();
+    std::vector<Stack> lost;
+    for (std::int32_t loss = 0; loss < losses; ++loss) {
+        const std::optional<Stack> picked = pickOccupiedStack(random);
+        if (!picked) {
+            break;
+        }
+        lost.push_back(*picked);
+        removeEveryStackOf(picked->item);
     }
     return lost;
 }

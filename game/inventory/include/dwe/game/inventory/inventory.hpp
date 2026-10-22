@@ -76,7 +76,10 @@ public:
     // Sets the bag's size to one of the rules' slot counts (script_interp.c: set_inventory_size).
     core::Result<void> setSlotCount(std::int32_t count);
 
-    // Loses random stacks on a defeat (script_common.c: handleItemLoss) and returns them, for the recycle shop.
+    // A defeat's loss (script_common.c: handleItemLoss): defeat.lost_percent of the occupied slots, rounded down and
+    // counted once before any loss, are picks of a random occupied slot; each pick takes every stack of that slot's
+    // item. Returns the picked stacks, which the recycle shop counts; the item's other stacks are lost with them.
+    // Stops early if the bag empties.
     std::vector<Stack> loseOnDefeat(ruleset::Random& random);
 
     // Adds money up to the rules' limit.
@@ -88,6 +91,9 @@ public:
 private:
     [[nodiscard]] std::span<std::optional<Stack>> usableSlots();
     [[nodiscard]] std::vector<std::size_t> occupiedSlots() const;
+    [[nodiscard]] std::int32_t defeatLossCount() const;
+    [[nodiscard]] std::optional<Stack> pickOccupiedStack(ruleset::Random& random) const;
+    void removeEveryStackOf(assets::ItemHandle item);
 
     InventoryRules rules_;
     std::unique_ptr<StackingRule> stacking_;

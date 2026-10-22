@@ -42,7 +42,8 @@ use:
   # (script_common.c: shopFillSellItemList) ni se tiran (inventory.c: selectOptionMenu, getItemOptionColor).
   key_item_droppable: 0
 defeat:
-  # script_common.c: handleItemLoss: al perder se van count × 30 / 100 huecos ocupados al azar, con la pila entera.
+  # script_common.c: handleItemLoss: al perder se tira count × 30 / 100 veces (count = huecos ocupados antes de
+  # perder); cada tirada elige un hueco ocupado al azar y se lleva todas las pilas de su objeto (item.c: removeItem).
   lost_percent: 30
 shop:
   # script_common.c: shopFillBuyItemList: no hay tabla de existencias; el objeto i se vende mientras el trigger

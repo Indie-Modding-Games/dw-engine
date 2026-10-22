@@ -33,7 +33,7 @@ auto used = useItem(*inventory, item, UseContext::Field, *items, effects, partne
   objeto y cantidad, de 1 a `max_stack`). El inventario no los pone: la sesión crea la bolsa y añade la lista. En el
   original la lista está vacía: el guion `dg 193` quita todo lo que deja `initializeDefaultSavegame`.
 - **Bolsa** (`Inventory`): `add`, `hasRoomFor`, `countOf`, `remove`, `move`, `discard`, `sort`, `setSlotCount`,
-  `loseOnDefeat` (devuelve las pilas perdidas, para la tienda de reciclaje) y `addMoney`, `spendMoney`.
+  `loseOnDefeat` (devuelve las pilas elegidas, las que cuenta la tienda de reciclaje) y `addMoney`, `spendMoney`.
 - **Efectos** (`ItemEffect`): una descripción plana de lo que hace un objeto (curar, revivir, curar estados, proteger,
   medicina, subir atributos en combate o para siempre, cambios de cuidado, nivel de domador, sección de guion, baño,
   evolución). `ItemEffects::resolve` la construye con la tabla y el ruleset.
@@ -95,8 +95,8 @@ Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decid
 | Objeto clave: `droppable` 0, ni se vende ni se tira (sin marca propia) | `script_common.c: shopFillSellItemList`; `inventory.c: selectOptionMenu` | `isKeyItem`; `use.key_item_droppable`; `UseResult::keyItem`, `Purchase::keyItem` | `use_tests`: "using an item says…"; `shop_tests`: "buying a key item…" | Igual (8 objetos; decidido el 2026-10-20; el aviso es para el autoguardado, que no existe en el original) |
 | Ordenar por categorías y número | `inventory.c: sortItems`, `ITEM_SORT_ORDER`; `utils.c: sortItemsById` | `Inventory::sort`; `sort.orders` | `bag_tests`: "sorting groups…" | Igual |
 | Dinero: tope 999 999, suelo 0 | `battle_ui.c`; `script_interp.c` | `addMoney`, `spendMoney`; `money.max` | `bag_tests`: "money stops…" | Igual |
-| Derrota: 30 % de huecos, pilas enteras | `script_common.c: handleItemLoss` | `Inventory::loseOnDefeat`; `defeat.lost_percent` | `bag_tests`: "a defeat loses…" | Igual en efecto (decidido el 2026-10-20): tirada con `ruleset::Random`, los números de la partida (`InventoryAdapter::loseOnDefeat`), no la del original |
-| Tienda de reciclaje con lo perdido | `script_common.c: handleItemLoss`, menú 2 | `loseOnDefeat` devuelve las pilas | — | Hueco (fase 4) |
+| Derrota: 30 % de los huecos ocupados, redondeado hacia abajo y contado una vez; cada tirada elige un hueco ocupado y se lleva todas las pilas de su objeto; si la bolsa se vacía, no se pierde nada más | `script_common.c: handleItemLoss`; `item.c: removeItem` | `Inventory::loseOnDefeat`; `defeat.lost_percent` | `bag_tests`: "a defeat loses…", "a defeat's pick takes every stack…", "a defeat that empties the bag…", "a defeat loses what the original's rule loses…" | Igual en efecto (decidido el 2026-10-20): tirada con `ruleset::Random`, los números de la partida (`InventoryAdapter::loseOnDefeat`), no la del original. Con un `bag.max_stack` de mod mayor que 99 se quitan todas las pilas del objeto enteras, mientras que el `removeItem(…, 99)` del original dejaría lo que pase de 99 |
+| Tienda de reciclaje con lo perdido | `script_common.c: handleItemLoss`, menú 2 | `loseOnDefeat` devuelve solo las pilas elegidas, como las cuenta el original | — | Hueco (fase 4) |
 | Uso según `item_color` | `inventory.c: selectOptionMenu` | `use.cpp: usableIn`; `use.*_colors` | `use_tests`: "colour 0…" | Igual |
 | Campo: rechazo sin gastar; gastar y aplicar | `partner.c` (estados 4 a 6); `partner_impl.c: partnerWillRefuseItem` | `useItem`, `ItemEffectTarget::accepts` | `use_tests`: "in the field…" | Igual (el rechazo lo decide el partner) |
 | Combate: se gasta al lanzar, siempre llega | `main.c: startThrowingItem`, `tickThrownItem` | `useItem` con `UseContext::Battle` | `use_tests`: "in the field…" | Igual (el retraso del lanzamiento es de la batalla) |

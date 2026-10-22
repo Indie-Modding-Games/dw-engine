@@ -3,8 +3,14 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <ostream>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "fixture.hpp"
@@ -23,6 +29,57 @@ std::vector<std::string_view> itemsInOrder(const Inventory& inventory) {
         items.push_back(slot ? std::string_view{fixtureItems().at(slot->item).id} : Empty);
     }
     return items;
+}
+
+// The whole of a percentage, as the rule divides by it.
+constexpr std::int32_t Hundred = 100;
+
+Stack stackOf(dwe::assets::ItemHandle item, std::int32_t count) {
+    return Stack{.item = item, .count = count};
+}
+
+// A bag of the original rules whose first slots hold these stacks, as a save may hold them.
+Inventory bagHolding(const std::vector<std::optional<Stack>>& stacks, std::int32_t slotCount) {
+    Inventory inventory = originalInventory();
+    InventoryState state = inventory.state();
+    state.slotCount = slotCount;
+    std::ranges::copy(stacks, state.slots.begin());
+    REQUIRE(inventory.restore(state).has_value());
+    return inventory;
+}
+
+// The defeat loss as script_common.c: handleItemLoss words it: the count of losses from the occupied slots before any
+// loss; each loss lists the occupied slots again, rolls one and takes every stack of its item (item.c: removeItem);
+// a roll over an empty bag takes nothing. Returns the rolled stacks.
+std::vector<Stack> referenceDefeatLoss(std::vector<std::optional<Stack>>& slots, std::int32_t lostPercent,
+                                       dwe::ruleset::Random& random) {
+    const auto occupiedOf = [&] {
+        std::vector<std::size_t> occupied;
+        for (std::size_t slot = 0; slot < slots.size(); ++slot) {
+            if (slots[slot].has_value()) {
+                occupied.push_back(slot);
+            }
+        }
+        return occupied;
+    };
+    const auto losses = static_cast<std::int32_t>(occupiedOf().size()) * lostPercent / Hundred;
+    std::vector<Stack> lost;
+    for (std::int32_t loss = 0; loss < losses; ++loss) {
+        const std::vector<std::size_t> occupied = occupiedOf();
+        const std::int32_t roll = random.below(static_cast<std::int32_t>(occupied.size()));
+        const std::optional<Stack> rolled =
+            occupied.empty() ? std::nullopt : slots[occupied[static_cast<std::size_t>(roll)]];
+        if (!rolled.has_value()) {
+            continue;
+        }
+        lost.push_back(*rolled);
+        for (std::optional<Stack>& slot : slots) {
+            if (slot.has_value() && slot->item == rolled->item) {
+                slot.reset();
+            }
+        }
+    }
+    return lost;
 }
 
 } // namespace
@@ -151,6 +208,77 @@ TEST_CASE("a defeat loses 30 % of the occupied slots, rounded down, as whole sta
     few.add(handleOf(Bun), 1);
     few.add(handleOf(Steak), 1);
     CHECK(few.loseOnDefeat(random).empty());
+}
+
+TEST_CASE("a defeat's pick takes every stack of the picked item and returns only the picked stack") {
+    // filler_0 and filler_1 have two stacks each; 10 occupied slots lose 3 picks.
+    Inventory inventory =
+        bagHolding({stackOf(filler(0), 5), stackOf(filler(1), 5), stackOf(filler(0), 7), stackOf(filler(2), 5),
+                    stackOf(filler(3), 5), stackOf(filler(1), 9), stackOf(filler(4), 5), stackOf(filler(5), 5),
+                    stackOf(filler(6), 5), stackOf(filler(7), 5)},
+                   10);
+    dwe::ruleset::Random random{11};
+    const std::vector<Stack> lost = inventory.loseOnDefeat(random);
+    // Seed 11 picks slots 1, 9 and 6; slot 1's pick also takes filler_1's other stack, in slot 5.
+    CHECK(lost == std::vector<Stack>{stackOf(filler(1), 5), stackOf(filler(7), 5), stackOf(filler(4), 5)});
+    CHECK(itemsInOrder(inventory) == std::vector<std::string_view>{"filler_0", Empty, "filler_0", "filler_2",
+                                                                   "filler_3", Empty, Empty, "filler_5", "filler_6",
+                                                                   Empty});
+    CHECK(inventory.countOf(filler(0)) == 5);
+}
+
+TEST_CASE("a defeat that empties the bag stops there with the bag empty") {
+    // Ten stacks of one item: 3 picks are due, the first takes them all.
+    std::vector<std::optional<Stack>> stacks;
+    for (std::int32_t count = 1; count <= 10; ++count) {
+        stacks.emplace_back(stackOf(filler(0), count));
+    }
+    Inventory inventory = bagHolding(stacks, 10);
+    dwe::ruleset::Random random{5};
+    const std::vector<Stack> lost = inventory.loseOnDefeat(random);
+    // Seed 5 picks slot 0.
+    CHECK(lost == std::vector<Stack>{stackOf(filler(0), 1)});
+    CHECK(itemsInOrder(inventory) == std::vector<std::string_view>(10, Empty));
+}
+
+TEST_CASE("a defeat loses what the original's rule loses, on random bags with repeated items") {
+    constexpr std::int32_t Bags = 300;
+    constexpr std::int32_t EmptyChance = 30;
+    constexpr std::int32_t Kinds = 4;
+    constexpr std::int32_t MaxCount = 99;
+    constexpr std::array<std::int32_t, 3> SlotCounts{10, 20, 30};
+    dwe::ruleset::Random bagMaker{2024};
+    // Bags that ran out of stacks with picks still due: the guard's case must stay covered.
+    std::int32_t emptiedEarly = 0;
+    for (std::int32_t bag = 0; bag < Bags; ++bag) {
+        const std::int32_t slotCount =
+            SlotCounts.at(static_cast<std::size_t>(bagMaker.below(static_cast<std::int32_t>(SlotCounts.size()))));
+        std::vector<std::optional<Stack>> stacks(static_cast<std::size_t>(slotCount));
+        for (std::optional<Stack>& slot : stacks) {
+            if (!bagMaker.chance(EmptyChance)) {
+                // Rolled one by one: the order of a call's arguments is unspecified.
+                const std::int32_t kind = bagMaker.below(Kinds);
+                const std::int32_t count = 1 + bagMaker.below(MaxCount);
+                slot = stackOf(filler(kind), count);
+            }
+        }
+        Inventory inventory = bagHolding(stacks, slotCount);
+        const auto occupied = static_cast<std::int32_t>(
+            std::ranges::count_if(stacks, [](const std::optional<Stack>& slot) { return slot.has_value(); }));
+        const std::int32_t picksDue = occupied * inventory.rules().defeatLostPercent / Hundred;
+        const auto seed = static_cast<std::uint64_t>(bag);
+        dwe::ruleset::Random ours{seed};
+        dwe::ruleset::Random reference{seed};
+        const std::vector<Stack> lost = inventory.loseOnDefeat(ours);
+        CHECK(lost == referenceDefeatLoss(stacks, inventory.rules().defeatLostPercent, reference));
+        CHECK(std::ranges::equal(inventory.slots(), stacks));
+        if (std::cmp_less(lost.size(), picksDue)) {
+            CHECK(std::ranges::none_of(inventory.slots(),
+                                       [](const std::optional<Stack>& slot) { return slot.has_value(); }));
+            ++emptiedEarly;
+        }
+    }
+    CHECK(emptiedEarly > 0);
 }
 
 TEST_CASE("money stops at 999999 and never goes below 0") {
