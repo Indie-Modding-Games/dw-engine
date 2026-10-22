@@ -22,5 +22,8 @@ CMakeUserPresets.json
 # The dev assets config (--dev-assets): paths of one machine, never versioned
 dev-assets.yaml
 
+# The documentation site's packages live in the development image; a local install never gets versioned
+node_modules/
+
 # Python bytecode of the scripts (scripts/gate)
 __pycache__/

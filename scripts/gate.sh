@@ -69,7 +69,7 @@ windows_marker="$windows_dir/.dwe-gate-zero-warnings"
 # lavapipe driver instead.
 # shellcheck disable=SC2034
 check_tools=(cmake ninja ctest ccache clang++ clang-format clang-tidy python3
-  stylua shfmt luacheck shellcheck)
+  stylua shfmt luacheck shellcheck node vitepress)
 # shellcheck disable=SC2034
 windows_tools=(cmake ninja clang-cl lld-link llvm-lib llvm-rc llvm-mt)
 routes_host_programs=(Xvfb timeout)

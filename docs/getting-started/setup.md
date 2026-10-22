@@ -39,7 +39,8 @@ clang-tidy y clang-format usan todos los núcleos; `DWE_JOBS=6` los limita.
 
 ```bash
 scripts/dev.sh check-commit   # lo de cada commit: build con warnings como errores y los tests rápidos
-scripts/dev.sh check-full     # lo de la punta de la rama, como la CI: además formato, tests lentos y clang-tidy
+scripts/dev.sh check-full     # lo de la punta de la rama, como la CI: además formato, el sitio de documentación,
+                              # tests lentos y clang-tidy
 ```
 
 Las dos usan el preset `ci`, guardan el log de cada paso en `build/logs/` (o en `DWE_LOG_DIR`) y terminan con error
@@ -145,6 +146,8 @@ PRESET=windows-cross scripts/dev.sh build
 | `scripts/dev.sh lint` | Pasa luacheck al Lua y shellcheck al shell |
 | `scripts/dev.sh setup-hooks` | Instala el hook de pre-commit, que formatea y revisa lo que vas a commitear |
 | `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
+| `scripts/dev.sh docs` | Construye el sitio de documentación de `docs/` en `build/docs-site`; un enlace roto lo hace fallar |
+| `scripts/dev.sh docs-dev` | Sirve el sitio en `http://localhost:5173` (o en el puerto `DWE_DOCS_PORT`) y lo recarga al editar |
 | `scripts/dev.sh test -LE slow` | Pasa los tests sin los lentos, los que leen el disco o el contenido extraído |
 | `build/<preset>/apps/dwx/dwx verify <fichero>` | Calcula el SHA-1 de una imagen o un ejecutable y dice de qué versión es |
 | `build/<preset>/apps/dwx/dwx extract --list <imagen.cue>` | Lista los ficheros del disco con su SHA-1 y comprueba la tabla de ficheros del ejecutable ([Disco](../formats/disco.md)) |

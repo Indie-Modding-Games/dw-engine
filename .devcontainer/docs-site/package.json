@@ -1,0 +1,13 @@
+{
+  "name": "dwe-docs-site",
+  "private": true,
+  "description": "The documentation site's tools (docs/), installed in the development image",
+  "packageManager": "npm@11.19.1",
+  "engines": {
+    "node": "24.22.1"
+  },
+  "dependencies": {
+    "mermaid": "12.2.0",
+    "vitepress": "1.6.4"
+  }
+}

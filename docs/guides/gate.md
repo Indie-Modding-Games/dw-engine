@@ -68,7 +68,7 @@ lo que necesitan los pasos que vas a correr:
   (`dev.sh image-name`); el gate no fija ninguna. Después mira dentro de ella, sin descargar nada (`--pull=never`),
   que están sus herramientas:
   - el check: `cmake`, `ninja`, `ctest`, `ccache`, `clang++`, `clang-format`, `clang-tidy`, `python3`, `stylua`,
-    `shfmt`, `luacheck` y `shellcheck`;
+    `shfmt`, `luacheck`, `shellcheck`, `node` y `vitepress`;
   - Windows: `cmake`, `ninja`, `clang-cl`, `lld-link`, `llvm-lib`, `llvm-rc` y `llvm-mt`.
 - Las rutas corren el juego en el host, así que comprueba en el host `Xvfb`, `timeout` y el driver de lavapipe
   (`/usr/share/vulkan/icd.d/lvp_icd.json`). Si te saltas el check, también que el juego ya esté compilado
@@ -80,7 +80,8 @@ equipo (`DWE_IMAGE=...`).
 
 **El check.**
 
-- `check-short` pasa el formato, el lint (luacheck y shellcheck) y `no-goto`, configura y compila el preset `ci` sin warnings, y corre todos los tests,
+- `check-short` pasa el formato, el lint (luacheck y shellcheck), construye el sitio de documentación (falla con
+  un enlace roto) y pasa `no-goto`, configura y compila el preset `ci` sin warnings, y corre todos los tests,
   sin dejar fuera ninguna etiqueta. Esa pasada corre sin `DWE_DISC` ni `DWE_CONTENT`, así que los tests del disco y
   del contenido extraído se saltan al momento. A la vez corre clang-tidy (ver abajo). Después, si das `--disc-tests`,
   corre esos tests, ya con el disco y el contenido. No cocina: el log lo dice con `gate: cook=none reason=...`.

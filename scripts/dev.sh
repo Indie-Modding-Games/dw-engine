@@ -53,6 +53,14 @@ gate_cook_mode="${DWE_GATE_COOK:-$gate_mode_incremental}"
 gate_state_folder="dwe-gate"
 dwx_target="apps/dwx/dwx"
 bad_gate_mode_message="dev.sh: DWE_GATE_TIDY and DWE_GATE_COOK must be full or incremental"
+# The documentation site (docs/, VitePress): its build fails on a dead link. The preview server
+# listens on every interface inside the container, so Docker can forward it, and on the host only
+# on localhost.
+docs_source="docs"
+docs_container_port="5173"
+docs_port="${DWE_DOCS_PORT:-$docs_container_port}"
+# A site build takes about a minute; a hung one must not hold a gate's lock.
+docs_build_timeout="10m"
 # The formatters and linters of the C++, Lua and shell sources (scripts/style), and the hook that
 # runs them on a commit.
 style_dir="$root/scripts/style"
@@ -81,17 +89,17 @@ Usage: scripts/dev.sh <command> [args]
                       not a build)
   check-commit [args] The check of every commit: configure (with args), build and the tests but the
                       slow ones
-  check-full [args]   The check of the tip: format, lint, configure (with args), build, every test
-                      and clang-tidy, and cook-content into a fresh build/gate-cooked when
-                      DWE_CONTENT is set and the preset builds for Linux
+  check-full [args]   The check of the tip: format, lint, the documentation site, configure (with
+                      args), build, every test and clang-tidy, and cook-content into a fresh
+                      build/gate-cooked when DWE_CONTENT is set and the preset builds for Linux
   check-gate [args]   check-full with the scope of clang-tidy (DWE_GATE_TIDY) and the reuse of a
                       cached cook (DWE_GATE_COOK) decided and logged by scripts/gate/gate_tool.py;
                       with both full it runs the same steps as check-full. It records full
                       clang-tidy passes and validated cooks for later gates
-  check-short [args]  The push gate's check: format, lint, configure (with args), build, every test
-                      with DWE_DISC and DWE_CONTENT unset (those on the disc and the content skip)
-                      beside clang-tidy scoped as check-gate's (DWE_GATE_TIDY), and the disc tests
-                      DWE_GATE_DISC_TESTS names, with both set
+  check-short [args]  The push gate's check: format, lint, the documentation site, configure (with
+                      args), build, every test with DWE_DISC and DWE_CONTENT unset (those on the
+                      disc and the content skip) beside clang-tidy scoped as check-gate's
+                      (DWE_GATE_TIDY), and the disc tests DWE_GATE_DISC_TESTS names, with both set
   windows-sdk [args]  Fetch the MSVC libraries and the Windows SDK for PRESET=windows-cross with
                       xwin, which first asks you to accept Microsoft's license (--accept-license if
                       you already have)
@@ -101,6 +109,10 @@ Usage: scripts/dev.sh <command> [args]
                       validate (needs a build of the preset, or of $linux_dwx_preset for a preset
                       that does not build for Linux); an earlier cook there is updated in place. The
                       routes on a cooked pack run on the archive
+  docs                Build the documentation site from docs/ into build/docs-site; a dead link
+                      fails it
+  docs-dev            Serve the documentation site with live reload on http://localhost:$docs_port
+                      (DWE_DOCS_PORT)
   run [args]          Run the game on the host
 
 Environment:
@@ -136,6 +148,7 @@ Environment:
                       too
   DWE_GATE_STATE_DIR  check-gate and check-short: folder of the markers and the cook cache (default
                       <git common folder>/$gate_state_folder)
+  DWE_DOCS_PORT       docs-dev: the port on localhost (default $docs_container_port)
   DWE_HOOK_RUNNER     format and lint: $style_runner_direct runs the formatters and linters found in
                       PATH instead of in the image (the hook's test, which runs inside the image
                       already)
@@ -147,6 +160,8 @@ EOF
 # starts it (BASHPID: a pipeline's part has its own) and a count of the containers that shell
 # started.
 container_count=0
+# Extra options of the next containers' docker run, such as a published port.
+container_options=()
 next_container_name() {
   local shell_pid="$BASHPID"
   container_count=$((container_count + 1))
@@ -174,6 +189,7 @@ in_container() {
     -v "$(mount_of "$ccache_dir" "$ccache_volume"):/cache/ccache" \
     -v "$(mount_of "$xwin_dir" "$xwin_volume"):/opt/xwin" \
     "${disc_flags[@]}" \
+    "${container_options[@]}" \
     "$image" "$@"
 }
 
@@ -569,6 +585,7 @@ check() {
   if $tip; then
     step format "$self" format --check || status=1
     step lint "$self" lint || status=1
+    step docs "$self" docs || status=1
   fi
   step no-goto no_goto || status=1
   # Warnings fail the build already, but not the linker's; clang-tidy fails on any diagnostic, and
@@ -584,7 +601,7 @@ check() {
     status=1
   fi
   steps=(no-goto configure build test)
-  $tip && steps=(format lint "${steps[@]}" tidy)
+  $tip && steps=(format lint docs "${steps[@]}" tidy)
   [[ "$tier" == "short" && -n "${DWE_GATE_DISC_TESTS:-}" ]] && steps+=(disc-tests)
   if [[ "$tier" == "full" || "$tier" == "gate" ]] && [[ -n "${DWE_CONTENT:-}" ]] \
     && builds_for_linux "$preset"; then
@@ -768,6 +785,16 @@ case "$command" in
     in_container bash -c "$cook_content" cook-content "$dwx" "$DWE_CONTENT/$base_pack" \
       "$cooked_dir/$cooked_folder_content/$base_pack" \
       "$cooked_dir/$cooked_archive_content/$base_pack.pak"
+    ;;
+  docs)
+    ensure_caches
+    in_container timeout "$docs_build_timeout" vitepress build "$docs_source"
+    ;;
+  docs-dev)
+    ensure_caches
+    container_options=(-p "127.0.0.1:$docs_port:$docs_container_port")
+    in_container vitepress dev "$docs_source" --host 0.0.0.0 --port "$docs_container_port" \
+      --strictPort
     ;;
   run)
     build_dir="$root/build/$preset"

@@ -122,3 +122,26 @@ RUN release="https://github.com" && cd /tmp \
     && rm -r stylua.zip luacheck.rock luacheck shellcheck.tar.gz \
     && chmod 755 /usr/local/bin/stylua /usr/local/bin/luacheck /usr/local/bin/shfmt /usr/local/bin/shellcheck \
     && stylua --version && luacheck --version && shfmt --version && shellcheck --version
+
+# The documentation site (docs/, scripts/dev.sh docs): Node from its official build, checked
+# against its checksum.
+ARG NODE_VERSION=24.22.1
+ARG NODE_SHA256=eb6728e77c576a35162c122c45ccadf224d89ff00abc8dae46cc2897c6002d7c
+RUN curl -fsSLo /tmp/node.tar.gz \
+        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" \
+    && echo "${NODE_SHA256}  /tmp/node.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 --no-same-owner \
+        "node-v${NODE_VERSION}-linux-x64/bin" "node-v${NODE_VERSION}-linux-x64/lib" \
+    && rm /tmp/node.tar.gz \
+    && node --version && npm --version
+
+# The site's packages (VitePress, Mermaid) at the versions of the committed lockfile, inside the
+# image, without their install scripts: the repository gets no node_modules. /node_modules points
+# at them, so the site's configuration and theme find them from any folder, as Node looks for
+# packages up to the root.
+ENV DWE_DOCS_TOOLS=/opt/docs-site NPM_CONFIG_UPDATE_NOTIFIER=false
+COPY docs-site/package.json docs-site/package-lock.json ${DWE_DOCS_TOOLS}/
+RUN npm ci --prefix ${DWE_DOCS_TOOLS} --ignore-scripts --no-audit --no-fund \
+    && ln -s ${DWE_DOCS_TOOLS}/node_modules /node_modules \
+    && npm ls --prefix ${DWE_DOCS_TOOLS} vitepress mermaid
+ENV PATH=${DWE_DOCS_TOOLS}/node_modules/.bin:${PATH}
