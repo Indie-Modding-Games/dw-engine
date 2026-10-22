@@ -9,8 +9,10 @@
 #include <dwe/session/session_system.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 
@@ -27,6 +29,9 @@ inline constexpr std::string_view StorySaveName = "story";
 // new game's section; script_common.c: setDigimonRaised).
 inline constexpr std::int32_t FirstRaisedTrigger = 0x200;
 inline constexpr std::int32_t RaisedSpeciesLimit = 0x3f;
+
+// The species another save section kept as raised (the evolution section), by number.
+using RaisedSource = std::function<std::set<std::int32_t>()>;
 
 struct StoryAdapterDesc {
     // The mounted packs, for data/new_game_story, field/warps and the digimon table; they must outlive the adapter.
@@ -55,6 +60,15 @@ public:
     // know at the start (its paths disagree, or game code may set it) starts clear, and the log says so.
     [[nodiscard]] game::story::StoryState newGameState(std::string_view firstPartner) const;
 
+    // The raised species, by number: the story owns them as triggers 0x200 + number, as the original does
+    // (script_common.c: setDigimonRaised). A number with no trigger is never raised, and marking it is logged.
+    [[nodiscard]] bool raised(std::int32_t species) const;
+    void markRaised(std::int32_t species);
+    [[nodiscard]] std::set<std::int32_t> raisedSpecies() const;
+    // Where a save from before the story section takes its raised species from (createGameSystems: the evolution
+    // section's); without it such a save starts with none raised.
+    void setSavedRaised(RaisedSource source) { savedRaised_ = std::move(source); }
+
     [[nodiscard]] game::story::StoryState& state() { return state_; }
     [[nodiscard]] const game::story::StoryState& state() const { return state_; }
 
@@ -66,6 +80,7 @@ private:
     std::string fieldStartMap_;
     std::int32_t fieldStartExit_ = 0;
     std::optional<assets::DigimonTable> digimon_;
+    RaisedSource savedRaised_;
     game::story::StoryState state_;
     std::unique_ptr<Serializer> serializer_;
 };

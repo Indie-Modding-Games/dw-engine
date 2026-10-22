@@ -57,8 +57,12 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 }
 
 GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTables tables) {
+    // The story owns the raised forms the evolution rules read; a save from before the story section takes them from
+    // the evolution section, which is read first.
+    auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &files});
     auto evolution = std::make_unique<EvolutionAdapter>(
-        EvolutionAdapterDesc{.files = &files, .tables = std::move(tables.evolution)});
+        EvolutionAdapterDesc{.files = &files, .tables = std::move(tables.evolution), .story = story.get()});
+    story->setSavedRaised([evolution = evolution.get()] { return evolution->state().raised; });
     auto inventory = std::make_unique<InventoryAdapter>(InventoryAdapterDesc{.files = &files,
                                                                              .items = std::move(tables.items),
                                                                              .effects = std::move(tables.itemEffects),
@@ -69,7 +73,6 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                                     .inventory = inventory.get()});
     // The evolution requirements read the partner's learned moves from the battle adapter.
     evolution->setMoveSource(*battle);
-    auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &files});
     GameSystems game{.systems = {},
                      .evolution = evolution.get(),
                      .inventory = inventory.get(),

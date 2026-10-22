@@ -22,6 +22,7 @@ class VirtualFileSystem;
 namespace dwe::session {
 
 class BattleAdapter;
+class StoryAdapter;
 
 // The save section of the evolution state.
 inline constexpr std::string_view EvolutionSaveName = "evolution";
@@ -31,6 +32,9 @@ struct EvolutionAdapterDesc {
     const assets::VirtualFileSystem* files = nullptr;
     // Tables already built (tests); otherwise they are read once from the ruleset's tables.
     std::optional<game::evolution::EvolutionTables> tables;
+    // The story, which owns the raised forms as triggers 0x200 + number (setDigimonRaised); it must outlive the
+    // adapter. Without it (tests of the adapter alone) the evolution state keeps them.
+    StoryAdapter* story = nullptr;
 };
 
 // Glues the evolution system to the partner (docs/reference/evolution.md): fills its inputs from the partner, checks
@@ -88,6 +92,11 @@ private:
     void apply(GameSession& session, const game::evolution::EvolutionResult& result);
 
     [[nodiscard]] std::int32_t masteredMoves() const;
+    // The raised forms the rules read, from the story before each check (a script may have raised one). Static so
+    // the checks keep knowing evolution_ is set.
+    static void syncRaised(const StoryAdapter* story, game::evolution::EvolutionState& state);
+    // Marks a form raised in the story and in the rules' view of it.
+    void raise(game::evolution::Species species);
 
     EvolutionAdapterDesc desc_;
     const BattleAdapter* battle_ = nullptr;

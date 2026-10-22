@@ -8,6 +8,7 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
 
+#include <set>
 #include <utility>
 
 namespace dwe::session {
@@ -38,10 +39,18 @@ public:
     }
 
     // A save from before the story was kept: the story starts as a new game's, without inventing what the player
-    // did since. Which partner came first is not saved, so none is raised.
+    // did since, and the species the evolution section kept as raised (read before this section) raise their
+    // triggers, which is what the original keeps them as.
     core::Result<void> readMissing() override {
         core::logWarning("{}", std::string{messages::StoryMissingInSave});
         adapter_->state_ = adapter_->newGameState({});
+        if (adapter_->savedRaised_) {
+            const std::set<std::int32_t> raised = adapter_->savedRaised_();
+            for (const std::int32_t species : raised) {
+                adapter_->markRaised(species);
+            }
+            core::logInfo("{}", formatMessage(messages::StoryRaisedFromSave, raised.size()));
+        }
         return {};
     }
 
@@ -73,6 +82,30 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
         }
     }
     return {};
+}
+
+bool StoryAdapter::raised(std::int32_t species) const {
+    return species >= 0 && species < RaisedSpeciesLimit && state_.trigger(FirstRaisedTrigger + species).value_or(false);
+}
+
+void StoryAdapter::markRaised(std::int32_t species) {
+    if (species < 0 || species >= RaisedSpeciesLimit) {
+        core::logWarning("{}", formatMessage(messages::StoryRaisedUnnumbered, species, RaisedSpeciesLimit));
+        return;
+    }
+    if (auto written = state_.setTrigger(FirstRaisedTrigger + species, true); !written) {
+        core::logWarning("{}", written.error().message);
+    }
+}
+
+std::set<std::int32_t> StoryAdapter::raisedSpecies() const {
+    std::set<std::int32_t> species;
+    for (std::int32_t number = 0; number < RaisedSpeciesLimit; ++number) {
+        if (raised(number)) {
+            species.insert(number);
+        }
+    }
+    return species;
 }
 
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {

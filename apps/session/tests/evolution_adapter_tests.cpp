@@ -3,7 +3,9 @@
 #include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/autosave.hpp>
 #include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <doctest/doctest.h>
 
@@ -11,6 +13,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -24,8 +27,12 @@ using dwe::game::partner::Stat;
 using dwe::game::save::AutosaveReason;
 using dwe::game::save::MemorySaveStorage;
 using dwe::session::EvolutionAdapter;
+using dwe::session::EvolutionAdapterDesc;
+using dwe::session::FirstRaisedTrigger;
 using dwe::session::GameSession;
 using dwe::session::SessionSystem;
+using dwe::session::StoryAdapter;
+using dwe::session::StoryAdapterDesc;
 using dwe::session::testing::errorOf;
 using dwe::session::testing::evolutionAdapter;
 using dwe::session::testing::GameHourPerSecond;
@@ -47,6 +54,27 @@ std::unique_ptr<GameSession> sessionWithEvolution(const TestPacks& packs, const 
     std::vector<std::unique_ptr<SessionSystem>> systems;
     systems.push_back(std::move(made));
     return newGameWith(packs, std::move(systems), storage);
+}
+
+// A session with the story and the evolution adapter on it, as the game builds them: the story owns the raised forms
+// and a save without the story section takes them from the evolution section.
+struct StoryEvolution {
+    std::unique_ptr<GameSession> session;
+    EvolutionAdapter* evolution = nullptr;
+    StoryAdapter* story = nullptr;
+};
+
+StoryEvolution sessionWithStory(const TestPacks& packs, const TableFixture& fixture) {
+    auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &packs.files()});
+    auto evolution = std::make_unique<EvolutionAdapter>(
+        EvolutionAdapterDesc{.files = &packs.files(), .tables = fixture.build(), .story = story.get()});
+    story->setSavedRaised([adapter = evolution.get()] { return adapter->state().raised; });
+    StoryEvolution made{.session = nullptr, .evolution = evolution.get(), .story = story.get()};
+    std::vector<std::unique_ptr<SessionSystem>> systems;
+    systems.push_back(std::move(evolution));
+    systems.push_back(std::move(story));
+    made.session = newGameWith(packs, std::move(systems));
+    return made;
 }
 
 // The partner's state changed by `change`, restored into it.
@@ -249,4 +277,49 @@ TEST_CASE("the evolution adapter registers the evolution section's check") {
     EvolutionAdapter* adapter = nullptr;
     auto session = sessionWithEvolution(packs, fixture, adapter);
     CHECK_FALSE(session->rules().setValue("evolution", "check_hours.baby", "soon").has_value());
+}
+
+TEST_CASE("the story owns the raised forms: an evolution and a rebirth raise their triggers, and a guard sees them") {
+    const TestPacks packs;
+    const TableFixture fixture;
+    const auto made = sessionWithStory(packs, fixture);
+    const auto target = TableFixture::index("species_b");
+    CHECK_FALSE(made.story->raised(target));
+
+    const auto evolved = made.evolution->evolveByScript(*made.session, "species_b");
+    REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
+    CHECK(*evolved);
+    CHECK(made.story->raised(target));
+    const dwe::game::field::GuardFacts facts = dwe::session::fieldGuardFacts(*made.session, nullptr, *made.story);
+    CHECK(facts.triggers(FirstRaisedTrigger + target) == std::optional<bool>{true});
+
+    // evolution.c: reincarnatePartner raises the new baby.
+    const auto baby = TableFixture::index("bota");
+    CHECK_FALSE(made.story->raised(baby));
+    changePartner(*made.session, [](PartnerState& state) { state.species = "bota"; });
+    made.evolution->routePartnerEvent(*made.session, {.kind = EventKind::Reborn});
+    CHECK(made.story->raised(baby));
+    CHECK(facts.triggers(FirstRaisedTrigger + baby) == std::optional<bool>{true});
+
+    // A form a script raised in the story is one the rules see as raised.
+    const auto scripted = TableFixture::index("kune");
+    REQUIRE(made.story->state().setTrigger(FirstRaisedTrigger + scripted, true).has_value());
+    REQUIRE(made.evolution->evolveByScript(*made.session, "species_d").value_or(false));
+    CHECK(made.evolution->state().raised.contains(scripted));
+}
+
+TEST_CASE("a save without the story section raises the forms its evolution section kept") {
+    const TestPacks packs;
+    const TableFixture fixture;
+    const auto saved = sessionWithStory(packs, fixture);
+    REQUIRE(saved.evolution->evolveByScript(*saved.session, "species_b").value_or(false));
+    auto file = saved.session->saveFile();
+    REQUIRE_MESSAGE(file.has_value(), errorOf(file));
+    file->sections.erase(std::string{dwe::session::StorySaveName});
+
+    const auto loaded = sessionWithStory(packs, fixture);
+    const auto read = loaded.session->loadFile(*file);
+    REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+    CHECK(loaded.story->raised(TableFixture::index("species_b")));
+    CHECK(loaded.story->raisedSpecies() == saved.story->raisedSpecies());
 }

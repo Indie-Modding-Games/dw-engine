@@ -79,7 +79,7 @@ de `clock` (con la velocidad que tenía).
 | `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |
 | `moves` | Las técnicas del partner: `learned` (ids de `data/moves`) y `equipped` (cuatro posiciones de la lista de la especie o `null`; la cuarta es el remate) |
-| `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../../game/story/README.md)); una partida sin ella carga la historia como la deja una partida nueva, sin el disparador del partner, y lo registra |
+| `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../../game/story/README.md)); una partida sin ella carga la historia como la deja una partida nueva, con los disparadores de criado (0x200 + número) de las formas que guardó la sección `evolution`, y lo registra |
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
@@ -105,6 +105,12 @@ una vez las tablas de los tres (`dwe-sim` las comparte entre sus partidas); sin 
 `fieldGuardFacts(partida, inventario, historia)` da los lectores de disparadores, bolsa, dinero, estadísticas y
 condiciones del partner con los que el campo decide sus condiciones, y `fieldTriggerWriter(historia)` escribe en la
 historia los `sets_flags` del warp tomado.
+
+La historia es la única dueña de las formas criadas, como en el original (`setDigimonRaised` pone el disparador
+0x200 + número): `EvolutionAdapter` (con `EvolutionAdapterDesc::story`) las escribe ahí al evolucionar, al renacer y
+al empezar, y antes de cada comprobación de evolución lee de ahí las que ve como criadas, así que un script que pone
+uno de esos disparadores también cuenta. La sección `evolution` sigue guardando una copia, de la que sale la historia
+de una partida sin sección `story`.
 
 ### Evolución (`EvolutionAdapter`)
 

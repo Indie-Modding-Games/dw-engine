@@ -280,8 +280,10 @@ Rama p4-scripted-warps-b. Lo que añade sobre la parte (a):
   carga la historia como la deja una partida nueva y lo registra.
 - **El disparador del partner.** El original pone, antes de la sección de partida nueva, 0x200 más la especie del
   primer partner (0x203 o 0x211, `main.c`). `dwx` no cambia: `data/new_game_story` los sigue dando como
-  desconocidos (`triggers_unknown`), y es el motor el que pone el del partner con el que empieza la partida. El pin
-  de 5 mapas no cambia.
+  desconocidos (`triggers_unknown`), y es el motor el que pone el del partner con el que empieza la partida. La
+  historia es la única dueña de los disparadores de criado 0x200–0x23E: la evolución los escribe al evolucionar y al
+  renacer y los lee de ahí, así que una condición de un warp ve a qué formas ha llegado el partner. El pin de 5 mapas
+  no cambia.
 - **Hablar con un NPC** (`via: talk`). `dwx` lee los NPC de cada mapa, y un cambio de mapa de una sección que corre
   un NPC del mapa es `talk` en vez de `other`. El campo no los toma (no hay intérprete de historia), pero entran en
   el grafo de mapas.

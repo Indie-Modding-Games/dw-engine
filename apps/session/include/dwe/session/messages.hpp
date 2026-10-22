@@ -91,6 +91,10 @@ inline constexpr std::string_view StoryUnknownAtStart =
     "story: trigger {} is not known at the new game's start (data/new_game_story); it starts clear";
 inline constexpr std::string_view StoryMissingInSave =
     "story: the save has no story section (made before it existed); the story starts as a new game's";
+inline constexpr std::string_view StoryRaisedFromSave =
+    "story: {} raised species of the evolution section raise their triggers";
+inline constexpr std::string_view StoryRaisedUnnumbered =
+    "story: species number {} has no raised trigger (0x200 plus a number below {})";
 inline constexpr std::string_view StoryDocumentFailed = "story: {}";
 // No digimon table to number the first partner by (the species), so its raised trigger stays clear.
 inline constexpr std::string_view StoryPartnerUnnumbered =

@@ -7,6 +7,7 @@
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
 #include <string>
@@ -88,7 +89,12 @@ public:
         if (!adapter_->evolution_) {
             return core::fail(std::string{messages::EvolutionNotRead});
         }
-        return game::evolution::toYaml(adapter_->state_, adapter_->evolution_->tables());
+        // The raised forms are the story's when there is one; the section keeps a copy for saves read without it.
+        game::evolution::EvolutionState state = adapter_->state_;
+        if (adapter_->desc_.story != nullptr) {
+            state.raised = adapter_->desc_.story->raisedSpecies();
+        }
+        return game::evolution::toYaml(state, adapter_->evolution_->tables());
     }
 
     core::Result<void> read(const core::YamlNode& state) override {
@@ -187,7 +193,7 @@ core::Result<void> EvolutionAdapter::startNewGame(GameSession& session) {
         return core::fail(std::string{messages::EvolutionNotRead});
     }
     if (const auto species = evolution_->tables().find(session.partner().state().species)) {
-        state_.raised.insert(*species);
+        raise(*species);
     }
     return {};
 }
@@ -208,6 +214,7 @@ void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& a
         return;
     }
     // partner_impl.c: tickConditions checks once a game hour.
+    syncRaised(desc_.story, state_);
     const game::evolution::NaturalCheck check =
         evolution_->checkNatural(*inputs, state_, advance.hours, session.random());
     if (check.evolution) {
@@ -226,6 +233,7 @@ void EvolutionAdapter::routePartnerEvent(GameSession& session, const game::partn
     switch (event.kind) {
     case EventKind::VirusBarFull:
         if (const auto inputs = inputsOf(session, NoScriptRunning)) {
+            syncRaised(desc_.story, state_);
             if (auto result = evolution_->fillVirusBar(*inputs, state_)) {
                 apply(session, *result);
             }
@@ -233,6 +241,7 @@ void EvolutionAdapter::routePartnerEvent(GameSession& session, const game::partn
         break;
     case EventKind::Slept:
         if (const auto inputs = inputsOf(session, NoScriptRunning)) {
+            syncRaised(desc_.story, state_);
             if (auto result = evolution_->wakeUp(*inputs, state_, session.random())) {
                 apply(session, *result);
             }
@@ -241,7 +250,7 @@ void EvolutionAdapter::routePartnerEvent(GameSession& session, const game::partn
     case EventKind::Reborn:
         // evolution.c: reincarnatePartner marks the new baby as raised.
         if (const auto species = evolution_->tables().find(session.partner().state().species)) {
-            state_.raised.insert(*species);
+            raise(*species);
         }
         break;
     default:
@@ -259,6 +268,7 @@ void EvolutionAdapter::afterPraiseOrScold(GameSession& session, const PraiseOrSc
     }
     const game::evolution::PraiseScold praised{
         .scolded = event.scolded, .disciplineBefore = event.disciplineBefore, .happinessBefore = event.happinessBefore};
+    syncRaised(desc_.story, state_);
     if (auto result = evolution_->praiseOrScold(*inputs, state_, praised, session.random())) {
         apply(session, *result);
     }
@@ -272,6 +282,7 @@ bool EvolutionAdapter::useItem(GameSession& session, std::string_view item) {
     if (!inputs) {
         return false;
     }
+    syncRaised(desc_.story, state_);
     auto result = evolution_->useItem(*inputs, state_, item);
     if (!result) {
         return false;
@@ -288,6 +299,7 @@ bool EvolutionAdapter::returnFromVirus(GameSession& session) {
     if (!inputs) {
         return false;
     }
+    syncRaised(desc_.story, state_);
     auto result = evolution_->returnFromVirus(*inputs, state_);
     if (!result) {
         return false;
@@ -309,6 +321,7 @@ core::Result<bool> EvolutionAdapter::evolveByScript(GameSession& session, std::s
     if (!inputs) {
         return false;
     }
+    syncRaised(desc_.story, state_);
     auto result = evolution_->evolveByScript(*inputs, state_, *target);
     if (!result) {
         return false;
@@ -416,8 +429,22 @@ void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result
                                 .stats = statBlockOf(result.virusBackup->stats)});
     }
     game::evolution::recordEvolution(state_, result);
+    raise(result.target);
     session.requestAutosave(game::save::AutosaveReason::Evolution);
     evolutions_.push_back(result);
+}
+
+void EvolutionAdapter::syncRaised(const StoryAdapter* story, game::evolution::EvolutionState& state) {
+    if (story != nullptr) {
+        state.raised = story->raisedSpecies();
+    }
+}
+
+void EvolutionAdapter::raise(game::evolution::Species species) {
+    state_.raised.insert(species);
+    if (desc_.story != nullptr) {
+        desc_.story->markRaised(species);
+    }
 }
 
 } // namespace dwe::session
