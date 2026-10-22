@@ -211,7 +211,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Reloj: un minuto cada 20 fotogramas, desde las 8:00 | Igual (sección `clock` del ruleset, `ruleset::GameClock`; la partida lo avanza solo en los ticks en que `Field::gameTimeRan`); `--time` lo pone a la hora de inicio de `clock` o a la del atardecer o la noche de `time_of_day` | |
 | Velocidad del reloj de las opciones | No | Fase 3 (opciones de juego) |
 | Fundido de la hora a escalones de 25 fotogramas, luces al final, parado fuera del campo; el menú de pausa del campo no lo para (`tickDaytimeTransition` solo espera a `GAME_STATE`, que el menú no cambia) | Igual (`render::timeOfDayFadeShown`; horas y luces en `time_of_day` de `field/rules.yaml`): con el menú abierto el reloj se para, pero un fundido ya empezado sigue | |
-| Sin clic | Clic para ir: camino A* por puntos cada media celda (centros, bordes y esquinas), en 8 direcciones, solo por pasos que el jugador anda con la colisión del original aunque vaya 20 unidades desviado, y sin pisar warps que no son el destino | Juego de PC ([ADR 0013](../adr/0013-juego-nativo-de-pc.md)); el seguidor nunca se queda en un borde |
+| Sin clic | Clic para ir: camino A* por puntos cada media celda (centros, bordes y esquinas), en 8 direcciones, solo por pasos que el jugador anda con la colisión del original aunque vaya 20 unidades desviado, y sin pisar warps que no son el destino | Juego de PC ([ADR 0013](../adr/0013-juego-nativo-de-pc.md)); el seguidor nunca se queda en un borde. Al empezar sobre las casillas de un warp (al llegar a un mapa sobre una), el camino puede salir por ellas: el warp de la casilla en la que está el jugador no salta hasta que vuelva a pisarla (`Field::keepsOff`), con o sin exploración libre (aceptado por el coordinador, 2026-10-22) |
 
 ## Datos
 
@@ -252,6 +252,13 @@ extractor, que añade los warps al hablar y las elecciones del transporte, 2026-
   que no tienen casilla 110–119, que son solo puntos de llegada. Con la regla de `checkMapInteraction` son 5. Hasta
   el 2026-10-22 eran 6, con `topn01`: el campo no ponía los disparadores de la apertura que se salta
   (`data/new_game_story`, `opening`), y dos casillas de `twna01` devolvían a ella.
+- **Cuándo se deciden las casillas otra vez:** al entrar en un mapa (también al cargar una partida, que entra en el
+  mapa guardado con la partida ya leída), al tomar un warp de script (por sus `sets_flags`) y, en el juego, en el
+  fotograma en que pasa algo que puede cambiar lo que leen sus condiciones: una orden del menú del compañero
+  (objetos, comida), dar o usar un objeto, una orden de cuidado (entrenar, dormir...), una evolución por script, un
+  evento del partner (condiciones, evolución) o el final de un combate (botín, dinero). No se comprueba cada
+  fotograma. Límite: un cambio que no pasa por ninguno de ellos (la consola de depuración tocando el dinero o la
+  bolsa, por ejemplo) se ve en el siguiente de esos sucesos o al cambiar de mapa.
 - **Aplicando `sets_flags`:** el test toma los warps que vainilla puede tomar y aplica sus `sets_flags` hasta el
   punto fijo; no se escribe ninguno y siguen siendo 5.
 - **Por qué tan pocos en vainilla:** la salida de `mayo00` hacia el resto del mundo (y la mayoría de las fases de

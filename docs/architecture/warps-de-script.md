@@ -298,8 +298,14 @@ resta el precio y sigue en la sección 0x4E3 de MAPHEAD, que enseña una ventana
 
 `dwx` escribe cada entrada como un cambio de mapa en el sitio de la llamada, con el destino de la tabla y como
 condición el disparador de la entrada, dinero al menos su precio y la elección del menú, más el registro
-`transport: {entry, cost, hand_off}` (hand_off 0x4E3). El motor no resta el precio: lo hará el menú del
-transporte cuando exista.
+`transport: {entry, cost, hand_off}` (hand_off 0x4E3). Ni el campo ni la exploración libre toman estos warps ni
+restan el precio (decidido por el coordinador, 2026-10-22): el flujo vainilla (el menú, la resta del precio del
+caso 5 y el traspaso a 0x4E3) es del paquete del menú del transporte, que tiene aquí sus datos. Queda para él,
+además:
+
+- el `selection` de la elección es el índice de la entrada en la tabla, no la fila del menú, que solo lista las
+  entradas cuyo disparador está puesto;
+- la confirmación sí/no del estado 4 del menú no está modelada.
 
 ### Exploración libre
 
@@ -311,7 +317,12 @@ mapas que el paquete tiene):
 - un solo sitio: se toma, y si no es el de vainilla se registra la puerta que abre;
 - varios: el campo se para y el selector `destination_choice` los enseña de 8 en 8, empezando por el de la historia;
   se elige con teclado, ratón o mando, en en/es; cancelar es quedarse;
-- los `sets_flags` del warp elegido se aplican también.
+- los `sets_flags` del warp elegido se aplican también (decidido por el coordinador, 2026-10-22); si se elige el
+  sitio de la historia, se toma el warp que tomaría el original, con sus `sets_flags`.
+
+**Con la exploración libre encendida, el orden de los sucesos de la historia puede no ser el de vainilla**: se
+llega a mapas antes de que la historia los abra y se ponen los disparadores de los warps tomados por el camino, así
+que una conversación o un suceso puede verse antes, después o nunca respecto al original.
 
 En el disco americano hay casillas con 1, 2, 3, 6, 12, 13 y 24 sitios (las de 24 son las fases de las ciudades).
 El grafo de la exploración libre, hecho con `explorationWarps`, llega a los mismos mapas que el grafo abierto de
