@@ -220,14 +220,14 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (16) sobre el contenido extraído, en `en` y en `es`: 32
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (17) sobre el contenido extraído, en `en` y en `es`: 34
   ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod` y
   `route-skins` con `--mods tests/mods/ui_skin`.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
   las dos comprobaciones.
 - [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
 
-En total, **36 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+En total, **38 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
 `autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
 añades una ruta, súmala aquí.
 
