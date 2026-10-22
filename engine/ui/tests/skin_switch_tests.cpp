@@ -340,6 +340,109 @@ TEST_CASE("without a skin the packs name, the UI starts with none and the docume
     CHECK(ui->styleProperty("test", "", "color") != own);
 }
 
+TEST_CASE("a default the packs do not offer gives way to the fallback ui/ui_skin.yaml names") {
+    Content content;
+    content.add("ui/ui_skin.yaml", "default: nowhere\nfallback: modern\n");
+    const assets::VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "en");
+    auto ui = createUi(files, texts);
+    CHECK(ui->skins().defaultSkin() == "modern");
+    CHECK(ui->skin() == "modern");
+}
+
+// A skin of the tests' pack that marks elements of the shared HUD document, one of them an id the HUD lacks.
+constexpr std::string_view ClassySkin = "id: classy\nname: ui_skin.classy\nextends: modern\n"
+                                        "document_classes:\n"
+                                        "  hud:\n"
+                                        "    field-meter-0-bar: [pips, wide]\n"
+                                        "    field-pool-1-bar: [pips]\n"
+                                        "    no-such-element: [pips]\n";
+
+TEST_CASE("a skin's document classes go on when a document loads and come off on a switch") {
+    Content content;
+    content.add("ui/skins/classy/skin.yaml", ClassySkin);
+    const assets::VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "en");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->setSkin("classy"));
+    const WarningCapture warnings;
+    loadScreens(*ui);
+    CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+    CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "wide"));
+    CHECK(ui->elementHasClass("hud", "field-pool-1-bar", "pips"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-1-bar", "pips"));
+    CHECK(warnings.has("#no-such-element"));
+
+    REQUIRE(ui->setSkin("modern"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-meter-0-bar", "wide"));
+    CHECK_FALSE(ui->elementHasClass("hud", "field-pool-1-bar", "pips"));
+    // A class of the document's own stays: only the classes a skin names come off.
+    CHECK(ui->elementHasClass("hud", "minimap", "size-medium"));
+
+    REQUIRE(ui->setSkin("classy"));
+    CHECK(ui->elementHasClass("hud", "field-meter-0-bar", "pips"));
+}
+
+// Happiness 30 of -100 to 100 in two tones: the upper tone fills 30 % of its half, or 28 % in whole pips of 4 %.
+void setHappiness(Ui& ui) {
+    ui.setSetting("hud.meter.0.value", 30.0);
+    ui.setSetting("hud.meter.0.min", -100.0);
+    ui.setSetting("hud.meter.0.max", 100.0);
+    ui.setSetting("hud.meter.0.two_tone", true);
+}
+
+TEST_CASE("a skin's classes are on before the HUD first draws and before it redraws on the switch's ui_skin") {
+    SUBCASE("a document loaded under the skin draws with them when it shows") {
+        Content content;
+        content.add("ui/skins/classy/skin.yaml", ClassySkin);
+        const assets::VirtualFileSystem& files = content.mount();
+        const localization::Catalog texts = catalogIn(files, "en");
+        auto ui = createUi(files, texts);
+        REQUIRE(ui->setSkin("classy"));
+        loadScreens(*ui);
+        setHappiness(*ui);
+        ui->show("hud");
+        ui->update();
+        CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "28%");
+    }
+    SUBCASE("a live switch has them on when the game publishes ui_skin, which redraws the HUD") {
+        Content content;
+        content.add("ui/skins/classy/skin.yaml", ClassySkin);
+        const assets::VirtualFileSystem& files = content.mount();
+        const localization::Catalog texts = catalogIn(files, "en");
+        auto ui = createUi(files, texts);
+        loadScreens(*ui);
+        setHappiness(*ui);
+        ui->show("hud");
+        ui->update();
+        CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "30%");
+        // What the game does on a change of skin (apps/game UiSkinChanger): switch, then publish the setting.
+        REQUIRE(ui->setSkin("classy"));
+        ui->setSetting(std::string{UiSkinSetting}, std::string{"classy"});
+        ui->update();
+        CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "28%");
+        REQUIRE(ui->setSkin("modern"));
+        ui->setSetting(std::string{UiSkinSetting}, std::string{"modern"});
+        ui->update();
+        CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "30%");
+    }
+}
+
+TEST_CASE("a skin's classes for a document the game does not load are a warning") {
+    Content content;
+    content.add("ui/skins/classy/skin.yaml", "id: classy\nname: ui_skin.classy\nextends: modern\n"
+                                             "document_classes:\n  huds:\n    field-status: [pips]\n");
+    const assets::VirtualFileSystem& files = content.mount();
+    const localization::Catalog texts = catalogIn(files, "en");
+    auto ui = createUi(files, texts);
+    loadScreens(*ui);
+    REQUIRE(ui->setSkin("classy"));
+    const WarningCapture warnings;
+    CHECK(ui->checkSkinDocuments() == std::vector<std::string>{"huds"});
+    CHECK(warnings.has("document huds"));
+}
+
 TEST_CASE("the menus' skin entry sends the next skin the packs offer and shows the one the game reports") {
     Content content;
     const assets::VirtualFileSystem& files = content.mount();

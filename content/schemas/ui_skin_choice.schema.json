@@ -6,6 +6,7 @@
   "required": ["default"],
   "additionalProperties": false,
   "properties": {
-    "default": { "description": "The id of a skin under ui/skins/.", "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
+    "default": { "description": "The id of a skin under ui/skins/.", "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+    "fallback": { "description": "The skin the game starts with when the default is not offered, such as the original look without the images extracted from the disc.", "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
   }
 }

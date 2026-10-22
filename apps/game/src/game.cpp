@@ -230,6 +230,8 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
             return loaded;
         }
     }
+    // Warns about a skin's classes for a document the game does not load.
+    static_cast<void>(ui.checkSkinDocuments());
     return {};
 }
 

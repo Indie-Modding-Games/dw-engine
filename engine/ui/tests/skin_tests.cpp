@@ -90,10 +90,29 @@ TEST_CASE("a skin.yaml with a misspelt key, a bad name or a bad sprite is refuse
             .contains("dp_per_pixel"));
 }
 
+TEST_CASE("a skin.yaml marks elements of shared documents with document_classes") {
+    const auto skin =
+        parseSkin("id: p\nname: x\ndocument_classes:\n  hud:\n    field-meter-0-bar: [pips, pips, wide]\n");
+    REQUIRE_MESSAGE(skin.has_value(), skin.error().message);
+    REQUIRE(skin->documentClasses.contains("hud"));
+    CHECK(skin->documentClasses.at("hud").at("field-meter-0-bar") == std::vector<std::string>{"pips", "wide"});
+    CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes:\n  Hud:\n    a: [b]\n").has_value());
+    CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes:\n  hud:\n    a b: [c]\n").has_value());
+    CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes:\n  hud:\n    a: []\n").has_value());
+    CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes:\n  hud:\n    a: [1b]\n").has_value());
+    CHECK_FALSE(parseSkin("id: p\nname: x\ndocument_classes: [hud]\n").has_value());
+}
+
 TEST_CASE("ui/ui_skin.yaml names the skin the game starts with") {
     const auto choice = parseSkinChoice("default: modern\n");
     REQUIRE(choice.has_value());
-    CHECK(*choice == "modern");
+    CHECK(choice->preferred == "modern");
+    CHECK_FALSE(choice->fallback.has_value());
+    const auto withFallback = parseSkinChoice("default: original\nfallback: modern\n");
+    REQUIRE(withFallback.has_value());
+    CHECK(withFallback->preferred == "original");
+    CHECK(withFallback->fallback == "modern");
+    CHECK_FALSE(parseSkinChoice("default: modern\nfallback: Modern\n").has_value());
     CHECK_FALSE(parseSkinChoice("default: modern\nother: 1\n").has_value());
     CHECK_FALSE(parseSkinChoice("default: Modern\n").has_value());
 }

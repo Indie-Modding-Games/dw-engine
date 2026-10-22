@@ -513,7 +513,20 @@ struct Ui::Impl {
             swapIn(name, std::move(document));
         }
         core::logInfo("{}", core::formatMessage(messages::SkinChanged, id));
+        // Before the game loads its documents (the skin set at start) there is nothing to check yet.
+        if (!documents.empty()) {
+            static_cast<void>(checkSkinDocuments());
+        }
         return {};
+    }
+
+    [[nodiscard]] std::vector<std::string> checkSkinDocuments() const {
+        std::vector<std::string> loaded;
+        loaded.reserve(documents.size());
+        for (const auto& [name, document] : documents) {
+            loaded.push_back(name);
+        }
+        return styler.unknownClassedDocuments(loaded);
     }
 
     static std::string_view skinIdOf(const Skin* skin) { return skin != nullptr ? skin->id : std::string_view{}; }
@@ -1018,6 +1031,10 @@ const SkinCatalog& Ui::skins() const {
 
 core::Result<void> Ui::setSkin(std::string_view id) {
     return impl_->setSkin(id);
+}
+
+std::vector<std::string> Ui::checkSkinDocuments() const {
+    return impl_->checkSkinDocuments();
 }
 
 std::string_view Ui::skin() const {

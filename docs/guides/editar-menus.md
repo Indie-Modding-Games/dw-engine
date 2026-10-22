@@ -24,7 +24,10 @@ content/packs/game/ui/
 Cada documento va en su carpeta porque los ficheros se leen por asset id, que es la ruta sin extensión:
 `menu.rml` y `menu.rcss` en la misma carpeta chocarían. Un mod puede sustituir cualquiera de estos ficheros con uno
 del mismo id en su paquete, o añadir un aspecto entero con su `ui/skins/<id>/skin.yaml` (ver
-[Aspectos](../architecture/ui.md#aspectos)). El estilo va en el aspecto, no en el documento: un documento solo
+[Aspectos](../architecture/ui.md#aspectos)). Un aspecto que necesita marcar elementos de un documento compartido (por
+ejemplo, que las barras del HUD se llenen a cuadritos con la clase `pips`) no copia el documento: lo dice en
+`document_classes` de su `skin.yaml`, por documento e id de elemento, y el juego pone y quita esas clases al
+cambiar de aspecto. El estilo va en el aspecto, no en el documento: un documento solo
 enlaza `../common/base.rcss` y, si la pantalla tiene un comportamiento propio que no cambia con el aspecto (por
 ejemplo, que una lista dé la vuelta), su `structure.rcss`.
 

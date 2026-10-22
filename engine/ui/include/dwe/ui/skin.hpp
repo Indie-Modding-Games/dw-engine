@@ -61,6 +61,10 @@ struct SkinScreen {
     std::optional<assets::AssetId> document;
 };
 
+// The classes a skin puts on elements of one document: element id → classes, so a skin marks elements of a document
+// every skin shares (such as the bars that fill in steps) without its own copy of the document.
+using SkinElementClasses = std::map<std::string, std::vector<std::string>, std::less<>>;
+
 // A skin: the look of every screen of the UI, as ui/skins/<id>/skin.yaml describes it. A skin only changes the look:
 // the documents keep their element ids, their scripts and what they send and read (docs/architecture/ui.md#aspectos).
 struct Skin {
@@ -73,12 +77,22 @@ struct Skin {
     std::vector<assets::AssetId> theme;
     std::map<std::string, SkinScreen, std::less<>> screens;
     std::vector<SkinSpriteSheet> spriteSheets;
+    // The classes it puts on elements, by the name of the document (document_classes). The documents' scripts must not
+    // toggle these classes themselves: a switch takes them off every element a skin of the catalog names.
+    std::map<std::string, SkinElementClasses, std::less<>> documentClasses;
 };
 
 // Reads a skin.yaml. Checks its shape, not that the assets it names exist (SkinCatalog does).
 core::Result<Skin> parseSkin(std::string_view yaml);
 
-// Reads ui/ui_skin.yaml: the id of the skin the game starts with.
-core::Result<std::string> parseSkinChoice(std::string_view yaml);
+// What ui/ui_skin.yaml names: the skin the game starts with, and the one it starts with instead when that one is not
+// offered (the original look's skin needs images extracted from the disc).
+struct SkinChoice {
+    std::string preferred;
+    std::optional<std::string> fallback;
+};
+
+// Reads ui/ui_skin.yaml.
+core::Result<SkinChoice> parseSkinChoice(std::string_view yaml);
 
 } // namespace dwe::ui

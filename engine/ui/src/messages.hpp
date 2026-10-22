@@ -62,6 +62,15 @@ inline constexpr std::string_view SpriteSheetsWhat = "sprite_sheets";
 inline constexpr std::string_view SpriteSheetWhat = "a sprite sheet";
 inline constexpr std::string_view SpriteRectangleWhat = "a sprite: [x, y, width, height]";
 inline constexpr std::string_view OriginalSizeWhat = "original_size: [width, height]";
+inline constexpr std::string_view DocumentClassesNotMapping =
+    "must map each name to its entries (document_classes: <document>: <element id>: [classes])";
+inline constexpr std::string_view BadElementId = "must be 1 to 64 letters, digits, underscores and hyphens";
+inline constexpr std::string_view ElementClassesWhat = "the classes of an element";
+inline constexpr std::string_view NoElementClasses = "must name at least one class";
+inline constexpr std::string_view SkinClassesUnknownElement =
+    "ui: the skin {} puts classes on #{} of the document {}, which has no such element";
+inline constexpr std::string_view SkinClassesUnknownDocument =
+    "ui: the skin {} puts classes on elements of the document {}, which the game does not load";
 inline constexpr std::string_view BadSkinName = "must be 1 to 64 lowercase letters, digits and underscores";
 inline constexpr std::string_view BadStyleName =
     "must be 1 to 64 lowercase letters, digits, underscores and hyphens, starting with a letter";
@@ -79,6 +88,8 @@ inline constexpr std::string_view SkinBaseMissing = "it extends '{}', which is n
 inline constexpr std::string_view SkinExtendsLoop = "it extends '{}', which comes back to it through extends";
 inline constexpr std::string_view NoSkinChoice = "ui: no {} in the packs; the UI starts without a skin";
 inline constexpr std::string_view BadSkinChoice = "ui: {} cannot be read: {}; the UI starts without a skin";
+inline constexpr std::string_view DefaultSkinFallback =
+    "ui: the packs start with the skin {}, which is not offered; the UI starts with its fallback, {}";
 inline constexpr std::string_view DefaultSkinNotOffered = "ui: the packs start with the skin {}, which is not offered";
 
 // Sprite sheets of a skin (sprite_sheet_rcss.cpp, skin_styler.cpp).

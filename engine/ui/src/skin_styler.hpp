@@ -7,6 +7,7 @@
 #include <RmlUi/Core/StyleSheetContainer.h>
 
 #include <map>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -33,6 +34,10 @@ public:
     std::vector<std::string> style(Rml::ElementDocument& document, std::string_view screen,
                                    const Rml::StyleSheetContainer& own);
 
+    // Of the documents the current skin puts classes on (document_classes), those not among `loaded`, each logged as
+    // a warning: a name the game never loads is likely a typo.
+    [[nodiscard]] std::vector<std::string> unknownClassedDocuments(std::span<const std::string> loaded) const;
+
     // Forgets the sheets built so far, so the next style() reads the files again (hot reload).
     void forget();
 
@@ -43,6 +48,9 @@ private:
     };
 
     const ScreenSheet& sheetOf(std::string_view screen);
+    // Takes off the document's elements every class a skin of the catalog puts on them, then puts on the current
+    // skin's, warning about the ids the document lacks.
+    void applyClasses(Rml::ElementDocument& document, std::string_view screen) const;
     // The skin's sprite sheets as one style sheet, or nullptr for none.
     [[nodiscard]] Rml::SharedPtr<Rml::StyleSheetContainer> buildSpriteSheets() const;
 

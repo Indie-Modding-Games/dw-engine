@@ -160,6 +160,9 @@ public:
     core::Result<void> setSkin(std::string_view id);
     // The skin shown; empty when the packs offer none.
     [[nodiscard]] std::string_view skin() const;
+    // The documents the skin shown puts classes on (document_classes) that are not loaded, each logged as a warning.
+    // The game calls it once its documents are loaded; a switch checks again, unless no document is loaded yet.
+    [[nodiscard]] std::vector<std::string> checkSkinDocuments() const;
 
     // Replaces the minimap with a new map's: its walkable area and the key of its name (localization::mapNameKey; empty
     // for none), shown in the hud:: elements.

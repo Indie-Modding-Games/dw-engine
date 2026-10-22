@@ -31,7 +31,8 @@ public:
     [[nodiscard]] const std::vector<Skin>& skins() const { return skins_; }
     [[nodiscard]] const Skin* find(std::string_view id) const;
 
-    // The skin the packs start with (ui/ui_skin.yaml), or an empty id when they name none that is offered.
+    // The skin the packs start with (ui/ui_skin.yaml): its default, or its fallback when the default is not offered,
+    // or an empty id when neither is.
     [[nodiscard]] const std::string& defaultSkin() const { return defaultSkin_; }
 
     // The look a skin gives a screen.
@@ -42,7 +43,20 @@ public:
     // it (RmlUi would keep the first one it reads).
     [[nodiscard]] std::vector<SkinSpriteSheet> spriteSheetsOf(const Skin& skin) const;
 
+    // The classes a skin puts on the elements of a document, with those of the skins it extends: every class any skin
+    // of the chain names, the base skin's first.
+    [[nodiscard]] SkinElementClasses classesOf(const Skin& skin, std::string_view document) const;
+
+    // Every class any skin offered puts on the elements of a document: what a switch takes off before the new skin's
+    // go on.
+    [[nodiscard]] SkinElementClasses declaredClassesOf(std::string_view document) const;
+
+    // The documents a skin or a skin it extends puts classes on.
+    [[nodiscard]] std::vector<std::string> classedDocumentsOf(const Skin& skin) const;
+
 private:
+    // The skin a choice starts with among those offered (see defaultSkin).
+    [[nodiscard]] std::string startingSkin(const std::optional<SkinChoice>& choice) const;
     // The skin and those it extends, the base skin first; an error when one is missing or the chain loops.
     [[nodiscard]] core::Result<std::vector<const Skin*>> chainOf(const Skin& skin) const;
 

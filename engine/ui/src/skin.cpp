@@ -146,6 +146,51 @@ std::optional<SkinSpriteSheet> readSpriteSheet(assets::YamlReader& reader, const
     return sheet;
 }
 
+// An element id of a document: what RML accepts in id="..." and the scripts look up.
+bool isElementId(std::string_view id) {
+    return !id.empty() && id.size() <= MaxNameLength && std::ranges::all_of(id, [](char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
+    });
+}
+
+SkinElementClasses readElementClasses(assets::YamlReader& reader, const core::YamlNode& node) {
+    SkinElementClasses classes;
+    if (!node.isMapping()) {
+        reader.fail(node, messages::DocumentClassesNotMapping);
+        return classes;
+    }
+    for (const core::YamlEntry& entry : node.entries()) {
+        if (!isElementId(entry.key)) {
+            reader.fail(entry.value, messages::BadElementId);
+        }
+        std::vector<std::string>& names = classes[entry.key];
+        const std::span<const core::YamlNode> items = reader.sequence(entry.value, messages::ElementClassesWhat);
+        if (reader.ok() && items.empty()) {
+            reader.fail(entry.value, messages::NoElementClasses);
+        }
+        for (const core::YamlNode& item : items) {
+            std::string name = styleName(reader, item);
+            if (!std::ranges::contains(names, name)) {
+                names.push_back(std::move(name));
+            }
+        }
+    }
+    return classes;
+}
+
+void readDocumentClasses(assets::YamlReader& reader, const core::YamlNode& node, Skin& skin) {
+    if (!node.isMapping()) {
+        reader.fail(node, messages::DocumentClassesNotMapping);
+        return;
+    }
+    for (const core::YamlEntry& entry : node.entries()) {
+        if (!isPlainName(entry.key)) {
+            reader.fail(entry.value, messages::BadSkinName);
+        }
+        skin.documentClasses.insert_or_assign(entry.key, readElementClasses(reader, entry.value));
+    }
+}
+
 void readScreens(assets::YamlReader& reader, const core::YamlNode& node, Skin& skin) {
     if (!node.isMapping()) {
         reader.fail(node, messages::ScreensNotMapping);
@@ -168,7 +213,8 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
     }
     assets::YamlReader reader;
     Skin skin;
-    reader.expectKeys(*tree, messages::SkinWhat, {"id", "name"}, {"extends", "theme", "screens", "sprite_sheets"});
+    reader.expectKeys(*tree, messages::SkinWhat, {"id", "name"},
+                      {"extends", "theme", "screens", "sprite_sheets", "document_classes"});
     skin.id = plainName(reader, reader.field(*tree, "id"));
     skin.nameKey = reader.text(reader.field(*tree, "name"));
     if (const core::YamlNode* extends = tree->find("extends")) {
@@ -187,17 +233,23 @@ core::Result<Skin> parseSkin(std::string_view yaml) {
             }
         }
     }
+    if (const core::YamlNode* classes = tree->find("document_classes")) {
+        readDocumentClasses(reader, *classes, skin);
+    }
     return reader.finish(std::move(skin), messages::SkinContext);
 }
 
-core::Result<std::string> parseSkinChoice(std::string_view yaml) {
+core::Result<SkinChoice> parseSkinChoice(std::string_view yaml) {
     auto tree = core::parseYaml(yaml);
     if (!tree) {
         return std::unexpected{tree.error()};
     }
     assets::YamlReader reader;
-    reader.expectKeys(*tree, messages::SkinChoiceContext, {"default"});
-    std::string choice = plainName(reader, reader.field(*tree, "default"));
+    reader.expectKeys(*tree, messages::SkinChoiceContext, {"default"}, {"fallback"});
+    SkinChoice choice{.preferred = plainName(reader, reader.field(*tree, "default")), .fallback = std::nullopt};
+    if (const core::YamlNode* fallback = tree->find("fallback")) {
+        choice.fallback = plainName(reader, *fallback);
+    }
     return reader.finish(std::move(choice), messages::SkinChoiceContext);
 }
 

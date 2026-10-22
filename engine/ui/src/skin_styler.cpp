@@ -6,8 +6,11 @@
 #include <dwe/ui/image_reference.hpp>
 #include <dwe/ui/sprite_sheet_rcss.hpp>
 
+#include <RmlUi/Core/Element.h>
+#include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Factory.h>
 
+#include <algorithm>
 #include <utility>
 
 #include "messages.hpp"
@@ -44,7 +47,45 @@ std::vector<std::string> SkinStyler::style(Rml::ElementDocument& document, std::
                                            const Rml::StyleSheetContainer& own) {
     const ScreenSheet& look = sheetOf(screen);
     document.SetStyleSheetContainer(own.CombineStyleSheetContainer(*look.sheet));
+    applyClasses(document, screen);
     return look.paths;
+}
+
+void SkinStyler::applyClasses(Rml::ElementDocument& document, std::string_view screen) const {
+    for (const auto& [id, classes] : catalog_->declaredClassesOf(screen)) {
+        if (Rml::Element* element = document.GetElementById(id)) {
+            for (const std::string& name : classes) {
+                element->SetClass(name, false);
+            }
+        }
+    }
+    if (skin_ == nullptr) {
+        return;
+    }
+    for (const auto& [id, classes] : catalog_->classesOf(*skin_, screen)) {
+        Rml::Element* element = document.GetElementById(id);
+        if (element == nullptr) {
+            core::logWarning("{}", core::formatMessage(messages::SkinClassesUnknownElement, skin_->id, id, screen));
+            continue;
+        }
+        for (const std::string& name : classes) {
+            element->SetClass(name, true);
+        }
+    }
+}
+
+std::vector<std::string> SkinStyler::unknownClassedDocuments(std::span<const std::string> loaded) const {
+    std::vector<std::string> unknown;
+    if (skin_ == nullptr) {
+        return unknown;
+    }
+    for (std::string& document : catalog_->classedDocumentsOf(*skin_)) {
+        if (!std::ranges::contains(loaded, document)) {
+            core::logWarning("{}", core::formatMessage(messages::SkinClassesUnknownDocument, skin_->id, document));
+            unknown.push_back(std::move(document));
+        }
+    }
+    return unknown;
 }
 
 const SkinStyler::ScreenSheet& SkinStyler::sheetOf(std::string_view screen) {

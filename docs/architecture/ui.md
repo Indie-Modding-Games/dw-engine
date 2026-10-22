@@ -353,11 +353,14 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
     dp_per_pixel: 3                 # opcional: cuántos dp ocupa un píxel del original (1 por defecto)
     sprites:
       corner: [0, 0, 8, 8]          # x, y, ancho, alto en píxeles del original
+document_classes:                   # opcional: clases que pone en elementos de los documentos compartidos
+  hud:                              # el nombre con el que se carga el documento
+    field-meter-0-bar: [pips]       # id del elemento: sus clases
 ```
 
 | Pieza | Qué hace |
 |---|---|
-| `parseSkin`, `parseSkinChoice` (`skin.hpp`) | Leen `skin.yaml` y `ui/ui_skin.yaml` (`default: modern`, esquema `ui_skin_choice`): el aspecto con el que arranca el juego es dato del paquete |
+| `parseSkin`, `parseSkinChoice` (`skin.hpp`) | Leen `skin.yaml` y `ui/ui_skin.yaml` (`default` y, opcional, `fallback`; esquema `ui_skin_choice`): el aspecto con el que arranca el juego es dato del paquete |
 | `SkinCatalog` (`skin_catalog.hpp`) | Los aspectos de todos los paquetes montados, por id. Uno cuyo id no es su carpeta, que nombra un asset que falta o que extiende uno que no está (o en bucle) se queda fuera con un aviso en el log |
 | `SkinStyler` (`src/skin_styler.*`) | La hoja de cada pantalla con el aspecto actual: sus hojas de sprites y las de `theme` y `screens.<pantalla>.styles` de cada aspecto de la cadena, el aspecto base primero, encima de las hojas propias del documento |
 | `spriteSheetRcss` (`sprite_sheet_rcss.hpp`) | Escribe el `@spritesheet` de RCSS de una hoja de sprites. Si la imagen es un múltiplo entero de `original_size` (una copia escalada del remaster), multiplica los rectángulos y ajusta `resolution`, así que los sprites ocupan los mismos dp. Del archivo de la imagen solo lee la cabecera, para su tamaño (`imageSize`) |
@@ -366,6 +369,21 @@ sprite_sheets:                      # opcional: hojas de sprites para RCSS
   su estado, el foco y lo que está visible siguen igual. Solo un documento cuyo RML cambia (`document`) se carga de
   nuevo, y se muestra donde estaba. `Ui::skins()` da el catálogo, `Ui::skin()` el aspecto actual. Desde Lua,
   `ui.skins()` da los ids y `ui.skin_name_key(id)` la clave de su nombre.
+- **Clases de documento (`document_classes`).** Un aspecto puede marcar elementos de un documento que comparten
+  todos los aspectos sin copiarlo: por documento (el nombre con el que se carga) y por id de elemento, una lista de
+  clases. El `SkinStyler` las pone al cargar el documento y, en un cambio de aspecto, quita de sus elementos todas
+  las clases que nombra cualquier aspecto del catálogo y pone las del nuevo; con `extends` se suman las de la cadena.
+  Los scripts las leen (`has_class`) pero no deben ponerlas ni quitarlas ellos: el cambio de aspecto las quitaría.
+  Un id que el documento no tiene es un aviso en el log al darle el aspecto, y un documento que el juego no carga
+  también (`Ui::checkSkinDocuments`, que el juego llama al cargar sus documentos y que repite cada cambio). El
+  aspecto original lo usa para poner `pips` en las cuatro barras del estado del campo. Cambio de contrato aditivo:
+  los `skin.yaml` de antes siguen valiendo (Decidido por el manager (2026-10-21): un mecanismo genérico en vez de
+  copiar el documento del HUD o de un ajuste propio del aspecto original).
+- **El aspecto de reserva (`fallback`).** `ui/ui_skin.yaml` puede nombrar, además de `default`, un `fallback`: el
+  aspecto con el que arranca el juego si el de `default` no se ofrece. El original necesita imágenes que extrae
+  `dwx extract` del disco del usuario; sin ellas se queda fuera del catálogo y el juego arranca con el moderno. Un
+  `default` que no está, sin `fallback` que esté, deja la UI sin aspecto, con un aviso, como antes. Cambio de
+  contrato aditivo (Decidido por el manager (2026-10-21)).
 - **Herencia:** con `extends`, las hojas del aspecto base van primero y las del nuevo después, así que un aspecto
   pequeño solo escribe lo que cambia. Si varios nombran `document` para una pantalla, gana el más cercano. Con las
   hojas de sprites también gana el más cercano: una hoja con el nombre de una del aspecto base la reemplaza, y si

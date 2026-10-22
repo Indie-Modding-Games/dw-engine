@@ -29,6 +29,16 @@
         }
       }
     },
+    "document_classes": {
+      "description": "Classes the skin puts on elements of the documents every skin shares, by the name the game loads the document under, then by element id; a switch takes them off again. The documents' scripts read them (for example pips on the field HUD's bars) and must not toggle them. An id the document lacks, or a document the game does not load, is a warning.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9_]{1,64}$" },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+        "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/styleName" }, "minItems": 1 }
+      }
+    },
     "sprite_sheets": {
       "description": "Sprite sheets the style sheets use (RCSS @spritesheet), measured in the pixels of the original image.",
       "type": "array",

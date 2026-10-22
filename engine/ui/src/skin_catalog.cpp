@@ -133,21 +133,21 @@ core::Result<Skin> readSkin(const assets::VirtualFileSystem& files, const assets
     return skin;
 }
 
-std::string readDefaultSkin(const assets::VirtualFileSystem& files) {
+std::optional<SkinChoice> readSkinChoice(const assets::VirtualFileSystem& files) {
     auto id = assets::AssetId::parse(SkinChoiceAsset);
     if (!id || files.resolve(*id) == nullptr) {
         core::logWarning("{}", core::formatMessage(messages::NoSkinChoice, SkinChoiceAsset));
-        return {};
+        return std::nullopt;
     }
     auto bytes = files.read(*id);
     if (!bytes) {
         core::logWarning("{}", core::formatMessage(messages::BadSkinChoice, SkinChoiceAsset, bytes.error().message));
-        return {};
+        return std::nullopt;
     }
     auto choice = parseSkinChoice(textOf(*bytes));
     if (!choice) {
         core::logWarning("{}", core::formatMessage(messages::BadSkinChoice, SkinChoiceAsset, choice.error().message));
-        return {};
+        return std::nullopt;
     }
     return std::move(*choice);
 }
@@ -184,12 +184,23 @@ SkinCatalog SkinCatalog::load(const assets::VirtualFileSystem& files) {
     }
     std::erase_if(catalog.skins_, [&](const Skin& skin) { return std::ranges::find(broken, skin.id) != broken.end(); });
 
-    catalog.defaultSkin_ = readDefaultSkin(files);
-    if (!catalog.defaultSkin_.empty() && catalog.find(catalog.defaultSkin_) == nullptr) {
-        core::logWarning("{}", core::formatMessage(messages::DefaultSkinNotOffered, catalog.defaultSkin_));
-        catalog.defaultSkin_.clear();
-    }
+    catalog.defaultSkin_ = catalog.startingSkin(readSkinChoice(files));
     return catalog;
+}
+
+std::string SkinCatalog::startingSkin(const std::optional<SkinChoice>& choice) const {
+    if (!choice) {
+        return {};
+    }
+    if (find(choice->preferred) != nullptr) {
+        return choice->preferred;
+    }
+    if (choice->fallback && find(*choice->fallback) != nullptr) {
+        core::logInfo("{}", core::formatMessage(messages::DefaultSkinFallback, choice->preferred, *choice->fallback));
+        return *choice->fallback;
+    }
+    core::logWarning("{}", core::formatMessage(messages::DefaultSkinNotOffered, choice->preferred));
+    return {};
 }
 
 const Skin* SkinCatalog::find(std::string_view id) const {
@@ -231,6 +242,54 @@ SkinLook SkinCatalog::lookOf(const Skin& skin, std::string_view screen) const {
         }
     }
     return look;
+}
+
+namespace {
+
+// Adds the classes of one skin's document to `into`, keeping each class once per element.
+void mergeClasses(const Skin& skin, std::string_view document, SkinElementClasses& into) {
+    const auto found = skin.documentClasses.find(document);
+    if (found == skin.documentClasses.end()) {
+        return;
+    }
+    for (const auto& [element, classes] : found->second) {
+        std::vector<std::string>& names = into[element];
+        for (const std::string& name : classes) {
+            if (!std::ranges::contains(names, name)) {
+                names.push_back(name);
+            }
+        }
+    }
+}
+
+} // namespace
+
+SkinElementClasses SkinCatalog::classesOf(const Skin& skin, std::string_view document) const {
+    SkinElementClasses classes;
+    for (const Skin* layer : chainOf(skin).value_or(std::vector<const Skin*>{})) {
+        mergeClasses(*layer, document, classes);
+    }
+    return classes;
+}
+
+SkinElementClasses SkinCatalog::declaredClassesOf(std::string_view document) const {
+    SkinElementClasses classes;
+    for (const Skin& skin : skins_) {
+        mergeClasses(skin, document, classes);
+    }
+    return classes;
+}
+
+std::vector<std::string> SkinCatalog::classedDocumentsOf(const Skin& skin) const {
+    std::vector<std::string> documents;
+    for (const Skin* layer : chainOf(skin).value_or(std::vector<const Skin*>{})) {
+        for (const auto& [document, classes] : layer->documentClasses) {
+            if (!std::ranges::contains(documents, document)) {
+                documents.push_back(document);
+            }
+        }
+    }
+    return documents;
 }
 
 std::vector<SkinSpriteSheet> SkinCatalog::spriteSheetsOf(const Skin& skin) const {
