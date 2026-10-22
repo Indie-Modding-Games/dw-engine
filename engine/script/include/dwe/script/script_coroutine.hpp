@@ -10,8 +10,8 @@
 #include <string>
 #include <variant>
 
-struct
-    lua_State; // NOLINT(readability-identifier-naming): a third-party type, named by its library.
+// NOLINTNEXTLINE(readability-identifier-naming): a third-party type, named by its library.
+struct lua_State;
 
 namespace dwe::script {
 
@@ -22,8 +22,9 @@ struct VmState;
 struct CoroutineWaiting {
   ApiValue value;
   // Lua functions between the coroutine's own function and the caller of the waiting function: 0
-  // when the coroutine's function called it. A story jump from inside a linked routine needs it to
-  // keep its caller waiting.
+  // when the coroutine's function called it. Tail calls, metamethods and for iterators add nothing.
+  // The story host takes it as the link depth of a jump to another script, whose caller then waits
+  // under it.
   std::uint32_t callDepth = 0;
 };
 
@@ -83,7 +84,7 @@ public:
   [[nodiscard]] bool finished() const { return thread_ == nullptr; }
 
 private:
-  void close();
+  void close(lua_State* from);
 
   detail::VmState* vm_;
   std::size_t mod_;

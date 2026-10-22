@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "api_functions.hpp"
+#include "budgeted_coroutines.hpp"
 #include "lua_errors.hpp"
 #include "messages.hpp"
 #include "vm_state.hpp"
@@ -70,6 +71,7 @@ int startCoroutine(lua_State* state) {
     return 0;
   }
   lua_State* thread = lua_newthread(state);
+  detail::markEngineThread(state, -1);
   lua_insert(state, -2);
   lua_xmove(state, thread, 1);
   start->reference = luaL_ref(state, LUA_REGISTRYINDEX);
@@ -106,11 +108,23 @@ std::uint32_t luaCallDepth(lua_State* thread) {
   lua_Debug debug{};
   std::uint32_t frames = 0;
   for (int level = 0; lua_getstack(thread, level, &debug) != 0; ++level) {
-    if (lua_getinfo(thread, "S", &debug) != 0 && std::string_view{debug.what} == "Lua") {
+    if (lua_getinfo(thread, "Sn", &debug) == 0 || std::string_view{debug.what} != "Lua") {
+      continue;
+    }
+    // A metamethod or a for iterator is not a call the script wrote, so it is no deeper for the
+    // story.
+    const std::string_view how = debug.namewhat != nullptr ? debug.namewhat : "";
+    if (how != "metamethod" && how != "for iterator") {
       ++frames;
     }
   }
   return frames > 0 ? frames - 1 : 0;
+}
+
+// lua_resume and lua_closethread count C calls from the thread that runs now, which in a nested
+// call may be a coroutine.
+lua_State* runningThread(detail::VmState& vm) {
+  return vm.callDepth > 0 ? vm.budget.running : vm.state();
 }
 
 } // namespace
@@ -168,8 +182,9 @@ ScriptCoroutine::ScriptCoroutine(ScriptCoroutine&& other) noexcept
 ScriptCoroutine& ScriptCoroutine::operator=(ScriptCoroutine&& other) noexcept {
   if (this != &other) {
     if (thread_ != nullptr) {
+      lua_State* const from = runningThread(*vm_);
       const detail::CallScope scope{*vm_, vm_->mods[mod_].memoryOwner, vm_->resumeBudget};
-      close();
+      close(from);
     }
     vm_ = other.vm_;
     mod_ = other.mod_;
@@ -182,12 +197,13 @@ ScriptCoroutine& ScriptCoroutine::operator=(ScriptCoroutine&& other) noexcept {
 
 ScriptCoroutine::~ScriptCoroutine() {
   if (thread_ != nullptr) {
+    lua_State* const from = runningThread(*vm_);
     const detail::CallScope scope{*vm_, vm_->mods[mod_].memoryOwner, vm_->resumeBudget};
-    close();
+    close(from);
   }
 }
 
-void ScriptCoroutine::close() {
+void ScriptCoroutine::close(lua_State* from) {
   detail::Budget& budget = vm_->budget;
   // A coroutine can only be closed while it is suspended, never from inside its own run.
   DWE_ASSERT(budget.running != thread_);
@@ -195,7 +211,7 @@ void ScriptCoroutine::close() {
   budget.arm(thread_);
   budget.running = thread_;
   // Errors of its to-be-closed variables are lost: the coroutine is gone either way.
-  [[maybe_unused]] const int closed = lua_closethread(thread_, vm_->state());
+  [[maybe_unused]] const int closed = lua_closethread(thread_, from);
   budget.running = resumer;
   releaseReference(*vm_, std::exchange(reference_, LUA_NOREF));
   thread_ = nullptr;
@@ -207,12 +223,13 @@ CoroutineStep ScriptCoroutine::resume(const ApiValue& value) {
                            .stop = BudgetStop::None};
   }
   detail::VmState& vm = *vm_;
+  lua_State* const from = runningThread(vm);
   const detail::CallScope scope{vm, vm.mods[mod_].memoryOwner, vm.resumeBudget};
   detail::Budget& budget = vm.budget;
   int arguments = 0;
   if (started_) {
     if (!pushResumeValue(vm.state(), thread_, value)) {
-      close();
+      close(from);
       return CoroutineFailed{.message = std::string{messages::ResumeOutOfMemory},
                              .stop = BudgetStop::None};
     }
@@ -229,7 +246,7 @@ CoroutineStep ScriptCoroutine::resume(const ApiValue& value) {
   budget.stepped = thread_;
   budget.waited = false;
   int results = 0;
-  const int status = lua_resume(thread_, vm.state(), arguments, &results);
+  const int status = lua_resume(thread_, from, arguments, &results);
   const bool waited = std::exchange(budget.waited, false);
   budget.running = resumer;
   budget.stepped = outerStepped;
@@ -240,7 +257,7 @@ CoroutineStep ScriptCoroutine::resume(const ApiValue& value) {
   }
   if (status == LUA_YIELD) {
     lua_pop(thread_, results);
-    close();
+    close(from);
     return CoroutineFailed{.message = std::string{messages::YieldWithoutWait},
                            .stop = BudgetStop::None};
   }
@@ -255,12 +272,12 @@ CoroutineStep ScriptCoroutine::resume(const ApiValue& value) {
                                                                  lua_typename(thread_, type)),
                                   .stop = BudgetStop::None}};
     lua_pop(thread_, results);
-    close();
+    close(from);
     return step;
   }
   CoroutineFailed failed{.message = std::string{detail::errorMessage(thread_)},
                          .stop = budget.stopped ? budget.lastStop : BudgetStop::None};
-  close();
+  close(from);
   return failed;
 }
 

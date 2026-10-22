@@ -122,14 +122,18 @@ TEST_CASE("a waiting function gives its result to the resumer and gets the next 
   CHECK(failed(section.resume()).message == "the coroutine already finished");
 }
 
-TEST_CASE("a wait tells how deep in the coroutine's calls it was made; a tail call adds nothing") {
-  Story story{"local function inner() return test.wait() end\n"
-              "local function middle() inner() end\n"
-              "return { sections = { [1] = function() test.wait() middle() return inner() end } }"};
+TEST_CASE(
+    "a wait tells how deep in the coroutine's calls it was made; tail calls and metamethods add nothing") {
+  Story story{
+      "local function inner() return test.wait() end\n"
+      "local function middle() inner() end\n"
+      "local probe = setmetatable({}, { __index = function() local value = test.wait() return value end })\n"
+      "return { sections = { [1] = function() test.wait() middle() local _ = probe.x return inner() end } }"};
   const ScriptModule module = story.load();
   ScriptCoroutine section = sectionOf(module, 1);
   CHECK(waiting(section.resume()).callDepth == 0);
   CHECK(waiting(section.resume()).callDepth == 2);
+  CHECK(waiting(section.resume()).callDepth == 0);
   CHECK(waiting(section.resume()).callDepth == 0);
   CHECK(std::holds_alternative<CoroutineFinished>(section.resume()));
 }
@@ -204,4 +208,98 @@ TEST_CASE("dropping a waiting coroutine closes its to-be-closed variables") {
     CHECK(story.reported->empty());
   }
   CHECK(*story.reported == std::vector<std::string>{"closed"});
+}
+
+TEST_CASE("scripts cannot resume or close a section's coroutine, so its wait holds") {
+  Story story{"local captured\n"
+              "hooks.on('test.tick', function()\n"
+              "  test.report(select(2, pcall(coroutine.resume, captured)))\n"
+              "  test.report(select(2, pcall(coroutine.close, captured)))\n"
+              "  test.report(coroutine.status(captured))\n"
+              "end)\n"
+              "return { sections = { [1] = function()\n"
+              "  captured = coroutine.running()\n"
+              "  test.wait()\n"
+              "  test.report('after')\n"
+              "end } }"};
+  REQUIRE(story.vm->hooks().declare("test.tick"));
+  const ScriptModule module = story.load();
+  ScriptCoroutine section = sectionOf(module, 1);
+  REQUIRE(std::holds_alternative<CoroutineWaiting>(section.resume()));
+  REQUIRE(story.vm->hooks().fire("test.tick"));
+  REQUIRE(story.reported->size() == 3);
+  CHECK((*story.reported)[0].contains("coroutine.resume: the engine runs this coroutine"));
+  CHECK((*story.reported)[1].contains("coroutine.close: the engine runs this coroutine"));
+  CHECK((*story.reported)[2] == "suspended");
+  CHECK(std::holds_alternative<CoroutineFinished>(section.resume()));
+  CHECK(story.reported->back() == "after");
+  CHECK(*story.waits == 1);
+}
+
+TEST_CASE("a wait may pass through pcall, but not through a C function that cannot yield") {
+  Story story{
+      "return { sections = {\n"
+      "  [1] = function() test.report(select(2, pcall(test.wait, 5))) end,\n"
+      "  [2] = function() table.sort({ 3, 1, 2 }, function(a, b) test.wait() return a < b end) end,\n"
+      "  [3] = function() string.gsub('ab', '.', function() test.wait() end) end,\n"
+      "} }"};
+  const ScriptModule module = story.load();
+  ScriptCoroutine protectedWait = sectionOf(module, 1);
+  CHECK(waiting(protectedWait.resume()).value == ApiValue{std::int64_t{5}});
+  CHECK(std::holds_alternative<CoroutineFinished>(protectedWait.resume(ApiValue{std::int64_t{7}})));
+  CHECK(*story.reported == std::vector<std::string>{"7"});
+  for (const std::int64_t id : {2, 3}) {
+    ScriptCoroutine callback = sectionOf(module, id);
+    CHECK(failed(callback.resume())
+              .message.contains("test.wait waits, so only a section the engine runs"));
+  }
+  CHECK(*story.waits == 1);
+}
+
+TEST_CASE(
+    "a to-be-closed variable that never ends is stopped by the budget when its coroutine is dropped") {
+  Story story{"return { sections = {\n"
+              "  [1] = function()\n"
+              "    local guard <close> = setmetatable({}, {\n"
+              "      __close = function() test.report('closing') while true do end end })\n"
+              "    test.wait()\n"
+              "  end,\n"
+              "  [2] = function() return 2 end,\n"
+              "} }"};
+  const ScriptModule module = story.load();
+  {
+    ScriptCoroutine section = sectionOf(module, 1);
+    REQUIRE(std::holds_alternative<CoroutineWaiting>(section.resume()));
+  }
+  CHECK(*story.reported == std::vector<std::string>{"closing"});
+  CHECK(story.vm->lastBudgetStop() == BudgetStop::Instructions);
+  ScriptCoroutine next = sectionOf(module, 2);
+  CHECK(finished(next.resume()) == ApiValue{std::int64_t{2}});
+}
+
+TEST_CASE("a section that runs out of memory fails without a budget stop") {
+  ScriptLimits limits = TestLimits;
+  limits.instructionsPerResume = 1'000'000'000;
+  Story story{"return { sections = { [1] = function()\n"
+              "  local kept = {}\n"
+              "  for i = 1, 1000 do kept[i] = string.rep('x', 1024 * 1024) .. i end\n"
+              "end } }",
+              limits};
+  const ScriptModule module = story.load();
+  ScriptCoroutine section = sectionOf(module, 1);
+  const CoroutineFailed error = failed(section.resume());
+  CHECK_MESSAGE(error.message.contains("memory"), error.message);
+  CHECK(error.stop == BudgetStop::None);
+}
+
+TEST_CASE("a pack cannot load another pack's script as a module") {
+  auto vm = makeVm();
+  MemoryPacks packs;
+  packs.addPack("my_mod");
+  packs.addPack("other_mod");
+  packs.addFile("other_mod", "scripts/story.lua", "return {}");
+  const auto& files = packs.mount();
+  auto mod = environmentOf(*vm, "my_mod");
+  CHECK(errorOf(mod.loadModule(files, assetId("scripts/story"))) ==
+        "the script scripts/story comes from the pack 'other_mod', not from 'my_mod'");
 }

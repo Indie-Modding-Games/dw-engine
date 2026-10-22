@@ -241,12 +241,11 @@ pendientes de todas las secciones en espera pasan de **256**; el disco no pasa d
 
 - **Presupuesto:** cada reanudación es una llamada con su propio presupuesto (`ScriptLimits::instructionsPerResume`,
   200 000 instrucciones). Los scripts del disco son cortos entre esperas; el presupuesto de instrucciones es el
-  límite efectivo y es determinista. El límite de
-  tiempo (`callDeadline`) queda como red de seguridad y nunca debe decidir el resultado de un test
-  ([5](#5-sandbox-y-frontera-de-la-api)).
+  límite efectivo y es determinista. El límite de tiempo (`resumeDeadline`, 20 ms) queda como red de seguridad y
+  nunca debe decidir el resultado de un test ([5](#5-sandbox-y-frontera-de-la-api)).
 - **Abortos:** derrota en combate (salta a `MAPHEAD 0x4DE` sin apilar), huida (warp a la pantalla anterior con un
-  marco 4 vacío) y cambio de mapa cierran la corrutina (`coroutine.close` desde el runner) y siguen con la
-  continuación que toque (`btl.c`, `script_common.c: handleItemLoss`, `scriptInstruction64to7E`).
+  marco 4 vacío) y cambio de mapa hacen que el runner suelte la corrutina de la sección (`ScriptCoroutine`, que al
+  destruirse la cierra) y siguen con la continuación que toque (`btl.c`, `script_common.c: handleItemLoss`, `scriptInstruction64to7E`).
 
 ### Tiempo: los fotogramas del original
 
