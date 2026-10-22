@@ -69,6 +69,8 @@ El objetivo es que nadie espere a una comprobación: se ejecutan en paralelo y s
 | `check-commit` | Cada commit | Build del preset `ci` sin warnings y tests sin el disco (`ctest -LE slow`) | ~30 s con caché |
 | `check-full` | Antes de integrar | Formato, build, todos los tests (también los del disco) y clang-tidy en paralelo | ~6 min con caché |
 | Windows | Antes de subir | Build cruzado `windows-cross` desde el contenedor | en paralelo |
+| Gate corto | Antes de subir | `scripts/gate.sh`: `check-short` (formato, build, todos los tests, con los del disco y del contenido saltados salvo los de `--disc-tests`, clang-tidy de lo cambiado), Windows y las rutas de humo ([gate](../guides/gate.md)) | |
+| Diario | Una vez al día sobre `main` | `scripts/gate.sh --tier daily`: los pasos de `check-full`, Windows y todas las rutas | |
 
 - **Un commit por funcionalidad completa.** El progreso se guarda con commits provisionales en la rama del worktree,
   que se juntan en uno antes de entregar ([commits](../conventions/commits.md)).

@@ -247,6 +247,11 @@ En total, **42 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de
 `autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
 añades una ruta, súmala aquí.
 
+`scripts/gate.sh --tier daily` corre todo esto por ti: el check, el build de Windows y las 42 ejecuciones, una detrás
+de otra o en varias pantallas de Xvfb a la vez. El gate de subida de cada paquete es el corto
+(`scripts/gate.sh`): las rutas de humo y las del paquete. Los dos están en [pasar el gate](gate.md). Si añades una
+ruta que necesita opciones propias (`--mods`, `--dev-assets`), añádelas también en `route_job` de `scripts/gate.sh`.
+
 ### Formato de una ruta
 
 ```yaml

@@ -38,6 +38,20 @@ if(BUILD_TESTING)
             -P ${PROJECT_SOURCE_DIR}/cmake/expect_failure.cmake)
     add_test(NAME "filter guard: a catch-all entry may match no test case"
         COMMAND dwe_filter_guard_tests "--test-case=${guarded_case} in another name" --dwe-allow-no-match)
+
+    # The decisions of scripts/gate.sh (docs/guides/gate.md), which only runs on a Linux host. -B keeps Python's
+    # bytecode out of the sources.
+    if(NOT WIN32)
+        find_program(DWE_PYTHON3 python3 REQUIRED)
+        set(gate_tests_dir ${PROJECT_SOURCE_DIR}/scripts/gate/tests)
+        add_test(NAME "gate scripts: the scope of an incremental clang-tidy"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_tidy_scope WORKING_DIRECTORY ${gate_tests_dir})
+        add_test(NAME "gate scripts: the cache of cooked content"
+            COMMAND ${DWE_PYTHON3} -B -m unittest -v test_cook_cache WORKING_DIRECTORY ${gate_tests_dir})
+        find_program(DWE_BASH bash REQUIRED)
+        add_test(NAME "gate scripts: only build folders of the worktree are deleted"
+            COMMAND ${DWE_BASH} ${gate_tests_dir}/test_build_dirs.sh)
+    endif()
 endif()
 
 add_subdirectory(third_party)
