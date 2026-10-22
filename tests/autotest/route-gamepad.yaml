@@ -8,15 +8,17 @@ steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
   - screenshot: twna01-start
-  # The menu with a gamepad (a virtual one of the platform): hide the minimap, then show it again.
+  # The menu with a gamepad (a virtual one of the platform): minimap on, off, then back to the skin's choice.
   - menu: open
   - screenshot: menu-open
   - menu_select: open-minimap
-  - menu_select: minimap-visible
-  - expect_setting: {minimap_visible: false}
+  - menu_select: minimap-mode
+  - expect_setting: {minimap: "on"}
+  - menu_select: minimap-mode
+  - expect_setting: {minimap: "off"}
   - screenshot: menu-minimap-hidden
-  - menu_select: minimap-visible
-  - expect_setting: {minimap_visible: true}
+  - menu_select: minimap-mode
+  - expect_setting: {minimap: "auto"}
   - menu: close
   - wait: {menu_open: false}
   # Behind the awning of the house by the water: the player under a depth layer.

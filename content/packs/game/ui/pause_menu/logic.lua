@@ -3,13 +3,15 @@
 -- Every text the player sees comes from the texts in the player's language: t(key) here, text-key in the document.
 
 local pages = { "main", "minimap", "options" }
-local first_entry = { main = "continue", minimap = "minimap-visible", options = "display-mode" }
+local first_entry = { main = "continue", minimap = "minimap-mode", options = "display-mode" }
 -- The entry of the main page that opened each page, focused again when going back.
 local opener = { minimap = "open-minimap", options = "open-options" }
 
 local current = "main"
 
 local minimap_sizes = { "small", "medium", "large" }
+-- Whether the HUD shows the minimap: as the skin decides (auto), always (on) or never (off).
+local minimap_modes = { "auto", "on", "off" }
 local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function on_off(value)
@@ -42,8 +44,9 @@ end
 
 -- What each option entry does when confirmed or moved left and right.
 local options = {
-	["minimap-visible"] = function(step)
-		ui.send("minimap_visible", not ui.setting("minimap_visible"))
+	["minimap-mode"] = function(step)
+		local index = index_of(minimap_modes, ui.setting("minimap")) or 1
+		ui.send("minimap", minimap_modes[cycle(minimap_modes, index, step)])
 	end,
 	["minimap-size"] = function(step)
 		local index = index_of(minimap_sizes, ui.setting("minimap_size")) or 2
@@ -65,7 +68,8 @@ local options = {
 }
 
 local function refresh(document)
-	document:get("minimap-visible-value"):set_text(on_off(ui.setting("minimap_visible")))
+	local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "auto"
+	document:get("minimap-mode-value"):set_text(t("pause_menu.minimap_mode." .. mode))
 	local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size") or "medium"
 	document:get("minimap-size-value"):set_text(t("pause_menu.minimap_size." .. size))
 	document:get("display-mode-value"):set_text(t(ui.setting("fullscreen") and "pause_menu.display_mode.fullscreen"

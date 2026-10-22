@@ -17,6 +17,7 @@ dwe_add_app(game
         src/language.cpp
         src/main.cpp
         src/map_preview.cpp
+        src/minimap_setting.cpp
         src/model_viewer.cpp
         src/options.cpp
         src/partner_events.cpp
@@ -46,10 +47,11 @@ target_compile_definitions(game PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/co
 target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
-# settings (settings.yaml) and how the UI skin is chosen at start and changed.
+# settings (settings.yaml), how the UI skin is chosen at start and changed, and the minimap mode.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/ui_skin_setting.cpp src/user_settings.cpp)
+    add_executable(dwe_game_tests ${game_test_sources} src/minimap_setting.cpp src/ui_skin_setting.cpp
+                                  src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe_test_main)
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

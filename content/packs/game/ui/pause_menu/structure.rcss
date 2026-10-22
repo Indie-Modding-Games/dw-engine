@@ -3,7 +3,7 @@
 
 #continue { nav-up: #quit; }
 #quit { nav-down: #continue; }
-#minimap-visible { nav-up: #minimap-back; }
-#minimap-back { nav-down: #minimap-visible; }
+#minimap-mode { nav-up: #minimap-back; }
+#minimap-back { nav-down: #minimap-mode; }
 #display-mode { nav-up: #options-back; }
 #options-back { nav-down: #display-mode; }

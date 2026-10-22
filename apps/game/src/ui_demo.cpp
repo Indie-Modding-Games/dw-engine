@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "device_names.hpp"
+#include "minimap_setting.hpp"
 
 namespace dwe::app {
 namespace {
@@ -328,9 +329,9 @@ private:
 
 // Logs where the entries of the menu's page are, for scripted clicks.
 void logMenuLayout(const ui::Ui& ui) {
-    constexpr std::array Entries{"continue",        "open-minimap", "open-options", "quit",
-                                 "minimap-visible", "minimap-size", "minimap-back", "display-mode",
-                                 "ui-scale",        "vsync",        "options-back"};
+    constexpr std::array Entries{"continue",     "open-minimap", "open-options", "quit",
+                                 "minimap-mode", "minimap-size", "minimap-back", "display-mode",
+                                 "ui-scale",     "vsync",        "options-back"};
     std::string line;
     for (const std::string_view entry : Entries) {
         const auto center = ui.elementCenter("pause_menu", entry);
@@ -388,8 +389,8 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     if (command.name == "quit") {
         return false;
     }
-    if (command.name == "minimap_visible" && std::holds_alternative<bool>(command.value)) {
-        ui.setSetting("minimap_visible", command.value);
+    if (command.name == MinimapSetting || command.name == LegacyMinimapVisibleSetting) {
+        ui.setSetting(MinimapSetting, std::string{minimapModeOf(command.value)});
     } else if (command.name == "minimap_size" && std::holds_alternative<std::string>(command.value)) {
         ui.setSetting("minimap_size", command.value);
     } else if (command.name == "fullscreen" && std::holds_alternative<bool>(command.value)) {
@@ -481,7 +482,7 @@ int runUiDemo(const UiDemoOptions& options) {
         }
     }
     Settings settings;
-    (*ui)->setSetting("minimap_visible", true);
+    (*ui)->setSetting(MinimapSetting, std::string{MinimapAuto});
     (*ui)->setSetting("minimap_size", std::string{"medium"});
     (*ui)->setSetting("fullscreen", settings.fullscreen);
     (*ui)->setSetting("ui_scale", settings.uiScale);

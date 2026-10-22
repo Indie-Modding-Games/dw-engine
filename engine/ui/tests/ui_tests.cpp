@@ -495,7 +495,7 @@ TEST_CASE("the pause menu works with the keyboard alone") {
     auto ui = createUi(content.mount());
     REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
     ui->setMenuDocument("pause_menu");
-    ui->setSetting("minimap_visible", true);
+    ui->setSetting("minimap", std::string{"auto"});
     ui->setSetting("minimap_size", std::string{"medium"});
     ui->setSetting("ui_scale", 1.0);
     input::InputState input{input::defaultActionMap()};
@@ -510,17 +510,17 @@ TEST_CASE("the pause menu works with the keyboard alone") {
     CHECK(ui->focusedElementId("pause_menu") == "open-minimap");
     press(*ui, input, input::keys::Return);
     CHECK(ui->elementText("pause_menu", "title") == "Minimap");
-    CHECK(ui->focusedElementId("pause_menu") == "minimap-visible");
-    CHECK(ui->elementText("pause_menu", "minimap-visible-value") == "Yes");
+    CHECK(ui->focusedElementId("pause_menu") == "minimap-mode");
+    CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "As the style");
 
     press(*ui, input, input::keys::Return);
     auto commands = ui->takeCommands();
     REQUIRE(commands.size() == 1);
-    CHECK(commands[0].name == "minimap_visible");
-    CHECK(commands[0].value == UiValue{false});
+    CHECK(commands[0].name == "minimap");
+    CHECK(commands[0].value == UiValue{std::string{"on"}});
     // The label follows what the game reports, not what was asked.
-    ui->setSetting("minimap_visible", false);
-    CHECK(ui->elementText("pause_menu", "minimap-visible-value") == "No");
+    ui->setSetting("minimap", std::string{"off"});
+    CHECK(ui->elementText("pause_menu", "minimap-mode-value") == "Never");
 
     // Right on an option changes it, as confirm does.
     press(*ui, input, input::keys::Down);
@@ -725,6 +725,25 @@ TEST_CASE("the HUD draws the field status on each revision, with the bars' low h
     CHECK(ui->elementHasClass("hud", "field-status", "shown"));
     bumpFieldRevision(*ui);
     CHECK_FALSE(ui->elementHasClass("hud", "field-status", "shown"));
+}
+
+TEST_CASE("the HUD leaves the minimap to the skin on auto, and shows or hides it on on and off") {
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->update();
+    // Unset is auto.
+    CHECK(ui->elementHasClass("hud", "minimap", "auto"));
+    CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
+    ui->setSetting("minimap", std::string{"off"});
+    CHECK_FALSE(ui->elementHasClass("hud", "minimap", "auto"));
+    CHECK(ui->elementHasClass("hud", "minimap", "hidden"));
+    ui->setSetting("minimap", std::string{"on"});
+    CHECK_FALSE(ui->elementHasClass("hud", "minimap", "auto"));
+    CHECK_FALSE(ui->elementHasClass("hud", "minimap", "hidden"));
+    ui->setSetting("minimap", std::string{"auto"});
+    CHECK(ui->elementHasClass("hud", "minimap", "auto"));
 }
 
 TEST_CASE("the HUD shows the minimap of the current map and its markers") {

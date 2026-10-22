@@ -131,6 +131,15 @@ un mod puede colocarlos y darles estilo como quiera, pero con estos ids y estos 
 | `minimap-name` | `hud::MinimapName` | Su texto es el nombre del mapa, el texto de la clave que da `setMinimap`, en el idioma del juego |
 | `minimap-player`, `minimap-partner` | `hud::MinimapPlayer`, `hud::MinimapPartner` | Los marcadores: `left`, `top` (en porcentaje del marco), `transform: rotate(...)`, y `display: none` sin marcador |
 
+**El minimapa es una diferencia opcional: el original no tiene minimapa.** El ajuste `minimap` vale `auto` (al
+empezar), `on` u `off`, y el menú de pausa lo cambia (entrada «Mostrar minimapa»: «Según el aspecto», «Siempre»,
+«Nunca»). Con `auto` el HUD pone la clase `auto` en `#minimap` y cada aspecto decide en su RCSS: el moderno lo enseña
+y el de aspecto original lo esconde (`#minimap.auto`); con `off` lo esconde (`hidden`) y con `on` lo enseña con
+cualquier aspecto. Sustituye al booleano `minimap_visible`: el comando antiguo todavía se acepta, con `true` como
+`on` y `false` como `off`, y cualquier otro valor (o ninguno) es `auto` (`minimapModeOf`, `apps/game/src/
+minimap_setting.hpp`). El ajuste no se guarda en `settings.yaml` (tampoco lo hacía `minimap_visible`), así que no
+hay partidas ni ajustes que migrar.
+
 ## Estado del campo
 
 El HUD enseña en el campo la hora del juego y el estado del compañero. Los datos y su dibujo van separados: un modelo
@@ -235,7 +244,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | Comando | Valor | Ajuste que la app publica después |
 |---|---|---|
 | `quit` | — | — |
-| `minimap_visible` | booleano | `minimap_visible` |
+| `minimap` | `auto`, `on`, `off` | `minimap` |
 | `minimap_size` | `small`, `medium`, `large` | `minimap_size` |
 | `fullscreen` | booleano | `fullscreen` |
 | `ui_scale` | número (0,75–2) | `ui_scale` |

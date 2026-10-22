@@ -1,9 +1,9 @@
--- The HUD follows the minimap settings the game reports: shown or hidden, and its size. Its menu button asks the game
--- to open the pause menu (the open_menu command) and shows the control that opens it with the last device used. On a
--- map change the game subtracts its fade from the scene under the HUD and reports how much it takes away
--- (screen_fade, 0 to 1): the panels fade out with it, as the original's fade covers its HUD. The name of the map it
--- goes to shows in front of the fade, in the player's language: the game reports its text key (map_title_key, empty
--- when none).
+-- The HUD follows the minimap settings the game reports: auto, on or off (minimap), and its size. Its menu button
+-- asks the game to open the pause menu (the open_menu command) and shows the control that opens it with the last
+-- device used. On a map change the game subtracts its fade from the scene under the HUD and reports how much it takes
+-- away (screen_fade, 0 to 1): the panels fade out with it, as the original's fade covers its HUD. The name of the map
+-- it goes to shows in front of the fade, in the player's language: the game reports its text key (map_title_key,
+-- empty when none).
 --
 -- The field status shows the game time and the partner's state, which the game publishes as hud.* settings
 -- (apps/screens: field_hud_view.hpp): it bumps hud.revision once per change, and only then this script redraws, so a
@@ -14,10 +14,17 @@
 -- that draws the original's clock.
 
 local sizes = { small = true, medium = true, large = true }
+local minimap_modes = { auto = true, on = true, off = true }
 
 local function refresh(document)
 	local minimap = document:get("minimap")
-	minimap:set_class("hidden", ui.setting("minimap_visible") == false)
+	local mode = ui.setting("minimap")
+	if not minimap_modes[mode] then
+		mode = "auto"
+	end
+	-- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off hides it.
+	minimap:set_class("auto", mode == "auto")
+	minimap:set_class("hidden", mode == "off")
 	local size = ui.setting("minimap_size")
 	if not sizes[size] then
 		size = "medium"

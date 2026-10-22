@@ -20,8 +20,8 @@
 			</div>
 
 			<div id="page-minimap" class="page hidden">
-				<button id="minimap-visible" class="option" onclick="adjust(document, 'minimap-visible', 1)">
-					<span class="label" text-key="pause_menu.minimap_visible"></span><span class="value" id="minimap-visible-value"></span>
+				<button id="minimap-mode" class="option" onclick="adjust(document, 'minimap-mode', 1)">
+					<span class="label" text-key="pause_menu.minimap_mode"></span><span class="value" id="minimap-mode-value"></span>
 				</button>
 				<button id="minimap-size" class="option" onclick="adjust(document, 'minimap-size', 1)">
 					<span class="label" text-key="pause_menu.minimap_size"></span><span class="value" id="minimap-size-value"></span>

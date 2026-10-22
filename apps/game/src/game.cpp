@@ -53,6 +53,7 @@
 #include "frame_stats.hpp"
 #include "language.hpp"
 #include "messages.hpp"
+#include "minimap_setting.hpp"
 #include "partner_events.hpp"
 #include "partner_menu.hpp"
 #include "partner_tab.hpp"
@@ -139,8 +140,8 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
         ui.show(MenuDocument, true);
     } else if (command.name == LanguageCommand && std::holds_alternative<std::string>(command.value)) {
         language.change(std::get<std::string>(command.value));
-    } else if (command.name == "minimap_visible" && std::holds_alternative<bool>(command.value)) {
-        ui.setSetting("minimap_visible", command.value);
+    } else if (command.name == MinimapSetting || command.name == LegacyMinimapVisibleSetting) {
+        ui.setSetting(MinimapSetting, std::string{minimapModeOf(command.value)});
     } else if (command.name == "minimap_size" && std::holds_alternative<std::string>(command.value)) {
         ui.setSetting("minimap_size", command.value);
     } else if (command.name == "fullscreen" && std::holds_alternative<bool>(command.value)) {
@@ -471,7 +472,7 @@ int runGame(const Options& options) {
     }
     LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
     (*ui)->setSetting(LanguageSetting, texts->language());
-    (*ui)->setSetting("minimap_visible", true);
+    (*ui)->setSetting(MinimapSetting, std::string{MinimapAuto});
     (*ui)->setSetting("minimap_size", std::string{"medium"});
     (*ui)->setSetting("fullscreen", settings.fullscreen);
     (*ui)->setSetting("ui_scale", settings.uiScale);
