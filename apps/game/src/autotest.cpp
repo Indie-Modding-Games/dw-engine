@@ -64,8 +64,9 @@ constexpr std::string_view MenuDocument = "pause_menu";
 // The menu the game shows at start; menu_select picks its entries while it is open.
 constexpr std::string_view MainMenuDocument = "main_menu";
 
-// The other documents menu_select picks from while they are open: the battle screen and the partner's menu.
-constexpr std::array<std::string_view, 2> ScreenDocuments{"partner_menu", "battle"};
+// The other documents menu_select picks from while they are open: the battle screen, the partner's menu and free
+// exploration's chooser.
+constexpr std::array<std::string_view, 3> ScreenDocuments{"partner_menu", "battle", "destination_choice"};
 
 // The menu menu_select picks from: the main menu while it is open, then the pause menu, then the battle screen or
 // the partner's menu; the pause menu when none is open, so the step says so.
@@ -767,7 +768,7 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
         progress.path = game::field::findPath(collision, position, goals, field.rules().player.radius,
                                               [&](assets::CollisionCell cell) {
                                                   const std::int32_t value = collision.trigger(cell).value_or(0);
-                                                  return !field.warpsOn(value) || value == step.trigger;
+                                                  return !field.keepsOff(value) || value == step.trigger;
                                               });
         // A walk to a point ends on it, not on the centre of its cell.
         if (step.point && !progress.path.empty()) {
@@ -804,6 +805,11 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
     if (field.mapChangePending()) {
         releaseMovement();
         return step.stopOnWarp;
+    }
+    // Free exploration asks where to go: the route answers in the chooser (wait for it shown, then menu_select).
+    if (field.destinationChoice()) {
+        releaseMovement();
+        return true;
     }
     bool stalled = false;
     if (groundDistance(position, progress.lastPosition) > ProgressDistance) {

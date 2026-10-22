@@ -65,6 +65,10 @@ local options = {
 	["ui-skin"] = function(step)
 		skin_choice.change(step)
 	end,
+	-- Free exploration: the scripts' map changes go anywhere they can, whatever the story (off by default).
+	["free-exploration"] = function(step)
+		ui.send("free_exploration", not ui.setting("free_exploration"))
+	end,
 }
 
 local function refresh(document)
@@ -78,6 +82,7 @@ local function refresh(document)
 	document:get("ui-scale-value"):set_text(t("pause_menu.ui_scale.value", { percent = percent }))
 	document:get("vsync-value"):set_text(on_off(ui.setting("vsync")))
 	document:get("ui-skin-value"):set_text(skin_choice.name())
+	document:get("free-exploration-value"):set_text(on_off(ui.setting("free_exploration")))
 end
 
 local function refresh_prompts(document)

@@ -146,7 +146,12 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
         game::field::ScriptWarpSetup{.warps = std::move(*scriptWarps),
                                      .facts = desc.facts,
                                      .writeTrigger = desc.writeTrigger,
-                                     .unknownPolicy = game::field::VanillaUnknownPolicy});
+                                     .unknownPolicy = game::field::VanillaUnknownPolicy,
+                                     .explore = desc.explore,
+                                     .hasMap = [&files](std::string_view map) {
+                                         const auto id = assets::mapDataId(map);
+                                         return id && files.resolve(*id) != nullptr;
+                                     }});
     scene->schedule_ = scheduleOf(rules->timeOfDay);
     scene->clock_ = desc.clock;
     if (desc.time) {

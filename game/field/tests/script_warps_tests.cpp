@@ -572,3 +572,31 @@ TEST_CASE("a guard reads the bag, the money and the partner as the original comp
     CHECK(decide(warp, knownTriggers, UnknownPolicy::Allow).truth == Truth::Unknown);
     CHECK(decide(warp, facts, UnknownPolicy::Allow).truth == Truth::True);
 }
+
+TEST_CASE("free exploration gives each place of a cell once, whatever the guards, and only maps with data") {
+    using dwe::game::field::ScriptWarp;
+    using dwe::game::field::WarpVia;
+    const auto warpTo = [](std::optional<std::string> map, std::int32_t exit, std::int32_t section) {
+        return ScriptWarp{
+            .map = "home",
+            .via = WarpVia::Step,
+            .section = section,
+            .targetMap = std::move(map),
+            .targetExit = exit,
+            .scriptGuard = {},
+            .guard = {.terms = {dwe::game::field::GuardChoice{.arm = 0, .selection = true}}, .unstructured = true},
+            .setsFlags = {},
+            .source = "test"};
+    };
+    const std::vector<ScriptWarp> warps{warpTo("town", 1, 51), warpTo(std::nullopt, 0, 51), warpTo("town", 1, 51),
+                                        warpTo("town", 2, 51), warpTo("cave", 0, 51),       warpTo("sea", 0, 52)};
+    const auto places = dwe::game::field::explorationWarps(warps, "home", WarpVia::Step, 51, {});
+    REQUIRE(places.size() == 3);
+    CHECK(places[0] == &warps[0]);
+    CHECK(places[1] == &warps[3]);
+    CHECK(places[2] == &warps[4]);
+    const auto withData = dwe::game::field::explorationWarps(warps, "home", WarpVia::Step, 51,
+                                                             [](std::string_view map) { return map != "cave"; });
+    CHECK(withData.size() == 2);
+    CHECK(dwe::game::field::explorationWarps(warps, "home", WarpVia::Confirm, 51, {}).empty());
+}

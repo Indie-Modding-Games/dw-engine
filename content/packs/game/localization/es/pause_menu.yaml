@@ -23,3 +23,5 @@ ui_scale: "Escala de la interfaz"
 ui_scale.value: "{percent} %"
 vsync: "Sincronización vertical"
 ui_skin: "Aspecto de la interfaz"
+# Exploración libre: los scripts abren todos sus caminos, diga lo que diga la historia (apagada por defecto).
+free_exploration: "Exploración libre"

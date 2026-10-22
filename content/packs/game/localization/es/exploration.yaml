@@ -1,0 +1,11 @@
+# El selector de la exploración libre: un lugar al que llevan los scripts de la casilla que pisó el jugador.
+title: "¿Adónde?"
+# {name} es el nombre del mapa, {map} su id (varios mapas comparten nombre).
+place: "{name} ({map})"
+# El lugar al que lleva la historia ahora, si lo hay.
+story: "historia"
+stay: "Quedarse aquí"
+previous: "Anterior"
+next: "Siguiente"
+# {page} de {pages}.
+page: "{page}/{pages}"

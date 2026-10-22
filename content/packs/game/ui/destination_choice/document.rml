@@ -1,0 +1,32 @@
+<rml>
+<head>
+	<title>Destination choice</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="exploration.title"></h1>
+			<button id="place-1" class="place" onclick="choose(1)"></button>
+			<button id="place-2" class="place" onclick="choose(2)"></button>
+			<button id="place-3" class="place" onclick="choose(3)"></button>
+			<button id="place-4" class="place" onclick="choose(4)"></button>
+			<button id="place-5" class="place" onclick="choose(5)"></button>
+			<button id="place-6" class="place" onclick="choose(6)"></button>
+			<button id="place-7" class="place" onclick="choose(7)"></button>
+			<button id="place-8" class="place" onclick="choose(8)"></button>
+			<p id="page"></p>
+			<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="exploration.previous"></button>
+			<button id="next" class="page-turn" onclick="turn(document, 1)" text-key="exploration.next"></button>
+			<button id="stay" class="back" onclick="stay()" text-key="exploration.stay"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="exploration.stay"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

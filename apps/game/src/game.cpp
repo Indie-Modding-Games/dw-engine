@@ -52,6 +52,7 @@
 #include "field_hud.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
+#include "free_exploration.hpp"
 #include "language.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
@@ -223,7 +224,8 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
     for (const auto& [name, id] :
          {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
           std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"},
-          std::pair{"partner_menu", "ui/partner_menu/document"}}) {
+          std::pair{"partner_menu", "ui/partner_menu/document"},
+          std::pair{"destination_choice", "ui/destination_choice/document"}}) {
         auto asset = assets::AssetId::parse(id);
         if (!asset) {
             return std::unexpected{asset.error()};
@@ -519,6 +521,9 @@ int runGame(const Options& options) {
         core::logError("game: {}", scene.error().message);
         return EXIT_FAILURE;
     }
+    FreeExploration freeExploration{
+        {.ui = ui->get(), .scene = scene->get(), .settings = &userSettings, .settingsFile = settingsFile},
+        startFreeExploration(options.explore, userSettings.freeExploration)};
     session.attachField((*scene)->field());
     // A loaded game's partner may be another species than the game pack's partner model.
     if (auto shown = (*scene)->showPartnerSpecies(session.partnerView().species); !shown) {
@@ -720,7 +725,7 @@ int runGame(const Options& options) {
         }
 
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-            if (battleScreen.handle(command) || partnerMenu.handle(command)) {
+            if (battleScreen.handle(command) || partnerMenu.handle(command) || freeExploration.handle(command)) {
                 continue;
             }
             running = apply(command, **ui, *window, settings, languageChanger, textFontChanger, uiSkinChanger,
@@ -750,6 +755,7 @@ int runGame(const Options& options) {
                 autotest->fail(saved.error().message);
             }
         }
+        freeExploration.update();
         if (pendingEvolution) {
             const std::string form = *std::exchange(pendingEvolution, std::nullopt);
             if (auto evolved = game->systems.evolution->evolveByScript(session, form); !evolved) {

@@ -18,6 +18,7 @@ dwe_add_app(game
         src/main.cpp
         src/map_preview.cpp
         src/minimap_setting.cpp
+        src/free_exploration.cpp
         src/model_viewer.cpp
         src/options.cpp
         src/partner_events.cpp

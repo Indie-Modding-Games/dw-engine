@@ -18,6 +18,7 @@
 #include <dwe/scene/world.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -41,6 +42,8 @@ struct FieldSceneDesc {
     // Without facts no script warp is taken.
     game::field::GuardFacts facts{};
     game::field::TriggerWriter writeTrigger{};
+    // Start with free exploration on (game::field::ScriptWarpSetup::explore).
+    bool explore = false;
 };
 
 // How long the last map change took, in milliseconds: reading the map through the VFS, entering it in the field and
@@ -99,6 +102,9 @@ public:
     [[nodiscard]] const assets::AssetId& partnerModel() const { return partnerActor_->character.model; }
 
     [[nodiscard]] const game::field::Field& field() const { return *field_; }
+    // Free exploration (game::field::Field::setExplore) and the answer to its choice (Field::chooseDestination).
+    void setExplore(bool explore) { field_->setExplore(explore); }
+    void chooseDestination(std::optional<std::size_t> place) { field_->chooseDestination(place); }
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
     // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
     [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }

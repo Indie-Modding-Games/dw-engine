@@ -1,0 +1,28 @@
+# Free exploration's switch and chooser with the mouse (docs/architecture/warps-de-script.md): the pause menu turns it
+# on, the elder's house's door offers File City's 13 phases, starting on the story's, and a click on the second page
+# takes one the story keeps closed. It runs once per language, like route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+name: free-exploration-mouse
+device: mouse
+timeout: 300
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - menu: open
+  - menu_select: open-options
+  - menu_select: free-exploration
+  - expect_setting: {free_exploration: "true"}
+  - menu: close
+  - wait: {menu_open: false}
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 51}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - expect_setting: {exploration_places: "13"}
+  - menu_select: next
+  - wait: {seconds: 0.3}
+  - screenshot: chooser-page-2
+  # The third place of the second page.
+  - menu_select: place-3
+  - wait: {hidden: destination_choice}
+  - wait: {map: twna04, partner_within: 400, seconds: 0.5}
+  - screenshot: twna04

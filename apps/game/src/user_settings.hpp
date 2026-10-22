@@ -19,6 +19,9 @@ struct UserSettings {
     std::optional<std::string> uiSkin;
     // Whether the HUD shows the minimap (minimap: auto, on, off); auto when not chosen yet.
     std::optional<std::string> minimap;
+    // Free exploration (free_exploration: true, false): the scripts' map changes go anywhere they can, whatever the
+    // story; off when not chosen yet.
+    std::optional<bool> freeExploration = std::nullopt;
 };
 
 // Reads the settings. Keys it does not know are left out, so an older game reads a newer file.

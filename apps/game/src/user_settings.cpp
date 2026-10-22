@@ -24,6 +24,7 @@ constexpr std::string_view SettingsFileName = "settings.yaml";
 constexpr std::string_view LanguageKey = "language";
 constexpr std::string_view TextFontKey = "text_font";
 constexpr std::string_view MinimapKey = "minimap";
+constexpr std::string_view FreeExplorationKey = "free_exploration";
 
 } // namespace
 
@@ -49,6 +50,9 @@ core::Result<UserSettings> parseUserSettings(std::string_view yaml) {
         if (const core::YamlNode* minimap = tree->find(MinimapKey)) {
             settings.minimap = reader.text(*minimap);
         }
+        if (const core::YamlNode* explore = tree->find(FreeExplorationKey)) {
+            settings.freeExploration = reader.boolean(*explore);
+        }
     }
     return reader.finish(std::move(settings), messages::UserSettingsContext);
 }
@@ -66,6 +70,9 @@ core::Result<std::string> formatUserSettings(const UserSettings& settings) {
     }
     if (settings.minimap) {
         root.set(std::string{MinimapKey}, core::YamlNode::scalar(*settings.minimap));
+    }
+    if (settings.freeExploration) {
+        root.set(std::string{FreeExplorationKey}, core::YamlNode::scalar(*settings.freeExploration ? "true" : "false"));
     }
     return core::emitYaml(root);
 }

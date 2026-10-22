@@ -259,6 +259,66 @@ TEST_CASE("the user's disc, extracted: a new game reaches its maps and back, and
     CHECK(open.reached.size() == ExpectedOpenReached);
     CHECK(open.withWayBack.size() == ExpectedOpenWithWayBack);
 
+    // Free exploration, through the field's own choice of places: every script warp's map, and the same way back.
+    Graph exploreWarps = tableWarps;
+    const dwe::game::field::MapFilter hasMap = [&](std::string_view map) { return cells.contains(std::string{map}); };
+    std::set<std::tuple<std::string, dwe::game::field::WarpVia, std::int32_t>> cellsExplored;
+    for (const dwe::game::field::ScriptWarp& warp : *scriptWarps) {
+        const bool runs = warp.via == dwe::game::field::WarpVia::Step || warp.via == dwe::game::field::WarpVia::Confirm;
+        const auto map = cells.find(warp.map);
+        if (!runs || map == cells.end() || !map->second.contains(warp.section) ||
+            !cellsExplored.insert(std::tuple{warp.map, warp.via, warp.section}).second) {
+            continue;
+        }
+        for (const dwe::game::field::ScriptWarp* place :
+             dwe::game::field::explorationWarps(*scriptWarps, warp.map, warp.via, warp.section, hasMap)) {
+            exploreWarps[warp.map].insert(*place->targetMap);
+        }
+    }
+    const Reach explored = reachFrom(exploreWarps, warps->startMap);
+    CHECK(explored.reached == open.reached);
+    CHECK(explored.withWayBack == open.withWayBack);
+    CHECK(explored.withWayBack.size() == ExpectedOpenWithWayBack);
+
+    // The triggers the warps a new game takes set on their way (sets_flags), written until nothing changes: they
+    // open no other map.
+    std::map<std::int32_t, bool> written;
+    Reach withWrites = vanilla;
+    for (bool changed = true; changed;) {
+        changed = false;
+        const dwe::game::field::TriggerState state = [&](std::int32_t trigger) -> std::optional<bool> {
+            const auto found = written.find(trigger);
+            return found != written.end() ? std::optional{found->second} : newGame(trigger);
+        };
+        Graph storyWarps = tableWarps;
+        for (const auto& [map, via, section] : cellsExplored) {
+            if (!withWrites.reached.contains(map)) {
+                continue;
+            }
+            const auto cell = dwe::game::field::warpOnCell(*scriptWarps, map, via, section, state,
+                                                           dwe::game::field::VanillaUnknownPolicy);
+            if (cell.warp == nullptr || !cell.warp->targetMap || !cells.contains(*cell.warp->targetMap)) {
+                continue;
+            }
+            storyWarps[map].insert(*cell.warp->targetMap);
+            for (const dwe::game::field::FlagEffect& effect : cell.warp->setsFlags) {
+                const auto [entry, added] = written.try_emplace(effect.trigger, effect.set);
+                changed = changed || added;
+                CHECK_MESSAGE(entry->second == effect.set, "trigger ", effect.trigger, " both set and cleared");
+            }
+        }
+        withWrites = reachFrom(storyWarps, warps->startMap);
+    }
+    std::string writtenText;
+    for (const auto& [trigger, set] : written) {
+        writtenText += std::format(" {}{}", set ? "+" : "-", trigger);
+    }
+    MESSAGE("the warps a new game takes write:", writtenText);
+    CHECK(withWrites.reached == vanilla.reached);
+    CHECK(withWrites.withWayBack == vanilla.withWayBack);
+    // None: the opening's 54, 55 and 75 are set by the opening's warp, which the field's start skips.
+    CHECK(written.empty());
+
     // What the vanilla policy decides: the warps whose path goes through a recursion the extraction cut, the ones of
     // the maps a new game reaches that it takes only because the policy allows what is not known, and the ones there
     // that no policy takes because their path is unstructured (exits the field's caution hides; parts (b) and S2).

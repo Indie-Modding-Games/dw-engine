@@ -1,0 +1,70 @@
+# Free exploration (docs/architecture/warps-de-script.md) with the keyboard, from a new game: the pause menu turns it
+# on, and the scripts' map changes go past the story's gates to three zones a new game does not reach yet (mayo02_2,
+# mayo08b, mayo02), through the chooser of the places a cell leads to, with a way back. The chooser starts on the
+# place the story takes, turns its pages and lets the player stay on the cell. Every place it takes is logged as a gate
+# opened. It runs once per language, like route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
+name: free-exploration
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - expect_setting: {free_exploration: "false"}
+  # The pause menu's switch, among the options.
+  - menu: open
+  - menu_select: open-options
+  - menu_select: free-exploration
+  - expect_setting: {free_exploration: "true"}
+  - screenshot: pause-options-exploration
+  - menu: close
+  - wait: {menu_open: false}
+  # The maps' warp tables, as in a new game: out of the town and on to the next zone.
+  - walk_to: {trigger: 111}
+  - wait: {map: trai00, partner_within: 400, seconds: 0.5}
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
+  # The script of mayo00's cell 52 waits for the story; free exploration offers its two places.
+  - walk_to: {trigger: 52}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - screenshot: chooser-mayo00
+  - menu_select: place-1
+  - wait: {hidden: destination_choice}
+  - wait: {map: mayo02_2, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo02_2
+  # The way back: mayo02_2's warp table.
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
+  # Cell 51 leads to File City's 24 phases: the chooser starts on the story's (twnb01) and turns its pages; staying
+  # keeps the player on the map.
+  - walk_to: {trigger: 51}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - screenshot: chooser-phases
+  - menu_select: next
+  - wait: {seconds: 0.3}
+  - screenshot: chooser-phases-next
+  # Cancel (Escape) stays.
+  - tap: {key: escape}
+  - wait: {hidden: destination_choice, seconds: 0.5}
+  - wait: {map: mayo00}
+  # Off the cell to the other one and back: it asks again, and confirm takes the story's place, where it starts.
+  - walk_to: {trigger: 52}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - tap: {key: escape}
+  - wait: {hidden: destination_choice, seconds: 0.5}
+  - walk_to: {trigger: 51}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - tap: {key: return}
+  - wait: {hidden: destination_choice}
+  - wait: {map: twnb01, partner_within: 400, seconds: 0.5}
+  # File City's other half: its cell 53, which the story keeps closed.
+  - walk_to: {trigger: 53}
+  - wait: {shown: destination_choice, seconds: 0.5}
+  - screenshot: chooser-twnb01
+  - menu_select: place-2
+  - wait: {hidden: destination_choice}
+  - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo08b
+  # And on through mayo08b's warp table.
+  - walk_to: {trigger: 111}
+  - wait: {map: mayo02, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo02

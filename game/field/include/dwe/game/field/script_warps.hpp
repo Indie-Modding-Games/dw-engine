@@ -204,6 +204,15 @@ struct CellWarp {
 CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, WarpVia via, std::int32_t section,
                     const GuardFacts& facts, UnknownPolicy policy);
 
+// Whether a map has data the field can enter; an empty one lets every map through.
+using MapFilter = std::function<bool(std::string_view map)>;
+
+// Free exploration (an option, off by default; docs/architecture/warps-de-script.md): the places the scripts' map
+// changes on a map's cell go to, whatever their guards decide: of that map, way and section, the warps with a target
+// that `hasMap` lets through, the first of each place (map and exit) in the warps' order.
+std::vector<const ScriptWarp*> explorationWarps(std::span<const ScriptWarp> warps, std::string_view map, WarpVia via,
+                                                std::int32_t section, const MapFilter& hasMap);
+
 // The triggers as a new game leaves them: set those the story lists and clear the rest; when its paths do not agree,
 // the rest is unknown. A field that starts on `startMap` at `startExit` anywhere but the opening's spawn (the story's
 // map at the opening's exit) skips the opening, and sets the triggers the opening would have set too.

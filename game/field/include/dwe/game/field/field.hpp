@@ -58,6 +58,21 @@ struct ScriptWarpSetup {
     TriggerWriter writeTrigger{};
     // What the field does with a recursion or a trigger it is told it cannot know.
     UnknownPolicy unknownPolicy = VanillaUnknownPolicy;
+    // Free exploration: the scripts' map changes go wherever they can go, whatever their guards (off: the original's
+    // conditions, untouched).
+    bool explore = false;
+    // The maps the field can enter, for free exploration's places; empty: every map.
+    MapFilter hasMap{};
+};
+
+// Free exploration's choice on a cell whose scripts go to more than one place: the app shows it, and the player picks
+// one (Field::chooseDestination) or stays.
+struct DestinationChoice {
+    std::string map; // where the player stands
+    std::int32_t cell = 0;
+    std::vector<MapChange> places;
+    // The place the original's conditions take now, if any: what the choice starts on.
+    std::optional<std::size_t> vanilla;
 };
 
 // A character as the minimap and the debug views see it.
@@ -127,9 +142,26 @@ public:
     // and the autotest's walks keep off these cells unless one is where they go.
     [[nodiscard]] bool warpsOn(std::int32_t trigger) const;
 
+    // Whether a walk must keep off the cells with this trigger: those that warp (warpsOn), except the ones of the
+    // trigger the player stands on, which fire nothing until stepped onto again (after staying in free exploration's
+    // chooser, or on a spawn on a warp).
+    [[nodiscard]] bool keepsOff(std::int32_t trigger) const { return trigger != lastTrigger_ && warpsOn(trigger); }
+
     // Decides the map's step cells again after what their guards read changed: the field does it itself when a warp
     // it takes writes triggers; whoever else writes them (a load, the console) calls it.
     void refreshScriptWarps();
+
+    // Free exploration (ScriptWarpSetup::explore), which the player can turn on and off while playing; the map's cells
+    // are decided again at once.
+    void setExplore(bool explore);
+    [[nodiscard]] bool explores() const { return explore_; }
+
+    // Free exploration's choice waiting for the player; nothing moves while it waits.
+    [[nodiscard]] const std::optional<DestinationChoice>& destinationChoice() const { return choice_; }
+
+    // Answers the choice: a place of it is taken (with the triggers its warp sets), nothing stays on the cell. Without
+    // a choice, or with a place it does not have, nothing happens.
+    void chooseDestination(std::optional<std::size_t> place);
 
     // The current map's collision grid, for the minimap.
     [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
@@ -176,6 +208,10 @@ private:
     // warp's triggers are written.
     std::optional<MapChange> takeScriptWarp(WarpVia via, std::int32_t value);
     void writeTriggersOf(const ScriptWarp& warp);
+    // takeScriptWarp under free exploration, given what the original's conditions take (`cell`).
+    std::optional<MapChange> exploreScriptWarp(WarpVia via, std::int32_t value, const CellWarp& cell);
+    // The warp taken, as the map change it makes; logs what free exploration opened if the original would not take it.
+    MapChange takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value);
     void walkOut(float seconds);
     // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
     // FADE_IN_CURRENT).
@@ -190,6 +226,12 @@ private:
     GuardFacts facts_;
     TriggerWriter writeTrigger_;
     UnknownPolicy unknownPolicy_;
+    bool explore_;
+    MapFilter hasMap_;
+    std::optional<DestinationChoice> choice_;
+    // The warp of each place of the choice, and the one the original's conditions take.
+    std::vector<const ScriptWarp*> choiceWarps_;
+    const ScriptWarp* choiceVanilla_ = nullptr;
     // The step cells of the current map whose map change is taken.
     std::vector<std::int32_t> warpingStepCells_;
     // The map and cell of each section whose map change could not be decided, logged once.

@@ -179,6 +179,8 @@ bool readFlag(Options& options, std::string_view argument) {
         options.listSaves = true;
     } else if (argument == TuningOption) {
         options.tuning = true;
+    } else if (argument == ExploreOption) {
+        options.explore = true;
     } else if (argument == content::DevAssetsOption) {
         options.devAssets = true;
     } else {

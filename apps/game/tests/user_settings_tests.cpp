@@ -11,7 +11,8 @@
 namespace dwe::app {
 
 TEST_CASE("the player's settings survive a write and a read, the UI skin with them") {
-    const UserSettings settings{.language = "es", .textFont = "original", .uiSkin = "test_contrast", .minimap = "off"};
+    const UserSettings settings{
+        .language = "es", .textFont = "original", .uiSkin = "test_contrast", .minimap = "off", .freeExploration = true};
     const auto text = formatUserSettings(settings);
     REQUIRE(text.has_value());
     CHECK(text->contains("ui_skin: test_contrast"));
@@ -21,12 +22,14 @@ TEST_CASE("the player's settings survive a write and a read, the UI skin with th
     CHECK(read->textFont == std::optional<std::string>{"original"});
     CHECK(read->uiSkin == std::optional<std::string>{"test_contrast"});
     CHECK(read->minimap == std::optional<std::string>{"off"});
+    CHECK(read->freeExploration == std::optional<bool>{true});
 
     // A file from before the setting existed, or without the choice made, leaves it to the packs.
     const auto older = parseUserSettings("language: en\n");
     REQUIRE(older.has_value());
     CHECK_FALSE(older->uiSkin.has_value());
     CHECK_FALSE(older->minimap.has_value());
+    CHECK_FALSE(older->freeExploration.has_value());
     CHECK_FALSE(formatUserSettings(UserSettings{})->contains("ui_skin"));
 }
 

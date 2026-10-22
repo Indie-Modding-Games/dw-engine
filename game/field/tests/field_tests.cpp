@@ -603,6 +603,116 @@ TEST_CASE("after a trigger written outside the field, refreshing decides the map
     CHECK(field.warpsOn(51));
 }
 
+namespace {
+
+// The house's door to the castle, which the story opens with trigger 203.
+dwe::game::field::ScriptWarp castleDoor() {
+    dwe::game::field::ScriptWarp door = houseDoor();
+    door.targetMap = "castle";
+    door.targetExit = 1;
+    std::get<dwe::game::field::GuardBranch>(door.guard.terms.front()).tests.front().clear = false;
+    door.setsFlags = {{.trigger = 9, .set = true}};
+    return door;
+}
+
+// Ticks until a map change or 5 seconds.
+std::optional<MapChange> tickToChange(Field& field) {
+    std::optional<MapChange> change;
+    for (int i = 0; i < 300 && !change; ++i) {
+        field.tick(Tick);
+        change = field.takeMapChange();
+    }
+    return change;
+}
+
+} // namespace
+
+TEST_CASE("free exploration opens a cell the story keeps closed, and logs it") {
+    static std::vector<std::string> lines;
+    static const bool added = [] {
+        dwe::core::addLogSink(
+            [](dwe::core::LogLevel /*level*/, std::string_view message) { lines.emplace_back(message); });
+        return true;
+    }();
+    static_cast<void>(added);
+    lines.clear();
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::scene::World world;
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({203}), .explore = true}};
+    const auto change = walkSouth(field, house);
+    REQUIRE(change.has_value());
+    CHECK(change->map == "town");
+    CHECK(std::ranges::any_of(lines, [](const std::string& line) { return line.contains("free exploration opens"); }));
+
+    // A place without data is not offered.
+    dwe::scene::World filtered;
+    Field noTown{
+        filtered,
+        originalRules(),
+        {.warps = {houseDoor()}, .facts = triggersSet({203}), .explore = true, .hasMap = [](std::string_view map) {
+             return map != "town";
+         }}};
+    CHECK_FALSE(walkSouth(noTown, house).has_value());
+}
+
+TEST_CASE("free exploration lets the player choose among a cell's places, starting on the story's, or stay") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    TestStory story;
+    dwe::scene::World world;
+    Field field{world,
+                originalRules(),
+                {.warps = {castleDoor(), houseDoor()},
+                 .facts = story.reader(),
+                 .writeTrigger = story.writer(),
+                 .explore = true}};
+    CHECK_FALSE(walkSouth(field, house).has_value());
+    REQUIRE(field.destinationChoice().has_value());
+    const auto& choice = *field.destinationChoice();
+    CHECK(choice.map == "house");
+    CHECK(choice.cell == 51);
+    REQUIRE(choice.places.size() == 2);
+    CHECK(choice.places[0].map == "castle");
+    CHECK(choice.places[1].map == "town");
+    CHECK(choice.vanilla == std::optional<std::size_t>{1});
+
+    // Staying: the player is on the cell, which does not fire again until stepped onto.
+    field.chooseDestination(std::nullopt);
+    CHECK_FALSE(field.destinationChoice().has_value());
+    field.setInput({});
+    CHECK_FALSE(tickToChange(field).has_value());
+    CHECK_FALSE(field.destinationChoice().has_value());
+
+    // Choosing the castle takes it and writes its triggers.
+    CHECK_FALSE(walkSouth(field, house).has_value());
+    REQUIRE(field.destinationChoice().has_value());
+    field.chooseDestination(7);
+    REQUIRE(field.destinationChoice().has_value());
+    field.chooseDestination(0);
+    CHECK_FALSE(field.destinationChoice().has_value());
+    const auto change = tickToChange(field);
+    REQUIRE(change.has_value());
+    CHECK(change->map == "castle");
+    CHECK(change->exit == 1);
+    CHECK(story.writes == std::vector<std::pair<std::int32_t, bool>>{{9, true}});
+}
+
+TEST_CASE("free exploration turns on and off while playing, and the story's conditions decide again") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::scene::World world;
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({203})}};
+    field.enterMapAt(house, at(0.0F, 1000.0F));
+    CHECK_FALSE(field.explores());
+    CHECK_FALSE(field.warpsOn(51));
+    field.setExplore(true);
+    CHECK(field.warpsOn(51));
+    field.setExplore(false);
+    CHECK_FALSE(field.warpsOn(51));
+    CHECK_FALSE(walkSouth(field, house).has_value());
+}
+
 TEST_CASE("a warp fades out while the player walks on, and fades in on the new map") {
     MapDocument town = roomMap("town");
     fill(town, {.column = 50, .row = 40}, {.column = 52, .row = 41}, 112);

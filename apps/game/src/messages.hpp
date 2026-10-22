@@ -40,6 +40,10 @@ inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin
 // The player's minimap mode (minimap_setting.cpp): a saved value that is not auto, on or off.
 inline constexpr std::string_view UnknownSavedMinimap = "game: the saved minimap mode '{}' is unknown; using auto";
 
+// Free exploration (free_exploration.cpp) on from the start, by --explore or the saved setting.
+inline constexpr std::string_view FreeExplorationAtStart =
+    "game: free exploration on: the scripts' map changes go anywhere they can, whatever the story";
+
 // Autotest: a wait for a map change's name that has not come yet (the map id).
 inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";
 

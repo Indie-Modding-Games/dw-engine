@@ -23,3 +23,5 @@ ui_scale: "Interface scale"
 ui_scale.value: "{percent}%"
 vsync: "Vertical sync"
 ui_skin: "Interface style"
+# Free exploration: the scripts open every way they have, whatever the story (off by default).
+free_exploration: "Free exploration"

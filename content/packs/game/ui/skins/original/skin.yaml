@@ -23,6 +23,9 @@ screens:
     styles: [ui/skins/original/partner_menu/style]
   battle:
     styles: [ui/skins/original/battle/style]
+  # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
+  destination_choice:
+    styles: [ui/skins/original/pause_menu/style]
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
   hud:

@@ -501,6 +501,24 @@ CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, War
     return cell;
 }
 
+std::vector<const ScriptWarp*> explorationWarps(std::span<const ScriptWarp> warps, std::string_view map, WarpVia via,
+                                                std::int32_t section, const MapFilter& hasMap) {
+    std::vector<const ScriptWarp*> places;
+    for (const ScriptWarp& warp : warps) {
+        if (warp.map != map || warp.via != via || warp.section != section || !warp.targetMap ||
+            (hasMap && !hasMap(*warp.targetMap))) {
+            continue;
+        }
+        const bool known = std::ranges::any_of(places, [&](const ScriptWarp* place) {
+            return place->targetMap == warp.targetMap && place->targetExit == warp.targetExit;
+        });
+        if (!known) {
+            places.push_back(&warp);
+        }
+    }
+    return places;
+}
+
 core::Result<std::vector<ScriptWarp>> parseScriptWarps(std::string_view yaml) {
     auto tree = core::parseYaml(yaml);
     if (!tree) {

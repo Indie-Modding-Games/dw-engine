@@ -87,7 +87,8 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
     : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps.warps)),
       facts_(std::move(scriptWarps.facts)), writeTrigger_(std::move(scriptWarps.writeTrigger)),
-      unknownPolicy_(scriptWarps.unknownPolicy), player_(world.create()), partner_(world.create()) {
+      unknownPolicy_(scriptWarps.unknownPolicy), explore_(scriptWarps.explore), hasMap_(std::move(scriptWarps.hasMap)),
+      player_(world.create()), partner_(world.create()) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
     registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -146,6 +147,9 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     leavingSeconds_ = 0.0F;
     pendingChange_.reset();
     waitingForMap_ = false;
+    choice_.reset();
+    choiceWarps_.clear();
+    choiceVanilla_ = nullptr;
     changeTarget_.clear();
     fadeInSeconds_.reset();
     triggerSteps_.clear();
@@ -182,7 +186,7 @@ void Field::tick(float seconds) {
         walkOut(seconds);
         return;
     }
-    if (pendingChange_ || waitingForMap_ || mapId_.empty()) {
+    if (pendingChange_ || waitingForMap_ || choice_ || mapId_.empty()) {
         registry.get<AnimationIntent>(player_) = {};
         return;
     }
@@ -289,8 +293,14 @@ void Field::refreshScriptWarps() {
         if (warp.map != mapId_) {
             continue;
         }
-        if (warp.via == WarpVia::Step && !std::ranges::contains(warpingStepCells_, warp.section) &&
-            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, facts_, unknownPolicy_).warp != nullptr) {
+        if (warp.via != WarpVia::Step || std::ranges::contains(warpingStepCells_, warp.section)) {
+            continue;
+        }
+        const bool warps =
+            explore_
+                ? !explorationWarps(scriptWarps_, mapId_, WarpVia::Step, warp.section, hasMap_).empty()
+                : warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, facts_, unknownPolicy_).warp != nullptr;
+        if (warps) {
             warpingStepCells_.push_back(warp.section);
         }
     }
@@ -308,6 +318,14 @@ void Field::writeTriggersOf(const ScriptWarp& warp) {
 
 std::optional<MapChange> Field::takeScriptWarp(WarpVia via, std::int32_t value) {
     const CellWarp cell = warpOnCell(scriptWarps_, mapId_, via, value, facts_, unknownPolicy_);
+    if (explore_) {
+        if (auto explored = exploreScriptWarp(via, value, cell)) {
+            return explored;
+        }
+        if (choice_) {
+            return std::nullopt;
+        }
+    }
     if (cell.warp != nullptr && cell.warp->targetMap) {
         const auto index = static_cast<std::size_t>(cell.warp - scriptWarps_.data());
         if (!cell.decision.allowed.empty() && !std::ranges::contains(allowedReported_, index)) {
@@ -339,6 +357,75 @@ std::optional<MapChange> Field::takeScriptWarp(WarpVia via, std::int32_t value) 
     return std::nullopt;
 }
 
+std::optional<MapChange> Field::exploreScriptWarp(WarpVia via, std::int32_t value, const CellWarp& cell) {
+    std::vector<const ScriptWarp*> places = explorationWarps(scriptWarps_, mapId_, via, value, hasMap_);
+    const ScriptWarp* vanilla = cell.warp != nullptr && cell.warp->targetMap ? cell.warp : nullptr;
+    const auto samePlace = [](const ScriptWarp* left, const ScriptWarp* right) {
+        return left != nullptr && right != nullptr && left->targetMap == right->targetMap &&
+               left->targetExit == right->targetExit;
+    };
+    // Where the original goes and nowhere else: the original's way, with its logs.
+    if (places.empty() || (places.size() == 1 && samePlace(places.front(), vanilla))) {
+        return std::nullopt;
+    }
+    if (places.size() == 1) {
+        return takeExplored(*places.front(), vanilla, value);
+    }
+    DestinationChoice choice{.map = mapId_, .cell = value, .places = {}, .vanilla = std::nullopt};
+    for (std::size_t index = 0; index < places.size(); ++index) {
+        choice.places.push_back(
+            MapChange{.map = *places[index]->targetMap, .exit = places[index]->targetExit, .trigger = value});
+        if (!choice.vanilla && samePlace(places[index], vanilla)) {
+            choice.vanilla = index;
+        }
+    }
+    core::logInfo("{}", core::formatMessage(messages::ExplorationChoice, mapId_, value, places.size()));
+    choice_ = std::move(choice);
+    choiceWarps_ = std::move(places);
+    choiceVanilla_ = vanilla;
+    return std::nullopt;
+}
+
+MapChange Field::takeExplored(const ScriptWarp& warp, const ScriptWarp* vanilla, std::int32_t value) {
+    const bool vanillaPlace =
+        vanilla != nullptr && vanilla->targetMap == warp.targetMap && vanilla->targetExit == warp.targetExit;
+    if (!vanillaPlace) {
+        core::logInfo("{}", core::formatMessage(messages::ExplorationOpened, mapId_, value, *warp.targetMap,
+                                                warp.targetExit, warp.source));
+    }
+    writeTriggersOf(warp);
+    return MapChange{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
+}
+
+void Field::setExplore(bool explore) {
+    if (explore_ == explore) {
+        return;
+    }
+    explore_ = explore;
+    core::logInfo("{}", core::formatMessage(explore ? messages::ExplorationOn : messages::ExplorationOff));
+    if (!explore) {
+        choice_.reset();
+        choiceWarps_.clear();
+        choiceVanilla_ = nullptr;
+    }
+    refreshScriptWarps();
+}
+
+void Field::chooseDestination(std::optional<std::size_t> place) {
+    if (!choice_ || (place && *place >= choiceWarps_.size())) {
+        return;
+    }
+    const ScriptWarp* warp = place ? choiceWarps_[*place] : nullptr;
+    const ScriptWarp* vanilla = choiceVanilla_;
+    const std::int32_t value = choice_->cell;
+    choice_.reset();
+    choiceWarps_.clear();
+    choiceVanilla_ = nullptr;
+    if (warp != nullptr) {
+        leave(takeExplored(*warp, vanilla, value));
+    }
+}
+
 void Field::leave(MapChange change) {
     leaving_ = std::move(change);
     leavingSeconds_ = 0.0F;
@@ -354,7 +441,7 @@ void Field::planPath(glm::vec3 target) {
     const CollisionCell clicked = assets::collisionCellAt(target);
     const glm::vec3 position = world_->registry().get<Transform>(player_).position;
     // Paths do not cross warps other than the one clicked.
-    const auto passable = [this](CollisionCell cell) { return !warpsOn(collision_.trigger(cell).value_or(0)); };
+    const auto passable = [this](CollisionCell cell) { return !keepsOff(collision_.trigger(cell).value_or(0)); };
     // The clicked cell, or the nearest ring of cells around it with one the player can get to.
     for (int ring = 0; ring <= ClickSearchCells; ++ring) {
         std::vector<CollisionCell> goals;
@@ -509,6 +596,9 @@ void Field::checkTriggers() {
     if (warpViaOf(value) == WarpVia::Step) {
         if (auto scripted = takeScriptWarp(WarpVia::Step, value)) {
             leave(std::move(*scripted));
+            return;
+        }
+        if (choice_) {
             return;
         }
     }

@@ -1,0 +1,11 @@
+# The free exploration's chooser: a place the scripts of the cell the player stepped on can lead to.
+title: "Where to?"
+# {name} is the map's name, {map} its id (several maps share a name).
+place: "{name} ({map})"
+# The place the story takes now, if any.
+story: "story"
+stay: "Stay here"
+previous: "Previous"
+next: "Next"
+# {page} of {pages}.
+page: "{page}/{pages}"

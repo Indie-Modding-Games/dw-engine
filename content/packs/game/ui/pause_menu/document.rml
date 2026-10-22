@@ -42,6 +42,9 @@
 				<button id="ui-skin" class="option" onclick="adjust(document, 'ui-skin', 1)">
 					<span class="label" text-key="pause_menu.ui_skin"></span><span class="value" id="ui-skin-value"></span>
 				</button>
+				<button id="free-exploration" class="option" onclick="adjust(document, 'free-exploration', 1)">
+					<span class="label" text-key="pause_menu.free_exploration"></span><span class="value" id="free-exploration-value"></span>
+				</button>
 				<button id="options-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 

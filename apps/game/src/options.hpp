@@ -40,6 +40,9 @@ struct Options {
     bool vsync = true;
     // Start with the debug overlay's tuning panel open (--tuning), for manual tests and screenshots.
     bool tuning = false;
+    // Start with free exploration on (--explore) for this run, whatever the saved setting
+    // (docs/architecture/warps-de-script.md). Never on by default.
+    bool explore = false;
     // The field's start, instead of field/warps (--start <map>[,<exit>]).
     std::optional<std::string> startMap;
     int startExit = 0;
@@ -89,7 +92,8 @@ struct Options {
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--saves <folder>] [--size "
     "<width>x<height>] "
-    "[--fullscreen] [--no-vsync] [--tuning] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang <language>] "
+    "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
+    "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] [--clock-speed <x>] "
     "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
@@ -97,6 +101,7 @@ inline constexpr std::string_view Usage =
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view TuningOption = "--tuning";
+inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view LanguageOption = "--lang";
 inline constexpr std::string_view SeedOption = "--seed";
 

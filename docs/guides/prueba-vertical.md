@@ -42,6 +42,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--autotest <ruta.yaml>` | Recorre una ruta y sale con 0 si pasa (ver abajo) |
 | `--shots <carpeta>` | Dónde guarda las capturas de un autotest |
 | `--lang en\|es` | El idioma de esta ejecución, para autotests; no se guarda. Sin él, el juego usa el que se eligió en el menú principal o, la primera vez, el del sistema ([localización](../architecture/localizacion.md)) |
+| `--explore` | Empieza con la [exploración libre](../architecture/warps-de-script.md#exploración-libre) encendida en esta ejecución, sin guardarlo; sin él, el juego usa el ajuste del menú de pausa (apagado por defecto) |
 | `--skip-steps <tipo>[,<tipo>...]` | Salta los pasos de esos tipos (`fullscreen` en un X sin gestor de ventanas); el informe lo dice, y saltar `walk_to` o `wait` deja la ejecución en parcial (sale con 2) |
 
 Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--model-viewer`, `--ui-demo` y
@@ -98,9 +99,9 @@ done
   no le parece nada especial el mapa de inicio (`hud.partner.area` a 0), el hambre que aparece con el reloj
   acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a 800x600, 1280x720 y 2560x1080
   y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
-  `route-language.yaml`. Con ella, `route-skin-original.yaml` y `route-scripted-loop.yaml`, el paso de rutas es de 21
-  rutas (con la pareja de `route-save-load`): 42 ejecuciones sobre el contenido extraído, más las 4 del `.pak`
-  cocinado, 46 en total.
+  `route-language.yaml`. Con ella, `route-skin-original.yaml`, `route-scripted-loop.yaml` y las tres de la
+  exploración libre, el paso de rutas es de 24 rutas (con la pareja de `route-save-load`): 48 ejecuciones sobre el
+  contenido extraído, más las 4 del `.pak` cocinado, 52 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
@@ -141,6 +142,14 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   File City (script). Comprueba los dos caminos de cambio de mapa, la tabla y los
   [warps de script](../architecture/warps-de-script.md), y que el compañero sigue al jugador en cada llegada; hace
   una captura en cada zona. Se corre en los dos idiomas, como `route-language.yaml`.
+- `route-free-exploration.yaml`: la [exploración libre](../architecture/warps-de-script.md#exploración-libre) con el
+  teclado, desde una partida nueva: la enciende en las opciones del menú de pausa y pasa las puertas que la historia
+  aún tiene cerradas hacia tres zonas a las que una partida nueva no llega (`mayo02_2`, `mayo08b`, `mayo02`), con el
+  selector de destinos y con camino de vuelta. Comprueba que el selector empieza en el lugar de la historia, que pasa
+  de página y que Escape deja al jugador en el mapa. Se corre en los dos idiomas.
+- `route-free-exploration-mouse.yaml` y `route-free-exploration-gamepad.yaml`: el interruptor y el selector con el
+  ratón (un clic en la segunda página) y con el mando (Este se queda, Sur toma el lugar de la historia). Se corren en
+  los dos idiomas.
 
 Todas las rutas corren con el aspecto original, el de por defecto, salvo que pidan otro. Las dos de aspectos (y el
 aspecto original en todas) necesitan contenido extraído con `dwx` de la versión 2 del extractor o posterior, que
