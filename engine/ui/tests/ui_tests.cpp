@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -735,6 +736,73 @@ TEST_CASE("the HUD draws the field status on each revision, with the bars' low h
     CHECK(ui->elementText("hud", "field-time") == "07:06");
 }
 
+TEST_CASE("the field bars fill both tones by the value's place in each half, and only whole pips with pips") {
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    // Without pips the second tone fills its part of the upper half: happiness 30 of 0 to 100 is 30 %, discipline 70
+    // of 50 to 100 is 40 %.
+    setFieldMeter(*ui, 0, 30.0, -100.0, 100.0);
+    setFieldMeter(*ui, 1, 70.0, 0.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->styleProperty("hud", "field-meter-0-fill", "width") == "100%");
+    CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "30%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-fill", "width") == "100%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "40%");
+    // In the lower half the first tone fills part of its half and the second none.
+    setFieldMeter(*ui, 1, 10.0, 0.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->styleProperty("hud", "field-meter-1-fill", "width") == "20%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "0%");
+}
+
+TEST_CASE("a field bar with pips fills in whole pips of the original's 25, rounding down") {
+    // The shared document with the bars marked as a skin marks them (docs/architecture/ui.md#estado-del-campo).
+    std::ifstream stream{std::filesystem::path{DWE_GAME_PACK} / "ui/hud/document.rml", std::ios::binary};
+    std::string document{std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}};
+    for (const std::string_view bar : {"field-meter-0-bar", "field-meter-1-bar"}) {
+        const std::string plain = std::format(R"(class="bar" id="{}")", bar);
+        const std::size_t at = document.find(plain);
+        REQUIRE(at != std::string::npos);
+        document.replace(at, plain.size(), std::format(R"(class="bar pips" id="{}")", bar));
+    }
+    Content content;
+    content.add("ui/hud/document.rml", document);
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    // Happiness 30: the upper half's 25 pips are 4 points each, so 7 of them (28 %); -97 is no pip of the lower half
+    // (partner_impl.c: renderStatusBars).
+    setFieldMeter(*ui, 0, 30.0, -100.0, 100.0);
+    // Discipline 31: 2 points a pip, 15 pips of the lower half (60 %), none of the upper.
+    setFieldMeter(*ui, 1, 31.0, 0.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->styleProperty("hud", "field-meter-0-fill", "width") == "100%");
+    CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "28%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-fill", "width") == "60%");
+    CHECK(ui->styleProperty("hud", "field-meter-1-high", "width") == "0%");
+    setFieldMeter(*ui, 0, -97.0, -100.0, 100.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->styleProperty("hud", "field-meter-0-fill", "width") == "0%");
+    CHECK(ui->styleProperty("hud", "field-meter-0-high", "width") == "0%");
+}
+
+TEST_CASE("the field clock is at night before 6:00 and from 17:00") {
+    Content content;
+    auto ui = createUi(content.mount());
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    // clock.c: renderGameClock draws the moon with HOUR < 6 or HOUR >= 17.
+    for (const auto& [hour, night] : {std::pair{0.0, true}, std::pair{5.0, true}, std::pair{6.0, false},
+                                      std::pair{16.0, false}, std::pair{17.0, true}, std::pair{23.0, true}}) {
+        CAPTURE(hour);
+        ui->setSetting("hud.clock.hour", hour);
+        bumpFieldRevision(*ui);
+        CHECK(ui->elementHasClass("hud", "field-clock", "night") == night);
+    }
+}
+
 namespace {
 
 void setFieldNeeds(Ui& ui, bool hunger, bool sleep, bool toilet, bool tired = false) {
@@ -964,6 +1032,31 @@ function unknown() ui.send(t("nobody.has.this")) end
     ui->setMinimap(grid, "");
     ui->update();
     CHECK(ui->elementText("hud", "minimap-name").empty());
+}
+
+TEST_CASE("the field status writes its labels, time and date again in the new language") {
+    Content content;
+    VirtualFileSystem& files = content.mount();
+    localization::Catalog texts = catalogIn(files, "es");
+    auto ui = createUi(files, texts);
+    REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+    ui->show("hud");
+    ui->setSetting("hud.meter.0.label", std::string{"partner_menu.happiness"});
+    ui->setSetting("hud.need.0.label", std::string{"hud.need.hunger"});
+    ui->setSetting("hud.clock.day", 3.0);
+    ui->setSetting("hud.clock.year", 1.0);
+    bumpFieldRevision(*ui);
+    CHECK(ui->elementText("hud", "field-meter-0-label") == "Felicidad");
+    CHECK(ui->elementText("hud", "field-need-0") == "Hambre");
+    CHECK(ui->elementText("hud", "field-date") == "Día 3, año 1");
+
+    // No new revision: the language change alone writes them again.
+    REQUIRE(texts.setLanguage("en"));
+    ui->refreshTexts();
+    ui->update();
+    CHECK(ui->elementText("hud", "field-meter-0-label") == "Happiness");
+    CHECK(ui->elementText("hud", "field-need-0") == "Hunger");
+    CHECK(ui->elementText("hud", "field-date") == "Day 3, Year 1");
 }
 
 TEST_CASE("the HUD shows the map change's map name in the middle of the screen, in the player's language") {
