@@ -257,6 +257,24 @@ TEST_CASE("flow that runs past the last instruction does not build") {
     CHECK_FALSE(buildScriptFlow(listing).has_value());
 }
 
+TEST_CASE("a section or a target with no instruction is an error of the flow and not a crash") {
+    // listingOf does not check destinations as readScriptListing does: a script whose code stops decoding keeps the
+    // sections that point at what did not decode.
+    ScriptListing section = ListingBuilder{}.section(0xFE, 0x00).op(0x00, "end_section").listing();
+    section.sections[0].entry = 0x02;
+    const auto sectionFlow = buildScriptFlow(section);
+    REQUIRE_FALSE(sectionFlow.has_value());
+    CHECK(sectionFlow.error().message.contains("section 0x0002"));
+    CHECK_FALSE(structureScript(section).has_value());
+
+    ScriptListing target =
+        ListingBuilder{}.section(0xFE, 0x00).jump(0x00, "jump_to", 0x04).op(0x04, "end_section").listing();
+    target.instructions[0].targets = {0x02};
+    const auto targetFlow = buildScriptFlow(target);
+    REQUIRE_FALSE(targetFlow.has_value());
+    CHECK(targetFlow.error().message.contains("target 0x0002"));
+}
+
 TEST_CASE("an if whose arms meet becomes if/else and the code after it") {
     const ScriptListing listing = ListingBuilder{}
                                       .section(0xFE, 0x00)

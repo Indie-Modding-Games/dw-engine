@@ -23,10 +23,14 @@ bool endsFlow(FlowRole role) {
 }
 
 // The listing indices where a block must start: the entry points, every destination, and the instruction after
-// one that does not simply run on.
+// one that does not simply run on. An offset with no instruction is skipped here; the builder reports it.
 std::set<std::size_t> findLeaders(const ScriptListing& listing) {
     std::set<std::size_t> leaders;
-    const auto addOffset = [&](std::uint32_t offset) { leaders.insert(*listing.indexAt(offset)); };
+    const auto addOffset = [&](std::uint32_t offset) {
+        if (const auto index = listing.indexAt(offset)) {
+            leaders.insert(*index);
+        }
+    };
     for (const ListingSection& section : listing.sections) {
         addOffset(section.entry);
     }
