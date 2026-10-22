@@ -1,0 +1,56 @@
+name: Docs site (GitHub Pages)
+
+# DISABLED: publishing the documentation site needs the owner's explicit yes. Until then this workflow never runs on
+# its own (manual dispatch only) and, even when dispatched, every job is skipped unless the repository variable
+# DWE_DOCS_PAGES is "enabled". Turning it on: enable GitHub Pages with "GitHub Actions" as the source, set the
+# variable, and add a push trigger on main for docs/** if the site should follow main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: vars.DWE_DOCS_PAGES == 'enabled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same Node and packages as the development image (.devcontainer/Dockerfile and its docs-site lockfile).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+
+      - name: Install the site's packages
+        run: |
+          npm ci --prefix .devcontainer/docs-site --ignore-scripts --no-audit --no-fund
+          ln -s .devcontainer/docs-site/node_modules node_modules
+
+      - name: Build the site
+        env:
+          DWE_DOCS_BASE: /${{ github.event.repository.name }}/
+        run: node_modules/.bin/vitepress build docs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/docs-site
+
+  deploy:
+    if: vars.DWE_DOCS_PAGES == 'enabled'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
