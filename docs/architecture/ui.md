@@ -223,7 +223,7 @@ aspecto lo dibuje a su manera:
 | Elemento o clase | Qué hace el script | Para qué |
 |---|---|---|
 | clase `shown` en `#field-status` | La pone con `hud.shown` y la quita sin él | Cada aspecto decide cómo se va el panel: el moderno lo quita (`display: none`); el original puede deslizarlo, como `clock.c` (50 píxeles por frame) |
-| clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone, el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
+| clase `pips` en una barra (`#field-meter-<i>-bar`, `#field-pool-<i>-bar`) | Si el aspecto se la pone (en su `skin.yaml`, ver abajo), el relleno va en 25 pasos del 4 %, redondeando hacia abajo, con la misma regla de dos tonos | Los 25 cuadritos de `partner_impl.c: renderStatusBars` (4 puntos por cuadrito en la felicidad, 2 en la disciplina) |
 | clase `low` en `#field-meter-<i>` | La pone si el valor está por debajo de la mitad de su rango (`(min + max) / 2`) y la quita si no | El icono de la barra: la cara de la felicidad se pone triste por debajo de 0 y el de la disciplina cambia por debajo de 50 (`partner_impl.c: renderStatusBars`); el moderno no la usa |
 | `#field-partner-bubble` | `left` y `top` desde `hud.partner.x` y `hud.partner.y` (redibuja con `hud.partner.revision`); la clase `shown` solo con `hud.partner.visible` y alguna necesidad; y una sola clase de necesidad, `hunger`, `sleep`, `toilet` o `tired` | La burbuja del original sobre el compañero (`bubble.c`). Cuelga del centro de su borde de abajo (`ui/hud/structure.rcss`), así que el aspecto solo le da tamaño y dibujo; el moderno no la enseña porque ya tiene el panel de necesidades |
 | `#field-clock-minute-hand` | `transform: rotate(minuto × 6deg)` | La aguja de minutos de `clock.c: renderGameClock`, una vuelta por hora |
@@ -248,6 +248,12 @@ script, con su referencia a `clock.c` o `partner_impl.c`. Al cambiar de aspecto 
 dibujar el estado y la burbuja sin esperar a otra revisión, porque el aspecto nuevo puede poner o quitar clases que
 lee (`pips`). El aspecto moderno esconde la esfera
 (`#field-clock-dial`) y no pone `pips`.
+
+**Cómo pone un aspecto una clase.** Las hojas RCSS no pueden poner clases, así que un aspecto pone `pips`, y cualquier
+otra clase en los elementos del documento compartido, con el campo `document_classes` de su `skin.yaml`: por documento e
+id de elemento, las clases que el juego le pone al cargar el documento y cambia al cambiar de aspecto. El mecanismo
+llega con el aspecto original; hasta entonces ningún aspecto pone `pips` y las barras se llenan de forma continua. El
+script solo lee la clase (`has_class`), así que no cambia cuando llega.
 
 **El aspecto moderno** (abajo a la izquierda, `ui/skins/modern/hud/style.rcss`) dibuja todo el contrato. Lo que
 cambia frente al original es solo de presentación y es opcional, porque es del aspecto: con el aspecto original se
