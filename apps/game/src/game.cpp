@@ -567,6 +567,8 @@ int runGame(const Options& options) {
                              .ui = ui->get()}};
     FieldHud fieldHud{**ui, session};
     std::optional<std::string> pendingBattle;
+    // Whether a battle ran last frame: its end may change the bag, the money and the partner.
+    bool battleRanLastFrame = false;
     std::optional<std::string> pendingGift;
     (*scripts)->bindCommand(GiveItemCommand,
                             [&pendingGift](std::string_view item) { pendingGift = std::string{item}; });
@@ -724,13 +726,23 @@ int runGame(const Options& options) {
             ++ticksRun;
         }
 
+        // What the script warps' guards read (bag, money, stats, conditions) may change only on these events; the
+        // field decides its cells again once after them (docs/reference/campo.md), not every frame.
+        bool guardFactsChanged = false;
         for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-            if (battleScreen.handle(command) || partnerMenu.handle(command) || freeExploration.handle(command)) {
+            if (battleScreen.handle(command) || freeExploration.handle(command)) {
+                continue;
+            }
+            if (partnerMenu.handle(command)) {
+                guardFactsChanged = true;
                 continue;
             }
             running = apply(command, **ui, *window, settings, languageChanger, textFontChanger, uiSkinChanger,
                             minimapChanger) &&
                       running;
+        }
+        if (pendingGift || pendingUse) {
+            guardFactsChanged = true;
         }
         if (pendingGift) {
             if (auto given = partnerMenu.giveItem(*std::exchange(pendingGift, std::nullopt)); !given) {
@@ -746,7 +758,7 @@ int runGame(const Options& options) {
             startBattle(battleScreen, species ? &*species : nullptr, **scene,
                         *std::exchange(pendingBattle, std::nullopt));
         }
-        careCommands.apply(session);
+        guardFactsChanged = careCommands.apply(session) || guardFactsChanged;
         // Before a queued evolve, so a script that saves and then evolves saves the form it had when it asked.
         if (auto saved = saveCommand.apply(session); !saved) {
             core::logWarning("{}", saved.error().message);
@@ -757,6 +769,7 @@ int runGame(const Options& options) {
         }
         freeExploration.update();
         if (pendingEvolution) {
+            guardFactsChanged = true;
             const std::string form = *std::exchange(pendingEvolution, std::nullopt);
             if (auto evolved = game->systems.evolution->evolveByScript(session, form); !evolved) {
                 core::logWarning("{}", core::formatMessage(messages::EvolveFailed, evolved.error().message));
@@ -784,7 +797,14 @@ int runGame(const Options& options) {
         mapChangeView.show(**scene);
 
         partnerMenu.update();
-        showPartnerEvents(session.takePartnerEvents(), session, **scene);
+        const auto partnerEvents = session.takePartnerEvents();
+        showPartnerEvents(partnerEvents, session, **scene);
+        guardFactsChanged =
+            guardFactsChanged || !partnerEvents.empty() || (battleRanLastFrame && !battleScreen.active());
+        battleRanLastFrame = battleScreen.active();
+        if (guardFactsChanged) {
+            (*scene)->refreshScriptWarps();
+        }
 
         const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
                             (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();

@@ -106,6 +106,8 @@ public:
     // Free exploration (game::field::Field::setExplore) and the answer to its choice (Field::chooseDestination).
     void setExplore(bool explore) { field_->setExplore(explore); }
     void chooseDestination(std::optional<std::size_t> place) { field_->chooseDestination(place); }
+    // Decides the map's script warp cells again after what their guards read changed (Field::refreshScriptWarps).
+    void refreshScriptWarps() { field_->refreshScriptWarps(); }
     [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
     // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
     [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }

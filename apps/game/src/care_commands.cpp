@@ -7,6 +7,7 @@
 #include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 #include "messages.hpp"
 
@@ -31,8 +32,9 @@ void CareCommands::bind(script::ScriptVm& scripts) {
     scripts.bindCommand(ClockSpeedCommand, queue(Kind::ClockSpeed));
 }
 
-void CareCommands::apply(session::GameSession& session) {
-    for (const Queued& command : std::exchange(queued_, {})) {
+bool CareCommands::apply(session::GameSession& session) {
+    const std::vector<Queued> commands = std::exchange(queued_, {});
+    for (const Queued& command : commands) {
         if (!session.playing()) {
             core::logWarning("{}", core::formatMessage(messages::CareCommandFailed, messages::NoGame));
             continue;
@@ -41,6 +43,7 @@ void CareCommands::apply(session::GameSession& session) {
             core::logWarning("{}", core::formatMessage(messages::CareCommandFailed, done.error().message));
         }
     }
+    return !commands.empty();
 }
 
 core::Result<void> CareCommands::run(session::GameSession& session, const Queued& command) {

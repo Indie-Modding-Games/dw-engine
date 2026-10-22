@@ -27,7 +27,8 @@ public:
     void bind(script::ScriptVm& scripts);
 
     // Runs the queued commands on the session, in order; a command that fails is logged and the rest still run.
-    void apply(session::GameSession& session);
+    // Whether any ran.
+    bool apply(session::GameSession& session);
 
 private:
     enum class Kind : std::uint8_t { Toilet, Sleep, Train, Scold, ClockSpeed };
