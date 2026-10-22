@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <map>
 #include <set>
 #include <utility>
@@ -19,8 +20,9 @@ using assets::TextTableName;
 
 constexpr char Open = '{';
 constexpr char Close = '}';
-// The missing keys a warning names; the rest are only counted.
+// The missing keys and tables a warning names; the rest are only counted.
 constexpr std::size_t MissingKeysNamed = 5;
+constexpr std::size_t MissingTablesNamed = 5;
 constexpr std::string_view KeyListSeparator = ", ";
 // The source and block of the map names in the original's text (docs/formats/textos.md).
 constexpr std::string_view MapNamesSource = "main";
@@ -33,8 +35,11 @@ const Catalog* currentCatalog = nullptr; // NOLINT(cppcoreguidelines-avoid-non-c
 
 // The tables of one language, by name.
 using LanguageTables = std::map<TextTableName, TextTable>;
+// The pack that provides each table, by name.
+using TablePacks = std::map<TextTableName, std::string>;
 
-core::Result<LanguageTables> readLanguage(const assets::VirtualFileSystem& files, std::string_view language) {
+core::Result<LanguageTables> readLanguage(const assets::VirtualFileSystem& files, std::string_view language,
+                                          TablePacks* packs = nullptr) {
     LanguageTables tables;
     for (const assets::AssetId& id : files.ids()) {
         std::optional<TextTableName> name = assets::textTableOf(id);
@@ -44,6 +49,10 @@ core::Result<LanguageTables> readLanguage(const assets::VirtualFileSystem& files
         auto table = assets::readTextTable(files, id, *name);
         if (!table) {
             return core::fail(std::format(messages::UnreadableTable, id.str(), table.error().message));
+        }
+        if (packs != nullptr) {
+            const assets::AssetSource* source = files.resolve(id);
+            packs->emplace(*name, source == nullptr ? std::string{} : source->packId);
         }
         tables.emplace(std::move(*name), std::move(*table));
     }
@@ -64,24 +73,35 @@ std::string tableIdText(const TextTableName& name, std::string_view language) {
     return std::format("{}/{}/{}", folder, language, name.name);
 }
 
-std::string keyList(const std::vector<std::string_view>& keys) {
+template <typename Text>
+std::string nameList(const std::vector<Text>& names, std::size_t named) {
     std::string list;
-    for (std::size_t i = 0; i < std::min(keys.size(), MissingKeysNamed); ++i) {
-        list += i == 0 ? std::string{keys[i]} : std::format("{}{}", KeyListSeparator, keys[i]);
+    for (std::size_t i = 0; i < std::min(names.size(), named); ++i) {
+        list += i == 0 ? std::string{names[i]} : std::format("{}{}", KeyListSeparator, names[i]);
     }
     return list;
 }
 
-// What a language misses of the fallback's tables: whole tables and keys of the tables it has.
-std::vector<std::string> missingTexts(const LanguageTables& fallback, const LanguageTables& chosen,
-                                      std::string_view language) {
+// The tables of one pack that have no translation in the language at all.
+struct UntranslatedTables {
+    std::vector<std::string> ids;
+    std::size_t texts = 0;
+};
+
+// What a language misses of the fallback's tables: one line per pack for its whole tables (a partial translation
+// leaves hundreds out), then one per table that misses keys.
+std::vector<std::string> missingTexts(const LanguageTables& fallback, const TablePacks& fallbackPacks,
+                                      const LanguageTables& chosen, std::string_view language) {
     std::vector<std::string> warnings;
+    std::map<std::string, UntranslatedTables> untranslated;
     for (const auto& [name, table] : fallback) {
         const TextTableName translated{.kind = name.kind, .language = std::string{language}, .name = name.name};
         const auto found = chosen.find(translated);
         if (found == chosen.end()) {
-            warnings.push_back(std::format(messages::MissingTable, tableIdText(name, FallbackLanguage), language,
-                                           table.size(), FallbackLanguage));
+            const auto pack = fallbackPacks.find(name);
+            UntranslatedTables& tables = untranslated[pack == fallbackPacks.end() ? std::string{} : pack->second];
+            tables.ids.push_back(tableIdText(name, FallbackLanguage));
+            tables.texts += table.size();
             continue;
         }
         std::vector<std::string_view> missing;
@@ -92,9 +112,19 @@ std::vector<std::string> missingTexts(const LanguageTables& fallback, const Lang
         }
         if (!missing.empty()) {
             warnings.push_back(std::format(messages::MissingKeys, tableIdText(translated, language), missing.size(),
-                                           FallbackLanguage, FallbackLanguage, keyList(missing)));
+                                           FallbackLanguage, FallbackLanguage, nameList(missing, MissingKeysNamed)));
         }
     }
+    std::vector<std::string> perPack;
+    for (const auto& [pack, tables] : untranslated) {
+        std::string named = nameList(tables.ids, MissingTablesNamed);
+        if (tables.ids.size() > MissingTablesNamed) {
+            named += messages::MoreNamed;
+        }
+        perPack.push_back(std::format(messages::MissingTables, pack, language, tables.ids.size(), tables.texts,
+                                      FallbackLanguage, named));
+    }
+    warnings.insert(warnings.end(), std::make_move_iterator(perPack.begin()), std::make_move_iterator(perPack.end()));
     return warnings;
 }
 
@@ -140,7 +170,8 @@ core::Result<void> Catalog::setLanguage(std::string_view language) {
             return core::fail(std::format(messages::NoLanguage, needed, needed));
         }
     }
-    auto fallback = readLanguage(*files_, FallbackLanguage);
+    TablePacks fallbackPacks;
+    auto fallback = readLanguage(*files_, FallbackLanguage, &fallbackPacks);
     if (!fallback) {
         return std::unexpected{fallback.error()};
     }
@@ -152,7 +183,8 @@ core::Result<void> Catalog::setLanguage(std::string_view language) {
         }
         chosen = std::move(*read);
     }
-    warnings_ = language == FallbackLanguage ? std::vector<std::string>{} : missingTexts(*fallback, chosen, language);
+    warnings_ = language == FallbackLanguage ? std::vector<std::string>{}
+                                             : missingTexts(*fallback, fallbackPacks, chosen, language);
     for (const std::string& warning : warnings_) {
         core::logWarning(messages::Warning, warning);
     }

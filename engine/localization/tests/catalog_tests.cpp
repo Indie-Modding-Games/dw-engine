@@ -6,6 +6,7 @@
 
 #include <array>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -69,7 +70,26 @@ TEST_CASE("a key missing in the language falls back to English, with a warning")
     REQUIRE(catalog.warnings().size() == 2);
     CHECK(catalog.warnings()[0].contains("localization/es/menu misses 1 keys of en"));
     CHECK(catalog.warnings()[0].contains("menu.only_english"));
-    CHECK(catalog.warnings()[1].contains("text/en/main has no es translation"));
+    CHECK(catalog.warnings()[1] ==
+          "pack base has no es translation of 1 tables (2 texts), which show in en: text/en/main");
+}
+
+TEST_CASE("the tables a language has no translation of at all make one warning per pack") {
+    Packs packs;
+    const int storyTables = 7;
+    for (int i = 0; i < storyTables; ++i) {
+        packs.memory.addFile(std::format("base/text/en/story_{:03}.yaml", i), "line.0: A\nline.1: B\n");
+    }
+    packs.memory.addFile("game/text/en/shop.yaml", "line.0: Buy\n");
+    const Catalog catalog = loaded(packs.mount(), "es");
+    // The menu's missing key, then base's 8 tables (main and the stories) and game's one, each pack in one line.
+    REQUIRE(catalog.warnings().size() == 3);
+    CHECK(catalog.warnings()[0].contains("menu.only_english"));
+    CHECK(catalog.warnings()[1] ==
+          "pack base has no es translation of 8 tables (16 texts), which show in en: text/en/main, text/en/story_000, "
+          "text/en/story_001, text/en/story_002, text/en/story_003, ...");
+    CHECK(catalog.warnings()[2] ==
+          "pack game has no es translation of 1 tables (1 texts), which show in en: text/en/shop");
 }
 
 TEST_CASE("a key no table has shows as itself") {
