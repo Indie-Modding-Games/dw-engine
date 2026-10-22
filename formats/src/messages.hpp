@@ -30,6 +30,7 @@ inline constexpr std::string_view ItemSwitchSkipped = "item {} ({}): {}";
 // Script listings read back from YAML (script/script_listing.cpp).
 inline constexpr std::string_view ListingNotMapping = "the listing is not a mapping with `sections` and `instructions`";
 inline constexpr std::string_view ListingMissingKey = "instruction {}: `{}` is missing";
+inline constexpr std::string_view ListingNotString = "instruction {}: `{}` must be a string";
 inline constexpr std::string_view ListingBadNumber = "instruction {}: `{}` is not a number: {}";
 inline constexpr std::string_view ListingBadLabel = "`{}` is not a label (l_<hex>)";
 inline constexpr std::string_view ListingUnknownTest = "instruction {}: `{}` is not an IF test";

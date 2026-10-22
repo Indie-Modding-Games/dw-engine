@@ -8,6 +8,8 @@
 #include <initializer_list>
 #include <set>
 
+#include "listing_vocabulary.hpp"
+
 namespace dwe::formats::script {
 
 namespace {
@@ -183,11 +185,11 @@ constexpr std::array Opcodes = {
     op(0xFF, "end_script", FlowRole::EndScript, {}),
 };
 
-constexpr std::uint8_t SetSelection = 0x10;
+constexpr std::uint8_t SetSelection = vocabulary::SetSelectionOpcode;
 constexpr std::uint8_t SelectionEndMarker = 0x12;
 constexpr std::uint8_t Switch = 0x18;
 constexpr std::uint8_t If = 0x19;
-constexpr std::uint8_t ShowTextbox = 0x1A;
+constexpr std::uint8_t ShowTextbox = vocabulary::ShowTextboxOpcode;
 constexpr std::uint8_t Data = 0x6B;
 constexpr std::uint8_t EndScript = 0xFF;
 // DATA blocks end with 0xFF. Their readers (dget.c: isTournamentEnabled, tournamentCheckEligible...) stop at the

@@ -76,7 +76,7 @@ YamlNode instructionToYaml(const Instruction& instruction, bool labelled) {
         node.set(instruction.text ? "options" : "cases", labelsToYaml(instruction.targets));
     }
     if (instruction.text) {
-        node.set("text", yaml::quoted(*instruction.text));
+        node.set(std::string{vocabulary::TextKey}, yaml::quoted(*instruction.text));
     }
     if (instruction.selectionEndMarker) {
         node.set("cancel_marker", yaml::boolean(true));

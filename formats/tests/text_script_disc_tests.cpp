@@ -2,6 +2,7 @@
 // from the disc is printed but counts.
 
 #include <dwe/core/sha1.hpp>
+#include <dwe/core/yaml.hpp>
 #include <dwe/formats/disc/boot.hpp>
 #include <dwe/formats/disc/disc_image.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
@@ -133,7 +134,7 @@ TEST_CASE("the user's disc: every event script decodes and its texts encode back
     CHECK(counts.textMismatches == 0);
 }
 
-TEST_CASE("the user's disc: every event script's listing YAML reads back as the listing of its disassembly") {
+TEST_CASE("the user's disc: every event script's listing YAML text reads back as its disassembly's listing") {
     auto files = openDisc();
     if (!files) {
         return;
@@ -142,16 +143,24 @@ TEST_CASE("the user's disc: every event script's listing YAML reads back as the 
     const auto slots = script::readScriptTable(pack);
     REQUIRE_MESSAGE(slots.has_value(), errorOf(slots));
     std::size_t mismatches = 0;
+    std::size_t texts = 0;
     for (const auto& slot : *slots) {
         const auto disassembly = script::disassembleScript(std::span{pack}.subspan(slot.offset, slot.size));
         REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
-        const auto read = script::readScriptListing(script::scriptToYaml(*disassembly));
+        const auto text = dwe::core::emitYaml(script::scriptToYaml(*disassembly));
+        REQUIRE_MESSAGE(text.has_value(), errorOf(text));
+        const auto parsed = dwe::core::parseYaml(*text);
+        REQUIRE_MESSAGE(parsed.has_value(), errorOf(parsed));
+        const auto read = script::readScriptListing(*parsed);
         REQUIRE_MESSAGE(read.has_value(), errorOf(read));
         if (*read != script::listingOf(*disassembly)) {
             ++mismatches;
         }
+        texts += static_cast<std::size_t>(std::ranges::count_if(
+            read->instructions, [](const auto& instruction) { return instruction.text.has_value(); }));
     }
-    MESSAGE("scripts ", slots->size(), ", listings that differ ", mismatches);
+    MESSAGE("scripts ", slots->size(), ", texts ", texts, ", listings that differ ", mismatches);
+    CHECK(texts > 0);
     CHECK(mismatches == 0);
 }
 

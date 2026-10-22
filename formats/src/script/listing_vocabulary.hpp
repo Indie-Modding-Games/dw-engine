@@ -10,6 +10,16 @@
 // script_listing.cpp reads them back).
 namespace dwe::formats::script::vocabulary {
 
+// The opcodes whose instruction carries a text, which the listing writes under TextKey (script_interp.c:
+// scriptShowSelection, showTextbox).
+inline constexpr std::uint8_t SetSelectionOpcode = 0x10;
+inline constexpr std::uint8_t ShowTextboxOpcode = 0x1A;
+inline constexpr std::string_view TextKey = "text";
+
+constexpr bool carriesText(std::uint8_t opcode) {
+    return opcode == SetSelectionOpcode || opcode == ShowTextboxOpcode;
+}
+
 // script_value.c: scriptCompareValue, by the low bits of a variable test or a "compare" operand.
 inline constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge", "le", "gt", "lt"};
 

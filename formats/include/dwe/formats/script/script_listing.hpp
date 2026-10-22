@@ -13,8 +13,8 @@
 
 // A script listing as the tools work with it: each instruction with what it does to the flow and its operands, read
 // back from the YAML that dwx writes and the map editor edits, or taken from a disassembly. It is the one decoded
-// form of a script: the control-flow graph, the structuring, the map changes and the Lua converter read it. Text,
-// DATA bytes and pad bytes stay in the YAML.
+// form of a script: the control-flow graph, the structuring, the map changes and the Lua converter read it. DATA
+// bytes and pad bytes stay in the YAML.
 namespace dwe::formats::script {
 
 // A jump entry of an IF: it jumps when the result of the entries before it is true (goto_if_true) or false.
@@ -43,6 +43,9 @@ struct ListingInstruction {
     std::optional<ScriptReference> reference;      // FileCall and FileJump
     std::vector<Argument> arguments;               // the operands, named as the disassembler names them
     std::vector<Condition> conditions;             // If, every entry in order
+    // SHOW_TEXTBOX and SET_SELECTION: the text as the listing writes it (text::decodeScriptText; a selection's
+    // options one per line).
+    std::optional<std::string> text;
 
     // The value of the operand with this name, if the instruction has one.
     [[nodiscard]] std::optional<std::int32_t> argument(std::string_view name) const;
@@ -74,8 +77,8 @@ struct ScriptListing {
 FlowRole flowRoleOf(std::string_view op);
 
 // Reads a listing. Fails on a listing that is not one: a missing `at` or `op`, a missing or malformed operand of an op
-// the interpreter has, an IF entry with an unknown test, a label that is not l_<hex>, instructions out of order, or
-// a section or target that is not an instruction.
+// the interpreter has (the `text` of SHOW_TEXTBOX and SET_SELECTION included), an IF entry with an unknown test, a
+// label that is not l_<hex>, instructions out of order, or a section or target that is not an instruction.
 core::Result<ScriptListing> readScriptListing(const core::YamlNode& listing);
 
 // The listing of a disassembly: the same as reading back scriptToYaml's YAML.

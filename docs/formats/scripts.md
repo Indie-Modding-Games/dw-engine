@@ -151,11 +151,13 @@ El paso a Lua (fase 4) parte del listado, no de los bytes, y no puede emitir sal
 anidado que se lee y se modifica. `formats/script` lo prepara en tres pasos:
 
 1. **`ScriptListing`** es la representación de los scripts que usa todo lo demás: secciones, offsets, el papel de
-   cada orden (salto, llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, cambio de mapa, fin), sus destinos y sus
-   operandos y condiciones con nombre. Sale del YAML (`readScriptListing`, el de un mod) o del desensamblado
-   (`listingOf`, el de `dwx`) con la misma tabla de órdenes; un test de disco comprueba que dan lo mismo en todos
-   los scripts. `warp_to` y `teleport` acaban el flujo (`FlowRole::MapChange`): nada de lo que sigue corre. El
-   formato del YAML no cambia.
+   cada orden (salto, llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, cambio de mapa, fin), sus destinos, sus
+   operandos y condiciones con nombre y el texto de `show_textbox` y `set_selection` (tal como lo escribe el listado;
+   las opciones de una selección, una por línea). Sale del YAML (`readScriptListing`, el de un mod) o del
+   desensamblado (`listingOf`, el de `dwx`) con la misma tabla de órdenes; un test de disco comprueba que dan lo mismo
+   en todos los scripts, pasando por el texto del YAML. Solo los bytes de `DATA` y los de relleno se quedan en el
+   YAML. `warp_to` y `teleport` acaban el flujo (`FlowRole::MapChange`): nada de lo que sigue corre. El formato del
+   YAML no cambia.
 2. **`buildScriptFlow`** parte el código en bloques básicos. Un `IF` es una cadena de bifurcaciones, una por cada
    entrada `goto_if_*`, en su orden. Un `SWITCH` elige entre sus casos; un `SET_SELECTION`, entre sus opciones y, al
    cancelar, sigue detrás del bloque. Las rutinas son las secciones y los destinos de `jump_and_link`.

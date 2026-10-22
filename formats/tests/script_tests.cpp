@@ -2,6 +2,7 @@
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
+#include <dwe/formats/script/script_listing.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
 
 #include <doctest/doctest.h>
@@ -23,8 +24,10 @@ using dwe::formats::script::Combine;
 using dwe::formats::script::ConditionTest;
 using dwe::formats::script::disassembleScript;
 using dwe::formats::script::Disassembly;
+using dwe::formats::script::listingOf;
 using dwe::formats::script::opcodeName;
 using dwe::formats::script::readScriptHeader;
+using dwe::formats::script::readScriptListing;
 using dwe::formats::script::readScriptTable;
 using dwe::formats::script::ScriptSlot;
 using dwe::formats::script::scriptToYaml;
@@ -187,6 +190,98 @@ TEST_CASE("the listing of a script names its labels and keeps every byte's meani
         CHECK_MESSAGE(text->find(expected) != std::string::npos, expected);
     }
     CHECK(text->find("unknowns") == std::string::npos);
+}
+
+TEST_CASE("the listing read back from its YAML text keeps the texts of SHOW_TEXTBOX and SET_SELECTION") {
+    const auto disassembly = disassembleScript(everyKindOfInstruction().bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    const auto text = dwe::core::emitYaml(scriptToYaml(*disassembly));
+    REQUIRE_MESSAGE(text.has_value(), errorOf(text));
+    const auto parsed = dwe::core::parseYaml(*text);
+    REQUIRE_MESSAGE(parsed.has_value(), errorOf(parsed));
+    const auto listing = readScriptListing(*parsed);
+    REQUIRE_MESSAGE(listing.has_value(), errorOf(listing));
+    CHECK(*listing == listingOf(*disassembly));
+    const auto textOf = [&](std::uint32_t offset) { return listing->instructions[*listing->indexAt(offset)].text; };
+    CHECK(textOf(46) == "A");
+    CHECK(textOf(66) == "A");
+    CHECK_FALSE(textOf(30).has_value());
+}
+
+TEST_CASE("texts with quotes or backslashes or line breaks come back byte for byte through the listing YAML") {
+    const auto disassembly = disassembleScript(everyKindOfInstruction().bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    for (const std::string_view text :
+         {std::string_view{"say \"hi\""}, std::string_view{"back\\slash"}, std::string_view{"key: value"},
+          std::string_view{" leading space"}, std::string_view{"two\nlines"}, std::string_view{""},
+          std::string_view{"caf\xC3\xA9"}}) {
+        auto edited = *disassembly;
+        const auto textbox = std::ranges::find(edited.instructions, 46U, &dwe::formats::script::Instruction::offset);
+        REQUIRE(textbox != edited.instructions.end());
+        textbox->text = std::string{text};
+        const auto yaml = dwe::core::emitYaml(scriptToYaml(edited));
+        REQUIRE_MESSAGE(yaml.has_value(), errorOf(yaml));
+        const auto parsed = dwe::core::parseYaml(*yaml);
+        REQUIRE_MESSAGE(parsed.has_value(), errorOf(parsed));
+        const auto listing = readScriptListing(*parsed);
+        REQUIRE_MESSAGE(listing.has_value(), errorOf(listing));
+        const std::size_t index = listing->indexAt(46).value_or(listing->instructions.size());
+        REQUIRE(index < listing->instructions.size());
+        CHECK_MESSAGE(listing->instructions[index].text == std::string{text}, text);
+        CHECK(*listing == listingOf(edited));
+    }
+}
+
+TEST_CASE("a SHOW_TEXTBOX or SET_SELECTION without its text is not a listing") {
+    const auto disassembly = disassembleScript(everyKindOfInstruction().bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    for (const std::string_view op : {"show_textbox", "set_selection"}) {
+        auto yaml = scriptToYaml(*disassembly);
+        auto* instructions = yaml.find("instructions");
+        REQUIRE(instructions != nullptr);
+        dwe::core::YamlNode stripped = dwe::core::YamlNode::sequence();
+        for (const auto& instruction : instructions->items()) {
+            const auto* name = instruction.find("op");
+            if (name == nullptr || name->text() != op) {
+                stripped.append(instruction);
+                continue;
+            }
+            dwe::core::YamlNode copy = dwe::core::YamlNode::mapping();
+            for (const auto& [key, value] : instruction.entries()) {
+                if (key != "text") {
+                    copy.set(key, value);
+                }
+            }
+            stripped.append(std::move(copy));
+        }
+        yaml.set("instructions", std::move(stripped));
+        const auto listing = readScriptListing(yaml);
+        REQUIRE_MESSAGE(!listing.has_value(), op);
+        CHECK_MESSAGE(listing.error().message.find("`text` is missing") != std::string::npos, listing.error().message);
+    }
+}
+
+TEST_CASE("a text that is a mapping or a sequence is not a string") {
+    const auto disassembly = disassembleScript(everyKindOfInstruction().bytes());
+    REQUIRE_MESSAGE(disassembly.has_value(), errorOf(disassembly));
+    for (const dwe::core::YamlNode& replacement : {dwe::core::YamlNode::mapping(), dwe::core::YamlNode::sequence()}) {
+        auto yaml = scriptToYaml(*disassembly);
+        auto* instructions = yaml.find("instructions");
+        REQUIRE(instructions != nullptr);
+        dwe::core::YamlNode edited = dwe::core::YamlNode::sequence();
+        for (const auto& instruction : instructions->items()) {
+            dwe::core::YamlNode copy = instruction;
+            if (instruction.find("text") != nullptr) {
+                copy.set("text", replacement);
+            }
+            edited.append(std::move(copy));
+        }
+        yaml.set("instructions", std::move(edited));
+        const auto listing = readScriptListing(yaml);
+        REQUIRE(!listing.has_value());
+        CHECK_MESSAGE(listing.error().message.find("`text` must be a string") != std::string::npos,
+                      listing.error().message);
+    }
 }
 
 TEST_CASE("what the interpreter would not run is an unknown, not a guess") {

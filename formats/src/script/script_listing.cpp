@@ -7,7 +7,9 @@
 #include <array>
 #include <charconv>
 #include <limits>
+#include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -302,6 +304,22 @@ core::Result<std::vector<std::uint32_t>> readChoices(const YamlNode& node, FlowR
     return std::vector<std::uint32_t>{};
 }
 
+// The text of an instruction that carries one; nothing for the others.
+core::Result<std::optional<std::string>> readText(const YamlNode& node, std::optional<std::uint8_t> opcode,
+                                                  std::size_t index) {
+    if (!opcode || !vocabulary::carriesText(*opcode)) {
+        return std::nullopt;
+    }
+    const YamlNode* text = node.find(vocabulary::TextKey);
+    if (text == nullptr) {
+        return core::fail(messages::formatMessage(messages::ListingMissingKey, index, vocabulary::TextKey));
+    }
+    if (!text->isScalar()) {
+        return core::fail(messages::formatMessage(messages::ListingNotString, index, vocabulary::TextKey));
+    }
+    return std::optional<std::string>{text->text()};
+}
+
 core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size_t index) {
     const auto offset = readNumber(node, AtKey, index);
     if (!offset) {
@@ -318,6 +336,7 @@ core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size
     auto conditions =
         arguments ? readConditions(node.find(ConditionsKey), index) : core::Result<std::vector<Condition>>{};
     auto choices = conditions ? readChoices(node, role) : core::Result<std::vector<std::uint32_t>>{};
+    auto text = choices ? readText(node, opcode, index) : core::Result<std::optional<std::string>>{};
     if (!arguments) {
         return std::unexpected{arguments.error()};
     }
@@ -327,6 +346,9 @@ core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size
     if (!choices) {
         return std::unexpected{choices.error()};
     }
+    if (!text) {
+        return std::unexpected{text.error()};
+    }
     return withFlow({.offset = *offset,
                      .op = op->text(),
                      .role = role,
@@ -334,7 +356,8 @@ core::Result<ListingInstruction> readInstruction(const YamlNode& node, std::size
                      .conditionalJumps = {},
                      .reference = std::nullopt,
                      .arguments = std::move(*arguments),
-                     .conditions = std::move(*conditions)},
+                     .conditions = std::move(*conditions),
+                     .text = std::move(*text)},
                     std::move(*choices));
 }
 
@@ -445,7 +468,8 @@ ScriptListing listingOf(const Disassembly& disassembly) {
                                                  .conditionalJumps = {},
                                                  .reference = std::nullopt,
                                                  .arguments = instruction.arguments,
-                                                 .conditions = instruction.conditions},
+                                                 .conditions = instruction.conditions,
+                                                 .text = instruction.text},
                                                 std::move(choices)));
     }
     return listing;

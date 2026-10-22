@@ -106,6 +106,9 @@ public:
         const bool selection = name == "set_selection";
         YamlNode node = instruction(at, std::move(name));
         node.set(selection ? "options" : "cases", std::move(labels));
+        if (selection) {
+            node.set("text", text("A selection"));
+        }
         instructions_.append(std::move(node));
         return *this;
     }
