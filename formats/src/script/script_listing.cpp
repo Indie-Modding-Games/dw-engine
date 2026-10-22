@@ -376,6 +376,16 @@ core::Result<void> checkDestinations(const ScriptListing& listing) {
 
 } // namespace
 
+std::vector<ListingSection> ScriptListing::runnableSections() const {
+    std::vector<ListingSection> runnable;
+    for (const ListingSection& section : sections) {
+        if (!std::ranges::contains(runnable, section.id, &ListingSection::id)) {
+            runnable.push_back(section);
+        }
+    }
+    return runnable;
+}
+
 std::optional<std::size_t> ScriptListing::indexAt(std::uint32_t offset) const {
     const auto found = std::ranges::lower_bound(instructions, offset, {}, &ListingInstruction::offset);
     if (found == instructions.end() || found->offset != offset) {

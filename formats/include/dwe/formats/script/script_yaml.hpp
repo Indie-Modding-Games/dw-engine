@@ -17,4 +17,8 @@ std::string labelName(std::uint32_t offset);
 // of the code span is lost.
 core::YamlNode scriptToYaml(const Disassembly& disassembly);
 
+// One IF entry as the listing writes it in `conditions`: `test`, `clear` for a clear trigger, `compare`, `combine`
+// when it is and/or, the operands, and `code` when the fields do not imply it.
+core::YamlNode conditionToYaml(const Condition& condition);
+
 } // namespace dwe::formats::script

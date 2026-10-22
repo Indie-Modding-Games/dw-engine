@@ -150,8 +150,12 @@ textos de la fase 4 (Lua) lo usará. El listado no es Lua: la traducción es tra
 El paso a Lua (fase 4) parte del listado, no de los bytes, y no puede emitir saltos: el Lua convertido es código
 anidado que se lee y se modifica. `formats/script` lo prepara en tres pasos:
 
-1. **`readScriptListing`** lee del YAML solo lo que mueve el flujo: secciones, offsets, el papel de cada orden (salto,
-   llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, fin) y sus destinos. El formato del YAML no cambia.
+1. **`ScriptListing`** es la representación de los scripts que usa todo lo demás: secciones, offsets, el papel de
+   cada orden (salto, llamada, retorno, `IF`, `SWITCH`, `SET_SELECTION`, cambio de mapa, fin), sus destinos y sus
+   operandos y condiciones con nombre. Sale del YAML (`readScriptListing`, el de un mod) o del desensamblado
+   (`listingOf`, el de `dwx`) con la misma tabla de órdenes; un test de disco comprueba que dan lo mismo en todos
+   los scripts. `warp_to` y `teleport` acaban el flujo (`FlowRole::MapChange`): nada de lo que sigue corre. El
+   formato del YAML no cambia.
 2. **`buildScriptFlow`** parte el código en bloques básicos. Un `IF` es una cadena de bifurcaciones, una por cada
    entrada `goto_if_*`, en su orden. Un `SWITCH` elige entre sus casos; un `SET_SELECTION`, entre sus opciones y, al
    cancelar, sigue detrás del bloque. Las rutinas son las secciones y los destinos de `jump_and_link`.
@@ -161,6 +165,16 @@ anidado que se lee y se modifica. `formats/script` lo prepara en tres pasos:
    menos 3 órdenes; si es más corto se copia. Lo que no se deja anidar (un bucle con dos entradas, una salida de dos
    bucles a la vez, demasiadas copias) se vuelve una **máquina de estados**: un bucle que despacha cada bloque según
    una variable. Así toda rutina se convierte, sin saltos.
+
+Encima del árbol, **`walkSection`** (`guarded_walk.hpp`) recorre una sección y da cada orden que se le pide con
+lo que hace falta para llegar a ella: las decisiones de sus `IF`, `SWITCH` y `SET_SELECTION`, los disparadores que
+pone por el camino y los que conoce al llegar. Un `IF` cuyas pruebas son de disparadores que el camino conoce toma su
+rama sin dejar condición. Una llamada a una rutina que ya se está recorriendo no se sigue: deja un término
+`RecursionTerm` (la rutina llamada) que dice que lo que decide no se sabe, y el camino sigue después con lo que
+conocía olvidado. Una orden que corre código del juego que puede escribir disparadores (`give_item`, `compare_date` y
+las rutinas de `call_routine` y `call_digimon_routine` que lo hacen, según `routine_writes.hpp`) deja un término
+`ForgetTerm` y el camino sigue sin saber esos disparadores. Lo usan los [warps de script](../architecture/warps-de-script.md); lo usarán la conversión
+a Lua y el intérprete de historia.
 
 Lua no tiene `continue`: una rama que vuelve a la cabeza del bucle se lleva el resto del cuerpo a la otra rama. Las
 cifras sobre el disco están en la [ficha de scripts](../reference/scripts.md#forma-del-control-de-flujo).

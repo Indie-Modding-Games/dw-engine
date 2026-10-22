@@ -4,10 +4,15 @@
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
+#include <dwe/formats/script/script_listing.hpp>
+#include <dwe/formats/script/script_warps.hpp>
 #include <dwe/formats/script/script_yaml.hpp>
+#include <dwe/formats/script/structuring.hpp>
 
 #include <algorithm>
+#include <array>
 #include <format>
+#include <map>
 #include <optional>
 #include <span>
 #include <string>
@@ -24,6 +29,9 @@ constexpr std::string_view MapHeadPath = "SCN/MAPHEAD.SCN";
 constexpr std::string_view ScriptPackPath = "SCN/DG.SCN";
 // data/new_game_stats: what the new-game script sets.
 constexpr std::string_view NewGameStatsDocument = "new_game_stats";
+// field/script_warps: the map changes of the event scripts; data/new_game_story: the triggers a new game sets.
+constexpr std::string_view ScriptWarpsDocument = "script_warps";
+constexpr std::string_view NewGameStoryDocument = "new_game_story";
 
 // What the listings of a file add up to, for the notes.
 struct Totals {
@@ -97,6 +105,103 @@ core::Result<void> addNewGameStats(Extraction& extraction, const Disc& disc, std
     return {};
 }
 
+// A script listed and structured, for the walks of formats::script.
+struct WalkedScript {
+    formats::script::ScriptListing listing;
+    formats::script::StructuredScript structured;
+};
+
+// The map changes of every map's scripts (formats::script::findScriptWarps): field/script_warps, and the triggers a
+// new game sets: data/new_game_story. `scripts` holds every script of the pack, MAPHEAD as script 0; one that does
+// not structure is noted and left out. Without the executable's tables the maps have no ids, and nothing is written.
+core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
+                                  const std::map<std::uint16_t, std::span<const std::byte>>& scripts) {
+    std::map<std::uint16_t, WalkedScript> walked;
+    for (const auto& [id, bytes] : scripts) {
+        const auto disassembly = formats::script::disassembleScript(bytes);
+        if (!disassembly) {
+            continue;
+        }
+        auto listing = formats::script::listingOf(*disassembly);
+        auto structured = formats::script::structureScript(listing);
+        if (!structured) {
+            extraction.notes.push_back(std::format("script {} does not structure ({}); its map changes are left out",
+                                                   id, structured.error().message));
+            continue;
+        }
+        walked.emplace(id, WalkedScript{.listing = std::move(listing), .structured = std::move(*structured)});
+    }
+    const GameTables* tables = disc.tables();
+    if (tables == nullptr) {
+        extraction.notes.push_back(std::format("the executable's tables are unknown, so field/{} and data/{} are not "
+                                               "written",
+                                               ScriptWarpsDocument, NewGameStoryDocument));
+        return {};
+    }
+    const formats::script::ScriptLookup lookup =
+        [&walked](std::uint16_t id) -> std::optional<formats::script::WalkableScript> {
+        const auto found = walked.find(id);
+        if (found == walked.end()) {
+            return std::nullopt;
+        }
+        return formats::script::WalkableScript{.listing = &found->second.listing,
+                                               .structured = &found->second.structured};
+    };
+    const formats::script::MapName mapName = [tables](std::uint16_t map) -> std::optional<std::string> {
+        if (map >= tables->ids.maps.size() || tables->ids.maps[map].empty()) {
+            return std::nullopt;
+        }
+        return tables->ids.maps[map];
+    };
+    const auto warps = formats::script::findScriptWarps(lookup);
+    auto output = yamlOutput(names::fieldDocument(ScriptWarpsDocument),
+                             formats::script::scriptWarpsToYaml(warps, lookup, mapName));
+    if (!output) {
+        return std::unexpected{output.error()};
+    }
+    extraction.outputs.push_back(std::move(*output));
+    std::array<std::size_t, 4> byVia{};
+    std::size_t unguarded = 0;
+    std::size_t teleports = 0;
+    std::size_t unnamed = 0;
+    for (const formats::script::ScriptWarp& warp : warps.warps) {
+        ++byVia.at(static_cast<std::size_t>(warp.via));
+        unguarded += warp.scriptGuard.terms.empty() && !warp.scriptGuard.unstructured &&
+                             warp.change.path.guard.terms.empty() && !warp.change.path.guard.unstructured
+                         ? 1
+                         : 0;
+        teleports += warp.change.screenVariable ? 1 : 0;
+        unnamed += warp.change.screen && !mapName(static_cast<std::uint16_t>(*warp.change.screen)) ? 1 : 0;
+    }
+    extraction.notes.push_back(std::format("{} map changes in the maps' scripts: {} on stepping on a cell, {} on "
+                                           "confirm, {} on entering, {} from NPCs or other sections; {} without a "
+                                           "condition, {} teleports (the map is in a variable), {} to a screen no map "
+                                           "has",
+                                           warps.warps.size(), byVia[0], byVia[1], byVia[2], byVia[3], unguarded,
+                                           teleports, unnamed));
+    extraction.notes.push_back(std::format("{} MAPHEAD sections load no map's script (new game, death, transport...); "
+                                           "their map changes are not in field/{}",
+                                           warps.otherMapHeadSections.size(), ScriptWarpsDocument));
+    const auto newGame = formats::script::findNewGameTriggers(lookup);
+    if (!newGame) {
+        extraction.notes.push_back(
+            std::format("MAPHEAD has no new-game section; data/{} is not written", NewGameStoryDocument));
+        return {};
+    }
+    if (!newGame->agreed) {
+        extraction.notes.push_back(std::format("the paths of a new game end with different triggers set; data/{} "
+                                               "keeps the ones they share",
+                                               NewGameStoryDocument));
+    }
+    auto story = yamlOutput(names::tableDocument(NewGameStoryDocument),
+                            formats::script::newGameTriggersToYaml(*newGame, mapName));
+    if (!story) {
+        return std::unexpected{story.error()};
+    }
+    extraction.outputs.push_back(std::move(*story));
+    return {};
+}
+
 void noteTotals(Extraction& extraction, const Totals& totals) {
     extraction.notes.push_back(
         std::format("{} scripts, {} instructions, {} texts", totals.scripts, totals.instructions, totals.texts));
@@ -137,8 +242,10 @@ core::Result<Extraction> extractScriptPack(const Disc& disc, std::span<const std
         }
         mapHead = std::move(*bytes);
     }
+    std::map<std::uint16_t, std::span<const std::byte>> scripts;
     for (std::size_t id = 0; id < slots->size(); ++id) {
         const auto script = file.subspan((*slots)[id].offset, (*slots)[id].size);
+        scripts[static_cast<std::uint16_t>(id)] = id == 0 && mapHead ? std::span<const std::byte>{*mapHead} : script;
         if (id == 0 && mapHead && script.size() >= mapHead->size() &&
             std::ranges::equal(script.first(mapHead->size()), *mapHead)) {
             extraction.notes.push_back(std::format("script 0 is a copy of {}, which the game loads instead; it is "
@@ -154,6 +261,9 @@ core::Result<Extraction> extractScriptPack(const Disc& disc, std::span<const std
                 return std::unexpected{added.error()};
             }
         }
+    }
+    if (auto added = addScriptWarps(extraction, disc, scripts); !added) {
+        return std::unexpected{added.error()};
     }
     noteTotals(extraction, totals);
     return extraction;

@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Script warps",
+  "description": "field/script_warps.yaml: the map changes (warp_to, teleport) the event scripts of each map make, with what it takes to make them (dwx, formats::script::findScriptWarps; docs/architecture/warps-de-script.md). Mods override the whole document.",
+  "type": "object",
+  "required": [
+    "warps"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "map": {
+      "description": "Map id (data/maps).",
+      "type": "string",
+      "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$"
+    },
+    "condition": {
+      "description": "An IF entry as the script listing writes it: test, clear, compare, combine and the operands.",
+      "type": "object",
+      "required": [
+        "test"
+      ],
+      "properties": {
+        "test": {
+          "type": "string"
+        },
+        "combine": {
+          "enum": [
+            "and",
+            "or"
+          ]
+        }
+      },
+      "additionalProperties": {
+        "type": [
+          "integer",
+          "string",
+          "boolean"
+        ]
+      }
+    },
+    "guard": {
+      "description": "The decisions of the path, in order: each IF's tests and the result they must give, or the arm of a SWITCH or SET_SELECTION. unstructured: the path goes round a loop or a state machine, so these are the terms of one way through.",
+      "type": "object",
+      "required": [
+        "terms"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "unstructured": {
+          "type": "boolean"
+        },
+        "terms": {
+          "type": "array",
+          "items": {
+            "description": "An IF term (if and holds), a choice term (switch or selection: the arm), a recursion the walk cut (recursion) or an instruction that runs game code which writes triggers (forget).",
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "if": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "holds": {
+                "type": "boolean"
+              },
+              "switch": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "selection": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "forget": {
+                "description": "An instruction that runs game code which may set or clear triggers (call_routine, call_digimon_routine, give_item, compare_date): the path goes on not knowing them. Its script and offset, and the triggers by number; none listed: any trigger.",
+                "type": "object",
+                "required": [
+                  "script"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "script": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "triggers": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "recursion": {
+                "description": "A call of a routine the walk was already in: the walk does not follow it again, and the path goes on after the call knowing no trigger. The routine's script and offset.",
+                "type": "object",
+                "required": [
+                  "script"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "script": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "warps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "map",
+          "via",
+          "section",
+          "source"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "map": {
+            "description": "The map whose script runs it (or the number of a map without an id).",
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "via": {
+            "description": "What runs the section: step (a cell of value 51-79), confirm (80-109), enter (entering the map) or other (an NPC, another section).",
+            "enum": [
+              "step",
+              "confirm",
+              "enter",
+              "other"
+            ]
+          },
+          "section": {
+            "description": "The section of the map's script.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "to": {
+            "description": "warp_to: the map and the exit to arrive at; screen when no map has that number.",
+            "type": "object",
+            "required": [
+              "exit"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "map": {
+                "$ref": "#/$defs/map"
+              },
+              "screen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "exit": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            }
+          },
+          "teleport": {
+            "description": "teleport: the variable that holds the screen (the exit is in the next one).",
+            "type": "object",
+            "required": [
+              "pstat"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "pstat": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "arrival_section": {
+            "description": "The section of the new map's script that warp_to runs on arrival.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 254
+          },
+          "script_guard": {
+            "$ref": "#/$defs/guard",
+            "description": "What MAPHEAD takes to load this script on the map."
+          },
+          "guard": {
+            "$ref": "#/$defs/guard",
+            "description": "What the section takes to reach the map change."
+          },
+          "sets_flags": {
+            "description": "The SET_TRIGGER (set: true) and UNSET_TRIGGER on the way, in order.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "trigger",
+                "set"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "trigger": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "set": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "source": {
+            "description": "Where the map change is: the script, the section that runs it and the instruction's offset.",
+            "type": "object",
+            "required": [
+              "script",
+              "section"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "script": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "section": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

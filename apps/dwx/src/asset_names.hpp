@@ -43,6 +43,9 @@ core::Result<assets::AssetId> packEntry(const GameTables* tables, std::string_vi
 // data/<name>: a document of the executable's tables ("digimon", "moves"...).
 core::Result<assets::AssetId> tableDocument(std::string_view name);
 
+// field/<name>: a document of the field the extractors make from the scripts ("script_warps").
+core::Result<assets::AssetId> fieldDocument(std::string_view name);
+
 // disc/boot: the boot settings of SYSTEM.CNF.
 core::Result<assets::AssetId> bootConfig();
 

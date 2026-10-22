@@ -11,3 +11,7 @@ test lento.
 `<dwe/test_support/temp_folder.hpp>` es `TempFolder`, una carpeta con nombre único bajo la carpeta temporal del
 sistema que se borra con todo lo que tiene al final del test. El juego y las herramientas no leen estas variables: en desarrollo usan `--dev-assets`
 ([assets de desarrollo](../../docs/architecture/assets-de-desarrollo.md)).
+
+`<dwe/test_support/script_warp_fixtures.hpp>` es el `field/script_warps` de un script sintético con una recursión: los
+tests de `formats` comprueban que la extracción lo da y los de `field`, que el campo toma ese warp y lo registra una
+vez.

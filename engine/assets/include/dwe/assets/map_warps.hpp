@@ -2,6 +2,7 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
+#include <dwe/core/collision_triggers.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -18,7 +19,7 @@
 namespace dwe::assets {
 
 // The first collision trigger of the warps: exit i is trigger 110 + i (tamer.c: checkMapInteraction).
-inline constexpr std::int32_t FirstWarpTrigger = 110;
+inline constexpr std::int32_t FirstWarpTrigger = core::collision::FirstWarpTrigger;
 
 enum class WarpProblem : std::uint8_t {
     // A pack's map: the collision has the exit's trigger, but the warp names no target: no id, and a target_map that

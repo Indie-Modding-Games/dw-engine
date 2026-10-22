@@ -127,4 +127,6 @@ TEST_CASE("a script that does not decode leaves its file partial") {
     CHECK(pack.outputs.size() == 2);
     REQUIRE(pack.unknowns.size() == 1);
     CHECK(pack.unknowns[0].starts_with("script 2: 0x0008: opcode 0x40"));
+    // Its section starts on no instruction, so the walk of the maps' scripts leaves it out instead of structuring it.
+    CHECK(hasNote(pack, "script 2 does not structure"));
 }

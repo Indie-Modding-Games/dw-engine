@@ -49,11 +49,13 @@ dwe_add_module(formats
         src/script/disassembly.cpp
         src/script/dominance.cpp
         src/script/guarded_walk.cpp
+        src/script/routine_writes.cpp
         src/script/map_changes.cpp
         src/script/new_game_stats.cpp
         src/script/routine_graph.cpp
         src/script/scn_file.cpp
         src/script/script_listing.cpp
+        src/script/script_warps.cpp
         src/script/script_yaml.cpp
         src/script/structure_statistics.cpp
         src/script/structuring.cpp

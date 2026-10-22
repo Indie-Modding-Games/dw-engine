@@ -87,6 +87,10 @@ core::Result<assets::AssetId> tableDocument(std::string_view name) {
     return assets::AssetId::parse(std::format("data/{}", name));
 }
 
+core::Result<assets::AssetId> fieldDocument(std::string_view name) {
+    return assets::AssetId::parse(std::format("field/{}", name));
+}
+
 core::Result<assets::AssetId> bootConfig() {
     return assets::AssetId::parse("disc/boot");
 }
@@ -164,6 +168,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "moves", .ids = {"data/moves"}},
         {.schema = "music", .ids = {"data/music"}},
         {.schema = "new_game_stats", .ids = {"data/new_game_stats"}},
+        {.schema = "new_game_story", .ids = {"data/new_game_story"}},
         {.schema = "raise", .ids = {"data/raise"}},
         {.schema = "shops", .ids = {"data/shops"}},
         {.schema = "skeletons", .ids = {"data/skeletons"}},
@@ -172,6 +177,7 @@ const std::vector<DocumentSchema>& documentSchemas() {
         {.schema = "training", .ids = {"data/training"}},
         {.schema = "versus", .ids = {"data/versus"}},
         {.schema = "boot", .ids = {"disc/boot"}},
+        {.schema = "script_warps", .ids = {"field/script_warps"}},
         {.schema = MapSchema, .ids = {"map/*/data"}},
         {.schema = "collision", .ids = {"arena/*/collision"}},
         {.schema = "image",

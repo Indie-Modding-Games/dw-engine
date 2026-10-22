@@ -49,31 +49,6 @@ void setArguments(YamlNode& node, const std::vector<Argument>& arguments, bool i
     }
 }
 
-YamlNode conditionToYaml(const Condition& condition) {
-    const vocabulary::TestInfo info = vocabulary::testInfo(condition.test);
-    YamlNode node = YamlNode::mapping();
-    node.set(std::string{vocabulary::TestKey}, YamlNode::scalar(std::string{info.name}));
-    const std::uint8_t low = condition.code & vocabulary::LowBits;
-    std::uint8_t variant = 0;
-    if (condition.test == ConditionTest::Trigger && low != 0) {
-        node.set(std::string{vocabulary::ClearKey}, yaml::boolean(true));
-        variant = vocabulary::ClearBit;
-    }
-    if (condition.test == ConditionTest::Pstat) {
-        node.set(std::string{vocabulary::CompareKey}, YamlNode::scalar(std::string{CompareNames.at(low)}));
-        variant = low;
-    }
-    if (condition.combine != Combine::Replace) {
-        node.set(std::string{vocabulary::CombineKey},
-                 YamlNode::scalar(std::string{vocabulary::combineName(condition.combine)}));
-    }
-    setArguments(node, condition.arguments, true);
-    if (condition.code != vocabulary::entryCode(condition.test, variant, condition.combine)) {
-        node.set(std::string{vocabulary::CodeKey}, hex(condition.code, 2));
-    }
-    return node;
-}
-
 YamlNode labelsToYaml(const std::vector<std::uint16_t>& targets) {
     YamlNode list = YamlNode::sequence();
     for (const std::uint16_t target : targets) {
@@ -127,6 +102,31 @@ YamlNode instructionToYaml(const Instruction& instruction, bool labelled) {
 }
 
 } // namespace
+
+YamlNode conditionToYaml(const Condition& condition) {
+    const vocabulary::TestInfo info = vocabulary::testInfo(condition.test);
+    YamlNode node = YamlNode::mapping();
+    node.set(std::string{vocabulary::TestKey}, YamlNode::scalar(std::string{info.name}));
+    const std::uint8_t low = condition.code & vocabulary::LowBits;
+    std::uint8_t variant = 0;
+    if (condition.test == ConditionTest::Trigger && low != 0) {
+        node.set(std::string{vocabulary::ClearKey}, yaml::boolean(true));
+        variant = vocabulary::ClearBit;
+    }
+    if (condition.test == ConditionTest::Pstat) {
+        node.set(std::string{vocabulary::CompareKey}, YamlNode::scalar(std::string{CompareNames.at(low)}));
+        variant = low;
+    }
+    if (condition.combine != Combine::Replace) {
+        node.set(std::string{vocabulary::CombineKey},
+                 YamlNode::scalar(std::string{vocabulary::combineName(condition.combine)}));
+    }
+    setArguments(node, condition.arguments, true);
+    if (condition.code != vocabulary::entryCode(condition.test, variant, condition.combine)) {
+        node.set(std::string{vocabulary::CodeKey}, hex(condition.code, 2));
+    }
+    return node;
+}
 
 std::string labelName(std::uint32_t offset) {
     return std::format("l_{:04x}", offset);

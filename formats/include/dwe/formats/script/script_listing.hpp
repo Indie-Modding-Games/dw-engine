@@ -63,6 +63,9 @@ struct ScriptListing {
 
     // The index of the instruction at an offset, if one starts there.
     [[nodiscard]] std::optional<std::size_t> indexAt(std::uint32_t offset) const;
+    // The sections the game can run: the first entry of each id, in the table's order. A later entry with the same id
+    // is never run, as the game takes the first that matches (script_interp.c: getScriptSection).
+    [[nodiscard]] std::vector<ListingSection> runnableSections() const;
 
     bool operator==(const ScriptListing&) const = default;
 };

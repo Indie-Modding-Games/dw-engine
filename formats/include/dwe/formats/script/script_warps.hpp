@@ -1,0 +1,93 @@
+#pragma once
+
+#include <dwe/core/yaml.hpp>
+#include <dwe/formats/script/guarded_walk.hpp>
+#include <dwe/formats/script/map_changes.hpp>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
+#include <vector>
+
+// The map changes the event scripts make on each map, and the triggers a new game starts with. Entering a map runs
+// the section of MAPHEAD (script 0) with the map's id, which loads the map's script with SET_SCRIPT (map.c:
+// changeMap, script_interp.c: runMapHeadScript); that script's sections run on stepping on a trigger cell, on
+// pressing confirm on one, on talking to an NPC and on entering the map (tamer.c: checkMapInteraction).
+namespace dwe::formats::script {
+
+// Script 0, the one initializeScripts loads from SCN/MAPHEAD.SCN.
+inline constexpr std::uint16_t MapHeadScript = 0;
+// The section of MAPHEAD a new game runs (main.c: newGameScene): the one of the first map.
+inline constexpr std::uint16_t NewGameSection = 0xCC;
+// The section of a map's script that runs when the map is entered.
+inline constexpr std::uint16_t EnterSection = 0xFE;
+
+// What runs a section of a map's script (tamer.c: checkMapInteraction): stepping on a cell whose collision value is
+// the section (51-79), pressing confirm on one (80-109), entering the map (EnterSection, and the map's own MAPHEAD
+// section), or anything else: an NPC whose script id it is, or another section.
+enum class WarpVia : std::uint8_t { Step, Confirm, Enter, Other };
+
+WarpVia warpViaOf(std::uint16_t section);
+
+// A map change a section run on a map makes.
+struct ScriptWarp {
+    std::uint16_t map = 0; // the map's id: the MAPHEAD section that loads the script
+    WarpVia via = WarpVia::Other;
+    std::uint16_t section = 0;
+    std::uint16_t script = 0; // the map's script, or MapHeadScript for the map's MAPHEAD section
+    // What MAPHEAD takes to load that script on entering the map; empty for the MAPHEAD section itself.
+    PathGuard scriptGuard;
+    MapChange change;
+
+    bool operator==(const ScriptWarp&) const = default;
+};
+
+struct ScriptWarps {
+    std::vector<ScriptWarp> warps; // by map, then by section, then in the order the walk finds them
+    // The MAPHEAD sections that load no script: the ones the game runs for other things than entering a map.
+    std::vector<std::uint16_t> otherMapHeadSections;
+};
+
+// Every map change of every section of every map's script, and of the MAPHEAD sections that load a script. The
+// lookup must know MAPHEAD as MapHeadScript.
+ScriptWarps findScriptWarps(const ScriptLookup& lookup);
+
+// The triggers set when a new game gives the player control: those that MAPHEAD's NewGameSection and the
+// EnterSection of the script it loads set, from all triggers clear (initializeScripts), on every path. Nothing if
+// MAPHEAD has no such section.
+struct NewGameTriggers {
+    std::uint16_t map = 0;
+    std::uint16_t script = 0;
+    std::vector<std::uint16_t> set; // sorted
+    // Whether every path ends with the same triggers set; if not, `set` holds the ones they share.
+    bool agreed = true;
+    // Sorted: the triggers the game code may have set before the new-game section runs, which the walk does not
+    // model (StartingPartnerRaisedTriggers). They are not known either way.
+    std::vector<std::uint16_t> unknown;
+
+    bool operator==(const NewGameTriggers&) const = default;
+};
+
+std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup);
+
+// The raised triggers of the two partners a new game may start with (main.c: main raises one of them by pstat 0xfe
+// before it runs the new-game section; script_common.c: setDigimonRaised sets trigger 0x200 + its id).
+inline constexpr std::array<std::uint16_t, 2> StartingPartnerRaisedTriggers = {0x203, 0x211};
+
+// The id of a map in data/maps, by its number; nothing for a number no map has.
+using MapName = std::function<std::optional<std::string>(std::uint16_t map)>;
+
+// field/script_warps (content/schemas/script_warps.schema.json): one entry per warp with the map, what runs it
+// (`via`), the section, where it goes (`to`: a map and exit, or `screen` for a number no map has; `teleport`: the
+// variable that holds it), the guards (`script_guard`, `guard`: IF terms with the listing's conditions and the
+// result they must give, choice terms with the arm), the triggers it sets on the way (`sets_flags`) and where it is
+// (`source`). The lookup gives the offsets of the sources.
+core::YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup, const MapName& mapName);
+
+// data/new_game_story (content/schemas/new_game_story.schema.json): the map, its script and the triggers set.
+core::YamlNode newGameTriggersToYaml(const NewGameTriggers& triggers, const MapName& mapName);
+
+} // namespace dwe::formats::script

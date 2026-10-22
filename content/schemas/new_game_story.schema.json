@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "New game story",
+  "description": "new_game_story.yaml: where the story stands when a new game gives the player control. Every trigger starts clear; the new-game section of MAPHEAD and the entry section of the script it loads may set some (dwx, formats::script::findNewGameTriggers).",
+  "type": "object",
+  "required": ["map", "script", "triggers_set"],
+  "additionalProperties": false,
+  "properties": {
+    "map": { "description": "Id of the first map (data/maps), or its number when no map has it.", "type": ["string", "integer"] },
+    "script": { "description": "The DG.SCN script MAPHEAD loads on it.", "type": "integer", "minimum": 0 },
+    "triggers_set": {
+      "description": "The triggers set when the player gets control, sorted.",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 799 }
+    },
+    "agreed": { "description": "False when the paths of a new game end with different triggers set: triggers_set holds the ones they share.", "type": "boolean" },
+    "triggers_unknown": {
+      "description": "The triggers the game code may have set before the new-game section runs, which the walk does not model (the starting partner's raised trigger), sorted. They are neither set nor clear.",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 799 }
+    }
+  }
+}

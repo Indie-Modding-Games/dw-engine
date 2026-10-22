@@ -11,6 +11,7 @@
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/move_table.hpp>
 #include <dwe/assets/new_game_stats.hpp>
+#include <dwe/assets/new_game_story.hpp>
 #include <dwe/assets/png_only_images.hpp>
 #include <dwe/assets/raise_table.hpp>
 #include <dwe/assets/shop_table.hpp>
@@ -157,7 +158,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 }};
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 12> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
     {"map/*/*/data", discardParsed<parseMapDocument>},
     {"data/digimon", discardParsed<parseDigimonTable>},
@@ -169,6 +170,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 11> DocumentReaders = 
     {"data/item_effects", discardParsed<parseItemEffectTable>},
     {"data/shops", discardParsed<parseShopTable>},
     {"data/new_game_stats", discardParsed<parseNewGameStats>},
+    {"data/new_game_story", discardParsed<parseNewGameStory>},
 }};
 
 // The strict reader of each kind of content table (table_kinds.hpp) but the Digimon table's, by its role.
