@@ -4,9 +4,3 @@
 start:
   map: "example_mod:meadow"
   exit: 0
-scripted_warps:
-- map: room08
-  trigger: 51
-  target_map: twna01
-  target_exit: 2
-  evidence: "MAPHEAD sección 218 pone el script 178; su sección 0x33 (disparador 51, la puerta) lleva al jugador a (-470, -1970) y hace warp_to 204 (twna01) salida 2 si el flag 203 está apagado (el principio del juego)"

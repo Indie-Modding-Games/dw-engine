@@ -667,7 +667,7 @@ fallan con un error claro hasta que alguien rellene sus direcciones desde `confi
 | `content/packs/game/field/rules.yaml: partner.radius, walk_speed, run_speed`; `player.radius, walk_speed, run_speed` | radio y velocidades del partner inicial y del jugador | **b** | D11. «Decidido por el coordinador (2026-10-21)»: radio de `data/digimon`, velocidades del movimiento raíz del modelo. |
 | `content/packs/game/field/rules.yaml` (el resto) | distancias en radios, fundidos, horas del día, luces | a | Mecánica. |
 | `content/packs/game/field/warps.yaml: start` | mapa y salida de inicio | a | Referencia (criterio 2). |
-| `content/packs/game/field/warps.yaml: scripted_warps` | 1 warp de guion (mapa, trigger, destino, flag) | **b** | D10. «Decidido por el coordinador (2026-10-21)»: sobra y se borra cuando R4.1 corra el guion convertido; hasta entonces, hueco marcado. |
+| ~~`content/packs/game/field/warps.yaml: scripted_warps`~~ | 1 warp de guion (mapa, trigger, destino, flag) | **b** | D10. «Decidido por el coordinador (2026-10-21)». **Borrado** en p4-scripted-warps (2026-10-21): lo sustituye `field/script_warps`, que extrae `dwx` del disco del usuario. |
 | `content/packs/game/models/partner.yaml`, `tamer.yaml` | ids de animación 0 a 4 | a | Estructura. |
 | `content/packs/game/save/settings.yaml: manual_slots` | 15 | a | Tamaño. |
 | `content/packs/game/ui/battle/logic.lua`, `ui/partner_menu/logic.lua` | 11 órdenes como máximo, 30 huecos | a | Tamaños; repiten el ruleset. |
@@ -763,7 +763,7 @@ localizadores.
 | `item_use.yaml: refusal.never_taken`, `refusal.discipline_checked_below`, `meals` (D5) | ejecutable principal | `partnerWillRefuseItem`, `partnerHandleFoodFeed` (partner_impl.c) | constantes de código, o derivado | `data/item_effects`: `refusal`, `meal` (`meal` se deriva de los objetos con manejador de comida si coincide) |
 | `inventory.yaml: effects.double_floppy` (D6) | ejecutable principal | `handleDoubleFloppy` (item.c) | constantes de código | `data/item_effects`, junto a `HEALING_VALUES` |
 | `inventory.yaml: effects.chip.tamer_level.items` (D7) | ejecutable principal | `handleChips` (item.c) | switch de constantes | `data/item_effects`: `chip_effect` |
-| `field/warps.yaml: scripted_warps` (D10) | el guion del mapa | — | conversión de guiones (R4.1) | se borra cuando corra el guion convertido |
+| ~~`field/warps.yaml: scripted_warps`~~ (D10) | el guion del mapa | — | `field/script_warps` (dwx) | borrado en p4-scripted-warps |
 | `field/rules.yaml` y `game/field/include/dwe/game/field/rules.hpp:27-29`: radio y velocidades (D11) | ejecutable principal y los modelos | `DIGIMON_DATA.radius`; movimiento raíz de las animaciones | ya extraído | `data/digimon` y los modelos |
 | Asserts de tests que repiten valores (b) (ver «Otras constantes») | — | — | — | valores inventados en los paquetes de sustitución, o pruebas con disco |
 
@@ -806,8 +806,8 @@ Las tomó el coordinador, en quien el usuario delegó estas decisiones. Cada una
 - **D9. Localizadores** (direcciones, tamaños, opcodes, las listas por mensaje de `string_manifest.cpp`,
   `KnownScenes`): **(a)**. Motivo: dicen dónde está cada dato en el disco del usuario, no lo que vale; es el estatus de
   `ExecutableLayout`.
-- **D10. Warps de guion** (`field/warps.yaml: scripted_warps`): **(b)**. Se borra cuando la conversión de guiones a
-  Lua (R4.1) corra el guion que lo hace; hasta entonces, hueco marcado.
+- **D10. Warps de guion** (`field/warps.yaml: scripted_warps`): **(b)**. **Borrado** en p4-scripted-warps
+  (2026-10-21): los warps de los scripts los extrae `dwx` a `field/script_warps` con sus condiciones.
 - **D11. Radio y velocidades de campo** (`field/rules.yaml`, partner inicial y jugador): **(b)**. El radio sale de
   `data/digimon` y las velocidades, del movimiento raíz del modelo. Motivo: son valores de una especie, y así un
   partner nuevo anda a su velocidad.
@@ -936,7 +936,7 @@ Cómo se construye:
    | `battle.rewards.no_drop_maps` | ganar un combate en cada mapa de la lista y en uno que no está |
    | `apps/sim` (carne del escenario de cuidado) | el escenario `care` |
    | `field/rules.yaml` y `rules.hpp` (radio y velocidades) | el partner sigue al jugador por un recorrido fijo |
-   | `field/warps.yaml: scripted_warps` | el warp con su flag puesto y quitado (tras R4.1) |
+   | `field/script_warps` (sustituye a `scripted_warps`) | la puerta de `room08` con el disparador 203 puesto y quitado (`game/field/tests/field_tests.cpp`) |
 
    **Cobertura:** el modo `--trace` anota cada entrada (b) que se lee. La prueba falla si una entrada migrada no se lee
    al menos una vez durante los escenarios, así que una tabla nueva sin escenario no pasa.

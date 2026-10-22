@@ -692,6 +692,7 @@ int runGame(const Options& options) {
                 }
                 // Escape, the right button or East drops a click-to-move target.
                 intent.cancelTarget = input.wasPressed("cancel");
+                intent.confirm = input.wasPressed("confirm");
             } else {
                 mouse.release();
             }

@@ -1,0 +1,35 @@
+# A loop across five zones of the new game's area with the keyboard, taking both kinds of map change: the maps' warp
+# table (cells 110-119, tamer.c: checkMapInteraction) and the warps of the maps' scripts (step cells 51-79, extracted to
+# field/script_warps.yaml; docs/architecture/warps-de-script.md). Every warp it takes has no condition in the new game's
+# state, so the loop needs no story progress.
+# How to run it: docs/guides/prueba-vertical.md.
+name: scripted-loop
+device: keyboard
+timeout: 600
+steps:
+  - wait: {map: twna01, seconds: 1}
+  - resize: [1280, 720]
+  - screenshot: twna01-start
+  # The table: out of the town.
+  - walk_to: {trigger: 111}
+  - wait: {map: trai00, partner_within: 400, seconds: 0.5}
+  - screenshot: trai00
+  # The table again: on to the next zone.
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo00
+  # The map's script: a step cell takes it to the next zone.
+  - walk_to: {trigger: 51}
+  - wait: {map: twnb01, partner_within: 400, seconds: 0.5}
+  - screenshot: twnb01
+  # The script again: back into the town by another way than the one the loop left by.
+  - walk_to: {trigger: 52}
+  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
+  - screenshot: twna01-back
+  # The door the hand-written entry used to give: the table in, the room's script out.
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, partner_within: 400, seconds: 0.5}
+  - screenshot: room08
+  - walk_to: {trigger: 51}
+  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
+  - screenshot: twna01-end

@@ -73,6 +73,19 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   - 80–109: lo mismo, pero al pulsar confirmar;
   - 110–119: warp por la salida `valor - 110` del mapa: va al mapa `targetMap` y aparece en la salida `targetExit`;
   - 120: un script (sección 0x4E2) si el partner tiene el bit 8 de su condición (el baño, **suposición**).
+  - Con `TAMER_STATE` distinto de 0 la función vuelve antes de mirar ninguna celda (`tamer.c:685`; solo la llama
+    `tamerTickWalkingState`, el estado 0 de `tamerTickOverworld`, `tamer.c:455`), y las secciones 51–109 piden además
+    que no haya script en marcha (`IS_SCRIPT_PAUSED` 1). En el motor equivale a que el paso del campo llegue a mirar
+    las celdas: sin fundido de entrada en curso y sin estar saliendo del mapa. **Es equivalente solo porque** el motor
+    aún no tiene los demás estados (6 parado, 7 recoger objeto, 8 entrenar, 11 pescar, 14 cofre, 15–20 apertura,
+    final y pérdida de vidas) ni scripts en marcha; cuando los tenga, deben cortar esta comprobación. Los valores de
+    las celdas (51, 80, 110 y 10 salidas) están en un solo sitio, `core/collision_triggers.hpp`.
+  - **Hueco (llegada):** al acabar el fundido de entrada el original llama otra vez a `checkMapInteraction`
+    (`tamer.c: tamerTickChangeMap`, `tamer.c:1391`), y cada fotograma en estado 0 la vuelve a llamar sobre la celda
+    en que está (no solo al pisarla). El motor dispara una celda solo al entrar en ella y no la de la aparición, lo
+    que da lo mismo mientras ninguna aparición caiga en una celda de disparo (**suposición**, sin medir en el disco).
+  - **Hueco (S4):** en el original, confirmar delante de un NPC habla con él antes de mirar la celda; el motor aún no
+    tiene conversaciones, así que una casilla 80–109 detrás de un NPC se toma al confirmar.
 - **El cambio de mapa** (`tamer.c: tamerTickChangeMap`, `fade.c`) **(comprobado)**: el reloj se para
   (`stopGameTime`) y la cámara deja de seguir. `fadeToBlack(20)` pone delante un rectángulo que **resta** un gris que
   sube 7 por fotograma; en el fotograma 10 aparece el nombre del mapa y en el 20 se carga el nuevo (`changeMap`).
@@ -107,9 +120,13 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   aparece en `spawn` de la salida, con su giro. El partner aparece a 200 en la dirección cardinal de detrás del
   jugador (por bandas del giro: `z + 200` si mira hacia −z, etc.), siempre, con el giro del jugador más media vuelta;
   `partnerTickCollision` le hace mirar al jugador desde el fotograma siguiente.
-- Algunas salidas no están en la tabla de warps del mapa sino en su script de eventos: la puerta de la casa de
-  Jijimon (`room08`, disparador 51) llama al script 178, que lleva al jugador a la puerta y hace `warp_to` a
-  `twna01` salida 2 mientras el flag 203 esté apagado **(comprobado en el script extraído)**.
+- Una entrada de la tabla de warps solo se dispara desde una casilla 110–119 de su salida; las que no tienen casilla
+  son solo puntos de llegada de otros warps (`tamer.c: checkMapInteraction`, `TARGET_MAP = targetMap[trigger -
+  110]`) **(comprobado)**.
+- Muchas salidas no están en la tabla sino en el script de eventos del mapa (`warp_to`): la puerta de la casa de
+  Jijimon (`room08`, disparador 51) corre la sección 51 del script 178, que lleva al jugador a la puerta y hace
+  `warp_to` a `twna01` salida 2 mientras el disparador 203 esté apagado **(comprobado en el script extraído)**. `dwx`
+  los extrae todos con sus condiciones ([warps de script](../architecture/warps-de-script.md)).
 
 ### El partner
 
@@ -184,7 +201,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Nombre del mapa con la fuente de mapa de bits del juego, en gris claro (color 1 de su CLUT) | La fuente es un ajuste del jugador (`text_font`): la de mapa de bits del original, leída de `font/main.png` y `font/main_meta.yaml` del paquete base, o Noto Sans, la de por defecto; en los dos casos, en el gris del original (clase `.original-look`, ver [UI](../architecture/ui.md#aspecto-original)). Lo que la fuente del original no tiene (ñ, á, ¿, ¡...) lo dibuja Noto Sans en la misma línea base | Decisión del responsable de diseño, 2026-10-20 |
 | Sin HUD fijo en el campo: lo que hay en pantalla (personajes, barras de estado de `partner_impl.c: renderStatusBars`, ventanas) va detrás del rectángulo del fundido (capa 1, `fade.c: renderFade`) y se oscurece restándole el mismo gris; solo el nombre va delante (capa 0) | El HUD del motor (minimapa, botón del menú) se desvanece con alfa al ritmo del fundido (`screen_fade`) en vez de restarle el gris | Desviación aprobada: decisión del responsable de diseño, 2026-10-20 |
 | Nombre colocado en `x = 12 − (largo / 2) × 8` con espacios de relleno: centrado a unos píxeles | Centrado exacto, sin opción de quirk para imitar el desvío | Decisión del responsable de diseño, 2026-10-20 |
-| Warps de script | `field/warps.yaml`: mapa + disparador → mapa + salida, con la prueba | No se leen scripts en tiempo de ejecución (fase 4) |
+| Warps de script (`warp_to` de las secciones de casilla del script del mapa) | `field/script_warps` del paquete base, que extrae `dwx` con las condiciones de su camino: al pisar (51–79) o al confirmar (80–109) se toma el primero que se cumple con certeza; las condiciones son disparadores contra el estado de partida nueva (`data/new_game_story`); lo que no se puede decidir (otras pruebas, elecciones, caminos no estructurados) no se toma y se registra una vez por mapa y casilla | No hay intérprete de historia todavía: ni hablar con NPC, ni secciones de entrada, ni estado de historia guardado ([warps de script](../architecture/warps-de-script.md), parte (b)) |
 | Partner nuevo mirando hacia fuera un fotograma | Mirando al jugador desde el principio, y solo si cabe en la rejilla | Mismo resultado visible; no aparece dentro de una pared |
 | Rastro: poda cada fotograma, de la más nueva a la más antigua | Igual | |
 | El partner anda o se para solo por la distancia | También anda mientras sigue el rastro | Si no, se para detrás de una pared a menos de 2,5 R del jugador |
@@ -200,7 +217,9 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 
 - `map/<id>/data`: colisión, warps y cámara de cada mapa ([mapas](../formats/mapas.md)).
 - `data/maps`: nombres de carga. File City es el nombre 43 y la casa de Jijimon el 48 **(comprobado)**.
-- `content/packs/game/field/rules.yaml` y `warps.yaml` (esquemas `field_rules` y `field_warps` en
+- `field/script_warps` y `data/new_game_story` del paquete base, que extrae `dwx` (esquemas `script_warps` y
+  `new_game_story`).
+- `content/packs/game/field/rules.yaml` y `warps.yaml` (solo `start`; esquemas `field_rules` y `field_warps` en
   `content/schemas/`).
 
 ## El recorrido de la fase 2
@@ -214,6 +233,39 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 - **La vuelta**: `room08` no tiene warps en su tabla; su puerta (disparador 51) es el warp de script a `twna01`
   salida 2, delante de la casa.
 - El campo empieza en `twna01`, salida 1 (la que viene de `trai00`, la entrada a la ciudad).
+
+## Alcance de los mapas
+
+Lo mide el test de disco `the user's disc, extracted: a new game reaches its maps and back, and the scripts join all
+but a few` (`game/field/tests/reachability_tests.cpp`), desde el inicio del campo (`twna01`) y solo con lo que el
+campo dispara: la tabla de cada mapa desde sus casillas 110–119 y los warps de script de las casillas que el mapa
+tiene, a mapas con datos (241). Cifras del disco americano **(comprobado, 2026-10-21)**:
+
+| Qué warps | Mapas a los que se llega | Con vuelta al inicio |
+|---|---|---|
+| Solo la tabla (el motor antes de los warps de script) | 4 | 1 |
+| Tabla + warps de script que se cumplen con los disparadores de partida nueva (vainilla) | 6: `twna01`, `room08`, `topn01`, `trai00`, `mayo00`, `twnb01` | 6 |
+| Tabla + cualquier warp de script, sea cual sea su condición (exploración libre) | 236 | 233 |
+
+- **No son 132.** El diseño daba 132 para vainilla, pero contaba como camino toda entrada de la tabla, también las
+  que no tienen casilla 110–119, que son solo puntos de llegada. Con la regla de `checkMapInteraction` son 6.
+- **Por qué tan pocos en vainilla:** la salida de `mayo00` hacia el resto del mundo (y la mayoría de las fases de
+  la ciudad) espera al disparador 203, que pone una conversación con un NPC de `mayo00` (script 105, sección 6). Los
+  disparadores de partida nueva están todos apagados (`data/new_game_story`: `triggers_set: []`). El mundo vainilla
+  se abrirá cuando el motor corra las conversaciones y guarde el estado de historia (intérprete de historia); la
+  parte (b) de los warps de script por sí sola no lo abre.
+- **Excepciones de la exploración libre** (241 − 8 = 233). El test falla si aparece otra, con su nombre:
+
+| Mapa | Índice | Qué le pasa | Prueba |
+|---|---|---|---|
+| `mgen14` | 229 | Sin usar: nada lleva a él | `MAPHEAD` solo le carga el script 180. Ningún `warp_to` ni entrada de tabla lo nombra y ningún script pone la variable 247 (la pantalla de `teleport`) a 229. Los únicos cambios de mapa del código son la tabla (`tamer.c: checkMapInteraction`), los de script (`map.c: scriptTickChangeMap`) y la muerte (`map.c: changeToDeathMap`), cuyo mapa ponen `dooa.c` y `murd.c` (`setDeathMap`) a 0xCD o 0xDA |
+| `mgen15` | 230 | Sin usar | Igual que `mgen14` (variable 247 nunca a 230) |
+| `mgen16` | 231 | Sin usar | Igual que `mgen14` (variable 247 nunca a 231) |
+| `miha03` | 21 | Sin camino conocido | Como `mgen14`: ningún `warp_to`, entrada de tabla ni muerte lo nombra. El script 49 (`gcan11`, desplazamiento 1334) pone las variables 247 y 248 a 21 y 12, pero son los argumentos de `call_routine 21` (`script_interp.c`, caso 0x15: `resetMapObjectAnimation`), no un `teleport`. El transporte (`call_routine 10`, `script_interp.c: tickBirdraTransport`) solo va a los mapas de `script_common.c: BIRDRA_TRANSPORT_TARGETS` (38, 70, 79, 93, 105 y 119) |
+| `yaka26` | 224 | Solo hablando con un NPC | Su único warp de entrada es la sección 5 del script 63 en `chka01`, la de un NPC. Hablar con NPC queda para después (pregunta 7) |
+| `icsa08` | 104 | Sin vuelta | Se llega por el script 187 (desplazamiento 92); de él no sale ningún warp |
+| `tend01` | 236 | Sin vuelta: el final | Se llega desde `mgen99` (script 184, sección 51); es el final del juego |
+| `tend02` | 237 | Sin vuelta: el final | Igual que `tend01` |
 
 ## Dónde está en el decomp
 
@@ -231,3 +283,5 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   `setPartnerSlowWalking`, `setPartnerIdle`, `updateConditionAnimation`.
 - `src/main/partner_impl.c`: `setupPartnerOnWarp`.
 - Scripts: `MAPHEAD` sección 218 (`set_script 178`) y el script 178, sección 0x33.
+- Cambios de mapa del código: `map.c: changeMap`, `scriptTickChangeMap`, `setDeathMap`, `changeToDeathMap`;
+  `dooa.c` y `murd.c` (`setDeathMap`); `main.c: newGameScene` (`MAPHEAD` sección 0xCC).

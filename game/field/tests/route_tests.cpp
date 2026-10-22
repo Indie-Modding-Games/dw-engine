@@ -1,21 +1,28 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
+#include <dwe/assets/new_game_story.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/grid.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/game/field/script_warps.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
+
+#include "content_fixture.hpp"
 
 // The vertical slice's route on the real extracted content: File City (twna01) to Jijimon's house (room08) and back,
 // driven headlessly with scripted intents, both as stick directions (keyboard, gamepad) and as click-to-move targets.
@@ -26,6 +33,7 @@ using dwe::assets::MapDocument;
 using dwe::game::field::Field;
 using dwe::game::field::FieldInput;
 using dwe::game::field::MapChange;
+using dwe::game::field::testing::mountContent;
 
 namespace {
 
@@ -164,8 +172,22 @@ void runRoute(const dwe::assets::VirtualFileSystem& vfs, Drive drive) {
     CHECK(table->displayName(*town) == "File City");
     CHECK(table->displayName(*house) == "Jijimon's house");
 
+    // The door back is a warp of room08's script: field/script_warps and the new game's triggers come from dwx.
+    auto scriptWarps = dwe::game::field::loadScriptWarps(vfs);
+    auto story = dwe::assets::loadNewGameStory(vfs);
+    if (!scriptWarps || !story) {
+        FAIL(errorOf(scriptWarps), errorOf(story));
+        return;
+    }
+    if (scriptWarps->empty() || !*story) {
+        FAIL("the content has no field/script_warps or data/new_game_story: extract it again with this dwx");
+        return;
+    }
+    dwe::game::field::TriggerState triggers = [set = (*story)->triggersSet](std::int32_t trigger) {
+        return std::optional<bool>{std::ranges::binary_search(set, trigger)};
+    };
     dwe::scene::World world;
-    Field field{world, *rules, warps->scriptedWarps};
+    Field field{world, *rules, std::move(*scriptWarps), std::move(triggers)};
     CHECK(warps->startMap == "twna01");
     const auto townMap = loadMap(vfs, warps->startMap);
     if (!enter(field, townMap, warps->startExit)) {
@@ -185,7 +207,8 @@ void runRoute(const dwe::assets::VirtualFileSystem& vfs, Drive drive) {
     }
     visited.push_back(field.mapId());
 
-    // And back: room08 has no warps; its door (trigger 51) is a scripted warp to twna01's exit 2.
+    // And back: room08 has no warps; its door (trigger 51) is a warp of its script to twna01's exit 2, taken while
+    // trigger 203 is clear, as it is in a new game.
     change = walkToTrigger(field, 51, drive);
     if (!change) {
         return;
@@ -209,33 +232,6 @@ void runRoute(const dwe::assets::VirtualFileSystem& vfs, Drive drive) {
     }
     CHECK_FALSE(field.mapChangePending());
     CHECK(partnerDistance(field) < rules->partner.runDistance * rules->partner.mover.radius);
-}
-
-std::optional<dwe::assets::VirtualFileSystem> mountContent(const dwe::assets::DiskFileSystem& disk) {
-    const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
-    if (!mountedContent) {
-        return std::nullopt;
-    }
-    const std::filesystem::path& content = *mountedContent;
-    auto packs = dwe::assets::findPacks(disk, content);
-    if (!packs) {
-        FAIL(errorOf(packs));
-        return std::nullopt;
-    }
-    // The extracted content is folders; the route needs no archives, which would have to outlive the mount.
-    std::vector<std::filesystem::path> roots;
-    for (const dwe::assets::FoundPack& pack : packs->packs) {
-        if (pack.kind == dwe::assets::FoundPack::Kind::Folder) {
-            roots.push_back(pack.path);
-        }
-    }
-    roots.emplace_back(DWE_GAME_PACK);
-    auto vfs = dwe::assets::VirtualFileSystem::mount(disk, roots, dwe::assets::PackOrigin::Engine);
-    if (!vfs) {
-        FAIL(errorOf(vfs));
-        return std::nullopt;
-    }
-    return std::move(*vfs);
 }
 
 } // namespace

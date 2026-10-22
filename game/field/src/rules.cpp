@@ -212,7 +212,7 @@ core::Result<FieldWarps> parseFieldWarps(std::string_view yaml) {
         return std::unexpected{core::Error{std::format("field warps: {}", tree.error().message)}};
     }
     YamlReader reader;
-    if (!reader.expectKeys(*tree, "the field warps", {"start", "scripted_warps"})) {
+    if (!reader.expectKeys(*tree, "the field warps", {"start"})) {
         return std::unexpected{reader.error("field warps")};
     }
     FieldWarps warps;
@@ -220,20 +220,6 @@ core::Result<FieldWarps> parseFieldWarps(std::string_view yaml) {
     if (reader.expectKeys(start, "start", {"map", "exit"})) {
         warps.startMap = reader.text(reader.field(start, "map"));
         warps.startExit = reader.integer<std::int32_t>(reader.field(start, "exit"));
-    }
-    for (const YamlNode& item : reader.sequence(reader.field(*tree, "scripted_warps"), "scripted_warps")) {
-        if (!reader.expectKeys(item, "a scripted warp", {"map", "trigger", "target_map", "target_exit", "evidence"})) {
-            break;
-        }
-        warps.scriptedWarps.push_back({.map = reader.text(reader.field(item, "map")),
-                                       .trigger = reader.integer<std::int32_t>(reader.field(item, "trigger")),
-                                       .targetMap = reader.text(reader.field(item, "target_map")),
-                                       .targetExit = reader.integer<std::int32_t>(reader.field(item, "target_exit")),
-                                       .evidence = reader.text(reader.field(item, "evidence"))});
-        const ScriptedWarp& added = warps.scriptedWarps.back();
-        if (reader.ok() && (added.trigger <= 0 || added.trigger >= 0x80)) {
-            reader.fail(item, "a trigger is a collision value from 1 to 127");
-        }
     }
     return reader.finish(std::move(warps), "field warps");
 }

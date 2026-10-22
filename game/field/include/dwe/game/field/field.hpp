@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/game/field/script_warps.hpp>
 #include <dwe/scene/components.hpp>
 #include <dwe/scene/world.hpp>
 
@@ -13,6 +14,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::game::field {
@@ -28,13 +30,16 @@ struct FieldInput {
     // it stays until reached, until the stick is used or until cancelTarget.
     std::optional<glm::vec3> moveTarget = std::nullopt;
     bool cancelTarget = false;
+    // The confirm button was pressed this tick: on a cell of value 80-109 it runs the map's script
+    // (tamer.c: checkMapInteraction).
+    bool confirm = false;
 };
 
 // The player stepped on a warp: the app loads `map` and calls Field::enterMap with `exit`.
 struct MapChange {
     std::string map;
     std::int32_t exit = 0;
-    // The collision value that fired it (110 + exit of the old map, or a scripted warp's trigger).
+    // The collision value that fired it (110 + exit of the old map, or the cell of a script's map change).
     std::int32_t trigger = 0;
 };
 
@@ -57,8 +62,12 @@ struct CharacterState {
 // rendering, input devices or file access: the app feeds input and map documents, and reads state and changes.
 class Field {
 public:
-    // Creates the player and the partner in the world. The world must outlive the field.
-    Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps = {});
+    // Creates the player and the partner in the world. The world must outlive the field. The scripts' map changes
+    // fire on stepping on (or confirming on) their cells when `triggers` decides them taken, under `unknownPolicy`
+    // for a recursion or a trigger it is told it cannot know (logged once per warp); the ones it cannot decide are
+    // logged once and not taken.
+    Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps = {}, TriggerState triggers = {},
+          UnknownPolicy unknownPolicy = VanillaUnknownPolicy);
 
     // Enters a map through one of its exits: the player appears at the exit's spawn and the partner next to it
     // (tamer.c: loadMapEntities), and the screen fades in (tamer.c: tamerTickChangeMap) before the player can move.
@@ -142,6 +151,10 @@ private:
     void movePlayer(float seconds);
     glm::vec2 followPath(glm::vec3& position, float distance);
     void checkTriggers();
+    void checkConfirm();
+    void leave(MapChange change);
+    // The map change the map's scripts make when `via` runs the section `value` and its guards are decided taken.
+    std::optional<MapChange> scriptWarpFor(WarpVia via, std::int32_t value);
     void walkOut(float seconds);
     // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
     // FADE_IN_CURRENT).
@@ -153,7 +166,17 @@ private:
 
     scene::World* world_;
     FieldRules rules_;
-    std::vector<ScriptedWarp> scriptedWarps_;
+    std::vector<ScriptWarp> scriptWarps_;
+    TriggerState triggers_;
+    UnknownPolicy unknownPolicy_;
+    // The step cells of the current map whose map change is taken.
+    std::vector<std::int32_t> warpingStepCells_;
+    // The map and cell of each section whose map change could not be decided, logged once.
+    std::vector<std::pair<std::string, std::int32_t>> undecidedReported_;
+    // The script warps taken under the unknown policy, by index, logged once.
+    std::vector<std::size_t> allowedReported_;
+    // The map and cell of each section whose warps the field could not tell apart, logged once.
+    std::vector<std::pair<std::string, std::int32_t>> ambiguousReported_;
     scene::Entity player_;
     scene::Entity partner_;
 

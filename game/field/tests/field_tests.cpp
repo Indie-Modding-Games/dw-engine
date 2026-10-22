@@ -1,14 +1,20 @@
+#include <dwe/core/log.hpp>
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/field/script_warps.hpp>
 #include <dwe/ruleset/game_clock.hpp>
+#include <dwe/test_support/script_warp_fixtures.hpp>
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "fixture.hpp"
 
@@ -203,20 +209,51 @@ TEST_CASE("a trigger fires when stepped onto, not while standing on it") {
     CHECK(field.mapChangePending());
 }
 
-TEST_CASE("a warp from a script works like a map warp") {
-    MapDocument house = roomMap("house");
-    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
-    const dwe::game::field::ScriptedWarp door{
-        .map = "house", .trigger = 51, .targetMap = "town", .targetExit = 2, .evidence = "test"};
-    dwe::scene::World world;
-    Field field{world, originalRules(), {door}};
+namespace {
+
+// The door of a house: stepping on cells of value 51 takes the player to exit 2 of town while trigger 203 is clear.
+dwe::game::field::ScriptWarp houseDoor() {
+    using dwe::game::field::GuardBranch;
+    using dwe::game::field::GuardTest;
+    return {.map = "house",
+            .via = dwe::game::field::WarpVia::Step,
+            .section = 51,
+            .targetMap = "town",
+            .targetExit = 2,
+            .scriptGuard = {},
+            .guard = {.terms = {GuardBranch{.tests = {GuardTest{.test = "trigger", .trigger = 203, .clear = true}},
+                                            .holds = true}},
+                      .unstructured = false},
+            .setsFlags = {},
+            .source = "test"};
+}
+
+dwe::game::field::TriggerState triggersSet(std::vector<std::int32_t> set) {
+    return [set = std::move(set)](std::int32_t trigger) -> std::optional<bool> {
+        return std::ranges::contains(set, trigger);
+    };
+}
+
+// Walks toward the camera (world +Z) from the middle of the house until a map change or 5 seconds.
+std::optional<MapChange> walkSouth(Field& field, const MapDocument& house) {
     field.enterMapAt(house, at(0.0F, 1200.0F));
-    field.setInput({.stick = {0.0F, -1.0F}}); // toward the camera: world +Z
+    field.setInput({.stick = {0.0F, -1.0F}});
     std::optional<MapChange> change;
     for (int i = 0; i < 300 && !change; ++i) {
         field.tick(Tick);
         change = field.takeMapChange();
     }
+    return change;
+}
+
+} // namespace
+
+TEST_CASE("a warp from a script whose triggers say it is taken works like a map warp") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::scene::World world;
+    Field field{world, originalRules(), {houseDoor()}, triggersSet({})};
+    const auto change = walkSouth(field, house);
     if (!change) {
         FAIL("no map change");
         return;
@@ -224,6 +261,96 @@ TEST_CASE("a warp from a script works like a map warp") {
     CHECK(change->map == "town");
     CHECK(change->exit == 2);
     CHECK(change->trigger == 51);
+
+    // With trigger 203 set the script does something else: the cell is a trigger step like any other.
+    dwe::scene::World later;
+    Field after{later, originalRules(), {houseDoor()}, triggersSet({203})};
+    CHECK_FALSE(walkSouth(after, house).has_value());
+}
+
+TEST_CASE("a warp from a script the field cannot decide is not taken") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::game::field::ScriptWarp door = houseDoor();
+    door.guard.terms.emplace_back(dwe::game::field::GuardChoice{.arm = 1, .selection = true});
+    dwe::scene::World world;
+    Field field{world, originalRules(), {door}, triggersSet({})};
+    CHECK_FALSE(walkSouth(field, house).has_value());
+    // Nor without the triggers.
+    dwe::scene::World unknown;
+    Field blind{unknown, originalRules(), {houseDoor()}};
+    CHECK_FALSE(walkSouth(blind, house).has_value());
+}
+
+TEST_CASE("a warp behind a recursion the extraction cut is taken under the vanilla policy and logged once") {
+    static std::vector<std::string> lines;
+    static const bool added = [] {
+        dwe::core::addLogSink(
+            [](dwe::core::LogLevel /*level*/, std::string_view message) { lines.emplace_back(message); });
+        return true;
+    }();
+    static_cast<void>(added);
+    lines.clear();
+    constexpr std::string_view Site = "script 63, offset 0x0120";
+
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::game::field::ScriptWarp door = houseDoor();
+    door.guard.terms.emplace_back(dwe::game::field::GuardRecursion{.site = std::string{Site}});
+    dwe::scene::World world;
+    Field field{world, originalRules(), {door}, triggersSet({})};
+    CHECK(walkSouth(field, house).has_value());
+    CHECK(walkSouth(field, house).has_value());
+    CHECK(std::ranges::count_if(lines, [Site](const std::string& line) { return line.contains(Site); }) == 1);
+
+    dwe::scene::World strict;
+    Field denied{strict, originalRules(), {door}, triggersSet({}), dwe::game::field::UnknownPolicy::Deny};
+    CHECK_FALSE(walkSouth(denied, house).has_value());
+}
+
+TEST_CASE("a warp the extraction gives behind a recursion is taken under the vanilla policy and logged once") {
+    static std::vector<std::string> lines;
+    static const bool added = [] {
+        dwe::core::addLogSink(
+            [](dwe::core::LogLevel /*level*/, std::string_view message) { lines.emplace_back(message); });
+        return true;
+    }();
+    static_cast<void>(added);
+    lines.clear();
+
+    const auto warps = dwe::game::field::parseScriptWarps(dwe::test_support::RecursionWarpYaml);
+    REQUIRE(warps.has_value());
+    MapDocument house = roomMap(std::string{dwe::test_support::RecursionWarpHouse});
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    dwe::scene::World world;
+    Field field{world, originalRules(), *warps, triggersSet({})};
+    const auto change = walkSouth(field, house);
+    if (!change) {
+        FAIL("no map change");
+        return;
+    }
+    CHECK(change->map == dwe::test_support::RecursionWarpTown);
+    CHECK(change->exit == 2);
+    CHECK(walkSouth(field, house).has_value());
+    const std::string_view site = dwe::test_support::RecursionWarpSite;
+    CHECK(std::ranges::count_if(lines, [site](const std::string& line) { return line.contains(site); }) == 1);
+}
+
+TEST_CASE("a warp from a script on a confirm cell needs the button there") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 49, .row = 49}, {.column = 51, .row = 51}, 80);
+    dwe::game::field::ScriptWarp sign = houseDoor();
+    sign.via = dwe::game::field::WarpVia::Confirm;
+    sign.section = 80;
+    dwe::scene::World world;
+    Field field{world, originalRules(), {sign}, triggersSet({})};
+    field.enterMapAt(house, at(0.0F, 0.0F));
+    field.setInput({});
+    run(field, 0.5F);
+    CHECK_FALSE(field.mapChangePending());
+    field.setInput({.confirm = true});
+    field.tick(Tick);
+    CHECK(field.mapChangePending());
 }
 
 TEST_CASE("the partner follows, keeps its distance and stops") {

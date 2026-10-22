@@ -9,4 +9,31 @@ inline constexpr std::string_view TransitionCountTooLow = "transition: {} must b
 // field/rules: a shade of `transition` beyond what a color channel holds (the limit).
 inline constexpr std::string_view TransitionShadeTooHigh = "transition: shade_max and shade_full must be at most {}";
 
+// field/script_warps: a cell of a map whose scripts change the map only on paths the field cannot decide yet (a test
+// of something else than a trigger, a choice, a loop) or to a map in a variable (the map, the cell's value).
+inline constexpr std::string_view ScriptWarpUndecided =
+    "field: the scripts of {} change the map from cell {} only on paths that depend on what the field does not track "
+    "yet; not taken";
+
+// field/script_warps: what the vanilla policy (UnknownPolicy::Allow) lets a warp through, named in its log: a recursion
+// the extraction's walk cut (its site), a trigger the new game's paths do not agree on (its number).
+inline constexpr std::string_view RecursionAllowed = "a recursion the extraction did not follow ({})";
+inline constexpr std::string_view UnknownTriggerAllowed = "trigger {}, which the new game's paths do not agree on";
+// A trigger the path's recursion or game code may have written (the trigger, what: one of the sites below).
+inline constexpr std::string_view ForgottenTriggerAllowed = "trigger {}, which {} may have written";
+inline constexpr std::string_view RecursionSite = "the recursion at {}";
+inline constexpr std::string_view GameCodeSite = "the game code at {}";
+
+// field/script_warps: a warp taken under the vanilla policy, once per warp (the map, the cell's value, the warp's
+// source, what the policy let through).
+inline constexpr std::string_view ScriptWarpAllowed =
+    "field: the scripts of {} change the map from cell {} ({}) although the field does not know {}; taken, as the "
+    "original would not lose the exit";
+
+// field/script_warps: a cell whose warps the vanilla policy takes go to more than one place, and none of them is taken
+// without the policy, once per cell (the map, the cell's value, the places, the source of the warp taken: the first).
+inline constexpr std::string_view ScriptWarpAmbiguous =
+    "field: the scripts of {} change the map from cell {} to {} on paths the field does not tell apart; taken the "
+    "first ({})";
+
 } // namespace dwe::game::field::messages

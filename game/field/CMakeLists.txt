@@ -2,6 +2,7 @@ dwe_add_module(field
     LAYER game
     SOURCES
         src/rules.cpp
+        src/script_warps.cpp
         src/grid.cpp
         src/field.cpp
     DEPS core assets scene

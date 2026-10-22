@@ -1,3 +1,6 @@
+#include <dwe/core/collision_triggers.hpp>
+#include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/grid.hpp>
 
@@ -13,6 +16,8 @@
 #include <string>
 #include <utility>
 
+#include "messages.hpp"
+
 namespace dwe::game::field {
 
 namespace {
@@ -23,8 +28,8 @@ using scene::Motion;
 using scene::Transform;
 
 constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
-constexpr std::int32_t FirstWarpTrigger = 110;
-constexpr std::int32_t WarpTriggerCount = 10;
+using core::collision::FirstWarpTrigger;
+using core::collision::WarpTriggerCount;
 // A move that makes less than this fraction of its distance counts as stuck.
 constexpr float StuckFraction = 0.1F;
 // Click-to-move gives up on a waypoint after pushing against a wall this long.
@@ -79,9 +84,10 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 
 } // namespace
 
-Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptedWarp> scriptedWarps)
-    : world_(&world), rules_(std::move(rules)), scriptedWarps_(std::move(scriptedWarps)), player_(world.create()),
-      partner_(world.create()) {
+Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps, TriggerState triggers,
+             UnknownPolicy unknownPolicy)
+    : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps)), triggers_(std::move(triggers)),
+      unknownPolicy_(unknownPolicy), player_(world.create()), partner_(world.create()) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
     registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -117,6 +123,16 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     collision_ = map.collision;
     regions_ = map.regions;
     warps_ = map.warps;
+    warpingStepCells_.clear();
+    for (const ScriptWarp& warp : scriptWarps_) {
+        if (warp.map != mapId_) {
+            continue;
+        }
+        if (warp.via == WarpVia::Step && !std::ranges::contains(warpingStepCells_, warp.section) &&
+            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, triggers_, unknownPolicy_).warp != nullptr) {
+            warpingStepCells_.push_back(warp.section);
+        }
+    }
     const glm::vec3 view =
         assets::toWorldPosition(map.camera.reference) - assets::toWorldPosition(map.camera.viewpoint);
     // tamer.c: tamerTickWalkingState adds the d-pad's direction to the camera's heading rounded to an eighth of a turn
@@ -195,6 +211,7 @@ void Field::tick(float seconds) {
     gameTimeRan_ = true;
     movePlayer(seconds);
     checkTriggers();
+    checkConfirm();
     updateTrail();
     movePartner(seconds);
 }
@@ -272,9 +289,47 @@ bool Field::isWarpTrigger(std::int32_t value) const {
             return true;
         }
     }
-    return std::ranges::any_of(scriptedWarps_, [&](const ScriptedWarp& scripted) {
-        return scripted.map == mapId_ && scripted.trigger == value;
-    });
+    return std::ranges::contains(warpingStepCells_, value);
+}
+
+std::optional<MapChange> Field::scriptWarpFor(WarpVia via, std::int32_t value) {
+    const CellWarp cell = warpOnCell(scriptWarps_, mapId_, via, value, triggers_, unknownPolicy_);
+    if (cell.warp != nullptr && cell.warp->targetMap) {
+        const auto index = static_cast<std::size_t>(cell.warp - scriptWarps_.data());
+        if (!cell.decision.allowed.empty() && !std::ranges::contains(allowedReported_, index)) {
+            allowedReported_.push_back(index);
+            std::string allowed;
+            for (const std::string& reason : cell.decision.allowed) {
+                allowed += (allowed.empty() ? "" : "; ") + reason;
+            }
+            core::logInfo("{}",
+                          core::formatMessage(messages::ScriptWarpAllowed, mapId_, value, cell.warp->source, allowed));
+        }
+        if (!cell.ambiguous.empty() && !std::ranges::contains(ambiguousReported_, std::pair{mapId_, value})) {
+            ambiguousReported_.emplace_back(mapId_, value);
+            std::string places;
+            for (const ScriptWarp* warp : cell.ambiguous) {
+                places += std::format("{}{} exit {}", places.empty() ? "" : ", ", warp->targetMap.value_or("?"),
+                                      warp->targetExit);
+            }
+            core::logInfo("{}",
+                          core::formatMessage(messages::ScriptWarpAmbiguous, mapId_, value, places, cell.warp->source));
+        }
+        return MapChange{.map = *cell.warp->targetMap, .exit = cell.warp->targetExit, .trigger = value};
+    }
+    if (cell.undecided && !std::ranges::contains(undecidedReported_, std::pair{mapId_, value})) {
+        undecidedReported_.emplace_back(mapId_, value);
+        core::logInfo("{}", core::formatMessage(messages::ScriptWarpUndecided, mapId_, value));
+    }
+    return std::nullopt;
+}
+
+void Field::leave(MapChange change) {
+    leaving_ = std::move(change);
+    leavingSeconds_ = 0.0F;
+    changeTarget_ = leaving_->map;
+    moveTarget_.reset();
+    path_.clear();
 }
 
 void Field::planPath(glm::vec3 target) {
@@ -432,24 +487,37 @@ void Field::checkTriggers() {
         const auto warp = std::ranges::find(warps_, value - FirstWarpTrigger, &assets::MapWarp::exit);
         const std::optional<std::string> target = warp != warps_.end() ? warp->targetMapId : std::nullopt;
         if (target) {
-            leaving_ = MapChange{.map = *target, .exit = warp->targetExit, .trigger = value};
+            leave(MapChange{.map = *target, .exit = warp->targetExit, .trigger = value});
+            return;
         }
     }
-    if (!leaving_) {
-        const auto scripted = std::ranges::find_if(
-            scriptedWarps_, [&](const ScriptedWarp& warp) { return warp.map == mapId_ && warp.trigger == value; });
-        if (scripted != scriptedWarps_.end()) {
-            leaving_ = MapChange{.map = scripted->targetMap, .exit = scripted->targetExit, .trigger = value};
+    if (warpViaOf(value) == WarpVia::Step) {
+        if (auto scripted = scriptWarpFor(WarpVia::Step, value)) {
+            leave(std::move(*scripted));
+            return;
         }
-    }
-    if (leaving_) {
-        leavingSeconds_ = 0.0F;
-        changeTarget_ = leaving_->map;
-        moveTarget_.reset();
-        path_.clear();
-        return;
     }
     triggerSteps_.push_back({.trigger = value, .cell = cell});
+}
+
+// tamer.c: checkMapInteraction runs the section of a cell of 80-109 the player stands on when confirm is pressed, only
+// while TAMER_STATE is 0 (tamer.c:685; tamerTickOverworld runs tamerTickWalkingState, tamer.c:455) and no script runs
+// (IS_SCRIPT_PAUSED 1). Here: while the tick gets this far (no fade in, not leaving). That is the same only because
+// the field has none of the other states yet (6 idle, 7 item pickup, 8 training, 11 fishing, 14 chest, 15-20 opening,
+// ending and life loss) nor running scripts. Before the cell, the original lets confirm talk to an NPC the player
+// faces; the field has no NPCs yet (story S4), so a cell never loses to one.
+void Field::checkConfirm() {
+    if (!std::exchange(input_.confirm, false) || leaving_) {
+        return;
+    }
+    const glm::vec3 position = world_->registry().get<Transform>(player_).position;
+    const std::int32_t value = collision_.trigger(assets::collisionCellAt(position)).value_or(0);
+    if (warpViaOf(value) != WarpVia::Confirm) {
+        return;
+    }
+    if (auto scripted = scriptWarpFor(WarpVia::Confirm, value)) {
+        leave(std::move(*scripted));
+    }
 }
 
 void Field::updateTrail() {

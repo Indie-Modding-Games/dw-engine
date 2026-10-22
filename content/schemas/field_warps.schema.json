@@ -1,32 +1,31 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field warps",
-  "description": "field/warps.yaml of the game pack: where the field starts and the warps the original does from event scripts instead of the map's warp table (game/field, docs/reference/campo.md).",
+  "description": "field/warps.yaml of the game pack: where the field starts (game/field, docs/reference/campo.md). The warps of the event scripts are in field/script_warps (script_warps.schema.json).",
   "type": "object",
-  "required": ["start", "scripted_warps"],
+  "required": [
+    "start"
+  ],
   "additionalProperties": false,
   "properties": {
     "start": {
       "type": "object",
-      "required": ["map", "exit"],
+      "required": [
+        "map",
+        "exit"
+      ],
       "additionalProperties": false,
       "properties": {
-        "map": { "description": "Map id (data/maps).", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
-        "exit": { "description": "The exit whose spawn the player starts at.", "type": "integer", "minimum": 0, "maximum": 9 }
-      }
-    },
-    "scripted_warps": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["map", "trigger", "target_map", "target_exit", "evidence"],
-        "additionalProperties": false,
-        "properties": {
-          "map": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
-          "trigger": { "description": "Collision value of the cells that fire it.", "type": "integer", "minimum": 1, "maximum": 127 },
-          "target_map": { "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
-          "target_exit": { "type": "integer", "minimum": 0, "maximum": 9 },
-          "evidence": { "description": "The script and section that do it in the original.", "type": "string" }
+        "map": {
+          "description": "Map id (data/maps).",
+          "type": "string",
+          "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$"
+        },
+        "exit": {
+          "description": "The exit whose spawn the player starts at.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
         }
       }
     }

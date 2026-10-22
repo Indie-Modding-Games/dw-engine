@@ -98,8 +98,8 @@ done
   no le parece nada especial el mapa de inicio (`hud.partner.area` a 0), el hambre que aparece con el reloj
   acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a 800x600, 1280x720 y 2560x1080
   y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
-  `route-language.yaml`. Con ella y `route-skin-original.yaml`, el paso de rutas es de 18 rutas: 36 ejecuciones sobre el
-  contenido extraído, más las 4 del `.pak` cocinado, 40 en total.
+  `route-language.yaml`. Con ella, `route-skin-original.yaml` y `route-scripted-loop.yaml`, el paso de rutas es de 19
+  rutas: 38 ejecuciones sobre el contenido extraído, más las 4 del `.pak` cocinado, 42 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
@@ -116,6 +116,12 @@ done
   título y su menú, el reloj y las barras del campo, el menú de pausa y sus opciones, la ficha y la bolsa del
   compañero (con las opciones de un objeto y los órdenes), un combate y sus cuadros finales, y la burbuja del hambre
   sobre el compañero a 1920x1080. Se corre en los dos idiomas.
+- `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado, sin progreso de la
+  historia: File City (`twna01`) → `trai00` (tabla de salidas del mapa) → `mayo00` (tabla) → `twnb01` (warp del
+  script del mapa, al pisar la celda) → File City por otra entrada (script) → la casa del anciano, `room08` (tabla) →
+  File City (script). Comprueba los dos caminos de cambio de mapa, la tabla y los
+  [warps de script](../architecture/warps-de-script.md), y que el compañero sigue al jugador en cada llegada; hace
+  una captura en cada zona. Se corre en los dos idiomas, como `route-language.yaml`.
 
 Todas las rutas corren con el aspecto original, el de por defecto, salvo que pidan otro. Las dos de aspectos (y el
 aspecto original en todas) necesitan contenido extraído con `dwx` de la versión 2 del extractor o posterior, que
@@ -230,14 +236,14 @@ En Windows no hay contenedor: los mismos pasos con `dwx` del build de Windows
 
 Un gate corre, sobre el tip exacto, en Xvfb con lavapipe y con `--skip-steps fullscreen`:
 
-- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (18) sobre el contenido extraído, en `en` y en `es`: 36
+- [ ] Todas las rutas de `tests/autotest/route-*.yaml` (19) sobre el contenido extraído, en `en` y en `es`: 38
   ejecuciones. `route-dev-assets` con `--dev-assets`, `route-mod-map` con `--mods tests/mods/example_mod` y
   `route-skins` con `--mods tests/mods/ui_skin`.
 - [ ] `check-full` con `DWE_CONTENT` (paso `cook-content`, desde cero en `build/gate-cooked`) con `0 problems` en
   las dos comprobaciones.
 - [ ] `route-mod-map` y `route-fade` sobre el paquete cocinado, en `en` y en `es`: 4 ejecuciones.
 
-En total, **40 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
+En total, **42 ejecuciones**. Cada una acaba en `autotest: PASS`, con la capa de validación en 0 mensajes y
 `autotest: 0 [error] lines in the log`; las del paquete cocinado, además, con la fuente de mapa de bits cargada. Si
 añades una ruta, súmala aquí.
 

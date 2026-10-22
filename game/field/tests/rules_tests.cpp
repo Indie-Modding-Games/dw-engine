@@ -133,26 +133,13 @@ TEST_CASE("the fade's shades follow the original's curve") {
     CHECK(shadeDarkness(rules, 160) == doctest::Approx(1.0F));
 }
 
-TEST_CASE("field warps read the start and the scripted warps") {
-    const auto warps = dwe::game::field::parseFieldWarps(R"(start:
-  map: twna01
-  exit: 1
-scripted_warps:
-- map: room08
-  trigger: 51
-  target_map: twna01
-  target_exit: 2
-  evidence: "script 178"
-)");
+TEST_CASE("field warps read the start, and the old scripted warps are refused") {
+    const auto warps = dwe::game::field::parseFieldWarps("start:\n  map: twna01\n  exit: 1\n");
     REQUIRE_MESSAGE(warps.has_value(), errorOf(warps));
     CHECK(warps->startMap == "twna01");
     CHECK(warps->startExit == 1);
-    REQUIRE(warps->scriptedWarps.size() == 1);
-    CHECK(warps->scriptedWarps[0].trigger == 51);
-    CHECK(warps->scriptedWarps[0].targetExit == 2);
-    CHECK_FALSE(dwe::game::field::parseFieldWarps("start:\n  map: a\n  exit: 0\nscripted_warps:\n- map: a\n  trigger: "
-                                                  "128\n  target_map: b\n  target_exit: 0\n  evidence: x\n")
-                    .has_value());
+    // The scripts' warps moved to field/script_warps (docs/architecture/warps-de-script.md).
+    CHECK_FALSE(dwe::game::field::parseFieldWarps("start:\n  map: a\n  exit: 0\nscripted_warps: []\n").has_value());
 }
 
 TEST_CASE("the game pack's field data is valid") {

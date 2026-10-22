@@ -4,12 +4,15 @@
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_warps.hpp>
+#include <dwe/assets/new_game_story.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/game/field/script_warps.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/scene/components.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <format>
 #include <tuple>
@@ -131,7 +134,23 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     } else {
         core::logWarning("field: no map table ({}); maps show their ids", table.error().message);
     }
-    scene->field_ = std::make_unique<game::field::Field>(scene->world_, *rules, warps->scriptedWarps);
+    auto scriptWarps = game::field::loadScriptWarps(files);
+    if (!scriptWarps) {
+        return core::fail(std::format("field/script_warps: {}", scriptWarps.error().message));
+    }
+    auto story = assets::loadNewGameStory(files);
+    if (!story) {
+        return core::fail(std::format("data/new_game_story: {}", story.error().message));
+    }
+    // Until the story is kept (StoryState), the triggers stay as a new game leaves them: every one clear but those
+    // data/new_game_story lists as set (unknown if its paths do not agree) and those it lists as unknown. Without that
+    // document no trigger is known, and no script warp is taken.
+    game::field::TriggerState triggers;
+    if (*story) {
+        triggers = game::field::newGameTriggers(**story);
+    }
+    scene->field_ =
+        std::make_unique<game::field::Field>(scene->world_, *rules, std::move(*scriptWarps), std::move(triggers));
     scene->schedule_ = scheduleOf(rules->timeOfDay);
     scene->clock_ = desc.clock;
     if (desc.time) {

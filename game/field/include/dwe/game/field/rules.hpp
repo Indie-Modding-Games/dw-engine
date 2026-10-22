@@ -110,22 +110,11 @@ struct FieldRules {
     TimeOfDayRules timeOfDay;
 };
 
-// A warp the original does in an event script instead of the map's warp table: stepping on `trigger` in `map` takes
-// the player to `targetExit` of `targetMap`. Each entry says in `evidence` which script does it.
-struct ScriptedWarp {
-    std::string map;
-    std::int32_t trigger = 0;
-    std::string targetMap;
-    std::int32_t targetExit = 0;
-    std::string evidence;
-};
-
-// Where a new field session starts, and the warps that come from scripts (`field/warps` in the game pack,
-// content/schemas/field_warps.schema.json).
+// Where a new field session starts (`field/warps` in the game pack, content/schemas/field_warps.schema.json). The
+// warps the scripts make are in `field/script_warps` (script_warps.hpp).
 struct FieldWarps {
     std::string startMap;
     std::int32_t startExit = 0;
-    std::vector<ScriptedWarp> scriptedWarps;
 };
 
 // Parses the text of `field/rules`. Unknown and missing keys are errors.
