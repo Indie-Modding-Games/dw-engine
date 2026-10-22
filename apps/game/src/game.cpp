@@ -18,6 +18,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
@@ -505,12 +506,15 @@ int runGame(const Options& options) {
 
     // A loaded game starts where it was saved, unless --start says otherwise.
     const std::optional<session::FieldPlace> savedPlace = options.startMap ? std::nullopt : session.savedPlace();
-    auto scene = FieldScene::create(**renderer, files,
-                                    {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
-                                     .startExit = options.startExit,
-                                     .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
-                                     .clock = &session.clock(),
-                                     .time = options.time});
+    auto scene =
+        FieldScene::create(**renderer, files,
+                           {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
+                            .startExit = options.startExit,
+                            .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
+                            .clock = &session.clock(),
+                            .time = options.time,
+                            .facts = session::fieldGuardFacts(session, game->systems.inventory, *game->systems.story),
+                            .writeTrigger = session::fieldTriggerWriter(*game->systems.story)});
     if (!scene) {
         core::logError("game: {}", scene.error().message);
         return EXIT_FAILURE;

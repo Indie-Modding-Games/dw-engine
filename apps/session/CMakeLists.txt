@@ -6,6 +6,7 @@ dwe_add_module(session
     SOURCES
         src/battle_adapter.cpp
         src/evolution_adapter.cpp
+        src/field_facts.cpp
         src/game_session.cpp
         src/game_systems.cpp
         src/inventory_adapter.cpp

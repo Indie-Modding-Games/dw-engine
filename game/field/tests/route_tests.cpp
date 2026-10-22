@@ -187,7 +187,7 @@ void runRoute(const dwe::assets::VirtualFileSystem& vfs, Drive drive) {
         return std::optional<bool>{std::ranges::binary_search(set, trigger)};
     };
     dwe::scene::World world;
-    Field field{world, *rules, std::move(*scriptWarps), std::move(triggers)};
+    Field field{world, *rules, {.warps = std::move(*scriptWarps), .facts = std::move(triggers)}};
     CHECK(warps->startMap == "twna01");
     const auto townMap = loadMap(vfs, warps->startMap);
     if (!enter(field, townMap, warps->startExit)) {

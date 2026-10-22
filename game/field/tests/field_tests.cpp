@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <numbers>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -253,7 +254,7 @@ TEST_CASE("a warp from a script whose triggers say it is taken works like a map 
     MapDocument house = roomMap("house");
     fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
     dwe::scene::World world;
-    Field field{world, originalRules(), {houseDoor()}, triggersSet({})};
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({})}};
     const auto change = walkSouth(field, house);
     if (!change) {
         FAIL("no map change");
@@ -265,7 +266,7 @@ TEST_CASE("a warp from a script whose triggers say it is taken works like a map 
 
     // With trigger 203 set the script does something else: the cell is a trigger step like any other.
     dwe::scene::World later;
-    Field after{later, originalRules(), {houseDoor()}, triggersSet({203})};
+    Field after{later, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({203})}};
     CHECK_FALSE(walkSouth(after, house).has_value());
 }
 
@@ -275,11 +276,11 @@ TEST_CASE("a warp from a script the field cannot decide is not taken") {
     dwe::game::field::ScriptWarp door = houseDoor();
     door.guard.terms.emplace_back(dwe::game::field::GuardChoice{.arm = 1, .selection = true});
     dwe::scene::World world;
-    Field field{world, originalRules(), {door}, triggersSet({})};
+    Field field{world, originalRules(), {.warps = {door}, .facts = triggersSet({})}};
     CHECK_FALSE(walkSouth(field, house).has_value());
     // Nor without the triggers.
     dwe::scene::World unknown;
-    Field blind{unknown, originalRules(), {houseDoor()}};
+    Field blind{unknown, originalRules(), {.warps = {houseDoor()}}};
     CHECK_FALSE(walkSouth(blind, house).has_value());
 }
 
@@ -299,13 +300,18 @@ TEST_CASE("a warp behind a recursion the extraction cut is taken under the vanil
     dwe::game::field::ScriptWarp door = houseDoor();
     door.guard.terms.emplace_back(dwe::game::field::GuardRecursion{.site = std::string{Site}});
     dwe::scene::World world;
-    Field field{world, originalRules(), {door}, triggersSet({})};
+    Field field{world, originalRules(), {.warps = {door}, .facts = triggersSet({})}};
     CHECK(walkSouth(field, house).has_value());
     CHECK(walkSouth(field, house).has_value());
     CHECK(std::ranges::count_if(lines, [Site](const std::string& line) { return line.contains(Site); }) == 1);
 
     dwe::scene::World strict;
-    Field denied{strict, originalRules(), {door}, triggersSet({}), dwe::game::field::UnknownPolicy::Deny};
+    Field denied{strict,
+                 originalRules(),
+                 {.warps = {door},
+                  .facts = triggersSet({}),
+                  .writeTrigger = {},
+                  .unknownPolicy = dwe::game::field::UnknownPolicy::Deny}};
     CHECK_FALSE(walkSouth(denied, house).has_value());
 }
 
@@ -324,7 +330,7 @@ TEST_CASE("a warp the extraction gives behind a recursion is taken under the van
     MapDocument house = roomMap(std::string{dwe::test_support::RecursionWarpHouse});
     fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
     dwe::scene::World world;
-    Field field{world, originalRules(), *warps, triggersSet({})};
+    Field field{world, originalRules(), {.warps = *warps, .facts = triggersSet({})}};
     const auto change = walkSouth(field, house);
     if (!change) {
         FAIL("no map change");
@@ -344,7 +350,7 @@ TEST_CASE("a warp from a script on a confirm cell needs the button there") {
     sign.via = dwe::game::field::WarpVia::Confirm;
     sign.section = 80;
     dwe::scene::World world;
-    Field field{world, originalRules(), {sign}, triggersSet({})};
+    Field field{world, originalRules(), {.warps = {sign}, .facts = triggersSet({})}};
     field.enterMapAt(house, at(0.0F, 0.0F));
     field.setInput({});
     run(field, 0.5F);
@@ -492,7 +498,7 @@ TEST_CASE("a walk to a door keeps off the cells whose script changes the map") {
     house.warps[2].targetMapId = "town";
     house.warps[2].targetExit = 0;
     dwe::scene::World world;
-    Field field{world, originalRules(), {houseDoor()}, triggersSet({})};
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({})}};
     field.enterMapAt(house, at(0.0F, 1000.0F));
     CHECK(field.warpsOn(Door));
     CHECK(field.warpsOn(ScriptStep));
@@ -527,10 +533,74 @@ TEST_CASE("a walk to a door keeps off the cells whose script changes the map") {
 
     // Once its triggers say the script does something else, the band is floor like any other.
     dwe::scene::World later;
-    Field after{later, originalRules(), {houseDoor()}, triggersSet({203})};
+    Field after{later, originalRules(), {.warps = {houseDoor()}, .facts = triggersSet({203})}};
     after.enterMapAt(house, at(0.0F, 1000.0F));
     CHECK_FALSE(after.warpsOn(ScriptStep));
     CHECK(after.warpsOn(Door));
+}
+
+namespace {
+
+// A story's triggers the tests write and the field reads, live.
+struct TestStory {
+    std::set<std::int32_t> set;
+    std::vector<std::pair<std::int32_t, bool>> writes;
+
+    [[nodiscard]] dwe::game::field::TriggerState reader() const {
+        return [this](std::int32_t trigger) -> std::optional<bool> { return set.contains(trigger); };
+    }
+
+    dwe::game::field::TriggerWriter writer() {
+        return [this](std::int32_t trigger, bool on) {
+            writes.emplace_back(trigger, on);
+            if (on) {
+                set.insert(trigger);
+            } else {
+                set.erase(trigger);
+            }
+        };
+    }
+};
+
+} // namespace
+
+TEST_CASE("a warp the field takes writes the triggers it sets, and the map's cells are decided again at once") {
+    MapDocument house = roomMap("house");
+    constexpr std::uint8_t OtherStep = 52;
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    fill(house, {.column = 20, .row = 20}, {.column = 21, .row = 21}, OtherStep);
+    dwe::game::field::ScriptWarp door = houseDoor();
+    door.setsFlags = {{.trigger = 203, .set = true}, {.trigger = 7, .set = false}};
+    // Another cell of the house leads out only while 203 is clear, as the door does.
+    dwe::game::field::ScriptWarp window = houseDoor();
+    window.section = OtherStep;
+    TestStory story{.set = {7}, .writes = {}};
+    dwe::scene::World world;
+    Field field{
+        world, originalRules(), {.warps = {door, window}, .facts = story.reader(), .writeTrigger = story.writer()}};
+    field.enterMapAt(house, at(0.0F, 1200.0F));
+    CHECK(field.warpsOn(OtherStep));
+    const auto change = walkSouth(field, house);
+    REQUIRE(change.has_value());
+    CHECK(story.writes == std::vector<std::pair<std::int32_t, bool>>{{203, true}, {7, false}});
+    // The walk out still sees the house: its cells follow the triggers the warp wrote.
+    CHECK_FALSE(field.warpsOn(OtherStep));
+}
+
+TEST_CASE("after a trigger written outside the field, refreshing decides the map's step cells again") {
+    MapDocument house = roomMap("house");
+    fill(house, {.column = 46, .row = 65}, {.column = 53, .row = 66}, 51);
+    TestStory story;
+    dwe::scene::World world;
+    Field field{world, originalRules(), {.warps = {houseDoor()}, .facts = story.reader()}};
+    field.enterMapAt(house, at(0.0F, 1000.0F));
+    CHECK(field.warpsOn(51));
+    story.set.insert(203);
+    field.refreshScriptWarps();
+    CHECK_FALSE(field.warpsOn(51));
+    story.set.erase(203);
+    field.refreshScriptWarps();
+    CHECK(field.warpsOn(51));
 }
 
 TEST_CASE("a warp fades out while the player walks on, and fades in on the new map") {

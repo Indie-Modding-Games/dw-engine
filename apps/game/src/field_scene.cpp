@@ -4,7 +4,6 @@
 #include <dwe/assets/content_id.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_warps.hpp>
-#include <dwe/assets/new_game_story.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/field/rules.hpp>
@@ -138,22 +137,16 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     if (!scriptWarps) {
         return core::fail(std::format("field/script_warps: {}", scriptWarps.error().message));
     }
-    auto story = assets::loadNewGameStory(files);
-    if (!story) {
-        return core::fail(std::format("data/new_game_story: {}", story.error().message));
-    }
     const std::string startMap = desc.startMap.value_or(warps->startMap);
     const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
-    // Until the story is kept (StoryState), the triggers stay as a new game leaves them: every one clear but those
-    // data/new_game_story lists as set (unknown if its paths do not agree) and those it lists as unknown. A start
-    // other than the opening's spawn skips the opening and sets what it sets: field/warps starts after it. Without
-    // that document no trigger is known, and no script warp is taken.
-    game::field::TriggerState triggers;
-    if (*story) {
-        triggers = game::field::newGameTriggers(**story, startMap, startExit);
-    }
-    scene->field_ =
-        std::make_unique<game::field::Field>(scene->world_, *rules, std::move(*scriptWarps), std::move(triggers));
+    // The story's triggers, the bag and the partner, as the session keeps them; a new game's start is the story's
+    // (session/story_adapter.hpp).
+    scene->field_ = std::make_unique<game::field::Field>(
+        scene->world_, *rules,
+        game::field::ScriptWarpSetup{.warps = std::move(*scriptWarps),
+                                     .facts = desc.facts,
+                                     .writeTrigger = desc.writeTrigger,
+                                     .unknownPolicy = game::field::VanillaUnknownPolicy});
     scene->schedule_ = scheduleOf(rules->timeOfDay);
     scene->clock_ = desc.clock;
     if (desc.time) {

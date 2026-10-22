@@ -37,6 +37,10 @@ struct FieldSceneDesc {
     ruleset::GameClock* clock = nullptr;
     // Jump the clock to this time of day instead of keeping its hour.
     std::optional<render::TimeOfDay> time;
+    // What the scripts' map changes read of the game, and where the triggers they set go (session/field_facts.hpp).
+    // Without facts no script warp is taken.
+    game::field::GuardFacts facts{};
+    game::field::TriggerWriter writeTrigger{};
 };
 
 // How long the last map change took, in milliseconds: reading the map through the VFS, entering it in the field and

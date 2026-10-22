@@ -143,6 +143,9 @@ using StatReader = std::function<std::optional<std::int64_t>(std::int32_t stat)>
 // The partner's conditions as the original's bits (params.h: CONDITION_*).
 using ConditionReader = std::function<std::optional<std::uint32_t>()>;
 
+// Sets or clears a story trigger: what a script warp the field takes sets on its way (sets_flags).
+using TriggerWriter = std::function<void(std::int32_t trigger, bool set)>;
+
 // Everything a guard reads, live: the field asks when it decides.
 struct GuardFacts {
     GuardFacts() = default;

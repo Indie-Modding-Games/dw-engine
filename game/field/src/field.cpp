@@ -84,10 +84,10 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
 
 } // namespace
 
-Field::Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps, GuardFacts facts,
-             UnknownPolicy unknownPolicy)
-    : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps)), facts_(std::move(facts)),
-      unknownPolicy_(unknownPolicy), player_(world.create()), partner_(world.create()) {
+Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
+    : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps.warps)),
+      facts_(std::move(scriptWarps.facts)), writeTrigger_(std::move(scriptWarps.writeTrigger)),
+      unknownPolicy_(scriptWarps.unknownPolicy), player_(world.create()), partner_(world.create()) {
     entt::registry& registry = world_->registry();
     registry.emplace<Transform>(player_);
     registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -123,16 +123,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
     collision_ = map.collision;
     regions_ = map.regions;
     warps_ = map.warps;
-    warpingStepCells_.clear();
-    for (const ScriptWarp& warp : scriptWarps_) {
-        if (warp.map != mapId_) {
-            continue;
-        }
-        if (warp.via == WarpVia::Step && !std::ranges::contains(warpingStepCells_, warp.section) &&
-            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, facts_, unknownPolicy_).warp != nullptr) {
-            warpingStepCells_.push_back(warp.section);
-        }
-    }
+    refreshScriptWarps();
     const glm::vec3 view =
         assets::toWorldPosition(map.camera.reference) - assets::toWorldPosition(map.camera.viewpoint);
     // tamer.c: tamerTickWalkingState adds the d-pad's direction to the camera's heading rounded to an eighth of a turn
@@ -292,7 +283,30 @@ bool Field::warpsOn(std::int32_t trigger) const {
     return std::ranges::contains(warpingStepCells_, trigger);
 }
 
-std::optional<MapChange> Field::scriptWarpFor(WarpVia via, std::int32_t value) {
+void Field::refreshScriptWarps() {
+    warpingStepCells_.clear();
+    for (const ScriptWarp& warp : scriptWarps_) {
+        if (warp.map != mapId_) {
+            continue;
+        }
+        if (warp.via == WarpVia::Step && !std::ranges::contains(warpingStepCells_, warp.section) &&
+            warpOnCell(scriptWarps_, mapId_, WarpVia::Step, warp.section, facts_, unknownPolicy_).warp != nullptr) {
+            warpingStepCells_.push_back(warp.section);
+        }
+    }
+}
+
+void Field::writeTriggersOf(const ScriptWarp& warp) {
+    if (!writeTrigger_ || warp.setsFlags.empty()) {
+        return;
+    }
+    for (const FlagEffect& effect : warp.setsFlags) {
+        writeTrigger_(effect.trigger, effect.set);
+    }
+    refreshScriptWarps();
+}
+
+std::optional<MapChange> Field::takeScriptWarp(WarpVia via, std::int32_t value) {
     const CellWarp cell = warpOnCell(scriptWarps_, mapId_, via, value, facts_, unknownPolicy_);
     if (cell.warp != nullptr && cell.warp->targetMap) {
         const auto index = static_cast<std::size_t>(cell.warp - scriptWarps_.data());
@@ -315,6 +329,7 @@ std::optional<MapChange> Field::scriptWarpFor(WarpVia via, std::int32_t value) {
             core::logInfo("{}",
                           core::formatMessage(messages::ScriptWarpAmbiguous, mapId_, value, places, cell.warp->source));
         }
+        writeTriggersOf(*cell.warp);
         return MapChange{.map = *cell.warp->targetMap, .exit = cell.warp->targetExit, .trigger = value};
     }
     if (cell.undecided && !std::ranges::contains(undecidedReported_, std::pair{mapId_, value})) {
@@ -492,7 +507,7 @@ void Field::checkTriggers() {
         }
     }
     if (warpViaOf(value) == WarpVia::Step) {
-        if (auto scripted = scriptWarpFor(WarpVia::Step, value)) {
+        if (auto scripted = takeScriptWarp(WarpVia::Step, value)) {
             leave(std::move(*scripted));
             return;
         }
@@ -515,7 +530,7 @@ void Field::checkConfirm() {
     if (warpViaOf(value) != WarpVia::Confirm) {
         return;
     }
-    if (auto scripted = scriptWarpFor(WarpVia::Confirm, value)) {
+    if (auto scripted = takeScriptWarp(WarpVia::Confirm, value)) {
         leave(std::move(*scripted));
     }
 }

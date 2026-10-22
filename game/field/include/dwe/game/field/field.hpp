@@ -49,6 +49,17 @@ struct TriggerStep {
     assets::CollisionCell cell;
 };
 
+// How the field takes the map changes of the scripts (field/script_warps).
+struct ScriptWarpSetup {
+    std::vector<ScriptWarp> warps{};
+    // What their guards read, live.
+    GuardFacts facts{};
+    // Where the triggers a taken warp sets go; without it they go nowhere.
+    TriggerWriter writeTrigger{};
+    // What the field does with a recursion or a trigger it is told it cannot know.
+    UnknownPolicy unknownPolicy = VanillaUnknownPolicy;
+};
+
 // A character as the minimap and the debug views see it.
 struct CharacterState {
     glm::vec3 position{};
@@ -63,11 +74,10 @@ struct CharacterState {
 class Field {
 public:
     // Creates the player and the partner in the world. The world must outlive the field. The scripts' map changes
-    // fire on stepping on (or confirming on) their cells when `facts` decide them taken, under `unknownPolicy`
-    // for a recursion or a trigger it is told it cannot know (logged once per warp); the ones it cannot decide are
-    // logged once and not taken.
-    Field(scene::World& world, FieldRules rules, std::vector<ScriptWarp> scriptWarps = {}, GuardFacts facts = {},
-          UnknownPolicy unknownPolicy = VanillaUnknownPolicy);
+    // fire on stepping on (or confirming on) their cells when their facts decide them taken, under the setup's
+    // unknown policy for a recursion or a trigger it is told it cannot know (logged once per warp); the ones it cannot
+    // decide are logged once and not taken. A warp taken writes the triggers it sets on its way.
+    Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps = {});
 
     // Enters a map through one of its exits: the player appears at the exit's spawn and the partner next to it
     // (tamer.c: loadMapEntities), and the screen fades in (tamer.c: tamerTickChangeMap) before the player can move.
@@ -117,6 +127,10 @@ public:
     // and the autotest's walks keep off these cells unless one is where they go.
     [[nodiscard]] bool warpsOn(std::int32_t trigger) const;
 
+    // Decides the map's step cells again after what their guards read changed: the field does it itself when a warp
+    // it takes writes triggers; whoever else writes them (a load, the console) calls it.
+    void refreshScriptWarps();
+
     // The current map's collision grid, for the minimap.
     [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
 
@@ -158,8 +172,10 @@ private:
     void checkTriggers();
     void checkConfirm();
     void leave(MapChange change);
-    // The map change the map's scripts make when `via` runs the section `value` and its guards are decided taken.
-    std::optional<MapChange> scriptWarpFor(WarpVia via, std::int32_t value);
+    // The map change the map's scripts make when `via` runs the section `value` and its guards are decided taken; the
+    // warp's triggers are written.
+    std::optional<MapChange> takeScriptWarp(WarpVia via, std::int32_t value);
+    void writeTriggersOf(const ScriptWarp& warp);
     void walkOut(float seconds);
     // The frame of the original a fade is on after `seconds`, counting the first as 1 (FADE_OUT_CURRENT,
     // FADE_IN_CURRENT).
@@ -172,6 +188,7 @@ private:
     FieldRules rules_;
     std::vector<ScriptWarp> scriptWarps_;
     GuardFacts facts_;
+    TriggerWriter writeTrigger_;
     UnknownPolicy unknownPolicy_;
     // The step cells of the current map whose map change is taken.
     std::vector<std::int32_t> warpingStepCells_;
