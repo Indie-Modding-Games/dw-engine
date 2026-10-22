@@ -40,6 +40,14 @@ if (auto change = field.takeMapChange()) {
   `shadeDarkness` en `rules.hpp`): la app lo resta sobre la escena (`render::ScreenFade`), no lo mezcla con negro.
   `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
   nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido.
+- **Warps de script** (`ScriptWarpSetup`): los de `field/script_warps` con `GuardFacts` (los lectores de
+  disparadores, bolsa, dinero, estadísticas y condiciones del partner) y un `TriggerWriter` que recibe los
+  `sets_flags` del warp tomado; después el campo vuelve a decidir las casillas del mapa (`refreshScriptWarps`).
+  `keepsOff(trigger)` dice qué casillas evita el clic para ir (no la del warp en la que está el jugador).
+  Ver [warps de script](../../docs/architecture/warps-de-script.md).
+- **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
+  su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
+  sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.
 
 ## Datos
 

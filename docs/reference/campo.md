@@ -201,7 +201,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Nombre del mapa con la fuente de mapa de bits del juego, en gris claro (color 1 de su CLUT) | La fuente es un ajuste del jugador (`text_font`): la de mapa de bits del original, leída de `font/main.png` y `font/main_meta.yaml` del paquete base, o Noto Sans, la de por defecto; en los dos casos, en el gris del original (clase `.original-look`, ver [UI](../architecture/ui.md#aspecto-original)). Lo que la fuente del original no tiene (ñ, á, ¿, ¡...) lo dibuja Noto Sans en la misma línea base | Decisión del responsable de diseño, 2026-10-20 |
 | Sin HUD fijo en el campo: lo que hay en pantalla (personajes, barras de estado de `partner_impl.c: renderStatusBars`, ventanas) va detrás del rectángulo del fundido (capa 1, `fade.c: renderFade`) y se oscurece restándole el mismo gris; solo el nombre va delante (capa 0) | El HUD del motor (minimapa, botón del menú) se desvanece con alfa al ritmo del fundido (`screen_fade`) en vez de restarle el gris | Desviación aprobada: decisión del responsable de diseño, 2026-10-20 |
 | Nombre colocado en `x = 12 − (largo / 2) × 8` con espacios de relleno: centrado a unos píxeles | Centrado exacto, sin opción de quirk para imitar el desvío | Decisión del responsable de diseño, 2026-10-20 |
-| Warps de script (`warp_to` de las secciones de casilla del script del mapa) | `field/script_warps` del paquete base, que extrae `dwx` con las condiciones de su camino: al pisar (51–79) o al confirmar (80–109) se toma el primero que se cumple con certeza; las condiciones son disparadores contra el estado de partida nueva (`data/new_game_story`); lo que no se puede decidir (otras pruebas, elecciones, caminos no estructurados) no se toma y se registra una vez por mapa y casilla | No hay intérprete de historia todavía: ni hablar con NPC, ni secciones de entrada, ni estado de historia guardado ([warps de script](../architecture/warps-de-script.md), parte (b)) |
+| Warps de script (`warp_to` de las secciones de casilla del script del mapa) | `field/script_warps` del paquete base, que extrae `dwx` con las condiciones de su camino: al pisar (51–79) o al confirmar (80–109) se toma el primero que se cumple con certeza; las condiciones (disparadores de la historia, objetos, dinero y partner) se deciden con el estado de la partida; lo que no se puede decidir (azar, elecciones, conversaciones, caminos no estructurados) no se toma y se registra una vez por mapa y casilla; al tomarlo se aplican sus `sets_flags`, que se guardan en la sección `story` | No hay intérprete de historia todavía: los warps al hablar con un NPC (`via: talk`), de las secciones de entrada y del menú del transporte se extraen pero no se toman ([warps de script](../architecture/warps-de-script.md), parte (b)) |
 | Partner nuevo mirando hacia fuera un fotograma | Mirando al jugador desde el principio, y solo si cabe en la rejilla | Mismo resultado visible; no aparece dentro de una pared |
 | Rastro: poda cada fotograma, de la más nueva a la más antigua | Igual | |
 | El partner anda o se para solo por la distancia | También anda mientras sigue el rastro | Si no, se para detrás de una pared a menos de 2,5 R del jugador |
@@ -239,18 +239,21 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 Lo mide el test de disco `the user's disc, extracted: a new game reaches its maps and back, and the scripts join all
 but a few` (`game/field/tests/reachability_tests.cpp`), desde el inicio del campo (`twna01`) y solo con lo que el
 campo dispara: la tabla de cada mapa desde sus casillas 110–119 y los warps de script de las casillas que el mapa
-tiene, a mapas con datos (241). Cifras del disco americano **(comprobado, 2026-10-21)**:
+tiene, a mapas con datos (241). Cifras del disco americano **(comprobado, 2026-10-21; las mismas con la versión 5 del
+extractor, que añade los warps al hablar y las elecciones del transporte, 2026-10-22)**:
 
 | Qué warps | Mapas a los que se llega | Con vuelta al inicio |
 |---|---|---|
 | Solo la tabla (el motor antes de los warps de script) | 4 | 1 |
 | Tabla + warps de script que se cumplen con los disparadores de partida nueva (vainilla, empezando después de la apertura) | 5: `twna01`, `room08`, `trai00`, `mayo00`, `twnb01` | 5 |
-| Tabla + cualquier warp de script, sea cual sea su condición (exploración libre) | 236 | 233 |
+| Tabla + cualquier warp de script, sea cual sea su condición (el grafo abierto, y el de la [exploración libre](../architecture/warps-de-script.md#exploración-libre), que da lo mismo) | 236 | 233 |
 
 - **No son 132.** El diseño daba 132 para vainilla, pero contaba como camino toda entrada de la tabla, también las
   que no tienen casilla 110–119, que son solo puntos de llegada. Con la regla de `checkMapInteraction` son 5. Hasta
   el 2026-10-22 eran 6, con `topn01`: el campo no ponía los disparadores de la apertura que se salta
   (`data/new_game_story`, `opening`), y dos casillas de `twna01` devolvían a ella.
+- **Aplicando `sets_flags`:** el test toma los warps que vainilla puede tomar y aplica sus `sets_flags` hasta el
+  punto fijo; no se escribe ninguno y siguen siendo 5.
 - **Por qué tan pocos en vainilla:** la salida de `mayo00` hacia el resto del mundo (y la mayoría de las fases de
   la ciudad) espera al disparador 203, que pone una conversación con un NPC de `mayo00` (script 105, sección 6). Los
   disparadores de partida nueva están todos apagados (`data/new_game_story`: `triggers_set: []`) salvo los 54, 55 y

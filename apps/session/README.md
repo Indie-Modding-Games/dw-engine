@@ -79,6 +79,7 @@ de `clock` (con la velocidad que tenía).
 | `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |
 | `moves` | Las técnicas del partner: `learned` (ids de `data/moves`) y `equipped` (cuatro posiciones de la lista de la especie o `null`; la cuarta es el remate) |
+| `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../../game/story/README.md)); una partida sin ella carga la historia como la deja una partida nueva, sin el disparador del partner, y lo registra |
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el
@@ -99,6 +100,11 @@ El juego y `dwe-sim` enchufan los tres con `createGameSystems(files, tablas)` (`
 `SessionDesc::systems`, en el orden en que avanzan (evolución, inventario, batalla), y los adaptadores por tipo para
 las órdenes de la app (empezar un combate, usar un objeto), válidos mientras viva la partida. `loadSystemTables` lee
 una vez las tablas de los tres (`dwe-sim` las comparte entre sus partidas); sin ellas, cada adaptador lee las suyas.
+
+`field_facts.hpp` une la partida con los [warps de script](../../docs/architecture/warps-de-script.md) del campo:
+`fieldGuardFacts(partida, inventario, historia)` da los lectores de disparadores, bolsa, dinero, estadísticas y
+condiciones del partner con los que el campo decide sus condiciones, y `fieldTriggerWriter(historia)` escribe en la
+historia los `sets_flags` del warp tomado.
 
 ### Evolución (`EvolutionAdapter`)
 

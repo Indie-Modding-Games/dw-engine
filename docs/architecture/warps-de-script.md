@@ -1,6 +1,7 @@
 # Warps de script
 
-Estado: **parte (a) hecha** (p4-scripted-warps, 2026-10-21); la parte (b) es la siguiente.
+Estado: **parte (a) hecha** (p4-scripted-warps, 2026-10-21); **parte (b) en su rama** (p4-scripted-warps-b,
+2026-10-22), pendiente de revisión.
 
 El original hace muchos cambios de mapa desde los scripts de eventos (`warp_to`, `teleport`), no desde la tabla de
 warps del mapa. `dwx` los extrae todos, con lo que hace falta para llegar a cada uno, a `field/script_warps` del
@@ -81,9 +82,10 @@ misma que usarán la conversión a Lua y el intérprete de historia.
        devuelven el partner a toda su máquina de estados, y 3, 7 y 9 (muerte), que llegan al cambio a mapa de muerte y
        a otros scripts. Son 9.
      - Sobreaproximaciones (no escriben disparadores, pero el recorrido sigue tras ellas como si volvieran):
-       `call_routine` 0x0A, el transporte: si el jugador elige un destino, deja el script que la llamó y sigue en la
-       sección 0x4E3 de MAPHEAD (`shop/script_menu.c: tickBirdraTransport`), cuyos destinos salen del recorrido de
-       MAPHEAD; si cancela, vuelve al script, y ese camino sí es real. Y 0x35 termina el script
+       `call_routine` 0x0A, el transporte (`shop/script_menu.c: tickBirdraTransport`): elegir un destino es un
+       traspaso a la sección 0x4E3 de MAPHEAD, y el script que llamó no sigue; cancelar vuelve al script
+       (`script_menu.c:1004-1006`), y ese camino sí es real. Los destinos salen de una tabla del ejecutable, no del
+       recorrido de MAPHEAD (ver [El transporte](#el-transporte)). Y 0x35 termina el script
        (`script_interp.c: scriptInstruction64to7E`). Lo que el recorrido encuentra después de ellas en el script que
        llama corre en el original solo si se canceló el transporte.
      - Cómo se leyó: lo que cada rutina corre al empezar y mientras el script la espera, con todo lo que llama o deja
@@ -131,7 +133,8 @@ Esquema `content/schemas/script_warps.schema.json`. Un registro por camino a un 
 ```yaml
 warps:
 - map: room08          # el mapa (la sección de MAPHEAD que carga el script)
-  via: step            # step (51–79) | confirm (80–109) | enter (su sección de MAPHEAD) | other (NPC, otra sección)
+  via: step            # step (51–79) | confirm (80–109) | enter (su sección de MAPHEAD) | talk (la sección de un
+                       # NPC del mapa) | other (otra sección)
   section: 51
   to: {map: twna01, exit: 2}   # o {screen: N, exit: N} si ningún mapa tiene ese número
   teleport: {pstat: 247}       # en vez de `to`: la variable con la pantalla; sin destino estático
@@ -143,6 +146,7 @@ warps:
     - if: [{test: trigger, trigger: 203, clear: true}]   # las entradas del IF, como en el listado
       holds: true
     - switch: 1                # o selection: 0 (lo elige el jugador)
+  transport: {entry: 0, cost: 1000, hand_off: 1251}   # solo en una elección del menú del transporte
     - recursion: {script: 63, offset: 288}   # una llamada que el recorrido cortó (RecursionTerm); offset opcional
     - forget: {script: 206, offset: 1694, triggers: [3]}   # código del juego que puede escribir esos disparadores
                                            # (ForgetTerm); sin triggers: cualquiera
@@ -178,12 +182,15 @@ Desde ahí, en vainilla no se vuelve a pisar `twna01` con esos disparadores apag
 opening: {exit: 9, section: 54, to: {map: topn01, exit: 9}, sets: [54, 55, 75]}
 ```
 
-En el disco americano salen 1834 registros: 1602 al pisar, 156 al confirmar, 76 de NPC u otras secciones; 201 sin
-condición; ninguno a una pantalla sin mapa; 37 con un término `forget` y ninguno con `recursion`. Frente a la
+En el disco americano salen 1870 registros (versión 5 del extractor): 1602 al pisar, 168 al confirmar, 100 al hablar
+con un NPC y ninguno de otras secciones; 36 son elecciones del menú del transporte; 201 sin condición; ninguno a una pantalla sin mapa; 37 con un término `forget` y ninguno con `recursion`. Frente a la
 extracción sin `ForgetTerm` ni `runnableSections`: 14 más del script 206 (offsets 0x836 y 0x1396, en `frzl15` y
 `room20`) y 2 menos, los de la sección 81 repetida del script 52 (`yaka11b`), que no corre nunca. 26 secciones de
 `MAPHEAD` no cargan script (partida nueva, muerte, transporte...) y quedan fuera; la del transporte (0x4E3) solo
-tiene un `teleport` al mapa del pstat 247, que pone la rutina del transporte desde una tabla del ejecutable.
+enseña una ventana de texto y sigue en 0x4E5, cuyo `teleport` lleva al mapa del pstat 247, que pone la rutina del
+transporte desde la tabla del ejecutable. La versión 4 tenía 1834: las 36 elecciones del transporte son nuevas (12
+al confirmar, 24 al hablar) y los 76 de «NPC u otras secciones» son ahora `talk`. 3 mapas no se pueden leer, y sus
+secciones de NPC no se distinguen.
 
 ## En el motor (parte a)
 
@@ -257,23 +264,68 @@ que `recursion`.
 
 ## Parte (b)
 
-- **Exploración libre** (ajuste y `--explore`, apagada por defecto): en las casillas con más de un destino, un
-  selector con el de vainilla elegido, en en/es, con teclado, ratón y mando. Vainilla nunca lo enseña. Se registra
-  cada puerta que abre.
-- Condiciones de objetos, dinero y especie y estadísticas del partner. Azar, elecciones y conversaciones siguen sin
-  decidirse (cerradas y registradas).
-- `sets_flags` se aplica al tomar el warp y se guarda en `StoryState`, una sección nueva y aditiva de la partida
-  guardada, con test de migración.
-- **La parte (b) sola no abre el mundo vainilla más allá de los 5 mapas:** el disparador 203 lo pone una
-  conversación (`mayo00`, script 105, sección 6). Aplicando los `sets_flags` de los warps que vainilla toma, solo se
-  ponen los disparadores 54, 55 y 75, ninguno abre una salida más (medido con los warps extraídos; la comprobación de
-  las secciones de pisar, entrar y cargar el mapa se cita aquí cuando se haga en la parte b).
+Rama p4-scripted-warps-b. Lo que añade sobre la parte (a):
+
+- **Condiciones de objetos, dinero y partner** (pregunta 6). Las entradas de un IF que miran cuántos hay de un
+  objeto, el dinero, una estadística o las condiciones del partner se leen con sus operandos y se deciden con
+  `GuardFacts`, que el campo pregunta en vivo (la sesión da los lectores: disparadores, bolsa, dinero, estadísticas,
+  condiciones). Comparan como el original: un byte del número de objetos, dinero como 32 bits sin signo, la
+  estadística 9 con signo y las demás de 16 bits sin signo, una condición por su máscara y negación. Un lector que
+  falta deja la prueba desconocida, y la política de vainilla solo deja pasar lo desconocido en pruebas de
+  disparador. Azar, elecciones y conversaciones siguen sin decidirse (cerradas y registradas).
+- **`sets_flags` y la sección `story` de la partida** (pregunta 8). Al tomar un warp, el campo escribe sus
+  `sets_flags` por su escritor de disparadores y vuelve a decidir las casillas del mapa (`refreshScriptWarps`), así
+  que solo el campo decide qué warps están activos. `game/story` guarda 800 disparadores y 256 variables; la
+  partida los escribe en una sección nueva y aditiva, `story` versión 1, con test de migración: una partida sin ella
+  carga la historia como la deja una partida nueva y lo registra.
+- **El disparador del partner.** El original pone, antes de la sección de partida nueva, 0x200 más la especie del
+  primer partner (0x203 o 0x211, `main.c`). `dwx` no cambia: `data/new_game_story` los sigue dando como
+  desconocidos (`triggers_unknown`), y es el motor el que pone el del partner con el que empieza la partida. El pin
+  de 5 mapas no cambia.
+- **Hablar con un NPC** (`via: talk`). `dwx` lee los NPC de cada mapa, y un cambio de mapa de una sección que corre
+  un NPC del mapa es `talk` en vez de `other`. El campo no los toma (no hay intérprete de historia), pero entran en
+  el grafo de mapas.
+
+### El transporte
+
+La llamada `call_routine` 0x0A (scripts 167 y 209) abre el menú del transporte. Sus destinos son una tabla del
+ejecutable (`formats/exe`, `transportTargets`: 6 entradas de 8 bytes, mapa, salida, disparador y precio; solo la
+disposición americana). Elegir un destino es un traspaso: la rutina pone el mapa y la salida en los pstat 247 y 248,
+resta el precio y sigue en la sección 0x4E3 de MAPHEAD, que enseña una ventana de texto y pasa a 0x4E5, cuyo
+`teleport` cambia de mapa. Cancelar vuelve al script (`script_menu.c:1004-1006`).
+
+`dwx` escribe cada entrada como un cambio de mapa en el sitio de la llamada, con el destino de la tabla y como
+condición el disparador de la entrada, dinero al menos su precio y la elección del menú, más el registro
+`transport: {entry, cost, hand_off}` (hand_off 0x4E3). El motor no resta el precio: lo hará el menú del
+transporte cuando exista.
+
+### Exploración libre
+
+Ajuste `free_exploration` (en el menú de pausa) y `--explore`, apagada por defecto. Vainilla nunca la enseña.
+Con ella, un warp de script de una casilla lleva a cualquiera de los sitios a los que llevan los warps de esa
+casilla, sea cual sea su condición (`explorationWarps`: el primer warp de cada mapa y salida distintos, solo a
+mapas que el paquete tiene):
+
+- un solo sitio: se toma, y si no es el de vainilla se registra la puerta que abre;
+- varios: el campo se para y el selector `destination_choice` los enseña de 8 en 8, empezando por el de la historia;
+  se elige con teclado, ratón o mando, en en/es; cancelar es quedarse;
+- los `sets_flags` del warp elegido se aplican también.
+
+En el disco americano hay casillas con 1, 2, 3, 6, 12, 13 y 24 sitios (las de 24 son las fases de las ciudades).
+El grafo de la exploración libre, hecho con `explorationWarps`, llega a los mismos mapas que el grafo abierto de
+los tests de alcance. Rutas: `route-free-exploration` (teclado), `-mouse` y `-gamepad`.
+
+### Lo que la parte (b) no abre
+
+**La parte (b) sola no abre el mundo vainilla más allá de los 5 mapas** de partida nueva (`mayo00`, `room08`,
+`trai00`, `twna01`, `twnb01`): el disparador 203 lo pone una conversación (`mayo00`, script 105, sección 6). El
+test de alcance aplica hasta el punto fijo los `sets_flags` de los warps que vainilla puede tomar y no se escribe
+ninguno (los 54, 55 y 75 vienen del warp de la apertura, que la partida salta); el alcance queda igual.
 
 ## Después (pregunta 7)
 
 - Las secciones globales de `MAPHEAD` (muerte, transporte, objetos) y sus rutinas, como el `teleport` de la variable
   247 en 0x6062.
-- La tabla del transporte de Birdramon.
-- Los warps al hablar con un NPC (`yaka26`) y al entrar en un mapa: los dará el intérprete de historia, que ejecuta
+- Tomar los warps al hablar con un NPC (`yaka26`), al entrar en un mapa y del menú del transporte: los dará el intérprete de historia, que ejecuta
   el script convertido. `field/script_warps` quedará entonces como grafo de mapas (exploración libre, rutas de clic,
   tests de alcance), no como lo que cambia de mapa.

@@ -31,3 +31,11 @@ de mapa (`EvolutionAdapter::evolveByScript`); es una ayuda de depuración hasta 
 Hueco: el radio de colisión y las velocidades de andar y correr del compañero siguen siendo los de `field/rules`
 (medidos en el compañero inicial), no los de la especie nueva (`DIGIMON_DATA[tipo].radius` y la raíz de sus
 animaciones).
+
+## Exploración libre
+
+`free_exploration.cpp` lleva la [exploración libre](../../docs/architecture/warps-de-script.md#exploración-libre):
+la enciende el ajuste `free_exploration` (menú de pausa, guardado en los ajustes del usuario) o `--explore` (solo en
+esa ejecución). Cuando el campo para en una casilla con varios sitios, abre `ui/destination_choice` con los sitios
+(`exploration_place_name.N`, `exploration_place_map.N`, `exploration_places`, `exploration_story`) y pasa al campo
+lo que se elige (`choose_destination`) o quedarse (`stay_here`).
