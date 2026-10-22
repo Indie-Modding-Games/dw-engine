@@ -131,7 +131,7 @@ struct Settings {
 
 // Applies a command of the UI's documents and publishes the resulting state. Returns false for quit.
 bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
-           LanguageChanger& language, TextFontChanger& textFont, UiSkinChanger& skin) {
+           LanguageChanger& language, TextFontChanger& textFont, UiSkinChanger& skin, MinimapChanger& minimap) {
     core::logInfo("game: command {} = {}", command.name, describe(command.value));
     if (command.name == "quit") {
         return false;
@@ -141,7 +141,7 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     } else if (command.name == LanguageCommand && std::holds_alternative<std::string>(command.value)) {
         language.change(std::get<std::string>(command.value));
     } else if (command.name == MinimapSetting || command.name == LegacyMinimapVisibleSetting) {
-        ui.setSetting(MinimapSetting, std::string{minimapModeOf(command.value)});
+        ui.setSetting(MinimapSetting, std::string{minimap.change(command.value)});
     } else if (command.name == "minimap_size" && std::holds_alternative<std::string>(command.value)) {
         ui.setSetting("minimap_size", command.value);
     } else if (command.name == "fullscreen" && std::holds_alternative<bool>(command.value)) {
@@ -472,7 +472,8 @@ int runGame(const Options& options) {
     }
     LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
     (*ui)->setSetting(LanguageSetting, texts->language());
-    (*ui)->setSetting(MinimapSetting, std::string{MinimapAuto});
+    MinimapChanger minimapChanger{userSettings, settingsFile};
+    (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
     (*ui)->setSetting("minimap_size", std::string{"medium"});
     (*ui)->setSetting("fullscreen", settings.fullscreen);
     (*ui)->setSetting("ui_scale", settings.uiScale);
@@ -708,8 +709,9 @@ int runGame(const Options& options) {
             if (battleScreen.handle(command) || partnerMenu.handle(command)) {
                 continue;
             }
-            running =
-                apply(command, **ui, *window, settings, languageChanger, textFontChanger, uiSkinChanger) && running;
+            running = apply(command, **ui, *window, settings, languageChanger, textFontChanger, uiSkinChanger,
+                            minimapChanger) &&
+                      running;
         }
         if (pendingGift) {
             if (auto given = partnerMenu.giveItem(*std::exchange(pendingGift, std::nullopt)); !given) {

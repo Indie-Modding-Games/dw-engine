@@ -37,6 +37,9 @@ inline constexpr std::string_view UnknownSavedTextFont = "game: the saved text f
 // The player's UI skin (ui_skin_setting.cpp): the id and why it cannot be put on.
 inline constexpr std::string_view UnusableUiSkin = "game: cannot use the UI skin '{}': {}";
 
+// The player's minimap mode (minimap_setting.cpp): a saved value that is not auto, on or off.
+inline constexpr std::string_view UnknownSavedMinimap = "game: the saved minimap mode '{}' is unknown; using auto";
+
 // Autotest: a wait for a map change's name that has not come yet (the map id).
 inline constexpr std::string_view MapNameNotShown = "no map change shows the name of {}";
 

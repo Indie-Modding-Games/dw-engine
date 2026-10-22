@@ -137,8 +137,10 @@ empezar), `on` u `off`, y el menú de pausa lo cambia (entrada «Mostrar minimap
 y el de aspecto original lo esconde (`#minimap.auto`); con `off` lo esconde (`hidden`) y con `on` lo enseña con
 cualquier aspecto. Sustituye al booleano `minimap_visible`: el comando antiguo todavía se acepta, con `true` como
 `on` y `false` como `off`, y cualquier otro valor (o ninguno) es `auto` (`minimapModeOf`, `apps/game/src/
-minimap_setting.hpp`). El ajuste no se guarda en `settings.yaml` (tampoco lo hacía `minimap_visible`), así que no
-hay partidas ni ajustes que migrar.
+minimap_setting.hpp`). La elección se guarda en el `settings.yaml` de los datos del usuario, como `ui_skin` y
+`text_font` (clave `minimap`, `MinimapChanger`; las autopruebas no lo tocan), y la partida siguiente empieza con ella
+(`startMinimapMode`): sin clave es `auto`, y un valor que no es un modo se avisa en el log y también es `auto`.
+`minimap_visible` nunca se guardó, así que no hay ajustes que migrar.
 
 ## Estado del campo
 
