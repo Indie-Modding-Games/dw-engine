@@ -35,7 +35,7 @@ cobertura que lista lo que falte.
 | Datos de mapa | Colisión, warps, NPCs, cámara | YAML | Binario |
 | Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | Binario |
 | Textos | Por región, en su codificación | UTF-8, un fichero por idioma | Igual |
-| Eventos e historia | Bytecode de scripts | Lua | Bytecode de Lua |
+| Eventos e historia | Bytecode de scripts | Lua (y el listado YAML) | Igual: texto Lua, sin bytecode (el sandbox solo carga texto) |
 | Música | VAB + SEQ | SF2 + MIDI | Igual, u Opus si es un remaster |
 | Efectos de sonido | VAB | WAV/FLAC | Opus |
 | Vídeos | STR (MDEC + XA) | Y4M + WAV + YAML (lo que escribe la extracción hoy) | **Pendiente** de decisión del usuario (propuesta: AV1/WebM; opciones en [Formatos](formats.md#vídeo)); no implementado |

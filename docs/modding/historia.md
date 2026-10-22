@@ -1,0 +1,41 @@
+# API de historia
+
+Los scripts de eventos del juego original llegan al motor como módulos Lua que `dwx extract` escribe en
+`story/<n>.lua` ([formato](../formats/scripts.md#lua)). Cada orden del script es una llamada a la tabla `story`. Esta
+página dice cómo se llaman esas funciones y las claves de sus textos, que es lo que un mod ve y puede reemplazar.
+
+> Estado: los módulos ya se generan; el motor aún no los ejecuta. Lo hará el paquete S2, que añade `story` a la API de
+> Lua y sube `LuaApiVersion` a **1.2.0**: el paquete base declarará `api: 1.2` porque sus módulos llaman a `story.*` y
+> a `error`.
+
+## Nombres
+
+Una función de `story` se llama como la orden del listado (`story.show_textbox`, `story.play_sound`), salvo las de esta
+tabla, que la API renombra con el vocabulario del motor (especie, compañero, NPC). El listado YAML
+(`script/dg/<n>.yaml`) conserva los nombres originales: es el contrato con `dw1fe` y no cambia.
+
+| Orden del listado | Función de `story` | Qué hace |
+|---|---|---|
+| `store_digimon_type` | `store_partner_species` | Guarda la especie del compañero en una variable |
+| `store_digimon_value` | `store_species_type` | Guarda en una variable el tipo (campo `type` de `data/digimon`) de la especie que hay en otra |
+| `load_digimon` | `load_species_model` | Carga el modelo de una especie |
+| `set_digimon` | `spawn_npc` | Aparece el NPC de un hueco del mapa, si es de esa especie |
+| `call_digimon_routine` | `call_partner_routine` | Ejecuta una rutina fija del compañero |
+| `unload_digimon` | `unload_species_model` | Descarga el modelo de una especie |
+
+Los operandos se renombran igual: el operando `digimon` se llama `species` en los comentarios del Lua.
+
+La tabla vive en un solo sitio, `formats/src/script/story_api_names.cpp`, y las palabras que ningún nombre generado
+puede contener, en `ForbiddenNameWords` (`formats/include/dwe/formats/script/story_api_names.hpp`). Un test recorre
+todas las órdenes y sus operandos, y los tests del conversor y del disco miran cada módulo generado.
+
+## Claves de texto
+
+Un `show_textbox` o un `set_selection` no lleva su texto en el Lua: lleva una clave, y el texto está en
+`text/<idioma>/story_<n>.yaml`.
+
+- La clave es `story_<n>.text.<offset>`: `<n>` es el id del script con tres cifras (`000` para `MAPHEAD.SCN`, que el
+  juego carga como script 0; `001`–`221` para los de `DG.SCN`, el mismo número que el `script_id` de los NPC de un
+  mapa) y `<offset>` el de la orden en el listado, con cuatro cifras hexadecimales. Ejemplo: `story_049.text.04c0`.
+- En el fichero de textos la clave va sin el prefijo del fichero: `text.04c0: "..."`.
+- `dwx extract` escribe el inglés (`text/en/`). Un idioma sin la clave usa el inglés.

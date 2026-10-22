@@ -15,7 +15,9 @@ una prueba de `IF` sin manejador, operandos que se salen) es un `unknown`, nunca
 - Cada script ocupa sectores enteros: tras su código viene **relleno de sector**, restos que a menudo parecen código y
   que nadie lee. El final real lo da el barrido (abajo), nunca el tamaño del hueco. `dwx` lo cuenta en una nota.
 - El script 0 de `DG.SCN` es una copia byte a byte de `MAPHEAD.SCN` (más relleno) que nunca se carga: `getScript(0)`
-  devuelve el residente. `dwx` lo comprueba y lo extrae solo desde `MAPHEAD.SCN`.
+  devuelve el residente. `dwx` lo comprueba y lo extrae solo desde `MAPHEAD.SCN`; si no fuera una copia, los dos
+  serían `story/000`, así que la extracción de `DG.SCN` se detiene con un mensaje en lugar de elegir uno.
+  Solo se comparan los bytes de `MAPHEAD.SCN` con el principio de la ranura: el resto es relleno de sector y no se mira.
 
 ## Cabecera
 
@@ -180,6 +182,57 @@ a Lua y el intérprete de historia.
 
 Lua no tiene `continue`: una rama que vuelve a la cabeza del bucle se lleva el resto del cuerpo a la otra rama. Las
 cifras sobre el disco están en la [ficha de scripts](../reference/scripts.md#forma-del-control-de-flujo).
+
+## Lua
+
+`formats/script/lua_emitter` escribe cada script estructurado como un módulo Lua, y `dwx extract` lo deja junto al
+listado (que no cambia: sigue siendo el formato que edita `dw1fe`):
+
+| Fichero | Qué es |
+|---|---|
+| `story/<n>.lua` | El módulo: devuelve `{ script = <n>, sections = { [0x0051] = <función>, ... } }` |
+| `story/<n>_lines.yaml` | Por cada línea que ejecuta una orden, su offset en el listado ([esquema](../../content/schemas/story_lines.schema.json)) |
+| `text/en/story_<n>.yaml` | Los textos de `show_textbox` y `set_selection`, con la clave `story_<n>.text.<offset>` |
+
+`<n>` es el id del script con tres cifras, el mismo número que usan los NPC de los mapas (`script_id`): `000` es
+`MAPHEAD.SCN`, que el juego carga como script 0, y `001`–`221` los de `DG.SCN` (`script/maphead.yaml` y
+`script/dg/<n>.yaml` en el listado). Los nombres de las funciones y de las claves están en
+[la API de historia](../modding/historia.md).
+
+La forma del módulo:
+
+- Cada rutina (sección, subrutina, cola compartida) es una función de la tabla `routines`, nombrada por el offset de
+  su entrada (`routines.at_04c0`); las que empiezan en la misma orden son una sola.
+- Si la tabla de secciones repite un id, `sections` lleva solo la primera, que es la que encuentra `getScriptSection`;
+  las demás quedan como comentario. En el disco pasa en algunos scripts (el 4 y el 52, por ejemplo).
+- Cada orden es una llamada `story.<nombre>(operandos)` con los operandos del listado en su orden, sin relleno ni
+  etiquetas, y un comentario con sus nombres si son dos o más. `<nombre>` es el de la orden, salvo las que la API
+  renombra ([tabla](../modding/historia.md#nombres)). Una entidad es `TAMER`, `PARTNER` o el id del NPC.
+- Una rutina devuelve `ENDED` si el script acabó (`end_section` y `end_script` lo acaban desde cualquier
+  profundidad) y nada en un `jump_return`. Un `jump_and_link` es `if routines.at_X() == ENDED then return ENDED end`;
+  un salto a código compartido, la llamada final `return routines.at_X()`; `jump_to_file`, `warp_to` y `teleport`,
+  `return story.<nombre>(...)`.
+- Un `IF` es el pliegue de sus entradas de izquierda a derecha con paréntesis explícitos
+  (`(story.trigger(3) and story.var(5) >= 2) or story.money() < 4294967295`). Cada constante va en el dominio en que
+  el original compara: sin signo de 32 bits, salvo la felicidad (stat 9), con signo de 16.
+- Un `SWITCH` es una cadena `if`/`elseif` sobre `story.var(n)` en la que un valor de más va al último caso; un
+  `SET_SELECTION`, `local choice <const> = story.set_selection(clave, n)` con la cancelación (`choice == n`) en el
+  último `else`. Los bucles son `while true do` con `break`; una máquina de estados, un `while true do` que despacha
+  sobre una variable `stateN`.
+- Nunca hay saltos. La salida es la misma byte a byte para el mismo listado, venga del YAML o del desensamblado.
+
+`dwx convert-script <listado> -o <carpeta>` convierte un listado suelto (el YAML que edita un mod) con el mismo
+código, y `dwx validate` compila todo el Lua de los paquetes. Los tests corren cada sección en Lua, con una API
+`story` falsa, contra un intérprete de referencia del listado, y comparan las llamadas y cómo acaba
+(`formats/tests/lua_emitter_tests.cpp`, y sobre el disco `lua_emitter_disc_tests.cpp`). Los mismos tests comprueban
+que ningún nombre generado tiene una palabra prohibida (`ForbiddenNameWords`).
+
+La prueba con listados aleatorios tiene dos tamaños. La de cada commit (`FastParity`: 120 listados, 4 mundos, unos
+5 s) corta antes los bucles: uno que llama menos de una vez cada ~25 pasos del listado se corta antes de 200 llamadas,
+y dos ejecuciones cortadas solo se comparan en las llamadas que hicieron las dos, así que no ve una diferencia
+posterior al corte más corto. La completa (`FullParity`: 300 listados, 8 mundos, límites con los que todo bucle con
+llamadas llega a 200 y las ejecuciones cortadas deben coincidir llamada a llamada) corre con `DWE_FULL_PARITY=1` y
+tarda minutos; la de paridad sobre el disco usa siempre esos límites.
 
 ## Estadísticas de la partida nueva
 
