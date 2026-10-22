@@ -173,7 +173,8 @@ TEST_CASE("the user's disc, extracted: the dev assets mount the extracted conten
     folder.write("content/.keep", "");
     const auto content = GameContent::mount(folder.path() / "content", {}, extractedOnly({*extracted}));
     REQUIRE_MESSAGE(content.has_value(), content.error().message);
-    CHECK((*content)->devPacks().size() == 1);
+    // The extraction writes the base and the pack of its bundled recipe, ui_original; another pack there fails here.
+    CHECK((*content)->devPacks() == std::vector{*extracted / "base", *extracted / "ui_original"});
     CHECK(packOf(**content, "data/digimon") == "base");
     CHECK(packOf(**content, "data/maps") == "base");
 

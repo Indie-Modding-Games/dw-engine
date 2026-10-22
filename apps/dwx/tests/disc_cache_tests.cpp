@@ -42,6 +42,7 @@ struct FingerprintRow {
 };
 constexpr std::array Fingerprints{
     FingerprintRow{.version = 1, .fingerprint = "bb77f40dc5892b246c1467fef107ffa30bb73fdc"},
+    FingerprintRow{.version = 2, .fingerprint = "d86dbc6ff1eda81d846b98db571eb01f522c36ef"},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {
@@ -67,6 +68,14 @@ std::vector<std::byte> syntheticDisc() {
     builder.addFile("ETCDAT/ONE.TIM", image::test::buildTim(image::test::directTim(
                                           image::TimPixelMode::Direct16, {.x = 0, .y = 0, .width = 2, .height = 1},
                                           bytesOf({0x1F, 0x00, 0x00, 0x7C}))));
+    // An invented 4x2 checkerboard under the name of an image the bundled UI recipe grows, so the extraction writes
+    // its remaster pack too.
+    std::vector<image::Color15> clut(16, image::Color15{0x7FFF});
+    clut.at(2) = 0x001F;
+    builder.addFile("ETCDAT/SYSTEM_W.TIM",
+                    image::test::buildTim(image::test::indexedTim(
+                        image::TimPixelMode::Indexed4, {.x = 0, .y = 480, .width = 16, .height = 1}, std::move(clut),
+                        {.x = 640, .y = 0, .width = 1, .height = 2}, bytesOf({0x21, 0x21, 0x12, 0x12}))));
     std::vector<std::byte> arena(10000);
     arena.front() = std::byte{0x80};
     builder.addFile("STDDAT/B_TOGI.ATR", std::move(arena));
@@ -216,6 +225,17 @@ TEST_CASE("a disc is extracted into the cache once and reused after that") {
     CHECK(extractions == 1);
 }
 
+TEST_CASE("dwx extract into a folder named with a trailing slash puts the bundled recipe's pack next to it") {
+    const TempFolder temp;
+    const std::filesystem::path image = writeDisc(temp.path());
+    const std::unique_ptr<std::FILE, FileCloser> report{std::tmpfile()};
+    const auto extracted = extractBasePack(image, temp.path() / "content/base/", false, report.get());
+    REQUIRE_MESSAGE(extracted.has_value(), extracted.error().message);
+    CHECK(std::filesystem::is_regular_file(temp.path() / "content/base/pack.yaml"));
+    CHECK(std::filesystem::is_regular_file(temp.path() / "content/ui_original/pack.yaml"));
+    CHECK_FALSE(std::filesystem::exists(temp.path() / "content/base/ui_original"));
+}
+
 TEST_CASE("a failed extraction leaves nothing in the cache") {
     const TempFolder temp;
     const std::filesystem::path cache = temp.path() / "dev-cache";
@@ -352,15 +372,21 @@ TEST_CASE("the extractor's output for the synthetic disc matches the fingerprint
     for (const std::string_view run : {"first", "second"}) {
         REQUIRE(realExtraction(image)(temp.path() / run).has_value());
     }
-    const std::filesystem::path pack = temp.path() / "first" / BasePackFolder;
+    const std::filesystem::path content = temp.path() / "first";
+    const std::filesystem::path pack = content / BasePackFolder;
     // The disc reaches several extractors, so the fingerprint follows changes in each of them.
     for (const std::string_view output :
          {"disc/boot.yaml", "texture/etcdat/one.png", "arena/b_togi/collision.yaml", "script/maphead.yaml",
           "effect/000/effect.yaml", "effect/000/model.glb", "model/test/box.glb", "dwx/coverage.yaml"}) {
         CHECK_MESSAGE(std::filesystem::is_regular_file(pack / output), output);
     }
-    const std::string fingerprint = treeFingerprint(pack);
-    CHECK(fingerprint == treeFingerprint(temp.path() / "second" / BasePackFolder));
+    // The bundled recipe's pack, next to the base pack.
+    for (const std::string_view output : {"ui_original/pack.yaml", "ui_original/texture/etcdat/system_w.png",
+                                          "ui_original/texture/etcdat/system_w_meta.yaml"}) {
+        CHECK_MESSAGE(std::filesystem::is_regular_file(content / output), output);
+    }
+    const std::string fingerprint = treeFingerprint(content);
+    CHECK(fingerprint == treeFingerprint(temp.path() / "second"));
     CHECK_MESSAGE(
         fingerprint == Fingerprints.back().fingerprint,
         std::format("the output of dwx extract changed (fingerprint {}): bump ExtractorVersion and update the "

@@ -1,0 +1,25 @@
+# The images the original-look interface skin draws its icons from (ui/skins/original/skin.yaml), grown 4x with the
+# built-in index_scale step: pixel-art neighbour rules on palette indices, integer only, the same bytes on every
+# machine. dwx extract runs it after writing the base pack and writes the result as the remaster pack ui_original next
+# to it; dwx upscale runs it (or another recipe) by hand. Only the recipe is shared: what it writes is made from the
+# user's own disc and never leaves their machine (docs/architecture/remaster-pipeline.md).
+recipe: 1
+id: ui_original
+asset_type: ui
+select:
+  include:
+    - texture/etcdat/system_w
+    - texture/etcdat/fi_info
+    - texture/etcdat/item
+    - texture/etcdat/btlcomnd
+    - texture/etcdat/bi_in
+    - texture/etcdat/feel_ef
+    - texture/etcdat/sboy
+    - texture/etcna/title2
+scale: 4
+steps:
+  - id: upscale
+    builtin: index_scale
+    scale: 4
+    params:
+      mode: edge

@@ -9,6 +9,7 @@
 #include "disc_description.hpp"
 #include "dwx.hpp"
 #include "messages.hpp"
+#include "upscale.hpp"
 
 namespace dwe::dwx {
 
@@ -69,7 +70,7 @@ core::Result<void> extractBasePack(const std::filesystem::path& path, const std:
     }
     std::println(report, "Engine check: the pack mounts with {} assets, every output resolves and every asset opens",
                  *assets);
-    return {};
+    return runBundledRecipes(out, report);
 }
 
 int extractDisc(const std::filesystem::path& path, const std::filesystem::path& out, bool force) {

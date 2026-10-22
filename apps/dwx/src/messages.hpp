@@ -39,4 +39,33 @@ inline constexpr std::string_view EntryReferenceUnknown = "{}: '{}' is no entry 
 // dwx validate: a schema whose entryReference names no content table.
 inline constexpr std::string_view EntryReferenceTable = "{}: the schema's entryReference '{}' is no content table";
 
+// dwx upscale: the built-in index_scale step and the recipe it runs (upscale_recipe.hpp).
+inline constexpr std::string_view IndexScaleUnsupported = "index_scale cannot grow an image {}x in {} mode";
+inline constexpr std::string_view IndexScaleBadImage = "index_scale: an image of {}x{} pixels with {} indices";
+inline constexpr std::string_view UpscaleRecipeVersion = "the recipe version must be {}";
+inline constexpr std::string_view UpscaleBadId = "the id must be 1 to 64 lowercase letters, digits or underscores";
+inline constexpr std::string_view UpscaleAssetType = "dwx upscale only runs recipes of asset_type ui or icon";
+inline constexpr std::string_view UpscaleImageTwice = "{} is selected twice";
+inline constexpr std::string_view UpscaleNoImages = "select.include names no image";
+inline constexpr std::string_view UpscaleOnlyIndexScale = "dwx upscale runs one step, builtin {}";
+inline constexpr std::string_view UpscaleStepScale = "the step's scale {} is not the recipe's scale {}";
+inline constexpr std::string_view UpscaleUnknownMode = "the mode must be edge or nearest";
+inline constexpr std::string_view UpscaleScaleUnsupported =
+    "index_scale cannot reach scale {} in this mode (edge: 1, 2, 3, 4, 6 or 8; nearest: 1 to 8)";
+inline constexpr std::string_view UpscaleNoPacks = "{} has no pack to read the images from";
+inline constexpr std::string_view UpscaleImageMissing = "no pack provides {} as a PNG";
+inline constexpr std::string_view UpscaleNotIndexed = "{} is not an indexed PNG: {}";
+inline constexpr std::string_view UpscaleBadMetadata = "{} is not a YAML mapping";
+inline constexpr std::string_view UpscalePackDescription =
+    "Written by dwx upscale with the recipe {}: images grown {}x";
+inline constexpr std::string_view UpscaleOutputTaken =
+    "{} exists and is not the remaster pack {} that this recipe writes; remove it or pick another folder";
+inline constexpr std::string_view BundledRecipeBroken = "a recipe built into dwx does not read: {}";
+inline constexpr std::string_view UpscaleCannotReplace = "cannot put the upscaled pack at {}: {}";
+inline constexpr std::string_view UpscaleCannotResolve = "cannot resolve {}: {}";
+inline constexpr std::string_view UpscaleOutputOverlaps =
+    "the output folder {} and the pack {} must not hold each other";
+inline constexpr std::string_view UpscalePartialTaken =
+    "{} exists and is not a run of this recipe left half written; remove it or pick another folder";
+
 } // namespace dwe::dwx::messages

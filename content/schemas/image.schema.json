@@ -21,6 +21,7 @@
       "type": "array",
       "items": { "type": "string", "pattern": "^[0-9a-f]{4}( [0-9a-f]{4})*$" }
     },
+    "scale": { "description": "Written by dwx upscale: the PNG is this many times width x height, every original pixel grown into scale x scale (index_scale, docs/architecture/remaster-pipeline.md). width, height and the rects stay the original's.", "type": "integer", "minimum": 1, "maximum": 8 },
     "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {

@@ -8,6 +8,7 @@
 
 #include "disc_cache.hpp"
 #include "dwx.hpp"
+#include "upscale.hpp"
 #include "validate.hpp"
 
 namespace dwe::dwx {
@@ -43,6 +44,13 @@ void printUsage() {
     std::println(stderr, "      cooked again. A folder that dwx cook did not write is refused.");
     std::println(stderr, "  dwx pack <pack folder> -o <file.pak>");
     std::println(stderr, "      Writes a pack as a single .pak archive and checks that it reads back.");
+    std::println(stderr, "  dwx upscale <recipe.yaml> <pack folder|content folder> -o <folder>");
+    std::println(stderr,
+                 "      Grows the indexed images a recipe selects with the built-in index_scale step (pixel-art");
+    std::println(stderr, "      neighbour rules on palette indices, no network, the same bytes on every machine) and");
+    std::println(stderr, "      writes them, with their metadata, as a remaster pack named after the recipe, such as");
+    std::println(stderr,
+                 "      dwx upscale content/enhance/ui_original.recipe.yaml <content> -o <content>/ui_original");
     std::println(stderr,
                  "  dwx validate [--schemas <folder>] [--with <folder>]... [--engine] <pack folder|content folder>");
     std::println(stderr, "      Checks a pack, or every pack of a folder, before the engine loads them: each YAML");
@@ -109,6 +117,12 @@ int main(int argc, char** argv) {
             const std::filesystem::path folder{arguments[2]};
             const std::filesystem::path out{arguments[4]};
             return command == "cook" ? cook(folder, out) : pack(folder, out);
+        }
+    }
+    if (command == "upscale" && arguments.size() == 6) {
+        const std::string_view option{arguments[4]};
+        if (option == "-o" || option == "--out") {
+            return upscale(arguments[2], arguments[3], arguments[5]);
         }
     }
     if (command == "validate") {

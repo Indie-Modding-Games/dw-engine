@@ -137,11 +137,6 @@ core::Result<std::optional<YamlNode>> readSidecar(const assets::FileSystem& file
     return std::optional{std::move(*sidecar)};
 }
 
-bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder) {
-    const std::filesystem::path relative = path.lexically_relative(folder);
-    return !relative.empty() && *relative.begin() != "..";
-}
-
 // Reads the cache of an earlier cook. One that does not parse counts as empty: everything cooks again.
 Cache readCache(const std::filesystem::path& file) {
     Cache cache;
@@ -339,6 +334,11 @@ core::Result<void> produce(Job& job, const std::filesystem::path& pack, const st
 }
 
 } // namespace
+
+bool isWithin(const std::filesystem::path& path, const std::filesystem::path& folder) {
+    const std::filesystem::path relative = path.lexically_relative(folder);
+    return !relative.empty() && *relative.begin() != "..";
+}
 
 std::span<const Cooker> cookers() {
     return Registry;

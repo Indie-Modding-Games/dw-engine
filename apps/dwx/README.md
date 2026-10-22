@@ -40,6 +40,32 @@ imágenes TIM, colisión de arenas, guiones, efectos, modelos) y compara la huel
 El disco sintético no tiene las tablas de un ejecutable conocido, así que los extractores que las necesitan (mapas,
 modelos de Digimon, textos del ejecutable...) no cambian la huella: si cambias uno de ellos, sube la versión igual.
 
+## `dwx upscale` y las recetas incluidas
+
+```sh
+dwx upscale <receta.recipe.yaml> <carpeta de un paquete | carpeta de contenido> -o <carpeta>
+```
+
+Agranda imágenes indexadas de los paquetes con el paso integrado `index_scale` y las escribe, con su `_meta.yaml` y
+`scale: k`, en un paquete de capa `remaster` con el id de la receta. Las imágenes conservan su asset id, así que el
+paquete tapa a la base sin tocar nada más. Lee un subconjunto determinista de las recetas del remaster
+([tubería del remaster](../../docs/architecture/remaster-pipeline.md#lo-que-ya-hay-dwx-upscale)): `recipe: 1`, `id`,
+`asset_type` (`ui` o `icon`), `select.include` con ids de asset, `scale` y un único paso `builtin: index_scale` con
+`params.mode` (`edge` o `nearest`). Sin proveedores, modelos ni red: los mismos bytes en cualquier máquina.
+
+- Lee los paquetes de la carpeta dada, sin contar la de salida, así que repetirlo lee siempre la base y no su propia
+  salida.
+- Escribe en `<salida>.partial` y lo renombra. Solo sustituye una carpeta que ya sea un paquete `remaster` con el id
+  de la receta; cualquier otra se rechaza sin tocarla.
+- Si no hay ninguna imagen que agrandar no escribe nada.
+
+**Las recetas incluidas.** `content/enhance/ui_original.recipe.yaml` va dentro de `dwx` al compilarlo
+(`src/bundled_recipes.hpp.in`) y `dwx extract` la ejecuta al terminar el paquete base, también para la caché de
+desarrollo. Escribe `ui_original` junto al paquete base y se salta las imágenes que el disco no traiga. Cambiar la
+receta cambia la salida de `dwx extract`: sube `ExtractorVersion` en el mismo commit (el disco sintético trae una
+imagen de la receta, `ETCDAT/SYSTEM_W.TIM` inventada, para que la huella lo vea). La versión 2 es la primera que
+escribe `ui_original`.
+
 ### Trabajo futuro
 
 Cada arranque calcula el SHA-1 de la imagen entera, también cuando la entrada ya existe (unos 12 s para 380 MB en la

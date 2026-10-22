@@ -388,6 +388,23 @@ plataformas (a diferencia de los mipmaps del cocinado, que usan `pow`). Cada uno
   `dwx validate --recipe`.
 - `mode: nearest`: repetición de píxeles, para cualquier `k` de 1 a 8.
 
+### Lo que ya hay: `dwx upscale`
+
+`index_scale` ya existe en `dwx` (`apps/dwx/src/index_scale.cpp`), con los dos modos de arriba: en `edge`, las reglas
+2× y 3× del escalado de pixel art clásico (familia AdvMAME) aplicadas a índices de paleta, con el píxel del borde
+repetido fuera de la imagen. `dwx upscale` ejecuta un subconjunto de las recetas: un paso `index_scale` y nada más
+(sin proveedores ni caché), y escribe un paquete `remaster` con el id de la receta
+([README de dwx](../../apps/dwx/README.md#dwx-upscale-y-las-recetas-incluidas)). `dwx extract` ejecuta las recetas
+incluidas en `content/enhance/` al terminar el paquete base: hoy `ui_original`, ×4 en `edge`, para los sprites del
+aspecto original de la UI (Decidido por el manager (2026-10-21): la receta va incluida y la ejecuta `dwx extract`,
+×4 `edge`; `dwx upscale` sigue disponible a mano).
+
+**Límite de `edge` en los atlas.** Las reglas miran los 8 vecinos de cada píxel sin saber dónde acaba un sprite: en
+una hoja de sprites, los píxeles del borde de un sprite que toca a otro sin hueco pueden tomar el índice del vecino
+en la copia agrandada. Un sprite con al menos un píxel de hueco (o de color 0 alrededor) no se ve afectado. Las hojas
+de la UI original casi siempre dejan ese hueco; donde no, el aspecto lo acepta o recorta el sprite un píxel. Un modo
+que respete los rectángulos de los sprites sería trabajo futuro.
+
 ## La caché
 
 Obligatoria: sin caché no hay `dwe-enhance`. Sigue el patrón de la caché de `dwx extract --cache`

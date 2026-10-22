@@ -24,6 +24,7 @@ dwe_add_module(dwx
         src/extractors.cpp
         src/game_tables.cpp
         src/image_extractors.cpp
+        src/index_scale.cpp
         src/map_extractors.cpp
         src/overlay_extractor.cpp
         src/padding_extractor.cpp
@@ -35,12 +36,22 @@ dwe_add_module(dwx
         src/pack.cpp
         src/text_extractors.cpp
         src/texture_cooker.cpp
+        src/upscale.cpp
+        src/upscale_recipe.cpp
         src/validate.cpp
         src/verify.cpp
         src/video_extractors.cpp
     DEPS core formats assets
     PRIVATE_LIBS dwe_opusenc KTX::ktx
     TEST_LIBS dwe_cgltf)
+
+# The recipes dwx extract runs after the base pack (content/enhance), built into the tool so it needs no files beside
+# it. Editing a recipe reconfigures.
+set(DWE_UI_ORIGINAL_RECIPE_FILE ${PROJECT_SOURCE_DIR}/content/enhance/ui_original.recipe.yaml)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${DWE_UI_ORIGINAL_RECIPE_FILE})
+file(READ ${DWE_UI_ORIGINAL_RECIPE_FILE} DWE_UI_ORIGINAL_RECIPE)
+configure_file(src/bundled_recipes.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/generated/bundled_recipes.hpp @ONLY)
+target_include_directories(dwe_dwx PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 if(BUILD_TESTING)
     # The tests build synthetic discs and TIMs with the fixtures of the formats tests, use the media files of the
