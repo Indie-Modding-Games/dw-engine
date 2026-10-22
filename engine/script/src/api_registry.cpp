@@ -5,8 +5,11 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "api_functions.hpp"
 #include "api_names.hpp"
@@ -159,7 +162,9 @@ core::Result<void> ApiRegistry::publishValue(std::string_view apiNamespace, std:
 core::Result<void> ApiRegistry::publishEntry(detail::PublishedFunction entry) {
   const std::string_view apiNamespace = entry.apiNamespace;
   const std::string_view name = entry.name;
-  if (!detail::isApiName(apiNamespace) || !detail::isApiName(name)) {
+  const bool nameFits = entry.kind == detail::PublishedKind::Value ? detail::isApiValueName(name)
+                                                                   : detail::isApiName(name);
+  if (!detail::isApiName(apiNamespace) || !nameFits) {
     return core::fail(core::formatMessage(messages::BadApiName, apiNamespace, name));
   }
   if (apiNamespace == detail::HooksGlobal) {
@@ -195,6 +200,17 @@ bool ApiRegistry::isPublished(std::string_view apiNamespace, std::string_view na
       vm_->functions, [&](const std::unique_ptr<detail::PublishedFunction>& function) {
         return function->apiNamespace == apiNamespace && function->name == name;
       });
+}
+
+std::vector<std::string> ApiRegistry::publishedNames(std::string_view apiNamespace) const {
+  std::vector<std::string> names;
+  for (const std::unique_ptr<detail::PublishedFunction>& function : vm_->functions) {
+    if (function->apiNamespace == apiNamespace) {
+      names.push_back(function->name);
+    }
+  }
+  std::ranges::sort(names);
+  return names;
 }
 
 } // namespace dwe::script

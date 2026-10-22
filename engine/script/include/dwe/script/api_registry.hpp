@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 namespace dwe::script {
 
@@ -70,10 +71,13 @@ public:
   core::Result<void> publishWaiting(std::string_view apiNamespace, std::string_view name,
                                     ApiFunction function);
 
+  // A value's name may also be upper case, as Lua constants are (story.ENDED).
   core::Result<void> publishValue(std::string_view apiNamespace, std::string_view name,
                                   ApiValue value);
 
   [[nodiscard]] bool isPublished(std::string_view apiNamespace, std::string_view name) const;
+  // The names published in a namespace, sorted.
+  [[nodiscard]] std::vector<std::string> publishedNames(std::string_view apiNamespace) const;
 
 private:
   core::Result<void> publishEntry(detail::PublishedFunction entry);

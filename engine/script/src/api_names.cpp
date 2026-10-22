@@ -20,6 +20,15 @@ bool isApiName(std::string_view name) {
          name.front() <= 'z' && std::ranges::all_of(name, isNameCharacter);
 }
 
+bool isApiValueName(std::string_view name) {
+  const auto isConstantCharacter = [](char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+  };
+  const bool isConstant = !name.empty() && name.size() <= MaxNameLength && name.front() >= 'A' &&
+                          name.front() <= 'Z' && std::ranges::all_of(name, isConstantCharacter);
+  return isConstant || isApiName(name);
+}
+
 bool isEventName(std::string_view event) {
   const std::size_t separator = event.find(EventSeparator);
   return separator != std::string_view::npos && isApiName(event.substr(0, separator)) &&

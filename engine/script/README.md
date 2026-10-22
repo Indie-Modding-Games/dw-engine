@@ -149,6 +149,8 @@ En Lua es `field.map_id()`. `ApiCall` da el paquete que llama (`pack()`) y los a
 (`nil`, booleano, entero, número, texto); el resultado también. Las tablas llegarán como subida menor cuando un
 sistema las necesite. Un error vuelve a Lua como error del script. Los
 nombres son `[a-z][a-z0-9_]*`; `hooks` está reservado y no se puede tapar una global estándar.
+Un valor publicado con `publishValue` puede llamarse además `[A-Z][A-Z0-9_]*`, como las constantes de Lua
+(`story.ENDED`).
 
 ## Eventos: `HookRegistry`
 

@@ -162,6 +162,7 @@ código del motor (`PackOrigin::Engine`, capa `base`). La API `story` es la mism
 | Puertos (`StoryWorld`) | `game/story` (interfaces) | lo que el runtime pide al mundo: campo, compañero, inventario, combate, cámara, sonido, fundidos |
 | Puertos implementados | `apps/session` (`story_adapter`) | el pegamento con `game/field`, `game/partner`, `game/inventory`, `game/battle` (regla 4) |
 | API `story` | `apps/session` publica en `engine/script` | funciones del espacio `story` (versionado semver) |
+| `StoryLuaHost` | `apps/session` (`story_lua`) | el `SectionHost` de la VM: el script N es el módulo `story/NNN` del paquete que lo da, la sección S su `sections[S]`, una corrutina por sección; publica la parte de la API `story` que ya funciona |
 | Vista de la caja de texto | `apps/screens` + `engine/ui` | dibuja `DialogueState`; el aspecto original (9b) lo viste |
 
 `game/story` no incluye `game/field` ni ningún otro `game/*`: declara los puertos y `apps/session` los implementa.
@@ -578,6 +579,39 @@ cerca del original. Ninguno cambia el YAML de scripts (contrato con `dw1fe`).
 | **S5** | Inventario, dinero, estadísticas, cartas, fecha, rutinas sin escena (12/13, 25, 30/31/56, 35/39, 15/16) | Las secciones de la ciudad no registran órdenes ausentes de estos grupos | por orden, contra la ficha (topes y suelos) | ampliar `route-story-talk` con una tienda |
 | **S6** | `start_battle` con guion y sus consecuencias, `call_digimon_routine`, rutina 32 (partida nueva), 47, 48 | Reclutar la especie 3 en `mayo00` pone el disparador 203 jugando | combate con guion, derrota → `0x4DE`, huida → warp | `route-story-recruit` (en/es) |
 | **S7** | Objetos del mapa, sonido, rutinas con escena restantes, teleport estático (Q7) | Cero órdenes ausentes en el disco | contador de ausentes = 0 | rutas de cada zona nueva |
+
+### Paridad de S2 en el disco
+
+`apps/session/tests/story_lua_disc_tests.cpp` juega cada sección del disco con dos mundos por el `StoryRunner` y
+el `StoryLuaHost`, y compara sus efectos (escrituras de estado, esperas, saltos de fichero y llamadas) con un
+intérprete de referencia de los listados que guarda la pila de retornos a través de `jump_to_file`. Las órdenes que
+la API aún no publica son stubs del test que registran la llamada; `call_routine` y las demás órdenes que corren
+código del original en otra parte son una llamada registrada sin ejecución anidada, igual en los dos lados. Dos
+corridas coinciden si su estado y sus eventos son idénticos; una corrida cortada debe haberse parado justo en el
+límite de eventos, en los dos lados.
+
+Medido en el disco US (`doctest -s`, registro `disc-s-*.log` del corte):
+
+- 3100 corridas, las 3100 coinciden: (i) 463 usan solo órdenes publicadas, (ii) 2637 llaman también a stubs;
+  29 se cortaron en los dos lados y 0 en uno solo.
+- Pila de retornos: llega a 2, lejos de los 8 marcos del original; en cada `jump_to_file` está vacía, y la
+  profundidad de enlace que da el host es 0. Ninguna sección de `MAPHEAD` hace `jump_and_link` (0 llamadas, 0
+  saltos afectados), así que la peculiaridad de `jump_return`, que restaura `ACTIVE_MAP_SCRIPT` como base, no se
+  alcanza.
+- El bucle de entrenamiento (script 49, sección `0x52`, con los scripts 199–202, sección `0x33`) da 20 vueltas,
+  40 saltos de cola, con una sola sección abierta a la vez. 20 es el máximo del disco: cada vuelta suma 1 a la
+  variable 123 y la sección `0x52` sale del bucle al llegar a 20, así que el test exige exactamente 20.
+
+### Pendiente para el corte 4 de S2
+
+- **`story.PLAYER`:** la constante del personaje del jugador se publica como `story.PLAYER`; el nombre `TAMER`
+  nunca se publica. El emisor cambia `local TAMER <const> = story.TAMER` por `PLAYER` y el vocabulario pasa de
+  `TamerEntity` a `PlayerEntity`. Entra con la subida de `ExtractorVersion` del corte, junto con el cambio de
+  `*_pstat` a `*_var` (y la subida de `LuaEmitterVersion`).
+- **Fallo de `publishApi`:** si publicar la API `story` falla al cablear la sesión, es un error fatal del arranque,
+  no un aviso.
+- **Caché de módulos:** `StoryLuaHost` guarda cada módulo `story/NNN` cargado y nunca lo invalida; si los paquetes
+  montados cambian (activar o quitar un mod en marcha), hay que vaciarla o crear otro host.
 
 ### Paridad contra el original (trazas)
 

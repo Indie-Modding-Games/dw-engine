@@ -106,6 +106,20 @@ TEST_CASE("published values are read-only constants of their namespace") {
   CHECK_FALSE(mod.run("test.ended = false", "mod"));
 }
 
+TEST_CASE("a published value may have an upper-case name, and a function may not") {
+  auto vm = makeVm();
+  auto& reported = publishReport(*vm);
+  REQUIRE(vm->api().publishValue("test", "ENDED_2", ApiValue{true}));
+  CHECK_FALSE(vm->api().publishValue("test", "Ended", ApiValue{true}));
+  CHECK_FALSE(vm->api().publishValue("test", "2ENDED", ApiValue{true}));
+  CHECK_FALSE(vm->api().publish(
+      "test", "ENDED", [](const ApiCall&) -> core::Result<ApiValue> { return ApiValue{}; }));
+  REQUIRE(vm->runString("test.report(test.ENDED_2)", "engine"));
+  CHECK(reported == std::vector<std::string>{"true"});
+  CHECK(vm->api().publishedNames("test") == std::vector<std::string>{"ENDED_2", "report"});
+  CHECK(vm->api().publishedNames("other").empty());
+}
+
 TEST_CASE("a waiting function gives its result to the resumer and gets the next resume's value") {
   Story story{"return { sections = { [81] = function()\n"
               "  test.report(test.wait(1))\n"

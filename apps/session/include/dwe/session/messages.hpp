@@ -112,4 +112,13 @@ inline constexpr std::string_view StoryDocumentFailed = "story: {}";
 inline constexpr std::string_view StoryPartnerUnnumbered =
     "story: partner '{}' has no number in the digimon table; its raised trigger stays clear";
 
+// The story's Lua host (story_lua.cpp).
+inline constexpr std::string_view NoStoryModule = "no pack has the story module {}";
+inline constexpr std::string_view NoStorySection =
+    "script {} section {} is outside the ids of story sections, 0 to 65535";
+inline constexpr std::string_view WaitWithoutStoryWait =
+    "the section waited on something that is not a story wait";
+inline constexpr std::string_view BadSectionReturn =
+    "a section returns story.ENDED or nothing, and this one returned another value";
+
 } // namespace dwe::session::messages

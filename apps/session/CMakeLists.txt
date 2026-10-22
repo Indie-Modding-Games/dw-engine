@@ -17,7 +17,10 @@ dwe_add_module(session
         src/session_rules.cpp
         src/slot_names.cpp
         src/story_adapter.cpp
-    DEPS core assets scene ruleset field partner save evolution inventory battle story)
+        src/story_lua.cpp
+    DEPS core assets scene ruleset field partner save evolution inventory battle story script
+    # The story tests check the API against the Lua emitter and run its listings' reference.
+    TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 
 # The tests read the game pack from the source tree.
 if(TARGET dwe_session_tests)
@@ -29,4 +32,7 @@ if(TARGET dwe_session_tests)
     target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/game/field/tests")
     # The made-up tables of the systems' tests, as "game/<system>/tests/fixture.hpp".
     target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+    # The reference interpreter of the story listings (story_lua_harness.hpp).
+    target_include_directories(dwe_session_tests PRIVATE "${PROJECT_SOURCE_DIR}/formats/tests")
+    target_include_directories(dwe_session_tests SYSTEM PRIVATE ${LUA_INCLUDE_DIR})
 endif()
