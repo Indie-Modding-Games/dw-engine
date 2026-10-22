@@ -15,12 +15,8 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/rhi/device.hpp>
-#include <dwe/ruleset/ruleset.hpp>
+#include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
-#include <dwe/session/evolution_adapter.hpp>
-#include <dwe/session/field_facts.hpp>
-#include <dwe/session/game_session.hpp>
-#include <dwe/ui/minimap.hpp>
 #include <dwe/ui/ui.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
@@ -43,24 +39,15 @@
 #include <vector>
 
 #include "autotest.hpp"
-#include "battle_screen.hpp"
-#include "battle_trigger.hpp"
-#include "care_commands.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
 #include "dev_assets_banner.hpp"
-#include "field_hud.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
-#include "free_exploration.hpp"
 #include "language.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
-#include "partner_events.hpp"
-#include "partner_menu.hpp"
-#include "partner_tab.hpp"
-#include "save_command.hpp"
-#include "session_start.hpp"
+#include "play_session.hpp"
 #include "text_font_setting.hpp"
 #include "ui_skin_setting.hpp"
 #include "user_settings.hpp"
@@ -68,14 +55,8 @@
 namespace dwe::app {
 namespace {
 
-constexpr std::string_view MenuDocument = "pause_menu";
-// The menu the game starts at (R3.9): play, the language, quit.
-constexpr std::string_view MainMenuDocument = "main_menu";
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
-// Frames left out of the steady frame times after a map change: the new map's textures upload in
-// the next frames.
-constexpr int MapChangeSettleFrames = 5;
 
 // Tells the HUD what the map change shows: how much the fade takes away and the key of the map name
 // it shows, which the HUD writes in the player's language.
@@ -175,59 +156,6 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     ui.setSetting("vsync", settings.vsync);
   }
   return true;
-}
-
-// Where the original's need bubble hangs over the partner, in world units: it starts 20 below the
-// top of its species' height (bubble.c: addConditionBubble: baseHeight = -height + 20) and rises 65
-// over its first 10 frames, where it settles (bubble.c: tickConditionBubble: activeHeight =
-// baseHeight - 65). Its bob of 12 up and down around that point is the skin's animation and is not
-// published.
-constexpr float BubbleDrop = 20.0F;
-constexpr float BubbleRise = 65.0F;
-
-// Where the partner's need bubble settles in the window; nothing off the map's camera.
-std::optional<screens::WindowFraction> partnerBubbleOf(const FieldScene& scene,
-                                                       const assets::DigimonTable* species,
-                                                       std::string_view partnerSpecies) {
-  const assets::DigimonRow* row = species != nullptr ? species->find(partnerSpecies) : nullptr;
-  const float height = row != nullptr ? static_cast<float>(row->height) - BubbleDrop : 0.0F;
-  glm::vec3 bubble = scene.field().partner().position;
-  bubble.y += height + BubbleRise;
-  const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(bubble);
-  if (!fraction) {
-    return std::nullopt;
-  }
-  return screens::WindowFraction{.x = fraction->x, .y = fraction->y};
-}
-
-ui::MinimapMarker markerOf(const game::field::CharacterState& character) {
-  return {.x = character.position.x,
-          .z = character.position.z,
-          .facingX = std::sin(character.yaw),
-          .facingZ = std::cos(character.yaw)};
-}
-
-// Starts the battle a battle("npcs") command asks for against the NPCs of the field's map.
-void startBattle(BattleScreen& screen, const assets::DigimonTable* species, const FieldScene& scene,
-                 std::string_view npcs) {
-  auto started = [&]() -> core::Result<void> {
-    if (species == nullptr) {
-      return core::fail(std::string{messages::NoSpeciesTable});
-    }
-    auto chosen = npcsOf(npcs);
-    if (!chosen) {
-      return std::unexpected{chosen.error()};
-    }
-    auto request = mapBattleRequest(scene.field(), scene.map(), *species, *chosen);
-    if (!request) {
-      return std::unexpected{request.error()};
-    }
-    return screen.start(std::move(*request));
-  }();
-  if (!started) {
-    core::logWarning("{}",
-                     core::formatMessage(messages::BattleStartFailed, started.error().message));
-  }
 }
 
 core::Result<void> loadDocuments(ui::Ui& ui) {
@@ -359,20 +287,6 @@ bool isPointerOrKey(const platform::Event& event) {
          std::holds_alternative<platform::MouseWheelMoved>(event);
 }
 
-// Logs which ruleset the game plays with, and where each of its sections comes from.
-void logRuleset(const ruleset::Ruleset& rules) {
-  std::string sections;
-  for (const auto& [name, section] : rules.sections()) {
-    if (!sections.empty()) {
-      sections += messages::ListSeparator;
-    }
-    sections += core::formatMessage(messages::RulesetSection, name, section.owner);
-  }
-  const ruleset::RulesetInfo& info = rules.info();
-  core::logInfo("{}", core::formatMessage(messages::RulesetActive, info.id, info.version, info.name,
-                                          sections));
-}
-
 } // namespace
 
 int runGame(const Options& options) {
@@ -429,21 +343,6 @@ int runGame(const Options& options) {
     return EXIT_FAILURE;
   }
   const assets::VirtualFileSystem& files = (*content)->files();
-  // The game session (apps/session): the ruleset, the game clock and the game systems, saved and
-  // loaded as one. The tuning panel tunes its ruleset, sets the speed of its clock, pauses it and
-  // jumps it.
-  auto game = startGame(files, options, !autotest);
-  if (!game) {
-    core::logError("{}", game.error().message);
-    return EXIT_FAILURE;
-  }
-  session::GameSession& session = *game->session;
-  logRuleset(session.rules().current());
-  (*debugUi)->attachTuning({.files = &files, .store = &session.rules(), .clock = &session.clock()});
-  (*debugUi)->addTuningTab(partnerTab(session));
-  if (options.tuning) {
-    (*debugUi)->openTuning();
-  }
   // An autotest neither reads nor writes the player's settings: its language is --lang or the
   // system's.
   const std::optional<std::filesystem::path> settingsFile =
@@ -525,36 +424,6 @@ int runGame(const Options& options) {
   if (!autotest || autotest->startsAtMainMenu()) {
     (*ui)->show(MainMenuDocument, true);
   }
-
-  // A loaded game starts where it was saved, unless --start says otherwise.
-  const std::optional<session::FieldPlace> savedPlace =
-      options.startMap ? std::nullopt : session.savedPlace();
-  auto scene = FieldScene::create(
-      **renderer, files,
-      {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
-       .startExit = options.startExit,
-       .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
-       .clock = &session.clock(),
-       .time = options.time,
-       .facts = session::fieldGuardFacts(session, game->systems.inventory, *game->systems.story),
-       .writeTrigger = session::fieldTriggerWriter(*game->systems.story)});
-  if (!scene) {
-    core::logError("game: {}", scene.error().message);
-    return EXIT_FAILURE;
-  }
-  FreeExploration freeExploration{
-      {.ui = ui->get(),
-       .scene = scene->get(),
-       .settings = &userSettings,
-       .settingsFile = settingsFile},
-      startFreeExploration(options.explore, userSettings.freeExploration)};
-  session.attachField((*scene)->field());
-  // A loaded game's partner may be another species than the game pack's partner model.
-  if (auto shown = (*scene)->showPartnerSpecies(session.partnerView().species); !shown) {
-    core::logWarning("{}",
-                     core::formatMessage(messages::PartnerModelNotShown,
-                                         session.partnerView().species, shown.error().message));
-  }
   loadUserGamepadMappings();
 
   input::InputState input{input::defaultActionMap()};
@@ -577,48 +446,27 @@ int runGame(const Options& options) {
     consoleUiSkin = std::string{id};
   });
 
-  // The battle screen, and the console's and the scripts' battle("npcs") that starts one against
-  // the map's NPCs (battle_trigger.hpp), applied between frames like the other commands.
-  auto species = speciesTable(files, session.rules().current());
-  if (!species) {
-    core::logWarning("{}",
-                     core::formatMessage(messages::BattleStartFailed, species.error().message));
-  }
-  BattleScreen battleScreen{{.session = &session,
-                             .battle = game->systems.battle,
-                             .inventory = game->systems.inventory,
-                             .species = species ? &*species : nullptr,
-                             .ui = ui->get()}};
-  PartnerMenu partnerMenu{{.session = &session,
-                           .inventory = game->systems.inventory,
-                           .species = species ? &*species : nullptr,
-                           .ui = ui->get()}};
-  FieldHud fieldHud{**ui, session};
-  std::optional<std::string> pendingBattle;
-  // Whether a battle ran last frame: its end may change the bag, the money and the partner.
-  bool battleRanLastFrame = false;
-  std::optional<std::string> pendingGift;
-  (*scripts)->bindCommand(
-      GiveItemCommand, [&pendingGift](std::string_view item) { pendingGift = std::string{item}; });
-  std::optional<std::string> pendingUse;
-  (*scripts)->bindCommand(UseItemCommand,
-                          [&pendingUse](std::string_view item) { pendingUse = std::string{item}; });
-  (*scripts)->bindCommand(BattleCommand, [&pendingBattle](std::string_view npcs) {
-    pendingBattle = std::string{npcs};
-  });
-  // The care debug commands (toilet, sleep, scold, train, clock_speed), applied between frames like
-  // the others.
-  CareCommands careCommands;
-  careCommands.bind(**scripts);
-  // The debug save("slot_NN"), applied between frames like the others.
-  SaveCommand saveCommand;
-  saveCommand.bind(**scripts);
+  SessionCommands sessionCommands;
+  sessionCommands.bind(**scripts);
   // The partner's status for the autotest's checks, refreshed every frame of a run.
   screens::ScreenSettings partnerStatus;
-  std::optional<std::string> pendingEvolution;
-  (*scripts)->bindCommand(EvolveCommand, [&pendingEvolution](std::string_view form) {
-    pendingEvolution = std::string{form};
-  });
+
+  auto play = PlaySession::create({.options = &options,
+                                   .keepsSaves = !autotest,
+                                   .files = &files,
+                                   .device = device->get(),
+                                   .renderer = renderer->get(),
+                                   .ui = ui->get(),
+                                   .debugUi = debugUi->get(),
+                                   .userSettings = &userSettings,
+                                   .settingsFile = settingsFile});
+  if (!play) {
+    core::logError("game: {}", play.error().message);
+    return EXIT_FAILURE;
+  }
+  if (options.tuning) {
+    (*debugUi)->openTuning();
+  }
 
   FrameStats frameStats;
   const AutotestHost host{
@@ -626,7 +474,7 @@ int runGame(const Options& options) {
       .window = &*window,
       .renderer = renderer->get(),
       .device = device->get(),
-      .scene = scene->get(),
+      .scene = &(*play)->scene(),
       .ui = ui->get(),
       .input = &input,
       .stats = &frameStats,
@@ -639,7 +487,6 @@ int runGame(const Options& options) {
   MouseSteering mouse;
   std::vector<platform::Event> events;
   std::uint64_t ticksRun = 0;
-  std::uint32_t mapSerial = 0;
   double previous = platform->nowSeconds();
   bool running = true;
   debug::FrameStats overlayStats{};
@@ -651,7 +498,7 @@ int runGame(const Options& options) {
   while (running) {
     events.clear();
     if (autotest) {
-      partnerStatus = partnerMenu.statusSettings();
+      partnerStatus = (*play)->partnerStatus();
       autotest->frame(host, ticksRun, platform->nowSeconds(), events);
       if (autotest->finished()) {
         break;
@@ -698,7 +545,7 @@ int runGame(const Options& options) {
       }
       input.handle(event);
       if (!(*ui)->capturesInput()) {
-        mouse.handle(event, **scene);
+        mouse.handle(event, (*play)->scene());
       }
     }
 
@@ -736,9 +583,10 @@ int runGame(const Options& options) {
         intent.stick = {move.x, -move.y};
         intent.run = !input.isDown("walk");
         intent.moveTarget = mouse.take();
-        if (const auto held = mouse.steer(
-                **scene, glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
-                                   static_cast<float>((*renderer)->targetExtent().height)});
+        if (const auto held =
+                mouse.steer((*play)->scene(),
+                            glm::vec2{static_cast<float>((*renderer)->targetExtent().width),
+                                      static_cast<float>((*renderer)->targetExtent().height)});
             held && move.x == 0.0F && move.y == 0.0F) {
           intent.stick = *held;
         }
@@ -748,110 +596,29 @@ int runGame(const Options& options) {
       } else {
         mouse.release();
       }
-      // The menus pause the field and the game time; a battle runs instead of the field.
-      if (battleScreen.active()) {
-        if (!(*ui)->isVisible(MenuDocument)) {
-          battleScreen.tick(TickSeconds);
-        }
-      } else if (!(*ui)->isVisible(MenuDocument) && !(*ui)->isVisible(MainMenuDocument) &&
-                 !(*ui)->isVisible(PartnerMenuDocument)) {
-        (*scene)->tick(intent, static_cast<float>(TickSeconds));
-        session.tick(TickSeconds);
-        (*scene)->finishTick();
-      }
+      (*play)->tick(intent);
       input.endTick();
       ++ticksRun;
     }
 
-    // What the script warps' guards read (bag, money, stats, conditions) may change only on these
-    // events; the field decides its cells again once after them (docs/reference/campo.md), not
-    // every frame.
-    bool guardFactsChanged = false;
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-      if (battleScreen.handle(command) || freeExploration.handle(command)) {
-        continue;
-      }
-      if (partnerMenu.handle(command)) {
-        guardFactsChanged = true;
+      if ((*play)->handle(command)) {
         continue;
       }
       running = apply(command, **ui, *window, settings, languageChanger, textFontChanger,
                       uiSkinChanger, minimapChanger) &&
                 running;
     }
-    if (pendingGift || pendingUse) {
-      guardFactsChanged = true;
-    }
-    if (pendingGift) {
-      if (auto given = partnerMenu.giveItem(*std::exchange(pendingGift, std::nullopt)); !given) {
-        core::logWarning("{}",
-                         core::formatMessage(messages::GiveItemFailed, given.error().message));
-      }
-    }
-    if (pendingUse) {
-      if (auto used = partnerMenu.useItem(*std::exchange(pendingUse, std::nullopt)); !used) {
-        core::logWarning("{}", core::formatMessage(messages::UseItemFailed, used.error().message));
-      }
-    }
-    if (pendingBattle) {
-      startBattle(battleScreen, species ? &*species : nullptr, **scene,
-                  *std::exchange(pendingBattle, std::nullopt));
-    }
-    guardFactsChanged = careCommands.apply(session) || guardFactsChanged;
-    // Before a queued evolve, so a script that saves and then evolves saves the form it had when it
-    // asked.
-    if (auto saved = saveCommand.apply(session); !saved) {
-      core::logWarning("{}", saved.error().message);
-      // A route that saves checks what it saved: a save that did not happen is the route's failure.
-      if (autotest) {
-        autotest->fail(saved.error().message);
-      }
-    }
-    freeExploration.update();
-    if (pendingEvolution) {
-      guardFactsChanged = true;
-      const std::string form = *std::exchange(pendingEvolution, std::nullopt);
-      if (auto evolved = game->systems.evolution->evolveByScript(session, form); !evolved) {
-        core::logWarning("{}",
-                         core::formatMessage(messages::EvolveFailed, evolved.error().message));
-      } else if (!*evolved) {
-        core::logWarning("{}", core::formatMessage(messages::EvolveRefused, form));
-      }
-    }
+    (*play)->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
+                    static_cast<float>(step.alpha()));
+    screenFade->setDarkness((*play)->scene().field().fadeLevel());
+    mapChangeView.show((*play)->scene());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
     }
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
     }
-    if ((*scene)->mapSerial() != mapSerial) {
-      mapSerial = (*scene)->mapSerial();
-      (*ui)->setMinimap(ui::minimapGridOf((*scene)->map()), (*scene)->mapNameKey());
-      if (const auto& change = (*scene)->lastMapChange(); change && autotest) {
-        autotest->mapChanged(*change);
-      }
-      frameStats.skipNext(MapChangeSettleFrames);
-    }
-    const game::field::Field& field = (*scene)->field();
-    (*ui)->setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
-    screenFade->setDarkness(field.fadeLevel());
-    mapChangeView.show(**scene);
-
-    partnerMenu.update();
-    const auto partnerEvents = session.takePartnerEvents();
-    showPartnerEvents(partnerEvents, session, **scene);
-    guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
-                        (battleRanLastFrame && !battleScreen.active());
-    battleRanLastFrame = battleScreen.active();
-    if (guardFactsChanged) {
-      (*scene)->refreshScriptWarps();
-    }
-
-    const bool paused = (*ui)->isVisible(MenuDocument) || (*ui)->isVisible(MainMenuDocument) ||
-                        (*ui)->isVisible(PartnerMenuDocument) || battleScreen.active();
-    fieldHud.update(!paused, partnerBubbleOf(**scene, species ? &*species : nullptr,
-                                             session.partnerView().species));
-    (*scene)->update(frameSeconds, static_cast<float>(step.alpha()), paused);
     (*ui)->update();
 
     overlayStats = {
@@ -865,7 +632,7 @@ int runGame(const Options& options) {
     const std::array<render::Drawer*, 2> uiDrawers{&*screenFade, uiRenderer->get()};
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
-        .scene = (*scene)->drawers(),
+        .scene = (*play)->scene().drawers(),
         .ui = uiDrawers,
         .overlay = std::ref(drawOverlay),
     });
@@ -874,7 +641,6 @@ int runGame(const Options& options) {
     }
   }
   (*device)->waitIdle();
-  session.detachField();
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.
@@ -885,7 +651,7 @@ int runGame(const Options& options) {
   // use) counts: the scene and the UI release their textures into the renderer before it, and the
   // device goes last.
   const bool validationActive = (*device)->validationEnabled();
-  scene->reset();
+  play->reset();
   scripts->reset();
   ui->reset();
   uiRenderer->reset();

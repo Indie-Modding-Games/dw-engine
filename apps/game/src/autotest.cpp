@@ -61,10 +61,6 @@ constexpr int PartialExitCode = 2;
 // Frames the window size must keep before a resize counts as done.
 constexpr int StableFrames = 5;
 
-constexpr std::string_view MenuDocument = "pause_menu";
-// The menu the game shows at start; menu_select picks its entries while it is open.
-constexpr std::string_view MainMenuDocument = "main_menu";
-
 // The other documents menu_select picks from while they are open: the battle screen, the partner's
 // menu and free exploration's chooser.
 constexpr std::array<std::string_view, 3> ScreenDocuments{"partner_menu", "battle",

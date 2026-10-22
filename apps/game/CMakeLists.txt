@@ -24,6 +24,7 @@ dwe_add_app(game
         src/partner_events.cpp
         src/partner_menu.cpp
         src/partner_tab.cpp
+        src/play_session.cpp
         src/save_command.cpp
         src/saves.cpp
         src/session_start.cpp

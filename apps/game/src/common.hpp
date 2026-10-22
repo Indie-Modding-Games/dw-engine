@@ -14,6 +14,9 @@ inline constexpr double TickSeconds = 1.0 / 60.0;
 // A longer frame (a stall, a breakpoint) runs at most this much logic, so the game slows down
 // instead of spiralling.
 inline constexpr double MaxFrameSeconds = 0.25;
+// The pause menu, and the title screen's menu (R3.9).
+inline constexpr std::string_view MenuDocument = "pause_menu";
+inline constexpr std::string_view MainMenuDocument = "main_menu";
 // The UI settings the game publishes for the HUD on a map change: how much the fade takes away (0
 // to 1), and the text key of the name of the map it goes to while the original shows it (empty
 // otherwise).
