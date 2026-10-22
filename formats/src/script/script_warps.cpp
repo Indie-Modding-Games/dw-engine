@@ -143,6 +143,18 @@ YamlNode mapToYaml(const MapName& mapName, std::uint16_t map) {
     return name ? YamlNode::scalar(*name) : yaml::number(map);
 }
 
+// Where a map change goes: the map, or the screen for a number no map has, and the exit.
+YamlNode destinationToYaml(const MapName& mapName, std::uint16_t screen, std::int32_t exit) {
+    YamlNode to = YamlNode::mapping();
+    if (const auto name = mapName(screen)) {
+        to.set("map", YamlNode::scalar(*name));
+    } else {
+        to.set("screen", yaml::number(screen));
+    }
+    to.set("exit", yaml::number(exit));
+    return to;
+}
+
 YamlNode warpToYaml(const ScriptWarp& warp, const ScriptLookup& lookup, const MapName& mapName) {
     YamlNode node = YamlNode::mapping();
     node.set("map", mapToYaml(mapName, warp.map));
@@ -150,15 +162,7 @@ YamlNode warpToYaml(const ScriptWarp& warp, const ScriptLookup& lookup, const Ma
     node.set("section", yaml::number(warp.section));
     const MapChange& change = warp.change;
     if (change.screen) {
-        YamlNode to = YamlNode::mapping();
-        const auto screen = static_cast<std::uint16_t>(*change.screen);
-        if (const auto name = mapName(screen)) {
-            to.set("map", YamlNode::scalar(*name));
-        } else {
-            to.set("screen", yaml::number(screen));
-        }
-        to.set("exit", yaml::number(change.exit.value_or(0)));
-        node.set("to", std::move(to));
+        node.set("to", destinationToYaml(mapName, static_cast<std::uint16_t>(*change.screen), change.exit.value_or(0)));
     }
     if (change.screenVariable) {
         YamlNode teleport = YamlNode::mapping();
@@ -274,8 +278,8 @@ std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup) {
             continue;
         }
         if (!result) {
-            result =
-                NewGameTriggers{.map = load->map, .script = load->script, .set = {}, .agreed = true, .unknown = {}};
+            result = NewGameTriggers{
+                .map = load->map, .script = load->script, .set = {}, .agreed = true, .unknown = {}, .opening = {}};
         }
         const WalkOptions entered{.knownTriggers = found.state, .othersClear = true};
         const auto finished = walkSection(load->script, EnterSection, lookup, &endsSection, entered);
@@ -306,6 +310,35 @@ std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup) {
     return result;
 }
 
+std::optional<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
+                                                 const ScriptLookup& lookup) {
+    if (warpViaOf(spawnCell) != WarpVia::Step) {
+        return std::nullopt;
+    }
+    WalkOptions state{.knownTriggers = {}, .othersClear = true};
+    for (const std::uint16_t trigger : newGame.set) {
+        state.knownTriggers.push_back({.trigger = trigger, .set = true});
+    }
+    const auto changes = findMapChanges(newGame.script, spawnCell, lookup, state);
+    if (changes.size() != 1 || !changes.front().screen || hasGuard(changes.front().path.guard)) {
+        return std::nullopt;
+    }
+    const MapChange& change = changes.front();
+    NewGameOpening opening{.exit = NewGameExit,
+                           .section = spawnCell,
+                           .screen = static_cast<std::uint16_t>(*change.screen),
+                           .screenExit = change.exit.value_or(0),
+                           .sets = {}};
+    for (const TriggerEffect& effect : change.path.effects) {
+        std::erase(opening.sets, effect.trigger);
+        if (effect.set) {
+            opening.sets.push_back(effect.trigger);
+        }
+    }
+    std::ranges::sort(opening.sets);
+    return opening;
+}
+
 YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup, const MapName& mapName) {
     YamlNode list = YamlNode::sequence();
     for (const ScriptWarp& warp : warps.warps) {
@@ -326,6 +359,15 @@ YamlNode newGameTriggersToYaml(const NewGameTriggers& triggers, const MapName& m
     }
     if (!triggers.unknown.empty()) {
         node.set("triggers_unknown", yaml::numbers(triggers.unknown));
+    }
+    if (triggers.opening) {
+        const NewGameOpening& opening = *triggers.opening;
+        YamlNode entry = YamlNode::mapping();
+        entry.set("exit", yaml::number(opening.exit));
+        entry.set("section", yaml::number(opening.section));
+        entry.set("to", destinationToYaml(mapName, opening.screen, opening.screenExit));
+        entry.set("sets", yaml::numbers(opening.sets));
+        node.set("opening", std::move(entry));
     }
     return node;
 }

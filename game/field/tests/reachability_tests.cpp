@@ -42,8 +42,8 @@ std::string errorOf(const dwe::core::Result<T>& result) {
 
 // Measured on the US disc with dwx's field/script_warps (docs/reference/campo.md, "Alcance de los mapas"). A new
 // game reaches few maps, all with a way back: the way on from mayo00 waits for trigger 203, which an NPC there sets.
-constexpr std::array<std::string_view, 6> ExpectedNewGameMaps{"mayo00", "room08", "topn01",
-                                                              "trai00", "twna01", "twnb01"};
+// The opening's map is not among them: the field starts after the opening, with the triggers it sets.
+constexpr std::array<std::string_view, 5> ExpectedNewGameMaps{"mayo00", "room08", "trai00", "twna01", "twnb01"};
 constexpr std::size_t ExpectedOpenReached = 236;
 constexpr std::size_t ExpectedOpenWithWayBack = 233;
 // What the vanilla policy decides on the disc (docs/architecture/warps-de-script.md): no script warp goes through a
@@ -168,7 +168,8 @@ TEST_CASE("the user's disc, extracted: a new game reaches its maps and back, and
     REQUIRE_MESSAGE(story.has_value(), errorOf(story));
     REQUIRE_MESSAGE((!scriptWarps->empty() && story->has_value()),
                     "the content has no field/script_warps or data/new_game_story: extract it again with this dwx");
-    const dwe::game::field::TriggerState newGame = dwe::game::field::newGameTriggers(**story);
+    const dwe::game::field::TriggerState newGame =
+        dwe::game::field::newGameTriggers(**story, warps->startMap, warps->startExit);
 
     // The cells of each map with data, and the edges of its warp table that a cell fires.
     std::map<std::string, std::set<std::int32_t>> cells;
@@ -310,4 +311,52 @@ TEST_CASE("the user's disc, extracted: a new game reaches its maps and back, and
         INFO(map, ": ", expected->reason);
         CHECK(found == expected->kind);
     }
+}
+
+TEST_CASE("the user's disc, extracted: a start after the opening leaves the town's cells to their doors") {
+    // The town's cell under the new game's spawn runs the opening while trigger 55 is clear and is the door of room08
+    // after it; the other cell runs the opening only while 75 and 54 are clear (script 164, sections 54 and 66).
+    constexpr std::int32_t SpawnCell = 54;
+    constexpr std::int32_t OpeningOnlyCell = 66;
+    const dwe::assets::DiskFileSystem disk;
+    const auto vfs = mountContent(disk);
+    if (!vfs) {
+        MESSAGE("DWE_CONTENT is not set: skipping the opening of extracted content");
+        return;
+    }
+    const auto warps = dwe::game::field::loadFieldWarps(*vfs);
+    const auto scriptWarps = dwe::game::field::loadScriptWarps(*vfs);
+    const auto story = dwe::assets::loadNewGameStory(*vfs);
+    REQUIRE_MESSAGE(warps.has_value(), errorOf(warps));
+    REQUIRE_MESSAGE(scriptWarps.has_value(), errorOf(scriptWarps));
+    REQUIRE_MESSAGE(story.has_value(), errorOf(story));
+    const std::optional<dwe::assets::NewGameStory> found = story.value_or(std::nullopt);
+    if (!found || !found->opening) {
+        FAIL("the content has no data/new_game_story with an opening: extract it again with this dwx");
+        return;
+    }
+    const dwe::assets::NewGameStory& newGame = *found;
+    const dwe::assets::NewGameOpening& opening = *found->opening;
+    CHECK(newGame.map == "twna01");
+    CHECK(opening.exit == 9);
+    CHECK(opening.section == SpawnCell);
+    CHECK(opening.toMap == std::optional<std::string>{"topn01"});
+    CHECK(opening.toExit == 9);
+    CHECK(opening.sets == std::vector<std::int32_t>{54, 55, 75});
+    REQUIRE(warps->startMap == newGame.map);
+    REQUIRE(warps->startExit != opening.exit);
+
+    const auto cellGoesTo = [&](const dwe::game::field::TriggerState& state, std::int32_t section) {
+        const auto cell = dwe::game::field::warpOnCell(*scriptWarps, newGame.map, dwe::game::field::WarpVia::Step,
+                                                       section, state, dwe::game::field::VanillaUnknownPolicy);
+        return cell.warp != nullptr ? cell.warp->targetMap : std::nullopt;
+    };
+    // Before the opening, as on the spawn, both cells run it.
+    const auto ahead = dwe::game::field::newGameTriggers(newGame, newGame.map, opening.exit);
+    CHECK(cellGoesTo(ahead, SpawnCell) == opening.toMap);
+    CHECK(cellGoesTo(ahead, OpeningOnlyCell) == opening.toMap);
+    // From the field's start, which skips it, the spawn's cell is room08's door and the other does nothing.
+    const auto skipped = dwe::game::field::newGameTriggers(newGame, warps->startMap, warps->startExit);
+    CHECK(cellGoesTo(skipped, SpawnCell) == std::optional<std::string>{"room08"});
+    CHECK_FALSE(cellGoesTo(skipped, OpeningOnlyCell).has_value());
 }

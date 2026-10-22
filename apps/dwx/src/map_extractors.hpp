@@ -2,7 +2,9 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/formats/disc/iso9660.hpp>
+#include <dwe/formats/map/map_file.hpp>
 
+#include <cstddef>
 #include <string_view>
 
 #include "extractor.hpp"
@@ -14,6 +16,9 @@ namespace dwe::dwx {
 // MAP/MAP<n>/<name>.MAP: map/<slug>/data.yaml and the map's TIMs as PNG and metadata.
 bool handlesMapFile(std::string_view path);
 core::Result<Extraction> extractMapFile(const Disc& disc, const formats::disc::IsoFile& file);
+
+// The .MAP file of the map with this MAP_ENTRIES id, read with its record, for extractors that need a map's data.
+core::Result<formats::map::MapFile> readMapOf(const Disc& disc, std::size_t mapId);
 
 // MAP/MAP<n>/<name>.TFS: the pre-rendered background, one indexed PNG per palette (map/<slug>/background_day...).
 bool handlesMapBackground(std::string_view path);

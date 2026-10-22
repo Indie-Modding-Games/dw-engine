@@ -18,6 +18,32 @@
       "description": "The triggers the game code may have set before the new-game section runs, which the walk does not model (the starting partner's raised trigger), sorted. They are neither set nor clear.",
       "type": "array",
       "items": { "type": "integer", "minimum": 0, "maximum": 799 }
+    },
+    "opening": {
+      "description": "The map change a new game makes before the player can move: the spawn at the first map's exit is on a step cell, whose section runs at once (formats::script::findNewGameOpening). A start that skips it (field/warps) applies its sets.",
+      "type": "object",
+      "required": ["exit", "section", "to", "sets"],
+      "additionalProperties": false,
+      "properties": {
+        "exit": { "description": "The first map's exit the new game spawns at.", "type": "integer", "minimum": 0, "maximum": 9 },
+        "section": { "description": "The step section of the cell under the spawn.", "type": "integer", "minimum": 51, "maximum": 79 },
+        "to": {
+          "description": "Where it goes: a map (data/maps), or the screen for a number no map has, and its exit.",
+          "type": "object",
+          "required": ["exit"],
+          "additionalProperties": false,
+          "properties": {
+            "map": { "type": "string" },
+            "screen": { "type": "integer", "minimum": 0 },
+            "exit": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "sets": {
+          "description": "The triggers its path leaves set, sorted.",
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 799 }
+        }
+      }
     }
   }
 }

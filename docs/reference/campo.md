@@ -244,14 +244,17 @@ tiene, a mapas con datos (241). Cifras del disco americano **(comprobado, 2026-1
 | Qué warps | Mapas a los que se llega | Con vuelta al inicio |
 |---|---|---|
 | Solo la tabla (el motor antes de los warps de script) | 4 | 1 |
-| Tabla + warps de script que se cumplen con los disparadores de partida nueva (vainilla) | 6: `twna01`, `room08`, `topn01`, `trai00`, `mayo00`, `twnb01` | 6 |
+| Tabla + warps de script que se cumplen con los disparadores de partida nueva (vainilla, empezando después de la apertura) | 5: `twna01`, `room08`, `trai00`, `mayo00`, `twnb01` | 5 |
 | Tabla + cualquier warp de script, sea cual sea su condición (exploración libre) | 236 | 233 |
 
 - **No son 132.** El diseño daba 132 para vainilla, pero contaba como camino toda entrada de la tabla, también las
-  que no tienen casilla 110–119, que son solo puntos de llegada. Con la regla de `checkMapInteraction` son 6.
+  que no tienen casilla 110–119, que son solo puntos de llegada. Con la regla de `checkMapInteraction` son 5. Hasta
+  el 2026-10-22 eran 6, con `topn01`: el campo no ponía los disparadores de la apertura que se salta
+  (`data/new_game_story`, `opening`), y dos casillas de `twna01` devolvían a ella.
 - **Por qué tan pocos en vainilla:** la salida de `mayo00` hacia el resto del mundo (y la mayoría de las fases de
   la ciudad) espera al disparador 203, que pone una conversación con un NPC de `mayo00` (script 105, sección 6). Los
-  disparadores de partida nueva están todos apagados (`data/new_game_story`: `triggers_set: []`). El mundo vainilla
+  disparadores de partida nueva están todos apagados (`data/new_game_story`: `triggers_set: []`) salvo los 54, 55 y
+  75 que pone la apertura (`opening`), que el campo se salta. El mundo vainilla
   se abrirá cuando el motor corra las conversaciones y guarde el estado de historia (intérprete de historia); la
   parte (b) de los warps de script por sí sola no lo abre.
 - **Excepciones de la exploración libre** (241 − 8 = 233). El test falla si aparece otra, con su nombre:

@@ -614,6 +614,61 @@ TEST_CASE("the map changes of a map's script are found on the maps MAPHEAD loads
     CHECK(dwe::formats::script::warpViaOf(3) == WarpVia::Other);
 }
 
+TEST_CASE("a new game's spawn on a step cell makes the opening's map change at once") {
+    constexpr std::uint16_t MapScript = 1;
+    constexpr std::uint16_t SpawnSection = 54;
+    constexpr unsigned Room = 8;
+    constexpr unsigned Opening = 7;
+    constexpr unsigned OpeningExit = 9;
+    constexpr unsigned Seen = 55;
+    constexpr unsigned Started = 54;
+    ScriptBuilder mapHead{{{dwe::formats::script::NewGameSection, CodeStart}}};
+    setScript(mapHead, MapScript, dwe::formats::script::NewGameSection); // 8
+    endSection(mapHead);                                                 // 14
+    ScriptBuilder mapScript{{{SpawnSection, 12}, {dwe::formats::script::EnterSection, 44}}};
+    ifTriggerElseGoto(mapScript, Seen, false, 30); // 12: once seen, the cell is the room's door
+    warpTo(mapScript, Room, 1);                    // 24
+    endSection(mapScript);                         // 28
+    setTrigger(mapScript, Started);                // 30: before, it is the opening
+    setTrigger(mapScript, Seen);                   // 34
+    warpTo(mapScript, Opening, OpeningExit);       // 38
+    endSection(mapScript);                         // 42
+    endSection(mapScript);                         // 44: the entry section
+    const std::map<std::uint16_t, Prepared> scripts{{dwe::formats::script::MapHeadScript, prepare(mapHead)},
+                                                    {MapScript, prepare(mapScript)}};
+    const auto newGame = dwe::formats::script::findNewGameTriggers(lookupOf(scripts));
+    REQUIRE(newGame.has_value());
+    const auto start = newGame.value_or(dwe::formats::script::NewGameTriggers{});
+    const auto opening = dwe::formats::script::findNewGameOpening(start, SpawnSection, lookupOf(scripts));
+    REQUIRE(opening.has_value());
+    const auto found = opening.value_or(dwe::formats::script::NewGameOpening{});
+    CHECK(found.exit == dwe::formats::script::NewGameExit);
+    CHECK(found.section == SpawnSection);
+    CHECK(found.screen == Opening);
+    CHECK(found.screenExit == OpeningExit);
+    CHECK(found.sets == std::vector<std::uint16_t>{Started, Seen});
+
+    // A spawn on a cell that runs nothing, or on a confirm cell, makes no map change.
+    constexpr std::uint8_t ConfirmCell = 80;
+    CHECK_FALSE(dwe::formats::script::findNewGameOpening(start, 0, lookupOf(scripts)).has_value());
+    CHECK_FALSE(dwe::formats::script::findNewGameOpening(start, ConfirmCell, lookupOf(scripts)).has_value());
+
+    // The story says where it goes and what it sets.
+    auto withOpening = start;
+    withOpening.opening = found;
+    const dwe::formats::script::MapName mapName = [](std::uint16_t map) -> std::optional<std::string> {
+        return map == Opening ? std::optional<std::string>{"opening01"} : std::nullopt;
+    };
+    const auto storyDocument = dwe::formats::script::newGameTriggersToYaml(withOpening, mapName);
+    const auto problems = dwe::formats::test::checkAgainstSchema(storyDocument, "new_game_story");
+    CHECK_MESSAGE(problems.empty(), (problems.empty() ? std::string{} : problems.front()));
+    const auto story = dwe::core::emitYaml(storyDocument);
+    REQUIRE(story.has_value());
+    CHECK(
+        story->ends_with("opening:\n  exit: 9\n  section: 54\n  to:\n    map: opening01\n    exit: 9\n  sets:\n  - 54\n"
+                         "  - 55\n"));
+}
+
 TEST_CASE("a map change behind a recursion the walk cut reaches field/script_warps with the routine's site") {
     constexpr std::uint16_t House = 5;
     constexpr std::uint16_t Town = 7;

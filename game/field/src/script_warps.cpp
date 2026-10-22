@@ -11,7 +11,9 @@
 #include <format>
 #include <iterator>
 #include <optional>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "messages.hpp"
 
@@ -337,8 +339,15 @@ WarpDecision decide(const ScriptWarp& warp, const TriggerState& triggers, Unknow
     return decision;
 }
 
-TriggerState newGameTriggers(const assets::NewGameStory& story) {
-    return [set = story.triggersSet, unknown = story.triggersUnknown,
+TriggerState newGameTriggers(const assets::NewGameStory& story, std::string_view startMap, std::int32_t startExit) {
+    std::vector<std::int32_t> set = story.triggersSet;
+    if (story.opening && (startMap != story.map || startExit != story.opening->exit)) {
+        set.insert(set.end(), story.opening->sets.begin(), story.opening->sets.end());
+        std::ranges::sort(set);
+        const auto repeated = std::ranges::unique(set);
+        set.erase(repeated.begin(), repeated.end());
+    }
+    return [set = std::move(set), unknown = story.triggersUnknown,
             agreed = story.agreed](std::int32_t trigger) -> std::optional<bool> {
         if (std::ranges::binary_search(unknown, trigger)) {
             return std::nullopt;

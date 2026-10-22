@@ -159,6 +159,22 @@ puede empezar la partida (0x203 y 0x211: `main.c: main` cría uno según el psta
 `script_common.c: setDigimonRaised`, que pone 0x200 más su id). En el disco americano: `twna01`, script 164, ninguno
 puesto; desconocidos el 0x203 y el 0x211.
 
+`opening` (opcional): el cambio de mapa que hace la partida nueva antes de que el jugador se mueva. La partida nueva
+entra en el primer mapa por la salida 9 (`map.c: initializeMap` pone `CURRENT_EXIT`; `NewGameExit`), y las casillas de
+pisar corren su sección en cada tick que el jugador está encima (`tamer.c: checkMapInteraction`), así que si la
+llegada cae en una la corre enseguida. `dwx` lee la casilla bajo esa llegada en el `.MAP` del primer mapa (como
+`map_collision.c: getTileTrigger`; `formats::map::collisionUnderSpawn`) y recorre su sección con el estado de partida
+nueva (`findNewGameOpening`); si hace un único cambio de mapa cierto, lo guarda: `exit`, `section`, `to` (mapa o
+pantalla y salida) y `sets`, los disparadores que deja puestos. En el disco americano la llegada cae en la casilla 54
+de `twna01`: con el 55 apagado salta al código de la 66 (la entrada «To Opening» de un menú de depuración, que el
+camino vivo se salta) y, con el 75 y el 54 apagados, pone 75, 54 y 55 y va a `topn01` salida 9, la apertura. Desde
+ahí, en vainilla no se vuelve a pisar `twna01` con esos disparadores apagados: la 54 es la puerta de `room08` y la
+66 no hace nada.
+
+```yaml
+opening: {exit: 9, section: 54, to: {map: topn01, exit: 9}, sets: [54, 55, 75]}
+```
+
 En el disco americano salen 1834 registros: 1602 al pisar, 156 al confirmar, 76 de NPC u otras secciones; 201 sin
 condición; ninguno a una pantalla sin mapa; 37 con un término `forget` y ninguno con `recursion`. Frente a la
 extracción sin `ForgetTerm` ni `runnableSections`: 14 más del script 206 (offsets 0x836 y 0x1396, en `frzl15` y
@@ -170,6 +186,15 @@ tiene un `teleport` al mapa del pstat 247, que pone la rutina del transporte des
 
 - `game/field` carga `field/script_warps` (`loadScriptWarps`; vacío si no hay) y el estado de partida nueva
   (`assets::loadNewGameStory`); `apps/game` le pasa un oráculo de disparadores (`TriggerState`) con ese estado.
+- **La apertura que el motor se salta.** El motor aún no juega la apertura: `field/warps.yaml` empieza en `twna01`
+  salida 1, no en la 9. `newGameTriggers(historia, mapa, salida)` da entonces por puestos también los `sets` de
+  `opening` cuando el campo empieza en otro sitio que su llegada (el primer mapa en la salida de `opening`), que es
+  el estado que deja la apertura. Sin eso, cruzar la 54 o la 66 de `twna01` llevaba a `topn01`, un estado al que el
+  original nunca llega. Pendiente: empezar en la salida 9, correr la casilla en la que se llega (el original lo hace
+  cada tick; el campo solo al entrar en una casilla) y jugar la apertura.
+- Las caminatas del autotest (`walk_to`) y el clic para moverse evitan las mismas casillas: las que cambian de mapa
+  ahora (`Field::warpsOn`: salidas de la tabla con destino y casillas de pisar cuyo warp de script se toma), salvo
+  la de destino.
 - Al entrar en una casilla 51–79, o al pulsar confirmar en una 80–109, el campo mira los warps de ese mapa, vía y
   sección, en orden, y toma **el primero que se cumple con certeza** (`evaluate` da `Truth::True`): toda decisión es
   un `IF` de disparadores que el oráculo sabe, el camino no es `unstructured` y el warp tiene mapa de destino. Los
@@ -211,7 +236,7 @@ tiene un `teleport` al mapa del pstat 247, que pone la rutina del transporte des
 - La puerta de `room08` sale de la extracción (disparador 203 apagado → `twna01` salida 2); la entrada escrita a
   mano desaparece.
 - **Alcance** (test de disco y cifras en la [ficha del campo](../reference/campo.md#alcance-de-los-mapas)): en
-  vainilla, con los disparadores de partida nueva, 6 mapas, todos con vuelta; con cualquier warp, 236 y 233 con
+  vainilla, con los disparadores de partida nueva y los de la apertura que se salta, 5 mapas, todos con vuelta; con cualquier warp, 236 y 233 con
   vuelta, con 8 excepciones documentadas. El test lista por nombre (mapa, casilla y origen), con su número, los warps
   con un término de recursión, los que en vainilla se toman por la política (`Allow`) y los alcanzables en vainilla
   que no se toman por ser `unstructured`, y los que en vainilla se toman solo porque el código del juego pudo
@@ -236,7 +261,7 @@ que `recursion`.
   decidirse (cerradas y registradas).
 - `sets_flags` se aplica al tomar el warp y se guarda en `StoryState`, una sección nueva y aditiva de la partida
   guardada, con test de migración.
-- **La parte (b) sola no abre el mundo vainilla más allá de los 6 mapas:** el disparador 203 lo pone una
+- **La parte (b) sola no abre el mundo vainilla más allá de los 5 mapas:** el disparador 203 lo pone una
   conversación (`mayo00`, script 105, sección 6). Aplicando los `sets_flags` de los warps que vainilla toma, solo se
   ponen los disparadores 54, 55 y 75, ninguno abre una salida más (medido con los warps extraídos; la comprobación de
   las secciones de pisar, entrar y cargar el mapa se cita aquí cuando se haga en la parte b).

@@ -36,6 +36,31 @@ std::vector<std::int32_t> triggers(YamlReader& reader, const YamlNode& list, std
     return numbers;
 }
 
+// The `opening` block: where the spawn's step cell goes and what it sets.
+NewGameOpening opening(YamlReader& reader, const YamlNode& node) {
+    NewGameOpening result;
+    if (!reader.expectKeys(node, "opening", {"exit", "section", "to", "sets"})) {
+        return result;
+    }
+    result.exit = reader.integer<std::int32_t>(reader.field(node, "exit"));
+    result.section = reader.integer<std::int32_t>(reader.field(node, "section"));
+    const YamlNode& to = reader.field(node, "to");
+    if (reader.expectKeys(to, "the opening's destination", {"exit"}, {"map", "screen"})) {
+        if (const YamlNode* map = to.find("map"); map != nullptr) {
+            result.toMap = reader.text(*map);
+        }
+        if (const YamlNode* screen = to.find("screen"); screen != nullptr) {
+            result.toScreen = reader.integer<std::int32_t>(*screen);
+        }
+        if (result.toMap.has_value() == result.toScreen.has_value()) {
+            reader.fail(to, "the opening goes to a map or to a screen");
+        }
+        result.toExit = reader.integer<std::int32_t>(reader.field(to, "exit"));
+    }
+    result.sets = triggers(reader, reader.field(node, "sets"), "sets");
+    return result;
+}
+
 } // namespace
 
 core::Result<NewGameStory> parseNewGameStory(std::string_view yaml) {
@@ -46,20 +71,24 @@ core::Result<NewGameStory> parseNewGameStory(std::string_view yaml) {
     YamlReader reader;
     const YamlNode& root = *tree;
     if (!reader.expectKeys(root, "the new game story", {"map", "script", "triggers_set"},
-                           {"agreed", "triggers_unknown"})) {
+                           {"agreed", "triggers_unknown", "opening"})) {
         return std::unexpected{reader.error(Context)};
     }
     NewGameStory story{.map = reader.text(reader.field(root, "map")),
                        .script = reader.integer<std::int32_t>(reader.field(root, "script")),
                        .triggersSet = {},
                        .agreed = true,
-                       .triggersUnknown = {}};
+                       .triggersUnknown = {},
+                       .opening = {}};
     if (const YamlNode* agreed = root.find("agreed"); agreed != nullptr) {
         story.agreed = reader.boolean(*agreed);
     }
     story.triggersSet = triggers(reader, reader.field(root, "triggers_set"), "triggers_set");
     if (const YamlNode* unknown = root.find("triggers_unknown"); unknown != nullptr) {
         story.triggersUnknown = triggers(reader, *unknown, "triggers_unknown");
+    }
+    if (const YamlNode* found = root.find("opening"); found != nullptr) {
+        story.opening = opening(reader, *found);
     }
     return reader.finish(std::move(story), Context);
 }

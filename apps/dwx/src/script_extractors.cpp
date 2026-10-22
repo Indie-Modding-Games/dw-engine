@@ -1,6 +1,7 @@
 #include "script_extractors.hpp"
 
 #include <dwe/core/yaml.hpp>
+#include <dwe/formats/map/map_file.hpp>
 #include <dwe/formats/script/disassembly.hpp>
 #include <dwe/formats/script/new_game_stats.hpp>
 #include <dwe/formats/script/scn_file.hpp>
@@ -20,6 +21,7 @@
 #include <vector>
 
 #include "asset_names.hpp"
+#include "map_extractors.hpp"
 
 namespace dwe::dwx {
 
@@ -105,6 +107,33 @@ core::Result<void> addNewGameStats(Extraction& extraction, const Disc& disc, std
     return {};
 }
 
+// The opening of a new game (formats::script::findNewGameOpening): the map change the cell under the first map's
+// spawn makes. Noted when the map cannot be read or its cell makes none.
+void addNewGameOpening(Extraction& extraction, const Disc& disc, formats::script::NewGameTriggers& newGame,
+                       const formats::script::ScriptLookup& lookup, const formats::script::MapName& mapName) {
+    const std::string map = mapName(newGame.map).value_or(std::to_string(newGame.map));
+    const auto file = readMapOf(disc, newGame.map);
+    if (!file) {
+        extraction.notes.push_back(std::format("the first map {} cannot be read ({}), so data/{} has no opening", map,
+                                               file.error().message, NewGameStoryDocument));
+        return;
+    }
+    const auto cell = formats::map::collisionUnderSpawn(*file, formats::script::NewGameExit);
+    newGame.opening = cell ? formats::script::findNewGameOpening(newGame, *cell, lookup) : std::nullopt;
+    if (!newGame.opening) {
+        extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} makes no certain map change, so "
+                                               "data/{} has no opening",
+                                               map, formats::script::NewGameExit, NewGameStoryDocument));
+        return;
+    }
+    const formats::script::NewGameOpening& opening = *newGame.opening;
+    extraction.notes.push_back(std::format("a new game's spawn on {} at exit {} is on step cell {}, which goes to {} "
+                                           "exit {} at once and sets {} triggers: data/{} keeps it as the opening",
+                                           map, opening.exit, opening.section,
+                                           mapName(opening.screen).value_or(std::to_string(opening.screen)),
+                                           opening.screenExit, opening.sets.size(), NewGameStoryDocument));
+}
+
 // A script listed and structured, for the walks of formats::script.
 struct WalkedScript {
     formats::script::ScriptListing listing;
@@ -182,7 +211,7 @@ core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
     extraction.notes.push_back(std::format("{} MAPHEAD sections load no map's script (new game, death, transport...); "
                                            "their map changes are not in field/{}",
                                            warps.otherMapHeadSections.size(), ScriptWarpsDocument));
-    const auto newGame = formats::script::findNewGameTriggers(lookup);
+    auto newGame = formats::script::findNewGameTriggers(lookup);
     if (!newGame) {
         extraction.notes.push_back(
             std::format("MAPHEAD has no new-game section; data/{} is not written", NewGameStoryDocument));
@@ -193,6 +222,7 @@ core::Result<void> addScriptWarps(Extraction& extraction, const Disc& disc,
                                                "keeps the ones they share",
                                                NewGameStoryDocument));
     }
+    addNewGameOpening(extraction, disc, *newGame, lookup, mapName);
     auto story = yamlOutput(names::tableDocument(NewGameStoryDocument),
                             formats::script::newGameTriggersToYaml(*newGame, mapName));
     if (!story) {

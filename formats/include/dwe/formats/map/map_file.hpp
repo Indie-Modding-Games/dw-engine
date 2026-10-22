@@ -207,6 +207,11 @@ core::Result<MapFileShape> readMapFileShape(std::span<const std::byte> file);
 // flag keep bytes there that the game never reads, so a longer section cannot be told apart and is an error.
 core::Result<MapReadOptions> inferMapReadOptions(std::span<const std::byte> file);
 
+// The collision value of the cell under an exit's spawn, as the game reads the player's cell there
+// (map_collision.c: getTileTrigger: column x / 100 + 50 and row 50 - z / 100 with C's division, one less for a
+// negative x and for a positive z). Nothing for an exit past the ten or a spawn off the grid.
+std::optional<std::uint8_t> collisionUnderSpawn(const MapFile& map, std::size_t exit);
+
 // Builds the disc path of a map's file (map.c: buildMapPath): \MAP\MAP<mapId / 15 + 1>\<name><extension>.
 std::string mapFilePath(int mapId, std::string_view filename, std::string_view extension);
 

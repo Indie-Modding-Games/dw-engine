@@ -19,6 +19,9 @@ constexpr std::size_t MaxInstances = 188;
 constexpr std::size_t MaxNpcs = 8;
 constexpr std::size_t MaxWaypoints = 8;
 constexpr std::size_t CollisionBytes = CollisionSize * CollisionSize;
+// World units per collision cell, and the cell of world 0 on each axis (map_collision.c: getTileTrigger).
+constexpr std::int32_t CollisionCellUnits = 100;
+constexpr auto CollisionOrigin = static_cast<std::int32_t>(CollisionSize / 2);
 constexpr int MaxImagesPerKind = 127; // num8bppImages and num4bppImages are int8
 // The sections every map has: setup, entities and collision.
 constexpr std::size_t FixedSections = 3;
@@ -307,6 +310,22 @@ core::Result<MapFile> readMapFile(std::span<const std::byte> file, const MapRead
     std::ranges::transform(collision, map.collision.begin(),
                            [](std::byte b) { return std::to_integer<std::uint8_t>(b); });
     return map;
+}
+
+std::optional<std::uint8_t> collisionUnderSpawn(const MapFile& map, std::size_t exit) {
+    const MapWarps& warps = map.entities.warps;
+    if (exit >= warps.spawnX.size() || map.collision.size() != CollisionBytes) {
+        return std::nullopt;
+    }
+    const std::int32_t x = warps.spawnX.at(exit);
+    const std::int32_t z = warps.spawnZ.at(exit);
+    const std::int32_t column = (x / CollisionCellUnits) + CollisionOrigin - (x < 0 ? 1 : 0);
+    const std::int32_t row = CollisionOrigin - (z / CollisionCellUnits) - (z > 0 ? 1 : 0);
+    const auto size = static_cast<std::int32_t>(CollisionSize);
+    if (column < 0 || column >= size || row < 0 || row >= size) {
+        return std::nullopt;
+    }
+    return map.collision.at((static_cast<std::size_t>(row) * CollisionSize) + static_cast<std::size_t>(column));
 }
 
 std::string mapFilePath(int mapId, std::string_view filename, std::string_view extension) {

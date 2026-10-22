@@ -157,8 +157,9 @@ CellWarp warpOnCell(std::span<const ScriptWarp> warps, std::string_view map, War
                     const TriggerState& triggers, UnknownPolicy policy);
 
 // The triggers as a new game leaves them: set those the story lists and clear the rest; when its paths do not agree,
-// the rest is unknown.
-TriggerState newGameTriggers(const assets::NewGameStory& story);
+// the rest is unknown. A field that starts on `startMap` at `startExit` anywhere but the opening's spawn (the story's
+// map at the opening's exit) skips the opening, and sets the triggers the opening would have set too.
+TriggerState newGameTriggers(const assets::NewGameStory& story, std::string_view startMap, std::int32_t startExit);
 
 // Parses the text of `field/script_warps`. Unknown and missing keys are errors; the keys of a test other than a
 // trigger test are not read.

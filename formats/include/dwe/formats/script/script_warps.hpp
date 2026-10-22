@@ -55,6 +55,22 @@ struct ScriptWarps {
 // lookup must know MAPHEAD as MapHeadScript.
 ScriptWarps findScriptWarps(const ScriptLookup& lookup);
 
+// The exit of the first map a new game puts the player at (map.c: initializeMap sets CURRENT_EXIT).
+inline constexpr std::int32_t NewGameExit = 9;
+
+// The map change a new game makes before the player can move: step cells run their section on every tick the player
+// stands on them (tamer.c: checkMapInteraction), so a spawn on one runs it at once. On the disc it is the opening of
+// the story, which sets the triggers that keep the town's cells from running it again.
+struct NewGameOpening {
+    std::int32_t exit = NewGameExit;
+    std::uint16_t section = 0; // the step section of the cell under the spawn
+    std::uint16_t screen = 0;  // where it goes
+    std::int32_t screenExit = 0;
+    std::vector<std::uint16_t> sets; // sorted: the triggers its path leaves set
+
+    bool operator==(const NewGameOpening&) const = default;
+};
+
 // The triggers set when a new game gives the player control: those that MAPHEAD's NewGameSection and the
 // EnterSection of the script it loads set, from all triggers clear (initializeScripts), on every path. Nothing if
 // MAPHEAD has no such section.
@@ -67,11 +83,19 @@ struct NewGameTriggers {
     // Sorted: the triggers the game code may have set before the new-game section runs, which the walk does not
     // model (StartingPartnerRaisedTriggers). They are not known either way.
     std::vector<std::uint16_t> unknown;
+    // The map change the cell under the spawn makes (findNewGameOpening), if it makes one for certain.
+    std::optional<NewGameOpening> opening;
 
     bool operator==(const NewGameTriggers&) const = default;
 };
 
 std::optional<NewGameTriggers> findNewGameTriggers(const ScriptLookup& lookup);
+
+// The map change of the section that a spawn on a cell of value `spawnCell` runs, in the state the new game leaves
+// (`set`, every other trigger clear): nothing unless the cell is a step cell (51-79) and its section makes exactly one
+// map change to a screen, through IFs that state decides. `sets` holds the triggers set at the change.
+std::optional<NewGameOpening> findNewGameOpening(const NewGameTriggers& newGame, std::uint8_t spawnCell,
+                                                 const ScriptLookup& lookup);
 
 // The raised triggers of the two partners a new game may start with (main.c: main raises one of them by pstat 0xfe
 // before it runs the new-game section; script_common.c: setDigimonRaised sets trigger 0x200 + its id).
@@ -87,7 +111,8 @@ using MapName = std::function<std::optional<std::string>(std::uint16_t map)>;
 // (`source`). The lookup gives the offsets of the sources.
 core::YamlNode scriptWarpsToYaml(const ScriptWarps& warps, const ScriptLookup& lookup, const MapName& mapName);
 
-// data/new_game_story (content/schemas/new_game_story.schema.json): the map, its script and the triggers set.
+// data/new_game_story (content/schemas/new_game_story.schema.json): the map, its script, the triggers set and the
+// opening, when there is one.
 core::YamlNode newGameTriggersToYaml(const NewGameTriggers& triggers, const MapName& mapName);
 
 } // namespace dwe::formats::script

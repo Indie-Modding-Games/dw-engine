@@ -116,6 +116,15 @@ TEST_CASE("the user's disc: the base pack the extractor writes mounts, validates
     for (const std::string_view document : {"data/fishing", "data/stadium", "data/versus", "data/training"}) {
         CHECK(has(document));
     }
+    // A new game spawns on a step cell of its first map that runs the opening at once (map.c: initializeMap, tamer.c:
+    // checkMapInteraction): data/new_game_story keeps where it goes and what it sets.
+    const auto story = std::ranges::find(run->outputs, "data/new_game_story",
+                                         [](const OutputFile& output) { return output.id.str(); });
+    REQUIRE(story != run->outputs.end());
+    const std::string_view storyYaml{reinterpret_cast<const char*>(story->bytes.data()), story->bytes.size()};
+    CHECK_MESSAGE(storyYaml.contains("opening:\n  exit: 9\n  section: 54\n  to:\n    map: topn01\n    exit: 9\n"
+                                     "  sets:\n  - 54\n  - 55\n  - 75\n"),
+                  storyYaml);
     // Every table document matches its schema.
     for (const OutputFile& output : run->outputs) {
         const std::string id = output.id.str();

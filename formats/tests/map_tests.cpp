@@ -245,6 +245,34 @@ TEST_CASE("a map path follows the folder of its id") {
     CHECK(mapFilePath(149, "ABC", ".TFS") == "\\MAP\\MAP10\\ABC.TFS");
 }
 
+TEST_CASE("the cell under an exit's spawn is the one the game reads the player on") {
+    using dwe::formats::map::CollisionSize;
+    dwe::formats::map::MapFile map;
+    map.collision.assign(CollisionSize * CollisionSize, 0);
+    const auto put = [&](std::size_t column, std::size_t row, std::uint8_t value) {
+        map.collision.at((row * CollisionSize) + column) = value;
+    };
+    constexpr std::uint8_t Step = 54;
+    constexpr std::uint8_t Other = 66;
+    constexpr std::uint8_t Corner = 70;
+    // Exit 9 at (266, -2130): column 2 + 50, row 50 + 21.
+    map.entities.warps.spawnX.at(9) = 266;
+    map.entities.warps.spawnZ.at(9) = -2130;
+    put(52, 71, Step);
+    // Exit 0 at (-50, 50): one less on both axes than C's division gives, so column 49 and row 49.
+    map.entities.warps.spawnX.at(0) = -50;
+    map.entities.warps.spawnZ.at(0) = 50;
+    put(49, 49, Other);
+    put(50, 50, Corner);
+    CHECK(dwe::formats::map::collisionUnderSpawn(map, 9) == Step);
+    CHECK(dwe::formats::map::collisionUnderSpawn(map, 0) == Other);
+    // An exit at the origin reads cell (50, 50); one past the ten, or a spawn off the grid, reads nothing.
+    CHECK(dwe::formats::map::collisionUnderSpawn(map, 1) == Corner);
+    CHECK_FALSE(dwe::formats::map::collisionUnderSpawn(map, 10).has_value());
+    map.entities.warps.spawnX.at(2) = 6000;
+    CHECK_FALSE(dwe::formats::map::collisionUnderSpawn(map, 2).has_value());
+}
+
 TEST_CASE("a TFS file is read and laid out on the grid once per palette") {
     const auto tfs = readTfsFile(makeTfs(3, 1));
     REQUIRE_MESSAGE(tfs.has_value(), tfs.error().message);

@@ -224,6 +224,19 @@ std::string replaceExtension(std::string_view path, std::string_view extension) 
 
 } // namespace
 
+core::Result<formats::map::MapFile> readMapOf(const Disc& disc, std::size_t mapId) {
+    const GameTables* tables = disc.tables();
+    if (tables == nullptr || mapId >= tables->tables.mapEntries.size() ||
+        tables->tables.mapEntries[mapId].filename.empty()) {
+        return core::fail(std::format("no MAP_ENTRIES record {} names a map file", mapId));
+    }
+    auto loaded = loadMap(disc, mapVolumePath(mapId, tables->tables.mapEntries[mapId].filename, MapExtension));
+    if (!loaded) {
+        return std::unexpected{loaded.error()};
+    }
+    return std::move(loaded->map);
+}
+
 bool handlesMapFile(std::string_view path) {
     return isMapPath(path, MapExtension);
 }

@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -269,14 +270,14 @@ TEST_CASE("the vanilla policy never takes a warp behind another test, a choice o
 
 TEST_CASE("a new game's triggers are those its story sets; the rest are clear only when its paths agree") {
     const dwe::assets::NewGameStory agreed{
-        .map = "a", .script = 1, .triggersSet = {3, 9}, .agreed = true, .triggersUnknown = {}};
-    const TriggerState known = newGameTriggers(agreed);
+        .map = "a", .script = 1, .triggersSet = {3, 9}, .agreed = true, .triggersUnknown = {}, .opening = {}};
+    const TriggerState known = newGameTriggers(agreed, "a", 1);
     CHECK(known(3) == std::optional{true});
     CHECK(known(9) == std::optional{true});
     CHECK(known(4) == std::optional{false});
     dwe::assets::NewGameStory parted = agreed;
     parted.agreed = false;
-    const TriggerState shared = newGameTriggers(parted);
+    const TriggerState shared = newGameTriggers(parted, "a", 1);
     CHECK(shared(3) == std::optional{true});
     CHECK_FALSE(shared(4).has_value());
     // A warp behind a trigger only some of the paths set is taken under the vanilla policy, and named.
@@ -293,12 +294,52 @@ TEST_CASE("the triggers the game code may set before a new game are not known ei
     REQUIRE(story.has_value());
     CHECK(story->triggersSet == std::vector<std::int32_t>{3, 9});
     CHECK(story->triggersUnknown == std::vector<std::int32_t>{0x203, 0x211});
-    const TriggerState known = newGameTriggers(*story);
+    const TriggerState known = newGameTriggers(*story, "a", 1);
     CHECK(known(3) == std::optional{true});
     CHECK(known(4) == std::optional{false});
     CHECK_FALSE(known(0x203).has_value());
     CHECK_FALSE(known(0x211).has_value());
     CHECK_FALSE(dwe::assets::parseNewGameStory("map: a\nscript: 1\ntriggers_set: []\ntriggers_unknown: [800]\n"));
+}
+
+TEST_CASE("a start that skips the new game's opening sets what the opening sets") {
+    const auto story = dwe::assets::parseNewGameStory("map: town\nscript: 1\ntriggers_set: [3]\n"
+                                                      "opening:\n  exit: 9\n  section: 54\n"
+                                                      "  to: {map: opening, exit: 9}\n  sets: [75, 54, 55]\n");
+    if (!story || !story->opening) {
+        FAIL("the story or its opening does not read");
+        return;
+    }
+    const dwe::assets::NewGameOpening& opening = *story->opening;
+    CHECK(opening.exit == 9);
+    CHECK(opening.section == 54);
+    CHECK(opening.toMap == std::optional<std::string>{"opening"});
+    CHECK_FALSE(opening.toScreen.has_value());
+    CHECK(opening.toExit == 9);
+    CHECK(opening.sets == std::vector<std::int32_t>{54, 55, 75});
+    // Started elsewhere, the opening never ran: the state is the one it leaves.
+    for (const auto& [map, exit] : {std::pair{"town", 1}, std::pair{"field", 9}}) {
+        CAPTURE(map);
+        CAPTURE(exit);
+        const TriggerState skipped = newGameTriggers(*story, map, exit);
+        CHECK(skipped(3) == std::optional{true});
+        CHECK(skipped(54) == std::optional{true});
+        CHECK(skipped(55) == std::optional{true});
+        CHECK(skipped(75) == std::optional{true});
+        CHECK(skipped(4) == std::optional{false});
+    }
+    // Started on the opening's spawn, the opening is still ahead.
+    const TriggerState ahead = newGameTriggers(*story, "town", 9);
+    CHECK(ahead(3) == std::optional{true});
+    CHECK(ahead(54) == std::optional{false});
+    CHECK(ahead(75) == std::optional{false});
+
+    CHECK_FALSE(dwe::assets::parseNewGameStory("map: town\nscript: 1\ntriggers_set: []\nopening:\n  exit: 9\n"
+                                               "  section: 54\n  to: {exit: 9}\n  sets: []\n"));
+    CHECK_FALSE(dwe::assets::parseNewGameStory("map: town\nscript: 1\ntriggers_set: []\nopening:\n  exit: 9\n"
+                                               "  section: 54\n  to: {map: a, screen: 3, exit: 9}\n  sets: []\n"));
+    CHECK_FALSE(dwe::assets::parseNewGameStory("map: town\nscript: 1\ntriggers_set: []\nopening:\n  exit: 9\n"
+                                               "  section: 54\n  to: {map: a, exit: 9}\n  sets: [800]\n"));
 }
 
 TEST_CASE("after a recursion the walk cut, a test of a trigger the state knows is unknown, for either polarity") {

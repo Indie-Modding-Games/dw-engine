@@ -142,12 +142,15 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     if (!story) {
         return core::fail(std::format("data/new_game_story: {}", story.error().message));
     }
+    const std::string startMap = desc.startMap.value_or(warps->startMap);
+    const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
     // Until the story is kept (StoryState), the triggers stay as a new game leaves them: every one clear but those
-    // data/new_game_story lists as set (unknown if its paths do not agree) and those it lists as unknown. Without that
-    // document no trigger is known, and no script warp is taken.
+    // data/new_game_story lists as set (unknown if its paths do not agree) and those it lists as unknown. A start
+    // other than the opening's spawn skips the opening and sets what it sets: field/warps starts after it. Without
+    // that document no trigger is known, and no script warp is taken.
     game::field::TriggerState triggers;
     if (*story) {
-        triggers = game::field::newGameTriggers(**story);
+        triggers = game::field::newGameTriggers(**story, startMap, startExit);
     }
     scene->field_ =
         std::make_unique<game::field::Field>(scene->world_, *rules, std::move(*scriptWarps), std::move(triggers));
@@ -169,8 +172,6 @@ FieldScene::create(render::Renderer& renderer, const assets::VirtualFileSystem& 
     scene->partnerActor_ = std::move(*partner);
     scene->partnerMover_ = rules->partner.mover;
 
-    const std::string startMap = desc.startMap.value_or(warps->startMap);
-    const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
     if (auto entered = scene->enterMap(startMap, startExit, desc.startMap ? desc.startAt : std::nullopt); !entered) {
         return std::unexpected{entered.error()};
     }
