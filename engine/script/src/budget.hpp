@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/script/budget_stop.hpp>
+
 #include <lua.hpp>
 
 #include <chrono>
@@ -8,8 +10,8 @@
 
 namespace dwe::script::detail {
 
-// What the running call may still spend: instructions, checked by a Lua hook every few hundred instructions, and
-// time. The state's extra space points to it, so the coroutines a script creates share it.
+// What the running call may still spend: instructions, counted by a Lua count hook on each thread, and time, a loose
+// ceiling read at the same checks. The state's extra space points to it, so the coroutines a script creates share it.
 struct Budget {
     lua_State* state = nullptr;
     std::uint64_t perCall = 0;
@@ -28,6 +30,8 @@ struct Budget {
     // as instructions spent.
     bool stopped = false;
     std::int64_t leftAtStop = 0;
+    // Why the latest stop of the outermost call happened; a nested call that goes on after its stop keeps it.
+    BudgetStop lastStop = BudgetStop::None;
 
     // Points the state's extra space at this budget. Coroutines copy it when they are created.
     void attach();
@@ -46,11 +50,15 @@ struct Budget {
 
     // Charges the bytes the allocator reserves, so C functions that build big strings or tables (string.rep,
     // table.concat, `..`) pay for them. It never raises, since the allocator may run anywhere: when the budget runs
-    // out, the next instruction of the running thread stops the script.
+    // out, the next instruction of the running thread stops the script. Only `running` is armed, and only
+    // coroutine.resume sets it to a coroutine; reset() and a nested CallScope (a hook's handlers) point it back at the
+    // main thread. A coroutine resumed from C++ (the story runner, S2) runs while `running` is the main thread, so it
+    // stops at its own next count check instead, at most InstructionCheckInterval instructions later.
     void chargeAllocation(std::size_t bytes);
 
     // Sets the hook of a thread about to run: every instruction stops it if the budget ran out, else the regular check
-    // of that thread (a coroutine's is shorter, see CoroutineCheckInterval).
+    // of that thread (a coroutine's is shorter, see CoroutineCheckInterval). The hook belongs to the thread and keeps
+    // its count across yields and resumes; each check charges the count it was armed with.
     void arm(lua_State* thread) const;
 
     // The instructions between two checks of a thread's budget.

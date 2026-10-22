@@ -21,6 +21,7 @@ using script::testing::LogCapture;
 using script::testing::makeVm;
 using script::testing::SmallLimits;
 using script::testing::TestDeadline;
+using script::testing::UnreachableInstructions;
 
 namespace {
 
@@ -108,30 +109,33 @@ TEST_CASE("a pack's hook handlers share a budget per fired event and one per fra
 }
 
 TEST_CASE("a hot handler cannot push one frame's script time over its pack's frame budget") {
+    constexpr auto FireTime = std::chrono::milliseconds{20};
     constexpr auto FrameTime = std::chrono::milliseconds{40};
-    constexpr script::ScriptLimits Limits{.instructionsPerCall = 100'000'000'000,
+    constexpr script::ScriptLimits Limits{.instructionsPerCall = UnreachableInstructions,
                                           .callDeadline = TestDeadline,
-                                          .instructionsPerHook = 100'000'000'000,
-                                          .hookDeadline = std::chrono::milliseconds{20},
-                                          .hookInstructionsPerFrame = 100'000'000'000,
+                                          .instructionsPerHook = UnreachableInstructions,
+                                          .hookDeadline = FireTime,
+                                          .hookInstructionsPerFrame = UnreachableInstructions,
                                           .hookTimePerFrame = FrameTime};
-    // Twenty fires of 20 ms would take 400 ms; the frame budget stops them after 40, plus a margin for a loaded
-    // machine.
+    // A fire that runs takes its 20 ms or what the frame has left, never less, so the frame's 40 ms let two fires run
+    // at most, however loaded the machine is: the rest are skipped. Counting fires, not timing them, keeps the test
+    // free of the load.
     constexpr int Fires = 20;
-    constexpr auto MaxFrameTime = (2 * FrameTime) + std::chrono::milliseconds{100};
+    constexpr std::size_t MostFiresRun = FrameTime / FireTime;
     auto vm = makeVm(Limits);
     REQUIRE(vm->hooks().declare("test.tick"));
     auto hot = environmentOf(*vm, "hot_mod");
     REQUIRE(hot.run("hooks.on('test.tick', function() while true do end end)", "=hot_mod"));
+    std::size_t run = 0;
     std::size_t skipped = 0;
-    const auto started = std::chrono::steady_clock::now();
     for (int fire = 0; fire < Fires; ++fire) {
         const auto report = vm->hooks().fire("test.tick");
         REQUIRE(report.has_value());
+        run += report->handlersRun;
         skipped += report->handlersSkipped;
     }
-    CHECK(std::chrono::steady_clock::now() - started < MaxFrameTime);
-    CHECK(skipped > 0);
+    CHECK(run <= MostFiresRun);
+    CHECK(run + skipped == Fires);
 }
 
 TEST_CASE("a pack cannot flood the log: its lines have a budget of bytes, and a repeated error is counted") {

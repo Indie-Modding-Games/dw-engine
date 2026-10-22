@@ -17,13 +17,15 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
 namespace dwe::script::testing {
 
-// A call deadline no test reaches unless it means to, even in a sanitized build on a loaded machine: the tests of
-// other limits must not stop on time instead.
+// A time ceiling no test reaches unless it means to, even in a sanitized build on a starved machine: the tests of
+// other limits must not stop on time instead. The tests check why a script stopped (BudgetStop), never how long it
+// took, so a loaded machine cannot fail them; this only bounds how long a broken charge makes a test run.
 inline constexpr std::chrono::milliseconds TestDeadline{60'000};
 
 // The engine's limits, with the test deadline for calls and hooks.
@@ -37,18 +39,18 @@ inline constexpr ScriptLimits SmallLimits{.memoryBytes = std::size_t{16} * 1024 
                                           .hookDeadline = TestDeadline,
                                           .hookTimePerFrame = TestDeadline};
 
-// A VM whose calls stop on time only: the instruction budget is out of reach.
-inline constexpr ScriptLimits ShortDeadline{.instructionsPerCall = 100'000'000'000,
+// Instructions no call of a test runs, so that only a time ceiling stops it.
+inline constexpr std::uint64_t UnreachableInstructions = 100'000'000'000;
+
+// A VM whose calls stop at the time ceiling only.
+inline constexpr ScriptLimits ShortDeadline{.instructionsPerCall = UnreachableInstructions,
                                             .callDeadline = std::chrono::milliseconds{200}};
 
-// How late a call of ShortDeadline may stop: twice its deadline, plus room for a machine loaded by parallel builds
-// and tests. A C function that the budget did not charge would run for seconds between two checks of the clock; the
-// tests that must tell a charge from none use the instruction budget instead (SmallLimits and QuickStop).
-inline constexpr std::chrono::milliseconds DeadlineStop =
-    (2 * ShortDeadline.callDeadline) + std::chrono::milliseconds{1000};
-
-// Far more than stopping a runaway script takes, even in a sanitized debug build, and far less than it would run.
-inline constexpr std::chrono::milliseconds QuickStop{5000};
+// How late a call of ShortDeadline may stop at its ceiling, so a clock check that went rare fails a test. Deliberately
+// loose: the ceiling's latency is the time between two budget checks, and with 18 busy spinners on 12 cores (load
+// about 40) a sanitized build was seen stopping 1.5 s after starting; a check made a thousand times rarer would take
+// minutes. Never tighten this into a speed test: the stop's cause is what the tests check.
+inline constexpr std::chrono::milliseconds CeilingStopBound{10'000};
 
 inline std::unique_ptr<ScriptVm> makeVm(const ScriptLimits& limits = TestLimits) {
     auto vm = ScriptVm::create(limits);
@@ -171,12 +173,34 @@ inline std::vector<std::string>& publishReport(ScriptVm& vm) {
     return reported;
 }
 
-// Runs a script that the budget must stop, and how long that took.
-inline std::chrono::milliseconds stopTime(ScriptVm& vm, std::string_view source) {
-    const auto start = std::chrono::steady_clock::now();
-    const std::string error = errorOf(vm.runString(source, "test"));
+// What a script that the budget stopped left: its error and the cause of the stop.
+struct BudgetStopped {
+    std::string error;
+    BudgetStop cause = BudgetStop::None;
+};
+
+// Runs a script that the budget must stop.
+inline BudgetStopped runStopped(ScriptVm& vm, std::string_view source) {
+    std::string error = errorOf(vm.runString(source, "test"));
     CHECK_MESSAGE(error.contains("ran too long"), error);
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+    return {.error = std::move(error), .cause = vm.lastBudgetStop()};
+}
+
+// Runs a script that the budget must stop, and why it stopped. A test that checks a charge expects
+// BudgetStop::Instructions: without the charge the script would run on to TestDeadline and stop at the ceiling.
+inline BudgetStop stopCause(ScriptVm& vm, std::string_view source) {
+    return runStopped(vm, source).cause;
+}
+
+// Runs a script that only the time ceiling can stop, checks that it stopped there within CeilingStopBound, and gives
+// its error.
+inline std::string checkCeilingStop(ScriptVm& vm, std::string_view source) {
+    CAPTURE(source);
+    const auto start = std::chrono::steady_clock::now();
+    BudgetStopped stopped = runStopped(vm, source);
+    CHECK(stopped.cause == BudgetStop::TimeCeiling);
+    CHECK(std::chrono::steady_clock::now() - start < CeilingStopBound);
+    return std::move(stopped.error);
 }
 
 } // namespace dwe::script::testing

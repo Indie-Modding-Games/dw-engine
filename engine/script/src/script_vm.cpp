@@ -313,6 +313,10 @@ core::Result<void> ScriptVm::runString(std::string_view source, std::string_view
     return runWithGlobals(*vm_, source, name);
 }
 
+BudgetStop ScriptVm::lastBudgetStop() const {
+    return vm_->budget.lastStop;
+}
+
 core::Result<void> ScriptVm::runAsset(const assets::VirtualFileSystem& files, const assets::AssetId& id) {
     auto script = detail::readEngineScriptAsset(files, id);
     if (!script) {

@@ -26,7 +26,8 @@ VmState::VmState(const ScriptLimits& limits)
              .chargesAllocations = false,
              .linesPrinted = 0,
              .stopped = false,
-             .leftAtStop = 0},
+             .leftAtStop = 0,
+             .lastStop = BudgetStop::None},
       lua{sol::default_at_panic, allocateLuaMemory, &memory},
       hookBudget{.instructions = static_cast<std::int64_t>(limits.instructionsPerHook), .time = limits.hookDeadline},
       hookFrameBudget{.instructions = static_cast<std::int64_t>(limits.hookInstructionsPerFrame),
@@ -96,6 +97,8 @@ CallScope::~CallScope() {
         current.deadline = outer_->deadline;
         // Only this call was stopped: the outer one goes on.
         current.stopped = false;
+        // Re-arms the thread the outer call knows as running; a coroutine resumed from C++ is not it and keeps its
+        // own count (Budget::chargeAllocation).
         current.arm(current.running);
         if (inCoroutine) {
             current.arm(current.state);

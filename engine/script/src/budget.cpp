@@ -1,5 +1,7 @@
 #include "budget.hpp"
 
+#include <string_view>
+
 #include "lua_errors.hpp"
 #include "messages.hpp"
 
@@ -8,24 +10,44 @@ namespace {
 
 void checkBudget(lua_State* state, lua_Debug* /*debug*/);
 
+// The instructions come first: a call that ran out of them and is also late stops the same way on every machine.
+BudgetStop stopCause(const Budget& budget, bool outOfTime) {
+    if (budget.left <= 0) {
+        return BudgetStop::Instructions;
+    }
+    return outOfTime ? BudgetStop::TimeCeiling : BudgetStop::None;
+}
+
+std::string_view stopReason(BudgetStop cause) {
+    return cause == BudgetStop::TimeCeiling ? messages::ReachedTimeCeiling : messages::RanOutOfInstructions;
+}
+
 // From now on every instruction fails, so a script that catches the error with pcall cannot keep running: the first
-// instruction it runs outside the pcall fails too.
-int stopScript(lua_State* state) {
+// instruction it runs outside the pcall fails too, for the reason of the first stop.
+int stopScript(lua_State* state, BudgetStop cause) {
     Budget& budget = budgetOf(state);
     if (!budget.stopped) {
         budget.stopped = true;
         budget.leftAtStop = budget.left;
+        budget.lastStop = cause;
     }
     budget.left = 0;
     lua_sethook(state, checkBudget, LUA_MASKCOUNT, 1);
-    return raiseError(state, {messages::RanTooLong});
+    return raiseError(state, {messages::RanTooLong, stopReason(budget.lastStop)});
 }
 
+// Charges the instructions the thread ran since its hook was armed or last fired: the count it was armed with, which
+// is its own (a coroutine created from C++ starts with its creator's) and survives its yields and resumes.
 void checkBudget(lua_State* state, lua_Debug* /*debug*/) {
     Budget& budget = budgetOf(state);
-    budget.left -= budget.checkInterval(state);
-    if (budget.left <= 0 || budget.pastDeadline()) {
-        stopScript(state);
+    budget.left -= lua_gethookcount(state);
+    const BudgetStop cause = stopCause(budget, budget.pastDeadline());
+    if (cause != BudgetStop::None) {
+        stopScript(state, cause);
+        return;
+    }
+    if (lua_gethookcount(state) != budget.checkInterval(state)) {
+        budget.arm(state);
     }
 }
 
@@ -50,6 +72,7 @@ void Budget::reset(std::int64_t instructions, std::chrono::steady_clock::duratio
     sinceClockCheck = 0;
     stopped = false;
     leftAtStop = 0;
+    lastStop = BudgetStop::None;
     running = state;
     linesPrinted = 0;
     arm(state);
@@ -61,6 +84,7 @@ void Budget::chargeAllocation(std::size_t bytes) {
     }
     left -= stepsForBytes(bytes);
     if (left <= 0) {
+        // A coroutine resumed from C++ is not `running`: its own count check stops it (see budget.hpp).
         arm(running);
     }
 }
@@ -90,8 +114,9 @@ void chargeBudget(lua_State* state, std::int64_t steps) {
         budget.sinceClockCheck = 0;
         outOfTime = budget.pastDeadline();
     }
-    if (budget.left <= 0 || outOfTime) {
-        stopScript(state);
+    const BudgetStop cause = stopCause(budget, outOfTime);
+    if (cause != BudgetStop::None) {
+        stopScript(state, cause);
     }
 }
 

@@ -12,12 +12,20 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   completo; las anidadas, como un script que llama a una función de la API que lanza un evento, comparten lo que
   queda. El estado de Lua solo se alcanza con `ScriptCall::lua()`: un módulo que registra su API o llama a Lua lo hace
   siempre dentro de un `ScriptCall`.
-- Límites por llamada (`ScriptLimits`): instrucciones (el hook las cuenta cada 1000, y cada llamada paga esas 1000
-  por adelantado, porque preparar el hook reinicia su cuenta) y tiempo (`callDeadline`, 1 s).
-  Lo que agota uno de los dos se para con «the script ran too long and was stopped», y una vez parado cada
-  instrucción falla, así que `pcall` no sirve para seguir. Los manejadores de `xpcall` no se ejecutan una vez parado
-  el script: Lua los llamaría con los hooks apagados. `xpcall` y las funciones que cobran por bytes llaman con
-  continuación (`lua_callk`), así que una corrutina puede hacer `coroutine.yield` dentro de `xpcall`.
+- Límites por llamada (`ScriptLimits`): instrucciones (`instructionsPerCall`, 10 millones; el hook de cuenta de Lua
+  las cuenta cada 1000, y cada llamada paga esas 1000 por adelantado, porque preparar el hook reinicia su cuenta) y un
+  techo de tiempo (`callDeadline`, 1 s). **Las instrucciones deciden** dónde se para un script desbocado: la cuenta es
+  la misma en cualquier máquina y con cualquier carga. El techo de tiempo es una red de seguridad holgada, unas diez
+  veces lo que tardan las instrucciones en una compilación de release (de 100 a 200 millones de instrucciones de Lua
+  por segundo), para el trabajo que la cuenta no ve, como comparar textos grandes. Se lee con
+  `std::chrono::steady_clock`, igual en Linux y en Windows. Lo que agota uno de los dos se para con «the script ran
+  too long and was stopped», seguido del motivo: «: it ran all the instructions of its budget» o «: it reached the
+  time ceiling of its budget». `ScriptVm::lastBudgetStop()` da el mismo motivo como `BudgetStop` (`budget_stop.hpp`:
+  `Instructions` o `TimeCeiling`) para la última llamada más externa, y los tests comprueban ese motivo, nunca cuánto
+  tardó la parada. Una vez parado, cada instrucción falla, así que `pcall` no sirve para seguir. Los manejadores de
+  `xpcall` no se ejecutan una vez parado el script: Lua los llamaría con los hooks apagados. `xpcall` y las funciones
+  que cobran por bytes llaman con continuación (`lua_callk`), así que una corrutina puede hacer `coroutine.yield`
+  dentro de `xpcall`.
 - Las funciones de C que trabajan en proporción a la longitud de sus textos pagan por bytes (64 bytes cuestan una
   instrucción): los patrones de `string.find`, `match`, `gmatch` y `gsub` (`pattern_matcher.cpp`, el mismo
   comportamiento que el de Lua, sin `goto`), `string.rep` (antes de construir el resultado), `upper`, `lower`,
@@ -27,10 +35,13 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   grandes con `..` en un bucle se para. Las corrutinas comparten el presupuesto: `coroutine.resume` y `wrap` preparan
   el hook de la corrutina antes de reanudarla. Preparar el hook reinicia su cuenta, así que una corrutina que cede
   antes de llegar a ella correría gratis: por eso su hook mira el presupuesto cada 64 instrucciones y cada
-  reanudación paga esas 64 por adelantado.
+  reanudación paga esas 64 por adelantado. El hook es de cada hilo y su cuenta sigue entre cesiones y reanudaciones;
+  cada comprobación cobra la cuenta con la que se preparó (`lua_gethookcount`). Así, una corrutina que el motor crea y
+  reanuda desde C++ (`lua_newthread` y `lua_resume` dentro de un `ScriptCall`, como hará el runner de la historia)
+  paga lo que corre aunque herede la cuenta de 1000 de su creador, y gasta el presupuesto de la llamada que la reanuda.
 - Comparar dos textos (`<`, `<=`, `==`) es trabajo de la VM y no pasa por ninguna función que se pueda cobrar por
   bytes. Es una decisión aceptada: cada comparación recorre como mucho un bloque (`largestBlockBytes`, 4 MiB), y un
-  bucle que compara textos grandes se para por el límite de tiempo de la llamada (`callDeadline`).
+  bucle que compara textos grandes se para por el techo de tiempo de la llamada (`callDeadline`).
 - Memoria: el límite total (`memoryBytes`, 64 MiB) guarda un octavo para el trabajo del propio motor fuera de las
   llamadas; cada paquete tiene su cuota (`packMemoryBytes`, 16 MiB) y ningún bloque de una llamada pasa de
   `largestBlockBytes` (4 MiB). Cada bloque lleva en una cabecera quién lo pagó, para devolvérselo al liberarlo. Un
@@ -57,6 +68,37 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   repite: se cuenta («the last error repeated N times») cuando llega otro distinto, o cada 10 s si sigue igual. Si los
   errores paran, la cuenta pendiente se escribe en el siguiente fotograma pasados esos 10 s (`beginFrame`), y toda la
   que quede al cerrar la VM, aunque el cubo del paquete esté vacío.
+
+## Presupuestos de un script, para quien hace mods
+
+> **CAMBIO DE CONTRATO (2026-10-22).** Los manejadores de eventos de un paquete tienen menos instrucciones que antes:
+> 250 000 por evento lanzado (antes 1 millón) y 500 000 por fotograma (antes 2 millones). Los techos de tiempo suben
+> a 20 ms por evento (antes 5 ms) y 40 ms por fotograma (antes 8 ms). El error de una parada añade el motivo. Las
+> llamadas (`instructionsPerCall`, 10 millones; `callDeadline`, 1 s) no cambian. Por bajar los presupuestos por
+> defecto, la versión de la API de Lua (`LuaApiVersion`) sube de 1.0.0 a **1.1.0**. Cuando exista `docs/modding/`,
+> esta sección pasa allí.
+
+Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o en bucle no cuelgue el juego:
+
+| Qué | Instrucciones de Lua | Techo de tiempo |
+|---|---|---|
+| Una llamada (cargar un script, una función de la API) | 10 000 000 | 1 s |
+| Los manejadores de tu paquete para un evento lanzado | 250 000 | 20 ms |
+| Todos los manejadores de tu paquete en un fotograma | 500 000 | 40 ms |
+
+- **Lo que para un script es la cuenta de instrucciones.** Es la misma en cualquier máquina y con cualquier carga:
+  un bucle que se para en un PC lento se para en el mismo punto en uno rápido. Las funciones de la biblioteca que
+  recorren textos o tablas grandes cobran también por lo que recorren (64 bytes, una instrucción).
+- **El reloj es solo un techo holgado**, unas diez veces lo que tardan esas instrucciones en una compilación de
+  release. Solo lo alcanza el trabajo que la cuenta no ve, como comparar textos grandes con `<` o `==` en un bucle, o
+  una máquina muy cargada. No cuentes con él: un manejador que necesita más de 250 000 instrucciones debe repartir el
+  trabajo entre fotogramas.
+- Cuando se agota, el script se para con un error que dice el motivo:
+  - `the script ran too long and was stopped: it ran all the instructions of its budget`: gastó sus instrucciones;
+  - `the script ran too long and was stopped: it reached the time ceiling of its budget`: llegó al techo de tiempo.
+- Una vez parado, cada instrucción falla: `pcall` no sirve para seguir. Si un paquete agota el presupuesto de un evento
+  o del fotograma, el resto de sus manejadores se salta hasta el siguiente, y el log lo dice.
+- Las corrutinas gastan del presupuesto de la llamada que las reanuda, también entre cesiones.
 
 ## Versión de la API
 
@@ -120,8 +162,9 @@ vm.hooks().fire("field.map_entered", arguments);
 Un mod se suscribe con `hooks.on("field.map_entered", function(map) ... end)`. Los manejadores se ejecutan en el
 orden de los paquetes y, dentro de cada uno, en el orden en que se registraron. Los manejadores de un paquete
 comparten una llamada, con su cuota de memoria y un presupuesto menor que el de una llamada: `instructionsPerHook`
-(1 millón) y `hookDeadline` (5 ms) por evento lanzado. Además, todos los manejadores de un paquete comparten un
-presupuesto por fotograma, `hookInstructionsPerFrame` (2 millones) y `hookTimePerFrame` (8 ms); el módulo que lleva
+(250 000, unos 2 ms en release) y el techo `hookDeadline` (20 ms) por evento lanzado. Además, todos los manejadores de
+un paquete comparten un presupuesto por fotograma, `hookInstructionsPerFrame` (500 000) y el techo `hookTimePerFrame`
+(40 ms); como en las llamadas, las instrucciones paran primero y el reloj es solo el techo holgado. El módulo que lleva
 los fotogramas llama a `vm.hooks().beginFrame()` una vez por fotograma para rellenarlo. Cuando un paquete agota el de
 un evento o el del fotograma, el resto de sus manejadores se salta, y el log lo dice como mucho una vez cada 10 s.
 Si `fire` se llama desde dentro de una llamada (un script que llama a una función de la API que lanza un evento),

@@ -16,18 +16,19 @@
 using namespace dwe;
 using script::ApiCall;
 using script::ApiValue;
-using script::testing::DeadlineStop;
+using script::BudgetStop;
+using script::testing::checkCeilingStop;
 using script::testing::environmentOf;
 using script::testing::errorOf;
 using script::testing::LogCapture;
 using script::testing::makeVm;
 using script::testing::MemoryPacks;
 using script::testing::publishReport;
-using script::testing::QuickStop;
 using script::testing::ShortDeadline;
 using script::testing::SmallLimits;
-using script::testing::stopTime;
+using script::testing::stopCause;
 using script::testing::TestDeadline;
+using script::testing::UnreachableInstructions;
 
 namespace {
 
@@ -80,42 +81,42 @@ TEST_CASE("string.rep charges for its result before building it") {
                     " test.report(('ab'):rep(3, ','))",
                     "=my_mod"));
     CHECK(reported == std::vector<std::string>{"0", "3", "ab,ab,ab"});
-    CHECK(stopTime(*vm, "local _ = string.rep('x', 200000000)") < QuickStop);
+    CHECK(stopCause(*vm, "local _ = string.rep('x', 200000000)") == BudgetStop::Instructions);
     CHECK(errorOf(vm->runString("local _ = ('x'):rep(math.maxinteger, 'y')", "test")).contains("too large"));
 }
 
-TEST_CASE("work that grows with the length of a text stops on time") {
+TEST_CASE("with the instructions out of reach, work that grows with the length of a text stops at the time ceiling") {
     auto vm = makeVm(ShortDeadline);
     const std::string bigText = "local big = ('x'):rep(3 << 20) ";
-    CHECK(stopTime(*vm, bigText + "while true do utf8.len(big) end") < DeadlineStop);
-    CHECK(stopTime(*vm, bigText + "local other = ('x'):rep((3 << 20) - 1) .. 'y'"
-                                  " while true do local _ = big < other end") < DeadlineStop);
-    CHECK(stopTime(*vm, bigText + "local other = ('x'):rep((3 << 20) - 1) .. 'y'"
-                                  " while true do local _ = big == other end") < DeadlineStop);
-    CHECK(stopTime(*vm, bigText + "while true do local _ = big:upper() end") < DeadlineStop);
-    CHECK(stopTime(*vm, bigText + "while true do local _ = utf8.offset(big, #big) end") < DeadlineStop);
-    CHECK(stopTime(*vm, "local big = 'a' .. ('\\x80'):rep(3 << 20) local step = utf8.codes(big, true)"
-                        " while true do step(big, 1) end") < DeadlineStop);
-    CHECK(stopTime(*vm, "local texts = {} for i = 1, 200 do texts[i] = ('x'):rep(1 << 16) end"
-                        " while true do table.sort(texts) end") < DeadlineStop);
+    checkCeilingStop(*vm, bigText + "while true do utf8.len(big) end");
+    checkCeilingStop(*vm, bigText + "local other = ('x'):rep((3 << 20) - 1) .. 'y'"
+                                    " while true do local _ = big < other end");
+    checkCeilingStop(*vm, bigText + "local other = ('x'):rep((3 << 20) - 1) .. 'y'"
+                                    " while true do local _ = big == other end");
+    checkCeilingStop(*vm, bigText + "while true do local _ = big:upper() end");
+    checkCeilingStop(*vm, bigText + "while true do local _ = utf8.offset(big, #big) end");
+    checkCeilingStop(*vm, "local big = 'a' .. ('\\x80'):rep(3 << 20) local step = utf8.codes(big, true)"
+                          " while true do step(big, 1) end");
+    checkCeilingStop(*vm, "local texts = {} for i = 1, 200 do texts[i] = ('x'):rep(1 << 16) end"
+                          " while true do table.sort(texts) end");
 }
 
 TEST_CASE("utf8.len, utf8.offset and the steps of utf8.codes charge for the bytes they go over") {
     // A few Lua instructions per call: only the charge for the bytes stops these loops within the instruction budget.
     auto vm = makeVm(SmallLimits);
-    CHECK(stopTime(*vm, "local big = ('x'):rep(3 << 20) while true do utf8.len(big) end") < QuickStop);
-    CHECK(stopTime(*vm, "local big = ('x'):rep(3 << 20) while true do local _ = utf8.offset(big, #big) end") <
-          QuickStop);
-    CHECK(stopTime(*vm, "local big = 'a' .. ('\\x80'):rep(3 << 20) local step = utf8.codes(big, true)"
-                        " while true do step(big, 1) end") < QuickStop);
+    CHECK(stopCause(*vm, "local big = ('x'):rep(3 << 20) while true do utf8.len(big) end") == BudgetStop::Instructions);
+    CHECK(stopCause(*vm, "local big = ('x'):rep(3 << 20) while true do local _ = utf8.offset(big, #big) end") ==
+          BudgetStop::Instructions);
+    CHECK(stopCause(*vm, "local big = 'a' .. ('\\x80'):rep(3 << 20) local step = utf8.codes(big, true)"
+                         " while true do step(big, 1) end") == BudgetStop::Instructions);
 }
 
 TEST_CASE("string.pack and string.unpack charge for the bytes they write and read") {
     // A few Lua instructions per call: only the charge for the bytes stops these loops within the instruction budget.
     auto vm = makeVm(SmallLimits);
-    CHECK(stopTime(*vm, "while true do local _ = string.pack('c3000000', '') end") < QuickStop);
-    CHECK(stopTime(*vm, "local big = ('x'):rep(3 << 20) local format = 'c' .. #big"
-                        " while true do local _ = string.unpack(format, big) end") < QuickStop);
+    CHECK(stopCause(*vm, "while true do local _ = string.pack('c3000000', '') end") == BudgetStop::Instructions);
+    CHECK(stopCause(*vm, "local big = ('x'):rep(3 << 20) local format = 'c' .. #big"
+                         " while true do local _ = string.unpack(format, big) end") == BudgetStop::Instructions);
     CHECK(errorOf(vm->runString("local _ = string.pack('c5000000', '')", "test")).contains("not enough memory"));
 }
 
@@ -235,7 +236,7 @@ TEST_CASE("a hook fired inside a call gets its own smaller budget, and the call 
                                               .callDeadline = TestDeadline,
                                               .instructionsPerHook = 100'000,
                                               .hookDeadline = TestDeadline,
-                                              .hookInstructionsPerFrame = 100'000'000'000,
+                                              .hookInstructionsPerFrame = UnreachableInstructions,
                                               .hookTimePerFrame = TestDeadline};
         auto vm = makeVm(Limits);
         const ClickTotals& totals = publishEndlessClick(*vm);
@@ -249,11 +250,11 @@ TEST_CASE("a hook fired inside a call gets its own smaller budget, and the call 
     }
     SUBCASE("the hook's deadline, when it is the earlier one") {
         // The handler stops after its 50 ms; the call, with a minute, goes on.
-        constexpr script::ScriptLimits Limits{.instructionsPerCall = 100'000'000'000,
+        constexpr script::ScriptLimits Limits{.instructionsPerCall = UnreachableInstructions,
                                               .callDeadline = TestDeadline,
-                                              .instructionsPerHook = 100'000'000'000,
+                                              .instructionsPerHook = UnreachableInstructions,
                                               .hookDeadline = std::chrono::milliseconds{50},
-                                              .hookInstructionsPerFrame = 100'000'000'000,
+                                              .hookInstructionsPerFrame = UnreachableInstructions,
                                               .hookTimePerFrame = TestDeadline};
         auto vm = makeVm(Limits);
         const ClickTotals& totals = publishEndlessClick(*vm);
@@ -263,16 +264,14 @@ TEST_CASE("a hook fired inside a call gets its own smaller budget, and the call 
     }
     SUBCASE("the call's deadline, when it is the earlier one") {
         // The hook could run for a minute, but the call has 200 ms: both stop then.
-        auto vm = makeVm({.instructionsPerCall = 100'000'000'000,
+        auto vm = makeVm({.instructionsPerCall = UnreachableInstructions,
                           .callDeadline = ShortDeadline.callDeadline,
-                          .instructionsPerHook = 100'000'000'000,
+                          .instructionsPerHook = UnreachableInstructions,
                           .hookDeadline = TestDeadline,
-                          .hookInstructionsPerFrame = 100'000'000'000,
+                          .hookInstructionsPerFrame = UnreachableInstructions,
                           .hookTimePerFrame = TestDeadline});
         const ClickTotals& totals = publishEndlessClick(*vm);
-        const auto started = std::chrono::steady_clock::now();
-        CHECK(errorOf(vm->runString("ui.click() while true do end", "test")).contains("ran too long"));
-        CHECK(std::chrono::steady_clock::now() - started < DeadlineStop);
+        checkCeilingStop(*vm, "ui.click() while true do end");
         CHECK(totals.failed == 1);
     }
 }
@@ -300,7 +299,7 @@ TEST_CASE("a hook that runs out inside a coroutine leaves the main thread's budg
                                           .callDeadline = TestDeadline,
                                           .instructionsPerHook = 100'000,
                                           .hookDeadline = TestDeadline,
-                                          .hookInstructionsPerFrame = 100'000'000'000,
+                                          .hookInstructionsPerFrame = UnreachableInstructions,
                                           .hookTimePerFrame = TestDeadline};
     auto vm = makeVm(Limits);
     const ClickTotals& totals = publishEndlessClick(*vm);

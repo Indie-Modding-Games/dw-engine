@@ -8,6 +8,9 @@ namespace dwe::script::messages {
 
 // The sandbox (script_vm.cpp, budget.cpp, print_to_log.cpp).
 inline constexpr std::string_view RanTooLong = "the script ran too long and was stopped";
+// Why it was stopped, after RanTooLong.
+inline constexpr std::string_view RanOutOfInstructions = ": it ran all the instructions of its budget";
+inline constexpr std::string_view ReachedTimeCeiling = ": it reached the time ceiling of its budget";
 inline constexpr std::string_view ErrorNotText = "the error is not a string";
 inline constexpr std::string_view GarbageOption = "collectgarbage('";
 inline constexpr std::string_view GarbageOptionEnd = "') is not available to scripts";

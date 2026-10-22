@@ -11,11 +11,11 @@
 #include "script_test_support.hpp"
 
 using namespace dwe;
+using script::BudgetStop;
 using script::testing::errorOf;
 using script::testing::makeVm;
-using script::testing::QuickStop;
 using script::testing::SmallLimits;
-using script::testing::stopTime;
+using script::testing::stopCause;
 
 namespace {
 
@@ -161,13 +161,14 @@ TEST_CASE("patterns that backtrack for too long are stopped by the budget") {
     });
     for (const std::string_view source : sources) {
         CAPTURE(source);
-        CHECK(stopTime(*vm, source) < QuickStop);
+        CHECK(stopCause(*vm, source) == BudgetStop::Instructions);
     }
 }
 
 TEST_CASE("strings' methods use the budgeted patterns") {
     auto vm = makeVm(SmallLimits);
-    CHECK(stopTime(*vm, R"lua(local s = ("a"):rep(5000) s:find(("a*"):rep(12) .. "b"))lua") < QuickStop);
+    CHECK(stopCause(*vm, R"lua(local s = ("a"):rep(5000) s:find(("a*"):rep(12) .. "b"))lua") ==
+          BudgetStop::Instructions);
 }
 
 TEST_CASE("after a stopped pattern, the next call has a full budget") {

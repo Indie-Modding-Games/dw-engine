@@ -127,7 +127,7 @@ TEST_CASE("a pack written for another major version of the API gets no environme
     auto pack = packNamed("old_mod");
     pack.api = assets::ApiRequirement{.major = 0, .minimumMinor = std::nullopt};
     CHECK(errorOf(vm->modEnvironment(pack)) ==
-          "pack 'old_mod': the scripts need the Lua API 0.x, and this engine has 1.0.0");
+          "pack 'old_mod': the scripts need the Lua API 0.x, and this engine has 1.1.0");
     pack.api = assets::ApiRequirement{.major = 1, .minimumMinor = std::nullopt};
     CHECK(vm->modEnvironment(pack).has_value());
 }

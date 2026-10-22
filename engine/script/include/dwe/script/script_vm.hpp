@@ -5,6 +5,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/script/api_registry.hpp>
+#include <dwe/script/budget_stop.hpp>
 #include <dwe/script/hook_registry.hpp>
 #include <dwe/script/mod_environment.hpp>
 
@@ -39,7 +40,9 @@ struct VmState;
 inline constexpr std::size_t MebiByte = std::size_t{1024} * 1024;
 
 // What a script may use, so a broken or hostile mod cannot hang or exhaust the game. A call that runs out of
-// instructions or time is stopped with an error; one that runs out of memory gets a memory error.
+// instructions or time is stopped with an error; one that runs out of memory gets a memory error. The instructions
+// decide where a runaway script stops, the same on every machine; each time limit is a loose ceiling, for the work the
+// instruction count does not see (BudgetStop).
 struct ScriptLimits {
     // All the memory of the Lua state. An eighth of it is kept for the engine's own work outside script calls.
     std::size_t memoryBytes = 64 * MebiByte;
@@ -48,18 +51,20 @@ struct ScriptLimits {
     // The largest single block (a string, a table's array) a script call may reserve. It keeps short the C work of
     // one operation the instruction hook cannot interrupt, such as comparing two strings.
     std::size_t largestBlockBytes = 4 * MebiByte;
+    // Each time ceiling is about ten times what its instructions take in a release build (100 to 200 million Lua
+    // instructions a second), so that the instructions, not the clock, stop a runaway script.
     // Lua instructions one call may run before it is stopped. C library functions charge for the bytes they handle.
     std::uint64_t instructionsPerCall = 10'000'000;
-    // How long one call may run, whatever it spends its time on.
+    // The time ceiling of one call, whatever it spends its time on.
     std::chrono::milliseconds callDeadline{1000};
     // What the handlers of one pack may spend on one fired event (HookRegistry::fire), together: hooks run inside
     // the frame, so they get far less than a call.
-    std::uint64_t instructionsPerHook = 1'000'000;
-    std::chrono::milliseconds hookDeadline{5};
+    std::uint64_t instructionsPerHook = 250'000;
+    std::chrono::milliseconds hookDeadline{20};
     // What all the hook handlers of one pack may spend in one frame (HookRegistry::beginFrame). Once it is spent, the
     // pack's handlers are skipped until the next frame.
-    std::uint64_t hookInstructionsPerFrame = 2'000'000;
-    std::chrono::milliseconds hookTimePerFrame{8};
+    std::uint64_t hookInstructionsPerFrame = 500'000;
+    std::chrono::milliseconds hookTimePerFrame{40};
 };
 
 // A sandboxed Lua 5.5 state. Scripts get the safe standard libraries (base without file loading, string, table,
@@ -120,6 +125,10 @@ public:
     // Exposes a global function of one text argument, for the developer console's commands: bindCommand("text_font",
     // ...) makes `text_font("original")` call `run` with "original". Another argument type is a Lua error.
     void bindCommand(std::string_view name, std::function<void(std::string_view)> run);
+
+    // Why the budget stopped a script in the latest outermost call (a run, a call, a ScriptCall, a fired event), if it
+    // did: a hook handler stopped inside a call that went on counts too. None once the next outermost call starts.
+    [[nodiscard]] BudgetStop lastBudgetStop() const;
 
 private:
     friend class ScriptCall;
