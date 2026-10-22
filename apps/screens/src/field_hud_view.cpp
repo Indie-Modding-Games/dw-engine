@@ -26,6 +26,11 @@ constexpr std::array<std::pair<Condition, std::string_view>, NeedCount> NeedLabe
 
 constexpr std::array<Stat, 2> PoolStats{Stat::Hp, Stat::Mp};
 
+// The lists by shorter names, which also keep the "Field" prefix away from listEntryName's `field` parameter.
+constexpr std::string_view MeterList = FieldHudMeterList;
+constexpr std::string_view NeedList = FieldHudNeedList;
+constexpr std::string_view PoolList = FieldHudPoolList;
+
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view TwoToneField = "two_tone";
 constexpr std::string_view ValueField = "value";
@@ -91,15 +96,15 @@ ScreenSettings fieldHudLabelSettings() {
     ScreenSettings settings;
     for (std::size_t index = 0; index < MeterLabels.size(); ++index) {
         settings.push_back(
-            {.name = listEntryName(FieldHudMeterList, index, LabelField), .value = std::string{MeterLabels.at(index)}});
-        settings.push_back({.name = listEntryName(FieldHudMeterList, index, TwoToneField), .value = true});
+            {.name = listEntryName(MeterList, index, LabelField), .value = std::string{MeterLabels.at(index)}});
+        settings.push_back({.name = listEntryName(MeterList, index, TwoToneField), .value = true});
     }
     for (std::size_t index = 0; index < NeedLabels.size(); ++index) {
-        settings.push_back({.name = listEntryName(FieldHudNeedList, index, LabelField),
-                            .value = std::string{NeedLabels.at(index).second}});
+        settings.push_back(
+            {.name = listEntryName(NeedList, index, LabelField), .value = std::string{NeedLabels.at(index).second}});
     }
     for (std::size_t index = 0; index < PoolStats.size(); ++index) {
-        settings.push_back({.name = listEntryName(FieldHudPoolList, index, LabelField),
+        settings.push_back({.name = listEntryName(PoolList, index, LabelField),
                             .value = mainLabelKey(StatLabelsBlock, static_cast<std::size_t>(PoolStats.at(index)))});
     }
     return settings;
@@ -115,18 +120,17 @@ ScreenSettings settingsOf(const FieldHudView& view) {
     };
     for (std::size_t index = 0; index < view.meters.size(); ++index) {
         const FieldMeterView& meter = view.meters.at(index);
-        settings.push_back({.name = listEntryName(FieldHudMeterList, index, ValueField), .value = number(meter.value)});
-        settings.push_back({.name = listEntryName(FieldHudMeterList, index, MinField), .value = number(meter.min)});
-        settings.push_back({.name = listEntryName(FieldHudMeterList, index, MaxField), .value = number(meter.max)});
+        settings.push_back({.name = listEntryName(MeterList, index, ValueField), .value = number(meter.value)});
+        settings.push_back({.name = listEntryName(MeterList, index, MinField), .value = number(meter.min)});
+        settings.push_back({.name = listEntryName(MeterList, index, MaxField), .value = number(meter.max)});
     }
     for (std::size_t index = 0; index < view.needs.size(); ++index) {
-        settings.push_back(
-            {.name = listEntryName(FieldHudNeedList, index, ActiveField), .value = view.needs.at(index)});
+        settings.push_back({.name = listEntryName(NeedList, index, ActiveField), .value = view.needs.at(index)});
     }
     for (std::size_t index = 0; index < view.pools.size(); ++index) {
         const FieldPoolView& pool = view.pools.at(index);
-        settings.push_back({.name = listEntryName(FieldHudPoolList, index, ValueField), .value = number(pool.current)});
-        settings.push_back({.name = listEntryName(FieldHudPoolList, index, MaxField), .value = number(pool.max)});
+        settings.push_back({.name = listEntryName(PoolList, index, ValueField), .value = number(pool.current)});
+        settings.push_back({.name = listEntryName(PoolList, index, MaxField), .value = number(pool.max)});
     }
     return settings;
 }
