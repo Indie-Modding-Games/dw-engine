@@ -10,12 +10,12 @@ device: keyboard
 main_menu: true
 timeout: 300
 steps:
-  - wait: {map: twna01, seconds: 1}
+  - wait: {shown: main_menu, seconds: 1}
   - resize: [1280, 720]
   - expect_setting: {ui_skin: original}
   - screenshot: main-menu
   - menu_select: play
-  - wait: {menu_open: false, seconds: 1}
+  - wait: {map: twna01, hidden: main_menu, seconds: 1}
   - screenshot: field
   # The new game's bag is empty, as the original's: the debug give_item fills a few slots first.
   - script: give_item("meat 3")

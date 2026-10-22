@@ -447,9 +447,6 @@ float groundDistance(glm::vec3 a, glm::vec3 b) {
   return std::hypot(a.x - b.x, a.z - b.z);
 }
 
-// The field's steps and conditions wait for a game; at the title screen there is none.
-constexpr std::string_view NoGamePlayed = "no game is being played";
-
 std::string where(const FieldScene* scene) {
   if (scene == nullptr) {
     return "at the title screen";
@@ -608,7 +605,7 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
       progress_->mapSerial = host.scene != nullptr ? host.scene->mapSerial() : 0;
     }
     if (host.scene == nullptr && (step.kind == Kind::WalkTo || step.kind == Kind::Click)) {
-      failStep(NoGamePlayed);
+      failStep(messages::NoGame);
     } else if (now - progress_->start > step.timeout && step.kind != Kind::Wait) {
       failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
     } else if (runStep(host, step, now)) {
@@ -745,7 +742,7 @@ std::string Autotest::unmetCondition(const AutotestHost& host, const AutotestCon
   if (host.scene == nullptr) {
     if (until.mapNameShown || until.map || until.partnerWithin || until.playerNear ||
         until.partnerModel) {
-      return std::string{NoGamePlayed};
+      return std::string{messages::NoGame};
     }
     return unmetInUi(host, until);
   }

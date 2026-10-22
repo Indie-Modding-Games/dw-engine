@@ -34,6 +34,9 @@ public:
   // still run. Whether any ran.
   bool apply(session::GameSession& session);
 
+  // Whether a command is queued.
+  [[nodiscard]] bool pending() const { return !queued_.empty(); }
+
 private:
   enum class Kind : std::uint8_t { Toilet, Sleep, Train, Scold, ClockSpeed };
   struct Queued {

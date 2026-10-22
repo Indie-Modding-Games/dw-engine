@@ -31,6 +31,8 @@ public:
   // Leaves the game being played, if any, and starts another. The new game is installed only once
   // it started, so a load that fails leaves the app at the title screen.
   core::Result<void> play(const PlayStart& start) {
+    // The old game goes first: two games would share the field's GPU memory, the HUD and the
+    // tuning panel.
     toTitle();
     auto started = starter_(start);
     if (!started) {

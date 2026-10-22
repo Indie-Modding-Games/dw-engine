@@ -464,9 +464,11 @@ int runGame(const Options& options) {
                                 .settingsFile = settingsFile},
                                start);
   }};
-  // The game starts at the title screen, with no game; --load, --start and an autotest whose route
-  // does not ask for the main menu start playing.
-  if ((autotest && !autotest->startsAtMainMenu()) || options.load || options.startMap) {
+  // The game starts at the title screen, with no game; --new-game, --load, --start and an autotest
+  // whose route does not ask for the main menu start playing.
+  if ((autotest && !autotest->startsAtMainMenu()) || options.newGame || options.load ||
+      options.startMap) {
+    sessionCommands.drop(autotest.get());
     if (auto started = flow.play({.load = options.load}); !started) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
@@ -618,9 +620,14 @@ int runGame(const Options& options) {
       }
       if (command.name == PlayCommand && flow.playing() == nullptr) {
         core::logInfo("game: command {}", command.name);
+        sessionCommands.drop(autotest.get());
         if (auto started = flow.play({}); !started) {
           core::logError("game: {}", started.error().message);
           (*ui)->show(MainMenuDocument, true);
+        } else {
+          // The load is not game time: the next frame must not run it as a burst of ticks.
+          step.reset();
+          previous = platform->nowSeconds();
         }
         continue;
       }
@@ -634,7 +641,7 @@ int runGame(const Options& options) {
       screenFade->setDarkness(play->scene().field().fadeLevel());
       mapChangeView.show(play->scene());
     } else {
-      sessionCommands.drop();
+      sessionCommands.drop(autotest.get());
     }
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
@@ -675,6 +682,7 @@ int runGame(const Options& options) {
   // use) counts: the scene and the UI release their textures into the renderer before it, and the
   // device goes last.
   const bool validationActive = (*device)->validationEnabled();
+  sessionCommands.drop(autotest.get());
   flow.toTitle();
   scripts->reset();
   ui->reset();

@@ -36,3 +36,11 @@ TEST_CASE("frames of exactly one tick run one tick each, without drifting") {
   }
   CHECK(ticks == 60 * 60);
 }
+
+TEST_CASE("after a reset the next frame runs only its own ticks") {
+  FixedStep step{0.01, 0.25};
+  CHECK(step.advance(0.005) == 0);
+  step.reset();
+  CHECK(step.alpha() == doctest::Approx(0.0));
+  CHECK(step.advance(0.01) == 1);
+}

@@ -31,6 +31,9 @@ public:
   // what a failed save means: the game goes on, an autotest fails.
   core::Result<void> apply(session::GameSession& session);
 
+  // Whether a save is queued.
+  [[nodiscard]] bool pending() const { return pending_.has_value(); }
+
 private:
   static core::Result<void> save(session::GameSession& session, std::string_view name);
 

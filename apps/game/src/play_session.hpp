@@ -60,14 +60,20 @@ struct SessionCommands {
   SaveCommand save;
 
   void bind(script::ScriptVm& scripts);
-  // Forgets what was queued with no game to apply it to.
-  void drop();
+  // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
+  // fails.
+  void drop(Autotest* autotest);
 };
 
 // What lives as long as one game (docs/architecture/guardar-y-cargar.md, 3.1): the session, the
 // field, the battle, the partner's menu and the HUD. It is built whole from a new game or a save
 // and torn down whole.
 class PlaySession {
+  // Only create builds a game, which needs make_unique to reach the constructor.
+  struct Key {
+    explicit Key() = default;
+  };
+
 public:
   static core::Result<std::unique_ptr<PlaySession>> create(const PlayContext& context,
                                                            const PlayStart& start);
@@ -77,6 +83,8 @@ public:
   PlaySession(PlaySession&&) = delete;
   PlaySession& operator=(PlaySession&&) = delete;
   ~PlaySession();
+  PlaySession(Key key, const PlayContext& context, GameStart game,
+              std::unique_ptr<FieldScene> scene);
 
   [[nodiscard]] FieldScene& scene() { return *scene_; }
   [[nodiscard]] const FieldScene& scene() const { return *scene_; }
@@ -97,8 +105,6 @@ public:
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
 
 private:
-  PlaySession(const PlayContext& context, GameStart game, std::unique_ptr<FieldScene> scene);
-
   [[nodiscard]] bool paused() const;
 
   PlayContext context_;

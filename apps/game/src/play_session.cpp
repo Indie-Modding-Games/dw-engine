@@ -107,6 +107,35 @@ std::optional<assets::DigimonTable> speciesOf(const assets::VirtualFileSystem& f
 
 } // namespace
 
+void SessionCommands::drop(Autotest* autotest) {
+  const auto dropped = [](std::string_view message) {
+    core::logWarning("{}", core::formatMessage(message, messages::NoGame));
+  };
+  if (std::exchange(gift, std::nullopt)) {
+    dropped(messages::GiveItemFailed);
+  }
+  if (std::exchange(use, std::nullopt)) {
+    dropped(messages::UseItemFailed);
+  }
+  if (std::exchange(battle, std::nullopt)) {
+    dropped(messages::BattleStartFailed);
+  }
+  if (std::exchange(evolution, std::nullopt)) {
+    dropped(messages::EvolveFailed);
+  }
+  if (care.pending()) {
+    dropped(messages::CareCommandFailed);
+    care = {};
+  }
+  if (save.pending()) {
+    dropped(messages::SaveCommandFailed);
+    save = {};
+    if (autotest != nullptr) {
+      autotest->fail(core::formatMessage(messages::SaveCommandFailed, messages::NoGame));
+    }
+  }
+}
+
 void SessionCommands::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(GiveItemCommand, [this](std::string_view item) { gift = std::string{item}; });
   scripts.bindCommand(UseItemCommand, [this](std::string_view item) { use = std::string{item}; });
@@ -115,15 +144,6 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
   save.bind(scripts);
-}
-
-void SessionCommands::drop() {
-  gift.reset();
-  use.reset();
-  battle.reset();
-  evolution.reset();
-  care = {};
-  save = {};
 }
 
 core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
@@ -151,12 +171,10 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   if (!scene) {
     return std::unexpected{scene.error()};
   }
-  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): the constructor is private.
-  return std::unique_ptr<PlaySession>{
-      new PlaySession(context, std::move(*game), std::move(*scene))};
+  return std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
 }
 
-PlaySession::PlaySession(const PlayContext& context, GameStart game,
+PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game,
                          std::unique_ptr<FieldScene> scene)
     : context_(context), game_(std::move(game)), scene_(std::move(scene)),
       species_(speciesOf(*context.files, *game_.session)),
@@ -184,11 +202,12 @@ PlaySession::PlaySession(const PlayContext& context, GameStart game,
                      core::formatMessage(messages::PartnerModelNotShown,
                                          session.partnerView().species, shown.error().message));
   }
+  context_.ui->show("hud");
   // The tuning panel tunes the game's ruleset, sets the speed of its clock, pauses it and jumps it.
+  // It is attached last and detached first, so it never points at a game half built or half gone.
   context_.debugUi->attachTuning(
       {.files = context_.files, .store = &session.rules(), .clock = &session.clock()});
   context_.debugUi->addTuningTab(partnerTab(session));
-  context_.ui->show("hud");
 }
 
 PlaySession::~PlaySession() {

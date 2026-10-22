@@ -56,10 +56,13 @@ if(BUILD_TESTING)
     add_executable(dwe_game_tests ${game_test_sources} src/minimap_setting.cpp src/save_command.cpp
                                   src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
-                                                 dwe::script dwe::save dwe::partner dwe::session dwe_test_main)
+                                                 dwe::script dwe::save dwe::partner dwe::session dwe::evolution
+                                                 dwe::inventory dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                                      ${PROJECT_SOURCE_DIR}/apps/session/tests)
+                                                      ${PROJECT_SOURCE_DIR}/apps/session/tests
+                                                      # The systems' made-up tables, as "game/<system>/tests/fixture.hpp".
+                                                      ${PROJECT_SOURCE_DIR})
     target_compile_definitions(dwe_game_tests PRIVATE
         DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game"
         DWE_SKIN_TEST_PACK="${PROJECT_SOURCE_DIR}/tests/mods/ui_skin/test_contrast")

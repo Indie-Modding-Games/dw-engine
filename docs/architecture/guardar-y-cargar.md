@@ -112,8 +112,8 @@ vuelve a la portada (`script_interp.c: 516-520`, `main.c: main: 3522-3524`).
 |---|---|---|
 | `SaveSummary` (cabecera) | `game/save` | Lo que enseña la lista: domador, especie y mote del partner, mapa. Ver [3.3](#33-las-ranuras) |
 | `SaveSlots` | `game/save` (existe) | Lista, carga, carga de la copia, guarda. Sin cambios de comportamiento |
-| `AppFlow` | `apps/game` (nuevo, `app_flow.{hpp,cpp}`) | La máquina de estados de la app: `Title` → `Playing` → `Title`. Crea y destruye la partida en juego |
-| `PlaySession` | `apps/game` (nuevo, `play_session.{hpp,cpp}`) | Todo lo que vive lo que dura una partida: `GameSession`, `FieldScene`, la VM de scripts con sus comandos, la batalla, el menú del partner, el HUD. Se construye entero desde una `SaveFile` o desde partida nueva y se destruye entero; sale de lo que hoy hace `runGame` de seguido |
+| `AppFlow` | `apps/game` (`app_flow.hpp`, plantilla sobre la partida para poder probarla sin ventana) | La máquina de estados de la app: `Title` → `Playing` → `Title`. Crea y destruye la partida en juego; la anterior se va antes de crear la nueva |
+| `PlaySession` | `apps/game` (`play_session.{hpp,cpp}`) | Todo lo que vive lo que dura una partida: `GameSession`, `FieldScene`, la batalla, el menú del partner, el HUD y el panel de ajuste. Se construye entero desde una ranura o desde partida nueva y se destruye entero. La VM de scripts es de la app: sus comandos de partida se encolan en `SessionCommands` y, sin partida, se descartan con un aviso |
 | `SaveFlow` | `apps/game` (nuevo, `save_flow.{hpp,cpp}`) | La **ranura de la partida** (la que se eligió al empezar o al continuar, o ninguna) y los guardados del jugador: dormir, máquina, fin del juego. Publica el resultado para la interfaz |
 | Documentos | `content/packs/game/ui/` | `main_menu` (la portada, existe), `save_slots` (lista de ranuras, nuevo), `dialog` (sí/no y avisos, nuevo y común), `sleep_menu` (nuevo), `pause_menu` (añade «Dormir» y «Volver a la portada») |
 | Textos | `content/packs/game/localization/{en,es}/` | `save.yaml` (amplía), `main_menu.yaml`, `pause_menu.yaml` |
@@ -139,7 +139,8 @@ arranque ──► Title ──(Nueva partida / Continuar)──► Playing ─�
 - **Carga transaccional**: la `PlaySession` nueva se crea y carga la partida **antes** de soltar nada. Si la carga
   falla, se destruye la nueva, se enseña el error y se sigue en `Title`. Esto arregla también que `loadFile` deje
   estado a medias: nadie usa esa sesión.
-- `--load`, `--start` y las rutas sin `main_menu: true` siguen entrando directas en `Playing`, como hoy.
+- `--new-game`, `--load`, `--start` y las rutas sin `main_menu: true` entran directas en `Playing`, sin portada.
+  Al entrar desde la portada, el tiempo de la carga no cuenta como tiempo de juego (no hay ráfaga de ticks).
 
 **Volver al campo** al cargar: `FieldScene::create` con el mapa y la posición guardados, como ya hace el arranque con
 `--load` (`apps/game/src/game.cpp: runGame`). El partner aparece donde estaba. La recolocación del original cuando el

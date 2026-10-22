@@ -6,7 +6,7 @@ device: keyboard
 main_menu: true
 timeout: 180
 steps:
-  - wait: {map: twna01, seconds: 1}
+  - wait: {shown: main_menu, seconds: 1}
   - resize: [1280, 720]
   - screenshot: main-menu
   # The language entry moves to the next language the packs have; with two, a second press comes back.
@@ -17,7 +17,7 @@ steps:
   - wait: {seconds: 0.5}
   - screenshot: main-menu-back
   - menu_select: play
-  - wait: {menu_open: false, seconds: 0.5}
+  - wait: {map: twna01, hidden: main_menu, seconds: 0.5}
   - screenshot: field
   - menu: open
   - screenshot: pause-menu

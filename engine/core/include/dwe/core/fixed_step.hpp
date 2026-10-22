@@ -26,6 +26,10 @@ public:
     return ticks;
   }
 
+  // Forgets the time not yet run, after a pause the logic must not catch up on (a game that took
+  // a while to load).
+  constexpr void reset() { accumulated_ = 0; }
+
   // How far the current moment is between the last tick and the next one, from 0 to 1.
   [[nodiscard]] constexpr double alpha() const {
     return static_cast<double>(accumulated_) / static_cast<double>(tickNanoseconds_);
