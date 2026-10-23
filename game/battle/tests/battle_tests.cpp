@@ -6,6 +6,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -492,4 +495,78 @@ TEST_CASE("player-facing text is only keys") {
   CHECK(commandTextKey(Command::YourCall) == "battle.command.your_call");
   CHECK(outcomeTextKey(Outcome::Fled) == "battle.outcome.fled");
   CHECK(statusTextKey(StatusEffect::Flatten) == "battle.status.flatten");
+}
+
+namespace {
+
+// A ground whose map stops every step.
+class WalledGround final : public BattleGround {
+public:
+  [[nodiscard]] std::optional<ScreenPoint> screenPointOf(Point /*ground*/,
+                                                         std::int32_t /*height*/) const override {
+    return ScreenPoint{};
+  }
+  [[nodiscard]] bool blocksStep(Point /*from*/, Point /*to*/,
+                                std::int32_t /*radius*/) const override {
+    return true;
+  }
+};
+
+// An open ground seen from above: a screen pixel is eight world units, x right and z down.
+class OpenGround final : public BattleGround {
+public:
+  static constexpr std::int32_t UnitsPerPixel = 8;
+  [[nodiscard]] std::optional<ScreenPoint> screenPointOf(Point ground,
+                                                         std::int32_t height) const override {
+    return ScreenPoint{.x = ground.x / UnitsPerPixel, .y = (ground.z - height) / UnitsPerPixel};
+  }
+  [[nodiscard]] bool blocksStep(Point /*from*/, Point /*to*/,
+                                std::int32_t /*radius*/) const override {
+    return false;
+  }
+};
+
+} // namespace
+
+TEST_CASE("behind walls on every side the fighters only close in to strike, as the melee walk "
+          "goes untested") {
+  const WalledGround ground;
+  for (const std::uint64_t seed : {3U, 8U}) {
+    Battle battle = startBattle(duel(evenStats(400, 120), evenStats(400, 120)), seed);
+    battle.setGround(&ground);
+    std::vector<Point> before{battle.state().fighters[0].position,
+                              battle.state().fighters[1].position};
+    while (!battle.finished() && battle.state().frame < 4000) {
+      battle.step();
+      for (std::size_t id = 0; id < before.size(); ++id) {
+        const Fighter& fighter = battle.state().fighters[id];
+        const Point other = battle.state().fighters[1 - id].position;
+        if (fighter.position != before[id]) {
+          CHECK(distanceSquared(fighter.position, other) <= distanceSquared(before[id], other));
+        }
+        before[id] = fighter.position;
+      }
+    }
+  }
+}
+
+TEST_CASE("no fighter walks out of the combat area, a rectangle of the screen") {
+  const OpenGround ground;
+  const TimingRules& timing = originalRules().timing;
+  const std::int32_t halfWidth = timing.combatAreaWidth / 2 * OpenGround::UnitsPerPixel;
+  const std::int32_t halfHeight = timing.combatAreaHeight / 2 * OpenGround::UnitsPerPixel;
+  for (const std::uint64_t seed : {1U, 5U, 9U}) {
+    BattleSetup setup = duel(evenStats(400, 120), evenStats(400, 120), {"punch"}, {"punch"});
+    Battle battle = startBattle(setup, seed);
+    battle.setGround(&ground);
+    while (!battle.finished() && battle.state().frame < 4000) {
+      battle.step();
+      for (const Fighter& fighter : battle.state().fighters) {
+        const std::int32_t slack = fighter.combatant.radius + timing.walkSpeed;
+        CHECK(std::abs(fighter.position.x) <= halfWidth + slack);
+        CHECK(fighter.position.z <= halfHeight + slack);
+        CHECK(fighter.position.z >= -halfHeight - slack);
+      }
+    }
+  }
 }

@@ -84,6 +84,7 @@ probable y está marcado en el código), **Hueco** (falta).
 | Técnica "a su aire" | `battle_main.c: BTL_selectPartnerMove`, `BTL_calculateElementBonus` | `OriginalPartnerAi` | seeded replay | Igual |
 | Técnica de los enemigos | `battle_main.c: BTL_selectEnemyMove` | `OriginalEnemyAi` | disc pairwise | Igual |
 | Órdenes de movimiento (huir, defensa, distancia) | `battle_main.c: BTL_handlePartnerMoveCommand` | `followMoveCommand`, `keepDistance` | fleeing ends the battle | Igual |
+| Colisión al andar (área de combate, mapa, otros luchadores) | `map.c: entityCheckCollision`, `collisionGrace`; `battle_main.c: BTL_findUnblockedRotation`, `BTL_backAwayFromTarget`, `BTL_moveTowardLocation` | `movement.cpp`, puerto `BattleGround` (`ground.hpp`), `FieldBattleGround` en la app | walls on every side; the combat area | Igual, salvo que el tamer no cuenta como obstáculo y, sin suelo (simulador, pruebas), el área es `arena_radius` |
 | Reserva de velocidad | `battle_main.c: BTL_increaseSpeedBuffer` | `ai_ticks.cpp` | the speed reserve grows | Igual |
 | MP, usabilidad y redondeo | `battle_main.c: BTL_isMoveUsable`, `BTL_setupMoveExecution` | `usability.cpp`, `beginAttack` | MP check and payment | Igual |
 | Estados del luchador (carga, enfriamiento, confusión, aplastado) | `battle_main.c: BTL_tickFighterStates` y sus `tick*State` | `fighter_actions.cpp` | flattening; stun and confusion | Igual |

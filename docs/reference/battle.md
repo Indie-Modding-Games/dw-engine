@@ -145,6 +145,16 @@ barra llena. Su modo de carga es aleatorio, o prudente si está fuera de pantall
 - Pausas: 40 fotogramas tras cada ataque y 80 si no puede pagar ninguna técnica **(comprobado)**.
 - Las técnicas a distancia buscan su distancia de alcance; si en 80 fotogramas no la consiguen, disparan igual
   (`BTL_tickRangedAttack`) **(comprobado)**.
+- Cada paso se prueba antes de darlo (`entityCheckCollision`, que `BTL_tickFighterAction` llama cada fotograma): no
+  sale del área de combate (un rectángulo de 280 x 200 píxeles alrededor del centro de la pantalla, probado con dos
+  esquinas de la caja del luchador, una en el suelo y otra 200 unidades arriba), no entra en una casilla del mapa con el
+  bit 0x80 y no choca con el borde de otro luchador vivo; si algo lo impide, el luchador no avanza ese fotograma
+  **(comprobado)**.
+- Al chocar, quien camina hacia un punto conserva su orientación y gira como mucho 0x50 hacia la primera salida libre
+  (`collisionGrace`); quien se saldría del área busca un abanico libre de tres octavos de vuelta
+  (`BTL_findUnblockedRotation`); quien retrocede da la espalda al rival y, tras un choque, gira de 20 en 20
+  (`BTL_backAwayFromTarget`). El ataque cuerpo a cuerpo se acerca sin esa prueba (`BTL_tickMeleeAttack`)
+  **(comprobado)**.
 
 ### Daño
 
