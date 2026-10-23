@@ -29,6 +29,15 @@ void StoryAdapter::attachNpcs(game::field::FieldNpcs* npcs) {
   npcs_->attach(npcs, npcs != nullptr ? &digimon_ : nullptr);
 }
 
+void StoryAdapter::followNpcHolds() {
+  const bool runs = runner_->busy();
+  // script_interp.c:638: when the script ends, every NPC a pause held moves again.
+  if (scriptRan_ && !runs) {
+    npcOrders_->releaseAll();
+  }
+  scriptRan_ = runs;
+}
+
 void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> contacts) {
   if (!runner_) {
     return;

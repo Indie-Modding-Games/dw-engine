@@ -67,6 +67,10 @@ struct NpcSurroundings {
   bool playerFree = false;
 };
 
+// The first entity instance an NPC takes: 0 is the player and 1 the partner (overworld.c:
+// ENTITY_TABLE, the scripts' move slots).
+inline constexpr std::size_t FirstNpcInstance = 2;
+
 class FieldNpcs {
 public:
   // The world must outlive the NPCs.
@@ -88,6 +92,19 @@ public:
   bool setAutotalk(std::int32_t scriptId, bool autotalk);
   // The entity of an NPC on the map, by script id (script_value.c: scriptIdToEntityId).
   [[nodiscard]] std::optional<scene::Entity> entityOf(std::int32_t scriptId) const;
+  // Its entity instance, FirstNpcInstance + its record's slot (the scripts' move slot).
+  [[nodiscard]] std::optional<std::size_t> instanceOf(std::int32_t scriptId) const;
+
+  // Holds an NPC still for a script, or lets it go (overworld.c: setMovementEnabled, stopAnim):
+  // held, it stands idle; holding it starts its path over (clearMapAITable). False when no NPC has
+  // that script id.
+  bool hold(std::int32_t scriptId, bool held);
+  // The same for every NPC on the map (setMovementEnabled(-1, ...)).
+  void holdAll(bool held);
+  // A script plays the NPC's animation `animation` (overworld.c: setActiveAnim, NPC_ACTIVE_ANIM):
+  // while it is not 0 the NPC's own tick leaves it to the script. False when no NPC has that
+  // script id.
+  bool setScriptedAnimation(std::int32_t scriptId, std::int32_t animation);
 
   // Whether a character moving from `from` to `to` walks into an NPC (map.c:
   // entityCheckEntityCollision): its square at `to` overlaps an NPC's it was not getting away from.
@@ -128,11 +145,15 @@ private:
     // A path that points past its waypoints: logged once, and the NPC stands.
     bool pathBroken = false;
     Blocker blocker = Blocker::None;
+    // Held by a script (MapDigimonEntity.stopAnim) and the script's animation (NPC_ACTIVE_ANIM).
+    bool held = false;
+    std::int32_t scriptedAnimation = 0;
   };
 
   [[nodiscard]] Npc* find(std::int32_t scriptId);
   [[nodiscard]] const Npc* find(std::int32_t scriptId) const;
   void remove(std::size_t index);
+  void setHeld(Npc& npc, bool held);
   void tickPath(Npc& npc, float seconds);
   void waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds);
   void walkOnPath(Npc& npc, const assets::MapNpc& record, scene::Motion motion, float seconds);

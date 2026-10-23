@@ -70,4 +70,23 @@ core::Result<void> NpcOrders::setAutotalk(std::int64_t entity, std::int64_t enab
   return {};
 }
 
+void NpcOrders::holdOwner(std::int64_t owner) {
+  if (owner >= FirstSystemOwner || isCharacter(owner) || owner < 0) {
+    return;
+  }
+  const bool held = npcs_->holdNpc(owner, true);
+  core::logDebug("[port:story] scriptPauseGame (script_interp.c:2754): owner {} held: {}", owner,
+                 held);
+}
+
+void NpcOrders::releaseAll() {
+  core::logDebug("[port:story] tickScript (script_interp.c:638): every NPC moves again");
+  npcs_->holdAllNpcs(false);
+}
+
+void NpcOrders::holdAll() {
+  core::logDebug("[port:story] tickScript (script_interp.c:1944): every NPC held");
+  npcs_->holdAllNpcs(true);
+}
+
 } // namespace dwe::game::story

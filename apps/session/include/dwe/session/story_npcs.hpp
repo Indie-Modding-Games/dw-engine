@@ -43,6 +43,8 @@ public:
   bool spawnNpc(std::int64_t species, std::int64_t slot, bool autotalk) override;
   bool unloadNpc(std::int64_t scriptId) override;
   bool setAutotalk(std::int64_t scriptId, bool autotalk) override;
+  bool holdNpc(std::int64_t scriptId, bool held) override;
+  void holdAllNpcs(bool held) override;
 
 private:
   game::field::FieldNpcs* npcs_ = nullptr;

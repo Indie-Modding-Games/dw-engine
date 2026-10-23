@@ -14,6 +14,8 @@ namespace dwe::game::story {
 // scriptIdToEntityId); any other is an NPC's script id.
 inline constexpr std::int64_t PlayerEntity = 0xFD;
 inline constexpr std::int64_t PartnerEntity = 0xFC;
+// The owners of a pause from here up are no script id (script_interp.c: scriptPauseGame).
+inline constexpr std::int64_t FirstSystemOwner = 0xC8;
 
 // The field's NPCs, as the story sees them. The session implements it over game/field.
 class NpcPort {
@@ -35,6 +37,10 @@ public:
   virtual bool unloadNpc(std::int64_t scriptId) = 0;
   // Whether touching the NPC runs its section; whether there was one.
   virtual bool setAutotalk(std::int64_t scriptId, bool autotalk) = 0;
+  // Holds the NPC still for the script or lets it go; whether there was one (setMovementEnabled).
+  virtual bool holdNpc(std::int64_t scriptId, bool held) = 0;
+  // The same for every NPC on the map.
+  virtual void holdAllNpcs(bool held) = 0;
 };
 
 class NpcOrders {
@@ -53,6 +59,15 @@ public:
   core::Result<void> unloadEntity(std::int64_t entity);
   // set_autotalk: the player and the partner have none.
   core::Result<void> setAutotalk(std::int64_t entity, std::int64_t enabled);
+
+  // The NPC side of a pause (script_interp.c: scriptPauseGame): an owner below FirstSystemOwner is
+  // an NPC's script id, and that NPC is held still (the speaker of a textbox, script_common.c).
+  void holdOwner(std::int64_t owner);
+  // The script ended while the world was frozen: every NPC moves again (script_interp.c:
+  // tickScript, setMovementEnabled(-1, 0)).
+  void releaseAll();
+  // Trigger 1 holds every NPC (script_interp.c:1944, setMovementEnabled(-1, 1)).
+  void holdAll();
 
 private:
   NpcPort* npcs_;

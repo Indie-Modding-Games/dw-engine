@@ -98,6 +98,9 @@ public:
   // Asks for the sections of the NPCs the player touched or talked to in the last field tick, as
   // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
   void runNpcContacts(std::span<const game::field::NpcContact> contacts);
+  // The NPC orders, for the other orders that hold an NPC (a textbox's speaker: holdOwner); null
+  // before the rules are read.
+  [[nodiscard]] game::story::NpcOrders* npcOrders() { return npcOrders_.get(); }
 
   // Where the story's map changes play (story_flow.hpp); an empty target drops them, and the story
   // goes on as if the player stayed.
@@ -144,6 +147,7 @@ private:
   core::Result<void> wire(const StorySectionRules& story,
                           const game::story::DialogueRules& dialogue);
   core::Result<void> wireNpcs();
+  void followNpcHolds();
   core::Result<void> wireFlow();
   [[nodiscard]] game::story::StoryFlowPorts flowPorts() const;
   void playUnplayedChange();
@@ -166,6 +170,8 @@ private:
   std::unique_ptr<game::story::StoryOrders> orders_;
   std::unique_ptr<StoryNpcs> npcs_;
   std::unique_ptr<game::story::NpcOrders> npcOrders_;
+  // Whether a script ran at the end of the last tick.
+  bool scriptRan_ = false;
   std::unique_ptr<StoryMapChanges> mapChanges_;
   std::optional<std::int32_t> enteredMap_;
   std::unique_ptr<StoryLuaHost> host_;

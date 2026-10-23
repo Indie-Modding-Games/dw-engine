@@ -180,6 +180,55 @@ std::optional<scene::Entity> FieldNpcs::entityOf(std::int32_t scriptId) const {
   return npc != nullptr ? std::optional{npc->entity} : std::nullopt;
 }
 
+std::optional<std::size_t> FieldNpcs::instanceOf(std::int32_t scriptId) const {
+  const Npc* npc = find(scriptId);
+  return npc != nullptr ? std::optional{FirstNpcInstance + npc->slot} : std::nullopt;
+}
+
+bool FieldNpcs::hold(std::int32_t scriptId, bool held) {
+  Npc* npc = find(scriptId);
+  if (npc == nullptr) {
+    core::logDebug("[port:npc] setMovementEnabled (overworld.c:1870): no NPC with script id {}",
+                   scriptId);
+    return false;
+  }
+  setHeld(*npc, held);
+  return true;
+}
+
+void FieldNpcs::holdAll(bool held) {
+  core::logDebug("[port:npc] setMovementEnabled (overworld.c:1870): every NPC held {}", held);
+  for (Npc& npc : npcs_) {
+    setHeld(npc, held);
+  }
+}
+
+void FieldNpcs::setHeld(Npc& npc, bool held) {
+  if (npc.held != held) {
+    core::logDebug("[port:npc] setMovementEnabled (overworld.c:1887): script id {} held {}",
+                   npc.scriptId, held);
+  }
+  npc.held = held;
+  if (held) {
+    // overworld.c: clearMapAITable: the path starts over.
+    npc.activeSection = 0;
+    npc.hasTarget = false;
+  }
+}
+
+bool FieldNpcs::setScriptedAnimation(std::int32_t scriptId, std::int32_t animation) {
+  Npc* npc = find(scriptId);
+  if (npc == nullptr) {
+    core::logDebug("[port:npc] setActiveAnim (overworld.c:1783): no NPC with script id {}",
+                   scriptId);
+    return false;
+  }
+  core::logDebug("[port:npc] setActiveAnim (overworld.c:1783): script id {} animation {} -> {}",
+                 scriptId, npc->scriptedAnimation, animation);
+  npc->scriptedAnimation = animation;
+  return true;
+}
+
 FieldNpcs::Npc* FieldNpcs::find(std::int32_t scriptId) {
   const auto found = std::ranges::find(npcs_, scriptId, &Npc::scriptId);
   return found != npcs_.end() ? &*found : nullptr;
@@ -263,6 +312,17 @@ void FieldNpcs::tick(float seconds, const assets::MapCollision& collision,
   entt::registry& registry = world_->registry();
   for (Npc& npc : npcs_) {
     scene::beginTick(registry.get<Transform>(npc.entity));
+    // overworld.c:1237: a script's animation leaves the NPC to the script.
+    if (npc.scriptedAnimation != 0) {
+      continue;
+    }
+    // overworld.c:1344: held, it stands (animation 0).
+    if (npc.held) {
+      npc.motion = Motion::Idle;
+      npc.blocker = Blocker::None;
+      registry.get<AnimationIntent>(npc.entity) = {.motion = Motion::Idle, .speedScale = 1.0F};
+      continue;
+    }
     tickPath(npc, seconds);
     move(npc, seconds, collision, surroundings);
   }

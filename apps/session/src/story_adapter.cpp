@@ -399,6 +399,7 @@ void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*adv
   dialogue_->dialogue().bindSound(session.sound());
   playUnplayedChange();
   runner_->tick();
+  followNpcHolds();
 }
 
 game::story::RequestOutcome StoryAdapter::request(game::story::SectionRef section,

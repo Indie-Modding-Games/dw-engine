@@ -80,4 +80,17 @@ bool StoryNpcs::setAutotalk(std::int64_t scriptId, bool autotalk) {
   return npcs_->setAutotalk(static_cast<std::int32_t>(scriptId), autotalk);
 }
 
+bool StoryNpcs::holdNpc(std::int64_t scriptId, bool held) {
+  if (npcs_ == nullptr || scriptId < 0 || scriptId > std::numeric_limits<std::int32_t>::max()) {
+    return false;
+  }
+  return npcs_->hold(static_cast<std::int32_t>(scriptId), held);
+}
+
+void StoryNpcs::holdAllNpcs(bool held) {
+  if (npcs_ != nullptr) {
+    npcs_->holdAll(held);
+  }
+}
+
 } // namespace dwe::session
