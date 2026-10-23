@@ -49,7 +49,7 @@ Audio::~Audio() {
   output_.reset();
 }
 
-core::Result<VoiceId> Audio::play(const PlayRequest& request) {
+core::Result<void> Audio::checkRequest(const PlayRequest& request) {
   if (!request.clip) {
     return core::fail(std::string{messages::PlayNoClip});
   }
@@ -62,6 +62,13 @@ core::Result<VoiceId> Audio::play(const PlayRequest& request) {
   }
   if (!std::isfinite(request.pan)) {
     return core::fail(core::formatMessage(messages::PlayBadPan, request.pan));
+  }
+  return {};
+}
+
+core::Result<VoiceId> Audio::play(const PlayRequest& request) {
+  if (auto playable = checkRequest(request); !playable) {
+    return std::unexpected{playable.error()};
   }
   if (!shared_->orders.hasRoom()) {
     ++droppedOrders_;
@@ -78,8 +85,35 @@ core::Result<VoiceId> Audio::play(const PlayRequest& request) {
                                   .bus = request.bus,
                                   .gain = clampedVolume(request.gain),
                                   .pan = std::clamp(request.pan, -1.0F, 1.0F),
-                                  .pitch = request.pitch});
+                                  .pitch = request.pitch,
+                                  .envelope = request.envelope});
   return voice;
+}
+
+core::Result<std::vector<VoiceId>> Audio::playAll(std::span<const PlayRequest> requests) {
+  for (const PlayRequest& request : requests) {
+    if (auto playable = checkRequest(request); !playable) {
+      return std::unexpected{playable.error()};
+    }
+  }
+  if (shared_->orders.room() < requests.size()) {
+    ++droppedOrders_;
+    return core::fail(core::formatMessage(messages::OrdersFull, CommandQueueCapacity));
+  }
+  std::vector<VoiceId> voices;
+  voices.reserve(requests.size());
+  for (const PlayRequest& request : requests) {
+    auto voice = play(request);
+    if (!voice) {
+      // Checked above, so this is a safety net: half an effect never plays.
+      for (const VoiceId started : voices) {
+        stop(started);
+      }
+      return std::unexpected{voice.error()};
+    }
+    voices.push_back(*voice);
+  }
+  return voices;
 }
 
 void Audio::stop(VoiceId voice) {

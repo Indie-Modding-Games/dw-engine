@@ -36,6 +36,8 @@ void VoicePlayer::start(const PlayOrder& order) {
           static_cast<double>(order.pitch);
   stopping_ = false;
   fade_ = 1.0F;
+  enveloped_ = order.envelope.has_value();
+  envelope_ = enveloped_ ? Envelope{*order.envelope} : Envelope{};
 }
 
 void VoicePlayer::stop() {
@@ -58,7 +60,8 @@ void VoicePlayer::mixInto(std::span<float> frames, std::span<const float> busGai
       const float from = sampleAt(frame, channel);
       return from + ((sampleAt(next, channel) - from) * fraction);
     };
-    const float gain = busGains[i] * fade_;
+    const float envelope = enveloped_ ? envelope_.advance() : 1.0F;
+    const float gain = busGains[i] * fade_ * envelope;
     frames[i * OutputChannels] += interpolate(0) * gains_.left * gain;
     frames[(i * OutputChannels) + 1] += interpolate(lastChannel) * gains_.right * gain;
     advance();
@@ -92,6 +95,9 @@ void VoicePlayer::advance() {
       }
     }
   } else if (position_ >= static_cast<double>(clip_->frameCount())) {
+    state_ = State::Ended;
+  }
+  if (enveloped_ && envelope_.silentForGood()) {
     state_ = State::Ended;
   }
   if (stopping_) {

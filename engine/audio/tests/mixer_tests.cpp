@@ -267,3 +267,20 @@ TEST_CASE("staged items stay out of sight until they are published") {
   CHECK(queue->pop().value_or(VoiceEnded{}).voice.slot == 2);
   CHECK_FALSE(queue->pop());
 }
+
+TEST_CASE("a looping voice whose envelope fades out ends by itself") {
+  auto rig = makeRig();
+  const auto clip = steadyClip(16384, 64, ClipLoop{.start = 0, .length = 64});
+  // Instant attack, full sustain level, then a fast linear fall in the sustain.
+  rig->send(PlayOrder{.voice = {.slot = 0, .generation = 1},
+                      .clip = clip.get(),
+                      .bus = Bus::Effects,
+                      .gain = 1.0F,
+                      .pan = 0.0F,
+                      .pitch = 1.0F,
+                      .envelope = ChipEnvelope{.adsr1 = 0x000F, .adsr2 = 0x4000}});
+  const auto out = rig->render(2);
+  CHECK(left(out, 1) > 0.0F);
+  rig->render(480);
+  CHECK(rig->ended() == std::vector<VoiceId>{{.slot = 0, .generation = 1}});
+}

@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -32,6 +33,8 @@ public:
   // not playable, the pitch is outside [MinPitch, MaxPitch], the pan is not finite or this tick's
   // orders are full.
   core::Result<VoiceId> play(const PlayRequest& request);
+  // Plays every request or, when any of them would fail, none.
+  core::Result<std::vector<VoiceId>> playAll(std::span<const PlayRequest> requests);
   // Fades a voice out and releases it. A voice that already ended is ignored.
   void stop(VoiceId voice);
   // Sets a volume, from 0 to 1 (values outside are clamped); the mixer ramps to it.
@@ -48,6 +51,7 @@ public:
 
 private:
   struct Shared;
+  [[nodiscard]] static core::Result<void> checkRequest(const PlayRequest& request);
   struct Slot {
     std::uint32_t generation = 0;
     bool active = false;

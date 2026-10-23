@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace dwe::audio {
 
@@ -17,6 +18,13 @@ struct VoiceId {
   friend bool operator==(const VoiceId&, const VoiceId&) = default;
 };
 
+// A volume envelope in the two 16-bit registers of the console's sound chip: attack, decay and
+// sustain level in the first; sustain and release in the second.
+struct ChipEnvelope {
+  std::uint16_t adsr1 = 0;
+  std::uint16_t adsr2 = 0;
+};
+
 // What a voice plays and how. A clip with a loop repeats it until the voice is stopped.
 struct PlayRequest {
   std::shared_ptr<const Clip> clip;
@@ -27,6 +35,9 @@ struct PlayRequest {
   float pan = 0.0F;
   // The playback speed: 2 is an octave up.
   float pitch = 1.0F;
+  // Without one the voice plays at a steady volume. With one it attacks from silence, and a voice
+  // whose sustain fades out ends there, even if its clip loops.
+  std::optional<ChipEnvelope> envelope = std::nullopt;
 };
 
 } // namespace dwe::audio

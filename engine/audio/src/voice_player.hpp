@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <span>
 
+#include "envelope.hpp"
 #include "orders.hpp"
 
 namespace dwe::audio {
@@ -56,6 +57,8 @@ private:
   double step_ = 1.0;
   bool stopping_ = false;
   float fade_ = 1.0F;
+  bool enveloped_ = false;
+  Envelope envelope_;
 };
 
 } // namespace dwe::audio

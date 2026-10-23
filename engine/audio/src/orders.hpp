@@ -4,6 +4,7 @@
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/voice.hpp>
 
+#include <optional>
 #include <variant>
 
 #include "spsc_queue.hpp"
@@ -20,6 +21,7 @@ struct PlayOrder {
   float gain = 1.0F;
   float pan = 0.0F;
   float pitch = 1.0F;
+  std::optional<ChipEnvelope> envelope = std::nullopt;
 };
 
 struct StopOrder {

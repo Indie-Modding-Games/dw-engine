@@ -28,8 +28,11 @@ public:
     return true;
   }
 
-  [[nodiscard]] bool hasRoom() const {
-    return staged_ - read_.load(std::memory_order_acquire) < Capacity;
+  [[nodiscard]] bool hasRoom() const { return room() > 0; }
+
+  // Producer: how many more items fit.
+  [[nodiscard]] std::size_t room() const {
+    return Capacity - (staged_ - read_.load(std::memory_order_acquire));
   }
 
   // Producer: lets the consumer see every staged item.

@@ -26,6 +26,16 @@ inline constexpr std::string_view OrdersDropped =
 inline constexpr std::string_view VoicesStolen =
     "audio: {} voices replaced the oldest playing ones this frame: the limit is {} voices";
 
+// Sound banks (effect_bank.cpp).
+inline constexpr std::string_view BankSampleMissing =
+    "the sound bank's sample {} is not in the packs";
+inline constexpr std::string_view BankSampleBad = "the sound bank's sample {} does not play: {}";
+inline constexpr std::string_view BankNoSound = "the sound bank has no sound {}";
+inline constexpr std::string_view BankBrokenSound =
+    "the sound bank's sound {} names a program, tone or sample the bank does not have";
+inline constexpr std::string_view BankSampleRate =
+    "the sound bank's sample {} was encoded at {} Hz, not at the {} Hz its bank says; it plays as encoded";
+
 // The device (sdl_output.cpp).
 inline constexpr std::string_view DeviceUnavailable = "could not open the sound device: {}";
 
