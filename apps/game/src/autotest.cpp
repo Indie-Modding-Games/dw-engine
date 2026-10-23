@@ -31,6 +31,7 @@
 
 #include "common.hpp"
 #include "device_names.hpp"
+#include "field_items_screen.hpp"
 #include "messages.hpp"
 #include "options.hpp"
 
@@ -53,6 +54,8 @@ constexpr double StallSeconds = 1.5;
 constexpr float KeyThreshold = 0.383F;
 // How long the driver holds a tapped control, and waits after it, in logic ticks.
 constexpr int TapTicks = 3;
+// How long a walk waits between two confirms of a pickup notice it ran into.
+constexpr double NoticeConfirmSeconds = 0.5;
 // A click-to-move point must be this far inside the window (a fraction of its smaller side).
 constexpr float ClickMargin = 0.02F;
 // Frames after a resize, a screenshot or a mode change that the steady frame times leave out.
@@ -478,6 +481,7 @@ struct Autotest::Progress {
   double unstickUntil = -1.0;
   int clickBackoff = 0;
   bool clickTook = false;
+  double lastNoticeConfirm = -1.0;
   // menu
   double lastTry = -1.0;
   // resize and fullscreen
@@ -855,6 +859,24 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
   if (field.destinationChoice()) {
     releaseMovement();
     return true;
+  }
+  // A ground item on the way opens its pickup notice and the field waits (the original
+  // checkItemPickup): the walk confirms it, as a player would, and goes on.
+  if (host.ui->isVisible(FieldItemNoticeDocument)) {
+    releaseMovement();
+    progress.lastProgress = now;
+    if (now - progress.lastNoticeConfirm > NoticeConfirmSeconds) {
+      progress.lastNoticeConfirm = now;
+      core::logInfo("autotest: a pickup notice on the way; confirming it");
+      if (device == AutotestDevice::Gamepad) {
+        button(platform::GamepadButton::South, true);
+        button(platform::GamepadButton::South, false, TapTicks);
+      } else {
+        key(input::keys::Return, true);
+        key(input::keys::Return, false, TapTicks);
+      }
+    }
+    return false;
   }
   bool stalled = false;
   if (groundDistance(position, progress.lastPosition) > ProgressDistance) {
