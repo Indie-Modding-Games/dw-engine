@@ -146,6 +146,22 @@ probable y está marcado en el código), **Hueco** (falta).
 - **Fotograma 7 del lanzamiento (pendiente):** que el objeto salga en el fotograma 7 de la animación del domador
   (`main.c: startThrowingItem`) sigue como suposición; se comprueba cuando llegue el sistema de animación del combate.
 
+## Scripts de efecto
+
+`EffectRunner` (`effect_runner.hpp`) ejecuta los scripts de efecto de las técnicas (`assets::EffectScript`, leídos de
+`effect/<técnica>/script.yaml`) como el original: `load` por técnica (`BTL_loadMoveEFE`), `start` corre el script de
+inicio (`BTL_startEFE`) y devuelve la primera instancia que lanzó, `tick` es un fotograma de combate
+(`BTL_tickEFEEngine`: suma el fotograma de cada sub-efecto activo y corre su script de tick) y `stop` corta un efecto
+(`BTL_removeMoveEffect`). Cada ranura tiene su copia de los datos, la pila, las llamadas, `spawn` y los sub-efectos
+siguen al original, así que cada sonido suena en el fotograma en que suena en el original.
+
+Solo los sonidos salen fuera: `play_sound` llama a `EffectSounds::play` (banco 8) y los ids 0x12 y 0x20–0x22 a
+`playHeld`, que guarda la voz; la voz se para cuando su sub-efecto termina, como `EFE_SOUND_DATA`. Las sub-operaciones
+de dibujo se saltan (sacan sus argumentos de la pila). Las de golpe (`check_collision`, `apply_*_hit`,
+`check_target_collision`, `is_target_unhit`) responden con el golpe de la simulación (`noteHit`) en vez de las cajas de
+colisión del original; `random_in_range` es `customRandom`. Mejora documentada: `stopAll` para todas las voces
+guardadas, mientras que `BTL_stopEFESounds` solo mira la primera (no avanza el puntero).
+
 ## Tests
 
 `dwe_battle_tests`: una prueba por regla, un valor del ruleset cambiado (el tope de daño), una estrategia cambiada
