@@ -37,7 +37,7 @@ public:
   [[nodiscard]] bool registered(RoutineNumber routine) const;
   // Runs the routine's handler. A number with no handler goes on, as the original's switch does
   // for the numbers it does not list, and the log says so.
-  core::Result<RoutineStart> call(RoutineNumber routine) const;
+  [[nodiscard]] core::Result<RoutineStart> call(RoutineNumber routine) const;
 
 private:
   // Wrapped so the map's iterators do not bring std::expected's operator== into lookup: libc++

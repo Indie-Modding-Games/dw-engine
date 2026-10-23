@@ -69,7 +69,7 @@ constexpr std::int32_t HeldShift = 2;
 } // namespace
 
 Fishing::Fishing(FishingRules rules, FishingTables tables, FishingPlace place)
-    : rules_{std::move(rules)}, tables_{std::move(tables)}, place_{std::move(place)} {}
+    : rules_{rules}, tables_{std::move(tables)}, place_{std::move(place)} {}
 
 void Fishing::emit(FishingEventKind kind, std::int32_t value) {
   out_.events.push_back({.kind = kind, .value = value});
@@ -303,13 +303,14 @@ void Fishing::reeling() {
     splash();
     return;
   }
+  const std::int32_t hookedSize = hooked_->size;
   if (in.confirmHeld) {
     pressedFrames_ = std::max(pressedFrames_, 0) + 1;
     if (in.confirmPressed || !in.animationPlaying) {
       animate(FightReelAnimation);
     }
     reelBobber(FightPullScale,
-               static_cast<float>(remapClamped(hooked_->size, rules_.tension.sizes, FightPullLoss)),
+               static_cast<float>(remapClamped(hookedSize, rules_.tension.sizes, FightPullLoss)),
                FightPullShare);
   } else {
     pressedFrames_ = std::min(pressedFrames_, 0) - 1;
@@ -318,7 +319,7 @@ void Fishing::reeling() {
     }
   }
   const std::optional<glm::vec2> screen = visibleScreen(bobber_.position);
-  if ((screen && !isWaterOnScreen(*screen)) || withinCastRange(bobber_.position, hooked_->size)) {
+  if ((screen && !isWaterOnScreen(*screen)) || withinCastRange(bobber_.position, hookedSize)) {
     landed();
     return;
   }
@@ -353,6 +354,9 @@ void Fishing::reeling() {
 
 void Fishing::landed() {
   tension_ = {};
+  if (!hooked_) {
+    return;
+  }
   if (hooked_->kind == SeaSerpentKind) {
     hooked_->state = FishState::Landing;
     hooked_->framesOnState = -1;
@@ -662,7 +666,12 @@ void Fishing::tickBobber() {
   for (int axis = 0; axis < 3; ++axis) {
     float& v = b.velocity[axis];
     const float slow = std::trunc(v * Drag);
-    v -= slow != 0.0F ? slow : (v > 0.0F ? 1.0F : (v < 0.0F ? -1.0F : 0.0F));
+    // At rest the drag still takes one unit toward zero.
+    float step = slow;
+    if (step == 0.0F && v != 0.0F) {
+      step = v > 0.0F ? 1.0F : -1.0F;
+    }
+    v -= step;
   }
   b.velocity.y -= b.gravity;
   const auto keepOnLine = [&] {

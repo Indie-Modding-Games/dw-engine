@@ -35,7 +35,7 @@ bool FieldItems::place(GroundItem item) {
   }
   core::logDebug("[port:field_items] spawnItem (item.c:2437): slot {} cell ({}, {})", *slot,
                  item.cell.column, item.cell.row);
-  ground_[*slot] = std::move(item);
+  ground_[*slot] = item;
   return true;
 }
 
@@ -87,7 +87,8 @@ std::optional<std::size_t> FieldItems::offerPickup(assets::CollisionCell cell) {
 
 std::optional<std::size_t> FieldItems::chestInReach(assets::CollisionCell cell) const {
   for (std::size_t slot = 0; slot < chests_.size(); ++slot) {
-    if (chests_[slot] && inReach(cell, assets::collisionCellAt(chests_[slot]->position))) {
+    if (const std::optional<Chest>& chest = chests_[slot];
+        chest && inReach(cell, assets::collisionCellAt(chest->position))) {
       return slot;
     }
   }
@@ -102,9 +103,12 @@ void FieldItems::remove(std::size_t slot) {
 }
 
 void FieldItems::markTaken(std::size_t chest) {
-  if (chest < chests_.size() && chests_[chest]) {
+  if (chest >= chests_.size()) {
+    return;
+  }
+  if (std::optional<Chest>& placed = chests_[chest]) {
     core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1565): chest {} taken", chest);
-    chests_[chest]->taken = true;
+    placed->taken = true;
   }
 }
 

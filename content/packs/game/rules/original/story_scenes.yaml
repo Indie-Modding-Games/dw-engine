@@ -39,8 +39,10 @@ recruits:
   first_trigger: 200
   count: 63
 new_game:
-  # seeded: el estado de data/new_game_story sin la apertura, hasta que la app ejecute los scripts
-  # del mapa (S3b). original: estado limpio y la cadena del mapa 0xCC (main.c: main).
+  # seeded: el estado de data/new_game_story sin la apertura. original: estado limpio y la cadena del
+  # mapa 0xCC (main.c: main). La app ya ejecuta los scripts de mapa, pero el campo de una partida
+  # nueva empieza en twna01 (field/warps.yaml): la cadena original correría la sección de 0xCC sobre
+  # File City. Se cambia cuando la partida nueva empiece en el lugar de la apertura.
   chain: seeded
   map: 204
   exit: 9

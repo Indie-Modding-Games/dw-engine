@@ -2,14 +2,14 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/npc_orders.hpp>
-#include <dwe/game/story/script_motion.hpp>
 #include <dwe/game/story/partner_routines.hpp>
+#include <dwe/game/story/script_motion.hpp>
 #include <dwe/game/story/section_host.hpp>
 #include <dwe/game/story/story_battle.hpp>
 #include <dwe/game/story/story_orders.hpp>
 #include <dwe/game/story/story_ports.hpp>
-#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_routines.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_task.hpp>
 #include <dwe/script/script_coroutine.hpp>
 

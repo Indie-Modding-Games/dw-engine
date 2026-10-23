@@ -430,14 +430,18 @@ void Fishing::hookedEscapes() {
   if (!hooked_) {
     return;
   }
+  Fish& fish = *hooked_;
   hookedEscaped_ = true;
   bobberCommand(SinkCommand);
-  hooked_->yaw = yawTowards(input_->player, hooked_->position);
-  hooked_->state = FishState::Escaping;
-  hooked_->framesOnState = -1;
+  fish.yaw = yawTowards(input_->player, fish.position);
+  fish.state = FishState::Escaping;
+  fish.framesOnState = -1;
 }
 
 void Fishing::hookedGrabbed() {
+  if (!hooked_) {
+    return;
+  }
   hooked_->state = FishState::Struggling;
   hooked_->framesOnState = -1;
 }
@@ -452,6 +456,9 @@ bool Fishing::tryStrike() {
 }
 
 void Fishing::steerHookedFromShore() {
+  if (!hooked_) {
+    return;
+  }
   Fish& fish = *hooked_;
   for (int i = 0; i < ShoreTries; ++i) {
     if (onWater(bobber_.position + (forward(fish.yaw) * ShoreProbe))) {
@@ -517,7 +524,9 @@ void Fishing::tickHooked() {
     }
     steerHookedFromShore();
     const std::int32_t divisor = power_ <= powerMax_ / TiredShare ? TiredDivisor : FreshDivisor;
-    bobber_.position += forward(fish.yaw) * static_cast<float>(fish.speed / divisor);
+    // The original steps in whole units.
+    const std::int32_t step = fish.speed / divisor;
+    bobber_.position += forward(fish.yaw) * static_cast<float>(step);
     fish.position = bobber_.position;
     const bool check = pressedFrames_ == -1 ||
                        (pressedFrames_ >= LongHold && pressedFrames_ % LongHoldEvery == 0) ||

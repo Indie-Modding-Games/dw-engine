@@ -29,7 +29,7 @@ constexpr std::string_view ClearedBitsKey = "cleared_bits";
 std::uint8_t byte(YamlReader& reader, const YamlNode& parent, std::string_view key) {
   const YamlNode& node = reader.field(parent, key);
   const auto value = reader.integer<std::int32_t>(node);
-  if (reader.ok() && (value < 0 || value > std::numeric_limits<std::uint8_t>::max())) {
+  if (reader.ok() && !std::in_range<std::uint8_t>(value)) {
     reader.fail(node, core::formatMessage(calendar_messages::NotAByte, key));
   }
   return static_cast<std::uint8_t>(value);

@@ -132,11 +132,15 @@ bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t original
 
 TakeOutcome FieldItemsAdapter::pickUp(std::size_t slot) {
   const auto ground = items_.ground();
-  if (slot >= ground.size() || !ground[slot]) {
+  if (slot >= ground.size()) {
+    return TakeOutcome::Empty;
+  }
+  const auto& onGround = ground[slot];
+  if (!onGround) {
     return TakeOutcome::Empty;
   }
   game::inventory::Inventory& bag = inventory_->inventory();
-  const assets::ItemHandle item = ground[slot]->item;
+  const assets::ItemHandle item = onGround->item;
   // tamerTickPickupItem: giveItem(type, 0) only asks whether the bag has room.
   if (!bag.hasRoomFor(item)) {
     core::logDebug("[port:field_items] tamerTickPickupItem (tamer.c:1450): bag full, slot {}",
@@ -152,18 +156,20 @@ TakeOutcome FieldItemsAdapter::pickUp(std::size_t slot) {
 
 TakeOutcome FieldItemsAdapter::takeChest(std::size_t chest) {
   const auto chests = items_.chests();
-  if (chest >= chests.size() || !chests[chest] || chests[chest]->taken) {
+  const auto* placed = chest < chests.size() ? &chests[chest] : nullptr;
+  if (placed == nullptr || !placed->has_value() || (*placed)->taken) {
     core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1520): chest {} empty", chest);
     return TakeOutcome::Empty;
   }
+  const game::field::Chest& found = **placed;
   game::inventory::Inventory& bag = inventory_->inventory();
-  const assets::ItemHandle item = chests[chest]->item;
+  const assets::ItemHandle item = found.item;
   if (!bag.hasRoomFor(item)) {
     core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1557): bag full, chest {}",
                    chest);
     return TakeOutcome::BagFull;
   }
-  const std::int32_t trigger = chests[chest]->trigger;
+  const std::int32_t trigger = found.trigger;
   if (auto set = story_->state().setTrigger(trigger, true); !set) {
     core::logWarning("{}", core::formatMessage(field_items_messages::TriggerFailed, trigger,
                                                set.error().message));

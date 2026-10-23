@@ -301,8 +301,10 @@ void FishingScreen::follow(FieldScene& scene, const game::fishing::FishingOutput
   const screens::NameKeys names{nullptr, &inventory_->items(), nullptr};
   for (const session::FishingCatch& caught : fishing_->apply(*session_, out)) {
     const bool fish = caught.kind == session::FishingCatch::Kind::Fish;
-    const std::string_view text = fish ? (caught.kept ? CaughtText : CaughtLetGoText)
-                                       : (caught.kept ? StuckText : StuckBagFullText);
+    std::string_view text = fish ? CaughtLetGoText : StuckBagFullText;
+    if (caught.kept) {
+      text = fish ? CaughtText : StuckText;
+    }
     notices_.push_back({.text = std::string{text},
                         .item = names.item(caught.item),
                         .size = fish ? caught.size : 0});

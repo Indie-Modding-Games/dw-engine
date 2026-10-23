@@ -55,7 +55,7 @@ core::Result<void> FishingAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!read) {
     return std::unexpected{read.error()};
   }
-  rules_ = std::move(*read);
+  rules_ = *read;
   // The water of the map comes back with the new rules on the next map.
   fishing_.reset();
   return {};
@@ -84,7 +84,7 @@ std::optional<std::int32_t> FishingAdapter::numberOf(std::string_view id) const 
 }
 
 std::optional<game::fishing::FishingTables> FishingAdapter::resolveTables() const {
-  if (table_->kinds.empty()) {
+  if (!table_ || table_->kinds.empty()) {
     core::logWarning("{}", fishing_messages::NoKinds);
     return std::nullopt;
   }
@@ -116,7 +116,7 @@ std::optional<game::fishing::FishingTables> FishingAdapter::resolveTables() cons
 
 std::optional<game::fishing::FishingPlace>
 FishingAdapter::resolvePlace(const assets::FishingMapEntry& map) const {
-  if (!map.shoreline || *map.shoreline >= table_->shorelines.size()) {
+  if (!table_ || !map.shoreline || *map.shoreline >= table_->shorelines.size()) {
     core::logWarning("{}", core::formatMessage(fishing_messages::NoShoreline, map.map));
     return std::nullopt;
   }

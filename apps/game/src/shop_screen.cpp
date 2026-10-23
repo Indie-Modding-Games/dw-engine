@@ -280,27 +280,32 @@ screens::ScreenSettings ShopScreen::settings() const {
   const session::ShopCounter& shop = *desc_.shop;
   const session::ShopLines& lines = shop.rules().lines;
   const screens::NameKeys names{nullptr, &shop.items(), nullptr};
+  // The line the counter shows: the chosen line, or the choice of the shop or the recycle shop.
+  std::int32_t lineShown = line_;
+  if (phase_ == Phase::Choice) {
+    lineShown = shop.recycling() ? lines.recycleChoices : lines.choices;
+  }
   screens::ScreenSettings out{
-      {"shop.phase", std::string{phaseName(static_cast<std::uint8_t>(phase_))}},
-      {"shop.mode", std::string{mode_ == Mode::Buy ? "buy" : "sell"}},
-      {"shop.line_key", shop.lineKey(phase_ != Phase::Choice ? line_
-                                     : shop.recycling()      ? lines.recycleChoices
-                                                             : lines.choices)},
-      {"shop.choice_count",
-       static_cast<double>(shop.recycling() ? RecycleChoiceCount : ChoiceCount)},
-      {"shop.bits_key", shop.lineKey(lines.bits)},
-      {"shop.money", static_cast<double>(shop.money())},
-      {"shop.saved", static_cast<double>(saved_)},
+      {.name = "shop.phase", .value = std::string{phaseName(static_cast<std::uint8_t>(phase_))}},
+      {.name = "shop.mode", .value = std::string{mode_ == Mode::Buy ? "buy" : "sell"}},
+      {.name = "shop.line_key", .value = shop.lineKey(lineShown)},
+      {.name = "shop.choice_count",
+       .value = static_cast<double>(shop.recycling() ? RecycleChoiceCount : ChoiceCount)},
+      {.name = "shop.bits_key", .value = shop.lineKey(lines.bits)},
+      {.name = "shop.money", .value = static_cast<double>(shop.money())},
+      {.name = "shop.saved", .value = static_cast<double>(saved_)},
   };
   const std::vector<Row> shown = rows();
-  out.push_back({"shop.rows", static_cast<double>(shown.size())});
+  out.push_back({.name = "shop.rows", .value = static_cast<double>(shown.size())});
   for (std::size_t i = 0; i < shown.size(); ++i) {
-    out.push_back({screens::listEntryName(RowsList, i, "name"), names.item(shown[i].item)});
     out.push_back(
-        {screens::listEntryName(RowsList, i, "price"), static_cast<double>(shown[i].price)});
+        {.name = screens::listEntryName(RowsList, i, "name"), .value = names.item(shown[i].item)});
+    out.push_back({.name = screens::listEntryName(RowsList, i, "price"),
+                   .value = static_cast<double>(shown[i].price)});
+    out.push_back({.name = screens::listEntryName(RowsList, i, "count"),
+                   .value = static_cast<double>(shown[i].count)});
     out.push_back(
-        {screens::listEntryName(RowsList, i, "count"), static_cast<double>(shown[i].count)});
-    out.push_back({screens::listEntryName(RowsList, i, "enabled"), shown[i].enabled});
+        {.name = screens::listEntryName(RowsList, i, "enabled"), .value = shown[i].enabled});
   }
   if (picked_) {
     const std::int32_t price =
@@ -308,12 +313,13 @@ screens::ScreenSettings ShopScreen::settings() const {
     // createItemMenuAmountBox: the total shown stops at the most money.
     const std::int64_t total =
         std::min<std::int64_t>(static_cast<std::int64_t>(price) * amount_, shop.maxMoney());
-    out.push_back({"shop.amount.name", names.item(*picked_)});
-    out.push_back({"shop.amount.price", static_cast<double>(price)});
-    out.push_back({"shop.amount.value", static_cast<double>(amount_)});
-    out.push_back({"shop.amount.max", static_cast<double>(maxAmount())});
-    out.push_back({"shop.amount.total", static_cast<double>(total)});
-    out.push_back({"shop.amount.step", static_cast<double>(shop.rules().amountStep)});
+    out.push_back({.name = "shop.amount.name", .value = names.item(*picked_)});
+    out.push_back({.name = "shop.amount.price", .value = static_cast<double>(price)});
+    out.push_back({.name = "shop.amount.value", .value = static_cast<double>(amount_)});
+    out.push_back({.name = "shop.amount.max", .value = static_cast<double>(maxAmount())});
+    out.push_back({.name = "shop.amount.total", .value = static_cast<double>(total)});
+    out.push_back(
+        {.name = "shop.amount.step", .value = static_cast<double>(shop.rules().amountStep)});
   }
   return out;
 }

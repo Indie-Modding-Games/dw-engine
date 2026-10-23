@@ -52,6 +52,15 @@ std::int64_t walkClip(std::int64_t character, std::int64_t animation) {
   return character == PlayerScriptId ? animation + 2 : (animation + 1) * 2;
 }
 
+// The low byte of `value` read as a signed byte, as the scripts keep some operands.
+std::int64_t signedByte(std::int64_t value) {
+  constexpr std::int64_t ByteMask = 0xFF;
+  constexpr std::int64_t SignBit = 0x80;
+  constexpr std::int64_t ByteRange = 0x100;
+  const std::int64_t low = value & ByteMask;
+  return low >= SignBit ? low - ByteRange : low;
+}
+
 // A division as the original's processor gives it: by zero it gives -1, or 1 for a negative
 // dividend, as its div does without a check (overworld.c: tickMoveObjectTo has none).
 std::int32_t divideLikeOriginal(std::int32_t dividend, std::int32_t divisor) {
@@ -120,8 +129,8 @@ std::optional<std::int64_t> ScriptMotion::slotFor(std::string_view order,
 void ScriptMotion::fill(std::int64_t slot, std::int64_t character, Move move) {
   core::logDebug("{}",
                  messages::formatMessage(messages::SlotFilled, move.index(), slot, character));
-  slots_.insert_or_assign(
-      slot, Slot{.character = character, .move = std::move(move), .cameraFrom = std::nullopt});
+  slots_.insert_or_assign(slot,
+                          Slot{.character = character, .move = move, .cameraFrom = std::nullopt});
 }
 
 void ScriptMotion::lookAt(std::int64_t character, std::int64_t target) {
@@ -256,8 +265,7 @@ void ScriptMotion::resetOrigin(std::int64_t character) {
 void ScriptMotion::moveMapSprite(std::int64_t slot, std::int64_t object, std::int64_t steps,
                                  std::int64_t x, std::int64_t y) {
   // The steps are a signed byte (overworld.c: tickMoveObjectTo).
-  const auto signedSteps =
-      static_cast<std::int64_t>(static_cast<std::int8_t>(static_cast<std::uint8_t>(steps)));
+  const std::int64_t signedSteps = signedByte(steps);
   fill(FirstSpriteSlot + slot, object,
        SpriteMove{.target = {static_cast<std::int32_t>(x), static_cast<std::int32_t>(y)},
                   .steps = signedSteps,
@@ -266,8 +274,7 @@ void ScriptMotion::moveMapSprite(std::int64_t slot, std::int64_t object, std::in
 
 void ScriptMotion::turnMapObject(std::int64_t object, std::int64_t direction) {
   // script_interp.c: SCRIPT_OP_ROTATE_3D_OBJECT keeps the direction as a signed byte.
-  const auto signedDirection =
-      static_cast<std::int64_t>(static_cast<std::int8_t>(static_cast<std::uint8_t>(direction)));
+  const std::int64_t signedDirection = signedByte(direction);
   fill(FirstObjectSlot, object, MapObjectTurn{.direction = signedDirection});
 }
 

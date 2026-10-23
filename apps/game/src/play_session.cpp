@@ -264,9 +264,8 @@ PlaySession::~PlaySession() {
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
-        SleepMenuDocument, DialogDocument, ShopMenuDocument,
-        FieldItemNoticeDocument, FishingBaitDocument,
-        FishingNoticeDocument, FishingHudDocument}) {
+        SleepMenuDocument, DialogDocument, ShopMenuDocument, FieldItemNoticeDocument,
+        FishingBaitDocument, FishingNoticeDocument, FishingHudDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -456,9 +455,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   shopScreen_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
-  const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() && !fishingScreen_.active() &&
-                         !evolutionScene_.active() && !deathScene_.active() &&
-                         !field.mapChangePending() && field.fadeLevel() == 0.0F;
+  const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
+                         !fishingScreen_.active() && !evolutionScene_.active() &&
+                         !deathScene_.active() && !field.mapChangePending() &&
+                         field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
   praiseScold_.update(fieldIdle);

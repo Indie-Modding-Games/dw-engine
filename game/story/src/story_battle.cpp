@@ -113,6 +113,7 @@ TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
   core::logDebug("{}", messages::formatMessage(messages::PortBattleWon, rules_.fixedFightTrigger,
                                                fixed, !fixed));
   if (fixed) {
+    battle_->holdAfterFixedFight();
     return TaskDone{};
   }
   battle_->startPartnerReturn();

@@ -69,6 +69,9 @@ public:
   // (script_interp.c: SCRIPT_MOVEMENT[10] type 7, WAIT_FOR_ENTITY 10).
   virtual void startPartnerReturn() = 0;
   [[nodiscard]] virtual bool partnerReturned() const = 0;
+  // A fixed fight won: every character on the map stays where it is (script_interp.c:1944,
+  // setMovementEnabled(-1, 1)).
+  virtual void holdAfterFixedFight() = 0;
 };
 
 // The battles the story counted (BATTLES_STARTED, BATTLES_FLED), for the medals.

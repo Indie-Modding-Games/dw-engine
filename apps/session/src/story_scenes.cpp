@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/evolution/tables.hpp>
+#include <dwe/game/story/npc_orders.hpp>
 #include <dwe/game/story/story_runner.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
@@ -65,6 +66,16 @@ public:
                    "is not moved yet, over at once");
   }
   [[nodiscard]] bool partnerReturned() const override { return true; }
+
+  void holdAfterFixedFight() override {
+    game::story::NpcOrders* orders = scenes_->desc.story->npcOrders();
+    core::logDebug("[port:story] start_battle (script_interp.c:1944): fixed fight won, every NPC "
+                   "held: {}",
+                   orders != nullptr);
+    if (orders != nullptr) {
+      orders->holdAll();
+    }
+  }
 
 private:
   StoryScenesContext* scenes_;
@@ -311,8 +322,8 @@ game::story::ScreenHistory& StoryScenes::screens() {
 }
 
 const game::story::BattleCounters& StoryScenes::battleCounters() const {
-  static const game::story::BattleCounters None{};
-  return context_->battles ? context_->battles->counters() : None;
+  static const game::story::BattleCounters none{};
+  return context_->battles ? context_->battles->counters() : none;
 }
 
 game::story::SceneSync& StoryScenes::sceneSync() {

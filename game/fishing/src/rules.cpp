@@ -226,7 +226,7 @@ core::Result<FishingRules> parseFishingRules(const ruleset::Section& section) {
                       .openAbove = integer(reader, shore, OpenAboveKey)};
   }
   rules.sounds = parseSounds(reader, reader.field(root, SoundsKey));
-  return reader.finish(std::move(rules), section.file);
+  return reader.finish(rules, section.file);
 }
 
 bool isWater(const Shoreline& shoreline, const ShoreByYRules& byY, glm::ivec2 point) {

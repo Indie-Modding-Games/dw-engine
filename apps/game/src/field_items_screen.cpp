@@ -33,8 +33,10 @@ bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm) {
   items.enterMap(field.mapId());
   const assets::CollisionCell cell = assets::collisionCellAt(field.player().position);
   if (const std::optional<std::size_t> slot = items.offerPickup(cell)) {
-    slot_ = *slot;
-    show(Step::GroundItem, FoundText, items.ground()[*slot]->item);
+    if (const auto& ground = items.ground()[*slot]) {
+      slot_ = *slot;
+      show(Step::GroundItem, FoundText, ground->item);
+    }
     return confirm;
   }
   if (!confirm) {
@@ -44,8 +46,12 @@ bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm) {
   if (!chest) {
     return false;
   }
+  const auto& inReach = items.chests()[*chest];
+  if (!inReach) {
+    return false;
+  }
   slot_ = *chest;
-  const game::field::Chest& found = *items.chests()[*chest];
+  const game::field::Chest& found = *inReach;
   core::logDebug("[port:field_items] checkChestCollision (tamer.c:1287): chest {} taken {}", *chest,
                  found.taken);
   if (found.taken) {
@@ -71,11 +77,19 @@ bool FieldItemsScreen::handle(const ui::UiCommand& command) {
     outcome = items_->takeChest(slot_);
   }
   if (outcome == session::TakeOutcome::BagFull) {
-    const auto ground = items_->items().ground();
-    const auto chests = items_->items().chests();
-    const assets::ItemHandle item =
-        step_ == Step::GroundItem ? ground[slot_]->item : chests[slot_]->item;
-    show(Step::BagFull, BagFullText, item);
+    std::optional<assets::ItemHandle> item;
+    if (step_ == Step::GroundItem) {
+      if (const auto& ground = items_->items().ground()[slot_]) {
+        item = ground->item;
+      }
+    } else if (const auto& chest = items_->items().chests()[slot_]) {
+      item = chest->item;
+    }
+    if (item) {
+      show(Step::BagFull, BagFullText, *item);
+    } else {
+      close();
+    }
   } else {
     close();
   }

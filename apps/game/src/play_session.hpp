@@ -41,8 +41,8 @@
 #include "shop_screen.hpp"
 #include "sleep_screen.hpp"
 #include "story_field_link.hpp"
-#include "story_textbox.hpp"
 #include "story_scene_glue.hpp"
+#include "story_textbox.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {

@@ -32,15 +32,15 @@ void Field::placeMapObjects(const assets::MapDoorSet* doors) {
 }
 
 bool Field::turnMapObjectByScript(std::int64_t slot, std::int64_t direction) {
-  const bool present = slot >= 0 && static_cast<std::size_t>(slot) < mapObjects_.size() &&
-                       mapObjects_.at(static_cast<std::size_t>(slot)).has_value();
-  if (!present) {
+  const auto* object = slot >= 0 && static_cast<std::size_t>(slot) < mapObjects_.size()
+                           ? &mapObjects_.at(static_cast<std::size_t>(slot))
+                           : nullptr;
+  if (object == nullptr || !object->has_value()) {
     core::logDebug("{}", core::formatMessage(script_messages::NoMapObject, slot));
     return true;
   }
-  core::logDebug("{}", core::formatMessage(script_messages::TurnNotPorted, slot,
-                                           mapObjects_.at(static_cast<std::size_t>(slot))->model,
-                                           direction));
+  core::logDebug(
+      "{}", core::formatMessage(script_messages::TurnNotPorted, slot, (*object)->model, direction));
   return true;
 }
 
