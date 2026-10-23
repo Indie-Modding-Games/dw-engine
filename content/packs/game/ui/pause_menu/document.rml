@@ -17,6 +17,7 @@
 				<button id="open-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
 				<button id="open-partner" onclick="ui.send('open_partner_menu')" text-key="pause_menu.partner"></button>
 				<button id="sleep" onclick="sleep()" text-key="pause_menu.sleep"></button>
+				<button id="to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
 				<button id="quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
 			</div>
 

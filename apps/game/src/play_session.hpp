@@ -16,6 +16,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
@@ -28,6 +29,7 @@
 #include "options.hpp"
 #include "partner_menu.hpp"
 #include "save_command.hpp"
+#include "save_machine.hpp"
 #include "session_start.hpp"
 #include "sleep_screen.hpp"
 #include "user_settings.hpp"
@@ -61,6 +63,7 @@ struct SessionCommands {
   std::optional<std::string> evolution;
   CareCommands care;
   SaveCommand save;
+  bool saveMachine = false;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
@@ -112,6 +115,10 @@ public:
     return game_.session->save(slot);
   }
 
+  // Whether the player chose to go back to the title screen, once (docs/architecture/
+  // guardar-y-cargar.md, 3.8).
+  [[nodiscard]] bool takeToTitle() { return std::exchange(toTitle_, false); }
+
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
 
@@ -127,11 +134,15 @@ private:
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;
+  SaveMachine saveMachine_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
   // Whether a command changed what the script warps' guards read (the partner's menu).
   bool guardFactsChanged_ = false;
+  // Whether the dialog on screen asks to go back to the title screen.
+  bool toTitleAsked_ = false;
+  bool toTitle_ = false;
 };
 
 } // namespace dwe::app

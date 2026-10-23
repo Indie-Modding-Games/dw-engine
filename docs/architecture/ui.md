@@ -300,6 +300,7 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `ui_skin` | id de un aspecto (`modern`, ...) | `ui_skin` (y la UI cambia el estilo de todos los documentos en el momento) |
 | `sleep` | — | — (en partida: el menú de pausa acuesta al compañero si tiene sueño; ver [guardar-y-cargar.md](guardar-y-cargar.md#36-dormir)) |
 | `sleep_only`, `sleep_and_save` | — | `save.last_result` con `sleep_and_save` (el menú de dormir: seguir durmiendo, o guardar en la ranura de la partida antes) |
+| `to_title` | — | — (en partida: pregunta y vuelve a la portada sin guardar; ver [guardar-y-cargar.md](guardar-y-cargar.md#38-volver-a-la-portada)) |
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
@@ -317,14 +318,14 @@ objetos en la bolsa. `evolve("species_b")` hace evolucionar al compañero a esa 
 el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
 partida nueva empieza con la bolsa vacía. Decisión del responsable de diseño (2026-10-21): hasta que corran los guiones
 de los mapas en la fase 4, `battle("")` es el único disparador de combates. `use_item("medicine")` usa uno de la bolsa
-con el compañero, y `toilet("")`, `sleep("")`, `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
+con el compañero, y `toilet("")`, `sleep("")`, `save_machine("")` (la máquina de guardado), `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
 comandos de cuidado de la sesión y aceleran el reloj, hasta que existan los baños, las camas, las pantallas de
 entrenamiento y las opciones del reloj (fase 4); la lista está en [la guía de la prueba
 vertical](../guides/prueba-vertical.md). Decisión del responsable de diseño (2026-10-21): `toilet`, `sleep`, `train`, `scold` y
 `clock_speed` se quedan como ayudas de depuración.
 
 **CAMBIO DE CONTRATO (aditivo):** los comandos `sleep`, `sleep_only` y `sleep_and_save`, los ajustes
-`pause_menu.sleep_enabled` y `save.last_result` y el documento `sleep_menu` (fase 4, tramo 5a). Un mod que
+`pause_menu.sleep_enabled` y `save.last_result` y el documento `sleep_menu` (fase 4, tramo 5a); el comando `to_title` y el botón `#to-title` del menú de pausa (tramo 5b). Un mod que
 reemplaza `pause_menu` no tiene «Dormir» hasta que lo añade: un botón `#sleep` que envía `sleep` y se pone en gris
 cuando `pause_menu.sleep_enabled` es falso.
 

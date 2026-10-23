@@ -228,20 +228,23 @@ mensaje, como el original; el aviso de autoguardado, si salta, es aparte.
 
 ### 3.7 Máquina de guardado y fin del juego
 
-`SaveFlow` expone `openSaveMachine()` y `gameClearSave()`: el diálogo «¿Quieres guardar?» y el guardado a la ranura
-(el de fin del juego, con la ciudad como mapa de vuelta). **Nadie los llama todavía**: los llamará el intérprete de los
-scripts de historia (R4.1) cuando corra las rutinas 48 y 54; hasta entonces un test los cubre. El registro para el
-modo versus de la máquina (y el regalo del fin del juego) **queda fuera**: es del modo versus, que es de la fase 5
-(pregunta 3).
+`SaveMachine` (`apps/game/src/save_machine.cpp`) porta `main_menu.c: openSaveMachine` y los menús 0x44 y 0x45 de
+`tickMainMenu`: sin ranura, el aviso `save.machine_no_slot` (el «sin tarjeta» del original); con ella, «¿Quieres
+guardar?» y el guardado a la ranura con la misma comprobación que al dormir ([4](#4-errores)). El campo y el reloj
+esperan mientras está abierta. **El intérprete de historia aún no corre la rutina 48**: hasta entonces la abre la
+ayuda de depuración `save_machine("")`. El registro para el modo versus (menús 0x3C a 0x3E y 0x46) es de la fase 5
+(pregunta 3). El guardado del fin del juego (rutina 54, `gameClearSave`: la ciudad como mapa de vuelta y la película
+al cargar) va en la 5b-2.
 
 ### 3.8 Volver a la portada
 
 Es una **mejora opcional de PC**, a propósito: el original no tiene forma de volver a la portada salvo acabar el
 juego ([1.6](#16-volver-a-la-portada)). No cambia reglas y quien no la use juega como en el original.
 
-`pause_menu` gana **«Volver a la portada»** (encima de «Salir del juego») → `dialog`: «Se perderá lo que no hayas
-guardado. ¿Volver a la portada?» → `AppFlow` destruye la `PlaySession` y vuelve a `Title`. No guarda nada. Es una
-**mejora** (el original no tiene), de interfaz y no de reglas.
+`pause_menu` gana **«Volver a la portada»** (encima de «Salir del juego»), que envía `to_title` → `dialog`: «Se
+perderá lo que no hayas guardado. ¿Volver a la portada?» (no sale durante un sueño o un combate) → `AppFlow` destruye
+la `PlaySession` y `TitleScreen::show()` vuelve al menú principal, como el original tras el final (`main.c: main`).
+No guarda nada.
 
 ### 3.9 Textos (en/es)
 

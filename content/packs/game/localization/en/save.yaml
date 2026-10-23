@@ -39,3 +39,8 @@ home_newer: "This slot holds a save from a newer version of the game. It cannot 
 # The sleep menu, once the partner slept (docs/architecture/guardar-y-cargar.md, 3.6).
 sleep: "Go to sleep"
 sleep_and_save: "Save and go to sleep"
+# The save machine (docs/architecture/guardar-y-cargar.md, 3.7).
+machine_confirm: "Do you want to save?"
+machine_no_slot: "This adventure has no save slot, so it cannot be saved."
+# Back to the title screen from the pause menu (docs/architecture/guardar-y-cargar.md, 3.8).
+to_title_confirm: "Anything not saved will be lost. Return to the title screen?"

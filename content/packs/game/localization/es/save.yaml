@@ -39,3 +39,8 @@ home_newer: "Esta ranura tiene una partida de una versión más nueva del juego.
 # El menú de dormir, cuando el compañero ya durmió (docs/architecture/guardar-y-cargar.md, 3.6).
 sleep: "Dormir"
 sleep_and_save: "Guardar y dormir"
+# La máquina de guardado (docs/architecture/guardar-y-cargar.md, 3.7).
+machine_confirm: "¿Quieres guardar?"
+machine_no_slot: "Esta aventura no tiene ranura, así que no se puede guardar."
+# Volver a la portada desde el menú de pausa (docs/architecture/guardar-y-cargar.md, 3.8).
+to_title_confirm: "Se perderá lo que no hayas guardado. ¿Volver a la portada?"

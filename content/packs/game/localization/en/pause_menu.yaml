@@ -6,6 +6,7 @@ partner: "Partner"
 minimap: "Minimap"
 options: "Options"
 sleep: "Sleep"
+to_title: "Return to title"
 quit: "Quit game"
 minimap_mode: "Show minimap"
 # As the interface style decides: the modern one shows it; the original game has none.

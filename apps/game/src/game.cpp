@@ -644,6 +644,14 @@ int runGame(const Options& options) {
                       uiSkinChanger, minimapChanger) &&
                 running;
     }
+    if (flow.playing() != nullptr && flow.playing()->takeToTitle()) {
+      // As the original after its ending (main.c: main): the game is torn down whole and the title
+      // screen comes back.
+      core::logDebug("[port:save] main (main.c:3522-3527): back to the title screen");
+      flow.toTitle();
+      screenFade->setDarkness(0.0F);
+      title.show();
+    }
     if (PlaySession* play = flow.playing()) {
       play->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
                    static_cast<float>(step.alpha()));

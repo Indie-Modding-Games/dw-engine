@@ -12,6 +12,7 @@
 #include <cmath>
 #include <string_view>
 #include <utility>
+#include <variant>
 
 #include "battle_trigger.hpp"
 #include "common.hpp"
@@ -122,6 +123,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(battle, std::nullopt)) {
     dropped(messages::BattleStartFailed);
   }
+  if (std::exchange(saveMachine, false)) {
+    dropped(messages::SaveMachineFailed);
+  }
   if (std::exchange(evolution, std::nullopt)) {
     dropped(messages::EvolveFailed);
   }
@@ -146,6 +150,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
   save.bind(scripts);
+  scripts.bindCommand(SaveMachineCommand, [this](std::string_view) { saveMachine = true; });
 }
 
 core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
@@ -196,7 +201,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .species = species_ ? &*species_ : nullptr,
                     .ui = context.ui}),
       fieldHud_(*context.ui, *game_.session),
-      sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition) {
+      sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
+      saveMachine_(*game_.session, *context.ui) {
   session::GameSession& session = *game_.session;
   session.attachField(scene_->field());
   // A loaded game's partner may be another species than the game pack's partner model.
@@ -245,8 +251,28 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
-  if (sleepScreen_.handle(command) || battleScreen_.handle(command) ||
-      freeExploration_.handle(command)) {
+  if (sleepScreen_.handle(command) || saveMachine_.handle(command) ||
+      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+    return true;
+  }
+  if (command.name == "to_title") {
+    // Not over a sleep or a battle, whose state a later save would not see whole.
+    if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active()) {
+      context_.ui->hide(MenuDocument);
+      screens::publish(
+          *context_.ui,
+          dialogSettings({.text = "save.to_title_confirm", .file = {}, .question = true}),
+          "dialog.revision");
+      context_.ui->show(DialogDocument, true);
+      toTitleAsked_ = true;
+    }
+    return true;
+  }
+  if (command.name == "dialog_answer" && toTitleAsked_) {
+    const bool* yes = std::get_if<bool>(&command.value);
+    context_.ui->hide(DialogDocument);
+    toTitleAsked_ = false;
+    toTitle_ = yes != nullptr && *yes;
     return true;
   }
   if (partnerMenu_.handle(command)) {
@@ -281,6 +307,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     startBattle(battleScreen_, species, *scene_, *npcs);
   }
   guardFactsChanged = commands.care.apply(session) || guardFactsChanged;
+  if (std::exchange(commands.saveMachine, false)) {
+    saveMachine_.open();
+  }
   // Before a queued evolve, so a script that saves and then evolves saves the form it had when it
   // asked.
   if (auto saved = commands.save.apply(session); !saved) {
@@ -337,7 +366,8 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
 bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active();
+         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
+         saveMachine_.active() || toTitleAsked_;
 }
 
 float PlaySession::fadeLevel() const {
