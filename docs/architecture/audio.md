@@ -320,7 +320,7 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | `story.set_bgm(pista)`, `story.stop_bgm(...)` | Ídem | Se publican en el tramo 3 | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
 | Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): documento nuevo del paquete `game` con su esquema |
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
-| Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la lista de la fase 5 / 4b | — |
+| Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la fase 5 | — |
 
 Internos (sin contrato): todo `engine/audio` (sus clases, la cola, las salidas, los límites), el puerto `SoundPort` de
 `game/story` y la resolución de ranuras de la sesión.
@@ -404,7 +404,7 @@ ejecutable: no pueden ir en git.
    la política de assets.
 
 **Q8. Fundidos de música.** El original corta en seco.
-1. *(Recomendada)* Cortes secos como el original; un fundido corto como mejora opcional queda para la lista 4b, no
+1. *(Recomendada)* Cortes secos como el original; un fundido corto como mejora opcional queda para la fase 5, no
    para VAN-01.
 2. Un ajuste `music_fades` (desactivado por defecto) ya en el tramo 3.
 
@@ -418,7 +418,7 @@ como en el original, pero es un límite de la máquina, no una regla.
    a partir de la documentación pública del hardware (no del decomp), como envío por voz según el bit de reverb del
    tono. Mantiene el sonido del original; alarga VAN-01 en un tramo.
 2. Una reverberación genérica (tipo Freeverb) aproximada, en el tramo 3. Más corta, menos fiel.
-3. Sin reverberación en VAN-01; se apunta a la lista 4b como hueco de fidelidad conocido.
+3. Sin reverberación en VAN-01; se apunta a la fase 5 como hueco de fidelidad conocido.
 
 **Q11. El audio en las rutas de autotest.** Con Xvfb no hay servidor de sonido y SDL no abre el dispositivo.
 1. *(Recomendada)* Lo que dice §4: aviso y salida nula; la ruta del tramo 4 comprueba el estado del mezclador (voces y
