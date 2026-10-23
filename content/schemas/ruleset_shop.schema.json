@@ -3,7 +3,7 @@
   "title": "Ruleset: shop",
   "description": "rules/<id>/shop.yaml: the shop the story opens (apps/session: ShopCounter; script_common.c: openShop).",
   "type": "object",
-  "required": ["keeper_lines_section", "ownerless_lines_section", "recycle_trigger", "amount_step", "lines"],
+  "required": ["keeper_lines_section", "ownerless_lines_section", "recycle_trigger", "recyclable", "recycle_max", "amount_step", "lines"],
   "additionalProperties": false,
   "$defs": {
     "line": { "description": "The line's place in the keeper's MAPHEAD section.", "type": "integer", "minimum": 0 }
@@ -12,11 +12,27 @@
     "keeper_lines_section": { "description": "The MAPHEAD section of the first keeper's lines; the others follow in data/shops order.", "type": "integer", "minimum": 0 },
     "ownerless_lines_section": { "description": "The MAPHEAD section of a shop without an owner.", "type": "integer", "minimum": 0 },
     "recycle_trigger": { "description": "While set, the routine opens the recycle shop instead.", "type": "integer", "minimum": 0 },
+    "recyclable": {
+      "description": "The items a lost battle hands to the recycle shop: ranges {from, to} of the original game's numbers, or ids.",
+      "type": "array",
+      "items": {
+        "type": ["string", "object"],
+        "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$",
+        "entryReference": "data/items",
+        "required": ["from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "integer", "minimum": 0 },
+          "to": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "recycle_max": { "description": "How many of each item the recycle shop keeps.", "type": "integer", "minimum": 0 },
     "amount_step": { "description": "How much the alternative button moves the amount.", "type": "integer", "minimum": 1 },
     "lines": {
       "description": "What the keeper says at each step (openShop).",
       "type": "object",
-      "required": ["greeting", "nothing_to_sell", "choices", "farewell_after_trade", "farewell", "bits", "buy_prompt", "sell_prompt", "thanks", "anything_else", "discount"],
+      "required": ["greeting", "nothing_to_sell", "choices", "farewell_after_trade", "farewell", "bits", "buy_prompt", "sell_prompt", "thanks", "anything_else", "discount", "recycle_choices", "sold_out"],
       "additionalProperties": false,
       "properties": {
         "greeting": { "$ref": "#/$defs/line" },
@@ -29,7 +45,9 @@
         "sell_prompt": { "$ref": "#/$defs/line" },
         "thanks": { "$ref": "#/$defs/line" },
         "anything_else": { "$ref": "#/$defs/line" },
-        "discount": { "$ref": "#/$defs/line", "description": "After a baby partner's discounted purchase." }
+        "discount": { "$ref": "#/$defs/line", "description": "After a baby partner's discounted purchase." },
+        "recycle_choices": { "$ref": "#/$defs/line", "description": "The recycle shop's choice: buy or leave." },
+        "sold_out": { "$ref": "#/$defs/line", "description": "The recycle shop has nothing left after a purchase." }
       }
     }
   }

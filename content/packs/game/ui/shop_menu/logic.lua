@@ -1,10 +1,11 @@
 -- The shop the story opens (script_common.c: openShop). The game drives it and publishes it as
 -- settings: shop.phase (talk, choice, list, amount), shop.mode (buy, sell), shop.line_key (the
 -- keeper's line, a text key), shop.bits_key and shop.money (the money box), shop.saved (what the
--- baby discount saved), shop.rows and shop.row.<n>.name/price/count/enabled (from 0), and in the
--- amount box shop.amount.name/price/value/max/total/step. It sends shop_next, shop_choice (0 buy,
--- 1 sell, 2 leave), shop_pick (the row, from 0), shop_amount (a change), shop_amount_max,
--- shop_confirm and shop_back. Pages of eight rows, turned with left and right.
+-- baby discount saved), shop.choice_count (3, or 2 in the recycle shop: buy or leave), shop.rows
+-- and shop.row.<n>.name/price/count/enabled (from 0), and in the amount box
+-- shop.amount.name/price/value/max/total/step. It sends shop_next, shop_choice (0 buy, 1 sell, 2
+-- leave), shop_pick (the row, from 0), shop_amount (a change), shop_amount_max, shop_confirm and
+-- shop_back. Pages of eight rows, turned with left and right.
 
 local PageSize = 8
 local ChoiceCount = 3
@@ -44,12 +45,17 @@ local function line_text()
 end
 
 -- The choice line holds the options, one per line ("Buy\nSell\nSee ya").
+local function choice_count()
+  return math.max(1, math.min(ChoiceCount, number("shop.choice_count")))
+end
+
 local function choice_labels()
   local labels = {}
   for label in string.gmatch(line_text(), "[^\n]+") do
     labels[#labels + 1] = label
   end
-  local fallback = { t("shop.buy"), t("shop.sell"), t("shop.leave") }
+  local fallback = choice_count() < ChoiceCount and { t("shop.buy"), t("shop.leave") }
+    or { t("shop.buy"), t("shop.sell"), t("shop.leave") }
   for choice = 1, ChoiceCount do
     labels[choice] = labels[choice] or fallback[choice]
   end
@@ -122,7 +128,11 @@ local function refresh(document)
   if current == "choice" then
     local labels = choice_labels()
     for choice = 1, ChoiceCount do
-      document:get("choice-" .. choice):set_text(labels[choice])
+      local entry = document:get("choice-" .. choice)
+      entry:set_class("hidden", choice > choice_count())
+      if choice <= choice_count() then
+        entry:set_text(labels[choice])
+      end
     end
   elseif current == "list" then
     if shown_phase ~= "list" and shown_phase ~= "amount" then

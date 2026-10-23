@@ -389,8 +389,12 @@ InventoryAdapter::buy(GameSession& session, assets::ItemHandle item, std::int32_
 }
 
 std::vector<game::inventory::Stack> InventoryAdapter::loseOnDefeat(GameSession& session) {
-  return inventory_ ? inventory_->loseOnDefeat(session.random())
-                    : std::vector<game::inventory::Stack>{};
+  auto lost = inventory_ ? inventory_->loseOnDefeat(session.random())
+                         : std::vector<game::inventory::Stack>{};
+  if (lossListener_ && !lost.empty()) {
+    lossListener_(lost);
+  }
+  return lost;
 }
 
 game::inventory::Inventory& InventoryAdapter::inventory() {

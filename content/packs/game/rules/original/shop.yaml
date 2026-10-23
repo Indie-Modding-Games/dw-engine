@@ -7,6 +7,20 @@ keeper_lines_section: 1220
 ownerless_lines_section: 1230
 # CALL_ROUTINE 8 abre la tienda de reciclaje (openRecycleShop) mientras este trigger está puesto.
 recycle_trigger: 3
+# RECYCLABLE_ITEMS (script_common.c:350): lo que una derrota quita de estos objetos va a la tienda de reciclaje
+# (handleItemLoss), que guarda hasta recycle_max de cada uno.
+recyclable:
+  - { from: 11, to: 12 }
+  - { from: 23, to: 31 }
+  - { from: 33, to: 33 }
+  - { from: 35, to: 36 }
+  - { from: 46, to: 46 }
+  - { from: 50, to: 50 }
+  - { from: 56, to: 61 }
+  - { from: 67, to: 67 }
+  - { from: 70, to: 76 }
+  - { from: 78, to: 124 }
+recycle_max: 99
 # tickItemMenuAmountBox (script_common.c:1457): el botón alternativo mueve la cantidad de diez en diez.
 amount_step: 10
 # openShop: el número de cada frase dentro de la sección del tendero (resolveMapHeadEntry).
@@ -22,3 +36,6 @@ lines:
   thanks: 10
   anything_else: 11
   discount: 13
+  # openRecycleShop (script_menu.c:584): sus opciones (comprar o salir) y lo que dice cuando ya no le queda nada.
+  recycle_choices: 3
+  sold_out: 12

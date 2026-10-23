@@ -17,6 +17,9 @@ constexpr std::string_view RowsList = "shop.row";
 
 // The choice line's options, in the order of openShop's states 4 to 6.
 enum class Choice : std::uint8_t { Buy, Sell, Leave };
+constexpr std::int32_t ChoiceCount = 3;
+// openRecycleShop: buy or leave.
+constexpr std::int32_t RecycleChoiceCount = 2;
 
 const char* phaseName(std::uint8_t phase) {
   constexpr std::array<const char*, 5> Names{"closed", "talk", "choice", "list", "amount"};
@@ -58,10 +61,20 @@ bool ShopScreen::handle(const ui::UiCommand& command) {
     return true;
   }
   if (name == "shop_next" && phase_ == Phase::Talk) {
-    if (after_ == After::Close) {
+    switch (after_) {
+    case After::Close:
       finish();
-    } else {
+      break;
+    case After::SoldOut:
+      // openRecycleShop state 9: it has nothing left, and the farewell follows.
+      talk(desc_.shop->rules().lines.soldOut, After::Leave);
+      break;
+    case After::Leave:
+      leave();
+      break;
+    case After::Choice:
       setPhase(Phase::Choice);
+      break;
     }
   } else if (name == "shop_choice" && phase_ == Phase::Choice) {
     choose(numberOf(command.value));
@@ -107,6 +120,10 @@ void ShopScreen::talk(std::int32_t line, After after) {
 void ShopScreen::choose(std::int32_t choice) {
   if (choice < 0 || choice > static_cast<std::int32_t>(Choice::Leave)) {
     return;
+  }
+  // openRecycleShop: its choice is buy or leave.
+  if (desc_.shop->recycling() && choice == static_cast<std::int32_t>(Choice::Sell)) {
+    choice = static_cast<std::int32_t>(Choice::Leave);
   }
   switch (static_cast<Choice>(choice)) {
   case Choice::Buy:
@@ -177,6 +194,11 @@ void ShopScreen::confirm() {
   }
   traded_ = true;
   picked_.reset();
+  // openRecycleShop state 7: once the recycle shop has nothing left it says so and the visit ends.
+  if (desc_.shop->recycling() && desc_.shop->stock().empty()) {
+    talk(line, After::SoldOut);
+    return;
+  }
   talk(line, After::Choice);
 }
 
@@ -261,7 +283,11 @@ screens::ScreenSettings ShopScreen::settings() const {
   screens::ScreenSettings out{
       {"shop.phase", std::string{phaseName(static_cast<std::uint8_t>(phase_))}},
       {"shop.mode", std::string{mode_ == Mode::Buy ? "buy" : "sell"}},
-      {"shop.line_key", shop.lineKey(phase_ == Phase::Choice ? lines.choices : line_)},
+      {"shop.line_key", shop.lineKey(phase_ != Phase::Choice ? line_
+                                     : shop.recycling()      ? lines.recycleChoices
+                                                             : lines.choices)},
+      {"shop.choice_count",
+       static_cast<double>(shop.recycling() ? RecycleChoiceCount : ChoiceCount)},
       {"shop.bits_key", shop.lineKey(lines.bits)},
       {"shop.money", static_cast<double>(shop.money())},
       {"shop.saved", static_cast<double>(saved_)},

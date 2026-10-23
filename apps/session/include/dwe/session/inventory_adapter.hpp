@@ -11,9 +11,11 @@
 #include <dwe/session/session_system.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::assets {
@@ -70,6 +72,10 @@ public:
   // A lost battle takes stacks away at random (script_common.c: handleItemLoss), with the session's
   // random numbers.
   std::vector<game::inventory::Stack> loseOnDefeat(GameSession& session);
+  // Hears of the stacks a lost battle takes away (the shop's recycle stock keeps them).
+  void setLossListener(std::function<void(const std::vector<game::inventory::Stack>&)> listener) {
+    lossListener_ = std::move(listener);
+  }
 
   // The bag, for the menus and the other adapters; only after the rules were read.
   [[nodiscard]] game::inventory::Inventory& inventory();
@@ -90,6 +96,7 @@ private:
   std::optional<game::inventory::ItemEffects> effects_;
   ItemUseRules itemUse_;
   std::unique_ptr<Serializer> serializer_;
+  std::function<void(const std::vector<game::inventory::Stack>&)> lossListener_;
 };
 
 } // namespace dwe::session

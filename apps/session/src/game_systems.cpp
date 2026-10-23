@@ -13,6 +13,7 @@
 
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 namespace {
@@ -86,6 +87,10 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       .files = &files, .story = story.get(), .inventory = inventory.get(), .battle = battle.get()});
   auto shop = std::make_unique<ShopCounter>(
       ShopCounterDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
+  // handleItemLoss: what a lost battle takes goes to the recycle shop.
+  inventory->setLossListener([shop = shop.get()](const std::vector<game::inventory::Stack>& lost) {
+    shop->recycleLost(lost);
+  });
   GameSystems game{.systems = {},
                    .evolution = evolution.get(),
                    .inventory = inventory.get(),

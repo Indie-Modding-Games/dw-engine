@@ -220,7 +220,9 @@ La tienda que abre la historia (`script_interp.c: CALL_ROUTINE 8` → `script_co
 `game::inventory::sell`. Las frases del tendero son las de su sección de MAPHEAD (`getShopkeeperLine`,
 `resolveMapHeadEntry`), leídas del listado `script/maphead`. La sección `shop`
 ([esquema](../../content/schemas/ruleset_shop.schema.json)) es opcional: sin ella no hay tiendas. La tienda de
-reciclaje (con el trigger `recycle_trigger`) aún no está portada: la visita se cierra al momento.
+reciclaje (`script_menu.c: openRecycleShop`, con el trigger `recycle_trigger` o `ShopVisit::recycle`) vende lo que
+quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `recycle_max` de cada uno, que llegan por
+`InventoryAdapter::setLossListener`) y no compra; su surtido se guarda en la sección `shop` de la partida.
 
 ## Paridad con el original
 

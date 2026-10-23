@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <string>
 #include <utility>
 
 #include "map_head_lines.hpp"
@@ -41,6 +42,15 @@ constexpr std::string_view SellPromptKey = "sell_prompt";
 constexpr std::string_view ThanksKey = "thanks";
 constexpr std::string_view AnythingElseKey = "anything_else";
 constexpr std::string_view DiscountKey = "discount";
+constexpr std::string_view RecycleChoicesKey = "recycle_choices";
+constexpr std::string_view SoldOutKey = "sold_out";
+constexpr std::string_view RecyclableKey = "recyclable";
+constexpr std::string_view RecycleMaxKey = "recycle_max";
+// The save section of the recycle shop's stock.
+constexpr std::string_view ShopSaveName = "shop";
+constexpr std::string_view RecycledKey = "recycled";
+constexpr std::string_view CountKey = "count";
+constexpr std::string_view ItemKey = "item";
 
 std::int32_t nonNegative(YamlReader& reader, const YamlNode& parent, std::string_view key) {
   const YamlNode& node = reader.field(parent, key);
@@ -55,7 +65,7 @@ ShopLines readLines(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, messages::ShopLinesText,
                          {GreetingKey, NothingToSellKey, ChoicesKey, FarewellAfterTradeKey,
                           FarewellKey, BitsKey, BuyPromptKey, SellPromptKey, ThanksKey,
-                          AnythingElseKey, DiscountKey})) {
+                          AnythingElseKey, DiscountKey, RecycleChoicesKey, SoldOutKey})) {
     return {};
   }
   return {.greeting = nonNegative(reader, node, GreetingKey),
@@ -68,7 +78,9 @@ ShopLines readLines(YamlReader& reader, const YamlNode& node) {
           .sellPrompt = nonNegative(reader, node, SellPromptKey),
           .thanks = nonNegative(reader, node, ThanksKey),
           .anythingElse = nonNegative(reader, node, AnythingElseKey),
-          .discount = nonNegative(reader, node, DiscountKey)};
+          .discount = nonNegative(reader, node, DiscountKey),
+          .recycleChoices = nonNegative(reader, node, RecycleChoicesKey),
+          .soldOut = nonNegative(reader, node, SoldOutKey)};
 }
 
 } // namespace
@@ -78,15 +90,18 @@ core::Result<ShopCounterRules> readShopCounterRules(const ruleset::Section& sect
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, messages::ShopSectionText,
                          {KeeperLinesSectionKey, OwnerlessLinesSectionKey, RecycleTriggerKey,
-                          AmountStepKey, LinesKey})) {
+                          RecyclableKey, RecycleMaxKey, AmountStepKey, LinesKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   ShopCounterRules rules{.keeperLinesSection = nonNegative(reader, root, KeeperLinesSectionKey),
                          .ownerlessLinesSection =
                              nonNegative(reader, root, OwnerlessLinesSectionKey),
                          .recycleTrigger = nonNegative(reader, root, RecycleTriggerKey),
+                         .recyclable = {},
+                         .recycleMax = nonNegative(reader, root, RecycleMaxKey),
                          .amountStep = nonNegative(reader, root, AmountStepKey),
                          .lines = readLines(reader, reader.field(root, LinesKey))};
+  assets::readEntryList(reader, reader.field(root, RecyclableKey), RecyclableKey, rules.recyclable);
   return reader.finish(std::move(rules), section.file);
 }
 
@@ -114,8 +129,72 @@ private:
   const StoryAdapter* story_;
 };
 
+// The recycle shop's items as stock triggers: an item is in stock while the shop holds some
+// (fillRecycleShopItemList).
+class ShopCounter::RecyclePort final : public game::inventory::StockTriggers {
+public:
+  explicit RecyclePort(const ShopCounter& counter) : counter_(&counter) {}
+
+  [[nodiscard]] bool isSet(std::int32_t trigger) const override {
+    const auto& items = counter_->items();
+    const std::int32_t base = counter_->desc_.inventory->inventory().rules().shop.stockTriggerBase;
+    const assets::ItemEntry* item = items.findByOriginalIndex(trigger - base);
+    return item != nullptr && counter_->recycleCount(items.handleOf(*item)) > 0;
+  }
+
+private:
+  const ShopCounter* counter_;
+};
+
+class ShopCounter::Serializer final : public game::save::SectionSerializer {
+public:
+  explicit Serializer(ShopCounter& counter) : counter_(&counter) {}
+
+  [[nodiscard]] core::Result<YamlNode> write() const override {
+    YamlNode recycled = YamlNode::sequence();
+    for (const auto& [item, count] : counter_->recycled_) {
+      YamlNode entry = YamlNode::mapping();
+      entry.set(std::string{ItemKey}, YamlNode::scalar(item));
+      entry.set(std::string{CountKey}, YamlNode::scalar(std::to_string(count)));
+      recycled.append(std::move(entry));
+    }
+    YamlNode root = YamlNode::mapping();
+    root.set(std::string{RecycledKey}, std::move(recycled));
+    return root;
+  }
+
+  core::Result<void> read(const YamlNode& state) override {
+    YamlReader reader;
+    std::map<std::string, std::int32_t, std::less<>> recycled;
+    if (reader.expectKeys(state, ShopSaveName, {RecycledKey})) {
+      for (const YamlNode& entry : reader.sequence(reader.field(state, RecycledKey), RecycledKey)) {
+        if (reader.expectKeys(entry, RecycledKey, {ItemKey, CountKey})) {
+          const std::string item = reader.text(reader.field(entry, ItemKey));
+          recycled[item] = nonNegative(reader, entry, CountKey);
+        }
+      }
+    }
+    auto read = reader.finish(std::move(recycled), std::string{ShopSaveName});
+    if (!read) {
+      return std::unexpected{read.error()};
+    }
+    counter_->recycled_ = std::move(*read);
+    return {};
+  }
+
+  core::Result<void> readMissing() override {
+    counter_->recycled_.clear();
+    return {};
+  }
+
+private:
+  ShopCounter* counter_;
+};
+
 ShopCounter::ShopCounter(ShopCounterDesc desc)
-    : desc_(desc), stockPort_(std::make_unique<StockPort>(desc.story)) {}
+    : desc_(desc), stockPort_(std::make_unique<StockPort>(desc.story)),
+      recyclePort_(std::make_unique<RecyclePort>(*this)),
+      serializer_(std::make_unique<Serializer>(*this)) {}
 
 ShopCounter::~ShopCounter() = default;
 
@@ -137,24 +216,52 @@ core::Result<void> ShopCounter::readRules(const ruleset::Ruleset& rules) {
   return {};
 }
 
+core::Result<void> ShopCounter::addSaveSections(game::save::SaveSections& sections) {
+  return sections.add(std::string{ShopSaveName}, *serializer_, game::save::MigrationChain{});
+}
+
+core::Result<void> ShopCounter::startNewGame(GameSession& /*session*/) {
+  recycled_.clear();
+  return {};
+}
+
+std::int32_t ShopCounter::recycleCount(assets::ItemHandle item) const {
+  const auto found = recycled_.find(items().at(item).id);
+  return found == recycled_.end() ? 0 : found->second;
+}
+
+void ShopCounter::recycleLost(const std::vector<game::inventory::Stack>& lost) {
+  if (!rules_) {
+    return;
+  }
+  for (const game::inventory::Stack& stack : lost) {
+    const assets::ItemEntry& item = items().at(stack.item);
+    if (!rules_->recyclable.contains(item)) {
+      continue;
+    }
+    std::int32_t& count = recycled_[item.id];
+    count = std::min(count + stack.count, rules_->recycleMax);
+    core::logDebug("[port:shop] handleItemLoss (script_common.c:1372): {} x{} to the recycle "
+                   "shop, now {}",
+                   item.id, stack.count, count);
+  }
+}
+
 void ShopCounter::open(ShopVisit visit) {
   if (!rules_ || desc_.inventory == nullptr) {
     core::logDebug("[port:shop] openShop (script_common.c:1618): the ruleset has no shop section; "
                    "the visit closes at once");
     return;
   }
-  if (recycles()) {
-    core::logDebug("[port:shop] openRecycleShop (script_interp.c:420, CALL_ROUTINE 8 with trigger "
-                   "{}): not ported yet; the visit closes at once",
-                   rules_->recycleTrigger);
-    return;
-  }
+  visit.recycle = visit.recycle || recycles();
   if (auto loaded = loadLines(); !loaded) {
     core::logWarning("[port:shop] getShopkeeperLine (script_common.c:1174): {}",
                      loaded.error().message);
   }
   visit_ = std::move(visit);
-  core::logDebug("[port:shop] openShop (script_common.c:1618): keeper '{}'{}, lines section {}",
+  core::logDebug("[port:shop] {}: keeper '{}'{}, lines section {}",
+                 visit_->recycle ? "openRecycleShop (script_menu.c:584)"
+                                 : "openShop (script_common.c:1618)",
                  visit_->keeperSpecies, visit_->ownerless ? " (ownerless)" : "", linesSection());
 }
 
@@ -175,7 +282,10 @@ bool ShopCounter::recycles() const {
 }
 
 std::vector<game::inventory::ShopOffer> ShopCounter::stock() const {
-  return game::inventory::shopStock(desc_.inventory->inventory(), items(), *stockPort_);
+  return game::inventory::shopStock(
+      desc_.inventory->inventory(), items(),
+      recycling() ? static_cast<const game::inventory::StockTriggers&>(*recyclePort_)
+                  : *stockPort_);
 }
 
 std::vector<game::inventory::SaleOffer> ShopCounter::saleOffers() const {
@@ -196,7 +306,10 @@ std::int32_t ShopCounter::maxPurchase(GameSession& session, assets::ItemHandle i
   const game::inventory::Buyer buyer{
       .partnerIsBaby =
           std::ranges::contains(desc_.inventory->itemUseRules().shopDiscountLevels, level)};
-  return game::inventory::maxPurchase(desc_.inventory->inventory(), items(), item, buyer);
+  const std::int32_t most =
+      game::inventory::maxPurchase(desc_.inventory->inventory(), items(), item, buyer);
+  // createItemMenuAmountBox: the recycle shop sells no more than it holds.
+  return recycling() ? std::min(most, recycleCount(item)) : most;
 }
 
 std::int32_t ShopCounter::money() const {
@@ -216,7 +329,18 @@ ShopCounter::buy(GameSession& session, assets::ItemHandle item, std::int32_t amo
   if (!visit_) {
     return core::fail(std::string{messages::ShopClosed});
   }
-  auto bought = desc_.inventory->buy(session, item, amount, *stockPort_);
+  if (recycling() && amount > recycleCount(item)) {
+    return core::fail(messages::formatMessage(messages::ShopAmountOutside, amount,
+                                              items().at(item).id, recycleCount(item)));
+  }
+  auto bought = desc_.inventory->buy(
+      session, item, amount,
+      recycling() ? static_cast<const game::inventory::StockTriggers&>(*recyclePort_)
+                  : *stockPort_);
+  if (bought && recycling()) {
+    // tickItemMenuAmountBox: the recycle shop gives up what it sold.
+    recycled_[items().at(item).id] -= amount;
+  }
   if (bought) {
     core::logDebug("[port:shop] tickItemMenuAmountBox (script_common.c:1457): bought {} x{} for "
                    "{}, saved {}",
@@ -227,7 +351,7 @@ ShopCounter::buy(GameSession& session, assets::ItemHandle item, std::int32_t amo
 
 core::Result<std::int32_t> ShopCounter::sell(GameSession& session, assets::ItemHandle item,
                                              std::int32_t amount) {
-  if (!visit_) {
+  if (!visit_ || visit_->recycle) {
     return core::fail(std::string{messages::ShopClosed});
   }
   auto sold = game::inventory::sell(desc_.inventory->inventory(), items(), item, amount);

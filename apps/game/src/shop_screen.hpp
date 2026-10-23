@@ -42,7 +42,7 @@ private:
   enum class Phase : std::uint8_t { Closed, Talk, Choice, List, Amount };
   enum class Mode : std::uint8_t { Buy, Sell };
   // Where a line goes once the player reads it.
-  enum class After : std::uint8_t { Choice, Close };
+  enum class After : std::uint8_t { Choice, SoldOut, Leave, Close };
 
   struct Row {
     assets::ItemHandle item;
