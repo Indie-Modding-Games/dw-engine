@@ -29,6 +29,9 @@ dwe_add_app(game
         src/model_viewer.cpp
         src/movie_rules.cpp
         src/movie_screen.cpp
+        src/naming_box.cpp
+        src/new_game_interview.cpp
+        src/new_game_scene_rules.cpp
         src/options.cpp
         src/partner_events.cpp
         src/partner_menu.cpp
@@ -44,11 +47,13 @@ dwe_add_app(game
         src/shop_screen.cpp
         src/sleep_screen.cpp
         src/story_field_link.cpp
+        src/story_text_rows.cpp
         src/story_textbox.cpp
         src/story_stage.cpp
         src/story_map_edits.cpp
         src/egg_box_screen.cpp
         src/story_gym.cpp
+        src/story_naming.cpp
         src/story_shop.cpp
         src/field_items_screen.cpp
         src/fishing_screen.cpp

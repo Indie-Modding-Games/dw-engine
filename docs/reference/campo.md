@@ -235,7 +235,10 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   **(suposición)**.
 - **La vuelta**: `room08` no tiene warps en su tabla; su puerta (disparador 51) es el warp de script a `twna01`
   salida 2, delante de la casa.
-- El campo empieza en `twna01`, salida 1 (la que viene de `trai00`, la entrada a la ciudad).
+- El campo empieza en `twna01`, salida 1 (la que viene de `trai00`, la entrada a la ciudad), salvo con la historia
+  y `story_scenes.new_game.chain: original`: entonces empieza como el original (`map.c: initializeMap`), en
+  `twna01` salida 9, cuya casilla corre la apertura (sección 0x36 del guion 164: disparadores 54, 55 y 75 y salto a
+  `topn01`, donde el guion 193 despierta al jugador en casa de Jijimon).
 
 ## Alcance de los mapas
 

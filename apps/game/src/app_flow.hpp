@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/save/slots.hpp>
+#include <dwe/session/game_session.hpp>
 
 #include <functional>
 #include <memory>
@@ -18,6 +19,8 @@ struct PlayStart {
   // The empty slot a new game is saved to once it started, as the original writes the card's file
   // when a game begins.
   std::optional<game::save::SlotId> saveTo;
+  // What a new game's opening asked (main.c: newGameScene); nothing when it did not run.
+  std::optional<session::NewGameChoice> choice;
 
   friend bool operator==(const PlayStart&, const PlayStart&) = default;
 };

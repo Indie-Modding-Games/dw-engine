@@ -34,6 +34,9 @@ screens:
   # El aviso de un objeto del suelo o de un cofre, también.
   field_item_notice:
     styles: [ui/skins/modern/pause_menu/style]
+  # La caja de nombres de la partida nueva y de los guiones, también.
+  naming_box:
+    styles: [ui/skins/modern/pause_menu/style]
   # El menú del cebo y los avisos de la pesca, también.
   fishing_bait:
     styles: [ui/skins/modern/pause_menu/style]

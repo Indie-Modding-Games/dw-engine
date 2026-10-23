@@ -59,6 +59,11 @@ Las secciones del ruleset de la partida (en `content/packs/game/rules/original/`
   (lo que pone el guion 193 tras la introducción, extraído por `dwx`;
   [scripts](../../formats/scripts.md#estadísticas-de-la-partida-nueva)), el partner empieza con las de su
   especie en ese documento, o con las de `others`, con el HP y el MP actuales que da el guion.
+- `new_game_scene` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_new_game_scene.schema.json)):
+  las preguntas de Jijimon antes del primer mapa ([apps/game](game.md#apertura-de-la-partida-nueva)). Lo que
+  responde el jugador llega a `startNewGame(NewGameChoice)`: el partner que eligen las respuestas sustituye al de
+  `new_game` y los nombres que escribe quedan en `GameSession::names()`, que la partida guarda en el resumen de su
+  cabecera (`tamer`, `nickname`) y que el cuadro de texto de la historia usa para `{tamer}` y `{partner}`.
 - `tamer` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_tamer.schema.json)): los límites del nivel de domador y los
   niveles que da una evolución cuando sale su probabilidad (`evolution_level_gain`, `evl.c: EVL_applyEvolution`).
 - `story` ([esquema](../../content/schemas/ruleset_story.schema.json)): `ticks_per_frame`, los ticks del motor por

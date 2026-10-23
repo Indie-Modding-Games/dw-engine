@@ -5,6 +5,7 @@
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/map_head_lines.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/shop_counter.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -15,7 +16,6 @@
 #include <string>
 #include <utility>
 
-#include "map_head_lines.hpp"
 #include "shop_messages.hpp"
 
 namespace dwe::session {

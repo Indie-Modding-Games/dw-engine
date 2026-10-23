@@ -24,9 +24,9 @@ inline constexpr std::string_view StoryScenesSection = "story_scenes";
 
 // How a new game's story starts.
 enum class NewGameChain : std::uint8_t {
-  // As the original: the story's state clear but for the partner's raised trigger, on the first
-  // map at its exit, and the map-head section of that map runs the opening (main.c: main,
-  // map.c: initializeMap, runMapHeadScript(0xCC)).
+  // As the original: the story's state clear but for the partner's raised trigger, and the field
+  // starts on the first map at its exit (map.c: initializeMap), whose map-head section and step
+  // cell run the opening (main.c: main, runMapHeadScript(0xCC)).
   Original,
   // The state data/new_game_story leaves and field/warps' start, without the opening.
   Seeded,
@@ -56,6 +56,12 @@ struct StoryDeathRules {
 };
 
 // The numbers of the story_scenes section.
+// Where the field puts the player at a new game's start: a map by its number in the original.
+struct NewGameStart {
+  std::int32_t map = 0;
+  std::int32_t exit = 0;
+};
+
 struct StoryScenesRules {
   game::story::StoryBattleRules battle;
   game::story::PartnerRoutineRules partner;
@@ -182,6 +188,9 @@ public:
   [[nodiscard]] const game::story::BattleCounters& battleCounters() const;
   [[nodiscard]] game::story::SceneSync& sceneSync();
   [[nodiscard]] const StoryScenesRules& rules() const;
+  // Where the field starts a new game when the original chain runs, nothing when the field's own
+  // start does (seeded, or no story_scenes section).
+  [[nodiscard]] std::optional<NewGameStart> newGameStart() const;
 
 private:
   void bind(GameSession& session);

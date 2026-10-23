@@ -33,6 +33,7 @@
 #include "free_exploration.hpp"
 #include "gym_screen.hpp"
 #include "movie_rules.hpp"
+#include "naming_box.hpp"
 #include "options.hpp"
 #include "partner_menu.hpp"
 #include "praise_scold_call.hpp"
@@ -157,6 +158,8 @@ private:
   FreeExploration freeExploration_;
   BattleScreen battleScreen_;
   StorySceneGlue storyScenes_;
+  // The naming box the story's renaming opens, when the ruleset has the new game's scene.
+  std::unique_ptr<NamingBox> namingBox_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

@@ -44,6 +44,8 @@ schemas:
     - ui/ui_sounds
   ruleset_new_game:
     - rules/*/new_game
+  ruleset_new_game_scene:
+    - rules/*/new_game_scene
   ruleset_tamer:
     - rules/*/tamer
   ruleset_item_use:

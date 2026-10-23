@@ -64,8 +64,6 @@ struct StoryScenesContext {
   std::int64_t shopTally = 0;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
-  // A new game whose map-head chain has not run yet.
-  bool chainPending = false;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
   bool deathPending = false;
   std::optional<std::size_t> egg;

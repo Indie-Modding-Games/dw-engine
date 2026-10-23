@@ -1,0 +1,5 @@
+# La caja de nombres (script_menu.c: setupNameSelectorBox): de quién es el nombre y sus botones.
+tamer: "Tu nombre"
+partner: "El nombre de tu Digimon"
+back: "Borrar"
+write: "Escribir"

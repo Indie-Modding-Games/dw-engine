@@ -1,0 +1,15 @@
+/* How the naming box behaves whatever the skin: the name over a grid of letters, two sides of five
+   columns, with Back and OK below (script_menu.c: setupNameSelectorBox, rect -145, -91, 290 x 138;
+   setupNameDisplayBox). The look is the pause menu's panel (the skins' pause_menu style). */
+
+body { pointer-events: none; }
+body #panel { left: 50%; margin-left: -230dp; top: 60dp; width: 460dp; }
+#title { margin: 0 0 6dp 0; }
+#name { margin: 0 0 10dp 0; }
+.letter { display: inline-block; width: 28dp; text-align: center; }
+.grid-row { display: block; height: 30dp; }
+.cell { display: inline-block; width: 40dp; height: 30dp; line-height: 30dp; text-align: center; }
+.cell:nth-child(5) { margin-right: 24dp; }
+.cell.selected, .button.selected { decorator: none; background-color: #ffffff40; }
+#buttons { margin: 8dp 0 0 0; }
+.button { display: inline-block; width: 200dp; text-align: center; }

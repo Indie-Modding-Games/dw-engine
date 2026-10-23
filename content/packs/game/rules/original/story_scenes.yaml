@@ -39,11 +39,12 @@ recruits:
   first_trigger: 200
   count: 63
 new_game:
-  # seeded: el estado de data/new_game_story sin la apertura. original: estado limpio y la cadena del
-  # mapa 0xCC (main.c: main). La app ya ejecuta los scripts de mapa, pero el campo de una partida
-  # nueva empieza en twna01 (field/warps.yaml): la cadena original correría la sección de 0xCC sobre
-  # File City. Se cambia cuando la partida nueva empiece en el lugar de la apertura.
-  chain: seeded
+  # original: estado limpio salvo el disparador de criado del partner; el campo empieza en la pantalla `map` por la
+  # salida `exit` (map.c: initializeMap), su sección de cabecera (runMapHeadScript(0xCC)) carga el guion 164 y la celda
+  # de paso de la salida 9 corre la apertura (sección 0x36: disparadores 54, 55 y 75, salto a topn01 y la escena de
+  # despertar en casa de Jijimon, guion 193). seeded: el estado de data/new_game_story y el inicio de field/warps, sin
+  # la apertura.
+  chain: original
   map: 204
   exit: 9
 # Casos de map.c: changeMap: al entrar en `to` desde `from`, la pantalla anterior es otra.

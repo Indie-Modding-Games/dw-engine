@@ -21,6 +21,7 @@ sections:
   - life
   - training
   - new_game
+  - new_game_scene
   - tamer
   - item_use
   - inventory

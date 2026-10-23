@@ -38,7 +38,8 @@ core::Result<void> begin(session::GameSession& session, const PlayStart& start,
                                                          : game::save::slotFileName(*start.load)));
     return {};
   }
-  if (auto started = session.startNewGame(); !started) {
+  if (auto started = session.startNewGame(start.choice.value_or(session::NewGameChoice{}));
+      !started) {
     return started;
   }
   core::logInfo("{}", core::formatMessage(messages::SessionStarted, seed));

@@ -29,6 +29,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dwe::audio {
@@ -59,6 +60,23 @@ struct TamerState {
   TamerRecord record{};
 
   friend bool operator==(const TamerState&, const TamerState&) = default;
+};
+
+// What the new game's opening asked (main.c: newGameScene): the partner the answers picked and the
+// names typed. Empty texts keep the ruleset's partner and leave the names unset.
+struct NewGameChoice {
+  std::string partner;
+  std::string tamerName;
+  std::string partnerName;
+
+  friend bool operator==(const NewGameChoice&, const NewGameChoice&) = default;
+};
+
+// The names the player gave, as the save's summary keeps them (SaveSummary::tamer and nickname);
+// empty until given.
+struct PlayerNames {
+  std::string tamer;
+  std::string partner;
 };
 
 // Where the player is: the map and the place on it, as a save keeps it.
@@ -126,8 +144,8 @@ public:
   ~GameSession();
 
   // Starts a new game from the ruleset's new_game section: the clock at its start, the partner, the
-  // tamer.
-  core::Result<void> startNewGame();
+  // tamer; the opening's choice, when it ran, gives the partner and the names.
+  core::Result<void> startNewGame(const NewGameChoice& choice = {});
 
   // Loads a slot (or its backup, for a damaged save), or a save already read, switching to its
   // ruleset if it is another one. The place it was saved at is in savedPlace() for whoever enters
@@ -190,6 +208,9 @@ public:
   // What the UI shows of the partner; only while playing().
   [[nodiscard]] PartnerView partnerView() const;
   [[nodiscard]] const TamerState& tamer() const;
+  // The tamer's and the partner's names; a script renames them (call_routine 32).
+  [[nodiscard]] const PlayerNames& names() const { return names_; }
+  void setNames(PlayerNames names) { names_ = std::move(names); }
 
   // The random numbers of the systems besides the partner (an evolution's special roll, a chip's
   // tamer level, the items lost in a defeat), saved with the game. A new game starts them from the
@@ -302,6 +323,7 @@ private:
   std::unique_ptr<SessionMusic> music_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
+  PlayerNames names_;
 };
 
 } // namespace dwe::session

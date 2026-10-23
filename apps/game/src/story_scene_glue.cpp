@@ -39,8 +39,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (eggBox_ != nullptr) {
     eggBox_->update(scenes);
   }
+  naming_.update(scenes);
   while (const auto screen = scenes.takeScreenRequest()) {
-    if (shop_.take(*screen, scene) || gym_.take(*screen) ||
+    if (shop_.take(*screen, scene) || gym_.take(*screen) || naming_.take(*screen) ||
         (eggBox_ != nullptr && eggBox_->take(*screen, scenes))) {
       continue;
     }

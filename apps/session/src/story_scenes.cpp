@@ -281,10 +281,11 @@ core::Result<void> StoryScenes::startNewGame(GameSession& session) {
   scenes.battles->restoreCounters({});
   scenes.recruits.clear();
   scenes.shopTally = 0;
-  scenes.chainPending = scenes.rules.newGameChain == NewGameChain::Original;
+  // main.c: main runs the first map's map-head section once the new game is set up
+  // (runMapHeadScript(0xCC)); the field does when it enters that map (newGameStart).
   core::logDebug("[port:story] initializeMap (map.c:3936): screen {} exit {}, chain={}",
                  scenes.rules.newGameMap, scenes.rules.newGameExit,
-                 scenes.chainPending ? "original" : "seeded");
+                 scenes.rules.newGameChain == NewGameChain::Original ? "original" : "seeded");
   return {};
 }
 
@@ -293,13 +294,6 @@ void StoryScenes::tick(GameSession& session, const ruleset::ClockAdvance& /*adva
   StoryScenesContext& scenes = *context_;
   if (!scenes.published) {
     return;
-  }
-  if (std::exchange(scenes.chainPending, false)) {
-    // main.c: main runs the first map's map-head section once the new game is set up
-    // (runMapHeadScript(0xCC)).
-    core::logDebug("[port:story] runMapHeadScript (script_interp.c:2235): new game, map {}",
-                   scenes.rules.newGameMap);
-    scenes.runner().enterMap(scenes.rules.newGameMap);
   }
   watchRecruits(session);
   askForDeath();
@@ -413,6 +407,14 @@ game::story::SceneSync& StoryScenes::sceneSync() {
 
 const StoryScenesRules& StoryScenes::rules() const {
   return context_->rules;
+}
+
+std::optional<NewGameStart> StoryScenes::newGameStart() const {
+  const StoryScenesContext& scenes = *context_;
+  if (!scenes.enabled || scenes.rules.newGameChain != NewGameChain::Original) {
+    return std::nullopt;
+  }
+  return NewGameStart{.map = scenes.rules.newGameMap, .exit = scenes.rules.newGameExit};
 }
 
 } // namespace dwe::session

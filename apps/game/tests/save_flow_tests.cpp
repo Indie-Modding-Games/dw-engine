@@ -96,7 +96,8 @@ TEST_CASE("a new game lists the empty slots and is saved to the one chosen") {
   CHECK_FALSE(flow.answer(false).has_value());
   CHECK_FALSE(flow.answer(true).has_value());
   REQUIRE(flow.choose(0).has_value());
-  CHECK(flow.answer(true) == PlayStart{.load = std::nullopt, .backup = false, .saveTo = Slot1});
+  CHECK(flow.answer(true) ==
+        PlayStart{.load = std::nullopt, .backup = false, .saveTo = Slot1, .choice = std::nullopt});
 
   CHECK(flow.chooseWithoutSaving().text == "save.slots.no_save_warning");
   CHECK(flow.answer(true) == PlayStart{});
@@ -117,11 +118,13 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
 
   CHECK(flow.choose(0) ==
         SaveDialog{.text = "save.confirm_continue", .file = {}, .question = true});
-  CHECK(flow.answer(true) == PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt});
+  CHECK(flow.answer(true) ==
+        PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
 
   CHECK(flow.choose(1) ==
         SaveDialog{.text = "save.damaged_use_backup", .file = "slot_03.yaml", .question = true});
-  CHECK(flow.answer(true) == PlayStart{.load = Slot3, .backup = true, .saveTo = std::nullopt});
+  CHECK(flow.answer(true) ==
+        PlayStart{.load = Slot3, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt});
 
   CHECK(flow.choose(2) ==
         SaveDialog{.text = "save.too_new", .file = "autosave_01.yaml", .question = false});
@@ -141,16 +144,18 @@ TEST_CASE("a damaged save with no backup is only a notice") {
 }
 
 TEST_CASE("a game that did not start says whether the start or the save failed, and the file") {
-  const PlayStart inFirst{.load = std::nullopt, .backup = false, .saveTo = Slot1};
+  const PlayStart inFirst{
+      .load = std::nullopt, .backup = false, .saveTo = Slot1, .choice = std::nullopt};
   CHECK(SaveFlow::startFailed(inFirst, true) ==
         SaveDialog{.text = "save.failed", .file = "slot_01.yaml", .question = false});
   CHECK(SaveFlow::startFailed(inFirst, false) ==
         SaveDialog{.text = "save.start_failed", .file = {}, .question = false});
   CHECK(SaveFlow::startFailed({}, false).text == "save.start_failed");
-  CHECK(
-      SaveFlow::startFailed({.load = Slot3, .backup = true, .saveTo = std::nullopt}, false).file ==
-      "slot_03.yaml.bak");
-  CHECK(
-      SaveFlow::startFailed({.load = Autosave1, .backup = false, .saveTo = std::nullopt}, false) ==
-      SaveDialog{.text = "save.load_failed", .file = "autosave_01.yaml", .question = false});
+  CHECK(SaveFlow::startFailed(
+            {.load = Slot3, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt}, false)
+            .file == "slot_03.yaml.bak");
+  CHECK(SaveFlow::startFailed(
+            {.load = Autosave1, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt},
+            false) ==
+        SaveDialog{.text = "save.load_failed", .file = "autosave_01.yaml", .question = false});
 }

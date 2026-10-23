@@ -51,6 +51,8 @@
 #include "messages.hpp"
 #include "minimap_setting.hpp"
 #include "movie_screen.hpp"
+#include "new_game_interview.hpp"
+#include "new_game_scene_rules.hpp"
 #include "play_session.hpp"
 #include "text_font_setting.hpp"
 #include "title_screen.hpp"
@@ -177,7 +179,8 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
         std::pair{"gym_stats", "ui/gym_stats/document"},
         std::pair{"shop_menu", "ui/shop_menu/document"},
         std::pair{"field_item_notice", "ui/field_item_notice/document"},
-        std::pair{"gym_slots", "ui/gym_slots/document"}}) {
+        std::pair{"gym_slots", "ui/gym_slots/document"},
+        std::pair{"naming_box", "ui/naming_box/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};
@@ -419,6 +422,11 @@ int runGame(const Options& options) {
       core::logWarning("movies: {}", screen.error().message);
     }
   }
+  // The new game's opening questions before its movie (main.c: newGameScene); none in an autotest,
+  // as the movies.
+  const std::optional<NewGameSceneRules> newGameScene =
+      autotest ? std::nullopt : loadNewGameSceneRules(files, options.ruleset);
+  std::unique_ptr<NewGameInterview> interview;
   const platform::PixelSize size = window->pixelSize();
   auto ui = ui::Ui::create({
       .files = &files,
@@ -507,6 +515,8 @@ int runGame(const Options& options) {
   TitleScreen title{files, options, !autotest, **ui};
   // What waits for the movie that plays: the title, or a game to start (main.c: main).
   std::optional<PlayStart> startAfterMovie;
+  // The new game that waits for the opening's questions.
+  std::optional<PlayStart> startAfterInterview;
   bool titleAfterMovie = false;
   bool moviePlayed = false;
   // The title's ticks without input, and whether the boot movie plays again after them
@@ -534,7 +544,10 @@ int runGame(const Options& options) {
   if ((autotest && !autotest->startsAtMainMenu()) || options.newGame || options.load ||
       options.startMap) {
     sessionCommands.drop(autotest.get());
-    if (auto started = flow.play({.load = options.load, .backup = false, .saveTo = std::nullopt});
+    if (auto started = flow.play({.load = options.load,
+                                  .backup = false,
+                                  .saveTo = std::nullopt,
+                                  .choice = std::nullopt});
         !started) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
@@ -592,6 +605,35 @@ int runGame(const Options& options) {
       title.show();
     }
     titleIdleTicks = 0;
+  };
+  // A new game: its movie, then its first map (main.c: main, MAIN_STATE 0).
+  const auto beginNewGame = [&](const PlayStart& start) {
+    if (playMovie(MovieMoment::NewGame)) {
+      startAfterMovie = start;
+    } else {
+      startPlaying(start);
+    }
+  };
+  // A new game asks the opening's questions first (main.c: main: newGameScene).
+  const auto askNewGame = [&](const PlayStart& start) {
+    if (!newGameScene) {
+      beginNewGame(start);
+      return;
+    }
+    auto made = NewGameInterview::create(**renderer, **ui, files, *newGameScene);
+    if (!made) {
+      core::logWarning("new game scene: {}; the game starts without the questions",
+                       made.error().message);
+      beginNewGame(start);
+      return;
+    }
+    core::logDebug("[port:story] newGameScene (main.c:3727): the opening's questions");
+    title.hide();
+    interview = std::move(*made);
+    startAfterInterview = start;
+    // Building the scene is not game time.
+    step.reset();
+    previous = platform->nowSeconds();
   };
   std::array<render::Drawer*, 1> movieDrawers{movies ? &movies->drawer() : nullptr};
 
@@ -689,6 +731,12 @@ int runGame(const Options& options) {
         ++ticksRun;
         continue;
       }
+      if (interview) {
+        interview->tick(input);
+        input.endTick();
+        ++ticksRun;
+        continue;
+      }
       if (flow.playing() == nullptr && movies && replayBootMovie &&
           ++titleIdleTicks >= movieRules->landingIdleFrames) {
         core::logDebug("[port:movie] runLandingScreen (main.c:3604): {} ticks without input on the "
@@ -737,11 +785,10 @@ int runGame(const Options& options) {
       }
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
-          // A new game's movie plays before its first map (main.c: main, MAIN_STATE 0).
-          if (!start->load && playMovie(MovieMoment::NewGame)) {
-            startAfterMovie = *start;
-          } else {
+          if (start->load) {
             startPlaying(*start);
+          } else {
+            askNewGame(*start);
           }
         }
         continue;
@@ -757,6 +804,18 @@ int runGame(const Options& options) {
       flow.toTitle();
       screenFade->setDarkness(0.0F);
       title.show();
+    }
+    if (interview) {
+      interview->update(frameSeconds, (*renderer)->targetExtent());
+      screenFade->setDarkness(interview->fadeLevel());
+      if (interview->finished()) {
+        PlayStart start = *std::exchange(startAfterInterview, std::nullopt);
+        start.choice = interview->choice();
+        // The scene's models leave the GPU before the game starts (main.c: unloadNewGameScene).
+        (*device)->waitIdle();
+        interview.reset();
+        beginNewGame(start);
+      }
     }
     if (PlaySession* play = flow.playing()) {
       play->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
@@ -807,6 +866,8 @@ int runGame(const Options& options) {
       sceneDrawers = movieDrawers;
     } else if (flow.playing() != nullptr) {
       sceneDrawers = flow.playing()->scene().drawers();
+    } else if (interview) {
+      sceneDrawers = interview->drawers();
     }
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},

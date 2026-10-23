@@ -256,8 +256,14 @@ game::partner::PartnerStats GameSession::startingStats(const NewGameRules& start
   return stats;
 }
 
-core::Result<void> GameSession::startNewGame() {
-  const NewGameRules& start = state_->rules.newGame;
+core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
+  NewGameRules start = state_->rules.newGame;
+  if (!choice.partner.empty()) {
+    // main.c: main raises 3 or 0x11 as the opening's answer picked (readPStat(0xFE)).
+    core::logDebug("[port:story] main (main.c:3445): the opening picked partner {}",
+                   choice.partner);
+    start.partner = choice.partner;
+  }
   ruleset::GameClock& clock = state_->clock;
   const double speed = clock.speed();
   const bool running = clock.running();
@@ -281,6 +287,7 @@ core::Result<void> GameSession::startNewGame() {
   file_.header.created = now();
   homeSlot_.reset();
   playSeconds_ = 0.0;
+  names_ = {.tamer = choice.tamerName, .partner = choice.partnerName};
   partnerEvents_.clear();
   state_->playing = true;
   for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
@@ -326,6 +333,7 @@ core::Result<void> GameSession::loadFile(const game::save::SaveFile& file) {
   }
   file_ = file;
   homeSlot_ = manualSlotFromName(file.header.summary.slot);
+  names_ = {.tamer = file.header.summary.tamer, .partner = file.header.summary.nickname};
   playSeconds_ = static_cast<double>(file.header.playSeconds);
   partnerEvents_.clear();
   state_->playing = true;
@@ -590,11 +598,10 @@ void GameSession::writeRequestedAutosave() {
 
 game::save::SaveHeader GameSession::headerNow() const {
   const std::optional<FieldPlace> place = state_->currentPlace();
-  // The engine has no tamer name and no partner nickname yet: they stay empty until it does.
   game::save::SaveSummary summary{.slot = homeSlot_ ? slotName(*homeSlot_) : std::string{},
-                                  .tamer = {},
+                                  .tamer = names_.tamer,
                                   .species = state_->partner.state().species,
-                                  .nickname = {},
+                                  .nickname = names_.partner,
                                   .map = place ? place->map : std::string{}};
   std::string label = summary.species;
   if (place) {

@@ -3,6 +3,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/game/story/dialogue.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/screens/name_keys.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
@@ -15,11 +16,11 @@
 #include <string_view>
 #include <vector>
 
+#include "story_text_rows.hpp"
+
 namespace dwe::app {
 
 class FieldScene;
-
-inline constexpr std::string_view StoryTextboxDocument = "story_textbox";
 
 // The story's textboxes on screen: it publishes the dialogue's view (game/story: Dialogue) to the
 // story_textbox document, its pages split in rows of coloured runs, and feeds the dialogue the
@@ -39,19 +40,15 @@ public:
   void update(const FieldScene& scene, const assets::DigimonTable* species);
 
 private:
-  struct Run {
-    std::string text;
-    std::int64_t color = 0;
-  };
-  using Row = std::vector<Run>;
-
-  [[nodiscard]] std::vector<Row> rowsOf(const game::story::DialogueView& view,
-                                        const FieldScene& scene,
-                                        const assets::DigimonTable* species) const;
+  [[nodiscard]] std::vector<TextRow> rowsOf(const game::story::DialogueView& view,
+                                            const FieldScene& scene,
+                                            const assets::DigimonTable* species) const;
   [[nodiscard]] std::string speakerName(const game::story::Speaker& speaker,
                                         const FieldScene& scene,
                                         const assets::DigimonTable* species) const;
   [[nodiscard]] std::int64_t nameColor(const game::story::Speaker& speaker) const;
+  [[nodiscard]] std::string tamerName() const;
+  [[nodiscard]] std::string partnerName(const screens::NameKeys& names) const;
   [[nodiscard]] std::string pageText(const std::string& key,
                                      const assets::DigimonTable* species) const;
   [[nodiscard]] static std::optional<glm::vec2> originOf(const game::story::DialogueView& view,

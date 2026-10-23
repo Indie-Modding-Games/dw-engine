@@ -137,7 +137,8 @@ TEST_CASE("the app goes from the title screen to a game and back with nothing le
   CHECK_FALSE(flow.playing()->session->homeSlot().has_value());
   CHECK(flow.playing()->tonics() == 0);
 
-  const auto loaded = flow.play({.load = FirstSlot, .backup = false, .saveTo = std::nullopt});
+  const auto loaded = flow.play(
+      {.load = FirstSlot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
   REQUIRE_MESSAGE(loaded.has_value(), errorOf(loaded));
   CHECK(flow.playing()->session->clock().elapsedFrames() == savedClock);
   CHECK(flow.playing()->session->homeSlot() == FirstSlot);
@@ -150,13 +151,19 @@ TEST_CASE("a load that fails leaves the app at the title screen, from the title 
   MemorySaveStorage storage;
   auto flow = flowOn(packs, storage);
 
-  CHECK_FALSE(flow.play({.load = EmptySlot, .backup = false, .saveTo = std::nullopt}).has_value());
+  CHECK_FALSE(
+      flow.play(
+              {.load = EmptySlot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt})
+          .has_value());
   CHECK(flow.playing() == nullptr);
   CHECK_FALSE(flow.saveFailed());
 
   const auto started = flow.play({});
   REQUIRE_MESSAGE(started.has_value(), errorOf(started));
-  CHECK_FALSE(flow.play({.load = EmptySlot, .backup = false, .saveTo = std::nullopt}).has_value());
+  CHECK_FALSE(
+      flow.play(
+              {.load = EmptySlot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt})
+          .has_value());
   CHECK(flow.playing() == nullptr);
   CHECK(Game::alive == 0);
   const auto file = storage.read("slot_02.yaml");
@@ -168,7 +175,8 @@ TEST_CASE("a new game in a slot is saved to it as it starts, or does not start")
   const TestPacks packs;
   MemorySaveStorage storage;
   auto flow = flowOn(packs, storage);
-  const PlayStart inFirst{.load = std::nullopt, .backup = false, .saveTo = FirstSlot};
+  const PlayStart inFirst{
+      .load = std::nullopt, .backup = false, .saveTo = FirstSlot, .choice = std::nullopt};
 
   storage.failNextWrite();
   CHECK_FALSE(flow.play(inFirst).has_value());

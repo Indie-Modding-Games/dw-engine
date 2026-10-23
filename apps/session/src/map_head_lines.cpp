@@ -1,9 +1,8 @@
-#include "map_head_lines.hpp"
-
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/session/map_head_lines.hpp>
 
 #include <algorithm>
 #include <charconv>

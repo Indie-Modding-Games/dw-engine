@@ -152,8 +152,23 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   if (!scriptWarps) {
     return core::fail(std::format("field/script_warps: {}", scriptWarps.error().message));
   }
-  const std::string startMap = desc.startMap.value_or(warps->startMap);
-  const std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
+  std::string startMap = desc.startMap.value_or(warps->startMap);
+  std::int32_t startExit = desc.startMap ? desc.startExit : warps->startExit;
+  if (!desc.startMap && desc.startOriginalMap) {
+    const assets::MapEntry* entry =
+        scene->mapTable_ ? scene->mapTable_->findByOriginalIndex(*desc.startOriginalMap) : nullptr;
+    if (entry != nullptr && entry->hasFile()) {
+      core::logDebug("[port:story] initializeMap (map.c:3936): a new game starts on screen {} "
+                     "({}) at exit {}",
+                     *desc.startOriginalMap, entry->id, desc.startOriginalExit);
+      startMap = entry->id;
+      startExit = desc.startOriginalExit;
+    } else {
+      core::logWarning("field: no map of the original with index {}; the new game starts at "
+                       "field/warps' start",
+                       *desc.startOriginalMap);
+    }
+  }
   // The story's triggers, the bag and the partner, as the session keeps them; a new game's start is
   // the story's (session/story_adapter.hpp).
   scene->field_ = std::make_unique<game::field::Field>(

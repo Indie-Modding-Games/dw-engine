@@ -27,26 +27,6 @@ using game::story::DialogueView;
 using game::story::Speaker;
 using game::story::SpeakerKind;
 
-constexpr std::string_view Prefix = "story_textbox";
-constexpr std::string_view RevisionSetting = "story_textbox.revision";
-constexpr std::string_view RowList = "story_textbox.row";
-
-// The rows and coloured runs the document has room for: the tallest sized box on the disc has 10
-// rows, and a row changes colour a few times at most.
-constexpr std::size_t MaxRows = 12;
-constexpr std::size_t MaxRuns = 8;
-
-// The text colour a page starts in: the font's normal colour, which the pages switch back to after
-// a name ({color:1}).
-constexpr std::int64_t PageColor = 1;
-
-// The font's colours: a {color:N} tag of the original's text becomes a marker the runs split at
-// (formatText fills a placeholder from an argument of its name before it drops the tag).
-constexpr char ColorMarker = '\x1F';
-constexpr std::array<std::string_view, 16> ColorTags{
-    "color:0", "color:1", "color:2",  "color:3",  "color:4",  "color:5",  "color:6",  "color:7",
-    "color:8", "color:9", "color:10", "color:11", "color:12", "color:13", "color:14", "color:15"};
-
 // The placeholders of the script's text that name a table's entry by a story variable
 // (script_textbox.c: showTextbox, codes 7, 8, 9, 0x11, 0x12; docs/formats/textos.md).
 struct VariableName {
@@ -104,8 +84,8 @@ StoryTextbox::~StoryTextbox() {
 void StoryTextbox::press(const input::InputState& input) {
   story_->dialogue().press({.confirm = input.wasPressed("confirm"),
                             .cancel = input.wasPressed("cancel"),
-                            .up = input.wasPressed("up"),
-                            .down = input.wasPressed("down")},
+                            .up = input.wasPressed("move_up"),
+                            .down = input.wasPressed("move_down")},
                            input.isDown("confirm"));
 }
 
@@ -115,41 +95,25 @@ void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* s
     return;
   }
   published_ = view.revision;
-  const std::vector<Row> rows = rowsOf(view, scene, species);
+  const std::vector<TextRow> rows = rowsOf(view, scene, species);
   const auto& rules = story_->dialogue().rules();
   const double opening = rules.openFrames > 0 ? static_cast<double>(view.openingFrame) /
                                                     static_cast<double>(rules.openFrames)
                                               : 1.0;
-  const std::optional<glm::vec2> origin = originOf(view, scene);
   const bool named = view.speaker.kind != SpeakerKind::None;
-  screens::ScreenSettings settings{
-      {.name = std::format("{}.open", Prefix), .value = view.open},
-      {.name = std::format("{}.kind", Prefix),
-       .value = std::string{view.kind == game::story::BoxKind::Speech ? "speech" : "sized"}},
-      {.name = std::format("{}.columns", Prefix), .value = static_cast<double>(view.columns)},
-      {.name = std::format("{}.rows", Prefix), .value = static_cast<double>(view.rows)},
-      {.name = std::format("{}.opening", Prefix), .value = opening},
-      {.name = std::format("{}.origin_x", Prefix),
-       .value = origin ? static_cast<double>(origin->x) : -1.0},
-      {.name = std::format("{}.origin_y", Prefix),
-       .value = origin ? static_cast<double>(origin->y) : -1.0},
-      {.name = std::format("{}.prompt", Prefix), .value = view.waitingForConfirm},
-      {.name = std::format("{}.cursor_row", Prefix),
-       .value = view.cursor ? static_cast<double>(*view.cursor + (named ? 1 : 0)) : -1.0},
-      {.name = std::format("{}.row_count", Prefix), .value = static_cast<double>(rows.size())},
+  const TextboxLook look{
+      .open = view.open,
+      .speech = view.kind == game::story::BoxKind::Speech,
+      .columns = view.columns,
+      .rows = view.rows,
+      .opening = opening,
+      .origin = originOf(view, scene),
+      .prompt = view.waitingForConfirm,
+      .cursorRow = view.cursor ? std::optional<std::size_t>{static_cast<std::size_t>(*view.cursor) +
+                                                            (named ? 1U : 0U)}
+                               : std::nullopt,
   };
-  for (std::size_t row = 0; row < rows.size(); ++row) {
-    settings.push_back({.name = screens::listEntryName(RowList, row, "runs"),
-                        .value = static_cast<double>(rows[row].size())});
-    const std::string runs = std::format("{}.{}.run", RowList, row);
-    for (std::size_t run = 0; run < rows[row].size(); ++run) {
-      settings.push_back(
-          {.name = screens::listEntryName(runs, run, "text"), .value = rows[row][run].text});
-      settings.push_back({.name = screens::listEntryName(runs, run, "color"),
-                          .value = static_cast<double>(rows[row][run].color)});
-    }
-  }
-  screens::publish(*ui_, settings, RevisionSetting);
+  screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);
   if (view.open != shown_) {
     shown_ = view.open;
     if (shown_) {
@@ -160,52 +124,18 @@ void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* s
   }
 }
 
-std::vector<StoryTextbox::Row> StoryTextbox::rowsOf(const DialogueView& view,
-                                                    const FieldScene& scene,
-                                                    const assets::DigimonTable* species) const {
-  std::vector<Row> rows;
+std::vector<TextRow> StoryTextbox::rowsOf(const DialogueView& view, const FieldScene& scene,
+                                          const assets::DigimonTable* species) const {
+  std::vector<TextRow> rows;
   if (!view.open || view.text.empty()) {
     return rows;
   }
   // script_textbox.c: showTextbox writes the speaker's name on the first row, in its colour.
   if (view.speaker.kind != SpeakerKind::None) {
-    rows.push_back(
-        {Run{.text = speakerName(view.speaker, scene, species), .color = nameColor(view.speaker)}});
+    rows.push_back({TextRun{.text = speakerName(view.speaker, scene, species),
+                            .color = nameColor(view.speaker)}});
   }
-  const std::string text = pageText(view.text, species);
-  std::int64_t color = PageColor;
-  Row row;
-  std::string run;
-  auto endRun = [&] {
-    if (!run.empty() && row.size() < MaxRuns) {
-      row.push_back({.text = std::move(run), .color = color});
-    } else if (!run.empty()) {
-      row.back().text += run;
-    }
-    run.clear();
-  };
-  for (std::size_t at = 0; at < text.size(); ++at) {
-    const char c = text[at];
-    if (c == '\n') {
-      endRun();
-      rows.push_back(std::move(row));
-      row.clear();
-    } else if (c == ColorMarker) {
-      endRun();
-      const std::size_t end = text.find(ColorMarker, at + 1);
-      if (std::from_chars(text.data() + at + 1, text.data() + end, color).ec != std::errc{}) {
-        color = PageColor;
-      }
-      at = end;
-    } else {
-      run += c;
-    }
-  }
-  endRun();
-  rows.push_back(std::move(row));
-  if (rows.size() > MaxRows) {
-    rows.resize(MaxRows);
-  }
+  appendPageRows(rows, pageText(view.text, species));
   return rows;
 }
 
@@ -216,9 +146,9 @@ std::string StoryTextbox::speakerName(const Speaker& speaker, const FieldScene& 
   case SpeakerKind::None:
     return {};
   case SpeakerKind::Player:
-    return localization::tr(screens::mainLabelKey(screens::SpeciesNamesBlock, PlayerNameSlot));
+    return tamerName();
   case SpeakerKind::Partner:
-    return localization::tr(names.species(session_->partnerView().species));
+    return partnerName(names);
   case SpeakerKind::Special:
     return localization::tr(
         screens::mainLabelKey(SpecialSpeakersBlock, static_cast<std::size_t>(speaker.number)));
@@ -235,6 +165,22 @@ std::string StoryTextbox::speakerName(const Speaker& speaker, const FieldScene& 
   }
   return localization::tr(screens::mainLabelKey(screens::SpeciesNamesBlock,
                                                 static_cast<std::size_t>(character->typeId)));
+}
+
+std::string StoryTextbox::tamerName() const {
+  // script_value.c: getSpeakerName, speaker 0xFD: DIGIMON_NAME(0), the name the opening asked for.
+  if (const std::string& name = session_->names().tamer; !name.empty()) {
+    return name;
+  }
+  return localization::tr(screens::mainLabelKey(screens::SpeciesNamesBlock, PlayerNameSlot));
+}
+
+std::string StoryTextbox::partnerName(const screens::NameKeys& names) const {
+  // PARTNER_ENTITY.name: the name the opening asked for, else the species'.
+  if (const std::string& name = session_->names().partner; !name.empty()) {
+    return name;
+  }
+  return localization::tr(names.species(session_->partnerView().species));
 }
 
 std::int64_t StoryTextbox::nameColor(const Speaker& speaker) const {
@@ -256,21 +202,15 @@ std::int64_t StoryTextbox::nameColor(const Speaker& speaker) const {
 
 std::string StoryTextbox::pageText(const std::string& key,
                                    const assets::DigimonTable* species) const {
-  std::vector<localization::TextArgument> colors;
-  colors.reserve(ColorTags.size());
-  for (std::size_t color = 0; color < ColorTags.size(); ++color) {
-    colors.push_back({.name = ColorTags.at(color),
-                      .value = std::format("{}{}{}", ColorMarker, color, ColorMarker)});
-  }
-  const std::string text = localization::tr(key, colors);
+  const std::string text = localization::tr(key, colorArguments());
   const screens::NameKeys names{species, nullptr, nullptr};
   // script_textbox.c: showTextbox writes the names and numbers the page's codes ask for.
   auto fill = [&](std::string_view tag) -> std::optional<std::string> {
     if (tag == TamerTag) {
-      return localization::tr(screens::mainLabelKey(screens::SpeciesNamesBlock, PlayerNameSlot));
+      return tamerName();
     }
     if (tag == PartnerTag) {
-      return localization::tr(names.species(session_->partnerView().species));
+      return partnerName(names);
     }
     const auto readVariable = [&](std::int32_t variable) -> std::optional<std::size_t> {
       const auto value = story_->state().variable(variable);

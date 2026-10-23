@@ -1,0 +1,54 @@
+# La escena de la partida nueva antes del primer mapa (apps/game: NewGameInterview): Jijimon pregunta en un fondo negro,
+# las respuestas eligen el partner y el jugador escribe su nombre y el del partner (main.c: newGameScene,
+# shop/script_menu.c: newGameStateMachine). Sin esta sección la partida nueva empieza sin preguntas.
+# La tabla de frases de MAPHEAD con las líneas de la escena (resolveMapHeadEntry(0x4D6, i), entradas 0x10 a 0x20).
+lines: 1238
+# El partner que elige cada respuesta, por su número (main.c: main: readPStat(0xFE) 0 → 3, si no → 0x11).
+partners: [agum, gabu]
+# Fundido al empezar y al terminar, en fotogramas de la escena (fadeFromBlack(0x14), fadeToBlack(0x28)).
+fade_in_frames: 20
+fade_out_frames: 40
+# Ticks del motor por fotograma de la escena: su bucle espera VSync(3) (main.c: newGameScene).
+frame_ticks: 3
+# La cámara mira al origen desde delante, a 0x1068 (new_game.c: loadNewGameScene: GsSetRefView2, vpz -0x1068), con la
+# distancia de proyección del original (GsSetProjection(0x3E8)) sobre su pantalla de 240 líneas, y el centro de la
+# proyección en esta línea (DRAWING_OFFSET_Y = 0xB9).
+camera_distance: 4200
+camera_projection: 1000
+camera_centre_line: 185
+# Jijimon (modelo 0x75) en (0x320, 0x96, 0) en los ejes del original, con la animación 2 (entra andando desde la
+# derecha); en el fotograma 0x23 gira hacia el jugador (0x400 → 0x71, en 4096 avos de vuelta) y pasa a la 0
+# (tickNewGameJijimon); entonces empiezan las preguntas.
+host:
+  species: jiji
+  position: [800, 150, 0]
+  clip: 2
+  turn_frame: 35
+  turned_clip: 0
+  yaw: 1024
+  turned_yaw: 113
+# La caja de nombres (setupNameSelectorBox, tickNamingBox): 6 letras como mucho, 5 columnas; la primera mitad de las
+# filas es el lado izquierdo de la rejilla y la segunda el derecho (NAMING_CHAR_PAGES de la versión americana). Un
+# espacio es una celda vacía.
+naming:
+  length: 6
+  columns: 5
+  rows:
+    - "ABCDE"
+    - "FGHIJ"
+    - "KLMNO"
+    - "PQRST"
+    - "UVWXY"
+    - "Z    "
+    - "     "
+    - "     "
+    - "     "
+    - "abcde"
+    - "fghij"
+    - "klmno"
+    - "pqrst"
+    - "uvwxy"
+    - "z    "
+    - "01234"
+    - "56789"
+    - "     "

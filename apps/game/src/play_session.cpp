@@ -7,6 +7,7 @@
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/minimap.hpp>
 
 #include <algorithm>
@@ -172,11 +173,19 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   // A loaded game starts where it was saved, unless --start says otherwise.
   const std::optional<session::FieldPlace> savedPlace =
       options.startMap ? std::nullopt : session.savedPlace();
+  // A new game on the original chain starts where the story's opening runs (story_scenes).
+  const std::optional<session::NewGameStart> newGameStart =
+      !start.load && !options.startMap && game->systems.scenes != nullptr
+          ? game->systems.scenes->newGameStart()
+          : std::nullopt;
   auto scene = FieldScene::create(
       *context.renderer, *context.files,
       {.startMap = savedPlace ? std::optional{savedPlace->map} : options.startMap,
        .startExit = options.startExit,
        .startAt = savedPlace ? std::optional{savedPlace->spawn} : std::nullopt,
+       .startOriginalMap =
+           newGameStart ? std::optional{newGameStart->map} : std::optional<std::int32_t>{},
+       .startOriginalExit = newGameStart ? newGameStart->exit : 0,
        .clock = &session.clock(),
        .time = options.time,
        .facts =
@@ -245,6 +254,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
+  if (auto newGameScene = loadNewGameSceneRules(*context.files, session.rules().current().id())) {
+    namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming));
+    storyScenes_.attachNaming(namingBox_.get(), &session);
+  }
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
@@ -269,12 +282,16 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, FieldItemNoticeDocument,
-        FishingBaitDocument, FishingNoticeDocument, FishingHudDocument, EggBoxDocument}) {
+        FishingBaitDocument, FishingNoticeDocument, FishingHudDocument, EggBoxDocument,
+        NamingBoxDocument}) {
     context_.ui->hide(document);
   }
 }
 
 void PlaySession::pressStory(const input::InputState& input) {
+  if (storyScenes_.pressNaming(input)) {
+    return;
+  }
   if (storyTextbox_) {
     storyTextbox_->press(input);
   }

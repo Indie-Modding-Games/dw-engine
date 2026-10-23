@@ -38,6 +38,10 @@ struct FieldSceneDesc {
   std::int32_t startExit = 0;
   // A place on startMap to start at instead of its exit, as a saved game keeps it.
   std::optional<assets::SpawnPoint> startAt;
+  // Without startMap: the map, by its number in the original, and the exit a new game starts at
+  // (map.c: initializeMap), instead of field/warps' start.
+  std::optional<std::int32_t> startOriginalMap;
+  std::int32_t startOriginalExit = 0;
   // The game clock, whose hour gives the time of day; it must outlive the scene.
   ruleset::GameClock* clock = nullptr;
   // Jump the clock to this time of day instead of keeping its hour.

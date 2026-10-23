@@ -118,6 +118,17 @@ comportamiento, no guardan datos.
 | `stats` | 6 stats de reserva | a | Valores inventados de respaldo (no son del original); los reales los extrae `dwx` del guion 193 a `data/new_game_stats`. |
 | `tamer_level` | 0 | a | Valor inicial. |
 
+### `new_game_scene.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `lines` | 1238 (una tabla de MAPHEAD) | a | Referencia a los textos del paquete base; las frases no se copian. |
+| `partners` | 2 especies (referencias) | a | Referencias (criterio 2): la especie que elige cada respuesta. |
+| `fade_in_frames`, `fade_out_frames`, `frame_ticks` | 20, 40, 3 | a | Tiempos de la escena (`fadeFromBlack`, `fadeToBlack`, `VSync(3)`). |
+| `camera_distance`, `camera_projection`, `camera_centre_line` | 4200, 1000, 185 | a | Parámetros de cámara de la escena. |
+| `host` | una especie, su posición, dos clips, un fotograma y dos giros | a | Puesta en escena: una entidad y sus números de animación. |
+| `naming` | 6 letras, 5 columnas, 18 filas de letras | a | El alfabeto latino y los dígitos en una rejilla; no son datos del original. |
+
 ### `partner_moves.yaml`
 
 | Clave | Valor | Clase | Motivo |

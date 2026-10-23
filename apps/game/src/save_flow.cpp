@@ -103,16 +103,19 @@ std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   const std::string file = game::save::slotFileName(info.slot);
   switch (info.state) {
   case SlotInfo::State::Empty:
-    pending_ = PlayStart{.load = std::nullopt, .backup = false, .saveTo = info.slot};
+    pending_ = PlayStart{
+        .load = std::nullopt, .backup = false, .saveTo = info.slot, .choice = std::nullopt};
     return SaveDialog{.text = "save.confirm_new", .file = {}, .question = true};
   case SlotInfo::State::Saved:
-    pending_ = PlayStart{.load = info.slot, .backup = false, .saveTo = std::nullopt};
+    pending_ = PlayStart{
+        .load = info.slot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt};
     return SaveDialog{.text = "save.confirm_continue", .file = {}, .question = true};
   case SlotInfo::State::Damaged:
     if (!info.hasBackup) {
       return SaveDialog{.text = "save.damaged_no_backup", .file = file, .question = false};
     }
-    pending_ = PlayStart{.load = info.slot, .backup = true, .saveTo = std::nullopt};
+    pending_ = PlayStart{
+        .load = info.slot, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt};
     return SaveDialog{.text = "save.damaged_use_backup", .file = file, .question = true};
   case SlotInfo::State::Newer:
     break;
