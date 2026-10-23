@@ -24,6 +24,14 @@ inline constexpr std::string_view ItemsText = "items";
 inline constexpr std::string_view StatGainsText = "stat_gains";
 inline constexpr std::string_view MovesText = "moves";
 inline constexpr std::string_view RebirthText = "rebirth";
+inline constexpr std::string_view SceneText = "scene";
+inline constexpr std::string_view SceneCameraText = "scene.camera";
+inline constexpr std::string_view SceneClipsText = "scene.clips";
+inline constexpr std::string_view FrameSpanText = "a span of frames";
+inline constexpr std::string_view EmptyFrameSpan = "the span from frame {} to {} is empty";
+inline constexpr std::string_view SceneOutOfOrder =
+    "the scene's frames must come in order: dim_frames, camera_aim_end, camera_move_end, "
+    "burst_frame, grow.to, swap_frame, end_frame";
 inline constexpr std::string_view StateText = "the evolution state";
 
 // Strategies.

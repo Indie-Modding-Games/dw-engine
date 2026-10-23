@@ -123,6 +123,53 @@
         "babies": { "description": "The baby of each egg; the egg is picked at random.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }
       }
     },
+    "scene": {
+      "description": "The evolution scene on the field, in frames of the original (main/evl.c, evl.c). Without it the partner takes its new form at once.",
+      "type": "object",
+      "required": ["sound_bank", "wait_frames", "dim_frames", "camera_aim_end", "camera_move_end", "burst_frame", "orbit_ease", "grow", "roar_frame", "swap_frame", "end_frame", "burst_sounds", "roar_sound", "camera", "clips"],
+      "additionalProperties": false,
+      "properties": {
+        "sound_bank": { "type": "integer" },
+        "wait_frames": { "$ref": "#/$defs/frame" },
+        "dim_frames": { "$ref": "#/$defs/frame" },
+        "camera_aim_end": { "$ref": "#/$defs/frame" },
+        "camera_move_end": { "$ref": "#/$defs/frame" },
+        "burst_frame": { "$ref": "#/$defs/frame" },
+        "orbit_ease": { "$ref": "#/$defs/frame_span" },
+        "grow": { "$ref": "#/$defs/frame_span" },
+        "roar_frame": { "$ref": "#/$defs/frame" },
+        "swap_frame": { "$ref": "#/$defs/frame" },
+        "end_frame": { "$ref": "#/$defs/frame" },
+        "burst_sounds": { "type": "array", "items": { "type": "integer" } },
+        "roar_sound": { "type": "integer" },
+        "camera": {
+          "type": "object",
+          "required": ["start_angle", "angle_step", "distance_per_size", "distance", "rise", "focal_length", "max_drop", "drop_height"],
+          "additionalProperties": false,
+          "properties": {
+            "start_angle": { "type": "integer" },
+            "angle_step": { "type": "integer" },
+            "distance_per_size": { "type": "integer" },
+            "distance": { "type": "integer" },
+            "rise": { "type": "integer" },
+            "focal_length": { "$ref": "#/$defs/frame" },
+            "max_drop": { "type": "integer" },
+            "drop_height": { "$ref": "#/$defs/frame" }
+          }
+        },
+        "clips": {
+          "type": "object",
+          "required": ["idle", "ready", "burst", "finish"],
+          "additionalProperties": false,
+          "properties": {
+            "idle": { "type": "integer", "minimum": 0 },
+            "ready": { "type": "integer", "minimum": 0 },
+            "burst": { "type": "integer", "minimum": 0 },
+            "finish": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
     "quirks": {
       "description": "The original's oddities: true reproduces the original, false fixes it.",
       "type": "object",
@@ -139,6 +186,13 @@
   },
   "$defs": {
     "name": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "frame": { "description": "A frame of the original (20 a second), or a count of them.", "type": "integer", "minimum": 1 },
+    "frame_span": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": { "from": { "type": "integer", "minimum": 0 }, "to": { "$ref": "#/$defs/frame" } }
+    },
     "id": { "description": "An id of a table of the packs.", "type": "string", "pattern": "^([a-z0-9_]{1,64}:)?[a-z0-9_]+$" },
     "move": {
       "description": "A move's id in data/moves.",

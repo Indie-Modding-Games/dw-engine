@@ -150,6 +150,58 @@ struct RebirthRules {
   std::vector<std::string> babies;
 };
 
+// The camera of the evolution scene (evl.c: EVL_updateEvoCamera, EVL_calculateCameraVectors): it
+// circles the partner at max(radius, height) * distancePerSize + distance, raised by rise plus
+// twice the height, in the original's angle units per frame.
+struct EvolutionSceneCamera {
+  std::int32_t startAngle = 0;
+  std::int32_t angleStep = 0;
+  std::int32_t distancePerSize = 0;
+  std::int32_t distance = 0;
+  std::int32_t rise = 0;
+  // The projection distance it zooms to, and how far the picture drops (pixels) for a partner of
+  // dropHeight or taller.
+  std::int32_t focalLength = 0;
+  std::int32_t maxDrop = 0;
+  std::int32_t dropHeight = 0;
+};
+
+// A span of the scene's frames, from `from` to `to`.
+struct FrameSpan {
+  std::int32_t from = 0;
+  std::int32_t to = 0;
+};
+
+// The partner's clips in the scene, by the original's ids.
+struct EvolutionSceneClips {
+  std::uint32_t idle = 0;
+  std::uint32_t ready = 0;
+  std::uint32_t burst = 0;
+  std::uint32_t finish = 0;
+};
+
+// The evolution scene on the field (main/evl.c: tickEvoSequenceLoading, evl.c:
+// EVL_tickEvoSequence), in frames of the original: when the scenery hides, the camera aims and
+// moves, the partner bursts, grows, roars, takes its new form and the scene ends.
+struct EvolutionSceneRules {
+  // The sound bank of the scene in slot 8 (loadMapSounds2), until the map's comes back.
+  std::int32_t soundBank = 0;
+  std::int32_t waitFrames = 0;
+  std::int32_t dimFrames = 0;
+  std::int32_t cameraAimEnd = 0;
+  std::int32_t cameraMoveEnd = 0;
+  std::int32_t burstFrame = 0;
+  FrameSpan orbitEase;
+  FrameSpan grow;
+  std::int32_t roarFrame = 0;
+  std::int32_t swapFrame = 0;
+  std::int32_t endFrame = 0;
+  std::vector<std::int32_t> burstSounds;
+  std::int32_t roarSound = 0;
+  EvolutionSceneCamera camera;
+  EvolutionSceneClips clips;
+};
+
 // The evolution section, as read. The strategy names are checked against their registries.
 struct EvolutionRules {
   std::string selection;
@@ -164,6 +216,8 @@ struct EvolutionRules {
   StatGainRules statGains;
   MoveRules moves;
   RebirthRules rebirth;
+  // Nothing: the partner takes its new form at once, with no scene.
+  std::optional<EvolutionSceneRules> scene;
   ruleset::Quirks quirks;
 };
 

@@ -137,6 +137,45 @@ moves:
 rebirth:
   babies: [bota, puni, poyo, yura]
 
+# La escena de la evolución en el campo, en fotogramas del original (main/evl.c: tickEvoSequenceLoading; evl.c:
+# EVL_tickEvoSequence, EVL_updateEvoCamera). Sin esta sección el partner cambia de modelo al momento.
+scene:
+  # loadMapSounds2(18): el banco de sonidos de la escena en la ranura 8, hasta que vuelve el del mapa.
+  sound_bank: 18
+  # tickEvoSequenceLoading: dos esperas (timer > 55), la primera con la animación idle y la segunda con ready.
+  wait_frames: 56
+  # Estado 0: el mapa se oscurece; al acabar se ocultan el mapa y los demás personajes.
+  dim_frames: 32
+  # EVL_updateEvoCamera: la cámara apunta al partner hasta el fotograma 64 y se acerca hasta el 96; luego gira.
+  camera_aim_end: 64
+  camera_move_end: 96
+  # Estado 2 (0x6a): los sonidos burst_sounds de la ranura 8 y la animación burst, seguida de ready.
+  burst_frame: 106
+  # El giro de la cámara vuelve a acelerar (0xa4-0xc2) y el partner crece hacia el tamaño de su nueva forma
+  # (0xcc-0x108).
+  orbit_ease: { from: 164, to: 194 }
+  grow: { from: 204, to: 264 }
+  # 0xd6: el sonido roar_sound; 0x11c: la nueva forma (EVL_applyEvolution); 0x162: vuelven el mapa y la cámara.
+  roar_frame: 214
+  swap_frame: 284
+  end_frame: 354
+  burst_sounds: [1, 0]
+  roar_sound: 5
+  # EVL_calculateCameraVectors: distancia max(radio, altura) * 5 + 1200, subida 400 + 2 * altura; ángulo inicial
+  # 0x638 y 0x16 por fotograma (4096 = una vuelta); proyección hasta 1000 y la imagen baja hasta 20 píxeles con la
+  # altura (hasta 200).
+  camera:
+    start_angle: 1592
+    angle_step: 22
+    distance_per_size: 5
+    distance: 1200
+    rise: 400
+    focal_length: 1000
+    max_drop: 20
+    drop_height: 200
+  # Las animaciones del partner por su id del original: reposo, preparada, el estallido y el final (0xb).
+  clips: { idle: 0, ready: 1, burst: 12, finish: 11 }
+
 # Rarezas del original (docs/reference/evolution.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
 quirks:
   # item.c: handleEvoItems pone HAS_USED_EVOITEM, que solo vuelve a 0 al arrancar el juego: las evoluciones

@@ -78,6 +78,37 @@ constexpr std::string_view MasteredMoveIdsKey = "mastered_move_ids";
 
 constexpr std::string_view BabiesKey = "babies";
 
+constexpr std::string_view SceneKey = "scene";
+constexpr std::string_view SoundBankKey = "sound_bank";
+constexpr std::string_view WaitFramesKey = "wait_frames";
+constexpr std::string_view DimFramesKey = "dim_frames";
+constexpr std::string_view CameraAimEndKey = "camera_aim_end";
+constexpr std::string_view CameraMoveEndKey = "camera_move_end";
+constexpr std::string_view BurstFrameKey = "burst_frame";
+constexpr std::string_view OrbitEaseKey = "orbit_ease";
+constexpr std::string_view GrowKey = "grow";
+constexpr std::string_view RoarFrameKey = "roar_frame";
+constexpr std::string_view SwapFrameKey = "swap_frame";
+constexpr std::string_view EndFrameKey = "end_frame";
+constexpr std::string_view BurstSoundsKey = "burst_sounds";
+constexpr std::string_view RoarSoundKey = "roar_sound";
+constexpr std::string_view CameraKey = "camera";
+constexpr std::string_view ClipsKey = "clips";
+constexpr std::string_view SpanFromKey = "from";
+constexpr std::string_view SpanToKey = "to";
+constexpr std::string_view StartAngleKey = "start_angle";
+constexpr std::string_view AngleStepKey = "angle_step";
+constexpr std::string_view DistancePerSizeKey = "distance_per_size";
+constexpr std::string_view DistanceKey = "distance";
+constexpr std::string_view RiseKey = "rise";
+constexpr std::string_view FocalLengthKey = "focal_length";
+constexpr std::string_view MaxDropKey = "max_drop";
+constexpr std::string_view DropHeightKey = "drop_height";
+constexpr std::string_view IdleClipKey = "idle";
+constexpr std::string_view ReadyClipKey = "ready";
+constexpr std::string_view BurstClipKey = "burst";
+constexpr std::string_view FinishClipKey = "finish";
+
 struct SpecialFieldName {
   std::string_view key;
   SpecialField field;
@@ -341,6 +372,88 @@ RebirthRules readRebirth(YamlReader& reader, const YamlNode& node) {
   return {.babies = readIds(reader, reader.field(node, BabiesKey), BabiesKey)};
 }
 
+FrameSpan readSpan(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, messages::FrameSpanText, {SpanFromKey, SpanToKey})) {
+    return {};
+  }
+  const FrameSpan span{.from = readNumber(reader, node, SpanFromKey),
+                       .to = readPositive(reader, node, SpanToKey)};
+  if (reader.ok() && span.to <= span.from) {
+    reader.fail(node, messages::formatMessage(messages::EmptyFrameSpan, span.from, span.to));
+  }
+  return span;
+}
+
+EvolutionSceneCamera readSceneCamera(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, messages::SceneCameraText,
+                         {StartAngleKey, AngleStepKey, DistancePerSizeKey, DistanceKey, RiseKey,
+                          FocalLengthKey, MaxDropKey, DropHeightKey})) {
+    return {};
+  }
+  return {.startAngle = readNumber(reader, node, StartAngleKey),
+          .angleStep = readNumber(reader, node, AngleStepKey),
+          .distancePerSize = readNumber(reader, node, DistancePerSizeKey),
+          .distance = readNumber(reader, node, DistanceKey),
+          .rise = readNumber(reader, node, RiseKey),
+          .focalLength = readPositive(reader, node, FocalLengthKey),
+          .maxDrop = readNumber(reader, node, MaxDropKey),
+          .dropHeight = readPositive(reader, node, DropHeightKey)};
+}
+
+std::uint32_t readClip(YamlReader& reader, const YamlNode& node, std::string_view key) {
+  return reader.integer<std::uint32_t>(reader.field(node, key));
+}
+
+EvolutionSceneClips readSceneClips(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, messages::SceneClipsText,
+                         {IdleClipKey, ReadyClipKey, BurstClipKey, FinishClipKey})) {
+    return {};
+  }
+  return {.idle = readClip(reader, node, IdleClipKey),
+          .ready = readClip(reader, node, ReadyClipKey),
+          .burst = readClip(reader, node, BurstClipKey),
+          .finish = readClip(reader, node, FinishClipKey)};
+}
+
+std::optional<EvolutionSceneRules> readScene(YamlReader& reader, const YamlNode* node) {
+  if (node == nullptr ||
+      !reader.expectKeys(*node, messages::SceneText,
+                         {SoundBankKey, WaitFramesKey, DimFramesKey, CameraAimEndKey,
+                          CameraMoveEndKey, BurstFrameKey, OrbitEaseKey, GrowKey, RoarFrameKey,
+                          SwapFrameKey, EndFrameKey, BurstSoundsKey, RoarSoundKey, CameraKey,
+                          ClipsKey})) {
+    return std::nullopt;
+  }
+  EvolutionSceneRules scene{.soundBank = readNumber(reader, *node, SoundBankKey),
+                            .waitFrames = readPositive(reader, *node, WaitFramesKey),
+                            .dimFrames = readPositive(reader, *node, DimFramesKey),
+                            .cameraAimEnd = readPositive(reader, *node, CameraAimEndKey),
+                            .cameraMoveEnd = readPositive(reader, *node, CameraMoveEndKey),
+                            .burstFrame = readPositive(reader, *node, BurstFrameKey),
+                            .orbitEase = readSpan(reader, reader.field(*node, OrbitEaseKey)),
+                            .grow = readSpan(reader, reader.field(*node, GrowKey)),
+                            .roarFrame = readPositive(reader, *node, RoarFrameKey),
+                            .swapFrame = readPositive(reader, *node, SwapFrameKey),
+                            .endFrame = readPositive(reader, *node, EndFrameKey),
+                            .burstSounds = {},
+                            .roarSound = readNumber(reader, *node, RoarSoundKey),
+                            .camera = readSceneCamera(reader, reader.field(*node, CameraKey)),
+                            .clips = readSceneClips(reader, reader.field(*node, ClipsKey))};
+  for (const YamlNode& sound :
+       reader.sequence(reader.field(*node, BurstSoundsKey), BurstSoundsKey)) {
+    scene.burstSounds.push_back(reader.integer<std::int32_t>(sound));
+  }
+  // The scene's moments come in this order; the camera's steps lead up to the burst.
+  const bool inOrder =
+      scene.dimFrames < scene.cameraAimEnd && scene.cameraAimEnd < scene.cameraMoveEnd &&
+      scene.cameraMoveEnd <= scene.burstFrame && scene.burstFrame < scene.swapFrame &&
+      scene.grow.to <= scene.swapFrame && scene.swapFrame < scene.endFrame;
+  if (reader.ok() && !inOrder) {
+    reader.fail(*node, messages::SceneOutOfOrder);
+  }
+  return scene;
+}
+
 } // namespace
 
 core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section) {
@@ -349,7 +462,8 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
   if (!reader.expectKeys(root, messages::SectionText,
                          {SelectionKey, ScoringKey, CheckHoursKey, BabyTargetsKey, RequirementsKey,
                           FallbackKey, SpecialsKey, ItemsKey, StatGainsKey, MovesKey, RebirthKey,
-                          ruleset::QuirksKey})) {
+                          ruleset::QuirksKey},
+                         {SceneKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   EvolutionRules rules{
@@ -364,6 +478,7 @@ core::Result<EvolutionRules> readEvolutionRules(const ruleset::Section& section)
       .statGains = readStatGains(reader, reader.field(root, StatGainsKey)),
       .moves = readMoves(reader, reader.field(root, MovesKey)),
       .rebirth = readRebirth(reader, reader.field(root, RebirthKey)),
+      .scene = readScene(reader, root.find(SceneKey)),
       .quirks = ruleset::readQuirks(reader, reader.field(root, ruleset::QuirksKey),
                                     {EvolutionItemSticks, SelectionAverageCarriesOver,
                                      UnlistedBabyRestartsTimer, RookieStatTiePicksLast,

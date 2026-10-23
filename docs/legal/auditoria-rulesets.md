@@ -270,6 +270,14 @@ comportamiento, no guardan datos.
 | `moves.finisher_first` | 58 | a | Límite de rango como mecánica; con `p4-ids-refs`, rango sobre índices del original. |
 | `moves.finisher_end` | 113 | a | Límite de rango como mecánica; con `p4-ids-refs`, rango sobre índices del original. |
 | `rebirth.babies` | 4 especies | **b** | `REINCARNATE_BABY_TYPE` (dooa.c, dato de 8 bytes). Destino: `data/rebirth`. Duplica la lista de `life.yaml`. |
+| `scene.sound_bank` | 18 | a | Referencia a un banco de sonidos (`loadMapSounds2`). |
+| `scene.wait_frames`, `scene.dim_frames` | 56, 32 | a | Temporizador o duración. |
+| `scene.camera_aim_end`, `scene.camera_move_end`, `scene.burst_frame` | 64, 96, 106 | a | Temporizador o duración. |
+| `scene.orbit_ease`, `scene.grow` | 164-194, 204-264 | a | Temporizador o duración. |
+| `scene.roar_frame`, `scene.swap_frame`, `scene.end_frame` | 214, 284, 354 | a | Temporizador o duración. |
+| `scene.burst_sounds`, `scene.roar_sound` | [1, 0], 5 | a | Referencia a sonidos del banco. |
+| `scene.camera.*` | 8 enteros (ángulo, paso, distancia, subida, proyección, caída) | a | Término de una fórmula de cámara. |
+| `scene.clips.*` | 0, 1, 12, 11 | a | Referencia a animaciones por su id. |
 | `quirks.evolution_item_sticks` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.selection_average_carries_over` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.unlisted_baby_restarts_timer` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
