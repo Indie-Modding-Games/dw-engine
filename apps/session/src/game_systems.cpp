@@ -7,6 +7,7 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
+#include <dwe/session/story_scenes.hpp>
 
 #include <string_view>
 #include <utility>
@@ -87,10 +88,17 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                    .battle = battle.get(),
                    .story = story.get(),
                    .storyOrders = storyOrders.get()};
+  // The story's scenes tick before the story, so what the app reported is seen the same tick.
+  auto scenes = std::make_unique<StoryScenes>(StoryScenesDesc{.story = story.get(),
+                                                              .evolution = evolution.get(),
+                                                              .inventory = inventory.get(),
+                                                              .battle = battle.get()});
+  game.scenes = scenes.get();
   game.systems.push_back(std::move(evolution));
   game.systems.push_back(std::move(inventory));
   game.systems.push_back(std::move(battle));
   game.systems.push_back(std::move(storyOrders));
+  game.systems.push_back(std::move(scenes));
   game.systems.push_back(std::move(story));
   return game;
 }
