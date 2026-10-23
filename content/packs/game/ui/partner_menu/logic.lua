@@ -170,6 +170,10 @@ local function draw_description(document)
   if moving ~= nil then
     description =
       t("partner_menu.bag.move_prompt", { name = text(setting(slot_setting(moving, "name"), "")) })
+  elseif box ~= nil and picked ~= nil and slot_filled(picked) then
+    -- A box over the bag keeps the description of the item it was opened on, as the original's
+    -- options box does.
+    description = text(setting(slot_setting(picked, "description"), ""))
   else
     for index = 0, number("bag.slot.count") - 1 do
       if document:get("slot-" .. index):has_focus() and slot_filled(index) then
