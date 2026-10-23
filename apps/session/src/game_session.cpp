@@ -460,6 +460,10 @@ void GameSession::addTamerLevel(std::int32_t chancePercent, std::int32_t amount)
   }
 }
 
+void GameSession::setTamerLevel(std::int32_t level) {
+  changeTamerLevel(level - state_->tamer.level);
+}
+
 void GameSession::changeTamerLevel(std::int32_t change) {
   // tamer.c: addTamerLevel keeps the level within its limits.
   const TamerRules& rules = state_->rules.tamer;

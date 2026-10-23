@@ -183,6 +183,9 @@ public:
   // A tamer level change with its chance (tamer.c: addTamerLevel), kept within the tamer section's
   // limits.
   void addTamerLevel(std::int32_t chancePercent, std::int32_t amount);
+  // A story order sets the tamer level (script_interp.c: scriptInstruction28to3F), kept within the
+  // tamer section's limits.
+  void setTamerLevel(std::int32_t level);
 
   // The partner's events of the last tick and of the commands since, for the UI.
   [[nodiscard]] std::vector<game::partner::PartnerEvent> takePartnerEvents();

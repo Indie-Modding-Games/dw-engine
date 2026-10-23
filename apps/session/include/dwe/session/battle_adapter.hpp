@@ -116,6 +116,10 @@ public:
                            std::optional<MoveSlot> slot);
 
   [[nodiscard]] const PartnerMoves& moves() const { return moves_; }
+  // A story order: the partner learns the move with this original number and the ones learned
+  // with it (utils2.c: learnMove), and whether it knows one (story_orders_partner.cpp).
+  core::Result<void> learnMoveNumber(std::int64_t number);
+  [[nodiscard]] core::Result<bool> knowsMoveNumber(std::int64_t number) const;
   [[nodiscard]] const game::battle::BattleRules& rules() const;
   [[nodiscard]] const game::battle::MoveCatalog& catalog() const;
 

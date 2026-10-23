@@ -63,7 +63,12 @@ struct StoryGameContext {
 
 // Each area's orders (story_orders_<area>.cpp).
 core::Result<void> publishBagOrders(script::ApiRegistry& api, StoryGameContext& context);
+core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
+
+// A stat as the scripts read it, or nothing for the ones the session does not keep yet (merit,
+// battles and tournaments).
+std::optional<std::int64_t> scriptStatOf(const GameSession& session, ScriptStat stat);
 
 // The story's change at the start of each day (script_common.c: dailyPStatTrigger).
 void runDailyChange(const StoryGameContext& context);

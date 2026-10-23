@@ -140,6 +140,13 @@ public:
   // tamer's level.
   core::Result<void> rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel);
 
+  // A story order changed the partner's numbers or conditions in place (script_interp.c:
+  // scriptInstruction28to3F, scriptInstruction64to7E): the species stays and nothing else runs.
+  void takeStoryChange(PartnerState changed);
+  // After a story order changed a stat: the energy stops at the species' cap, and a hungry partner
+  // whose energy reached the threshold is fed (script_interp.c: scriptUpdateEnergyBoundaries).
+  void keepEnergyInBounds(const ruleset::GameClock& clock);
+
 private:
   // One frame of the clock.
   struct FrameTime {

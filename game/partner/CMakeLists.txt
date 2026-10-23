@@ -13,6 +13,7 @@ dwe_add_module(partner
         src/partner_tick.cpp
         src/partner_commands.cpp
         src/partner_activities.cpp
+        src/partner_story.cpp
         src/poop_piles.cpp
         src/state_yaml.cpp
     DEPS core assets ruleset)
