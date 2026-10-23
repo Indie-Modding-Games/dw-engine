@@ -153,6 +153,7 @@ private:
   class Serializer;
   class StatePort;
   class RandomPort;
+  class SoundRelay;
 
   core::Result<void> wire(const StorySectionRules& story,
                           const game::story::DialogueRules& dialogue);
@@ -178,6 +179,7 @@ private:
   std::unique_ptr<script::ScriptVm> vm_;
   std::unique_ptr<StatePort> statePort_;
   std::unique_ptr<RandomPort> randomPort_;
+  std::unique_ptr<SoundRelay> sound_;
   std::unique_ptr<game::story::StoryOrders> orders_;
   std::unique_ptr<StoryNpcs> npcs_;
   std::unique_ptr<game::story::NpcOrders> npcOrders_;

@@ -52,10 +52,11 @@ inline constexpr std::string_view CopyVariable = "copy_var";
 inline constexpr std::string_view StoreRandom = "store_random";
 inline constexpr std::string_view Delay = "delay";
 inline constexpr std::string_view JumpToFile = "jump_to_file";
+inline constexpr std::string_view PlaySound = "play_sound";
 
-inline constexpr std::array Published{Ended,        Trigger,     Variable,      SetTrigger,
-                                      UnsetTrigger, SetVariable, AddToVariable, ReduceVariable,
-                                      CopyVariable, StoreRandom, Delay,         JumpToFile};
+inline constexpr std::array Published{
+    Ended,          Trigger,      Variable,    SetTrigger, UnsetTrigger, SetVariable, AddToVariable,
+    ReduceVariable, CopyVariable, StoreRandom, Delay,      JumpToFile,   PlaySound};
 } // namespace story_api
 
 // Runs the story's sections as coroutines of the script VM: script N is the module story/NNN of
@@ -70,10 +71,10 @@ public:
   StoryLuaHost& operator=(StoryLuaHost&&) = delete;
   ~StoryLuaHost() override = default;
 
-  // Once per VM. The published functions point to the host, the state and the orders, which must
-  // outlive every script call of the VM.
+  // Once per VM. The published functions point to the host, the state, the orders and the sound,
+  // which must outlive every script call of the VM.
   core::Result<void> publishApi(game::story::StoryStatePort& state,
-                                game::story::StoryOrders& orders);
+                                game::story::StoryOrders& orders, game::story::SoundPort& sound);
   // The NPC orders (story_npcs.hpp: story_api::NpcPublished), once per VM; the orders must outlive
   // every script call of the VM.
   core::Result<void> publishNpcApi(game::story::NpcOrders& orders);

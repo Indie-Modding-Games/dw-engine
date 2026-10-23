@@ -85,7 +85,8 @@ StoryLuaHost::StoryLuaHost(script::ScriptVm& vm, const assets::VirtualFileSystem
     : vm_{&vm}, files_{&files} {}
 
 core::Result<void> StoryLuaHost::publishApi(game::story::StoryStatePort& state,
-                                            game::story::StoryOrders& orders) {
+                                            game::story::StoryOrders& orders,
+                                            game::story::SoundPort& sound) {
   script::ApiRegistry api = vm_->api();
   std::vector<core::Result<void>> published;
   published.push_back(api.publishValue(StoryNamespace, story_api::Ended, ApiValue{true}));
@@ -165,6 +166,25 @@ core::Result<void> StoryLuaHost::publishApi(game::story::StoryStatePort& state,
         pendingWait_ = FileJump{.target = *target, .linkDepth = 0};
         return ApiValue{};
       }));
+  // story.play_sound(slot, sound), op 0x5A: as script_interp.c: scriptInstruction5Ato5F, it hands
+  // both operands to the sound slots (sound.c: playSound) and goes on; a sound that cannot play
+  // stays silent.
+  published.push_back(api.publish(StoryNamespace, story_api::PlaySound,
+                                  [&sound](const ApiCall& call) -> core::Result<ApiValue> {
+                                    const auto slot = call.integer(0);
+                                    if (!slot) {
+                                      return std::unexpected{slot.error()};
+                                    }
+                                    const auto value = call.integer(1);
+                                    if (!value) {
+                                      return std::unexpected{value.error()};
+                                    }
+                                    core::logDebug("[port:audio] scriptInstruction5Ato5F "
+                                                   "(script_interp.c:1550): play_sound({}, {})",
+                                                   *slot, *value);
+                                    sound.playSound(*slot, *value);
+                                    return ApiValue{};
+                                  }));
   const auto failed = std::ranges::find_if(published, [](const auto& result) { return !result; });
   return failed == published.end() ? core::Result<void>{} : *failed;
 }

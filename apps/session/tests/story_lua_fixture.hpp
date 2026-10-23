@@ -59,9 +59,12 @@ std::string errorText(const Result& result) {
 struct Recorder {
   std::vector<std::string> events;
   std::size_t limit = std::numeric_limits<std::size_t>::max();
+  // Whether a call went past the limit, also one that cannot fail, such as a sound.
+  bool overflowed = false;
 
   bool record(std::string event) {
     if (events.size() >= limit) {
+      overflowed = true;
       return false;
     }
     events.push_back(std::move(event));
@@ -115,6 +118,19 @@ private:
   Recorder* recorder_;
   std::vector<bool> triggers_ = std::vector<bool>(OriginalTriggers);
   std::vector<std::int64_t> variables_ = std::vector<std::int64_t>(OriginalVariables);
+};
+
+// Records the story's sounds as the reference writes their calls.
+class RecordedSound final : public dwe::game::story::SoundPort {
+public:
+  explicit RecordedSound(Recorder& recorder) : recorder_{&recorder} {}
+
+  void playSound(std::int64_t slot, std::int64_t sound) override {
+    static_cast<void>(recorder_->record(std::format("play_sound({},{})", slot, sound)));
+  }
+
+private:
+  Recorder* recorder_;
 };
 
 // The numbers a seed gives, the same on the Lua side and in a reference.
@@ -190,6 +206,9 @@ public:
         step = SectionFailed{.message = std::string{LimitReached}};
       }
     }
+    if (recorder_->overflowed && !std::holds_alternative<SectionFailed>(step)) {
+      step = SectionFailed{.message = std::string{LimitReached}};
+    }
     if (std::holds_alternative<SectionEnded>(step)) {
       outcome_.status = "ended";
     } else if (std::holds_alternative<SectionReturned>(step)) {
@@ -222,7 +241,7 @@ class StoryPlay {
 public:
   explicit StoryPlay(const dwe::assets::VirtualFileSystem& files)
       : vm_{makeVm()}, host_{*vm_, files}, recording_{host_, recorder_} {
-    REQUIRE(host_.publishApi(state_, orders_));
+    REQUIRE(host_.publishApi(state_, orders_, sound_));
   }
   StoryPlay(const StoryPlay&) = delete;
   StoryPlay& operator=(const StoryPlay&) = delete;
@@ -235,6 +254,7 @@ public:
   // Runs a section through a StoryRunner of one tick per frame until the script is done.
   Played play(SectionRef section, std::uint32_t seed) {
     recorder_.events.clear();
+    recorder_.overflowed = false;
     random_.reset(seed);
     recording_.reset();
     auto runner = dwe::game::story::StoryRunner::create(recording_, 1);
@@ -264,6 +284,7 @@ private:
 
   Recorder recorder_;
   RecordedState state_{recorder_};
+  RecordedSound sound_{recorder_};
   SeededRandom random_;
   std::unique_ptr<dwe::script::ScriptVm> vm_;
   dwe::game::story::StoryOrders orders_{state_, random_, OriginalRules};

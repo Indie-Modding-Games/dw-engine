@@ -42,6 +42,8 @@ void SessionSound::enterMap(std::string_view mapId) {
 
 void SessionSound::playSound(std::int64_t slot, std::int64_t sound) {
   const std::optional<std::string> folder = folderOf(slot);
+  core::logDebug("[port:audio] playSound (sound.c:641): slot={} sound={} bank={}", slot, sound,
+                 folder.value_or("none"));
   if (!folder) {
     if (!firstWarning(slot, sound)) {
       return;

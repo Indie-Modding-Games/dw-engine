@@ -167,6 +167,22 @@ private:
   ruleset::Random* source_ = nullptr;
 };
 
+// The VM is built before any session, so its sound orders go through here to the session's sound
+// slots of the tick (GameSession::sound()); none bound, or a silent session, plays nothing.
+class StoryAdapter::SoundRelay final : public game::story::SoundPort {
+public:
+  void bind(game::story::SoundPort* target) { target_ = target; }
+
+  void playSound(std::int64_t slot, std::int64_t sound) override {
+    if (target_ != nullptr) {
+      target_->playSound(slot, sound);
+    }
+  }
+
+private:
+  game::story::SoundPort* target_ = nullptr;
+};
+
 class StoryAdapter::Serializer final : public game::save::SectionSerializer {
 public:
   explicit Serializer(StoryAdapter& adapter) : adapter_(&adapter) {}
@@ -337,9 +353,10 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   vm_ = std::move(*vm);
   statePort_ = std::make_unique<StatePort>(state_);
   randomPort_ = std::make_unique<RandomPort>();
+  sound_ = std::make_unique<SoundRelay>();
   orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules);
   host_ = std::make_unique<StoryLuaHost>(*vm_, *desc_.files);
-  if (auto published = host_->publishApi(*statePort_, *orders_); !published) {
+  if (auto published = host_->publishApi(*statePort_, *orders_, *sound_); !published) {
     return core::fail(formatMessage(messages::StoryApiFailed, published.error().message));
   }
   dialogue_ = std::make_unique<StoryDialogue>(*statePort_, dialogue);
@@ -411,6 +428,7 @@ void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*adv
   }
   randomPort_->bind(session.random());
   dialogue_->dialogue().bindSound(session.sound());
+  sound_->bind(session.sound());
   playUnplayedChange();
   if (runner_) {
     runner_->tick();
