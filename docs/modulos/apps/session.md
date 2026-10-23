@@ -211,6 +211,17 @@ una vez (los tests le dan las suyas). Registra las comprobaciones de las dos sec
 
 La sección `partner_moves` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_partner_moves.schema.json)) es de la partida.
 
+### Tienda (`ShopCounter`)
+
+La tienda que abre la historia (`script_interp.c: CALL_ROUTINE 8` → `script_common.c: openShop`). La historia llama a
+`open(ShopVisit)` con el tendero (la variable 254 y su especie) y espera mientras `visit()` siga abierta; la pantalla
+`shop_menu` del juego (`apps/game: ShopScreen`) la cierra cuando el jugador se va. Compra con
+`InventoryAdapter::buy` (el surtido son los triggers `0x180 + i` de la historia) y vende con
+`game::inventory::sell`. Las frases del tendero son las de su sección de MAPHEAD (`getShopkeeperLine`,
+`resolveMapHeadEntry`), leídas del listado `script/maphead`. La sección `shop`
+([esquema](../../content/schemas/ruleset_shop.schema.json)) es opcional: sin ella no hay tiendas. La tienda de
+reciclaje (con el trigger `recycle_trigger`) aún no está portada: la visita se cierra al momento.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |

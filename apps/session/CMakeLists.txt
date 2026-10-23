@@ -12,12 +12,14 @@ dwe_add_module(session
         src/gym_adapter.cpp
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
+        src/map_head_lines.cpp
         src/partner_moves.cpp
         src/partner_view.cpp
         src/save_sections.cpp
         src/session_rules.cpp
         src/session_music.cpp
         src/session_sound.cpp
+        src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp
         src/story_adapter_flow.cpp

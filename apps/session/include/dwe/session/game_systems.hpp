@@ -25,6 +25,7 @@ namespace dwe::session {
 class BattleAdapter;
 class EvolutionAdapter;
 class InventoryAdapter;
+class ShopCounter;
 class StoryAdapter;
 class StoryGameOrders;
 class StoryScenes;
@@ -44,9 +45,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
                                             const ruleset::Ruleset& rules);
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
-// inventory, battle, the story's game orders, story scenes, story), and the adapters by type for
-// the commands of the game and its menus. The session owns the adapters once given them: the typed
-// pointers are valid while it lives.
+// inventory, battle, the story's game orders, story scenes, story, gym, shop), and the adapters by
+// type for the commands of the game and its menus. The session owns the adapters once given them:
+// the typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -55,6 +56,8 @@ struct GameSystems {
   StoryAdapter* story = nullptr;
   StoryGameOrders* storyOrders = nullptr;
   StoryScenes* scenes = nullptr;
+  // The shop the story opens (CALL_ROUTINE 8).
+  ShopCounter* shop = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

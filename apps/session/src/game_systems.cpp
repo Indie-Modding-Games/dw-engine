@@ -6,6 +6,7 @@
 #include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/shop_counter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
@@ -83,12 +84,15 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   evolution->setMoveSource(*battle);
   auto storyOrders = std::make_unique<StoryGameOrders>(StoryGameOrdersDesc{
       .files = &files, .story = story.get(), .inventory = inventory.get(), .battle = battle.get()});
+  auto shop = std::make_unique<ShopCounter>(
+      ShopCounterDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   GameSystems game{.systems = {},
                    .evolution = evolution.get(),
                    .inventory = inventory.get(),
                    .battle = battle.get(),
                    .story = story.get(),
-                   .storyOrders = storyOrders.get()};
+                   .storyOrders = storyOrders.get(),
+                   .shop = shop.get()};
   // The story's scenes tick before the story, so what the app reported is seen the same tick.
   auto scenes = std::make_unique<StoryScenes>(StoryScenesDesc{.story = story.get(),
                                                               .evolution = evolution.get(),
@@ -102,6 +106,7 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(scenes));
   game.systems.push_back(std::move(story));
   game.systems.push_back(std::make_unique<GymAdapter>());
+  game.systems.push_back(std::move(shop));
   return game;
 }
 

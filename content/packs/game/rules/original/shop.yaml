@@ -1,0 +1,24 @@
+# La tienda que abre la historia (script_interp.c: CALL_ROUTINE 8 -> script_common.c: openShop; apps/session: ShopCounter).
+# El surtido no está aquí: el objeto i se vende mientras el trigger 0x180 + i está puesto (inventory: shop).
+
+# getShopkeeperLine (script_common.c:1174): las frases de un tendero son la sección de MAPHEAD 0x4c4 más su lugar en
+# data/shops shopkeepers; una tienda sin dueño (variable 254 = 0xFF) usa la sección 0x4ce.
+keeper_lines_section: 1220
+ownerless_lines_section: 1230
+# CALL_ROUTINE 8 abre la tienda de reciclaje (openRecycleShop) mientras este trigger está puesto.
+recycle_trigger: 3
+# tickItemMenuAmountBox (script_common.c:1457): el botón alternativo mueve la cantidad de diez en diez.
+amount_step: 10
+# openShop: el número de cada frase dentro de la sección del tendero (resolveMapHeadEntry).
+lines:
+  greeting: 0
+  nothing_to_sell: 1
+  choices: 2
+  farewell_after_trade: 4
+  farewell: 5
+  bits: 6
+  buy_prompt: 8
+  sell_prompt: 9
+  thanks: 10
+  anything_else: 11
+  discount: 13
