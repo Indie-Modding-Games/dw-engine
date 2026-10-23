@@ -6,6 +6,10 @@
 
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
+
+#include "field_scene.hpp"
 
 namespace dwe::app {
 
@@ -62,6 +66,22 @@ bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm) {
     show(Step::Chest, FoundText, found.item);
   }
   return true;
+}
+
+void FieldItemsScreen::show(FieldScene& scene) const {
+  std::vector<GroundItemSprite> sprites;
+  const assets::ItemTable& table = inventory_->items();
+  for (const std::optional<game::field::GroundItem>& ground : items_->items().ground()) {
+    if (!ground) {
+      continue;
+    }
+    const assets::ItemEntry& entry = table.at(ground->item);
+    if (entry.iconPalette && entry.originalIndex) {
+      sprites.push_back(
+          {.position = ground->position, .icon = entry.index, .palette = *entry.iconPalette});
+    }
+  }
+  scene.setGroundItems(std::move(sprites));
 }
 
 bool FieldItemsScreen::handle(const ui::UiCommand& command) {

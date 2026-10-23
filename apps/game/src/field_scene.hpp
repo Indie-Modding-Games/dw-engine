@@ -33,6 +33,15 @@
 
 namespace dwe::app {
 
+// An item lying on the field's ground (item.c: spawnItem, spawnDroppedItems): its world point and
+// its icon, the cell of its number in the items' image with its palette (ItemEntry::index,
+// iconPalette).
+struct GroundItemSprite {
+  glm::vec3 position{0.0F};
+  std::int32_t icon = 0;
+  std::uint8_t palette = 0;
+};
+
 struct FieldSceneDesc {
   // The map and exit to start at; field/warps' start when not given.
   std::optional<std::string> startMap;
@@ -129,6 +138,9 @@ public:
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
   }
+  // The items on the ground, drawn as their icons over their shadows (item.c: renderDroppedItem)
+  // until replaced. The images load on first use; one that fails is logged and not drawn.
+  void setGroundItems(std::vector<GroundItemSprite> items) { groundItems_ = std::move(items); }
   // Copies of a model of the packs drawn on the map at these world transforms until replaced (the
   // partner's poop piles: partner_impl.c: renderPoop). The model loads on first use; one that
   // fails is logged and not drawn.
@@ -286,6 +298,9 @@ private:
   // loaded when the story puts one on the map, dropped when it goes.
   void followNpcs();
   void drawNpcs(double animationSeconds, float alpha);
+  // The ground items' billboards (field_scene_ground_items.cpp).
+  void drawGroundItems();
+  std::optional<std::size_t> groundItemTexture(std::optional<std::uint8_t> palette);
 
   const assets::VirtualFileSystem* files_;
   std::unique_ptr<render::MapRenderer> mapRenderer_;
@@ -320,6 +335,10 @@ private:
   std::string mapNameKey_;
   std::uint32_t mapSerial_ = 0;
   std::vector<render::MapMarker> extraMarkers_;
+  std::vector<GroundItemSprite> groundItems_;
+  // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),
+  // or nothing for one that failed to load.
+  std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;

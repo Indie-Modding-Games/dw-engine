@@ -53,7 +53,7 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   cámara al tamaño del fotograma en `prepare`. Da dos `Drawer`: el fondo (sin profundidad, primero) y las capas (los
   sprites de lejos a cerca con prueba de profundidad `LessOrEqual` y su mezcla, y las bandas negras al final). Lo que
   haya entre los dos (los modelos) usa `camera().view()` y `camera().projection()` y queda tapado por las capas que
-  tiene delante. `setMarkers` dibuja rectángulos de prueba de pie en el suelo. Dibujar no reserva memoria: los
+  tiene delante. `setMarkers` dibuja rectángulos de prueba de pie en el suelo. `setBillboards` dibuja cuadros con textura (de `addBillboardTexture`, que duran entre mapas) de pie y de cara a la cámara o tumbados en el suelo, opacos o semitransparentes como los sprites de las capas: los objetos del suelo y sus sombras (`item.c: renderDroppedItem`). Dibujar no reserva memoria: los
   búferes de cada fotograma se reutilizan.
 - `dwe-game --map <id>[,<id>...]` lo enseña sin la escena de campo: `--time day|dusk|night`, `--focus x,z` y
   `--size AnchoxAlto`; las flechas mueven un marcador relativo a la cámara, el clic lo manda al punto del suelo, las

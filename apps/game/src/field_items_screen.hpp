@@ -12,6 +12,8 @@
 
 namespace dwe::app {
 
+class FieldScene;
+
 inline constexpr std::string_view FieldItemNoticeDocument = "field_item_notice";
 
 // Picking up the items on the field's ground and taking the chests' items (tamer.c:
@@ -33,6 +35,10 @@ public:
 
   // Takes the notice's answer; false for any other command.
   bool handle(const ui::UiCommand& command);
+
+  // Hands the scene the items on the ground of the map shown, once a frame: those with an icon
+  // (ItemEntry::iconPalette) are drawn (item.c: renderDroppedItem).
+  void show(FieldScene& scene) const;
 
 private:
   enum class Step : std::uint8_t { None, GroundItem, Chest, BagFull, Empty };

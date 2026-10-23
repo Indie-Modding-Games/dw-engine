@@ -607,6 +607,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
+  fieldItemsScreen_.show(*scene_);
   scene_->update(frameSeconds, alpha, paused());
 }
 

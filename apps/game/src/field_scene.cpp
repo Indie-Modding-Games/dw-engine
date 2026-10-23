@@ -532,6 +532,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     markers.push_back(marker);
   }
   mapRenderer_->setMarkers(markers);
+  drawGroundItems();
 }
 
 void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {

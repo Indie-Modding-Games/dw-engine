@@ -155,6 +155,9 @@ MapRenderer::MapRenderer(Renderer& renderer, Pipelines pipelines, TextureId blac
 
 MapRenderer::~MapRenderer() {
   releaseMap();
+  for (const SpriteTexture& texture : billboardTextures_) {
+    renderer_->destroyTexture(texture.id);
+  }
   renderer_->destroyTexture(black_);
 }
 
@@ -167,6 +170,18 @@ core::Result<TextureId> MapRenderer::makeTexture(rhi::Extent extent,
   core::logWarning("map: cannot queue a {}x{} texture ({}); uploading it at once", extent.width,
                    extent.height, texture.error().message);
   return renderer_->createTexture(extent, pixels);
+}
+
+core::Result<std::size_t> MapRenderer::addBillboardTexture(const assets::Image& image) {
+  auto texture =
+      makeTexture({.width = image.width, .height = image.height}, std::span{image.pixels});
+  if (!texture) {
+    return std::unexpected{texture.error()};
+  }
+  billboardTextures_.push_back(
+      {.id = *texture,
+       .size = {static_cast<float>(image.width), static_cast<float>(image.height)}});
+  return billboardTextures_.size() - 1;
 }
 
 void MapRenderer::releaseMap() {
@@ -412,6 +427,38 @@ void MapRenderer::drawLayers(DrawContext& context) {
                 clip(marker.feet - side), clip(marker.feet + side)},
                {0.0F, 0.0F}, {1.0F, 1.0F}, white, marker.color);
     addToRun(SpriteBlend::Opaque, TexelFilter::All, first);
+  }
+  const glm::vec3 up{camera_.view()[0][1], camera_.view()[1][1], camera_.view()[2][1]};
+  for (const MapBillboard& billboard : billboards_) {
+    if (billboard.texture >= billboardTextures_.size()) {
+      continue;
+    }
+    const SpriteTexture& texture = billboardTextures_[billboard.texture];
+    const glm::vec2 half = billboard.size * 0.5F;
+    // Upright: the camera's right and up. Flat: the world's x and z, the far side first.
+    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F} : right * half.x;
+    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y} : up * half.y;
+    const auto clip = [&viewProjection](glm::vec3 world) {
+      return viewProjection * glm::vec4{world, 1.0F};
+    };
+    const std::array<glm::vec4, 4> corners{
+        clip(billboard.centre - across + along), clip(billboard.centre + across + along),
+        clip(billboard.centre - across - along), clip(billboard.centre + across - along)};
+    const glm::vec2 uvMin = billboard.texel / texture.size;
+    const glm::vec2 uvMax = (billboard.texel + billboard.texels) / texture.size;
+    const glm::uvec2 textures{texture.id.index, NoPalette};
+    const glm::vec4 color{billboard.color, 1.0F};
+    const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
+    appendQuad(vertices_, corners, uvMin, uvMax, textures, color);
+    if (billboard.blend == SpriteBlend::Opaque) {
+      addToRun(SpriteBlend::Opaque, TexelFilter::All, plainStart);
+      continue;
+    }
+    addToRun(SpriteBlend::Opaque, TexelFilter::Plain, plainStart);
+    const auto semiStart = static_cast<std::uint32_t>(vertices_.size());
+    appendQuad(vertices_, corners, uvMin, uvMax, textures,
+               {billboard.color, blendAlpha(billboard.blend)});
+    addToRun(billboard.blend, TexelFilter::SemiTransparent, semiStart);
   }
   for (const DepthLayerQuad& quad : layers_.quads()) {
     if (quad.sprite >= placements_.size() ||

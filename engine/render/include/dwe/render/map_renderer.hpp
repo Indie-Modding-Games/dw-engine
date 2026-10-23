@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/image.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/render/drawer.hpp>
@@ -24,6 +25,26 @@ struct MapMarker {
   float width = 60.0F;
   float height = 160.0F;
   glm::vec4 color{1.0F, 0.2F, 0.6F, 1.0F};
+};
+
+// A textured quad in the world, drawn with depth after the markers and before the depth layers:
+// upright and facing the camera, centred on its point, as the original's items on the ground
+// (item.c: renderOverworldItem), or flat on the ground around it, as their shadows
+// (renderDroppedItemShadow).
+struct MapBillboard {
+  glm::vec3 centre{0.0F};
+  // World units: the width and height of an upright one, the x and z sides of a flat one.
+  glm::vec2 size{0.0F};
+  bool flat = false;
+  // A texture of addBillboardTexture, and the rectangle of it drawn, in texels.
+  std::size_t texture = 0;
+  glm::vec2 texel{0.0F};
+  glm::vec2 texels{0.0F};
+  // A semi-transparent one mixes its texels with STP with this blend and draws the others opaque,
+  // as the depth-layer sprites.
+  assets::SpriteBlend blend = assets::SpriteBlend::Opaque;
+  // Multiplies the texels' colours: the original's 0x80 is 1.
+  glm::vec3 color{1.0F};
 };
 
 // How long the original fades the background palette when the time of day changes: 25 frames of its
@@ -71,6 +92,15 @@ public:
   // models.
   void setMarkers(std::span<const MapMarker> markers) {
     markers_.assign(markers.begin(), markers.end());
+  }
+
+  // Uploads a texture for billboards: RGBA whose alpha is 0 (not drawn), 128 (STP) or 255. It
+  // stays across maps until the map renderer goes. Returns its index for MapBillboard::texture.
+  core::Result<std::size_t> addBillboardTexture(const assets::Image& image);
+
+  // Billboards drawn by layerDrawer() after the markers, in this order, until replaced.
+  void setBillboards(std::span<const MapBillboard> billboards) {
+    billboards_.assign(billboards.begin(), billboards.end());
   }
 
   [[nodiscard]] bool hasMap() const { return hasMap_; }
@@ -171,6 +201,8 @@ private:
   std::vector<SpriteTexture> spriteTextures_;
   std::vector<assets::MapSpriteSheet::Placement> placements_;
   std::vector<MapMarker> markers_;
+  std::vector<SpriteTexture> billboardTextures_;
+  std::vector<MapBillboard> billboards_;
   glm::vec2 backgroundSize_{0.0F};
   // The palette rows faded between: fade_ 0 shows fromRow_, 1 toRow_.
   std::uint32_t fromRow_ = 0;
