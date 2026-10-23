@@ -67,7 +67,7 @@ Las secciones del ruleset de la partida (en `content/packs/game/rules/original/`
   «jugador quieto» (0 y 3), el disparador de girarse en una charla (44) y la variable del nombre del mapa con sus tres
   valores (6; 0, 1, 2). La lee `StoryAdapter`, que en la primera lectura crea la VM de scripts de la partida,
   publica en ella la API `story` y comprueba que los módulos de historia vienen de este `dwx`; si algo de eso falla, la
-  partida no se crea ([intérprete de historia](../../docs/architecture/interprete-historia.md)).
+  partida no se crea ([intérprete de historia](../../architecture/interprete-historia.md)).
 
 Una partida nueva con la misma semilla (`SessionDesc::seed`) es siempre la misma, aunque antes se haya jugado otra en
 la misma `GameSession`: la semilla reinicia los números aleatorios del partner y los de los sistemas (`random()`, que empiezan en la semilla
