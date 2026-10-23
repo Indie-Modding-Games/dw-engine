@@ -24,7 +24,8 @@ end
 function on_show(document)
   refresh(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get(question() and "yes" or "ok"):focus()
+  -- A question starts on no, so that confirming in a hurry does not overwrite a save.
+  document:get(question() and "no" or "ok"):focus()
 end
 
 function on_setting(document, _name)

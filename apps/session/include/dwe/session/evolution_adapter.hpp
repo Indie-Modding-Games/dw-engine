@@ -56,6 +56,7 @@ public:
   void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
   void routePartnerEvent(GameSession& session, const game::partner::PartnerEvent& event) override;
   void afterPraiseOrScold(GameSession& session, const PraiseOrScold& event) override;
+  void afterWakeUp(GameSession& session) override;
 
   // Where the partner's learned moves are: the session's battle adapter, which owns them and must
   // outlive this adapter. The battle adapter is built after this one (it needs the inventory, which

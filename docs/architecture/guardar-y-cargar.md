@@ -204,18 +204,24 @@ tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `
 
 ### 3.6 Dormir
 
-`pause_menu` gana **«Dormir»**, activo solo si `Partner::canSleep()` (el original lo pone en gris igual). Al elegirlo:
+`pause_menu` gana **«Dormir»**, activo solo si `Partner::canSleep()` (el original lo pone en gris igual) y el menú
+podría abrirse sobre el campo: sin combate ni fundido (`tamer.c: 517-528`; las condiciones de guion y caja de texto
+llegarán con el intérprete de historia y las cajas de texto). Al elegirlo, como `partner.c: partnerTickSleep`:
 
-1. Se cierra el menú, fundido a negro (tan largo como el del cambio de mapa), `GameSession::sleep` (el reloj salta a
-   la mañana; ya existe). Lo lleva `SleepScreen` (`apps/game/src/sleep_screen.cpp`); el campo y el reloj esperan del
-   primer fundido al último y el menú de pausa no se abre encima.
+1. Se cierra el menú y la pantalla funde a negro: `sleep.fade.out_frames` (40) frames del original, con la curva
+   escalonada de `fade.c` (el paso es `160 / (frames + 1)`, el mismo cálculo que da el 7 del cambio de mapa). En el
+   último frame, `GameSession::fallAsleep` (el reloj salta a la mañana; ya existía). Lo lleva `SleepScreen`
+   (`apps/game/src/sleep_screen.cpp`); el campo y el reloj esperan y el menú de pausa no se abre encima.
 2. Si la partida tiene ranura, `sleep_menu`: «Dormir» / «Guardar y dormir». Cancelar no hace nada, como el original.
    Sin ranura no sale nada.
 3. «Guardar y dormir» guarda en la ranura (`GameSaves`, `apps/game/src/game_saves.cpp`). Antes mira la ranura
    (`SaveSlots::list`): si ya no tiene esta partida, pregunta o avisa en vez de escribir encima ([4](#4-errores)). Si
-   falla, aviso con el error y vuelta al paso 2.
-4. Fundido de entrada; el reloj sigue. Lo que el original hace al despertar (evoluciones especiales) es del sistema de
-   evolución, que ya escucha `Slept`.
+   falla, aviso con el error y vuelta al paso 2. Las preguntas empiezan en «No».
+4. Fundido de entrada de `sleep.fade.in_frames` (40) frames. En el frame `sleep.fade.control_frame` (35) el jugador
+   recupera el control, el reloj sigue y `GameSession::wakeUp` corre las evoluciones especiales del despertar
+   (`SessionSystem::afterWakeUp`): el guardado del paso 3 guarda al partner de antes de evolucionar, como el original.
+   Los últimos frames del fundido se dibujan con el jugador ya en marcha y el menú de pausa no se abre hasta que acaba
+   (`FADE_PROTECTION`).
 
 El reloj está parado mientras el menú está abierto (el bucle ya pausa con documentos modales). Al acabar bien no hay
 mensaje, como el original; el aviso de autoguardado, si salta, es aparte.
@@ -308,6 +314,8 @@ fichero (`dialog.file`).
 | Volver a la portada desde la pausa | Mejora documentada | El original no tiene; es interfaz, sin efecto en las reglas |
 | Sin formatear tarjetas, sin «quitar la tarjeta» | Sin equivalente | No hay tarjetas |
 | Fichero de la ranura borrado fuera del juego: se reescribe | Mejora menor | |
+| Al guardar durmiendo se mira antes la ranura de la partida (otra partida, dañada, de un juego más nuevo) | Mejora documentada | El original escribe encima sin mirar; un PC deja tocar la carpeta fuera del juego |
+| Dormir: el partner no camina a la cama ni hay animaciones ni sonido del sueño (`partner.c: 281-321`) | Pendiente: VAN-04 | El fundido, el momento del guardado y el del despertar ya son los del original |
 | Sin registro para el modo versus en la máquina | Pendiente (fase 5) | Pregunta 3 |
 | Borrar partida en la portada | Pendiente | Pregunta 4 |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |

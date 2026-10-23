@@ -335,6 +335,9 @@ comportamiento, no guardan datos.
 | `sleep.injured_penalty.discipline` | -5 | a | Incremento. |
 | `sleep.injured_penalty.tiredness` | 5 | a | Incremento. |
 | `sleep.hungry_weight_loss` | 1 | a | Incremento. |
+| `sleep.fade.out_frames` | 40 | a | Temporizador o duración. |
+| `sleep.fade.in_frames` | 40 | a | Temporizador o duración. |
+| `sleep.fade.control_frame` | 35 | a | Temporizador o duración. |
 | `toilet.poop_step_minutes` | 10 | a | Temporizador o duración. |
 | `toilet.urge_discipline_offset` | 20 | a | Término de una fórmula. |
 | `toilet.urge_frames_per_hundred` | 1200 | a | Temporizador o duración. |

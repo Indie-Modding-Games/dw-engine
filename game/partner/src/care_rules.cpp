@@ -80,6 +80,10 @@ constexpr std::string_view RegenerationKey = "regeneration";
 constexpr std::string_view SickPenaltyKey = "sick_penalty";
 constexpr std::string_view InjuredPenaltyKey = "injured_penalty";
 constexpr std::string_view HungryWeightLossKey = "hungry_weight_loss";
+constexpr std::string_view FadeKey = "fade";
+constexpr std::string_view FadeOutKey = "out_frames";
+constexpr std::string_view FadeInKey = "in_frames";
+constexpr std::string_view ControlFrameKey = "control_frame";
 constexpr std::string_view SleepyHourKey = "sleepy_hour";
 constexpr std::string_view SleepyMinuteKey = "sleepy_minute";
 constexpr std::string_view WakeHourKey = "wake_hour";
@@ -299,13 +303,27 @@ SleepRegeneration readRegeneration(YamlReader& reader, const YamlNode& parent) {
           .dislikedAreaPercent = nonNegative(reader, *node, DislikedAreaPercentKey)};
 }
 
+SleepFade readFade(YamlReader& reader, const YamlNode& parent) {
+  const YamlNode* node = nullptr;
+  if (!group(reader, parent, FadeKey, {FadeOutKey, FadeInKey, ControlFrameKey}, node)) {
+    return {};
+  }
+  const SleepFade fade{.outFrames = positive(reader, *node, FadeOutKey),
+                       .inFrames = positive(reader, *node, FadeInKey),
+                       .controlFrame = positive(reader, *node, ControlFrameKey)};
+  if (reader.ok() && fade.controlFrame > fade.inFrames) {
+    reader.fail(*node, formatMessage(messages::MinAboveMax, ControlFrameKey, FadeInKey));
+  }
+  return fade;
+}
+
 SleepRules readSleep(YamlReader& reader, const YamlNode& root) {
   const YamlNode* node = nullptr;
   if (!group(reader, root, SleepKey,
              {TirednessPerMinuteKey, TirednessThresholdKey, AwakeCutMinutesKey, BabyAwakeKey,
               InTrainingAwakeKey, YoungVariationKey, PatternsKey, BabyPenaltyKey,
               InTrainingPenaltyKey, AdultPenaltyKey, MissedSleepTamerKey, RegenerationKey,
-              SickPenaltyKey, InjuredPenaltyKey, HungryWeightLossKey},
+              SickPenaltyKey, InjuredPenaltyKey, HungryWeightLossKey, FadeKey},
              node)) {
     return {};
   }
@@ -333,6 +351,7 @@ SleepRules readSleep(YamlReader& reader, const YamlNode& root) {
   rules.sickPenalty = moodChange(reader, *node, SickPenaltyKey);
   rules.injuredPenalty = moodChange(reader, *node, InjuredPenaltyKey);
   rules.hungryWeightLoss = nonNegative(reader, *node, HungryWeightLossKey);
+  rules.fade = readFade(reader, *node);
   return rules;
 }
 

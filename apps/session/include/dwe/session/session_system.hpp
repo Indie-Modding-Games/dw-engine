@@ -54,6 +54,9 @@ public:
 
   // Runs after the player praised or scolded the partner, before its events are routed.
   virtual void afterPraiseOrScold(GameSession& /*session*/, const PraiseOrScold& /*event*/) {}
+
+  // Runs when the partner wakes up after a sleep, before its events are routed.
+  virtual void afterWakeUp(GameSession& /*session*/) {}
 };
 
 } // namespace dwe::session

@@ -188,7 +188,8 @@
         "regeneration",
         "sick_penalty",
         "injured_penalty",
-        "hungry_weight_loss"
+        "hungry_weight_loss",
+        "fade"
       ],
       "additionalProperties": false,
       "properties": {
@@ -385,6 +386,26 @@
         },
         "hungry_weight_loss": {
           "type": "integer"
+        },
+        "fade": {
+          "type": "object",
+          "required": [
+            "out_frames",
+            "in_frames",
+            "control_frame"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "out_frames": {
+              "type": "integer"
+            },
+            "in_frames": {
+              "type": "integer"
+            },
+            "control_frame": {
+              "type": "integer"
+            }
+          }
         }
       }
     },

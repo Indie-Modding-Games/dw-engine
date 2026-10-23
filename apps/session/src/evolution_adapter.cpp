@@ -251,14 +251,6 @@ void EvolutionAdapter::routePartnerEvent(GameSession& session,
       }
     }
     break;
-  case EventKind::Slept:
-    if (const auto inputs = inputsOf(session, NoScriptRunning)) {
-      syncRaised(desc_.story, state_);
-      if (auto result = evolution_->wakeUp(*inputs, state_, session.random())) {
-        apply(session, *result);
-      }
-    }
-    break;
   case EventKind::Reborn:
     // evolution.c: reincarnatePartner marks the new baby as raised.
     if (const auto species = evolution_->tables().find(session.partner().state().species)) {
@@ -267,6 +259,24 @@ void EvolutionAdapter::routePartnerEvent(GameSession& session,
     break;
   default:
     break;
+  }
+}
+
+void EvolutionAdapter::afterWakeUp(GameSession& session) {
+  if (!evolution_) {
+    return;
+  }
+  // partner.c: partnerTickSleep, handleSpecialEvolutions(2) once the player has control again.
+  if (const auto inputs = inputsOf(session, NoScriptRunning)) {
+    syncRaised(desc_.story, state_);
+    auto result = evolution_->wakeUp(*inputs, state_, session.random());
+    core::logDebug("[port:save] partnerTickSleep (partner.c:359): wake-up evolution {}",
+                   result ? "taken" : "none");
+    if (result) {
+      apply(session, *result);
+    }
+  } else {
+    core::logDebug("[port:save] partnerTickSleep (partner.c:359): wake-up evolution not checked");
   }
 }
 

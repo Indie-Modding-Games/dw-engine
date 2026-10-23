@@ -194,8 +194,13 @@ public:
   void scold();
   void praise();
   void useToilet();
-  // Puts the partner to bed; the clock jumps to its wake hour. Fails if it is not sleepy.
+  // Puts the partner to bed; the clock jumps to its wake hour. Fails if it is not sleepy. sleep is
+  // fallAsleep and then wakeUp; the sleep screen calls them apart, because the original saves
+  // between them and runs the wake-up evolutions only once the screen faded back in (partner.c:
+  // partnerTickSleep).
   core::Result<void> sleep(const game::partner::SleepContext& context);
+  core::Result<void> fallAsleep(const game::partner::SleepContext& context);
+  void wakeUp();
   core::Result<game::partner::TrainingResult> train(const game::partner::TrainingRequest& request);
 
   // After a system's command changed the partner (an item, an evolution): routes the partner's

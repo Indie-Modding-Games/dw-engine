@@ -195,7 +195,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
                     .ui = context.ui}),
-      fieldHud_(*context.ui, *game_.session), sleepScreen_(*game_.session, *context.ui) {
+      fieldHud_(*context.ui, *game_.session),
+      sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition) {
   session::GameSession& session = *game_.session;
   session.attachField(scene_->field());
   // A loaded game's partner may be another species than the game pack's partner model.
@@ -227,9 +228,11 @@ PlaySession::~PlaySession() {
 void PlaySession::tick(const game::field::FieldInput& intent) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
+  sleepScreen_.tick(TickSeconds);
   if (sleepScreen_.active()) {
-    sleepScreen_.tick(TickSeconds);
-  } else if (battleScreen_.active()) {
+    return;
+  }
+  if (battleScreen_.active()) {
     if (!ui.isVisible(MenuDocument)) {
       battleScreen_.tick(TickSeconds);
     }
@@ -310,7 +313,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
 
   partnerMenu_.update();
-  sleepScreen_.update();
+  // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
+  // text boxes yet.
+  sleepScreen_.update(!battleScreen_.active() && !field.mapChangePending() &&
+                      field.fadeLevel() == 0.0F);
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(partnerEvents, session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||

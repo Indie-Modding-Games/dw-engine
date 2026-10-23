@@ -104,6 +104,9 @@ sleep:
   injured_penalty: { happiness: -10, discipline: -5, tiredness: 5 }
   # handleSleeping: dormirse con hambre baja el peso 1 (ver la rareza sleeping_hungry_keeps_weight).
   hungry_weight_loss: 1
+  # partnerTickSleep: fadeToBlack(40), el sueño cuando FADE_OUT_CURRENT pasa de 39; fadeFromBlack(40), y el control
+  # vuelve (con la evolución especial al despertar) cuando FADE_IN_CURRENT pasa de 34. En fotogramas del original.
+  fade: { out_frames: 40, in_frames: 40, control_frame: 35 }
 toilet:
   # tickPoopingMechanic: el temporizador del baño (poopLevel) baja 1 cada 200 fotogramas.
   poop_step_minutes: 10

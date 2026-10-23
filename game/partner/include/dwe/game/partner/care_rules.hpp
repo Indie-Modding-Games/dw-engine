@@ -90,6 +90,15 @@ struct SleepRegeneration {
   std::int32_t dislikedAreaPercent = 0;
 };
 
+// The screen's fade around a sleep (partner.c: partnerTickSleep), in frames of the original: the
+// partner sleeps once the fade out ends, and the player gets control back on the fade in's control
+// frame.
+struct SleepFade {
+  std::int32_t outFrames = 0;
+  std::int32_t inFrames = 0;
+  std::int32_t controlFrame = 0;
+};
+
 struct SleepRules {
   std::int32_t tirednessPercentPerMinute = 0;
   std::int32_t tirednessThreshold = 0;
@@ -106,6 +115,7 @@ struct SleepRules {
   MoodChange sickPenalty;
   MoodChange injuredPenalty;
   std::int32_t hungryWeightLoss = 0;
+  SleepFade fade;
 };
 
 // Eating a poop pile of a size range (handleEatingPoop).

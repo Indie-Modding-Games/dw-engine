@@ -2,10 +2,15 @@
 
 #include <dwe/core/log.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/game/partner/care_rules.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <string>
+#include <utility>
 #include <variant>
 
 #include "common.hpp"
@@ -15,27 +20,56 @@
 namespace dwe::app {
 namespace {
 
-// The sleep's fades last as long as a map change's.
-double fadeDuration() {
-  const game::field::TransitionRules rules;
-  return static_cast<double>(rules.fadeOutFrames) * static_cast<double>(rules.frameSeconds);
+// fade.c: fadeToBlack and fadeFromBlack step the shade by shadeMax / (frames + 1) per frame.
+std::int32_t shadeStep(const game::field::TransitionRules& rules, std::int32_t frames) {
+  return rules.shadeMax / (frames + 1);
+}
+
+const char* phaseName(std::uint8_t phase) {
+  constexpr std::array<const char*, 5> Names{"awake", "fading out", "menu", "fading in",
+                                             "fade tail"};
+  return phase < Names.size() ? Names.at(phase) : "?";
 }
 
 } // namespace
 
-SleepScreen::SleepScreen(session::GameSession& session, ui::Ui& ui)
-    : session_(&session), ui_(&ui),
-      saves_(session.slots(), [&session](game::save::SlotId slot) { return session.save(slot); }) {}
+SleepScreen::SleepScreen(session::GameSession& session, ui::Ui& ui,
+                         const game::field::TransitionRules& transition)
+    : session_(&session), ui_(&ui), transition_(transition),
+      saves_(session.slots(), [&session](game::save::SlotId slot) { return session.save(slot); }) {
+  ui.setSetting("save.last_result", std::string{});
+}
+
+bool SleepScreen::active() const {
+  return phase_ != Phase::Awake && phase_ != Phase::FadeTail;
+}
+
+std::int32_t SleepScreen::fadeFrame() const {
+  // As the field's fades: the frame counter starts at 1, and a little slack lets ticks adding up to
+  // a frame's length land on that frame despite rounding.
+  constexpr double Slack = 1e-3;
+  return 1 + static_cast<std::int32_t>(std::floor(
+                 (fadeSeconds_ / static_cast<double>(transition_.frameSeconds)) + Slack));
+}
 
 float SleepScreen::fadeLevel() const {
-  const double progress = std::clamp(fadeSeconds_ / fadeDuration(), 0.0, 1.0);
+  const game::partner::SleepFade& fade = session_->partnerRules().care.sleep.fade;
   switch (phase_) {
   case Phase::FadingOut:
-    return static_cast<float>(progress);
-  case Phase::Menu:
-    return 1.0F;
+  case Phase::Menu: {
+    // fade.c: renderFadeOut adds its step to the shade the last fade in left, and goes on drawing
+    // until the fade in replaces it.
+    const std::int32_t start = game::field::fadeInShade(transition_, transition_.fadeInFrames);
+    const std::int32_t shade = std::min(
+        transition_.shadeMax, start + (shadeStep(transition_, fade.outFrames) * fadeFrame()));
+    return game::field::shadeDarkness(transition_, shade);
+  }
   case Phase::FadingIn:
-    return static_cast<float>(1.0 - progress);
+  case Phase::FadeTail: {
+    game::field::TransitionRules in = transition_;
+    in.shadeStep = shadeStep(transition_, fade.inFrames);
+    return game::field::shadeDarkness(in, game::field::fadeInShade(in, fadeFrame()));
+  }
   case Phase::Awake:
     break;
   }
@@ -44,42 +78,51 @@ float SleepScreen::fadeLevel() const {
 
 void SleepScreen::tick(double seconds) {
   // The pause menu does not open over a sleep.
-  if (phase_ != Phase::Awake && ui_->isVisible(MenuDocument)) {
+  if (active() && ui_->isVisible(MenuDocument)) {
     ui_->hide(MenuDocument);
   }
-  if (phase_ != Phase::FadingOut && phase_ != Phase::FadingIn) {
+  if (phase_ == Phase::Awake) {
     return;
   }
   fadeSeconds_ += seconds;
-  if (fadeSeconds_ < fadeDuration()) {
-    return;
-  }
-  if (phase_ == Phase::FadingOut) {
+  const game::partner::SleepFade& fade = session_->partnerRules().care.sleep.fade;
+  const std::int32_t frame = fadeFrame();
+  if (phase_ == Phase::FadingOut && frame >= fade.outFrames) {
+    // partner.c: partnerTickSleep sleeps once FADE_OUT_CURRENT passes 39.
     fallAsleep();
-  } else {
-    phase_ = Phase::Awake;
+  } else if (phase_ == Phase::FadingIn && frame >= fade.controlFrame) {
+    // partner.c: partnerTickSleep gives control back once FADE_IN_CURRENT passes 34, and only then
+    // runs the wake-up evolution and the game time.
+    setPhase(Phase::FadeTail);
+    if (std::exchange(asleep_, false)) {
+      core::logDebug("[port:save] partnerTickSleep (partner.c:354): awake at frame {}", frame);
+      session_->wakeUp();
+    }
+  } else if (phase_ == Phase::FadeTail && frame > fade.inFrames) {
+    setPhase(Phase::Awake);
   }
 }
 
 bool SleepScreen::handle(const ui::UiCommand& command) {
   const std::string& name = command.name;
   if (name == "sleep") {
-    if (phase_ == Phase::Awake && session_->partner().canSleep()) {
+    if (canSleep(fieldIdle_)) {
       ui_->hide(MenuDocument);
-      phase_ = Phase::FadingOut;
+      setPhase(Phase::FadingOut);
       fadeSeconds_ = 0.0;
     }
     return true;
   }
   if (name == "open_menu") {
-    return active();
+    // fade.c: FADE_PROTECTION keeps the menu shut until the fade in ends.
+    return phase_ != Phase::Awake;
   }
   if (phase_ != Phase::Menu) {
     return false;
   }
   if (name == "sleep_only") {
     ui_->hide(SleepMenuDocument);
-    wakeUp();
+    startFadeIn();
   } else if (name == "sleep_and_save") {
     ui_->hide(SleepMenuDocument);
     follow(saves_.save({.home = session_->homeSlot(), .started = session_->playthroughStarted()}));
@@ -94,35 +137,46 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
   return true;
 }
 
-void SleepScreen::update() {
-  const bool canSleep = session_->partner().canSleep();
-  if (canSleep_ != canSleep) {
-    canSleep_ = canSleep;
-    ui_->setSetting("pause_menu.sleep_enabled", canSleep);
+bool SleepScreen::canSleep(bool fieldIdle) const {
+  return fieldIdle && phase_ == Phase::Awake && session_->partner().canSleep();
+}
+
+void SleepScreen::update(bool fieldIdle) {
+  fieldIdle_ = fieldIdle;
+  const bool enabled = canSleep(fieldIdle);
+  if (canSleep_ != enabled) {
+    canSleep_ = enabled;
+    ui_->setSetting("pause_menu.sleep_enabled", enabled);
   }
 }
 
 void SleepScreen::fallAsleep() {
-  if (auto slept = session_->sleep({.hasPillow = false, .area = session_->areaResponse()});
+  if (auto slept = session_->fallAsleep({.hasPillow = false, .area = session_->areaResponse()});
       !slept) {
     core::logWarning(messages::SleepFailed, slept.error().message);
-    wakeUp();
+    startFadeIn();
     return;
   }
+  asleep_ = true;
+  core::logDebug("[port:save] partnerTickSleep (partner.c:325): asleep at frame {}, home slot {}",
+                 fadeFrame(), session_->homeSlot().has_value());
   // Without a slot the playthrough cannot be saved, so there is nothing to ask.
   if (session_->homeSlot() && session_->slots() != nullptr) {
     showMenu();
   } else {
-    wakeUp();
+    startFadeIn();
   }
 }
 
 void SleepScreen::showMenu() {
-  phase_ = Phase::Menu;
+  setPhase(Phase::Menu);
   ui_->show(SleepMenuDocument, true);
 }
 
 void SleepScreen::follow(const SaveStep& step) {
+  core::logDebug("[port:save] tickMainMenu (main_menu.c): sleep menu save: result {}, dialog {}",
+                 step.result ? saveResultName(*step.result) : "pending",
+                 step.dialog ? step.dialog->text : std::string{"none"});
   if (step.result) {
     ui_->setSetting("save.last_result", std::string{saveResultName(*step.result)});
   }
@@ -131,14 +185,21 @@ void SleepScreen::follow(const SaveStep& step) {
     ui_->show(DialogDocument, true);
     dialogShown_ = true;
   } else if (step.result == SaveResult::Saved) {
-    wakeUp();
+    startFadeIn();
   } else {
     showMenu();
   }
 }
 
-void SleepScreen::wakeUp() {
-  phase_ = Phase::FadingIn;
+void SleepScreen::setPhase(Phase phase) {
+  core::logDebug("[port:save] partnerTickSleep (partner.c:320-362): sleep {} -> {}",
+                 phaseName(static_cast<std::uint8_t>(phase_)),
+                 phaseName(static_cast<std::uint8_t>(phase)));
+  phase_ = phase;
+}
+
+void SleepScreen::startFadeIn() {
+  setPhase(Phase::FadingIn);
   fadeSeconds_ = 0.0;
 }
 

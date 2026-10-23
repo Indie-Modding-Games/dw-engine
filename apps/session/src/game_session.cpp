@@ -640,12 +640,27 @@ void GameSession::useToilet() {
 }
 
 core::Result<void> GameSession::sleep(const game::partner::SleepContext& context) {
+  if (auto slept = fallAsleep(context); !slept) {
+    return slept;
+  }
+  wakeUp();
+  return {};
+}
+
+core::Result<void> GameSession::fallAsleep(const game::partner::SleepContext& context) {
   if (!state_->partner.canSleep()) {
     return core::fail(std::string{messages::NotSleepy});
   }
   state_->partner.sleep(state_->clock, context);
   afterCommand();
   return {};
+}
+
+void GameSession::wakeUp() {
+  for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
+    system->afterWakeUp(*this);
+  }
+  afterCommand();
 }
 
 core::Result<game::partner::TrainingResult>
