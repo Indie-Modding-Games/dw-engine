@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <utility>
 
@@ -27,6 +28,14 @@ constexpr std::int32_t PathWait = 0;
 constexpr std::int32_t PathWalk = 1;
 constexpr std::int32_t PathRun = 2;
 constexpr std::int32_t PathEnd = -1;
+// NPCEntityIsInTrackingRadius: trackingRange * radiusTenths / 10.
+constexpr std::int32_t Tenths = 10;
+// lookAtTamerState: the steps of a reaction.
+constexpr std::uint8_t TrackUnseen = 0;
+constexpr std::uint8_t TrackStep1 = 1;
+constexpr std::uint8_t TrackStep2 = 2;
+constexpr std::uint8_t TrackStep3 = 3;
+constexpr std::uint8_t TrackStep4 = 4;
 
 glm::vec2 ground(glm::vec3 v) {
   return {v.x, v.z};
@@ -86,7 +95,7 @@ std::array<float, 4> graceFacings(float yaw) {
 } // namespace
 
 FieldNpcs::FieldNpcs(scene::World& world, NpcRules rules, float frameSeconds)
-    : world_{&world}, rules_{rules}, frameSeconds_{frameSeconds} {}
+    : world_{&world}, rules_{std::move(rules)}, frameSeconds_{frameSeconds} {}
 
 void FieldNpcs::enterMap(std::span<const assets::MapNpc> records) {
   core::logDebug("[port:npc] removeMapEntities (overworld.c:1180): {} NPCs off, {} records on the "
@@ -210,9 +219,10 @@ void FieldNpcs::setHeld(Npc& npc, bool held) {
   }
   npc.held = held;
   if (held) {
-    // overworld.c: clearMapAITable: the path starts over.
+    // overworld.c: clearMapAITable: the path and the reaction to the player start over.
     npc.activeSection = 0;
     npc.hasTarget = false;
+    npc.trackState = TrackUnseen;
   }
 }
 
@@ -323,9 +333,193 @@ void FieldNpcs::tick(float seconds, const assets::MapCollision& collision,
       registry.get<AnimationIntent>(npc.entity) = {.motion = Motion::Idle, .speedScale = 1.0F};
       continue;
     }
-    tickPath(npc, seconds);
+    // overworld.c:1239: the path runs while the NPC has not seen the player.
+    if (npc.trackState == TrackUnseen) {
+      tickPath(npc, seconds);
+    }
+    if (rules_.tracking.has_value()) {
+      const NpcTrackingRules& tracking = *rules_.tracking;
+      const assets::MapNpc& record = records_[npc.slot];
+      if (const NpcTrackingMode* mode = trackingOf(tracking, record); mode != nullptr) {
+        track(npc, record, tracking, *mode, surroundings.player.centre, seconds);
+      }
+    }
     move(npc, seconds, collision, surroundings);
   }
+}
+
+const NpcTrackingMode* FieldNpcs::trackingOf(const NpcTrackingRules& tracking,
+                                             const assets::MapNpc& record) {
+  const auto mode = std::ranges::find_if(tracking.modes, [&](const NpcTrackingMode& candidate) {
+    return std::ranges::find(candidate.followModes, record.followMode) !=
+           candidate.followModes.end();
+  });
+  return mode != tracking.modes.end() ? &*mode : nullptr;
+}
+
+bool FieldNpcs::sees(const Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+                     NpcSpot spot, glm::vec2 player) const {
+  if (spot == NpcSpot::Rect) {
+    // NPCEntityIsInTrackingRect (overworld.c:1389): around the NPC's home, not where it stands.
+    const glm::vec2 home = ground(assets::toWorldPosition(record.position));
+    const auto range = static_cast<float>(record.trackingRange);
+    return std::abs(player.x - home.x) < range && std::abs(player.y - home.y) < range;
+  }
+  // NPCEntityIsInTrackingRadius (overworld.c:1446) in the original's axes (its z is the world's
+  // -z): it adds the signed dx and dz, not their squares, so a player on one side is always seen.
+  const glm::vec2 at = ground(world_->registry().get<Transform>(npc.entity).position);
+  const float dx = at.x - player.x;
+  const float dz = player.y - at.y;
+  const std::int32_t radius = record.trackingRange * tracking.radiusTenths / Tenths;
+  return dx + dz < static_cast<float>(radius * radius);
+}
+
+void FieldNpcs::track(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+                      const NpcTrackingMode& mode, glm::vec2 player, float seconds) {
+  // overworld.c:1247: a reaction starts when the NPC sees the player and runs until it ends.
+  if (npc.trackState == TrackUnseen && !sees(npc, record, tracking, mode.spot, player)) {
+    return;
+  }
+  switch (mode.reaction) {
+  case NpcReaction::Look:
+    look(npc, record, tracking, player, seconds);
+    break;
+  case NpcReaction::Chase:
+    chase(npc, record, tracking, player, seconds);
+    break;
+  case NpcReaction::Follow:
+    follow(npc, record, tracking, mode.gait, player, seconds);
+    break;
+  }
+}
+
+void FieldNpcs::look(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+                     glm::vec2 player, float seconds) {
+  // NPCEntityTickLookingAtTamer (overworld.c:1400): stand, then turn to the player while it stays
+  // in the rectangle.
+  if (npc.trackState == TrackUnseen) {
+    npc.motion = Motion::Idle;
+    setTrackState(npc, TrackStep1);
+    return;
+  }
+  const float height = world_->registry().get<Transform>(npc.entity).position.y;
+  turnTo(npc, {player.x, height, player.y}, seconds);
+  if (!sees(npc, record, tracking, NpcSpot::Rect, player)) {
+    setTrackState(npc, TrackUnseen);
+    npc.hasTarget = false;
+  }
+}
+
+void FieldNpcs::chase(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+                      glm::vec2 player, float seconds) {
+  // NPCEntityTickTrackingTamer (overworld.c:1424) and NPCEntityTickTrackingTamer3 (:1548).
+  switch (npc.trackState) {
+  case TrackUnseen: {
+    // Where the player was when seen, walking (animation 2).
+    const float height = world_->registry().get<Transform>(npc.entity).position.y;
+    npc.target = {player.x, height, player.y};
+    npc.motion = Motion::Walk;
+    setTrackState(npc, TrackStep1);
+    break;
+  }
+  case TrackStep1:
+    npc.motion = Motion::Run;
+    setTrackState(npc, TrackStep2);
+    break;
+  case TrackStep2:
+    // It stops on the cell where it saw the player, or when it runs into the player.
+    turnTo(npc, npc.target, seconds);
+    if (reachedTarget(npc) || npc.blocker == Blocker::Player) {
+      npc.motion = Motion::Idle;
+      npc.waitSeconds = 0.0F;
+      setTrackState(npc, TrackStep3);
+    }
+    break;
+  case TrackStep3:
+    if (waited(npc, tracking.chaseWaitFrames, seconds)) {
+      npc.motion = Motion::Walk;
+      npc.target = assets::toWorldPosition(record.position);
+      npc.waitSeconds = 0.0F;
+      setTrackState(npc, TrackStep4);
+    }
+    break;
+  case TrackStep4:
+    turnTo(npc, npc.target, seconds);
+    if (reachedTarget(npc)) {
+      npc.motion = Motion::Idle;
+      npc.waitSeconds = 0.0F;
+      npc.hasTarget = false;
+      setTrackState(npc, TrackUnseen);
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void FieldNpcs::follow(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+                       NpcGait gait, glm::vec2 player, float seconds) {
+  // NPCEntityTickTrackingTamer2 (overworld.c:1465) and NPCEntityTickTrackingTamer4 (:1626): after
+  // the first step it keeps going while the radius test sees the player, whatever saw it first.
+  switch (npc.trackState) {
+  case TrackUnseen:
+    npc.motion = gait == NpcGait::Run ? Motion::Run : Motion::Walk;
+    setTrackState(npc, TrackStep1);
+    break;
+  case TrackStep1:
+    if (sees(npc, record, tracking, NpcSpot::Radius, player)) {
+      const float height = world_->registry().get<Transform>(npc.entity).position.y;
+      turnTo(npc, {player.x, height, player.y}, seconds);
+    } else {
+      npc.target = assets::toWorldPosition(record.position);
+      setTrackState(npc, TrackStep2);
+    }
+    break;
+  case TrackStep2:
+    turnTo(npc, npc.target, seconds);
+    if (reachedTarget(npc)) {
+      npc.motion = Motion::Idle;
+      npc.waitSeconds = 0.0F;
+      setTrackState(npc, TrackStep3);
+    }
+    break;
+  case TrackStep3:
+    if (waited(npc, tracking.followWaitFrames, seconds)) {
+      npc.waitSeconds = 0.0F;
+      npc.hasTarget = false;
+      setTrackState(npc, TrackUnseen);
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void FieldNpcs::turnTo(Npc& npc, glm::vec3 target, float seconds) {
+  // The chases turn only while nothing blocks the NPC (NPC_COLLISION_STATE -1).
+  if (npc.blocker != Blocker::None) {
+    return;
+  }
+  auto& transform = world_->registry().get<Transform>(npc.entity);
+  transform.yaw = turnToward(transform.yaw, assets::yawOfDirection(target - transform.position),
+                             rules_.turnSpeed * seconds);
+}
+
+bool FieldNpcs::reachedTarget(const Npc& npc) const {
+  const glm::vec3 position = world_->registry().get<Transform>(npc.entity).position;
+  return assets::collisionCellAt(position) == assets::collisionCellAt(npc.target);
+}
+
+bool FieldNpcs::waited(Npc& npc, std::int32_t frames, float seconds) const {
+  npc.waitSeconds += seconds;
+  return npc.waitSeconds >= static_cast<float>(frames) * frameSeconds_;
+}
+
+void FieldNpcs::setTrackState(Npc& npc, std::uint8_t state) {
+  core::logDebug("[port:encounter] NPCEntityTickOverworld (overworld.c:1247): script id {} "
+                 "reaction step {} -> {}",
+                 npc.scriptId, npc.trackState, state);
+  npc.trackState = state;
 }
 
 void FieldNpcs::tickPath(Npc& npc, float seconds) {

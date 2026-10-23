@@ -5,8 +5,11 @@
 #include <dwe/game/field/rules.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <initializer_list>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -160,10 +163,71 @@ TimeOfDayRules readTimeOfDay(YamlReader& reader, const YamlNode& node) {
   return time;
 }
 
+// A choice among names: its index in `names`, or a failure that lists them.
+std::size_t readChoice(YamlReader& reader, const YamlNode& node,
+                       std::initializer_list<std::string_view> names) {
+  const std::string name = reader.text(node);
+  const auto* found = std::ranges::find(names, name);
+  if (found == names.end()) {
+    if (reader.ok()) {
+      reader.fail(node, std::format("unknown name {}", name));
+    }
+    return 0;
+  }
+  return static_cast<std::size_t>(found - names.begin());
+}
+
+NpcTrackingMode readTrackingMode(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "npc.tracking.modes", {"follow_modes", "spot", "reaction"},
+                         {"gait"})) {
+    return {};
+  }
+  NpcTrackingMode mode{.followModes = {},
+                       .spot = static_cast<NpcSpot>(
+                           readChoice(reader, reader.field(node, "spot"), {"rect", "radius"})),
+                       .reaction = static_cast<NpcReaction>(readChoice(
+                           reader, reader.field(node, "reaction"), {"look", "chase", "follow"})),
+                       .gait = NpcGait::Walk};
+  for (const YamlNode& followMode :
+       reader.sequence(reader.field(node, "follow_modes"), "follow_modes")) {
+    mode.followModes.push_back(reader.integer<std::int32_t>(followMode));
+  }
+  if (const YamlNode* gait = node.find("gait"); gait != nullptr) {
+    mode.gait = static_cast<NpcGait>(readChoice(reader, *gait, {"walk", "run"}));
+  }
+  if (reader.ok() && mode.followModes.empty()) {
+    reader.fail(node, "npc.tracking.modes: follow_modes cannot be empty");
+  }
+  return mode;
+}
+
+NpcTrackingRules readTracking(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "npc.tracking",
+                         {"radius_tenths", "chase_wait_frames", "follow_wait_frames", "modes"})) {
+    return {};
+  }
+  NpcTrackingRules tracking{
+      .radiusTenths = reader.integer<std::int32_t>(reader.field(node, "radius_tenths")),
+      .chaseWaitFrames = reader.integer<std::int32_t>(reader.field(node, "chase_wait_frames")),
+      .followWaitFrames = reader.integer<std::int32_t>(reader.field(node, "follow_wait_frames")),
+      .modes = {}};
+  for (const YamlNode& mode : reader.sequence(reader.field(node, "modes"), "modes")) {
+    tracking.modes.push_back(readTrackingMode(reader, mode));
+  }
+  const bool positive =
+      tracking.radiusTenths > 0 && tracking.chaseWaitFrames >= 0 && tracking.followWaitFrames >= 0;
+  if (reader.ok() && !positive) {
+    reader.fail(node,
+                "npc.tracking: radius_tenths must be more than zero and the waits not negative");
+  }
+  return tracking;
+}
+
 NpcRules readNpc(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "npc",
                          {"walk_speed", "run_speed", "turn_speed", "grace_turn_speed",
-                          "stuck_turn_speed", "talk_reach"})) {
+                          "stuck_turn_speed", "talk_reach"},
+                         {"tracking"})) {
     return {};
   }
   NpcRules npc{.walkSpeed = readPositive(reader, reader.field(node, "walk_speed")),
@@ -171,7 +235,11 @@ NpcRules readNpc(YamlReader& reader, const YamlNode& node) {
                .turnSpeed = readPositive(reader, reader.field(node, "turn_speed")),
                .graceTurnSpeed = readPositive(reader, reader.field(node, "grace_turn_speed")),
                .stuckTurnSpeed = readPositive(reader, reader.field(node, "stuck_turn_speed")),
-               .talkReach = readNonNegative(reader, reader.field(node, "talk_reach"))};
+               .talkReach = readNonNegative(reader, reader.field(node, "talk_reach")),
+               .tracking = std::nullopt};
+  if (const YamlNode* tracking = node.find("tracking"); tracking != nullptr) {
+    npc.tracking = readTracking(reader, *tracking);
+  }
   if (reader.ok() && npc.runSpeed < npc.walkSpeed) {
     reader.fail(node, "npc: run_speed cannot be less than walk_speed");
   }

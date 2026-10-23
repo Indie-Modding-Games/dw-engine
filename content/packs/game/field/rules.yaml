@@ -78,6 +78,24 @@ npc:
   stuck_turn_speed: 0.9817
   # map.c: entityCheckEntityCollision alarga 50 la caja del jugador hacia donde mira si pulsa confirmar parado.
   talk_reach: 50
+  # Cómo ven los NPC al jugador y van tras él (overworld.c:1247-1303, el switch sobre followMode de
+  # NPCEntityTickOverworld). Sin este bloque, los NPC no ven al jugador.
+  tracking:
+    # NPCEntityIsInTrackingRadius: radio = trackingRange × 6 / 10. El original suma dx y dz con signo en vez de sus
+    # cuadrados (se mantiene).
+    radius_tenths: 6
+    # NPCEntityTickTrackingTamer3 espera 40 imágenes donde vio al jugador; ...TrackingTamer4, 80 al volver a casa.
+    chase_wait_frames: 40
+    follow_wait_frames: 80
+    # look: se para y mira al jugador mientras sigue en el rectángulo (NPCEntityTickLookingAtTamer).
+    # chase: corre adonde lo vio, espera y vuelve andando (NPCEntityTickTrackingTamer y ...3).
+    # follow: lo sigue andando (animación 2) o corriendo (4) mientras está en el radio, y vuelve (...2 y ...4).
+    modes:
+      - { follow_modes: [2, 11], spot: rect, reaction: look }
+      - { follow_modes: [3, 4, 5, 12, 13, 14], spot: rect, reaction: chase }
+      - { follow_modes: [6, 15], spot: radius, reaction: follow, gait: walk }
+      - { follow_modes: [7, 16], spot: radius, reaction: follow, gait: run }
+      - { follow_modes: [8, 9, 17, 18], spot: rect, reaction: follow, gait: walk }
 
 # Los movimientos con guion (script_interp.c: tickScriptedMovement). entity_look_at_entity gira 0x200 de 4096 por
 # fotograma (overworld.c: rotateEntity): un octavo de vuelta, 2π / 8 / 0,05 radianes por segundo.

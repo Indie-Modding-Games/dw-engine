@@ -80,7 +80,33 @@
         "turn_speed": { "description": "How fast it turns toward its waypoint.", "type": "number", "exclusiveMinimum": 0 },
         "grace_turn_speed": { "description": "How fast a blocked NPC turns toward a free side.", "type": "number", "exclusiveMinimum": 0 },
         "stuck_turn_speed": { "description": "How fast a blocked NPC with no free side turns.", "type": "number", "exclusiveMinimum": 0 },
-        "talk_reach": { "description": "How much further the player reaches the way it faces when confirm is pressed while standing.", "type": "number", "minimum": 0 }
+        "talk_reach": { "description": "How much further the player reaches the way it faces when confirm is pressed while standing.", "type": "number", "minimum": 0 },
+        "tracking": {
+          "description": "How the NPCs see the player and go after it, by their record's follow mode (overworld.c: NPCEntityTickOverworld). Optional: without it, the NPCs never see the player.",
+          "type": "object",
+          "required": ["radius_tenths", "chase_wait_frames", "follow_wait_frames", "modes"],
+          "additionalProperties": false,
+          "properties": {
+            "radius_tenths": { "description": "The radius test's radius: trackingRange * radius_tenths / 10.", "type": "integer", "minimum": 1 },
+            "chase_wait_frames": { "description": "Frames a chasing NPC waits where it saw the player.", "type": "integer", "minimum": 0 },
+            "follow_wait_frames": { "description": "Frames a following NPC waits back home.", "type": "integer", "minimum": 0 },
+            "modes": {
+              "description": "The reaction of the NPCs with each follow mode; a mode not listed does not react.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["follow_modes", "spot", "reaction"],
+                "additionalProperties": false,
+                "properties": {
+                  "follow_modes": { "type": "array", "minItems": 1, "items": { "type": "integer" } },
+                  "spot": { "description": "rect: within trackingRange of its home on both axes; radius: the radius test.", "enum": ["rect", "radius"] },
+                  "reaction": { "description": "look: stand and turn to the player; chase: run where it saw the player, wait and walk home; follow: go after the player while it is in the radius, then home.", "enum": ["look", "chase", "follow"] },
+                  "gait": { "description": "follow only: walk or run.", "enum": ["walk", "run"] }
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

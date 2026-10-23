@@ -4,6 +4,7 @@
 #include <dwe/core/math.hpp>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -108,6 +109,51 @@ struct TimeOfDayRules {
   glm::vec3 nightLight{0.5F};
 };
 
+// Where an NPC sees the player (overworld.c: NPCEntityIsInTrackingRect,
+// NPCEntityIsInTrackingRadius).
+enum class NpcSpot : std::uint8_t {
+  // Within trackingRange of the NPC's home on both ground axes.
+  Rect,
+  // The radius test, which adds the two axes' signed distances instead of their squares (a quirk
+  // of the original, kept).
+  Radius,
+};
+
+// What an NPC does once it sees the player.
+enum class NpcReaction : std::uint8_t {
+  // NPCEntityTickLookingAtTamer: it stands and turns to the player while the player stays in sight.
+  Look,
+  // NPCEntityTickTrackingTamer and ...3: it runs to where it saw the player, waits there and walks
+  // back home.
+  Chase,
+  // NPCEntityTickTrackingTamer2 and ...4: it walks or runs after the player while the player is in
+  // its radius, then goes home and waits.
+  Follow,
+};
+
+// How an NPC follows the player.
+enum class NpcGait : std::uint8_t { Walk, Run };
+
+// The reaction of the NPCs whose record has one of these follow modes (MapNpc::followMode).
+struct NpcTrackingMode {
+  std::vector<std::int32_t> followModes;
+  NpcSpot spot = NpcSpot::Rect;
+  NpcReaction reaction = NpcReaction::Look;
+  // Follow only: walk (animation 2) or run (animation 4).
+  NpcGait gait = NpcGait::Walk;
+};
+
+// How the map's NPCs see the player and go after it (overworld.c:1247-1303: the switch on
+// followMode in NPCEntityTickOverworld).
+struct NpcTrackingRules {
+  // The radius test's radius: trackingRange * radiusTenths / 10, in whole units.
+  std::int32_t radiusTenths = 0;
+  // Frames a chasing NPC waits where it saw the player, and a following NPC waits back home.
+  std::int32_t chaseWaitFrames = 0;
+  std::int32_t followWaitFrames = 0;
+  std::vector<NpcTrackingMode> modes;
+};
+
 // How the map's NPCs move and touch (overworld.c: NPCEntityTickOverworld, map.c:
 // entityCheckCollision, collisionGrace). Missing from a pack's field/rules: these defaults.
 struct NpcRules {
@@ -124,6 +170,8 @@ struct NpcRules {
   // map.c: entityCheckEntityCollision reaches 50 further the way the player faces when confirm is
   // pressed while standing.
   float talkReach = 50.0F;
+  // Missing from a pack's field/rules: the NPCs never see the player.
+  std::optional<NpcTrackingRules> tracking;
 };
 
 // The story's scripted moves (script_interp.c: tickScriptedMovement).

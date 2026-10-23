@@ -148,6 +148,9 @@ private:
     // Held by a script (MapDigimonEntity.stopAnim) and the script's animation (NPC_ACTIVE_ANIM).
     bool held = false;
     std::int32_t scriptedAnimation = 0;
+    // How far it is in its reaction to the player (MapDigimonEntity.lookAtTamerState): 0 while it
+    // has not seen the player, and its path runs only then.
+    std::uint8_t trackState = 0;
   };
 
   [[nodiscard]] Npc* find(std::int32_t scriptId);
@@ -155,6 +158,26 @@ private:
   void remove(std::size_t index);
   static void setHeld(Npc& npc, bool held);
   void tickPath(Npc& npc, float seconds);
+  // overworld.c:1247-1303: the reaction of the NPC's follow mode, if the rules have one.
+  [[nodiscard]] static const NpcTrackingMode* trackingOf(const NpcTrackingRules& tracking,
+                                                         const assets::MapNpc& record);
+  [[nodiscard]] bool sees(const Npc& npc, const assets::MapNpc& record,
+                          const NpcTrackingRules& tracking, NpcSpot spot, glm::vec2 player) const;
+  void track(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+             const NpcTrackingMode& mode, glm::vec2 player, float seconds);
+  void look(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+            glm::vec2 player, float seconds);
+  void chase(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+             glm::vec2 player, float seconds);
+  void follow(Npc& npc, const assets::MapNpc& record, const NpcTrackingRules& tracking,
+              NpcGait gait, glm::vec2 player, float seconds);
+  // getRotationDifference and rotateEntity at the NPC's turn speed, unless it is blocked.
+  void turnTo(Npc& npc, glm::vec3 target, float seconds);
+  // Whether the NPC stands on its target's collision cell (getModelTile).
+  [[nodiscard]] bool reachedTarget(const Npc& npc) const;
+  // Whether it waited this many of the original's frames, counting this tick.
+  [[nodiscard]] bool waited(Npc& npc, std::int32_t frames, float seconds) const;
+  static void setTrackState(Npc& npc, std::uint8_t state);
   void waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds) const;
   void walkOnPath(Npc& npc, const assets::MapNpc& record, scene::Motion motion, float seconds);
   void move(Npc& npc, float seconds, const assets::MapCollision& collision,

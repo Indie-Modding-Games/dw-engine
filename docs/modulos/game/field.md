@@ -45,6 +45,11 @@ if (auto change = field.takeMapChange()) {
   `sets_flags` del warp tomado; después el campo vuelve a decidir las casillas del mapa (`refreshScriptWarps`).
   `keepsOff(trigger)` dice qué casillas evita el clic para ir (no la del warp en la que está el jugador).
   Ver [warps de script](../../architecture/warps-de-script.md).
+- **NPC que ven al jugador** (`FieldNpcs`, con `npc.tracking` en `field/rules`): según el `followMode` de su
+  registro, un NPC mira al jugador, corre adonde lo vio y vuelve, o lo sigue mientras está en su radio
+  (`overworld.c: NPCEntityTickOverworld`). Mientras reacciona no sigue su ruta. Si un NPC con `autotalk` choca con
+  el jugador, el contacto (`contacts()`) lanza su sección del guion, que es la que empieza el combate. El original
+  no tiene encuentros aleatorios: todos los enemigos del campo son NPC del mapa.
 - **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
   su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
   sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.
@@ -54,7 +59,7 @@ if (auto change = field.takeMapChange()) {
 - `field/rules` (`content/packs/game/field/rules.yaml`, [esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/field_rules.schema.json)):
   radios, velocidades y giro del jugador y del partner, las distancias de seguimiento, el rastro y los límites para
   desatascarlo, la zona muerta del stick, el cambio de mapa (fotogramas, tonos del fundido y fotograma del nombre),
-  y las horas del día.
+  las horas del día, y cómo se mueven los NPC y cómo reaccionan al jugador (`npc`).
 
 El campo no tiene reloj propio: `gameTimeRan()` dice si el último tick corrió tiempo de juego (no lo corre durante
 un cambio de mapa, `tamer.c: stopGameTime`/`startGameTime`), y quien lleva el bucle avanza `ruleset::GameClock` con
