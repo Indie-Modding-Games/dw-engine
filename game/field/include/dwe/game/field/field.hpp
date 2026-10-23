@@ -273,6 +273,10 @@ public:
   // While held for care: the partner goes to `point` with `motion` (Walk or Run), the player
   // looking at it (partner.c: tickPartnerToilet, tickEntityWalkTo).
   void walkPartnerTo(glm::vec3 point, scene::Motion motion);
+  // While held for care: the partner runs up to the player until it is within its running
+  // distance (partner.c: tickWildPoop sub state 1, getPartnerTamerCloseness > 0); it stays where it
+  // is if it already is.
+  void runPartnerUp();
   // Whether either walk goes on; once a walk to a range is over, the two face each other.
   [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
 

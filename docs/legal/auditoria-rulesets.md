@@ -166,6 +166,10 @@ comportamiento, no guardan datos.
 |---|---|---|---|
 | `look.model` | `model/etcna/unti` | a | Referencia al modelo que extrae dwx (partner_impl.c: initializePoop); el modelo no se copia. |
 | `look.model_size` | 10 | a | Constante de la regla de dibujo (renderPoop: tamaño × 4096 / 10). |
+| `wild.squat_clip`, `wild.after_clip` | 10, 12 | a | Referencias a animaciones del compañero (partner.c: tickWildPoop). |
+| `eat.large_from` | 11 | a | Umbral de la regla (partner_impl.c: tickPoopDetection). |
+| `eat.small_reach`, `eat.large_reach` | 200, 300 | a | Distancias de la regla (tickPoopDetection). |
+| `eat.eat_clip` | 8 | a | Referencia a una animación del compañero (partner.c: partnerTickEatShit). |
 
 ### `cards.yaml`
 

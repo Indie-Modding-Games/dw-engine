@@ -545,6 +545,11 @@ void GameSession::afterCommand() {
   writeRequestedAutosave();
 }
 
+void GameSession::eatPoop(std::int32_t pileSize) {
+  state_->partner.eatPoop(pileSize);
+  afterCommand();
+}
+
 void GameSession::afterSystemCommand() {
   afterCommand();
 }

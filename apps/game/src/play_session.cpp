@@ -325,8 +325,11 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
   // scold 4 and 15, feeding 5, the toilet 6), the sleep (3), the evolution (13) and the death (8,
   // 14) each run instead of the field; the normal state (1) is the field's following, and the
-  // condition bubble (10) the HUD's. The piles on the ground (7, partnerTickEatShit's 9) are not
-  // here yet.
+  // condition bubble (10) the HUD's. A pile on the field (7) and eating one (9) are FieldPoop's.
+  if (fieldPoop_.active()) {
+    guardFactsChanged_ = fieldPoop_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    return;
+  }
   if (fieldToilet_.active()) {
     guardFactsChanged_ = fieldToilet_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
     return;
@@ -415,14 +418,16 @@ bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       sleepScreen_.handle(command) || saveMachine_.handle(command) ||
       praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
-      fieldItemsScreen_.handle(command) || fishingScreen_.handle(command) ||
-      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) ||
+      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
+      freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
     if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
-        !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active()) {
+        !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active() &&
+        !fieldPoop_.active()) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
@@ -528,7 +533,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
                          !fishingScreen_.active() && !evolutionScene_.active() &&
                          !deathScene_.active() && !feedScene_.active() && !fieldToilet_.active() &&
-                         !field.mapChangePending() && field.fadeLevel() == 0.0F;
+                         !fieldPoop_.active() && !field.mapChangePending() &&
+                         field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
   praiseScold_.update(fieldIdle);
@@ -537,9 +543,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (fieldIdle && !paused()) {
     guardFactsChanged = fieldToilet_.checkCell() || guardFactsChanged;
   }
-  // partner_impl.c: createPoopPile: the piles the partner left go in front of it.
+  // partner_impl.c: createPoopPile, tickPoopDetection: the piles the partner left, and the one a
+  // partner that eats piles finds.
   if (fieldIdle && !paused()) {
-    fieldPoop_.placePending();
+    fieldPoop_.update();
   }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);

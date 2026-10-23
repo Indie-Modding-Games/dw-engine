@@ -512,6 +512,34 @@ TEST_CASE("a care scene runs the partner to a point and pans the camera, given b
   CHECK_FALSE(field.scriptCamera().has_value());
 }
 
+TEST_CASE("a pile's scene runs the partner up to the player, and leaves it where it is if near") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  const float runRange = field.rules().partner.runDistance * field.rules().partner.mover.radius;
+
+  dwe::scene::place(partner, {-1000.0F, 0.0F, 0.0F}, 0.0F);
+  field.holdForCare(true);
+  field.runPartnerUp();
+  bool ran = false;
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+    ran = ran || field.partner().motion == Motion::Run;
+  }
+  CHECK(ran);
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(partnerDistance(field) <= runRange);
+
+  dwe::scene::place(partner, {-100.0F, 0.0F, 0.0F}, 0.0F);
+  field.runPartnerUp();
+  field.tick(Tick);
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(field.partner().position.x == doctest::Approx(-100.0F));
+  field.holdForCare(false);
+}
+
 TEST_CASE("click-to-move walks around walls to the target") {
   auto map = roomMap("room");
   fill(map, {.column = 50, .row = 30}, {.column = 50, .row = 65}, Blocked); // gap at z 1600 to 2000

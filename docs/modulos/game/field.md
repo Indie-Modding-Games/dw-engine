@@ -58,7 +58,8 @@ if (auto change = field.takeMapChange()) {
   tamer en el original. No hay entrada ni casillas, y el compañero no sigue al jugador. `walkPartnerToRange(rango)`
   lleva al compañero hasta esa distancia del jugador: se acerca si está más lejos y se aleja si está más cerca
   (`partner.c: partnerTickFeedItem`, `checkEatDistance`). Al llegar, los dos se miran. Si se atasca, se para donde
-  está.
+  está. `runPartnerUp()` hace correr al compañero hacia el jugador hasta su distancia de correr, como antes de una caca
+  en el campo (`partner.c: tickWildPoop`, `getPartnerTamerCloseness > 0`); si ya está, no se mueve.
 - **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
   su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
   sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.

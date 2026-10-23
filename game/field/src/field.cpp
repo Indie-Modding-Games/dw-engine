@@ -904,6 +904,18 @@ void Field::walkPartnerTo(glm::vec3 point, Motion motion) {
   partnerStuckSeconds_ = 0.0F;
 }
 
+void Field::runPartnerUp() {
+  if (!careHeld_) {
+    return;
+  }
+  const PartnerRules& rules = rules_.partner;
+  careWalk_ = CareWalk{.range = rules.runDistance * rules.mover.radius,
+                       .away = false,
+                       .point = std::nullopt,
+                       .motion = Motion::Run};
+  partnerStuckSeconds_ = 0.0F;
+}
+
 void Field::tickCareWalk(float seconds) {
   if (!careWalk_) {
     return;

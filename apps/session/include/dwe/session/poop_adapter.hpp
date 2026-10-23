@@ -27,9 +27,32 @@ struct PoopPileLook {
   std::int32_t modelSize = 0;
 };
 
-// The `poop_piles` rules.
+// The scene of a pile on the field (partner.c: tickWildPoop): the partner runs up to the player,
+// squats with one clip, leaves the pile and plays another.
+struct WildPoopRules {
+  std::uint32_t squatClip = 0;
+  std::uint32_t afterClip = 0;
+};
+
+// The partners that eat piles find one near the player (partner_impl.c: tickPoopDetection): the
+// player within `smallReach` of a pile's centre on x and on z, or `largeReach` from size
+// `largeFrom` on. The partner walks to it and eats it with a clip (partner.c: partnerTickEatShit).
+struct EatPoopRules {
+  std::int32_t largeFrom = 0;
+  std::int32_t smallReach = 0;
+  std::int32_t largeReach = 0;
+  std::uint32_t eatClip = 0;
+
+  [[nodiscard]] std::int32_t reachOf(std::int32_t size) const {
+    return size < largeFrom ? smallReach : largeReach;
+  }
+};
+
+// The `poop_piles` rules; without `wild` a pile appears at once, without `eat` none is eaten.
 struct PoopPileRules {
   PoopPileLook look;
+  std::optional<WildPoopRules> wild;
+  std::optional<EatPoopRules> eat;
 };
 
 // Reads the `poop_piles` section; errors name the line.

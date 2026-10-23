@@ -236,6 +236,8 @@ public:
   void scold();
   void praise();
   void useToilet();
+  // The partner eats a pile of this size from the ground (partner_impl.c: handleEatingPoop).
+  void eatPoop(std::int32_t pileSize);
   // Puts the partner to bed; the clock jumps to its wake hour. Fails if it is not sleepy. sleep is
   // fallAsleep and then wakeUp; the sleep screen calls them apart, because the original saves
   // between them and runs the wake-up evolutions only once the screen faded back in (partner.c:

@@ -5,3 +5,10 @@ look:
   model: model/etcna/unti
   # renderPoop: la escala es tamaño × 4096 / 10, así que una caca de tamaño 10 se dibuja a la escala del modelo.
   model_size: 10
+# partner.c: tickWildPoop: el compañero corre hacia el jugador (animación 4) hasta estar a la distancia de correr
+# (getPartnerTamerCloseness > 0), se agacha (animación 10), deja la caca (createPoopPile) y hace la animación 12.
+wild: {squat_clip: 10, after_clip: 12}
+# partner_impl.c: tickPoopDetection: una caca de tamaño menor que 11 se encuentra con el jugador a menos de 200 de su
+# centro en x y en z; las otras, a menos de 300. partner.c: partnerTickEatShit: el compañero va andando a la caca y se la
+# come con la animación 8 (handleEatingPoop).
+eat: {large_from: 11, small_reach: 200, large_reach: 300, eat_clip: 8}

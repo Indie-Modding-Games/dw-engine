@@ -19,6 +19,28 @@
           "minimum": 1
         }
       }
+    },
+    "wild": {
+      "description": "The scene of a pile on the field (partner.c: tickWildPoop); without it the pile appears at once.",
+      "type": "object",
+      "required": ["squat_clip", "after_clip"],
+      "additionalProperties": false,
+      "properties": {
+        "squat_clip": { "description": "The partner's clip while it goes.", "type": "integer", "minimum": 0 },
+        "after_clip": { "description": "The partner's clip after it went.", "type": "integer", "minimum": 0 }
+      }
+    },
+    "eat": {
+      "description": "How the partners that eat piles find and eat one (tickPoopDetection, partnerTickEatShit); without it none is eaten.",
+      "type": "object",
+      "required": ["large_from", "small_reach", "large_reach", "eat_clip"],
+      "additionalProperties": false,
+      "properties": {
+        "large_from": { "description": "The size from which a pile is found from farther.", "type": "integer", "minimum": 1 },
+        "small_reach": { "description": "How near the player must be to a smaller pile, on x and on z.", "type": "integer", "minimum": 1 },
+        "large_reach": { "description": "The same for a larger pile.", "type": "integer", "minimum": 1 },
+        "eat_clip": { "description": "The partner's clip while it eats.", "type": "integer", "minimum": 0 }
+      }
     }
   }
 }

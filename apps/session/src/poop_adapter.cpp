@@ -26,6 +26,14 @@ using game::partner::Tile;
 constexpr std::string_view LookKey = "look";
 constexpr std::string_view ModelKey = "model";
 constexpr std::string_view ModelSizeKey = "model_size";
+constexpr std::string_view WildKey = "wild";
+constexpr std::string_view SquatClipKey = "squat_clip";
+constexpr std::string_view AfterClipKey = "after_clip";
+constexpr std::string_view EatKey = "eat";
+constexpr std::string_view LargeFromKey = "large_from";
+constexpr std::string_view SmallReachKey = "small_reach";
+constexpr std::string_view LargeReachKey = "large_reach";
+constexpr std::string_view EatClipKey = "eat_clip";
 constexpr std::string_view CursorKey = "cursor";
 constexpr std::string_view PilesKey = "piles";
 constexpr std::string_view SlotKey = "slot";
@@ -47,12 +55,37 @@ YamlNode integerNode(std::int64_t value) {
   return YamlNode::scalar(std::to_string(value));
 }
 
+std::uint32_t clip(YamlReader& reader, const YamlNode& root, std::string_view key) {
+  return reader.integer<std::uint32_t>(reader.field(root, key));
+}
+
+std::optional<WildPoopRules> wildRules(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(WildKey);
+  if (node == nullptr || !reader.expectKeys(*node, WildKey, {SquatClipKey, AfterClipKey})) {
+    return std::nullopt;
+  }
+  return WildPoopRules{.squatClip = clip(reader, *node, SquatClipKey),
+                       .afterClip = clip(reader, *node, AfterClipKey)};
+}
+
+std::optional<EatPoopRules> eatRules(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(EatKey);
+  if (node == nullptr ||
+      !reader.expectKeys(*node, EatKey, {LargeFromKey, SmallReachKey, LargeReachKey, EatClipKey})) {
+    return std::nullopt;
+  }
+  return EatPoopRules{.largeFrom = positive(reader, *node, LargeFromKey),
+                      .smallReach = positive(reader, *node, SmallReachKey),
+                      .largeReach = positive(reader, *node, LargeReachKey),
+                      .eatClip = clip(reader, *node, EatClipKey)};
+}
+
 } // namespace
 
 core::Result<PoopPileRules> readPoopPileRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
-  if (!reader.expectKeys(root, poop_messages::SectionText, {LookKey})) {
+  if (!reader.expectKeys(root, poop_messages::SectionText, {LookKey}, {WildKey, EatKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const YamlNode& look = reader.field(root, LookKey);
@@ -68,7 +101,9 @@ core::Result<PoopPileRules> readPoopPileRules(const ruleset::Section& section) {
     return std::unexpected{reader.error(section.file)};
   }
   PoopPileRules rules{
-      .look = {.model = std::move(*model), .modelSize = positive(reader, look, ModelSizeKey)}};
+      .look = {.model = std::move(*model), .modelSize = positive(reader, look, ModelSizeKey)},
+      .wild = wildRules(reader, root),
+      .eat = eatRules(reader, root)};
   return reader.finish(std::move(rules), section.file);
 }
 

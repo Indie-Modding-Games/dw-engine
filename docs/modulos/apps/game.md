@@ -67,6 +67,14 @@ dónde mira, o a una vecina al azar si ya hay uno. Cada fotograma pasa a `FieldS
 modelo de `poop_piles.look.model` en el centro de su casilla, a la altura del compañero y a la escala de su tamaño entre
 `model_size` (`renderPoop`). Sin la sección `poop_piles` los montones se guardan pero no se ven.
 
+Una caca en el campo tiene su escena (`partner.c: tickWildPoop`, estado 7), con `poop_piles.wild`: el jugador se para y
+mira al compañero, que corre hacia él hasta su distancia de correr (`Field::runPartnerUp`), se agacha (`squat_clip`),
+deja el montón delante de él y hace `after_clip`; luego el jugador queda libre. La caca de una noche de sueño sale sin
+escena (`handleSleeping`). Con `poop_piles.eat`, un compañero que come cacas (`care.toilet.poop_eaters`) busca con el
+campo libre un montón del mapa con el jugador a menos de `small_reach` de su centro en x y en z (`large_reach` desde
+el tamaño `large_from`; `tickPoopDetection`), va andando a él, hace `eat_clip` y se lo come (`handleEatingPoop`). Las
+dos escenas dejan correr el tiempo y cierran el menú de pausa.
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

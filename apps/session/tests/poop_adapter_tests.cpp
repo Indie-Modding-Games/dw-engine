@@ -99,3 +99,16 @@ TEST_CASE("the piles go in the save and come back") {
   REQUIRE(loaded->startNewGame().has_value());
   CHECK(loading->onMap(Map).empty());
 }
+
+TEST_CASE("the original's piles play their scene and are found nearer when small") {
+  const TestPacks packs;
+  PoopAdapter* poop = nullptr;
+  auto session = sessionWithPoop(packs, poop);
+  const auto& rules = poop->rules();
+  REQUIRE(rules.has_value());
+  CHECK((rules.has_value() && rules->wild.has_value()));
+  const auto eat = rules.has_value() ? rules->eat : std::nullopt;
+  REQUIRE(eat.has_value());
+  const dwe::session::EatPoopRules reach = eat.value_or(dwe::session::EatPoopRules{});
+  CHECK(reach.reachOf(reach.largeFrom - 1) < reach.reachOf(reach.largeFrom));
+}
