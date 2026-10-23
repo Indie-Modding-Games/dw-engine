@@ -365,6 +365,8 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
             tables.moveLearnChances, error) &&
       store(readItemPara(image, layout), tables.itemPara, error) &&
       store(strings(layout.itemDescriptions, "ITEM_DESCS"), tables.itemDescriptions, error) &&
+      store(readScalars<std::uint8_t>(image, layout.itemCluts, "ITEM_CLUT_DATA"), tables.itemCluts,
+            error) &&
       store(readEvolutionRequirements(image, layout), tables.evolutionRequirements, error) &&
       store(readEvolutionStatsGains(image, layout), tables.evolutionStatsGains, error) &&
       store(readEvolutionPaths(image, layout), tables.evolutionPaths, error) &&

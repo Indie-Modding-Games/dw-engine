@@ -211,6 +211,9 @@ private:
       node.set("item_color", number(item.itemColor));
       node.set("droppable", number(item.droppable));
       node.set("unknown_1e", number(item.unknown1E));
+      if (i < tables_->itemCluts.size()) {
+        node.set("icon_palette", number(tables_->itemCluts[i]));
+      }
       list.append(std::move(node));
     }
     YamlNode root = YamlNode::mapping();

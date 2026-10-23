@@ -39,6 +39,10 @@ struct ItemEntry {
   std::int32_t itemColor = 0;
   // 1 when it can be thrown away and sold.
   std::int32_t droppable = 0;
+  // The palette of its icon, the cell of its index in `texture/etcdat/item` (ITEM_CLUT_DATA;
+  // utils2.c: setItemTexture), or nothing for an item without an icon: one a pack adds, or a table
+  // extracted before the field existed.
+  std::optional<std::uint8_t> iconPalette = std::nullopt;
 };
 
 class ItemTable;

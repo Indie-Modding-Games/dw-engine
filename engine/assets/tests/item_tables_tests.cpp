@@ -43,6 +43,7 @@ constexpr std::string_view FixtureItems = R"(items:
   item_color: 2
   droppable: 1
   unknown_1e: 0
+  icon_palette: 3
 - id: "gate_key"
   index: 7
   name: "gate key"
@@ -124,11 +125,13 @@ TEST_CASE("the item table reads every item and finds them by id and original num
   CHECK(tonic->value == 100);
   CHECK(tonic->itemColor == 2);
   CHECK(tonic->droppable == 1);
+  CHECK(tonic->iconPalette == std::optional<std::uint8_t>{3});
   const dwe::assets::ItemEntry* key = table->findByOriginalIndex(7);
   REQUIRE(key != nullptr);
   CHECK(key->id == "gate_key");
   CHECK(key->meritValue == 5);
   CHECK(key->sortingValue == 5);
+  CHECK_FALSE(key->iconPalette.has_value());
   CHECK(table->find("nothing") == nullptr);
 }
 

@@ -51,6 +51,7 @@ tiene el nombre `char name[20]` al principio de `DigimonPara` ni de `Item` (`inl
 | `MOVE_LEARN_CHANCES` | 58 × 3 | `u8` por ranura de especialidad del que aprende (`battle_ui.c`) | técnica aprendible |
 | `ITEM_PARA` | 128 × 32 | `Item` (`item.h`) | objeto |
 | `ITEM_DESCS` | 128 `char*` | | objeto |
+| `ITEM_CLUT_DATA` | 128 `u8` | paleta del icono en `ETCDAT/ITEM.TIM`: fila de CLUT 0x1E8 + el valor (`utils2.c: setItemTexture`) | objeto |
 | `ITEM_FUNCTIONS` | 128 punteros | función que aplica el objeto, o nulo (`item.c`) | objeto |
 | `HEALING_VALUES` | 4 `s16` | HP o MP que cura (`handleHPHealingItem`, `handleMPHealingItem`) | objeto, u objeto − 4 para MP |
 | `EVOLUTION_ITEM_TARGET` | 44 `u8` | tipo destino (`handleEvoItems`) | objeto − 0x47 |
@@ -122,7 +123,7 @@ escapado se anota en las notas de la conversión.
 | `digimon` | `DIGIMON_DATA` con el nombre de fichero del modelo |
 | `skeletons` | los huesos de cada tipo |
 | `moves` | `MOVE_DATA` con su nombre, y `learn_chances` (`MOVE_LEARN_CHANCES`) en las técnicas que se aprenden |
-| `items` | `ITEM_PARA` con su descripción |
+| `items` | `ITEM_PARA` con su descripción y `icon_palette` (`ITEM_CLUT_DATA`): la paleta de su icono en `texture/etcdat/item` |
 | `item_effects` | qué hace cada objeto: su función, lo que cura, a qué evoluciona y los valores de su caso de comida o chip |
 | `evolution` | requisitos, ganancias y el árbol de evolución |
 | `raise` | `RAISE_DATA` |

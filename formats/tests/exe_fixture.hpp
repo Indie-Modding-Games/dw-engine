@@ -171,6 +171,8 @@ inline ExecutableFixture makeExecutableFixture() {
   image.i16(layout.itemPara.address + 0x1A, -1);
   image.u16(layout.itemPara.address + 0x1E, 0xBEEF);
   layout.itemDescriptions = {.address = image.stringTable({"Food.", "Strange."}), .count = 2};
+  layout.itemCluts = {.address = image.place(2), .count = 2};
+  image.u8(layout.itemCluts.address + 1, 12);
 
   layout.evolutionRequirements = {.address = image.place(56), .count = 2};
   image.i16(layout.evolutionRequirements.address, -1);

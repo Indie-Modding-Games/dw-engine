@@ -84,6 +84,7 @@ struct ExecutableLayout {
   TableLocation moveLearnChances;      // u8[3] per learnable move: MOVE_LEARN_CHANCES
   TableLocation itemPara;              // Item[]
   TableLocation itemDescriptions;      // char*[]: ITEM_DESCS
+  TableLocation itemCluts;             // u8[]: ITEM_CLUT_DATA, the icon's palette
   TableLocation evolutionRequirements; // EvoRequirements[]
   TableLocation evolutionStatsGains;   // EvoStatsGains[]
   TableLocation evolutionPaths;        // EvolutionPath[], entry i is Digimon i + 1

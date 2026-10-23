@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Items",
-  "description": "items.yaml: ITEM_PARA and ITEM_DESCS of the executable (item.h: Item).",
+  "description": "items.yaml: ITEM_PARA, ITEM_DESCS and ITEM_CLUT_DATA of the executable (item.h: Item).",
   "type": "object",
   "required": ["items"],
   "additionalProperties": false,
@@ -22,7 +22,8 @@
           "sorting_value": { "type": "integer" },
           "item_color": { "type": "integer" },
           "droppable": { "type": "integer" },
-          "unknown_1e": { "type": "integer" }
+          "unknown_1e": { "type": "integer" },
+          "icon_palette": { "description": "The palette of the item's icon, the cell of its index in texture/etcdat/item (ITEM_CLUT_DATA; utils2.c: setItemTexture). Without it the item has no icon.", "type": "integer", "minimum": 0, "maximum": 255 }
         }
       }
     }

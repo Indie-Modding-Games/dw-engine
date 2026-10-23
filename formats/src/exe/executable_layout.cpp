@@ -64,6 +64,7 @@ constexpr std::array Layouts = {
         .moveLearnChances = {.address = 0x80125FA4, .count = 58},
         .itemPara = {.address = 0x801269DC, .count = 128},
         .itemDescriptions = {.address = 0x801279DC, .count = 128},
+        .itemCluts = {.address = 0x80127BDC, .count = 128},
         .evolutionRequirements = {.address = 0x8012ABEC, .count = 63},
         .evolutionStatsGains = {.address = 0x8012B2D0, .count = 66},
         .evolutionPaths = {.address = 0x8012B66C, .count = 62},

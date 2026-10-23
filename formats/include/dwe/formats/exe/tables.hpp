@@ -239,6 +239,9 @@ struct ExecutableTables {
       moveLearnChances; // by learner special slot (battle_ui.c)
   std::vector<Item> itemPara;
   std::vector<std::string> itemDescriptions;
+  // The palette of each item's icon in ETCDAT/ITEM.TIM: CLUT row 0x1E8 plus it (utils2.c:
+  // setItemTexture).
+  std::vector<std::uint8_t> itemCluts;
   std::vector<EvoRequirements> evolutionRequirements;
   std::vector<EvoStatsGains> evolutionStatsGains;
   std::vector<EvolutionPath> evolutionPaths;

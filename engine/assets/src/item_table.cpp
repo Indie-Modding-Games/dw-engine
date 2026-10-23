@@ -20,7 +20,8 @@ constexpr std::string_view Context = "item table";
 ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "an item",
                          {"id", EntryIndexKey, "name", "description", "value", "merit_value",
-                          "sorting_value", "item_color", "droppable", "unknown_1e"})) {
+                          "sorting_value", "item_color", "droppable", "unknown_1e"},
+                         {"icon_palette"})) {
     return {};
   }
   const auto integer = [&](std::string_view key) {
@@ -32,7 +33,8 @@ ItemEntry readItem(YamlReader& reader, const YamlNode& node) {
           .meritValue = integer("merit_value"),
           .sortingValue = integer("sorting_value"),
           .itemColor = integer("item_color"),
-          .droppable = integer("droppable")};
+          .droppable = integer("droppable"),
+          .iconPalette = reader.optionalInteger<std::uint8_t>(node, "icon_palette")};
 }
 
 } // namespace

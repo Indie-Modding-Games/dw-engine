@@ -104,6 +104,7 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
   CHECK(tables->itemPara[0].unknown1E == 0xBEEF);
   CHECK(tables->itemPara[1].name == "Odd\x82\xA0\\");
   CHECK(tables->itemDescriptions[1] == "Strange.");
+  CHECK(tables->itemCluts == std::vector<std::uint8_t>{0, 12});
   REQUIRE(tables->itemEffects.size() == 2);
   CHECK(tables->itemEffects[0].handler == dwe::formats::exe::ItemHandler::Food);
   REQUIRE(tables->itemEffects[0].values.size() == dwe::formats::exe::FoodValueCount);

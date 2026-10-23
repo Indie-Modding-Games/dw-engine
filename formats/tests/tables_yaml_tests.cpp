@@ -96,6 +96,7 @@ TEST_CASE("the tables become documents with ids and resolved references") {
   const YamlNode& items = documentNamed(yaml, "items");
   CHECK(at(items, {"items", std::size_t{1}, "name"}).text() == "Odd\\x82\\xA0\\\\");
   CHECK(at(items, {"items", std::size_t{1}, "description"}).text() == "Strange.");
+  CHECK(at(items, {"items", std::size_t{1}, "icon_palette"}).text() == "12");
 
   const YamlNode& effects = documentNamed(yaml, "item_effects");
   CHECK(at(effects, {"item_effects", std::size_t{0}, "item"}).text() == "meat");
