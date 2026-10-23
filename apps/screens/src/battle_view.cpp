@@ -32,6 +32,7 @@ constexpr std::string_view AvailableField = "available";
 constexpr std::string_view CurrentField = "current";
 constexpr std::string_view KeyField = "key";
 constexpr std::string_view AmountField = "amount";
+constexpr std::string_view SubjectField = "subject";
 constexpr std::string_view ValueField = "value";
 constexpr std::string_view CountSuffix = ".count";
 
@@ -156,33 +157,43 @@ BattleEndView battleEndViewOf(const battle::BattleResult& result,
                      .lines = {},
                      .statGains = {},
                      .bits = result.bits};
-  for (const std::string& drop : result.drops) {
-    view.lines.push_back(
-        {.key = std::string{battle::ItemDroppedTextKey}, .nameKey = names.item(drop), .amount = 1});
+  for (const battle::Drop& drop : result.drops) {
+    view.lines.push_back({.key = std::string{battle::ItemDroppedTextKey},
+                          .nameKey = names.item(drop.item),
+                          .amount = 1,
+                          .subjectKey = names.species(drop.species)});
   }
   if (result.injured) {
-    view.lines.push_back({.key = std::string{battle::InjuredTextKey}, .nameKey = {}, .amount = 0});
+    view.lines.push_back(
+        {.key = std::string{battle::InjuredTextKey}, .nameKey = {}, .amount = 0, .subjectKey = {}});
   }
   for (const std::string& move : aftermath.learnedMoves) {
-    view.lines.push_back(
-        {.key = std::string{battle::MoveLearnedTextKey}, .nameKey = names.move(move), .amount = 0});
+    view.lines.push_back({.key = std::string{battle::MoveLearnedTextKey},
+                          .nameKey = names.move(move),
+                          .amount = 0,
+                          .subjectKey = {}});
   }
   if (result.livesLost > 0) {
-    view.lines.push_back(
-        {.key = std::string{LivesLostTextKey}, .nameKey = {}, .amount = result.livesLost});
+    view.lines.push_back({.key = std::string{LivesLostTextKey},
+                          .nameKey = {},
+                          .amount = result.livesLost,
+                          .subjectKey = {}});
   }
   for (const game::inventory::Stack& lost : aftermath.itemsLost) {
     view.lines.push_back({.key = std::string{ItemLostTextKey},
                           .nameKey = names.item(lost.item),
-                          .amount = lost.count});
+                          .amount = lost.count,
+                          .subjectKey = {}});
   }
   if (aftermath.recruitJoined) {
     view.lines.push_back({.key = std::string{RecruitJoinedTextKey},
                           .nameKey = names.species(*aftermath.recruitJoined),
-                          .amount = 0});
+                          .amount = 0,
+                          .subjectKey = {}});
   }
   for (const game::partner::Stat stat : game::partner::AllStats) {
     view.statGains.at(static_cast<std::size_t>(stat)) = aftermath.statGains[stat];
+    view.stats.at(static_cast<std::size_t>(stat)) = aftermath.statsBefore[stat];
   }
   return view;
 }
@@ -229,10 +240,14 @@ ScreenSettings settingsOf(const BattleEndView& view) {
         {.name = listEntryName(BattleEndList, index, NameField), .value = line.nameKey});
     settings.push_back({.name = listEntryName(BattleEndList, index, AmountField),
                         .value = static_cast<double>(line.amount)});
+    settings.push_back(
+        {.name = listEntryName(BattleEndList, index, SubjectField), .value = line.subjectKey});
   }
   for (std::size_t stat = 0; stat < view.statGains.size(); ++stat) {
     settings.push_back({.name = listEntryName(BattleGainList, stat, ValueField),
                         .value = static_cast<double>(view.statGains[stat])});
+    settings.push_back({.name = listEntryName(BattleStatList, stat, ValueField),
+                        .value = static_cast<double>(view.stats.at(stat))});
   }
   settings.push_back(
       {.name = std::string{BattleBitsSetting}, .value = static_cast<double>(view.bits)});

@@ -235,6 +235,7 @@ local function draw_end(document)
       line:set_text(text(setting(entry("battle.end", index, "key"), ""), {
         name = text(setting(entry("battle.end", index, "name"), "")),
         amount = number(entry("battle.end", index, "amount")),
+        subject = text(setting(entry("battle.end", index, "subject"), "")),
       }))
     end
   end

@@ -209,6 +209,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       battleScreen_({.session = game_.session.get(),
                      .battle = game_.systems.battle,
                      .inventory = game_.systems.inventory,
+                     .fieldItems = game_.systems.fieldItems,
                      .species = species_ ? &*species_ : nullptr,
                      .ui = context.ui}),
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),

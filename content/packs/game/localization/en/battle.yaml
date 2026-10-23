@@ -19,8 +19,9 @@ status.poison: "Poisoned"
 status.confusion: "Confused"
 status.stun: "Stunned"
 status.flatten: "Flattened"
-# {name} is the item's name and {amount} how many.
-result.item_dropped: "Found {name}."
+# {subject} is the enemy that dropped it, {name} the item's name and {amount} how many. A line break starts a
+# new row of the end box.
+result.item_dropped: "{subject}\ndropped {name}"
 result.injured: "Your partner was injured."
 # {name} is the move's name.
 result.move_learned: "Learned {name}!"

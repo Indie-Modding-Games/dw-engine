@@ -202,6 +202,19 @@ bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalI
   return item && items_.spawn(*item, cell, height);
 }
 
+bool FieldItemsAdapter::dropItem(std::string_view mapId, std::string_view item,
+                                 glm::vec3 position) {
+  items_.enterMap(mapId);
+  const std::optional<assets::ItemHandle> handle = inventory_->items().handleOf(item);
+  if (!handle) {
+    core::logWarning("{}", core::formatMessage(field_items_messages::UnknownDrop, item));
+    return false;
+  }
+  core::logDebug("[port:field_items] spawnDroppedItems (item.c:2403): {} at ({}, {})", item,
+                 position.x, position.z);
+  return items_.drop(*handle, position);
+}
+
 bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t originalItem,
                                    glm::vec3 position, std::int32_t rotation,
                                    std::int32_t trigger) {

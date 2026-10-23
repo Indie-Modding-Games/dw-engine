@@ -444,7 +444,11 @@ TEST_CASE("a beaten partner on a map with no drops gets none") {
   setup.enemies.front().dropChance = 100;
   Battle dropping = startBattle(setup, 6);
   runToEnd(dropping);
-  CHECK(resultOf(dropping).drops == std::vector<std::string>{"meat"});
+  const std::vector<Drop> dropped = resultOf(dropping).drops;
+  REQUIRE(dropped.size() == 1);
+  CHECK(dropped.front().item == "meat");
+  CHECK(dropped.front().species == setup.enemies.front().species);
+  CHECK(dropped.front().position == dropping.state().fighters[1].position);
   setup.map = "ogre11";
   Battle none = startBattle(setup, 6);
   runToEnd(none);

@@ -1,4 +1,0 @@
-# The notices of the items on the field's ground and in the chests. {item} is the item's name.
-found: "You found {item}."
-bag_full: "Your bag is full: {item} stays here."
-chest_empty: "The chest is empty."

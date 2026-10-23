@@ -5,13 +5,16 @@
 #include <dwe/game/battle/battle.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/session_music.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::app {
 
@@ -34,6 +37,8 @@ struct BattleScreenDesc {
   session::GameSession* session = nullptr;
   session::BattleAdapter* battle = nullptr;
   session::InventoryAdapter* inventory = nullptr;
+  // Where the beaten enemies' drops land; it may be null (then they are lost).
+  session::FieldItemsAdapter* fieldItems = nullptr;
   // For the fighters' names; it may be null.
   const assets::DigimonTable* species = nullptr;
   ui::Ui* ui = nullptr;
@@ -75,6 +80,10 @@ private:
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
   bool won_ = false;
+  // The battle's map and the items its beaten enemies left: they land on the ground when the end
+  // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).
+  std::string map_;
+  std::vector<game::battle::Drop> drops_;
 };
 
 } // namespace dwe::app

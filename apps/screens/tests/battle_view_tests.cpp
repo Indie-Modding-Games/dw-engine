@@ -158,11 +158,12 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   BattleResult result;
   result.outcome = Outcome::Victory;
   result.bits = 120;
-  result.drops = {"tonic"};
+  result.drops = {{.item = "tonic", .species = "foe", .position = {}}};
   result.injured = true;
   dwe::session::BattleAftermath aftermath;
   aftermath.learnedMoves = {"shot"};
   aftermath.statGains[dwe::game::partner::Stat::Offense] = 4;
+  aftermath.statsBefore[dwe::game::partner::Stat::Offense] = 80;
 
   const auto view = dwe::screens::battleEndViewOf(result, aftermath, names);
   CHECK(view.outcomeKey == "battle.outcome.victory");
@@ -170,12 +171,15 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   REQUIRE(view.lines.size() == 3);
   CHECK(view.lines[0] == dwe::screens::EndLine{.key = "battle.result.item_dropped",
                                                .nameKey = "main.item_names.0004",
-                                               .amount = 1});
+                                               .amount = 1,
+                                               .subjectKey = "main.digimon_names.0012"});
   CHECK(view.lines[1].key == "battle.result.injured");
   CHECK(view.lines[2] == dwe::screens::EndLine{.key = "battle.result.move_learned",
                                                .nameKey = "main.move_names.0001",
-                                               .amount = 0});
+                                               .amount = 0,
+                                               .subjectKey = {}});
   CHECK(view.statGains.at(2) == 4);
+  CHECK(view.stats.at(2) == 80);
 
   result.outcome = Outcome::Defeat;
   result.drops.clear();
@@ -189,10 +193,12 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   CHECK(defeat.outcomeKey == "battle.outcome.defeat");
   REQUIRE(defeat.lines.size() == 2);
   CHECK(defeat.lines[0] ==
-        dwe::screens::EndLine{.key = "battle.result.lives_lost", .nameKey = {}, .amount = 1});
+        dwe::screens::EndLine{
+            .key = "battle.result.lives_lost", .nameKey = {}, .amount = 1, .subjectKey = {}});
   CHECK(defeat.lines[1] == dwe::screens::EndLine{.key = "battle.result.item_lost",
                                                  .nameKey = "main.item_names.0004",
-                                                 .amount = 2});
+                                                 .amount = 2,
+                                                 .subjectKey = {}});
 }
 
 TEST_CASE("a name whose row is unknown has no key") {

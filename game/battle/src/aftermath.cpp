@@ -61,15 +61,22 @@ StatValues statGains(const BattleState& state, const BattleRules& rules, ruleset
   return gains;
 }
 
-std::vector<std::string> drops(const BattleSetup& setup, const RewardRules& rules,
-                               ruleset::Random& random) {
-  std::vector<std::string> items;
+std::vector<Drop> drops(const BattleSetup& setup, const BattleState& state,
+                        const RewardRules& rules, ruleset::Random& random) {
+  std::vector<Drop> items;
   if (std::ranges::find(rules.noDropMaps, setup.map) != rules.noDropMaps.end()) {
     return items;
   }
-  for (const Combatant& enemy : setup.enemies) {
+  // The enemies follow the partner in the fighters, in the setup's order.
+  for (std::size_t index = 0; index < setup.enemies.size(); ++index) {
+    const Combatant& enemy = setup.enemies[index];
     if (enemy.dropChance > random.below(Hundred) && enemy.dropItem) {
-      items.push_back(*enemy.dropItem);
+      const std::size_t fighter = index + 1;
+      items.push_back({.item = *enemy.dropItem,
+                       .species = enemy.species,
+                       .position = fighter < state.fighters.size()
+                                       ? state.fighters[fighter].position
+                                       : enemy.position});
     }
   }
   return items;
@@ -165,7 +172,7 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
       result.bits += enemy.bits;
     }
     result.statGains = statGains(state, rules, random);
-    result.drops = drops(setup, rules.rewards, random);
+    result.drops = drops(setup, state, rules.rewards, random);
     result.injured = injured(setup, state, rules, random);
     result.learnedMoves = learnedMoves(setup, state, moves, random);
     result.care = consequences.victory;

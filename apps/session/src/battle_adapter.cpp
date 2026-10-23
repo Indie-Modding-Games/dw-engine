@@ -378,18 +378,12 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
 
 void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result,
                                 BattleAftermath& aftermath) const {
+  aftermath.drops = result.drops;
   if (desc_.inventory == nullptr) {
-    aftermath.dropsLeft = result.drops;
     return;
   }
   game::inventory::Inventory& bag = desc_.inventory->inventory();
   bag.addMoney(result.bits);
-  for (const std::string& drop : result.drops) {
-    const std::optional<assets::ItemHandle> item = desc_.inventory->items().handleOf(drop);
-    if (!item || !bag.add(*item, 1).taken()) {
-      aftermath.dropsLeft.push_back(drop);
-    }
-  }
   if (result.outcome == Outcome::Defeat) {
     aftermath.itemsLost = desc_.inventory->loseOnDefeat(session);
   }
@@ -407,6 +401,7 @@ core::Result<BattleAftermath> BattleAdapter::finish(GameSession& session,
   stats.currentHp = result.partnerHp;
   stats.currentMp = result.partnerMp;
   partner.setStats(stats);
+  aftermath.statsBefore = stats.base;
   aftermath.statGains = partner.addStatGains(statBlockOf(result.statGains));
   partner.applyBattle(consequencesOf(result), session.clock());
   for (const std::string& move : result.learnedMoves) {

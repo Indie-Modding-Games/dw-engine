@@ -1,4 +1,5 @@
 /* How the notice of an item on the ground or in a chest behaves whatever the skin. The look is the pause menu's (the
    skins' pause_menu style). */
 
+#item { margin: 0 0 0 18dp; }
 #text { margin: 0 0 12dp 18dp; }

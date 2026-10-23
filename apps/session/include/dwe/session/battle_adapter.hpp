@@ -37,7 +37,7 @@ struct BattleAdapterDesc {
   // Tables already built (tests); otherwise they are read once from the ruleset's tables.
   std::optional<assets::DigimonTable> digimon;
   std::optional<assets::MoveTable> moves;
-  // Where the bits and the drops go, and what a defeat takes; without it they are lost. It must
+  // Where the bits go, and what a defeat takes; without it they are lost. It must
   // outlive the adapter.
   InventoryAdapter* inventory = nullptr;
 };
@@ -61,10 +61,14 @@ struct BattleRequest {
 struct BattleAftermath {
   // The stat raises as the partner took them (each stops at the care limits).
   game::partner::StatBlock statGains;
+  // The stats before those raises: the end box counts up from them (battle_ui.c:
+  // renderPostBattleStatsBox).
+  game::partner::StatBlock statsBefore;
   // The moves learned that it did not know.
   std::vector<std::string> learnedMoves;
-  // Drops the bag did not take: they stay on the ground.
-  std::vector<std::string> dropsLeft;
+  // The items the beaten enemies left: item.c: spawnDroppedItems lays them on the ground where each
+  // enemy stood once the end box closes, for the player to pick up.
+  std::vector<game::battle::Drop> drops;
   // The stacks a defeat took (script_common.c: handleItemLoss).
   std::vector<game::inventory::Stack> itemsLost;
   // The resident that joined the city.

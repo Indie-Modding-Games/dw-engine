@@ -170,7 +170,7 @@ BattleResult victory() {
   result.partnerMp = 30;
   result.statGains = {10, 0, 3, 0, 0, 2};
   result.bits = Bits;
-  result.drops = {"tonic", "no_such_item"};
+  result.drops = {{.item = "tonic", .species = "foe", .position = {.x = 100, .z = 600}}};
   result.learnedMoves = {"dynamite_kick", "punch"};
   result.care = {.happiness = 2, .discipline = 0, .tiredness = 5, .battles = 1};
   result.foodChange = -15;
@@ -269,7 +269,7 @@ TEST_CASE("only learned techniques are equipped, at positions the species has a 
 }
 
 TEST_CASE(
-    "a won battle gives the partner its HP, raises, care, minutes, moves, bits and drops, and autosaves") {
+    "a won battle gives the partner its HP, raises, care, minutes, moves and bits, leaves the drops on the ground, and autosaves") {
   const TestPacks packs;
   MemorySaveStorage storage;
   Adapters adapters;
@@ -277,6 +277,8 @@ TEST_CASE(
   const PartnerState before = session->partner().state();
   const std::int32_t minute = session->clock().time().minute;
   const std::int32_t money = adapters.inventory->inventory().money();
+  const std::int32_t tonics =
+      adapters.inventory->inventory().countOf(items::handleOf(items::Tonic));
   BattleResult result = victory();
   result.recruitJoined = "foe";
   const auto aftermath = adapters.battle->finish(*session, result);
@@ -294,8 +296,8 @@ TEST_CASE(
   CHECK(aftermath->learnedMoves == std::vector<std::string>{"dynamite_kick"});
   CHECK(dwe::session::knows(adapters.battle->moves(), "dynamite_kick"));
   CHECK(adapters.inventory->inventory().money() == money + Bits);
-  CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 1);
-  CHECK(aftermath->dropsLeft == std::vector<std::string>{"no_such_item"});
+  CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == tonics);
+  CHECK(aftermath->drops == result.drops);
   CHECK(aftermath->recruitJoined == "foe");
   CHECK(autosavedFor(*session, AutosaveReason::BattleEnd));
 }

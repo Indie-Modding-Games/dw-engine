@@ -18,8 +18,9 @@ status.poison: "Envenenado"
 status.confusion: "Confundido"
 status.stun: "Aturdido"
 status.flatten: "Aplastado"
-# {name} es el nombre del objeto y {amount} cuántos.
-result.item_dropped: "Has encontrado {name}."
+# {subject} es el enemigo que lo soltó, {name} el nombre del objeto y {amount} cuántos. Un salto de línea empieza
+# otra fila de la caja final.
+result.item_dropped: "{subject}\nsoltó {name}"
 result.injured: "Tu compañero ha resultado herido."
 # {name} es el nombre de la técnica.
 result.move_learned: "¡Ha aprendido {name}!"

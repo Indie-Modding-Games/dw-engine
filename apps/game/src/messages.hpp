@@ -102,6 +102,7 @@ inline constexpr std::string_view BattleAlreadyRunning = "a battle is already un
 inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
 inline constexpr std::string_view BattleStarted = "game: battle against {} on {}";
 inline constexpr std::string_view BattleFinished = "game: battle over: {}";
+inline constexpr std::string_view BattleDropLost = "game: no room on the ground for the dropped {}";
 inline constexpr std::string_view NoSpeciesTable = "game: the ruleset names no Digimon table";
 inline constexpr std::string_view BattleCommandRefused = "game: battle: command {} refused: {}";
 inline constexpr std::string_view BattleBagRefused = "game: battle: the bag did not open: {}";

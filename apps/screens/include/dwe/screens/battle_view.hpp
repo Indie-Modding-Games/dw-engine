@@ -21,6 +21,7 @@ inline constexpr std::string_view BattleFighterList = "battle.fighter";
 inline constexpr std::string_view BattleMenuList = "battle.menu";
 inline constexpr std::string_view BattleEndList = "battle.end";
 inline constexpr std::string_view BattleGainList = "battle.end.gain";
+inline constexpr std::string_view BattleStatList = "battle.end.stat";
 inline constexpr std::string_view FinisherProgressSetting = "battle.finisher.progress";
 inline constexpr std::string_view FinisherGoalSetting = "battle.finisher.goal";
 inline constexpr std::string_view FinisherReadySetting = "battle.finisher.ready";
@@ -97,6 +98,8 @@ struct EndLine {
   // {name}: the key of a name (an item, a move) the line shows; {amount}: a number.
   std::string nameKey;
   std::int32_t amount = 0;
+  // {subject}: the key of who the line is about: the enemy that dropped the item.
+  std::string subjectKey;
 
   friend bool operator==(const EndLine&, const EndLine&) = default;
 };
@@ -107,8 +110,9 @@ struct EndLine {
 struct BattleEndView {
   std::string outcomeKey;
   std::vector<EndLine> lines;
-  // HP, MP, offense, defense, speed and brain, as the partner took them.
+  // HP, MP, offense, defense, speed and brain, as the partner took them, and their values before.
   std::array<std::int32_t, game::battle::StatCount> statGains{};
+  std::array<std::int32_t, game::battle::StatCount> stats{};
   std::int32_t bits = 0;
 };
 

@@ -33,6 +33,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
     return std::unexpected{battle.error()};
   }
   battle_.emplace(std::move(*battle));
+  map_ = map;
+  drops_.clear();
   if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {
     sessionMusic->startBattle(music);
   }
@@ -177,6 +179,7 @@ void BattleScreen::finish() {
                    core::formatMessage(messages::BattleStartFailed, aftermath.error().message));
     aftermath = session::BattleAftermath{};
   }
+  drops_ = aftermath->drops;
   screens::publish(*desc_.ui,
                    screens::settingsOf(screens::battleEndViewOf(result, *aftermath, names())),
                    screens::BattleRevisionSetting);
@@ -197,6 +200,14 @@ void BattleScreen::close() {
   }
   ending_ = false;
   desc_.ui->hide(BattleDocument);
+  for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
+    if (desc_.fieldItems != nullptr &&
+        !desc_.fieldItems->dropItem(
+            map_, drop.item,
+            {static_cast<float>(drop.position.x), 0.0F, static_cast<float>(drop.position.z)})) {
+      core::logInfo("{}", core::formatMessage(messages::BattleDropLost, drop.item));
+    }
+  }
   if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
     music->leaveBattle(std::exchange(won_, false));
   }

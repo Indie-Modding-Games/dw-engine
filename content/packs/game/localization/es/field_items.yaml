@@ -1,4 +1,0 @@
-# Los avisos de los objetos del suelo del campo y de los cofres. {item} es el nombre del objeto.
-found: "Has encontrado {item}."
-bag_full: "Tu bolsa está llena: {item} se queda aquí."
-chest_empty: "El cofre está vacío."

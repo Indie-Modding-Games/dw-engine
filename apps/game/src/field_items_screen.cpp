@@ -14,9 +14,11 @@ namespace {
 constexpr std::string_view NoticeAnswer = "field_item_notice_ok";
 constexpr std::string_view TextSetting = "field_item_notice.text";
 constexpr std::string_view ItemSetting = "field_item_notice.item";
-constexpr std::string_view FoundText = "field_items.found";
-constexpr std::string_view BagFullText = "field_items.bag_full";
-constexpr std::string_view EmptyText = "field_items.chest_empty";
+// tamer.c: tamerTickPickupItem and tamerTickTakeChest draw the item's name over the tamer's words
+// (tamer_messages: "Woah!", "I can't hold anymore."); an empty chest shows only its own words.
+constexpr std::string_view FoundText = "main.tamer_messages.0000";
+constexpr std::string_view BagFullText = "main.tamer_messages.0001";
+constexpr std::string_view EmptyText = "main.tamer_messages.0002";
 
 } // namespace
 
@@ -99,7 +101,7 @@ bool FieldItemsScreen::handle(const ui::UiCommand& command) {
 void FieldItemsScreen::show(Step step, std::string_view text, assets::ItemHandle item) {
   step_ = step;
   const screens::NameKeys names{nullptr, &inventory_->items(), nullptr};
-  ui_->setSetting(ItemSetting, names.item(item));
+  ui_->setSetting(ItemSetting, step == Step::Empty ? std::string{} : names.item(item));
   ui_->setSetting(TextSetting, std::string{text});
   ui_->show(FieldItemNoticeDocument, true);
 }

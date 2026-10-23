@@ -73,6 +73,17 @@ inline constexpr std::size_t StatCount = 6;
 using StatValues = std::array<std::int32_t, StatCount>;
 
 // The battle's results. The battle never touches the partner: the session applies these.
+// An item a beaten enemy leaves (battle_ui.c: battleStatsGainsAndDrops), with the enemy's species
+// and where it stood: item.c: spawnDroppedItems lays it on the ground there once the end box
+// closes.
+struct Drop {
+  std::string item;
+  std::string species;
+  Point position;
+
+  friend bool operator==(const Drop&, const Drop&) = default;
+};
+
 struct BattleResult {
   Outcome outcome = Outcome::Defeat;
   std::int64_t frames = 0;
@@ -84,7 +95,7 @@ struct BattleResult {
   // items won and the moves learned.
   StatValues statGains{};
   std::int32_t bits = 0;
-  std::vector<std::string> drops;
+  std::vector<Drop> drops;
   std::vector<std::string> learnedMoves;
   // battle_ui.c: handleBattleInjury: the partner got injured.
   bool injured = false;
