@@ -145,5 +145,7 @@ inline constexpr std::string_view SoundBankFailed =
     "sound: bank {} does not load ({}); it stays silent";
 inline constexpr std::string_view SoundNotPlayed = "sound: {} does not play sound {}: {}";
 inline constexpr std::string_view SoundOutOfRange = "no sound has that number";
+inline constexpr std::string_view MusicFontFailed = "music: {} does not load ({}); it stays silent";
+inline constexpr std::string_view MusicSongFailed = "music: {} track {} does not play: {}";
 
 } // namespace dwe::session::messages

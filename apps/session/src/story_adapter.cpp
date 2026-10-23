@@ -11,7 +11,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
-#include <dwe/session/story_audio_stubs.hpp>
+#include <dwe/session/story_music_api.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -181,6 +181,27 @@ public:
 
 private:
   game::story::SoundPort* target_ = nullptr;
+};
+
+// The same for the music orders and the session's music (GameSession::music()).
+class StoryAdapter::MusicRelay final : public game::story::MusicPort {
+public:
+  void bind(game::story::MusicPort* target) { target_ = target; }
+
+  void playBgm(std::int64_t font) override {
+    if (target_ != nullptr) {
+      target_->playBgm(font);
+    }
+  }
+
+  void resetBgm() override {
+    if (target_ != nullptr) {
+      target_->resetBgm();
+    }
+  }
+
+private:
+  game::story::MusicPort* target_ = nullptr;
 };
 
 class StoryAdapter::Serializer final : public game::save::SectionSerializer {
@@ -354,6 +375,7 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   statePort_ = std::make_unique<StatePort>(state_);
   randomPort_ = std::make_unique<RandomPort>();
   sound_ = std::make_unique<SoundRelay>();
+  music_ = std::make_unique<MusicRelay>();
   orders_ = std::make_unique<game::story::StoryOrders>(*statePort_, *randomPort_, story.rules);
   host_ = std::make_unique<StoryLuaHost>(*vm_, *desc_.files);
   if (auto published = host_->publishApi(*statePort_, *orders_, *sound_); !published) {
@@ -374,8 +396,8 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   if (auto flow = wireFlow(); !flow) {
     return flow;
   }
-  if (auto audio = publishStoryAudioStubs(*vm_); !audio) {
-    return audio;
+  if (auto music = publishStoryMusic(*vm_, *music_); !music) {
+    return music;
   }
   if (auto checked = host_->checkModules(); !checked) {
     return checked;
@@ -429,6 +451,7 @@ void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*adv
   randomPort_->bind(session.random());
   dialogue_->dialogue().bindSound(session.sound());
   sound_->bind(session.sound());
+  music_->bind(session.music());
   playUnplayedChange();
   if (runner_) {
     runner_->tick();

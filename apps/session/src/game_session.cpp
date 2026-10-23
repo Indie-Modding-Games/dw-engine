@@ -5,12 +5,17 @@
 #include <dwe/ruleset/random.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/session_music.hpp>
 #include <dwe/session/session_sound.hpp>
 #include <dwe/session/slot_names.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "save_sections.hpp"
 #include "session_state.hpp"
@@ -65,6 +70,22 @@ speciesOf(const SessionDesc& desc, const ruleset::Ruleset& rules) {
   return std::make_shared<const game::partner::SpeciesTable>(std::move(*species));
 }
 
+// The music mode is the story's variable 245 (script_interp.c: handleMusicOverride, PSTAT_245);
+// without a story it is 0, the day and night songs.
+std::function<std::int64_t()>
+musicModeOf(const std::vector<std::unique_ptr<SessionSystem>>& systems) {
+  constexpr std::int32_t MusicModeVariable = 245;
+  const StoryAdapter* story = nullptr;
+  for (const auto& system : systems) {
+    if (const auto* found = dynamic_cast<const StoryAdapter*>(system.get()); found != nullptr) {
+      story = found;
+    }
+  }
+  return [story]() -> std::int64_t {
+    return story == nullptr ? 0 : story->state().variable(MusicModeVariable).value_or(0);
+  };
+}
+
 } // namespace
 
 std::optional<FieldPlace> SessionState::currentPlace() const {
@@ -96,6 +117,10 @@ GameSession::GameSession(SessionDesc desc, ruleset::RulesetStore store)
     : desc_(std::move(desc)), store_(std::move(store)), seed_(desc_.seed) {
   if (desc_.sound != nullptr && desc_.files != nullptr) {
     sound_ = std::make_unique<SessionSound>(*desc_.sound, *desc_.files);
+    music_ = std::make_unique<SessionMusic>(
+        *desc_.sound, *desc_.files, MusicFacts{.mode = musicModeOf(desc_.systems), .hour = [this] {
+                                                 return state_ ? state_->clock.time().hour : 0;
+                                               }});
   }
 }
 
@@ -103,6 +128,10 @@ GameSession::~GameSession() = default;
 
 game::story::SoundPort* GameSession::sound() {
   return sound_.get();
+}
+
+game::story::MusicPort* GameSession::music() {
+  return music_.get();
 }
 
 core::Result<void> GameSession::setUp() {

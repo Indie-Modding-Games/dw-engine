@@ -65,6 +65,24 @@ public:
   virtual void playSound(std::int64_t slot, std::int64_t sound) = 0;
 };
 
+// The music the story asks for (script_interp.c: playBGM, resetBGM). A font is the original's music
+// font number; which of its songs plays (day, night or a fixed one) the owner works out. Music
+// never waits and never fails a script: a song that cannot play stays silent.
+class MusicPort {
+public:
+  MusicPort() = default;
+  MusicPort(const MusicPort&) = delete;
+  MusicPort& operator=(const MusicPort&) = delete;
+  MusicPort(MusicPort&&) = delete;
+  MusicPort& operator=(MusicPort&&) = delete;
+  virtual ~MusicPort() = default;
+
+  // Plays a font's song from its start, even the one playing; 0xFF stops the music.
+  virtual void playBgm(std::int64_t font) = 0;
+  // Stops the music and forgets the font.
+  virtual void resetBgm() = 0;
+};
+
 // The player's control while a script runs. Freezing takes control from the player and the partner,
 // lets the camera go and stops game time; releasing gives them back (script_interp.c:
 // scriptPauseGame, tickScript).

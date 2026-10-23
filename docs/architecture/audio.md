@@ -259,7 +259,36 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 - **Historia (tramo 2b):** `StoryLuaHost::publishApi` recibe el `SoundPort` y publica `story.play_sound(ranura,
   sonido)`, la orden 0x5A del listado: como `scriptInstruction5Ato5F` (`script_interp.c:1550`), pasa los dos
   operandos a las ranuras (`playSound`, `sound.c:641`, que 2a ya sigue en `SessionSound`) y sigue sin esperar; un
-  sonido que no suena no rompe el script. Es una función nueva de la API de Lua, así que `LuaApiVersion` sube de 1.1.0 a **1.2.0**.
+  sonido que no suena no rompe el script. Es una función nueva de la API de Lua, así que `LuaApiVersion` sube de 1.2.0 a **1.3.0**, junto con `set_bgm` y `stop_bgm` (§6.5).
+
+### 6.5 El tramo 3 en detalle (música del mapa)
+
+Primero lo que pide el hito 1 («Inicio jugable»): la música que pone el script del mapa. El combate, el cambio de
+día y noche con la hora (`updateBGM`, desde `tickGameClock`), los modos 2–10 y la gramola quedan para el tramo 3b.
+
+| Función del original | Dónde vive ahora |
+|---|---|
+| `scriptInstruction5Ato5F` (`script_interp.c:1569`, 0x5D y 0x5E) | `apps/session/src/story_music_api.cpp`: `story.set_bgm(fuente)`, `story.stop_bgm(operando)` |
+| `playBGM` (`script_interp.c:2587`), `resetBGM` (`:2377`), `handleMusicOverride` (`:1584`, modos 0 y 1) | `SessionMusic` (`apps/session`), detrás del puerto `MusicPort` de `game/story` |
+| `playMusic` (`sound.c:753`), `stopBGM` (`:779`), `loadMusicFont` (`:738`), `seqOpen` (`:477`) | `SessionMusic::playMusic`, `stopBgm` y `load` |
+| `seqPlay` (`sound.c:488`) y el secuenciador de la librería de sonido | `audio::Audio::playMusic` → `MusicPlayer` (hilo de audio) con TinySoundFont |
+| El SMF y `font_meta.yaml` | `assets::readSong`, `assets::readMusicFont` (`engine/assets/src/music.cpp`) |
+
+- **Como el original:** `set_bgm` reinicia la canción aunque sea la misma (`playBGM` llama a `stopBGM` antes de
+  `playMusic`); `0xFF` para la música; una pista que la fuente no tiene suena la 0; la fuente se queda cargada entre
+  canciones; volumen de secuencia 0x50 de 0x7F; `plays: once` para al final y deja sonar las colas; el resto vuelve
+  del marcador `loopEnd` (o del final) al `loopStart` (o al principio). Los cortes son secos.
+- **Diferencias con el original:** el volumen de canal (CC 7) se aplica lineal, como la librería de sonido, no con la
+  curva cúbica del sintetizador; los modos 2–10 de la variable 245 suenan de momento la canción 0 de la fuente pedida
+  (sus pares fuente/canción son datos del ejecutable, Q7, tramo 3b) y lo dicen en el log de depuración.
+- **Hilos:** el SoundFont se carga en el hilo del juego (`audio::SoundFont`, con las voces y los 16 canales ya
+  reservados, para que el hilo de audio no reserve memoria); la orden de música lleva el puntero, y `Audio` guarda la
+  fuente y la canción hasta que el mezclador acepta una orden de música posterior (`musicTaken`).
+- `TinySoundFont` entra como port de overlay (`vcpkg-ports/tinysoundfont`, commit `853a0a17`, MIT) con
+  `VCPKG_OVERLAY_PORTS` en los presets.
+- **Quién lo conecta:** `StoryAdapter` publica `publishStoryMusic` en la VM de la historia (en lugar de los
+  marcadores mudos de antes) y, en cada tick, pasa las órdenes a `GameSession::music()` y `sound()`; una sesión muda
+  (puerto nulo) no suena.
 
 ## 7. Fidelidad: lo que oye el jugador
 
@@ -324,8 +353,8 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | Assets de sonido y música (`sound/**`, `music/**`, sus `*_meta.yaml`, `data/music.yaml`) | Los escribe `dwx`; esquemas `sound_bank` y `music` | Sin cambios: un mod que sustituye un `sample_<n>`, un `font.sf2` o un `track_<nn>.mid` por id ya se oye en los tramos 2 y 3 | Ninguno |
 | Formato cocinado (Opus, SF2 y MIDI copiados) | ADR 0017 | Sin cambios | Ninguno |
 | `pack.yaml` | — | Sin claves nuevas | Ninguno |
-| `story.play_sound(ranura, sonido)` | Lo emite `dwx` en el Lua convertido | Publicada en el tramo 2b (Q14) sobre el `SoundPort` | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): `LuaApiVersion` sube de 1.1.0 a 1.2.0 |
-| `story.set_bgm(pista)`, `story.stop_bgm(...)` | Ídem | Se publican en el tramo 3 | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
+| `story.play_sound(ranura, sonido)` | Lo emite `dwx` en el Lua convertido | Publicada en el tramo 2b (Q14) sobre el `SoundPort` | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): `LuaApiVersion` sube de 1.2.0 a 1.3.0 |
+| `story.set_bgm(fuente)`, `story.stop_bgm(operando)` | Ídem | Publicadas en el tramo 3 (§6.5) sobre el `MusicPort` | **CAMBIO DE CONTRATO** (aditivo, tramo 3): la misma subida a 1.3.0 que `play_sound` |
 | Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): documento nuevo del paquete `game` con su esquema |
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
 | Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la fase 5 | — |

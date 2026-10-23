@@ -36,6 +36,7 @@ class Audio;
 
 namespace dwe::session {
 
+class SessionMusic;
 class SessionSound;
 
 // The tamer as far as the session keeps it until a tamer system exists.
@@ -80,8 +81,8 @@ struct SessionDesc {
   // The real date for the saves' created and updated times; the epoch when not given, so tests are
   // repeatable.
   std::function<std::chrono::sys_seconds()> wallClock;
-  // Where the story's sounds play, or nullptr for a silent session (dwe-sim, tests); it must
-  // outlive the session.
+  // Where the story's sounds and music play, or nullptr for a silent session (dwe-sim, tests); it
+  // must outlive the session.
   audio::Audio* sound = nullptr;
   // The adapters of the systems besides the partner, in the order they tick.
   std::vector<std::unique_ptr<SessionSystem>> systems;
@@ -220,6 +221,8 @@ public:
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
   // The story's sound slots, or nullptr for a silent session.
   [[nodiscard]] game::story::SoundPort* sound();
+  // The story's music, or nullptr for a silent session.
+  [[nodiscard]] game::story::MusicPort* music();
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);
@@ -269,6 +272,7 @@ private:
   std::vector<game::partner::PartnerEvent> partnerEvents_;
   std::string lastMap_;
   std::unique_ptr<SessionSound> sound_;
+  std::unique_ptr<SessionMusic> music_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
 };

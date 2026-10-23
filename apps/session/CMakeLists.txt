@@ -15,6 +15,7 @@ dwe_add_module(session
         src/partner_view.cpp
         src/save_sections.cpp
         src/session_rules.cpp
+        src/session_music.cpp
         src/session_sound.cpp
         src/slot_names.cpp
         src/story_adapter.cpp
@@ -26,7 +27,7 @@ dwe_add_module(session
         src/story_lua_npc.cpp
         src/story_npcs.cpp
         src/story_stage_link.cpp
-        src/story_audio_stubs.cpp
+        src/story_music_api.cpp
         src/story_motion_lua.cpp
         src/story_game_orders.cpp
         src/story_orders_bag.cpp
