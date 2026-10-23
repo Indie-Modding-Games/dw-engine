@@ -151,6 +151,7 @@ void StoryRunner::freezeWorld() {
       ports_.control->freeze();
     }
     setVariable(rules_.frozenVariable, rules_.frozenValue);
+    faceTalkers();
   }
   if (ports_.state != nullptr) {
     if (auto cleared = ports_.state->setTrigger(rules_.talkFacingTrigger, false); !cleared) {
@@ -176,6 +177,13 @@ void StoryRunner::runFrame() {
   if (const std::optional<PendingSection> pending = std::exchange(pending_, std::nullopt)) {
     beginScript(pending->ref, pending->source);
     return;
+  }
+  // script_interp.c: tickScript ticks the boxes and the scripted moves before anything else, also
+  // during a map change.
+  if (busy()) {
+    for (ScriptFrameSystem* system : ports_.frameSystems) {
+      system->scriptFrame();
+    }
   }
   if (changingMap_) {
     return;
@@ -203,9 +211,16 @@ void StoryRunner::runFrame() {
   }
   // script_interp.c: tickScript counts the wait down and, when it reaches 0, runs the next order in
   // the same frame.
-  --framesToWait_;
-  if (framesToWait_ > 0) {
-    return;
+  if (waitUntil_) {
+    if (!waitUntil_()) {
+      return;
+    }
+    waitUntil_ = nullptr;
+  } else {
+    --framesToWait_;
+    if (framesToWait_ > 0) {
+      return;
+    }
   }
   run(std::exchange(waitResult_, std::nullopt));
 }
@@ -213,6 +228,10 @@ void StoryRunner::runFrame() {
 void StoryRunner::beginScript(SectionRef section, SectionSource source) {
   // script_interp.c: callScriptSection.
   source_ = source;
+  sectionAtStart_ = section.section;
+  for (ScriptFrameSystem* system : ports_.frameSystems) {
+    system->scriptBegins();
+  }
   variableAtStart_ = variable(rules_.frozenVariable);
   frozen_ = false;
   core::logDebug("{}",
@@ -286,6 +305,11 @@ std::optional<ResumeValue> StoryRunner::follow(const Wait& wait) {
   if (const auto* source = std::get_if<SourceWait>(&wait)) {
     DWE_ASSERT(source->source != nullptr);
     return waitOn(*source->source);
+  }
+  if (const auto* until = std::get_if<UntilWait>(&wait)) {
+    framesToWait_ = 0;
+    waitUntil_ = until->done;
+    return std::nullopt;
   }
   const auto& frames = std::get<FrameWait>(wait);
   framesToWait_ = std::max<std::int64_t>(frames.frames, 1);
@@ -453,11 +477,27 @@ void StoryRunner::closeSections() {
   framesToWait_ = 0;
   waitResult_.reset();
   waitSource_ = nullptr;
+  waitUntil_ = nullptr;
 }
 
 void StoryRunner::stopScript() {
   for (ScriptFrameListener* listener : frameListeners_) {
     listener->scriptStopped();
+  }
+}
+
+void StoryRunner::faceTalkers() {
+  // script_interp.c: scriptPauseGame turns the two sides of a talk to each other unless the talk
+  // trigger says not to; the caller clears that trigger afterwards.
+  if (source_ != SectionSource::Event || ports_.state == nullptr) {
+    return;
+  }
+  const auto noFacing = ports_.state->trigger(rules_.talkFacingTrigger);
+  if (!noFacing || *noFacing) {
+    return;
+  }
+  for (ScriptFrameSystem* system : ports_.frameSystems) {
+    system->talkFrozen(sectionAtStart_);
   }
 }
 

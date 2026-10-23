@@ -1,11 +1,13 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/game/story/frame_systems.hpp>
 #include <dwe/game/story/section_host.hpp>
 #include <dwe/game/story/story_ports.hpp>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <variant>
@@ -66,6 +68,9 @@ struct StoryFlowPorts {
   StoryStatePort* state = nullptr;
   FieldControlPort* control = nullptr;
   MapChangePort* mapChange = nullptr;
+  // What ticks inside the story's frame, in this order (script_interp.c: tickScript).
+  // NOLINTNEXTLINE(readability-redundant-member-init): the default lets designated initializers leave it out.
+  std::vector<ScriptFrameSystem*> frameSystems = {};
 };
 
 // A system that keeps time with the script, as script_interp.c: tickScript ticks the textboxes
@@ -193,6 +198,7 @@ private:
   bool openMapEntrySection();
   void continueWith(const RunSection& next);
   void finishScript();
+  void faceTalkers();
   void closeSections();
   void stopScript();
   std::optional<ResumeValue> waitOn(WaitSource& source);
@@ -213,6 +219,10 @@ private:
   // The system the running section waits on, if any.
   WaitSource* waitSource_ = nullptr;
   std::vector<ScriptFrameListener*> frameListeners_;
+  // A wait for the field (wait_for_entity), checked once a frame.
+  std::function<bool()> waitUntil_;
+  // The section the script started at: the talker's script id for a talk (SCRIPT_SECTION).
+  std::uint16_t sectionAtStart_ = 0;
   // The script stack's continuations. The original never clears them between scripts, so one
   // left by a script that ended another way runs at the next script's end.
   std::vector<Continuation> continuations_;

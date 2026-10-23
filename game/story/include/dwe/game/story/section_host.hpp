@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <variant>
@@ -80,8 +81,15 @@ struct SourceWait {
   friend bool operator==(const SourceWait&, const SourceWait&) = default;
 };
 
+// The section waits until `done` says so (wait_for_entity): checked once a frame after the frame
+// systems ran; when it holds, the section goes on in that frame and gets nil back
+// (script_interp.c: tickScript).
+struct UntilWait {
+  std::function<bool()> done;
+};
+
 // What a section waits for when it yields.
-using Wait = std::variant<FrameWait, FileJump, MapChangeWait, SourceWait>;
+using Wait = std::variant<FrameWait, FileJump, MapChangeWait, SourceWait, UntilWait>;
 
 // The section ended the script: end_section, end_script, a map change, or a routine that gave back
 // ENDED.

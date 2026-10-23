@@ -7,4 +7,5 @@ dwe_add_module(story
         src/orders_npc.cpp
         src/story_runner.cpp
         src/dialogue.cpp
+        src/script_motion.cpp
     DEPS core assets)
