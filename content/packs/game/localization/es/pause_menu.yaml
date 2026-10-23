@@ -5,6 +5,7 @@ continue: "Continuar"
 partner: "Compañero"
 minimap: "Minimapa"
 options: "Opciones"
+sleep: "Dormir"
 quit: "Salir del juego"
 minimap_mode: "Mostrar minimapa"
 # Como decida el aspecto de la interfaz: el moderno lo enseña; el juego original no tiene.

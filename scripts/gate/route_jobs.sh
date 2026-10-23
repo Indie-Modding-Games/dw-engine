@@ -17,6 +17,9 @@ smoke_routes=(route-loop-keyboard route-keyboard route-save-load)
 # own saves folder.
 declare -gA follow_up_routes=(["route-save-load"]=route-save-load-check)
 saved_slot="slot_01"
+# Routes that play with saves of their own, which the gate runs, like the save route, with an empty
+# saves folder of the job's: they start a new game in a slot and save to it.
+saves_routes=(route-sleep-save)
 smoke_lang="en"
 languages=(en es)
 # The job list's separators: fields, and the arguments of a run.
@@ -91,7 +94,7 @@ route_job() {
     *) ;;
   esac
   local follow="${follow_up_routes[$route]:-}" saves="$logs/$lang$suffix/$route/saves" line
-  if [[ -n "$follow" ]]; then
+  if [[ -n "$follow" || " ${saves_routes[*]} " == *" $route "* ]]; then
     empty_saves_folder "$saves" || die "refusing to empty the saves folder $saves"
     flags+=(--saves "$saves")
   fi

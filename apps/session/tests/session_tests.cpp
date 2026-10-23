@@ -312,6 +312,10 @@ TEST_CASE("a game saved to a slot loads from it") {
   REQUIRE_MESSAGE(read.has_value(), errorOf(read));
   CHECK(loaded->partner().state() == session->partner().state());
   CHECK(loaded->homeSlot() == slot);
+  // The playthrough is the same one, which a save in the game checks its slot against.
+  CHECK(loaded->playthroughStarted() == session->playthroughStarted());
+  REQUIRE(loaded->slots() != nullptr);
+  CHECK(loaded->slots()->list().front().state == dwe::game::save::SlotInfo::State::Empty);
   const auto file = loaded->saveFile();
   REQUIRE_MESSAGE(file.has_value(), errorOf(file));
   CHECK(file->header.summary.slot == "slot_02");

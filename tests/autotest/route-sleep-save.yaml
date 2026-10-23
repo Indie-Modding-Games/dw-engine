@@ -1,0 +1,34 @@
+# The sleep and its save (docs/architecture/guardar-y-cargar.md, 3.6): a new game in slot_01, the clock run on until
+# the partner is sleepy, Sleep in the pause menu and then Save and sleep in the sleep menu. The slot holds this very
+# playthrough, so the save is written without a question. The gate runs it with an empty saves folder of its own
+# (scripts/gate/route_jobs.sh, saves_routes).
+name: sleep-save
+device: keyboard
+timeout: 300
+main_menu: true
+steps:
+  - wait: {shown: main_menu, seconds: 1}
+  - resize: [1280, 720]
+  - menu_select: play
+  - wait: {shown: save_slots, seconds: 0.5}
+  - menu_select: slot-1
+  - wait: {shown: dialog, seconds: 0.5}
+  - menu_select: yes
+  - wait: {map: twna01, hidden: dialog, seconds: 1}
+  # Two game hours a real second until the partner is sleepy, which the pause menu's Sleep waits for.
+  - script: clock_speed("120")
+  - wait: {setting: {pause_menu.sleep_enabled: "true"}, timeout: 60}
+  - script: clock_speed("1")
+  - remember: partner.age
+  - menu: open
+  - screenshot: pause-sleep
+  - menu_select: sleep
+  - wait: {shown: sleep_menu, timeout: 10}
+  - screenshot: sleep-menu
+  - menu_select: save-and-sleep
+  - wait: {setting: {save.last_result: saved}, hidden: sleep_menu, timeout: 10}
+  # Sleeping moves the clock to the wake hour, the next day.
+  - expect_change: {partner.age: up}
+  - expect_setting: {pause_menu.sleep_enabled: "false"}
+  - wait: {seconds: 1.5}
+  - screenshot: awake

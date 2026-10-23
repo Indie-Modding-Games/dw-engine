@@ -8,6 +8,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/minimap.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <string_view>
 #include <utility>
@@ -17,6 +18,7 @@
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_tab.hpp"
+#include "title_screen.hpp"
 
 namespace dwe::app {
 namespace {
@@ -193,7 +195,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
                     .ui = context.ui}),
-      fieldHud_(*context.ui, *game_.session) {
+      fieldHud_(*context.ui, *game_.session), sleepScreen_(*game_.session, *context.ui) {
   session::GameSession& session = *game_.session;
   session.attachField(scene_->field());
   // A loaded game's partner may be another species than the game pack's partner model.
@@ -216,15 +218,18 @@ PlaySession::~PlaySession() {
   context_.debugUi->detachTuning();
   game_.session->detachField();
   for (const std::string_view document :
-       {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument}) {
+       {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
+        SleepMenuDocument, DialogDocument}) {
     context_.ui->hide(document);
   }
 }
 
 void PlaySession::tick(const game::field::FieldInput& intent) {
   const ui::Ui& ui = *context_.ui;
-  // The menus pause the field and the game time; a battle runs instead of the field.
-  if (battleScreen_.active()) {
+  // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
+  if (sleepScreen_.active()) {
+    sleepScreen_.tick(TickSeconds);
+  } else if (battleScreen_.active()) {
     if (!ui.isVisible(MenuDocument)) {
       battleScreen_.tick(TickSeconds);
     }
@@ -237,7 +242,8 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
-  if (battleScreen_.handle(command) || freeExploration_.handle(command)) {
+  if (sleepScreen_.handle(command) || battleScreen_.handle(command) ||
+      freeExploration_.handle(command)) {
     return true;
   }
   if (partnerMenu_.handle(command)) {
@@ -304,6 +310,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
 
   partnerMenu_.update();
+  sleepScreen_.update();
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(partnerEvents, session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
@@ -324,7 +331,11 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
 bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || battleScreen_.active();
+         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active();
+}
+
+float PlaySession::fadeLevel() const {
+  return std::max(scene_->field().fadeLevel(), sleepScreen_.fadeLevel());
 }
 
 } // namespace dwe::app

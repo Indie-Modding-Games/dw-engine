@@ -1,0 +1,5 @@
+/* How the sleep menu behaves whatever the skin: its two entries wrap around. The look is the pause menu's (the skins'
+   pause_menu style). */
+
+#sleep { nav-up: #save-and-sleep; }
+#save-and-sleep { nav-down: #sleep; }

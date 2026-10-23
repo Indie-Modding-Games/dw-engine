@@ -32,3 +32,10 @@ start_failed: "The game could not start."
 damaged_use_backup: "This save is damaged. Load the previous copy?"
 damaged_no_backup: "This save is damaged and has no copy."
 too_new: "This save is from a newer version of the game."
+# A save in the game whose slot changed outside the game (docs/architecture/guardar-y-cargar.md, 4).
+home_damaged: "This adventure's save is damaged. Save over it?"
+home_other: "This slot holds another adventure. Save over it?"
+home_newer: "This slot holds a save from a newer version of the game. It cannot be saved over."
+# The sleep menu, once the partner slept (docs/architecture/guardar-y-cargar.md, 3.6).
+sleep: "Go to sleep"
+sleep_and_save: "Save and go to sleep"

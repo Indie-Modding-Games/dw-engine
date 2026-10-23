@@ -7,3 +7,5 @@
 #minimap-back { nav-down: #minimap-mode; }
 #display-mode { nav-up: #options-back; }
 #options-back { nav-down: #display-mode; }
+/* Sleep is greyed while the partner is not sleepy, as in the original. */
+#sleep.unavailable { opacity: 0.45; focus: none; tab-index: none; }

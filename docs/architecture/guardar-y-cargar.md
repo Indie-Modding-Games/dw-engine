@@ -206,10 +206,14 @@ tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `
 
 `pause_menu` gana **«Dormir»**, activo solo si `Partner::canSleep()` (el original lo pone en gris igual). Al elegirlo:
 
-1. Se cierra el menú, fundido a negro, `GameSession::sleep` (el reloj salta a la mañana; ya existe).
+1. Se cierra el menú, fundido a negro (tan largo como el del cambio de mapa), `GameSession::sleep` (el reloj salta a
+   la mañana; ya existe). Lo lleva `SleepScreen` (`apps/game/src/sleep_screen.cpp`); el campo y el reloj esperan del
+   primer fundido al último y el menú de pausa no se abre encima.
 2. Si la partida tiene ranura, `sleep_menu`: «Dormir» / «Guardar y dormir». Cancelar no hace nada, como el original.
    Sin ranura no sale nada.
-3. «Guardar y dormir» guarda en la ranura (`SaveFlow`). Si falla, aviso con el error y vuelta al paso 2.
+3. «Guardar y dormir» guarda en la ranura (`GameSaves`, `apps/game/src/game_saves.cpp`). Antes mira la ranura
+   (`SaveSlots::list`): si ya no tiene esta partida, pregunta o avisa en vez de escribir encima ([4](#4-errores)). Si
+   falla, aviso con el error y vuelta al paso 2.
 4. Fundido de entrada; el reloj sigue. Lo que el original hace al despertar (evoluciones especiales) es del sistema de
    evolución, que ya escucha `Slept`.
 
@@ -225,6 +229,9 @@ modo versus de la máquina (y el regalo del fin del juego) **queda fuera**: es d
 (pregunta 3).
 
 ### 3.8 Volver a la portada
+
+Es una **mejora opcional de PC**, a propósito: el original no tiene forma de volver a la portada salvo acabar el
+juego ([1.6](#16-volver-a-la-portada)). No cambia reglas y quien no la use juega como en el original.
 
 `pause_menu` gana **«Volver a la portada»** (encima de «Salir del juego») → `dialog`: «Se perderá lo que no hayas
 guardado. ¿Volver a la portada?» → `AppFlow` destruye la `PlaySession` y vuelve a `Title`. No guarda nada. Es una
@@ -260,6 +267,9 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.damaged_use_backup` | This save is damaged. Load the previous copy? | Esta partida está dañada. ¿Cargar la copia anterior? |
 | `save.damaged_no_backup` | This save is damaged and has no copy. | Esta partida está dañada y no tiene copia. |
 | `save.too_new` | This save is from a newer version of the game. | Esta partida es de una versión más nueva del juego. |
+| `save.home_damaged` | This adventure's save is damaged. Save over it? | La partida de esta aventura está dañada. ¿Guardar encima? |
+| `save.home_other` | This slot holds another adventure. Save over it? | Esta ranura tiene otra aventura. ¿Guardar encima? |
+| `save.home_newer` | This slot holds a save from a newer version of the game. It cannot be saved over. | Esta ranura tiene una partida de una versión más nueva del juego. No se puede guardar encima. |
 | `pause_menu.sleep` | Sleep | Dormir |
 | `pause_menu.to_title` | Back to title | Volver a la portada |
 | `pause_menu.to_title_confirm` | Anything you haven't saved will be lost. Back to the title? | Se perderá lo que no hayas guardado. ¿Volver a la portada? |
@@ -280,6 +290,7 @@ fichero (`dialog.file`).
 | Todas las ranuras ocupadas al empezar | «No hay bloque libre», o jugar sin tarjeta (`main_menu.c: tickMainMenu: 3509-3520`) | «No hay ranuras libres»: jugar sin guardar o volver. No se ofrece sobrescribir (el original tampoco; para borrar, pregunta 4) |
 | Falla la escritura en partida (disco lleno, permisos) | Error y vuelta al menú de dormir o a la pregunta (`main_menu.c: tickMainMenu: 4001-4009`) | Igual: `save.failed` y vuelta a `sleep_menu` o a la pregunta. La escritura atómica deja la partida anterior intacta |
 | El fichero de la ranura desapareció durante la partida | «El fichero no existe», no se crea (`main_menu.c: tickMainMenu: 3929-3953`) | Se escribe de nuevo en la ranura (desviación menor: no hay tarjeta que cambiar) |
+| La ranura de la partida cambió fuera del juego durante la partida | — (la tarjeta cambiada es el caso de arriba) | Al guardar en partida: dañada, «¿guardar encima?»; con otra partida, «¿guardar encima?»; de un juego más nuevo, aviso y no se escribe. «No» vuelve al menú de dormir sin escribir |
 
 ## 5. Diferencias con el original
 
@@ -357,6 +368,29 @@ el 4 en «nueva partida» y «continuar».
 - Al volver a la portada, `TitleScreen::show()` (no `ui.show` del menú a secas), para que «Continuar» y la lista se
   vuelvan a leer.
 - Partir el tramo al diseñarlo para que cada gate quede en unas 800 líneas: el 4 llegó a 960 y fue la última excepción.
+
+**El tramo 5, partido** (aprobado por el coordinador y el gestor el 2026-10-22). Cada parte pasa su gate corto, con su
+ruta en en y es (`--routes-extra`), y se sube sola; la 5b va después de la 5a.
+
+| Parte | Contenido | Ruta | Líneas (estim.) |
+|---|---|---|---|
+| 5a | «Dormir» en la pausa, `SleepScreen` (fundidos, sueño, menú), `sleep_menu`, `GameSaves` con la comprobación de la ranura, textos | `route-sleep-save` | ~520 |
+| 5b | «Volver a la portada» con su diálogo y `TitleScreen::show()`, `openSaveMachine`/`gameClearSave` (sin llamadas) | `route-to-title` | ~260 |
+
+Decisiones del diseño (aceptadas):
+
+- **(a)** Si el fichero de la ranura ya no está (borrado fuera del juego), se escribe de nuevo, como dice
+  [4](#4-errores): no hay nada que perder. La nota de arriba lo contaba entre los avisos; manda la tabla de errores.
+- **(b)** Ranura dañada o con otra partida: pregunta sí/no («¿guardar encima?»). De un juego más nuevo: solo aviso.
+- **(c)** «La misma partida» es la misma `created` en la cabecera (la hora en que empezó, al segundo); no cambia el
+  formato. **Límite:** dos partidas empezadas en el mismo segundo cuentan como la misma, así que guardar una sobre la
+  otra no pregunta. Se acepta por ahora; si la cabecera gana un id de partida, la comprobación pasa a usarlo
+  (pendiente en el BACKLOG).
+
+**CAMBIO DE CONTRATO (aditivo)** de la interfaz ([ui.md](ui.md#comandos-y-ajustes)), cada uno en la parte en que
+funciona: en la 5a, los comandos `sleep`, `sleep_only` y `sleep_and_save`, los ajustes `pause_menu.sleep_enabled` y
+`save.last_result` y el documento `sleep_menu`; en la 5b, `to_title`. Lo que tiene que añadir un mod que reemplaza el
+menú de pausa: [modding/menus.md](../modding/menus.md).
 
 ## 8. Preguntas (decididas)
 

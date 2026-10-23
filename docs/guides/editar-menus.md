@@ -20,6 +20,8 @@ content/packs/game/ui/
   pause_menu/document.rml    el menú de pausa
   pause_menu/structure.rcss  su comportamiento en todos los aspectos: las listas dan la vuelta
   pause_menu/logic.lua
+  sleep_menu/                el menú de dormir (dormir, o guardar y dormir)
+  save_slots/, dialog/       la lista de ranuras de la portada y el diálogo de guardar
   hud/document.rml           el HUD con el minimapa
   hud/logic.lua
 ```
@@ -27,7 +29,8 @@ content/packs/game/ui/
 Cada documento va en su carpeta porque los ficheros se leen por asset id, que es la ruta sin extensión:
 `menu.rml` y `menu.rcss` en la misma carpeta chocarían. Un mod puede sustituir cualquiera de estos ficheros con uno
 del mismo id en su paquete, o añadir un aspecto entero con su `ui/skins/<id>/skin.yaml` (ver
-[Aspectos](../architecture/ui.md#aspectos)). Un aspecto que necesita marcar elementos de un documento compartido (por
+[Aspectos](../architecture/ui.md#aspectos)). Un documento sustituido no recibe las entradas que el juego añada luego
+al suyo: [modding/menus.md](../modding/menus.md) las lista. Un aspecto que necesita marcar elementos de un documento compartido (por
 ejemplo, que las barras del HUD se llenen a cuadritos con la clase `pips`) no copia el documento: lo dice en
 `document_classes` de su `skin.yaml`, por documento e id de elemento, y el juego pone y quita esas clases al
 cambiar de aspecto.

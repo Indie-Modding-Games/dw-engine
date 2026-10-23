@@ -26,10 +26,12 @@ screens:
   # El selector de la exploración libre usa el panel y las entradas del menú de pausa.
   destination_choice:
     styles: [ui/skins/original/pause_menu/style]
-  # La lista de ranuras y el diálogo de la portada, también.
+  # La lista de ranuras, el diálogo de guardar y el menú de dormir, también.
   save_slots:
     styles: [ui/skins/original/pause_menu/style]
   dialog:
+    styles: [ui/skins/original/pause_menu/style]
+  sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:

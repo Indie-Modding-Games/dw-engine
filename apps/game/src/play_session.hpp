@@ -29,6 +29,7 @@
 #include "partner_menu.hpp"
 #include "save_command.hpp"
 #include "session_start.hpp"
+#include "sleep_screen.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -103,6 +104,9 @@ public:
   void update(SessionCommands& commands, Autotest* autotest, FrameStats& stats, double frameSeconds,
               float alpha);
 
+  // How much the map change's or the sleep's fade takes away from the screen, from 0 to 1.
+  [[nodiscard]] float fadeLevel() const;
+
   // Saves the game to a slot (AppFlow, for a new game's slot).
   [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {
     return game_.session->save(slot);
@@ -122,6 +126,7 @@ private:
   BattleScreen battleScreen_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
+  SleepScreen sleepScreen_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

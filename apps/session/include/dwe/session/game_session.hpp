@@ -131,6 +131,11 @@ public:
   // for a new game until it is saved. Each save's summary keeps it, so an autosave knows its
   // playthrough's slot.
   [[nodiscard]] const std::optional<game::save::SlotId>& homeSlot() const { return homeSlot_; }
+  // When the playthrough started, which its every save keeps: it tells this playthrough's saves
+  // from another's.
+  [[nodiscard]] std::chrono::sys_seconds playthroughStarted() const { return file_.header.created; }
+  // The save slots, to check one before writing it; nothing for a session that never saves.
+  [[nodiscard]] const game::save::SaveSlots* slots() const { return slots_ ? &*slots_ : nullptr; }
 
   // Whether a game was started or loaded.
   [[nodiscard]] bool playing() const;

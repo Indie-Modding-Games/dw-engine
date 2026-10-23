@@ -73,7 +73,12 @@ local options = {
   end,
 }
 
+local function can_sleep()
+  return ui.setting("pause_menu.sleep_enabled") == true
+end
+
 local function refresh(document)
+  document:get("sleep"):set_class("unavailable", not can_sleep())
   local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "auto"
   document:get("minimap-mode-value"):set_text(t("pause_menu.minimap_mode." .. mode))
   local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
@@ -115,6 +120,14 @@ function back(document)
     ui.hide(document_name)
   else
     show_page(document, "main", opener[current])
+  end
+end
+
+-- The game closes the menu and puts the partner to bed (docs/architecture/guardar-y-cargar.md,
+-- 3.6).
+function sleep()
+  if can_sleep() then
+    ui.send("sleep")
   end
 end
 

@@ -1,7 +1,7 @@
--- The title screen's dialog: a question (yes or no) or a notice (accept) about the save slots. The
--- game publishes dialog.text (a text key), dialog.file (the save file it is about, or "") and
--- dialog.question, and shows this document; it sends dialog_answer, true only for yes. Cancel
--- answers no.
+-- The save dialog, at the title screen and in the game: a question (yes or no) or a notice
+-- (accept) about the save slots. The game publishes dialog.text (a text key), dialog.file (the save
+-- file it is about, or "") and dialog.question, and shows this document; it sends dialog_answer,
+-- true only for yes. Cancel answers no.
 
 local function question()
   return ui.setting("dialog.question") == true

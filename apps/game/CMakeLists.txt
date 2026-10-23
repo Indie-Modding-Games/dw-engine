@@ -20,6 +20,7 @@ dwe_add_app(game
         src/map_preview.cpp
         src/minimap_setting.cpp
         src/free_exploration.cpp
+        src/game_saves.cpp
         src/model_viewer.cpp
         src/options.cpp
         src/partner_events.cpp
@@ -30,6 +31,7 @@ dwe_add_app(game
         src/save_flow.cpp
         src/saves.cpp
         src/session_start.cpp
+        src/sleep_screen.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
         src/title_screen.cpp
@@ -54,11 +56,11 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save debug command and
-# the title screen's save flow.
+# the title screen's and the game's save flows.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/minimap_setting.cpp src/save_command.cpp
-                                  src/save_flow.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
+    add_executable(dwe_game_tests ${game_test_sources} src/game_saves.cpp src/minimap_setting.cpp
+                                  src/save_command.cpp src/save_flow.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe_test_main)

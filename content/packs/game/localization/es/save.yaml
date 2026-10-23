@@ -32,3 +32,10 @@ start_failed: "No se ha podido empezar la partida."
 damaged_use_backup: "Esta partida está dañada. ¿Cargar la copia anterior?"
 damaged_no_backup: "Esta partida está dañada y no tiene copia."
 too_new: "Esta partida es de una versión más nueva del juego."
+# Un guardado en partida cuya ranura cambió fuera del juego (docs/architecture/guardar-y-cargar.md, 4).
+home_damaged: "La partida de esta aventura está dañada. ¿Guardar encima?"
+home_other: "Esta ranura tiene otra aventura. ¿Guardar encima?"
+home_newer: "Esta ranura tiene una partida de una versión más nueva del juego. No se puede guardar encima."
+# El menú de dormir, cuando el compañero ya durmió (docs/architecture/guardar-y-cargar.md, 3.6).
+sleep: "Dormir"
+sleep_and_save: "Guardar y dormir"

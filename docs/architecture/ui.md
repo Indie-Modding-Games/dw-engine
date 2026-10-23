@@ -298,6 +298,8 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 | `language` | código de idioma (`en`, `es`) | `language` (y la UI vuelve a poner todos sus textos) |
 | `text_font` | `modern`, `original` | `text_font` (y la UI vuelve a componer los documentos con la fuente) |
 | `ui_skin` | id de un aspecto (`modern`, ...) | `ui_skin` (y la UI cambia el estilo de todos los documentos en el momento) |
+| `sleep` | — | — (en partida: el menú de pausa acuesta al compañero si tiene sueño; ver [guardar-y-cargar.md](guardar-y-cargar.md#36-dormir)) |
+| `sleep_only`, `sleep_and_save` | — | `save.last_result` con `sleep_and_save` (el menú de dormir: seguir durmiendo, o guardar en la ranura de la partida antes) |
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
@@ -321,11 +323,17 @@ entrenamiento y las opciones del reloj (fase 4); la lista está en [la guía de 
 vertical](../guides/prueba-vertical.md). Decisión del responsable de diseño (2026-10-21): `toilet`, `sleep`, `train`, `scold` y
 `clock_speed` se quedan como ayudas de depuración.
 
+**CAMBIO DE CONTRATO (aditivo):** los comandos `sleep`, `sleep_only` y `sleep_and_save`, los ajustes
+`pause_menu.sleep_enabled` y `save.last_result` y el documento `sleep_menu` (paquete 4a, tramo 5a). Un mod que
+reemplaza `pause_menu` no tiene «Dormir» hasta que lo añade ([modding/menus.md](../modding/menus.md)).
+
 Otros ajustes los publica el juego sin que un menú los pida:
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `screen_fade` | número de 0 a 1 | Cuánto quita de la pantalla el fundido del cambio de mapa, que el render resta de la escena debajo de la UI; el HUD desvanece con él sus paneles |
+| `pause_menu.sleep_enabled` | booleano | Si el compañero puede dormir ahora: el menú de pausa pone «Dormir» en gris si no |
+| `save.last_result` | `saved`, `failed`, `not_saved` | Cómo acabó el último guardado que pidió el jugador en partida |
 | `map_title_key` | clave de texto | La clave del nombre del mapa al que lleva el cambio de mapa (`main.map_names.NNNN`) mientras el original lo enseña (fotogramas 10 a 20 del fundido de salida); vacía el resto del tiempo o si el mapa no tiene nombre. El HUD pone su texto en el idioma del jugador (`t()`) en el centro, delante del fundido, y lo reescribe al cambiar de idioma |
 
 ## Aspectos

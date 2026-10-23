@@ -72,8 +72,8 @@ public:
   }
 
   // Publishes the field's fade and map name key when they changed.
-  void show(const FieldScene& scene) {
-    showFade(scene.field().fadeLevel());
+  void show(const FieldScene& scene, float fade) {
+    showFade(fade);
     const auto named = scene.field().mapNameShown();
     showTitleKey(named ? scene.nameKeyOf(*named) : std::string{});
   }
@@ -169,7 +169,8 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
         std::pair{"partner_menu", "ui/partner_menu/document"},
         std::pair{"destination_choice", "ui/destination_choice/document"},
         std::pair{"save_slots", "ui/save_slots/document"},
-        std::pair{"dialog", "ui/dialog/document"}}) {
+        std::pair{"dialog", "ui/dialog/document"},
+        std::pair{"sleep_menu", "ui/sleep_menu/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};
@@ -646,8 +647,8 @@ int runGame(const Options& options) {
     if (PlaySession* play = flow.playing()) {
       play->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
                    static_cast<float>(step.alpha()));
-      screenFade->setDarkness(play->scene().field().fadeLevel());
-      mapChangeView.show(play->scene());
+      screenFade->setDarkness(play->fadeLevel());
+      mapChangeView.show(play->scene(), play->fadeLevel());
     } else {
       sessionCommands.drop(autotest.get());
     }

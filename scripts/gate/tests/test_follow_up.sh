@@ -120,6 +120,20 @@ check "  a slot an earlier run left is gone before the job runs" \
   test ! -e "$logs/en/route-save-load/saves"
 check "the runs are one per job and one per follow-up" test "$(count_runs "$logs/jobs.txt")" == 4
 
+# A route with saves of its own and no follow-up: its job saves to an empty folder of its own.
+new_logs saves
+mkdir -p "$logs/es/route-sleep-save/saves"
+echo "stale" >"$logs/es/route-sleep-save/saves/slot_01.yaml"
+routes_extra="route-sleep-save"
+write_short_jobs "" >"$logs/jobs.txt"
+routes_extra=""
+saves_line="$(grep '^route-sleep-save-es' "$logs/jobs.txt" | tr '\t' ' ')"
+check "a route with saves of its own runs once, with no follow-up" \
+  test "$(awk -F"$field_separator" '{ print NF }' <<<"$saves_line")" == 3
+check "  saving to the job's own folder" \
+  grep -q -- "--saves $logs/es/route-sleep-save/saves --lang es" <<<"$saves_line"
+check "  emptied before the job runs" test ! -e "$logs/es/route-sleep-save/saves"
+
 # A passing pair: two summary lines, both passes.
 run_all "$logs/jobs.txt"
 check "a passing save route gives two summary lines" \

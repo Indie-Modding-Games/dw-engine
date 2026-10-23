@@ -100,8 +100,8 @@ done
   acelerado, el panel que se va con el menú de pausa y vuelve al cerrarlo, y capturas a 800x600, 1280x720 y 2560x1080
   y con la escala de la interfaz más grande. Se corre en los dos idiomas, como
   `route-language.yaml`. Con ella, `route-skin-original.yaml`, `route-scripted-loop.yaml` y las tres de la
-  exploración libre, el paso de rutas es de 24 rutas (con la pareja de `route-save-load`): 48 ejecuciones sobre el
-  contenido extraído, más las 4 del `.pak` cocinado, 52 en total.
+  exploración libre, el paso de rutas es de 25 rutas (con la pareja de `route-save-load`): 50 ejecuciones sobre el
+  contenido extraído, más las 4 del `.pak` cocinado, 54 en total.
 - `route-loop-keyboard.yaml`: el bucle de la fase 3 con el teclado, desde el menú principal: cría al compañero
   (lo regaña, espera a que tenga hambre y le da su comida favorita desde la bolsa, lo lleva al baño y lo acuesta),
   lo entrena, combate con el disparador de depuración y, con el reloj acelerado, lo cuida a tramos hasta que
@@ -125,6 +125,12 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
 ```
 
   Cuando exista la pantalla de guardar del juego, la ruta la usará en vez del comando y cargará desde el título.
+- `route-sleep-save.yaml`: dormir y guardar ([guardar-y-cargar.md](../architecture/guardar-y-cargar.md#36-dormir)).
+  Empieza una partida nueva en `slot_01` desde el menú principal, acelera el reloj hasta que el compañero tiene sueño
+  (`pause_menu.sleep_enabled`), elige «Dormir» en la pausa y «Guardar y dormir» en el menú de dormir, y espera
+  `save.last_result` = `saved` sin ninguna pregunta, porque la ranura es de esta misma partida; luego comprueba que el
+  compañero cumplió un día. Necesita `--saves` con una carpeta vacía; el gate le da una suya (`saves_routes`). Se
+  corre en los dos idiomas.
 - `route-dev-assets.yaml`: comprueba que el aviso de los [assets de desarrollo](../architecture/assets-de-desarrollo.md)
   se ve en el menú principal y en el campo. Es la única ruta que necesita `--dev-assets` y un `dev-assets.yaml` en la
   carpeta actual; se corre en los dos idiomas.
