@@ -2,6 +2,8 @@
 #include <dwe/animation/clip_sampling.hpp>
 #include <dwe/game/field/field.hpp>
 
+#include <algorithm>
+
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -40,6 +42,11 @@ float FieldScene::clipGroundSpeed(scene::Entity entity, std::uint32_t clip) cons
     actor = playerActor_.get();
   } else if (entity == partnerActor_->entity) {
     actor = partnerActor_.get();
+  } else if (const auto npc = std::ranges::find(npcActors_, entity, &Actor::entity);
+             npc != npcActors_.end()) {
+    // A map's NPC walks for the script too (script_interp.c: scriptSetEntityWalking), as the wild
+    // one of the forest's first fight leaves; without its speed the script would wait forever.
+    actor = npc->get();
   }
   if (actor == nullptr) {
     return 0.0F;
