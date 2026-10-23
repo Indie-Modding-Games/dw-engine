@@ -35,7 +35,8 @@ Combatant combatantOf(const assets::DigimonRow& species) {
 
 // overworld.c: loadMapDigimon: the NPC record gives the enemy its stats, its moves as animations,
 // its priorities, charge mode, bits and the flag that makes it only target the partner.
-core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const assets::MapNpc& npc) {
+core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const assets::MapNpc& npc,
+                                     Point position) {
   Combatant enemy = combatantOf(species);
   enemy.stats = {.maxHp = npc.hp,
                  .maxMp = npc.mp,
@@ -48,7 +49,7 @@ core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const as
   enemy.chargeMode = static_cast<ChargeMode>(std::clamp(npc.chargeMode, 0, HighestChargeMode));
   enemy.focusesPartner = npc.unknown2A == 1;
   enemy.bits = npc.bits;
-  enemy.position = {.x = npc.position.x, .z = npc.position.z};
+  enemy.position = position;
   if (enemy.stats.maxHp < 1) {
     return std::unexpected{core::Error{messages::formatMessage(messages::NoMaxHp, species.id)}};
   }

@@ -186,6 +186,7 @@ BattleRequest duelWithFoe() {
           .tamerless = false,
           .map = "test_map",
           .tamer = {.x = 0, .z = -800},
+          .partner = {.x = 0, .z = -600},
           .kind = BattleKind::Normal,
           .recruitOnVictory = "foe"};
 }
@@ -364,6 +365,7 @@ TEST_CASE(
   });
   auto battle = adapters.battle->start(*session, duelWithFoe());
   REQUIRE_MESSAGE(battle.has_value(), errorOf(battle));
+  CHECK(battle->state().partner().position == dwe::game::battle::Point{.x = 0, .z = -600});
   battle_test::runToEnd(*battle);
   REQUIRE(battle->result().has_value());
   const BattleResult result = battle->result().value_or(BattleResult{});

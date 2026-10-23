@@ -49,7 +49,10 @@ struct BattleRequest {
   bool scripted = false;
   bool tamerless = false;
   std::string map;
+  // Where the tamer and the partner stand on the field when it starts, in world axes, as the
+  // enemies' positions.
   game::battle::Point tamer;
+  game::battle::Point partner;
   game::battle::BattleKind kind = game::battle::BattleKind::Normal;
   // The resident that joins the city if the partner wins; the session decides it (the story's
   // recruit triggers).

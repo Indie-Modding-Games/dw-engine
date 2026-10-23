@@ -33,7 +33,8 @@ enum class DigimonType : std::uint8_t { None = 0, Data = 1, Vaccine = 2, Virus =
 // How a fighter paces itself between attacks (battle_main.c: BTL_applyChargeRequirement).
 enum class ChargeMode : std::uint8_t { Aggressive = 0, Normal = 1, Cautious = 2 };
 
-// A point on the battle ground, in world units (the original's X and Z).
+// A point on the battle ground, in world units and world axes (the field's,
+// assets::toWorldPosition: the original's X and its Z negated).
 struct Point {
   std::int32_t x = 0;
   std::int32_t z = 0;
@@ -78,7 +79,7 @@ struct Combatant {
   std::int32_t dropChance = 0;
   // The species' move list, for learning in battle.
   std::array<std::optional<std::string>, SpeciesMoves> speciesMoves{};
-  // Where it stands when the battle starts.
+  // Where it stands when the battle starts, in world axes, as every position of the battle.
   Point position;
 };
 
@@ -86,7 +87,9 @@ struct Combatant {
 Combatant combatantOf(const assets::DigimonRow& species);
 
 // An enemy as the map places it: the species from the Digimon table and the stats, moves,
-// priorities, charge mode and bits of its NPC record.
-core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const assets::MapNpc& npc);
+// priorities, charge mode and bits of its NPC record, standing at `position`: where the NPC stands
+// on the field when the battle starts, in world axes.
+core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const assets::MapNpc& npc,
+                                     Point position);
 
 } // namespace dwe::game::battle

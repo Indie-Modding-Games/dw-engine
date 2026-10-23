@@ -27,8 +27,9 @@ core::Result<std::vector<std::size_t>> npcsOf(std::string_view argument);
 
 // A battle against NPCs of the field's map, as the original's scripts start one (script_interp.c:
 // SCRIPT_OP_START_BATTLE, btl.c: the enemies are NPCs of the map): each enemy is its NPC record on
-// the Digimon table (game::battle::enemyFromMap), the tamer where the player stands. Without NPC
-// numbers, the first NPC with a Digimon.
+// the Digimon table (game::battle::enemyFromMap) where the NPC stands, the tamer where the player
+// stands and the partner where it stands, all in world axes: this is where the field's positions
+// become the battle's. Without NPC numbers, the first NPC with a Digimon.
 //
 // This is the engine's debug trigger until the map scripts run (phase 4): it changes no rule of the
 // battle.

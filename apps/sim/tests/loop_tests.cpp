@@ -207,7 +207,10 @@ session::BattleRequest startMapBattle(const assets::MapDocument& map,
     if (row == nullptr || npc.hp <= 0) {
       continue;
     }
-    auto enemy = game::battle::enemyFromMap(*row, npc);
+    const glm::vec3 spawn = assets::toWorldPosition(npc.position);
+    auto enemy = game::battle::enemyFromMap(
+        *row, npc,
+        {.x = static_cast<std::int32_t>(spawn.x), .z = static_cast<std::int32_t>(spawn.z)});
     REQUIRE_MESSAGE(enemy.has_value(), errorOf(enemy));
     request.enemies.push_back(std::move(*enemy));
     break;

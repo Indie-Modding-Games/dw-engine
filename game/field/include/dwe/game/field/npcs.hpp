@@ -92,6 +92,8 @@ public:
   bool setAutotalk(std::int32_t scriptId, bool autotalk);
   // The entity of an NPC on the map, by script id (script_value.c: scriptIdToEntityId).
   [[nodiscard]] std::optional<scene::Entity> entityOf(std::int32_t scriptId) const;
+  // Where an NPC on the map stands now, in world axes, by script id.
+  [[nodiscard]] std::optional<glm::vec3> positionOf(std::int32_t scriptId) const;
   // Its entity instance, FirstNpcInstance + its record's slot (the scripts' move slot).
   [[nodiscard]] std::optional<std::size_t> instanceOf(std::int32_t scriptId) const;
 

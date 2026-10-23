@@ -189,6 +189,12 @@ std::optional<scene::Entity> FieldNpcs::entityOf(std::int32_t scriptId) const {
   return npc != nullptr ? std::optional{npc->entity} : std::nullopt;
 }
 
+std::optional<glm::vec3> FieldNpcs::positionOf(std::int32_t scriptId) const {
+  const Npc* npc = find(scriptId);
+  return npc != nullptr ? std::optional{world_->registry().get<Transform>(npc->entity).position}
+                        : std::nullopt;
+}
+
 std::optional<std::size_t> FieldNpcs::instanceOf(std::int32_t scriptId) const {
   const Npc* npc = find(scriptId);
   return npc != nullptr ? std::optional{FirstNpcInstance + npc->slot} : std::nullopt;

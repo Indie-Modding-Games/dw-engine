@@ -1,12 +1,17 @@
 #include "battle_trigger.hpp"
 
+#include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/evolution/tables.hpp>
 
+#include <glm/vec3.hpp>
+
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -19,6 +24,21 @@ constexpr char NpcSeparator = ',';
 
 bool canFight(const assets::MapNpc& npc, const assets::DigimonTable& species) {
   return npc.digimon && species.find(*npc.digimon) != nullptr && npc.hp > 0;
+}
+
+// The battle's positions are the field's, in world axes, on the ground.
+game::battle::Point battlePointOf(glm::vec3 world) {
+  return {.x = static_cast<std::int32_t>(std::lround(world.x)),
+          .z = static_cast<std::int32_t>(std::lround(world.z))};
+}
+
+// Where the NPC stands when the battle starts: its live place on the field, or, when it is not on
+// the map, its record's spawn, which is in the original's axes.
+glm::vec3 fieldPositionOf(const game::field::Field& field, const assets::MapNpc& npc) {
+  if (const std::optional<glm::vec3> live = field.npcs().positionOf(npc.scriptId)) {
+    return *live;
+  }
+  return assets::toWorldPosition(npc.position);
 }
 
 } // namespace
@@ -64,15 +84,14 @@ core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& 
       return core::fail(core::formatMessage(messages::NoMapFighter, field.mapId()));
     }
   }
-  session::BattleRequest request{
-      .enemies = {},
-      .scripted = false,
-      .tamerless = false,
-      .map = field.mapId(),
-      .tamer = {.x = static_cast<std::int32_t>(std::lround(field.player().position.x)),
-                .z = static_cast<std::int32_t>(std::lround(field.player().position.z))},
-      .kind = game::battle::BattleKind::Normal,
-      .recruitOnVictory = std::nullopt};
+  session::BattleRequest request{.enemies = {},
+                                 .scripted = false,
+                                 .tamerless = false,
+                                 .map = field.mapId(),
+                                 .tamer = battlePointOf(field.player().position),
+                                 .partner = battlePointOf(field.partner().position),
+                                 .kind = game::battle::BattleKind::Normal,
+                                 .recruitOnVictory = std::nullopt};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {
       return core::fail(core::formatMessage(messages::NoMapNpc, field.mapId(), index));
@@ -82,10 +101,14 @@ core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& 
     if (row == nullptr || !canFight(npc, species)) {
       return core::fail(core::formatMessage(messages::NpcNotAFighter, index, field.mapId()));
     }
-    auto enemy = game::battle::enemyFromMap(*row, npc);
+    auto enemy = game::battle::enemyFromMap(*row, npc, battlePointOf(fieldPositionOf(field, npc)));
     if (!enemy) {
       return std::unexpected{enemy.error()};
     }
+    core::logDebug(
+        "[port:battle] btl.c: the fighters stand where their entities are: NPC {} ({}) at "
+        "({}, {})",
+        npc.scriptId, enemy->species, enemy->position.x, enemy->position.z);
     request.enemies.push_back(std::move(*enemy));
   }
   return request;

@@ -13,6 +13,10 @@
 #include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/minimap.hpp>
 
+#include <glm/geometric.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <optional>
@@ -60,22 +64,31 @@ std::optional<screens::WindowFraction> partnerBubbleOf(const FieldScene& scene,
 
 // Where an enemy's anger mark hangs in the window (btl.c: renderFleeBubble): `lift` over the top of
 // its species' height, over the map's NPC it is (the one of its species that the battle placed
-// where it stood). Nothing off the map's camera or without that NPC.
+// where it stood, in world axes). Nothing off the map's camera or without that NPC.
 screens::AngerAnchor angerAnchorOf(const FieldScene& fieldScene,
                                    const assets::DigimonTable* species,
                                    const game::battle::Combatant& enemy, float lift) {
-  const auto found = std::ranges::find_if(fieldScene.map().npcs, [&](const assets::MapNpc& npc) {
-    return npc.digimon == enemy.species && npc.position.x == enemy.position.x &&
-           npc.position.z == enemy.position.z;
-  });
-  if (found == fieldScene.map().npcs.end()) {
+  // The battle starts each enemy where its NPC stands, in world axes (mapBattleRequest): its NPC
+  // is the one of its species nearest that place.
+  const glm::vec2 start{static_cast<float>(enemy.position.x), static_cast<float>(enemy.position.z)};
+  std::optional<glm::vec3> nearest;
+  for (const assets::MapNpc& npc : fieldScene.map().npcs) {
+    if (npc.digimon != enemy.species) {
+      continue;
+    }
+    const glm::vec3 at = fieldScene.field()
+                             .npcs()
+                             .positionOf(npc.scriptId)
+                             .value_or(assets::toWorldPosition(npc.position));
+    if (!nearest || glm::distance(glm::vec2{at.x, at.z}, start) <
+                        glm::distance(glm::vec2{nearest->x, nearest->z}, start)) {
+      nearest = at;
+    }
+  }
+  if (!nearest) {
     return std::nullopt;
   }
-  glm::vec3 position = assets::toWorldPosition(found->position);
-  if (const std::optional<scene::Entity> entity =
-          fieldScene.field().npcs().entityOf(found->scriptId)) {
-    position = fieldScene.world().registry().get<scene::Transform>(*entity).position;
-  }
+  glm::vec3 position = *nearest;
   const assets::DigimonRow* row = species != nullptr ? species->find(enemy.species) : nullptr;
   position.y += (row != nullptr ? static_cast<float>(row->height) : 0.0F) + lift;
   const std::optional<glm::vec2> fraction = fieldScene.worldToWindowFraction(position);

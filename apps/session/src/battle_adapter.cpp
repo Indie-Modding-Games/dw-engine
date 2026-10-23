@@ -349,6 +349,7 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   if (!partner) {
     return std::unexpected{partner.error()};
   }
+  partner->position = request.partner;
   auto strategies = game::battle::createStrategies(*section_);
   if (!strategies) {
     return std::unexpected{strategies.error()};

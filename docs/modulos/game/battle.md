@@ -40,6 +40,10 @@ auto joins = battle::rollJoiningEnemies(*rules, {.partnerType = ..., .inventory 
 battle::WinRates rates = battle::runBattles(setup, *rules, *moves, factory, {.count = 1000, .firstSeed = 1});
 ```
 
+- **Posiciones:** todas las del combate (`Point`) van en ejes del mundo, los del campo (`assets::toWorldPosition`).
+  El paso de datos a mundo se hace una sola vez, en la frontera entre campo y combate (`mapBattleRequest`): cada
+  enemigo empieza donde está su NPC en el campo (`enemyFromMap`), el tamer y el partner donde están ellos, y lo que
+  suelta un enemigo vencido cae donde estaba al final.
 - **Entradas del tamer:** `command`, `pressFinisherCharge` y la bolsa: `openBag`, `closeBag` y `throwItem`, que lanza
   un `ThrownItem` (`items.hpp`: curación, revivir, curar estados, protección y discos) que llega al compañero tras los
   fotogramas de `battle.item_throw`. La sesión construye el `ThrownItem` a partir del efecto del objeto del inventario
