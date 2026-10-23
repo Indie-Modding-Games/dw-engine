@@ -2,11 +2,13 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/section_host.hpp>
+#include <dwe/game/story/story_ports.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 // The one interpreter of the story (docs/architecture/interprete-historia.md, "El runtime"): it
@@ -32,8 +34,47 @@ enum class RequestOutcome : std::uint8_t {
   Dropped,
 };
 
+// What started a script. The original marks the map's chain and talking as events
+// (script_interp.c: callScriptSection); a cell, the toilet and the systems' sections are not. An
+// event's map change shows no map name unless a script asks (consumeMapChangeShowName).
+enum class SectionSource : std::uint8_t {
+  Plain,
+  Event,
+};
+
+// The game rules of the script flow, from the ruleset's story section.
+struct StoryFlowRules {
+  // While a script holds the player still the runner keeps frozenValue in frozenVariable, and it
+  // puts back the variable's value from the start of the script when the script ends or changes
+  // the map (script_interp.c: scriptPauseGame, tickScript).
+  std::int64_t frozenVariable = 0;
+  std::int64_t frozenValue = 0;
+  // Every freeze clears this trigger, which keeps a talk's two sides from turning to each other.
+  std::int64_t talkFacingTrigger = 0;
+  // Whether a script's map change shows the new map's name: the variable says by event (no name
+  // for an event), always or never, and goes back to by event; any other value keeps the last
+  // choice (script_interp.c: consumeMapChangeShowName).
+  std::int64_t showNameVariable = 0;
+  std::int64_t showNameByEvent = 0;
+  std::int64_t showNameAlways = 0;
+  std::int64_t showNameNever = 0;
+};
+
+// What the script flow changes outside the runner. Without a port the runner leaves that part
+// alone, as the tests of the bare flow need.
+struct StoryFlowPorts {
+  StoryStatePort* state = nullptr;
+  FieldControlPort* control = nullptr;
+  MapChangePort* mapChange = nullptr;
+};
+
 class StoryRunner {
 public:
+  // The script of the map-head sections, and the section of a map's script that runs when the
+  // map is set up (script_interp.c: getScript, returnFromScriptFile).
+  static constexpr std::uint16_t MapHeadScript = 0;
+  static constexpr std::uint16_t MapEntrySection = 0xFE;
+
   // Guards against runaway scripts, not rules of the original: the engine's limits, far above what
   // the disc needs. How deep in subroutine calls, counted over the sections waiting under jumps, a
   // jump to another script may be. The original's script stack holds 8 frames (script_interp.c:
@@ -44,15 +85,33 @@ public:
   static constexpr std::uint32_t MaxResumesPerFrame = 1024;
 
   // ticksPerFrame: engine ticks per frame of the original, from the ruleset.
-  static core::Result<StoryRunner> create(SectionHost& host, std::uint32_t ticksPerFrame);
+  static core::Result<StoryRunner> create(SectionHost& host, std::uint32_t ticksPerFrame,
+                                          StoryFlowPorts ports = {}, StoryFlowRules rules = {});
 
   // Asks for a section to run.
-  RequestOutcome request(SectionRef section, StartTiming timing);
+  RequestOutcome request(SectionRef section, StartTiming timing,
+                         SectionSource source = SectionSource::Plain);
   // One engine tick: runs a frame of the original every ticksPerFrame ticks.
   void tick();
 
+  // The player is on a new map: walked there, loaded a save or ended a script's map change. Runs
+  // the map's map-head section at once, over whatever ran (map.c: changeMap); after a script's map
+  // change the script goes on in the same frame (map.c: scriptTickChangeMap).
+  void enterMap(std::int32_t map);
+
+  // set_script: the map's script is `script`; once the section ends, the script's map-entry section
+  // runs. The map was loaded by whoever entered it.
+  core::Result<void> setScript(std::int64_t script, std::int64_t map);
+  // section_on_exit: once the script ends, `section` of the map's script runs the next frame
+  // (NoArrivalSection: none).
+  core::Result<void> sectionOnExit(std::int64_t section);
+  // Holds the player still for the script (script_interp.c: scriptPauseGame).
+  void freezeWorld();
+
   // Whether a script is running or about to start.
-  [[nodiscard]] bool busy() const { return pending_.has_value() || !sections_.empty(); }
+  [[nodiscard]] bool busy() const {
+    return pending_.has_value() || !sections_.empty() || continueAt_.has_value() || changingMap_;
+  }
   // The sections now running, the first one requested first.
   [[nodiscard]] std::vector<SectionRef> runningSections() const;
 
@@ -63,30 +122,71 @@ private:
     // The subroutine calls it waits in, under a section it jumped to.
     std::uint32_t linkDepth = 0;
   };
+  struct PendingSection {
+    SectionRef ref;
+    SectionSource source = SectionSource::Plain;
+  };
+  // What runs once the current section ends, as the original's script stack keeps it besides
+  // subroutine returns (script_interp.c: returnFromScriptFile): the map's entry section after
+  // set_script, or a section of the map's script after a map change or section_on_exit.
+  struct MapLoaded {};
+  struct RunSection {
+    // Nothing: the map-head script's end, which goes on to the next continuation.
+    std::optional<std::uint16_t> section;
+  };
+  using Continuation = std::variant<MapLoaded, RunSection>;
 
-  StoryRunner(SectionHost& host, std::uint32_t ticksPerFrame)
-      : host_{&host}, ticksPerFrame_{ticksPerFrame} {}
+  StoryRunner(SectionHost& host, std::uint32_t ticksPerFrame, StoryFlowPorts ports,
+              StoryFlowRules rules)
+      : host_{&host}, ticksPerFrame_{ticksPerFrame}, ports_{ports}, rules_{rules} {}
 
   void runFrame();
+  void beginScript(SectionRef section, SectionSource source);
   void startSection(SectionRef section);
+  bool openSection(SectionRef section);
   void run(ResumeValue value);
   // Handles how the top section left a resume; the value to resume with when the script goes on
   // now.
   std::optional<ResumeValue> follow(const SectionStep& step);
   std::optional<ResumeValue> follow(const Wait& wait);
   std::optional<ResumeValue> jumpTo(const FileJump& jump);
+  void changeMap(const MapChangeWait& change);
   [[nodiscard]] std::uint64_t heldLinkDepth() const;
   std::optional<ResumeValue> returnFromTop();
-  void fail(std::string_view message);
-  void endScript();
+  std::optional<ResumeValue> fail(std::string_view message);
+  // The end of a section: runs the continuations, or ends the script when none is left. The value
+  // to resume with when a section it opened goes on now.
+  std::optional<ResumeValue> returnFromScript();
+  bool openMapEntrySection();
+  void continueWith(const RunSection& next);
+  void finishScript();
+  void closeSections();
+  bool chooseShowName();
+  [[nodiscard]] std::int64_t variable(std::int64_t variable) const;
+  // The state is the port's, not the runner's.
+  void setVariable(std::int64_t variable, std::int64_t value) const;
 
   SectionHost* host_;
   std::uint32_t ticksPerFrame_;
+  StoryFlowPorts ports_;
+  StoryFlowRules rules_;
   std::uint32_t ticksIntoFrame_ = 0;
-  std::optional<SectionRef> pending_;
+  std::optional<PendingSection> pending_;
   std::vector<RunningSection> sections_;
   std::int64_t framesToWait_ = 0;
   ResumeValue waitResult_;
+  // The script stack's continuations. The original never clears them between scripts, so one
+  // left by a script that ended another way runs at the next script's end.
+  std::vector<Continuation> continuations_;
+  std::optional<RunSection> continueAt_;
+  // The current map's script (set_script) and the map entered last.
+  std::optional<std::uint16_t> mapScript_;
+  std::optional<std::int32_t> enteredMap_;
+  bool changingMap_ = false;
+  bool frozen_ = false;
+  SectionSource source_ = SectionSource::Plain;
+  std::int64_t variableAtStart_ = 0;
+  bool showName_ = false;
 };
 
 } // namespace dwe::game::story

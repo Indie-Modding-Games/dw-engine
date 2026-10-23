@@ -1,7 +1,10 @@
 #include <dwe/core/assert.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/story/story_orders.hpp>
 
 #include <algorithm>
+#include <optional>
+#include <utility>
 
 #include "messages.hpp"
 
@@ -80,6 +83,41 @@ core::Result<void> StoryOrders::storeRandom(std::int64_t variable, std::int64_t 
 
 FrameWait StoryOrders::delay(std::int64_t frames) {
   return FrameWait{.frames = std::max<std::int64_t>(frames, 1), .result = {}};
+}
+
+core::Result<MapChangeWait> StoryOrders::warpTo(std::int64_t map, std::int64_t exit,
+                                                std::int64_t arrival) {
+  if (map < 0 || exit < 0 || !std::in_range<std::int32_t>(map) ||
+      !std::in_range<std::int32_t>(exit)) {
+    return core::fail(messages::formatMessage(messages::NoSuchPlace, map, exit));
+  }
+  MapChangeWait change{.map = static_cast<std::int32_t>(map),
+                       .exit = static_cast<std::int32_t>(exit),
+                       .arrival = std::nullopt};
+  if (arrival == NoArrivalSection) {
+    core::logDebug("{}", messages::formatMessage(messages::PortWarpTo, map, exit, arrival));
+    return change;
+  }
+  if (!std::in_range<std::uint16_t>(arrival)) {
+    return core::fail(messages::formatMessage(messages::NoSuchSection, arrival));
+  }
+  change.arrival = static_cast<std::uint16_t>(arrival);
+  core::logDebug("{}", messages::formatMessage(messages::PortWarpTo, map, exit, arrival));
+  return change;
+}
+
+core::Result<MapChangeWait> StoryOrders::teleport(std::int64_t variable) const {
+  // script_interp.c: scriptInstruction46to58 reads the map and the exit from two variables in a
+  // row.
+  auto map = readVariable(variable);
+  if (!map) {
+    return std::unexpected{map.error()};
+  }
+  return readVariable(variable + 1).and_then([&](std::int64_t exit) {
+    core::logDebug(
+        "{}", messages::formatMessage(messages::PortTeleport, variable, variable + 1, *map, exit));
+    return warpTo(*map, exit, NoArrivalSection);
+  });
 }
 
 core::Result<void> StoryOrders::checkTrigger(std::int64_t trigger) const {

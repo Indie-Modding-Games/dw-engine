@@ -39,6 +39,13 @@ public:
   core::Result<void> storeRandom(std::int64_t variable, std::int64_t highest);
   // delay: the wait of `frames` frames, at least one (script_textbox.c: tickTextboxHandling).
   static FrameWait delay(std::int64_t frames);
+  // warp_to: the map change to `map` at `exit`, then the section `arrival` of the new map's script,
+  // or none with NoArrivalSection.
+  static core::Result<MapChangeWait> warpTo(std::int64_t map, std::int64_t exit,
+                                            std::int64_t arrival);
+  // teleport: the map change to the map in `variable` at the exit in the next variable, with no
+  // section on arrival.
+  [[nodiscard]] core::Result<MapChangeWait> teleport(std::int64_t variable) const;
 
 private:
   [[nodiscard]] core::Result<void> checkTrigger(std::int64_t trigger) const;

@@ -42,8 +42,23 @@ struct FileJump {
   std::uint32_t linkDepth = 0;
 };
 
+// The section number warp_to and section_on_exit give for none (script_interp.c:
+// returnFromScriptFile).
+inline constexpr std::int64_t NoArrivalSection = 0xFF;
+
+// The section changes the map (warp_to, teleport): it ends at once, the screen fades out and the
+// map's script chain runs on the new map; then `arrival`, a section of the new map's script, runs
+// (script_interp.c: scriptInstruction46to58, map.c: scriptTickChangeMap).
+struct MapChangeWait {
+  std::int32_t map = 0;
+  std::int32_t exit = 0;
+  // Nothing: no section runs on arrival, only what the map's chain leaves.
+  std::optional<std::uint16_t> arrival;
+  friend bool operator==(const MapChangeWait&, const MapChangeWait&) = default;
+};
+
 // What a section waits for when it yields.
-using Wait = std::variant<FrameWait, FileJump>;
+using Wait = std::variant<FrameWait, FileJump, MapChangeWait>;
 
 // The section ended the script: end_section, end_script, a map change, or a routine that gave back
 // ENDED.

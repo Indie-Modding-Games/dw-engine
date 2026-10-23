@@ -1,7 +1,7 @@
 # Historia S3: nota de port
 
-Estado: **diseño adelantado** (rama `p4-hist-s3`, 2026-10-22). Sin código hasta que S2 4b esté en `main`. Va a F4a
-y al coordinador para el visto bueno. Diseño padre: [intérprete de historia](interprete-historia.md) (§2 «El
+Estado: **aprobado por el coordinador** (2026-10-22: P1, P2 y P3 con la opción 1). S3a escrito en `p4-hist-s3`;
+entra después de S2 4b. Diseño padre: [intérprete de historia](interprete-historia.md) (§2 «El
 runtime», §3 «Estado», §6 «Corte 4 de S2: decisiones»).
 
 Alcance de S3 (BACKLOG HIST-S3): cargar el mapa por `MAPHEAD`, `set_script` y `0xFE`, las casillas de pisar y de
@@ -86,6 +86,8 @@ las 35 variables guardadas con la variable 0 y la puesta a 0 de 35–255 al carg
 
 ### P1. Warps de casilla antes de S4
 
+**Decidido por el coordinador (2026-10-22): opción 1.**
+
 Medido en `content-f8`: de las 218 secciones de pisar, confirmar o `0xFE` con un `warp_to`, solo 23 llegan al warp
 con las órdenes que funcionan tras S3. Las demás pasan antes por órdenes de S4 (`entity_walk_to` en 125, giros,
 diálogo). Si el Lua fuese ya el único mecanismo, esos warps dejarían de funcionar hasta S4.
@@ -97,6 +99,8 @@ diálogo). Si el Lua fuese ya el único mecanismo, esos warps dejarían de funci
 
 ### P2. Órdenes de `MAPHEAD` sin publicar
 
+**Decidido por el coordinador (2026-10-22): opción 1.**
+
 202 de las 207 secciones de mapa de `MAPHEAD` llaman a `set_bgm` justo después de `set_script`; 179 cargan NPC y 95
 usan `store_date`. Sin esas órdenes, la sección falla ahí. Con el fallo como `end_section`, la continuación igual
 corre `0xFE`; se pierde lo que venga detrás en la sección.
@@ -106,6 +110,8 @@ corre `0xFE`; se pierde lo que venga detrás en la sección.
 2. Adelantar a S3 `store_date` y `store_partner_species` (sus sistemas existen; ~60 líneas).
 
 ### P3. Partida nueva
+
+**Decidido por el coordinador (2026-10-22): opción 1.**
 
 La cadena real (`MAPHEAD 0xCC` → `twna01` → la apertura que lleva a `topn01`, sección 54) necesita diálogo (S4) y
 las rutinas de partida nueva (S6).

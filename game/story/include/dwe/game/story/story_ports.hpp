@@ -65,4 +65,35 @@ public:
   virtual void playSound(std::int64_t slot, std::int64_t sound) = 0;
 };
 
+// The player's control while a script runs. Freezing takes control from the player and the partner,
+// lets the camera go and stops game time; releasing gives them back (script_interp.c:
+// scriptPauseGame, tickScript).
+class FieldControlPort {
+public:
+  FieldControlPort() = default;
+  FieldControlPort(const FieldControlPort&) = delete;
+  FieldControlPort& operator=(const FieldControlPort&) = delete;
+  FieldControlPort(FieldControlPort&&) = delete;
+  FieldControlPort& operator=(FieldControlPort&&) = delete;
+  virtual ~FieldControlPort() = default;
+
+  virtual void freeze() = 0;
+  virtual void release() = 0;
+};
+
+// The map changes a script makes. The owner fades the screen out, showing the new map's name if
+// asked, enters the map at the exit and then tells the runner (StoryRunner::enterMap), which runs
+// the new map's chain while the screen fades back in (map.c: scriptTickChangeMap).
+class MapChangePort {
+public:
+  MapChangePort() = default;
+  MapChangePort(const MapChangePort&) = delete;
+  MapChangePort& operator=(const MapChangePort&) = delete;
+  MapChangePort(MapChangePort&&) = delete;
+  MapChangePort& operator=(MapChangePort&&) = delete;
+  virtual ~MapChangePort() = default;
+
+  virtual void startMapChange(std::int32_t map, std::int32_t exit, bool showName) = 0;
+};
+
 } // namespace dwe::game::story

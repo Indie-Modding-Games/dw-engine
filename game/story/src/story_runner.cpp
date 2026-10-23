@@ -3,6 +3,7 @@
 #include <dwe/game/story/story_runner.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 #include <ranges>
 #include <type_traits>
@@ -13,25 +14,40 @@
 
 namespace dwe::game::story {
 
-core::Result<StoryRunner> StoryRunner::create(SectionHost& host, std::uint32_t ticksPerFrame) {
+namespace {
+
+constexpr std::int64_t LastSectionNumber = std::numeric_limits<std::uint16_t>::max();
+
+bool isSectionNumber(std::int64_t number) {
+  return number >= 0 && number <= LastSectionNumber;
+}
+
+} // namespace
+
+core::Result<StoryRunner> StoryRunner::create(SectionHost& host, std::uint32_t ticksPerFrame,
+                                              StoryFlowPorts ports, StoryFlowRules rules) {
   if (ticksPerFrame == 0) {
     return core::fail(std::string{messages::NoTicksPerFrame});
   }
-  return StoryRunner{host, ticksPerFrame};
+  return StoryRunner{host, ticksPerFrame, ports, rules};
 }
 
-RequestOutcome StoryRunner::request(SectionRef section, StartTiming timing) {
+RequestOutcome StoryRunner::request(SectionRef section, StartTiming timing, SectionSource source) {
   if (busy()) {
-    const SectionRef running =
-        pending_.value_or(sections_.empty() ? section : sections_.front().ref);
+    std::uint16_t running = mapScript_.value_or(section.script);
+    if (pending_) {
+      running = pending_->ref.script;
+    } else if (!sections_.empty()) {
+      running = sections_.front().ref.script;
+    }
     core::logDebug("{}", messages::formatMessage(messages::RequestDropped, section.section,
-                                                 section.script, running.script));
+                                                 section.script, running));
     return RequestOutcome::Dropped;
   }
   if (timing == StartTiming::Now) {
-    startSection(section);
+    beginScript(section, source);
   } else {
-    pending_ = section;
+    pending_ = PendingSection{.ref = section, .source = source};
   }
   return RequestOutcome::Accepted;
 }
@@ -45,13 +61,108 @@ void StoryRunner::tick() {
   runFrame();
 }
 
+void StoryRunner::enterMap(std::int32_t map) {
+  enteredMap_ = map;
+  const bool scripted = std::exchange(changingMap_, false);
+  core::logDebug("{}", messages::formatMessage(messages::PortEnterMap, map, scripted));
+  if (!isSectionNumber(map)) {
+    core::logError("{}", messages::formatMessage(messages::NoMapHeadSection, map));
+    if (scripted) {
+      finishScript();
+    }
+    return;
+  }
+  // map.c: changeMap starts the map-head section over whatever runs; the continuations stay.
+  closeSections();
+  pending_.reset();
+  continueAt_.reset();
+  beginScript({.script = MapHeadScript, .section = static_cast<std::uint16_t>(map)},
+              SectionSource::Event);
+  if (!scripted) {
+    return;
+  }
+  // map.c: scriptTickChangeMap holds the player again once the map is in, and tickScript goes on
+  // in the same frame with the arrival section the chain left. Freezing only while a script runs
+  // is an engine guard against holding the player with no script to let go.
+  frozen_ = false;
+  core::logDebug(
+      "{}", messages::formatMessage(messages::PortMapChangeDone, busy(), continueAt_.has_value()));
+  if (!busy()) {
+    // map.c: scriptTickChangeMap gives the player back when the chain ended the script.
+    if (ports_.control != nullptr) {
+      ports_.control->release();
+    }
+    return;
+  }
+  freezeWorld();
+  if (const std::optional<RunSection> next = std::exchange(continueAt_, std::nullopt)) {
+    continueWith(*next);
+  }
+}
+
+core::Result<void> StoryRunner::setScript(std::int64_t script, std::int64_t map) {
+  if (!isSectionNumber(script)) {
+    return core::fail(messages::formatMessage(messages::NoSuchScript, script));
+  }
+  mapScript_ = static_cast<std::uint16_t>(script);
+  core::logDebug("{}", messages::formatMessage(messages::PortSetScript, script, map));
+  if (enteredMap_ != map) {
+    // The original loads the map here (script_interp.c: scriptInstructionFBtoFF); the engine
+    // entered it before the chain ran, and on the disc set_script always names that map.
+    core::logError("{}",
+                   messages::formatMessage(messages::MapNotEntered, map, enteredMap_.value_or(-1)));
+  }
+  continuations_.emplace_back(MapLoaded{});
+  return {};
+}
+
+core::Result<void> StoryRunner::sectionOnExit(std::int64_t section) {
+  if (section != NoArrivalSection && !isSectionNumber(section)) {
+    return core::fail(messages::formatMessage(messages::NoSuchSection, section));
+  }
+  core::logDebug("{}", messages::formatMessage(messages::PortSectionOnExit, section));
+  RunSection next;
+  if (section != NoArrivalSection) {
+    next.section = static_cast<std::uint16_t>(section);
+  }
+  continuations_.emplace_back(next);
+  setVariable(rules_.frozenVariable, variableAtStart_);
+  return {};
+}
+
+void StoryRunner::freezeWorld() {
+  core::logDebug("{}",
+                 messages::formatMessage(messages::PortFreeze, !frozen_, rules_.talkFacingTrigger));
+  if (!frozen_) {
+    frozen_ = true;
+    if (ports_.control != nullptr) {
+      ports_.control->freeze();
+    }
+    setVariable(rules_.frozenVariable, rules_.frozenValue);
+  }
+  if (ports_.state != nullptr) {
+    if (auto cleared = ports_.state->setTrigger(rules_.talkFacingTrigger, false); !cleared) {
+      core::logError("{}",
+                     messages::formatMessage(messages::FlowStateFailed, cleared.error().message));
+    }
+  }
+}
+
 std::vector<SectionRef> StoryRunner::runningSections() const {
   return sections_ | std::views::transform(&RunningSection::ref) | std::ranges::to<std::vector>();
 }
 
 void StoryRunner::runFrame() {
-  if (const std::optional<SectionRef> section = std::exchange(pending_, std::nullopt)) {
-    startSection(*section);
+  if (const std::optional<PendingSection> pending = std::exchange(pending_, std::nullopt)) {
+    beginScript(pending->ref, pending->source);
+    return;
+  }
+  if (changingMap_) {
+    return;
+  }
+  // A continuation runs at the start of the frame after the section that left it.
+  if (const std::optional<RunSection> next = std::exchange(continueAt_, std::nullopt)) {
+    continueWith(*next);
     return;
   }
   if (sections_.empty()) {
@@ -66,15 +177,32 @@ void StoryRunner::runFrame() {
   run(std::exchange(waitResult_, std::nullopt));
 }
 
+void StoryRunner::beginScript(SectionRef section, SectionSource source) {
+  // script_interp.c: callScriptSection.
+  source_ = source;
+  variableAtStart_ = variable(rules_.frozenVariable);
+  frozen_ = false;
+  core::logDebug("{}",
+                 messages::formatMessage(messages::PortBeginScript, section.script, section.section,
+                                         source == SectionSource::Event, variableAtStart_));
+  startSection(section);
+}
+
 void StoryRunner::startSection(SectionRef section) {
+  if (openSection(section)) {
+    run(std::nullopt);
+  }
+}
+
+bool StoryRunner::openSection(SectionRef section) {
   auto handle = host_->start(section);
   if (!handle) {
     core::logError("{}", messages::formatMessage(messages::SectionMissing, section.script,
                                                  section.section, handle.error().message));
-    return;
+    return false;
   }
   sections_.push_back({.ref = section, .handle = *handle});
-  run(std::nullopt);
+  return true;
 }
 
 void StoryRunner::run(ResumeValue value) {
@@ -99,14 +227,13 @@ std::optional<ResumeValue> StoryRunner::follow(const SectionStep& step) {
         if constexpr (std::is_same_v<Outcome, Wait>) {
           return follow(outcome);
         } else if constexpr (std::is_same_v<Outcome, SectionEnded>) {
-          endScript();
-          return std::nullopt;
+          return returnFromScript();
         } else if constexpr (std::is_same_v<Outcome, SectionReturned>) {
           return returnFromTop();
         } else {
-          fail(messages::formatMessage(messages::SectionFailedLog, sections_.back().ref.script,
-                                       sections_.back().ref.section, outcome.message));
-          return std::nullopt;
+          return fail(messages::formatMessage(messages::SectionFailedLog,
+                                              sections_.back().ref.script,
+                                              sections_.back().ref.section, outcome.message));
         }
       },
       step);
@@ -115,6 +242,10 @@ std::optional<ResumeValue> StoryRunner::follow(const SectionStep& step) {
 std::optional<ResumeValue> StoryRunner::follow(const Wait& wait) {
   if (const auto* jump = std::get_if<FileJump>(&wait)) {
     return jumpTo(*jump);
+  }
+  if (const auto* change = std::get_if<MapChangeWait>(&wait)) {
+    changeMap(*change);
+    return std::nullopt;
   }
   const auto& frames = std::get<FrameWait>(wait);
   framesToWait_ = std::max<std::int64_t>(frames.frames, 1);
@@ -131,20 +262,35 @@ std::optional<ResumeValue> StoryRunner::jumpTo(const FileJump& jump) {
     const SectionRef from = sections_.back().ref;
     const std::uint64_t depth = heldLinkDepth() + jump.linkDepth;
     if (depth > MaxLinkDepth) {
-      fail(messages::formatMessage(messages::TooDeep, from.script, from.section, depth,
-                                   MaxLinkDepth));
-      return std::nullopt;
+      return fail(messages::formatMessage(messages::TooDeep, from.script, from.section, depth,
+                                          MaxLinkDepth));
     }
     sections_.back().linkDepth = jump.linkDepth;
   }
   auto handle = host_->start(jump.target);
   if (!handle) {
-    fail(messages::formatMessage(messages::SectionMissing, jump.target.script, jump.target.section,
-                                 handle.error().message));
-    return std::nullopt;
+    return fail(messages::formatMessage(messages::SectionMissing, jump.target.script,
+                                        jump.target.section, handle.error().message));
   }
   sections_.push_back({.ref = jump.target, .handle = *handle});
   return ResumeValue{};
+}
+
+void StoryRunner::changeMap(const MapChangeWait& change) {
+  // script_interp.c: scriptInstruction46to58 freezes, picks the name and leaves the arrival on the
+  // stack; tickScript then drops the section, puts the frozen variable back and starts the change.
+  freezeWorld();
+  const bool showName = chooseShowName();
+  core::logDebug("{}",
+                 messages::formatMessage(messages::PortMapChangeWait, change.map, change.exit,
+                                         change.arrival.value_or(NoArrivalSection), showName));
+  continuations_.emplace_back(RunSection{.section = change.arrival});
+  closeSections();
+  setVariable(rules_.frozenVariable, variableAtStart_);
+  changingMap_ = true;
+  if (ports_.mapChange != nullptr) {
+    ports_.mapChange->startMapChange(change.map, change.exit, showName);
+  }
 }
 
 std::uint64_t StoryRunner::heldLinkDepth() const {
@@ -161,8 +307,8 @@ std::optional<ResumeValue> StoryRunner::returnFromTop() {
     // A jump_return with an empty stack reads outside the original's script stack (script_interp.c:
     // scriptInstruction10to27), so it is an error rather than a rule
     // (docs/architecture/interprete-historia.md, Q11).
-    fail(messages::formatMessage(messages::ReturnWithNothing, top.ref.script, top.ref.section));
-    return std::nullopt;
+    return fail(
+        messages::formatMessage(messages::ReturnWithNothing, top.ref.script, top.ref.section));
   }
   // The section that jumped gets nil back from its jump_to_file and the subroutine it jumped from
   // returns; it is counted again when it next jumps.
@@ -170,18 +316,127 @@ std::optional<ResumeValue> StoryRunner::returnFromTop() {
   return ResumeValue{};
 }
 
-void StoryRunner::fail(std::string_view message) {
+std::optional<ResumeValue> StoryRunner::fail(std::string_view message) {
+  // The original cannot fail; a failed section ends as end_section does, so the chain goes on.
   core::logError("{}", message);
-  endScript();
+  core::logDebug("{}", messages::formatMessage(messages::PortSectionFailed, continuations_.size()));
+  return returnFromScript();
 }
 
-void StoryRunner::endScript() {
+std::optional<ResumeValue> StoryRunner::returnFromScript() {
+  // script_interp.c: returnFromScriptFile.
+  closeSections();
+  while (!continuations_.empty()) {
+    const Continuation next = continuations_.back();
+    continuations_.pop_back();
+    if (const auto* section = std::get_if<RunSection>(&next)) {
+      core::logDebug("{}", messages::formatMessage(messages::PortPopRunSection,
+                                                   section->section.value_or(NoArrivalSection)));
+      continueAt_ = *section;
+      return std::nullopt;
+    }
+    const bool opened = openMapEntrySection();
+    core::logDebug(
+        "{}", messages::formatMessage(messages::PortPopMapLoaded, mapScript_.value_or(0), opened));
+    if (opened) {
+      return ResumeValue{};
+    }
+  }
+  finishScript();
+  return std::nullopt;
+}
+
+bool StoryRunner::openMapEntrySection() {
+  if (!mapScript_) {
+    core::logError("{}", std::string{messages::NoMapScript});
+    return false;
+  }
+  const SectionRef entry{.script = *mapScript_, .section = MapEntrySection};
+  auto handle = host_->start(entry);
+  if (!handle) {
+    // Most maps have no entry section (script_interp.c: getScriptSection gives none).
+    core::logDebug("{}", messages::formatMessage(messages::NoEntrySection, entry.script,
+                                                 handle.error().message));
+    return false;
+  }
+  sections_.push_back({.ref = entry, .handle = *handle});
+  return true;
+}
+
+void StoryRunner::continueWith(const RunSection& next) {
+  if (!next.section) {
+    // script_interp.c: setMapHeadActive points at the map-head script's end, which returns again.
+    core::logDebug("{}", std::string{messages::PortMapHeadEnd});
+    if (const std::optional<ResumeValue> value = returnFromScript()) {
+      run(*value);
+    }
+    return;
+  }
+  if (!mapScript_) {
+    core::logError("{}", std::string{messages::NoMapScript});
+  } else if (openSection({.script = *mapScript_, .section = *next.section})) {
+    run(std::nullopt);
+    return;
+  }
+  if (const std::optional<ResumeValue> value = returnFromScript()) {
+    run(*value);
+  }
+}
+
+void StoryRunner::finishScript() {
+  // script_interp.c: tickScript, once the script is over.
+  core::logDebug("{}", messages::formatMessage(messages::PortFinish, rules_.frozenVariable,
+                                               variableAtStart_, frozen_));
+  setVariable(rules_.frozenVariable, variableAtStart_);
+  if (std::exchange(frozen_, false) && ports_.control != nullptr) {
+    ports_.control->release();
+  }
+}
+
+void StoryRunner::closeSections() {
   for (const RunningSection& section : sections_ | std::views::reverse) {
     host_->close(section.handle);
   }
   sections_.clear();
   framesToWait_ = 0;
   waitResult_.reset();
+}
+
+bool StoryRunner::chooseShowName() {
+  const std::int64_t choice = variable(rules_.showNameVariable);
+  if (choice == rules_.showNameByEvent) {
+    showName_ = source_ != SectionSource::Event;
+  } else if (choice == rules_.showNameAlways) {
+    showName_ = true;
+  } else if (choice == rules_.showNameNever) {
+    showName_ = false;
+  }
+  setVariable(rules_.showNameVariable, rules_.showNameByEvent);
+  core::logDebug("{}", messages::formatMessage(messages::PortShowName, choice,
+                                               source_ == SectionSource::Event, showName_));
+  return showName_;
+}
+
+std::int64_t StoryRunner::variable(std::int64_t variable) const {
+  if (ports_.state == nullptr) {
+    return 0;
+  }
+  auto value = ports_.state->variable(variable);
+  if (!value) {
+    core::logError("{}", messages::formatMessage(messages::FlowStateFailed, value.error().message));
+    return 0;
+  }
+  return *value;
+}
+
+void StoryRunner::setVariable(std::int64_t variable, std::int64_t value) const {
+  if (ports_.state == nullptr) {
+    return;
+  }
+  if (auto written = ports_.state->setVariable(variable, value); !written) {
+    core::logError("{}",
+                   messages::formatMessage(messages::FlowStateFailed, written.error().message));
+  }
 }
 
 } // namespace dwe::game::story
