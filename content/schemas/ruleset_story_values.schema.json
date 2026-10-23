@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: story_values",
+  "description": "rules/<id>/story_values.yaml: the numbers of the story orders that change the game (apps/session: StoryValueRules, docs/reference/scripts.md).",
+  "type": "object",
+  "required": [
+    "stat_limits",
+    "happiness_floor",
+    "date_year_limit",
+    "date_overflow",
+    "daily_change"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "stat_limits": {
+      "description": "The highest value set_stat and add_stat leave, per stat; the current HP and MP stop at their maximum.",
+      "type": "object",
+      "required": [
+        "offense",
+        "defense",
+        "speed",
+        "brain",
+        "max_hp",
+        "max_mp",
+        "tiredness",
+        "happiness",
+        "discipline",
+        "energy",
+        "virus",
+        "lifetime",
+        "merit",
+        "started_battles",
+        "fled_battles",
+        "tournaments_won",
+        "tournament_wins",
+        "tournaments_lost",
+        "weight",
+        "tamer_level",
+        "lives"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "offense": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "defense": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "brain": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_hp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_mp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tiredness": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "happiness": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "discipline": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "energy": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "virus": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lifetime": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "merit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started_battles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fled_battles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tournaments_won": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tournament_wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tournaments_lost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weight": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tamer_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lives": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "happiness_floor": {
+      "description": "reduce_stat stops the happiness here, every other stat at 0.",
+      "type": "integer",
+      "maximum": 0
+    },
+    "date_year_limit": {
+      "description": "add_minutes_to_date_at: a date of this many years or more becomes date_overflow.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "date_overflow": {
+      "description": "The date [year, day, hour, minute] a date past the limit becomes.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "daily_change": {
+      "description": "The story's change at the start of each day.",
+      "type": "object",
+      "required": [
+        "counter_variables",
+        "masked_variable",
+        "mask",
+        "draws",
+        "draw_range",
+        "draw_skipped"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "counter_variables": {
+          "description": "Variables that gain one each day unless they hold 255.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "masked_variable": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "The variable that keeps only the bits of mask each day, unless it holds 255."
+        },
+        "mask": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "draws": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "How many daily numbers are drawn."
+        },
+        "draw_range": {
+          "description": "Each daily number is from 1 to this.",
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 255
+        },
+        "draw_skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "The number a draw never gives."
+        }
+      }
+    }
+  }
+}

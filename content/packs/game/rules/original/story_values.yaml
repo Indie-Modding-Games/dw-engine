@@ -1,0 +1,43 @@
+# Los números de las órdenes de historia que cambian la partida (apps/session: StoryGameOrders,
+# docs/reference/scripts.md).
+# El tope de cada estadística tras set_stat y add_stat (script_value.c: STATS_LIMIT_ARRAY); el HP
+# y el MP actuales se quedan en su máximo. El original lee las vidas fuera de su tabla: 255 deja
+# pasar cada valor que escribe el disco.
+stat_limits:
+  offense: 999
+  defense: 999
+  speed: 999
+  brain: 999
+  max_hp: 9999
+  max_mp: 9999
+  tiredness: 100
+  happiness: 100
+  discipline: 999
+  energy: 999
+  virus: 999
+  lifetime: 999
+  merit: 9999
+  started_battles: 9999
+  fled_battles: 9999
+  tournaments_won: 999
+  tournament_wins: 999
+  tournaments_lost: 999
+  weight: 99
+  tamer_level: 10
+  lives: 255
+# reduce_stat no baja la felicidad de aquí (script_interp.c: scriptInstruction28to3F).
+happiness_floor: -100
+# add_minutes_to_date_at: una fecha de 255 años o más se queda en 25 años, día 14, 23:59
+# (script_interp.c: secondsToDate).
+date_year_limit: 255
+date_overflow: [25, 14, 23, 59]
+# El cambio de cada día (script_common.c: dailyPStatTrigger): seis números de 1 a 64 sin el 4, +1
+# a las variables 28-31 y la variable 2 se queda con sus 7 bits bajos; una variable a 255 no
+# cambia.
+daily_change:
+  counter_variables: [28, 29, 30, 31]
+  masked_variable: 2
+  mask: 127
+  draws: 6
+  draw_range: 64
+  draw_skipped: 4

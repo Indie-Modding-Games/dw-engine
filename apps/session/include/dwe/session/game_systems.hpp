@@ -26,6 +26,7 @@ class BattleAdapter;
 class EvolutionAdapter;
 class InventoryAdapter;
 class StoryAdapter;
+class StoryGameOrders;
 
 // The tables the game systems read. Loaded once, they are shared by many sessions (dwe-sim's runs);
 // a table left empty is read by its adapter from the packs.
@@ -42,7 +43,8 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
                                             const ruleset::Ruleset& rules);
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
-// inventory, battle, story), and the adapters by type for the commands of the game and its menus.
+// inventory, battle, the story's game orders, story), and the adapters by type for the commands of
+// the game and its menus.
 // The session owns the adapters once given them: the typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
@@ -50,6 +52,7 @@ struct GameSystems {
   InventoryAdapter* inventory = nullptr;
   BattleAdapter* battle = nullptr;
   StoryAdapter* story = nullptr;
+  StoryGameOrders* storyOrders = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

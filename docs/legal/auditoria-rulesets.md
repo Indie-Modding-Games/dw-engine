@@ -164,6 +164,15 @@ comportamiento, no guardan datos.
 | `sounds.*` | 5 pares ranura/sonido | a | Números de sonido del sistema que suenan al abrir, avanzar, cancelar, mover el cursor y rechazar. |
 | `name_colors.*` | 6, 10, 7, 5 | a | Índices de color del nombre de quien habla. |
 
+### `story_values.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `stat_limits` | 21 topes | a | Topes de las órdenes de estadísticas (`STATS_LIMIT_ARRAY`); `lives` 255: el original lee fuera de la tabla. |
+| `happiness_floor` | -100 | a | Suelo de `reduce_stat` para la felicidad. |
+| `date_year_limit`, `date_overflow` | 255; 25, 14, 23:59 | a | Rareza de `secondsToDate`. |
+| `daily_change` | variables 28–31 y 2, máscara 127, 6 sorteos de 1 a 64 sin el 4 | a | Cambio diario de la historia (`dailyPStatTrigger`). |
+
 ### `item_use.yaml`
 
 | Clave | Valor | Clase | Motivo |

@@ -138,6 +138,8 @@ public:
   [[nodiscard]] game::story::Dialogue& dialogue();
   // Whether a script runs or is about to start (the original's IS_SCRIPT_PAUSED is 0).
   [[nodiscard]] bool scriptRunning() const { return runner_.has_value() && runner_->busy(); }
+  // The game's script VM once the rules were read, where other systems publish their story orders.
+  [[nodiscard]] script::ScriptVm* vm() { return vm_.get(); }
 
   [[nodiscard]] game::story::StoryState& state() { return state_; }
   [[nodiscard]] const game::story::StoryState& state() const { return state_; }
