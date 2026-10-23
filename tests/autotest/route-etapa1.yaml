@@ -61,7 +61,11 @@ steps:
   - screenshot: mayo08b-bridge
   # The bridge's Aruraumon walks up to the player and its section starts a battle with no predefined
   # enemies: the fight is against it, the NPC that touched the player (btl.c: handleBattleStart).
-  - walk_to: {point: [-930, 2330], radius: 40, walk: true, timeout: 20}
+  # It only sees a player strictly within 500 of its home (-915, 1868) on each axis
+  # (NPCEntityIsInTrackingRect), so the walk ends just inside, by z 2360: z 2330 with radius 40
+  # could end at 2369, just outside, and then it never came; deeper in, it runs into the player
+  # before the walk ends.
+  - walk_to: {point: [-930, 2310], radius: 50, walk: true, timeout: 20}
   - repeat: {times: 6, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
   - wait: {shown: battle, seconds: 1, timeout: 30}
   - screenshot: mayo08b-battle
