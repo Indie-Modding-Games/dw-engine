@@ -347,12 +347,13 @@ private:
   ReferenceRun run_;
 };
 
-// The stubs of the ops the story API does not publish, and TAMER and PARTNER.
+// The stubs of the ops the story API does not publish, and PLAYER and PARTNER.
 class Stubs {
 public:
   explicit Stubs(StoryPlay& play) : recorder_{&play.recorder()} {
     dwe::script::ApiRegistry registry = play.vm().api();
-    REQUIRE(registry.publishValue(dwe::session::StoryNamespace, "TAMER", story_play::TamerEntity));
+    REQUIRE(
+        registry.publishValue(dwe::session::StoryNamespace, "PLAYER", story_play::PlayerEntity));
     REQUIRE(
         registry.publishValue(dwe::session::StoryNamespace, "PARTNER", story_play::PartnerEntity));
     const auto read = [this, &registry](std::string_view name, auto answer) {
@@ -626,4 +627,8 @@ TEST_CASE("the user's disc, extracted: the modules use the story values and read
     CAPTURE(name);
     CHECK(modules.contains(std::format("story.{}", name)));
   }
+  // The listing's words for the player and the variables never reach the Lua.
+  CHECK(modules.contains("story.PLAYER"));
+  CHECK_FALSE(modules.contains("TAMER"));
+  CHECK_FALSE(modules.contains("pstat"));
 }

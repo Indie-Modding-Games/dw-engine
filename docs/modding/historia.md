@@ -11,7 +11,7 @@ página dice cómo se llaman esas funciones y las claves de sus textos, que es l
 ## Nombres
 
 Una función de `story` se llama como la orden del listado (`story.show_textbox`, `story.play_sound`), salvo las de esta
-tabla, que la API renombra con el vocabulario del motor (especie, compañero, NPC). El listado YAML
+tabla, que la API renombra con el vocabulario del motor (especie, compañero, NPC, variable). El listado YAML
 (`script/dg/<n>.yaml`) conserva los nombres originales: es el contrato con `dw1fe` y no cambia.
 
 | Orden del listado | Función de `story` | Qué hace |
@@ -22,8 +22,16 @@ tabla, que la API renombra con el vocabulario del motor (especie, compañero, NP
 | `set_digimon` | `spawn_npc` | Aparece el NPC de un hueco del mapa, si es de esa especie |
 | `call_digimon_routine` | `call_partner_routine` | Ejecuta una rutina fija del compañero |
 | `unload_digimon` | `unload_species_model` | Descarga el modelo de una especie |
+| `set_pstat` | `set_var` | Da un valor a una variable de la historia |
+| `add_to_pstat` | `add_to_var` | Suma a una variable de la historia |
+| `reduce_pstat` | `reduce_var` | Resta a una variable de la historia |
+| `copy_pstat` | `copy_var` | Copia una variable de la historia en otra |
 
-Los operandos se renombran igual: el operando `digimon` se llama `species` en los comentarios del Lua.
+Los operandos se renombran igual: el operando `digimon` se llama `species` y el operando `pstat`, `var`, en los
+comentarios del Lua.
+
+Las entidades que no son NPC son constantes de `story`: `story.PLAYER` (el personaje del jugador, `tamer` en el
+listado) y `story.PARTNER` (el compañero).
 
 La tabla vive en un solo sitio, `formats/src/script/story_api_names.cpp`, y las palabras que ningún nombre generado
 puede contener, en `ForbiddenNameWords` (`formats/include/dwe/formats/script/story_api_names.hpp`). Un test recorre

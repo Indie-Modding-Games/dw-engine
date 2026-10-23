@@ -44,7 +44,7 @@ TEST_CASE("dwx convert-script writes the module of a listing with its line map a
   REQUIRE(dwe::dwx::convertScript(temp.path() / "script/dg/049.yaml", temp.path() / "out") ==
           dwe::dwx::ExitOk);
   const std::string code = readText(temp.path() / "out/049.lua");
-  CHECK(code.starts_with("-- dwx lua 2: script 49, from script/dg/049\n"));
+  CHECK(code.starts_with("-- dwx lua 3: script 49, from script/dg/049\n"));
   CHECK(code.contains("story.show_textbox(\"story_049.text.0008\")"));
   CHECK(code.contains("[0x0051] = routines.at_0008,"));
   CHECK(readText(temp.path() / "out/049_lines.yaml").contains(": 0x0008"));
@@ -57,7 +57,7 @@ TEST_CASE("dwx convert-script writes the module of the map header listing as scr
   REQUIRE(dwe::dwx::convertScript(temp.path() / "script/maphead.yaml", temp.path() / "out") ==
           dwe::dwx::ExitOk);
   const std::string code = readText(temp.path() / "out/000.lua");
-  CHECK(code.starts_with("-- dwx lua 2: script 0, from script/maphead\n"));
+  CHECK(code.starts_with("-- dwx lua 3: script 0, from script/maphead\n"));
   CHECK(code.contains("story.show_textbox(\"story_000.text.0008\")"));
   CHECK(std::filesystem::exists(temp.path() / "out/000_lines.yaml"));
 }

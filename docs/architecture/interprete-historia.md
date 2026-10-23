@@ -602,16 +602,45 @@ Medido en el disco US (`doctest -s`, registro `disc-s-*.log` del corte):
   40 saltos de cola, con una sola sección abierta a la vez. 20 es el máximo del disco: cada vuelta suma 1 a la
   variable 123 y la sección `0x52` sale del bucle al llegar a 20, así que el test exige exactamente 20.
 
-### Pendiente para el corte 4 de S2
+### Corte 4 de S2: decisiones
 
-- **`story.PLAYER`:** la constante del personaje del jugador se publica como `story.PLAYER`; el nombre `TAMER`
-  nunca se publica. El emisor cambia `local TAMER <const> = story.TAMER` por `PLAYER` y el vocabulario pasa de
-  `TamerEntity` a `PlayerEntity`. Entra con la subida de `ExtractorVersion` del corte, junto con el cambio de
-  `*_pstat` a `*_var` (y la subida de `LuaEmitterVersion`).
-- **Fallo de `publishApi`:** si publicar la API `story` falla al cablear la sesión, es un error fatal del arranque,
-  no un aviso.
-- **Caché de módulos:** `StoryLuaHost` guarda cada módulo `story/NNN` cargado y nunca lo invalida; si los paquetes
-  montados cambian (activar o quitar un mod en marcha), hay que vaciarla o crear otro host.
+El corte 4 se parte en dos. **4a** (nombres y extracción) no cablea nada al juego; **4b** cablea la historia a la
+sesión y publica `story` a los mods.
+
+**4a**
+
+- **`story.PLAYER`:** la constante del personaje del jugador (entidad `0xFD`) es `story.PLAYER`; `TAMER` nunca se
+  publica. El emisor escribe `local PLAYER <const> = story.PLAYER` y la constante del motor es `PlayerEntity`. El
+  listado YAML conserva la palabra `tamer`, igual que conserva `set_pstat`: es el contrato con `dw1fe` y no cambia.
+- **Variables:** las órdenes de variables se llaman `set_var`, `add_to_var`, `reduce_var` y `copy_var`, y el operando
+  `pstat` se llama `var` en los comentarios del Lua ([tabla](../modding/historia.md#nombres)). El listado conserva
+  `pstat`.
+- `LuaEmitterVersion` pasa de 2 a 3 y `ExtractorVersion` de 5 a 6. Si VAN-01 sube `ExtractorVersion` antes, el corte
+  que entra después toma el número siguiente.
+
+**4b**
+
+- **Una VM por partida:** la VM de la historia es de la sesión (la crea `StoryAdapter`), separada de la de la consola
+  y de los demás scripts de un mod; un módulo de historia de un mod no ve sus globales. La caché de módulos de
+  `StoryLuaHost` vive lo que la partida, y los paquetes montados no cambian durante una partida, así que nunca hace
+  falta invalidarla.
+- **Fallo de `publishApi`:** si publicar la API `story` falla, la sesión no se crea: es un error fatal, no un aviso.
+- **Versión de la API:** `LuaApiVersion` sube a 1.2 cuando `story` se publica, y el paquete base que escribe `dwx`
+  declara `api:` sin otra subida de `ExtractorVersion`; un paquete sin `api:` cuenta como escrito para este motor.
+  Si VAN-01 (`story.play_sound`) sube la versión menor antes, este corte toma la siguiente.
+- **Variables guardadas:** el original guarda 35 variables. `writeSavegame` copia `0x17C` bytes desde el principio de
+  `ScriptState` (`main_menu.c:5120`; `loadSavegame` los copia de vuelta en `main_menu.c:5058`), y `ScriptState`
+  (`script.h:158`) es `smth[212]`, `cards[33]`, `triggers[100]` y `pstats[256]`: `0x17C − 345 = 35`. Se siguen
+  guardando 35.
+- **Variables 35–255 al cargar:** el original las deja con lo que hubiera en la RAM; el motor las pone a 0. Es una
+  decisión de determinismo: reproduce cargar en un original recién encendido.
+- **Versión del emisor:** al cargar un módulo, `StoryLuaHost` compara su cabecera `-- dwx lua N` con
+  `LuaEmitterVersion`. Si no coincide o no la tiene, la partida no arranca, con un error que pide volver a extraer
+  («content extracted by an older dwx; run dwx extract again»); nunca falla a mitad de partida.
+- **Constantes de entidad:** `story.PLAYER` y `story.PARTNER` se publican junto con la primera orden con entidad que
+  se publique, no antes.
+- **Variable 0 al guardar:** `writeSavegame` guarda la variable 0 como 0 si vale 3 y luego la restaura
+  (`main_menu.c:5080`); el motor hace lo mismo.
 
 ### Paridad contra el original (trazas)
 

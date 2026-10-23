@@ -34,7 +34,7 @@ using dwe::formats::script::ScriptListing;
 constexpr std::size_t TriggerCount = 800;
 constexpr std::size_t TableSize = 256;
 constexpr std::int32_t SignedStat = 9;
-constexpr std::uint32_t TamerEntity = 0xFD;
+constexpr std::uint32_t PlayerEntity = 0xFD;
 constexpr std::uint32_t PartnerEntity = 0xFC;
 // How many calls a run records before it is cut.
 constexpr std::size_t EventLimit = 200;
@@ -383,7 +383,7 @@ local function record(name, ...)
   for index = 1, select("#", ...) do parts[index] = tostring((select(index, ...))) end
   events[#events + 1] = name .. "(" .. table.concat(parts, ",") .. ")"
 end
-local story = { ENDED = true, TAMER = 0xFD, PARTNER = 0xFC }
+local story = { ENDED = true, PLAYER = 0xFD, PARTNER = 0xFC }
 function story.trigger(n) return world.triggers[n] end
 function story.var(n) return world.vars[n] end
 function story.stat(n) return world.stats[n] end

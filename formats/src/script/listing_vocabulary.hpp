@@ -26,8 +26,9 @@ inline constexpr std::array<std::string_view, 6> CompareNames = {"eq", "ne", "ge
 
 // scriptIdToEntityId: these ids are not NPCs.
 inline constexpr std::int32_t PartnerEntity = 0xFC;
-inline constexpr std::int32_t TamerEntity = 0xFD;
+inline constexpr std::int32_t PlayerEntity = 0xFD;
 inline constexpr std::string_view PartnerName = "partner";
+// The listing keeps the original word for the player character (docs/formats/scripts.md).
 inline constexpr std::string_view TamerName = "tamer";
 
 // The bits of an IF entry's code besides the test (script_interp.c: scriptIfInstruction).

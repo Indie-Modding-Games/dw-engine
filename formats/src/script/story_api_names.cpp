@@ -11,10 +11,15 @@ namespace dwe::formats::script {
 
 namespace {
 
-// The engine's words for the same things: a species (content ids, data/digimon) and the partner.
-// What each op does is in script_interp.c: scriptInstruction10to27 (0x22), scriptInstruction28to3F
-// (0x3F), scriptInstruction46to58 (0x46, 0x47, 0x49) and scriptInstruction64to7E (0x79).
+// The engine's words for the same things: a species (content ids, data/digimon), the partner and a
+// story variable (ScriptState.pstats). What each op does is in script_interp.c:
+// scriptInstruction10to27 (0x1E, 0x1F, 0x20, 0x22), scriptInstruction28to3F (0x3F),
+// scriptInstruction46to58 (0x46, 0x47, 0x49) and scriptInstruction64to7E (0x79, 0x7A).
 constexpr std::array FunctionRenames{
+    StoryRename{.listing = "set_pstat", .story = "set_var"},
+    StoryRename{.listing = "add_to_pstat", .story = "add_to_var"},
+    StoryRename{.listing = "reduce_pstat", .story = "reduce_var"},
+    StoryRename{.listing = "copy_pstat", .story = "copy_var"},
     StoryRename{.listing = "store_digimon_type", .story = "store_partner_species"},
     StoryRename{.listing = "store_digimon_value", .story = "store_species_type"},
     StoryRename{.listing = "load_digimon", .story = "load_species_model"},
@@ -25,6 +30,7 @@ constexpr std::array FunctionRenames{
 
 constexpr std::array OperandRenames{
     StoryRename{.listing = "digimon", .story = "species"},
+    StoryRename{.listing = "pstat", .story = "var"},
 };
 
 std::string_view renamed(std::span<const StoryRename> renames, std::string_view name) {

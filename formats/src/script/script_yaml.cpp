@@ -16,7 +16,7 @@ using core::YamlNode;
 
 using vocabulary::CompareNames;
 using vocabulary::PartnerEntity;
-using vocabulary::TamerEntity;
+using vocabulary::PlayerEntity;
 
 YamlNode hex(std::uint32_t value, int digits) {
   return YamlNode::scalar(std::format("{:#0{}x}", value, digits + 2));
@@ -27,7 +27,7 @@ YamlNode argumentToYaml(const Argument& argument, bool isCondition) {
   case ArgumentKind::Label:
     return YamlNode::scalar(labelName(static_cast<std::uint32_t>(argument.value)));
   case ArgumentKind::Entity:
-    if (argument.value == TamerEntity) {
+    if (argument.value == PlayerEntity) {
       return YamlNode::scalar(std::string{vocabulary::TamerName});
     }
     if (argument.value == PartnerEntity) {

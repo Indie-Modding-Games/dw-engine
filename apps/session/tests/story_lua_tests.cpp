@@ -93,10 +93,10 @@ TEST_CASE("the story orders write the state and delay waits whole frames") {
 function routines.at_0001()
   story.set_trigger(5)
   story.unset_trigger(6)
-  story.set_pstat(3, 300)
-  story.add_to_pstat(3, 10)
-  story.reduce_pstat(4, 1)
-  story.copy_pstat(3, 7)
+  story.set_var(3, 300)
+  story.add_to_var(3, 10)
+  story.reduce_var(4, 1)
+  story.copy_var(3, 7)
   if story.trigger(5) and not story.trigger(6) and story.var(7) == 255 then
     story.delay(0)
     story.delay(3)
@@ -133,7 +133,7 @@ return { script = 1, sections = { [1] = routines.at_0001 } }
 TEST_CASE("a tail jump_to_file loops between two scripts without holding the sections it left") {
   const StoryPacks packs{{{1, R"lua(
 function routines.at_0001()
-  story.add_to_pstat(1, 1)
+  story.add_to_var(1, 1)
   if story.var(1) >= 30 then
     return ENDED
   end

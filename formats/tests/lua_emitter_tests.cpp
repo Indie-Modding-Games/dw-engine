@@ -321,7 +321,7 @@ TEST_CASE("a switch past its last case runs the last arm") {
       .op(32, "end_script");
   const auto module = convert(builder.listing());
   CHECK(module.code.find("local value <const> = story.var(7)") != std::string::npos);
-  CHECK(module.code.find("story.entity_walk_to(TAMER, -40, 120, 0, 0)") != std::string::npos);
+  CHECK(module.code.find("story.entity_walk_to(PLAYER, -40, 120, 0, 0)") != std::string::npos);
   checkRunsLikeTheListing(builder.listing(), module, 32);
 }
 
@@ -561,6 +561,9 @@ void checkRandomListings(const ParityRun& run) {
     REQUIRE_MESSAGE(!error.has_value(), error.value_or(""), "\n", module->code);
     CHECK_FALSE(hasJumpStatement(module->code));
     CHECK_FALSE(dwe::formats::script::forbiddenWordIn(module->code).has_value());
+    // The listing's words for the player and the variables never reach the Lua.
+    CHECK_FALSE(module->code.contains("TAMER"));
+    CHECK_FALSE(module->code.contains("pstat"));
     checkRunsLikeTheListing(*listing, *module, run.seeds, run.limits);
     ++converted;
   }

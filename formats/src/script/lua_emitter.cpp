@@ -99,7 +99,7 @@ public:
                      name_->source));
     line("local story <const> = story");
     line("local ENDED <const> = story.ENDED");
-    line("local TAMER <const> = story.TAMER");
+    line("local PLAYER <const> = story.PLAYER");
     line("local PARTNER <const> = story.PARTNER");
     line("");
     line("local routines = {}");
@@ -261,8 +261,8 @@ private:
       if (!out.empty()) {
         out += ", ";
       }
-      if (argument.kind == ArgumentKind::Entity && argument.value == vocabulary::TamerEntity) {
-        out += "TAMER";
+      if (argument.kind == ArgumentKind::Entity && argument.value == vocabulary::PlayerEntity) {
+        out += "PLAYER";
       } else if (argument.kind == ArgumentKind::Entity &&
                  argument.value == vocabulary::PartnerEntity) {
         out += "PARTNER";

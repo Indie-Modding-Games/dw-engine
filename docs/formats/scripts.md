@@ -207,7 +207,7 @@ La forma del módulo:
   las demás quedan como comentario. En el disco pasa en algunos scripts (el 4 y el 52, por ejemplo).
 - Cada orden es una llamada `story.<nombre>(operandos)` con los operandos del listado en su orden, sin relleno ni
   etiquetas, y un comentario con sus nombres si son dos o más. `<nombre>` es el de la orden, salvo las que la API
-  renombra ([tabla](../modding/historia.md#nombres)). Una entidad es `TAMER`, `PARTNER` o el id del NPC.
+  renombra ([tabla](../modding/historia.md#nombres)). Una entidad es `PLAYER`, `PARTNER` o el id del NPC.
 - Una rutina devuelve `ENDED` si el script acabó (`end_section` y `end_script` lo acaban desde cualquier
   profundidad) y nada en un `jump_return`. Un `jump_and_link` es `if routines.at_X() == ENDED then return ENDED end`;
   un salto a código compartido, la llamada final `return routines.at_X()`; `jump_to_file`, `warp_to` y `teleport`,

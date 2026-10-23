@@ -24,9 +24,9 @@
 // the routine with `return story.<name>(...)`, so they give back what the API returns.
 //
 // What the `story` API must provide, beyond one function per op (story.<name>(operands in the
-// listing's order, pads and labels left out, an entity as TAMER, PARTNER or the NPC's script id),
+// listing's order, pads and labels left out, an entity as PLAYER, PARTNER or the NPC's script id),
 // with <name> the op's name in the story API (story_api_names.hpp: storyFunctionName)):
-// - story.ENDED, story.TAMER (0xFD), story.PARTNER (0xFC);
+// - story.ENDED, story.PLAYER (0xFD), story.PARTNER (0xFC);
 // - story.show_textbox(key) and story.set_selection(key, count), which returns the option picked
 // from 0 or count for
 //   a cancel, with key a text key (LuaModuleName::textSource);
@@ -44,7 +44,7 @@ namespace dwe::formats::script {
 
 // The version of what the emitter writes, in the first line of every module. A change to the output
 // raises it and dwx's ExtractorVersion.
-inline constexpr int LuaEmitterVersion = 2;
+inline constexpr int LuaEmitterVersion = 3;
 
 // Names a module.
 struct LuaModuleName {

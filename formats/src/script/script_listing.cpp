@@ -131,7 +131,7 @@ core::Result<std::int32_t> readOperand(const YamlNode& mapping, const OperandFie
                  : std::unexpected{label.error()};
   }
   if (field.kind == ArgumentKind::Entity && text == vocabulary::TamerName) {
-    return vocabulary::TamerEntity;
+    return vocabulary::PlayerEntity;
   }
   if (field.kind == ArgumentKind::Entity && text == vocabulary::PartnerName) {
     return vocabulary::PartnerEntity;

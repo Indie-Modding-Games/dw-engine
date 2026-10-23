@@ -33,7 +33,7 @@ namespace story_play {
 
 using dwe::game::story::SectionRef;
 
-inline constexpr std::int64_t TamerEntity = 0xFD;
+inline constexpr std::int64_t PlayerEntity = 0xFD;
 inline constexpr std::int64_t PartnerEntity = 0xFC;
 inline constexpr dwe::game::story::StoryRules OriginalRules{.variableMax = 255};
 inline constexpr std::int64_t OriginalTriggers = 800;
