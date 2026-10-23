@@ -12,6 +12,7 @@
 #include <dwe/session/session_system.hpp>
 #include <dwe/session/story_dialogue.hpp>
 #include <dwe/session/story_flow.hpp>
+#include <dwe/session/story_lock.hpp>
 #include <dwe/session/story_lua.hpp>
 #include <dwe/session/story_npcs.hpp>
 #include <dwe/session/story_stage_link.hpp>
@@ -24,6 +25,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -126,6 +128,12 @@ public:
   // Whether the story set up the script of the map with this number (StoryRunner::scriptsMap).
   [[nodiscard]] bool scriptsMap(std::int32_t map) const;
 
+  // The stage of the story lock to play instead of the ruleset's active_stage (--story-stage; empty
+  // keeps the ruleset's, StoryStageAll opens everything). Set before the rules are read.
+  void setStoryStage(std::string stage) { storyStage_ = std::move(stage); }
+  // What the stage keeps open, from the story_lock section when the rules were read.
+  [[nodiscard]] const StoryLock& lock() const { return lock_; }
+
   // The story as a new game with this first partner leaves it: the triggers data/new_game_story
   // sets, the ones its opening sets when field/warps starts after it, and the partner's raised
   // trigger. A trigger the document does not know at the start (its paths disagree, or game code
@@ -181,6 +189,8 @@ private:
   core::Result<void> startRunner(const StorySectionRules& story);
 
   StoryAdapterDesc desc_;
+  std::string storyStage_;
+  StoryLock lock_;
   std::optional<assets::NewGameStory> newGame_;
   std::string fieldStartMap_;
   std::int32_t fieldStartExit_ = 0;

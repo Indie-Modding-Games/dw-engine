@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: story_lock",
+  "description": "rules/<id>/story_lock.yaml: which maps, exits and cell sections each stage of the story opens (apps/session: StoryLockRules, docs/modulos/apps/session.md). Stage N opens the maps of stages 1 to N; only the active stage's exits and sections narrow them. The --story-stage launch option overrides active_stage, and 'all' opens everything.",
+  "type": "object",
+  "required": ["active_stage", "closed_message", "stages"],
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "mapPattern": {
+      "description": "A map id, or a prefix ending in '*'; '*' alone is every map.",
+      "type": "string",
+      "pattern": "^[a-z0-9_]*\\*?$",
+      "minLength": 1
+    },
+    "mapPatterns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mapPattern" }
+    }
+  },
+  "properties": {
+    "active_stage": {
+      "description": "The stage played: the latest one delivered. One of the stages' ids.",
+      "$ref": "#/$defs/id"
+    },
+    "closed_message": {
+      "description": "The text key of the message a closed exit shows.",
+      "type": "string",
+      "minLength": 1
+    },
+    "stages": {
+      "description": "The stages in delivery order.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "maps"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "The stage's id; 'all' is reserved for the launch option (the session refuses it).",
+            "$ref": "#/$defs/id"
+          },
+          "maps": {
+            "description": "The maps this stage opens, added to those of the stages before it.",
+            "$ref": "#/$defs/mapPatterns"
+          },
+          "exits": {
+            "description": "While this stage is active: maps whose exits lead only to these open maps.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["map", "open"],
+              "additionalProperties": false,
+              "properties": {
+                "map": { "$ref": "#/$defs/id" },
+                "open": { "$ref": "#/$defs/mapPatterns" }
+              }
+            }
+          },
+          "sections": {
+            "description": "While this stage is active: maps whose cells run only these sections of the map's script.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["map", "open"],
+              "additionalProperties": false,
+              "properties": {
+                "map": { "$ref": "#/$defs/id" },
+                "open": {
+                  "type": "array",
+                  "items": { "type": "integer", "minimum": 0, "maximum": 65535 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

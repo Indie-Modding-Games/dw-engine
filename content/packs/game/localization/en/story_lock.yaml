@@ -1,0 +1,3 @@
+# The story lock's message (rules/<id>/story_lock.yaml: closed_message): the player tried a way the
+# stage being played keeps closed.
+closed_exit: "This way is not open yet: the story does not go beyond here in this version."

@@ -1,0 +1,59 @@
+# El candado de historia (apps/session: StoryLock, docs/modulos/apps/session.md): qué parte del juego
+# está abierta mientras el port llega etapa a etapa. No es una regla del original: cuando todo el
+# juego esté portado, la última etapa abre todos los mapas ("*").
+#
+# - Las etapas van en orden de entrega y son acumulativas: la etapa N abre los mapas de las etapas 1
+#   a N. Sus `exits` y `sections` son su frontera: solo valen mientras esa etapa es la activa.
+# - `active_stage` es la última etapa entregada. La opción de arranque `--story-stage <id>` juega
+#   otra sin tocar este fichero, y `--story-stage all` lo abre todo (desarrollo y pruebas). El log
+#   dice al arrancar qué etapa se juega ([port:story-lock]).
+# - Se cierran los cambios de mapa nuevos hacia un mapa cerrado: una salida que pisa el jugador, el
+#   cambio de mapa de un script y una sección de casilla cerrada no ocurren, y el juego muestra
+#   `closed_message`. Una partida guardada más allá de la etapa no se rompe: el jugador se queda
+#   donde está y puede salir por cualquier salida hacia un mapa abierto.
+# - Un mapa se nombra por su id o por un prefijo acabado en '*' (twnb*); "*" son todos.
+# - `exits` (opcional): mapas cuyas salidas solo llevan a estos mapas abiertos.
+# - `sections` (opcional): mapas cuyas casillas solo lanzan estas secciones del script del mapa.
+#
+# Mapas y salidas verificados en el decomp y en los scripts extraídos (E1-01:
+# _work/logs/plan/hitos-disparadores.md).
+active_stage: stage_1
+closed_message: story_lock.closed_exit
+stages:
+  # Etapa 1: la apertura, File City con sus casas y el Green Gym, y el Native Forest hasta el
+  # puente roto de Coelamon. Quedan cerradas solas, por no estar en la lista, las salidas a la
+  # etapa 2 y siguientes: mayo01_2 y mayo02_2 a mayo11 (Drill Tunnel), mayo02_2 a miha00,
+  # mayo08a a trop00, el lomo de Coelamon (mayo05 a trop01), mayo06 a betl01, las casas
+  # room10/11/12/14/19/20, mgen01, ogre10/fact01, los viajes de Birdramon (script 209) y el
+  # teletransporte de depuración de twna01 (sección 5).
+  - id: stage_1
+    maps:
+      # La apertura y File City (twna01 vacía, twna02-13 según la prosperidad; twnb, sus calles).
+      - topn01
+      - twna*
+      - twnb*
+      # Las casas de File City de la etapa (room08 es la casa de Jijimon) y el Green Gym.
+      - room02
+      - room04
+      - room05a
+      - room05b
+      - room06
+      - room07
+      - room08
+      - room13
+      - trai00
+      # Native Forest (mayo00 es el paso de Agumon; mayo02_2 y mayo08a son variantes que abren
+      # flags de etapas posteriores, y sus salidas fuera quedan cerradas).
+      - mayo00
+      - mayo01
+      - mayo01_2
+      - mayo02
+      - mayo02_2
+      - mayo03
+      - mayo04a
+      - mayo04b
+      - mayo05
+      - mayo06
+      - mayo08a
+      - mayo08b
+      - mayo10

@@ -350,7 +350,20 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
     applyStoryMapEdits(*scene_, game_.systems.storyOrders);
     scene_->finishTick();
     storyLink_->afterMapChange();
+    if (auto notice = storyLink_->takeLockNotice()) {
+      showLockNotice(*notice);
+    }
   }
+}
+
+void PlaySession::showLockNotice(const std::string& textKey) {
+  if (context_.ui->isVisible(DialogDocument)) {
+    return;
+  }
+  screens::publish(*context_.ui, dialogSettings({.text = textKey, .file = {}, .question = false}),
+                   "dialog.revision");
+  context_.ui->show(DialogDocument, true);
+  lockNoticeShown_ = true;
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
@@ -372,7 +385,13 @@ bool PlaySession::handle(const ui::UiCommand& command) {
           "dialog.revision");
       context_.ui->show(DialogDocument, true);
       toTitleAsked_ = true;
+      lockNoticeShown_ = false;
     }
+    return true;
+  }
+  if (command.name == "dialog_answer" && lockNoticeShown_) {
+    context_.ui->hide(DialogDocument);
+    lockNoticeShown_ = false;
     return true;
   }
   if (command.name == "dialog_answer" && toTitleAsked_) {

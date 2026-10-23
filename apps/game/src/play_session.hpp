@@ -147,6 +147,8 @@ public:
 
 private:
   [[nodiscard]] bool paused() const;
+  // Shows the story lock's message in the dialog, unless the dialog is on screen already.
+  void showLockNotice(const std::string& textKey);
 
   PlayContext context_;
   GameStart game_;
@@ -178,6 +180,8 @@ private:
   // Whether the dialog on screen asks to go back to the title screen.
   bool toTitleAsked_ = false;
   bool toTitle_ = false;
+  // Whether the dialog on screen is the story lock's message.
+  bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;
 };
 

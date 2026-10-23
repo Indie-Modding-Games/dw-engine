@@ -29,6 +29,9 @@ struct Options {
   bool devAssets = false;
   // The ruleset the game plays with (--ruleset <id>): rules/<id>/ in the packs.
   std::string ruleset{dwe::ruleset::OriginalRuleset};
+  // The story lock's stage to play (--story-stage <id>|all) instead of the ruleset's active_stage;
+  // "all" opens everything, for development and tests. Empty: the ruleset's.
+  std::string storyStage;
   // The folder of the save files (--saves); the user's data folder when not given.
   std::optional<std::filesystem::path> saves;
   // Set by --list-saves: log the save slots and quit, without a window.
@@ -95,7 +98,8 @@ struct Options {
 };
 
 inline constexpr std::string_view Usage =
-    "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--saves <folder>] [--size "
+    "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
+    "[--saves <folder>] [--size "
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
     "<language>] "
@@ -105,6 +109,7 @@ inline constexpr std::string_view Usage =
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
+inline constexpr std::string_view StoryStageOption = "--story-stage";
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view LanguageOption = "--lang";

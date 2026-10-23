@@ -81,6 +81,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.ruleset = value;
     return !value.empty();
   }
+  if (argument == StoryStageOption) {
+    options.storyStage = value;
+    return !value.empty();
+  }
   if (argument == "--autotest") {
     options.autotest = value;
     return true;

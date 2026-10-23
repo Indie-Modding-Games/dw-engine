@@ -58,3 +58,5 @@ schemas:
     - rules/*/gym
   ruleset_movies:
     - rules/*/movies
+  ruleset_story_lock:
+    - rules/*/story_lock

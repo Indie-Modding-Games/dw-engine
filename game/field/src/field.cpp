@@ -435,8 +435,12 @@ std::optional<MapChange> Field::takeScriptWarp(WarpVia via, std::int32_t value) 
       core::logInfo("{}", core::formatMessage(messages::ScriptWarpAmbiguous, mapId_, value, places,
                                               cell.warp->source));
     }
+    MapChange change{.map = *cell.warp->targetMap, .exit = cell.warp->targetExit, .trigger = value};
+    if (!exitOpen(change)) {
+      return std::nullopt;
+    }
     writeTriggersOf(*cell.warp);
-    return MapChange{.map = *cell.warp->targetMap, .exit = cell.warp->targetExit, .trigger = value};
+    return change;
   }
   if (cell.undecided && !std::ranges::contains(undecidedReported_, std::pair{mapId_, value})) {
     undecidedReported_.emplace_back(mapId_, value);
@@ -496,10 +500,14 @@ std::optional<MapChange> Field::takeExplored(const ScriptWarp& warp, const Scrip
     core::logInfo("{}", core::formatMessage(messages::ExplorationOpened, mapId_, value,
                                             *warp.targetMap, warp.targetExit, warp.source));
   }
+  MapChange change{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
+  if (!exitOpen(change)) {
+    return std::nullopt;
+  }
   // The story's own place is taken by the warp the original takes, so its sets_flags are the
   // original's (the first warp of a place, which the chooser shows, may be another path to it).
   writeTriggersOf(vanillaPlace ? *vanilla : warp);
-  return MapChange{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
+  return change;
 }
 
 void Field::setStoryCells(bool storyCells) {
@@ -542,6 +550,17 @@ void Field::chooseDestination(std::optional<std::size_t> place) {
   if (auto change = takeExplored(*warp, vanilla, value)) {
     leave(std::move(*change));
   }
+}
+
+bool Field::exitOpen(const MapChange& change) {
+  if (!exitFilter_ || exitFilter_(mapId_, change.map)) {
+    return true;
+  }
+  core::logDebug("[port:field] exit filter: {} cell {} to {} exit {} stays closed", mapId_,
+                 change.trigger, change.map, change.exit);
+  closedExit_ = change;
+  exitClosedNow_ = true;
+  return false;
 }
 
 void Field::leave(MapChange change) {
@@ -705,6 +724,7 @@ glm::vec2 Field::followPath(glm::vec3& position, float distance) {
 // - 110; the other values go to later systems. The original tests the cell every frame; this fires
 // on stepping onto it.
 void Field::checkTriggers() {
+  exitClosedNow_ = false;
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
   const CollisionCell cell = assets::collisionCellAt(position);
   const std::int32_t value = collision_.trigger(cell).value_or(0);
@@ -729,7 +749,10 @@ void Field::checkTriggers() {
     const std::optional<std::string> target =
         warp != warps_.end() ? warp->targetMapId : std::nullopt;
     if (target) {
-      leave(MapChange{.map = *target, .exit = warp->targetExit, .trigger = value});
+      MapChange change{.map = *target, .exit = warp->targetExit, .trigger = value};
+      if (exitOpen(change)) {
+        leave(std::move(change));
+      }
       return;
     }
   }
@@ -738,7 +761,7 @@ void Field::checkTriggers() {
       leave(std::move(*scripted));
       return;
     }
-    if (choice_) {
+    if (choice_ || exitClosedNow_) {
       return;
     }
   }
@@ -753,6 +776,7 @@ void Field::checkTriggers() {
 // fishing, 14 chest, 15-20 opening, ending and life loss). Before the cell, the original lets
 // confirm talk to an NPC the player faces: then the cell's section loses (touchNpcs).
 void Field::checkConfirm() {
+  exitClosedNow_ = false;
   if (!std::exchange(input_.confirm, false) || leaving_) {
     return;
   }
@@ -764,6 +788,9 @@ void Field::checkConfirm() {
   if (staticWarps()) {
     if (auto scripted = takeScriptWarp(WarpVia::Confirm, value)) {
       leave(std::move(*scripted));
+      return;
+    }
+    if (exitClosedNow_) {
       return;
     }
   }

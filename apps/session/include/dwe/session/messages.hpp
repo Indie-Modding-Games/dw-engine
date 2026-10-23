@@ -123,6 +123,22 @@ inline constexpr std::string_view StoryRunnerKept =
     "the next game";
 inline constexpr std::string_view StoryNumberOutside = "{} is {}, outside 0 to {}";
 
+// The story lock (story_lock.hpp).
+inline constexpr std::string_view StoryLockSectionText = "the story_lock section";
+inline constexpr std::string_view StoryLockStageText = "a story_lock stage";
+inline constexpr std::string_view StoryLockMapsText = "a list of map patterns";
+inline constexpr std::string_view StoryLockExitsText = "a stage's exits";
+inline constexpr std::string_view StoryLockSectionsText = "a stage's sections";
+inline constexpr std::string_view StoryLockEmptyText = "the text is empty";
+inline constexpr std::string_view StoryLockBadPattern =
+    "map pattern '{}' has a '*' that is not its last character";
+inline constexpr std::string_view StoryLockStageTwice = "stage '{}' is defined twice";
+inline constexpr std::string_view StoryLockNoStage = "active_stage '{}' is none of the stages";
+inline constexpr std::string_view StoryLockReservedStage =
+    "a stage cannot be called '{}': that name opens everything";
+inline constexpr std::string_view StoryLockUnknownStage =
+    "story stage '{}' is none of the stages of {}";
+
 // The story's Lua host (story_lua.cpp).
 inline constexpr std::string_view NoStoryModule = "no pack has the story module {}";
 inline constexpr std::string_view NoStorySection =

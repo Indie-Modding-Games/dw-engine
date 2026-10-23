@@ -35,6 +35,10 @@ if (auto change = field.takeMapChange()) {
 - **Cambios**: `takeMapChange()` da una vez el warp pisado (`MapChange`: mapa, salida y disparador); mientras está
   pendiente nada se mueve. `triggerSteps()` da los disparadores que no son warps pisados en el último tick, para los
   scripts de más adelante.
+- **Filtro de salidas**: `setExitFilter(filtro)` decide si un cambio de mapa del jugador (warp pisado, warp de script
+  de una casilla, elección de la exploración libre) puede ocurrir; se pregunta antes del fundido y antes de escribir
+  disparadores. Uno cerrado deja al jugador en su sitio y `takeClosedExit()` lo da una vez. Lo usa el candado de
+  historia ([session](../apps/session.md)); sin filtro todo pasa.
 - **Fundido y nombre**: el cambio de mapa cuenta en fotogramas del original. `fadeLevel()` dice cuánto quita el
   fundido de la pantalla (0 nada, 1 negro), con la curva de `fade.c` (`fadeOutShade`, `fadeInShade` y
   `shadeDarkness` en `rules.hpp`): la app lo resta sobre la escena (`render::ScreenFade`), no lo mezcla con negro.

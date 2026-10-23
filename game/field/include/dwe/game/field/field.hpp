@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -47,6 +48,10 @@ struct MapChange {
   // change).
   std::int32_t trigger = 0;
 };
+
+// Whether an exit of map `from` may take the player to map `to` now (the story lock of
+// apps/session). A closed one keeps the player on the map.
+using ExitFilter = std::function<bool(std::string_view from, std::string_view to)>;
 
 // The player stepped onto a trigger cell that is not a warp (scripts, the toilet): for later
 // systems.
@@ -176,6 +181,15 @@ public:
 
   // The trigger cells the player stepped onto during the last tick.
   [[nodiscard]] std::span<const TriggerStep> triggerSteps() const { return triggerSteps_; }
+
+  // Which of the player's map changes may happen: a walked warp, a script warp of a cell and free
+  // exploration's choice ask it before they fade out or write a trigger. An empty filter lets
+  // every one through. A script's own map change (startScriptedMapChange) is its caller's to ask.
+  void setExitFilter(ExitFilter filter) { exitFilter_ = std::move(filter); }
+  // The last map change the filter kept closed, once; the player stayed.
+  [[nodiscard]] std::optional<MapChange> takeClosedExit() {
+    return std::exchange(closedExit_, std::nullopt);
+  }
 
   // The id of the current map; empty before the first enterMap.
   [[nodiscard]] const std::string& mapId() const { return mapId_; }
@@ -308,6 +322,9 @@ private:
   bool touchNpcs();
   void tickNpcs(float seconds, bool playerFree);
   void leave(MapChange change);
+  // Whether the exit filter lets the player take this map change; a closed one is kept for
+  // closedExit and logged.
+  bool exitOpen(const MapChange& change);
   // The map change the map's scripts make when `via` runs the section `value` and its guards are
   // decided taken; the warp's triggers are written.
   std::optional<MapChange> takeScriptWarp(WarpVia via, std::int32_t value);
@@ -388,6 +405,11 @@ private:
 
   bool gameTimeRan_ = false;
   std::vector<TriggerStep> triggerSteps_;
+  ExitFilter exitFilter_;
+  std::optional<MapChange> closedExit_;
+  // Whether the cell being checked now asked for a closed map change: then it asks for nothing
+  // else.
+  bool exitClosedNow_ = false;
   std::vector<std::int32_t> cellSections_;
 
   assets::CollisionCell lastPlayerCell_;

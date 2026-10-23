@@ -113,6 +113,19 @@ una vez las tablas de los tres (`dwe-sim` las comparte entre sus partidas); sin 
 condiciones del partner con los que el campo decide sus condiciones, y `fieldTriggerWriter(historia)` escribe en la
 historia los `sets_flags` del warp tomado.
 
+- **Candado de historia** (`story_lock.hpp`, sección de ruleset `story_lock`, esquema `ruleset_story_lock`): el juego
+  se entrega por etapas y el candado dice qué parte está abierta. Cada etapa nombra los mapas que abre (ids o
+  prefijos con `*`) y, solo mientras es la activa, su frontera: `exits` (a qué mapas abiertos llevan las salidas de un
+  mapa) y `sections` (qué secciones de casilla lanza un mapa). Las etapas son **acumulativas**: la etapa N abre los
+  mapas de las etapas 1 a N, y `active_stage` es la última entregada. La opción `--story-stage <id>` de `dwe-game`
+  juega otra sin tocar los datos y `--story-stage all` lo abre todo (desarrollo y pruebas); el log dice al leer las
+  reglas qué etapa se juega (`[port:story-lock]`). `StoryAdapter::lock()` la responde y la app
+  (`StoryFieldLink`) la aplica: una salida pisada, el cambio de mapa de un script o una sección de casilla hacia lo
+  cerrado no ocurre y el diálogo muestra `closed_message`. Solo se cierran los cambios de mapa **nuevos**: una
+  partida guardada más allá de la etapa no se rompe, el jugador se queda donde está y sale por cualquier salida hacia
+  un mapa abierto. Un ruleset sin la sección no cierra nada. Abrir una etapa más es solo editar datos. La Etapa 1
+  sale de la verificación E1-01 en el decomp.
+
 La historia es la única dueña de las formas criadas, como en el original (`setDigimonRaised` pone el disparador
 0x200 + número): `EvolutionAdapter` (con `EvolutionAdapterDesc::story`) las escribe ahí al evolucionar, al renacer y
 al empezar, y antes de cada comprobación de evolución lee de ahí las que ve como criadas, así que un script que pone

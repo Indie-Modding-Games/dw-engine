@@ -273,19 +273,22 @@ StoryAdapter::StoryAdapter(StoryAdapterDesc desc)
 StoryAdapter::~StoryAdapter() = default;
 
 ruleset::SectionChecks StoryAdapter::sectionChecks() const {
-  return {{std::string{StorySection},
-           [](const ruleset::Section& section) -> core::Result<void> {
-             if (auto read = readStoryRules(section); !read) {
-               return std::unexpected{read.error()};
-             }
-             return {};
-           }},
-          {std::string{DialogueSection}, [](const ruleset::Section& section) -> core::Result<void> {
-             if (auto read = readDialogueRules(section); !read) {
-               return std::unexpected{read.error()};
-             }
-             return {};
-           }}};
+  ruleset::SectionChecks checks{
+      {std::string{StorySection},
+       [](const ruleset::Section& section) -> core::Result<void> {
+         if (auto read = readStoryRules(section); !read) {
+           return std::unexpected{read.error()};
+         }
+         return {};
+       }},
+      {std::string{DialogueSection}, [](const ruleset::Section& section) -> core::Result<void> {
+         if (auto read = readDialogueRules(section); !read) {
+           return std::unexpected{read.error()};
+         }
+         return {};
+       }}};
+  checks.merge(storyLockSectionChecks());
+  return checks;
 }
 
 core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
@@ -308,6 +311,11 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!dialogueRules) {
     return std::unexpected{dialogueRules.error()};
   }
+  auto lock = storyLockOf(rules, storyStage_);
+  if (!lock) {
+    return std::unexpected{lock.error()};
+  }
+  lock_ = std::move(*lock);
   if (vm_ == nullptr) {
     if (auto wired = wire(*storyRules, *dialogueRules); !wired) {
       return wired;
