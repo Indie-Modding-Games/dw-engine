@@ -13,6 +13,10 @@
 		<div class="row"><span class="label" id="stat-3-label"></span><span class="value" id="stat-3"></span></div>
 		<div class="row"><span class="label" id="stat-4-label"></span><span class="value" id="stat-4"></span></div>
 		<div class="row"><span class="label" id="stat-5-label"></span><span class="value" id="stat-5"></span></div>
+		<p class="notice" id="notice-0"></p>
+		<p class="notice" id="notice-1"></p>
+		<p class="notice" id="notice-2"></p>
+		<p class="notice" id="notice-3"></p>
 	</div>
 </body>
 </rml>

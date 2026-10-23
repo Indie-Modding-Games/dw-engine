@@ -1,0 +1,4 @@
+# Las notas del gimnasio bajo la caja de estadísticas tras una sesión de inteligencia (ui/gym_stats). {name} es el
+# nombre de una orden o de una técnica.
+new_order: "Nueva orden: {name}"
+move_learned: "¡Aprendió {name}!"

@@ -1,6 +1,7 @@
 # El gimnasio del pueblo (src/trn: TRN_setup*Training y TRN_tick*Training). Lo leen game/gym y apps/game. Las
 # ganancias de cada sesión son de training.yaml; aquí está la coreografía de cada curso, contada en fotogramas del
-# original (20 por segundo). Los puntos son unidades del mundo; los objetos, píxeles del fondo.
+# original (20 por segundo). Los puntos son unidades del mundo; los objetos, píxeles del fondo; los ángulos, 4096 por
+# vuelta. Los otros puntos de entrenamiento (mapas 0x4e y 0x77) no están aquí todavía.
 # map.c: loadTrainingLibrary y TRN_setup*Training: el gimnasio solo funciona en trai00 (mapa 0x70).
 map: trai00
 # training.yaml: el lugar cuyas ganancias da cada curso.
@@ -24,34 +25,209 @@ count:
   sound: 22
   hp_mp_max: 9999
   stat_max: 999
+# Lo común de cada curso: el aparato (el compañero anda hasta él y la cámara lo sigue a velocidad 10), la sesión de
+# 1200 fotogramas (o hasta cancelar), 20 fotogramas de pausa tras la cuenta, los sonidos al empezar (9) y al acabar (10)
+# y las animaciones de andar y de terminar (0x12). Debajo, la coreografía propia del curso.
 courses:
-  # trn_hp.c: TRN_setupHpTraining y TRN_tickHpTraining.
+  # trn_hp.c: las pesas.
   - id: hp
-    # El aparato: el compañero anda hasta él (tickEntityWalkTo) y la cámara lo sigue a velocidad 10.
     spot: { x: 1420, z: -1744 }
     camera_speed: 10
-    # Mira hacia el aparato: 0xa00 de 4096 por vuelta.
-    facing: 2560
-    # Los objetos 0x53 a 0x62 del mapa (las pesas).
-    objects: { first: 83, count: 16 }
-    # El ciclo dura 1200 fotogramas (o hasta cancelar); cada 120 un golpe, en los fotogramas 0 a 1200, sube las
-    # pesas (1, -2); cada fotograma tiemblan ±2 en x; cada 10 suena el golpe.
     cycle_frames: 1200
-    beat_frames: 120
-    beat_move: { x: 1, y: -2 }
-    jitter: 2
-    sound_every_frames: 10
-    # Al volver, las pesas bajan (-1, 2) un fotograma por golpe dado.
-    return_move: { x: -1, y: 2 }
-    # Fotogramas de pausa tras la cuenta antes de volver.
     rest_frames: 20
-    # Sonidos del banco del mapa: al empezar, el golpe y al acabar.
-    sounds: { start: 9, beat: 0, end: 10 }
-    # Animaciones del compañero: andar, trabajar y terminar.
-    animations: { walk: 4, work: 27, done: 18 }
-    # TRN_createCloudFXLine: cada `every` fotogramas, `count` nubes desde (x, z) con paso (dx, dz), corridas por los
-    # golpes dados × every.
-    clouds:
-      - { every: 15, x: 1360, z: -1540, dx: 100, dz: -50, count: 8 }
-      - { every: 20, x: 1461, z: -1639, dx: 50, dz: -50, count: 6 }
-      - { every: 18, x: 1300, z: -1317, dx: 20, dz: -50, count: 4 }
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 4, done: 18 }
+    hp:
+      # Mira hacia el aparato (0xa00) y levanta (animación 0x1b) los objetos 0x53 a 0x62 del mapa.
+      facing: 2560
+      objects: { first: 83, count: 16 }
+      work_animation: 27
+      # Cada 120 fotogramas, en los fotogramas 0 a 1200, un golpe sube las pesas (1, -2); cada fotograma tiemblan ±2
+      # en x; cada 10 suena el golpe (sonido 0).
+      beat_frames: 120
+      beat_move: { x: 1, y: -2 }
+      jitter: 2
+      beat_sound_every: 10
+      beat_sound: 0
+      # Al volver, las pesas bajan (-1, 2) un fotograma por golpe dado.
+      return_move: { x: -1, y: 2 }
+      # TRN_createCloudFXLine: cada `every` fotogramas, `count` nubes desde (x, z) con paso (dx, dz), corridas por los
+      # golpes dados × every.
+      clouds:
+        - { every: 15, x: 1360, z: -1540, dx: 100, dz: -50, count: 8 }
+        - { every: 20, x: 1461, z: -1639, dx: 50, dz: -50, count: 6 }
+        - { every: 18, x: 1300, z: -1317, dx: 20, dz: -50, count: 4 }
+  # trn_mp.c: la máquina de meditar.
+  - id: mp
+    spot: { x: 684, z: 2152 }
+    camera_speed: 10
+    cycle_frames: 1200
+    rest_frames: 20
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 4, done: 18 }
+    mp:
+      # Pasa antes por este punto y vuelve a él al acabar; se queda allí.
+      waypoint: { x: 656, z: 750 }
+      facing: 0
+      # Los objetos 0xa4 a 0xab suben sobre su cabeza (20 píxeles por encima); mientras tanto se ocultan los 0x93 a
+      # 0xa2 y se muestran los 0xa3 a 0xba.
+      objects: { first: 164, count: 8 }
+      hidden: { first: 147, count: 16 }
+      shown: { first: 163, count: 24 }
+      head_lift: 20
+      work_animation: 0
+      # playSound2(8, 2): suena hasta acabar.
+      loop_sound: 2
+      leave_animation: 2
+  # trn_off.c: el saco de boxeo.
+  - id: offense
+    spot: { x: -982, z: -2580 }
+    camera_speed: 10
+    cycle_frames: 1200
+    rest_frames: 20
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 4, done: 18 }
+    offense:
+      # Mira hacia el saco (0x200), los objetos 0x64 a 0x6b.
+      facing: 512
+      objects: { first: 100, count: 8 }
+      # createParticleFX en el golpe, con el sonido 5.
+      particles:
+        - { x: -1100, y: -600, z: -2850 }
+        - { x: -1100, y: -500, z: -2850 }
+        - { x: -1100, y: -400, z: -2850 }
+      hit_sound: 5
+      # El saco se va (-4, 2) los fotogramas 1 a 3 del vaivén, vuelve los 4 a 6 y luego tiembla
+      # ±((100 - fotograma) / 20, (100 - fotograma) / 50) hasta el fotograma 41.
+      recoil_frames: 4
+      recoil_move: { x: -4, y: 2 }
+      rebound_frames: 7
+      swing_frames: 41
+      swing_base: 100
+      swing_divisor: { x: 20, y: 50 }
+      leave_animation: 2
+      # TRN_TRAINING_ANIM_IDS: el golpe de cada especie (animación y fotogramas hasta el impacto); el resto usa este.
+      punch: { animation: 46, frames: 10 }
+      punch_by_species:
+        agum: { animation: 51, frames: 12 }
+        beta: { animation: 46, frames: 20 }
+        grey: { animation: 53, frames: 20 }
+        mera: { animation: 53, frames: 13 }
+        nume: { animation: 46, frames: 20 }
+        mtgr: { animation: 49, frames: 10 }
+        mame: { animation: 46, frames: 8 }
+        gabu: { animation: 46, frames: 20 }
+        ange: { animation: 46, frames: 14 }
+        bird: { animation: 46, frames: 15 }
+        mtma: { animation: 46, frames: 8 }
+        veda: { animation: 51, frames: 10 }
+        poyo: { animation: 46, frames: 20 }
+        toko: { animation: 46, frames: 20 }
+        kune: { animation: 46, frames: 14 }
+        unim: { animation: 46, frames: 20 }
+        ogre: { animation: 49, frames: 10 }
+        cent: { animation: 53, frames: 20 }
+        bake: { animation: 46, frames: 20 }
+        scum: { animation: 46, frames: 20 }
+        andr: { animation: 46, frames: 13 }
+        giro: { animation: 47, frames: 30 }
+        etem: { animation: 46, frames: 15 }
+        yura: { animation: 46, frames: 15 }
+        piyo: { animation: 53, frames: 23 }
+        mono: { animation: 51, frames: 10 }
+        coca: { animation: 52, frames: 10 }
+        digi: { animation: 48, frames: 30 }
+        houo: { animation: 46, frames: 25 }
+        hkab: { animation: 48, frames: 10 }
+  # trn_def.c: el tronco que golpea.
+  - id: defense
+    spot: { x: -827, z: -1634 }
+    camera_speed: 10
+    cycle_frames: 1200
+    rest_frames: 20
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 4, done: 18 }
+    defense:
+      # Mira hacia el tronco (0x400) en guardia (animación 0x25); los objetos 0x47 a 0x53.
+      facing: 1024
+      objects: { first: 71, count: 13 }
+      # createParticleFX y playSound2(8, 4) cuando el tronco llega.
+      particles:
+        - { x: -900, y: -500, z: -2000 }
+        - { x: -950, y: -500, z: -1900 }
+        - { x: -950, y: -500, z: -2100 }
+      loop_sound: 4
+      work_animation: 37
+      # Los golpes que empujan mueven al compañero 100 en x por fotograma, con polvo 100 detrás.
+      push: 100
+      dust_behind: 100
+      # Cada vaivén mueve el tronco `dx` por fotograma hasta `limit` desde donde estaba; luego el compañero vuelve a
+      # su sitio y empieza otra ronda, o acaba si pasó la sesión.
+      swings:
+        - { dx: 50, limit: 100, push: false }
+        - { dx: -50, limit: 50, push: true }
+        - { dx: 50, limit: 90, push: true }
+        - { dx: -30, limit: 60, push: false }
+        - { dx: 20, limit: 90, push: false }
+        - { dx: -10, limit: 70, push: false }
+        - { dx: 5, limit: 90, push: false }
+        - { dx: -4, limit: 0, push: false }
+  # trn_speed.c: la pista.
+  - id: speed
+    spot: { x: 45, z: -388 }
+    camera_speed: 10
+    cycle_frames: 1200
+    rest_frames: 20
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 4, done: 18 }
+    speed:
+      # Corre hacia 0xc00; cada 60 fotogramas, si salió de la pantalla, vuelve a x = -3000.
+      facing: 3072
+      run_animation: 4
+      lap_frames: 60
+      restart_x: -3000
+  # trn_brain.c: la pizarra.
+  - id: brain
+    spot: { x: -1249, z: 1011 }
+    camera_speed: 10
+    cycle_frames: 1200
+    rest_frames: 20
+    sounds: { start: 9, end: 10 }
+    animations: { walk: 2, done: 18 }
+    brain:
+      # El domador anda (2) a la pizarra, se para (0) y enseña (9, cada 30 fotogramas con el sonido 3); el compañero
+      # espera (0) y aprende (0x16, cada 35). El compañero se queda en su pupitre al acabar.
+      tamer_spot: { x: -1452, z: 1563 }
+      tamer_walk: 2
+      tamer_stand: 0
+      tamer_teach: 9
+      partner_stand: 0
+      partner_learn: 22
+      teach_every_frames: 30
+      teach_sound: 3
+      learn_every_frames: 35
+      # TRN_awardBrainsTrainingGains y TRN_tryLearnMove: pasar 100, 200, 300, 400 o 500 de inteligencia da órdenes
+      # nuevas; si no, pasar uno de estos umbrales (o llegar a 999) puede enseñar una técnica: la primera aún no
+      # aprendida de cada especial del compañero (TRN_D_8008F14C, por número de técnica) que esté en su lista, con el
+      # peso de su puesto (TRN_D_8008F184, por especial); gana la de más peso si supera randomLimit(100).
+      learning:
+        order_thresholds: [100, 200, 300, 400, 500]
+        move_thresholds: [150, 250, 350, 450, 550, 650, 750, 800, 850, 900, 950]
+        move_cap: 999
+        moves_by_special:
+          - [2, 5, 0, 4, 3, 1, 6, 7]
+          - [43, 44, 42, 46, 45, 41, 40, 47]
+          - [12, 10, 13, 9, 11, 14, 8, 15]
+          - [37, 38, 32, 35, 34, 36, 39, 33]
+          - [23, 19, 20, 21, 18, 16, 17, 22]
+          - [24, 26, 31, 27, 30, 28, 25, 29]
+          - [55, 49, 50, 53, 54, 51, 52, 56]
+        weights:
+          - [0, 15, 10]
+          - [25, 13, 8]
+          - [22, 11, 7]
+          - [20, 9, 5]
+          - [18, 8, 2]
+          - [15, 7, 0]
+          - [12, 6, 0]
+          - [10, 5, 0]

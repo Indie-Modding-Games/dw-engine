@@ -1,18 +1,23 @@
 #pragma once
 
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/gym/course_flow.hpp>
 #include <dwe/game/gym/gym_rules.hpp>
+#include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include "field_scene.hpp"
 
@@ -26,8 +31,17 @@ struct GymScreenDesc {
   session::GameSession* session = nullptr;
   session::StoryAdapter* story = nullptr;
   session::InventoryAdapter* inventory = nullptr;
+  session::BattleAdapter* battle = nullptr;
+  // The species' moves and specials, for the moves the brains course teaches; none teaches none.
+  const assets::DigimonTable* species = nullptr;
   FieldScene* scene = nullptr;
   ui::Ui* ui = nullptr;
+};
+
+// A note under the stats box: a text key, and the key of the name it shows.
+struct GymNotice {
+  std::string text;
+  std::string name;
 };
 
 // The town gym on the field (src/trn): a course runs while the field goes on without the player's
@@ -66,12 +80,14 @@ private:
 
   GymScreenDesc desc_;
   game::gym::GymRules rules_;
+  std::vector<GymNotice> notices_;
   std::unique_ptr<Ports> ports_;
   std::unique_ptr<game::gym::CourseRun> run_;
   // TRAINING_COMPLETE.
   bool complete_ = false;
   bool boxShown_ = false;
   std::optional<game::gym::GymStats> published_;
+  std::size_t publishedNotices_ = 0;
 };
 
 } // namespace dwe::app

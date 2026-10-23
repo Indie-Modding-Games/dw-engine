@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace dwe::game::gym {
 
@@ -14,7 +15,10 @@ struct Award {
   GymStats gains{};
 };
 
-// What a course asks of the field, the partner, the sound and the screen. The game implements it;
+// Who a course moves: the partner, or the tamer (the brains course).
+enum class Actor : std::uint8_t { Partner, Tamer };
+
+// What a course asks of the field, the actors, the sound and the screen. The game implements it;
 // a course knows none of them.
 class GymPorts {
 public:
@@ -25,26 +29,43 @@ public:
   GymPorts& operator=(GymPorts&&) = delete;
   virtual ~GymPorts() = default;
 
-  // tamerSetState(8) and partnerSetState(10) while training; tamerSetState(0) and
-  // partnerSetState(1) after.
+  // tamerSetState and partnerSetState: the actors are the course's while training, the player's
+  // after.
   virtual void setTraining(bool training) = 0;
-  virtual void partnerAnimation(std::int32_t animation) = 0;
+  virtual void animate(Actor actor, std::int32_t animation) = 0;
   // The animation stands still on its frame (animFlag 2) until released.
-  virtual void holdPartnerAnimation(bool hold) = 0;
+  virtual void holdAnimation(Actor actor, bool hold) = 0;
   // 4096 per turn.
-  virtual void facePartner(std::int32_t angle) = 0;
-  // tickEntityWalkTo: one frame of the partner's walk to a spot, or back to the player with no
-  // spot; true once it is there.
-  virtual bool walkPartner(std::optional<Point> spot) = 0;
-  // createCameraMovement: to a spot, or back to the player with no spot.
+  virtual void face(Actor actor, std::int32_t angle) = 0;
+  // entityLookAtLocation, both ways.
+  virtual void faceEachOther() = 0;
+  // tickEntityWalkTo: one frame of a walk to a spot; with no spot, the partner walks back to the
+  // tamer. True once there.
+  virtual bool walk(Actor actor, std::optional<Point> spot) = 0;
+  // createCameraMovement: to a spot, or back to the tamer with no spot.
   virtual void moveCamera(std::optional<Point> spot, std::int32_t speed) = 0;
   virtual void playSound(std::int32_t slot, std::int32_t sound) = 0;
+  // playSound2 and thunkStopSoundMask: a sound that plays until stopped.
+  virtual std::int32_t loopSound(std::int32_t slot, std::int32_t sound) = 0;
+  virtual void stopSound(std::int32_t handle) = 0;
   // storeMapObjectPosition and loadMapObjectPosition: the objects go back where they were stored.
   virtual void storeObjects(const ObjectGroup& group) = 0;
   virtual void restoreObjects(const ObjectGroup& group) = 0;
   virtual void moveObjects(const ObjectGroup& group, ObjectMove move) = 0;
-  // createCloudFX and removeAllCloudFX.
+  // setMapObjectsFlag: hidden or shown.
+  virtual void showObjects(const ObjectGroup& group, bool shown) = 0;
+  // getDrawPosition of the top of the partner's head: its background pixel row, if known.
+  [[nodiscard]] virtual std::optional<std::int32_t> partnerHeadRow() = 0;
+  [[nodiscard]] virtual std::optional<Point> partnerPosition() = 0;
+  virtual void movePartner(Point delta) = 0;
+  // Whether the partner is drawn on screen (entity.isOnScreen).
+  [[nodiscard]] virtual bool partnerOnScreen() = 0;
+  // Puts the partner at another x, where it runs on from.
+  virtual void placePartnerX(std::int32_t x) = 0;
+  [[nodiscard]] virtual std::string partnerSpecies() = 0;
+  // createCloudFX, createParticleFX and removeAllCloudFX.
   virtual void addCloud(Point at) = 0;
+  virtual void addParticle(Point3 at) = 0;
   virtual void removeClouds() = 0;
   // randomLimit: 0 to limit - 1.
   virtual std::int32_t randomBelow(std::int32_t limit) = 0;
@@ -54,15 +75,16 @@ public:
 
 // What the player pressed this frame.
 struct GymInput {
-  // Confirm or cancel newly pressed: ends the stats count at once.
+  // Confirm newly pressed. With cancel, it ends the stats count at once.
   bool confirm = false;
-  // Cancel pressed or held: ends the cycle early.
+  // Cancel pressed or held: ends the session early.
   bool cancel = false;
 };
 
-// One run of a course, as trn_hp.c: TRN_tickHpTraining: the partner walks to the machine, works
-// until the cycle ends or the player cancels, the stats box counts the gains, and the partner walks
-// back. It steps whole frames of the original.
+// One run of a course, as trn_*.c: TRN_tick*Training: the actors walk to the machine, the partner
+// works until the session ends or the player cancels, the stats box counts the gains, and the
+// partner goes back. It steps whole frames of the original; each course's steps are numbered as
+// the original's TRAINING_STATE.
 class CourseRun {
 public:
   // The rules must outlive the run.
@@ -72,27 +94,50 @@ public:
   void tick(GymPorts& ports, double seconds, double frameSeconds, const GymInput& input);
 
   // TRAINING_COMPLETE.
-  [[nodiscard]] bool finished() const { return state_ == State::Finished; }
+  [[nodiscard]] bool finished() const { return finished_; }
   // The stats box while it is on screen.
   [[nodiscard]] const std::optional<StatCountup>& countup() const { return countup_; }
   [[nodiscard]] const CourseRules& course() const { return *course_; }
 
 private:
-  enum class State : std::uint8_t { Start, WalkTo, Cycle, Count, Rest, WalkBack, Finished };
-
   void frame(GymPorts& ports, const GymInput& input);
-  void cycleFrame(GymPorts& ports, const GymInput& input);
+  void hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& input);
+  void mpFrame(GymPorts& ports, const MpCourse& mp, const GymInput& input);
+  void offenseFrame(GymPorts& ports, const OffenseCourse& offense, const GymInput& input);
+  void defenseFrame(GymPorts& ports, const DefenseCourse& defense, const GymInput& input);
+  void speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymInput& input);
+  void brainFrame(GymPorts& ports, const BrainCourse& brain, const GymInput& input);
+
+  // The steps every course shares.
+  void begin(GymPorts& ports);
+  void award(GymPorts& ports);
+  // The session ran its frames, or the player cancelled.
+  [[nodiscard]] bool sessionOver(const GymInput& input) const;
+  [[nodiscard]] bool counted() const;
+  [[nodiscard]] bool rested();
+  void finish(GymPorts& ports);
+  void setState(std::int32_t state);
   void cloudLine(GymPorts& ports, const CloudLine& line) const;
-  void setState(State state);
+  // moveMapObjectsWithLimit: moves the objects, true once the first reaches `limit` from where
+  // they were stored, in the direction of the move.
+  bool moveObjectsTo(GymPorts& ports, const ObjectGroup& group, std::int32_t dx,
+                     std::int32_t limit);
 
   const GymRules* gym_;
   const CourseRules* course_;
-  State state_ = State::Start;
+  std::int32_t state_ = 0;
+  bool finished_ = false;
   double pendingSeconds_ = 0.0;
-  // MAIN_D_8013537A: frames into the cycle, then the beats left to undo on the way back.
+  // MAIN_D_8013537A: frames into the session; the HP course then keeps the beats to undo.
   std::int32_t counter_ = 0;
+  // MAIN_D_8013537E: frames into a swing or punch.
+  std::int32_t step_ = 0;
   // MAIN_D_8013537C.
   std::int32_t rest_ = 0;
+  // How far the objects moved in x since they were stored.
+  std::int32_t shift_ = 0;
+  std::optional<std::int32_t> loop_;
+  std::size_t swing_ = 0;
   std::optional<StatCountup> countup_;
   // An input seen during a tick that steps no frame still counts on the next frame.
   GymInput pending_;

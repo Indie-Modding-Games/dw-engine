@@ -1,0 +1,3 @@
+# The gym's notes under the stats box after a brains session (ui/gym_stats). {name} is an order's or a move's name.
+new_order: "New order: {name}"
+move_learned: "Learned {name}!"

@@ -159,6 +159,25 @@ BattleAdapter::BattleAdapter(BattleAdapterDesc desc)
 
 BattleAdapter::~BattleAdapter() = default;
 
+std::vector<std::string> BattleAdapter::learnMove(std::string_view move) {
+  std::vector<std::string> learned;
+  if (learn(moves_, move)) {
+    learned.emplace_back(move);
+  }
+  if (catalog_ == nullptr) {
+    return learned;
+  }
+  if (const auto ref = catalog_->find(move)) {
+    for (const game::battle::MoveRef paired : catalog_->learnedWith(*ref)) {
+      const std::string& id = catalog_->at(paired).id;
+      if (learn(moves_, id)) {
+        learned.push_back(id);
+      }
+    }
+  }
+  return learned;
+}
+
 ruleset::SectionChecks BattleAdapter::sectionChecks() const {
   return {{std::string{game::battle::SectionName}, game::battle::checkBattleSection},
           {std::string{PartnerMovesSection}, checkPartnerMovesSection}};

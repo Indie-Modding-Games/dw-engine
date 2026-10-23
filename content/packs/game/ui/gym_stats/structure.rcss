@@ -7,3 +7,4 @@ body #panel { left: auto; margin-left: 0; right: 24dp; top: 24dp; width: 260dp; 
 .row { display: block; }
 .label { display: inline-block; width: 150dp; }
 .value { display: inline-block; width: 90dp; text-align: right; }
+.notice { margin: 6dp 0 0 0; }

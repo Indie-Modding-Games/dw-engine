@@ -115,6 +115,11 @@ public:
   core::Result<void> equip(const GameSession& session, std::size_t place,
                            std::optional<MoveSlot> slot);
 
+  // Teaches the partner a move outside battle (the gym's brains course: trn_reward.c:
+  // TRN_tryLearnMove), with the moves learned along with it (utils2.c: learnMove). The ids it did
+  // not know.
+  std::vector<std::string> learnMove(std::string_view move);
+
   [[nodiscard]] const PartnerMoves& moves() const { return moves_; }
   // A story order: the partner learns the move with this original number and the ones learned
   // with it (utils2.c: learnMove), and whether it knows one (story_orders_partner.cpp).

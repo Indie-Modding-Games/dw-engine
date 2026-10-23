@@ -34,6 +34,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [field](game/field.md) | El campo: movimiento, colisión, disparadores, warps y seguimiento |
 | [inventory](game/inventory.md) | La bolsa, el dinero, el uso de objetos y las tiendas |
 | [fishing](game/fishing.md) | La pesca: la caña, el corcho, el sedal y los peces del agua |
+| [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 

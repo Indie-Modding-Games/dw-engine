@@ -222,6 +222,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
                   .inventory = game_.systems.inventory,
+                  .battle = game_.systems.battle,
+                  .species = species_ ? &*species_ : nullptr,
                   .scene = scene_.get(),
                   .ui = context.ui}),
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
