@@ -169,7 +169,7 @@ con valor entero.
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `hud.revision` | número | Sube en uno cada vez que cambia algún valor de abajo; el documento redibuja con él |
-| `hud.shown` | booleano | `false` mientras el campo está parado: un menú (pausa, principal, compañero) o un combate, o sin partida. El original saca el reloj y las barras de la pantalla cuando para la hora del juego (`clock.c: renderGameClock`, `stopGameTime`) |
+| `hud.shown` | booleano | `false` mientras el campo está parado: un menú (pausa, principal, compañero), un combate, una escena o charla de un guion, un fundido o un cambio de mapa, o sin partida. El original saca el reloj y las barras de la pantalla cuando para la hora del juego (`clock.c: renderGameClock`, `stopGameTime`) |
 | `hud.clock.hour`, `hud.clock.minute` | 0–23, 0–59 | La hora del juego. Un minuto de juego dura 20 frames del original, un segundo real a velocidad normal (`clock.c: tickGameClock`; sección `clock` del ruleset) |
 | `hud.clock.day`, `hud.clock.year` | desde 1 | El día del año (1–30 con `days_per_year: 30`) y el año, contados desde 1 como los enseña el menú del original (`game_menu.c: renderDateDigits`: `DAY + 1`, `YEAR + 1`); el reloj los guarda desde 0 |
 | `hud.meter.<i>.{value,min,max}` | números | Felicidad (0) y disciplina (1), con su rango del ruleset: −100 a 100 y 0 a 100 en `original` (`partner_impl.c: tickConditionBoundaries`) |

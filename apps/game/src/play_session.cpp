@@ -530,7 +530,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     scene_->refreshScriptWarps();
   }
 
-  fieldHud_.update(!paused(), partnerBubbleOf(*scene_, species, session.partnerView().species));
+  // clock.c: renderGameClock slides the clock and the bars off the screen whenever game time stands
+  // still: a script's scene or talk (script_interp.c: scriptPauseGame), a fade, a map change.
+  fieldHud_.update(!paused() && field.gameTimeRan(),
+                   partnerBubbleOf(*scene_, species, session.partnerView().species));
   if (storyTextbox_) {
     storyTextbox_->update(*scene_, species);
   }
