@@ -84,6 +84,8 @@ enum class StoryScreen : std::uint8_t {
   NewGameMenu,        // routine 32, newGameStateMachine: the opening's questions and the names
   ForgetMoves,        // routine 47, lostAllLives: the reborn partner forgets moves, with its box
   SaveMenu,           // routine 48, tickSaveMachine
+  GymLibrary,         // routine 39, loadTrainingLibrary: the next course is not complete yet
+  GymCourse,          // routine 7, the gym course pstat 254 picks, waited for to its end
 };
 
 // A screen a routine asks the app for. `waits`: the script waits until the app closes it.

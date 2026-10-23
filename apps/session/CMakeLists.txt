@@ -52,6 +52,7 @@ dwe_add_module(session
         src/story_routines/routine_discard_item.cpp
         src/story_routines/routine_egg_box.cpp
         src/story_routines/routine_forget_moves.cpp
+        src/story_routines/routine_gym.cpp
         src/story_routines/routine_item_keeper.cpp
         src/story_routines/routine_jukebox.cpp
         src/story_routines/routine_merit_shop.cpp

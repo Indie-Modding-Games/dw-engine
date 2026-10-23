@@ -7,6 +7,8 @@ original está en la [ficha de cuidado](../../reference/care.md#entrenamiento).
 
 No dibuja ni toca el campo: depende de `core`, `assets` y `ruleset`. Los números salen de la sección `gym` del
 ruleset (`rules/<id>/gym.yaml`, esquema `content/schemas/ruleset_gym.schema.json`), en fotogramas del original.
+La historia abre un curso con las rutinas 39 (`loadTrainingLibrary`) y 7, y espera a que acabe; en `apps/game` lo
+hace `StoryGym` sobre la `GymScreen`.
 
 ## Uso
 

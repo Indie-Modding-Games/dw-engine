@@ -47,6 +47,7 @@ dwe_add_app(game
         src/story_textbox.cpp
         src/story_stage.cpp
         src/story_map_edits.cpp
+        src/story_gym.cpp
         src/story_shop.cpp
         src/field_items_screen.cpp
         src/fishing_screen.cpp

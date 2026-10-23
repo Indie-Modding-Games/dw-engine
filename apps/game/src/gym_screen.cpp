@@ -33,6 +33,7 @@ using game::gym::Point3;
 constexpr std::string_view GymCourseUnknown = "game: gym: no course {}";
 constexpr std::string_view GymChoiceUnknown = "game: gym: no course for choice {}";
 constexpr std::string_view GymTrainFailed = "game: gym: training failed: {}";
+constexpr std::string_view GymOffMap = "game: gym: the courses run on {} only";
 constexpr std::string_view NewOrderText = "gym.new_order";
 constexpr std::string_view MoveLearnedText = "gym.move_learned";
 constexpr std::int32_t Hundred = 100;
@@ -353,10 +354,11 @@ core::Result<void> GymScreen::start(std::string_view course) {
     return core::fail(std::vformat(GymCourseUnknown, std::make_format_args(course)));
   }
   complete_ = false;
-  // TRN_setup*Training: off the gym's map the course never starts, and the story waits on.
+  // TRN_setup*Training: off the gym's map no course starts. The original also runs courses on
+  // the two other training maps (0x4e, 0x77), not ported yet: rather than leave the story waiting
+  // forever there, the course fails and the story goes on.
   if (desc_.scene->field().mapId() != rules_.map) {
-    core::logDebug("[port:gym] TRN_setup*Training (src/trn): not on {}, no course", rules_.map);
-    return {};
+    return core::fail(std::vformat(GymOffMap, std::make_format_args(rules_.map)));
   }
   // TRN_setup*Training: readPStat(0xf6) == 1 puts the roulette over the course.
   auto slots = desc_.story->state().variable(rules_.slotVariable);

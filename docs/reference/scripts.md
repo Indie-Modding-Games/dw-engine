@@ -445,7 +445,7 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 | 1 | 2 | tienda de méritos (cartas por méritos, objetos con méritos) | sí | `shop/script_menu.c: openMeritShop` | más tarde |
 | 2 | 4 | intercambio de Mojyamon (tres ofertas, conjunto en la 249) | sí | `script_menu.c: openMojyamonShop` | más tarde |
 | 6 | 3 | correr el torneo inscrito (copa en la 3; rondas ganadas en la 255) | sí | `tournament.c: scriptStartTournament`, `utils2.c: startTournament` | más tarde |
-| 7 | 32 | entrenamiento del gimnasio (tipo en la 254); necesita la 39 antes | sí | `script_interp.c` + overlays de entrenamiento | más tarde |
+| 7 | 32 | entrenamiento del gimnasio (tipo en la 254); necesita la 39 antes | sí | `script_interp.c` + overlays de entrenamiento | sí |
 | 8 | 13 | tienda de objetos; con el disparador 3, reciclaje | sí | `script_common.c: openShop`, `script_menu.c: openRecycleShop` | sí |
 | 9 | 2 | gramola | sí | `script_menu.c: openJukebox` | más tarde |
 | 10 | 2 | transporte de Birdramon: destino en 247/248, cobra y salta a `MAPHEAD 0x4E3` | sí | `script_menu.c: tickBirdraTransport` | más tarde |
@@ -465,7 +465,7 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 | 32 | 4 | introducción y nombres de la partida nueva (elección de huevo en la 254) | sí | `script_menu.c: newGameStateMachine` | sí |
 | 33 | 1 | inscribir a la fuerza en la copa especial | no | `script_interp.c` | más tarde |
 | 34, 37, 38 | 1, 1, 1 | efectos de un mapa: temblor de Meramon, quitar niebla (espera), Ninjamon | 37: sí | `map.c`, `overworld.c` | más tarde |
-| 35, 39 | 3, 16 | carga asíncrona de la librería de tiendas / de entrenamiento (se espera con `wait_for_entity 0xD6`) | no | `script_common.c: loadShopLibrary`, `map.c: loadTrainingLibrary` | 35 sí |
+| 35, 39 | 3, 16 | carga asíncrona de la librería de tiendas / de entrenamiento (se espera con `wait_for_entity 0xD6`) | no | `script_common.c: loadShopLibrary`, `map.c: loadTrainingLibrary` | sí |
 | 36 | — | recargar el fondo del mapa | no | `map.c: readMapTFS` | no: el disco no la usa |
 | 40, 51 | 1, 1 | jefe final: precargar y efecto de aparición | no | `eab.c`, `script_interp.c` | más tarde |
 | 41–44 | 1, 3, 1, 3 | cajas de Toy Town | no | `map_object.c` | más tarde |

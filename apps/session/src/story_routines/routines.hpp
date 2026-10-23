@@ -39,5 +39,6 @@ core::Result<void> registerAnimationLoopRoutine(StoryScenesContext& scenes);
 core::Result<void> registerNewGameMenuRoutine(StoryScenesContext& scenes);
 core::Result<void> registerForgetMovesRoutine(StoryScenesContext& scenes);
 core::Result<void> registerSaveMenuRoutine(StoryScenesContext& scenes);
+core::Result<void> registerGymRoutines(StoryScenesContext& scenes);
 
 } // namespace dwe::session

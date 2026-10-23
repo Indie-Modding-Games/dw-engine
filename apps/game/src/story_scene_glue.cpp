@@ -35,8 +35,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     startBattle(scenes, battle, species, scene, *request);
   }
   shop_.update(scenes);
+  gym_.update(scenes);
   while (const auto screen = scenes.takeScreenRequest()) {
-    if (shop_.take(*screen, scene)) {
+    if (shop_.take(*screen, scene) || gym_.take(*screen)) {
       continue;
     }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",
