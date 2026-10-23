@@ -16,8 +16,8 @@ el gate y se sube por separado.
 | Tramo | Qué entra | Dónde acaba |
 |---|---|---|
 | 1 | Este diseño y el núcleo de `engine/audio`: salida por SDL3, salida nula, mezclador, voces, volúmenes maestro, de música y de efectos, y el límite de voces | `dwe-game` abre el dispositivo y no suena nada todavía (nadie pide sonidos); los tests cubren la mezcla, los volúmenes, el límite y la salida nula |
-| 2a | Efectos (§6.4): decodificar WAV, leer `bank_meta.yaml`, envolvente ADSR, resolver `banco + sonido` a sus tonos y muestras, el puerto `SoundPort` y los sonidos de los menús | Suenan los efectos del sistema y de los menús; el runner ya puede pedir sonidos por su puerto |
-| 2b | La orden `story.play_sound` de los scripts sobre el puerto de 2a, cuando la API `story` de S2 esté en `main` | Suenan los efectos de los scripts; se publica `story.play_sound` |
+| 2a | Efectos (§6.4): decodificar WAV, leer `bank_meta.yaml`, envolvente ADSR, resolver `banco + sonido` a sus tonos y muestras, y el puerto `SoundPort` con sus ranuras en la sesión | La sesión ya puede tocar efectos por su puerto (nadie los pide todavía) |
+| 2b | Los sonidos de los menús (`ui/ui_sounds.yaml`) y la orden `story.play_sound` de los scripts sobre el puerto de 2a, cuando la API `story` de S2 esté en `main` | Suenan los menús y los efectos de los scripts; se publica `story.play_sound` |
 | 3 | Música: el secuenciador MIDI (tempo, bucles), el sintetizador SF2 y las transiciones de música; las órdenes `set_bgm` y `stop_bgm` | Suena la música del mapa, del combate y de los scripts; se publican `story.set_bgm` y `story.stop_bgm` |
 | 3b | La reverberación del chip (§7.4, Q10) | Envío por voz según el bit de reverberación del tono |
 | 4 | El volumen en la pantalla de opciones (maestro, música, efectos), guardado con los demás ajustes, y una ruta de autotest | La ruta cambia los volúmenes y comprueba el estado del mezclador con la salida nula |
@@ -63,8 +63,13 @@ Estructura del módulo (tramo 1):
 | `src/sdl_output.cpp`, `src/null_output.cpp` | Las dos salidas |
 | `src/messages.hpp` | Los mensajes de log y de error del módulo |
 
+Tramo 2a: `include/dwe/audio/effect_bank.hpp` (`EffectBank`: un banco de efectos con sus muestras; cada efecto, una
+voz por tono) y `src/envelope.{hpp,cpp}` (la envolvente ADSR del chip). En `assets`, `decodeWav` (`sound.hpp`) y
+`readSoundBank` (`sound_bank.hpp`).
+
 `apps/game/src/game_audio.cpp` abre el dispositivo o, si no hay, la salida nula con un aviso, y el bucle llama a
-`Audio::update` con el tiempo de los ticks que avanzó.
+`Audio::update` con el tiempo de los ticks que avanzó. Desde el tramo 2a la sesión recibe el `audio::Audio` para sus
+ranuras (`session::SessionSound`, el `SoundPort`); en el 2b, `MenuSounds` toca los sonidos de los menús.
 
 Mientras `docs/modulos/` no exista (p4-docs-site), este documento hace de página del módulo.
 
@@ -123,8 +128,8 @@ cuando las necesita, cada pocos milisegundos).
 - **Bucles:** una voz con bucle vuelve a `loop.start` al llegar a `loop.start + loop.length` hasta que se la para;
   sin bucle, acaba al final del clip y avisa.
 - **Parar una voz** la baja a 0 en 5 ms antes de soltarla, para que no haga clic. (El original también la baja
-  deprisa con `SsUtAutoVol` antes de soltar la nota, y luego suena la liberación de la envolvente: eso llega en el
-  tramo 2 con la envolvente.)
+  deprisa con `SsUtAutoVol` antes de soltar la nota, y luego suena la liberación de la envolvente; aquí el fundido
+  hace ese papel, también con la envolvente del tramo 2, §6.4.)
 - **Límite de voces (`MaxVoices` = 256).** El original tiene 24 canales en el chip de sonido: los efectos usan solo
   14 (del 10 al 23) y la música puede usar cualquiera, así que en escenas cargadas un efecto puede cortar otro o una
   nota de la música (§7.3). Aquí **no** se reproduce ese límite: es de la máquina, no una regla del juego. 256 es una
@@ -204,8 +209,8 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 
 | Parte | Qué entra | Líneas (aprox., sin tests) |
 |---|---|---|
-| 2a | Lector WAV y lector de `bank_meta.yaml` en `assets`; envolvente ADSR y efectos de banco en `audio`; `SoundPort` en `game/story` y su implementación en `apps/session`; los sonidos de los menús | ~750 |
-| 2b | `story.play_sound(banco, sonido)` en la API de Lua de la historia, sobre el `SoundPort` de 2a, y la subida menor de `LuaApiVersion` | ~60 |
+| 2a | Lector WAV y lector de `bank_meta.yaml` en `assets`; envolvente ADSR y efectos de banco en `audio`; `SoundPort` en `game/story` y su implementación en `apps/session` | ~840 |
+| 2b | Los sonidos de los menús (avisos de `ui::Ui`, `ui/ui_sounds.yaml` y su esquema, `MenuSounds`); `story.play_sound(banco, sonido)` en la API de Lua de la historia, sobre el `SoundPort` de 2a, y la subida menor de `LuaApiVersion` | ~300 |
 
 **`assets` (2a).**
 - `decodeWav(bytes) → Result<Sound>`: PCM de 16 bits, mono o estéreo, con el bucle del bloque `smpl` y la nota raíz
@@ -218,26 +223,35 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 
 **`audio` (2a).**
 - **Envolvente** (`src/envelope.{hpp,cpp}`): la del chip a partir de los dos registros `adsr` del tono (ataque
-  lineal o exponencial, caída exponencial hasta el nivel de sostén, sostén que sube o baja, liberación lineal o
-  exponencial), contada en ticks de 44,1 kHz y avanzada por fotogramas de la mezcla, sin asignar memoria. Es la
-  documentación pública del chip, no el código del juego. Una voz con bucle que el sostén baja hasta 0 acaba sola;
-  parar una voz sigue siendo el fundido de 5 ms del tramo 1, como la bajada rápida del original (§7.2).
+  lineal o exponencial, caída exponencial hasta el nivel de sostén, sostén que sube o baja), contada en ticks de
+  44,1 kHz y avanzada por fotogramas de la mezcla, sin asignar memoria. Es la documentación pública del chip, no el
+  código del juego. Una voz con bucle que el sostén baja hasta 0 acaba sola. No hay fase de liberación: parar una
+  voz sigue siendo el fundido de 5 ms del tramo 1, como la bajada rápida del original (§7.2).
 - `PlayRequest` gana un campo opcional `envelope` (los dos registros); sin él la voz suena como en el tramo 1.
-- **`EffectBank`** (`include/dwe/audio/effect_bank.hpp`): un `SoundBank` más sus clips (`shared_ptr<const Clip>`,
-  cargados en el hilo del juego). `play(Audio&, sonido) → Result<EffectVoices>` lanza una voz por tono con
-  ganancia = (vol. tono/127)·(vol. programa/127)·(vol. banco/127), panorama = ((pan tono − 64) + (pan programa − 64))
-  /64 recortado a ±1, tono = 44100·2^((nota·128 − (raíz·128 + shift))/1536) / frecuencia de origen de la muestra
-  (vale igual para WAV y Opus), y la envolvente del tono. `stop(Audio&, EffectVoices)` los suelta.
+- **`EffectBank`** (`include/dwe/audio/effect_bank.hpp`): un `SoundBank` más sus muestras (`EffectSample`: el
+  clip y la frecuencia a la que se codificó, cargados en el hilo del juego). `play(Audio&, sonido) →
+  Result<vector<VoiceId>>` lanza una voz por tono con ganancia = (vol. tono/127)·(vol. programa/127)·(vol.
+  banco/127), panorama = ((pan tono − 64) + (pan programa − 64))/64 recortado a ±1, la envolvente del tono y
+  tono = frecuencia del chip / frecuencia de origen de la muestra (vale igual para WAV y Opus). La frecuencia del
+  chip es 44100·2^(pasos/192), con pasos = (nota − raíz)·16 + (shift >> 3) en dieciseisavos de semitono (`shift`
+  sube el tono), recortada al techo del registro de tono, 0x3FFF/0x1000·44100. Así lo calcula el original:
+  `note2pitch2` de libsnd (`asm/main/psyq/libsnd.s:8717`, US `0x800D0C7C`), al que llama `SsUtKeyOnV` desde
+  `sound.c:621`. La frecuencia de origen es la de la cabecera de la muestra; la de `bank_meta` solo cuenta si la
+  cabecera no la trae, y si no coinciden se avisa una vez al cargar. `play` comprueba todas las voces (y que
+  quepan sus órdenes) antes de lanzar ninguna (`Audio::playAll`): un efecto suena entero o no suena. No hay
+  `stop` propio: cada voz se para con `Audio::stop`.
 
 **Juego (2a).**
 - `game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
 - `apps/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>` (o
-  `sb` en combate y VS, cuando existan). Los bancos se cargan al montar el paquete (`ss`, `sl`) o al entrar en el
-  mapa (`esall`); una ranura sin banco cargado no suena y deja un aviso una sola vez por banco. Las ranuras 3–7 no
+  `sb` en combate y VS, cuando existan). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
+  anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
   las piden los scripts del disco (§10, Q3): la tabla tipo → entrada se aplaza al paquete de los gritos (Q13).
-- **Menús:** `ui::Ui` informa de lo que pasó al navegar (`takeCues()`: mover, confirmar, cancelar), sin saber de
-  sonido; `apps/game` toca el sonido de cada aviso. «Error» lo emite la sesión cuando rechaza una orden del jugador.
-  Qué sonido es cada aviso es la pregunta Q12.
+- **Menús (tramo 2b):** `ui::Ui` informa de lo que pasó al navegar con el teclado o el mando (`takeCues()`: mover, confirmar,
+  cancelar; los clics del ratón no dan aviso), sin saber de sonido. `MenuSounds` (`apps/game/src/game_audio.cpp`) lee
+  `ui/ui_sounds.yaml` y carga sus bancos al arrancar, y toca el sonido de cada aviso. «Error» suena cuando el combate
+  rechaza una orden del jugador (un comando, la bolsa o un objeto que no se puede lanzar). Un aviso que falta o no
+  vale, o cuyo banco no carga, queda en silencio con un aviso en el log al arrancar (Q12).
 
 ## 7. Fidelidad: lo que oye el jugador
 
@@ -304,7 +318,7 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | `pack.yaml` | — | Sin claves nuevas | Ninguno |
 | `story.play_sound(banco, sonido)` | Lo emite `dwx` en el Lua convertido; S7 lo registra como orden ausente | Se publica en el tramo 2b, en la rama dueña de la API `story` (Q14) | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
 | `story.set_bgm(pista)`, `story.stop_bgm(...)` | Ídem | Se publican en el tramo 3 | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
-| Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2a): documento nuevo del paquete `game` con su esquema |
+| Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): documento nuevo del paquete `game` con su esquema |
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
 | Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la lista de la fase 5 / 4b | — |
 
@@ -332,7 +346,8 @@ rama pequeña desde `main` cuando entre el tramo 3 de S2, con `story.play_sound`
 (si la subida del tramo 4 de S2 entra antes, 2b toma el número siguiente). Q12: `ui/ui_sounds.yaml` y su esquema
 entran en 2a, **CAMBIO DE CONTRATO** aditivo; una entrada que falta o no vale deja ese aviso en silencio con un aviso
 en el log, y el juego nunca falla por ello; si 2a se pasa mucho de unas 800 líneas, los avisos de los menús pasan a
-2b. Q13: la tabla tipo → entrada va al paquete de los gritos y del combate.
+2b. Q13: la tabla tipo → entrada va al paquete de los gritos y del combate. Al medirlo, 2a con los menús pasaba de 1000 líneas, así que, como
+se decidió, los menús pasan a 2b (unas 240 líneas) y 2a queda en unas 840.
 
 **Q1. Cómo entra el sintetizador SF2 (tramo 3).**
 1. *(Recomendada)* TinySoundFont (MIT) como **port de overlay de vcpkg** en el repositorio
