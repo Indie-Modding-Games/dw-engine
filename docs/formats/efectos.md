@@ -256,10 +256,12 @@ argumento sin unir es `null`. El área de datos va elemento a elemento con su ti
 relleno (una variable sin valor inicial) es `null`. Los datos sin uso van como `kind: unused` con sus bytes y el
 motivo (`reason`); una fila de CLUT con índice calculado lleva `row_starts` y todos los colores que puede leer.
 
-El motor lo vuelve a leer con `readEfeScriptYaml` (`formats/effect/efe_yaml.hpp`): da un `EfeProgram` con las
-instrucciones de los dos scripts y la imagen del área de datos, de la base al script de inicio, con los valores de
-variables, tablas, instancias y argumentos numéricos; lo que solo lee el dibujo (huesos, sprites, UV, CLUT, mapas de
-tiles, cintas) queda como relleno. Rechaza un `op`, `sub`, operador o comparación desconocidos y datos fuera del área.
+En tiempo de juego lo lee `assets::readEffectScript` (`engine/assets/include/dwe/assets/effect_script.hpp`), sin
+pasar por `formats`: junto con `effect.yaml` da un `EffectScript` con la técnica (`move`), el número de sub-efectos,
+las instrucciones de los dos scripts y la imagen del área de datos, de la base al script de inicio, con los valores
+de variables, tablas, instancias y argumentos numéricos; lo que solo lee el dibujo (huesos, sprites, UV, CLUT, mapas
+de tiles, cintas) queda como relleno. De cada `sub` guarda el nombre y cuántos valores saca de la pila. Rechaza un
+`op`, operador o comparación desconocidos y datos fuera del área.
 
 Un ejemplo inventado:
 
