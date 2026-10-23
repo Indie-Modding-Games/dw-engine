@@ -112,6 +112,7 @@ private:
     case PartnerScene::SicknessLostLife:
     case PartnerScene::BattleLostLife:
       scenes_->deathPending = false;
+      scenes_->dying = scenes_->session != nullptr && !scenes_->session->partner().alive();
       break;
     case PartnerScene::LostAllLives:
       rebirth();
@@ -281,6 +282,9 @@ core::Result<void> StoryScenes::startNewGame(GameSession& session) {
   scenes.battles->restoreCounters({});
   scenes.recruits.clear();
   scenes.shopTally = 0;
+  scenes.deathPending = false;
+  scenes.dying = false;
+  scenes.egg.reset();
   // main.c: main runs the first map's map-head section once the new game is set up
   // (runMapHeadScript(0xCC)); the field does when it enters that map (newGameStart).
   core::logDebug("[port:story] initializeMap (map.c:3936): screen {} exit {}, chain={}",
@@ -296,7 +300,7 @@ void StoryScenes::tick(GameSession& session, const ruleset::ClockAdvance& /*adva
     return;
   }
   watchRecruits(session);
-  askForDeath();
+  askForDeath(session);
 }
 
 void StoryScenes::routePartnerEvent(GameSession& /*session*/,
@@ -306,11 +310,22 @@ void StoryScenes::routePartnerEvent(GameSession& /*session*/,
   }
 }
 
-void StoryScenes::askForDeath() {
-  // partner_impl.c: tickDeathCondition and the sickness's lost life call the death section once no
-  // script runs; a story battle lost goes there itself, and its scene clears the request.
+void StoryScenes::askForDeath(const GameSession& session) {
+  // partner_impl.c: tickDeathCondition and the sickness's lost life call the death section once the
+  // player is free and no script runs; a story battle lost goes there itself, and its scene clears
+  // the request.
   StoryScenesContext& scenes = *context_;
-  if (!scenes.deathPending || !scenes.rules.death.has_value() || scenes.runner().busy()) {
+  if (!scenes.rules.death.has_value()) {
+    return;
+  }
+  if (session.partner().alive()) {
+    scenes.dying = false;
+  } else if (!scenes.dying) {
+    // A dead partner whose death section has not run, as a game saved during the death loads:
+    // tickDeathCondition asks again while the partner is dead.
+    scenes.deathPending = true;
+  }
+  if (!scenes.deathPending || scenes.runner().busy() || !session.playerFree()) {
     return;
   }
   const StoryDeathRules& death = *scenes.rules.death;
@@ -321,6 +336,7 @@ void StoryScenes::askForDeath() {
     return;
   }
   scenes.deathPending = false;
+  scenes.dying = !session.partner().alive();
   if (auto cleared = scenes.state().setVariable(death.clearedVariable, 0); !cleared) {
     core::logWarning("{}", cleared.error().message);
   }

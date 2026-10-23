@@ -110,12 +110,17 @@ TEST_CASE("care.md death: with no lifetime left the partner dies a natural death
   CHECK(raising.state() == dead);
 }
 
-TEST_CASE("care.md death: death waits while the tamer is busy and in the hour after waking up") {
+TEST_CASE(
+    "care.md death: death waits while the tamer is busy, a script runs or in the hour after waking up") {
   OriginalRuleset original;
   Raising raising(original.rules());
   raising.quiet();
   raising.edit([](PartnerState& state) { state.life.remainingLifetime = 0; });
-  CHECK_FALSE(has(raising.playMinutes(5, {.tamerIdle = false, .area = AreaResponse::Neutral}),
+  CHECK_FALSE(has(raising.playMinutes(
+                      5, {.tamerIdle = false, .scriptIdle = true, .area = AreaResponse::Neutral}),
+                  EventKind::Died));
+  CHECK_FALSE(has(raising.playMinutes(
+                      5, {.tamerIdle = true, .scriptIdle = false, .area = AreaResponse::Neutral}),
                   EventKind::Died));
   raising.edit([](PartnerState& state) { state.life.protectedHour = 8; });
   CHECK_FALSE(has(raising.playMinutes(30), EventKind::Died));

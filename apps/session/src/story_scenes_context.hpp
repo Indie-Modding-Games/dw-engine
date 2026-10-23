@@ -67,6 +67,8 @@ struct StoryScenesContext {
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
   bool deathPending = false;
   std::optional<std::size_t> egg;
+  // A death whose section ran: the partner stays dead until the rebirth's scene.
+  bool dying = false;
 };
 
 // The routines of the opening (story_routines/*.cpp), one file each; each registers its own.

@@ -101,7 +101,8 @@ void Partner::stepCare(const FrameTime& time, const CareContext& context) {
 
 void Partner::tickDeath(const FrameTime& time, const CareContext& context) {
   // partner_impl.c: tickDeathCondition.
-  if (inProtectedHour(time.hour) || state_.life.remainingLifetime > 0 || !context.tamerIdle) {
+  if (inProtectedHour(time.hour) || state_.life.remainingLifetime > 0 || !context.tamerIdle ||
+      !context.scriptIdle) {
     return;
   }
   state_.life.remainingLifetime = 0;
@@ -222,7 +223,7 @@ void Partner::tickSickness(const FrameTime& time, const CareContext& context) {
       fallSick();
       cureInjury();
     }
-    if (health.sickHours >= rules.untreatedHours && context.tamerIdle &&
+    if (health.sickHours >= rules.untreatedHours && context.tamerIdle && context.scriptIdle &&
         state_.life.remainingLifetime != 0) {
       loseLife();
       health.sickHours = 0;

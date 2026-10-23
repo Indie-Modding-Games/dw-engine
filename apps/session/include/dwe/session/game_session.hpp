@@ -249,6 +249,13 @@ public:
   // events and writes a requested autosave, as the session's own commands do.
   void afterSystemCommand();
 
+  // Whether the player walks the field freely (tamer.c: tamerGetState() == 0): no map change, no
+  // script holding them, and the field ran game time last tick. Always true without a field.
+  [[nodiscard]] bool playerFree() const;
+  // Whether a story script ran at the end of the last tick (IS_SCRIPT_PAUSED == 0): the story
+  // tells it each tick. The partner's death and sickness wait for the player free and no script.
+  void setScriptRunning(bool running) { scriptRunning_ = running; }
+
   // Whether the story plays the death and asks for the rebirth itself (StoryScenes); otherwise a
   // dead partner is reborn at once.
   void setRebirthByStory(bool byStory) { rebirthByStory_ = byStory; }
@@ -318,6 +325,7 @@ private:
   std::optional<game::save::SlotId> homeSlot_;
   std::vector<game::partner::PartnerEvent> partnerEvents_;
   bool rebirthByStory_ = false;
+  bool scriptRunning_ = false;
   std::string lastMap_;
   std::unique_ptr<SessionSound> sound_;
   std::unique_ptr<SessionMusic> music_;

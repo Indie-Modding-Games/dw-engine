@@ -466,6 +466,7 @@ void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*adv
     runner_->tick();
   }
   followNpcHolds();
+  session.setScriptRunning(runner_ && runner_->busy());
 }
 
 game::story::RequestOutcome StoryAdapter::request(game::story::SectionRef section,

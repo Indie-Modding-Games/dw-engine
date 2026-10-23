@@ -195,7 +195,7 @@ public:
 private:
   void bind(GameSession& session);
   void watchRecruits(GameSession& session);
-  void askForDeath();
+  void askForDeath(const GameSession& session);
 
   std::unique_ptr<StoryScenesContext> context_;
 };

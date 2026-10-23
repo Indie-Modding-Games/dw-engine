@@ -162,6 +162,9 @@ void DeathScene::begin(const Pending& pending) {
   }
   // murd.c: MURD_tick; a death with no lives left starts here too and goes on to the dissolve.
   core::logDebug("[port:death] MURD_tick (murd.c:756): lives={}", lives_);
+  if (lives_ != 0) {
+    setDeathMap();
+  }
   frame_ = 0;
   setPhase(Phase::LostLifeAlone);
 }
@@ -270,6 +273,7 @@ void DeathScene::startDissolve(bool livesLeft) {
   // none starts at the map frame, already gone.
   const game::partner::DeathScene& rules = rules_.death;
   session_->useSceneSounds(rules.soundBank);
+  setDeathMap();
   lives_ = livesLeft ? 1 : 0;
   if (livesLeft) {
     frame_ = 0;
@@ -373,8 +377,9 @@ void DeathScene::stepRebirth() {
   }
 }
 
-void DeathScene::enterWakeMap() {
-  // MURD_tick and DOOA_tick pick the map (setDeathMap); changeToDeathMap enters it.
+void DeathScene::setDeathMap() {
+  // MURD_tick (murd.c:780, with lives left) and DOOA_tick (dooa.c:1734) pick the map when their
+  // scene starts (map.c:5400 setDeathMap).
   const game::partner::WakeMap& wake = rules_.wakeMap;
   bool storyMap = false;
   if (story_ != nullptr) {
@@ -385,11 +390,18 @@ void DeathScene::enterWakeMap() {
     storyMap = storyMap || std::cmp_greater_equal(state.variable(wake.storyVariable).value_or(0),
                                                   wake.storyVariableAtLeast);
   }
-  const std::int32_t map = storyMap ? wake.storyMap : wake.earlyMap;
-  core::logDebug("[port:death] changeToDeathMap (map.c:5420): map={} exit={}", map, wake.exit);
-  if (auto entered = scene_->enterOriginalMap(map, wake.exit); !entered) {
+  deathMap_ = storyMap ? wake.storyMap : wake.earlyMap;
+  core::logDebug("[port:death] setDeathMap (map.c:5400): map={} exit={}", deathMap_, wake.exit);
+}
+
+void DeathScene::enterWakeMap() {
+  // map.c:5420 changeToDeathMap: the map the scene picked when it started. The map's load in the
+  // background (waitForDeathMapLoading) has no counterpart: the field loads it when it enters it.
+  const std::int32_t exit = rules_.wakeMap.exit;
+  core::logDebug("[port:death] changeToDeathMap (map.c:5420): map={} exit={}", deathMap_, exit);
+  if (auto entered = scene_->enterOriginalMap(deathMap_, exit); !entered) {
     core::logWarning(
-        "{}", core::formatMessage(messages::WakeMapNotEntered, map, entered.error().message));
+        "{}", core::formatMessage(messages::WakeMapNotEntered, deathMap_, entered.error().message));
   }
 }
 

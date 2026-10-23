@@ -142,10 +142,10 @@ TEST_CASE(
   raising.quiet();
   raising.edit([](PartnerState& state) { state.mood.tiredness = 10; });
   raising.partner().enterMap();
-  raising.playFrames(1201, {.tamerIdle = true, .area = AreaResponse::Liked});
+  raising.playFrames(1201, {.tamerIdle = true, .scriptIdle = true, .area = AreaResponse::Liked});
   CHECK(raising.state().mood.happiness == 51);
   CHECK(raising.state().mood.tiredness == 8);
-  raising.playFrames(1200, {.tamerIdle = true, .area = AreaResponse::Disliked});
+  raising.playFrames(1200, {.tamerIdle = true, .scriptIdle = true, .area = AreaResponse::Disliked});
   CHECK(raising.state().mood.happiness == 50);
   CHECK(raising.state().mood.tiredness == 9);
 }

@@ -20,7 +20,7 @@ partner.start("agu", stats, clock);
 
 // Cada tick: el reloj avanza y el partner pasa por cada fotograma cruzado.
 const auto advance = clock.advanceFrames(frames);
-partner.tick(clock, advance, {.tamerIdle = idle, .area = area});
+partner.tick(clock, advance, {.tamerIdle = idle, .scriptIdle = noScript, .area = area});
 for (const auto& event : partner.takeEvents()) { /* UI, guardado, guiones */ }
 
 // Órdenes del tamer.
@@ -169,7 +169,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Qué le parece la zona: las listas de regiones del mapa frente a la región favorita de la especie | `map.c: loadMapSetup` | `areaResponseOf` (`area_response.hpp`); la sesión lo calcula al entrar en cada mapa | `area_response_tests` | Igual |
 | Cansado | `partner_impl.c: tickTirednessMechanics` | `tickTiredness` | `mood_tests`: at 80 | Igual |
 | Vida por infelicidad | `partner_impl.c: tickConditions` | `tickUnhappyLifetime`, `loseUnhappyLifetime` | `life_tests`: unhappy | Igual |
-| Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath` | `life_tests`: natural death | Igual |
+| Muerte natural | `partner_impl.c: tickDeathCondition` | `tickDeath`: espera al tamer libre (`tamerIdle`) y a que no corra ningún guion (`scriptIdle`); la vida que quita una enfermedad sin tratar, también | `life_tests`: natural death, death waits | Igual |
 | Renacer y herencia | `evolution.c: reincarnatePartner`; `partner_impl.c: initializeReincarnatedPartner`; `dooa.c` | `rebirth`, `OriginalRebirthChoice` | `life_tests`: rebirth | Igual |
 | Combate: tiempo, comida y caca | `tamer.c: advanceBattleTime` | `passBattleTime` (los pasos de caca salen de `toilet.poop_step_minutes`) | `a battle's minutes bring the meal closer ...`, `a battle across midnight ...` | Igual |
 | Combate que ya resolvió `game/battle`: sus números y la cuenta horaria si acaba una hora | `tamer.c: startBattle`, `advanceBattleTime` | `applyBattle` (`BattleConsequences`), `passBattleTime` | `a battle the battle system settled ...`, `a settled battle that ends an hour ...` | Igual |

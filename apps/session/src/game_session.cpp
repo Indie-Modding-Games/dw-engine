@@ -409,10 +409,16 @@ void GameSession::advanceGameTime(double realSeconds) {
   }
 }
 
+bool GameSession::playerFree() const {
+  const game::field::Field* field = state_->field;
+  return field == nullptr ||
+         (field->gameTimeRan() && !field->mapChangePending() && !field->heldByScript());
+}
+
 game::partner::CareContext GameSession::careContext() const {
-  // The tamer is busy while a map change runs.
-  const bool tamerIdle = state_->field == nullptr || !state_->field->mapChangePending();
-  return {.tamerIdle = tamerIdle, .area = area_};
+  // partner_impl.c: tickDeathCondition and tickConditions wait for tamerGetState() == 0 and
+  // IS_SCRIPT_PAUSED == 1.
+  return {.tamerIdle = playerFree(), .scriptIdle = !scriptRunning_, .area = area_};
 }
 
 void GameSession::attachField(const game::field::Field& field) {

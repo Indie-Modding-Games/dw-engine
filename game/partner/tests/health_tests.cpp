@@ -106,7 +106,7 @@ TEST_CASE("care.md injuries: the injury waits while the tamer is busy") {
   Raising raising(original.rules());
   raising.quiet();
   raising.edit([](PartnerState& state) { state.conditions.set(Condition::Injured); });
-  const CareContext busy{.tamerIdle = false, .area = AreaResponse::Neutral};
+  const CareContext busy{.tamerIdle = false, .scriptIdle = true, .area = AreaResponse::Neutral};
   CHECK_FALSE(has(raising.playHours(13, busy), EventKind::GotSick));
   CHECK(has(raising.playFrames(1), EventKind::GotSick));
 }
@@ -115,7 +115,7 @@ TEST_CASE("care.md sickness: ten hours in a disliked area make the partner sick"
   OriginalRuleset original;
   Raising raising(original.rules());
   raising.quiet();
-  const CareContext disliked{.tamerIdle = true, .area = AreaResponse::Disliked};
+  const CareContext disliked{.tamerIdle = true, .scriptIdle = true, .area = AreaResponse::Disliked};
   CHECK_FALSE(has(raising.playHours(10, disliked), EventKind::GotSick));
   CHECK(has(raising.playHours(1, disliked), EventKind::GotSick));
   CHECK(raising.state().mood.areaFrames < 1200);

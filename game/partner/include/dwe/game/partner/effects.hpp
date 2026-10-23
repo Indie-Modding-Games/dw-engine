@@ -62,9 +62,12 @@ enum class AreaResponse : std::uint8_t { Neutral, Liked, Disliked };
 
 // What the care rules need from the rest of the game each tick.
 struct CareContext {
-  // The tamer is free and no script runs (tamerGetState() == 0, IS_SCRIPT_PAUSED == 1): the
-  // original holds back death, poop and the sickness that comes from an injury until then.
+  // The tamer is free (tamerGetState() == 0): the original holds back death, poop and the
+  // sickness that comes from an injury until then.
   bool tamerIdle = true;
+  // No script runs (IS_SCRIPT_PAUSED == 1): death and the life an untreated sickness takes wait
+  // for it too.
+  bool scriptIdle = true;
   AreaResponse area = AreaResponse::Neutral;
 };
 

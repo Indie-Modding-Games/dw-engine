@@ -171,8 +171,8 @@ se acaba, muere y renace como bebé con parte de sus stats.
 
 ### Muerte y renacer
 
-- **Muerte natural** (`tickDeathCondition`): con la vida restante a 0, el tamer libre y fuera de la hora protegida tras
-  dormir, se lanza el evento de muerte **(comprobado)**.
+- **Muerte natural** (`tickDeathCondition`): con la vida restante a 0, el tamer libre, ningún guion en marcha
+  (`IS_SCRIPT_PAUSED` 1) y fuera de la hora protegida tras dormir, se lanza el evento de muerte **(comprobado)**.
 - **Vidas:** perder un combate o dejar 12 horas una enfermedad sin tratar quita una vida; con 0 vidas, la vida
   restante pasa a 0 y muere (`script_interp.c`) **(comprobado)**.
 - **Renacer** (`reincarnatePartner` en `evolution.c`, `initializeReincarnatedPartner`, `setReincarnateStats`;

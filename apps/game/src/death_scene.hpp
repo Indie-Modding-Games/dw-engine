@@ -96,6 +96,7 @@ private:
   void stepDissolve();
   void stepRebirth();
   void startDissolve(bool livesLeft);
+  void setDeathMap();
   void enterWakeMap();
   void finish();
   void setPhase(Phase phase);
@@ -122,6 +123,8 @@ private:
   Phase phase_ = Phase::Idle;
   std::int32_t frame_ = 0;
   std::int32_t lives_ = 0;
+  // The map the tamer wakes up on, picked when the scene starts.
+  std::int32_t deathMap_ = 0;
   double pendingSeconds_ = 0.0;
   float fade_ = 0.0F;
   FieldStage stage_;
