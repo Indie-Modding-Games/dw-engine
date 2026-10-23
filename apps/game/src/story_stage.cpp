@@ -2,6 +2,7 @@
 
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/npcs.hpp>
 #include <dwe/scene/components.hpp>
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <string_view>
 #include <utility>
 
 #include "field_scene.hpp"
@@ -23,6 +25,14 @@ using game::story::PlayerScriptId;
 // The move slots of the player and the partner (script_value.c: scriptIdToEntityId).
 constexpr std::int64_t PlayerSlot = 0;
 constexpr std::int64_t PartnerSlot = 1;
+
+// The field has no NPCs and no 3D map objects yet: their slices bring them.
+constexpr std::string_view NoNpcOrigin =
+    "[port:story-stage] reset_entity_origin (overworld.c:1829 resetEntityOrigin): no NPC {} on "
+    "the field yet, nothing to reset";
+constexpr std::string_view NoMapObject =
+    "[port:story-stage] rotate_3d_object (map_object.c:932 tickRotateDoor): no 3D map object {} "
+    "on the field yet, the turn toward {} ends at once";
 
 float groundDistance(glm::vec3 from, glm::vec3 to) {
   return glm::length(glm::vec2{to.x - from.x, to.z - from.z});
@@ -153,6 +163,20 @@ void StoryStage::panCamera(glm::vec3 focus, float seconds) {
 
 bool StoryStage::cameraPanning() const {
   return scene_->field().cameraPanning();
+}
+
+void StoryStage::shiftCamera(glm::vec3 by) {
+  scene_->field().shiftCameraByScript(by);
+}
+
+void StoryStage::resetOrigin(std::int64_t character) {
+  // Only NPCs have an origin to reset; the player and the partner are never NPCs.
+  core::logDebug("{}", core::formatMessage(NoNpcOrigin, character));
+}
+
+bool StoryStage::turnMapObject(std::int64_t object, std::int64_t direction) {
+  core::logDebug("{}", core::formatMessage(NoMapObject, object, direction));
+  return true;
 }
 
 } // namespace dwe::app

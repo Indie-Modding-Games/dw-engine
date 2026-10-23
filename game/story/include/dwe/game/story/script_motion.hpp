@@ -55,6 +55,15 @@ public:
   // Pans the camera's focus to `focus` over `seconds` (map.c: tickCameraMovement).
   virtual void panCamera(glm::vec3 focus, float seconds) = 0;
   [[nodiscard]] virtual bool cameraPanning() const = 0;
+  // Moves the camera by `by` (map.c: moveCameraByDiff, which a move with the camera calls each
+  // frame with the mover's step).
+  virtual void shiftCamera(glm::vec3 by) = 0;
+  // Makes the NPC's place on the map where it stands now, and shifts its route the same
+  // (overworld.c: resetEntityOrigin).
+  virtual void resetOrigin(std::int64_t character) = 0;
+  // Ticks one frame of the turn or slide of a 3D object of the map, toward `direction` (-1 or 1);
+  // true when it is done (map_object.c: tickRotateDoor).
+  [[nodiscard]] virtual bool turnMapObject(std::int64_t object, std::int64_t direction) = 0;
 };
 
 // The rules of the scripted moves, from the field rules.
@@ -81,11 +90,31 @@ public:
   void walkTo(std::int64_t character, std::int64_t x, std::int64_t z, std::int64_t animation);
   // entity_walk_to_entity: walks to the cell of `target`, or until it touches a character.
   void walkToCharacter(std::int64_t character, std::int64_t animation, std::int64_t target);
+  // entity_walk_to_with_camera and entity_walk_to_entity_with_camera: the same, and the camera
+  // follows the walker (tamer.c: tickEntityWalkTo with useCamera).
+  void walkToWithCamera(std::int64_t character, std::int64_t x, std::int64_t z,
+                        std::int64_t animation);
+  void walkToCharacterWithCamera(std::int64_t character, std::int64_t animation,
+                                 std::int64_t target);
   // entity_move_to: slides to (x, z) in `frames` frames, without animation.
   void moveTo(std::int64_t character, std::int64_t x, std::int64_t z, std::int64_t frames);
+  // entity_move_to_entity: slides to where `target` stands when the move starts.
+  void moveToCharacter(std::int64_t character, std::int64_t target, std::int64_t frames);
+  // entity_move_to_with_camera and entity_move_to_entity_with_camera: the camera follows.
+  void moveToWithCamera(std::int64_t character, std::int64_t x, std::int64_t z,
+                        std::int64_t frames);
+  void moveToCharacterWithCamera(std::int64_t character, std::int64_t target, std::int64_t frames);
   // entity_move_to_axis: slides along one axis (0 x, 1 y, 2 z) to `position` in `frames` frames.
   void moveToAxis(std::int64_t character, std::int64_t position, std::int64_t axis,
                   std::int64_t frames);
+  // entity_move_to_axis_with_camera: the camera follows.
+  void moveToAxisWithCamera(std::int64_t character, std::int64_t position, std::int64_t axis,
+                            std::int64_t frames);
+  // reset_entity_origin: at once, no slot.
+  void resetOrigin(std::int64_t character);
+  // rotate_3d_object: turns or slides a 3D object of the map in the first object slot
+  // (SCRIPT_MOVEMENT[11]); `direction` is the original's signed byte.
+  void turnMapObject(std::int64_t object, std::int64_t direction);
   // move_camera_to and move_camera_to_entity: pans the camera in `frames` frames.
   void cameraTo(std::int64_t frames, std::int64_t x, std::int64_t z);
   void cameraToCharacter(std::int64_t character, std::int64_t frames);
@@ -115,17 +144,24 @@ private:
     std::optional<std::int64_t> target;
     glm::vec3 point{};
     std::int64_t clip = 0;
+    bool withCamera = false;
   };
   struct MoveTo {
+    std::optional<std::int64_t> target;
     glm::vec3 point{};
     std::int64_t frames = 1;
     std::optional<glm::vec3> perFrame;
+    bool withCamera = false;
   };
   struct MoveToAxis {
     std::int64_t axis = 0;
     float position = 0.0F;
     std::int64_t frames = 1;
     std::optional<float> perFrame;
+    bool withCamera = false;
+  };
+  struct MapObjectTurn {
+    std::int64_t direction = 0;
   };
   struct CameraPan {
     std::optional<std::int64_t> target;
@@ -133,16 +169,27 @@ private:
     std::int64_t frames = 1;
     bool started = false;
   };
-  using Move = std::variant<LookAt, SetRotation, Walk, MoveTo, MoveToAxis, CameraPan>;
+  using Move =
+      std::variant<LookAt, SetRotation, Walk, MoveTo, MoveToAxis, CameraPan, MapObjectTurn>;
   struct Slot {
+    // The character, or the map object of a MapObjectTurn.
     std::int64_t character = 0;
     Move move;
+    // Where the mover stood on the last frame the camera followed it (PREVIOUS_CAMERA_POS).
+    std::optional<glm::vec3> cameraFrom;
   };
 
   // The slot of a character on the map, logged when it is not there.
   [[nodiscard]] std::optional<std::int64_t> slotFor(std::string_view order,
                                                     std::int64_t character) const;
   void fill(std::int64_t slot, std::int64_t character, Move move);
+  void walk(std::string_view order, std::int64_t character, std::optional<std::int64_t> target,
+            glm::vec3 point, std::int64_t animation, bool withCamera);
+  void slide(std::string_view order, std::int64_t character, MoveTo move);
+  void slideAlong(std::string_view order, std::int64_t character, std::int64_t position,
+                  std::int64_t axis, std::int64_t frames, bool withCamera);
+  // Moves the camera by the mover's step since the frame before (tamer.c: moveCameraByDiff).
+  void followWithCamera(Slot& slot);
   // Ticks one slot; true when its move is done.
   bool tick(Slot& slot);
   bool tick(std::int64_t character, LookAt& move);

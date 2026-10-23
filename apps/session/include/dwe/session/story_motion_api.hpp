@@ -19,9 +19,34 @@ inline constexpr std::string_view CameraTo = "move_camera_to";
 inline constexpr std::string_view CameraToEntity = "move_camera_to_entity";
 inline constexpr std::string_view PlayAnimation = "play_animation";
 inline constexpr std::string_view WaitForEntity = "wait_for_entity";
+inline constexpr std::string_view WalkToWithCamera = "entity_walk_to_with_camera";
+inline constexpr std::string_view WalkToEntityWithCamera = "entity_walk_to_entity_with_camera";
+inline constexpr std::string_view MoveToEntity = "entity_move_to_entity";
+inline constexpr std::string_view MoveToWithCamera = "entity_move_to_with_camera";
+inline constexpr std::string_view MoveToEntityWithCamera = "entity_move_to_entity_with_camera";
+inline constexpr std::string_view MoveToAxisWithCamera = "entity_move_to_axis_with_camera";
+inline constexpr std::string_view ResetEntityOrigin = "reset_entity_origin";
+inline constexpr std::string_view Rotate3dObject = "rotate_3d_object";
 
-inline constexpr std::array Published{Player,   Partner,        LookAt,        SetRotation,
-                                      WalkTo,   WalkToEntity,   MoveTo,        MoveToAxis,
-                                      CameraTo, CameraToEntity, PlayAnimation, WaitForEntity};
+inline constexpr std::array Published{Player,
+                                      Partner,
+                                      LookAt,
+                                      SetRotation,
+                                      WalkTo,
+                                      WalkToEntity,
+                                      MoveTo,
+                                      MoveToAxis,
+                                      CameraTo,
+                                      CameraToEntity,
+                                      PlayAnimation,
+                                      WaitForEntity,
+                                      WalkToWithCamera,
+                                      WalkToEntityWithCamera,
+                                      MoveToEntity,
+                                      MoveToWithCamera,
+                                      MoveToEntityWithCamera,
+                                      MoveToAxisWithCamera,
+                                      ResetEntityOrigin,
+                                      Rotate3dObject};
 
 } // namespace dwe::session::story_motion_api

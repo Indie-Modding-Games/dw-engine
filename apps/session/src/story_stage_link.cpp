@@ -66,6 +66,23 @@ bool StoryActorsLink::cameraPanning() const {
   return target_ != nullptr && target_->cameraPanning();
 }
 
+void StoryActorsLink::shiftCamera(glm::vec3 by) {
+  if (target_ != nullptr) {
+    target_->shiftCamera(by);
+  }
+}
+
+void StoryActorsLink::resetOrigin(std::int64_t character) {
+  if (target_ != nullptr) {
+    target_->resetOrigin(character);
+  }
+}
+
+// Without a stage there is no object to turn: the turn is over at once.
+bool StoryActorsLink::turnMapObject(std::int64_t object, std::int64_t direction) {
+  return target_ == nullptr || target_->turnMapObject(object, direction);
+}
+
 // The scripted moves' rules come with the stage, from the field rules: until then the moves have
 // none, which no order reaches since no character is on the map.
 void StoryAdapter::attachStage(game::story::ScriptActorsPort* stage,

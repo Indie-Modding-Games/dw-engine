@@ -40,5 +40,14 @@ inline constexpr std::string_view SyncUnconnected =
     "so a cleared sync counts as raised";
 inline constexpr std::string_view TargetGone =
     "[port:story-motion] slot {}: target {} is not on the map, the move ends";
+inline constexpr std::string_view MoveToCharacter =
+    "[port:story-motion] {} (script_interp.c:2018, tamer.c:1125 tickEntityMoveTo): the original "
+    "ends each axis on 0 instead of the target; the engine ends on the target";
+inline constexpr std::string_view MoveToWithCamera =
+    "[port:story-motion] entity_move_to_with_camera (script_interp.c:2032): the original files it "
+    "as a move to its slot's last target; the engine moves to (x, z)";
+inline constexpr std::string_view ResetOrigin =
+    "[port:story-motion] reset_entity_origin (script_interp.c:1516, overworld.c:1829 "
+    "resetEntityOrigin): character {}";
 
 } // namespace dwe::game::story::motion_messages

@@ -240,6 +240,8 @@ public:
   // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).
   void panCameraByScript(glm::vec3 focus, float seconds);
   [[nodiscard]] bool cameraPanning() const { return cameraPan_.has_value(); }
+  // Moves the held camera by `by` (map.c: moveCameraByDiff).
+  void shiftCameraByScript(glm::vec3 by);
 
   // The ground waypoints left of the click-to-move path, for debug drawing.
   [[nodiscard]] std::span<const glm::vec3> path() const { return path_; }

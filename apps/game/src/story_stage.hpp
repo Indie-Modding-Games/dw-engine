@@ -34,6 +34,9 @@ public:
   [[nodiscard]] bool wouldTouchCharacter(std::int64_t character, float step) const override;
   void panCamera(glm::vec3 focus, float seconds) override;
   [[nodiscard]] bool cameraPanning() const override;
+  void shiftCamera(glm::vec3 by) override;
+  void resetOrigin(std::int64_t character) override;
+  [[nodiscard]] bool turnMapObject(std::int64_t object, std::int64_t direction) override;
 
 private:
   // The entity of a character on the map.

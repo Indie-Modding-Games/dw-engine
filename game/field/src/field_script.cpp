@@ -62,6 +62,10 @@ void Field::panCameraByScript(glm::vec3 focus, float seconds) {
   cameraPan_ = CameraPan{.from = from, .to = focus, .seconds = seconds, .elapsed = 0.0F};
 }
 
+void Field::shiftCameraByScript(glm::vec3 by) {
+  scriptCamera_ = scriptCamera_.value_or(world_->registry().get<Transform>(player_).position) + by;
+}
+
 void Field::tickScripted(float seconds) {
   entt::registry& registry = world_->registry();
   registry.get<AnimationIntent>(player_) = {};

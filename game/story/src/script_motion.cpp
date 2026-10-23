@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <string>
 #include <type_traits>
@@ -95,7 +96,8 @@ std::optional<std::int64_t> ScriptMotion::slotFor(std::string_view order,
 void ScriptMotion::fill(std::int64_t slot, std::int64_t character, Move move) {
   core::logDebug("{}",
                  messages::formatMessage(messages::SlotFilled, move.index(), slot, character));
-  slots_.insert_or_assign(slot, Slot{.character = character, .move = move});
+  slots_.insert_or_assign(
+      slot, Slot{.character = character, .move = std::move(move), .cameraFrom = std::nullopt});
 }
 
 void ScriptMotion::lookAt(std::int64_t character, std::int64_t target) {
@@ -111,9 +113,10 @@ void ScriptMotion::setRotation(std::int64_t character, std::int64_t rotation) {
   }
 }
 
-void ScriptMotion::walkTo(std::int64_t character, std::int64_t x, std::int64_t z,
-                          std::int64_t animation) {
-  const auto slot = slotFor("entity_walk_to", character);
+void ScriptMotion::walk(std::string_view order, std::int64_t character,
+                        std::optional<std::int64_t> target, glm::vec3 point, std::int64_t animation,
+                        bool withCamera) {
+  const auto slot = slotFor(order, character);
   if (!slot) {
     return;
   }
@@ -122,45 +125,115 @@ void ScriptMotion::walkTo(std::int64_t character, std::int64_t x, std::int64_t z
   core::logDebug("{}", messages::formatMessage(messages::WalkClip, character, animation, clip,
                                                actors_->groundSpeed(character, clip)));
   fill(*slot, character,
-       Walk{.target = std::nullopt,
-            .point = groundPoint(x, z, actors_->position(character).y),
-            .clip = clip});
+       Walk{.target = target, .point = point, .clip = clip, .withCamera = withCamera});
+}
+
+void ScriptMotion::walkTo(std::int64_t character, std::int64_t x, std::int64_t z,
+                          std::int64_t animation) {
+  walk("entity_walk_to", character, std::nullopt, groundPoint(x, z, actors_->position(character).y),
+       animation, false);
 }
 
 void ScriptMotion::walkToCharacter(std::int64_t character, std::int64_t animation,
                                    std::int64_t target) {
-  const auto slot = slotFor("entity_walk_to_entity", character);
-  if (!slot) {
-    return;
+  walk("entity_walk_to_entity", character, target, {}, animation, false);
+}
+
+void ScriptMotion::walkToWithCamera(std::int64_t character, std::int64_t x, std::int64_t z,
+                                    std::int64_t animation) {
+  walk("entity_walk_to_with_camera", character, std::nullopt,
+       groundPoint(x, z, actors_->position(character).y), animation, true);
+}
+
+void ScriptMotion::walkToCharacterWithCamera(std::int64_t character, std::int64_t animation,
+                                             std::int64_t target) {
+  walk("entity_walk_to_entity_with_camera", character, target, {}, animation, true);
+}
+
+void ScriptMotion::slide(std::string_view order, std::int64_t character, MoveTo move) {
+  if (const auto slot = slotFor(order, character)) {
+    fill(*slot, character, move);
   }
-  const std::int64_t clip = walkClip(character, animation);
-  actors_->animate(character, clip);
-  core::logDebug("{}", messages::formatMessage(messages::WalkClip, character, animation, clip,
-                                               actors_->groundSpeed(character, clip)));
-  fill(*slot, character, Walk{.target = target, .point = {}, .clip = clip});
 }
 
 void ScriptMotion::moveTo(std::int64_t character, std::int64_t x, std::int64_t z,
                           std::int64_t frames) {
-  if (const auto slot = slotFor("entity_move_to", character)) {
-    fill(*slot, character,
-         MoveTo{.point = groundPoint(x, z, actors_->position(character).y),
-                .frames = frames,
-                .perFrame = std::nullopt});
-  }
+  slide("entity_move_to", character,
+        MoveTo{.target = std::nullopt,
+               .point = groundPoint(x, z, actors_->position(character).y),
+               .frames = frames,
+               .perFrame = std::nullopt,
+               .withCamera = false});
 }
 
-void ScriptMotion::moveToAxis(std::int64_t character, std::int64_t position, std::int64_t axis,
-                              std::int64_t frames) {
-  if (const auto slot = slotFor("entity_move_to_axis", character)) {
+void ScriptMotion::moveToCharacter(std::int64_t character, std::int64_t target,
+                                   std::int64_t frames) {
+  core::logDebug("{}", messages::formatMessage(messages::MoveToCharacter, "entity_move_to_entity"));
+  slide("entity_move_to_entity", character,
+        MoveTo{.target = target,
+               .point = {},
+               .frames = frames,
+               .perFrame = std::nullopt,
+               .withCamera = false});
+}
+
+void ScriptMotion::moveToWithCamera(std::int64_t character, std::int64_t x, std::int64_t z,
+                                    std::int64_t frames) {
+  core::logDebug("{}", std::string{messages::MoveToWithCamera});
+  slide("entity_move_to_with_camera", character,
+        MoveTo{.target = std::nullopt,
+               .point = groundPoint(x, z, actors_->position(character).y),
+               .frames = frames,
+               .perFrame = std::nullopt,
+               .withCamera = true});
+}
+
+void ScriptMotion::moveToCharacterWithCamera(std::int64_t character, std::int64_t target,
+                                             std::int64_t frames) {
+  core::logDebug("{}", messages::formatMessage(messages::MoveToCharacter,
+                                               "entity_move_to_entity_with_camera"));
+  slide("entity_move_to_entity_with_camera", character,
+        MoveTo{.target = target,
+               .point = {},
+               .frames = frames,
+               .perFrame = std::nullopt,
+               .withCamera = true});
+}
+
+void ScriptMotion::slideAlong(std::string_view order, std::int64_t character, std::int64_t position,
+                              std::int64_t axis, std::int64_t frames, bool withCamera) {
+  if (const auto slot = slotFor(order, character)) {
     // The original's y and z point the other way from the world's (core::fromOriginalAxes).
     const float sign = glm::dot(worldAxis(axis), core::fromOriginalAxes(worldAxis(axis)));
     fill(*slot, character,
          MoveToAxis{.axis = axis,
                     .position = sign * static_cast<float>(position),
                     .frames = frames,
-                    .perFrame = std::nullopt});
+                    .perFrame = std::nullopt,
+                    .withCamera = withCamera});
   }
+}
+
+void ScriptMotion::moveToAxis(std::int64_t character, std::int64_t position, std::int64_t axis,
+                              std::int64_t frames) {
+  slideAlong("entity_move_to_axis", character, position, axis, frames, false);
+}
+
+void ScriptMotion::moveToAxisWithCamera(std::int64_t character, std::int64_t position,
+                                        std::int64_t axis, std::int64_t frames) {
+  slideAlong("entity_move_to_axis_with_camera", character, position, axis, frames, true);
+}
+
+void ScriptMotion::resetOrigin(std::int64_t character) {
+  core::logDebug("{}", messages::formatMessage(messages::ResetOrigin, character));
+  actors_->resetOrigin(character);
+}
+
+void ScriptMotion::turnMapObject(std::int64_t object, std::int64_t direction) {
+  // script_interp.c: SCRIPT_OP_ROTATE_3D_OBJECT keeps the direction as a signed byte.
+  const auto signedDirection =
+      static_cast<std::int64_t>(static_cast<std::int8_t>(static_cast<std::uint8_t>(direction)));
+  fill(FirstObjectSlot, object, MapObjectTurn{.direction = signedDirection});
 }
 
 void ScriptMotion::cameraTo(std::int64_t frames, std::int64_t x, std::int64_t z) {
@@ -263,9 +336,13 @@ void ScriptMotion::talkFrozen(std::int64_t talker) {
 }
 
 bool ScriptMotion::tick(Slot& slot) {
+  if (const auto* turn = std::get_if<MapObjectTurn>(&slot.move)) {
+    return actors_->turnMapObject(slot.character, turn->direction);
+  }
   if (!std::holds_alternative<CameraPan>(slot.move) && !actors_->slotOf(slot.character)) {
     return true;
   }
+  followWithCamera(slot);
   return std::visit(
       [&](auto& move) {
         using Kind = std::decay_t<decltype(move)>;
@@ -275,11 +352,33 @@ bool ScriptMotion::tick(Slot& slot) {
           return true;
         } else if constexpr (std::is_same_v<Kind, CameraPan>) {
           return tick(move);
+        } else if constexpr (std::is_same_v<Kind, MapObjectTurn>) {
+          return true;
         } else {
           return tick(slot.character, move);
         }
       },
       slot.move);
+}
+
+void ScriptMotion::followWithCamera(Slot& slot) {
+  const bool withCamera = std::visit(
+      [](const auto& move) {
+        if constexpr (requires { move.withCamera; }) {
+          return move.withCamera;
+        } else {
+          return false;
+        }
+      },
+      slot.move);
+  if (!withCamera) {
+    return;
+  }
+  const glm::vec3 position = actors_->position(slot.character);
+  if (slot.cameraFrom) {
+    actors_->shiftCamera(position - *slot.cameraFrom);
+  }
+  slot.cameraFrom = position;
 }
 
 bool ScriptMotion::tick(std::int64_t character, LookAt& move) {
@@ -336,6 +435,16 @@ bool ScriptMotion::tick(std::int64_t character, MoveTo& move) {
   // stops at the target once it gets there.
   const glm::vec3 position = actors_->position(character);
   if (!move.perFrame) {
+    if (move.target) {
+      // tamer.c: tickEntityMoveTo aims at where the target stands on the first frame.
+      if (!actors_->slotOf(*move.target)) {
+        core::logWarning("{}",
+                         messages::formatMessage(messages::TargetGone, character, *move.target));
+        return true;
+      }
+      move.point = actors_->position(*move.target);
+      move.point.y = position.y;
+    }
     glm::vec3 step = (move.point - position) / frames(move.frames);
     step.y = 0.0F;
     move.perFrame = step;
