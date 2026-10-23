@@ -254,8 +254,14 @@ destinos son etiquetas (`start`, `init`, `l_<offset>`) y cada `sub` lista sus ar
 apiló: un número, una variable (`base+0x0040`, `instance+0x0008`), una dirección (`&base+0x0040`) o una etiqueta. Un
 argumento sin unir es `null`. El área de datos va elemento a elemento con su tipo y sus valores; un valor que es
 relleno (una variable sin valor inicial) es `null`. Los datos sin uso van como `kind: unused` con sus bytes y el
-motivo (`reason`); una fila de CLUT con índice calculado lleva `row_starts` y todos los colores que puede leer. Un
-ejemplo inventado:
+motivo (`reason`); una fila de CLUT con índice calculado lleva `row_starts` y todos los colores que puede leer.
+
+El motor lo vuelve a leer con `readEfeScriptYaml` (`formats/effect/efe_yaml.hpp`): da un `EfeProgram` con las
+instrucciones de los dos scripts y la imagen del área de datos, de la base al script de inicio, con los valores de
+variables, tablas, instancias y argumentos numéricos; lo que solo lee el dibujo (huesos, sprites, UV, CLUT, mapas de
+tiles, cintas) queda como relleno. Rechaza un `op`, `sub`, operador o comparación desconocidos y datos fuera del área.
+
+Un ejemplo inventado:
 
 ```yaml
 start_script:

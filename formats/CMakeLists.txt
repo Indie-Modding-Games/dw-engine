@@ -26,6 +26,7 @@ dwe_add_module(formats
         src/effect/efe_script.cpp
         src/effect/efe_subops.cpp
         src/effect/efe_yaml.cpp
+        src/effect/efe_yaml_read.cpp
         src/exe/psx_exe.cpp
         src/exe/constant_switch.cpp
         src/exe/executable_layout.cpp
