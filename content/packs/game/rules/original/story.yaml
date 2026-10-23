@@ -1,0 +1,19 @@
+# La historia (apps/session: StoryAdapter, docs/architecture/interprete-historia.md).
+# El motor hace tick a 60 Hz y la historia del original avanza 20 fotogramas por segundo
+# (main.c: gameLoop, VSync(3)): un fotograma del original son 3 ticks.
+ticks_per_frame: 3
+# Una variable de la historia es un byte (script.h: ScriptState.pstats): 0 a 255, y una escritura
+# que se pasa se queda en el extremo (script_interp.c: scriptInstruction10to27).
+variable_max: 255
+# Mientras un script tiene quieto al jugador, la variable 0 vale 3 (script_interp.c: scriptPauseGame), y al acabar
+# vuelve a su valor; una partida guardada entonces la guarda como 0 (main_menu.c: writeSavegame).
+frozen_variable: 0
+frozen_value: 3
+# Cada congelación borra este disparador, el que evita que los dos lados de una charla se giren.
+talk_facing_trigger: 44
+# Si el cambio de mapa de un script muestra el nombre del mapa nuevo (script_interp.c: consumeMapChangeShowName): la
+# variable dice según el evento (sin nombre en un evento), siempre o nunca, y vuelve a «según el evento».
+show_name_variable: 6
+show_name_by_event: 0
+show_name_always: 1
+show_name_never: 2

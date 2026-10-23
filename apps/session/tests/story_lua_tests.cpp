@@ -28,7 +28,7 @@ using story_play::StoryPlay;
 
 namespace {
 
-constexpr std::string_view Header = R"lua(
+constexpr std::string_view Header = R"lua(-- dwx lua 3: a module of the tests
 local story <const> = story
 local ENDED <const> = story.ENDED
 local routines = {}

@@ -4,9 +4,8 @@ Los scripts de eventos del juego original llegan al motor como módulos Lua que 
 `story/<n>.lua` ([formato](../formats/scripts.md#lua)). Cada orden del script es una llamada a la tabla `story`. Esta
 página dice cómo se llaman esas funciones y las claves de sus textos, que es lo que un mod ve y puede reemplazar.
 
-> Estado: los módulos ya se generan; el motor aún no los ejecuta. Lo hará el paquete S2, que añade `story` a la API de
-> Lua y sube `LuaApiVersion` a **1.2.0**: el paquete base declarará `api: 1.2` porque sus módulos llaman a `story.*` y
-> a `error`.
+> Estado: la partida publica `story` en su VM de historia y `LuaApiVersion` es **1.2.0**. Que el paquete base declare
+> `api:` y lo que un mod puede hacer con la historia son de la fase 5.
 
 ## Nombres
 

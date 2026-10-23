@@ -61,6 +61,13 @@ Las secciones del ruleset de la partida (en `content/packs/game/rules/original/`
   especie en ese documento, o con las de `others`, con el HP y el MP actuales que da el guion.
 - `tamer` ([esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/ruleset_tamer.schema.json)): los límites del nivel de domador y los
   niveles que da una evolución cuando sale su probabilidad (`evolution_level_gain`, `evl.c: EVL_applyEvolution`).
+- `story` ([esquema](../../content/schemas/ruleset_story.schema.json)): `ticks_per_frame`, los ticks del motor por
+  fotograma de la historia del original (3: 60 Hz contra 20 fotogramas por segundo), y `variable_max`, el tope de una
+  variable de la historia (255), y los números del flujo de un script que usa el runner: la variable y el valor de
+  «jugador quieto» (0 y 3), el disparador de girarse en una charla (44) y la variable del nombre del mapa con sus tres
+  valores (6; 0, 1, 2). La lee `StoryAdapter`, que en la primera lectura crea la VM de scripts de la partida,
+  publica en ella la API `story` y comprueba que los módulos de historia vienen de este `dwx`; si algo de eso falla, la
+  partida no se crea ([intérprete de historia](../../docs/architecture/interprete-historia.md)).
 
 Una partida nueva con la misma semilla (`SessionDesc::seed`) es siempre la misma, aunque antes se haya jugado otra en
 la misma `GameSession`: la semilla reinicia los números aleatorios del partner y los de los sistemas (`random()`, que empiezan en la semilla
@@ -79,7 +86,7 @@ de `clock` (con la velocidad que tenía).
 | `inventory` | Los huecos, cuántos se usan y el dinero (`inventory::toYaml`, versión `SectionVersion`) |
 | `evolution` | Las formas ya criadas (`evolution::toYaml`, versión `EvolutionStateVersion`); la marca de objeto de evolución usado no se guarda, como en el original |
 | `moves` | Las técnicas del partner: `learned` (ids de `data/moves`) y `equipped` (cuatro posiciones de la lista de la especie o `null`; la cuarta es el remate) |
-| `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../game/story.md)); una partida sin ella carga la historia como la deja una partida nueva, con los disparadores de criado (0x200 + número) de las formas que guardó la sección `evolution`, y lo registra |
+| `story` | Los disparadores y las variables de la historia (`StoryAdapter`, versión 1, [game/story](../game/story.md)); guarda las variables 0 a 34, como el original, y la variable de «jugador quieto» como 0 si tiene su valor (`main_menu.c: writeSavegame`); al cargar, las demás empiezan a 0; una partida sin ella carga la historia como la deja una partida nueva, con los disparadores de criado (0x200 + número) de las formas que guardó la sección `evolution`, y lo registra |
 
 La cabecera lleva el ruleset, la versión del juego, el tiempo jugado y una etiqueta `<especie> <mapa>`. Cargar una
 partida de otro ruleset lo selecciona antes de leer las secciones. Al cargar, `savedPlace()` dice dónde empezar: el

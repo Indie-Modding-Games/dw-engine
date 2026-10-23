@@ -4,9 +4,12 @@
 #include <dwe/assets/new_game_story.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/game/story/story_orders.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/session_system.hpp>
+#include <dwe/session/story_lua.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -20,6 +23,10 @@ namespace dwe::assets {
 class VirtualFileSystem;
 } // namespace dwe::assets
 
+namespace dwe::script {
+class ScriptVm;
+} // namespace dwe::script
+
 namespace dwe::session {
 
 // The save section of the story's triggers and variables.
@@ -30,6 +37,19 @@ inline constexpr std::string_view StorySaveName = "story";
 inline constexpr std::int32_t FirstRaisedTrigger = 0x200;
 inline constexpr std::int32_t RaisedSpeciesLimit = 0x3f;
 
+// The ruleset section of the story (rules/<id>/story.yaml).
+inline constexpr std::string_view StorySection = "story";
+
+struct StorySectionRules {
+  // Engine ticks per frame of the original: the engine ticks at 60 Hz and the original's story ran
+  // at 20 frames a second, so the original's is 3.
+  std::uint32_t ticksPerFrame = 0;
+  game::story::StoryRules rules;
+  game::story::StoryFlowRules flow;
+};
+
+core::Result<StorySectionRules> readStoryRules(const ruleset::Section& section);
+
 // The species another save section kept as raised (the evolution section), by number.
 using RaisedSource = std::function<std::set<std::int32_t>()>;
 
@@ -39,8 +59,10 @@ struct StoryAdapterDesc {
   const assets::VirtualFileSystem* files = nullptr;
 };
 
-// Glues the story state (game/story) to the session: starts it as a new game leaves it, and saves
-// it in the `story` section. The field reads its triggers and writes the ones a script warp sets
+// Glues the story (game/story) to the session: starts its state as a new game leaves it, saves it
+// in the `story` save section, and runs the story's sections. Each game has its own script VM, in
+// which StoryLuaHost runs the packs' story modules; one tick of the session is one engine tick of
+// the runner. The field reads the triggers and writes the ones a script warp sets
 // (field_facts.hpp).
 class StoryAdapter final : public SessionSystem {
 public:
@@ -51,12 +73,20 @@ public:
   StoryAdapter(StoryAdapter&&) = delete;
   StoryAdapter& operator=(StoryAdapter&&) = delete;
 
-  // Reads data/new_game_story, field/warps' start and the ruleset's digimon table; any of them may
-  // be missing.
+  [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
+  // Reads data/new_game_story, field/warps' start and the ruleset's digimon table, any of which may
+  // be missing, and the story section. The first time, it builds the game's script VM and publishes
+  // the story API in it; a failure there, or story modules from another dwx, stops the game.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> addSaveSections(game::save::SaveSections& sections) override;
   // The story as a new game leaves it, with the session's partner as the first one.
   core::Result<void> startNewGame(GameSession& session) override;
+  void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
+
+  // Asks the runner for a section (StoryRunner::request). A section that starts at once draws its
+  // random numbers from the session the last tick or new game bound.
+  game::story::RequestOutcome request(game::story::SectionRef section,
+                                      game::story::StartTiming timing);
 
   // The story as a new game with this first partner leaves it: the triggers data/new_game_story
   // sets, the ones its opening sets when field/warps starts after it, and the partner's raised
@@ -79,6 +109,12 @@ public:
 
 private:
   class Serializer;
+  class StatePort;
+  class RandomPort;
+
+  core::Result<void> wire(const StorySectionRules& story);
+  void followRules(const StorySectionRules& story);
+  core::Result<void> startRunner(const StorySectionRules& story);
 
   StoryAdapterDesc desc_;
   std::optional<assets::NewGameStory> newGame_;
@@ -88,6 +124,16 @@ private:
   RaisedSource savedRaised_;
   game::story::StoryState state_;
   std::unique_ptr<Serializer> serializer_;
+  // Declared in the order they are built: the runner holds the host, the host the VM's coroutines,
+  // and the VM's published functions the ports and the orders.
+  std::unique_ptr<script::ScriptVm> vm_;
+  std::unique_ptr<StatePort> statePort_;
+  std::unique_ptr<RandomPort> randomPort_;
+  std::unique_ptr<game::story::StoryOrders> orders_;
+  std::unique_ptr<StoryLuaHost> host_;
+  std::optional<game::story::StoryRunner> runner_;
+  std::uint32_t ticksPerFrame_ = 0;
+  game::story::StoryFlowRules flow_;
 };
 
 } // namespace dwe::session

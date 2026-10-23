@@ -208,7 +208,7 @@ TEST_CASE("a mod that cannot mount is left out with its reason, and the others s
   writeContent(folder);
   addMod(folder, "good_mod", "id: good_mod\nversion: 1.0.0\nlayer: mods\napi: \"1.x\"\n");
   addMod(folder, "other_api", "id: other_api\nversion: 1.0.0\nlayer: mods\napi: \"2.x\"\n");
-  addMod(folder, "newer_minor", "id: newer_minor\nversion: 1.0.0\nlayer: mods\napi: \"1.2\"\n");
+  addMod(folder, "newer_minor", "id: newer_minor\nversion: 1.0.0\nlayer: mods\napi: \"1.3\"\n");
   addMod(folder, "broken", "id: Broken\nversion: 1.0.0\nlayer: mods\n");
   addMod(
       folder, "lonely",
@@ -225,11 +225,11 @@ TEST_CASE("a mod that cannot mount is left out with its reason, and the others s
   const SkippedMod* otherApi = skippedFolder(**content, "other_api");
   REQUIRE(otherApi != nullptr);
   CHECK(otherApi->reason ==
-        "pack 'other_api': the scripts need the Lua API 2.x, and this engine has 1.1.0");
+        "pack 'other_api': the scripts need the Lua API 2.x, and this engine has 1.2.0");
   const SkippedMod* newerMinor = skippedFolder(**content, "newer_minor");
   REQUIRE(newerMinor != nullptr);
   CHECK(newerMinor->reason ==
-        "pack 'newer_minor': the scripts need the Lua API 1.2, and this engine has 1.1.0");
+        "pack 'newer_minor': the scripts need the Lua API 1.3, and this engine has 1.2.0");
   const SkippedMod* broken = skippedFolder(**content, "broken");
   REQUIRE(broken != nullptr);
   CHECK(broken->reason.contains("pack id 'Broken' may only use a-z, 0-9 and '_'"));

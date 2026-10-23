@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: story",
+  "description": "rules/<id>/story.yaml: the story's rules (apps/session: StorySectionRules, docs/architecture/interprete-historia.md).",
+  "type": "object",
+  "required": [
+    "ticks_per_frame",
+    "variable_max",
+    "frozen_variable",
+    "frozen_value",
+    "talk_facing_trigger",
+    "show_name_variable",
+    "show_name_by_event",
+    "show_name_always",
+    "show_name_never"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ticks_per_frame": {
+      "description": "Engine ticks (60 Hz) per frame of the original's story; the original's is 3.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "variable_max": {
+      "description": "The highest value of a story variable; a write past either end stops there.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255
+    },
+    "frozen_variable": {
+      "description": "The variable that holds frozen_value while a script holds the player still.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "frozen_value": {
+      "description": "The value of frozen_variable while a script holds the player still.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "talk_facing_trigger": {
+      "description": "The trigger every freeze clears, which keeps a talk's two sides from turning to each other.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 799
+    },
+    "show_name_variable": {
+      "description": "The variable that says whether a script's map change shows the new map's name.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "show_name_by_event": {
+      "description": "show_name_variable's value for: no name when the section is an event.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "show_name_always": {
+      "description": "show_name_variable's value for: always show the name.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "show_name_never": {
+      "description": "show_name_variable's value for: never show the name.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    }
+  }
+}

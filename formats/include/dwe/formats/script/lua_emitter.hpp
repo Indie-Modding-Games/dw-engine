@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/core/story_modules.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/formats/script/script_listing.hpp>
 #include <dwe/formats/script/structuring.hpp>
@@ -42,9 +43,10 @@
 // gives the original's result.
 namespace dwe::formats::script {
 
-// The version of what the emitter writes, in the first line of every module. A change to the output
-// raises it and dwx's ExtractorVersion.
-inline constexpr int LuaEmitterVersion = 3;
+// The version of what the emitter writes, in the first line of every module
+// (core/story_modules.hpp, which the session checks). A change to the output raises it and dwx's
+// ExtractorVersion.
+inline constexpr int LuaEmitterVersion = core::story_modules::Version;
 
 // Names a module.
 struct LuaModuleName {

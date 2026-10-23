@@ -605,7 +605,8 @@ Medido en el disco US (`doctest -s`, registro `disc-s-*.log` del corte):
 ### Corte 4 de S2: decisiones
 
 El corte 4 se parte en dos. **4a** (nombres y extracción) no cablea nada al juego; **4b** cablea la historia a la
-sesión y publica `story` a los mods.
+sesión y publica `story` a los módulos de historia del paquete base, que es lo que necesita el juego original. Lo que
+toca a los mods es de la fase 5.
 
 **4a**
 
@@ -620,27 +621,39 @@ sesión y publica `story` a los mods.
 
 **4b**
 
-- **Una VM por partida:** la VM de la historia es de la sesión (la crea `StoryAdapter`), separada de la de la consola
-  y de los demás scripts de un mod; un módulo de historia de un mod no ve sus globales. La caché de módulos de
-  `StoryLuaHost` vive lo que la partida, y los paquetes montados no cambian durante una partida, así que nunca hace
-  falta invalidarla.
+- **Una VM por partida:** la VM de la historia es de la sesión (la crea `StoryAdapter` en la primera lectura de las
+  reglas), separada de la de la consola. La caché de módulos de `StoryLuaHost` vive lo que la partida, y los paquetes
+  montados no cambian durante una partida, así que nunca hace falta invalidarla. Qué ve un módulo de historia de un
+  mod es de la fase 5.
+- **Ritmo:** la sección `story` del ruleset da `ticks_per_frame` (3: el motor hace tick a 60 Hz y la historia del
+  original avanza 20 fotogramas por segundo, `main.c: VSync(3)`), `variable_max` (255) y las claves de
+  `StoryFlowRules` de S3 (`frozen_variable`/`frozen_value` 0 y 3, `talk_facing_trigger` 44, `show_name_variable` 6
+  con `show_name_by_event`/`always`/`never` 0, 1 y 2). Cada tick de la sesión es un
+  tick del runner, aunque el reloj de juego esté parado; los números aleatorios de `store_random` salen del generador
+  de los sistemas de la sesión (`GameSession::random()`), como el `rand()` único del original.
 - **Fallo de `publishApi`:** si publicar la API `story` falla, la sesión no se crea: es un error fatal, no un aviso.
-- **Versión de la API:** `LuaApiVersion` sube a 1.2 cuando `story` se publica, y el paquete base que escribe `dwx`
-  declara `api:` sin otra subida de `ExtractorVersion`; un paquete sin `api:` cuenta como escrito para este motor.
-  Si VAN-01 (`story.play_sound`) sube la versión menor antes, este corte toma la siguiente.
+- **Versión de la API:** `LuaApiVersion` sube a 1.2 cuando `story` se publica. Si VAN-01 (`story.play_sound`) sube la
+  versión menor antes, este corte toma la siguiente. Que el paquete base declare `api:` queda para la fase 5: un
+  paquete sin `api:` cuenta como escrito para este motor, y declararla cambia la salida de `dwx`, lo que obliga a subir
+  `ExtractorVersion` (el test de la huella del disco sintético lo exige).
 - **Variables guardadas:** el original guarda 35 variables. `writeSavegame` copia `0x17C` bytes desde el principio de
   `ScriptState` (`main_menu.c:5120`; `loadSavegame` los copia de vuelta en `main_menu.c:5058`), y `ScriptState`
   (`script.h:158`) es `smth[212]`, `cards[33]`, `triggers[100]` y `pstats[256]`: `0x17C − 345 = 35`. Se siguen
   guardando 35.
-- **Variables 35–255 al cargar:** el original las deja con lo que hubiera en la RAM; el motor las pone a 0. Es una
-  decisión de determinismo: reproduce cargar en un original recién encendido.
-- **Versión del emisor:** al cargar un módulo, `StoryLuaHost` compara su cabecera `-- dwx lua N` con
-  `LuaEmitterVersion`. Si no coincide o no la tiene, la partida no arranca, con un error que pide volver a extraer
-  («content extracted by an older dwx; run dwx extract again»); nunca falla a mitad de partida.
+- **Variables 35–255 al cargar:** el original las deja con lo que hubiera en la RAM; el motor las pone a 0, como las
+  deja `initializeScripts` al encender (`script_interp.c:2208`). Es una mejora opcional de determinismo: reproduce
+  cargar en un original recién encendido. `ResetUnsavedVariablesOnLoad` (`story_adapter.cpp`) en `false` vuelve a lo
+  del original.
+- **Versión del emisor:** `StoryLuaHost` compara la cabecera `-- dwx lua N` de un módulo con la versión de los
+  módulos (`core/story_modules.hpp`, la misma que usa el emisor, porque el runtime no depende de `formats`). Al crear la
+  partida mira el módulo 0, que el paquete base siempre trae; si no coincide o no la tiene, la partida no arranca, con
+  un error que pide volver a extraer («content extracted by an older dwx; run dwx extract again»). Cada módulo que
+  carga después pasa la misma comprobación. Sin módulos de historia (los tests sin paquete base) la partida arranca y
+  el registro dice que ninguna sección puede correr.
 - **Constantes de entidad:** `story.PLAYER` y `story.PARTNER` se publican junto con la primera orden con entidad que
   se publique, no antes.
 - **Variable 0 al guardar:** `writeSavegame` guarda la variable 0 como 0 si vale 3 y luego la restaura
-  (`main_menu.c:5080`); el motor hace lo mismo.
+  (`main_menu.c:5080`); el motor hace lo mismo con `frozen_variable` y `frozen_value` del ruleset.
 
 ### Paridad contra el original (trazas)
 

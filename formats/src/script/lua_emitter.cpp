@@ -95,8 +95,8 @@ public:
       : listing_(&listing), script_(&script), name_(&name) {}
 
   core::Result<LuaModule> write() {
-    line(std::format("-- dwx lua {}: script {}, from {}", LuaEmitterVersion, name_->script,
-                     name_->source));
+    line(std::format("{}{}: script {}, from {}", core::story_modules::HeaderPrefix,
+                     LuaEmitterVersion, name_->script, name_->source));
     line("local story <const> = story");
     line("local ENDED <const> = story.ENDED");
     line("local PLAYER <const> = story.PLAYER");

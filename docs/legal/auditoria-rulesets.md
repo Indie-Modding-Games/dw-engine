@@ -144,6 +144,16 @@ comportamiento, no guardan datos.
 | `level_max` | 10 | a | Tope. |
 | `evolution_level_gain` | 1 | a | Incremento. |
 
+### `story.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `ticks_per_frame` | 3 | a | Ritmo: el original avanza 20 fotogramas por segundo (`VSync(3)`), el motor hace tick a 60 Hz. |
+| `variable_max` | 255 | a | Tope (una variable es un byte). |
+| `frozen_variable`, `frozen_value` | 0, 3 | a | Número de variable y valor de una marca de estado (`scriptPauseGame`). |
+| `talk_facing_trigger` | 44 | a | Número de disparador de una regla. |
+| `show_name_variable` y sus valores | 6; 0, 1, 2 | a | Número de variable y valores de una regla (`consumeMapChangeShowName`). |
+
 ### `item_use.yaml`
 
 | Clave | Valor | Clase | Motivo |

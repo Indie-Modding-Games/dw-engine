@@ -111,6 +111,17 @@ inline constexpr std::string_view StoryDocumentFailed = "story: {}";
 // No digimon table to number the first partner by (the species), so its raised trigger stays clear.
 inline constexpr std::string_view StoryPartnerUnnumbered =
     "story: partner '{}' has no number in the digimon table; its raised trigger stays clear";
+inline constexpr std::string_view StorySectionText = "the story section";
+inline constexpr std::string_view StoryApiFailed =
+    "story: the story API could not be published: {}";
+inline constexpr std::string_view StoryTicksPerFrame =
+    "ticks_per_frame is {}, and a frame of the original takes 1 to {} engine ticks";
+inline constexpr std::string_view StoryVariableMax =
+    "variable_max is {}, and a story variable holds 1 to {} at most (one byte)";
+inline constexpr std::string_view StoryRunnerKept =
+    "story: ticks_per_frame or the flow keys changed while a script runs; the new values apply to "
+    "the next game";
+inline constexpr std::string_view StoryNumberOutside = "{} is {}, outside 0 to {}";
 
 // The story's Lua host (story_lua.cpp).
 inline constexpr std::string_view NoStoryModule = "no pack has the story module {}";
@@ -120,6 +131,11 @@ inline constexpr std::string_view WaitWithoutStoryWait =
     "the section waited on something that is not a story wait";
 inline constexpr std::string_view BadSectionReturn =
     "a section returns story.ENDED or nothing, and this one returned another value";
+inline constexpr std::string_view StoryModuleOutdated =
+    "story module {}: its first line is not '{}{}: ...': content extracted by an older dwx; run dwx "
+    "extract again";
+inline constexpr std::string_view NoStoryModules =
+    "story: no pack has story modules; no story section can run";
 
 // The story's sound slots (session_sound.hpp). A sound that cannot play stays silent.
 inline constexpr std::string_view SoundNoMaps = "sound: no map table ({}); slot 8 stays silent";

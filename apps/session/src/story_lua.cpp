@@ -1,6 +1,8 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/assert.hpp>
+#include <dwe/core/log.hpp>
+#include <dwe/core/story_modules.hpp>
 #include <dwe/script/api_registry.hpp>
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/messages.hpp>
@@ -60,6 +62,12 @@ core::Result<ApiValue> nothing(const core::Result<void>& done) {
     return std::unexpected{done.error()};
   }
   return ApiValue{};
+}
+
+assets::AssetId moduleId(std::uint16_t script) {
+  const auto id = assets::AssetId::parse(std::format("story/{:03}", script));
+  DWE_ASSERT(id.has_value());
+  return *id;
 }
 
 core::Result<SectionRef> sectionRef(std::int64_t script, std::int64_t section) {
@@ -161,26 +169,53 @@ core::Result<void> StoryLuaHost::publishApi(game::story::StoryStatePort& state,
   return failed == published.end() ? core::Result<void>{} : *failed;
 }
 
+core::Result<void> StoryLuaHost::checkModules() const {
+  const assets::AssetId first = moduleId(0);
+  if (files_->resolve(first) == nullptr) {
+    core::logInfo("{}", messages::NoStoryModules);
+    return {};
+  }
+  return checkHeader(first);
+}
+
+core::Result<void> StoryLuaHost::checkHeader(const assets::AssetId& id) const {
+  const auto bytes = files_->read(id);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  const std::string_view text{reinterpret_cast<const char*>(bytes->data()), bytes->size()};
+  const std::string header =
+      std::format("{}{}:", core::story_modules::HeaderPrefix, core::story_modules::Version);
+  if (!text.starts_with(header)) {
+    return core::fail(messages::formatMessage(messages::StoryModuleOutdated, id.str(),
+                                              core::story_modules::HeaderPrefix,
+                                              core::story_modules::Version));
+  }
+  return {};
+}
+
 core::Result<const script::ScriptModule*> StoryLuaHost::module(std::uint16_t script) {
   if (const auto loaded = modules_.find(script); loaded != modules_.end()) {
     return &loaded->second;
   }
-  const auto id = assets::AssetId::parse(std::format("story/{:03}", script));
-  DWE_ASSERT(id.has_value());
-  const assets::AssetSource* source = files_->resolve(*id);
+  const assets::AssetId id = moduleId(script);
+  const assets::AssetSource* source = files_->resolve(id);
   const auto pack = source == nullptr ? files_->packs().end()
                                       : std::ranges::find(files_->packs(), source->packId,
                                                           [](const assets::MountedPack& mounted) {
                                                             return mounted.manifest.id;
                                                           });
   if (pack == files_->packs().end()) {
-    return core::fail(messages::formatMessage(messages::NoStoryModule, id->str()));
+    return core::fail(messages::formatMessage(messages::NoStoryModule, id.str()));
+  }
+  if (auto checked = checkHeader(id); !checked) {
+    return std::unexpected{checked.error()};
   }
   auto environment = vm_->modEnvironment(pack->manifest);
   if (!environment) {
     return std::unexpected{environment.error()};
   }
-  auto loaded = environment->loadModule(*files_, *id);
+  auto loaded = environment->loadModule(*files_, id);
   if (!loaded) {
     return std::unexpected{loaded.error()};
   }

@@ -13,6 +13,7 @@
 #include <string_view>
 
 namespace dwe::assets {
+class AssetId;
 class VirtualFileSystem;
 } // namespace dwe::assets
 
@@ -62,6 +63,11 @@ public:
   core::Result<void> publishApi(game::story::StoryStatePort& state,
                                 game::story::StoryOrders& orders);
 
+  // Whether the packs' story modules come from this engine's dwx: the first one (script 0, which
+  // the base pack always has) must carry its header, so outdated content stops the game when it
+  // starts. Packs without story modules pass, and the log says no section can run.
+  [[nodiscard]] core::Result<void> checkModules() const;
+
   core::Result<game::story::SectionHandle> start(game::story::SectionRef section) override;
   game::story::SectionStep resume(game::story::SectionHandle handle,
                                   game::story::ResumeValue value) override;
@@ -69,6 +75,7 @@ public:
 
 private:
   core::Result<const script::ScriptModule*> module(std::uint16_t script);
+  [[nodiscard]] core::Result<void> checkHeader(const assets::AssetId& id) const;
 
   script::ScriptVm* vm_;
   const assets::VirtualFileSystem* files_;
