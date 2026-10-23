@@ -52,8 +52,8 @@ steps:
   - wait: {seconds: 3}
   - expect_setting: {battle.phase: end}
   - screenshot: battle-end
-  - menu_select: end-continue
-  - wait: {hidden: battle, timeout: 5}
+  # The end box closes by itself once its wait is over.
+  - wait: {hidden: battle, timeout: 10}
   # Two game hours a real second until the partner is hungry, then the bubble over it at a larger size.
   - resize: [1920, 1080]
   - script: clock_speed("120")

@@ -33,6 +33,7 @@ constexpr std::string_view CurrentField = "current";
 constexpr std::string_view KeyField = "key";
 constexpr std::string_view AmountField = "amount";
 constexpr std::string_view SubjectField = "subject";
+constexpr std::string_view MaxField = "max";
 constexpr std::string_view ValueField = "value";
 constexpr std::string_view CountSuffix = ".count";
 
@@ -248,9 +249,19 @@ ScreenSettings settingsOf(const BattleEndView& view) {
                         .value = static_cast<double>(view.statGains[stat])});
     settings.push_back({.name = listEntryName(BattleStatList, stat, ValueField),
                         .value = static_cast<double>(view.stats.at(stat))});
+    settings.push_back({.name = listEntryName(BattleStatList, stat, MaxField),
+                        .value = static_cast<double>(view.statMaxima.at(stat))});
   }
   settings.push_back(
       {.name = std::string{BattleBitsSetting}, .value = static_cast<double>(view.bits)});
+  settings.push_back(
+      {.name = std::string{BattleMoneySetting}, .value = static_cast<double>(view.money)});
+  settings.push_back(
+      {.name = std::string{BattleFrameSecondsSetting}, .value = 1.0 / battle::FramesPerSecond});
+  settings.push_back({.name = std::string{BattleCountDelaySetting},
+                      .value = static_cast<double>(view.countDelayFrames)});
+  settings.push_back(
+      {.name = std::string{BattleWaitSetting}, .value = static_cast<double>(view.waitFrames)});
   return settings;
 }
 

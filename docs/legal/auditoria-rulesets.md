@@ -657,6 +657,8 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `item_throw.release_frame` | 7 | a | Temporizador o duración. |
 | `item_throw.flight_frames` | 24 | a | Temporizador o duración. |
 | `hud.enemy_hp_bar_frames` | 21 | a | Temporizador o duración. |
+| `hud.end_count_delay_frames` | 100 | a | Temporizador o duración. |
+| `hud.end_wait_frames` | 60 | a | Temporizador o duración. |
 | `consequences.victory.happiness` | 2 | a | Incremento. |
 | `consequences.victory.discipline` | 0 | a | Incremento. |
 | `consequences.victory.tiredness` | 0 | a | Incremento. |

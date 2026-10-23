@@ -180,9 +180,20 @@ void BattleScreen::finish() {
     aftermath = session::BattleAftermath{};
   }
   drops_ = aftermath->drops;
-  screens::publish(*desc_.ui,
-                   screens::settingsOf(screens::battleEndViewOf(result, *aftermath, names())),
-                   screens::BattleRevisionSetting);
+  screens::BattleEndView view = screens::battleEndViewOf(result, *aftermath, names());
+  const game::partner::CareLimits& limits = desc_.session->partnerRules().care.limits;
+  for (const game::partner::Stat stat : game::partner::AllStats) {
+    view.statMaxima.at(static_cast<std::size_t>(stat)) =
+        stat == game::partner::Stat::Hp || stat == game::partner::Stat::Mp ? limits.hpMpMax
+                                                                           : limits.statMax;
+  }
+  if (desc_.inventory != nullptr) {
+    view.money = desc_.inventory->inventory().money();
+  }
+  const game::battle::HudRules& hud = desc_.battle->rules().hud;
+  view.countDelayFrames = hud.endCountDelayFrames;
+  view.waitFrames = hud.endWaitFrames;
+  screens::publish(*desc_.ui, screens::settingsOf(view), screens::BattleRevisionSetting);
   desc_.ui->setSetting(BattlePhaseSetting, std::string{EndPhase});
   ending_ = true;
 }

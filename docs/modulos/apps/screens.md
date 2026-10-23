@@ -31,9 +31,11 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 | `battle.revive_seconds` | número, -1 sin cuenta | Los segundos que le quedan al compañero caído para levantarse, desde que el original enseña la cuenta (`command_menu.c: BTL_renderDeathCountdown`) |
 | `battle.bag.{available,open}`, `battle.item_in_flight` | booleanos | La bolsa del domador: si se puede abrir (no huyendo, no sin domador, sin otro objeto en el aire), si está abierta y si un objeto lanzado va de camino (`battle_tick.c: tamerTickBattle`, `main.c: tickThrownItem`) |
 | `battle.end.outcome` | clave | `battle.outcome.victory`, `fled` o `defeat` |
-| `battle.end.<i>.{key,name,amount}` | claves, número | Las líneas de la caja final (`battle_ui.c: handleBattleEndBox`): objetos encontrados, herida, técnicas aprendidas, vidas perdidas, objetos perdidos, quien se une a la ciudad |
+| `battle.end.<i>.{key,name,amount,subject}` | claves, número | Las líneas de la caja final (`battle_ui.c: handleBattleEndBox`): objetos que sueltan los enemigos (`subject`: el enemigo), herida, técnicas aprendidas, vidas perdidas, objetos perdidos, quien se une a la ciudad. Un salto de línea en el texto empieza otra fila |
 | `battle.end.gain.<i>.value` | número | Lo que ha ganado cada estadística (HP, MP, ataque, defensa, velocidad, cerebro) |
-| `battle.end.bits` | número | Los bits ganados |
+| `battle.end.stat.<i>.{value,max}` | números | Cada estadística antes de subir y su tope: la caja cuenta desde ahí y dibuja su barra contra el tope (`renderPostBattleStatsBox`) |
+| `battle.end.bits`, `battle.end.money` | números | Los bits ganados y el dinero con ellos ya dentro: la caja del saldo cuenta hasta él (`tickBitBox`) |
+| `battle.frame_seconds`, `battle.end.{count_delay_frames,wait_frames}` | números | Lo que dura un fotograma de combate y el ritmo de las cajas, del ruleset (`battle.hud`): la espera antes de contar y la de cada línea. Las cajas se cierran solas al acabar; un botón salta lo que corre |
 
 Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
 de abajo): `usable` dice qué objetos se pueden lanzar en combate.

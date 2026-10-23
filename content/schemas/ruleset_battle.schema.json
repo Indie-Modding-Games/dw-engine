@@ -897,15 +897,23 @@
     "hud": {
       "type": "object",
       "required": [
-        "enemy_hp_bar_frames"
+        "enemy_hp_bar_frames",
+        "end_count_delay_frames",
+        "end_wait_frames"
       ],
       "additionalProperties": false,
       "properties": {
         "enemy_hp_bar_frames": {
           "type": "integer"
+        },
+        "end_count_delay_frames": {
+          "type": "integer"
+        },
+        "end_wait_frames": {
+          "type": "integer"
         }
       },
-      "description": "What the battle HUD shows: the frames an enemy's HP bar stays after its damage."
+      "description": "What the battle HUD shows: the frames an enemy's HP bar stays after its damage, and the end box's wait before the stats count up and after each line."
     },
     "consequences": {
       "type": "object",

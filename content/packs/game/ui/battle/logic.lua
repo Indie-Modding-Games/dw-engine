@@ -225,26 +225,225 @@ local function focus_bag(document)
   end
 end
 
-local function draw_end(document)
-  document:get("end-title"):set_text(text(setting("battle.end.outcome", "")))
-  local count = number("battle.end.count")
-  for index = 0, max_end_lines - 1 do
-    local line = document:get("end-line-" .. index)
-    line:set_class("hidden", index >= count)
-    if index < count then
-      line:set_text(text(setting(entry("battle.end", index, "key"), ""), {
-        name = text(setting(entry("battle.end", index, "name"), "")),
-        amount = number(entry("battle.end", index, "amount")),
-        subject = text(setting(entry("battle.end", index, "subject"), "")),
-      }))
+-- The end boxes (battle_ui.c: handleBattleEndBox). The stats box counts each raise up a point a
+-- frame after battle.end.count_delay_frames (renderPostBattleStatsBox, tickPostBattleStatsBox);
+-- then the final balance box opens and the bits move from the bits box into it, one a frame
+-- (tickBitBox). Meanwhile the lines are typed a character a frame into two rows that scroll, and
+-- each waits battle.end.wait_frames (BTL_drawBattleEndText, BTL_tickBattleEndText). A press skips
+-- what runs: the count, the bits, the wait or the typing. The boxes close by themselves once all is
+-- done; there is no button to close them.
+local end_rows_shown = 2
+local end_segments = 5
+local ending = nil
+
+-- A line's rows: its text with the line breaks as rows and each row cut at the placeholders, so the
+-- names show in their own colour: plain, name, plain, name, plain.
+local function rows_of(template, values)
+  local rows = {}
+  for row in (template .. "\n"):gmatch("(.-)\n") do
+    local segments = {}
+    local rest = row
+    while #segments < end_segments - 1 do
+      local first, last, name = rest:find("{(%w+)}")
+      if first == nil then
+        break
+      end
+      table.insert(segments, rest:sub(1, first - 1))
+      table.insert(segments, values[name] or "")
+      rest = rest:sub(last + 1)
+    end
+    table.insert(segments, rest)
+    table.insert(rows, segments)
+  end
+  return rows
+end
+
+local function row_length(row)
+  local length = 0
+  for _, segment in ipairs(row) do
+    length = length + #segment
+  end
+  return length
+end
+
+-- Every row of the end box's lines; the last row of each line waits.
+local function end_rows()
+  local rows = {}
+  for index = 0, math.min(number("battle.end.count"), max_end_lines) - 1 do
+    local values = {
+      name = text(setting(entry("battle.end", index, "name"), "")),
+      subject = text(setting(entry("battle.end", index, "subject"), "")),
+      amount = tostring(number(entry("battle.end", index, "amount"))),
+    }
+    local line = rows_of(text(setting(entry("battle.end", index, "key"), "")), values)
+    for row_index, row in ipairs(line) do
+      table.insert(rows, { segments = row, waits = row_index == #line })
     end
   end
+  return rows
+end
+
+local function start_end()
+  local stats, gains, maxima = {}, {}, {}
   for index = 0, stat_count - 1 do
+    stats[index] = number(entry("battle.end.stat", index, "value"))
+    gains[index] = number(entry("battle.end.gain", index, "value"))
+    maxima[index] = number(entry("battle.end.stat", index, "max"))
+  end
+  local bits = number("battle.end.bits")
+  ending = {
+    frame_seconds = setting("battle.frame_seconds", 0.05),
+    seconds = 0,
+    delay = number("battle.end.count_delay_frames"),
+    wait_frames = number("battle.end.wait_frames"),
+    stats = stats,
+    gains = gains,
+    maxima = maxima,
+    bits = bits,
+    balance = number("battle.end.money") - bits,
+    balance_open = false,
+    rows = end_rows(),
+    row = 1,
+    typed = 0,
+    wait = 0,
+    closed = false,
+  }
+  local raised = false
+  for index = 0, stat_count - 1 do
+    raised = raised or gains[index] > 0
+  end
+  -- Without raises nothing counts; with nothing to count or type, the outcome stays for a wait.
+  if not raised then
+    ending.delay = 0
+    if bits <= 0 and #ending.rows == 0 then
+      ending.wait = ending.wait_frames
+    end
+  end
+end
+
+local function counting()
+  for index = 0, stat_count - 1 do
+    if ending.gains[index] > 0 then
+      return index
+    end
+  end
+  return nil
+end
+
+local function text_done()
+  return ending.row > #ending.rows and ending.wait <= 0
+end
+
+-- One frame of the end boxes.
+local function step_end()
+  if ending.delay > 0 then
+    ending.delay = ending.delay - 1
+  else
+    local stat = counting()
+    if stat ~= nil then
+      ending.stats[stat] = ending.stats[stat] + 1
+      ending.gains[stat] = ending.gains[stat] - 1
+    elseif ending.bits > 0 then
+      ending.balance_open = true
+      ending.bits = ending.bits - 1
+      ending.balance = ending.balance + 1
+    else
+      ending.balance_open = true
+    end
+  end
+  if ending.wait > 0 then
+    ending.wait = ending.wait - 1
+  elseif ending.row <= #ending.rows then
+    local row = ending.rows[ending.row]
+    ending.typed = ending.typed + 1
+    if ending.typed >= row_length(row.segments) then
+      if row.waits then
+        ending.wait = ending.wait_frames
+      end
+      ending.row = ending.row + 1
+      ending.typed = 0
+    end
+  end
+end
+
+-- A press skips what runs first: the count, the bits, the wait or the rest of the row.
+function press_end()
+  if ending == nil then
+    return
+  end
+  if counting() ~= nil then
+    for index = 0, stat_count - 1 do
+      ending.stats[index] =
+        math.min(ending.stats[index] + ending.gains[index], ending.maxima[index])
+      ending.gains[index] = 0
+    end
+    ending.delay = 0
+  elseif ending.bits > 0 then
+    ending.balance_open = true
+    ending.balance = ending.balance + ending.bits
+    ending.bits = 0
+  elseif ending.wait > 0 then
+    ending.wait = 0
+  elseif ending.row <= #ending.rows then
+    ending.typed = row_length(ending.rows[ending.row].segments) - 1
+  end
+end
+
+-- The rows on show: the two last begun, the one being typed cut where the typing is.
+local function draw_end_rows(document)
+  local last = math.min(ending.row, #ending.rows)
+  local first = math.max(1, last - end_rows_shown + 1)
+  for slot = 0, end_rows_shown - 1 do
+    local index = first + slot
+    local row = ending.rows[index]
+    local left = 0
+    if row ~= nil then
+      left = index < ending.row and row_length(row.segments) or ending.typed
+    end
+    for segment = 1, end_segments do
+      local piece = row ~= nil and row.segments[segment] or ""
+      local shown = piece:sub(1, math.max(0, left))
+      left = left - #piece
+      document:get("end-row-" .. slot .. "-" .. (segment - 1)):set_text(shown)
+    end
+  end
+end
+
+local function draw_end(document)
+  document:get("end-title"):set_text(text(setting("battle.end.outcome", "")))
+  for index = 0, stat_count - 1 do
+    local gain = ending.gains[index]
     document:get("gain-" .. index .. "-label"):set_text(t(stat_label_keys[index]))
-    document:get("gain-" .. index):set_text("+" .. number(entry("battle.end.gain", index, "value")))
+    document:get("stat-" .. index):set_text(tostring(ending.stats[index]))
+    document
+      :get("stat-" .. index .. "-fill")
+      :set_property("width", percent(ending.stats[index], ending.maxima[index]) .. "%")
+    document
+      :get("stat-" .. index .. "-bar")
+      :set_class("raised", number(entry("battle.end.gain", index, "value")) > 0)
+    document:get("gain-" .. index .. "-arrow"):set_class("hidden", gain <= 0)
+    document:get("gain-" .. index):set_text(gain > 0 and tostring(gain) or "")
   end
   document:get("bits-label"):set_text(t(bits_label_key))
-  document:get("bits-value"):set_text(tostring(number("battle.end.bits")))
+  document:get("bits-value"):set_text(tostring(ending.bits))
+  document:get("balance"):set_class("hidden", not ending.balance_open)
+  document:get("balance-label"):set_text(t(bits_label_key))
+  document:get("balance-value"):set_text(tostring(ending.balance))
+  document:get("end-boxes"):set_class("with-text", #ending.rows > 0)
+  draw_end_rows(document)
+end
+
+local function tick_end(document, seconds)
+  ending.seconds = ending.seconds + seconds
+  while ending.seconds >= ending.frame_seconds and not ending.closed do
+    ending.seconds = ending.seconds - ending.frame_seconds
+    step_end()
+    if counting() == nil and ending.bits <= 0 and text_done() then
+      ending.closed = true
+      close_end()
+    end
+  end
+  draw_end(document)
 end
 
 local function draw_prompts(document)
@@ -258,10 +457,13 @@ local function draw(document)
   document:get("fight"):set_class("hidden", phase ~= "fight")
   document:get("end"):set_class("hidden", phase ~= "end")
   if phase == "end" then
+    if ending == nil then
+      start_end()
+    end
     draw_end(document)
-    document:get("end-continue"):focus()
     return
   end
+  ending = nil
   for index = 0, max_fighters - 1 do
     draw_fighter(document, index)
   end
@@ -320,8 +522,10 @@ function on_setting(document, name)
   end
 end
 
-function on_tick(document)
-  if phase == "fight" then
+function on_tick(document, seconds)
+  if phase == "end" and ending ~= nil then
+    tick_end(document, seconds)
+  elseif phase == "fight" then
     if bag_open then
       draw_bag_description(document)
     else
@@ -343,11 +547,10 @@ end
 -- charges the finisher while its aura lasts.
 function on_action(_document, action)
   if phase == "end" then
-    if action == "cancel" or action == "menu" then
-      close_end()
-      return true
+    if action == "confirm" or action == "cancel" then
+      press_end()
     end
-    return action == "up" or action == "down"
+    return true
   end
   if action == "confirm" and setting("battle.finisher.charging", false) then
     charge()

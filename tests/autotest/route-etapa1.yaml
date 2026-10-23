@@ -29,8 +29,8 @@ steps:
   - screenshot: battle-start
   - wait: {setting: {battle.phase: end}, timeout: 300}
   - screenshot: battle-end
-  - menu_select: end-continue
-  - wait: {hidden: battle, seconds: 1, timeout: 30}
+  # The end box counts the raises and the bits and types its lines, then closes by itself.
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
   - screenshot: mayo00-after-battle
   - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
   - screenshot: mayo00-recruit

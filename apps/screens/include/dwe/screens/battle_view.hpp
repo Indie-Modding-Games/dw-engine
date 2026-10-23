@@ -30,6 +30,10 @@ inline constexpr std::string_view FinisherChargeSetting = "battle.finisher.charg
 inline constexpr std::string_view ReviveSecondsSetting = "battle.revive_seconds";
 inline constexpr std::string_view BattleOutcomeSetting = "battle.end.outcome";
 inline constexpr std::string_view BattleBitsSetting = "battle.end.bits";
+inline constexpr std::string_view BattleMoneySetting = "battle.end.money";
+inline constexpr std::string_view BattleFrameSecondsSetting = "battle.frame_seconds";
+inline constexpr std::string_view BattleCountDelaySetting = "battle.end.count_delay_frames";
+inline constexpr std::string_view BattleWaitSetting = "battle.end.wait_frames";
 inline constexpr std::string_view BagAvailableSetting = "battle.bag.available";
 inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
 inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
@@ -113,7 +117,16 @@ struct BattleEndView {
   // HP, MP, offense, defense, speed and brain, as the partner took them, and their values before.
   std::array<std::int32_t, game::battle::StatCount> statGains{};
   std::array<std::int32_t, game::battle::StatCount> stats{};
+  // Each stat's limit: the end box's bars are drawn against it (battle_ui.c:
+  // renderPostBattleStatsBox).
+  std::array<std::int32_t, game::battle::StatCount> statMaxima{};
   std::int32_t bits = 0;
+  // The money with the bits already in: the final balance box counts up to it.
+  std::int32_t money = 0;
+  // The pacing of the boxes, in battle frames: the wait before the stats count up and after each
+  // line.
+  std::int32_t countDelayFrames = 0;
+  std::int32_t waitFrames = 0;
 };
 
 // The battle screen's view of a battle under way.

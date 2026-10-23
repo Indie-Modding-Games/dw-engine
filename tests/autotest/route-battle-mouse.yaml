@@ -32,6 +32,6 @@ steps:
   - wait: {seconds: 3}
   - expect_setting: {battle.phase: end}
   - screenshot: battle-end
-  - menu_select: end-continue
-  - wait: {hidden: battle, timeout: 5}
+  # The end box closes by itself once its wait is over.
+  - wait: {hidden: battle, timeout: 10}
   - screenshot: battle-closed

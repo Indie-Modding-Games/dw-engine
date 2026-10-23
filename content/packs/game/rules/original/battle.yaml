@@ -317,6 +317,12 @@ item_throw:
 # 21 fotogramas (0x15) sin reacción al golpe ni daño pendiente.
 hud:
   enemy_hp_bar_frames: 21
+  # battle_ui.c: createPostBattleStatsBox: la caja final espera 100 fotogramas antes de contar los parámetros, un punto
+  # por fotograma (POST_BATTLE_STATS_TIMER).
+  end_count_delay_frames: 100
+  # battle_hud.c: BTL_drawBattleEndText: cada línea de la caja final espera 60 fotogramas o un botón
+  # (BATTLE_END_WAIT_FRAMES).
+  end_wait_frames: 60
 
 # Consecuencias para el cuidado (tamer.c: startBattle, advanceBattleTime; partner_impl.c: handlePostBattleTiredness;
 # battle_ui.c: handleBattleInjury). Esta sección es la dueña de estos números: el partner los recibe de la batalla

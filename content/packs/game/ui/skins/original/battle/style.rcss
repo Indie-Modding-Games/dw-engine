@@ -363,10 +363,13 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The end boxes (capture battle_end_box_stats, battle_end_box, battle_end_box_drop): from (73, 36), 174 pixels
-   wide, the stat gains in a box 102 tall, the names in yellow (#fff371); the bits in a box under it; the outcome and
-   the lines of drops, injury and moves learned in a third box under that. The boxes are black at half opacity. The
-   original marks a gain with a blue arrow and the count; here it is "+n". */
+   The end boxes (battle_ui.c: handleBattleEndBox; capture battle_end_box_stats, battle_end_box_drop), 176 pixels wide
+   in the middle of the screen. The stats box (createPostBattleStatsBox: -88, -78, 176 x 96; renderPostBattleStatsBox):
+   six rows 13 pixels apart from its y 9, the label at x 10, the value at x 68 over a bar 2 pixels tall from x 64 to
+   117 (grey, blue while it rises), the up arrow at x 130 and the raise left at x 142, a line at x 122. The bits box
+   under it (createBitsBox: -88, 18, 176 x 66): the label at x 10, the bits at x 70, a line at y 32 and the two rows of
+   text from y 36 (BTL_initializeBattleEndText: -78, 54, 156 x 24). The final balance box (createFinalBalanceBox: -88,
+   -13, 176 x 31) opens over the stats box's foot once the raises are counted. The names are yellow (#fff371). */
 
 #end {
 	display: block;
@@ -377,12 +380,17 @@
 	position: absolute;
 	left: 50%;
 	top: 108dp;
-	width: 522dp;
-	margin-left: -261dp;
-	padding: 393dp 0 0 0;
+	width: 528dp;
+	height: 486dp;
+	margin-left: -264dp;
+	padding: 0;
 	border-radius: 0;
 	border-width: 0;
 	background-color: transparent;
+}
+
+#end-title {
+	display: none;
 }
 
 #end-boxes {
@@ -390,84 +398,185 @@
 	position: absolute;
 	left: 0;
 	top: 0;
-	width: 522dp;
+	width: 528dp;
+	height: 486dp;
 	margin: 0;
 }
 
-#gains, #bits {
-	margin: 0 0 3dp 0;
-	padding: 6dp 18dp;
+#gains, #bits, #balance {
+	position: absolute;
+	left: 0;
+	width: 528dp;
+	margin: 0;
+	padding: 0;
 	border-radius: 0;
 	border: 3dp #90d9fa;
 	border-right-color: #4a9fc5;
 	background-color: #00000080;
+	box-sizing: border-box;
 }
 
+/* The rows start 9 pixels into the box (battle_ui.c: handleBattleEndBox), the border's 3dp included. */
 #gains {
+	top: 0;
 	height: 288dp;
+	padding-top: 24dp;
+}
+
+#gains-divider {
+	display: block;
+	position: absolute;
+	left: 366dp;
+	top: 0;
+	width: 6dp;
+	height: 100%;
+	background-color: #90d9fa;
 }
 
 .gain {
 	display: block;
-	width: auto;
+	position: relative;
+	width: 528dp;
+	height: 39dp;
 	font-size: 33dp;
-	line-height: 45dp;
+	line-height: 36dp;
 }
 
 .gain-label {
+	position: absolute;
+	left: 30dp;
+	top: 0;
 	color: #fff371;
+}
+
+.gain-stat {
+	position: absolute;
+	left: 192dp;
+	top: 0;
+	width: 120dp;
+	text-align: right;
+	color: #ffffff;
+}
+
+.stat-bar {
+	position: absolute;
+	left: 192dp;
+	top: 33dp;
+	width: 159dp;
+	height: 6dp;
+	border-radius: 0;
+	background-color: #282828;
+}
+
+.stat-bar.raised {
+	background-color: #005a96;
+}
+
+.stat-fill {
+	width: 0;
+	height: 6dp;
+	border-radius: 0;
+	background-color: #787878;
+}
+
+.stat-bar.raised .stat-fill {
+	background-color: #69c2ff;
+}
+
+.gain-arrow {
+	display: block;
+	position: absolute;
+	left: 390dp;
+	top: 0;
+	width: 36dp;
+	height: 36dp;
+	decorator: image(battle-up-arrow);
+}
+
+.gain-arrow.hidden {
+	display: none;
 }
 
 .gain-value {
-	float: right;
-	margin-right: 18dp;
-	color: #90c8f0;
+	position: absolute;
+	left: 426dp;
+	top: 0;
+	color: #69c2ff;
 }
 
+/* The bits box is as tall as the balance box, and grows to hold the two rows of text when there is any. */
 #bits {
-	width: auto;
-	height: 81dp;
+	top: 288dp;
+	height: 93dp;
 	font-size: 33dp;
-	line-height: 81dp;
+	line-height: 36dp;
 }
 
-#bits-value {
-	display: inline;
-	margin-left: 60dp;
-	text-align: left;
+#end-boxes.with-text #bits {
+	height: 198dp;
 }
 
-#end-title {
+#end-boxes.with-text #bits-line {
+	display: block;
+}
+
+#bits-line {
+	position: absolute;
+	left: 0;
+	top: 93dp;
+	width: 100%;
+	height: 3dp;
+	background-color: #90d9fa;
+}
+
+#bits-label, #balance-label {
+	position: absolute;
+	left: 30dp;
+	top: 27dp;
+}
+
+#bits-value, #balance-value {
+	position: absolute;
+	left: 210dp;
+	top: 27dp;
+	color: #69c2ff;
+}
+
+#balance {
+	top: 195dp;
+	height: 93dp;
+	font-size: 33dp;
+	line-height: 36dp;
+	background-color: #1c2a36;
+}
+
+#balance.hidden {
+	display: none;
+}
+
+#end-text {
 	margin: 0;
-	padding: 6dp 18dp 0 18dp;
+	position: absolute;
+	left: 30dp;
+	top: 396dp;
+	width: 468dp;
+	height: 72dp;
+}
+
+.end-row {
+	display: block;
+	height: 36dp;
+	margin: 0;
+	padding: 0;
 	font-size: 33dp;
+	line-height: 36dp;
+	white-space: pre;
+}
+
+.end-plain {
+	color: #e8e8e8;
+}
+
+.end-name {
 	color: #fff371;
-	border: 3dp #90d9fa;
-	border-bottom-width: 0;
-	border-right-color: #4a9fc5;
-	background-color: #00000080;
-}
-
-.end-line {
-	margin: 0;
-	padding: 0 18dp;
-	font-size: 33dp;
-	border: 3dp #90d9fa;
-	border-top-width: 0;
-	border-bottom-width: 0;
-	border-right-color: #4a9fc5;
-	background-color: #00000080;
-}
-
-/* The original goes on at a button press with nothing on the screen for it; here the "continue" entry closes the
-   third box at its bottom right, always focused, so it needs no selector of its own. */
-#end-continue, #end-continue:focus {
-	margin: 0;
-	padding: 0 18dp;
-	text-align: right;
-	color: #b2b2b2;
-	border: 3dp #90d9fa;
-	border-top-width: 0;
-	border-right-color: #4a9fc5;
-	background-color: #00000080;
 }

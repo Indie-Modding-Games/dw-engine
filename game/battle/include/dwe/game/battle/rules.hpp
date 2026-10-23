@@ -294,6 +294,12 @@ struct HudRules {
   // An enemy's HP bar shows after it takes damage, until this many frames pass with no hit reaction
   // and no damage left to drain.
   std::int32_t enemyHpBarFrames = 0;
+  // battle_ui.c: createPostBattleStatsBox: the end box waits this many frames before the stats
+  // count up (POST_BATTLE_STATS_TIMER), a point a frame.
+  std::int32_t endCountDelayFrames = 0;
+  // battle_hud.c: BTL_drawBattleEndText: a line of the end box waits this many frames, or a press,
+  // before the next one (BATTLE_END_WAIT_FRAMES).
+  std::int32_t endWaitFrames = 0;
 };
 
 // What a battle's outcome does to the partner's care values.

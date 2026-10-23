@@ -564,10 +564,13 @@ ItemThrowRules readItemThrow(ValueReader& in, const YamlNode& node) {
 }
 
 HudRules readHud(ValueReader& in, const YamlNode& node) {
-  if (!in.group(node, "hud", {"enemy_hp_bar_frames"})) {
+  if (!in.group(node, "hud",
+                {"enemy_hp_bar_frames", "end_count_delay_frames", "end_wait_frames"})) {
     return {};
   }
-  return {.enemyHpBarFrames = in.positive(node, "enemy_hp_bar_frames")};
+  return {.enemyHpBarFrames = in.positive(node, "enemy_hp_bar_frames"),
+          .endCountDelayFrames = in.count(node, "end_count_delay_frames"),
+          .endWaitFrames = in.count(node, "end_wait_frames")};
 }
 
 CareChange readCareChange(ValueReader& in, const YamlNode& node, std::string_view what) {

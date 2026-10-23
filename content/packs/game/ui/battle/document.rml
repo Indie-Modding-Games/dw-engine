@@ -104,31 +104,26 @@
 		</div>
 	</div>
 
-	<div id="end" class="hidden">
+	<div id="end" class="hidden" onclick="press_end()">
 		<div id="end-panel">
 			<h1 id="end-title" class="original-look"></h1>
-				<p class="end-line original-look hidden" id="end-line-0"></p>
-				<p class="end-line original-look hidden" id="end-line-1"></p>
-				<p class="end-line original-look hidden" id="end-line-2"></p>
-				<p class="end-line original-look hidden" id="end-line-3"></p>
-				<p class="end-line original-look hidden" id="end-line-4"></p>
-				<p class="end-line original-look hidden" id="end-line-5"></p>
-				<p class="end-line original-look hidden" id="end-line-6"></p>
-				<p class="end-line original-look hidden" id="end-line-7"></p>
-				<p class="end-line original-look hidden" id="end-line-8"></p>
-				<p class="end-line original-look hidden" id="end-line-9"></p>
 			<div id="end-boxes">
 				<div id="gains">
-					<div class="gain"><span class="original-look gain-label" id="gain-0-label"></span><span class="original-look gain-value" id="gain-0"></span></div>
-					<div class="gain"><span class="original-look gain-label" id="gain-1-label"></span><span class="original-look gain-value" id="gain-1"></span></div>
-					<div class="gain"><span class="original-look gain-label" id="gain-2-label"></span><span class="original-look gain-value" id="gain-2"></span></div>
-					<div class="gain"><span class="original-look gain-label" id="gain-3-label"></span><span class="original-look gain-value" id="gain-3"></span></div>
-					<div class="gain"><span class="original-look gain-label" id="gain-4-label"></span><span class="original-look gain-value" id="gain-4"></span></div>
-					<div class="gain"><span class="original-look gain-label" id="gain-5-label"></span><span class="original-look gain-value" id="gain-5"></span></div>
+					<div id="gains-divider"></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-0-label"></span><span class="original-look gain-stat" id="stat-0"></span><div class="stat-bar" id="stat-0-bar"><div class="stat-fill" id="stat-0-fill"></div></div><span class="gain-arrow hidden" id="gain-0-arrow"></span><span class="original-look gain-value" id="gain-0"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-1-label"></span><span class="original-look gain-stat" id="stat-1"></span><div class="stat-bar" id="stat-1-bar"><div class="stat-fill" id="stat-1-fill"></div></div><span class="gain-arrow hidden" id="gain-1-arrow"></span><span class="original-look gain-value" id="gain-1"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-2-label"></span><span class="original-look gain-stat" id="stat-2"></span><div class="stat-bar" id="stat-2-bar"><div class="stat-fill" id="stat-2-fill"></div></div><span class="gain-arrow hidden" id="gain-2-arrow"></span><span class="original-look gain-value" id="gain-2"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-3-label"></span><span class="original-look gain-stat" id="stat-3"></span><div class="stat-bar" id="stat-3-bar"><div class="stat-fill" id="stat-3-fill"></div></div><span class="gain-arrow hidden" id="gain-3-arrow"></span><span class="original-look gain-value" id="gain-3"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-4-label"></span><span class="original-look gain-stat" id="stat-4"></span><div class="stat-bar" id="stat-4-bar"><div class="stat-fill" id="stat-4-fill"></div></div><span class="gain-arrow hidden" id="gain-4-arrow"></span><span class="original-look gain-value" id="gain-4"></span></div>
+					<div class="gain"><span class="original-look gain-label" id="gain-5-label"></span><span class="original-look gain-stat" id="stat-5"></span><div class="stat-bar" id="stat-5-bar"><div class="stat-fill" id="stat-5-fill"></div></div><span class="gain-arrow hidden" id="gain-5-arrow"></span><span class="original-look gain-value" id="gain-5"></span></div>
 				</div>
-				<div id="bits"><span class="original-look" id="bits-label"></span><span class="original-look" id="bits-value"></span></div>
+				<div id="balance" class="hidden"><span class="original-look" id="balance-label"></span><span class="original-look" id="balance-value"></span></div>
+				<div id="bits"><div id="bits-line"></div><span class="original-look" id="bits-label"></span><span class="original-look" id="bits-value"></span></div>
+				<div id="end-text">
+					<p class="end-row original-look" id="end-row-0"><span class="end-plain" id="end-row-0-0"></span><span class="end-name" id="end-row-0-1"></span><span class="end-plain" id="end-row-0-2"></span><span class="end-name" id="end-row-0-3"></span><span class="end-plain" id="end-row-0-4"></span></p>
+					<p class="end-row original-look" id="end-row-1"><span class="end-plain" id="end-row-1-0"></span><span class="end-name" id="end-row-1-1"></span><span class="end-plain" id="end-row-1-2"></span><span class="end-name" id="end-row-1-3"></span><span class="end-plain" id="end-row-1-4"></span></p>
+				</div>
 			</div>
-			<button id="end-continue" onclick="close_end()" text-key="battle.continue"></button>
 		</div>
 	</div>
 </body>

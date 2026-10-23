@@ -78,8 +78,8 @@ steps:
   - screenshot: battle-start
   - wait: {setting: {battle.phase: end}, timeout: 180}
   - screenshot: battle-end
-  - menu_select: end-continue
-  - wait: {hidden: battle, timeout: 5}
+  # The end box closes by itself once it has counted, typed and waited.
+  - wait: {hidden: battle, timeout: 60}
   - expect_change: {partner.hp: changed}
   # Evolve: ten game hours a real second, in stretches of about six game hours, caring for the partner after each as
   # a player would: a medicine when it is sick, as the original's untreated sickness takes a life every few hours

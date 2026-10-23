@@ -261,7 +261,8 @@
 	font-size: 26dp;
 }
 
-/* The end box: the outcome, the lines of drops, injury and moves learned, then the stats and the bits. */
+/* The end box: the outcome, the stats with their raises counting up, the bits moving into the balance, then the lines
+   of drops, injury and moves learned typed in two rows. */
 #end {
 	display: flex;
 	align-items: center;
@@ -283,38 +284,65 @@
 	margin-bottom: 10dp;
 }
 
-.end-line {
-	font-size: 22dp;
-	margin: 2dp 0;
-}
-
 #end-boxes {
-	display: flex;
-	margin-top: 12dp;
+	display: block;
 }
 
 #gains {
-	flex: 1;
 	padding: 8dp 12dp;
-	margin-right: 10dp;
 	background-color: #10161ee0;
 	border: 1dp #3a4a5e;
 	border-radius: 8dp;
+}
+
+#gains-divider, #bits-line, .gain-arrow {
+	display: none;
 }
 
 .gain {
-	display: inline-block;
-	width: 48%;
+	display: block;
+	position: relative;
+	height: 30dp;
 	font-size: 22dp;
+	line-height: 26dp;
+}
+
+.gain-stat {
+	position: absolute;
+	left: 150dp;
+	width: 80dp;
+	text-align: right;
+}
+
+.stat-bar {
+	position: absolute;
+	left: 250dp;
+	top: 10dp;
+	width: 160dp;
+	height: 8dp;
+	background-color: #2a3442;
+	border-radius: 4dp;
+}
+
+.stat-fill {
+	width: 0;
+	height: 8dp;
+	background-color: #8a96a8;
+	border-radius: 4dp;
+}
+
+.stat-bar.raised .stat-fill {
+	background-color: #6cc4ff;
 }
 
 .gain-value {
-	float: right;
-	margin-right: 14dp;
+	position: absolute;
+	left: 430dp;
+	color: #6cc4ff;
 }
 
-#bits {
-	width: 160dp;
+#bits, #balance {
+	margin-top: 8dp;
 	padding: 8dp 12dp;
 	font-size: 22dp;
 	background-color: #10161ee0;
@@ -322,19 +350,35 @@
 	border-radius: 8dp;
 }
 
-#bits-value {
-	display: block;
-	text-align: right;
+#bits-value, #balance-value {
+	float: right;
 }
 
-#end-continue {
-	margin-top: 14dp;
-	text-align: center;
+/* The rows of text show only when the battle left any. */
+#end-text {
+	display: none;
+	margin-top: 10dp;
+	height: 60dp;
+}
+
+#end-boxes.with-text #end-text {
+	display: block;
+}
+
+.end-row {
+	display: block;
+	height: 30dp;
+	font-size: 22dp;
+	white-space: pre;
+}
+
+.end-name {
+	color: #f0a73a;
 }
 
 /* Hidden wins over the display of the elements above. */
-#fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .end-line.hidden, .fighter.hidden,
-#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden {
+#fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .fighter.hidden, #balance.hidden,
+#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden {
 	display: none;
 }
 
