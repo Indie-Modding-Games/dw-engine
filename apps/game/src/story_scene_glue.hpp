@@ -3,6 +3,9 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/session/story_scenes.hpp>
 
+#include <cstdint>
+#include <vector>
+
 #include "battle_screen.hpp"
 #include "death_scene.hpp"
 #include "egg_box_screen.hpp"
@@ -19,7 +22,7 @@ namespace dwe::app {
 class StorySceneGlue {
 public:
   void update(session::StoryScenes& scenes, BattleScreen& battle,
-              const assets::DigimonTable* species, const FieldScene& scene);
+              const assets::DigimonTable* species, FieldScene& scene);
   // The shop the story's Shop screen opens.
   void attachShop(session::ShopCounter* shop) { shop_.attach(shop); }
   // The gym the story's GymLibrary and GymCourse screens run.
@@ -36,9 +39,14 @@ private:
   void startBattle(session::StoryScenes& scenes, BattleScreen& battle,
                    const assets::DigimonTable* species, const FieldScene& scene,
                    const game::story::ScriptedBattle& request);
+  // A battle that can be fled leaves the field without its enemies (battle_main.c:800-808).
+  void leaveField(FieldScene& scene) const;
 
   // Whether the battle on the screen is the story's.
   bool storyBattle_ = false;
+  // The story battle's enemies, by script id, and whether it could not be fled.
+  std::vector<std::int32_t> fighters_;
+  bool fixedFight_ = false;
   StoryShop shop_;
   StoryGym gym_;
   DeathScene* death_ = nullptr;

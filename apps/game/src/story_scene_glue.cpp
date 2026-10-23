@@ -26,9 +26,10 @@ game::story::BattleOutcome storyOutcome(game::battle::Outcome outcome) {
 } // namespace
 
 void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
-                            const assets::DigimonTable* species, const FieldScene& scene) {
+                            const assets::DigimonTable* species, FieldScene& scene) {
   if (const auto outcome = battle.takeOutcome(); outcome && storyBattle_) {
     storyBattle_ = false;
+    leaveField(scene);
     scenes.battleFinished(storyOutcome(*outcome));
   }
   if (const auto request = scenes.takeBattleRequest()) {
@@ -67,9 +68,8 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
 }
 
-// The enemies are the map's NPCs by script id (MapNpc::scriptId). A battle with none named is the
-// one against the NPC the player talks to (btl.c: handleBattleStart), which the field does not
-// tell yet.
+// The enemies are the map's NPCs by script id (MapNpc::scriptId). A battle with none predefined is
+// the one against the NPC the player talked to (btl.c: handleBattleStart), which the story names.
 void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& battle,
                                  const assets::DigimonTable* species, const FieldScene& scene,
                                  const game::story::ScriptedBattle& request) {
@@ -99,6 +99,27 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
     return;
   }
   storyBattle_ = true;
+  fighters_.clear();
+  for (const std::int64_t enemy : request.enemies) {
+    fighters_.push_back(static_cast<std::int32_t>(enemy));
+  }
+  fixedFight_ = request.fixedFight;
+}
+
+// After a battle that could be fled the enemies are off the map until it loads again
+// (battle_main.c:800-808: the NPCs on screen get isOnMap 0); after a fixed fight they stay, as
+// mayo00's Agumon does for the scene that follows. The other NPCs on screen, which fled when it
+// started, stay: the field does not port the flight (btl.c: setFleeBubble).
+void StorySceneGlue::leaveField(FieldScene& scene) const {
+  if (fixedFight_) {
+    return;
+  }
+  for (const std::int32_t fighter : fighters_) {
+    if (scene.npcs().unload(fighter)) {
+      core::logDebug("[port:battle] BTL_battleMain (battle_main.c:804): enemy {} off the map",
+                     fighter);
+    }
+  }
 }
 
 } // namespace dwe::app

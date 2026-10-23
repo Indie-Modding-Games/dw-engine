@@ -53,8 +53,15 @@ public:
     return scriptId;
   }
 
+  [[nodiscard]] std::optional<std::int64_t> talkedTo() const override {
+    if (const auto talked = scenes_->desc.story->talkedTo()) {
+      return *talked;
+    }
+    return std::nullopt;
+  }
+
   void startBattle(const ScriptedBattle& battle) override {
-    core::logDebug("[port:battle] startBattle (tamer.c:832): {} predefined enemies, fixed={}",
+    core::logDebug("[port:battle] startBattle (tamer.c:832): {} enemies, fixed={}",
                    battle.enemies.size(), battle.fixedFight);
     scenes_->battleOutcome.reset();
     scenes_->battleRequest = battle;

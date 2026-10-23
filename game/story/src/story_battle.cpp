@@ -59,6 +59,16 @@ core::Result<ScriptedBattle> StoryBattles::enemies() {
     return std::unexpected{predefined.error()};
   }
   if (*predefined == 0) {
+    // btl.c: handleBattleStart: without a predefined battle the enemy is the NPC the player talked
+    // to. The original also lets other NPCs on screen join by the flee table's roll; here they
+    // stay out.
+    if (const auto talked = battle_->talkedTo()) {
+      if (const auto entity = battle_->entityOf(*talked)) {
+        core::logDebug("{}",
+                       messages::formatMessage(messages::PortBattleTalkedTo, *talked, *entity));
+        battle.enemies.push_back(*entity);
+      }
+    }
     return battle;
   }
   // script_interp.c: scriptInstruction64to7E turns each script id into its entity in place, and

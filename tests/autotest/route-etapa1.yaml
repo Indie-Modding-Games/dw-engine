@@ -1,7 +1,7 @@
 # Stage 1 of the story with the keyboard, from a new game (without the opening's questions, which an autotest skips)
 # to the broken bridge: the waking scene and the elder's talk, File City, the gym, the forest's first fight and its
-# recruit, and the forest's maps up to the bridge. Captures at the points the original's reference frames show.
-# How to run it: docs/guides/prueba-vertical.md.
+# recruit, the forest's maps up to the bridge and the fight its Aruraumon starts. Captures at the points the
+# original's reference frames show. How to run it: docs/guides/prueba-vertical.md.
 name: etapa1
 device: keyboard
 timeout: 1800
@@ -47,3 +47,9 @@ steps:
   - walk_to: {trigger: 51}
   - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
   - screenshot: mayo08b-bridge
+  # The bridge's Aruraumon walks up to the player and its section starts a battle with no predefined
+  # enemies: the fight is against it, the NPC that touched the player (btl.c: handleBattleStart).
+  - walk_to: {point: [-930, 2330], radius: 40, walk: true, timeout: 20}
+  - repeat: {times: 6, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 30}
+  - screenshot: mayo08b-battle

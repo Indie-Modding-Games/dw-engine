@@ -316,6 +316,11 @@ Comprobado en el decomp (solo lectura) para este diseño:
 - **Combate:** `start_battle` con rival predefinido (variables 250–253) o el NPC con el que se habló. El disparador
   de depuración actual (`battle_trigger`) ya monta un combate con NPC del mapa; el puerto `BattlePort` lo
   generaliza y devuelve el resultado. Las consecuencias (derrota → `0x4DE`, huida → warp) son del runner.
+  Sin rival predefinido, el rival es el NPC cuya sección abrió el último toque o charla (`TALKED_TO_ENTITY`,
+  `StoryAdapter::talkedTo`). Tras un combate del que se puede huir (disparador 1 sin poner) el rival sale del mapa
+  hasta que este se vuelve a cargar (`battle_main.c`: los NPC en pantalla quedan con `isOnMap` 0); tras uno fijo se
+  queda, como el Agumon de mayo00. Aún no se portan los NPC que se unen ni los que huyen al empezar
+  (`rollJoiningEnemies` existe en `game/battle`, pero la app no lo usa).
 
 ### Cobertura de órdenes
 

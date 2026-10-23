@@ -102,6 +102,9 @@ public:
   // Asks for the sections of the NPCs the player touched or talked to in the last field tick, as
   // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
   void runNpcContacts(std::span<const game::field::NpcContact> contacts);
+  // The script id of the NPC whose section last ran from a contact (TALKED_TO_ENTITY): a battle
+  // with no predefined enemies fights it.
+  [[nodiscard]] std::optional<std::int32_t> talkedTo() const { return talkedTo_; }
   // The NPC orders, for the other orders that hold an NPC (a textbox's speaker: holdOwner); null
   // before the rules are read.
   [[nodiscard]] game::story::NpcOrders* npcOrders() { return npcOrders_.get(); }
@@ -210,6 +213,7 @@ private:
   std::unique_ptr<game::story::NpcOrders> npcOrders_;
   // Whether a script ran at the end of the last tick.
   bool scriptRan_ = false;
+  std::optional<std::int32_t> talkedTo_;
   std::unique_ptr<StoryMapChanges> mapChanges_;
   std::unique_ptr<StoryFieldControl> fieldControl_;
   std::unique_ptr<StoryActorsLink> actors_;

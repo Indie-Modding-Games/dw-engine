@@ -62,6 +62,10 @@ public:
   // The entity a script id names: 0xFD the player, 0xFC the partner, an NPC by its script id;
   // nothing when no entity has it (script_value.c: scriptIdToEntityId).
   [[nodiscard]] virtual std::optional<std::int64_t> entityOf(std::int64_t scriptId) const = 0;
+  // The script id of the NPC the player last talked to or was touched by: the enemy of a battle
+  // with none predefined (script_interp.c: callScriptSection keeps TALKED_TO_ENTITY, which
+  // tamer.c: startBattle hands to btl.c: handleBattleStart); nothing when there is none.
+  [[nodiscard]] virtual std::optional<std::int64_t> talkedTo() const { return std::nullopt; }
   virtual void startBattle(const ScriptedBattle& battle) = 0;
   // The outcome once the battle and its aftermath are over; nothing while it runs.
   virtual std::optional<BattleOutcome> battleOutcome() = 0;

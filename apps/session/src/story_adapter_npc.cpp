@@ -51,6 +51,9 @@ void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> conta
     const auto outcome = runner_->requestMapSection(static_cast<std::uint16_t>(contact.scriptId),
                                                     game::story::StartTiming::NextFrame,
                                                     game::story::SectionSource::Event);
+    if (outcome == game::story::RequestOutcome::Accepted) {
+      talkedTo_ = contact.scriptId;
+    }
     core::logDebug("[port:npc] callScriptSection (tamer.c:677, overworld.c:1333): NPC section {} "
                    "({}): {}",
                    contact.scriptId,
