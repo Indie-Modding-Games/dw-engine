@@ -417,11 +417,15 @@ bool GameSession::playerFree() const {
 
 game::partner::CareContext GameSession::careContext() const {
   // partner_impl.c: tickDeathCondition and tickConditions wait for tamerGetState() == 0 and
-  // IS_SCRIPT_PAUSED == 1. A field plays the partner's pile scene (partner.c: tickWildPoop).
+  // IS_SCRIPT_PAUSED == 1, and run only in the partner's normal state, not in a care scene
+  // (partner.c: partnerTickNormal). A field plays the partner's pile scene (partner.c:
+  // tickWildPoop).
+  const game::field::Field* field = state_->field;
   return {.tamerIdle = playerFree(),
           .scriptIdle = !scriptRunning_,
           .area = area_,
-          .fieldScenes = state_->field != nullptr};
+          .partnerNormal = field == nullptr || !field->heldForCare(),
+          .fieldScenes = field != nullptr};
 }
 
 void GameSession::attachField(const game::field::Field& field) {

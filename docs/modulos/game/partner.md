@@ -141,6 +141,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Hora: evolución +1, vida −1; medianoche: edad +1 | `clock.c: tickGameClock` | `Partner::stepClock`, `startDay` | `life_tests`: spends an hour, the day turns | Igual |
 | Año: nivel del tamer ±1 | `clock.c: tickGameClock` | `startDay`, `care.year` | `mood_tests`: a new year | Igual |
 | Orden de las reglas por fotograma | `partner_impl.c: tickConditions` | `Partner::stepCare` | `simulation_tests`: three days at once | Igual |
+| Las reglas de cuidado y el baño solo corren en el estado normal del compañero, no en una escena de cuidado (comer, baño, montón); el reloj sigue | `partner.c: partnerTickNormal` (`PARTNER_STATE` 1 llama a `tickConditions` y `tickPoopingMechanic`) | `CareContext::partnerNormal` (la sesión lo quita con `Field::heldForCare`) | `hunger_tests`: care scene | Igual |
 | Horario de comida | `partner_impl.c: setFoodTimer` | `setFoodTimer`, `nextAdultMealHour` | `hunger_tests`: meal hours, baby every 2 | Igual |
 | Comida al despertar: busca desde la última que fijó, sin día, y puede saltarse comidas | `partner_impl.c: handleSleeping`, `setFoodTimer` (rama de la versión americana) | `wakeUp` → `setFoodTimer` (`care.quirks.wake_searches_from_last_meal`) | `waking searches the next meal from the one set before sleeping ...` | Igual (rareza con bandera) |
 | Ventana de hambre y error de cuidado | `partner_impl.c: tickHungerMechanics` | `tickHunger`, `closeHungerWindow` | `hunger_tests`: unfed window | Igual |

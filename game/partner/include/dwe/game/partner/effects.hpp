@@ -69,6 +69,10 @@ struct CareContext {
   // for it too.
   bool scriptIdle = true;
   AreaResponse area = AreaResponse::Neutral;
+  // The partner is in its normal state (PARTNER_STATE 1, partner.c: partnerTickNormal), not in a
+  // care scene: only then do the care rules and the toilet run (tickConditions,
+  // tickPoopingMechanic). The game clock goes on either way.
+  bool partnerNormal = true;
   // A field plays the partner's scenes: a pile on the ground waits for its scene (partner.c:
   // tickWildPoop), which leaves it with its care effects. Without one the pile and its effects
   // come at once when the urge runs out.

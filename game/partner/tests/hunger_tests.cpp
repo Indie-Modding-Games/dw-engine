@@ -218,4 +218,15 @@ TEST_CASE(
   CHECK_FALSE(raising.partner().refuses({.item = "plain"}));
 }
 
+TEST_CASE("care.md hunger: the meal clock stands still while the partner is in a care scene") {
+  OriginalRuleset original;
+  Raising raising(original.rules(), "agu");
+  const std::int32_t food = raising.state().hunger.foodLevel;
+  // partner.c: partnerTickNormal is the only state that runs tickConditions.
+  const CareContext careScene{.partnerNormal = false};
+  CHECK_FALSE(has(raising.playUntil(13, 30, careScene), EventKind::BecameHungry));
+  CHECK(raising.state().hunger.foodLevel == food);
+  CHECK(has(raising.playUntil(19, 0), EventKind::BecameHungry));
+}
+
 } // namespace dwe::game::partner

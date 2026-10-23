@@ -563,8 +563,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
 
   // clock.c: renderGameClock slides the clock and the bars off the screen whenever game time stands
   // still: a script's scene or talk (script_interp.c: scriptPauseGame), a fade, a map change.
+  // partner_impl.c: handleConditionBubble runs in the partner's normal state (partner.c:
+  // partnerTickNormal), so a care scene shows no need bubble.
   fieldHud_.update(!paused() && field.gameTimeRan(),
-                   partnerBubbleOf(*scene_, species, session.partnerView().species));
+                   field.heldForCare()
+                       ? std::nullopt
+                       : partnerBubbleOf(*scene_, species, session.partnerView().species));
   if (storyTextbox_) {
     storyTextbox_->update(*scene_, species);
   }

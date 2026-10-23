@@ -43,7 +43,9 @@ void Partner::tick(const ruleset::GameClock& clock, const ruleset::ClockAdvance&
   for (std::int64_t frame = last - advance.frames + 1; frame <= last && alive(); ++frame) {
     const FrameTime time = frameAt(frame);
     stepClock(time);
-    stepCare(time, context);
+    if (context.partnerNormal) {
+      stepCare(time, context);
+    }
   }
 }
 
