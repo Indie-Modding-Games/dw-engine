@@ -669,7 +669,8 @@ JoiningRules readJoining(ValueReader& in, const YamlNode& node) {
 TimingRules readTiming(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "timing",
                 {"attack_frames", "hit_frame", "hit_reaction_frames", "block_animation_frames",
-                 "faint_frames", "walk_speed", "projectile_speed", "arena_radius"})) {
+                 "faint_frames", "walk_speed", "projectile_speed", "arena_radius",
+                 "combat_area_width", "combat_area_height", "combat_area_corner_height"})) {
     return {};
   }
   TimingRules timing{.attackFrames = in.positive(node, "attack_frames"),
@@ -679,7 +680,10 @@ TimingRules readTiming(ValueReader& in, const YamlNode& node) {
                      .faintFrames = in.positive(node, "faint_frames"),
                      .walkSpeed = in.positive(node, "walk_speed"),
                      .projectileSpeed = in.positive(node, "projectile_speed"),
-                     .arenaRadius = in.positive(node, "arena_radius")};
+                     .arenaRadius = in.positive(node, "arena_radius"),
+                     .combatAreaWidth = in.positive(node, "combat_area_width"),
+                     .combatAreaHeight = in.positive(node, "combat_area_height"),
+                     .combatAreaCornerHeight = in.count(node, "combat_area_corner_height")};
   if (in.yaml().ok() && timing.hitFrame >= timing.attackFrames) {
     in.yaml().fail(node, messages::HitAfterAttack);
   }

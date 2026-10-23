@@ -56,6 +56,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
     return std::unexpected{battle.error()};
   }
   battle_.emplace(std::move(*battle));
+  battle_->setGround(desc_.ground);
   map_ = map;
   drops_.clear();
   if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {

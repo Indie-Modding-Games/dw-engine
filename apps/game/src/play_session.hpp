@@ -21,6 +21,7 @@
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
+#include "battle_ground.hpp"
 #include "battle_screen.hpp"
 #include "care_commands.hpp"
 #include "death_scene.hpp"
@@ -164,6 +165,7 @@ private:
   std::unique_ptr<FieldScene> scene_;
   std::optional<assets::DigimonTable> species_;
   FreeExploration freeExploration_;
+  FieldBattleGround battleGround_;
   BattleScreen battleScreen_;
   StorySceneGlue storyScenes_;
   // The naming box the story's renaming opens, when the ruleset has the new game's scene.

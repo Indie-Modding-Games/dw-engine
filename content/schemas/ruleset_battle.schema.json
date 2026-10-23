@@ -1160,7 +1160,10 @@
         "faint_frames",
         "walk_speed",
         "projectile_speed",
-        "arena_radius"
+        "arena_radius",
+        "combat_area_width",
+        "combat_area_height",
+        "combat_area_corner_height"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1186,6 +1189,15 @@
           "type": "integer"
         },
         "arena_radius": {
+          "type": "integer"
+        },
+        "combat_area_width": {
+          "type": "integer"
+        },
+        "combat_area_height": {
+          "type": "integer"
+        },
+        "combat_area_corner_height": {
           "type": "integer"
         }
       },

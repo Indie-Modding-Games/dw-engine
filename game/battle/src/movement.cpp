@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -159,12 +160,43 @@ Point stepFrom(Point point, Facing facing, std::int32_t step) {
 enum class Blocker : std::uint8_t { None, CombatArea, Map, Fighter };
 
 // Without a ground, the combat area is the ruleset's arena radius around where the fighters
-// started: a step may not go further out past it (hasMovedOutsideCombatArea).
+// started: a step may not go further out past it.
 bool leavesArena(const BattleContext& context, Point from, Point to) {
   const Point center = context.state->arenaCenter;
   const std::int64_t radius = context.rules->timing.arenaRadius;
   const std::int64_t after = distanceSquared(to, center);
   return after > radius * radius && after > distanceSquared(from, center);
+}
+
+// map.c: hasMovedOutsideCombatArea: past the rectangle around the screen's centre and moving
+// further out on either axis.
+bool movesOutOfArea(ScreenPoint before, ScreenPoint after, const TimingRules& timing) {
+  const std::int32_t halfWidth = timing.combatAreaWidth / 2;
+  const std::int32_t halfHeight = timing.combatAreaHeight / 2;
+  return (after.x < -halfWidth && after.x < before.x) ||
+         (after.x > halfWidth && after.x > before.x) ||
+         (after.y < -halfHeight && after.y < before.y) ||
+         (after.y > halfHeight && after.y > before.y);
+}
+
+// map.c: entityCheckCombatArea: the step leaves the combat area, a rectangle of the screen. Two
+// corners of the fighter's box are tested, as its loop over QUADRANTS ignores its inner index:
+// the near left one on the ground and the near right one corner_height up.
+bool leavesCombatArea(const BattleContext& context, Point from, Point to, std::int32_t radius) {
+  if (context.ground == nullptr) {
+    return leavesArena(context, from, to);
+  }
+  const TimingRules& timing = context.rules->timing;
+  const std::array<std::pair<std::int32_t, std::int32_t>, 2> corners{
+      {{-radius, 0}, {radius, timing.combatAreaCornerHeight}}};
+  return std::ranges::any_of(corners, [&](const std::pair<std::int32_t, std::int32_t>& corner) {
+    const auto [side, height] = corner;
+    const std::optional<ScreenPoint> before =
+        context.ground->screenPointOf({.x = from.x + side, .z = from.z - radius}, height);
+    const std::optional<ScreenPoint> after =
+        context.ground->screenPointOf({.x = to.x + side, .z = to.z - radius}, height);
+    return before && after && movesOutOfArea(*before, *after, timing);
+  });
 }
 
 // The leading edge of the mover's square, on each axis it moves along, against the other's square
@@ -195,10 +227,7 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing) 
   const std::int32_t radius = fighter.combatant.radius;
   const Point from = fighter.position;
   const Point to = stepFrom(from, facing, context.rules->timing.walkSpeed);
-  const bool outside = context.ground != nullptr
-                           ? context.ground->leavesCombatArea(from, to, radius)
-                           : leavesArena(context, from, to);
-  if (outside) {
+  if (leavesCombatArea(context, from, to, radius)) {
     return Blocker::CombatArea;
   }
   if (context.ground != nullptr && context.ground->blocksStep(from, to, radius)) {

@@ -367,6 +367,11 @@ struct TimingRules {
   std::int32_t walkSpeed = 0;
   std::int32_t projectileSpeed = 0;
   std::int32_t arenaRadius = 0;
+  // map.c: entityCheckCollision: the combat area, a rectangle of the screen around its centre, and
+  // how high over the ground the upper corner it tests is.
+  std::int32_t combatAreaWidth = 0;
+  std::int32_t combatAreaHeight = 0;
+  std::int32_t combatAreaCornerHeight = 0;
 };
 
 struct BattleRules {

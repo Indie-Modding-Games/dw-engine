@@ -702,7 +702,10 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `timing.faint_frames` | 40 | a | Valor del motor (aproximado, a falta de medirlo), no del original. |
 | `timing.walk_speed` | 22 | a | Valor del motor (aproximado, a falta de medirlo), no del original. |
 | `timing.projectile_speed` | 60 | a | Valor del motor (aproximado, a falta de medirlo), no del original. |
-| `timing.arena_radius` | 2400 | a | Valor del motor (aproximado, a falta de medirlo), no del original. |
+| `timing.arena_radius` | 2400 | a | Valor del motor (aproximado, a falta de medirlo), no del original; solo cuenta sin cámara ni mapa (simulación, pruebas). |
+| `timing.combat_area_width` | 280 | a | Número de la lógica del original (map.c: entityCheckCollision, 0x118), no datos del disco. |
+| `timing.combat_area_height` | 200 | a | Número de la lógica del original (map.c: entityCheckCollision, 0xc8), no datos del disco. |
+| `timing.combat_area_corner_height` | 200 | a | Número de la lógica del original (map.c: entityCheckCombatArea), no datos del disco. |
 | `quirks.broken_mp_tiredness` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.command_delay_discarded` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.sickness_always_hits` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |

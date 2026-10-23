@@ -392,8 +392,15 @@ timing:
   # Velocidad de andar en batalla y de los proyectiles, en unidades por fotograma.
   walk_speed: 22
   projectile_speed: 60
-  # El combate se queda dentro de este radio alrededor de donde empezó (el original choca con el mapa).
+  # Sin cámara ni mapa (la simulación, las pruebas), el combate se queda dentro de este radio alrededor de donde
+  # empezó; en el mapa manda el área de combate.
   arena_radius: 2400
+  # map.c: entityCheckCollision: ningún paso sale del área de combate, un rectángulo de 280 x 200 píxeles alrededor
+  # del centro de la pantalla original; prueba la esquina de abajo a la izquierda del luchador en el suelo y la de la
+  # derecha a esta altura.
+  combat_area_width: 280
+  combat_area_height: 200
+  combat_area_corner_height: 200
 
 # Rarezas del original (docs/reference/battle.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
 quirks:

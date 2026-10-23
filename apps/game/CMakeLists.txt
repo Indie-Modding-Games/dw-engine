@@ -2,6 +2,7 @@ dwe_add_app(game
     LAYER apps
     SOURCES
         src/autotest.cpp
+        src/battle_ground.cpp
         src/battle_screen.cpp
         src/battle_trigger.cpp
         src/care_commands.cpp

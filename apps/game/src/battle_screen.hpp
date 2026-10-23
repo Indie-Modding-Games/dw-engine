@@ -46,6 +46,9 @@ struct BattleScreenDesc {
   session::InventoryAdapter* inventory = nullptr;
   // Where the beaten enemies' drops land; it may be null (then they are lost).
   session::FieldItemsAdapter* fieldItems = nullptr;
+  // What the fighters walk on: the field's camera and map; it may be null (then the ruleset's arena
+  // radius holds them).
+  const game::battle::BattleGround* ground = nullptr;
   // For the fighters' names; it may be null.
   const assets::DigimonTable* species = nullptr;
   ui::Ui* ui = nullptr;
