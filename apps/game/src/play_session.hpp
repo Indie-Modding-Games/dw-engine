@@ -33,6 +33,7 @@
 #include "save_machine.hpp"
 #include "session_start.hpp"
 #include "sleep_screen.hpp"
+#include "story_textbox.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -110,6 +111,8 @@ public:
 
   // How much the map change's or the sleep's fade takes away from the screen, from 0 to 1.
   [[nodiscard]] float fadeLevel() const;
+  // Feeds the story's textboxes the player's keys, once per tick while no menu takes them.
+  void pressStory(const input::InputState& input);
 
   // Saves the game to a slot (AppFlow, for a new game's slot).
   [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {
@@ -144,6 +147,8 @@ private:
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;
   SaveMachine saveMachine_;
+  // The story's textboxes, when the game runs the story.
+  std::optional<StoryTextbox> storyTextbox_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

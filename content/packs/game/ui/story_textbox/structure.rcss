@@ -1,0 +1,70 @@
+/* The story's textboxes (game/story: Dialogue). One pixel of the original is 3dp (240 lines over 720 dp).
+
+   The speech box: 21 columns and 4 rows of 12 x 13 pixels, from x 30 to 292 and y 162 to 221 of the original's
+   320 x 240 screen (ui.c: setupDialogueBox), centred on a wide screen. A sized box (set_textbox_size) is centred on
+   the screen; the script sets its size. The text colours are the font's CLUT (font.c: FONT_CLUT, colour N of a
+   {color:N} tag). */
+
+body {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+#box {
+	position: absolute;
+	left: 50%;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	margin-left: -393dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+#box.sized {
+	top: 50%;
+}
+
+.row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.cursor {
+	display: inline-block;
+	width: 0dp;
+}
+
+.row.selected .cursor {
+	width: 18dp;
+	height: 18dp;
+	margin-right: 6dp;
+	background-color: #f8f800;
+}
+
+#prompt {
+	position: absolute;
+	right: 15dp;
+	bottom: 6dp;
+	width: 15dp;
+	height: 9dp;
+	background-color: #d0d0d0;
+}
+
+.color-0 { color: #000000; }
+.color-1 { color: #d0d0d0; }
+.color-2 { color: #0000f8; }
+.color-3 { color: #e03028; }
+.color-4 { color: #f898d0; }
+.color-5 { color: #98d890; }
+.color-6 { color: #90a8f8; }
+.color-7 { color: #f8f800; }
+.color-8 { color: #000008; }
+.color-9 { color: #808080; }
+.color-10 { color: #e08858; }

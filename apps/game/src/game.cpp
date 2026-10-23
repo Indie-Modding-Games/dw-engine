@@ -165,7 +165,9 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
 
 core::Result<void> loadDocuments(ui::Ui& ui) {
   for (const auto& [name, id] :
-       {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
+       {std::pair{"hud", "ui/hud/document"},
+        std::pair{"story_textbox", "ui/story_textbox/document"},
+        std::pair{"pause_menu", "ui/pause_menu/document"},
         std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"},
         std::pair{"partner_menu", "ui/partner_menu/document"},
         std::pair{"destination_choice", "ui/destination_choice/document"},
@@ -707,6 +709,7 @@ int runGame(const Options& options) {
         // Escape, the right button or East drops a click-to-move target.
         intent.cancelTarget = input.wasPressed("cancel");
         intent.confirm = input.wasPressed("confirm");
+        play->pressStory(input);
       } else {
         mouse.release();
       }

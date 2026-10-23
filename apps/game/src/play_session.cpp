@@ -204,6 +204,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
       saveMachine_(*game_.session, *context.ui) {
   session::GameSession& session = *game_.session;
+  if (game_.systems.story != nullptr) {
+    storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
+  }
   session.attachField(scene_->field());
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
@@ -231,6 +234,12 @@ PlaySession::~PlaySession() {
   }
 }
 
+void PlaySession::pressStory(const input::InputState& input) {
+  if (storyTextbox_) {
+    storyTextbox_->press(input);
+  }
+}
+
 void PlaySession::tick(const game::field::FieldInput& intent) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
@@ -244,7 +253,16 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
     }
   } else if (!ui.isVisible(MenuDocument) && !ui.isVisible(MainMenuDocument) &&
              !ui.isVisible(PartnerMenuDocument)) {
-    scene_->tick(intent, static_cast<float>(TickSeconds));
+    // tamer.c: checkMapInteraction talks and confirms on a cell only while no script runs
+    // (IS_SCRIPT_PAUSED 1), so the press that closes a textbox never starts a talk again.
+    game::field::FieldInput fieldIntent = intent;
+    if (fieldIntent.confirm && game_.systems.story != nullptr &&
+        game_.systems.story->scriptRunning()) {
+      core::logDebug("[port:dialogue] checkMapInteraction (tamer.c:671): confirm ignored while a "
+                     "script runs");
+      fieldIntent.confirm = false;
+    }
+    scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
     game_.session->tick(TickSeconds);
     scene_->finishTick();
   }
@@ -356,6 +374,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
 
   fieldHud_.update(!paused(), partnerBubbleOf(*scene_, species, session.partnerView().species));
+  if (storyTextbox_) {
+    storyTextbox_->update(*scene_, species);
+  }
   scene_->update(frameSeconds, alpha, paused());
 }
 
