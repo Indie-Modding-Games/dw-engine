@@ -248,10 +248,18 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
   anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
   las piden los scripts del disco (§10, Q3): la tabla tipo → entrada se aplaza al paquete de los gritos (Q13).
 - **Menús (tramo 2b):** `ui::Ui` informa de lo que pasó al navegar con el teclado o el mando (`takeCues()`: mover, confirmar,
-  cancelar; los clics del ratón no dan aviso), sin saber de sonido. `MenuSounds` (`apps/game/src/game_audio.cpp`) lee
-  `ui/ui_sounds.yaml` y carga sus bancos al arrancar, y toca el sonido de cada aviso. «Error» suena cuando el combate
-  rechaza una orden del jugador (un comando, la bolsa o un objeto que no se puede lanzar). Un aviso que falta o no
-  vale, o cuyo banco no carga, queda en silencio con un aviso en el log al arrancar (Q12).
+  cancelar; los clics del ratón no dan aviso), sin saber de sonido, y como el original: `tickMenuInput`
+  (`main_menu.c:4664`) toca el sonido 2 de la ranura 0 solo si el cursor se mueve (en el borde calla), el 3 al
+  confirmar y el 4 al cancelar, y abrir el menú (`tickMainMenu`, `main_menu.c:3319`) no suena. `MenuSounds`
+  (`apps/game/src/game_audio.cpp`) lee `ui/ui_sounds.yaml` y carga sus bancos al arrancar, y toca el sonido de cada
+  aviso. Un aviso que falta o no vale, o cuyo banco no carga, queda en silencio con un aviso en el log al arrancar
+  (Q12). El zumbido de rechazo del original (sonido 11, `script_textbox.c:260`, `script_common.c:898`: elecciones de
+  diálogo y tienda) llega con esos menús; el combate del original no suena al rechazar una orden, así que el nuestro
+  tampoco.
+- **Historia (tramo 2b):** `StoryLuaHost::publishApi` recibe el `SoundPort` y publica `story.play_sound(ranura,
+  sonido)`, la orden 0x5A del listado: como `scriptInstruction5Ato5F` (`script_interp.c:1550`), pasa los dos
+  operandos a las ranuras (`playSound`, `sound.c:641`, que 2a ya sigue en `SessionSound`) y sigue sin esperar; un
+  sonido que no suena no rompe el script. Es una función nueva de la API de Lua, así que `LuaApiVersion` sube de 1.1.0 a **1.2.0**.
 
 ## 7. Fidelidad: lo que oye el jugador
 
@@ -316,9 +324,9 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 | Assets de sonido y música (`sound/**`, `music/**`, sus `*_meta.yaml`, `data/music.yaml`) | Los escribe `dwx`; esquemas `sound_bank` y `music` | Sin cambios: un mod que sustituye un `sample_<n>`, un `font.sf2` o un `track_<nn>.mid` por id ya se oye en los tramos 2 y 3 | Ninguno |
 | Formato cocinado (Opus, SF2 y MIDI copiados) | ADR 0017 | Sin cambios | Ninguno |
 | `pack.yaml` | — | Sin claves nuevas | Ninguno |
-| `story.play_sound(banco, sonido)` | Lo emite `dwx` en el Lua convertido; S7 lo registra como orden ausente | Se publica en el tramo 2b, en la rama dueña de la API `story` (Q14) | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
+| `story.play_sound(ranura, sonido)` | Lo emite `dwx` en el Lua convertido | Publicada en el tramo 2b (Q14) sobre el `SoundPort` | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): `LuaApiVersion` sube de 1.1.0 a 1.2.0 |
 | `story.set_bgm(pista)`, `story.stop_bgm(...)` | Ídem | Se publican en el tramo 3 | **CAMBIO DE CONTRATO** (aditivo): sube la versión menor de `LuaApiVersion` |
-| Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel`, `error` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): documento nuevo del paquete `game` con su esquema |
+| Qué sonido toca cada aviso de los menús | — | Un documento del paquete `game` (`ui/ui_sounds.yaml`: `cursor`, `confirm`, `cancel` → `{bank, sound}`) | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): documento nuevo del paquete `game` con su esquema |
 | Volúmenes del jugador | — | Ajustes del usuario (tramo 4), no del paquete | Ninguno (no los ve un mod) |
 | Una API de sonido general para mods (`sound.play("sound/...")` por id) | — | Fuera de VAN-01: va a la fase 5 | — |
 
@@ -348,6 +356,11 @@ entran en 2a, **CAMBIO DE CONTRATO** aditivo; una entrada que falta o no vale de
 en el log, y el juego nunca falla por ello; si 2a se pasa mucho de unas 800 líneas, los avisos de los menús pasan a
 2b. Q13: la tabla tipo → entrada va al paquete de los gritos y del combate. Al medirlo, 2a con los menús pasaba de 1000 líneas, así que, como
 se decidió, los menús pasan a 2b (unas 240 líneas) y 2a queda en unas 840.
+
+2b, con la regla de portar del decomp (2026-10-22): los avisos siguen `tickMenuInput` y `tickMainMenu` (§6.4), así que
+un movimiento que no mueve el cursor y abrir el menú callan, y `ui_sounds.yaml` lleva solo `cursor`, `confirm` y
+`cancel`. El aviso `error` y su zumbido en el combate salen: el combate del original no suena al rechazar una orden, y
+el zumbido 11 llega con los menús de diálogo y tienda que lo tocan.
 
 **Q1. Cómo entra el sintetizador SF2 (tramo 3).**
 1. *(Recomendada)* TinySoundFont (MIT) como **port de overlay de vcpkg** en el repositorio
