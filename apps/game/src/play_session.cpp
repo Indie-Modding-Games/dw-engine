@@ -208,10 +208,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       evolutionScene_({.session = game_.session.get(),
                        .scene = scene_.get(),
                        .species = species_ ? &*species_ : nullptr,
-                       .rules = game_.systems.evolution != nullptr
-                                    ? game_.systems.evolution->sceneRules()
-                                    : nullptr,
-                       .frameSeconds = scene_->field().rules().transition.frameSeconds}) {
+                       .evolution = game_.systems.evolution,
+                       .frameSeconds = scene_->field().rules().transition.frameSeconds}),
+      deathScene_({.session = game_.session.get(),
+                   .scene = scene_.get(),
+                   .story = game_.systems.story,
+                   .transition = scene_->field().rules().transition}) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -264,6 +266,13 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
   evolutionScene_.tick(TickSeconds);
   if (evolutionScene_.active()) {
     return;
+  }
+  // murd.c and dooa.c: a lost life's or a death's scene holds the field once a battle is over.
+  if (!battleScreen_.active()) {
+    deathScene_.tick(TickSeconds);
+    if (deathScene_.active()) {
+      return;
+    }
   }
   if (battleScreen_.active()) {
     if (!ui.isVisible(MenuDocument)) {
@@ -388,9 +397,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
   sleepScreen_.update(!battleScreen_.active() && !evolutionScene_.active() &&
-                      !field.mapChangePending() && field.fadeLevel() == 0.0F);
+                      !deathScene_.active() && !field.mapChangePending() &&
+                      field.fadeLevel() == 0.0F);
   const auto partnerEvents = session.takePartnerEvents();
-  showPartnerEvents(evolutionScene_.take(partnerEvents), session, *scene_);
+  showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
                       (battleRanLastFrame_ && !battleScreen_.active());
   battleRanLastFrame_ = battleScreen_.active();
@@ -413,11 +423,11 @@ bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
-         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active();
+         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() || deathScene_.active();
 }
 
 float PlaySession::fadeLevel() const {
-  return std::max(scene_->field().fadeLevel(), sleepScreen_.fadeLevel());
+  return std::max({scene_->field().fadeLevel(), sleepScreen_.fadeLevel(), deathScene_.fadeLevel()});
 }
 
 } // namespace dwe::app

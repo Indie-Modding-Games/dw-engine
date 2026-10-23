@@ -4,6 +4,7 @@
 #include <dwe/core/math.hpp>
 #include <dwe/game/evolution/rules.hpp>
 #include <dwe/game/partner/events.hpp>
+#include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 
 #include <cstdint>
@@ -21,8 +22,9 @@ struct EvolutionSceneDesc {
   FieldScene* scene = nullptr;
   // The sizes of the forms (DIGIMON_DATA radius and height); nullptr keeps the partner's size.
   const assets::DigimonTable* species = nullptr;
-  // The ruleset's scene; nullptr draws a new form at once, with no scene.
-  const game::evolution::EvolutionSceneRules* rules = nullptr;
+  // Whose ruleset has the scene (EvolutionAdapter::sceneRules); without one, or without a scene in
+  // it, a new form is drawn at once.
+  const session::EvolutionAdapter* evolution = nullptr;
   // The length of one frame of the original (field rules, transition.frame_seconds).
   float frameSeconds = 0.0F;
 };
@@ -92,7 +94,10 @@ private:
   session::GameSession* session_;
   FieldScene* scene_;
   const assets::DigimonTable* species_;
-  const game::evolution::EvolutionSceneRules* rules_;
+  const session::EvolutionAdapter* evolution_;
+  // The scene's rules as they were when it started: a tuned ruleset changes the next scene. Only
+  // read while the scene is active, which start() sets after copying them.
+  game::evolution::EvolutionSceneRules rules_;
   double frameSeconds_;
 
   Phase phase_ = Phase::Idle;

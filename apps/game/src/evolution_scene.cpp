@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <optional>
 #include <utility>
 
 #include "messages.hpp"
@@ -63,14 +64,16 @@ const char* phaseName(std::uint8_t phase) {
 } // namespace
 
 EvolutionScene::EvolutionScene(const EvolutionSceneDesc& desc)
-    : session_(desc.session), scene_(desc.scene), species_(desc.species), rules_(desc.rules),
-      frameSeconds_(desc.frameSeconds), drawn_(desc.session->partnerView().species) {}
+    : session_(desc.session), scene_(desc.scene), species_(desc.species),
+      evolution_(desc.evolution), frameSeconds_(desc.frameSeconds),
+      drawn_(desc.session->partnerView().species) {}
 
 std::vector<PartnerEvent> EvolutionScene::take(std::span<const PartnerEvent> events) {
   std::vector<PartnerEvent> rest;
   for (const PartnerEvent& event : events) {
     const std::string species = session_->partnerView().species;
-    if (event.kind == EventKind::Evolved && rules_ != nullptr && frameSeconds_ > 0.0) {
+    if (event.kind == EventKind::Evolved && evolution_ != nullptr &&
+        evolution_->sceneRules() != nullptr && frameSeconds_ > 0.0) {
       start(species);
       continue;
     }
@@ -91,14 +94,15 @@ void EvolutionScene::start(const std::string& target) {
     return;
   }
   target_ = target;
+  rules_ = *evolution_->sceneRules();
   core::logDebug("[port:evolution] partnerTickEvolving (partner.c:741): scene {} -> {}", drawn_,
                  target_);
   stage_ = {};
   pendingSeconds_ = 0.0;
   burstClipPlaying_ = false;
   // getEvoSequenceState: the idle clip, the scene's sound bank in slot 8.
-  scene_->playPartnerClip(rules_->clips.idle);
-  session_->useSceneSounds(rules_->soundBank);
+  scene_->playPartnerClip(rules_.clips.idle);
+  session_->useSceneSounds(rules_.soundBank);
   setPhase(Phase::Glowing);
 }
 
@@ -133,25 +137,25 @@ void EvolutionScene::step() {
   // evl.c:376: the burst clip goes on with the ready one once it ends.
   if (burstClipPlaying_ && scene_->partnerClipFinished()) {
     burstClipPlaying_ = false;
-    scene_->playPartnerClip(rules_->clips.ready);
+    scene_->playPartnerClip(rules_.clips.ready);
   }
   switch (phase_) {
   case Phase::Glowing:
     // tickEvoSequenceLoading state 0 (main/evl.c:41); the condition bubble is not drawn yet.
-    if (frame_ >= rules_->waitFrames) {
-      scene_->playPartnerClip(rules_->clips.ready);
+    if (frame_ >= rules_.waitFrames) {
+      scene_->playPartnerClip(rules_.clips.ready);
       setPhase(Phase::Gathering);
     }
     break;
   case Phase::Gathering:
-    if (frame_ >= rules_->waitFrames) {
+    if (frame_ >= rules_.waitFrames) {
       setPhase(Phase::Dimming);
     }
     break;
   case Phase::Dimming:
     // State 0: the map's palettes fade to black over these frames; here the scenery goes at their
     // end.
-    if (frame_ >= rules_->dimFrames) {
+    if (frame_ >= rules_.dimFrames) {
       const render::MapCamera& map = scene_->mapCamera();
       mapEye_ = map.desc().eye;
       mapTarget_ = map.desc().target;
@@ -190,34 +194,34 @@ void EvolutionScene::step() {
 
 void EvolutionScene::stepClosing() {
   // EVL_updateEvoCamera (evl.c:702): aim at the partner, move in, then circle it.
-  const game::evolution::EvolutionSceneCamera& rules = rules_->camera;
+  const game::evolution::EvolutionSceneCamera& rules = rules_.camera;
   const Size size = sizeOf(drawn_);
-  if (frame_ >= rules_->dimFrames && frame_ <= rules_->cameraMoveEnd) {
+  if (frame_ >= rules_.dimFrames && frame_ <= rules_.cameraMoveEnd) {
     orbitAngle_ = rules.startAngle;
     const Orbit orbit = orbitAt(size);
-    if (frame_ <= rules_->cameraAimEnd) {
-      const float t = progress(rules_->dimFrames, rules_->cameraAimEnd, frame_);
+    if (frame_ <= rules_.cameraAimEnd) {
+      const float t = progress(rules_.dimFrames, rules_.cameraAimEnd, frame_);
       camera_.target = glm::mix(mapTarget_, orbit.target, t);
       recentre_ = t;
     } else {
-      const float t = progress(rules_->cameraAimEnd, rules_->cameraMoveEnd, frame_);
+      const float t = progress(rules_.cameraAimEnd, rules_.cameraMoveEnd, frame_);
       camera_.eye = glm::mix(mapEye_, orbit.eye, t);
       const std::int32_t drop = originalLerp(0, rules.maxDrop, 0, rules.dropHeight,
                                              static_cast<std::int32_t>(size.height));
       drop_ = static_cast<float>(
-          originalLerp(0, drop, rules_->cameraAimEnd, rules_->cameraMoveEnd, frame_));
+          originalLerp(0, drop, rules_.cameraAimEnd, rules_.cameraMoveEnd, frame_));
       focalLength_ = glm::mix(mapFocalLength_, static_cast<float>(rules.focalLength), t);
     }
-  } else if (frame_ > rules_->cameraMoveEnd) {
+  } else if (frame_ > rules_.cameraMoveEnd) {
     orbitAngle_ += rules.angleStep;
     camera_ = orbitAt(size);
   }
   showCamera();
-  if (frame_ == rules_->burstFrame) {
-    for (const std::int32_t sound : rules_->burstSounds) {
+  if (frame_ == rules_.burstFrame) {
+    for (const std::int32_t sound : rules_.burstSounds) {
       playSound(sound);
     }
-    scene_->playPartnerClip(rules_->clips.burst);
+    scene_->playPartnerClip(rules_.clips.burst);
     burstClipPlaying_ = true;
     setPhase(Phase::Bursting);
   }
@@ -225,17 +229,17 @@ void EvolutionScene::stepClosing() {
 
 void EvolutionScene::stepBursting() {
   // State 2 (evl.c:410); its particles, shards and flashes are not drawn yet.
-  const game::evolution::EvolutionSceneCamera& rules = rules_->camera;
+  const game::evolution::EvolutionSceneCamera& rules = rules_.camera;
   const Size size = grownSize();
-  if (frame_ > rules_->orbitEase.from) {
-    orbitAngle_ += frame_ > rules_->orbitEase.to
-                       ? rules.angleStep
-                       : originalLerp(0, rules.angleStep, rules_->orbitEase.from,
-                                      rules_->orbitEase.to, frame_);
+  if (frame_ > rules_.orbitEase.from) {
+    orbitAngle_ +=
+        frame_ > rules_.orbitEase.to
+            ? rules.angleStep
+            : originalLerp(0, rules.angleStep, rules_.orbitEase.from, rules_.orbitEase.to, frame_);
     camera_ = orbitAt(size);
     showCamera();
   }
-  if (frame_ >= rules_->grow.from && frame_ < rules_->grow.to) {
+  if (frame_ >= rules_.grow.from && frame_ < rules_.grow.to) {
     const Size from = sizeOf(drawn_);
     const Size to = sizeOf(target_);
     const auto ratio = [](float next, float now) {
@@ -243,20 +247,20 @@ void EvolutionScene::stepBursting() {
     };
     const auto scaleAt = [&](std::int32_t target) {
       return static_cast<float>(
-                 originalLerp(FixedOne, target, rules_->grow.from, rules_->grow.to, frame_)) /
+                 originalLerp(FixedOne, target, rules_.grow.from, rules_.grow.to, frame_)) /
              FixedOneF;
     };
     const float across = scaleAt(ratio(to.radius, from.radius));
     stage_.partnerScale = {across, scaleAt(ratio(to.height, from.height)), across};
     scene_->setStage(stage_);
   }
-  if (frame_ == rules_->roarFrame) {
-    playSound(rules_->roarSound);
+  if (frame_ == rules_.roarFrame) {
+    playSound(rules_.roarSound);
   }
-  if (frame_ == rules_->swapFrame) {
+  if (frame_ == rules_.swapFrame) {
     drawNewForm();
   }
-  if (frame_ >= rules_->endFrame) {
+  if (frame_ >= rules_.endFrame) {
     // State 3: the map's camera comes back.
     stage_.camera.reset();
     scene_->setStage(stage_);
@@ -276,7 +280,7 @@ void EvolutionScene::drawNewForm() {
   stage_.partnerScale = glm::vec3{1.0F};
   scene_->setStage(stage_);
   burstClipPlaying_ = false;
-  scene_->playPartnerClip(rules_->clips.idle);
+  scene_->playPartnerClip(rules_.clips.idle);
 }
 
 void EvolutionScene::restore() {
@@ -285,7 +289,7 @@ void EvolutionScene::restore() {
   stage_ = {};
   scene_->setStage(stage_);
   session_->useSceneSounds(std::nullopt);
-  scene_->playPartnerClip(rules_->clips.finish);
+  scene_->playPartnerClip(rules_.clips.finish);
   waitFrames_ = 0;
   setPhase(Phase::Finishing);
 }
@@ -312,16 +316,16 @@ EvolutionScene::Size EvolutionScene::sizeOf(std::string_view species) const {
 EvolutionScene::Size EvolutionScene::grownSize() const {
   const Size from = sizeOf(drawn_);
   const Size to = sizeOf(target_);
-  if (frame_ < rules_->grow.from) {
+  if (frame_ < rules_.grow.from) {
     return from;
   }
-  if (frame_ >= rules_->grow.to) {
+  if (frame_ >= rules_.grow.to) {
     return to;
   }
   const auto at = [&](float start, float end) {
     return static_cast<float>(originalLerp(static_cast<std::int32_t>(start),
-                                           static_cast<std::int32_t>(end), rules_->grow.from,
-                                           rules_->grow.to, frame_));
+                                           static_cast<std::int32_t>(end), rules_.grow.from,
+                                           rules_.grow.to, frame_));
   };
   return {.radius = at(from.radius, to.radius), .height = at(from.height, to.height)};
 }
@@ -330,7 +334,7 @@ EvolutionScene::Orbit EvolutionScene::orbitAt(Size size) const {
   // EVL_calculateCameraVectors (evl.c:834) in the original's axes (Y down), turned into world
   // space: the camera looks at half the partner's height from its root, from `distance` away at the
   // orbit angle plus the partner's facing, raised by rise plus twice the height.
-  const game::evolution::EvolutionSceneCamera& rules = rules_->camera;
+  const game::evolution::EvolutionSceneCamera& rules = rules_.camera;
   const game::field::CharacterState partner = scene_->field().partner();
   const float distance =
       (std::max(size.radius, size.height) * static_cast<float>(rules.distancePerSize)) +

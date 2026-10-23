@@ -1,0 +1,354 @@
+#include "death_scene.hpp"
+
+#include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
+
+#include <algorithm>
+#include <array>
+#include <optional>
+#include <utility>
+
+#include "messages.hpp"
+
+namespace dwe::app {
+namespace {
+
+using game::partner::EventKind;
+using game::partner::PartnerEvent;
+
+// Not in the original: a last clip that never ends (a model whose clip repeats) gives the field
+// back after this many frames instead of holding it forever.
+constexpr std::int32_t ClipWaitGuardFrames = 200;
+// Slot 8 plays the scene's bank (playSound2(8, n)).
+constexpr std::int64_t SceneSoundSlot = 8;
+// fadeoutCLUT1's full level: the palettes are black.
+constexpr float PaletteLevelMax = 255.0F;
+
+// A linear step from `start` at t0 to `end` at t1 (effect_common.c: lerp, inside its range).
+std::int32_t lerpFrames(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
+                        std::int32_t t) {
+  if (t1 == t0) {
+    return end;
+  }
+  const std::int32_t clamped = std::clamp(t, std::min(t0, t1), std::max(t0, t1));
+  return start + ((end - start) * (clamped - t0) / (t1 - t0));
+}
+
+const char* phaseName(std::uint8_t phase) {
+  constexpr std::array<const char*, 7> Names{
+      "idle",     "lost life alone", "lost life fade out", "lost life fade in",
+      "dissolve", "rebirth",         "rebirth finish"};
+  return phase < Names.size() ? Names.at(phase) : "?";
+}
+
+} // namespace
+
+DeathScene::DeathScene(const DeathSceneDesc& desc)
+    : session_(desc.session), scene_(desc.scene), story_(desc.story), transition_(desc.transition) {
+}
+
+std::vector<PartnerEvent> DeathScene::take(std::span<const PartnerEvent> events) {
+  if (!session_->partnerRules().life.scenes || transition_.frameSeconds <= 0.0F) {
+    return {events.begin(), events.end()};
+  }
+  std::vector<PartnerEvent> rest;
+  for (const PartnerEvent& event : events) {
+    switch (event.kind) {
+    case EventKind::LostLife:
+      // tamer.c: tamerTickBattleLostLife and tamerTickSicknessLostLife run MURD_tick; with no lives
+      // left it leads into the death (murd.c:308).
+      if (event.value > 0) {
+        pending_.push_back({.kind = SceneKind::LostLife, .lives = event.value});
+      } else {
+        lastLifeLost_ = true;
+      }
+      rest.push_back(event);
+      break;
+    case EventKind::Died:
+      pending_.push_back({.kind = SceneKind::Death, .lives = lastLifeLost_ ? 0 : 1});
+      lastLifeLost_ = false;
+      rest.push_back(event);
+      break;
+    case EventKind::Reborn:
+      // The new baby is drawn on the rebirth's frame, not now.
+      baby_ = session_->partnerView().species;
+      break;
+    default:
+      rest.push_back(event);
+      break;
+    }
+  }
+  return rest;
+}
+
+void DeathScene::tick(double seconds) {
+  if (phase_ == Phase::Idle) {
+    if (pending_.empty()) {
+      return;
+    }
+    const Pending next = pending_.front();
+    pending_.pop_front();
+    begin(next);
+  }
+  pendingSeconds_ += seconds;
+  const double frameSeconds = transition_.frameSeconds;
+  while (phase_ != Phase::Idle && pendingSeconds_ >= frameSeconds) {
+    pendingSeconds_ -= frameSeconds;
+    step();
+  }
+}
+
+void DeathScene::begin(const Pending& pending) {
+  const std::optional<game::partner::LifeScenes>& scenes = session_->partnerRules().life.scenes;
+  if (!scenes.has_value()) {
+    // The scenes went from the ruleset since the event came: the baby is drawn at once.
+    if (!baby_.empty() && !scene_->showPartnerSpecies(baby_)) {
+      core::logWarning("{}", core::formatMessage(messages::PartnerModelNotShown, baby_, ""));
+    }
+    return;
+  }
+  rules_ = *scenes;
+  lives_ = pending.lives;
+  pendingSeconds_ = 0.0;
+  stage_ = {};
+  if (pending.kind == SceneKind::Death && lives_ > 0) {
+    // partner.c: partnerTickDying (natural death): the death's sound bank, then DOOA_tick.
+    core::logDebug("[port:death] partnerTickDying (partner.c:640): natural death");
+    startDissolve(true);
+    return;
+  }
+  // murd.c: MURD_tick; a death with no lives left starts here too and goes on to the dissolve.
+  core::logDebug("[port:death] MURD_tick (murd.c:756): lives={}", lives_);
+  frame_ = 0;
+  setPhase(Phase::LostLifeAlone);
+}
+
+void DeathScene::setPhase(Phase phase) {
+  core::logDebug("[port:death] {} -> {} at frame {}", phaseName(static_cast<std::uint8_t>(phase_)),
+                 phaseName(static_cast<std::uint8_t>(phase)), frame_);
+  phase_ = phase;
+}
+
+void DeathScene::playSound(std::int32_t sound) {
+  if (game::story::SoundPort* port = session_->sound()) {
+    port->playSound(SceneSoundSlot, sound);
+  }
+}
+
+void DeathScene::showStage() {
+  scene_->setStage(stage_);
+}
+
+void DeathScene::setShade(std::int32_t shade) {
+  fade_ = game::field::shadeDarkness(transition_, shade);
+}
+
+bool DeathScene::reached(std::int32_t frame) const {
+  return frame_ == frame;
+}
+
+void DeathScene::step() {
+  // The scenes count their frame first (scene->timer++, seq->frame++).
+  frame_ += 1;
+  switch (phase_) {
+  case Phase::LostLifeAlone:
+  case Phase::LostLifeFadeOut:
+  case Phase::LostLifeFadeIn:
+    stepLostLife();
+    break;
+  case Phase::Dissolve:
+    stepDissolve();
+    break;
+  case Phase::Rebirth:
+    stepRebirth();
+    break;
+  case Phase::RebirthFinish:
+    waitFrames_ += 1;
+    if (scene_->partnerClipFinished() || waitFrames_ >= ClipWaitGuardFrames) {
+      finish();
+    }
+    break;
+  case Phase::Idle:
+    break;
+  }
+}
+
+void DeathScene::stepLostLife() {
+  // MURD_tickScene (murd.c:188). The iris and the lives box are not drawn yet.
+  const game::partner::LostLifeScene& rules = rules_.lostLife;
+  if (reached(rules.irisFrames)) {
+    // Phase 1: the partner alone on black.
+    stage_.sceneryHidden = true;
+    showStage();
+  }
+  switch (phase_) {
+  case Phase::LostLifeAlone:
+    if (frame_ < rules.aloneUntil) {
+      break;
+    }
+    if (lives_ == 0) {
+      // Phase 0x65: the dissolve goes on from the lost life's scene, the partner already gone.
+      startDissolve(false);
+      break;
+    }
+    setPhase(Phase::LostLifeFadeOut);
+    break;
+  case Phase::LostLifeFadeOut:
+    setShade(lerpFrames(0, rules.shadeMax, rules.aloneUntil, rules.fadeOutEnd, frame_));
+    if (frame_ >= rules.fadeOutEnd) {
+      // Phases 4 and 5: black, and the tamer wakes up on the wake map.
+      setShade(rules.shadeHold);
+      enterWakeMap();
+      setPhase(Phase::LostLifeFadeIn);
+    }
+    break;
+  case Phase::LostLifeFadeIn:
+    if (frame_ < rules.mapBack) {
+      setShade(rules.shadeHold);
+      break;
+    }
+    if (reached(rules.mapBack)) {
+      stage_ = {};
+      showStage();
+    }
+    setShade(lerpFrames(rules.shadeMax, 0, rules.mapBack, rules.fadeInEnd, frame_));
+    if (frame_ >= rules.fadeInEnd) {
+      finish();
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+void DeathScene::startDissolve(bool livesLeft) {
+  // DOOA_tick (dooa.c:1699): a partner with lives starts on frame 0 with its alive clip; one with
+  // none starts at the map frame, already gone.
+  const game::partner::DeathScene& rules = rules_.death;
+  session_->useSceneSounds(rules.soundBank);
+  lives_ = livesLeft ? 1 : 0;
+  if (livesLeft) {
+    frame_ = 0;
+    scene_->playPartnerClip(rules.clips.alive);
+  } else {
+    frame_ = rules.mapFrame;
+    stage_.partnerHidden = true;
+    showStage();
+  }
+  setPhase(Phase::Dissolve);
+}
+
+void DeathScene::stepDissolve() {
+  // DOOA_tickDissolve (dooa.c:303). The iris, the wireframe shards, the squash, the rising light,
+  // the egg and the cutscene cameras are not drawn yet.
+  const game::partner::DeathScene& rules = rules_.death;
+  // A partner with lives reaches the map frame from 0; one without starts on it and moves on first
+  // (dooa.c:341: the check runs after the frame is counted).
+  if (frame_ == (lives_ > 0 ? rules.mapFrame : rules.mapFrame + 1)) {
+    // Phase 0 ends: the wake map, and the partner alone on black.
+    enterWakeMap();
+    scene_->playPartnerClip(lives_ > 0 ? rules.clips.alive : rules.clips.lastLife);
+    stage_ = {};
+    stage_.sceneryHidden = true;
+    showStage();
+  }
+  if (reached(rules.standFrame) && lives_ > 0) {
+    scene_->playPartnerClip(rules.clips.burst);
+  }
+  if (reached(rules.burst.frame)) {
+    playSound(rules.burst.sound);
+  }
+  if (reached(rules.sink.frame)) {
+    playSound(rules.sink.sound);
+  }
+  if (reached(rules.vanish.frame)) {
+    scene_->playPartnerClip(rules.clips.vanish);
+    stage_.partnerHidden = true;
+    showStage();
+    playSound(rules.vanish.sound);
+  }
+  if (reached(rules.rise.frame)) {
+    playSound(rules.rise.sound);
+  }
+  if (frame_ >= rules.endFrame) {
+    // The story's death script runs between the two in the original (partnerTickDying2); it does
+    // not run here yet, so the rebirth follows at once.
+    core::logDebug("[port:death] DOOA_getSequenceState (dooa.c:1745): rebirth as {}", baby_);
+    frame_ = 0;
+    setPhase(Phase::Rebirth);
+  }
+}
+
+void DeathScene::stepRebirth() {
+  // DOOA_tickRebirth (dooa.c:1020). The egg's shards, flashes and sparkles are not drawn yet.
+  const game::partner::DeathScene& rules = rules_.death;
+  if (reached(rules.glow.frame)) {
+    playSound(rules.glow.sound);
+  }
+  if (reached(rules.hatch.frame)) {
+    playSound(rules.hatch.sound);
+  }
+  if (reached(rules.swapFrame)) {
+    // reincarnatePartner: the new baby; the scenery and the tamer come back from black.
+    core::logDebug("[port:death] reincarnatePartner (dooa.c:1103): draw {}", baby_);
+    if (!baby_.empty()) {
+      if (auto shown = scene_->showPartnerSpecies(baby_); !shown) {
+        core::logWarning("{}", core::formatMessage(messages::PartnerModelNotShown, baby_,
+                                                   shown.error().message));
+      }
+    }
+    stage_ = {};
+    stage_.partnerHidden = true;
+    showStage();
+  }
+  if (frame_ >= rules.swapFrame && frame_ < rules.shownFrame) {
+    // fadeoutCLUT1 and the models' palettes from black (255) to their colours.
+    fade_ = static_cast<float>(lerpFrames(static_cast<std::int32_t>(PaletteLevelMax), 0,
+                                          rules.swapFrame, rules.shownFrame, frame_)) /
+            PaletteLevelMax;
+  }
+  if (reached(rules.shownFrame)) {
+    fade_ = 0.0F;
+    stage_ = {};
+    showStage();
+    scene_->playPartnerClip(rules.clips.reborn);
+    playSound(rules.sparkleSound);
+  }
+  if (reached(rules.finishFrame)) {
+    scene_->playPartnerClip(rules.clips.finish);
+    waitFrames_ = 0;
+    setPhase(Phase::RebirthFinish);
+  }
+}
+
+void DeathScene::enterWakeMap() {
+  // MURD_tick and DOOA_tick pick the map (setDeathMap); changeToDeathMap enters it.
+  const game::partner::WakeMap& wake = rules_.wakeMap;
+  bool storyMap = false;
+  if (story_ != nullptr) {
+    const game::story::StoryState& state = story_->state();
+    for (const std::int32_t trigger : wake.storyTriggers) {
+      storyMap = storyMap || state.trigger(trigger).value_or(false);
+    }
+    storyMap = storyMap || std::cmp_greater_equal(state.variable(wake.storyVariable).value_or(0),
+                                                  wake.storyVariableAtLeast);
+  }
+  const std::int32_t map = storyMap ? wake.storyMap : wake.earlyMap;
+  core::logDebug("[port:death] changeToDeathMap (map.c:5420): map={} exit={}", map, wake.exit);
+  if (auto entered = scene_->enterOriginalMap(map, wake.exit); !entered) {
+    core::logWarning(
+        "{}", core::formatMessage(messages::WakeMapNotEntered, map, entered.error().message));
+  }
+}
+
+void DeathScene::finish() {
+  core::logDebug("[port:death] scene ends at frame {}", frame_);
+  session_->useSceneSounds(std::nullopt);
+  scene_->playPartnerClip(std::nullopt);
+  stage_ = {};
+  showStage();
+  fade_ = 0.0F;
+  setPhase(Phase::Idle);
+}
+
+} // namespace dwe::app

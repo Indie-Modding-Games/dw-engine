@@ -136,6 +136,8 @@ inline constexpr std::string_view SaveCommandFailed = "game: save: {}";
 inline constexpr std::string_view SavedToSlot = "game: saved to {}";
 
 // The partner's events and the debug evolve command (partner_events.cpp, game.cpp).
+// The map's index, the reason (death_scene.cpp).
+inline constexpr std::string_view WakeMapNotEntered = "game: the wake map {} cannot be entered: {}";
 // The clip id, the model.
 inline constexpr std::string_view PartnerClipMissing =
     "field: the partner's model {1} has no clip {0}";

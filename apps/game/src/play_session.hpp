@@ -22,6 +22,7 @@
 #include "autotest.hpp"
 #include "battle_screen.hpp"
 #include "care_commands.hpp"
+#include "death_scene.hpp"
 #include "evolution_scene.hpp"
 #include "field_hud.hpp"
 #include "field_scene.hpp"
@@ -155,6 +156,7 @@ private:
   std::optional<StoryTextbox> storyTextbox_;
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
+  DeathScene deathScene_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

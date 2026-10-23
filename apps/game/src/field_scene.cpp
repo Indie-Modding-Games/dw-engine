@@ -212,6 +212,14 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   return {};
 }
 
+core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t exit) {
+  const assets::MapEntry* entry = mapTable_ ? mapTable_->findByOriginalIndex(index) : nullptr;
+  if (entry == nullptr) {
+    return core::fail(std::format("no map of the original with index {}", index));
+  }
+  return enterMap(entry->id, exit);
+}
+
 void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId) {
   partnerClip_ = clipId;
   partnerClipStarted_ = false;

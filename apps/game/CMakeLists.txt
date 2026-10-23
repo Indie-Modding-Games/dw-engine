@@ -7,6 +7,7 @@ dwe_add_app(game
         src/care_commands.cpp
         src/common.cpp
         src/content_mount.cpp
+        src/death_scene.cpp
         src/dev_assets_banner.cpp
         src/dev_views.cpp
         src/device_names.cpp

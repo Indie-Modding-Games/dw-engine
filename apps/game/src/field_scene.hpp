@@ -129,6 +129,9 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
+  // Enters the original's map with this index at this exit, keeping the partner (a scene's map
+  // change: map.c: changeToDeathMap).
+  core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
   // What a scene does to the picture; a default FieldStage gives the field its own back.
   void setStage(const FieldStage& stage) { stage_ = stage; }
   [[nodiscard]] const FieldStage& stage() const { return stage_; }
