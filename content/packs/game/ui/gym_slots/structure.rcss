@@ -1,0 +1,11 @@
+/* The gym's roulette whatever the skin: three reels in a row over the field, each a window two
+   cells high that the strip scrolls through. The look is the pause menu's panel (the skins'
+   pause_menu style); the more specific rule here makes the panel the machine's size. */
+
+body { pointer-events: none; }
+body #panel { left: 50%; margin-left: -90dp; top: 40dp; width: 180dp; }
+.reel { display: inline-block; position: relative; overflow: hidden; width: 41dp; height: 65dp;
+        margin: 0 8dp; }
+.strip { position: absolute; left: 0; width: 41dp; }
+.cell { display: block; height: 32dp; line-height: 32dp; text-align: center; }
+.payout { text-align: center; }

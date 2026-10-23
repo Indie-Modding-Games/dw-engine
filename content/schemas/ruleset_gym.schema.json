@@ -13,6 +13,7 @@
     "sound_slot",
     "cloud_scatter",
     "count",
+    "slots",
     "courses"
   ],
   "additionalProperties": false,
@@ -192,6 +193,125 @@
         }
       }
     },
+    "slots": {
+      "description": "The roulette over a course.",
+      "type": "object",
+      "required": [
+        "reels",
+        "assist_by_roll",
+        "jackpot_symbol",
+        "spin_speed",
+        "cell_pixels",
+        "settle_pixels",
+        "result_frames",
+        "payouts",
+        "sounds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "reels": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "assist_by_roll": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          }
+        },
+        "jackpot_symbol": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "spin_speed": {
+          "$ref": "#/$defs/frames"
+        },
+        "cell_pixels": {
+          "$ref": "#/$defs/frames"
+        },
+        "settle_pixels": {
+          "type": "integer"
+        },
+        "result_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payouts": {
+          "type": "object",
+          "required": [
+            "jackpot",
+            "own_symbol",
+            "triple",
+            "miss"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "jackpot": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "own_symbol": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "triple": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "miss": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "sounds": {
+          "type": "object",
+          "required": [
+            "start",
+            "press",
+            "stop",
+            "jackpot",
+            "triple",
+            "miss"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "type": "integer"
+            },
+            "press": {
+              "type": "integer"
+            },
+            "stop": {
+              "type": "integer"
+            },
+            "jackpot": {
+              "type": "integer"
+            },
+            "triple": {
+              "type": "integer"
+            },
+            "miss": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
     "courses": {
       "type": "array",
       "items": {
@@ -203,7 +323,8 @@
           "cycle_frames",
           "rest_frames",
           "sounds",
-          "animations"
+          "animations",
+          "slot_symbol"
         ],
         "additionalProperties": false,
         "properties": {
@@ -262,6 +383,10 @@
                 "type": "integer"
               }
             }
+          },
+          "slot_symbol": {
+            "type": "integer",
+            "minimum": 1
           },
           "hp": {
             "type": "object",

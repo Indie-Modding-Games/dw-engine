@@ -29,6 +29,7 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
     break;
   case WalkTo:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.face(Actor::Partner, defense.facing);
       ports.animate(Actor::Partner, defense.workAnimation);
       swing_ = 0;
@@ -79,7 +80,8 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
     if (!ports.walk(Actor::Partner, course_->spot)) {
       break;
     }
-    if (counter_ >= course_->cycleFrames) {
+    // Cancel only cut the swings short above: the session itself has no cancel here.
+    if (sessionOver(GymInput{})) {
       award(ports);
       ports.animate(Actor::Partner, course_->doneAnimation);
       ports.playSound(gym_->soundSlot, course_->endSound);

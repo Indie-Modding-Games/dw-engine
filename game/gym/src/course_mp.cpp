@@ -19,6 +19,7 @@ void CourseRun::mpFrame(GymPorts& ports, const MpCourse& mp, const GymInput& inp
     break;
   case 2:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.showObjects(mp.hidden, false);
       ports.showObjects(mp.shown, true);
       // The lit part sits over the partner's head, wherever its model puts it.

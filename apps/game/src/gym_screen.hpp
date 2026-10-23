@@ -24,6 +24,7 @@
 namespace dwe::app {
 
 inline constexpr std::string_view GymStatsDocument = "gym_stats";
+inline constexpr std::string_view GymSlotsDocument = "gym_slots";
 // gym("<course>"): runs a course of the gym (gym.yaml: courses), on its map only.
 inline constexpr std::string_view GymCommand = "gym";
 
@@ -72,11 +73,14 @@ public:
   // One logic tick of the course, with the player's buttons.
   void tick(double seconds, const game::field::FieldInput& intent);
 
-  // Once per frame: shows the stats box while a course counts its gains.
+  // Once per frame: shows the roulette while it runs, and the stats box while a course counts its
+  // gains.
   void update();
 
 private:
   class Ports;
+
+  void updateSlots();
 
   GymScreenDesc desc_;
   game::gym::GymRules rules_;
@@ -86,6 +90,7 @@ private:
   // TRAINING_COMPLETE.
   bool complete_ = false;
   bool boxShown_ = false;
+  bool slotsShown_ = false;
   std::optional<game::gym::GymStats> published_;
   std::size_t publishedNotices_ = 0;
 };

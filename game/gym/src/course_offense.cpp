@@ -16,6 +16,7 @@ void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, cons
     break;
   case 1:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.animate(Actor::Partner, punch.animation);
       ports.holdAnimation(Actor::Partner, true);
       step_ = 0;

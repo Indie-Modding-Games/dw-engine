@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/gym/gym_rules.hpp>
+#include <dwe/game/gym/slot_machine.hpp>
 #include <dwe/game/gym/stat_countup.hpp>
 
 #include <cstdint>
@@ -87,8 +88,9 @@ struct GymInput {
 // the original's TRAINING_STATE.
 class CourseRun {
 public:
-  // The rules must outlive the run.
-  CourseRun(const GymRules& gym, const CourseRules& course);
+  // The rules must outlive the run. With the roulette, it decides when the session ends and the
+  // rate of the gains.
+  CourseRun(const GymRules& gym, const CourseRules& course, bool withSlots);
 
   // Real seconds of a logic tick; `frameSeconds` is how long a frame of the original lasts.
   void tick(GymPorts& ports, double seconds, double frameSeconds, const GymInput& input);
@@ -98,6 +100,8 @@ public:
   // The stats box while it is on screen.
   [[nodiscard]] const std::optional<StatCountup>& countup() const { return countup_; }
   [[nodiscard]] const CourseRules& course() const { return *course_; }
+  // The roulette while it is on screen.
+  [[nodiscard]] const std::optional<SlotMachine>& slots() const { return slots_; }
 
 private:
   void frame(GymPorts& ports, const GymInput& input);
@@ -110,6 +114,10 @@ private:
 
   // The steps every course shares.
   void begin(GymPorts& ports);
+  // TRN_startSlotSessionIfEnabled.
+  void startSlots(GymPorts& ports);
+  // TRN_startSlotSpin: the partner is at the machine.
+  void startSpin();
   void award(GymPorts& ports);
   // The session ran its frames, or the player cancelled.
   [[nodiscard]] bool sessionOver(const GymInput& input) const;
@@ -139,6 +147,8 @@ private:
   std::optional<std::int32_t> loop_;
   std::size_t swing_ = 0;
   std::optional<StatCountup> countup_;
+  bool withSlots_ = false;
+  std::optional<SlotMachine> slots_;
   // An input seen during a tick that steps no frame still counts on the next frame.
   GymInput pending_;
 };

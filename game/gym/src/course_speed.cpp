@@ -13,6 +13,7 @@ void CourseRun::speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymI
     break;
   case 1:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.face(Actor::Partner, speed.facing);
       ports.animate(Actor::Partner, speed.runAnimation);
       setState(2);

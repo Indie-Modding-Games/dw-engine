@@ -9,9 +9,10 @@
 
 namespace dwe::game::gym {
 
-CourseRun::CourseRun(const GymRules& gym, const CourseRules& course)
-    : gym_(&gym), course_(&course) {
-  core::logDebug("[port:gym] TRN_setup*Training (src/trn): course {}", course.id);
+CourseRun::CourseRun(const GymRules& gym, const CourseRules& course, bool withSlots)
+    : gym_(&gym), course_(&course), withSlots_(withSlots) {
+  core::logDebug("[port:gym] TRN_setup*Training (src/trn): course {}, roulette {}", course.id,
+                 withSlots);
 }
 
 void CourseRun::tick(GymPorts& ports, double seconds, double frameSeconds, const GymInput& input) {
@@ -36,6 +37,9 @@ void CourseRun::frame(GymPorts& ports, const GymInput& input) {
     } else if (countup_->tickFrame()) {
       ports.playSound(gym_->count.soundSlot, gym_->count.sound);
     }
+  }
+  if (slots_.has_value()) {
+    slots_->tick(ports, input.confirm);
   }
   std::visit(
       [&](const auto& detail) {
@@ -68,17 +72,35 @@ void CourseRun::begin(GymPorts& ports) {
   ports.moveCamera(course_->spot, course_->cameraSpeed);
   ports.playSound(gym_->soundSlot, course_->startSound);
   counter_ = 0;
+  startSlots(ports);
+}
+
+void CourseRun::startSlots(GymPorts& ports) {
+  if (withSlots_) {
+    slots_.emplace(gym_->slots, course_->slotSymbol, ports);
+  }
+}
+
+void CourseRun::startSpin() {
+  if (slots_.has_value()) {
+    slots_->startSpin();
+  }
 }
 
 void CourseRun::award(GymPorts& ports) {
-  // The roulette (TRN_getSlotSessionResult) comes with the slot slice; without it the default
-  // rate.
-  const Award award = ports.award(*course_, 0);
+  // Without the roulette the default rate (TRN_getSlotSessionResult is not asked).
+  const std::int32_t tenths =
+      slots_.has_value() && slots_->result().has_value() ? *slots_->result() : 0;
+  slots_.reset();
+  const Award award = ports.award(*course_, tenths);
   countup_.emplace(gym_->count, award.before, award.gains);
   core::logDebug("[port:gym] TRN_award*TrainingGains (trn_reward.c): course {}", course_->id);
 }
 
 bool CourseRun::sessionOver(const GymInput& input) const {
+  if (withSlots_) {
+    return slots_.has_value() && slots_->result().has_value();
+  }
   return counter_ >= course_->cycleFrames || input.cancel;
 }
 
@@ -138,6 +160,7 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     break;
   case 1:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.animate(Actor::Partner, hp.workAnimation);
       ports.face(Actor::Partner, hp.facing);
       ports.playSound(gym_->soundSlot, hp.beatSound);

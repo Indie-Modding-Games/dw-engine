@@ -185,6 +185,8 @@ struct CourseRules {
   std::int32_t endSound = 0;
   std::int32_t walkAnimation = 0;
   std::int32_t doneAnimation = 0;
+  // The roulette symbol that is the course's own, which pays more.
+  std::int32_t slotSymbol = 0;
   CourseDetail detail;
 };
 
@@ -195,6 +197,43 @@ struct CountRules {
   std::int32_t sound = 0;
   std::int32_t hpMpMax = 0;
   std::int32_t statMax = 0;
+};
+
+// The rate in tenths each line of the roulette pays.
+struct SlotPayouts {
+  std::int32_t jackpot = 0;
+  std::int32_t ownSymbol = 0;
+  std::int32_t triple = 0;
+  std::int32_t miss = 0;
+};
+
+struct SlotSounds {
+  std::int32_t start = 0;
+  std::int32_t press = 0;
+  std::int32_t stop = 0;
+  std::int32_t jackpot = 0;
+  std::int32_t triple = 0;
+  std::int32_t miss = 0;
+};
+
+// trn_slots.c: the roulette over a course.
+struct SlotRules {
+  // The symbols of each of the three reels, all of the same length.
+  std::vector<std::vector<std::int32_t>> reels;
+  // The assist of each roll of randomLimit(size): 0 none, 1 matches, 2 aims at the jackpot.
+  std::vector<std::int32_t> assistByRoll;
+  std::int32_t jackpotSymbol = 0;
+  // Pixels per frame of a spinning reel, and the height of a cell.
+  std::int32_t spinSpeed = 0;
+  std::int32_t cellPixels = 1;
+  // How far a reel that is about to stop is drawn past its cell.
+  std::int32_t settlePixels = 0;
+  // How long the line shows before the session goes on without a press.
+  std::int32_t resultFrames = 0;
+  // The gym's sound slot.
+  std::int32_t soundSlot = 0;
+  SlotPayouts payouts;
+  SlotSounds sounds;
 };
 
 struct GymRules {
@@ -212,6 +251,7 @@ struct GymRules {
   std::int32_t soundSlot = 0;
   std::int32_t cloudScatter = 1;
   CountRules count;
+  SlotRules slots;
   std::vector<CourseRules> courses;
 
   [[nodiscard]] const CourseRules* findCourse(std::string_view id) const;

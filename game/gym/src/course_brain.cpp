@@ -15,6 +15,7 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
     ports.playSound(gym_->soundSlot, course_->startSound);
     ports.moveCamera(brain.tamerSpot, course_->cameraSpeed);
     counter_ = 0;
+    startSlots(ports);
     setState(1);
     break;
   case 1:
@@ -27,6 +28,7 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
     break;
   case 2:
     if (ports.walk(Actor::Partner, course_->spot)) {
+      startSpin();
       ports.faceEachOther();
       ports.animate(Actor::Tamer, brain.tamerTeach);
       ports.animate(Actor::Partner, brain.partnerLearn);

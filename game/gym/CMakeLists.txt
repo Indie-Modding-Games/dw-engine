@@ -8,6 +8,7 @@ dwe_add_module(gym
         src/course_mp.cpp
         src/course_offense.cpp
         src/course_speed.cpp
+  src/slot_machine.cpp
         src/gym_rules.cpp
         src/stat_countup.cpp
     DEPS core assets ruleset)

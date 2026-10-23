@@ -28,9 +28,40 @@ count:
 # Lo común de cada curso: el aparato (el compañero anda hasta él y la cámara lo sigue a velocidad 10), la sesión de
 # 1200 fotogramas (o hasta cancelar), 20 fotogramas de pausa tras la cuenta, los sonidos al empezar (9) y al acabar (10)
 # y las animaciones de andar y de terminar (0x12). Debajo, la coreografía propia del curso.
+# trn_slots.c: la ruleta, si la variable de slot_variable vale 1. Los rodillos son TRN_D_8008F1AC; la
+# ayuda oculta sale de TRN_D_8008F2CC[rand() % 10] (0 ninguna, 1 empareja, 2 busca el 7). Giran a 0x400 >> 6
+# píxeles por fotograma en celdas de 32; la línea se ve 30 fotogramas (o hasta confirmar). Paga en décimas: triple 7,
+# triple del símbolo del curso, otro triple y nada. Sonidos playSound(8, ...): 6 arranca, 7 al pulsar, 8 al parar,
+# 0xc el 7, 0xb un triple y 0xd nada.
+slots:
+  reels:
+    - [1, 2, 3, 4, 5, 6, 7, 1, 3, 5, 2, 4, 6]
+    - [6, 4, 2, 5, 3, 1, 2, 5, 3, 6, 1, 4, 7]
+    - [7, 6, 5, 4, 6, 5, 4, 3, 2, 1, 3, 2, 1]
+  assist_by_roll: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2]
+  jackpot_symbol: 7
+  spin_speed: 16
+  cell_pixels: 32
+  # TRN_renderSlotMachine: un rodillo a punto de parar se dibuja 2 píxeles más abajo.
+  settle_pixels: 2
+  result_frames: 30
+  payouts:
+    jackpot: 100
+    own_symbol: 40
+    triple: 20
+    miss: 5
+  sounds:
+    start: 6
+    press: 7
+    stop: 8
+    jackpot: 12
+    triple: 11
+    miss: 13
 courses:
   # trn_hp.c: las pesas.
   - id: hp
+    # TRN_startSlotSessionIfEnabled(0): su símbolo en la ruleta es el 1.
+    slot_symbol: 1
     spot: { x: 1420, z: -1744 }
     camera_speed: 10
     cycle_frames: 1200
@@ -59,6 +90,8 @@ courses:
         - { every: 18, x: 1300, z: -1317, dx: 20, dz: -50, count: 4 }
   # trn_mp.c: la máquina de meditar.
   - id: mp
+    # TRN_startSlotSessionIfEnabled(1): su símbolo en la ruleta es el 2.
+    slot_symbol: 2
     spot: { x: 684, z: 2152 }
     camera_speed: 10
     cycle_frames: 1200
@@ -81,6 +114,8 @@ courses:
       leave_animation: 2
   # trn_off.c: el saco de boxeo.
   - id: offense
+    # TRN_startSlotSessionIfEnabled(2): su símbolo en la ruleta es el 3.
+    slot_symbol: 3
     spot: { x: -982, z: -2580 }
     camera_speed: 10
     cycle_frames: 1200
@@ -141,6 +176,8 @@ courses:
         hkab: { animation: 48, frames: 10 }
   # trn_def.c: el tronco que golpea.
   - id: defense
+    # TRN_startSlotSessionIfEnabled(3): su símbolo en la ruleta es el 4.
+    slot_symbol: 4
     spot: { x: -827, z: -1634 }
     camera_speed: 10
     cycle_frames: 1200
@@ -174,6 +211,8 @@ courses:
         - { dx: -4, limit: 0, push: false }
   # trn_speed.c: la pista.
   - id: speed
+    # TRN_startSlotSessionIfEnabled(4): su símbolo en la ruleta es el 5.
+    slot_symbol: 5
     spot: { x: 45, z: -388 }
     camera_speed: 10
     cycle_frames: 1200
@@ -188,6 +227,8 @@ courses:
       restart_x: -3000
   # trn_brain.c: la pizarra.
   - id: brain
+    # TRN_startSlotSessionIfEnabled(5): su símbolo en la ruleta es el 6.
+    slot_symbol: 6
     spot: { x: -1249, z: 1011 }
     camera_speed: 10
     cycle_frames: 1200

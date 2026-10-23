@@ -39,3 +39,5 @@ screens:
     styles: [ui/skins/modern/pause_menu/style]
   fishing_notice:
     styles: [ui/skins/modern/pause_menu/style]
+  gym_slots:
+    styles: [ui/skins/modern/pause_menu/style]

@@ -302,10 +302,10 @@ CourseDetail readDetail(YamlReader& reader, const YamlNode& node, std::string_vi
 
 CourseRules readCourse(YamlReader& reader, const YamlNode& node) {
   CourseRules course;
-  if (!reader.expectKeys(
-          node, "a gym course",
-          {"id", "spot", "camera_speed", "cycle_frames", "rest_frames", "sounds", "animations"},
-          {"hp", "mp", "offense", "defense", "speed", "brain"})) {
+  if (!reader.expectKeys(node, "a gym course",
+                         {"id", "spot", "camera_speed", "cycle_frames", "rest_frames", "sounds",
+                          "animations", "slot_symbol"},
+                         {"hp", "mp", "offense", "defense", "speed", "brain"})) {
     return course;
   }
   course.id = reader.text(reader.field(node, "id"));
@@ -313,6 +313,7 @@ CourseRules readCourse(YamlReader& reader, const YamlNode& node) {
   course.cameraSpeed = integerOf(reader, node, "camera_speed");
   course.cycleFrames = readPositive(reader, reader.field(node, "cycle_frames"));
   course.restFrames = integerOf(reader, node, "rest_frames");
+  course.slotSymbol = integerOf(reader, node, "slot_symbol");
   const YamlNode& sounds = reader.field(node, "sounds");
   if (reader.expectKeys(sounds, "the course's sounds", {"start", "end"})) {
     course.startSound = integerOf(reader, sounds, "start");
@@ -349,6 +350,56 @@ CountRules readCount(YamlReader& reader, const YamlNode& node) {
           .statMax = reader.integer<std::int32_t>(reader.field(node, "stat_max"))};
 }
 
+SlotRules readSlots(YamlReader& reader, const YamlNode& node) {
+  SlotRules slots;
+  if (!reader.expectKeys(node, "the roulette",
+                         {"reels", "assist_by_roll", "jackpot_symbol", "spin_speed", "cell_pixels",
+                          "settle_pixels", "result_frames", "payouts", "sounds"})) {
+    return slots;
+  }
+  for (const YamlNode& reel : reader.sequence(reader.field(node, "reels"), "the reels", 3)) {
+    slots.reels.push_back(readIntegers(reader, reel, "a reel's symbols"));
+  }
+  if (reader.ok() &&
+      (slots.reels.front().empty() || std::ranges::any_of(slots.reels, [&](const auto& reel) {
+         return reel.size() != slots.reels.front().size();
+       }))) {
+    reader.fail(node, "the reels need the same number of symbols, at least one");
+  }
+  slots.assistByRoll =
+      readIntegers(reader, reader.field(node, "assist_by_roll"), "the assists by roll");
+  if (reader.ok() && (slots.assistByRoll.empty() ||
+                      std::ranges::any_of(slots.assistByRoll, [](std::int32_t assist) {
+                        return assist < 0 || assist > 2;
+                      }))) {
+    reader.fail(node, "the assists by roll are 0, 1 or 2, at least one");
+  }
+  slots.jackpotSymbol = integerOf(reader, node, "jackpot_symbol");
+  slots.spinSpeed = readPositive(reader, reader.field(node, "spin_speed"));
+  slots.cellPixels = readPositive(reader, reader.field(node, "cell_pixels"));
+  slots.settlePixels = integerOf(reader, node, "settle_pixels");
+  slots.resultFrames = integerOf(reader, node, "result_frames");
+  const YamlNode& payouts = reader.field(node, "payouts");
+  if (reader.expectKeys(payouts, "the roulette's payouts",
+                        {"jackpot", "own_symbol", "triple", "miss"})) {
+    slots.payouts = {.jackpot = integerOf(reader, payouts, "jackpot"),
+                     .ownSymbol = integerOf(reader, payouts, "own_symbol"),
+                     .triple = integerOf(reader, payouts, "triple"),
+                     .miss = integerOf(reader, payouts, "miss")};
+  }
+  const YamlNode& sounds = reader.field(node, "sounds");
+  if (reader.expectKeys(sounds, "the roulette's sounds",
+                        {"start", "press", "stop", "jackpot", "triple", "miss"})) {
+    slots.sounds = {.start = integerOf(reader, sounds, "start"),
+                    .press = integerOf(reader, sounds, "press"),
+                    .stop = integerOf(reader, sounds, "stop"),
+                    .jackpot = integerOf(reader, sounds, "jackpot"),
+                    .triple = integerOf(reader, sounds, "triple"),
+                    .miss = integerOf(reader, sounds, "miss")};
+  }
+  return slots;
+}
+
 } // namespace
 
 const SpeciesAnimation& OffenseCourse::animationOf(std::string_view species) const {
@@ -375,7 +426,8 @@ core::Result<GymRules> readGymRules(const ruleset::Section& section) {
   const YamlNode& node = section.node;
   if (!reader.expectKeys(node, SectionWhat,
                          {"map", "place", "course_variable", "course_by_choice", "slot_variable",
-                          "manual_item", "sound_slot", "cloud_scatter", "count", "courses"})) {
+                          "manual_item", "sound_slot", "cloud_scatter", "count", "slots",
+                          "courses"})) {
     return std::unexpected{reader.error(section.file)};
   }
   rules.map = reader.text(reader.field(node, "map"));
@@ -390,6 +442,8 @@ core::Result<GymRules> readGymRules(const ruleset::Section& section) {
   rules.soundSlot = reader.integer<std::int32_t>(reader.field(node, "sound_slot"));
   rules.cloudScatter = readPositive(reader, reader.field(node, "cloud_scatter"));
   rules.count = readCount(reader, reader.field(node, "count"));
+  rules.slots = readSlots(reader, reader.field(node, "slots"));
+  rules.slots.soundSlot = rules.soundSlot;
   for (const YamlNode& course : reader.sequence(reader.field(node, "courses"), "the courses")) {
     rules.courses.push_back(readCourse(reader, course));
   }

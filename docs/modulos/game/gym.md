@@ -13,7 +13,7 @@ ruleset (`rules/<id>/gym.yaml`, esquema `content/schemas/ruleset_gym.schema.json
 ```cpp
 auto rules = dwe::game::gym::readGymRules(ruleset);       // la sección gym; sin ella, ningún curso
 const auto* course = rules->courseOfChoice(choice);        // la variable 254 elige el curso
-dwe::game::gym::CourseRun run{*rules, *course};
+dwe::game::gym::CourseRun run{*rules, *course, withSlots};   // la variable 246 pone la ruleta
 run.tick(ports, seconds, frameSeconds, {.confirm = pressed, .cancel = cancel});
 if (run.finished()) { ... }                                // TRAINING_COMPLETE: el guion sigue
 ```
@@ -24,6 +24,11 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
 - **Ejecución** (`CourseRun`): avanza fotogramas enteros del original con los estados numerados como el
   `TRAINING_STATE` de cada curso. La sesión acaba al cumplir su duración o al cancelar; luego la caja de estadísticas
   (`StatCountup`) cuenta las ganancias, un punto por fotograma, y confirmar o cancelar la termina de golpe.
+- **Ruleta** (`SlotMachine`, `trn_slots.c`): con la variable 246 a 1, la ruleta decide cuándo acaba la sesión y el
+  ritmo de las ganancias en décimas: el jugador para tres rodillos y la línea paga más con tres sietes o con tres del
+  símbolo del curso (`slot_symbol`). Una ayuda oculta, sorteada por sesión, acerca la parada a una pareja o al siete
+  (o empuja el último rodillo más allá de un casi acierto). La sección `slots` tiene los rodillos, las ayudas, los
+  pagos y los sonidos.
 - **Puertos** (`GymPorts`): todo lo que el curso pide al juego (caminar, animar, mover objetos del mapa, nubes,
   partículas, sonidos, cámara y la recompensa). Los implementa `apps/game` (`GymScreen`).
 - **Inteligencia** (`brain_learning.hpp`): `brainMilestones` dice qué órdenes nuevas abre la ganancia y si toca

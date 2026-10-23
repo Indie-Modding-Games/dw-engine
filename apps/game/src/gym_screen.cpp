@@ -311,6 +311,9 @@ GymScreen::~GymScreen() {
   if (boxShown_) {
     desc_.ui->hide(GymStatsDocument);
   }
+  if (slotsShown_) {
+    desc_.ui->hide(GymSlotsDocument);
+  }
 }
 
 void GymScreen::loadLibrary() {
@@ -355,8 +358,13 @@ core::Result<void> GymScreen::start(std::string_view course) {
     core::logDebug("[port:gym] TRN_setup*Training (src/trn): not on {}, no course", rules_.map);
     return {};
   }
+  // TRN_setup*Training: readPStat(0xf6) == 1 puts the roulette over the course.
+  auto slots = desc_.story->state().variable(rules_.slotVariable);
+  if (!slots) {
+    return std::unexpected{slots.error()};
+  }
   notices_.clear();
-  run_ = std::make_unique<game::gym::CourseRun>(rules_, *found);
+  run_ = std::make_unique<game::gym::CourseRun>(rules_, *found, *slots == 1);
   return {};
 }
 
@@ -377,7 +385,41 @@ void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
   }
 }
 
+void GymScreen::updateSlots() {
+  ui::Ui& ui = *desc_.ui;
+  const game::gym::SlotMachine* slots =
+      run_ != nullptr && run_->slots().has_value() ? &*run_->slots() : nullptr;
+  if (slots == nullptr) {
+    if (slotsShown_) {
+      ui.hide(GymSlotsDocument);
+      slotsShown_ = false;
+    }
+    return;
+  }
+  // trn_slots.c: TRN_renderSlotMachine draws each reel from two cells above its line.
+  constexpr std::int32_t FirstRow = -2;
+  constexpr std::int32_t Rows = 4;
+  screens::ScreenSettings settings;
+  for (std::size_t reel = 0; reel < game::gym::SlotMachine::Reels; ++reel) {
+    for (std::int32_t row = 0; row < Rows; ++row) {
+      settings.push_back(
+          {.name = screens::listEntryName("gym.slots", reel, std::format("row{}", row)),
+           .value = static_cast<double>(slots->symbolAt(reel, FirstRow + row))});
+    }
+    settings.push_back({.name = screens::listEntryName("gym.slots", reel, "offset"),
+                        .value = static_cast<double>(slots->drawnScroll(reel))});
+  }
+  settings.push_back(
+      {.name = "gym.slots.payout", .value = static_cast<double>(slots->payout().value_or(-1))});
+  screens::publish(ui, settings, "gym.slots.revision");
+  if (!slotsShown_) {
+    ui.show(GymSlotsDocument, false);
+    slotsShown_ = true;
+  }
+}
+
 void GymScreen::update() {
+  updateSlots();
   ui::Ui& ui = *desc_.ui;
   const std::optional<game::gym::StatCountup>* countup =
       run_ != nullptr ? &run_->countup() : nullptr;
