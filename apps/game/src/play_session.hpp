@@ -30,6 +30,7 @@
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
 #include "field_scene.hpp"
+#include "field_toilet.hpp"
 #include "fishing_screen.hpp"
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
@@ -166,6 +167,7 @@ private:
   // The naming box the story's renaming opens, when the ruleset has the new game's scene.
   std::unique_ptr<NamingBox> namingBox_;
   FeedScene feedScene_;
+  FieldToilet fieldToilet_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

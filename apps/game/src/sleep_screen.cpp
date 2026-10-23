@@ -157,6 +157,8 @@ bool SleepScreen::canSleep(bool fieldIdle) const {
 }
 
 void SleepScreen::update(bool fieldIdle) {
+  // game_menu.c: setSleepDisabled greys out the menu's Sleep unless the partner is sleepy
+  // (partner_impl.c:1037-1039, and on waking at 1209); here it follows canSleep each frame.
   fieldIdle_ = fieldIdle;
   const bool enabled = canSleep(fieldIdle);
   if (canSleep_ != enabled) {

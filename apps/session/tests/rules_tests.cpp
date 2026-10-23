@@ -80,7 +80,8 @@ TEST_CASE("the session's checks refuse values it cannot use") {
   CHECK(session->sessionRules().newGame.stats[dwe::game::partner::Stat::Hp] == 600);
 }
 
-TEST_CASE("the original's feeding takes the item at 360, or farther for the big species") {
+TEST_CASE("the original's feeding takes the item at 360, or farther for the big species, and the "
+          "toilet walk pans the camera in 20 frames") {
   const dwe::assets::DiskFileSystem disk;
   const auto bytes =
       disk.readFile(std::filesystem::path{DWE_GAME_PACK} / "rules/original/field_items.yaml");
@@ -99,4 +100,9 @@ TEST_CASE("the original's feeding takes the item at 360, or farther for the big 
   CHECK(feed.rangeOf("grey") == doctest::Approx(460.0F));
   CHECK(feed.rangeOf("skul") == doctest::Approx(660.0F));
   CHECK(feed.clips.partnerEat == 8);
+  REQUIRE(rules->toiletWalk.has_value());
+  const dwe::session::ToiletWalkRules toilet =
+      rules->toiletWalk.value_or(dwe::session::ToiletWalkRules{});
+  CHECK(toilet.cameraFrames == 20);
+  CHECK(toilet.partnerClip == 10);
 }

@@ -23,6 +23,8 @@ void Field::holdForScript(bool held) {
     scriptCamera_ = registry.get<Transform>(player_).position;
     moveTarget_.reset();
     path_.clear();
+    // A held partner stands on its idle clip until the script picks one (partner.c:
+    // partnerTickIdle, partner state 11, which callDigimonRoutine's routines 1, 5, 6 and 8 set).
     registry.emplace_or_replace<ScriptedActor>(player_);
     registry.emplace_or_replace<ScriptedActor>(partner_);
   } else {
@@ -66,6 +68,19 @@ void Field::shiftCameraByScript(glm::vec3 by) {
   scriptCamera_ = scriptCamera_.value_or(world_->registry().get<Transform>(player_).position) + by;
 }
 
+void Field::tickCameraPan(float seconds) {
+  if (!cameraPan_) {
+    return;
+  }
+  cameraPan_->elapsed += seconds;
+  const float done =
+      cameraPan_->seconds > 0.0F ? std::min(cameraPan_->elapsed / cameraPan_->seconds, 1.0F) : 1.0F;
+  scriptCamera_ = cameraPan_->from + (cameraPan_->to - cameraPan_->from) * done;
+  if (done >= 1.0F) {
+    cameraPan_.reset();
+  }
+}
+
 void Field::tickScripted(float seconds) {
   entt::registry& registry = world_->registry();
   registry.get<AnimationIntent>(player_) = {};
@@ -75,16 +90,7 @@ void Field::tickScripted(float seconds) {
       [seconds](const ScriptedActor& actor, Transform& transform) {
         transform.position += actor.velocity * seconds;
       });
-  if (cameraPan_) {
-    cameraPan_->elapsed += seconds;
-    const float done = cameraPan_->seconds > 0.0F
-                           ? std::min(cameraPan_->elapsed / cameraPan_->seconds, 1.0F)
-                           : 1.0F;
-    scriptCamera_ = cameraPan_->from + (cameraPan_->to - cameraPan_->from) * done;
-    if (done >= 1.0F) {
-      cameraPan_.reset();
-    }
-  }
+  tickCameraPan(seconds);
   // A scripted map change's fade in runs on while the script holds the player (map.c:
   // scriptTickChangeMap).
   if (fadeInSeconds_) {

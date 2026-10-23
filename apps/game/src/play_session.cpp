@@ -18,7 +18,6 @@
 
 #include "battle_trigger.hpp"
 #include "common.hpp"
-#include "field_toilet.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_tab.hpp"
@@ -213,6 +212,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      .species = species_ ? &*species_ : nullptr,
                      .ui = context.ui}),
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
+      fieldToilet_(*game_.session, *game_.systems.fieldItems, *scene_),
       partnerMenu_({.session = game_.session.get(),
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
@@ -321,6 +321,15 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   if (sleepScreen_.active() || shopScreen_.active()) {
     return;
   }
+  // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
+  // scold 4 and 15, feeding 5, the toilet 6), the sleep (3), the evolution (13) and the death (8,
+  // 14) each run instead of the field; the normal state (1) is the field's following, and the
+  // condition bubble (10) the HUD's. The piles on the ground (7, partnerTickEatShit's 9) are not
+  // here yet.
+  if (fieldToilet_.active()) {
+    guardFactsChanged_ = fieldToilet_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    return;
+  }
   if (feedScene_.active()) {
     guardFactsChanged_ = feedScene_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
     return;
@@ -404,7 +413,7 @@ void PlaySession::showLockNotice(const std::string& textKey) {
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       sleepScreen_.handle(command) || saveMachine_.handle(command) ||
-      praiseScold_.handle(command) || feedScene_.handle(command) ||
+      praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
       fieldItemsScreen_.handle(command) || fishingScreen_.handle(command) ||
       battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
@@ -412,7 +421,7 @@ bool PlaySession::handle(const ui::UiCommand& command) {
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
     if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
-        !praiseScold_.active() && !feedScene_.active()) {
+        !praiseScold_.active() && !feedScene_.active() && !fieldToilet_.active()) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
@@ -517,7 +526,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // text boxes yet.
   const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
                          !fishingScreen_.active() && !evolutionScene_.active() &&
-                         !deathScene_.active() && !feedScene_.active() &&
+                         !deathScene_.active() && !feedScene_.active() && !fieldToilet_.active() &&
                          !field.mapChangePending() && field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
@@ -525,8 +534,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   feedScene_.update(fieldIdle);
   fishingScreen_.update(fieldIdle);
   if (fieldIdle && !paused()) {
-    guardFactsChanged =
-        goToToiletOnCell(session, *game_.systems.fieldItems, field) || guardFactsChanged;
+    guardFactsChanged = fieldToilet_.checkCell() || guardFactsChanged;
   }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);

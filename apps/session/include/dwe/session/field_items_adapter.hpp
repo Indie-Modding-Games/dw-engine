@@ -59,6 +59,13 @@ struct FeedRules {
   [[nodiscard]] float rangeOf(std::string_view species) const;
 };
 
+// The partner's walk to the toilet (partner.c: tickPartnerToilet): the camera's move to the toilet
+// and back, in the original's frames, and the clip at the toilet.
+struct ToiletWalkRules {
+  std::int32_t cameraFrames = 0;
+  std::uint32_t partnerClip = 0;
+};
+
 // The field_items section: the ground items and the chests, and the field's sounds.
 struct FieldItemsRules {
   game::field::FieldItemRules items;
@@ -69,6 +76,8 @@ struct FieldItemsRules {
   SoundCue scoldSound;
   // Without one, an item from the bag goes to the partner at once.
   std::optional<FeedRules> feed;
+  // Without one, the partner goes at the toilet where it stands.
+  std::optional<ToiletWalkRules> toiletWalk;
 };
 
 // Reads the field_items section; errors name the file and line.

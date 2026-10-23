@@ -397,6 +397,8 @@ void DeathScene::setDeathMap() {
 void DeathScene::enterWakeMap() {
   // map.c:5420 changeToDeathMap: the map the scene picked when it started. The map's load in the
   // background (waitForDeathMapLoading) has no counterpart: the field loads it when it enters it.
+  // dooa.c:357 then calls setSomeDyingState (tamer state 6, partner state 8 sub state 2, the
+  // camera put): the scene or the story's script already holds the player and the camera.
   const std::int32_t exit = rules_.wakeMap.exit;
   core::logDebug("[port:death] changeToDeathMap (map.c:5420): map={} exit={}", deathMap_, exit);
   if (auto entered = scene_->enterOriginalMap(deathMap_, exit); !entered) {

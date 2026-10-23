@@ -19,6 +19,16 @@
     "sleep_sound": { "description": "The sound of the partner come to the player to sleep.", "$ref": "#/$defs/sound" },
     "praise_sound": { "description": "The sound of praising the partner.", "$ref": "#/$defs/sound" },
     "scold_sound": { "description": "The sound of scolding the partner.", "$ref": "#/$defs/sound" },
+    "toilet_walk": {
+      "description": "The partner's walk to the map's toilet (partner.c: tickPartnerToilet); without it the partner goes where it stands.",
+      "type": "object",
+      "required": ["camera_frames", "partner_clip"],
+      "additionalProperties": false,
+      "properties": {
+        "camera_frames": { "description": "The camera's move to the toilet and back, in frames.", "type": "integer", "minimum": 1 },
+        "partner_clip": { "description": "The partner's clip at the toilet, by the original's animation id.", "type": "integer", "minimum": 0 }
+      }
+    },
     "feed": {
       "description": "Giving the partner an item from the bag in the field (partner.c: partnerTickFeedItem); without it the item goes to the partner at once.",
       "type": "object",

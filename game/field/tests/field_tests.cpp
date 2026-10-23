@@ -487,6 +487,31 @@ TEST_CASE("a care scene holds the player and walks the partner to a range, towar
   CHECK(field.player().position.x > 0.0F);
 }
 
+TEST_CASE("a care scene runs the partner to a point and pans the camera, given back on release") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  field.holdForCare(true);
+  const glm::vec3 point{800.0F, field.partner().position.y, 600.0F};
+  field.panCameraByScript(point, 1.0F);
+  field.walkPartnerTo(point, Motion::Run);
+  bool ran = false;
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+    ran = ran || field.partner().motion == Motion::Run;
+  }
+  CHECK(ran);
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(field.partner().position.x == doctest::Approx(800.0F).epsilon(0.01));
+  CHECK(field.partner().position.z == doctest::Approx(600.0F).epsilon(0.01));
+  run(field, 1.0F);
+  REQUIRE(field.scriptCamera().has_value());
+  CHECK(field.scriptCamera().value_or(glm::vec3{}).x == doctest::Approx(800.0F));
+  field.holdForCare(false);
+  CHECK_FALSE(field.scriptCamera().has_value());
+}
+
 TEST_CASE("click-to-move walks around walls to the target") {
   auto map = roomMap("room");
   fill(map, {.column = 50, .row = 30}, {.column = 50, .row = 65}, Blocked); // gap at z 1600 to 2000

@@ -157,6 +157,8 @@ comportamiento, no guardan datos.
 | `feed.take_distance` | 10 por defecto; 15 o 25 en 13 especies (`ITEM_TAKE_DISTANCE`, 66 bytes) | **b** | Tabla por especie. Como las de D3, se extrae como tabla de datos (`TableLocation`); hasta entonces el ruleset escribe solo los valores distintos del 10. |
 | `feed.offer_frame`, `feed.hand_down_frame` | 7, 15 | a | Cuadros de animación de la escena (referencias de tiempo). |
 | `feed.clips` | 5, 4, 0, 8, 13 | a | Ids de animación (referencias). |
+| `toilet_walk.camera_frames` | 20 | a | Duración (partner.c: tickPartnerToilet, createCameraMovement). |
+| `toilet_walk.partner_clip` | 10 | a | Id de animación (referencia). |
 
 ### `cards.yaml`
 

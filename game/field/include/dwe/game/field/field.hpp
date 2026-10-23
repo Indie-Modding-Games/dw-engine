@@ -262,14 +262,18 @@ public:
   [[nodiscard]] bool heldByScript() const { return scriptHeld_; }
   // A care scene holds the player while the game time runs (partner.c: partnerTickFeedItem and
   // the other partner states that set tamer state 6): no input, no triggers and no following; the
-  // camera stays on the player. The partner stands unless walkPartnerToRange moves it.
+  // camera stays on the player unless panCameraByScript moves it, and comes back on release. The
+  // partner stands unless walkPartnerToRange or walkPartnerTo moves it.
   void holdForCare(bool held);
   [[nodiscard]] bool heldForCare() const { return careHeld_; }
   // While held for care: the partner walks until its ground distance to the player crosses
   // `range`, toward the player from farther and away from it from closer, while the player looks
   // at it (partner.c: partnerTickFeedItem sub states 0 to 2, checkEatDistance).
   void walkPartnerToRange(float range);
-  // Whether that walk goes on; once over, the two face each other.
+  // While held for care: the partner goes to `point` with `motion` (Walk or Run), the player
+  // looking at it (partner.c: tickPartnerToilet, tickEntityWalkTo).
+  void walkPartnerTo(glm::vec3 point, scene::Motion motion);
+  // Whether either walk goes on; once a walk to a range is over, the two face each other.
   [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
 
   // A held character's scripted move, place, facing and clip.
@@ -358,6 +362,9 @@ private:
   void tickScripted(float seconds);
   void tickCare(float seconds);
   void tickCareWalk(float seconds);
+  void tickCameraPan(float seconds);
+  // One step of the partner's care walk along `heading`; whether it moved.
+  void stepCareWalk(glm::vec2 heading, float distance, scene::Motion motion, float seconds);
   void faceEachOther();
 
   scene::World* world_;
@@ -440,10 +447,13 @@ private:
     float elapsed = 0.0F;
   };
   bool scriptHeld_ = false;
-  // A care scene's walk of the partner: to `range` of the player, `away` from it when closer.
+  // A care scene's walk of the partner: to `point`, or to `range` of the player, `away` from it
+  // when closer.
   struct CareWalk {
     float range = 0.0F;
     bool away = false;
+    std::optional<glm::vec3> point;
+    scene::Motion motion = scene::Motion::Walk;
   };
   bool careHeld_ = false;
   std::optional<CareWalk> careWalk_;

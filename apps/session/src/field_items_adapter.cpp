@@ -40,6 +40,9 @@ constexpr std::string_view PlayerRefusedKey = "player_refused";
 constexpr std::string_view PartnerIdleKey = "partner_idle";
 constexpr std::string_view PartnerEatKey = "partner_eat";
 constexpr std::string_view PartnerRefuseKey = "partner_refuse";
+constexpr std::string_view ToiletWalkKey = "toilet_walk";
+constexpr std::string_view CameraFramesKey = "camera_frames";
+constexpr std::string_view PartnerClipKey = "partner_clip";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
 
@@ -111,6 +114,17 @@ std::optional<FeedRules> feedRules(YamlReader& reader, const YamlNode& root) {
   return rules;
 }
 
+std::optional<ToiletWalkRules> toiletWalkRules(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(ToiletWalkKey);
+  if (node == nullptr ||
+      !reader.expectKeys(*node, ToiletWalkKey, {CameraFramesKey, PartnerClipKey})) {
+    return std::nullopt;
+  }
+  return ToiletWalkRules{.cameraFrames = positive(reader, *node, CameraFramesKey),
+                         .partnerClip =
+                             reader.integer<std::uint32_t>(reader.field(*node, PartnerClipKey))};
+}
+
 } // namespace
 
 float FeedRules::rangeOf(std::string_view species) const {
@@ -125,7 +139,7 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
   if (!reader.expectKeys(root, field_items_messages::SectionText,
                          {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
                           ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey},
-                         {FeedKey})) {
+                         {FeedKey, ToiletWalkKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const FieldItemsRules rules{.items = {.groundSlots = positive(reader, root, GroundSlotsKey),
@@ -136,7 +150,8 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
                               .sleepSound = soundCue(reader, root, SleepSoundKey),
                               .praiseSound = soundCue(reader, root, PraiseSoundKey),
                               .scoldSound = soundCue(reader, root, ScoldSoundKey),
-                              .feed = feedRules(reader, root)};
+                              .feed = feedRules(reader, root),
+                              .toiletWalk = toiletWalkRules(reader, root)};
   return reader.finish(rules, section.file);
 }
 

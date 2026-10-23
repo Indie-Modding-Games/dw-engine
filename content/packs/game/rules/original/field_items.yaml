@@ -31,3 +31,7 @@ feed:
   offer_frame: 7
   hand_down_frame: 15
   clips: {player_offer: 5, player_refused: 4, partner_idle: 0, partner_eat: 8, partner_refuse: 13}
+# El compañero va al baño (partner.c: tickPartnerToilet): la cámara va al baño y vuelve al jugador en 20 cuadros
+# (createCameraMovement), y en el baño el compañero hace la animación 10. Corre a los dos puntos del baño del mapa
+# (TOILET_DATA, en el paquete base) y vuelve andando al primero.
+toilet_walk: {camera_frames: 20, partner_clip: 10}
