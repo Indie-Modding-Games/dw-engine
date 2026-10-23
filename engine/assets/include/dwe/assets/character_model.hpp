@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -35,5 +36,9 @@ core::Result<CharacterModel> loadCharacterModel(const VirtualFileSystem& vfs, co
 
 // Checks that the model has a clip for every animation of the character.
 core::Result<void> checkCharacterModel(const CharacterModel& character, const ModelData& model);
+
+// Forgets the animations whose clip the model lacks and returns their names: a species drawn as a
+// map's NPC has only the clips its own scenes play.
+std::vector<std::string> dropMissingClips(CharacterModel& character, const ModelData& model);
 
 } // namespace dwe::assets

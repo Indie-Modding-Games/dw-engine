@@ -8,6 +8,7 @@
 #include <format>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace dwe::assets {
 
@@ -120,6 +121,18 @@ core::Result<void> checkCharacterModel(const CharacterModel& character, const Mo
     }
   }
   return {};
+}
+
+std::vector<std::string> dropMissingClips(CharacterModel& character, const ModelData& model) {
+  std::vector<std::string> dropped;
+  std::erase_if(character.animations, [&](const auto& animation) {
+    if (model.findClip(animation.second) != nullptr) {
+      return false;
+    }
+    dropped.push_back(animation.first);
+    return true;
+  });
+  return dropped;
 }
 
 } // namespace dwe::assets

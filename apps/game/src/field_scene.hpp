@@ -247,12 +247,18 @@ private:
 
   explicit FieldScene(const assets::VirtualFileSystem& files);
 
+  // What loading a character does with an animation whose clip the model lacks: the player and the
+  // partner need them all; an NPC is drawn with the clips it has, as the original draws any
+  // species on a map.
+  enum class MissingClips : std::uint8_t { Refuse, Drop };
+
   // Loads a character; `otherModel` draws it with another model than its document's, with the same
   // animations.
   core::Result<std::unique_ptr<Actor>>
   loadActor(std::string_view characterId, scene::Entity entity,
             const game::field::MoverRules& rules,
-            const std::optional<assets::AssetId>& otherModel = std::nullopt);
+            const std::optional<assets::AssetId>& otherModel = std::nullopt,
+            MissingClips missingClips = MissingClips::Refuse);
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt);
   void animate(Actor& actor, double seconds);

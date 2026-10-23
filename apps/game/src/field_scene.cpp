@@ -266,7 +266,7 @@ void FieldScene::animatePartnerClip(double seconds) {
 core::Result<std::unique_ptr<FieldScene::Actor>>
 FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
                       const game::field::MoverRules& rules,
-                      const std::optional<assets::AssetId>& otherModel) {
+                      const std::optional<assets::AssetId>& otherModel, MissingClips missingClips) {
   const auto id = assets::AssetId::parse(characterId);
   if (!id) {
     return std::unexpected{id.error()};
@@ -285,7 +285,12 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
   if (!model) {
     return core::fail(std::format("{}: {}", character->model.str(), model.error().message));
   }
-  if (auto checked = assets::checkCharacterModel(*character, *model); !checked) {
+  if (missingClips == MissingClips::Drop) {
+    for (const std::string& animation : assets::dropMissingClips(*character, *model)) {
+      core::logDebug("[port:field] {} has no clip for '{}': drawn without it",
+                     character->model.str(), animation);
+    }
+  } else if (auto checked = assets::checkCharacterModel(*character, *model); !checked) {
     return core::fail(std::format("{}: {}", characterId, checked.error().message));
   }
   auto handle = models_->add(*model);

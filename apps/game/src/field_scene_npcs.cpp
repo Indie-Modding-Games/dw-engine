@@ -11,7 +11,7 @@ namespace dwe::app {
 namespace {
 
 // An NPC is drawn as its species with models/partner's animations, whose clip ids every species
-// shares (as FieldScene::showPartnerSpecies draws the partner).
+// shares (as FieldScene::showPartnerSpecies draws the partner); those its model lacks are left out.
 constexpr std::string_view NpcCharacter = "models/partner";
 
 } // namespace
@@ -40,7 +40,7 @@ void FieldScene::followNpcs() {
                                     .walkSpeed = rules.walkSpeed,
                                     .runSpeed = rules.runSpeed,
                                     .turnSpeed = rules.turnSpeed},
-                                   *model)
+                                   *model, MissingClips::Drop)
                        : core::Result<std::unique_ptr<Actor>>{std::unexpected{model.error()}};
     if (!actor) {
       core::logWarning("field: the NPC with script id {} is not drawn: {}", tag.scriptId,
