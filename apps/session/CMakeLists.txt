@@ -25,6 +25,8 @@ dwe_add_module(session
         src/story_lua_flow.cpp
         src/story_lua_npc.cpp
         src/story_npcs.cpp
+        src/story_stage_link.cpp
+        src/story_audio_stubs.cpp
         src/story_motion_lua.cpp
         src/story_game_orders.cpp
         src/story_orders_bag.cpp

@@ -14,12 +14,24 @@ StoryFieldLink::StoryFieldLink(session::StoryAdapter& story, FieldScene& scene)
   story_->setMapChangeTarget([this](std::int32_t map, std::int32_t exit, bool showName) {
     return playMapChange(map, exit, showName);
   });
-  story_->setFieldHoldTarget([this](bool held) { scene_->holdForScript(held); });
+  stage_ = std::make_unique<StoryStage>(scene);
+  const game::field::FieldRules& rules = scene.field().rules();
+  story_->attachStage(stage_.get(), {.frameSeconds = rules.transition.frameSeconds,
+                                     .lookTurnPerFrame = rules.scriptMotion.lookTurnSpeed *
+                                                         rules.transition.frameSeconds});
+  story_->setFieldHoldTarget([this](bool held) {
+    if (held) {
+      stage_->freeze();
+    } else {
+      stage_->release();
+    }
+  });
 }
 
 StoryFieldLink::~StoryFieldLink() {
   story_->setMapChangeTarget({});
   story_->setFieldHoldTarget({});
+  story_->attachStage(nullptr, {});
 }
 
 void StoryFieldLink::afterFieldTick() {

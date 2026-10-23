@@ -6,12 +6,15 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
 core::Result<void> StoryAdapter::wireFlow() {
   mapChanges_ = std::make_unique<StoryMapChanges>();
   fieldControl_ = std::make_unique<StoryFieldControl>();
+  actors_ = std::make_unique<StoryActorsLink>();
+  motion_.emplace(*actors_, game::story::MotionRules{});
   if (auto published =
           host_->publishFlowApi(*orders_, [this] { return runner_ ? &*runner_ : nullptr; });
       !published) {
@@ -20,10 +23,14 @@ core::Result<void> StoryAdapter::wireFlow() {
   return {};
 }
 
-// The hold on the player (to the field the app sets, setFieldHoldTarget) and the map changes
-// (StoryFlowPorts). The story's state comes from startRunner, which knows its port.
-game::story::StoryFlowPorts StoryAdapter::flowPorts() const {
-  return {.state = nullptr, .control = fieldControl_.get(), .mapChange = mapChanges_.get()};
+// The hold on the player (to the field the app sets, setFieldHoldTarget), the map changes and the
+// scripted moves (StoryFlowPorts). The story's state comes from startRunner, which knows its port.
+game::story::StoryFlowPorts StoryAdapter::flowPorts() {
+  return {.state = nullptr,
+          .control = fieldControl_.get(),
+          .mapChange = mapChanges_.get(),
+          .frameSystems = motion_ ? std::vector<game::story::ScriptFrameSystem*>{&*motion_}
+                                  : std::vector<game::story::ScriptFrameSystem*>{}};
 }
 
 void StoryAdapter::setMapChangeTarget(StoryMapChangeTarget target) {
@@ -51,6 +58,9 @@ void StoryAdapter::playUnplayedChange() {
   if (mapChanges_ == nullptr || !mapChanges_->takeUnplayed() || !enteredMap_) {
     return;
   }
+  if (!runner_) {
+    return;
+  }
   // The change the field could not play ends on the map the player is on.
   runner_->enterMap(*enteredMap_);
 }
@@ -60,7 +70,7 @@ void StoryAdapter::runCellSections(std::span<const std::int32_t> sections) {
     return;
   }
   for (const std::int32_t section : sections) {
-    if (section < 0 || section > std::numeric_limits<std::uint16_t>::max()) {
+    if (!std::in_range<std::uint16_t>(section)) {
       core::logError("[port:story] checkMapInteraction (tamer.c:660): cell {} is no section",
                      section);
       continue;

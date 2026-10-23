@@ -140,7 +140,8 @@ private:
   };
 
   // The slot of a character on the map, logged when it is not there.
-  std::optional<std::int64_t> slotFor(std::string_view order, std::int64_t character) const;
+  [[nodiscard]] std::optional<std::int64_t> slotFor(std::string_view order,
+                                                    std::int64_t character) const;
   void fill(std::int64_t slot, std::int64_t character, Move move);
   // Ticks one slot; true when its move is done.
   bool tick(Slot& slot);
@@ -149,7 +150,7 @@ private:
   bool tick(std::int64_t character, MoveTo& move);
   bool tick(std::int64_t character, MoveToAxis& move);
   bool tick(CameraPan& move);
-  [[nodiscard]] float frames(std::int64_t count) const;
+  [[nodiscard]] static float frames(std::int64_t count);
   [[nodiscard]] bool partnerSynced() const;
 
   ScriptActorsPort* actors_;

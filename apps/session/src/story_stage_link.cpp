@@ -1,0 +1,94 @@
+#include <dwe/core/log.hpp>
+#include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_stage_link.hpp>
+
+#include <cstdint>
+#include <optional>
+
+namespace dwe::session {
+
+std::optional<std::int64_t> StoryActorsLink::slotOf(std::int64_t character) const {
+  if (target_ == nullptr) {
+    core::logDebug("[port:story] scriptIdToEntityId (script_value.c): no stage for character {}",
+                   character);
+    return std::nullopt;
+  }
+  return target_->slotOf(character);
+}
+
+glm::vec3 StoryActorsLink::position(std::int64_t character) const {
+  return target_ != nullptr ? target_->position(character) : glm::vec3{};
+}
+
+float StoryActorsLink::yaw(std::int64_t character) const {
+  return target_ != nullptr ? target_->yaw(character) : 0.0F;
+}
+
+void StoryActorsLink::turn(std::int64_t character, float yaw) {
+  if (target_ != nullptr) {
+    target_->turn(character, yaw);
+  }
+}
+
+void StoryActorsLink::place(std::int64_t character, glm::vec3 position) {
+  if (target_ != nullptr) {
+    target_->place(character, position);
+  }
+}
+
+void StoryActorsLink::drive(std::int64_t character, glm::vec3 velocity) {
+  if (target_ != nullptr) {
+    target_->drive(character, velocity);
+  }
+}
+
+void StoryActorsLink::animate(std::int64_t character, std::int64_t animation) {
+  if (target_ != nullptr) {
+    target_->animate(character, animation);
+  }
+}
+
+float StoryActorsLink::groundSpeed(std::int64_t character, std::int64_t animation) const {
+  return target_ != nullptr ? target_->groundSpeed(character, animation) : 0.0F;
+}
+
+bool StoryActorsLink::wouldTouchCharacter(std::int64_t character, float step) const {
+  return target_ != nullptr && target_->wouldTouchCharacter(character, step);
+}
+
+void StoryActorsLink::panCamera(glm::vec3 focus, float seconds) {
+  if (target_ != nullptr) {
+    target_->panCamera(focus, seconds);
+  }
+}
+
+bool StoryActorsLink::cameraPanning() const {
+  return target_ != nullptr && target_->cameraPanning();
+}
+
+// The scripted moves' rules come with the stage, from the field rules: until then the moves have
+// none, which no order reaches since no character is on the map.
+void StoryAdapter::attachStage(game::story::ScriptActorsPort* stage,
+                               const game::story::MotionRules& rules) {
+  if (actors_ == nullptr || !motion_.has_value()) {
+    return;
+  }
+  actors_->setTarget(stage);
+  if (stage != nullptr) {
+    // In place, so the runner and the move orders keep pointing at it; a stage comes with a game's
+    // field, before any script of it runs.
+    motion_.emplace(*actors_, rules);
+  }
+}
+
+core::Result<void> StoryAdapter::publishMotion() {
+  if (!runner_ || !motion_) {
+    return {};
+  }
+  if (auto published = host_->publishMotionApi(*runner_, *motion_); !published) {
+    return published;
+  }
+  return {};
+}
+
+} // namespace dwe::session

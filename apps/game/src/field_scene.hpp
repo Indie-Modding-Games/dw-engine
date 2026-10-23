@@ -119,13 +119,14 @@ public:
   [[nodiscard]] const game::field::Field& field() const { return *field_; }
   // The field's NPCs, for the story's NPC orders.
   [[nodiscard]] game::field::FieldNpcs& npcs() { return field_->npcs(); }
+  // The scene's entities, for the story's stage to read where an NPC stands.
+  [[nodiscard]] const scene::World& world() const { return world_; }
   // The story's side of the field (story_field_link.hpp): a script's map change, and whether the
   // story runs the map's cells (Field::startScriptedMapChange, Field::setStoryCells).
   void startScriptedMapChange(game::field::MapChange change, bool showName) {
     field_->startScriptedMapChange(std::move(change), showName);
   }
   void setStoryCells(bool storyCells) { field_->setStoryCells(storyCells); }
-  void holdForScript(bool hold) { field_->holdForScript(hold); }
   // The map table the scene names its maps with, if the packs have one.
   [[nodiscard]] const assets::MapTable* mapTable() const {
     return mapTable_ ? &*mapTable_ : nullptr;

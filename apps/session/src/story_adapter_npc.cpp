@@ -30,7 +30,7 @@ void StoryAdapter::attachNpcs(game::field::FieldNpcs* npcs) {
 }
 
 void StoryAdapter::followNpcHolds() {
-  const bool runs = runner_->busy();
+  const bool runs = runner_ && runner_->busy();
   // script_interp.c:638: when the script ends, every NPC a pause held moves again.
   if (scriptRan_ && !runs) {
     npcOrders_->releaseAll();
@@ -43,7 +43,7 @@ void StoryAdapter::runNpcContacts(std::span<const game::field::NpcContact> conta
     return;
   }
   for (const game::field::NpcContact& contact : contacts) {
-    if (contact.scriptId < 0 || contact.scriptId > std::numeric_limits<std::uint16_t>::max()) {
+    if (!std::in_range<std::uint16_t>(contact.scriptId)) {
       core::logError("[port:npc] callScriptSection (tamer.c:677): script id {} is no section",
                      contact.scriptId);
       continue;

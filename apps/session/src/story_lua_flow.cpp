@@ -82,7 +82,7 @@ void StoryFieldControl::apply() {
 }
 
 core::Result<void> StoryLuaHost::publishFlowApi(StoryOrders& orders,
-                                                std::function<StoryRunner*()> runner) {
+                                                const std::function<StoryRunner*()>& runner) {
   script::ApiRegistry api = vm_->api();
   std::vector<core::Result<void>> published;
   // script_interp.c: scriptInstructionFBtoFF (set_script) and scriptInstruction64to7E

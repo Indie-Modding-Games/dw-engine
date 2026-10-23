@@ -6,7 +6,9 @@
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string_view>
+#include <utility>
 
 namespace dwe::session {
 
@@ -45,12 +47,19 @@ public:
   [[nodiscard]] game::story::Dialogue& dialogue() { return dialogue_; }
   [[nodiscard]] const game::story::Dialogue& dialogue() const { return dialogue_; }
 
+  // Who holds a speaking NPC still while it speaks (overworld.c: setMovementEnabled); without
+  // it, only the world freezes.
+  void setSpeakerHold(std::function<void(std::int64_t speaker)> hold) {
+    holdSpeaker_ = std::move(hold);
+  }
+
   void freeze(std::int64_t speaker) override;
   [[nodiscard]] bool onMap(std::int64_t speaker) const override;
 
 private:
   game::story::Dialogue dialogue_;
   game::story::StoryRunner* runner_ = nullptr;
+  std::function<void(std::int64_t speaker)> holdSpeaker_;
 };
 
 } // namespace dwe::session

@@ -65,6 +65,7 @@ core::Result<std::array<std::int64_t, Count>> integers(const ApiCall& call) {
 core::Result<void> StoryLuaHost::publishNpcApi(NpcOrders& orders) {
   script::ApiRegistry api = vm_->api();
   std::vector<core::Result<void>> published;
+  published.reserve(OneOperandNpcOrders.size() + TwoOperandNpcOrders.size());
   for (const NamedNpcOrder1& order : OneOperandNpcOrders) {
     published.push_back(
         api.publish(StoryNamespace, order.name,

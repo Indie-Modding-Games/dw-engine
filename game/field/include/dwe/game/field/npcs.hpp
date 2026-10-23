@@ -153,9 +153,9 @@ private:
   [[nodiscard]] Npc* find(std::int32_t scriptId);
   [[nodiscard]] const Npc* find(std::int32_t scriptId) const;
   void remove(std::size_t index);
-  void setHeld(Npc& npc, bool held);
+  static void setHeld(Npc& npc, bool held);
   void tickPath(Npc& npc, float seconds);
-  void waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds);
+  void waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds) const;
   void walkOnPath(Npc& npc, const assets::MapNpc& record, scene::Motion motion, float seconds);
   void move(Npc& npc, float seconds, const assets::MapCollision& collision,
             const NpcSurroundings& surroundings);

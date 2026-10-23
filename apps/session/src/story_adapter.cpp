@@ -11,6 +11,7 @@
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_audio_stubs.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -348,13 +349,24 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   if (auto npcs = wireNpcs(); !npcs) {
     return npcs;
   }
+  dialogue_->setSpeakerHold([this](std::int64_t speaker) {
+    if (npcOrders_ != nullptr) {
+      npcOrders_->holdOwner(speaker);
+    }
+  });
   if (auto flow = wireFlow(); !flow) {
     return flow;
+  }
+  if (auto audio = publishStoryAudioStubs(*vm_); !audio) {
+    return audio;
   }
   if (auto checked = host_->checkModules(); !checked) {
     return checked;
   }
-  return startRunner(story);
+  if (auto started = startRunner(story); !started) {
+    return started;
+  }
+  return publishMotion();
 }
 
 core::Result<void> StoryAdapter::startRunner(const StorySectionRules& story) {
@@ -394,11 +406,15 @@ game::story::Dialogue& StoryAdapter::dialogue() {
 }
 
 void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*advance*/) {
-  DWE_ASSERT(runner_.has_value());
+  if (!runner_) {
+    return;
+  }
   randomPort_->bind(session.random());
   dialogue_->dialogue().bindSound(session.sound());
   playUnplayedChange();
-  runner_->tick();
+  if (runner_) {
+    runner_->tick();
+  }
   followNpcHolds();
 }
 

@@ -145,7 +145,7 @@ bool FieldNpcs::spawn(const NpcSpawn& spawn) {
                  spawn.slot, spawn.species, record->scriptId, record->position.x,
                  record->position.z, spawn.autotalk, spawn.model, spawn.radius);
   const auto place = std::ranges::upper_bound(npcs_, spawn.slot, {}, &Npc::slot);
-  npcs_.insert(place, std::move(npc));
+  npcs_.insert(place, npc);
   return true;
 }
 
@@ -352,7 +352,7 @@ void FieldNpcs::tickPath(Npc& npc, float seconds) {
   }
 }
 
-void FieldNpcs::waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds) {
+void FieldNpcs::waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds) const {
   // overworld.c: tickWaypointWait: stand, then count the frames in the waypoint's x.
   if (!npc.hasTarget) {
     npc.motion = Motion::Idle;

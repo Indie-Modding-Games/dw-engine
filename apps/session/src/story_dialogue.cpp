@@ -136,9 +136,12 @@ void StoryDialogue::attach(game::story::StoryRunner& runner) {
 
 void StoryDialogue::freeze(std::int64_t speaker) {
   core::logDebug("{}", messages::formatMessage(msg::PortFreeze, speaker, runner_ != nullptr));
-  // Stopping the speaker's own moves (setMovementEnabled) belongs to the characters on the map.
   if (runner_ != nullptr) {
     runner_->freezeWorld();
+  }
+  // script_interp.c: scriptPauseGame also stops the speaker's own moves (setMovementEnabled).
+  if (holdSpeaker_) {
+    holdSpeaker_(speaker);
   }
 }
 

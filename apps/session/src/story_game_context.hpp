@@ -62,8 +62,8 @@ struct StoryGameContext {
   [[nodiscard]] GameSession& game() const;
   // A story variable, and a write that keeps the value within a variable's byte, logged.
   [[nodiscard]] core::Result<std::int64_t> variable(std::int64_t variable) const;
-  core::Result<void> setVariable(std::int64_t variable, std::int64_t value) const;
-  core::Result<void> setTrigger(std::int64_t trigger, bool set) const;
+  [[nodiscard]] core::Result<void> setVariable(std::int64_t variable, std::int64_t value) const;
+  [[nodiscard]] core::Result<void> setTrigger(std::int64_t trigger, bool set) const;
 };
 
 // Each area's orders (story_orders_<area>.cpp).

@@ -250,9 +250,12 @@ bool Field::touchNpcs() {
   const glm::vec2 facing = ground(assets::forwardOfYaw(transform.yaw));
   // map.c: entityCheckCollision tests the player one frame of its animation's motion ahead, so
   // pushing against an NPC touches it.
-  const float speed = motion == Motion::Run    ? rules_.player.runSpeed
-                      : motion == Motion::Walk ? rules_.player.walkSpeed
-                                               : 0.0F;
+  float speed = 0.0F;
+  if (motion == Motion::Run) {
+    speed = rules_.player.runSpeed;
+  } else if (motion == Motion::Walk) {
+    speed = rules_.player.walkSpeed;
+  }
   const glm::vec2 ahead =
       ground(transform.position) + (facing * (speed * rules_.transition.frameSeconds));
   const std::size_t before = npcs_.contacts().size();

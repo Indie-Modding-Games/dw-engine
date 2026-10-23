@@ -4,6 +4,7 @@
 #include <dwe/assets/new_game_story.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/game/story/script_motion.hpp>
 #include <dwe/game/story/story_orders.hpp>
 #include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state.hpp>
@@ -13,6 +14,7 @@
 #include <dwe/session/story_flow.hpp>
 #include <dwe/session/story_lua.hpp>
 #include <dwe/session/story_npcs.hpp>
+#include <dwe/session/story_stage_link.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -108,6 +110,9 @@ public:
   // Where the story's hold on the player goes while a script runs frozen (story_flow.hpp); an
   // empty target holds nothing.
   void setFieldHoldTarget(StoryHoldTarget target);
+  // The characters and the camera the scripted moves drive, and their rules from the field rules
+  // (story_stage_link.hpp); null detaches it. The stage must outlive its attachment.
+  void attachStage(game::story::ScriptActorsPort* stage, const game::story::MotionRules& rules);
   // The player is on the map with this number of the original (walked there, loaded a save or ended
   // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
   void mapEntered(std::int32_t map);
@@ -154,7 +159,8 @@ private:
   core::Result<void> wireNpcs();
   void followNpcHolds();
   core::Result<void> wireFlow();
-  [[nodiscard]] game::story::StoryFlowPorts flowPorts() const;
+  core::Result<void> publishMotion();
+  [[nodiscard]] game::story::StoryFlowPorts flowPorts();
   void playUnplayedChange();
   void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
   core::Result<void> startRunner(const StorySectionRules& story);
@@ -179,6 +185,9 @@ private:
   bool scriptRan_ = false;
   std::unique_ptr<StoryMapChanges> mapChanges_;
   std::unique_ptr<StoryFieldControl> fieldControl_;
+  std::unique_ptr<StoryActorsLink> actors_;
+  // In place, so the runner's frame systems and the move orders keep pointing at it.
+  std::optional<game::story::ScriptMotion> motion_;
   std::optional<std::int32_t> enteredMap_;
   std::unique_ptr<StoryLuaHost> host_;
   // Before the runner, which points to it.

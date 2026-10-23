@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
+
+#include "story_stage.hpp"
 
 namespace dwe::session {
 class StoryAdapter;
@@ -36,6 +39,8 @@ private:
 
   session::StoryAdapter* story_;
   FieldScene* scene_;
+  // The characters and the camera the story's scripts move, and the hold on the player.
+  std::unique_ptr<StoryStage> stage_;
   std::uint32_t mapSerial_ = 0;
   // The original's number of the map the player is on, when it has one.
   std::optional<std::int32_t> mapNumber_;

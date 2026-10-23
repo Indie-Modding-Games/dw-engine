@@ -12,8 +12,8 @@ class FieldScene;
 
 // The story's stage on the field: the characters and the camera its scripted moves drive
 // (game::story::ScriptMotion), and the hold a script keeps on the player (script_interp.c:
-// scriptPauseGame, tickScript). The player and the partner are on every map; the map's NPCs come
-// with their own slice.
+// scriptPauseGame, tickScript). The player and the partner are on every map; the map's NPCs are
+// the field's (game::field::FieldNpcs), by script id.
 class StoryStage final : public game::story::ScriptActorsPort,
                          public game::story::FieldControlPort {
 public:

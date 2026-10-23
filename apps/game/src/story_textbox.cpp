@@ -309,8 +309,7 @@ std::string StoryTextbox::pageText(const std::string& key,
   return filled;
 }
 
-std::optional<glm::vec2> StoryTextbox::originOf(const DialogueView& view,
-                                                const FieldScene& scene) const {
+std::optional<glm::vec2> StoryTextbox::originOf(const DialogueView& view, const FieldScene& scene) {
   if (view.originPoint) {
     return scene.worldToWindowFraction(assets::toWorldPosition(
         glm::ivec3{static_cast<int>(view.originPoint->x), static_cast<int>(view.originPoint->y),

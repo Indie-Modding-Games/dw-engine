@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
 // The scripted moves' orders (script_interp.c: scriptInstruction46to58, scriptInstruction64to7E).
@@ -92,13 +93,18 @@ core::Result<void> StoryLuaHost::publishMotionApi(game::story::StoryRunner& runn
   namespace api = story_motion_api;
   script::ApiRegistry registry = vm_->api();
   std::vector<core::Result<void>> published;
-  published.push_back(
-      registry.publishValue(StoryNamespace, api::Player, ApiValue{game::story::PlayerScriptId}));
-  published.push_back(
-      registry.publishValue(StoryNamespace, api::Partner, ApiValue{game::story::PartnerScriptId}));
+  // The dialogue orders publish the same two script ids (story_dialogue.cpp); whichever family
+  // comes first publishes them.
+  for (const auto& [name, value] : {std::pair{api::Player, game::story::PlayerScriptId},
+                                    std::pair{api::Partner, game::story::PartnerScriptId}}) {
+    if (!registry.isPublished(StoryNamespace, name)) {
+      published.push_back(registry.publishValue(StoryNamespace, name, ApiValue{value}));
+    }
+  }
   for (MotionOrder& order : motionOrders(motion)) {
+    const auto name = order.name;
     published.push_back(registry.publish(
-        StoryNamespace, order.name,
+        StoryNamespace, name,
         [&runner, order = std::move(order)](const ApiCall& call) -> core::Result<ApiValue> {
           const auto operands = readOperands(call, order.operands);
           if (!operands) {

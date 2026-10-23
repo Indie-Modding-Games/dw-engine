@@ -176,7 +176,7 @@ private:
 
   StoryRunner(SectionHost& host, std::uint32_t ticksPerFrame, StoryFlowPorts ports,
               StoryFlowRules rules)
-      : host_{&host}, ticksPerFrame_{ticksPerFrame}, ports_{ports}, rules_{rules} {}
+      : host_{&host}, ticksPerFrame_{ticksPerFrame}, ports_{std::move(ports)}, rules_{rules} {}
 
   void runFrame();
   void beginScript(SectionRef section, SectionSource source);

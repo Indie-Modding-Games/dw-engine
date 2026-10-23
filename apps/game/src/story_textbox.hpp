@@ -54,8 +54,8 @@ private:
   [[nodiscard]] std::int64_t nameColor(const game::story::Speaker& speaker) const;
   [[nodiscard]] std::string pageText(const std::string& key,
                                      const assets::DigimonTable* species) const;
-  [[nodiscard]] std::optional<glm::vec2> originOf(const game::story::DialogueView& view,
-                                                  const FieldScene& scene) const;
+  [[nodiscard]] static std::optional<glm::vec2> originOf(const game::story::DialogueView& view,
+                                                         const FieldScene& scene);
 
   ui::Ui* ui_;
   session::StoryAdapter* story_;

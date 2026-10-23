@@ -31,10 +31,9 @@ std::int64_t minutesPerDay() {
 
 // script_interp.c:2512 dateToSeconds counts minutes, with the calendar's days per year.
 std::int64_t minutesOf(const ruleset::GameTime& date, const ruleset::ClockRules& clock) {
-  return ((((std::int64_t{date.year} * clock.daysPerYear) + date.day) * ruleset::HoursPerDay +
-           date.hour) *
-          ruleset::MinutesPerHour) +
-         date.minute;
+  const std::int64_t days = (std::int64_t{date.year} * clock.daysPerYear) + date.day;
+  const std::int64_t hours = (days * ruleset::HoursPerDay) + date.hour;
+  return (hours * ruleset::MinutesPerHour) + date.minute;
 }
 
 ruleset::GameTime dateOf(std::int64_t minutes, const ruleset::ClockRules& clock) {

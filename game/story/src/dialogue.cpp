@@ -94,8 +94,8 @@ core::Result<Wait> Dialogue::showSelection(std::string text, std::int64_t count)
 
 core::Result<void> Dialogue::setMode(std::int64_t mode, std::int64_t frames) {
   core::logDebug("{}", msg::formatMessage(msg::PortSetMode, mode, frames));
-  if (mode < std::to_underlying(TextboxMode::Confirm) ||
-      mode > std::to_underlying(TextboxMode::Timed)) {
+  if (std::cmp_less(mode, std::to_underlying(TextboxMode::Confirm)) ||
+      std::cmp_greater(mode, std::to_underlying(TextboxMode::Timed))) {
     return core::fail(msg::formatMessage(msg::NoSuchMode, mode));
   }
   mode_ = static_cast<TextboxMode>(mode);
@@ -273,7 +273,7 @@ bool Dialogue::boxOpen() const {
 }
 
 void Dialogue::tickBox(const DialogueKeys& keys) {
-  if (waiting_ == Waiting::None) {
+  if (waiting_ == Waiting::None || !box_) {
     return;
   }
   // script_textbox.c: flipIdleTextboxPage turns to the new page; that frame reads no input.

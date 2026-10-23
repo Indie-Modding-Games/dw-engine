@@ -29,7 +29,7 @@ core::Result<StoryRunner> StoryRunner::create(SectionHost& host, std::uint32_t t
   if (ticksPerFrame == 0) {
     return core::fail(std::string{messages::NoTicksPerFrame});
   }
-  return StoryRunner{host, ticksPerFrame, ports, rules};
+  return StoryRunner{host, ticksPerFrame, std::move(ports), rules};
 }
 
 RequestOutcome StoryRunner::request(SectionRef section, StartTiming timing, SectionSource source) {

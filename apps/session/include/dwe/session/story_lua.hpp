@@ -81,7 +81,7 @@ public:
   // section_on_exit go to the runner `runner` gives (none yet: the order fails), warp_to and
   // teleport end the section with a map change. The orders must outlive every script call.
   core::Result<void> publishFlowApi(game::story::StoryOrders& orders,
-                                    std::function<game::story::StoryRunner*()> runner);
+                                    const std::function<game::story::StoryRunner*()>& runner);
 
   // Once per VM, after publishApi: the textbox orders (story_dialogue.cpp), which point to the
   // dialogue; it must outlive every script call of the VM.

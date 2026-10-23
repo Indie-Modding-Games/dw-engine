@@ -95,7 +95,7 @@ std::optional<std::int64_t> ScriptMotion::slotFor(std::string_view order,
 void ScriptMotion::fill(std::int64_t slot, std::int64_t character, Move move) {
   core::logDebug("{}",
                  messages::formatMessage(messages::SlotFilled, move.index(), slot, character));
-  slots_.insert_or_assign(slot, Slot{.character = character, .move = std::move(move)});
+  slots_.insert_or_assign(slot, Slot{.character = character, .move = move});
 }
 
 void ScriptMotion::lookAt(std::int64_t character, std::int64_t target) {
@@ -400,7 +400,7 @@ bool ScriptMotion::tick(CameraPan& move) {
   return false;
 }
 
-float ScriptMotion::frames(std::int64_t count) const {
+float ScriptMotion::frames(std::int64_t count) {
   if (count > 0) {
     return static_cast<float>(count);
   }
