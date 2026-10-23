@@ -15,6 +15,10 @@ namespace dwe::app {
 class FieldScene;
 
 inline constexpr std::string_view FieldItemNoticeDocument = "field_item_notice";
+// The console's and the scripts' drop_item("<item id>"): lays an item on the ground at the player's
+// feet as a beaten enemy's drop (item.c: spawnDroppedItems), for the autotest routes and to look at
+// the ground items without a battle.
+inline constexpr std::string_view DropItemCommand = "drop_item";
 
 // Picking up the items on the field's ground and taking the chests' items (tamer.c:
 // checkItemPickup, tamerTickPickupItem, checkChestCollision, tamerTickTakeChest): the player walks

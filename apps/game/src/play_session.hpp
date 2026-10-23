@@ -70,12 +70,13 @@ struct PlayContext {
   std::optional<std::filesystem::path> settingsFile;
 };
 
-// The console's and the scripts' commands on the game being played (give_item, use_item, battle,
-// evolve, the care commands and save). The script VM outlives the games, so they are bound once
-// and queued here; the game being played applies them between frames.
+// The console's and the scripts' commands on the game being played (give_item, use_item, drop_item,
+// battle, evolve, the care commands and save). The script VM outlives the games, so they are bound
+// once and queued here; the game being played applies them between frames.
 struct SessionCommands {
   std::optional<std::string> gift;
   std::optional<std::string> use;
+  std::optional<std::string> groundDrop;
   std::optional<std::string> battle;
   std::optional<std::string> evolution;
   CareCommands care;

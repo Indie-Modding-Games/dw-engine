@@ -340,6 +340,7 @@ fase 4:
 | `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
 | `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("species_b")`); el campo lo dibuja con su modelo |
 | `use_item("<id>")` | Usa uno de la bolsa con el compañero, como «Usar» en la bolsa; el compañero puede rechazarlo |
+| `drop_item("<id>")` | Deja ese objeto en el suelo a los pies del jugador, como la caída de un enemigo vencido (`drop_item("meat")`) |
 | `toilet("")` | Lleva al compañero al baño |
 | `sleep("")` | Lo acuesta, si tiene sueño |
 | `scold("")` | Lo regaña, como «Regañar» en la pestaña de cuidados |

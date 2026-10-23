@@ -154,6 +154,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(use, std::nullopt)) {
     dropped(messages::UseItemFailed);
   }
+  if (std::exchange(groundDrop, std::nullopt)) {
+    dropped(messages::DropItemFailed);
+  }
   if (std::exchange(battle, std::nullopt)) {
     dropped(messages::BattleStartFailed);
   }
@@ -182,6 +185,8 @@ void SessionCommands::drop(Autotest* autotest) {
 void SessionCommands::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(GiveItemCommand, [this](std::string_view item) { gift = std::string{item}; });
   scripts.bindCommand(UseItemCommand, [this](std::string_view item) { use = std::string{item}; });
+  scripts.bindCommand(DropItemCommand,
+                      [this](std::string_view item) { groundDrop = std::string{item}; });
   scripts.bindCommand(BattleCommand, [this](std::string_view npcs) { battle = std::string{npcs}; });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
@@ -512,6 +517,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (const auto use = std::exchange(commands.use, std::nullopt)) {
     if (auto used = partnerMenu_.useItem(*use); !used) {
       core::logWarning("{}", core::formatMessage(messages::UseItemFailed, used.error().message));
+    }
+  }
+  if (const auto item = std::exchange(commands.groundDrop, std::nullopt)) {
+    const game::field::Field& field = scene_->field();
+    if (!game_.systems.fieldItems->dropItem(field.mapId(), *item, field.player().position)) {
+      core::logWarning("{}", core::formatMessage(messages::DropItemFailed, *item));
     }
   }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {

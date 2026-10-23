@@ -123,6 +123,7 @@ inline constexpr std::string_view ScriptIfNotRun = "autotest: step {} not run: {
 inline constexpr std::string_view CareScolded = "game: the partner was scolded";
 inline constexpr std::string_view UsedItem = "game: used {}: {}";
 inline constexpr std::string_view UseItemFailed = "game: use_item: {}";
+inline constexpr std::string_view DropItemFailed = "game: drop_item: {}";
 
 // The care debug commands (care_commands.cpp).
 inline constexpr std::string_view CareCommandFailed = "game: care command: {}";
