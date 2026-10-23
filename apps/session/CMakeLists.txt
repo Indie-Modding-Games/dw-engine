@@ -38,6 +38,29 @@ dwe_add_module(session
         src/story_scenes.cpp
         src/story_scenes_rules.cpp
         src/story_routines/opening_routines.cpp
+        src/story_routines/routine_animation_loop.cpp
+        src/story_routines/routine_card_shop.cpp
+        src/story_routines/routine_close_text_box.cpp
+        src/story_routines/routine_discard_item.cpp
+        src/story_routines/routine_egg_box.cpp
+        src/story_routines/routine_forget_moves.cpp
+        src/story_routines/routine_item_keeper.cpp
+        src/story_routines/routine_jukebox.cpp
+        src/story_routines/routine_merit_shop.cpp
+        src/story_routines/routine_money_box.cpp
+        src/story_routines/routine_new_game_menu.cpp
+        src/story_routines/routine_object_animation.cpp
+        src/story_routines/routine_remove_item.cpp
+        src/story_routines/routine_save_menu.cpp
+        src/story_routines/routine_shop.cpp
+        src/story_routines/routine_shop_overlay.cpp
+        src/story_routines/routine_shop_tally.cpp
+        src/story_routines/routine_smoke_effect.cpp
+        src/story_routines/routine_tournament.cpp
+        src/story_routines/routine_tournament_medal.cpp
+        src/story_routines/routine_tournament_schedule.cpp
+        src/story_routines/routine_trade_shop.cpp
+        src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
     DEPS core assets audio scene ruleset field partner save evolution inventory battle story script
     # The story tests check the API against the Lua emitter and run its listings' reference.
