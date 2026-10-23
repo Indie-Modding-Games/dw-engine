@@ -383,12 +383,6 @@ void NewGameInterview::showText(bool open) {
   std::vector<TextRow> rows;
   appendPageRows(rows, lineText(*shownLine_));
   inputFrom_ = ticks_ + ticksOf(static_cast<std::uint32_t>(rows.size()));
-  // The selection's rows come after the speaker's name, which the original shows cut by the box's
-  // rim, barely readable (captures cp02-q1-choice-yes, cp05-name-right-yesno); here that row is
-  // left empty.
-  if (waiting_ == Waiting::Selection && !rows.empty()) {
-    rows.front().clear();
-  }
   const TextboxLook look{.open = true,
                          .speech = true,
                          .columns = 0,
@@ -407,7 +401,12 @@ void NewGameInterview::showText(bool open) {
 
 std::string NewGameInterview::lineText(std::size_t line) const {
   std::vector<localization::TextArgument> arguments = colorArguments();
-  arguments.push_back({.name = TamerArgument, .value = tamerName()});
+  // The selections' first row is the name just given, in blue: the player's, and after the
+  // partner's naming the partner's (captures cp05-name-right-yesno, cp06-partner-name-yesno).
+  // Before any naming it is empty (cp02-q1-choice-yes).
+  const bool partnerConfirm = line == RightYesNo && target_ == NameTarget::Partner;
+  arguments.push_back(
+      {.name = TamerArgument, .value = partnerConfirm ? partnerName_ : tamerName()});
   arguments.push_back({.name = PartnerArgument, .value = partnerName_});
   return localization::tr(lines_.at(line), arguments);
 }

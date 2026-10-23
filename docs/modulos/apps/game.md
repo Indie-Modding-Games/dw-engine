@@ -100,9 +100,10 @@ o si tiene amigos (si dice que no); la primera respuesta da Agumon y la segunda 
 en la caja de nombres (`NamingBox`, documento `ui/naming_box`), con su confirmación, y se funde a negro. El
 resultado va en `PlayStart::choice` hasta `GameSession::startNewGame`. Las frases son las de la tabla 1238 de
 MAPHEAD y se ven en el documento `ui/story_textbox`, arriba de la pantalla como en el original
-(`setupNewGameDialogueBox`, ajuste `story_textbox.top`). En las elecciones (sí/no, día/noche) la fila del hablante
-queda vacía: el original la deja cortada por el borde de la caja, casi ilegible, y en la confirmación del nombre
-del compañero sería además el del jugador, porque la línea 0x1C sirve a las dos. Mientras corren la película, la
+(`setupNewGameDialogueBox`, ajuste `story_textbox.top`). En las elecciones (sí/no, día/noche) la primera fila es el
+nombre recién dado, en azul, como en el original: vacía antes de nombrar a nadie, la del jugador tras su nombre y
+la del compañero tras el suyo, aunque la línea 0x1C sirva a las dos (capturas cp05-name-right-yesno,
+cp06-partner-name-yesno). Mientras corren la película, la
 entrevista o una caja de nombres, `menu` no abre el menú de pausa (allí salta la película o lleva el cursor a
 Aceptar), como el original, que no tiene pausa en esas pantallas. La misma caja de nombres sirve a la rutina 32 de
 los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas.
