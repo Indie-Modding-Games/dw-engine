@@ -1,9 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: field_items",
-  "description": "rules/<id>/field_items.yaml: the items on the field's ground, the chests and the toilet's sound (apps/session: FieldItemsAdapter).",
+  "description": "rules/<id>/field_items.yaml: the items on the field's ground, the chests and the field's sounds (apps/session: FieldItemsAdapter).",
   "type": "object",
-  "required": ["ground_slots", "chest_slots", "reach_cells", "pickup_sound", "toilet_sound"],
+  "required": ["ground_slots", "chest_slots", "reach_cells", "pickup_sound", "toilet_sound", "sleep_sound", "praise_sound",
+    "scold_sound"],
   "additionalProperties": false,
   "properties": {
     "ground_slots": { "description": "How many items lie on the ground at once.", "type": "integer", "minimum": 1 },
@@ -14,7 +15,10 @@
       "minimum": 1
     },
     "pickup_sound": { "description": "The sound of picking up an item.", "$ref": "#/$defs/sound" },
-    "toilet_sound": { "description": "The sound of the partner at the toilet.", "$ref": "#/$defs/sound" }
+    "toilet_sound": { "description": "The sound of the partner at the toilet.", "$ref": "#/$defs/sound" },
+    "sleep_sound": { "description": "The sound of the partner come to the player to sleep.", "$ref": "#/$defs/sound" },
+    "praise_sound": { "description": "The sound of praising the partner.", "$ref": "#/$defs/sound" },
+    "scold_sound": { "description": "The sound of scolding the partner.", "$ref": "#/$defs/sound" }
   },
   "$defs": {
     "sound": {

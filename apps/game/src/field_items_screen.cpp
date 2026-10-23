@@ -1,11 +1,11 @@
+#include "field_items_screen.hpp"
+
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/screens/name_keys.hpp>
 
 #include <optional>
 #include <string>
-
-#include "field_items_screen.hpp"
 
 namespace dwe::app {
 
@@ -63,9 +63,9 @@ bool FieldItemsScreen::handle(const ui::UiCommand& command) {
   session::TakeOutcome outcome = session::TakeOutcome::Taken;
   if (step_ == Step::GroundItem) {
     outcome = items_->pickUp(slot_);
-    const std::optional<session::SoundCue> cue = items_->pickupSound();
-    if (outcome == session::TakeOutcome::Taken && cue && sound_ != nullptr) {
-      sound_->playSound(cue->slot, cue->sound);
+    const auto& rules = items_->rules();
+    if (outcome == session::TakeOutcome::Taken && rules && sound_ != nullptr) {
+      sound_->playSound(rules->pickupSound.slot, rules->pickupSound.sound);
     }
   } else if (step_ == Step::Chest) {
     outcome = items_->takeChest(slot_);

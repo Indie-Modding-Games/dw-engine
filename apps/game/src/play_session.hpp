@@ -25,6 +25,7 @@
 #include "death_scene.hpp"
 #include "evolution_scene.hpp"
 #include "field_hud.hpp"
+#include "field_items_screen.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
@@ -32,11 +33,11 @@
 #include "movie_rules.hpp"
 #include "options.hpp"
 #include "partner_menu.hpp"
+#include "praise_scold_call.hpp"
 #include "save_command.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
 #include "shop_screen.hpp"
-#include "field_items_screen.hpp"
 #include "sleep_screen.hpp"
 #include "story_field_link.hpp"
 #include "story_textbox.hpp"
@@ -164,6 +165,7 @@ private:
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
   FieldItemsScreen fieldItemsScreen_;
+  PraiseScoldCall praiseScold_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

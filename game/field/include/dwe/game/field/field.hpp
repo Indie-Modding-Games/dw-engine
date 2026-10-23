@@ -230,6 +230,13 @@ public:
 
   [[nodiscard]] CharacterState player() const;
   [[nodiscard]] CharacterState partner() const;
+
+  // Whether the partner stands beside the player, closer than its walking distance (partner.c:
+  // getPartnerTamerCloseness returns 2), as it comes to the player to sleep or to be praised.
+  [[nodiscard]] bool partnerBeside() const;
+  // The player turns to the partner at once (map.c: entityLookAtLocation); the partner already
+  // looks at the player while it waits.
+  void playerFacePartner();
   [[nodiscard]] scene::Entity playerEntity() const { return player_; }
   [[nodiscard]] scene::Entity partnerEntity() const { return partner_; }
 

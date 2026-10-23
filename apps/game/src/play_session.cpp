@@ -226,7 +226,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .ui = context.ui}),
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
-                        game_.session->sound()) {
+                        game_.session->sound()),
+      praiseScold_(*game_.session, *context.ui) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -274,7 +275,16 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
+  const auto& fieldRules = game_.systems.fieldItems->rules();
+  sleepScreen_.walkUp(*scene_, static_cast<float>(TickSeconds),
+                      fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active()) {
+    return;
+  }
+  if (praiseScold_.active()) {
+    guardFactsChanged_ =
+        praiseScold_.tick(*scene_, static_cast<float>(TickSeconds), *game_.systems.fieldItems) ||
+        guardFactsChanged_;
     return;
   }
   // partner.c: partnerTickEvolving stops the game time and holds the player for the scene.
@@ -330,12 +340,14 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (shopScreen_.handle(command) || sleepScreen_.handle(command) || saveMachine_.handle(command) ||
-      fieldItemsScreen_.handle(command) || battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      praiseScold_.handle(command) || fieldItemsScreen_.handle(command) ||
+      battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
-    if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active()) {
+    if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
+        !praiseScold_.active()) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
@@ -436,9 +448,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                          !field.mapChangePending() && field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
+  praiseScold_.update(fieldIdle);
   if (fieldIdle && !paused()) {
-    guardFactsChanged = goToToiletOnCell(session, *game_.systems.fieldItems, field) ||
-                        guardFactsChanged;
+    guardFactsChanged =
+        goToToiletOnCell(session, *game_.systems.fieldItems, field) || guardFactsChanged;
   }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
@@ -463,8 +476,9 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
 bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
-         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
+         ui.isVisible(PartnerMenuDocument) || battleScreen_.active() ||
+         (sleepScreen_.active() && !sleepScreen_.walkingUp()) || saveMachine_.active() ||
+         toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || fieldItemsScreen_.active();
 }
 

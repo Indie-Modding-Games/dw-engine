@@ -22,6 +22,9 @@ constexpr std::string_view ChestSlotsKey = "chest_slots";
 constexpr std::string_view ReachCellsKey = "reach_cells";
 constexpr std::string_view PickupSoundKey = "pickup_sound";
 constexpr std::string_view ToiletSoundKey = "toilet_sound";
+constexpr std::string_view SleepSoundKey = "sleep_sound";
+constexpr std::string_view PraiseSoundKey = "praise_sound";
+constexpr std::string_view ScoldSoundKey = "scold_sound";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
 
@@ -50,15 +53,17 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, field_items_messages::SectionText,
                          {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
-                          ToiletSoundKey})) {
+                          ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey})) {
     return std::unexpected{reader.error(section.file)};
   }
-  const FieldItemsRules rules{
-      .items = {.groundSlots = positive(reader, root, GroundSlotsKey),
-                .chestSlots = positive(reader, root, ChestSlotsKey),
-                .reachCells = positive(reader, root, ReachCellsKey)},
-      .pickupSound = soundCue(reader, root, PickupSoundKey),
-      .toiletSound = soundCue(reader, root, ToiletSoundKey)};
+  const FieldItemsRules rules{.items = {.groundSlots = positive(reader, root, GroundSlotsKey),
+                                        .chestSlots = positive(reader, root, ChestSlotsKey),
+                                        .reachCells = positive(reader, root, ReachCellsKey)},
+                              .pickupSound = soundCue(reader, root, PickupSoundKey),
+                              .toiletSound = soundCue(reader, root, ToiletSoundKey),
+                              .sleepSound = soundCue(reader, root, SleepSoundKey),
+                              .praiseSound = soundCue(reader, root, PraiseSoundKey),
+                              .scoldSound = soundCue(reader, root, ScoldSoundKey)};
   return reader.finish(rules, section.file);
 }
 
@@ -66,14 +71,14 @@ FieldItemsAdapter::FieldItemsAdapter(InventoryAdapter& inventory, StoryAdapter& 
     : inventory_{&inventory}, story_{&story} {}
 
 ruleset::SectionChecks FieldItemsAdapter::sectionChecks() const {
-  return {{std::string{FieldItemsSection},
-           [](const ruleset::Section& section) -> core::Result<void> {
-             auto rules = readFieldItemRules(section);
-             if (!rules) {
-               return std::unexpected{rules.error()};
-             }
-             return {};
-           }}};
+  return {
+      {std::string{FieldItemsSection}, [](const ruleset::Section& section) -> core::Result<void> {
+         auto rules = readFieldItemRules(section);
+         if (!rules) {
+           return std::unexpected{rules.error()};
+         }
+         return {};
+       }}};
 }
 
 core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
@@ -81,8 +86,7 @@ core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
   if (section == nullptr) {
     core::logDebug("[port:field_items] the ruleset has no field_items section: no ground items");
     items_.setRules({});
-    pickupSound_.reset();
-    toiletSound_.reset();
+    rules_.reset();
     return {};
   }
   auto read = readFieldItemRules(*section);
@@ -90,8 +94,7 @@ core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{read.error()};
   }
   items_.setRules(read->items);
-  pickupSound_ = read->pickupSound;
-  toiletSound_ = read->toiletSound;
+  rules_ = *read;
   return {};
 }
 
@@ -120,9 +123,11 @@ bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t original
     return false;
   }
   const bool taken = story_->state().trigger(trigger).value_or(false);
-  return items_.spawnChest(
-      {.item = *item, .position = position, .rotation = rotation, .trigger = trigger,
-       .taken = taken});
+  return items_.spawnChest({.item = *item,
+                            .position = position,
+                            .rotation = rotation,
+                            .trigger = trigger,
+                            .taken = taken});
 }
 
 TakeOutcome FieldItemsAdapter::pickUp(std::size_t slot) {

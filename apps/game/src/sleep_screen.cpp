@@ -26,8 +26,8 @@ std::int32_t shadeStep(const game::field::TransitionRules& rules, std::int32_t f
 }
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 5> Names{"awake", "fading out", "menu", "fading in",
-                                             "fade tail"};
+  constexpr std::array<const char*, 6> Names{"awake",     "fading out", "menu",
+                                             "fading in", "fade tail",  "walking up"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -71,6 +71,7 @@ float SleepScreen::fadeLevel() const {
     return game::field::shadeDarkness(in, game::field::fadeInShade(in, fadeFrame()));
   }
   case Phase::Awake:
+  case Phase::WalkingUp:
     break;
   }
   return 0.0F;
@@ -81,7 +82,7 @@ void SleepScreen::tick(double seconds) {
   if (active() && ui_->isVisible(MenuDocument)) {
     ui_->hide(MenuDocument);
   }
-  if (phase_ == Phase::Awake) {
+  if (phase_ == Phase::Awake || phase_ == Phase::WalkingUp) {
     return;
   }
   fadeSeconds_ += seconds;
@@ -108,8 +109,8 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
   if (name == "sleep") {
     if (canSleep(fieldIdle_)) {
       ui_->hide(MenuDocument);
-      setPhase(Phase::FadingOut);
-      fadeSeconds_ = 0.0;
+      setPhase(Phase::WalkingUp);
+      walkUp_.start();
     }
     return true;
   }
@@ -135,6 +136,20 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
     return false;
   }
   return true;
+}
+
+void SleepScreen::walkUp(FieldScene& scene, float seconds,
+                         const std::optional<session::SoundCue>& arrived) {
+  if (phase_ != Phase::WalkingUp || !walkUp_.tick(scene, seconds, nullptr)) {
+    return;
+  }
+  // partner.c: partnerTickSleep plays the sound when the partner is beside the player; the
+  // tamer's and the partner's sleep animations come before the fade there.
+  if (arrived && session_->sound() != nullptr) {
+    session_->sound()->playSound(arrived->slot, arrived->sound);
+  }
+  setPhase(Phase::FadingOut);
+  fadeSeconds_ = 0.0;
 }
 
 bool SleepScreen::canSleep(bool fieldIdle) const {

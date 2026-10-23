@@ -27,11 +27,14 @@ struct SoundCue {
   std::int64_t sound = 0;
 };
 
-// The field_items section: the ground items and the chests, and the sounds of the field's cells.
+// The field_items section: the ground items and the chests, and the field's sounds.
 struct FieldItemsRules {
   game::field::FieldItemRules items;
   SoundCue pickupSound;
   SoundCue toiletSound;
+  SoundCue sleepSound;
+  SoundCue praiseSound;
+  SoundCue scoldSound;
 };
 
 // Reads the field_items section; errors name the file and line.
@@ -49,7 +52,8 @@ enum class TakeOutcome : std::uint8_t {
 
 // Glues the field's ground items and chests to the bag and the story: what the player picks up goes
 // to the bag, and a chest taken sets its story trigger. They are not saved: the map's scripts spawn
-// them again when the player comes back (FieldItems::enterMap clears them on another map), and the chest's trigger says it was taken.
+// them again when the player comes back (FieldItems::enterMap clears them on another map), and the
+// chest's trigger says it was taken.
 class FieldItemsAdapter final : public SessionSystem {
 public:
   // The inventory and the story must outlive the adapter.
@@ -59,9 +63,8 @@ public:
   // Reads the field_items section; without one, nothing lies on the ground.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
 
-  // The sounds of picking up an item and of the toilet; none without a field_items section.
-  [[nodiscard]] std::optional<SoundCue> pickupSound() const { return pickupSound_; }
-  [[nodiscard]] std::optional<SoundCue> toiletSound() const { return toiletSound_; }
+  // The field's sounds; none without a field_items section.
+  [[nodiscard]] const std::optional<FieldItemsRules>& rules() const { return rules_; }
 
   [[nodiscard]] game::field::FieldItems& items() { return items_; }
   [[nodiscard]] const game::field::FieldItems& items() const { return items_; }
@@ -88,8 +91,7 @@ private:
   InventoryAdapter* inventory_;
   StoryAdapter* story_;
   game::field::FieldItems items_{{}};
-  std::optional<SoundCue> pickupSound_;
-  std::optional<SoundCue> toiletSound_;
+  std::optional<FieldItemsRules> rules_;
 };
 
 } // namespace dwe::session

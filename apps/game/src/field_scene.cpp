@@ -390,6 +390,10 @@ void FieldScene::finishTick() {
   followNpcs();
 }
 
+void FieldScene::playerFacePartner() {
+  field_->playerFacePartner();
+}
+
 void FieldScene::followClock() {
   const std::int32_t hour = clock_->time().hour;
   if (hour == clockHour_) {

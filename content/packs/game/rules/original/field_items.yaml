@@ -1,4 +1,4 @@
-# Los objetos en el suelo, los cofres y el baño del campo (apps/session: FieldItemsAdapter; game/field: field_items.hpp).
+# Los objetos en el suelo, los cofres y los sonidos del campo (el baño, dormir, felicitar y regañar) (apps/session: FieldItemsAdapter; game/field: field_items.hpp).
 # item.c: spawnItem y spawnDroppedItems: 11 objetos en el suelo a la vez (DROPPED_ITEMS).
 ground_slots: 11
 # map_object.c: spawnChest: 8 cofres (NUM_CHESTS).
@@ -9,3 +9,9 @@ reach_cells: 1
 pickup_sound: {slot: 0, sound: 7}
 # La sección 0x4e2 del mapa (la casilla del baño, tamer.c: checkMapInteraction): play_sound(0, 10).
 toilet_sound: {slot: 0, sound: 10}
+# partner.c: partnerTickSleep: playSound(0, 15) cuando el compañero llega junto al jugador para dormir.
+sleep_sound: {slot: 0, sound: 15}
+# partner.c: partnerTickPraiseScold: playSound(0, 14) al felicitar; tamer.c: tamerTickPraiseScold: playSound(0, 13) al
+# regañar.
+praise_sound: {slot: 0, sound: 14}
+scold_sound: {slot: 0, sound: 13}

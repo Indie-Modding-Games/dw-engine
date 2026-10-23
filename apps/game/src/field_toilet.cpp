@@ -1,11 +1,11 @@
+#include "field_toilet.hpp"
+
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/collision_triggers.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/partner/state.hpp>
 
 #include <optional>
-
-#include "field_toilet.hpp"
 
 namespace dwe::app {
 
@@ -20,9 +20,9 @@ bool goToToiletOnCell(session::GameSession& session, const session::FieldItemsAd
                  "partner goes (section 0x4e2 stands in for handleToilet)",
                  cell.column, cell.row);
   session.useToilet();
-  const std::optional<session::SoundCue> cue = fieldItems.toiletSound();
-  if (cue && session.sound() != nullptr) {
-    session.sound()->playSound(cue->slot, cue->sound);
+  const auto& rules = fieldItems.rules();
+  if (rules && session.sound() != nullptr) {
+    session.sound()->playSound(rules->toiletSound.slot, rules->toiletSound.sound);
   }
   return true;
 }

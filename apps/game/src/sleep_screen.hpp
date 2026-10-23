@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/field/rules.hpp>
+#include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -8,16 +9,19 @@
 #include <optional>
 #include <string_view>
 
+#include "field_scene.hpp"
 #include "game_saves.hpp"
+#include "partner_walk_up.hpp"
 
 namespace dwe::app {
 
 inline constexpr std::string_view SleepMenuDocument = "sleep_menu";
 
 // The pause menu's Sleep (docs/architecture/guardar-y-cargar.md, 3.6), as partner.c's
-// partnerTickSleep: the screen fades to black, the partner sleeps until morning, the sleep menu
-// offers to save to the playthrough's slot, and the screen fades back in; the partner wakes up,
-// and may evolve, when the player gets control back. The field and the game time wait meanwhile.
+// partnerTickSleep: the partner walks up to the player, the screen fades to black, the partner
+// sleeps until morning, the sleep menu offers to save to the playthrough's slot, and the screen
+// fades back in; the partner wakes up, and may evolve, when the player gets control back. The field
+// and the game time wait meanwhile.
 class SleepScreen {
 public:
   // The session and the UI must outlive this object; `transition` is the field's.
@@ -27,10 +31,17 @@ public:
   // Whether the player waits on a sleep: the field and the game time wait meanwhile.
   [[nodiscard]] bool active() const;
 
+  // Whether the partner walks up to sleep: the field still moves, without the player.
+  [[nodiscard]] bool walkingUp() const { return phase_ == Phase::WalkingUp; }
+
   // How much the sleep's fade takes away from the screen, from 0 (nothing) to 1 (black).
   [[nodiscard]] float fadeLevel() const;
 
   void tick(double seconds);
+
+  // While the partner walks up to the player to sleep: ticks the field with no input and the game
+  // time stopped, and fades out once it is there, with `arrived`'s sound if any.
+  void walkUp(FieldScene& scene, float seconds, const std::optional<session::SoundCue>& arrived);
 
   // Takes the pause menu's sleep, and the sleep menu's and its dialog's commands while asleep;
   // false for any other command.
@@ -42,7 +53,7 @@ public:
 
 private:
   // FadeTail: the player has control back, and the fade in draws its last frames.
-  enum class Phase : std::uint8_t { Awake, FadingOut, Menu, FadingIn, FadeTail };
+  enum class Phase : std::uint8_t { Awake, FadingOut, Menu, FadingIn, FadeTail, WalkingUp };
 
   [[nodiscard]] std::int32_t fadeFrame() const;
   [[nodiscard]] bool canSleep(bool fieldIdle) const;
@@ -57,6 +68,7 @@ private:
   game::field::TransitionRules transition_;
   GameSaves saves_;
   Phase phase_ = Phase::Awake;
+  PartnerWalkUp walkUp_;
   double fadeSeconds_ = 0.0;
   // Whether the session put the partner to bed, so that the fade in wakes it up.
   bool asleep_ = false;

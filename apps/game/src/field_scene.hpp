@@ -103,6 +103,8 @@ public:
   // Ends the tick: follows the clock's time of day, and loads the map of a warp the player stepped
   // on, keeping the partner.
   void finishTick();
+  // The player turns to the partner (Field::playerFacePartner).
+  void playerFacePartner();
 
   // Prepares the next frame: advances the animations by frameSeconds (not while paused; a
   // time-of-day fade under way goes on), places the characters between the last two ticks (alpha

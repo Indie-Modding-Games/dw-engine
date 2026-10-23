@@ -121,9 +121,8 @@ void CalendarAdapter::startNewDays(std::int32_t days) {
   core::logDebug("[port:calendar] tickGameClock (clock.c:148): {} new day(s)", days);
   for (std::int32_t day = 0; day < days; ++day) {
     if (auto started = game::story::startNewDay(story_->state(), *rules_); !started) {
-      core::logWarning("{}",
-                       core::formatMessage(calendar_messages::NewDayFailed,
-                                           started.error().message));
+      core::logWarning(
+          "{}", core::formatMessage(calendar_messages::NewDayFailed, started.error().message));
       return;
     }
   }
