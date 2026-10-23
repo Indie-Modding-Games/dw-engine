@@ -154,6 +154,25 @@ Diferencias con el original: en el mando, `alt` está en el botón norte y no en
 las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
 enfermedad y los registros de combate y de la arena, que en el original nombran al compañero, aún no existen.
 
+## Apertura del combate
+
+Todo combate (salvaje, de la historia o de la consola) empieza en `BattleScreen::start` con la fase `intro`: la
+apertura del original (`battle_setup.c: BTL_handleBattleIntro`) que lleva `screens::BattleIntro` a 20 frames por
+segundo, y que se publica con `battle.intro.*` ([screens](screens.md#apertura-del-combate)). Primero, 20 frames de la
+marca de enfado sobre cada enemigo (`btl.c: handleBattleStart`, `setFleeBubble`), donde `PlaySession` lo proyecta:
+el NPC del mapa de esa especie en esa casilla, a su altura más lo que sube la marca (`renderFleeBubble`). Después
+el rótulo «BATTLE» (sonido 0x10), que vuela, se junta y parpadea, y su estallido (sonido 0x11); cuando la última
+pieza sale de la pantalla, la fase pasa a `fight`. Durante la apertura el documento no atiende órdenes, ni la bolsa,
+ni la carga del remate. La semilla de las piezas es el número de combates de la sesión.
+
+Diferencias con el original: el rótulo espera 60 frames donde el original espera a que el domador llegue andando a
+su sitio (el campo está quieto en el combate) y no salen las marcas de huida de los demás Digimon de la pantalla; la
+marca de enfado no se inclina hacia su enemigo ni cambia de tamaño con la distancia. Un enemigo sin NPC en el mapa
+(el de la consola, si no hay ninguno de su especie) no lleva marca.
+
+El aviso del menú del HUD («Tab Menu») va con el reloj y las barras del campo (`hud.shown`): no sale en combates,
+escenas ni menús, como en el original.
+
 ## Exploración libre
 
 `free_exploration.cpp` lleva la [exploración libre](../../architecture/warps-de-script.md#exploración-libre):

@@ -6,6 +6,12 @@
 local max_fighters = 4
 local max_commands = 11
 local finisher_segments = 6
+local finisher_marks = 8
+local max_anger = 3
+local banner_pieces = 155
+-- The hovered command's icon swaps to its second frame every 8 of the original's battle frames
+-- (command_menu.c: BTL_renderCommandMenu).
+local blink_seconds = 0.4
 local max_end_lines = 10
 local stat_count = 6
 local max_bag_slots = 30
@@ -20,6 +26,12 @@ local bits_label_key = "main.battle_ui_bits_labels.0000"
 
 local phase = "fight"
 local bag_open = false
+local intro_step = "done"
+local blink_clock = 0
+local blink_on = false
+local icon_classes = {}
+local frame_classes = {}
+local shown_pieces = {}
 
 local function setting(name, fallback)
   local value = ui.setting(name)
@@ -92,16 +104,82 @@ local function command_available(index)
   return setting(entry("battle.menu", index, "available"), false)
 end
 
+-- Swaps an element's class from one set to another: icons, places and frame kinds.
+local function swap_class(element, classes, id, class)
+  if classes[id] ~= nil and classes[id] ~= class then
+    element:set_class(classes[id], false)
+  end
+  if class ~= nil then
+    element:set_class(class, true)
+  end
+  classes[id] = class
+end
+
+-- A command's place in the original's strip (command_menu.c: BTL_renderCommandMenu): the last
+-- command is the first icon from the left, each one 14 pixels on, every other one lower. The first
+-- command, the finisher, has no icon there.
+local function command_place(index, count)
+  local place = count - 1 - index
+  return "place-" .. place, place % 2 == 0
+end
+
+-- The strip's frame behind the icons, one piece per command: the left end, the middle pieces in
+-- turn, and the right end that matches the last middle one.
+local function frame_kind(index, count)
+  if index == 0 then
+    return "frame-left"
+  end
+  if index == count - 1 then
+    return count % 2 == 1 and "frame-right-odd" or "frame-right-even"
+  end
+  return index % 2 == 1 and "frame-odd" or "frame-even"
+end
+
 local function draw_commands(document)
   local count = number("battle.menu.count")
   for index = 0, max_commands - 1 do
     local button = document:get("command-" .. index)
+    local id = "command-" .. index
+    local frame = document:get("command-frame-" .. index)
     button:set_class("hidden", index >= count)
+    frame:set_class("hidden", index >= count)
     if index < count then
       button:set_text(text(setting(entry("battle.menu", index, "label"), "")))
       button:set_class("unavailable", not command_available(index))
       button:set_class("current", setting(entry("battle.menu", index, "current"), false))
+      local icon = setting(entry("battle.menu", index, "icon"), "")
+      button:set_class("no-icon", icon == "")
+      swap_class(button, icon_classes, id, icon ~= "" and ("icon-" .. icon) or nil)
+      local place, up = command_place(index, count)
+      swap_class(button, frame_classes, id, icon ~= "" and place or nil)
+      button:set_class("up", icon ~= "" and up)
+      button:set_class("down", icon ~= "" and not up)
+      swap_class(frame, frame_classes, "frame-" .. index, frame_kind(index, count))
     end
+  end
+  -- The bag's entry follows the strip, where a skin that draws it wants it.
+  swap_class(document:get("open-bag"), frame_classes, "open-bag", "place-" .. count)
+end
+
+-- The cursor round the hovered icon, and its blink; nothing while the battle opens.
+local function draw_cursor(document)
+  local cursor = document:get("command-cursor")
+  local count = number("battle.menu.count")
+  local hovered = nil
+  for index = 0, count - 1 do
+    local button = document:get("command-" .. index)
+    local focused = button:has_focus() and setting(entry("battle.menu", index, "icon"), "") ~= ""
+    button:set_class("blink", focused and blink_on)
+    if focused then
+      hovered = index
+    end
+  end
+  cursor:set_class("hidden", hovered == nil or phase ~= "fight")
+  if hovered ~= nil then
+    local place, up = command_place(hovered, count)
+    swap_class(cursor, frame_classes, "cursor", place)
+    cursor:set_class("up", up)
+    cursor:set_class("down", not up)
   end
 end
 
@@ -140,10 +218,15 @@ end
 local function draw_finisher(document)
   local progress, goal = number("battle.finisher.progress"), number("battle.finisher.goal")
   local filled = goal > 0 and math.floor(progress * finisher_segments / goal) or 0
-  for index = 0, finisher_segments - 1 do
+  local ready = setting("battle.finisher.ready", false)
+  -- The gauge's word has two marks more than its steps; they show once it is full.
+  if ready then
+    filled = finisher_marks
+  end
+  for index = 0, finisher_marks - 1 do
     document:get("finisher-" .. index):set_class("filled", index < filled)
   end
-  document:get("finisher"):set_class("ready", setting("battle.finisher.ready", false))
+  document:get("finisher"):set_class("ready", ready)
   local charging = setting("battle.finisher.charging", false)
   document:get("charge"):set_class("hidden", not charging)
   document
@@ -452,10 +535,108 @@ local function draw_prompts(document)
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
 end
 
+-- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the
+-- "BATTLE" banner flying together, flashing and bursting over the battle's HUD.
+local function draw_anger(document)
+  local scale = number("battle.intro.anger.scale") / 100
+  for index = 0, max_anger - 1 do
+    local mark = document:get("anger-" .. index)
+    local shown = intro_step == "anger"
+      and setting(entry("battle.intro.anger", index, "shown"), false)
+    mark:set_class("hidden", not shown)
+    if shown then
+      mark:set_property("left", setting(entry("battle.intro.anger", index, "x"), 0) .. "%")
+      mark:set_property("top", setting(entry("battle.intro.anger", index, "y"), 0) .. "%")
+      mark:set_property("transform", string.format("scale(%.2f)", scale))
+    end
+  end
+end
+
+-- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
+-- width, height, texture, trail and 1 for a trail on the left.
+local function banner_numbers()
+  local numbers = {}
+  for value in string.gmatch(setting("battle.intro.pieces", ""), "%S+") do
+    numbers[#numbers + 1] = tonumber(value)
+  end
+  return numbers
+end
+
+local function draw_piece(document, index, piece)
+  local key = table.concat(piece, " ")
+  if shown_pieces[index] == key then
+    return
+  end
+  shown_pieces[index] = key
+  local block = document:get("bp-" .. index)
+  local shadow = document:get("bs-" .. index)
+  local trail = document:get("bt-" .. index)
+  block:set_class("hidden", piece[1] == nil)
+  shadow:set_class("hidden", piece[1] == nil)
+  if piece[1] == nil then
+    return
+  end
+  local x, y = piece[1] * 3, piece[2] * 3
+  local width, height = piece[3] * 3, piece[4] * 3
+  for _, element in ipairs({ block, shadow }) do
+    element:set_property("width", width .. "dp")
+    element:set_property("height", height .. "dp")
+  end
+  block:set_property("left", x .. "dp")
+  block:set_property("top", y .. "dp")
+  -- The shadow lies 2 pixels down and right (battle_hud.c: BTL_renderBattleStartText).
+  shadow:set_property("left", (x + 6) .. "dp")
+  shadow:set_property("top", (y + 6) .. "dp")
+  for texture = 0, 2 do
+    block:set_class("texture-" .. texture, piece[5] == texture)
+  end
+  local length = piece[6] * 3
+  trail:set_class("hidden", length <= 0)
+  trail:set_class("left", piece[7] == 1)
+  if length > 0 then
+    trail:set_property("width", length .. "dp")
+    trail:set_property("left", (piece[7] == 1 and -length or width) .. "dp")
+  end
+end
+
+local function draw_banner(document)
+  local numbers = banner_numbers()
+  local count = math.floor(#numbers / 7)
+  for index = 0, banner_pieces - 1 do
+    local piece = {}
+    if index < count then
+      for field = 1, 7 do
+        piece[field] = numbers[index * 7 + field]
+      end
+    end
+    draw_piece(document, index, piece)
+  end
+  local banner = document:get("banner")
+  for flash = 0, 2 do
+    banner:set_class("flash-" .. flash, number("battle.intro.flash") == flash)
+  end
+end
+
+local function draw_intro(document)
+  intro_step = phase == "intro" and setting("battle.intro.step", "done") or "done"
+  document:get("intro"):set_class("hidden", phase ~= "intro")
+  -- The HUD is already there under the banner, without the cursor or the hovered command's name.
+  document:get("fight"):set_class("opening", phase == "intro")
+  if phase ~= "intro" then
+    return
+  end
+  draw_anger(document)
+  draw_banner(document)
+  -- Veiled, not hidden: the commands keep their boxes, so the focus and the keyboard and gamepad
+  -- navigation work on them from the first frame of the fight.
+  document:get("fight"):set_class("veiled", intro_step == "anger")
+end
+
 local function draw(document)
   phase = setting("battle.phase", "fight")
-  document:get("fight"):set_class("hidden", phase ~= "fight")
+  document:get("fight"):set_class("hidden", phase ~= "fight" and phase ~= "intro")
   document:get("end"):set_class("hidden", phase ~= "end")
+  draw_intro(document)
   if phase == "end" then
     if ending == nil then
       start_end()
@@ -476,6 +657,7 @@ local function draw(document)
     draw_commands(document)
     focus_command(document)
     draw_command_name(document)
+    draw_cursor(document)
   end
   draw_finisher(document)
   draw_revive(document)
@@ -519,6 +701,8 @@ end
 function on_setting(document, name)
   if name == "battle.revision" or name == "battle.phase" or name == "bag.revision" then
     draw(document)
+  elseif name == "battle.intro.revision" then
+    draw_intro(document)
   end
 end
 
@@ -526,10 +710,16 @@ function on_tick(document, seconds)
   if phase == "end" and ending ~= nil then
     tick_end(document, seconds)
   elseif phase == "fight" then
+    blink_clock = blink_clock + (seconds or 0)
+    if blink_clock >= blink_seconds then
+      blink_clock = blink_clock - blink_seconds
+      blink_on = not blink_on
+    end
     if bag_open then
       draw_bag_description(document)
     else
       draw_command_name(document)
+      draw_cursor(document)
     end
   end
 end
@@ -546,6 +736,10 @@ end
 -- original's own button) and closes it again; up and down move through the open bag; confirm
 -- charges the finisher while its aura lasts.
 function on_action(_document, action)
+  -- Nothing answers while the battle opens.
+  if phase == "intro" then
+    return true
+  end
   if phase == "end" then
     if action == "confirm" or action == "cancel" then
       press_end()

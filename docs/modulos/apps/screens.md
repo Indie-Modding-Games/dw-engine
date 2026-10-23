@@ -27,6 +27,7 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 |---|---|---|
 | `battle.fighter.<i>.{name,hp,max_hp,mp,max_mp,fainted,status,hp_bar}` | clave, números, booleanos, clave | El compañero (0) y los enemigos: nombre, barras, si ha caído, su estado (`battle.status.*`) y si el HUD enseña ahora su barra de HP. La del compañero se ve siempre; la de un enemigo, solo un rato tras recibir daño y sin barra de MP (`battle_main.c: BTL_renderEnemyHPBars`) |
 | `battle.menu.<i>.{command,label,available,current}` | número, clave, booleanos | Las entradas que su inteligencia permite, en orden (`command_menu.c: BTL_renderCommandMenu`): el comando, su etiqueta (los comandos del original o el nombre de la técnica), si se puede elegir (el golpe final, solo con el indicador lleno) y si es la orden que sigue |
+| `battle.menu.<i>.icon` | texto | El icono de BTLCOMND de la entrada: `command-<n>` (el número del comando, de huir a cambiar), `special-<tipo>` (una técnica, por el tipo de su efecto, 0 a 6) o vacío (el golpe final, que no tiene icono en la tira) |
 | `battle.finisher.{progress,goal,ready,charging,charge}` | números, booleanos | El indicador del golpe final (`battle_hud.c: BTL_renderFinisherGauge`) y su carga durante el aura (`command_menu.c: BTL_tickFinisherChargeup`) |
 | `battle.revive_seconds` | número, -1 sin cuenta | Los segundos que le quedan al compañero caído para levantarse, desde que el original enseña la cuenta (`command_menu.c: BTL_renderDeathCountdown`) |
 | `battle.bag.{available,open}`, `battle.item_in_flight` | booleanos | La bolsa del domador: si se puede abrir (no huyendo, no sin domador, sin otro objeto en el aire), si está abierta y si un objeto lanzado va de camino (`battle_tick.c: tamerTickBattle`, `main.c: tickThrownItem`) |
@@ -40,9 +41,27 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
 de abajo): `usable` dice qué objetos se pueden lanzar en combate.
 
-El juego añade `battle.phase` (`fight` o `end`), y el documento envía `battle_command` (el número del comando),
+El juego añade `battle.phase` (`intro`, `fight` o `end`), y el documento envía `battle_command` (el número del comando),
 `battle_charge`, `battle_close`, `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
 ([ui.md](../../architecture/ui.md)).
+
+### Apertura del combate
+
+`BattleIntro` es la apertura del original paso a paso, a su ritmo de combate (20 frames por segundo): la marca de
+enfado sobre cada enemigo mientras el original carga el combate (`btl.c: handleBattleStart`, `renderFleeBubble`),
+el rótulo «BATTLE» con sus 155 piezas que llegan volando con su estela y parpadean al juntarse
+(`battle_hud.c: BTL_renderBattleStartText`, `battle_setup.c: BTL_handleBattleIntro`) y su estallido
+(`BTL_renderBattleStartTextBurst`). Las piezas salen de una semilla, así que una ruta ve siempre la misma apertura.
+`battleIntroViewOf(intro, marcas)` y `settingsOf(vista, enemigos)` dan los ajustes que lee el documento, que redibuja
+con `battle.intro.revision`:
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `battle.intro.step` | texto | `anger`, `banner`, `burst` o `done` |
+| `battle.intro.anger.<i>.{shown,x,y}` | booleano, % | Si la marca del enemigo `i` se ve y dónde, en % de la ventana (su centro) |
+| `battle.intro.anger.scale` | % | El tamaño de las marcas: crecen 5 frames y luego laten (`FLEE_BUBBLE_SCALE`) |
+| `battle.intro.flash` | 0 a 2 | La paleta con la que parpadea el rótulo cuando todas sus piezas han llegado |
+| `battle.intro.pieces` | texto | Las piezas que se ven, siete números cada una en píxeles de la pantalla de 320 × 240 del original: x, y, ancho, alto, textura (0 a 2), estela y 1 si la estela va a la izquierda |
 
 ## HUD del campo
 

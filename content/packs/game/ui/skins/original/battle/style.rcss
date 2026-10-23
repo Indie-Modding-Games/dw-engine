@@ -104,12 +104,16 @@
 	opacity: 0.5;
 }
 
-/* The finisher (command_menu.c: 8 segments from x 215, y 35, in the yellows #f8e058 to #c8b028): the original fills
-   the letters of its word one by one (capture battle_hud_finisher_ready, "FIN"); its 8 segments are blocks here, the
-   word's letters being part of the sprite. */
+/* The finisher's word (battle_hud.c: BTL_renderFinisherGauge; BI_IN, palette 12): "FINISH!!" from x 215, y 35, one
+   letter more for each sixth of the gauge and the last two marks once it is full; nothing while it is empty. Once
+   full, "PUSH" (palette 2) shows at (270, 39) on a grey box at half opacity from (268, 38), 41 x 11. */
 #finisher {
-	width: auto;
-	margin: 0 0 0 27dp;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 312dp;
+	height: 0;
+	margin: 0;
 	padding: 0;
 	border-width: 0;
 	background-color: transparent;
@@ -119,9 +123,20 @@
 	display: none;
 }
 
-.segment {
-	width: 18dp;
-	height: 21dp;
+#finisher-segments {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 63dp;
+	width: 312dp;
+	height: 45dp;
+}
+
+.segment, .segment.extra {
+	display: block;
+	position: absolute;
+	top: 0;
+	height: 45dp;
 	margin: 0;
 	border-radius: 0;
 	background-color: transparent;
@@ -129,20 +144,55 @@
 
 .segment.filled, #finisher.ready .segment {
 	background-color: transparent;
-	decorator: vertical-gradient(#f8e058 #c8b028);
+}
+
+#finisher-0 { left: 27dp; width: 18dp; }
+#finisher-0.filled { decorator: image(finish-0); }
+#finisher-1 { left: 45dp; width: 12dp; }
+#finisher-1.filled { decorator: image(finish-1); }
+#finisher-2 { left: 57dp; width: 24dp; }
+#finisher-2.filled { decorator: image(finish-2); }
+#finisher-3 { left: 81dp; width: 12dp; }
+#finisher-3.filled { decorator: image(finish-3); }
+#finisher-4 { left: 93dp; width: 24dp; }
+#finisher-4.filled { decorator: image(finish-4); }
+#finisher-5 { left: 117dp; width: 24dp; }
+#finisher-5.filled { decorator: image(finish-5); }
+#finisher-6 { left: 141dp; width: 15dp; }
+#finisher-6.filled { decorator: image(finish-6); }
+#finisher-7 { left: 156dp; width: 15dp; }
+#finisher-7.filled { decorator: image(finish-7); }
+
+#finisher-ready {
+	display: none;
+	position: absolute;
+	left: 186dp;
+	top: 72dp;
+	width: 123dp;
+	height: 33dp;
+	background-color: #80808080;
+	decorator: image(finish-push scale-none center center);
+}
+
+#finisher.ready #finisher-ready {
+	display: block;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The tamer's commands (command_menu.c: BTL_renderCommandMenu): a strip at the top left from x 17, y 14, the
-   current command's name under it at (20, 48) in the ink colour, the cursor a yellow outline (#f8d000). The original
-   draws each command as a 16 x 16 icon of BTLCOMND; the battle's settings name a command's text, not its icon, so
-   the strip shows the names, smaller. */
+   The tamer's commands (command_menu.c: BTL_renderCommandMenu): one icon of BTLCOMND per command, 16 x 16, the last
+   command's first from (20, 17) and each one 14 pixels to the right, every other one 10 lower; the hovered one swaps
+   to its second frame every 8 frames under the cursor (22 x 22, 3 up and left of its icon) and its name shows at (20,
+   48) in the ink colour. Behind them runs the strip's frame at half opacity, one piece per command from (17, 14),
+   31 pixels tall. Each command answers on the 14 pixels of the strip that are its own, so the pointer and the left
+   and right keys find its neighbours; its icon overhangs them. The finisher has no icon: its command answers on the "PUSH" box once the gauge is full. While the
+   banner shows, the icons are there without the cursor or the name. */
 
 #commands {
 	position: absolute;
-	left: 51dp;
-	top: 42dp;
-	width: auto;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
 	text-align: left;
 	padding: 0;
 	border-radius: 0;
@@ -160,29 +210,175 @@
 }
 
 .command {
-	display: inline-block;
-	margin: 0 6dp 6dp 0;
+	display: block;
+}
+
+.command, .command:focus, .command.current {
+	position: absolute;
+	top: 42dp;
+	width: 42dp;
+	height: 66dp;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	font-size: 22dp;
+	color: transparent;
+	border-width: 0;
+	background-color: transparent;
+}
+
+.command.down {
+	top: 72dp;
+}
+
+.command.unavailable {
+	color: transparent;
+	opacity: 0.5;
+}
+
+.command.no-icon, .command.no-icon:focus {
+	left: auto;
+	right: 33dp;
+	top: 114dp;
+	width: 123dp;
+	height: 33dp;
+}
+
+.command.no-icon.unavailable {
+	display: none;
+}
+
+/* The original opens the bag with its own button and draws nothing for it; here the bag also has an entry after the
+   last icon, for the pointer, in the ink colour on a box at half opacity. */
+#open-bag, #open-bag:focus {
+	top: 60dp;
+	width: auto;
+	height: 30dp;
 	padding: 0 9dp;
 	font-size: 22dp;
-	line-height: 30dp;
+	line-height: 24dp;
+	color: #d0d0d0;
 	border: 3dp transparent;
 	background-color: #00000080;
 }
 
-.command:focus, .command.current {
+#open-bag:focus {
 	border-color: #f8d000;
-	background-color: #00000080;
-	color: #d0d0d0;
 }
 
-.command.unavailable {
+#open-bag.unavailable {
 	color: #828282;
 }
 
+.command.place-0 { left: 63dp; }
+.command.place-1 { left: 105dp; }
+.command.place-2 { left: 147dp; }
+.command.place-3 { left: 189dp; }
+.command.place-4 { left: 231dp; }
+.command.place-5 { left: 273dp; }
+.command.place-6 { left: 315dp; }
+.command.place-7 { left: 357dp; }
+.command.place-8 { left: 399dp; }
+.command.place-9 { left: 441dp; }
+.command.place-10 { left: 483dp; }
+.command.place-11 { left: 525dp; }
+#command-cursor.place-0 { left: 51dp; }
+#command-cursor.place-1 { left: 93dp; }
+#command-cursor.place-2 { left: 135dp; }
+#command-cursor.place-3 { left: 177dp; }
+#command-cursor.place-4 { left: 219dp; }
+#command-cursor.place-5 { left: 261dp; }
+#command-cursor.place-6 { left: 303dp; }
+#command-cursor.place-7 { left: 345dp; }
+#command-cursor.place-8 { left: 387dp; }
+#command-cursor.place-9 { left: 429dp; }
+
+.command.icon-command-1 { decorator: image(command-1 scale-none center center); }
+.command.icon-command-1.blink { decorator: image(command-1-blink scale-none center center); }
+.command.icon-command-2 { decorator: image(command-2 scale-none center center); }
+.command.icon-command-2.blink { decorator: image(command-2-blink scale-none center center); }
+.command.icon-command-3 { decorator: image(command-3 scale-none center center); }
+.command.icon-command-3.blink { decorator: image(command-3-blink scale-none center center); }
+.command.icon-command-4 { decorator: image(command-4 scale-none center center); }
+.command.icon-command-4.blink { decorator: image(command-4-blink scale-none center center); }
+.command.icon-command-5 { decorator: image(command-5 scale-none center center); }
+.command.icon-command-5.blink { decorator: image(command-5-blink scale-none center center); }
+.command.icon-command-6 { decorator: image(command-6 scale-none center center); }
+.command.icon-command-6.blink { decorator: image(command-6-blink scale-none center center); }
+.command.icon-command-7 { decorator: image(command-7 scale-none center center); }
+.command.icon-command-7.blink { decorator: image(command-7-blink scale-none center center); }
+.command.icon-special-0 { decorator: image(special-0 scale-none center center); }
+.command.icon-special-0.blink { decorator: image(special-0-blink scale-none center center); }
+.command.icon-special-1 { decorator: image(special-1 scale-none center center); }
+.command.icon-special-1.blink { decorator: image(special-1-blink scale-none center center); }
+.command.icon-special-2 { decorator: image(special-2 scale-none center center); }
+.command.icon-special-2.blink { decorator: image(special-2-blink scale-none center center); }
+.command.icon-special-3 { decorator: image(special-3 scale-none center center); }
+.command.icon-special-3.blink { decorator: image(special-3-blink scale-none center center); }
+.command.icon-special-4 { decorator: image(special-4 scale-none center center); }
+.command.icon-special-4.blink { decorator: image(special-4-blink scale-none center center); }
+.command.icon-special-5 { decorator: image(special-5 scale-none center center); }
+.command.icon-special-5.blink { decorator: image(special-5-blink scale-none center center); }
+.command.icon-special-6 { decorator: image(special-6 scale-none center center); }
+.command.icon-special-6.blink { decorator: image(special-6-blink scale-none center center); }
+
+#command-cursor {
+	display: block;
+	position: absolute;
+	top: 42dp;
+	width: 66dp;
+	height: 66dp;
+	decorator: image(command-cursor);
+}
+
+#command-cursor.down {
+	top: 72dp;
+}
+
+.command-frame {
+	display: block;
+	position: absolute;
+	top: 42dp;
+	width: 42dp;
+	height: 93dp;
+	opacity: 0.5;
+}
+
+.command-frame.frame-left, .command-frame.frame-right-odd, .command-frame.frame-right-even {
+	width: 33dp;
+}
+
+.command-frame.frame-left { decorator: image(frame-left); }
+.command-frame.frame-odd { decorator: image(frame-odd); }
+.command-frame.frame-even { decorator: image(frame-even); }
+.command-frame.frame-right-odd { decorator: image(frame-right-odd); }
+.command-frame.frame-right-even { decorator: image(frame-right-even); }
+
+#command-frame-0 { left: 51dp; }
+#command-frame-1 { left: 84dp; }
+#command-frame-2 { left: 126dp; }
+#command-frame-3 { left: 168dp; }
+#command-frame-4 { left: 210dp; }
+#command-frame-5 { left: 252dp; }
+#command-frame-6 { left: 294dp; }
+#command-frame-7 { left: 336dp; }
+#command-frame-8 { left: 378dp; }
+#command-frame-9 { left: 420dp; }
+#command-frame-10 { left: 462dp; }
+
 #command-name {
-	margin: 6dp 0 0 9dp;
+	position: absolute;
+	left: 60dp;
+	top: 144dp;
+	width: 600dp;
+	margin: 0;
 	font-size: 33dp;
 	color: #d0d0d0;
+}
+
+#fight.opening #command-cursor {
+	display: none;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -212,8 +408,13 @@
 	color: #d0d0d0;
 }
 
+/* The original names no enemy over its bar. */
+.enemy .fighter-name {
+	display: none;
+}
+
 .enemy .fighter-status {
-	margin-left: 9dp;
+	margin-left: 0;
 	font-size: 22dp;
 	color: #fff371;
 }
@@ -297,14 +498,49 @@
 	color: #d0d0d0;
 }
 
+/* The original shows no button hints in battle. */
 #prompts {
-	right: 30dp;
-	bottom: 18dp;
-	padding: 0;
+	display: none;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The battle's opening. The anger mark (btl.c: renderFleeBubble; BI_IN, palette 7): the red bubble, 24 pixels round
+   its centre over the enemy, with the angry face inside at two thirds of its size; it grows for 5 frames and then
+   pulses. The "BATTLE" banner (battle_hud.c: BTL_renderBattleStartText): its 8 x 12 pieces in one of three red
+   textures, each with a black shadow 2 pixels down and right and, while it flies in, a trail at half opacity on the
+   side it comes from; once all are in place they flash through palettes 8, 9 and 10. */
+
+.anger {
+	width: 72dp;
+	height: 72dp;
+	margin: -36dp 0 0 -36dp;
 	border-radius: 0;
-	font-size: 22dp;
-	color: #b2b2b2;
 	background-color: transparent;
+	decorator: image(anger-mark scale-none center center), image(anger-bubble);
+}
+
+.bp {
+	background-color: transparent;
+}
+
+.bp.texture-0 { decorator: image(banner-0-0); }
+.bp.texture-1 { decorator: image(banner-0-1); }
+.bp.texture-2 { decorator: image(banner-0-2); }
+#banner.flash-1 .bp.texture-0 { decorator: image(banner-1-0); }
+#banner.flash-1 .bp.texture-1 { decorator: image(banner-1-1); }
+#banner.flash-1 .bp.texture-2 { decorator: image(banner-1-2); }
+#banner.flash-2 .bp.texture-0 { decorator: image(banner-2-0); }
+#banner.flash-2 .bp.texture-1 { decorator: image(banner-2-1); }
+#banner.flash-2 .bp.texture-2 { decorator: image(banner-2-2); }
+
+.bt {
+	opacity: 0.5;
+	background-color: transparent;
+	decorator: image(banner-trail);
+}
+
+.bt.left {
+	decorator: image(banner-trail flip-horizontal);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

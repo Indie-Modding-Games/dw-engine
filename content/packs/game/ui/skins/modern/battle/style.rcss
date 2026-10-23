@@ -376,9 +376,72 @@
 	color: #f0a73a;
 }
 
+/* The battle's opening (btl.c: setFleeBubble; battle_hud.c: BTL_renderBattleStartText): a red mark over each enemy,
+   then the "BATTLE" banner, its pieces placed on the original's 320 x 240 screen, which stands in the middle of the
+   window at 3dp a pixel. The strip's frame, the cursor and the extra marks of the finisher's word are the original
+   look's. While the banner shows, the HUD is there under it without the hovered command's name. */
+#intro {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.anger {
+	position: absolute;
+	width: 48dp;
+	height: 48dp;
+	margin: -24dp 0 0 -24dp;
+	border-radius: 24dp;
+	background-color: #d03030;
+}
+
+#banner {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+.bp, .bs {
+	position: absolute;
+}
+
+.bp {
+	background-color: #c03838;
+}
+
+.bs {
+	background-color: #000000;
+}
+
+.bt {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	background-color: #c0383880;
+}
+
+/* While the anger mark shows, the fight's panels are there but unseen (logic.lua: draw_intro). */
+#fight.veiled, #fight.veiled .command, #fight.veiled .command-frame {
+	opacity: 0;
+}
+
+#fight.opening #command-name {
+	visibility: hidden;
+}
+
+.command-frame, #command-cursor, .segment.extra, #finisher-ready {
+	display: none;
+}
+
 /* Hidden wins over the display of the elements above. */
 #fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .fighter.hidden, #balance.hidden,
-#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden {
+#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden,
+#intro.hidden, .anger.hidden, .bp.hidden, .bs.hidden, .bt.hidden, .command-frame.hidden, #command-cursor.hidden {
 	display: none;
 }
 

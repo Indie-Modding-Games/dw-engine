@@ -64,6 +64,10 @@ struct CommandEntry {
   bool available = true;
   // The command the partner follows now.
   bool current = false;
+  // The icon the original draws for it (battle_main.c: BTL_setCommandIconUV): "command-<n>" by the
+  // command's number, "special-<n>" by a technique's special effect, or empty for the finisher,
+  // which has none.
+  std::string icon;
 
   friend bool operator==(const CommandEntry&, const CommandEntry&) = default;
 };

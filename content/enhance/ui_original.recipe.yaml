@@ -11,6 +11,7 @@ select:
     - texture/etcdat/system_w
     - texture/etcdat/fi_info
     - texture/etcdat/bi_in
+    - texture/etcdat/btlcomnd
     - texture/etcdat/feel_ef
     - texture/etcna/title2
 scale: 4

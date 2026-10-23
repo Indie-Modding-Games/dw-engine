@@ -9,14 +9,14 @@
 -- The field status shows the game time and the partner's state, which the game publishes as hud.*
 -- settings (apps/screens: field_hud_view.hpp): it bumps hud.revision once per change, and only then
 -- this script redraws, so a frame where nothing changed writes nothing. The labels come once, as
--- text keys. hud.shown is false while a menu or a battle stops the field: the panel loses its class
--- "shown" and each skin decides how it leaves. Every skin draws this same document and script and
--- differs only in its style sheets: a bar with the class "pips" fills in the original's 25 steps,
--- and the dial (#field-clock-dial) and the class "night" on #field-clock are there for a skin that
--- draws the original's clock. #field-partner-bubble hangs over the partner's head (hud.partner.*)
--- with the class of the need the original's bubble would show. How the partner feels about the map
--- (hud.partner.area) puts the class "area-liked" or "area-disliked" on #field-status, where a skin
--- can swap the happiness face as the original does.
+-- text keys. hud.shown is false while a menu or a battle stops the field: the panel and the menu's
+-- hint lose their class "shown" and each skin decides how they leave. Every skin draws this same
+-- document and script and differs only in its style sheets: a bar with the class "pips" fills in
+-- the original's 25 steps, and the dial (#field-clock-dial) and the class "night" on #field-clock
+-- are there for a skin that draws the original's clock. #field-partner-bubble hangs over the
+-- partner's head (hud.partner.*) with the class of the need the original's bubble would show. How
+-- the partner feels about the map (hud.partner.area) puts the class "area-liked" or "area-disliked"
+-- on #field-status, where a skin can swap the happiness face as the original does.
 
 local sizes = { small = true, medium = true, large = true }
 local minimap_modes = { auto = true, on = true, off = true }
@@ -283,6 +283,7 @@ end
 local function draw_field(document)
   local status = document:get("field-status")
   status:set_class("shown", ui.setting("hud.shown") == true)
+  document:get("menu-button"):set_class("shown", ui.setting("hud.shown") == true)
   draw_partner_area(status)
   draw_field_clock(document)
   for index = 0, field_meters - 1 do

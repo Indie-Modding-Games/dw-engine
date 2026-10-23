@@ -4,18 +4,30 @@
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/text_keys.hpp>
 #include <dwe/game/inventory/use.hpp>
+#include <dwe/game/story/story_ports.hpp>
 #include <dwe/screens/bag_view.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "bag_slots.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
+namespace {
+
+// The original's battle runs at 20 frames a second.
+constexpr double IntroFrameSeconds = 1.0 / 20.0;
+// battle_setup.c: BTL_handleBattleIntro: the banner's sounds, in slot 0.
+constexpr std::int64_t BannerSound = 0x10;
+constexpr std::int64_t BurstSound = 0x11;
+
+} // namespace
 
 core::Result<void> BattleScreen::start(session::BattleRequest request) {
   if (active()) {
@@ -27,6 +39,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
         enemies.empty() ? enemy.species : std::string{messages::ListSeparator} + enemy.species;
   }
   const std::string map = request.map;
+  std::vector<game::battle::Combatant> introEnemies = request.enemies;
   const session::BattleMusicFacts music = musicFactsOf(request);
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
@@ -39,14 +52,28 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
     sessionMusic->startBattle(music);
   }
   core::logInfo("{}", core::formatMessage(messages::BattleStarted, enemies, map));
-  desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
+  // btl.c: handleBattleStart marks each enemy with an anger bubble before the battle loads, and
+  // battle_setup.c: BTL_handleBattleIntro shows the "BATTLE" banner before the fight starts.
+  intro_.emplace(battlesStarted_++);
+  introEnemies_ = std::move(introEnemies);
+  angerAnchors_.assign(introEnemies_.size(), std::nullopt);
+  introSeconds_ = 0.0;
+  core::logDebug("[port:battle] handleBattleStart (btl.c:237): {} anger bubbles; "
+                 "BTL_handleBattleIntro (battle_setup.c:207) follows",
+                 introEnemies_.size());
+  desc_.ui->setSetting(BattlePhaseSetting, std::string{IntroPhase});
   publish();
+  publishIntro();
   desc_.ui->show(BattleDocument, true);
   return {};
 }
 
 void BattleScreen::tick(double seconds) {
   if (!battle_) {
+    return;
+  }
+  if (intro_) {
+    tickIntro(seconds);
     return;
   }
   battle_->advance(seconds);
@@ -56,7 +83,65 @@ void BattleScreen::tick(double seconds) {
   }
 }
 
+// The opening runs at the original's battle rate, a frame each 3 of the screen's
+// (BTL_battleTickFrame waits for VSync(3)), and the battle does not run meanwhile.
+void BattleScreen::tickIntro(double seconds) {
+  introSeconds_ += seconds;
+  while (intro_ && introSeconds_ >= IntroFrameSeconds) {
+    introSeconds_ -= IntroFrameSeconds;
+    const screens::IntroStep before = intro_->current();
+    intro_->step();
+    const screens::IntroStep after = intro_->current();
+    if (after == before) {
+      continue;
+    }
+    game::story::SoundPort* sound = desc_.session->sound();
+    if (after == screens::IntroStep::Banner) {
+      core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:226): the banner "
+                     "gathers; playSound(0, 0x10)");
+      if (sound != nullptr) {
+        sound->playSound(0, BannerSound);
+      }
+    } else if (after == screens::IntroStep::Burst) {
+      core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:321): the banner "
+                     "bursts; playSound(0, 0x11)");
+      if (sound != nullptr) {
+        sound->playSound(0, BurstSound);
+      }
+    } else if (after == screens::IntroStep::Done) {
+      core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:328): GAME_STATE 1, "
+                     "the fight starts");
+      intro_.reset();
+      desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
+      publish();
+    }
+  }
+  publishIntro();
+}
+
+void BattleScreen::placeIntro(const EnemyAnchor& anchor) {
+  if (!intro_ || intro_->current() != screens::IntroStep::Anger) {
+    return;
+  }
+  for (std::size_t index = 0; index < introEnemies_.size(); ++index) {
+    angerAnchors_.at(index) = anchor(introEnemies_[index], intro_->angerLift());
+  }
+  publishIntro();
+}
+
+void BattleScreen::publishIntro() const {
+  const screens::BattleIntroView view =
+      intro_ ? screens::battleIntroViewOf(*intro_, angerAnchors_) : screens::BattleIntroView{};
+  screens::publish(*desc_.ui, screens::settingsOf(view, introEnemies_.size()),
+                   screens::IntroRevisionSetting);
+}
+
 bool BattleScreen::handle(const ui::UiCommand& command) {
+  // Nothing is taken until the fight starts (BTL_handleBattleIntro reads no buttons).
+  if (intro_ && (command.name == BattleCommandName || command.name == BattleChargeCommand ||
+                 command.name == BattleBagOpenCommand || command.name == BattleThrowCommand)) {
+    return true;
+  }
   if (command.name == BattleCommandName) {
     const auto* number = std::get_if<double>(&command.value);
     if (battle_ && number != nullptr) {

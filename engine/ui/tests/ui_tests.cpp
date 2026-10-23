@@ -697,6 +697,8 @@ TEST_CASE("the HUD's menu button asks the game to open the menu and names the ke
   auto ui = createUi(content.mount());
   input::InputState input{input::defaultActionMap()};
   REQUIRE(ui->loadDocument("hud", idOf("ui/hud/document")));
+  // The button shows with the rest of the HUD (hud.shown).
+  ui->setSetting("hud.shown", true);
   ui->show("hud");
   ui->update();
   CHECK(ui->elementText("hud", "prompt-menu") == "Tab");

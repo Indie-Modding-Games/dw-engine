@@ -558,7 +558,7 @@ del disco; el resto de imágenes de la UI se siguen filtrando.
 | Menú de pausa | Un cuadro del original (borde cian, esquinas de SYSTEM_W, relleno #2D3840 a media opacidad) sobre el campo sin oscurecer | `ui.c: renderUIBoxBorder`, `game_menu.c: renderGameMenu` |
 | Menú del compañero | La ficha (cuadro opaco, recuadros hundidos, iconos de parámetros, barras de felicidad, disciplina y virus) y la bolsa (dos columnas de filas de 18 píxeles, el selector claro arriba y oscuro abajo, el cuadro de opciones, los de orden y de tirar) | `game_menu.c: renderDigimonStatsView`, `inventory.c`; capturas de la ficha y de la bolsa |
 | HUD del campo | El reloj de esfera (esfera, campanas, martillo, minutero y punto de la hora), las barras de felicidad y disciplina a cuadritos (`pips`) con sus iconos, la burbuja de la necesidad sobre el compañero y el nombre del mapa | `clock.c`, `partner_impl.c`, `bubble.c`, `map.c`; capturas del campo |
-| Combate | Las barras de HP y MP del compañero (BI_IN), los segmentos del remate, la tira de órdenes, las barras de los enemigos y los cuadros del final | `command_menu.c`; capturas del combate y de sus cuadros finales |
+| Combate | La marca de enfado y el rótulo «BATTLE» de la apertura, las barras de HP y MP del compañero (BI_IN), las letras de «FINISH!!» y el aviso «PUSH» del remate, la tira de iconos de órdenes (BTLCOMND), las barras de los enemigos y los cuadros del final | `btl.c`, `battle_hud.c`, `command_menu.c`; capturas del combate y de sus cuadros finales |
 | Minimapa | Solo con el ajuste `minimap` en `on`: un cuadro del original. Con `auto` no se ve (el original no tiene) | Diferencia opcional |
 
 **Captura frente a descompilación.** En las capturas de referencia el campo sale 6 líneas más abajo que las
@@ -582,11 +582,15 @@ las posiciones dentro de un elemento van en %.
 | El selector mide 12 píxeles de alto en vez de 14 | Con 14 se solapa con las filas vecinas y el teclado no puede pasar de una a otra |
 | El menú de pausa es más ancho (184 píxeles) y lista opciones con texto | Tiene más entradas que el del original, con valores en el idioma del jugador |
 | El menú del compañero tiene cuatro pestañas; las barras de HP y MP de su ficha miden 82 píxeles en vez de 104 | El menú tiene más páginas; los valores «800 / 800» necesitan sitio |
-| Las órdenes del combate son texto, no los iconos de BTLCOMND | Los ajustes del combate nombran el texto de una orden, no su icono |
+| El golpe final se elige en el recuadro de «PUSH», que es su entrada de la lista; en la tira no tiene icono, como el original | El original lo lanza con un botón propio; aquí es una orden más para el teclado, el mando y el ratón |
+| La bolsa del combate tiene una entrada «Objetos» tras el último icono de la tira; también se abre con cancelar, como el botón del original | El original no dibuja nada para la bolsa; la entrada sirve al ratón |
+| La marca de enfado no se inclina hacia su enemigo, no cambia de tamaño con la distancia y su cara no es semitransparente | El contrato publica dónde está la marca, no la cámara del combate |
+| No salen las marcas de huida de los demás Digimon de la pantalla ni el domador vuelve andando a su sitio antes del rótulo; el rótulo espera 60 frames en su lugar | El campo está quieto durante el combate; esos movimientos llegarán con la escena del combate |
+| Las dos últimas marcas de «FINISH!!» salen en cuanto el indicador se llena, no 3 y 5 frames después | El contrato publica si el indicador está lleno, no cuánto lleva lleno |
 | Las barras de los enemigos van en columna arriba en el centro | El combate no publica dónde está cada enemigo en la pantalla |
 | Las filas de la bolsa dejan el hueco del icono vacío | Los ajustes de los objetos no dicen qué icono tiene cada uno |
 | Las ganancias del final dicen «+n» en vez de la flecha azul; «Continuar» cierra el tercer cuadro | El original avanza con un botón sin nada en pantalla |
-| Los avisos de botones y el botón del menú del HUD | El juego también se usa con teclado y ratón |
+| El botón del menú del HUD, mientras el campo corre (en combates, escenas y menús se esconde, como los demás paneles del HUD); los avisos de botones de los menús | El juego también se usa con teclado y ratón; el combate no los lleva, como el original |
 | El parpadeo de la cara de la felicidad empieza cuando el compañero entra en una zona que le gusta o le disgusta (o cuando cambia la cara), no al compás del contador de tiempo de juego del original (`PLAYTIME_FRAMES % 10`): el ritmo es el mismo, 5 frames y 5 frames, pero la fase puede ir hasta 0,25 s desplazada | La animación del aspecto (RCSS) empieza al ponerse la clase; el contrato no publica el contador de frames, y publicarlo cada frame obligaría a redibujar el estado del campo 20 veces por segundo |
 | La burbuja parpadea con su propio reloj de 3 s, no con el de la burbuja del original, y sin su vaivén de 12 unidades; solo se dibuja el primer cuadro de la animación de cada necesidad y la «Z» baja del sueño | El contrato no publica los frames de la burbuja; el vaivén y los cuadros son animación opcional |
 

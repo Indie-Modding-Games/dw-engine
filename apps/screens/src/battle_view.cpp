@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <format>
 #include <string>
 #include <utility>
 
@@ -30,6 +32,9 @@ constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
 constexpr std::string_view CurrentField = "current";
+constexpr std::string_view IconField = "icon";
+// BTL_COMMAND_ICON_UVS and BTL_SPECIAL_ICON_UVS: seven icons in each row of BTLCOMND.
+constexpr std::int32_t IconsPerRow = 7;
 constexpr std::string_view KeyField = "key";
 constexpr std::string_view AmountField = "amount";
 constexpr std::string_view SubjectField = "subject";
@@ -79,6 +84,25 @@ std::string labelOf(battle::Command command, const battle::Fighter& partner,
   return move ? names.move(*move) : std::string{};
 }
 
+// battle_main.c: BTL_setCommandIconUV: a command's own icon, or for a technique the icon of its
+// move's special effect.
+std::string iconOf(battle::Command command, const battle::Fighter& partner,
+                   const battle::MoveCatalog& moves) {
+  const auto number = static_cast<std::int32_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  if (command == battle::Command::Finisher || command == battle::Command::None) {
+    return {};
+  }
+  if (number < FirstTechnique) {
+    return std::format("command-{}", number);
+  }
+  const auto& move = partner.moves.at(static_cast<std::size_t>(number - FirstTechnique));
+  if (!move) {
+    return {};
+  }
+  return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
+}
+
 bool gaugeFull(const battle::Fighter& fighter) {
   return fighter.hasFinisher() && fighter.finisherGoal > 0 &&
          fighter.finisherProgress >= fighter.finisherGoal;
@@ -118,6 +142,7 @@ void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry&
   add(LabelField, entry.labelKey);
   add(AvailableField, entry.available);
   add(CurrentField, entry.current);
+  add(IconField, entry.icon);
 }
 
 std::string countName(std::string_view list) {
@@ -137,7 +162,8 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
     view.menu.push_back({.command = command,
                          .labelKey = labelOf(command, partner, names),
                          .available = command != battle::Command::Finisher || gaugeFull(partner),
-                         .current = command == state.commands.current});
+                         .current = command == state.commands.current,
+                         .icon = iconOf(command, partner, battle.moves())});
   }
   const bool partnerCharging = state.finisher.fighter == battle::PartnerId;
   view.finisher = {.progress = partner.finisherProgress,

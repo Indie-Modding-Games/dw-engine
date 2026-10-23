@@ -5,6 +5,7 @@ dwe_add_module(screens
     LAYER apps
     SOURCES
         src/bag_view.cpp
+        src/battle_intro.cpp
         src/battle_view.cpp
         src/field_hud_view.cpp
         src/name_keys.cpp

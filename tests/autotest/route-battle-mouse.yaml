@@ -12,8 +12,9 @@ steps:
   # The new game's bag is empty, as the original's: the debug give_item puts a Recovery in its first slot.
   - script: give_item("sm_recovery 2")
   - script: battle("")
+  # The battle opens with the enemy's anger mark and the "BATTLE" banner; the commands answer once it has gone.
   - wait: {shown: battle, seconds: 1}
-  - expect_setting: {battle.phase: fight}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle-start
   - menu_select: command-2
   - wait: {seconds: 4}

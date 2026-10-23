@@ -21,8 +21,9 @@ steps:
   - script: give_item("various 1")
   - script: give_item("omnipotent 1")
   - script: battle("")
+  # The battle opens with the enemy's anger mark and the "BATTLE" banner; the commands answer once it has gone.
   - wait: {shown: battle, seconds: 1}
-  - expect_setting: {battle.phase: fight}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle-start
   - menu_select: command-2
   - wait: {seconds: 4}

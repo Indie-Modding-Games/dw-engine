@@ -27,8 +27,17 @@ steps:
   - walk_to: {trigger: 110}
   - wait: {map: mayo00, seconds: 2}
   - screenshot: mayo00-event
-  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
-  - wait: {shown: battle, seconds: 1, timeout: 60}
+  # Four lines of talk, then the fight: the last press starts it, so no wait follows it.
+  - repeat: {times: 3, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - tap: {key: return}
+  # The battle's opening: the anger mark over the Agumon, then the "BATTLE" banner, then the HUD.
+  - wait: {shown: battle, setting: {battle.intro.step: anger}, timeout: 60}
+  - screenshot: battle-anger
+  # The banner flies in for a second before it gathers into the word.
+  - wait: {setting: {battle.intro.step: banner}, timeout: 30}
+  - wait: {seconds: 1}
+  - screenshot: battle-banner
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle-start
   - wait: {setting: {battle.phase: end}, timeout: 300}
   - screenshot: battle-end

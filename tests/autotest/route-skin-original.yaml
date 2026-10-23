@@ -42,6 +42,7 @@ steps:
   - wait: {hidden: partner_menu, timeout: 5}
   - script: battle("")
   - wait: {shown: battle, seconds: 1}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
   - screenshot: battle
   # An order first, as route-battle-keyboard gives, then Run (the new game's partner's second command) ends the
   # battle.

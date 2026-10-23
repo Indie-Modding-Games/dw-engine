@@ -1,8 +1,11 @@
 #include "play_session.hpp"
 
+#include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
+#include <dwe/game/battle/combatant.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/scene/components.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
@@ -12,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <string_view>
 #include <utility>
 #include <variant>
@@ -48,6 +52,33 @@ std::optional<screens::WindowFraction> partnerBubbleOf(const FieldScene& scene,
   glm::vec3 bubble = scene.field().partner().position;
   bubble.y += height + BubbleRise;
   const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(bubble);
+  if (!fraction) {
+    return std::nullopt;
+  }
+  return screens::WindowFraction{.x = fraction->x, .y = fraction->y};
+}
+
+// Where an enemy's anger mark hangs in the window (btl.c: renderFleeBubble): `lift` over the top of
+// its species' height, over the map's NPC it is (the one of its species that the battle placed
+// where it stood). Nothing off the map's camera or without that NPC.
+screens::AngerAnchor angerAnchorOf(const FieldScene& fieldScene,
+                                   const assets::DigimonTable* species,
+                                   const game::battle::Combatant& enemy, float lift) {
+  const auto found = std::ranges::find_if(fieldScene.map().npcs, [&](const assets::MapNpc& npc) {
+    return npc.digimon == enemy.species && npc.position.x == enemy.position.x &&
+           npc.position.z == enemy.position.z;
+  });
+  if (found == fieldScene.map().npcs.end()) {
+    return std::nullopt;
+  }
+  glm::vec3 position = assets::toWorldPosition(found->position);
+  if (const std::optional<scene::Entity> entity =
+          fieldScene.field().npcs().entityOf(found->scriptId)) {
+    position = fieldScene.world().registry().get<scene::Transform>(*entity).position;
+  }
+  const assets::DigimonRow* row = species != nullptr ? species->find(enemy.species) : nullptr;
+  position.y += (row != nullptr ? static_cast<float>(row->height) : 0.0F) + lift;
+  const std::optional<glm::vec2> fraction = fieldScene.worldToWindowFraction(position);
   if (!fraction) {
     return std::nullopt;
   }
@@ -569,6 +600,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
                    field.heldForCare()
                        ? std::nullopt
                        : partnerBubbleOf(*scene_, species, session.partnerView().species));
+  battleScreen_.placeIntro([&](const game::battle::Combatant& enemy, float lift) {
+    return angerAnchorOf(*scene_, species, enemy, lift);
+  });
   if (storyTextbox_) {
     storyTextbox_->update(*scene_, species);
   }
