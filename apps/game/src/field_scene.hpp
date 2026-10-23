@@ -25,6 +25,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::app {
 
@@ -115,6 +116,8 @@ public:
   }
 
   [[nodiscard]] const game::field::Field& field() const { return *field_; }
+  // The field's NPCs, for the story's NPC orders.
+  [[nodiscard]] game::field::FieldNpcs& npcs() { return field_->npcs(); }
   // Free exploration (game::field::Field::setExplore) and the answer to its choice
   // (Field::chooseDestination).
   void setExplore(bool explore) { field_->setExplore(explore); }
@@ -170,6 +173,10 @@ private:
   void submit(const Actor& actor, float alpha);
   void followClock();
   void applyLighting();
+  // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):
+  // loaded when the story puts one on the map, dropped when it goes.
+  void followNpcs();
+  void drawNpcs(double animationSeconds, float alpha);
 
   const assets::VirtualFileSystem* files_;
   std::unique_ptr<render::MapRenderer> mapRenderer_;
@@ -201,6 +208,9 @@ private:
   std::unique_ptr<Actor> partnerActor_;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
+  std::vector<std::unique_ptr<Actor>> npcActors_;
+  // The NPCs whose model could not be loaded, logged once each.
+  std::vector<scene::Entity> npcsNotShown_;
 };
 
 } // namespace dwe::app

@@ -12,6 +12,7 @@ dwe_add_app(game
         src/device_names.cpp
         src/field_hud.cpp
         src/field_scene.cpp
+        src/field_scene_npcs.cpp
         src/frame_stats.cpp
         src/game.cpp
         src/game_audio.cpp

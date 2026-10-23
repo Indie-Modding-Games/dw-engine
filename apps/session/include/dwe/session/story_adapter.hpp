@@ -11,12 +11,14 @@
 #include <dwe/session/session_system.hpp>
 #include <dwe/session/story_dialogue.hpp>
 #include <dwe/session/story_lua.hpp>
+#include <dwe/session/story_npcs.hpp>
 
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -89,6 +91,13 @@ public:
   game::story::RequestOutcome request(game::story::SectionRef section,
                                       game::story::StartTiming timing);
 
+  // The field's NPCs the story's NPC orders change (story_npcs.hpp); they must outlive the
+  // attachment, and nullptr detaches.
+  void attachNpcs(game::field::FieldNpcs* npcs);
+  // Asks for the sections of the NPCs the player touched or talked to in the last field tick, as
+  // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
+  void runNpcContacts(std::span<const game::field::NpcContact> contacts);
+
   // The story as a new game with this first partner leaves it: the triggers data/new_game_story
   // sets, the ones its opening sets when field/warps starts after it, and the partner's raised
   // trigger. A trigger the document does not know at the start (its paths disagree, or game code
@@ -121,6 +130,7 @@ private:
 
   core::Result<void> wire(const StorySectionRules& story,
                           const game::story::DialogueRules& dialogue);
+  core::Result<void> wireNpcs();
   void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
   core::Result<void> startRunner(const StorySectionRules& story);
 
@@ -138,6 +148,8 @@ private:
   std::unique_ptr<StatePort> statePort_;
   std::unique_ptr<RandomPort> randomPort_;
   std::unique_ptr<game::story::StoryOrders> orders_;
+  std::unique_ptr<StoryNpcs> npcs_;
+  std::unique_ptr<game::story::NpcOrders> npcOrders_;
   std::unique_ptr<StoryLuaHost> host_;
   // Before the runner, which points to it.
   std::unique_ptr<StoryDialogue> dialogue_;

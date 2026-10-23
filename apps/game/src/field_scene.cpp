@@ -341,6 +341,7 @@ void FieldScene::finishTick() {
       core::logError("field: {}", entered.error().message);
     }
   }
+  followNpcs();
 }
 
 void FieldScene::followClock() {
@@ -412,6 +413,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   models_->clear();
   submit(*playerActor_, alpha);
   submit(*partnerActor_, alpha);
+  drawNpcs(animationSeconds, alpha);
   const scene::Pose player =
       scene::interpolate(world_.registry().get<scene::Transform>(playerActor_->entity), alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:

@@ -110,6 +110,11 @@ public:
   // Asks for a section to run.
   RequestOutcome request(SectionRef section, StartTiming timing,
                          SectionSource source = SectionSource::Plain);
+  // Asks for a section of the map's script (set_script), as the field does for an NPC
+  // (tamer.c: checkMapInteraction, callScriptSection(CURRENT_SCRIPT_ID, ...)). Dropped while the
+  // map has no script.
+  RequestOutcome requestMapSection(std::uint16_t section, StartTiming timing,
+                                   SectionSource source = SectionSource::Plain);
   // One engine tick: runs a frame of the original every ticksPerFrame ticks.
   void tick();
 

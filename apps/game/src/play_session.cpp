@@ -6,6 +6,7 @@
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_facts.hpp>
 #include <dwe/session/game_session.hpp>
+#include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/minimap.hpp>
 
 #include <algorithm>
@@ -208,6 +209,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
   }
   session.attachField(scene_->field());
+  game_.systems.story->attachNpcs(&scene_->npcs());
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
@@ -227,6 +229,7 @@ PlaySession::~PlaySession() {
   context_.device->waitIdle();
   context_.debugUi->detachTuning();
   game_.session->detachField();
+  game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument}) {
@@ -263,6 +266,7 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
       fieldIntent.confirm = false;
     }
     scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
+    game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     game_.session->tick(TickSeconds);
     scene_->finishTick();
   }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/core/error.hpp>
+#include <dwe/game/story/npc_orders.hpp>
 #include <dwe/game/story/section_host.hpp>
 #include <dwe/game/story/story_orders.hpp>
 #include <dwe/game/story/story_ports.hpp>
@@ -66,6 +67,9 @@ public:
   // outlive every script call of the VM.
   core::Result<void> publishApi(game::story::StoryStatePort& state,
                                 game::story::StoryOrders& orders);
+  // The NPC orders (story_npcs.hpp: story_api::NpcPublished), once per VM; the orders must outlive
+  // every script call of the VM.
+  core::Result<void> publishNpcApi(game::story::NpcOrders& orders);
 
   // Once per VM, after publishApi: the textbox orders (story_dialogue.cpp), which point to the
   // dialogue; it must outlive every script call of the VM.

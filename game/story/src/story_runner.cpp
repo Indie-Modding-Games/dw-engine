@@ -52,6 +52,17 @@ RequestOutcome StoryRunner::request(SectionRef section, StartTiming timing, Sect
   return RequestOutcome::Accepted;
 }
 
+RequestOutcome StoryRunner::requestMapSection(std::uint16_t section, StartTiming timing,
+                                              SectionSource source) {
+  if (!mapScript_) {
+    core::logDebug("[port:story] callScriptSection (script_interp.c:2244): section {} of the map's "
+                   "script, but no set_script ran on this map; dropped",
+                   section);
+    return RequestOutcome::Dropped;
+  }
+  return request({.script = *mapScript_, .section = section}, timing, source);
+}
+
 void StoryRunner::tick() {
   ++ticksIntoFrame_;
   if (ticksIntoFrame_ < ticksPerFrame_) {

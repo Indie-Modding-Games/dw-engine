@@ -345,6 +345,9 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   if (auto published = host_->publishDialogue(dialogue_->dialogue()); !published) {
     return published;
   }
+  if (auto npcs = wireNpcs(); !npcs) {
+    return npcs;
+  }
   if (auto checked = host_->checkModules(); !checked) {
     return checked;
   }
