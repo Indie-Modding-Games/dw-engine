@@ -35,6 +35,7 @@ dwe_add_module(assets
         src/digimon_table.cpp
         src/raise_table.cpp
         src/item_table.cpp
+        src/card_table.cpp
         src/item_effect_table.cpp
         src/new_game_stats.cpp
         src/new_game_story.cpp

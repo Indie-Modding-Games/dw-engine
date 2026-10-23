@@ -8,6 +8,7 @@ dwe_add_module(inventory
         src/use.cpp
         src/shop.cpp
         src/inventory_yaml.cpp
+        src/cards.cpp
     DEPS core assets ruleset)
 
 # The tests read the game pack from the source tree.
