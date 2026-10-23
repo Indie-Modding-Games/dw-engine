@@ -35,6 +35,7 @@
 #include "sleep_screen.hpp"
 #include "story_field_link.hpp"
 #include "story_textbox.hpp"
+#include "story_scene_glue.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -144,6 +145,7 @@ private:
   std::optional<assets::DigimonTable> species_;
   FreeExploration freeExploration_;
   BattleScreen battleScreen_;
+  StorySceneGlue storyScenes_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

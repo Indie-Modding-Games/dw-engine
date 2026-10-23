@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: story_scenes",
+  "description": "rules/<id>/story_scenes.yaml: the story's battles, partner scenes and routines (apps/session: StoryScenesRules).",
+  "type": "object",
+  "required": [
+    "battle",
+    "partner",
+    "routines",
+    "recruits",
+    "new_game",
+    "previous_screen"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "battle": {
+      "description": "start_battle (script_interp.c: scriptInstruction64to7E).",
+      "type": "object",
+      "required": [
+        "counter_max",
+        "defeat_section",
+        "enemy_count",
+        "first_enemy_variable",
+        "fixed_fight_trigger",
+        "no_enemy",
+        "outcome_variable",
+        "predefined_variable",
+        "show_name_never",
+        "show_name_variable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "outcome_variable": {
+          "description": "The variable the outcome goes to: 255 (-1) defeat, 0 fled, 1 victory.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "predefined_variable": {
+          "description": "While set, the enemies are those of the enemy variables.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_enemy_variable": {
+          "description": "The first of the variables naming the enemies by script id.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "enemy_count": {
+          "description": "How many enemy variables there are.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "no_enemy": {
+          "description": "The enemy variable's value for none.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "defeat_section": {
+          "description": "The section of the map's script a defeat goes on at.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "counter_max": {
+          "description": "The highest value of the battles-started and battles-fled counters.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "fixed_fight_trigger": {
+          "description": "While set, the battle cannot be fled and the partner does not walk back.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "show_name_variable": {
+          "description": "The variable that says whether the next map shows its name.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "show_name_never": {
+          "description": "Its value for never, set after a flight.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "partner": {
+      "description": "call_partner_routine (partner.c: callDigimonRoutine).",
+      "type": "object",
+      "required": [
+        "target_variable",
+        "virus_backup_variable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "virus_backup_variable": {
+          "description": "The variable with the form before the virus (routine 2).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "target_variable": {
+          "description": "The variable with the species routine 10 evolves into.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "routines": {
+      "description": "call_routine's operands (script_interp.c).",
+      "type": "object",
+      "required": [
+        "buying_cards_trigger",
+        "no_item",
+        "operand_variable",
+        "remove_all",
+        "remove_one",
+        "selling_trigger",
+        "tally_high_variable",
+        "tally_low_variable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operand_variable": {
+          "description": "The variable most routines read their operand from.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "tally_high_variable": {
+          "description": "The shop tally's high byte (routines 31 and 56).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "tally_low_variable": {
+          "description": "The shop tally's low byte.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "no_item": {
+          "description": "The operand of routines 12 and 13 that names no item.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "remove_one": {
+          "description": "How many of the item routine 12 removes.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "remove_all": {
+          "description": "How many of the item routine 13 removes.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "selling_trigger": {
+          "description": "While set, routine 8 opens the recycle shop and routine 14 buys cards.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "buying_cards_trigger": {
+          "description": "While set, routine 14 sells cards one by one.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "recruits": {
+      "description": "The recruits: trigger first_trigger + species, for count species.",
+      "type": "object",
+      "required": [
+        "count",
+        "first_trigger"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "first_trigger": {
+          "description": "The first recruit trigger.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "count": {
+          "description": "How many species can be recruited.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "new_game": {
+      "description": "How a new game's story starts (main.c: main, map.c: initializeMap).",
+      "type": "object",
+      "required": [
+        "chain",
+        "exit",
+        "map"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "chain": {
+          "description": "original: clear state and the first map's map-head chain; seeded: data/new_game_story's state without the opening.",
+          "enum": [
+            "original",
+            "seeded"
+          ]
+        },
+        "map": {
+          "description": "The first screen.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "exit": {
+          "description": "The first screen's exit.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "previous_screen": {
+      "description": "map.c: changeMap's previous-screen cases.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "to",
+          "previous"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "The screen left; any when missing.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "to": {
+            "description": "The screen entered.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "previous": {
+            "description": "The previous screen it gets instead.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "previous_exit": {
+            "description": "The previous exit it gets; unchanged when missing.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

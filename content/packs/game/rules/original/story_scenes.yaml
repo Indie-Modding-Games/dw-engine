@@ -1,0 +1,58 @@
+# Las batallas, escenas y rutinas de la historia (apps/session: StoryScenes; script_interp.c:
+# scriptInstruction64to7E, partner.c: callDigimonRoutine, map.c: changeMap).
+battle:
+  # start_battle deja el resultado en la variable 255: 255 (-1) derrota, 0 huida, 1 victoria.
+  outcome_variable: 255
+  # Con la variable 250 puesta, los enemigos son los de las variables 251 a 253 (255: ninguno).
+  predefined_variable: 250
+  first_enemy_variable: 251
+  enemy_count: 3
+  no_enemy: 255
+  # Una derrota sigue en la sección 0x4DE del script del mapa (MAPHEAD).
+  defeat_section: 1246
+  # Los contadores de batallas empezadas y huidas se quedan en 9999.
+  counter_max: 9999
+  # Con el trigger 1 puesto la pelea es fija: no se huye y el compañero no vuelve andando.
+  fixed_fight_trigger: 1
+  # Tras huir, el nombre del mapa no se enseña (variable 6 = 2).
+  show_name_variable: 6
+  show_name_never: 2
+partner:
+  # La rutina 2 vuelve a la forma de antes del virus (variable 5); la 10 evoluciona a la de la 254.
+  virus_backup_variable: 5
+  target_variable: 254
+routines:
+  # La mayoría de rutinas leen su operando de la variable 254.
+  operand_variable: 254
+  # La cuenta de la tienda (rutinas 30, 31 y 56) entra y sale por las variables 243 (alto) y 244.
+  tally_high_variable: 243
+  tally_low_variable: 244
+  # Las rutinas 12 y 13 quitan 1 o 99 del objeto de la 254, salvo 255 (ninguno).
+  no_item: 255
+  remove_one: 1
+  remove_all: 99
+  # Con el trigger 3 la tienda es la de reciclaje y la de cartas compra; con el 4 vende cartas.
+  selling_trigger: 3
+  buying_cards_trigger: 4
+recruits:
+  # Un reclutado es el trigger 200 + su número, para 63 especies; el motor guarda al llegar uno.
+  first_trigger: 200
+  count: 63
+new_game:
+  # seeded: el estado de data/new_game_story sin la apertura, hasta que la app ejecute los scripts
+  # del mapa (S3b). original: estado limpio y la cadena del mapa 0xCC (main.c: main).
+  chain: seeded
+  map: 204
+  exit: 9
+# Casos de map.c: changeMap: al entrar en `to` desde `from`, la pantalla anterior es otra.
+previous_screen:
+  - {from: 207, to: 38, previous: 88, previous_exit: 2}
+  - {from: 207, to: 70, previous: 69, previous_exit: 2}
+  - {from: 207, to: 79, previous: 17, previous_exit: 1}
+  - {from: 207, to: 93, previous: 90, previous_exit: 0}
+  - {from: 207, to: 119, previous: 118, previous_exit: 1}
+  - {from: 207, to: 105, previous: 106, previous_exit: 0}
+  - {from: 43, to: 42, previous: 41, previous_exit: 1}
+  - {from: 6, to: 105, previous: 106}
+  - {from: 142, to: 135, previous: 132, previous_exit: 1}
+  - {from: 5, to: 12, previous: 13, previous_exit: 1}

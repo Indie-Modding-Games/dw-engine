@@ -334,6 +334,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {
     startBattle(battleScreen_, species, *scene_, *npcs);
   }
+  if (game_.systems.scenes != nullptr) {
+    storyScenes_.update(*game_.systems.scenes, battleScreen_, species, *scene_);
+  }
   guardFactsChanged = commands.care.apply(session) || guardFactsChanged;
   if (std::exchange(commands.saveMachine, false)) {
     saveMachine_.open();

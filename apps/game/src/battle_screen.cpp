@@ -156,6 +156,7 @@ void BattleScreen::finish() {
     return;
   }
   const game::battle::BattleResult& result = *finished;
+  outcome_ = result.outcome;
   core::logInfo("{}", core::formatMessage(messages::BattleFinished,
                                           game::battle::outcomeTextKey(result.outcome)));
   auto aftermath = desc_.battle->finish(*desc_.session, result);
@@ -169,6 +170,13 @@ void BattleScreen::finish() {
                    screens::BattleRevisionSetting);
   desc_.ui->setSetting(BattlePhaseSetting, std::string{EndPhase});
   ending_ = true;
+}
+
+std::optional<game::battle::Outcome> BattleScreen::takeOutcome() {
+  if (active()) {
+    return std::nullopt;
+  }
+  return std::exchange(outcome_, std::nullopt);
 }
 
 void BattleScreen::close() {

@@ -50,6 +50,8 @@ public:
 
   // Whether the battle or its end box is on screen: the field and the game clock wait meanwhile.
   [[nodiscard]] bool active() const { return battle_.has_value() || ending_; }
+  // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
+  [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
 
   // One logic tick of the battle and the view of it.
   void tick(double seconds);
@@ -68,6 +70,7 @@ private:
   BattleScreenDesc desc_;
   std::optional<game::battle::Battle> battle_;
   bool ending_ = false;
+  std::optional<game::battle::Outcome> outcome_;
 };
 
 } // namespace dwe::app

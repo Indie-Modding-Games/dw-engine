@@ -32,6 +32,7 @@ dwe_add_app(game
         src/partner_menu.cpp
         src/partner_tab.cpp
         src/play_session.cpp
+        src/story_scene_glue.cpp
         src/save_command.cpp
         src/save_flow.cpp
         src/saves.cpp
