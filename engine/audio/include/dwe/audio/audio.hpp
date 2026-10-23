@@ -1,7 +1,9 @@
 #pragma once
 
+#include <dwe/assets/music.hpp>
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/output.hpp>
+#include <dwe/audio/sound_font.hpp>
 #include <dwe/audio/voice.hpp>
 #include <dwe/core/error.hpp>
 
@@ -15,6 +17,16 @@
 #include <vector>
 
 namespace dwe::audio {
+
+// A song to play on the Music bus.
+struct MusicRequest {
+  std::shared_ptr<SoundFont> font;
+  std::shared_ptr<const assets::Song> song;
+  // Whether it loops or stops at its end (sound.c: seqPlay).
+  bool loops = true;
+  // From 0 to 1 (values outside are clamped), before the volumes of the bus.
+  float gain = 1.0F;
+};
 
 // The game thread's side of the audio: it asks for voices and volumes, and the mixer applies them
 // on the audio thread. Orders take effect together at the next update, in the order they were
@@ -38,6 +50,11 @@ public:
   core::Result<std::vector<VoiceId>> playAll(std::span<const PlayRequest> requests);
   // Fades a voice out and releases it. A voice that already ended is ignored.
   void stop(VoiceId voice);
+  // Replaces the music with a song from its start, a hard cut as in the original (sound.c:
+  // playMusic). Fails when the font or the song is missing or this tick's orders are full.
+  core::Result<void> playMusic(const MusicRequest& request);
+  // Cuts the music (sound.c: stopBGM).
+  void stopMusic();
   // Sets a volume, from 0 to 1 (values outside are clamped); the mixer ramps to it.
   void setVolume(VolumeControl control, float volume);
   [[nodiscard]] float volume(VolumeControl control) const;
@@ -66,6 +83,15 @@ private:
   [[nodiscard]] std::uint32_t takeSlot();
   void collectEndedVoices();
   void logGuards();
+  // Lets go of the music the mixer no longer plays.
+  void releaseTakenMusic();
+
+  // A song handed to the mixer, held until a later music order is taken.
+  struct HeldMusic {
+    std::uint64_t serial = 0;
+    std::shared_ptr<SoundFont> font;
+    std::shared_ptr<const assets::Song> song;
+  };
 
   std::unique_ptr<Shared> shared_;
   // Declared after shared_, so it stops pulling from the mixer before the mixer goes.
@@ -74,6 +100,8 @@ private:
   std::uint64_t nextStartOrder_ = 0;
   // Holds each playing clip until the mixer reports its voice ended: the audio thread never frees.
   std::unordered_map<std::uint64_t, std::shared_ptr<const Clip>> playingClips_;
+  std::vector<HeldMusic> heldMusic_;
+  std::uint64_t nextMusicSerial_ = 0;
   std::array<float, VolumeControlCount> volumes_{1.0F, 1.0F, 1.0F};
   std::size_t droppedOrders_ = 0;
   std::size_t stolenVoices_ = 0;

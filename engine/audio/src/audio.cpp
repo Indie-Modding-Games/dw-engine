@@ -3,6 +3,7 @@
 #include <dwe/core/message.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <iterator>
@@ -23,7 +24,8 @@ struct Audio::Shared {
   OrderQueue orders;
   EndQueue ends;
   VoicePositions positions{};
-  Mixer mixer{orders, ends, positions};
+  std::atomic<std::uint64_t> musicTaken{0};
+  Mixer mixer{orders, ends, positions, musicTaken};
 };
 
 namespace {
@@ -125,6 +127,29 @@ void Audio::stop(VoiceId voice) {
   }
 }
 
+core::Result<void> Audio::playMusic(const MusicRequest& request) {
+  if (!request.font || !request.song) {
+    return core::fail(std::string{messages::MusicNoSong});
+  }
+  const std::uint64_t serial = ++nextMusicSerial_;
+  if (!shared_->orders.stage(MusicOrder{.serial = serial,
+                                        .synth = request.font->synth(),
+                                        .song = request.song.get(),
+                                        .loops = request.loops,
+                                        .gain = clampedVolume(request.gain)})) {
+    ++droppedOrders_;
+    return core::fail(core::formatMessage(messages::MusicOrdersFull, CommandQueueCapacity));
+  }
+  heldMusic_.push_back({.serial = serial, .font = request.font, .song = request.song});
+  return {};
+}
+
+void Audio::stopMusic() {
+  if (!shared_->orders.stage(MusicStopOrder{.serial = ++nextMusicSerial_})) {
+    ++droppedOrders_;
+  }
+}
+
 void Audio::setVolume(VolumeControl control, float volume) {
   const float clamped = clampedVolume(volume);
   volumes_[std::to_underlying(control)] = clamped;
@@ -159,6 +184,7 @@ std::size_t Audio::activeVoiceCount() const {
 
 void Audio::update(double seconds) {
   collectEndedVoices();
+  releaseTakenMusic();
   shared_->orders.publish();
   logGuards();
   output_->advance(seconds);
@@ -182,6 +208,12 @@ void Audio::collectEndedVoices() {
       slots_[ended->voice.slot].active = false;
     }
   }
+}
+
+// A font or a song is only freed here, on the game thread, once the mixer has moved past it.
+void Audio::releaseTakenMusic() {
+  const std::uint64_t taken = shared_->musicTaken.load(std::memory_order_acquire);
+  std::erase_if(heldMusic_, [taken](const HeldMusic& held) { return held.serial < taken; });
 }
 
 // Once per frame, so a runaway script fills the log with one line a frame, not one per sound.

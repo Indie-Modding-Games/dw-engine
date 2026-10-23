@@ -26,6 +26,7 @@ dwe_add_module(assets
         src/ogg.cpp
         src/sound.cpp
         src/sound_bank.cpp
+        src/music.cpp
         src/texture.cpp
         src/yaml_reader.cpp
         src/map_document.cpp

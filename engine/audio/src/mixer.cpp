@@ -27,8 +27,9 @@ constexpr std::size_t busVolume(Bus bus) {
 
 } // namespace
 
-Mixer::Mixer(OrderQueue& orders, EndQueue& ends, VoicePositions& positions)
-    : orders_{orders}, ends_{ends}, positions_{positions} {}
+Mixer::Mixer(OrderQueue& orders, EndQueue& ends, VoicePositions& positions,
+             std::atomic<std::uint64_t>& musicTaken)
+    : orders_{orders}, ends_{ends}, positions_{positions}, musicTaken_{musicTaken} {}
 
 void Mixer::render(std::span<float> frames) noexcept {
   applyOrders();
@@ -71,6 +72,16 @@ void Mixer::apply(const VolumeOrder& order) noexcept {
   volumes_[std::to_underlying(order.control)].target = order.volume;
 }
 
+void Mixer::apply(const MusicOrder& order) noexcept {
+  music_.start(order);
+  musicTaken_.store(order.serial, std::memory_order_release);
+}
+
+void Mixer::apply(const MusicStopOrder& order) noexcept {
+  music_.stop();
+  musicTaken_.store(order.serial, std::memory_order_release);
+}
+
 void Mixer::renderPass(std::span<float> frames) {
   std::ranges::fill(frames, 0.0F);
   const std::size_t frameCount = frames.size() / OutputChannels;
@@ -87,6 +98,7 @@ void Mixer::renderPass(std::span<float> frames) {
       reportEnd(voice);
     }
   }
+  music_.mixInto(frames, std::span{busGains_[std::to_underlying(Bus::Music)]}.first(frameCount));
   // The original's sound chip saturates at 16 bits, so a hard clip is the faithful limit. A NaN
   // that got this far becomes silence instead of reaching the device.
   for (float& sample : frames) {

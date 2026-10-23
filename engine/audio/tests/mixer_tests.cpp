@@ -2,8 +2,10 @@
 
 #include <doctest/doctest.h>
 
+#include <atomic>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <numbers>
 #include <span>
@@ -28,7 +30,8 @@ struct MixerRig {
   OrderQueue orders;
   EndQueue ends;
   VoicePositions positions{};
-  Mixer mixer{orders, ends, positions};
+  std::atomic<std::uint64_t> musicTaken{0};
+  Mixer mixer{orders, ends, positions, musicTaken};
 
   void send(const Order& order) { REQUIRE(orders.push(order)); }
 

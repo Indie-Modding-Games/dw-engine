@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/music.hpp>
 #include <dwe/audio/clip.hpp>
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/voice.hpp>
@@ -12,6 +13,8 @@
 #include <variant>
 
 #include "spsc_queue.hpp"
+
+struct tsf;
 
 // What the game thread tells the audio thread, and what it hears back.
 namespace dwe::audio {
@@ -37,7 +40,22 @@ struct VolumeOrder {
   float volume = 1.0F;
 };
 
-using Order = std::variant<PlayOrder, StopOrder, VolumeOrder>;
+// Replaces the music, a hard cut. The game thread keeps the font and the song alive until the mixer
+// has taken a later music order (Mixer::musicTaken).
+struct MusicOrder {
+  std::uint64_t serial = 0;
+  tsf* synth = nullptr;
+  const assets::Song* song = nullptr;
+  bool loops = true;
+  float gain = 1.0F;
+};
+
+// Cuts the music.
+struct MusicStopOrder {
+  std::uint64_t serial = 0;
+};
+
+using Order = std::variant<PlayOrder, StopOrder, VolumeOrder, MusicOrder, MusicStopOrder>;
 
 // A voice ended: it played out, was stopped or was replaced.
 struct VoiceEnded {

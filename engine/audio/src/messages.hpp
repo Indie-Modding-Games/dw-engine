@@ -26,6 +26,14 @@ inline constexpr std::string_view OrdersDropped =
 inline constexpr std::string_view VoicesStolen =
     "audio: {} voices replaced the oldest playing ones this frame: the limit is {} voices";
 
+// Music (audio.cpp, sound_font.cpp).
+inline constexpr std::string_view MusicNoSong = "music needs a SoundFont and a song";
+inline constexpr std::string_view MusicOrdersFull =
+    "audio: the orders of this frame are full ({}), so the music did not change";
+inline constexpr std::string_view FontTooBig = "the SoundFont is too big";
+inline constexpr std::string_view FontUnreadable = "not a SoundFont the synthesizer reads";
+inline constexpr std::string_view FontNoMemory = "no memory for the synthesizer's voices";
+
 // Sound banks (effect_bank.cpp).
 inline constexpr std::string_view BankSampleMissing =
     "the sound bank's sample {} is not in the packs";

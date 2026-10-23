@@ -20,6 +20,12 @@ inline constexpr std::size_t CommandQueueCapacity = 1024;
 inline constexpr std::uint32_t MaxClipSampleRate = 192000;
 inline constexpr float MinPitch = 1.0F / 64.0F;
 inline constexpr float MaxPitch = 64.0F;
+// A guard, not a limit of the original, whose 24 chip channels the music shares with the effects:
+// the notes the music synthesizer sounds at once. Past it, a new note takes the voice furthest into
+// its release.
+inline constexpr int MaxMusicVoices = 128;
+// The channels of a song.
+inline constexpr int MusicChannels = 16;
 // The most frames the mixer renders in one pass; longer requests are rendered in pieces.
 inline constexpr std::size_t MaxRenderFrames = 1024;
 
