@@ -4,6 +4,7 @@
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/events.hpp>
+#include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
 #include <dwe/game/battle/rules.hpp>
@@ -157,6 +158,10 @@ public:
   void protectPartner();
   core::Result<void> revivePartner(std::int32_t hp);
 
+  // The ground the fighters walk on, which must outlive the battle; none keeps them within the
+  // ruleset's arena radius.
+  void setGround(const BattleGround* ground) { ground_ = ground; }
+
   // Runs one frame and returns what happened in it, with what the inputs since the last frame did
   // first.
   const BattleEvents& step();
@@ -190,6 +195,7 @@ private:
   BattleEvents events_;
   std::optional<BattleResult> result_;
   core::FixedStep clock_;
+  const BattleGround* ground_ = nullptr;
   bool chargePressed_ = false;
   bool delivered_ = false;
 };

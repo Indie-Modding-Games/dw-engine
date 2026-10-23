@@ -134,6 +134,9 @@ struct Fighter {
   std::optional<MoveRef> queuedMove;
   std::int32_t moveRange = 0;
   std::int32_t outOfRangeFrames = 0;
+  // A step backing away hit something: it turns gradually now (battle_main.c:
+  // hasCollidedWhileDistanceCmd).
+  bool collidedWhileBacking = false;
   bool chargingUp = false;
   bool coolingDown = false;
   std::int32_t cooldown = 0;

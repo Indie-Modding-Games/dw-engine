@@ -17,6 +17,7 @@ struct BattleContext {
   ruleset::Random* random = nullptr;
   BattleEvents* events = nullptr;
   const PartnerCondition* condition = nullptr;
+  const BattleGround* ground = nullptr;
 
   [[nodiscard]] BattleView view() const {
     return {.rules = rules,
@@ -95,8 +96,14 @@ void tickHpBars(BattleContext& context);
 // movement.cpp: walking on the battle ground. Distances squared, as the original compares them.
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b);
 void lookAt(Fighter& fighter, Point point);
+// The walks stop at whatever the step would run into (map.c: entityCheckCollision): the combat
+// area, the map and the other fighters. battle_main.c: BTL_moveTowardLocation: blocked, the fighter
+// keeps its facing and turns a little toward a free way (collisionGrace).
 void walkToward(BattleContext& context, FighterId id, Point point);
-void backAwayFrom(BattleContext& context, FighterId id, Point point);
+// battle_main.c: BTL_tickMeleeAttack walks up to the target without the collision test.
+void approach(BattleContext& context, FighterId id, Point point);
+// battle_main.c: BTL_backAwayFromTarget: turns its back on the target and walks away.
+void backAwayFrom(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_maintainTargetDistance.
 void keepDistance(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_confusedRotate: a confused fighter turns at random.

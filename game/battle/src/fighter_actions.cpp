@@ -119,7 +119,7 @@ void tickMeleeAttack(BattleContext& context, FighterId id) {
   const bool inContact = distanceSquared(fighter.position, target.position) <=
                          contactRangeSquared(context, id, *fighter.target);
   if (!inContact && !context.state->frozenByFinisher()) {
-    walkToward(context, id, target.position);
+    approach(context, id, target.position);
     return;
   }
   if (inContact) {
@@ -171,7 +171,7 @@ void tickRangedAttack(BattleContext& context, FighterId id) {
     return;
   }
   if (distance < total - band) {
-    backAwayFrom(context, id, target.position);
+    backAwayFrom(context, id, *fighter.target);
     ++fighter.outOfRangeFrames;
     return;
   }
@@ -231,7 +231,7 @@ void paceWhileWaiting(BattleContext& context, FighterId id, bool standInNormalMo
     }
     break;
   case ChargeMode::Cautious:
-    backAwayFrom(context, id, targetAt);
+    backAwayFrom(context, id, *fighter.target);
     break;
   }
 }
@@ -445,7 +445,7 @@ bool followMoveCommand(BattleContext& context) {
       reach += context.rules->spacing.keepAwayWalkingSquared;
     }
     if (distanceSquared(partner.position, target.position) < reach) {
-      backAwayFrom(context, PartnerId, target.position);
+      backAwayFrom(context, PartnerId, *partner.target);
     } else {
       standIdle(partner);
       lookAt(partner, target.position);
@@ -639,6 +639,7 @@ void faint(BattleContext& context, FighterId id) {
 }
 
 void standIdle(Fighter& fighter) {
+  fighter.collidedWhileBacking = false;
   fighter.pose = Pose::Standing;
   fighter.poseFrames = 0;
 }

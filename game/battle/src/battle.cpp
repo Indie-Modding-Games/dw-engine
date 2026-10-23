@@ -292,7 +292,8 @@ core::Result<void> Battle::command(Command command) {
                         .strategies = &strategies_,
                         .random = &random_,
                         .events = &events_,
-                        .condition = &setup_.condition};
+                        .condition = &setup_.condition,
+                        .ground = ground_};
   commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
 }
@@ -361,7 +362,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .strategies = &strategies_,
           .random = &random_,
           .events = &events,
-          .condition = &setup_.condition};
+          .condition = &setup_.condition,
+          .ground = ground_};
 }
 
 BattleEvents& Battle::pending() {
@@ -385,7 +387,8 @@ const BattleEvents& Battle::step() {
                         .strategies = &strategies_,
                         .random = &random_,
                         .events = &events_,
-                        .condition = &setup_.condition};
+                        .condition = &setup_.condition,
+                        .ground = ground_};
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
   if (state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
