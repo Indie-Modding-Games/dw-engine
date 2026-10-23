@@ -424,6 +424,26 @@ TEST_CASE("a reborn partner equips one move again and keeps the learned ones") {
   CHECK(dwe::session::knows(moves, "dynamite_kick"));
 }
 
+TEST_CASE("an evolution teaches the new form's move and sets the four places again") {
+  // evl.c: EVL_applyEvolution: learnMove, then moves[0..3].
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  const std::array<std::optional<dwe::session::MoveSlot>, dwe::game::battle::EquippedSlots>
+      equipped{2, std::nullopt, std::nullopt, 5};
+  adapters.battle->evolveMoves(std::string{"dynamite_kick"}, equipped);
+  const PartnerMoves& moves = adapters.battle->moves();
+  CHECK(dwe::session::knows(moves, "dynamite_kick"));
+  CHECK(dwe::session::knows(moves, "punch"));
+  CHECK(moves.equipped == equipped);
+
+  // A form that learns nothing (an in-training one) only has its places set.
+  const std::vector<std::string> learned = moves.learned;
+  adapters.battle->evolveMoves(std::nullopt, {});
+  CHECK(adapters.battle->moves().learned == learned);
+  CHECK_FALSE(adapters.battle->moves().equipped.at(0).has_value());
+}
+
 TEST_CASE("the partner's moves go in the save and come back") {
   const TestPacks packs;
   Adapters saving;

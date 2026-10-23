@@ -1,4 +1,5 @@
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/battle/messages.hpp>
 #include <dwe/game/battle/strategies.hpp>
 #include <dwe/game/inventory/item_effect.hpp>
@@ -12,8 +13,11 @@
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace dwe::session {
@@ -286,6 +290,28 @@ void BattleAdapter::routePartnerEvent(GameSession& /*session*/,
     moves_.equipped = {};
     moves_.equipped.at(0) = moveRules_.rebornSlot;
   }
+}
+
+void BattleAdapter::evolveMoves(
+    const std::optional<std::string>& learned,
+    const std::array<std::optional<MoveSlot>, game::battle::EquippedSlots>& equipped) {
+  if (learned) {
+    learn(moves_, *learned);
+    const std::optional<game::battle::MoveRef> move =
+        catalog_ ? catalog_->find(*learned) : std::nullopt;
+    if (move) {
+      for (const game::battle::MoveRef together : catalog_->learnedWith(*move)) {
+        learn(moves_, catalog_->at(together).id);
+      }
+    }
+  }
+  moves_.equipped = equipped;
+  const auto place = [&](std::size_t index) {
+    const std::optional<MoveSlot>& slot = moves_.equipped.at(index);
+    return slot ? std::to_string(*slot) : std::string{"-"};
+  };
+  core::logDebug("[port:evolution] EVL_applyEvolution (evl.c:1449): learns {}, equips {} {} {} {}",
+                 learned.value_or("nothing"), place(0), place(1), place(2), place(3));
 }
 
 core::Result<game::battle::Combatant>

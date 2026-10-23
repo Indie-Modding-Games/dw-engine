@@ -147,7 +147,8 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
 - **Aplicar** (`evl.c: EVL_applyEvolution`): `Partner::changeSpecies` a la forma destino; `statChange` por
   `addStatGains` o, al volver de la forma virus, `restoredStats` con `setStats` y cada stat en su tope de
   `care.limits` (sin el tope por ganancia, decidido el 2026-10-20); HP y MP actuales dentro de los nuevos máximos;
-  peso, errores de cuidado, batallas y contador; horas de vida extra (`addLifetime`); la probabilidad de nivel de
+  la técnica aprendida (con las que se aprenden con ella, `utils2.c: learnMove`) y las cuatro ranuras equipadas por
+  `BattleAdapter::evolveMoves`; peso, errores de cuidado, batallas y contador; horas de vida extra (`addLifetime`); la probabilidad de nivel de
   domador con `tamer.evolution_level_gain`; la barra de virus a 0; la copia de la forma virus (forma y stats) en
   `PartnerState::virusBackup`; `recordEvolution` y autoguardado `Evolution`. `takeEvolutions()` da las aplicadas
   para la UI.

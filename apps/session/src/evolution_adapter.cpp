@@ -463,6 +463,9 @@ void EvolutionAdapter::apply(GameSession& session, const EvolutionResult& result
     return;
   }
   applyStats(session, result);
+  if (battle_ != nullptr) {
+    battle_->evolveMoves(result.learnedMove, result.equippedMoves);
+  }
   partner.setWeight(result.weight);
   game::partner::EvolutionCounters counters = partner.state().evolution;
   counters.careMistakes = result.careMistakes;

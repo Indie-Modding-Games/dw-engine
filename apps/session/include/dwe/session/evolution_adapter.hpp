@@ -58,10 +58,11 @@ public:
   void afterPraiseOrScold(GameSession& session, const PraiseOrScold& event) override;
   void afterWakeUp(GameSession& session) override;
 
-  // Where the partner's learned moves are: the session's battle adapter, which owns them and must
-  // outlive this adapter. The battle adapter is built after this one (it needs the inventory, which
-  // needs this), so it comes in here. Without it the requirements see no learned moves.
-  void setMoveSource(const BattleAdapter& battle) { battle_ = &battle; }
+  // Where the partner's moves are: the session's battle adapter, which owns them and must outlive
+  // this adapter. The battle adapter is built after this one (it needs the inventory, which needs
+  // this), so it comes in here. The requirements read the learned moves from it and an evolution
+  // gives it the new form's moves. Without it the requirements see no learned moves.
+  void setMoveSource(BattleAdapter& battle) { battle_ = &battle; }
 
   // An evolution item used on the partner (item.c: handleEvoItems); the inventory's command calls
   // it. Whether the partner evolved.
@@ -106,7 +107,7 @@ private:
   void raise(game::evolution::Species species);
 
   EvolutionAdapterDesc desc_;
-  const BattleAdapter* battle_ = nullptr;
+  BattleAdapter* battle_ = nullptr;
   std::optional<game::evolution::Evolution> evolution_;
   std::optional<assets::MapTable> maps_;
   game::evolution::EvolutionState state_;

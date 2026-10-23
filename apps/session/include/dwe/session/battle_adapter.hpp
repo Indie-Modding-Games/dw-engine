@@ -12,6 +12,7 @@
 #include <dwe/session/partner_moves.hpp>
 #include <dwe/session/session_system.hpp>
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -121,6 +122,11 @@ public:
   std::vector<std::string> learnMove(std::string_view move);
 
   [[nodiscard]] const PartnerMoves& moves() const { return moves_; }
+  // The new form's moves after an evolution (evl.c: EVL_applyEvolution): it learns `learned` and
+  // the moves learned with it (utils2.c: learnMove), and the four places become `equipped`.
+  void
+  evolveMoves(const std::optional<std::string>& learned,
+              const std::array<std::optional<MoveSlot>, game::battle::EquippedSlots>& equipped);
   // A story order: the partner learns the move with this original number and the ones learned
   // with it (utils2.c: learnMove), and whether it knows one (story_orders_partner.cpp).
   core::Result<void> learnMoveNumber(std::int64_t number);

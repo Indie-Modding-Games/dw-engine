@@ -121,7 +121,7 @@ hay que extraerlo de nuevo.
 | Ganancias de stats y escala | `evl.c`: `EVL_applyEvolution`, `EVL_scaleBaseStats` | `stat_gains` (`EvolutionEffects`), `EvolutionResult::statChange` | `each stat that reaches the reference…`, `the listed forms…` | Igual |
 | Topes de los stats | `evl.c`: `EVL_clampBaseStats` | `Partner::addStatGains` (`care.limits`), no la evolución | `game/partner`: `stat_gain_tests.cpp` | Desviación aprobada: además, cada ganancia queda en 999 como mucho (`stat_gain_max`, 2026-10-20) |
 | Peso, cuidado, batallas, contador, vida, nivel del tamer | `evl.c`: `EVL_applyEvolution` | `stat_gains` | `effects_tests.cpp` | Igual |
-| Técnica aprendida y ranuras | `evl.c`: `EVL_applyEvolution` | `moves` | `the form learns the weakest move…`, slow `every target of every chart…` | Igual |
+| Técnica aprendida y ranuras | `evl.c`: `EVL_applyEvolution`; `utils2.c`: `learnMove` | `moves`; la sesión las da a `BattleAdapter::evolveMoves` | `the form learns the weakest move…`, slow `every target of every chart…`, `an evolution teaches the new form's move…` | Igual |
 | Renacer | `evolution.c`: `reincarnatePartner`; `dooa.c` | `Evolution::rebirth`, `rebirth` | `rebirth turns the partner…` | Igual (la herencia de stats y las vidas son del partner) |
 | Rechazo de objetos | `partner_impl.c`: `partnerWillRefuseItem` | — | — | Fuera de alcance (sistema de objetos) |
 
