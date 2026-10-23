@@ -100,8 +100,15 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                         .inventory = inventory.get()});
   // The evolution requirements read the partner's learned moves from the battle adapter.
   evolution->setMoveSource(*battle);
-  auto storyOrders = std::make_unique<StoryGameOrders>(StoryGameOrdersDesc{
-      .files = &files, .story = story.get(), .inventory = inventory.get(), .battle = battle.get()});
+  auto calendar = std::make_unique<CalendarAdapter>(*story);
+  auto fieldItems = std::make_unique<FieldItemsAdapter>(*inventory, *story);
+  auto storyOrders =
+      std::make_unique<StoryGameOrders>(StoryGameOrdersDesc{.files = &files,
+                                                            .story = story.get(),
+                                                            .inventory = inventory.get(),
+                                                            .battle = battle.get(),
+                                                            .calendar = calendar.get(),
+                                                            .fieldItems = fieldItems.get()});
   auto shop = std::make_unique<ShopCounter>(
       ShopCounterDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   // handleItemLoss: what a lost battle takes goes to the recycle shop.
@@ -130,10 +137,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::make_unique<GymAdapter>());
   game.systems.push_back(std::move(shop));
   // The calendar runs a new game's day on the story after the story started it.
-  auto calendar = std::make_unique<CalendarAdapter>(*game.story);
   game.calendar = calendar.get();
   game.systems.push_back(std::move(calendar));
-  auto fieldItems = std::make_unique<FieldItemsAdapter>(*game.inventory, *game.story);
   game.fieldItems = fieldItems.get();
   game.systems.push_back(std::move(fieldItems));
   game.cards = cards.get();

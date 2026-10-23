@@ -50,6 +50,8 @@ inline constexpr std::string_view AdvanceToDateAt = "advance_to_date_at";
 inline constexpr std::string_view AddMinutesToDateAt = "add_minutes_to_date_at";
 inline constexpr std::string_view SetObjVisibility = "set_obj_visibility";
 inline constexpr std::string_view SetRectImpassable = "set_rect_impassable";
+inline constexpr std::string_view SpawnItem = "spawn_item";
+inline constexpr std::string_view SpawnChest = "spawn_chest";
 } // namespace story_game_api
 
 struct StoryGameContext {
@@ -74,12 +76,10 @@ core::Result<void> publishBagOrders(script::ApiRegistry& api, StoryGameContext& 
 core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishMapOrders(script::ApiRegistry& api, StoryGameContext& context);
+core::Result<void> publishFieldItemOrders(script::ApiRegistry& api, StoryGameContext& context);
 
 // A stat as the scripts read it.
 std::int64_t scriptStatOf(const GameSession& session, ScriptStat stat);
-
-// The story's change at the start of each day (script_common.c: dailyPStatTrigger).
-void runDailyChange(const StoryGameContext& context);
 
 // An order of N integer operands: reads them, then runs `run` with them as a std::array.
 template <std::size_t N, typename Run>

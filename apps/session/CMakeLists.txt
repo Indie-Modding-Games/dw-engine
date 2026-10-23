@@ -39,6 +39,7 @@ dwe_add_module(session
         src/story_game_orders.cpp
         src/story_orders_bag.cpp
         src/story_orders_date.cpp
+        src/story_orders_field_items.cpp
         src/story_orders_map.cpp
         src/story_orders_partner.cpp
         src/story_scene_api.cpp

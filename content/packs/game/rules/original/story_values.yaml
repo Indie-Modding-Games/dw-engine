@@ -31,13 +31,3 @@ happiness_floor: -100
 # (script_interp.c: secondsToDate).
 date_year_limit: 255
 date_overflow: [25, 14, 23, 59]
-# El cambio de cada día (script_common.c: dailyPStatTrigger): seis números de 1 a 64 sin el 4, +1
-# a las variables 28-31 y la variable 2 se queda con sus 7 bits bajos; una variable a 255 no
-# cambia.
-daily_change:
-  counter_variables: [28, 29, 30, 31]
-  masked_variable: 2
-  mask: 127
-  draws: 6
-  draw_range: 64
-  draw_skipped: 4

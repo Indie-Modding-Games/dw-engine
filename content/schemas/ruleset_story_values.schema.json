@@ -7,8 +7,7 @@
     "stat_limits",
     "happiness_floor",
     "date_year_limit",
-    "date_overflow",
-    "daily_change"
+    "date_overflow"
   ],
   "additionalProperties": false,
   "properties": {
@@ -144,59 +143,6 @@
       "items": {
         "type": "integer",
         "minimum": 0
-      }
-    },
-    "daily_change": {
-      "description": "The story's change at the start of each day.",
-      "type": "object",
-      "required": [
-        "counter_variables",
-        "masked_variable",
-        "mask",
-        "draws",
-        "draw_range",
-        "draw_skipped"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "counter_variables": {
-          "description": "Variables that gain one each day unless they hold 255.",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 255
-          }
-        },
-        "masked_variable": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 255,
-          "description": "The variable that keeps only the bits of mask each day, unless it holds 255."
-        },
-        "mask": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 255
-        },
-        "draws": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 255,
-          "description": "How many daily numbers are drawn."
-        },
-        "draw_range": {
-          "description": "Each daily number is from 1 to this.",
-          "type": "integer",
-          "minimum": 2,
-          "maximum": 255
-        },
-        "draw_skipped": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 255,
-          "description": "The number a draw never gives."
-        }
       }
     }
   }

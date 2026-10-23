@@ -1,17 +1,17 @@
 #include <dwe/core/log.hpp>
 #include <dwe/ruleset/game_clock.hpp>
+#include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 
 #include <array>
 #include <cstdint>
 
 #include "story_game_context.hpp"
-#include "story_game_messages.hpp"
 
 // The story's orders of the date (script_interp.c: scriptInstruction10to27 STORE_DATE,
-// scriptInstruction28to3F ADVANCE_TO_DATE_AT and ADD_MINUTES_TO_DATE_AT) and its daily change
-// (script_common.c: dailyPStatTrigger). A date in variables is four in a row: year, day, hour and
-// minute.
+// scriptInstruction28to3F ADVANCE_TO_DATE_AT and ADD_MINUTES_TO_DATE_AT); moving to another day
+// runs the calendar's new day (script_common.c: dailyPStatTrigger). A date in variables is four in
+// a row: year, day, hour and minute.
 namespace dwe::session {
 
 namespace {
@@ -19,11 +19,6 @@ namespace {
 using script::ApiValue;
 
 constexpr std::int64_t DateVariables = 4;
-// A variable holding this is not counted by the daily change (script_common.c:1427).
-constexpr std::int64_t UncountedValue = 255;
-// math.c: randomLimit(limit) is (limit * rand()) >> 15, rand() being the session's high bits.
-constexpr std::uint32_t RandDroppedBits = 17;
-constexpr int RandomBits = 15;
 
 std::int64_t minutesPerDay() {
   return ruleset::HoursPerDay * ruleset::MinutesPerHour;
@@ -99,8 +94,8 @@ core::Result<ApiValue> advanceToDate(const StoryGameContext& context, std::int64
                  now.year, now.day, now.hour, now.minute, target->year, target->day, target->hour,
                  target->minute);
   clock.restore(targetMinutes * clock.rules().framesPerMinute, 0.0);
-  if (target->day != now.day) {
-    runDailyChange(context);
+  if (target->day != now.day && context.desc.calendar != nullptr) {
+    context.desc.calendar->startNewDays(1);
   }
   return ApiValue{};
 }
@@ -126,45 +121,7 @@ core::Result<ApiValue> addMinutesToDate(const StoryGameContext& context, std::in
   return done(writeDate(context, first, result));
 }
 
-std::int64_t drawBelow(GameSession& session, std::int64_t limit) {
-  const auto drawn = std::int64_t{session.random().next() >> RandDroppedBits};
-  return (limit * drawn) >> RandomBits;
-}
-
-void writeDaily(const StoryGameContext& context, std::int64_t variable, std::int64_t value) {
-  if (auto written = context.setVariable(variable, value); !written) {
-    core::logWarning("{}",
-                     story_game_messages::formatMessage(story_game_messages::VariableNotWritten,
-                                                        variable, written.error().message));
-  }
-}
-
 } // namespace
-
-void runDailyChange(const StoryGameContext& context) {
-  // script_common.c:1399 dailyPStatTrigger.
-  const StoryDailyRules& daily = context.rules.daily;
-  GameSession& session = context.game();
-  for (std::int32_t draw = 0; draw < daily.draws; ++draw) {
-    std::int64_t number = 0;
-    do {
-      number = drawBelow(session, daily.drawRange) + 1;
-    } while (number == daily.drawSkipped);
-    // Where the original keeps these (ScriptState) nothing reads them in the story yet.
-    core::logDebug("[port:story] dailyPStatTrigger (script_common.c:1413): daily number {} = {}",
-                   draw, number);
-  }
-  for (const std::int32_t counter : daily.counterVariables) {
-    const auto value = context.variable(counter);
-    if (value && *value != UncountedValue) {
-      writeDaily(context, counter, *value + 1);
-    }
-  }
-  const auto masked = context.variable(daily.maskedVariable);
-  if (masked && *masked != UncountedValue) {
-    writeDaily(context, daily.maskedVariable, *masked & daily.mask);
-  }
-}
 
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context) {
   namespace names = story_game_api;

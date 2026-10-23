@@ -30,13 +30,6 @@ constexpr std::string_view StatLimitsKey = "stat_limits";
 constexpr std::string_view HappinessFloorKey = "happiness_floor";
 constexpr std::string_view DateYearLimitKey = "date_year_limit";
 constexpr std::string_view DateOverflowKey = "date_overflow";
-constexpr std::string_view DailyChangeKey = "daily_change";
-constexpr std::string_view CounterVariablesKey = "counter_variables";
-constexpr std::string_view MaskedVariableKey = "masked_variable";
-constexpr std::string_view MaskKey = "mask";
-constexpr std::string_view DrawsKey = "draws";
-constexpr std::string_view DrawRangeKey = "draw_range";
-constexpr std::string_view DrawSkippedKey = "draw_skipped";
 constexpr std::size_t DateParts = 4;
 
 // The stats' names in stat_limits, by their number; the current HP and MP have none, as they stop
@@ -110,45 +103,20 @@ ruleset::GameTime readDateOverflow(YamlReader& reader, const YamlNode& node) {
   return time;
 }
 
-StoryDailyRules readDailyRules(YamlReader& reader, const YamlNode& node) {
-  StoryDailyRules daily;
-  if (!reader.expectKeys(node, DailyChangeKey,
-                         {CounterVariablesKey, MaskedVariableKey, MaskKey, DrawsKey, DrawRangeKey,
-                          DrawSkippedKey})) {
-    return daily;
-  }
-  for (const YamlNode& variable :
-       reader.sequence(reader.field(node, CounterVariablesKey), CounterVariablesKey)) {
-    daily.counterVariables.push_back(reader.integer<std::uint8_t>(variable));
-  }
-  daily.maskedVariable = reader.integer<std::uint8_t>(reader.field(node, MaskedVariableKey));
-  daily.mask = reader.integer<std::uint8_t>(reader.field(node, MaskKey));
-  daily.draws = reader.integer<std::uint8_t>(reader.field(node, DrawsKey));
-  daily.drawRange = reader.integer<std::uint8_t>(reader.field(node, DrawRangeKey));
-  daily.drawSkipped = reader.integer<std::uint8_t>(reader.field(node, DrawSkippedKey));
-  // A range of one number, the skipped one, would never end the draw.
-  if (reader.ok() && daily.draws > 0 && daily.drawRange < 2) {
-    reader.fail(node, msg::formatMessage(msg::DrawRangeTooSmall, daily.drawRange));
-  }
-  return daily;
-}
-
 } // namespace
 
 core::Result<StoryValueRules> readStoryValueRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
-  if (!reader.expectKeys(
-          root, msg::StoryValuesText,
-          {StatLimitsKey, HappinessFloorKey, DateYearLimitKey, DateOverflowKey, DailyChangeKey})) {
+  if (!reader.expectKeys(root, msg::StoryValuesText,
+                         {StatLimitsKey, HappinessFloorKey, DateYearLimitKey, DateOverflowKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   StoryValueRules rules{
       .statLimits = readStatLimits(reader, reader.field(root, StatLimitsKey)),
       .happinessFloor = reader.integer<std::int32_t>(reader.field(root, HappinessFloorKey)),
       .dateYearLimit = reader.integer<std::int32_t>(reader.field(root, DateYearLimitKey)),
-      .dateOverflow = readDateOverflow(reader, reader.field(root, DateOverflowKey)),
-      .daily = readDailyRules(reader, reader.field(root, DailyChangeKey))};
+      .dateOverflow = readDateOverflow(reader, reader.field(root, DateOverflowKey))};
   if (reader.ok() && rules.happinessFloor > 0) {
     reader.fail(root, msg::formatMessage(msg::FloorPositive, rules.happinessFloor));
   }
@@ -249,11 +217,8 @@ core::Result<void> StoryGameOrders::startNewGame(GameSession& session) {
   return {};
 }
 
-void StoryGameOrders::tick(GameSession& session, const ruleset::ClockAdvance& advance) {
+void StoryGameOrders::tick(GameSession& session, const ruleset::ClockAdvance& /*advance*/) {
   bind(session);
-  for (std::int64_t day = 0; day < advance.days; ++day) {
-    runDailyChange(*context_);
-  }
 }
 
 std::vector<StoryMapEdit> StoryGameOrders::takeMapEdits() {
@@ -271,8 +236,8 @@ void StoryGameOrders::bind(GameSession& session) {
     return;
   }
   script::ApiRegistry api = vm->api();
-  for (auto* publish :
-       {&publishBagOrders, &publishPartnerOrders, &publishDateOrders, &publishMapOrders}) {
+  for (auto* publish : {&publishBagOrders, &publishPartnerOrders, &publishDateOrders,
+                        &publishMapOrders, &publishFieldItemOrders}) {
     if (auto published = publish(api, *context_); !published) {
       core::logError("{}", published.error().message);
     }

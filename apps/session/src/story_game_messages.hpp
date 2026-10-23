@@ -14,10 +14,6 @@ inline constexpr std::string_view StoryValuesText = "the story_values section";
 inline constexpr std::string_view LimitNegative = "{} cannot be negative";
 inline constexpr std::string_view FloorPositive = "happiness_floor ({}) cannot be above 0";
 inline constexpr std::string_view OverflowOutside = "date_overflow {} is outside the calendar";
-inline constexpr std::string_view DrawRangeTooSmall =
-    "daily_change draw_range ({}) must be 2 or more";
-inline constexpr std::string_view VariableNotWritten =
-    "the daily change could not write variable {}: {}";
 inline constexpr std::string_view NoStoryVm = "the story's script VM is not built";
 inline constexpr std::string_view NoSuchVariable = "no story variable has the number {}";
 inline constexpr std::string_view NoSuchTrigger = "no story trigger has the number {}";

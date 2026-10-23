@@ -20,6 +20,8 @@ class VirtualFileSystem;
 namespace dwe::session {
 
 class BattleAdapter;
+class CalendarAdapter;
+class FieldItemsAdapter;
 class InventoryAdapter;
 class StoryAdapter;
 
@@ -55,18 +57,6 @@ enum class ScriptStat : std::uint8_t {
 };
 inline constexpr std::size_t ScriptStatCount = static_cast<std::size_t>(ScriptStat::Lives) + 1;
 
-// The story's change at the start of each day (script_common.c: dailyPStatTrigger): it draws
-// `draws` numbers from 1 to draw_range other than draw_skipped, adds one to each counter variable
-// and keeps the bits of `mask` of the masked variable; a variable holding 255 is left alone.
-struct StoryDailyRules {
-  std::vector<std::int32_t> counterVariables;
-  std::int32_t maskedVariable = 0;
-  std::int64_t mask = 0;
-  std::int32_t draws = 0;
-  std::int64_t drawRange = 0;
-  std::int64_t drawSkipped = 0;
-};
-
 // The numbers of the story_values section.
 struct StoryValueRules {
   // The highest value of each stat a set_stat or an add_stat leaves (script_value.c:
@@ -78,7 +68,6 @@ struct StoryValueRules {
   // secondsToDate).
   std::int32_t dateYearLimit = 0;
   ruleset::GameTime dateOverflow{};
-  StoryDailyRules daily;
 };
 
 core::Result<StoryValueRules> readStoryValueRules(const ruleset::Section& section);
@@ -89,6 +78,10 @@ struct StoryGameOrdersDesc {
   StoryAdapter* story = nullptr;
   InventoryAdapter* inventory = nullptr;
   BattleAdapter* battle = nullptr;
+  // A date a script moves to another day runs the calendar's new day; the field's items take the
+  // items and chests the scripts lay.
+  CalendarAdapter* calendar = nullptr;
+  FieldItemsAdapter* fieldItems = nullptr;
 };
 
 struct StoryGameContext;
@@ -111,8 +104,7 @@ public:
   [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> startNewGame(GameSession& session) override;
-  // Binds the session, publishes the orders once, and on each day the clock crossed runs the
-  // story's daily change (script_common.c: dailyPStatTrigger, called by clock.c: tickGameClock).
+  // Binds the session and publishes the orders once.
   void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
 
   // The map edits the orders made since the last call, in order, for the field to apply to the map
