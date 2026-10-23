@@ -1,0 +1,3 @@
+/* How the fishing's notices behave whatever the skin. The look is the pause menu's (the skins' pause_menu style). */
+
+#text { margin: 0 0 12dp 18dp; }

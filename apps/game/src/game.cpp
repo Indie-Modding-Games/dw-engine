@@ -699,6 +699,7 @@ int runGame(const Options& options) {
       }
       PlaySession* play = flow.playing();
       game::field::FieldInput intent;
+      FishingButtons fishing;
       if (play != nullptr && !(*ui)->capturesInput()) {
         const input::Vector2 move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
@@ -715,11 +716,15 @@ int runGame(const Options& options) {
         intent.cancelTarget = input.wasPressed("cancel");
         intent.confirm = input.wasPressed("confirm");
         play->pressStory(input);
+        fishing = {.confirmDown = input.isDown("confirm"),
+                   .cancelPressed = intent.cancelTarget,
+                   .left = move.x < 0.0F,
+                   .right = move.x > 0.0F};
       } else {
         mouse.release();
       }
       if (play != nullptr) {
-        play->tick(intent);
+        play->tick(intent, fishing);
       }
       input.endTick();
       ++ticksRun;

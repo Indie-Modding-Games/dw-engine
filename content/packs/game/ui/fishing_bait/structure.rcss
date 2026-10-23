@@ -1,0 +1,5 @@
+/* How the bait menu of the fishing behaves whatever the skin: the list wraps around, up from the first entry to the
+   last and down from the last to the first. The look is the pause menu's (the skins' pause_menu style). */
+
+#bait-1 { nav-up: #none; }
+#none { nav-down: #bait-1; }

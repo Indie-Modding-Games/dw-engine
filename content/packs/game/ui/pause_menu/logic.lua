@@ -77,8 +77,15 @@ local function can_sleep()
   return ui.setting("pause_menu.sleep_enabled") == true
 end
 
+-- main/fish.c: getFishingAvailability; 0 off a fishing map, 1 without a rod or bait, 2 ready.
+local function fishing()
+  return math.floor(ui.setting("pause_menu.fishing") or 0)
+end
+
 local function refresh(document)
   document:get("sleep"):set_class("unavailable", not can_sleep())
+  document:get("fish"):set_class("hidden", fishing() == 0)
+  document:get("fish"):set_class("unavailable", fishing() ~= 2)
   local mode = index_of(minimap_modes, ui.setting("minimap")) and ui.setting("minimap") or "auto"
   document:get("minimap-mode-value"):set_text(t("pause_menu.minimap_mode." .. mode))
   local size = index_of(minimap_sizes, ui.setting("minimap_size")) and ui.setting("minimap_size")
@@ -128,6 +135,13 @@ end
 function sleep()
   if can_sleep() then
     ui.send("sleep")
+  end
+end
+
+-- The game closes the menu and the player takes out the rod (game_menu.c: initializeFishing).
+function fish()
+  if fishing() == 2 then
+    ui.send("fish")
   end
 end
 

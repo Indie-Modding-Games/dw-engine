@@ -1,0 +1,25 @@
+/* The line's tension while a fish fights (fish.c: FISH_updateRodPose reads the same level): a bar in the lower right
+   corner that fills from slack to the line's limit. It has its own look in every skin. */
+
+body { pointer-events: none; }
+#gauge {
+	position: absolute;
+	right: 24dp;
+	bottom: 24dp;
+	width: 240dp;
+	padding: 8dp 12dp;
+	background-color: #10204ccc;
+	border-radius: 6dp;
+	color: #ffffff;
+}
+#track {
+	height: 12dp;
+	margin-top: 4dp;
+	background-color: #ffffff33;
+}
+#fill {
+	height: 12dp;
+	width: 50%;
+	background-color: #f0c040;
+}
+#fill.danger { background-color: #e04030; }

@@ -27,6 +27,7 @@
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
 #include "field_scene.hpp"
+#include "fishing_screen.hpp"
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
 #include "gym_screen.hpp"
@@ -107,7 +108,7 @@ public:
   [[nodiscard]] const FieldScene& scene() const { return *scene_; }
 
   // One logic tick: the battle, or the field and the game time unless a menu pauses them.
-  void tick(const game::field::FieldInput& intent);
+  void tick(const game::field::FieldInput& intent, const FishingButtons& fishing);
 
   // Takes the UI's commands for the game (the battle, free exploration, the partner's menu); false
   // for any other.
@@ -166,6 +167,7 @@ private:
   ShopScreen shopScreen_;
   FieldItemsScreen fieldItemsScreen_;
   PraiseScoldCall praiseScold_;
+  FishingScreen fishingScreen_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

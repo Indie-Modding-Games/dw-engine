@@ -1,0 +1,14 @@
+<rml>
+<head>
+	<title>Fishing gauge</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="gauge">
+		<span id="label" text-key="fishing.tension"></span>
+		<div id="track"><div id="fill"></div></div>
+	</div>
+</body>
+</rml>

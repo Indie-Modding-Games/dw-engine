@@ -227,7 +227,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
                         game_.session->sound()),
-      praiseScold_(*game_.session, *context.ui) {
+      praiseScold_(*game_.session, *context.ui),
+      fishingScreen_(*game_.systems.fishing, *game_.systems.inventory, *game_.session, *context.ui,
+                     game_.session->sound()) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -260,7 +262,8 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument,
-        FieldItemNoticeDocument}) {
+        FieldItemNoticeDocument, FishingBaitDocument,
+        FishingNoticeDocument, FishingHudDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -271,7 +274,7 @@ void PlaySession::pressStory(const input::InputState& input) {
   }
 }
 
-void PlaySession::tick(const game::field::FieldInput& intent) {
+void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
@@ -305,6 +308,11 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
     }
   } else if (!ui.isVisible(MenuDocument) && !ui.isVisible(MainMenuDocument) &&
              !ui.isVisible(PartnerMenuDocument)) {
+    // The fishing runs instead of the field and the game time (clock.c: tickGameClock).
+    if (fishingScreen_.active()) {
+      fishingScreen_.tick(*scene_, fishing, TickSeconds);
+      return;
+    }
     // tamer.c: checkMapInteraction talks and confirms on a cell only while no script runs
     // (IS_SCRIPT_PAUSED 1), so the press that closes a textbox never starts a talk again.
     game::field::FieldInput fieldIntent = intent;
@@ -341,7 +349,8 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (shopScreen_.handle(command) || sleepScreen_.handle(command) || saveMachine_.handle(command) ||
       praiseScold_.handle(command) || fieldItemsScreen_.handle(command) ||
-      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
+      freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
@@ -431,6 +440,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (scene_->mapSerial() != mapSerial_) {
     mapSerial_ = scene_->mapSerial();
     ui.setMinimap(ui::minimapGridOf(scene_->map()), scene_->mapNameKey());
+    fishingScreen_.enterMap(*scene_, scene_->field().mapId());
     if (const auto& change = scene_->lastMapChange(); change && autotest != nullptr) {
       autotest->mapChanged(*change);
     }
@@ -443,12 +453,13 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   shopScreen_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
-  const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
+  const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() && !fishingScreen_.active() &&
                          !evolutionScene_.active() && !deathScene_.active() &&
                          !field.mapChangePending() && field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
   praiseScold_.update(fieldIdle);
+  fishingScreen_.update(fieldIdle);
   if (fieldIdle && !paused()) {
     guardFactsChanged =
         goToToiletOnCell(session, *game_.systems.fieldItems, field) || guardFactsChanged;

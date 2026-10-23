@@ -19,6 +19,7 @@
 				<button id="praise" onclick="ui.send('praise')" text-key="pause_menu.praise"></button>
 				<button id="scold" onclick="ui.send('scold')" text-key="pause_menu.scold"></button>
 				<button id="sleep" onclick="sleep()" text-key="pause_menu.sleep"></button>
+				<button id="fish" class="hidden" onclick="fish()" text-key="pause_menu.fish"></button>
 				<button id="to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
 				<button id="quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
 			</div>

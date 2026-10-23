@@ -41,6 +41,11 @@ screens:
   # El aviso de un objeto del suelo o de un cofre, también.
   field_item_notice:
     styles: [ui/skins/original/pause_menu/style]
+  # El menú del cebo y los avisos de la pesca, también.
+  fishing_bait:
+    styles: [ui/skins/original/pause_menu/style]
+  fishing_notice:
+    styles: [ui/skins/original/pause_menu/style]
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
   hud:

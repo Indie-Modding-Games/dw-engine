@@ -1,0 +1,32 @@
+<rml>
+<head>
+	<title>Fishing bait</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<h1 id="title" text-key="fishing.bait.title"></h1>
+			<button id="bait-1" class="bait" onclick="choose(1)"></button>
+			<button id="bait-2" class="bait" onclick="choose(2)"></button>
+			<button id="bait-3" class="bait" onclick="choose(3)"></button>
+			<button id="bait-4" class="bait" onclick="choose(4)"></button>
+			<button id="bait-5" class="bait" onclick="choose(5)"></button>
+			<button id="bait-6" class="bait" onclick="choose(6)"></button>
+			<button id="bait-7" class="bait" onclick="choose(7)"></button>
+			<button id="bait-8" class="bait" onclick="choose(8)"></button>
+			<p id="page"></p>
+			<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="exploration.previous"></button>
+			<button id="next" class="page-turn" onclick="turn(document, 1)" text-key="exploration.next"></button>
+			<button id="none" class="back" onclick="none()" text-key="fishing.bait.none"></button>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="fishing.bait.none"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>
