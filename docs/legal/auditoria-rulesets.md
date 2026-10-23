@@ -125,6 +125,23 @@ comportamiento, no guardan datos.
 | `new_game_slot` | 0 | a | Posición en la lista de técnicas de la especie, no una técnica concreta. |
 | `reborn_slot` | 0 | a | Posición en la lista de técnicas de la especie, no una técnica concreta. |
 
+### `calendar.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `new_day.day_counters` | 4 variables de la historia | a | Números de variable (referencias): script_common.c: dailyPStatTrigger suma 1 a cada una al empezar el día. |
+| `new_day.stopped_value` | 255 | a | Valor centinela de la regla: una variable con él no cuenta. |
+| `new_day.daily_marks` | 1 variable y su bit | a | Referencia y máscara: el bit que el día nuevo borra. |
+
+### `field_items.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `ground_slots` | 11 | a | Capacidad (DROPPED_ITEMS). |
+| `chest_slots` | 8 | a | Capacidad (los cofres de un mapa). |
+| `reach_cells` | 1 | a | Distancia de la regla (tamer.c: checkItemPickup, checkChestCollision). |
+| `pickup_sound`, `toilet_sound`, `sleep_sound`, `praise_sound`, `scold_sound` | ranura y sonido | a | Referencias a sonidos (ranura, número), no datos. |
+
 ### `save.yaml`
 
 | Clave | Valor | Clase | Motivo |

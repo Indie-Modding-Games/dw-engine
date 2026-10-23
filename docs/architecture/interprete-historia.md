@@ -426,6 +426,12 @@ return sections
   del primer mapa **cuando el runner las ejecute de verdad**. Desde S3, `data/new_game_story` deja de ser la fuente
   del estado inicial y queda solo para el análisis estático de alcance.
 
+- **El día nuevo** (`game/story/new_day`, `session::CalendarAdapter`, sección `calendar` del ruleset): cada día que
+  cruza el reloj, y una vez al empezar partida (`initializeScripts`), suma 1 a los contadores de días (variables
+  28–31) salvo si valen 255, y borra el bit 0x80 de la variable 2 (`script_common.c: dailyPStatTrigger`). Las órdenes
+  de fecha pueden llamar a `CalendarAdapter::startNewDays`. La tienda de cartas que el original repone ese día queda
+  para después del Hito 1. El original no tiene estaciones.
+
 ### Sección de guardado (encima de la Q8 de warps de script (b))
 
 La rama (b) de warps de script crea la sección `story` con `StoryState`. El intérprete la hereda sin cambiar su
