@@ -2,6 +2,7 @@
 
 #include <dwe/assets/card_table.hpp>
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/fishing_table.hpp>
 #include <dwe/assets/item_effect_table.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/assets/move_table.hpp>
@@ -28,6 +29,7 @@ class CalendarAdapter;
 class FieldItemsAdapter;
 class CardsAdapter;
 class EvolutionAdapter;
+class FishingAdapter;
 class InventoryAdapter;
 class ShopCounter;
 class StoryAdapter;
@@ -44,6 +46,8 @@ struct SystemTables {
   std::optional<assets::MoveTable> moves;
   // data/cards, when a pack has it.
   std::optional<assets::CardTable> cards;
+  // data/fishing, when a pack has it.
+  std::optional<assets::FishingTable> fishing;
 };
 
 // Reads every table of the game systems from the packs, as the ruleset names them.
@@ -52,8 +56,8 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, gym, shop, calendar, field
-// items, cards), and the adapters by type for the commands of the game and its menus. The session
-// owns the adapters once given them: the typed pointers are valid while it lives.
+// items, cards, fishing), and the adapters by type for the commands of the game and its menus. The
+// session owns the adapters once given them: the typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -67,6 +71,7 @@ struct GameSystems {
   CalendarAdapter* calendar = nullptr;
   FieldItemsAdapter* fieldItems = nullptr;
   CardsAdapter* cards = nullptr;
+  FishingAdapter* fishing = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

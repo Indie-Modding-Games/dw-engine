@@ -5,6 +5,7 @@
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_items_adapter.hpp>
+#include <dwe/session/fishing_adapter.hpp>
 #include <dwe/session/game_systems.hpp>
 #include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -64,12 +65,17 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
   if (!cards) {
     return std::unexpected{cards.error()};
   }
+  auto fishing = assets::loadFishingTable(files);
+  if (!fishing) {
+    return std::unexpected{fishing.error()};
+  }
   return SystemTables{.evolution = std::move(*evolution),
                       .items = std::move(*items),
                       .itemEffects = std::move(*effects),
                       .digimon = std::move(*digimon),
                       .moves = std::move(*moves),
-                      .cards = std::move(*cards)};
+                      .cards = std::move(*cards),
+                      .fishing = std::move(*fishing)};
 }
 
 GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTables tables) {
@@ -132,6 +138,10 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(fieldItems));
   game.cards = cards.get();
   game.systems.push_back(std::move(cards));
+  auto fishing =
+      std::make_unique<FishingAdapter>(*game.inventory, *game.story, std::move(tables.fishing));
+  game.fishing = fishing.get();
+  game.systems.push_back(std::move(fishing));
   return game;
 }
 

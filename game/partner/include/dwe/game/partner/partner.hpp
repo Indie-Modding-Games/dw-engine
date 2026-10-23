@@ -94,6 +94,9 @@ public:
   // Eats a poop pile of this size (handleEatingPoop).
   void eatPoop(std::int32_t pileSize);
 
+  // The player landed a fish while it watched (fish.c: PARTNER_PARA.fishCaught++).
+  void countFishCaught() { ++state_.evolution.fishCaught; }
+
   // A battle the battle system settled ended: its care, injury, lives and minutes as it gives them,
   // with the partner's hourly accounting when the battle ends an hour (tamer.c: advanceBattleTime).
   // Its stats after the battle come in with setStats and addStatGains first.
