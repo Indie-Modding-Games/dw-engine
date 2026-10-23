@@ -21,6 +21,7 @@ namespace dwe::session {
 
 class BattleAdapter;
 class CalendarAdapter;
+class CardsAdapter;
 class FieldItemsAdapter;
 class InventoryAdapter;
 class StoryAdapter;
@@ -82,6 +83,8 @@ struct StoryGameOrdersDesc {
   // items and chests the scripts lay.
   CalendarAdapter* calendar = nullptr;
   FieldItemsAdapter* fieldItems = nullptr;
+  // The player's cards, which give_card and take_card change.
+  CardsAdapter* cards = nullptr;
 };
 
 struct StoryGameContext;

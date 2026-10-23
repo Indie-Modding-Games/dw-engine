@@ -342,7 +342,7 @@ son el primer muro.
 | `call_digimon_routine` | escenas del compañero (0 baño … 10 evolución) | `partner.c`, el despacho de escenas del compañero | S6 | sí (24 usos) |
 | `give_item`, `remove_item`, `set_inventory_size`, `add_money`, `reduce_money` | inventario | `item.c`, ficha [inventario](../reference/inventory.md) | S5 | sí |
 | `set_stat`, `add_stat`, `reduce_stat`, `remove_condition`, `learn_move`, `deal_damage` | compañero | `script_value.c: getStatsPointer` | S5 | sí |
-| `give_card`, `take_card` | cartas | `scriptInstruction5Ato5F` | S5 | no |
+| `give_card`, `take_card` | cartas | `script_interp.c:1143` (`tickScript`), `getCardAmount`, `setCardAmount` | S5 | sí |
 | `start_battle` | combate con guion | `btl.c: handleBattleStart`, `tamer.c: startBattle` | S6 | sí (5 en el inicio) |
 | `call_routine` | ver tabla de rutinas | `scriptInstruction64to7E` | S5–S7 | sí (rutinas 7, 8, 32, 35, 39, 47, 48) |
 | `set_obj_visibility`, `move_object_to`, `rotate_3d_object`, `spawn_item`, `spawn_chest`, `set_rect_impassable`, `spawn_sprite_at_entity`, rocas | objetos del mapa | `map_object.c`, `overworld.c` | S7 | `set_obj_visibility`, `set_rect_impassable`, `spawn_item` sí |

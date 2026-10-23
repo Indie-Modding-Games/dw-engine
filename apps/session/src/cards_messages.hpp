@@ -12,5 +12,6 @@ inline constexpr std::string_view MissingInSave =
 inline constexpr std::string_view NoCards =
     "cards: no card table or no cards rules; the player has no cards";
 inline constexpr std::string_view DigimonNotSet = "cards: variable {} for card {}: {}";
+inline constexpr std::string_view NoSuchCard = "cards: no card has the number {}";
 
 } // namespace dwe::session::cards_messages

@@ -52,6 +52,9 @@ inline constexpr std::string_view SetObjVisibility = "set_obj_visibility";
 inline constexpr std::string_view SetRectImpassable = "set_rect_impassable";
 inline constexpr std::string_view SpawnItem = "spawn_item";
 inline constexpr std::string_view SpawnChest = "spawn_chest";
+inline constexpr std::string_view GiveCard = "give_card";
+inline constexpr std::string_view TakeCard = "take_card";
+inline constexpr std::string_view Cards = "cards";
 } // namespace story_game_api
 
 struct StoryGameContext {
@@ -77,6 +80,7 @@ core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameConte
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishMapOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishFieldItemOrders(script::ApiRegistry& api, StoryGameContext& context);
+core::Result<void> publishCardOrders(script::ApiRegistry& api, StoryGameContext& context);
 
 // A stat as the scripts read it.
 std::int64_t scriptStatOf(const GameSession& session, ScriptStat stat);

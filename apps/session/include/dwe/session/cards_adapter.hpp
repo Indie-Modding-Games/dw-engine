@@ -48,6 +48,11 @@ public:
   // story's variable 249 holds the card's Digimon, which the pack's line names.
   std::optional<PackCard> drawPackCard(ruleset::Random& random);
 
+  // A copy of a card a script gives or takes (script_interp.c:1143, 1151: give_card, take_card).
+  // Without cards nothing changes; a card the table does not have is an error.
+  core::Result<void> giveCopy(std::int32_t card);
+  core::Result<void> takeCopy(std::int32_t card);
+
   [[nodiscard]] std::int32_t copies(std::int32_t card) const;
   [[nodiscard]] std::vector<game::inventory::HeldCard> heldCards() const;
 

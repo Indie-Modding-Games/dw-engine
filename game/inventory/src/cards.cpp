@@ -144,4 +144,37 @@ std::optional<DrawnCard> CardCollection::drawPackCard(ruleset::Random& random) {
   return drawn;
 }
 
+void CardCollection::setCopies(std::int32_t card, std::int32_t copies) {
+  if (std::cmp_greater_equal(card, state_.copies.size())) {
+    state_.copies.resize(static_cast<std::size_t>(card) + 1, 0);
+  }
+  state_.copies[static_cast<std::size_t>(card)] = copies;
+}
+
+bool CardCollection::giveCopy(std::int32_t card) {
+  if (table_.find(card) == nullptr) {
+    return false;
+  }
+  const std::int32_t before = copies(card);
+  if (before < rules_.maxCopies) {
+    setCopies(card, before + 1);
+  }
+  core::logDebug("[port:cards] give_card (script_interp.c:1143): card {}, {} -> {} copies", card,
+                 before, copies(card));
+  return true;
+}
+
+bool CardCollection::takeCopy(std::int32_t card) {
+  if (table_.find(card) == nullptr) {
+    return false;
+  }
+  const std::int32_t before = copies(card);
+  if (before > 0) {
+    setCopies(card, before - 1);
+  }
+  core::logDebug("[port:cards] take_card (script_interp.c:1151): card {}, {} -> {} copies", card,
+                 before, copies(card));
+  return true;
+}
+
 } // namespace dwe::game::inventory

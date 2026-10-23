@@ -103,6 +103,10 @@ puede tirar.
   249 lleva su Digimon (`showCardTextbox`) **(comprobado)**.
 - Motor: `game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
   cartas, la venta, el canje por méritos y el álbum quedan para después del Hito 1.
+- Los scripts: `story.give_card(n)` suma una copia sin pasar de `max_copies` y `story.take_card(n)` quita una sin
+  bajar de 0 (`script_interp.c:1143`, `:1151`); `story.cards(n)` dice cuántas hay (`scriptCompareCard`). Una carta
+  que la tabla no tiene es un error del script; sin cartas (sin tabla o sin reglas) no cambian nada
+  (`story_orders_cards.cpp`).
 
 ## Datos
 

@@ -108,7 +108,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                             .inventory = inventory.get(),
                                                             .battle = battle.get(),
                                                             .calendar = calendar.get(),
-                                                            .fieldItems = fieldItems.get()});
+                                                            .fieldItems = fieldItems.get(),
+                                                            .cards = cards.get()});
   auto shop = std::make_unique<ShopCounter>(
       ShopCounterDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   // handleItemLoss: what a lost battle takes goes to the recycle shop.

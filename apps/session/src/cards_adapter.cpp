@@ -162,6 +162,31 @@ std::optional<PackCard> CardsAdapter::drawPackCard(ruleset::Random& random) {
   return PackCard{.card = drawn->card, .line = drawn->line};
 }
 
+namespace {
+
+core::Result<void> changeCopy(game::inventory::CardCollection* collection, std::int32_t card,
+                              bool gives) {
+  if (collection == nullptr) {
+    core::logDebug("[port:cards] {} card {}: no cards, nothing", gives ? "give_card" : "take_card",
+                   card);
+    return {};
+  }
+  if (!(gives ? collection->giveCopy(card) : collection->takeCopy(card))) {
+    return core::fail(core::formatMessage(cards_messages::NoSuchCard, card));
+  }
+  return {};
+}
+
+} // namespace
+
+core::Result<void> CardsAdapter::giveCopy(std::int32_t card) {
+  return changeCopy(collection_ ? &*collection_ : nullptr, card, true);
+}
+
+core::Result<void> CardsAdapter::takeCopy(std::int32_t card) {
+  return changeCopy(collection_ ? &*collection_ : nullptr, card, false);
+}
+
 std::int32_t CardsAdapter::copies(std::int32_t card) const {
   return collection_ ? collection_->copies(card) : 0;
 }

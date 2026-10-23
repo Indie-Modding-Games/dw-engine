@@ -237,7 +237,7 @@ void StoryGameOrders::bind(GameSession& session) {
   }
   script::ApiRegistry api = vm->api();
   for (auto* publish : {&publishBagOrders, &publishPartnerOrders, &publishDateOrders,
-                        &publishMapOrders, &publishFieldItemOrders}) {
+                        &publishMapOrders, &publishFieldItemOrders, &publishCardOrders}) {
     if (auto published = publish(api, *context_); !published) {
       core::logError("{}", published.error().message);
     }

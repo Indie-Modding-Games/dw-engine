@@ -93,9 +93,17 @@ public:
   // table has no card of the rolled rarity.
   std::optional<DrawnCard> drawPackCard(ruleset::Random& random);
 
+  // A copy a script gives (script_interp.c:1143: give_card): one more, up to maxCopies. False for a
+  // card the table does not have.
+  bool giveCopy(std::int32_t card);
+  // A copy a script takes (script_interp.c:1151: take_card): one fewer, down to none. False for a
+  // card the table does not have.
+  bool takeCopy(std::int32_t card);
+
 private:
   [[nodiscard]] std::int32_t rollRarity(ruleset::Random& random) const;
   [[nodiscard]] std::int32_t lineFor(const assets::CardEntry& card, std::int32_t copies) const;
+  void setCopies(std::int32_t card, std::int32_t copies);
 
   CardRules rules_;
   assets::CardTable table_;
