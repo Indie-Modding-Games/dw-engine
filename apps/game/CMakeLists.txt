@@ -47,6 +47,7 @@ dwe_add_app(game
         src/story_textbox.cpp
         src/story_stage.cpp
         src/story_map_edits.cpp
+        src/story_shop.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
         src/title_screen.cpp

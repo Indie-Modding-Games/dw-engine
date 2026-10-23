@@ -34,7 +34,11 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (const auto request = scenes.takeBattleRequest()) {
     startBattle(scenes, battle, species, scene, *request);
   }
+  shop_.update(scenes);
   while (const auto screen = scenes.takeScreenRequest()) {
+    if (shop_.take(*screen, scene)) {
+      continue;
+    }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",
                    screen->routine, static_cast<int>(screen->screen));
     if (screen->waits) {

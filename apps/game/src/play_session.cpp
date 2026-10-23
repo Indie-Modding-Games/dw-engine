@@ -231,6 +231,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   session.attachField(scene_->field());
   game_.systems.story->attachNpcs(&scene_->npcs());
   storyLink_ = std::make_unique<StoryFieldLink>(*game_.systems.story, *scene_);
+  storyScenes_.attachShop(game_.systems.shop);
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
