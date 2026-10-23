@@ -99,6 +99,302 @@
           "type": "integer"
         }
       }
+    },
+    "scenes": {
+      "description": "The scenes of a lost life, a death and a rebirth, in frames of the original (murd.c, dooa.c). Without them the partner changes at once.",
+      "type": "object",
+      "required": [
+        "lost_life",
+        "wake_map",
+        "death"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lost_life": {
+          "type": "object",
+          "required": [
+            "iris_frames",
+            "alone_until",
+            "fade_out_end",
+            "map_back",
+            "fade_in_end",
+            "shade_max",
+            "shade_hold"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "iris_frames": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "alone_until": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "fade_out_end": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "map_back": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "fade_in_end": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "shade_max": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "shade_hold": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "wake_map": {
+          "type": "object",
+          "required": [
+            "story_map",
+            "early_map",
+            "exit",
+            "story_triggers",
+            "story_variable",
+            "story_variable_at_least"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "story_map": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "early_map": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "exit": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "story_triggers": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "story_variable": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "story_variable_at_least": {
+              "type": "integer"
+            }
+          }
+        },
+        "death": {
+          "type": "object",
+          "required": [
+            "sound_bank",
+            "map_frame",
+            "stand_frame",
+            "burst",
+            "sink",
+            "vanish",
+            "rise",
+            "end_frame",
+            "glow",
+            "hatch",
+            "swap_frame",
+            "shown_frame",
+            "sparkle_sound",
+            "finish_frame",
+            "clips"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "sound_bank": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "map_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "stand_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "burst": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "sink": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "vanish": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "rise": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "end_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "glow": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "hatch": {
+              "type": "object",
+              "required": [
+                "frame",
+                "sound"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "sound": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "swap_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "shown_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sparkle_sound": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "finish_frame": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "clips": {
+              "type": "object",
+              "required": [
+                "alive",
+                "last_life",
+                "burst",
+                "vanish",
+                "reborn",
+                "finish"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "alive": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "last_life": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "burst": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "vanish": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reborn": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "finish": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -13,6 +13,12 @@ using core::formatMessage;
 // What the readers call each part of the sections in their errors.
 inline constexpr std::string_view CareSectionText = "the care section";
 inline constexpr std::string_view LifeSectionText = "the life section";
+inline constexpr std::string_view LostLifeSceneOutOfOrder =
+    "scenes.lost_life's frames must come in order: iris_frames, alone_until, fade_out_end, "
+    "map_back, fade_in_end";
+inline constexpr std::string_view DeathSceneOutOfOrder =
+    "scenes.death's frames must come in order: map_frame, stand_frame, burst, sink, vanish, rise, "
+    "end_frame; and glow, hatch, swap_frame, shown_frame, finish_frame";
 inline constexpr std::string_view TrainingSectionText = "the training section";
 inline constexpr std::string_view GroupText = "{}";
 inline constexpr std::string_view SleepPatternText = "a sleep pattern";

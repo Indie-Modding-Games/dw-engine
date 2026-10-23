@@ -25,3 +25,49 @@ rebirth:
   # setReincarnateStats: tras una muerte natural hereda un % de cada stat del partner muerto igual al nivel del
   # tamer; si no, nada.
   inherit_percent_per_tamer_level: 1
+# Las escenas de una vida perdida, de la muerte y del renacer, en fotogramas del original (20 por segundo). Sin esta
+# sección el partner cambia al momento.
+scenes:
+  # murd/murd.c: MURD_tickScene: el iris se cierra sobre el partner (0x23), que queda solo sobre negro con la caja de
+  # vidas hasta 0x5f; con vidas, el fundido a negro sube hasta 160 (0x87), se sostiene en 255 mientras carga el mapa
+  # donde despierta el tamer, el mapa vuelve en 0x91 y el fundido baja desde 160 hasta 0xb9.
+  lost_life:
+    iris_frames: 35
+    alone_until: 95
+    fade_out_end: 135
+    map_back: 145
+    fade_in_end: 185
+    shade_max: 160
+    shade_hold: 255
+  # dooa/dooa.c: DOOA_tick y murd.c: MURD_tick: el mapa 0xcd (salida 1) si el trigger 0xdc o el 0xd6 está puesto o
+  # la variable 1 llega a 50; si no, el 0xda.
+  wake_map:
+    story_map: 205
+    early_map: 218
+    exit: 1
+    story_triggers: [220, 214]
+    story_variable: 1
+    story_variable_at_least: 50
+  # dooa/dooa.c: DOOA_tickDissolve (la muerte) y DOOA_tickRebirth (el renacer), con el banco de sonidos 0x13 en la
+  # ranura 8 (partnerTickDying: loadMapSounds2(19)). Los sonidos son de ese banco.
+  death:
+    sound_bank: 19
+    # 0x23: carga el mapa donde despierta el tamer; sin vidas la escena empieza aquí, con el partner ya oculto.
+    map_frame: 35
+    # 0x56: el partner queda solo y empieza la animación burst.
+    stand_frame: 86
+    burst: { frame: 105, sound: 0 }
+    # 0xbf: el partner se encoge; 0xd1: desaparece (animación vanish); 0x135: sube la luz; 0x1b7: fin.
+    sink: { frame: 191, sound: 1 }
+    vanish: { frame: 209, sound: 2 }
+    rise: { frame: 309, sound: 3 }
+    end_frame: 439
+    # DOOA_tickRebirth: el huevo brilla (10) y se abre (132); en 152 el bebé nuevo (reincarnatePartner) y el mapa
+    # vuelve desde negro hasta 202, cuando se ve el bebé con la animación reborn; en 262 la animación finish.
+    glow: { frame: 10, sound: 5 }
+    hatch: { frame: 132, sound: 6 }
+    swap_frame: 152
+    shown_frame: 202
+    sparkle_sound: 7
+    finish_frame: 262
+    clips: { alive: 1, last_life: 44, burst: 12, vanish: 33, reborn: 28, finish: 11 }
