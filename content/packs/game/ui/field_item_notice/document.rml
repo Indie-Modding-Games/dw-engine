@@ -2,19 +2,15 @@
 <head>
 	<title>Field item notice</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="../story_textbox/structure.rcss"/>
 	<link type="text/rcss" href="structure.rcss"/>
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="scrim">
-		<div id="panel">
-			<p id="item"></p>
-			<p id="text"></p>
-			<button id="ok" autofocus="autofocus" onclick="ui.send('field_item_notice_ok')" text-key="common.accept"></button>
-
-			<div id="prompts">
-				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
-			</div>
+	<div id="box" class="original-look">
+		<div id="rows">
+			<div class="row" id="item"></div>
+			<div class="row" id="text"></div>
 		</div>
 	</div>
 </body>

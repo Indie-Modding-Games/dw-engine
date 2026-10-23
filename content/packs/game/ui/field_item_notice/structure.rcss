@@ -1,5 +1,9 @@
-/* How the notice of an item on the ground or in a chest behaves whatever the skin. The look is the pause menu's (the
-   skins' pause_menu style). */
+/* The notice of an item on the ground or in a chest is the story's speech box (tamer.c: tamerTickPickupItem opens
+   renderItemPickupTextbox's box at -130, 42, 262 x 59 from the screen's centre: x 30 to 292 and y 162 to 221, the
+   speech box's place; ../story_textbox/structure.rcss), with the item's name on its first row and the words on the
+   second (renderString at y 0x2D and 0x39). The name is TEXT_COLORS 15 (0x48, 0x54, 0x7C) over the font's ink
+   #d0d0d0 (utils.c). */
 
-#item { margin: 0 0 0 18dp; }
-#text { margin: 0 0 12dp 18dp; }
+#item {
+	color: #7588c9;
+}

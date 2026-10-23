@@ -1,8 +1,8 @@
 -- The notice of an item on the field's ground or in a chest (tamer.c: tamerTickPickupItem,
--- tamerTickTakeChest). The game publishes field_item_notice.text (a text key) and
--- field_item_notice.item (the item's name key, empty for an empty chest) and shows this
--- document; it sends field_item_notice_ok. Like the original's text box, it shows the item's name
--- over the words and is answered only by confirming.
+-- tamerTickTakeChest): the story's speech box with the item's name over the words. The game
+-- publishes field_item_notice.text (a text key) and field_item_notice.item (the item's name key,
+-- empty for an empty chest) and shows this document; confirming sends field_item_notice_ok, the
+-- only answer the original's box takes (there is no button).
 
 local function refresh(document)
   local item_key = ui.setting("field_item_notice.item") or ""
@@ -12,14 +12,8 @@ local function refresh(document)
   document:get("text"):set_text(t(ui.setting("field_item_notice.text") or ""))
 end
 
-local function refresh_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-end
-
 function on_show(document)
   refresh(document)
-  refresh_prompts(document)
-  document:get("ok"):focus()
 end
 
 function on_setting(document, _name)
@@ -30,10 +24,10 @@ function on_language(document)
   refresh(document)
 end
 
-function on_device(document)
-  refresh_prompts(document)
-end
-
 function on_action(_document, action)
+  if action == "confirm" then
+    ui.send("field_item_notice_ok")
+    return true
+  end
   return action == "cancel" or action == "menu"
 end

@@ -31,9 +31,6 @@ screens:
   # La tienda, también.
   shop_menu:
     styles: [ui/skins/modern/pause_menu/style]
-  # El aviso de un objeto del suelo o de un cofre, también.
-  field_item_notice:
-    styles: [ui/skins/modern/pause_menu/style]
   # La caja de nombres de la partida nueva y de los guiones, también.
   naming_box:
     styles: [ui/skins/modern/pause_menu/style]
