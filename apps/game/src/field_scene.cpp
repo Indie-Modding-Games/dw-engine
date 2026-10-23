@@ -276,6 +276,7 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
     return core::fail(std::format("map {}: {}", mapId, entered.error().message));
   }
   const assets::MapEntry* entry = mapTable_ ? mapTable_->find(mapId) : nullptr;
+  placeMapObjects(entry);
   const bool fixedTime = entry != nullptr && entry->fixedTimeOfDay;
   std::string nameKey = nameKeyOf(mapId);
   // map.c: setupMap shows the palette and the lights of the clock's time of day (updateTimeOfDay).
@@ -418,6 +419,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   submit(*playerActor_, alpha);
   submit(*partnerActor_, alpha);
   drawNpcs(animationSeconds, alpha);
+  submitMapObjects();
   const scene::Pose player =
       scene::interpolate(world_.registry().get<scene::Transform>(playerActor_->entity), alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:

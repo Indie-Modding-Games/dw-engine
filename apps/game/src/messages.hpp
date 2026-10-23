@@ -148,5 +148,10 @@ inline constexpr std::string_view EvolveRefused = "game: evolve: the partner can
 // or for a problem that leaves it working (assets::disablesWarp) only names it.
 inline constexpr std::string_view WarpDisabled = "game: {}; the warp is disabled";
 inline constexpr std::string_view WarpProblem = "game: {}";
+// The asset of a door model, DOOR\DOORnn.TMD (dwx asset_names.hpp).
+inline constexpr std::string_view DoorModelId = "model/door/door{:02}";
+inline constexpr std::string_view DoorModelMissing =
+    "[port:field-objects] loadDoors (map_object.c:355 loadStaticTMD): {}: {}; the object is not "
+    "drawn";
 
 } // namespace dwe::app::messages

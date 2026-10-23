@@ -26,13 +26,10 @@ using game::story::PlayerScriptId;
 constexpr std::int64_t PlayerSlot = 0;
 constexpr std::int64_t PartnerSlot = 1;
 
-// The field has no NPCs and no 3D map objects yet: their slices bring them.
+// The field has no NPCs yet: their slice brings them.
 constexpr std::string_view NoNpcOrigin =
     "[port:story-stage] reset_entity_origin (overworld.c:1829 resetEntityOrigin): no NPC {} on "
     "the field yet, nothing to reset";
-constexpr std::string_view NoMapObject =
-    "[port:story-stage] rotate_3d_object (map_object.c:932 tickRotateDoor): no 3D map object {} "
-    "on the field yet, the turn toward {} ends at once";
 
 float groundDistance(glm::vec3 from, glm::vec3 to) {
   return glm::length(glm::vec2{to.x - from.x, to.z - from.z});
@@ -175,8 +172,7 @@ void StoryStage::resetOrigin(std::int64_t character) {
 }
 
 bool StoryStage::turnMapObject(std::int64_t object, std::int64_t direction) {
-  core::logDebug("{}", core::formatMessage(NoMapObject, object, direction));
-  return true;
+  return scene_->field().turnMapObjectByScript(object, direction);
 }
 
 } // namespace dwe::app

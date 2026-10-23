@@ -20,6 +20,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -198,6 +199,10 @@ private:
   // Plays the clip a script picked for the actor; false when it has none.
   bool animateScripted(Actor& actor, double seconds);
   void submit(const Actor& actor, float alpha);
+  // Places the map's 3D objects in the field and loads their models (map.c: loadMap, loadDoors).
+  void placeMapObjects(const assets::MapEntry* entry);
+  // Draws them (map_object.c: renderDoors).
+  void submitMapObjects();
   void followClock();
   void applyLighting();
   // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):
@@ -238,6 +243,8 @@ private:
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;
+  // The models of the map's 3D objects, by door model id.
+  std::map<std::int32_t, render::ModelHandle> mapObjectModels_;
 };
 
 } // namespace dwe::app

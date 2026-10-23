@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/npcs.hpp>
@@ -95,6 +96,14 @@ struct CharacterState {
 struct ScriptedActor {
   glm::vec3 velocity{};
   std::optional<std::uint32_t> clip;
+};
+
+// A 3D object of the map, a door model (map_object.c: loadDoors, Map3DObject), in world space.
+struct MapObject3D {
+  // The door model, DOOR\DOORnn.TMD.
+  std::int32_t model = 0;
+  glm::vec3 position{};
+  float yaw = 0.0F;
 };
 
 // The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents
@@ -243,6 +252,16 @@ public:
   // Moves the held camera by `by` (map.c: moveCameraByDiff).
   void shiftCameraByScript(glm::vec3 by);
 
+  // Places the map's 3D objects from its door set, or none (map.c: loadMap calls loadDoors). The
+  // slots keep the set's order, empty where it has no model, as scripts name them by slot.
+  void placeMapObjects(const assets::MapDoorSet* doors);
+  [[nodiscard]] std::span<const std::optional<MapObject3D>> mapObjects() const {
+    return mapObjects_;
+  }
+  // Ticks one frame of a script's turn of the map object in `slot` toward `direction`; true when
+  // it is done (map_object.c: tickRotateDoor).
+  [[nodiscard]] bool turnMapObjectByScript(std::int64_t slot, std::int64_t direction);
+
   // The ground waypoints left of the click-to-move path, for debug drawing.
   [[nodiscard]] std::span<const glm::vec3> path() const { return path_; }
 
@@ -379,6 +398,7 @@ private:
   bool scriptHeld_ = false;
   std::optional<glm::vec3> scriptCamera_;
   std::optional<CameraPan> cameraPan_;
+  std::vector<std::optional<MapObject3D>> mapObjects_;
 };
 
 } // namespace dwe::game::field
