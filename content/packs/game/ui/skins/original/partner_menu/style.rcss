@@ -362,13 +362,14 @@
    The boxes over the bag (field_item_option_box): the options box at (19, 35), 56 x 88, rows 19 pixels apart, the
    focused row a filled grey bar; the sort orders and the drop's question as boxes of the same look (inventory.c: 72 x
    66 and 128 x 53, the question at (96, 82)). The boxes are beside the panel, not in it: they place themselves from
-   the middle of the screen, where the panel's left edge is 450dp to the left, and the panel's top is 48dp; the
-   panel's origin is the original's (10, 16). */
+   the middle of the screen, where the panel's left edge is 450dp to the left. The bag's frame, at the original's
+   y 10 (30dp), sits at 93dp here, under the page tabs the original does not have, so the boxes are 63dp lower than
+   the original's numbers: the options box stays 25 pixels under the frame's top, below the first row of slots. */
 
 .box {
 	position: absolute;
 	left: 50%;
-	top: 105dp;
+	top: 168dp;
 	width: 168dp;
 	margin: 0 0 0 -423dp;
 	padding: 12dp 6dp;
@@ -398,7 +399,7 @@
 }
 
 #confirm-box {
-	top: 246dp;
+	top: 309dp;
 	margin-left: -192dp;
 	width: 384dp;
 }
