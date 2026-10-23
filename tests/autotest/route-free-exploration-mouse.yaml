@@ -13,6 +13,11 @@ steps:
   - expect_setting: {free_exploration: "true"}
   - menu: close
   - wait: {menu_open: false}
+  # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans
+  # around the map's walls but not around NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
   - walk_to: {trigger: 112}
   - wait: {map: room08, partner_within: 400, seconds: 0.5}
   - walk_to: {trigger: 51}

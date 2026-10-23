@@ -20,6 +20,10 @@ steps:
   - expect_setting: {minimap: "auto"}
   - menu: close
   - wait: {menu_open: false}
+  # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans
+  # around the map's walls but not around NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
   # Behind the awning of the house by the water: the player under a depth layer.
   - walk_to: {point: [600, 300], radius: 40}
   # The partner has followed the walk across the map (on arrival it is always close: it spawns next to the player).

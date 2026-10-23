@@ -11,10 +11,16 @@ steps:
   - wait: {partner_model: digimon/agum/model}
   - screenshot: partner-before
   - script: evolve("grey")
-  - wait: {partner_model: digimon/grey/model, timeout: 5}
+  # The new form shows once the field's evolution scene has played (the glow, the dimmed map, the camera round the
+  # partner and the burst), many seconds of frames.
+  - wait: {partner_model: digimon/grey/model, timeout: 60}
   - wait: {seconds: 1}
   - screenshot: partner-evolved
-  # It keeps following the player with the new model.
+  # It keeps following the player with the new model. The new game's Jijimon stands by File City's entrance, in the
+  # straight line from the start; walk_to plans around the map's walls but not around NPCs, so the walk goes south
+  # of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
   - walk_to: {point: [600, 300], radius: 40}
   - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
   - screenshot: partner-evolved-follows

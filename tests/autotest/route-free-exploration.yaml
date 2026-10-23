@@ -22,7 +22,15 @@ steps:
   - walk_to: {trigger: 111}
   - wait: {map: trai00, partner_within: 400, seconds: 0.5}
   - walk_to: {trigger: 110}
-  - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
+  - wait: {map: mayo00, seconds: 2}
+  # A new game's forest still holds its first fight: the wild Agumon walks up and talks, the fight, then the recruit
+  # (as in route-etapa1.yaml). Free exploration opens the gates, not the story's events.
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - wait: {setting: {battle.phase: end}, timeout: 300}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - wait: {partner_within: 400, seconds: 0.5, timeout: 10}
   # The script of mayo00's cell 52 waits for the story; free exploration offers its two places.
   - walk_to: {trigger: 52}
   - wait: {shown: destination_choice, seconds: 0.5}

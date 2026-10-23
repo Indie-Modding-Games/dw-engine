@@ -6,6 +6,11 @@ timeout: 120
 steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
+  # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans
+  # around the map's walls but not around NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
   - walk_to: {trigger: 112, stop_on_warp: true}
   - wait: {map_name: room08, timeout: 5}
   - screenshot: fade-name

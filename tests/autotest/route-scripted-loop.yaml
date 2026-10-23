@@ -1,7 +1,8 @@
 # A loop across five zones of the new game's area with the keyboard, taking both kinds of map change: the maps' warp
 # table (cells 110-119, tamer.c: checkMapInteraction) and the warps of the maps' scripts (step cells 51-79, extracted to
 # field/script_warps.yaml; docs/architecture/warps-de-script.md). Every warp it takes has no condition in the new game's
-# state, so the loop needs no story progress.
+# state but one: the forest's first fight, which the loop plays, and whose recruit moves the town on to its next map,
+# twna02, so the loop comes back into twna02.
 # How to run it: docs/guides/prueba-vertical.md.
 name: scripted-loop
 device: keyboard
@@ -10,7 +11,20 @@ steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
   - screenshot: twna01-start
-  # The table: out of the town.
+  # The door the hand-written entry used to give: the table in, the room's script out. The new game's Jijimon stands
+  # by File City's entrance, in the straight line from the start; walk_to plans around the map's walls but not around
+  # NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
+  - walk_to: {trigger: 112}
+  - wait: {map: room08, partner_within: 400, seconds: 0.5}
+  - screenshot: room08
+  - walk_to: {trigger: 51}
+  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
+  # The table: out of the town, first back south the way it came so that the walk does not cross the door again.
+  - walk_to: {point: [600, 300], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
   - walk_to: {trigger: 111}
   - wait: {map: trai00, partner_within: 400, seconds: 0.5}
   - screenshot: trai00
@@ -18,18 +32,20 @@ steps:
   - walk_to: {trigger: 110}
   - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
   - screenshot: mayo00
+  # A new game's forest still holds its first fight: the wild Agumon walks up and talks, the fight, then the recruit
+  # (as in route-etapa1.yaml).
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - wait: {setting: {battle.phase: end}, timeout: 300}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - wait: {partner_within: 400, seconds: 0.5, timeout: 10}
   # The map's script: a step cell takes it to the next zone.
   - walk_to: {trigger: 51}
   - wait: {map: twnb01, partner_within: 400, seconds: 0.5}
   - screenshot: twnb01
-  # The script again: back into the town by another way than the one the loop left by.
+  # The script again: back into the town by another way than the one the loop left by, into twna02 once Agumon
+  # is recruited.
   - walk_to: {trigger: 52}
-  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
-  - screenshot: twna01-back
-  # The door the hand-written entry used to give: the table in, the room's script out.
-  - walk_to: {trigger: 112}
-  - wait: {map: room08, partner_within: 400, seconds: 0.5}
-  - screenshot: room08
-  - walk_to: {trigger: 51}
-  - wait: {map: twna01, partner_within: 400, seconds: 0.5}
-  - screenshot: twna01-end
+  - wait: {map: twna02, partner_within: 400, seconds: 0.5}
+  - screenshot: twna02-end

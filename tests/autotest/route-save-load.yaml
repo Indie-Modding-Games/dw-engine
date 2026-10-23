@@ -19,6 +19,11 @@ steps:
   - menu_select: yes
   - wait: {map: twna01, hidden: dialog, seconds: 1}
   - script: give_item("meat 3")
+  # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans
+  # around the map's walls but not around NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
+  - walk_to: {point: [600, 300], radius: 40}
   - walk_to: {trigger: 112}
   - wait: {map: room08, seconds: 0.5}
   # Across the room, away from the door the map is entered by: only the save puts the player back here.

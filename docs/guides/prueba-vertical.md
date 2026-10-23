@@ -144,17 +144,18 @@ scripts/dev.sh run --content <carpeta> --lang en --saves $saves --load slot_01 \
   título y su menú, el reloj y las barras del campo, el menú de pausa y sus opciones, la ficha y la bolsa del
   compañero (con las opciones de un objeto y los órdenes), un combate y sus cuadros finales, y la burbuja del hambre
   sobre el compañero a 1920x1080. Se corre en los dos idiomas.
-- `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado, sin progreso de la
-  historia: File City (`twna01`) → `trai00` (tabla de salidas del mapa) → `mayo00` (tabla) → `twnb01` (warp del
-  script del mapa, al pisar la celda) → File City por otra entrada (script) → la casa del anciano, `room08` (tabla) →
-  File City (script). Comprueba los dos caminos de cambio de mapa, la tabla y los
+- `route-scripted-loop.yaml`: una vuelta por cinco zonas desde una partida nueva con el teclado: File City (`twna01`)
+  → la casa del anciano, `room08` (tabla de salidas del mapa) → File City (script) → `trai00` (tabla) → `mayo00`
+  (tabla), donde juega el primer combate del bosque y el reclutamiento de Agumon → `twnb01` (warp del script del mapa,
+  al pisar la celda) → File City por otra entrada (script), que tras el reclutamiento ya es `twna02`. Comprueba los dos caminos de cambio de mapa, la tabla y los
   [warps de script](../architecture/warps-de-script.md), y que el compañero sigue al jugador en cada llegada; hace
   una captura en cada zona. Se corre en los dos idiomas, como `route-language.yaml`.
 - `route-free-exploration.yaml`: la [exploración libre](../architecture/warps-de-script.md#exploración-libre) con el
   teclado, desde una partida nueva: la enciende en las opciones del menú de pausa y pasa las puertas que la historia
   aún tiene cerradas hacia tres zonas a las que una partida nueva no llega (`mayo02_2`, `mayo08b`, `mayo02`), con el
   selector de destinos y con camino de vuelta. Comprueba que el selector empieza en el lugar de la historia, que pasa
-  de página y que Escape deja al jugador en el mapa. Se corre en los dos idiomas.
+  de página y que Escape deja al jugador en el mapa. En `mayo00` juega antes el primer combate del bosque, como
+  una partida nueva. Se corre en los dos idiomas.
 - `route-free-exploration-mouse.yaml` y `route-free-exploration-gamepad.yaml`: el interruptor y el selector con el
   ratón (un clic en la segunda página) y con el mando (Este se queda, Sur toma el lugar de la historia). Se corren en
   los dos idiomas.
