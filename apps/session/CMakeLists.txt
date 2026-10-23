@@ -5,6 +5,7 @@ dwe_add_module(session
     LAYER apps
     SOURCES
         src/battle_adapter.cpp
+        src/calendar_adapter.cpp
         src/evolution_adapter.cpp
         src/field_facts.cpp
         src/game_session.cpp

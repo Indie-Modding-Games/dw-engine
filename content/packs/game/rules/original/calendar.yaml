@@ -1,0 +1,11 @@
+# El calendario (apps/session: CalendarAdapter; game/story: new_day.hpp).
+# script_common.c: dailyPStatTrigger, en cada medianoche, al dormir o entrenar pasándola, cuando un script cambia el
+# día y una vez al empezar una partida (script_interp.c: initializeScripts).
+new_day:
+  # Las variables 0x1c a 0x1f cuentan los días: suben uno al día salvo si valen 0xff (parada).
+  day_counters: [28, 29, 30, 31]
+  stopped_value: 255
+  # La variable 2 pierde su bit alto cada día (una marca de «una vez al día»), salvo si vale 0xff.
+  daily_marks:
+    - variable: 2
+      cleared_bits: 128

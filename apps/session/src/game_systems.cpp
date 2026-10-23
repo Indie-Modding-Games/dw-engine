@@ -1,6 +1,7 @@
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_systems.hpp>
 #include <dwe/session/gym_adapter.hpp>
@@ -112,6 +113,10 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(story));
   game.systems.push_back(std::make_unique<GymAdapter>());
   game.systems.push_back(std::move(shop));
+  // The calendar runs a new game's day on the story after the story started it.
+  auto calendar = std::make_unique<CalendarAdapter>(*game.story);
+  game.calendar = calendar.get();
+  game.systems.push_back(std::move(calendar));
   return game;
 }
 

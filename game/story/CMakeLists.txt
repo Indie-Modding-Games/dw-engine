@@ -12,4 +12,5 @@ dwe_add_module(story
         src/story_battle.cpp
         src/screen_history.cpp
         src/partner_routines.cpp
+        src/new_day.cpp
     DEPS core assets)
