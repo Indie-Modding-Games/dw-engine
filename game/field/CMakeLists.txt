@@ -9,6 +9,7 @@ dwe_add_module(field
         src/field_script.cpp
         src/field_edits.cpp
         src/map_objects.cpp
+        src/field_items.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 

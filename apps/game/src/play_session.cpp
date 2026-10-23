@@ -223,7 +223,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .inventory = game_.systems.inventory,
                   .scene = scene_.get(),
                   .ui = context.ui}),
-      shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}) {
+      shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
+      fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -255,7 +256,8 @@ PlaySession::~PlaySession() {
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
-        SleepMenuDocument, DialogDocument, ShopMenuDocument}) {
+        SleepMenuDocument, DialogDocument, ShopMenuDocument,
+        FieldItemNoticeDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -300,6 +302,15 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
                      "script runs");
       fieldIntent.confirm = false;
     }
+    // An item on the ground or a chest in reach takes the confirm, and its notice stops the field.
+    const game::field::Field& field = scene_->field();
+    if (!field.mapChangePending() && field.fadeLevel() == 0.0F &&
+        fieldItemsScreen_.tick(field, fieldIntent.confirm)) {
+      fieldIntent.confirm = false;
+    }
+    if (fieldItemsScreen_.active()) {
+      return;
+    }
     // A gym course takes the player's control; its buttons are the course's.
     if (gymScreen_.active()) {
       gymScreen_.tick(TickSeconds, intent);
@@ -317,7 +328,7 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (shopScreen_.handle(command) || sleepScreen_.handle(command) || saveMachine_.handle(command) ||
-      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      fieldItemsScreen_.handle(command) || battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
@@ -447,7 +458,7 @@ bool PlaySession::paused() const {
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
          saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
-         shopScreen_.active();
+         shopScreen_.active() || fieldItemsScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

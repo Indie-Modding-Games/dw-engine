@@ -3,6 +3,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
+#include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_systems.hpp>
 #include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -117,6 +118,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto calendar = std::make_unique<CalendarAdapter>(*game.story);
   game.calendar = calendar.get();
   game.systems.push_back(std::move(calendar));
+  auto fieldItems = std::make_unique<FieldItemsAdapter>(*game.inventory, *game.story);
+  game.fieldItems = fieldItems.get();
+  game.systems.push_back(std::move(fieldItems));
   return game;
 }
 

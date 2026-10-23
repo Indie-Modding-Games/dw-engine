@@ -8,6 +8,7 @@ dwe_add_module(session
         src/calendar_adapter.cpp
         src/evolution_adapter.cpp
         src/field_facts.cpp
+        src/field_items_adapter.cpp
         src/game_session.cpp
         src/game_systems.cpp
         src/gym_adapter.cpp

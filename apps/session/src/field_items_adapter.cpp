@@ -1,0 +1,154 @@
+#include <dwe/assets/yaml_reader.hpp>
+#include <dwe/core/log.hpp>
+#include <dwe/core/message.hpp>
+#include <dwe/core/yaml.hpp>
+#include <dwe/session/field_items_adapter.hpp>
+#include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/story_adapter.hpp>
+
+#include <string>
+
+#include "field_items_messages.hpp"
+
+namespace dwe::session {
+
+namespace {
+
+using assets::YamlReader;
+using core::YamlNode;
+
+constexpr std::string_view GroundSlotsKey = "ground_slots";
+constexpr std::string_view ChestSlotsKey = "chest_slots";
+constexpr std::string_view ReachCellsKey = "reach_cells";
+
+std::int32_t positive(YamlReader& reader, const YamlNode& root, std::string_view key) {
+  const YamlNode& node = reader.field(root, key);
+  const auto value = reader.integer<std::int32_t>(node);
+  if (reader.ok() && value <= 0) {
+    reader.fail(node, core::formatMessage(field_items_messages::NotPositive, key));
+  }
+  return value;
+}
+
+} // namespace
+
+core::Result<game::field::FieldItemRules>
+readFieldItemRules(const ruleset::Section& section) {
+  YamlReader reader;
+  const YamlNode& root = section.node;
+  if (!reader.expectKeys(root, field_items_messages::SectionText,
+                         {GroundSlotsKey, ChestSlotsKey, ReachCellsKey})) {
+    return std::unexpected{reader.error(section.file)};
+  }
+  const game::field::FieldItemRules rules{.groundSlots = positive(reader, root, GroundSlotsKey),
+                                          .chestSlots = positive(reader, root, ChestSlotsKey),
+                                          .reachCells = positive(reader, root, ReachCellsKey)};
+  return reader.finish(rules, section.file);
+}
+
+FieldItemsAdapter::FieldItemsAdapter(InventoryAdapter& inventory, StoryAdapter& story)
+    : inventory_{&inventory}, story_{&story} {}
+
+ruleset::SectionChecks FieldItemsAdapter::sectionChecks() const {
+  return {{std::string{FieldItemsSection},
+           [](const ruleset::Section& section) -> core::Result<void> {
+             auto rules = readFieldItemRules(section);
+             if (!rules) {
+               return std::unexpected{rules.error()};
+             }
+             return {};
+           }}};
+}
+
+core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
+  const ruleset::Section* section = rules.section(FieldItemsSection);
+  if (section == nullptr) {
+    core::logDebug("[port:field_items] the ruleset has no field_items section: no ground items");
+    items_.setRules({});
+    return {};
+  }
+  auto read = readFieldItemRules(*section);
+  if (!read) {
+    return std::unexpected{read.error()};
+  }
+  items_.setRules(*read);
+  return {};
+}
+
+std::optional<assets::ItemHandle> FieldItemsAdapter::itemOf(std::int32_t originalItem) const {
+  const assets::ItemEntry* entry = inventory_->items().findByOriginalIndex(originalItem);
+  if (entry == nullptr) {
+    core::logWarning("{}", core::formatMessage(field_items_messages::UnknownItem, originalItem));
+    return std::nullopt;
+  }
+  return inventory_->items().handleOf(*entry);
+}
+
+bool FieldItemsAdapter::spawnItem(std::string_view mapId, std::int32_t originalItem,
+                                  assets::CollisionCell cell, float height) {
+  items_.enterMap(mapId);
+  const std::optional<assets::ItemHandle> item = itemOf(originalItem);
+  return item && items_.spawn(*item, cell, height);
+}
+
+bool FieldItemsAdapter::spawnChest(std::string_view mapId, std::int32_t originalItem,
+                                   glm::vec3 position, std::int32_t rotation,
+                                   std::int32_t trigger) {
+  items_.enterMap(mapId);
+  const std::optional<assets::ItemHandle> item = itemOf(originalItem);
+  if (!item) {
+    return false;
+  }
+  const bool taken = story_->state().trigger(trigger).value_or(false);
+  return items_.spawnChest(
+      {.item = *item, .position = position, .rotation = rotation, .trigger = trigger,
+       .taken = taken});
+}
+
+TakeOutcome FieldItemsAdapter::pickUp(std::size_t slot) {
+  const auto ground = items_.ground();
+  if (slot >= ground.size() || !ground[slot]) {
+    return TakeOutcome::Empty;
+  }
+  game::inventory::Inventory& bag = inventory_->inventory();
+  const assets::ItemHandle item = ground[slot]->item;
+  // tamerTickPickupItem: giveItem(type, 0) only asks whether the bag has room.
+  if (!bag.hasRoomFor(item)) {
+    core::logDebug("[port:field_items] tamerTickPickupItem (tamer.c:1450): bag full, slot {}",
+                   slot);
+    return TakeOutcome::BagFull;
+  }
+  bag.add(item, 1);
+  items_.remove(slot);
+  core::logDebug("[port:field_items] pickupItem (item.c:2639): '{}' into the bag",
+                 inventory_->items().at(item).id);
+  return TakeOutcome::Taken;
+}
+
+TakeOutcome FieldItemsAdapter::takeChest(std::size_t chest) {
+  const auto chests = items_.chests();
+  if (chest >= chests.size() || !chests[chest] || chests[chest]->taken) {
+    core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1520): chest {} empty", chest);
+    return TakeOutcome::Empty;
+  }
+  game::inventory::Inventory& bag = inventory_->inventory();
+  const assets::ItemHandle item = chests[chest]->item;
+  if (!bag.hasRoomFor(item)) {
+    core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1557): bag full, chest {}",
+                   chest);
+    return TakeOutcome::BagFull;
+  }
+  const std::int32_t trigger = chests[chest]->trigger;
+  if (auto set = story_->state().setTrigger(trigger, true); !set) {
+    core::logWarning("{}", core::formatMessage(field_items_messages::TriggerFailed, trigger,
+                                               set.error().message));
+  }
+  items_.markTaken(chest);
+  bag.add(item, 1);
+  core::logDebug("[port:field_items] tamerTickTakeChest (tamer.c:1565): '{}' into the bag, "
+                 "trigger {} set",
+                 inventory_->items().at(item).id, trigger);
+  return TakeOutcome::Taken;
+}
+
+} // namespace dwe::session

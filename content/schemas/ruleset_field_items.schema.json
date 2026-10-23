@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: field_items",
+  "description": "rules/<id>/field_items.yaml: the items on the field's ground and the chests (apps/session: FieldItemsAdapter).",
+  "type": "object",
+  "required": ["ground_slots", "chest_slots", "reach_cells"],
+  "additionalProperties": false,
+  "properties": {
+    "ground_slots": { "description": "How many items lie on the ground at once.", "type": "integer", "minimum": 1 },
+    "chest_slots": { "description": "How many chests a map holds at once.", "type": "integer", "minimum": 1 },
+    "reach_cells": {
+      "description": "An item or a chest is in reach within this many cells on each axis.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

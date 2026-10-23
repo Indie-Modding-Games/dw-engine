@@ -1,0 +1,7 @@
+# Los objetos en el suelo y los cofres del campo (apps/session: FieldItemsAdapter; game/field: field_items.hpp).
+# item.c: spawnItem y spawnDroppedItems: 11 objetos en el suelo a la vez (DROPPED_ITEMS).
+ground_slots: 11
+# map_object.c: spawnChest: 8 cofres (NUM_CHESTS).
+chest_slots: 8
+# tamer.c: checkItemPickup y checkChestCollision: a una casilla o menos en cada eje.
+reach_cells: 1
