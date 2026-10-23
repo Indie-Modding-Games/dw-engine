@@ -97,7 +97,8 @@ void Partner::startCare(std::int32_t hour, std::int32_t minute) {
   state_.evolution.hours = 0;
 }
 
-core::Result<void> Partner::rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel) {
+core::Result<void> Partner::rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel,
+                                    std::optional<std::size_t> egg) {
   if (alive()) {
     return core::fail(std::string{messages::StillAlive});
   }
@@ -105,7 +106,14 @@ core::Result<void> Partner::rebirth(const ruleset::GameClock& clock, std::int32_
   if (babies.empty()) {
     return core::fail(std::string{messages::NoBabies});
   }
-  const std::size_t index = strategies().rebirthChoice->pick(babies, state_, random_);
+  // dooa.c: DOOA_getSequenceState: the egg box's egg, but a partner with no lives left gets a
+  // random one.
+  std::size_t index = 0;
+  if (egg.has_value() && state_.life.lives > 0) {
+    index = *egg;
+  } else {
+    index = strategies().rebirthChoice->pick(babies, state_, random_);
+  }
   if (index >= babies.size()) {
     return core::fail(formatMessage(messages::BadBabyPick, index, babies.size()));
   }

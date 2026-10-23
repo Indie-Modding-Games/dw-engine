@@ -188,6 +188,24 @@ TEST_CASE("care.md rebirth: the baby is a strategy; another one picks differentl
   }
 }
 
+TEST_CASE("care.md rebirth: the egg box's egg counts only while the partner has lives left") {
+  auto registries = std::make_shared<PartnerStrategyRegistries>();
+  registries->rebirthChoices.add("first", [] { return std::make_unique<FirstBaby>(); });
+  OriginalRuleset original(registries);
+  original.set("life", "rebirth.baby_choice", "first");
+  constexpr std::size_t ThirdEgg = 2;
+  Raising natural(original.rules());
+  natural.quiet();
+  dieNaturally(natural);
+  REQUIRE(natural.partner().rebirth(natural.clock(), 0, ThirdEgg).has_value());
+  CHECK(natural.state().species == natural.rules().life.rebirth.babies.at(ThirdEgg).digimon);
+  Raising lastLife(original.rules());
+  lastLife.edit([](PartnerState& state) { state.life.lives = 1; });
+  loseBattle(lastLife);
+  REQUIRE(lastLife.partner().rebirth(lastLife.clock(), 0, ThirdEgg).has_value());
+  CHECK(lastLife.state().species == lastLife.rules().life.rebirth.babies.front().digimon);
+}
+
 TEST_CASE("evolution: a partner that becomes another species says so, for the field to draw it") {
   OriginalRuleset original;
   Raising raising(original.rules());

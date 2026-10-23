@@ -58,3 +58,13 @@ previous_screen:
   - {from: 6, to: 105, previous: 106}
   - {from: 142, to: 135, previous: 132, previous_exit: 1}
   - {from: 5, to: 12, previous: 13, previous_exit: 1}
+# La muerte (partner_impl.c: tickDeathCondition): una vida perdida o una muerte ponen la variable 255
+# a 0 y siguen en la sección 0x4DE del script del mapa. La caja de los huevos (doo2.c:
+# DOO2_openEggBox, DOO2_tickEggInput) suena al abrirse, al mover el huevo y al elegirlo.
+death:
+  section: 1246
+  cleared_variable: 255
+  egg_box:
+    open: {slot: 8, sound: 4}
+    move: {slot: 0, sound: 2}
+    choose: {slot: 0, sound: 3}

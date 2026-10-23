@@ -108,6 +108,14 @@ void StoryAdapter::attachStage(game::story::ScriptActorsPort* stage,
   }
 }
 
+void StoryAdapter::setPartnerSync(bool raised) {
+  if (!motion_.has_value()) {
+    return;
+  }
+  motion_->connectPartnerSync();
+  motion_->setPartnerSync(raised);
+}
+
 core::Result<void> StoryAdapter::publishMotion() {
   if (!runner_ || !motion_) {
     return {};

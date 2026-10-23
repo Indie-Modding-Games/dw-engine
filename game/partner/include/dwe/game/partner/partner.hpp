@@ -9,7 +9,9 @@
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -140,8 +142,11 @@ public:
 
   // After the death: the partner is reborn as a baby (evolution.c: reincarnatePartner,
   // initializeReincarnatedPartner). A natural death passes on a part of the stats, as much as the
-  // tamer's level.
-  core::Result<void> rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel);
+  // tamer's level. `egg` is the baby the egg box gave, by its place in life.rebirth.babies; it
+  // counts only while the partner has lives left (dooa.c: DOOA_getSequenceState), and without it
+  // the rebirth strategy picks.
+  core::Result<void> rebirth(const ruleset::GameClock& clock, std::int32_t tamerLevel,
+                             std::optional<std::size_t> egg = std::nullopt);
 
   // A story order changed the partner's numbers or conditions in place (script_interp.c:
   // scriptInstruction28to3F, scriptInstruction64to7E): the species stays and nothing else runs.

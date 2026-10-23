@@ -458,6 +458,27 @@ TEST_CASE("a partner that dies is reborn as a baby") {
   CHECK(std::ranges::find(Babies, session->partner().state().species) != Babies.end());
 }
 
+TEST_CASE("a partner whose death the story plays waits for the story's rebirth and its egg") {
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  session->setRebirthByStory(true);
+  makePartnerDie(*session);
+  session->clock().setSpeed(SixtyGameHoursPerSecond);
+  std::vector<PartnerEvent> events;
+  for (std::int32_t step = 0; step < 120 && !has(events, EventKind::Died); ++step) {
+    session->tick(Tick);
+    const std::vector<PartnerEvent> tickEvents = session->takePartnerEvents();
+    events.insert(events.end(), tickEvents.begin(), tickEvents.end());
+  }
+  REQUIRE(has(events, EventKind::Died));
+  session->tick(Tick);
+  CHECK_FALSE(session->partner().alive());
+  constexpr std::size_t LastEgg = 3;
+  session->rebirthPartner(LastEgg);
+  CHECK(session->partner().alive());
+  CHECK(session->partner().state().species == "yura");
+}
+
 TEST_CASE("a partner reborn after dying autosaves") {
   const TestPacks packs;
   MemorySaveStorage storage;

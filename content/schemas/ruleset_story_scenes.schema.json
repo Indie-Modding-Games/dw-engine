@@ -3,6 +3,18 @@
   "title": "Ruleset: story_scenes",
   "description": "rules/<id>/story_scenes.yaml: the story's battles, partner scenes and routines (apps/session: StoryScenesRules).",
   "type": "object",
+  "$defs": {
+    "sound": {
+      "description": "A sound of the scene: the bank slot and the sound in it.",
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0 },
+        "sound": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
   "required": [
     "battle",
     "partner",
@@ -207,6 +219,36 @@
           "description": "The first screen's exit.",
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "death": {
+      "description": "The death the story plays (partner_impl.c: tickDeathCondition; doo2.c: the egg box). Without it the partner is reborn at once.",
+      "type": "object",
+      "required": ["cleared_variable", "egg_box", "section"],
+      "additionalProperties": false,
+      "properties": {
+        "section": {
+          "description": "The map-head script's section a lost life or a death runs (0x4DE).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "cleared_variable": {
+          "description": "The variable set to 0 before the section runs.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "egg_box": {
+          "description": "The egg box's sounds: when it opens, when the egg moves and when one is taken.",
+          "type": "object",
+          "required": ["choose", "move", "open"],
+          "additionalProperties": false,
+          "properties": {
+            "open": { "$ref": "#/$defs/sound" },
+            "move": { "$ref": "#/$defs/sound" },
+            "choose": { "$ref": "#/$defs/sound" }
+          }
         }
       }
     },

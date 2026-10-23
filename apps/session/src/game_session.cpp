@@ -486,7 +486,12 @@ void GameSession::routePartnerEvent(const PartnerEvent& event) {
     changeTamerLevel(event.value);
     break;
   case EventKind::Died:
-    rebirthPartner();
+    if (rebirthByStory_) {
+      core::logDebug("[port:death] tickDeathCondition (partner_impl.c:1918): the story plays the "
+                     "death and asks for the rebirth");
+    } else {
+      rebirthPartner();
+    }
     break;
   default:
     break;
@@ -513,8 +518,8 @@ void GameSession::changeTamerLevel(std::int32_t change) {
   state_->tamer.level = std::clamp(state_->tamer.level + change, rules.levelMin, rules.levelMax);
 }
 
-void GameSession::rebirthPartner() {
-  if (auto reborn = state_->partner.rebirth(state_->clock, state_->tamer.level); !reborn) {
+void GameSession::rebirthPartner(std::optional<std::size_t> egg) {
+  if (auto reborn = state_->partner.rebirth(state_->clock, state_->tamer.level, egg); !reborn) {
     core::logError("{}", formatMessage(messages::RebirthFailed, reborn.error().message));
     return;
   }

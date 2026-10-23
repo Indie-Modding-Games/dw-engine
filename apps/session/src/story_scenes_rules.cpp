@@ -113,6 +113,32 @@ void readOverrides(assets::YamlReader& reader, const core::YamlNode& node,
   }
 }
 
+StorySceneSound readSound(assets::YamlReader& reader, const core::YamlNode& node,
+                          std::string_view key) {
+  const core::YamlNode& sound = reader.field(node, key);
+  if (!reader.expectKeys(sound, "story_scenes.death.egg_box sound", {"slot", "sound"})) {
+    return {};
+  }
+  return {.slot = integerAt(reader, sound, "slot"), .sound = integerAt(reader, sound, "sound")};
+}
+
+void readDeath(assets::YamlReader& reader, const core::YamlNode& node, StoryScenesRules& rules) {
+  if (!reader.expectKeys(node, "story_scenes.death", {"section", "cleared_variable", "egg_box"})) {
+    return;
+  }
+  const core::YamlNode& eggBox = reader.field(node, "egg_box");
+  if (!reader.expectKeys(eggBox, "story_scenes.death.egg_box", {"open", "move", "choose"})) {
+    return;
+  }
+  rules.death = StoryDeathRules{
+      .section = reader.integer<std::uint16_t>(reader.field(node, "section")),
+      .clearedVariable = integerAt(reader, node, "cleared_variable"),
+      .eggBox = {.open = readSound(reader, eggBox, "open"),
+                 .move = readSound(reader, eggBox, "move"),
+                 .choose = readSound(reader, eggBox, "choose")},
+  };
+}
+
 } // namespace
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section) {
@@ -121,7 +147,8 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   StoryScenesRules rules;
   if (!reader.expectKeys(
           root, SectionText,
-          {"battle", "partner", "routines", "recruits", "new_game", "previous_screen"})) {
+          {"battle", "partner", "routines", "recruits", "new_game", "previous_screen"},
+          {"death"})) {
     return std::unexpected{reader.error(section.file)};
   }
   readBattle(reader, reader.field(root, "battle"), rules.battle);
@@ -130,6 +157,9 @@ core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& sect
   readRecruits(reader, reader.field(root, "recruits"), rules);
   readNewGame(reader, reader.field(root, "new_game"), rules);
   readOverrides(reader, reader.field(root, "previous_screen"), rules.screens);
+  if (const core::YamlNode* death = root.find("death")) {
+    readDeath(reader, *death, rules);
+  }
   return reader.finish(std::move(rules), section.file);
 }
 

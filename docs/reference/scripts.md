@@ -460,7 +460,7 @@ falta para correr los eventos de la historia y las tiendas en la fase 4a (propue
 | 23, 24 | — | abrir / cerrar la bandeja del cofre de la 254 | sí, unos 8 fotogramas | `map_object.c` | no: el disco no la usa |
 | 25 | 7 | el valor al que vuelve la variable 0 al acabar = la 254 | no | `script_interp.c` | sí |
 | 28 | 140 | burbuja de humor de Monochromon (247, 248) | no | `script_common.c: createMonochromonMoodBubble` | más tarde |
-| 29 | 1 | elegir huevo al renacer | sí | `doo2.c: DOO2_openEggBox` | más tarde |
+| 29 | 1 | elegir huevo al renacer | sí | `doo2.c: DOO2_openEggBox` | sí |
 | 30, 31, 56 | 2, 97, 4 | acumulador de tienda: a 0, sumar 243/244, guardarlo en 243/244 | no | `script_interp.c` | sí |
 | 32 | 4 | introducción y nombres de la partida nueva (elección de huevo en la 254) | sí | `script_menu.c: newGameStateMachine` | sí |
 | 33 | 1 | inscribir a la fuerza en la copa especial | no | `script_interp.c` | más tarde |

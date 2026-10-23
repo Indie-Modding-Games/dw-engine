@@ -8,6 +8,7 @@
 #include <dwe/game/story/story_routines.hpp>
 #include <dwe/session/story_scenes.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <memory>
@@ -65,6 +66,9 @@ struct StoryScenesContext {
   std::vector<bool> recruits;
   // A new game whose map-head chain has not run yet.
   bool chainPending = false;
+  // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
+  bool deathPending = false;
+  std::optional<std::size_t> egg;
 };
 
 // The routines of the opening (story_routines/*.cpp), one file each; each registers its own.

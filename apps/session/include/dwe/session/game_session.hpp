@@ -23,6 +23,7 @@
 #include <dwe/session/session_system.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -227,6 +228,13 @@ public:
   // events and writes a requested autosave, as the session's own commands do.
   void afterSystemCommand();
 
+  // Whether the story plays the death and asks for the rebirth itself (StoryScenes); otherwise a
+  // dead partner is reborn at once.
+  void setRebirthByStory(bool byStory) { rebirthByStory_ = byStory; }
+  // Gives the dead partner its new form; `egg` is the egg box's (Partner::rebirth). The events are
+  // routed with the session's next ones.
+  void rebirthPartner(std::optional<std::size_t> egg = std::nullopt);
+
   // Asks for an autosave; the save module keeps one request and the ruleset decides which reasons
   // count.
   void requestAutosave(game::save::AutosaveReason reason);
@@ -260,7 +268,6 @@ private:
   void routePartnerEvents();
   void routePartnerEvent(const game::partner::PartnerEvent& event);
   void changeTamerLevel(std::int32_t change);
-  void rebirthPartner();
   void advanceAutosaveWindow(double realSeconds);
   void writeRequestedAutosave();
   // What every command of the player does after it: route the partner's events and write a
@@ -289,6 +296,7 @@ private:
   game::save::SaveFile file_;
   std::optional<game::save::SlotId> homeSlot_;
   std::vector<game::partner::PartnerEvent> partnerEvents_;
+  bool rebirthByStory_ = false;
   std::string lastMap_;
   std::unique_ptr<SessionSound> sound_;
   std::unique_ptr<SessionMusic> music_;

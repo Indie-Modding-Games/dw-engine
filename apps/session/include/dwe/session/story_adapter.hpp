@@ -113,6 +113,10 @@ public:
   // The characters and the camera the scripted moves drive, and their rules from the field rules
   // (story_stage_link.hpp); null detaches it. The stage must outlive its attachment.
   void attachStage(game::story::ScriptActorsPort* stage, const game::story::MotionRules& rules);
+  // The partner's sync wait_for_entity waits on (partner.c: getScriptSyncBit): the partner scenes'
+  // owner lowers it when a scene starts and raises it when it is over. Until the first call, the
+  // waits find it raised.
+  void setPartnerSync(bool raised);
   // The player is on the map with this number of the original (walked there, loaded a save or ended
   // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
   void mapEntered(std::int32_t map);

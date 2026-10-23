@@ -11,6 +11,9 @@
 #include <dwe/session/story_scenes.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -18,6 +21,7 @@
 
 namespace dwe::session {
 
+using game::partner::EventKind;
 using game::story::BattleOutcome;
 using game::story::PartnerScene;
 using game::story::ScriptedBattle;
@@ -92,10 +96,43 @@ public:
       scenes_->sync.finish();
       return;
     }
+    if (scenes_->rules.death.has_value()) {
+      startDeathScene(scene);
+    }
+    scenes_->desc.story->setPartnerSync(false);
     scenes_->partnerScene = PartnerSceneRequest{.scene = scene};
   }
 
 private:
+  // The death section ran its scene: the lost life or the death is the app's to play; the
+  // rebirth's scene gives the dead partner its new form first.
+  void startDeathScene(PartnerScene scene) const {
+    switch (scene) {
+    case PartnerScene::Dying:
+    case PartnerScene::SicknessLostLife:
+    case PartnerScene::BattleLostLife:
+      scenes_->deathPending = false;
+      break;
+    case PartnerScene::LostAllLives:
+      rebirth();
+      break;
+    default:
+      break;
+    }
+  }
+
+  void rebirth() const {
+    GameSession* session = scenes_->session;
+    if (session == nullptr || session->partner().alive()) {
+      core::logWarning("[port:death] partnerTickDying2: the partner is not dead, no rebirth");
+      return;
+    }
+    const std::optional<std::size_t> egg = std::exchange(scenes_->egg, std::nullopt);
+    core::logDebug("[port:death] DOOA_getSequenceState (dooa.c:1745): egg {}",
+                   egg.has_value() ? static_cast<std::int64_t>(*egg) : -1);
+    session->rebirthPartner(egg);
+  }
+
   void evolve(PartnerScene scene, std::optional<std::int64_t> species) const {
     EvolutionAdapter* evolution = scenes_->desc.evolution;
     GameSession* session = scenes_->session;
@@ -212,6 +249,7 @@ void StoryScenes::bind(GameSession& session) {
     return;
   }
   scenes.published = true;
+  session.setRebirthByStory(scenes.rules.death.has_value());
   scenes.battlePort = std::make_unique<SceneBattlePort>(scenes);
   scenes.partnerPort = std::make_unique<ScenePartnerPort>(scenes);
   scenes.battles = std::make_unique<game::story::StoryBattles>(scenes.state(), *scenes.battlePort,
@@ -264,6 +302,37 @@ void StoryScenes::tick(GameSession& session, const ruleset::ClockAdvance& /*adva
     scenes.runner().enterMap(scenes.rules.newGameMap);
   }
   watchRecruits(session);
+  askForDeath();
+}
+
+void StoryScenes::routePartnerEvent(GameSession& /*session*/,
+                                    const game::partner::PartnerEvent& event) {
+  if (playsDeath() && (event.kind == EventKind::LostLife || event.kind == EventKind::Died)) {
+    context_->deathPending = true;
+  }
+}
+
+void StoryScenes::askForDeath() {
+  // partner_impl.c: tickDeathCondition and the sickness's lost life call the death section once no
+  // script runs; a story battle lost goes there itself, and its scene clears the request.
+  StoryScenesContext& scenes = *context_;
+  if (!scenes.deathPending || !scenes.rules.death.has_value() || scenes.runner().busy()) {
+    return;
+  }
+  const StoryDeathRules& death = *scenes.rules.death;
+  const game::story::SectionRef section{.script = game::story::StoryRunner::MapHeadScript,
+                                        .section = death.section};
+  if (scenes.desc.story->request(section, game::story::StartTiming::NextFrame) !=
+      game::story::RequestOutcome::Accepted) {
+    return;
+  }
+  scenes.deathPending = false;
+  if (auto cleared = scenes.state().setVariable(death.clearedVariable, 0); !cleared) {
+    core::logWarning("{}", cleared.error().message);
+  }
+  core::logDebug("[port:death] tickDeathCondition (partner_impl.c:1918): section {} of the "
+                 "map-head script, variable {} cleared",
+                 death.section, death.clearedVariable);
 }
 
 void StoryScenes::watchRecruits(GameSession& session) {
@@ -315,6 +384,18 @@ std::optional<PartnerSceneRequest> StoryScenes::takePartnerScene() {
 
 void StoryScenes::partnerSceneFinished() {
   context_->sync.finish();
+  if (context_->desc.story != nullptr) {
+    context_->desc.story->setPartnerSync(true);
+  }
+}
+
+bool StoryScenes::playsDeath() const {
+  return context_->published && context_->rules.death.has_value();
+}
+
+void StoryScenes::chooseEgg(std::size_t egg) {
+  core::logDebug("[port:death] DOO2_tickEggInput (doo2.c:739): egg {} taken", egg);
+  context_->egg = egg;
 }
 
 game::story::ScreenHistory& StoryScenes::screens() {

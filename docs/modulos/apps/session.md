@@ -36,8 +36,8 @@ auto session = session::GameSession::create({.files = &files, .rulesetId = "orig
    siempre (simulaciones, tests).
 4. El cuidado del partner con lo que avanzó el reloj (`Partner::tick`), y después cada adaptador.
 5. Reparte los eventos del partner: `Slept` → autoguardado `PartnerSleep`, `NewDay` → autoguardado `NewDay`,
-   `TamerLevelChanged` → nivel de domador entre los límites de `tamer`, `Died` → renacer. Lo que provoca un evento
-   (renacer da `Reborn`) se reparte también.
+   `TamerLevelChanged` → nivel de domador entre los límites de `tamer`, `Died` → renacer (salvo si la historia
+   juega la muerte: ver abajo). Lo que provoca un evento (renacer da `Reborn`) se reparte también.
 6. Si hay una petición de autoguardado que el ruleset deja pasar, escribe la ranura de autoguardado siguiente.
 
 Las órdenes del jugador (`feed`, `cure`, `scold`, `praise`, `useToilet`, `sleep`, `train`) y el final de una batalla
@@ -238,7 +238,8 @@ quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `rec
 | Los efectos del área vuelven a empezar en cada mapa | `partner.c: setupPartnerOnWarp` | `followMap` → `Partner::enterMap` | `a map change autosaves, ...` | Igual |
 | Autoguardado al dormir, al cambiar de mapa y al acabar una batalla | El original no autoguarda | sección `save` | `the partner going to sleep autosaves`, `a map change autosaves, ...` | Desviación aprobada (2026-10-20) |
 | Autoguardado al empezar un día | El original no autoguarda | `save.autosave.on_new_day: true` | `a new day autosaves only when ...` | Desviación aprobada (2026-10-20) |
-| Al morir, renace enseguida como bebé | `partner.c` (muerte y renacer tras la escena de muerte) | `routePartnerEvent` → `Partner::rebirth` | `a partner that dies is reborn as a baby` | **Hueco**: sin la escena ni la espera |
+| Al morir, renace enseguida como bebé | `partner.c` (muerte y renacer tras la escena de muerte) | `routePartnerEvent` → `Partner::rebirth` | `a partner that dies is reborn as a baby` | Solo sin la historia; con ella, la fila siguiente |
+| Una vida perdida o una muerte corren la sección `0x4DE` del script 0 (variable 255 a 0); la muerte espera a la escena de renacer (rutina de compañero 4), que usa el huevo de la caja (rutina 29) si quedan vidas, o uno al azar | `partner_impl.c: tickDeathCondition`, `doo2.c: DOO2_openEggBox`, `DOO2_tickEggInput`, `dooa.c: DOOA_getSequenceState` | `story_scenes.death`: `StoryScenes::routePartnerEvent` y `tick` piden la sección cuando no corre ningún guion; `GameSession::setRebirthByStory`, `StoryScenes::chooseEgg`, `rebirthPartner(huevo)` | `a partner whose death the story plays waits ...`, `the egg box's egg counts only while ...` | Igual, sin la carga del overlay (`loadDynamicLibrary`), los sprites de los huevos en VRAM ni la animación de la caja |
 | Respuesta del partner al área (le gusta, no le gusta), calculada al entrar en cada mapa con las listas de regiones del mapa y la región favorita de la especie | `map.c: loadMapSetup` (`MAP_TILE_DATA.partnerAreaResponse`). En la decompilación lo llama `map.c: loadMap`, y a este el cambio de mapa de los guiones (`script_interp.c`); según eso, la evolución y el renacer no lo recalculan hasta que se carga otro mapa | `attachField` y `followMap` → `game::partner::areaResponseOf`; `careContext`, `partnerView` y el sueño (`care_commands.cpp`) | `how the partner feels about the map follows the map entered, ...`; en `game/partner`: `area response: ...` | Igual |
 | Montones de caca en el suelo | `partner.c` | `PoopedOnGround` no se reparte | — | **Hueco** |
 | El primer partner y cada bebé renacido quedan como criados | `main.c: main`, `evolution.c: reincarnatePartner` (`setDigimonRaised`) | `EvolutionAdapter::startNewGame`, `Reborn` | `the evolution adapter marks the first partner as raised ...` | Igual |

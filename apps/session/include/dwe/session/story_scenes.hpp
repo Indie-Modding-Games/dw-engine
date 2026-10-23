@@ -6,6 +6,7 @@
 #include <dwe/game/story/story_battle.hpp>
 #include <dwe/session/session_system.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -29,6 +30,29 @@ enum class NewGameChain : std::uint8_t {
   Original,
   // The state data/new_game_story leaves and field/warps' start, without the opening.
   Seeded,
+};
+
+// A sound of the story's scenes: the bank slot and the sound in it.
+struct StorySceneSound {
+  std::int64_t slot = 0;
+  std::int64_t sound = 0;
+};
+
+// The egg box's sounds (doo2.c: DOO2_openEggBox, DOO2_tickEggInput): when it opens, when the egg
+// moves and when the player takes one.
+struct StoryEggBoxRules {
+  StorySceneSound open;
+  StorySceneSound move;
+  StorySceneSound choose;
+};
+
+// The death the story plays (partner_impl.c: tickDeathCondition): a lost life or a death runs
+// `section` of the map-head script with `clearedVariable` at 0, and the rebirth waits for its
+// scene.
+struct StoryDeathRules {
+  std::uint16_t section = 0;
+  std::int64_t clearedVariable = 0;
+  StoryEggBoxRules eggBox;
 };
 
 // The numbers of the story_scenes section.
@@ -55,6 +79,8 @@ struct StoryScenesRules {
   NewGameChain newGameChain = NewGameChain::Seeded;
   std::int32_t newGameMap = 0;
   std::int32_t newGameExit = 0;
+  // Without it, the session gives the partner its new form at once and no script runs.
+  std::optional<StoryDeathRules> death;
 };
 
 core::Result<StoryScenesRules> readStoryScenesRules(const ruleset::Section& section);
@@ -131,6 +157,8 @@ public:
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> startNewGame(GameSession& session) override;
   void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
+  // A lost life or a death waits for the death section (rules.death).
+  void routePartnerEvent(GameSession& session, const game::partner::PartnerEvent& event) override;
 
   // The battle the story asks for, once.
   [[nodiscard]] std::optional<game::story::ScriptedBattle> takeBattleRequest();
@@ -141,6 +169,12 @@ public:
   void screenClosed();
   [[nodiscard]] std::optional<PartnerSceneRequest> takePartnerScene();
   void partnerSceneFinished();
+  // Whether the story plays the lost lives, the deaths and the rebirths as partner scenes; the app
+  // then plays them when the story asks, not when the partner's events come.
+  [[nodiscard]] bool playsDeath() const;
+  // The egg the player took in the egg box, by its place in the rebirth's babies; the rebirth's
+  // scene gives it to the partner.
+  void chooseEgg(std::size_t egg);
 
   // What the original keeps of the screens and the battles (map.c, script_interp.c), and where a
   // new game starts.
@@ -152,6 +186,7 @@ public:
 private:
   void bind(GameSession& session);
   void watchRecruits(GameSession& session);
+  void askForDeath();
 
   std::unique_ptr<StoryScenesContext> context_;
 };
