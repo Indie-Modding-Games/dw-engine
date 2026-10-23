@@ -245,7 +245,7 @@ void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId) {
 bool FieldScene::partnerClipFinished() const {
   // A clip the model lacks counts as finished, so that no scene waits for it.
   return partnerClip_ && partnerClipStarted_ &&
-         (!partnerClipPlays_ || partnerActor_->player->finished());
+         (!partnerClipPlays_ || partnerActor_->player->playedThrough());
 }
 
 void FieldScene::animatePartnerClip(double seconds) {
@@ -552,6 +552,10 @@ void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {
 
 bool FieldScene::playerClipPlaying() const {
   return playerActor_->heldClip && !playerActor_->player->finished();
+}
+
+bool FieldScene::playerClipPlayedThrough() const {
+  return !playerActor_->heldClip || playerActor_->player->playedThrough();
 }
 
 std::optional<glm::vec3> FieldScene::playerNodePoint(std::uint32_t node, glm::vec3 offset) const {

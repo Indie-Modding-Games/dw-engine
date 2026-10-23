@@ -40,7 +40,10 @@ mientras el tiempo corre (`Field::holdForCare`). El compañero anda hasta la dis
 está lejos y se aleja si está cerca (`Field::walkPartnerToRange`, `checkEatDistance`). Esa distancia va por especie en
 `field_items.feed.take_distance` (`ITEM_TAKE_DISTANCE`). El jugador le tiende el objeto y suena el sonido. Pasado el
 cuadro 7, el compañero lo come y el objeto se aplica al acabar, o lo rechaza y el objeto queda en la bolsa. Mientras
-dura, la muerte y la evolución esperan, porque el jugador no está libre. Sin el bloque `feed` del ruleset, la bolsa usa
+dura, la muerte y la evolución esperan, porque el jugador no está libre. Al abrir la escena se cierra el menú
+(`startFeedingItem` pone `IS_IN_MENU = 0`). Las escenas de cuidado esperan a que un clip acabe su primera vuelta, también
+si tiene bucle (`FieldScene::partnerClipFinished`, `playerClipPlayedThrough`); con un clip en bucle, el rechazo no
+terminaba nunca. Sin el bloque `feed` del ruleset, la bolsa usa
 el objeto al momento, como antes. `use_item` de la consola también lo usa al momento.
 
 Diferencias con el original:

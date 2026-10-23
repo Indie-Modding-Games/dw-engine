@@ -44,10 +44,10 @@ steps:
   - menu_select: tab-items
   - menu_select: slot-0
   - menu_select: opt-use
-  - expect_change: {partner.weight: up}
-  - screenshot: raise-fed
-  - menu_select: close
+  # startFeedingItem (game_menu.c): the menu closes, the partner comes for the item and eats it.
   - wait: {hidden: partner_menu, timeout: 5}
+  - expect_change: {partner.weight: up, timeout: 20}
+  - screenshot: raise-fed
   # Two game hours a real second, until the partner needs the toilet and then gets sleepy.
   - script: clock_speed("120")
   - wait: {partner_has: partner_menu.condition.needs_toilet, timeout: 60}

@@ -59,6 +59,10 @@ steps:
   - script: clock_speed("120")
   - wait: {partner_has: partner_menu.condition.hungry, timeout: 60}
   - script: clock_speed("1")
+  # The new game's Jijimon stands by File City's entrance, in the straight line from the start; walk_to plans
+  # around the map's walls but not around NPCs, so the walk goes south of him first.
+  - walk_to: {point: [-330, 1950], radius: 40}
+  - walk_to: {point: [300, 1950], radius: 40}
   - walk_to: {point: [600, 300], radius: 40}
   - wait: {partner_within: 300, seconds: 0.5, timeout: 5}
   - expect_setting: {hud.partner.visible: true}

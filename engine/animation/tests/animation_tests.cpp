@@ -184,6 +184,18 @@ TEST_CASE("a clip that does not repeat holds its last pose") {
   CHECK(player.clip() == model.findClip(5U));
 }
 
+TEST_CASE("a clip that repeats has played through at the end of its first pass") {
+  const ModelData model = testModel();
+  AnimationPlayer player{model};
+  REQUIRE(player.play(2U));
+  const float pass = model.findClip(2U)->duration;
+  player.advance(pass * 0.5F);
+  CHECK_FALSE(player.playedThrough());
+  player.advance(pass);
+  CHECK(player.playedThrough());
+  CHECK_FALSE(player.finished());
+}
+
 TEST_CASE("joint matrices move the vertices with their joints") {
   const ModelData model = testModel();
   AnimationPlayer player{model};

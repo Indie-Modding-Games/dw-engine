@@ -116,6 +116,9 @@ public:
   void setPlayerClip(std::optional<std::uint32_t> clip);
   // Whether the clip setPlayerClip gave still plays.
   [[nodiscard]] bool playerClipPlaying() const;
+  // Whether that clip has reached the end of its first pass, one that repeats too (animFrame ==
+  // frameCount); true without a clip.
+  [[nodiscard]] bool playerClipPlayedThrough() const;
   // A point in the space of one of the player's model nodes (the original's object index), in
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
@@ -168,7 +171,8 @@ public:
   // motion picks, until nothing gives the partner back to its motion. A clip the model lacks is
   // logged and the partner keeps its motion.
   void playPartnerClip(std::optional<std::uint32_t> clipId);
-  // Whether the partner's scene clip holds its last pose (animFrame == frameCount).
+  // Whether the partner's scene clip has reached the end of its first pass (animFrame ==
+  // frameCount), one that repeats too.
   [[nodiscard]] bool partnerClipFinished() const;
   // The map's camera, which a scene's camera starts from.
   [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }

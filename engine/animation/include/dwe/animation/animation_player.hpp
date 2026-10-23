@@ -35,6 +35,9 @@ public:
   [[nodiscard]] double time() const { return time_; }
   // A clip that does not repeat is finished once it holds its last pose.
   [[nodiscard]] bool finished() const;
+  // Any clip, one that repeats too, has played through once its first pass reaches its end
+  // (anim.c: animFrame reaching frameCount, which the care scenes wait for).
+  [[nodiscard]] bool playedThrough() const;
   [[nodiscard]] std::span<const assets::NodeTransform> pose() const { return pose_; }
   // One per joint of the skin (see computeJointMatrices).
   [[nodiscard]] std::span<const glm::mat4> jointMatrices() const { return joints_; }

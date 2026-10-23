@@ -21,6 +21,14 @@ steps:
   - menu_select: slot-0
   - screenshot: partner-bag-options
   - menu_select: opt-use
+  # startFeedingItem (game_menu.c): the menu closes and the partner comes for the meat; the bag opens again once
+  # the scene is over.
+  - wait: {hidden: partner_menu, timeout: 5}
+  - wait: {seconds: 6}
+  - menu: open
+  - menu_select: open-partner
+  - wait: {shown: partner_menu, seconds: 0.5}
+  - menu_select: tab-items
   - wait: {seconds: 0.5}
   - screenshot: partner-bag-used
   - menu_select: slot-0

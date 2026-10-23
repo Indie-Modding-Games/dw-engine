@@ -139,7 +139,8 @@ bool FeedScene::tick(float seconds) {
     return false;
   case Step::Shrug:
     // Sub state 8: the item stays in the bag.
-    if (!scene_->playerClipPlaying()) {
+    // A clip that repeats ends after its first pass, as anim.c's frame count does.
+    if (scene_->playerClipPlayedThrough()) {
       core::logDebug("[port:feed] partnerTickFeedItem (partner.c:515): refused, kept");
       finish();
       return true;
