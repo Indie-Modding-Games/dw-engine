@@ -160,6 +160,24 @@ TimeOfDayRules readTimeOfDay(YamlReader& reader, const YamlNode& node) {
   return time;
 }
 
+NpcRules readNpc(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "npc",
+                         {"walk_speed", "run_speed", "turn_speed", "grace_turn_speed",
+                          "stuck_turn_speed", "talk_reach"})) {
+    return {};
+  }
+  NpcRules npc{.walkSpeed = readPositive(reader, reader.field(node, "walk_speed")),
+               .runSpeed = readPositive(reader, reader.field(node, "run_speed")),
+               .turnSpeed = readPositive(reader, reader.field(node, "turn_speed")),
+               .graceTurnSpeed = readPositive(reader, reader.field(node, "grace_turn_speed")),
+               .stuckTurnSpeed = readPositive(reader, reader.field(node, "stuck_turn_speed")),
+               .talkReach = readNonNegative(reader, reader.field(node, "talk_reach"))};
+  if (reader.ok() && npc.runSpeed < npc.walkSpeed) {
+    reader.fail(node, "npc: run_speed cannot be less than walk_speed");
+  }
+  return npc;
+}
+
 template <typename T>
 core::Result<T> loadDocument(const assets::VirtualFileSystem& vfs, std::string_view idText,
                              core::Result<T> (*parse)(std::string_view)) {
@@ -202,14 +220,18 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
   }
   YamlReader reader;
   if (!reader.expectKeys(*tree, "the field rules",
-                         {"player", "partner", "input", "transition", "time_of_day"})) {
+                         {"player", "partner", "input", "transition", "time_of_day"}, {"npc"})) {
     return std::unexpected{reader.error("field rules")};
   }
   FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
                    .partner = readPartner(reader, reader.field(*tree, "partner")),
                    .input = readInput(reader, reader.field(*tree, "input")),
                    .transition = readTransition(reader, reader.field(*tree, "transition")),
-                   .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day"))};
+                   .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day")),
+                   .npc = {}};
+  if (const YamlNode* npc = tree->find("npc"); npc != nullptr) {
+    rules.npc = readNpc(reader, *npc);
+  }
   return reader.finish(std::move(rules), "field rules");
 }
 

@@ -59,6 +59,20 @@
         "dusk_light": { "$ref": "#/$defs/light" },
         "night_light": { "$ref": "#/$defs/light" }
       }
+    },
+    "npc": {
+      "description": "How the map's NPCs move and touch (overworld.c: NPCEntityTickOverworld; map.c: entityCheckCollision, collisionGrace). Optional: without it, the original's values.",
+      "type": "object",
+      "required": ["walk_speed", "run_speed", "turn_speed", "grace_turn_speed", "stuck_turn_speed", "talk_reach"],
+      "additionalProperties": false,
+      "properties": {
+        "walk_speed": { "description": "Ground speed of the walk animation.", "type": "number", "exclusiveMinimum": 0 },
+        "run_speed": { "description": "Ground speed of the run animation.", "type": "number", "exclusiveMinimum": 0 },
+        "turn_speed": { "description": "How fast it turns toward its waypoint.", "type": "number", "exclusiveMinimum": 0 },
+        "grace_turn_speed": { "description": "How fast a blocked NPC turns toward a free side.", "type": "number", "exclusiveMinimum": 0 },
+        "stuck_turn_speed": { "description": "How fast a blocked NPC with no free side turns.", "type": "number", "exclusiveMinimum": 0 },
+        "talk_reach": { "description": "How much further the player reaches the way it faces when confirm is pressed while standing.", "type": "number", "minimum": 0 }
+      }
     }
   },
   "$defs": {

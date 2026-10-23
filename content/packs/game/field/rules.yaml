@@ -63,3 +63,18 @@ time_of_day:
   night_start: 20
   dusk_light: [1.0, 0.7, 0.7]
   night_light: [0.5, 0.5, 0.5]
+# Los NPC del mapa (overworld.c: NPCEntityTickOverworld; map.c: entityCheckCollision, collisionGrace), a 20
+# imágenes por segundo.
+npc:
+  # El original los mueve con la raíz de sus animaciones 2 (andar) y 4 (correr), la de cada especie
+  # (anim.c: applyRootMomentum). Aquí, la del partner inicial: diferencia pendiente hasta tener la raíz por especie.
+  walk_speed: 452
+  run_speed: 870
+  # overworld.c: NPCEntityTickWaypointWalk gira 0x71 de 4096 por imagen hacia su punto: 113 × 2π / 4096 × 20.
+  turn_speed: 3.4669
+  # map.c: collisionGrace gira al NPC bloqueado como mucho 0x50 por imagen hacia un lado libre (80 × 2π / 4096 × 20)
+  # y 32 por imagen si no hay ninguno libre (32 × 2π / 4096 × 20).
+  grace_turn_speed: 2.4544
+  stuck_turn_speed: 0.9817
+  # map.c: entityCheckEntityCollision alarga 50 la caja del jugador hacia donde mira si pulsa confirmar parado.
+  talk_reach: 50

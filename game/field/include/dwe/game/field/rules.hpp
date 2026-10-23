@@ -108,12 +108,31 @@ struct TimeOfDayRules {
   glm::vec3 nightLight{0.5F};
 };
 
+// How the map's NPCs move and touch (overworld.c: NPCEntityTickOverworld, map.c:
+// entityCheckCollision, collisionGrace). Missing from a pack's field/rules: these defaults.
+struct NpcRules {
+  // The original moves an NPC by the root motion of its animations 2 (walk) and 4 (run)
+  // (anim.c: applyRootMomentum), per species; these are the first partner's (field/rules).
+  float walkSpeed = 452.0F;
+  float runSpeed = 870.0F;
+  // overworld.c: NPCEntityTickWaypointWalk turns 0x71 of 4096 a frame toward its waypoint.
+  float turnSpeed = 3.4669F;
+  // map.c: collisionGrace turns a blocked NPC at most 0x50 a frame toward a free side, and 32 a
+  // frame when no side is free.
+  float graceTurnSpeed = 2.4544F;
+  float stuckTurnSpeed = 0.9817F;
+  // map.c: entityCheckEntityCollision reaches 50 further the way the player faces when confirm is
+  // pressed while standing.
+  float talkReach = 50.0F;
+};
+
 struct FieldRules {
   MoverRules player;
   PartnerRules partner;
   InputRules input;
   TransitionRules transition;
   TimeOfDayRules timeOfDay;
+  NpcRules npc;
 };
 
 // Where a new field session starts (`field/warps` in the game pack,

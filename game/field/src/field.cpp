@@ -90,7 +90,8 @@ Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
     : world_(&world), rules_(std::move(rules)), scriptWarps_(std::move(scriptWarps.warps)),
       facts_(std::move(scriptWarps.facts)), writeTrigger_(std::move(scriptWarps.writeTrigger)),
       unknownPolicy_(scriptWarps.unknownPolicy), explore_(scriptWarps.explore),
-      hasMap_(std::move(scriptWarps.hasMap)), player_(world.create()), partner_(world.create()) {
+      hasMap_(std::move(scriptWarps.hasMap)), player_(world.create()), partner_(world.create()),
+      npcs_(world, rules_.npc, rules_.transition.frameSeconds) {
   entt::registry& registry = world_->registry();
   registry.emplace<Transform>(player_);
   registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -126,6 +127,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   collision_ = map.collision;
   regions_ = map.regions;
   warps_ = map.warps;
+  npcs_.enterMap(map.npcs);
   refreshScriptWarps();
   const glm::vec3 view =
       assets::toWorldPosition(map.camera.reference) - assets::toWorldPosition(map.camera.viewpoint);
@@ -181,6 +183,7 @@ void Field::setInput(const FieldInput& input) {
 
 void Field::tick(float seconds) {
   triggerSteps_.clear();
+  npcs_.clearContacts();
   gameTimeRan_ = false;
   entt::registry& registry = world_->registry();
   scene::beginTick(registry.get<Transform>(player_));
@@ -204,16 +207,51 @@ void Field::tick(float seconds) {
       fadeInSeconds_.reset();
     } else if (frame < rules_.transition.fadeInFrames) {
       registry.get<AnimationIntent>(player_) = {};
+      tickNpcs(seconds, false);
       return;
     }
   }
   // clock.c: tickGameClock runs while the player plays.
   gameTimeRan_ = true;
   movePlayer(seconds);
+  // tamer.c: checkMapInteraction: an NPC's section starts the script, so a confirm cell's section
+  // that frame finds a script running and is dropped.
+  if (touchNpcs()) {
+    input_.confirm = false;
+  }
   checkTriggers();
   checkConfirm();
   updateTrail();
   movePartner(seconds);
+  tickNpcs(seconds, true);
+}
+
+bool Field::touchNpcs() {
+  entt::registry& registry = world_->registry();
+  const auto& transform = registry.get<Transform>(player_);
+  const Motion motion = registry.get<AnimationIntent>(player_).motion;
+  const glm::vec2 facing = ground(assets::forwardOfYaw(transform.yaw));
+  // map.c: entityCheckCollision tests the player one frame of its animation's motion ahead, so
+  // pushing against an NPC touches it.
+  const float speed = motion == Motion::Run    ? rules_.player.runSpeed
+                      : motion == Motion::Walk ? rules_.player.walkSpeed
+                                               : 0.0F;
+  const glm::vec2 ahead =
+      ground(transform.position) + (facing * (speed * rules_.transition.frameSeconds));
+  const std::size_t before = npcs_.contacts().size();
+  npcs_.touchFromPlayer({.centre = ahead, .half = rules_.player.radius}, facing,
+                        motion == Motion::Idle, input_.confirm);
+  return npcs_.contacts().size() > before;
+}
+
+void Field::tickNpcs(float seconds, bool playerFree) {
+  entt::registry& registry = world_->registry();
+  npcs_.tick(seconds, collision_,
+             {.player = {.centre = ground(registry.get<Transform>(player_).position),
+                         .half = rules_.player.radius},
+              .partner = {.centre = ground(registry.get<Transform>(partner_).position),
+                          .half = rules_.partner.mover.radius},
+              .playerFree = playerFree});
 }
 
 void Field::walkOut(float seconds) {
@@ -544,6 +582,10 @@ void Field::movePlayer(float seconds) {
         moveOnGrid(collision_, transform.position, step.direction * expected, mover.radius)
             .position;
   }
+  // tamer.c: checkMapInteraction stops the player at an NPC (animFlag 2).
+  if (npcs_.blocks(start, transform.position, mover.radius)) {
+    transform.position = start;
+  }
   const float moved = groundDistance(transform.position, start);
   // The original faces the way the stick points even against a wall (tamer.c: setTamerDirection),
   // and keeps its walk or run animation playing at full speed there: it is the animation that moves
@@ -649,7 +691,7 @@ void Field::checkTriggers() {
 // gets this far (no fade in, not leaving). That is the same only because the field has none of the
 // other states yet (6 idle, 7 item pickup, 8 training, 11 fishing, 14 chest, 15-20 opening, ending
 // and life loss) nor running scripts. Before the cell, the original lets confirm talk to an NPC the
-// player faces; the field has no NPCs yet (story S4), so a cell never loses to one.
+// player faces: then the cell's section loses (touchNpcs).
 void Field::checkConfirm() {
   if (!std::exchange(input_.confirm, false) || leaving_) {
     return;
@@ -746,8 +788,11 @@ void Field::movePartner(float seconds) {
       (motion == Motion::Run ? rules.mover.runSpeed : rules.mover.walkSpeed) * seconds;
   const GridMove move = moveOnGrid(collision_, transform.position,
                                    direction * std::min(expected, glm::length(toTarget)), radius);
-  const float moved = groundDistance(move.position, transform.position);
-  transform.position = move.position;
+  // map.c: partnerTickCollision stops at an NPC too (entityCheckCollision).
+  const glm::vec3 reached =
+      npcs_.blocks(transform.position, move.position, radius) ? transform.position : move.position;
+  const float moved = groundDistance(reached, transform.position);
+  transform.position = reached;
   transform.yaw =
       turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),
                  rules.mover.turnSpeed * seconds);

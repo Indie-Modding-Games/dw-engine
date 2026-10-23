@@ -3,6 +3,7 @@
 #include <dwe/assets/map_document.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/field/npcs.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/field/script_warps.hpp>
 #include <dwe/scene/components.hpp>
@@ -206,6 +207,12 @@ public:
   // The rules in use.
   [[nodiscard]] const FieldRules& rules() const { return rules_; }
 
+  // The map's NPCs, which the story puts on the map and takes off (npcs.hpp).
+  [[nodiscard]] FieldNpcs& npcs() { return npcs_; }
+  [[nodiscard]] const FieldNpcs& npcs() const { return npcs_; }
+  // The NPC touches and talks of the last tick, whose sections the story runs if no script runs.
+  [[nodiscard]] std::span<const NpcContact> npcContacts() const { return npcs_.contacts(); }
+
 private:
   struct Step {
     glm::vec2 direction{};
@@ -220,6 +227,9 @@ private:
   glm::vec2 followPath(glm::vec3& position, float distance);
   void checkTriggers();
   void checkConfirm();
+  // tamer.c: checkMapInteraction's NPC part; whether an NPC's section was asked for.
+  bool touchNpcs();
+  void tickNpcs(float seconds, bool playerFree);
   void leave(MapChange change);
   // The map change the map's scripts make when `via` runs the section `value` and its guards are
   // decided taken; the warp's triggers are written.
@@ -261,6 +271,7 @@ private:
   std::vector<std::pair<std::string, std::int32_t>> ambiguousReported_;
   scene::Entity player_;
   scene::Entity partner_;
+  FieldNpcs npcs_;
 
   std::string mapId_;
   assets::MapCollision collision_;

@@ -5,6 +5,7 @@ dwe_add_module(field
         src/script_warps.cpp
         src/grid.cpp
         src/field.cpp
+        src/npcs.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 
