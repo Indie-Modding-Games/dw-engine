@@ -136,6 +136,12 @@ inline constexpr std::string_view StoryModuleOutdated =
     "extract again";
 inline constexpr std::string_view NoStoryModules =
     "story: no pack has story modules; no story section can run";
+inline constexpr std::string_view TooManyStoryTasks =
+    "the section started more than 256 routines that ended in the same frame";
+inline constexpr std::string_view NoSceneOrders =
+    "story: the scenes' orders need the routines, the battles and the partner's scenes";
+inline constexpr std::string_view StoryScenesOff =
+    "[port:story] no story_scenes section: battles, scenes and routines are off";
 
 // The story's sound slots (session_sound.hpp). A sound that cannot play stays silent.
 inline constexpr std::string_view SoundNoMaps = "sound: no map table ({}); slot 8 stays silent";

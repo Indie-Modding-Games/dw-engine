@@ -258,36 +258,75 @@ core::Result<game::story::SectionHandle> StoryLuaHost::start(SectionRef section)
   return handle;
 }
 
+std::optional<SectionStep> StoryLuaHost::driveTask(game::story::SectionHandle handle,
+                                                   game::story::ResumeValue& value) {
+  const auto waiting = tasks_.find(handle);
+  if (waiting == tasks_.end()) {
+    return std::nullopt;
+  }
+  const game::story::TaskStep step = waiting->second.task->tick();
+  if (std::holds_alternative<game::story::TaskRunning>(step)) {
+    return game::story::Wait{game::story::FrameWait{.frames = 1, .result = {}}};
+  }
+  const std::uint32_t linkDepth = waiting->second.linkDepth;
+  tasks_.erase(waiting);
+  if (const auto* done = std::get_if<game::story::TaskDone>(&step)) {
+    value = done->value;
+    return std::nullopt;
+  }
+  if (const auto* jump = std::get_if<game::story::TaskJump>(&step)) {
+    return game::story::Wait{FileJump{.target = jump->target, .linkDepth = linkDepth}};
+  }
+  return game::story::Wait{std::get<game::story::TaskMapChange>(step).change};
+}
+
 SectionStep StoryLuaHost::resume(game::story::SectionHandle handle,
                                  game::story::ResumeValue value) {
   const auto found = sections_.find(handle);
   DWE_ASSERT(found != sections_.end());
-  pendingWait_.reset();
-  const ApiValue resumed = value ? ApiValue{*value} : ApiValue{};
-  const script::CoroutineStep step = found->second.resume(resumed);
-  if (const auto* waiting = std::get_if<script::CoroutineWaiting>(&step)) {
-    if (!pendingWait_) {
-      return SectionFailed{.message = std::string{messages::WaitWithoutStoryWait}};
+  // A task that ends in the frame it starts lets the section go on and wait again; a section that
+  // only ever does that would never give the frame back.
+  constexpr int MostTasksInAFrame = 256;
+  for (int round = 0; round < MostTasksInAFrame; ++round) {
+    if (auto step = driveTask(handle, value)) {
+      return *step;
     }
-    game::story::Wait wait = *std::exchange(pendingWait_, std::nullopt);
-    if (auto* jump = std::get_if<FileJump>(&wait)) {
-      jump->linkDepth = waiting->callDepth;
+    pendingWait_.reset();
+    pendingTask_.reset();
+    const ApiValue resumed = value ? ApiValue{*value} : ApiValue{};
+    const script::CoroutineStep step = found->second.resume(resumed);
+    if (const auto* waiting = std::get_if<script::CoroutineWaiting>(&step)) {
+      if (pendingTask_) {
+        tasks_.insert_or_assign(handle, WaitingTask{.task = std::exchange(pendingTask_, nullptr),
+                                                    .linkDepth = waiting->callDepth});
+        value.reset();
+        continue;
+      }
+      if (!pendingWait_) {
+        return SectionFailed{.message = std::string{messages::WaitWithoutStoryWait}};
+      }
+      game::story::Wait wait = *std::exchange(pendingWait_, std::nullopt);
+      if (auto* jump = std::get_if<FileJump>(&wait)) {
+        jump->linkDepth = waiting->callDepth;
+      }
+      return wait;
     }
-    return wait;
+    if (const auto* finished = std::get_if<script::CoroutineFinished>(&step)) {
+      if (finished->value == ApiValue{true}) {
+        return SectionEnded{};
+      }
+      if (std::holds_alternative<std::monostate>(finished->value)) {
+        return SectionReturned{};
+      }
+      return SectionFailed{.message = std::string{messages::BadSectionReturn}};
+    }
+    return SectionFailed{.message = std::get<script::CoroutineFailed>(step).message};
   }
-  if (const auto* finished = std::get_if<script::CoroutineFinished>(&step)) {
-    if (finished->value == ApiValue{true}) {
-      return SectionEnded{};
-    }
-    if (std::holds_alternative<std::monostate>(finished->value)) {
-      return SectionReturned{};
-    }
-    return SectionFailed{.message = std::string{messages::BadSectionReturn}};
-  }
-  return SectionFailed{.message = std::get<script::CoroutineFailed>(step).message};
+  return SectionFailed{.message = std::string{messages::TooManyStoryTasks}};
 }
 
 void StoryLuaHost::close(game::story::SectionHandle handle) {
+  tasks_.erase(handle);
   sections_.erase(handle);
 }
 

@@ -472,6 +472,10 @@ core::Result<void> StoryAdapter::startNewGame(GameSession& session) {
   return {};
 }
 
+game::story::StoryStatePort* StoryAdapter::statePort() {
+  return statePort_.get();
+}
+
 game::story::StoryState StoryAdapter::newGameState(std::string_view firstPartner) const {
   game::story::StoryState state;
   std::optional<std::int32_t> raised;
@@ -483,7 +487,7 @@ game::story::StoryState StoryAdapter::newGameState(std::string_view firstPartner
       core::logWarning("{}", formatMessage(messages::StoryPartnerUnnumbered, firstPartner));
     }
   }
-  if (newGame_) {
+  if (newGame_ && seedNewGame_) {
     const game::field::TriggerState start =
         game::field::newGameTriggers(*newGame_, fieldStartMap_, fieldStartExit_);
     for (std::int32_t trigger = 0; trigger < game::story::TriggerCount; ++trigger) {

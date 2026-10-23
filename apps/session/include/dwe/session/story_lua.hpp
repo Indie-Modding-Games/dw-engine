@@ -3,16 +3,21 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/npc_orders.hpp>
 #include <dwe/game/story/script_motion.hpp>
+#include <dwe/game/story/partner_routines.hpp>
 #include <dwe/game/story/section_host.hpp>
+#include <dwe/game/story/story_battle.hpp>
 #include <dwe/game/story/story_orders.hpp>
 #include <dwe/game/story/story_ports.hpp>
 #include <dwe/game/story/story_runner.hpp>
+#include <dwe/game/story/story_routines.hpp>
+#include <dwe/game/story/story_task.hpp>
 #include <dwe/script/script_coroutine.hpp>
 
 #include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string_view>
 
@@ -57,7 +62,23 @@ inline constexpr std::string_view PlaySound = "play_sound";
 inline constexpr std::array Published{
     Ended,          Trigger,      Variable,    SetTrigger, UnsetTrigger, SetVariable, AddToVariable,
     ReduceVariable, CopyVariable, StoreRandom, Delay,      JumpToFile,   PlaySound};
+
+// The scenes' orders (story_scenes.hpp), published apart once their system binds.
+inline constexpr std::string_view CallRoutine = "call_routine";
+inline constexpr std::string_view StartBattle = "start_battle";
+inline constexpr std::string_view CallPartnerRoutine = "call_partner_routine";
+
+inline constexpr std::array ScenePublished{CallRoutine, StartBattle, CallPartnerRoutine};
 } // namespace story_api
+
+// What the scenes' orders run: the routine table, the scripted battles and the partner's scenes,
+// and how the world freezes for a scene. They must outlive every script call of the VM.
+struct StorySceneOrders {
+  game::story::RoutineTable* routines = nullptr;
+  game::story::StoryBattles* battles = nullptr;
+  game::story::PartnerRoutines* partner = nullptr;
+  std::function<void()> freeze;
+};
 
 // Runs the story's sections as coroutines of the script VM: script N is the module story/NNN of
 // the pack that provides it, and section S is its function sections[S].
@@ -88,6 +109,11 @@ public:
   // dialogue; it must outlive every script call of the VM.
   core::Result<void> publishDialogue(game::story::Dialogue& dialogue);
 
+  // Once per VM, after publishApi: call_routine, start_battle and call_partner_routine. A section
+  // that waits on one of them waits on its task (story_task.hpp), which the host ticks once a
+  // frame.
+  core::Result<void> publishSceneApi(StorySceneOrders orders);
+
   // Whether the packs' story modules come from this engine's dwx: the first one (script 0, which
   // the base pack always has) must carry its header, so outdated content stops the game when it
   // starts. Packs without story modules pass, and the log says no section can run.
@@ -104,7 +130,16 @@ public:
   void close(game::story::SectionHandle handle) override;
 
 private:
+  // A section that waits on a task, and the subroutine calls it waits in.
+  struct WaitingTask {
+    std::shared_ptr<game::story::StoryTask> task;
+    std::uint32_t linkDepth = 0;
+  };
+
   core::Result<const script::ScriptModule*> module(std::uint16_t script);
+  // Ticks the section's task: its step, or nothing once it is done and the section resumes.
+  std::optional<game::story::SectionStep> driveTask(game::story::SectionHandle handle,
+                                                    game::story::ResumeValue& value);
   [[nodiscard]] core::Result<void> checkHeader(const assets::AssetId& id) const;
 
   script::ScriptVm* vm_;
@@ -113,6 +148,8 @@ private:
   std::map<game::story::SectionHandle, script::ScriptCoroutine> sections_;
   game::story::SectionHandle nextHandle_ = 1;
   std::optional<game::story::Wait> pendingWait_;
+  std::shared_ptr<game::story::StoryTask> pendingTask_;
+  std::map<game::story::SectionHandle, WaitingTask> tasks_;
 };
 
 } // namespace dwe::session

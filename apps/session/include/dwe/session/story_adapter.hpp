@@ -145,6 +145,15 @@ public:
   [[nodiscard]] bool scriptRunning() const { return runner_.has_value() && runner_->busy(); }
   // The game's script VM once the rules were read, where other systems publish their story orders.
   [[nodiscard]] script::ScriptVm* vm() { return vm_.get(); }
+  // What the story's scenes (story_scenes.hpp) build on: the state's port, the runner, the host
+  // and the packs. Null until readRules built them.
+  [[nodiscard]] game::story::StoryStatePort* statePort();
+  [[nodiscard]] game::story::StoryRunner* runner() { return runner_ ? &*runner_ : nullptr; }
+  [[nodiscard]] StoryLuaHost* host() { return host_.get(); }
+  [[nodiscard]] const assets::VirtualFileSystem& files() const { return *desc_.files; }
+  // Whether a new game's state is the one data/new_game_story leaves (the default), or clear but
+  // for the partner's raised trigger, for the original's opening to set it.
+  void seedNewGame(bool seed) { seedNewGame_ = seed; }
 
   [[nodiscard]] game::story::StoryState& state() { return state_; }
   [[nodiscard]] const game::story::StoryState& state() const { return state_; }
@@ -199,6 +208,7 @@ private:
   std::optional<game::story::StoryRunner> runner_;
   std::uint32_t ticksPerFrame_ = 0;
   game::story::StoryFlowRules flow_;
+  bool seedNewGame_ = true;
 };
 
 } // namespace dwe::session
