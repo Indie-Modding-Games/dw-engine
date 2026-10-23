@@ -13,6 +13,7 @@
         "CMAKE_C_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
         "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-ports",
         "VCPKG_TARGET_TRIPLET": "x64-linux-libcxx",
         "VCPKG_HOST_TRIPLET": "x64-linux-libcxx",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
@@ -53,6 +54,7 @@
         "CMAKE_CXX_COMPILER_LAUNCHER": "$env{DWE_COMPILER_LAUNCHER}",
         "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-ports",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static-cross",
         "VCPKG_HOST_TRIPLET": "x64-linux-libcxx",
         "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON",
@@ -76,6 +78,7 @@
         "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static",
         "VCPKG_HOST_TRIPLET": "x64-windows",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-ports",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build/${presetName}/vcpkg_installed",
         "VCPKG_INSTALL_OPTIONS": "--x-buildtrees-root=${sourceDir}/build/${presetName}/vcpkg_buildtrees"
       }

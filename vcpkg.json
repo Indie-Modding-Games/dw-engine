@@ -28,6 +28,7 @@
     "opus",
     "libopusenc",
     "ktx",
+    "tinysoundfont",
     "entt",
     { "name": "rmlui", "default-features": false, "features": ["freetype"] }
   ],

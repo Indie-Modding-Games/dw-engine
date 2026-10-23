@@ -29,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
+          key: vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'triplets/**', 'cmake/toolchains/**', '.devcontainer/Dockerfile') }}
           restore-keys: vcpkg-
 
       - name: Restore the compiler cache
@@ -102,7 +102,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-windows-${{ hashFiles('vcpkg.json', 'cmake/toolchains/**') }}
+          key: vcpkg-windows-${{ hashFiles('vcpkg.json', 'vcpkg-ports/**', 'cmake/toolchains/**') }}
           restore-keys: vcpkg-windows-
 
       - name: Show the tools
