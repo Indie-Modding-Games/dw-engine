@@ -3,6 +3,7 @@
 #include <tsf.h>
 
 #include <algorithm>
+#include <cmath>
 
 namespace dwe::audio {
 
@@ -75,7 +76,9 @@ void MusicPlayer::mixInto(std::span<float> frames, std::span<const float> gains)
             block_[(i * OutputChannels) + channel] * gain;
       }
     }
-    tick_ += ticksPerFrame_ * static_cast<double>(count);
+    // A song that played out stops counting, so the tick never outgrows its type.
+    tick_ = std::min(tick_ + (ticksPerFrame_ * static_cast<double>(count)),
+                     static_cast<double>(song_->endTick));
     frame += count;
   }
 }
@@ -103,7 +106,9 @@ void MusicPlayer::sequence() noexcept {
     if (!loops_ || now < loopEnd_) {
       break;
     }
-    tick_ -= static_cast<double>(loopEnd_ - loopStart_);
+    // Back into the loop in one step, however far past its end a long block went.
+    tick_ = static_cast<double>(loopStart_) + std::fmod(tick_ - static_cast<double>(loopStart_),
+                                                        static_cast<double>(loopEnd_ - loopStart_));
     next_ = static_cast<std::size_t>(
         std::ranges::lower_bound(events, loopStart_, {}, &assets::SongEvent::tick) -
         events.begin());

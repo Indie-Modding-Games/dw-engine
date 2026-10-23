@@ -1,3 +1,4 @@
+#include <dwe/assets/media_headers.hpp>
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/sound_font.hpp>
 
@@ -14,6 +15,10 @@ namespace dwe::audio {
 core::Result<std::shared_ptr<SoundFont>> SoundFont::load(std::span<const std::byte> sf2) {
   if (sf2.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
     return core::fail(std::string{messages::FontTooBig});
+  }
+  // The synthesizer trusts the chunk sizes it reads, so the file's layout is checked first.
+  if (auto header = assets::readSoundFontHeader(sf2); !header) {
+    return std::unexpected{header.error()};
   }
   tsf* synth = tsf_load_memory(sf2.data(), static_cast<int>(sf2.size()));
   if (synth == nullptr) {
