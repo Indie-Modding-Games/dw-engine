@@ -58,11 +58,10 @@ struct PoopPileRules {
 // Reads the `poop_piles` section; errors name the line.
 core::Result<PoopPileRules> readPoopPileRules(const ruleset::Section& section);
 
-// A pile the partner left that the field has not placed yet: its size, and whether the partner
-// went on the field (partner.c: tickWildPoop) or on waking (partner_impl.c: handleSleeping).
+// A pile the partner left that the field has not placed yet: its size. The field places it at
+// once; a pile with a scene is left at the scene's squat (partner.c: tickWildPoop).
 struct PendingPile {
   std::int32_t size = 0;
-  bool wild = true;
 };
 
 // The partner's poop piles around the world (partner_impl.c: WORLD_POOP), with the care rules'

@@ -238,6 +238,10 @@ public:
   void useToilet();
   // The partner eats a pile of this size from the ground (partner_impl.c: handleEatingPoop).
   void eatPoop(std::int32_t pileSize);
+  // The field's pile scene (partner.c: tickWildPoop): the pile with its care effects at the
+  // squat, the tamer level at the end.
+  void leaveWildPile();
+  void finishWildPoop();
   // Puts the partner to bed; the clock jumps to its wake hour. Fails if it is not sleepy. sleep is
   // fallAsleep and then wakeUp; the sleep screen calls them apart, because the original saves
   // between them and runs the wake-up evolutions only once the screen faded back in (partner.c:

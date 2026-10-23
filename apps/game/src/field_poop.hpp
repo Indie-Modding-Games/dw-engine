@@ -15,7 +15,8 @@ namespace dwe::app {
 // partner left is placed in front of where it stands, and the piles of the map shown are drawn
 // with the `poop_piles` look, at the partner's height. A pile on the field plays its scene first
 // (partner.c: tickWildPoop, partner state 7): the player stops and looks, the partner runs up to
-// it, squats, leaves the pile and plays its after clip. A partner that eats piles goes to one near
+// it, squats, leaves the pile with its care effects and plays its after clip; the tamer level may
+// drop at the end. A partner that eats piles goes to one near
 // the player and eats it (partner_impl.c: tickPoopDetection; partner.c: partnerTickEatShit, state
 // 9). The player stands while the game time runs.
 class FieldPoop {
@@ -44,6 +45,8 @@ private:
   void placeOne();
   void checkEating();
   void finish();
+  void leavePile();
+  void endScene();
 
   session::GameSession* session_;
   session::PoopAdapter* poop_;

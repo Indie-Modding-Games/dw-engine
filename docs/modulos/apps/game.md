@@ -69,8 +69,11 @@ modelo de `poop_piles.look.model` en el centro de su casilla, a la altura del co
 
 Una caca en el campo tiene su escena (`partner.c: tickWildPoop`, estado 7), con `poop_piles.wild`: el jugador se para y
 mira al compañero, que corre hacia él hasta su distancia de correr (`Field::runPartnerUp`), se agacha (`squat_clip`),
-deja el montón delante de él y hace `after_clip`; luego el jugador queda libre. La caca de una noche de sueño sale sin
-escena (`handleSleeping`). Con `poop_piles.eat`, un compañero que come cacas (`care.toilet.poop_eaters`) busca con el
+deja el montón delante de él y hace `after_clip`; luego el jugador queda libre. La escena empieza cuando el compañero
+tiene una caca esperando (`Partner::wildPoopDue`); el montón y sus efectos (error de cuidado, ánimo, peso) llegan al
+dejarlo (`GameSession::leaveWildPile`, `handleWildPoop`), y la posible bajada del nivel de domador al acabar
+(`GameSession::finishWildPoop`, subestado 3), como en el original. Sin `poop_piles.wild` todo llega a la vez. La caca de
+una noche de sueño sale sin escena (`handleSleeping`). Con `poop_piles.eat`, un compañero que come cacas (`care.toilet.poop_eaters`) busca con el
 campo libre un montón del mapa con el jugador a menos de `small_reach` de su centro en x y en z (`large_reach` desde
 el tamaño `large_from`; `tickPoopDetection`), va andando a él, hace `eat_clip` y se lo come (`handleEatingPoop`). Las
 dos escenas dejan correr el tiempo y cierran el menú de pausa.

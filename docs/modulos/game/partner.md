@@ -45,7 +45,8 @@ partner.addStatGains(evolutionGains);                                           
   Dormir, combatir y entrenar mueven el reloj con sus propias cuentas, como el original, y no recorren los
   fotogramas que saltan.
 - **Órdenes.** Comer (`FoodEffect`), curar (`CureEffect`), regañar, elogiar, dormir, baño y orinal portátil, comer
-  caca (`eatPoop`, para las especies que lo hacen), descansar (`skipHours`), combate (`BattleConsequences`, con los
+  caca (`eatPoop`, para las especies que lo hacen), dejar la caca de la escena del campo (`leaveWildPile`, con sus
+  efectos, y `finishWildPoop`, el nivel del tamer), descansar (`skipHours`), combate (`BattleConsequences`, con los
   números de la sección `battle`) y entrenamiento (`TrainingRequest`). El inventario es dueño de la tabla de objetos; la sesión traduce un objeto a su
   efecto. Las ganancias de stats que vienen de fuera (evolución, combate) van por `addStatGains`, que aplica el tope de
   cada ganancia (`care.limits.stat_gain_max`) y el de cada stat; `setStats` pone los stats tal cual, sin tope (el HP
@@ -73,7 +74,8 @@ partner.addStatGains(evolutionGains);                                           
   casilla está ocupada, 16 por mapa y 100 en total, reutilizando las más antiguas.
 - **Guardado.** `toYaml`/`fromYaml` con `PartnerStateVersion` (`state_yaml.hpp`); la sesión los envuelve en un
   `SectionSerializer` con sus migraciones. La versión 2 añade la forma a la copia de la forma virus:
-  `addVirusBackupSpecies` sube una partida de la versión 1, que no la tenía, con la forma vacía. `PoopPiles::slots()`/`restore()` para las cacas.
+  `addVirusBackupSpecies` sube una partida de la versión 1, que no la tenía, con la forma vacía. `PoopPiles::slots()`/`restore()` para las cacas. `toilet.wild_poop_due` (una caca que espera su escena
+  del campo) es opcional: una partida de antes no lo tiene y no tiene ninguna esperando.
 
 ## Datos
 
@@ -151,7 +153,7 @@ Igual: hace lo mismo que el decomp. Desviación aprobada: distinto a propósito.
 | Penalización con sueño, sueño perdido | `partner_impl.c: tickSleepMechanics` | `tickSleep`, `missSleep` | `sleep_tests`: sleepy adult, misses its sleep | Igual |
 | Dormir y recuperación | `partner_impl.c: handleSleeping`, `sleepRegen` | `sleep`, `regenerateWhileAsleep`, `wakeUp` | `sleep_tests` | Igual |
 | Hora protegida | `partner_impl.c: setImmortalHour`, `tickDeathCondition` | `inProtectedHour` | `life_tests`: death waits | Igual |
-| Baño: aviso, margen, en el suelo | `partner_impl.c: tickPoopingMechanic`, `handleWildPoop` | `tickPoop`, `poopOnGround` | `toilet_tests` | Igual |
+| Baño: aviso, margen, en el suelo | `partner_impl.c: tickPoopingMechanic`, `handleWildPoop`; `partner.c: tickWildPoop` | `tickPoop`, `poopOnGround`; con `CareContext::fieldScenes`, `wildPoopDue`, `leaveWildPile` y `finishWildPoop` para la escena del campo | `toilet_tests` | Igual |
 | Baño y orinal portátil | `partner_impl.c: handleToilet`; `item.c: handlePortaPotty` | `useToilet`, `usePortableToilet` | `toilet_tests` | Igual |
 | Peso tras la caca | `partner_impl.c: handlePoopWeightLoss` | `loseWeightAfterPoop` | `toilet_tests`: the toilet gives | Igual |
 | Cacas en el mapa | `partner_impl.c: createPoopPile` | `PoopPiles` | `toilet_tests`: piles | Igual |

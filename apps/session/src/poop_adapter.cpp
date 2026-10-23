@@ -244,14 +244,7 @@ core::Result<void> PoopAdapter::startNewGame(GameSession& /*session*/) {
 void PoopAdapter::routePartnerEvent(GameSession& /*session*/,
                                     const game::partner::PartnerEvent& event) {
   if (event.kind == EventKind::PoopedOnGround) {
-    pending_.push_back({.size = event.value, .wild = true});
-    return;
-  }
-  // partner_impl.c: handleSleeping: the pile of a night's sleep is no scene of the field.
-  if (event.kind == EventKind::Slept) {
-    for (PendingPile& pile : pending_) {
-      pile.wild = false;
-    }
+    pending_.push_back({.size = event.value});
   }
 }
 

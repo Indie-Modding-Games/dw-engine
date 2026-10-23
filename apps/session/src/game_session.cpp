@@ -417,8 +417,11 @@ bool GameSession::playerFree() const {
 
 game::partner::CareContext GameSession::careContext() const {
   // partner_impl.c: tickDeathCondition and tickConditions wait for tamerGetState() == 0 and
-  // IS_SCRIPT_PAUSED == 1.
-  return {.tamerIdle = playerFree(), .scriptIdle = !scriptRunning_, .area = area_};
+  // IS_SCRIPT_PAUSED == 1. A field plays the partner's pile scene (partner.c: tickWildPoop).
+  return {.tamerIdle = playerFree(),
+          .scriptIdle = !scriptRunning_,
+          .area = area_,
+          .fieldScenes = state_->field != nullptr};
 }
 
 void GameSession::attachField(const game::field::Field& field) {
@@ -547,6 +550,16 @@ void GameSession::afterCommand() {
 
 void GameSession::eatPoop(std::int32_t pileSize) {
   state_->partner.eatPoop(pileSize);
+  afterCommand();
+}
+
+void GameSession::leaveWildPile() {
+  state_->partner.leaveWildPile();
+  afterCommand();
+}
+
+void GameSession::finishWildPoop() {
+  state_->partner.finishWildPoop();
   afterCommand();
 }
 

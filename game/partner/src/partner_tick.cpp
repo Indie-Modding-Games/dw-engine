@@ -390,22 +390,48 @@ void Partner::tickPoop(const FrameTime& time, const CareContext& context) {
   if (!needed) {
     return;
   }
+  if (toilet.wildPoopDue) {
+    // Partner state 7 waits for the field's scene; a pile left without a field comes at once.
+    if (!context.fieldScenes) {
+      poopOnGround();
+    }
+    return;
+  }
   --toilet.urgeFrames;
-  if (toilet.urgeFrames <= 0) {
+  if (toilet.urgeFrames > 0) {
+    return;
+  }
+  // partnerSetState(7): the need stays until the scene leaves the pile.
+  toilet.urgeFrames = constants::NoUrge;
+  state_.mood.scoldBoost = ScoldBoost::Ready;
+  toilet.wildPoopDue = true;
+  if (!context.fieldScenes) {
     poopOnGround();
   }
 }
 
 void Partner::poopOnGround() {
-  // The partner held on as long as it could (handleWildPoop, after createPoopPile).
+  // The partner held on as long as it could and no field plays the scene: all of it at once.
+  leaveWildPile();
+  finishWildPoop();
+}
+
+void Partner::leaveWildPile() {
+  // partner.c: tickWildPoop sub state 2: createPoopPile, then handleWildPoop.
+  if (!state_.toilet.wildPoopDue) {
+    return;
+  }
+  state_.toilet.wildPoopDue = false;
   leavePoopPile();
-  state_.toilet.urgeFrames = constants::NoUrge;
-  state_.mood.scoldBoost = ScoldBoost::Ready;
   state_.conditions.clear(Condition::NeedsToilet);
   countCareMistake(CareMistakeCause::PoopOnGround);
   changeMood(care().toilet.wild);
   state_.toilet.poopLevel = poopLevelAfterGoing();
   loseWeightAfterPoop();
+}
+
+void Partner::finishWildPoop() {
+  // partner.c: tickWildPoop sub state 3: addTamerLevel(1, -1).
   rollTamerLevel(care().toilet.wildTamerLevelPercent, -1);
 }
 

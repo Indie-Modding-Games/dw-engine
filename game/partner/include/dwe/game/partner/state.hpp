@@ -133,6 +133,9 @@ struct ToiletState {
   // need to go.
   std::int32_t urgeFrames = -1;
   std::int32_t virusBar = 0;
+  // The urge ran out with a field to play it (partner state 7): the pile and its care effects wait
+  // for the scene to place it (partner.c: tickWildPoop, sub state 2).
+  bool wildPoopDue = false;
 
   friend bool operator==(const ToiletState&, const ToiletState&) = default;
 };

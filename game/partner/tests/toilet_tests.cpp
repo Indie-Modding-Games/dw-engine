@@ -65,6 +65,51 @@ TEST_CASE("care.md toilet: a partner that holds on too long goes on the ground: 
   CHECK_FALSE(raising.state().conditions.has(Condition::NeedsToilet));
 }
 
+TEST_CASE("care.md toilet: with a field the pile and its care effects wait for the pile's scene") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  putOffMeals(raising);
+  needToilet(raising);
+  const MoodState before = raising.state().mood;
+  const CareContext field{.fieldScenes = true};
+  const std::int32_t urge = raising.state().toilet.urgeFrames;
+  const auto due = raising.playFrames(urge, field);
+  CHECK_FALSE(has(due, EventKind::PoopedOnGround));
+  CHECK_FALSE(has(due, EventKind::CareMistake));
+  CHECK(raising.partner().wildPoopDue());
+  CHECK(raising.state().conditions.has(Condition::NeedsToilet));
+  CHECK(raising.state().mood.scoldBoost == ScoldBoost::Ready);
+  CHECK(raising.state().evolution.careMistakes == 0);
+  CHECK_FALSE(has(raising.playMinutes(10, field), EventKind::PoopedOnGround));
+
+  raising.partner().leaveWildPile();
+  const auto placed = raising.partner().takeEvents();
+  CHECK(testing::valueOf(placed, EventKind::PoopedOnGround) == 8);
+  CHECK(has(placed, EventKind::CareMistake));
+  CHECK_FALSE(raising.partner().wildPoopDue());
+  CHECK(raising.state().evolution.careMistakes == 1);
+  CHECK(raising.state().mood.happiness == before.happiness - 10);
+  CHECK(raising.state().mood.discipline == before.discipline - 5);
+  CHECK(raising.state().toilet.poopLevel == 36);
+  CHECK_FALSE(raising.state().conditions.has(Condition::NeedsToilet));
+  raising.partner().leaveWildPile();
+  CHECK(raising.partner().takeEvents().empty());
+  CHECK(raising.state().evolution.careMistakes == 1);
+}
+
+TEST_CASE("care.md toilet: a pile waiting for its scene comes at once once the field is gone") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  putOffMeals(raising);
+  needToilet(raising);
+  raising.playFrames(raising.state().toilet.urgeFrames, CareContext{.fieldScenes = true});
+  REQUIRE(raising.partner().wildPoopDue());
+  const auto events = raising.playFrames(1);
+  CHECK(has(events, EventKind::PoopedOnGround));
+  CHECK(has(events, EventKind::CareMistake));
+  CHECK_FALSE(raising.partner().wildPoopDue());
+}
+
 TEST_CASE(
     "care.md toilet: the toilet gives happiness +2 and discipline +2 and puts off the next need twice the "
     "interval") {

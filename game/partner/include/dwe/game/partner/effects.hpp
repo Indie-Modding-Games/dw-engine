@@ -69,6 +69,10 @@ struct CareContext {
   // for it too.
   bool scriptIdle = true;
   AreaResponse area = AreaResponse::Neutral;
+  // A field plays the partner's scenes: a pile on the ground waits for its scene (partner.c:
+  // tickWildPoop), which leaves it with its care effects. Without one the pile and its effects
+  // come at once when the urge runs out.
+  bool fieldScenes = false;
 };
 
 // What sleeping needs from the rest of the game.

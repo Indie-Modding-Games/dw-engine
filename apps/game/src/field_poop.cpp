@@ -55,20 +55,41 @@ void FieldPoop::update() {
   if (active() || field.mapId().empty()) {
     return;
   }
-  while (const std::optional<session::PendingPile> pending = poop_->nextPending()) {
-    if (pending->wild && wildOf(*poop_) != nullptr) {
-      // partner.c: tickWildPoop sub state 0: the player stops and looks at the partner, which runs
-      // up to it.
-      field.holdForCare(true);
-      field.runPartnerUp();
-      step_ = Step::RunUp;
-      core::logDebug("[port:poop] tickWildPoop (partner.c:593): partner state 7, size {}",
-                     pending->size);
-      return;
-    }
+  // A pile left off the field's scenes (handleSleeping, on waking) goes down at once.
+  while (poop_->nextPending().has_value()) {
     placeOne();
   }
+  if (session_->partner().wildPoopDue()) {
+    if (wildOf(*poop_) == nullptr) {
+      // Without the scene's rules the pile and its care effects come at once.
+      session_->leaveWildPile();
+      placeOne();
+      session_->finishWildPoop();
+      return;
+    }
+    // partner.c: tickWildPoop sub state 0: the player stops and looks at the partner, which runs
+    // up to it.
+    field.holdForCare(true);
+    field.runPartnerUp();
+    step_ = Step::RunUp;
+    core::logDebug("[port:poop] tickWildPoop (partner.c:593): partner state 7");
+    return;
+  }
   checkEating();
+}
+
+void FieldPoop::leavePile() {
+  // Sub state 2: createPoopPile and handleWildPoop, the care mistake, mood and weight with it.
+  session_->leaveWildPile();
+  placeOne();
+  core::logDebug("[port:poop] tickWildPoop (partner.c:620): createPoopPile, handleWildPoop");
+}
+
+void FieldPoop::endScene() {
+  // Sub state 3: the player is free again and the tamer level may drop.
+  session_->finishWildPoop();
+  finish();
+  core::logDebug("[port:poop] tickWildPoop (partner.c): sub state 3, addTamerLevel");
 }
 
 void FieldPoop::checkEating() {
@@ -117,8 +138,8 @@ bool FieldPoop::tick(float seconds) {
     // Sub state 1: close enough, the partner squats.
     if (!field.partnerWalking()) {
       if (wild == nullptr) {
-        placeOne();
-        finish();
+        leavePile();
+        endScene();
         return false;
       }
       scene_->playPartnerClip(wild->squatClip);
@@ -126,11 +147,11 @@ bool FieldPoop::tick(float seconds) {
     }
     return false;
   case Step::Squat:
-    // Sub state 2: at the clip's end, createPoopPile and the after clip.
+    // Sub state 2: at the clip's end, the pile and the after clip.
     if (scene_->partnerClipFinished()) {
-      placeOne();
+      leavePile();
       if (wild == nullptr) {
-        finish();
+        endScene();
         return false;
       }
       scene_->playPartnerClip(wild->afterClip);
@@ -138,9 +159,8 @@ bool FieldPoop::tick(float seconds) {
     }
     return false;
   case Step::After:
-    // Sub state 3: the player is free again.
     if (scene_->partnerClipFinished()) {
-      finish();
+      endScene();
     }
     return false;
   case Step::ToPile:

@@ -66,6 +66,8 @@ constexpr std::string_view TiredHungerFramesKey = "tired_hunger_frames";
 constexpr std::string_view PoopLevelKey = "poop_level";
 constexpr std::string_view UrgeFramesKey = "urge_frames";
 constexpr std::string_view VirusBarKey = "virus_bar";
+// Optional: saves from before it have no pile waiting for its scene.
+constexpr std::string_view WildPoopDueKey = "wild_poop_due";
 
 constexpr std::string_view SicknessTriesKey = "sickness_tries";
 constexpr std::string_view SickHoursKey = "sick_hours";
@@ -167,6 +169,8 @@ YamlNode toiletNode(const ToiletState& toilet) {
   put(node, PoopLevelKey, toilet.poopLevel);
   put(node, UrgeFramesKey, toilet.urgeFrames);
   put(node, VirusBarKey, toilet.virusBar);
+  node.set(std::string{WildPoopDueKey},
+           YamlNode::scalar(std::string{toilet.wildPoopDue ? TrueText : FalseText}));
   return node;
 }
 
@@ -352,13 +356,17 @@ HungerState readHunger(YamlReader& reader, const YamlNode& root) {
 }
 
 ToiletState readToilet(YamlReader& reader, const YamlNode& root) {
-  const YamlNode* node = nullptr;
-  if (!group(reader, root, ToiletKey, {PoopLevelKey, UrgeFramesKey, VirusBarKey}, node)) {
+  const YamlNode& node = reader.field(root, ToiletKey);
+  if (!reader.ok() ||
+      !reader.expectKeys(node, ToiletKey, {PoopLevelKey, UrgeFramesKey, VirusBarKey},
+                         {WildPoopDueKey})) {
     return {};
   }
-  return {.poopLevel = integer(reader, *node, PoopLevelKey),
-          .urgeFrames = integer(reader, *node, UrgeFramesKey),
-          .virusBar = integer(reader, *node, VirusBarKey)};
+  const YamlNode* due = node.find(WildPoopDueKey);
+  return {.poopLevel = integer(reader, node, PoopLevelKey),
+          .urgeFrames = integer(reader, node, UrgeFramesKey),
+          .virusBar = integer(reader, node, VirusBarKey),
+          .wildPoopDue = due != nullptr && reader.boolean(*due)};
 }
 
 HealthState readHealth(YamlReader& reader, const YamlNode& root) {

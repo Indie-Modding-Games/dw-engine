@@ -220,6 +220,7 @@ void Partner::wakeUp(std::int32_t hour, std::int32_t minute, std::int32_t hoursS
     state_.conditions.clear(Condition::NeedsToilet);
     state_.toilet.poopLevel = species_->poopInterval;
     state_.toilet.urgeFrames = constants::NoUrge;
+    state_.toilet.wildPoopDue = false;
   }
   // The original clears the hunger before it checks it (sleeping_hungry_keeps_weight).
   if (wasHungry && !care().quirks.sleepingHungryKeepsWeight) {
@@ -268,6 +269,8 @@ void Partner::useToilet() {
   changeMood(care().toilet.toilet);
   state_.toilet.poopLevel = poopLevelAfterGoing();
   state_.conditions.clear(Condition::NeedsToilet);
+  // A pile that waited for its scene is no longer left.
+  state_.toilet.wildPoopDue = false;
   loseWeightAfterPoop();
   emit(EventKind::UsedToilet);
 }
@@ -280,6 +283,8 @@ void Partner::usePortableToilet() {
   state_.toilet.poopLevel = species_->poopInterval;
   state_.conditions.clear(Condition::NeedsToilet);
   loseWeightAfterPoop();
+  // A pile that waited for its scene is no longer left.
+  state_.toilet.wildPoopDue = false;
   emit(EventKind::UsedToilet);
 }
 

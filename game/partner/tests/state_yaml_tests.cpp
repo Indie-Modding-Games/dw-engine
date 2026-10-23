@@ -5,6 +5,7 @@
 
 #include <ostream>
 #include <string>
+#include <string_view>
 
 #include "partner_fixture.hpp"
 
@@ -24,6 +25,7 @@ TEST_CASE("the partner state goes to YAML and back unchanged, with its version")
     state.virusBackup.species = "kept";
     state.virusBackup.stats[Stat::Mp] = 77;
     state.hunger.refusedFavorite = true;
+    state.toilet.wildPoopDue = true;
   });
   const core::YamlNode node = toYaml(raising.state());
   const core::YamlNode* version = node.find("version");
@@ -46,6 +48,26 @@ TEST_CASE("a partner state of an unknown version or with a bad value is refused"
   core::YamlNode missing = core::YamlNode::mapping();
   missing.set("version", core::YamlNode::scalar("1"));
   CHECK_FALSE(fromYaml(missing).has_value());
+}
+
+TEST_CASE("a partner state from before the pile scenes has no pile waiting for its scene") {
+  testing::OriginalRuleset original;
+  testing::Raising raising(original.rules());
+  raising.edit([](PartnerState& state) { state.toilet.wildPoopDue = true; });
+  core::YamlNode old = toYaml(raising.state());
+  const core::YamlNode* toilet = old.find("toilet");
+  REQUIRE(toilet != nullptr);
+  core::YamlNode before = core::YamlNode::mapping();
+  for (const std::string_view key : {"poop_level", "urge_frames", "virus_bar"}) {
+    const core::YamlNode* value = toilet->find(key);
+    REQUIRE(value != nullptr);
+    before.set(std::string{key}, *value);
+  }
+  old.set("toilet", before);
+  const auto restored = fromYaml(old);
+  REQUIRE_MESSAGE(restored.has_value(), testing::errorOf(restored));
+  CHECK_FALSE(restored->toilet.wildPoopDue);
+  CHECK(restored->toilet.urgeFrames == raising.state().toilet.urgeFrames);
 }
 
 TEST_CASE("a partner state of version 1 gains an empty virus backup species and keeps its stats") {

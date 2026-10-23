@@ -390,6 +390,7 @@ void Partner::resetCare(std::int32_t hour, std::int32_t minute) {
   // partner_impl.c: resetPartnerPara.
   state_.toilet.poopLevel = species_->poopInterval;
   state_.toilet.urgeFrames = constants::NoUrge;
+  state_.toilet.wildPoopDue = false;
   state_.mood.tiredness = 0;
   state_.mood.subTiredness = 0;
   state_.hunger.tiredHungerFrames = 0;

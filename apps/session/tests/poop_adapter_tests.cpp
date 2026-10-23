@@ -51,7 +51,7 @@ TEST_CASE("a pile the partner left waits for the field, which places it in front
   poop->routePartnerEvent(*session,
                           PartnerEvent{.kind = EventKind::PoopedOnGround, .value = PileSize});
   REQUIRE(poop->nextPending().has_value());
-  CHECK(poop->nextPending().value_or(dwe::session::PendingPile{}).wild);
+  CHECK(poop->nextPending().value_or(dwe::session::PendingPile{}).size == PileSize);
   const auto placed = poop->placePending(*session, Map, Standing, 0);
   REQUIRE(placed.has_value());
   CHECK(placed.value_or(Tile{}) == InFront);
@@ -63,17 +63,6 @@ TEST_CASE("a pile the partner left waits for the field, which places it in front
   CHECK(poop->onMap("map/other").empty());
   CHECK(poop->remove(Map, InFront) == PileSize);
   CHECK(poop->onMap(Map).empty());
-}
-
-TEST_CASE("the pile of a night's sleep is no scene of the field") {
-  const TestPacks packs;
-  PoopAdapter* poop = nullptr;
-  auto session = sessionWithPoop(packs, poop);
-  poop->routePartnerEvent(*session,
-                          PartnerEvent{.kind = EventKind::PoopedOnGround, .value = PileSize});
-  poop->routePartnerEvent(*session, PartnerEvent{.kind = EventKind::Slept, .value = 0});
-  REQUIRE(poop->nextPending().has_value());
-  CHECK_FALSE(poop->nextPending().value_or(dwe::session::PendingPile{}).wild);
 }
 
 TEST_CASE("the piles go in the save and come back") {

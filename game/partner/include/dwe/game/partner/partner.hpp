@@ -96,6 +96,16 @@ public:
   // Eats a poop pile of this size (handleEatingPoop).
   void eatPoop(std::int32_t pileSize);
 
+  // A pile on the ground waits for its scene (partner state 7, CareContext::fieldScenes).
+  [[nodiscard]] bool wildPoopDue() const { return state_.toilet.wildPoopDue; }
+
+  // The scene's pile with its care effects (partner.c: tickWildPoop sub state 2: createPoopPile,
+  // handleWildPoop). Does nothing if no pile waits.
+  void leaveWildPile();
+
+  // The scene's end (tickWildPoop sub state 3): the tamer level may drop.
+  void finishWildPoop();
+
   // The player landed a fish while it watched (fish.c: PARTNER_PARA.fishCaught++).
   void countFishCaught() { ++state_.evolution.fishCaught; }
 
