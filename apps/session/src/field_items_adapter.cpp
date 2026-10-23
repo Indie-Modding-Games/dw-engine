@@ -20,6 +20,10 @@ using core::YamlNode;
 constexpr std::string_view GroundSlotsKey = "ground_slots";
 constexpr std::string_view ChestSlotsKey = "chest_slots";
 constexpr std::string_view ReachCellsKey = "reach_cells";
+constexpr std::string_view PickupSoundKey = "pickup_sound";
+constexpr std::string_view ToiletSoundKey = "toilet_sound";
+constexpr std::string_view SlotKey = "slot";
+constexpr std::string_view SoundKey = "sound";
 
 std::int32_t positive(YamlReader& reader, const YamlNode& root, std::string_view key) {
   const YamlNode& node = reader.field(root, key);
@@ -30,19 +34,31 @@ std::int32_t positive(YamlReader& reader, const YamlNode& root, std::string_view
   return value;
 }
 
+SoundCue soundCue(YamlReader& reader, const YamlNode& root, std::string_view key) {
+  const YamlNode& node = reader.field(root, key);
+  if (!reader.expectKeys(node, key, {SlotKey, SoundKey})) {
+    return {};
+  }
+  return {.slot = reader.integer<std::int64_t>(reader.field(node, SlotKey)),
+          .sound = reader.integer<std::int64_t>(reader.field(node, SoundKey))};
+}
+
 } // namespace
 
-core::Result<game::field::FieldItemRules>
-readFieldItemRules(const ruleset::Section& section) {
+core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, field_items_messages::SectionText,
-                         {GroundSlotsKey, ChestSlotsKey, ReachCellsKey})) {
+                         {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
+                          ToiletSoundKey})) {
     return std::unexpected{reader.error(section.file)};
   }
-  const game::field::FieldItemRules rules{.groundSlots = positive(reader, root, GroundSlotsKey),
-                                          .chestSlots = positive(reader, root, ChestSlotsKey),
-                                          .reachCells = positive(reader, root, ReachCellsKey)};
+  const FieldItemsRules rules{
+      .items = {.groundSlots = positive(reader, root, GroundSlotsKey),
+                .chestSlots = positive(reader, root, ChestSlotsKey),
+                .reachCells = positive(reader, root, ReachCellsKey)},
+      .pickupSound = soundCue(reader, root, PickupSoundKey),
+      .toiletSound = soundCue(reader, root, ToiletSoundKey)};
   return reader.finish(rules, section.file);
 }
 
@@ -65,13 +81,17 @@ core::Result<void> FieldItemsAdapter::readRules(const ruleset::Ruleset& rules) {
   if (section == nullptr) {
     core::logDebug("[port:field_items] the ruleset has no field_items section: no ground items");
     items_.setRules({});
+    pickupSound_.reset();
+    toiletSound_.reset();
     return {};
   }
   auto read = readFieldItemRules(*section);
   if (!read) {
     return std::unexpected{read.error()};
   }
-  items_.setRules(*read);
+  items_.setRules(read->items);
+  pickupSound_ = read->pickupSound;
+  toiletSound_ = read->toiletSound;
   return {};
 }
 

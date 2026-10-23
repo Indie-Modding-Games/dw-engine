@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/game/field/field.hpp>
+#include <dwe/game/story/story_ports.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/ui/ui.hpp>
@@ -19,9 +20,9 @@ inline constexpr std::string_view FieldItemNoticeDocument = "field_item_notice";
 // the bag; with the bag full a second notice says so and the item stays. The field waits meanwhile.
 class FieldItemsScreen {
 public:
-  // The adapters and the UI must outlive this object.
+  // The adapters, the UI and the sound (nullptr: silent) must outlive this object.
   FieldItemsScreen(session::FieldItemsAdapter& items, const session::InventoryAdapter& inventory,
-                   ui::Ui& ui);
+                   ui::Ui& ui, game::story::SoundPort* sound);
 
   // Whether a notice is on screen: the field waits meanwhile.
   [[nodiscard]] bool active() const { return step_ != Step::None; }
@@ -42,6 +43,7 @@ private:
   session::FieldItemsAdapter* items_;
   const session::InventoryAdapter* inventory_;
   ui::Ui* ui_;
+  game::story::SoundPort* sound_;
   Step step_ = Step::None;
   std::size_t slot_ = 0;
 };

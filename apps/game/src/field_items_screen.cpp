@@ -21,8 +21,9 @@ constexpr std::string_view EmptyText = "field_items.chest_empty";
 } // namespace
 
 FieldItemsScreen::FieldItemsScreen(session::FieldItemsAdapter& items,
-                                   const session::InventoryAdapter& inventory, ui::Ui& ui)
-    : items_{&items}, inventory_{&inventory}, ui_{&ui} {}
+                                   const session::InventoryAdapter& inventory, ui::Ui& ui,
+                                   game::story::SoundPort* sound)
+    : items_{&items}, inventory_{&inventory}, ui_{&ui}, sound_{sound} {}
 
 bool FieldItemsScreen::tick(const game::field::Field& field, bool confirm) {
   if (active()) {
@@ -62,6 +63,10 @@ bool FieldItemsScreen::handle(const ui::UiCommand& command) {
   session::TakeOutcome outcome = session::TakeOutcome::Taken;
   if (step_ == Step::GroundItem) {
     outcome = items_->pickUp(slot_);
+    const std::optional<session::SoundCue> cue = items_->pickupSound();
+    if (outcome == session::TakeOutcome::Taken && cue && sound_ != nullptr) {
+      sound_->playSound(cue->slot, cue->sound);
+    }
   } else if (step_ == Step::Chest) {
     outcome = items_->takeChest(slot_);
   }

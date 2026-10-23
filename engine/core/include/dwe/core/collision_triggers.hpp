@@ -14,5 +14,7 @@ inline constexpr std::int32_t FirstConfirmTrigger = 80;
 // 110-119: the cell takes the map's table warp of exit (value - 110).
 inline constexpr std::int32_t FirstWarpTrigger = 110;
 inline constexpr std::int32_t WarpTriggerCount = 10;
+// 120: the toilet; the partner that needs it goes (map section 0x4e2).
+inline constexpr std::int32_t ToiletTrigger = 120;
 
 } // namespace dwe::core::collision

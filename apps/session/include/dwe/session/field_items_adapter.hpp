@@ -21,8 +21,21 @@ class StoryAdapter;
 // The ruleset section of the items on the ground and the chests.
 inline constexpr std::string_view FieldItemsSection = "field_items";
 
+// A sound of the original's: the sound `sound` of slot `slot` (sound.c: playSound).
+struct SoundCue {
+  std::int64_t slot = 0;
+  std::int64_t sound = 0;
+};
+
+// The field_items section: the ground items and the chests, and the sounds of the field's cells.
+struct FieldItemsRules {
+  game::field::FieldItemRules items;
+  SoundCue pickupSound;
+  SoundCue toiletSound;
+};
+
 // Reads the field_items section; errors name the file and line.
-core::Result<game::field::FieldItemRules> readFieldItemRules(const ruleset::Section& section);
+core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section);
 
 // What taking an item off the ground or out of a chest came to (tamer.c: tamerTickPickupItem,
 // tamerTickTakeChest).
@@ -45,6 +58,10 @@ public:
   [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
   // Reads the field_items section; without one, nothing lies on the ground.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
+
+  // The sounds of picking up an item and of the toilet; none without a field_items section.
+  [[nodiscard]] std::optional<SoundCue> pickupSound() const { return pickupSound_; }
+  [[nodiscard]] std::optional<SoundCue> toiletSound() const { return toiletSound_; }
 
   [[nodiscard]] game::field::FieldItems& items() { return items_; }
   [[nodiscard]] const game::field::FieldItems& items() const { return items_; }
@@ -71,6 +88,8 @@ private:
   InventoryAdapter* inventory_;
   StoryAdapter* story_;
   game::field::FieldItems items_{{}};
+  std::optional<SoundCue> pickupSound_;
+  std::optional<SoundCue> toiletSound_;
 };
 
 } // namespace dwe::session

@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: field_items",
-  "description": "rules/<id>/field_items.yaml: the items on the field's ground and the chests (apps/session: FieldItemsAdapter).",
+  "description": "rules/<id>/field_items.yaml: the items on the field's ground, the chests and the toilet's sound (apps/session: FieldItemsAdapter).",
   "type": "object",
-  "required": ["ground_slots", "chest_slots", "reach_cells"],
+  "required": ["ground_slots", "chest_slots", "reach_cells", "pickup_sound", "toilet_sound"],
   "additionalProperties": false,
   "properties": {
     "ground_slots": { "description": "How many items lie on the ground at once.", "type": "integer", "minimum": 1 },
@@ -12,6 +12,19 @@
       "description": "An item or a chest is in reach within this many cells on each axis.",
       "type": "integer",
       "minimum": 1
+    },
+    "pickup_sound": { "description": "The sound of picking up an item.", "$ref": "#/$defs/sound" },
+    "toilet_sound": { "description": "The sound of the partner at the toilet.", "$ref": "#/$defs/sound" }
+  },
+  "$defs": {
+    "sound": {
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "description": "The sound slot.", "type": "integer", "minimum": 0 },
+        "sound": { "description": "The sound in the slot.", "type": "integer", "minimum": 0 }
+      }
     }
   }
 }

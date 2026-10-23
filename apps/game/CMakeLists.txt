@@ -49,6 +49,7 @@ dwe_add_app(game
         src/story_map_edits.cpp
         src/story_shop.cpp
         src/field_items_screen.cpp
+        src/field_toilet.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
         src/title_screen.cpp

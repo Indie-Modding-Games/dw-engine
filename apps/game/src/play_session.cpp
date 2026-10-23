@@ -17,6 +17,7 @@
 
 #include "battle_trigger.hpp"
 #include "common.hpp"
+#include "field_toilet.hpp"
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_tab.hpp"
@@ -224,7 +225,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .scene = scene_.get(),
                   .ui = context.ui}),
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
-      fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui) {
+      fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
+                        game_.session->sound()) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -429,10 +431,15 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   shopScreen_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
-  sleepScreen_.update(!battleScreen_.active() && !gymScreen_.active() &&
-                      !evolutionScene_.active() && !deathScene_.active() &&
-                      !field.mapChangePending() && field.fadeLevel() == 0.0F);
+  const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
+                         !evolutionScene_.active() && !deathScene_.active() &&
+                         !field.mapChangePending() && field.fadeLevel() == 0.0F;
+  sleepScreen_.update(fieldIdle);
   gymScreen_.update();
+  if (fieldIdle && !paused()) {
+    guardFactsChanged = goToToiletOnCell(session, *game_.systems.fieldItems, field) ||
+                        guardFactsChanged;
+  }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
