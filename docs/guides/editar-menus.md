@@ -30,7 +30,8 @@ Cada documento va en su carpeta porque los ficheros se leen por asset id, que es
 `menu.rml` y `menu.rcss` en la misma carpeta chocarían. Un mod puede sustituir cualquiera de estos ficheros con uno
 del mismo id en su paquete, o añadir un aspecto entero con su `ui/skins/<id>/skin.yaml` (ver
 [Aspectos](../architecture/ui.md#aspectos)). Un documento sustituido no recibe las entradas que el juego añada luego
-al suyo: [modding/menus.md](../modding/menus.md) las lista. Un aspecto que necesita marcar elementos de un documento compartido (por
+al suyo: un menú de pausa sustituido no tiene «Dormir» (`#sleep`, que envía `sleep` y se pone en gris con
+`pause_menu.sleep_enabled`) hasta que lo añade. Un aspecto que necesita marcar elementos de un documento compartido (por
 ejemplo, que las barras del HUD se llenen a cuadritos con la clase `pips`) no copia el documento: lo dice en
 `document_classes` de su `skin.yaml`, por documento e id de elemento, y el juego pone y quita esas clases al
 cambiar de aspecto.

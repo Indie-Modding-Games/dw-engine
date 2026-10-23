@@ -324,8 +324,9 @@ vertical](../guides/prueba-vertical.md). Decisión del responsable de diseño (2
 `clock_speed` se quedan como ayudas de depuración.
 
 **CAMBIO DE CONTRATO (aditivo):** los comandos `sleep`, `sleep_only` y `sleep_and_save`, los ajustes
-`pause_menu.sleep_enabled` y `save.last_result` y el documento `sleep_menu` (paquete 4a, tramo 5a). Un mod que
-reemplaza `pause_menu` no tiene «Dormir» hasta que lo añade ([modding/menus.md](../modding/menus.md)).
+`pause_menu.sleep_enabled` y `save.last_result` y el documento `sleep_menu` (fase 4, tramo 5a). Un mod que
+reemplaza `pause_menu` no tiene «Dormir» hasta que lo añade: un botón `#sleep` que envía `sleep` y se pone en gris
+cuando `pause_menu.sleep_enabled` es falso.
 
 Otros ajustes los publica el juego sin que un menú los pida:
 

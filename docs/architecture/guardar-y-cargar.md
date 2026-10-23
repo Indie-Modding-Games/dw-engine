@@ -225,7 +225,7 @@ mensaje, como el original; el aviso de autoguardado, si salta, es aparte.
 `SaveFlow` expone `openSaveMachine()` y `gameClearSave()`: el diálogo «¿Quieres guardar?» y el guardado a la ranura
 (el de fin del juego, con la ciudad como mapa de vuelta). **Nadie los llama todavía**: los llamará el intérprete de los
 scripts de historia (R4.1) cuando corra las rutinas 48 y 54; hasta entonces un test los cubre. El registro para el
-modo versus de la máquina (y el regalo del fin del juego) **queda fuera**: es del modo versus, que no está en 4a
+modo versus de la máquina (y el regalo del fin del juego) **queda fuera**: es del modo versus, que es de la fase 5
 (pregunta 3).
 
 ### 3.8 Volver a la portada
@@ -308,7 +308,7 @@ fichero (`dialog.file`).
 | Volver a la portada desde la pausa | Mejora documentada | El original no tiene; es interfaz, sin efecto en las reglas |
 | Sin formatear tarjetas, sin «quitar la tarjeta» | Sin equivalente | No hay tarjetas |
 | Fichero de la ranura borrado fuera del juego: se reescribe | Mejora menor | |
-| Sin registro para el modo versus en la máquina | Pendiente (fuera de 4a) | Pregunta 3 |
+| Sin registro para el modo versus en la máquina | Pendiente (fase 5) | Pregunta 3 |
 | Borrar partida en la portada | Pendiente | Pregunta 4 |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
 
@@ -389,20 +389,20 @@ Decisiones del diseño (aceptadas):
 
 **CAMBIO DE CONTRATO (aditivo)** de la interfaz ([ui.md](ui.md#comandos-y-ajustes)), cada uno en la parte en que
 funciona: en la 5a, los comandos `sleep`, `sleep_only` y `sleep_and_save`, los ajustes `pause_menu.sleep_enabled` y
-`save.last_result` y el documento `sleep_menu`; en la 5b, `to_title`. Lo que tiene que añadir un mod que reemplaza el
-menú de pausa: [modding/menus.md](../modding/menus.md).
+`save.last_result` y el documento `sleep_menu`; en la 5b, `to_title`. Un mod que reemplaza el menú de pausa tiene que
+añadir «Dormir» ([ui.md](ui.md#comandos-y-ajustes)).
 
 ## 8. Preguntas (decididas)
 
 El coordinador aceptó el 2026-10-22 todas las recomendaciones; la columna «Recomendación» es la decisión. La 1 es un
-cambio de contrato del formato de la partida. Las 3 y 4 van a la lista de 4b y la 7 a la de fase 5.
+cambio de contrato del formato de la partida. Las 3, 4 y 7 van a la fase 5 (la fase 4 es solo vanilla).
 
 | # | Pregunta | Tipo | Recomendación |
 |---|---|---|---|
 | 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
 | 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar |
-| 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | No: va a la lista de 4b con el modo versus; la máquina pregunta solo «¿Quieres guardar?», documentado como pendiente |
-| 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | A la lista de 4b (alcance congelado). Sin él no se libera una ranura salvo borrando el fichero; «sin guardar» cubre el caso lleno |
+| 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | No: va a la fase 5 con el modo versus; la máquina pregunta solo «¿Quieres guardar?», documentado como pendiente |
+| 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | A la fase 5. Sin él no se libera una ranura salvo borrando el fichero; «sin guardar» cubre el caso lleno |
 | 5 | ¿«Volver a la portada» siempre, o detrás de un ajuste por ser una mejora? | FIDELITY | Siempre: es interfaz como «Salir del juego», no cambia reglas; queda en la tabla de desviaciones |
 | 6 | Una partida recién creada y nunca guardada en el juego: el original repite la escena de partida nueva al cargarla; ¿aquí? | minor | Cargar en el mapa de inicio con el estado de partida nueva; repetir la escena cuando la escena de inicio sea del intérprete de historia |
 | 7 | ¿Recolocar al partner en la salida guardada si aparece encima de un NPC (`main.c: initializeLoadedMap: 3821-3857`)? | FIDELITY | A la lista de fase 5: necesita los NPC del campo, que aún no existen |
