@@ -366,14 +366,14 @@ void EffectRunner::playSound(std::int32_t sound) {
     return;
   }
   if (!std::ranges::contains(HeldSounds, sound)) {
-    sounds_->play(sound);
+    sounds_->play(slot_, sound);
     return;
   }
   const auto free = std::ranges::find_if(held_, [](const auto& held) { return !held.has_value(); });
   if (free == held_.end()) {
     return;
   }
-  if (const std::optional<std::int64_t> voice = sounds_->playHeld(sound)) {
+  if (const std::optional<std::int64_t> voice = sounds_->playHeld(slot_, sound)) {
     *free = HeldSound{.voice = *voice, .slot = slot_, .subEffect = subEffect_};
   }
 }

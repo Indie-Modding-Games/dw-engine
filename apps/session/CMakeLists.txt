@@ -24,6 +24,7 @@ dwe_add_module(session
         src/session_rules.cpp
         src/session_music.cpp
         src/session_sound.cpp
+        src/battle_effects.cpp
         src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp

@@ -3,6 +3,7 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/session_sound.hpp>
 
+#include <algorithm>
 #include <format>
 #include <utility>
 
@@ -60,34 +61,72 @@ void SessionSound::dropUnusedBanks() {
   });
 }
 
-void SessionSound::playSound(std::int64_t slot, std::int64_t sound) {
+std::optional<std::vector<audio::VoiceId>> SessionSound::playVoices(std::int64_t slot,
+                                                                    std::int64_t sound) {
   const std::optional<std::string> folder = folderOf(slot);
   core::logDebug("[port:audio] playSound (sound.c:641): slot={} sound={} bank={}", slot, sound,
                  folder.value_or("none"));
   if (!folder) {
     if (!firstWarning(slot, sound)) {
-      return;
+      return std::nullopt;
     }
     core::logWarning("{}", core::formatMessage(messages::SoundNoSlot, slot, sound));
-    return;
+    return std::nullopt;
   }
   const audio::EffectBank* effects = bank(*folder);
   if (effects == nullptr) {
-    return;
+    return std::nullopt;
   }
   if (!std::in_range<std::uint32_t>(sound)) {
     if (!firstWarning(slot, sound)) {
-      return;
+      return std::nullopt;
     }
     core::logWarning("{}", core::formatMessage(messages::SoundNotPlayed, *folder, sound,
                                                messages::SoundOutOfRange));
+    return std::nullopt;
+  }
+  auto played = effects->play(*audio_, static_cast<std::uint32_t>(sound));
+  if (!played) {
+    if (firstWarning(slot, sound)) {
+      core::logWarning("{}", core::formatMessage(messages::SoundNotPlayed, *folder, sound,
+                                                 played.error().message));
+    }
+    return std::nullopt;
+  }
+  return std::move(*played);
+}
+
+void SessionSound::playSound(std::int64_t slot, std::int64_t sound) {
+  playVoices(slot, sound);
+}
+
+std::optional<std::int64_t> SessionSound::playHeldSound(std::int64_t slot, std::int64_t sound) {
+  // Held sounds that ended on their own are let go first, so the map does not grow.
+  std::erase_if(held_, [this](const auto& entry) {
+    return std::ranges::none_of(entry.second,
+                                [this](audio::VoiceId voice) { return audio_->isActive(voice); });
+  });
+  std::optional<std::vector<audio::VoiceId>> voices = playVoices(slot, sound);
+  if (!voices) {
+    return std::nullopt;
+  }
+  const std::int64_t handle = nextHeld_++;
+  core::logDebug("[port:audio] playSound2 (sound.c): slot={} sound={} held={} voices={}", slot,
+                 sound, handle, voices->size());
+  held_.emplace(handle, std::move(*voices));
+  return handle;
+}
+
+void SessionSound::stopHeldSound(std::int64_t held) {
+  const auto found = held_.find(held);
+  if (found == held_.end()) {
     return;
   }
-  if (auto played = effects->play(*audio_, static_cast<std::uint32_t>(sound));
-      !played && firstWarning(slot, sound)) {
-    core::logWarning("{}", core::formatMessage(messages::SoundNotPlayed, *folder, sound,
-                                               played.error().message));
+  core::logDebug("[port:audio] thunkStopSoundMask (sound.c): held={}", held);
+  for (const audio::VoiceId voice : found->second) {
+    audio_->stop(voice);
   }
+  held_.erase(found);
 }
 
 std::optional<std::string> SessionSound::folderOf(std::int64_t slot) const {

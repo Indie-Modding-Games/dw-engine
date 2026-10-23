@@ -6,6 +6,7 @@
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/battle_effects.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -51,6 +52,9 @@ struct BattleScreenDesc {
   const game::battle::BattleGround* ground = nullptr;
   // For the fighters' names; it may be null.
   const assets::DigimonTable* species = nullptr;
+  // The mounted packs, for the techniques' effect scripts; without them (or without sound) the
+  // techniques play no sounds.
+  const assets::VirtualFileSystem* files = nullptr;
   ui::Ui* ui = nullptr;
 };
 
@@ -96,6 +100,7 @@ private:
 
   BattleScreenDesc desc_;
   std::optional<game::battle::Battle> battle_;
+  std::optional<session::BattleEffects> effects_;
   bool ending_ = false;
   // The opening before the fight (battle_setup.c: BTL_handleBattleIntro), the enemies it marks and
   // where, and the time it has not run yet. Each battle seeds its own from their count.

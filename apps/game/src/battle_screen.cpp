@@ -57,6 +57,11 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
   }
   battle_.emplace(std::move(*battle));
   battle_->setGround(desc_.ground);
+  effects_.reset();
+  if (game::story::SoundPort* sound = desc_.session->sound();
+      sound != nullptr && desc_.files != nullptr) {
+    effects_.emplace(*desc_.files, *sound);
+  }
   map_ = map;
   drops_.clear();
   if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {
@@ -88,7 +93,11 @@ void BattleScreen::tick(double seconds) {
     tickIntro(seconds);
     return;
   }
-  battle_->advance(seconds);
+  battle_->advance(seconds, [this](const game::battle::BattleEvents& frame) {
+    if (effects_) {
+      effects_->frame(frame, battle_->moves());
+    }
+  });
   publish();
   if (battle_->finished()) {
     finish();
@@ -287,6 +296,10 @@ void BattleScreen::finish() {
   const std::optional<game::battle::BattleResult> finished =
       battle_ ? battle_->result() : std::nullopt;
   battle_.reset();
+  if (effects_) {
+    effects_->end();
+    effects_.reset();
+  }
   session::SessionMusic* music = desc_.session->music();
   if (music != nullptr) {
     music->endBattle();

@@ -163,8 +163,10 @@ struct Recorded {
 
 class RecordingSounds final : public EffectSounds {
 public:
-  void play(std::int32_t sound) override { log.push_back({.kind = "play", .value = sound}); }
-  std::optional<std::int64_t> playHeld(std::int32_t sound) override {
+  void play(std::size_t /*slot*/, std::int32_t sound) override {
+    log.push_back({.kind = "play", .value = sound});
+  }
+  std::optional<std::int64_t> playHeld(std::size_t /*slot*/, std::int32_t sound) override {
     log.push_back({.kind = "held", .value = sound});
     return HeldVoice;
   }

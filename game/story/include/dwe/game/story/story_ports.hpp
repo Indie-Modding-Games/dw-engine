@@ -3,6 +3,7 @@
 #include <dwe/core/error.hpp>
 
 #include <cstdint>
+#include <optional>
 
 // What the story orders read and change outside the runner
 // (docs/architecture/interprete-historia.md, "Dónde vive"). The session implements them; the tests
@@ -63,6 +64,16 @@ public:
   virtual ~SoundPort() = default;
 
   virtual void playSound(std::int64_t slot, std::int64_t sound) = 0;
+  // A sound whose voices are kept so it can be stopped before it ends (sound.c: playSound2, which
+  // returns its voice mask): a handle for stopHeldSound, or nothing when it did not play. An owner
+  // that cannot stop voices plays it as playSound does.
+  virtual std::optional<std::int64_t> playHeldSound(std::int64_t slot, std::int64_t sound) {
+    playSound(slot, sound);
+    return std::nullopt;
+  }
+  // Stops the voices of a held sound (sound.c: thunkStopSoundMask); a handle that ended already
+  // does nothing.
+  virtual void stopHeldSound(std::int64_t /*held*/) {}
 };
 
 // The music the story asks for (script_interp.c: playBGM, resetBGM). A font is the original's music

@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
@@ -32,8 +33,12 @@ public:
   // and death scenes load theirs); nothing gives slot 8 back to the map's bank.
   void useSceneBank(std::optional<std::int32_t> soundId);
   void playSound(std::int64_t slot, std::int64_t sound) override;
+  std::optional<std::int64_t> playHeldSound(std::int64_t slot, std::int64_t sound) override;
+  void stopHeldSound(std::int64_t held) override;
 
 private:
+  // Plays a sound and returns its voices, warning once when it cannot.
+  std::optional<std::vector<audio::VoiceId>> playVoices(std::int64_t slot, std::int64_t sound);
   [[nodiscard]] std::optional<std::string> folderOf(std::int64_t slot) const;
   const audio::EffectBank* bank(const std::string& folder);
   // Lets go of the banks no slot uses.
@@ -51,6 +56,9 @@ private:
   // Kept across maps, so a bank that failed to load is not tried (or reported) again.
   std::set<std::string, std::less<>> failedBanks_;
   std::set<std::pair<std::int64_t, std::int64_t>> warnedSounds_;
+  // The voices of the held sounds, by handle.
+  std::map<std::int64_t, std::vector<audio::VoiceId>> held_;
+  std::int64_t nextHeld_ = 0;
 };
 
 } // namespace dwe::session

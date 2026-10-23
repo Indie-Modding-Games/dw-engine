@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -433,10 +434,16 @@ const BattleEvents& Battle::step() {
 }
 
 BattleEvents Battle::advance(double seconds) {
+  return advance(seconds, [](const BattleEvents& /*frame*/) {});
+}
+
+BattleEvents Battle::advance(double seconds,
+                             const std::function<void(const BattleEvents&)>& onFrame) {
   BattleEvents all;
   const int ticks = clock_.advance(seconds);
   for (int tick = 0; tick < ticks && !finished(); ++tick) {
     const BattleEvents& frame = step();
+    onFrame(frame);
     all.insert(all.end(), frame.begin(), frame.end());
   }
   return all;

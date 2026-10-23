@@ -22,9 +22,10 @@ public:
   EffectSounds& operator=(EffectSounds&&) = delete;
   virtual ~EffectSounds() = default;
 
-  virtual void play(std::int32_t sound) = 0;
+  // The slot is the effect's (EffectRunner::load) that asks for the sound.
+  virtual void play(std::size_t slot, std::int32_t sound) = 0;
   // The voice the sound plays on, or nothing when it did not play.
-  virtual std::optional<std::int64_t> playHeld(std::int32_t sound) = 0;
+  virtual std::optional<std::int64_t> playHeld(std::size_t slot, std::int32_t sound) = 0;
   virtual void stop(std::int64_t voice) = 0;
 };
 

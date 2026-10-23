@@ -261,6 +261,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                              .fieldItems = game_.systems.fieldItems,
                                              .ground = &battleGround_,
                                              .species = species_ ? &*species_ : nullptr,
+                                             .files = context.files,
                                              .ui = context.ui}),
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
       fieldToilet_(*game_.session, *game_.systems.fieldItems, *scene_),

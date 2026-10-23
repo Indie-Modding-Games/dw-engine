@@ -14,6 +14,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -167,6 +168,9 @@ public:
   const BattleEvents& step();
   // Runs the frames that `seconds` of real time hold and returns their events.
   BattleEvents advance(double seconds);
+  // The same, also handing each frame's events to `onFrame` right after that frame, for what runs
+  // in step with the battle's frames (the effect scripts).
+  BattleEvents advance(double seconds, const std::function<void(const BattleEvents&)>& onFrame);
 
   [[nodiscard]] bool finished() const { return result_.has_value(); }
   [[nodiscard]] const std::optional<BattleResult>& result() const { return result_; }

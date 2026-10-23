@@ -248,6 +248,14 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
   `sb` en combate y VS, cuando existan). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
   anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
   las piden los scripts del disco (§10, Q3): la tabla tipo → entrada se aplaza al paquete de los gritos (Q13).
+- `SoundPort` también tiene `playHeldSound(slot, value)` → asa y `stopHeldSound(asa)` (`sound.c: playSound2` y
+  `thunkStopSoundMask`); `SessionSound` guarda las voces de cada asa. Por defecto el puerto lo toca como `playSound` y no
+  para nada.
+- **Combate:** los golpes y técnicas suenan desde sus scripts de efecto (`battle_effect.c: BTL_playEFESound`):
+  `session::BattleEffects` carga `effect/<técnica>/` la primera vez que se usa, lo arranca con `AttackStarted` y lo
+  avanza un paso por fotograma de combate con `game::battle::EffectRunner` (ver [battle](../modulos/game/battle.md));
+  sus `play_sound` van a la ranura 8 y los ids 0x12 y 0x20–0x22 como sonido guardado, que se para al acabar su
+  sub-efecto. En el log: `[port:battle] BTL_startEFE ... move=` y `[port:audio] BTL_playEFESound ... move= sound=`.
 - **Menús (tramo 2b):** `ui::Ui` informa de lo que pasó al navegar con el teclado o el mando (`takeCues()`: mover, confirmar,
   cancelar; los clics del ratón no dan aviso), sin saber de sonido, y como el original: `tickMenuInput`
   (`main_menu.c:4664`) toca el sonido 2 de la ranura 0 solo si el cursor se mueve (en el borde calla), el 3 al
@@ -362,7 +370,7 @@ ticks por segundo. Lo que es regla del juego queda igual en el ruleset `original
 | Siempre a volumen máximo y centrado: sin volumen ni panorama por llamada y **sin posición 3D** (la distancia no atenúa) | `sound.c: startSound` | Igual: el volumen y el panorama son los del tono y el programa. Sonido posicional sería una mejora opcional (fuera de VAN-01) |
 | Volver a pedir un efecto que suena **no** lo reinicia: suena otra vez encima | `sound.c: playSound` | Igual |
 | Parar un efecto: bajada rápida del volumen y suelta la nota | `sound.c: stopSoundMask` | Igual (§5) |
-| Algunos efectos de combate y de minijuegos suenan en bucle hasta que su dueño los para | `battle_effect.c: BTL_playEFESound` | La API lo permite (voz con bucle + parar por id); cada sistema lo usa en su paquete. El fallo de `BTL_stopEFESounds` (solo para la primera ranura) se decide con el combate |
+| Algunos efectos de combate y de minijuegos suenan en bucle hasta que su dueño los para | `battle_effect.c: BTL_playEFESound` | La API lo permite (voz con bucle + parar por id); cada sistema lo usa en su paquete. El fallo de `BTL_stopEFESounds` (solo para la primera ranura) no se copia: `EffectRunner::stopAll` las para todas |
 | Las órdenes de script de sonido no esperan: `play_sound` dispara y sigue; `set_bgm(0xFF)` y `stop_bgm` paran la música | `script_interp.c: scriptInstruction5Ato5F` | Igual. Las esperas de carga del banco del mapa (rutinas 0x28, 0x35) acaban en el acto: son del runner de la historia |
 | Los gritos de los Digimon van en las animaciones (instrucción de animación con banco y sonido; solo si la entidad está en pantalla) | `anim.c` | Con su sistema (pregunta Q6) |
 
