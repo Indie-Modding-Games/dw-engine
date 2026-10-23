@@ -28,8 +28,6 @@ inline constexpr std::string_view NoSuchSpecies = "no species has the number {}"
 inline constexpr std::string_view NoBag = "the story orders have no bag";
 inline constexpr std::string_view NoMoves = "the story orders have no moves";
 inline constexpr std::string_view SlotCountRefused = "set_inventory_size {}: {}";
-inline constexpr std::string_view StatNotKept =
-    "the session does not keep stat {} yet; the story order leaves it";
 inline constexpr std::string_view PartnerUnnumbered = "the partner '{}' has no number";
 
 } // namespace dwe::session::story_game_messages

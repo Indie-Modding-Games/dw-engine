@@ -35,6 +35,9 @@ inline constexpr std::string_view SetStat = "set_stat";
 inline constexpr std::string_view AddStat = "add_stat";
 inline constexpr std::string_view ReduceStat = "reduce_stat";
 inline constexpr std::string_view Stat = "stat";
+inline constexpr std::string_view SetMerit = "set_merit";
+inline constexpr std::string_view AddMerit = "add_merit";
+inline constexpr std::string_view ReduceMerit = "reduce_merit";
 inline constexpr std::string_view RemoveCondition = "remove_condition";
 inline constexpr std::string_view HasCondition = "has_condition";
 inline constexpr std::string_view DealDamage = "deal_damage";
@@ -72,9 +75,8 @@ core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameConte
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishMapOrders(script::ApiRegistry& api, StoryGameContext& context);
 
-// A stat as the scripts read it, or nothing for the ones the session does not keep yet (merit,
-// battles and tournaments).
-std::optional<std::int64_t> scriptStatOf(const GameSession& session, ScriptStat stat);
+// A stat as the scripts read it.
+std::int64_t scriptStatOf(const GameSession& session, ScriptStat stat);
 
 // The story's change at the start of each day (script_common.c: dailyPStatTrigger).
 void runDailyChange(const StoryGameContext& context);

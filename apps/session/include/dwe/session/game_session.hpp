@@ -39,9 +39,23 @@ namespace dwe::session {
 class SessionMusic;
 class SessionSound;
 
+// The tamer's record the story reads and changes (script_value.c: getStatsPointer MERIT,
+// BATTLES_STARTED, BATTLES_FLED, TOURNAMENTS_WON, TOURNAMENT_WINS, TOURNAMENTS_LOST).
+struct TamerRecord {
+  std::int32_t merit = 0;
+  std::int32_t startedBattles = 0;
+  std::int32_t fledBattles = 0;
+  std::int32_t tournamentsWon = 0;
+  std::int32_t tournamentWins = 0;
+  std::int32_t tournamentsLost = 0;
+
+  friend bool operator==(const TamerRecord&, const TamerRecord&) = default;
+};
+
 // The tamer as far as the session keeps it until a tamer system exists.
 struct TamerState {
   std::int32_t level = 0;
+  TamerRecord record{};
 
   friend bool operator==(const TamerState&, const TamerState&) = default;
 };
@@ -187,6 +201,8 @@ public:
   // A story order sets the tamer level (script_interp.c: scriptInstruction28to3F), kept within the
   // tamer section's limits.
   void setTamerLevel(std::int32_t level);
+  // A story order changes the tamer's record (script_interp.c: scriptInstruction28to3F).
+  void setTamerRecord(const TamerRecord& record);
 
   // The partner's events of the last tick and of the commands since, for the UI.
   [[nodiscard]] std::vector<game::partner::PartnerEvent> takePartnerEvents();

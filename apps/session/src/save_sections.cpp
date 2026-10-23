@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <format>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
 
@@ -23,6 +24,12 @@ using messages::formatMessage;
 constexpr std::string_view ElapsedFramesKey = "elapsed_frames";
 constexpr std::string_view PendingFramesKey = "pending_frames";
 constexpr std::string_view LevelKey = "level";
+constexpr std::string_view MeritKey = "merit";
+constexpr std::string_view StartedBattlesKey = "started_battles";
+constexpr std::string_view FledBattlesKey = "fled_battles";
+constexpr std::string_view TournamentsWonKey = "tournaments_won";
+constexpr std::string_view TournamentWinsKey = "tournament_wins";
+constexpr std::string_view TournamentsLostKey = "tournaments_lost";
 constexpr std::string_view MapKey = "map";
 constexpr std::string_view PositionKey = "position";
 constexpr std::string_view YawKey = "yaw";
@@ -137,15 +144,34 @@ core::Result<void> PartnerSave::read(const YamlNode& state) {
 core::Result<YamlNode> TamerSave::write() const {
   YamlNode node = YamlNode::mapping();
   node.set(std::string{LevelKey}, scalarOf(state_->tamer.level));
+  const TamerRecord& record = state_->tamer.record;
+  node.set(std::string{MeritKey}, scalarOf(record.merit));
+  node.set(std::string{StartedBattlesKey}, scalarOf(record.startedBattles));
+  node.set(std::string{FledBattlesKey}, scalarOf(record.fledBattles));
+  node.set(std::string{TournamentsWonKey}, scalarOf(record.tournamentsWon));
+  node.set(std::string{TournamentWinsKey}, scalarOf(record.tournamentWins));
+  node.set(std::string{TournamentsLostKey}, scalarOf(record.tournamentsLost));
   return node;
 }
 
 core::Result<void> TamerSave::read(const YamlNode& state) {
   YamlReader reader;
-  if (!reader.expectKeys(state, messages::TamerStateText, {LevelKey})) {
+  // The record came after the level: a save without it starts it at 0.
+  if (!reader.expectKeys(state, messages::TamerStateText, {LevelKey},
+                         {MeritKey, StartedBattlesKey, FledBattlesKey, TournamentsWonKey,
+                          TournamentWinsKey, TournamentsLostKey})) {
     return std::unexpected{reader.error(messages::TamerStateText)};
   }
-  const TamerState tamer{.level = reader.integer<std::int32_t>(reader.field(state, LevelKey))};
+  const auto count = [&reader, &state](std::string_view key) {
+    return reader.optionalInteger<std::int32_t>(state, key).value_or(0);
+  };
+  const TamerState tamer{.level = reader.integer<std::int32_t>(reader.field(state, LevelKey)),
+                         .record = {.merit = count(MeritKey),
+                                    .startedBattles = count(StartedBattlesKey),
+                                    .fledBattles = count(FledBattlesKey),
+                                    .tournamentsWon = count(TournamentsWonKey),
+                                    .tournamentWins = count(TournamentWinsKey),
+                                    .tournamentsLost = count(TournamentsLostKey)}};
   auto done = reader.finish(tamer, messages::TamerStateText);
   if (!done) {
     return std::unexpected{done.error()};

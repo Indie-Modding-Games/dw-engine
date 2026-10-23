@@ -1,3 +1,4 @@
+#include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/battle/moves.hpp>
 #include <dwe/game/partner/state.hpp>
@@ -62,7 +63,7 @@ std::optional<Stat> baseStatOf(ScriptStat stat) {
   }
 }
 
-// The partner's number that a stat names, or nullptr for the ones the partner does not keep.
+// The partner's number that a stat names, or nullptr for the tamer's.
 std::int32_t* partnerField(PartnerState& partner, ScriptStat stat) {
   if (const std::optional<Stat> base = baseStatOf(stat)) {
     return &partner.stats.base[*base];
@@ -93,6 +94,26 @@ std::int32_t* partnerField(PartnerState& partner, ScriptStat stat) {
   }
 }
 
+// The tamer's count that a stat names, or nullptr for the ones the partner keeps.
+std::int32_t* recordField(TamerRecord& record, ScriptStat stat) {
+  switch (stat) {
+  case ScriptStat::Merit:
+    return &record.merit;
+  case ScriptStat::StartedBattles:
+    return &record.startedBattles;
+  case ScriptStat::FledBattles:
+    return &record.fledBattles;
+  case ScriptStat::TournamentsWon:
+    return &record.tournamentsWon;
+  case ScriptStat::TournamentWins:
+    return &record.tournamentWins;
+  case ScriptStat::TournamentsLost:
+    return &record.tournamentsLost;
+  default:
+    return nullptr;
+  }
+}
+
 // The highest value set_stat and add_stat leave (script_value.c:356 enforceStatsLimits).
 std::int64_t limitOf(const StoryGameContext& context, ScriptStat stat) {
   const PartnerState& partner = context.game().partner().state();
@@ -113,12 +134,15 @@ void writeStat(const StoryGameContext& context, ScriptStat stat, std::int64_t va
     session.setTamerLevel(number);
     return;
   }
-  PartnerState partner = session.partner().state();
-  std::int32_t* field = partnerField(partner, stat);
-  if (field == nullptr) {
-    core::logWarning("{}", msg::formatMessage(msg::StatNotKept, static_cast<int>(stat)));
+  TamerRecord record = session.tamer().record;
+  if (std::int32_t* count = recordField(record, stat)) {
+    *count = number;
+    session.setTamerRecord(record);
     return;
   }
+  PartnerState partner = session.partner().state();
+  std::int32_t* field = partnerField(partner, stat);
+  DWE_ASSERT(field != nullptr);
   *field = number;
   session.partner().takeStoryChange(std::move(partner));
 }
@@ -129,7 +153,7 @@ core::Result<ApiValue> changeStat(const StoryGameContext& context, std::int64_t 
   if (!stat) {
     return std::unexpected{stat.error()};
   }
-  const std::int64_t current = scriptStatOf(context.game(), *stat).value_or(0);
+  const std::int64_t current = scriptStatOf(context.game(), *stat);
   std::int64_t value = 0;
   switch (change) {
   case StatChange::Set:
@@ -152,16 +176,24 @@ core::Result<ApiValue> changeStat(const StoryGameContext& context, std::int64_t 
   return ApiValue{};
 }
 
+// script_interp.c:1173 REDUCE_MERIT writes MERIT = -value into a 16-bit count and then stops it at
+// 0: the merit becomes 0 whatever it was (kept as the original does).
+core::Result<ApiValue> reduceMerit(const StoryGameContext& context, std::int64_t amount) {
+  const auto merit = std::max<std::int64_t>(static_cast<std::int16_t>(-amount), 0);
+  TamerRecord record = context.game().tamer().record;
+  core::logDebug("[port:story] reduce_merit (script_interp.c:1173): by {}: {} -> {}", amount,
+                 record.merit, merit);
+  record.merit = static_cast<std::int32_t>(merit);
+  context.game().setTamerRecord(record);
+  return ApiValue{};
+}
+
 core::Result<ApiValue> readStat(const StoryGameContext& context, std::int64_t number) {
   const auto stat = statOf(number);
   if (!stat) {
     return std::unexpected{stat.error()};
   }
-  const std::optional<std::int64_t> value = scriptStatOf(context.game(), *stat);
-  if (!value) {
-    core::logWarning("{}", msg::formatMessage(msg::StatNotKept, number));
-  }
-  return ApiValue{value.value_or(0)};
+  return ApiValue{scriptStatOf(context.game(), *stat)};
 }
 
 core::Result<ApiValue> removeCondition(const StoryGameContext& context, std::int64_t mask) {
@@ -304,15 +336,17 @@ core::Result<bool> BattleAdapter::knowsMoveNumber(std::int64_t number) const {
   return core::fail(msg::formatMessage(msg::NoSuchMove, number));
 }
 
-std::optional<std::int64_t> scriptStatOf(const GameSession& session, ScriptStat stat) {
+std::int64_t scriptStatOf(const GameSession& session, ScriptStat stat) {
   if (stat == ScriptStat::TamerLevel) {
     return session.tamer().level;
   }
+  TamerRecord record = session.tamer().record;
+  if (const std::int32_t* count = recordField(record, stat)) {
+    return *count;
+  }
   PartnerState partner = session.partner().state();
   const std::int32_t* field = partnerField(partner, stat);
-  if (field == nullptr) {
-    return std::nullopt;
-  }
+  DWE_ASSERT(field != nullptr);
   return *field;
 }
 
@@ -326,6 +360,12 @@ core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameConte
       return changeStat(*game, operands[0], operands[1], change);
     });
   };
+  // script_interp.c:1159-1171: set_merit and add_merit are set_stat and add_stat of the merit.
+  const auto meritOrder = [game](StatChange change) {
+    return integerOrder<1>([game, change](const Operands1& operands) {
+      return changeStat(*game, static_cast<std::int64_t>(ScriptStat::Merit), operands[0], change);
+    });
+  };
   const auto oneOperand =
       [game](core::Result<ApiValue> (*run)(const StoryGameContext&, std::int64_t)) {
         return integerOrder<1>(
@@ -336,6 +376,9 @@ core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameConte
             {names::AddStat, statOrder(StatChange::Add)},
             {names::ReduceStat, statOrder(StatChange::Reduce)},
             {names::Stat, oneOperand(&readStat)},
+            {names::SetMerit, meritOrder(StatChange::Set)},
+            {names::AddMerit, meritOrder(StatChange::Add)},
+            {names::ReduceMerit, oneOperand(&reduceMerit)},
             {names::RemoveCondition, oneOperand(&removeCondition)},
             {names::HasCondition, oneOperand(&hasCondition)},
             {names::DealDamage, oneOperand(&dealDamage)},

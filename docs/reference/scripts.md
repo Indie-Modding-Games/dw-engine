@@ -151,7 +151,8 @@ Lo que guarda `ScriptState` y lo que el motor reserva (comprobado, `script.h`, `
 
 - **Cartas:** 66 cuentas de 4 bits; `give_card` no pasa de 9 y `take_card` no baja de 0 (comprobado).
 - **Dinero:** `add_money` no pasa de 999 999; `reduce_money` no baja de 0 (comprobado).
-- **Méritos:** `set_merit` y `add_merit` no pasan de 9999 (comprobado).
+- **Méritos:** `set_merit` y `add_merit` no pasan de 9999 (comprobado). `reduce_merit` escribe `MERIT = -valor` y
+  lo detiene en 0: deja los méritos en 0 sea cual sea la cantidad (`script_interp.c:1173`; el motor lo conserva).
 - **Contadores:** combates empezados y huidas, +1 por `start_battle` y por huida, con tope 9999; los de torneos los
   lleva la rutina 6 (comprobado).
 - **Fecha:** año, día, hora y minuto; un año son 30 días (comprobado).
