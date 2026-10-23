@@ -142,6 +142,11 @@ public:
   // Decides the map's script warp cells again after what their guards read changed
   // (Field::refreshScriptWarps).
   void refreshScriptWarps() { field_->refreshScriptWarps(); }
+  // The story's edits of the map shown, until a map is entered again (story_map_edits.cpp): an
+  // object's flag (overworld.c: setMapObjectsFlag) and a rectangle of cells that stop movement
+  // (map_collision.c: setImpassableRect).
+  void setMapObjectFlag(std::int32_t object, std::int32_t flag);
+  void blockCells(assets::CollisionCell from, std::int32_t width, std::int32_t height);
   [[nodiscard]] const assets::MapDocument& map() const { return map_.document; }
   // The key of the current map's name among the texts (nameKeyOf), empty when it has none.
   [[nodiscard]] const std::string& mapNameKey() const { return mapNameKey_; }

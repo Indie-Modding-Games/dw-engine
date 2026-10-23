@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/script/api_registry.hpp>
 #include <dwe/session/story_game_orders.hpp>
+#include <dwe/session/story_map_edits.hpp>
 
 #include <array>
 #include <cstddef>
@@ -44,6 +45,8 @@ inline constexpr std::string_view StoreSpeciesType = "store_species_type";
 inline constexpr std::string_view StoreDate = "store_date";
 inline constexpr std::string_view AdvanceToDateAt = "advance_to_date_at";
 inline constexpr std::string_view AddMinutesToDateAt = "add_minutes_to_date_at";
+inline constexpr std::string_view SetObjVisibility = "set_obj_visibility";
+inline constexpr std::string_view SetRectImpassable = "set_rect_impassable";
 } // namespace story_game_api
 
 struct StoryGameContext {
@@ -53,6 +56,8 @@ struct StoryGameContext {
   StoryValueRules rules;
   // The species by the original's number, for the orders that store one in a variable.
   std::optional<assets::DigimonTable> digimon;
+  // The map edits the field has not taken yet.
+  std::vector<StoryMapEdit> mapEdits;
 
   [[nodiscard]] GameSession& game() const;
   // A story variable, and a write that keeps the value within a variable's byte, logged.
@@ -65,6 +70,7 @@ struct StoryGameContext {
 core::Result<void> publishBagOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishPartnerOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
+core::Result<void> publishMapOrders(script::ApiRegistry& api, StoryGameContext& context);
 
 // A stat as the scripts read it, or nothing for the ones the session does not keep yet (merit,
 // battles and tournaments).

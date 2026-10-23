@@ -20,6 +20,7 @@
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_tab.hpp"
+#include "story_map_edits.hpp"
 #include "title_screen.hpp"
 
 namespace dwe::app {
@@ -271,6 +272,7 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
+    applyStoryMapEdits(*scene_, game_.systems.storyOrders);
     scene_->finishTick();
     storyLink_->afterMapChange();
   }

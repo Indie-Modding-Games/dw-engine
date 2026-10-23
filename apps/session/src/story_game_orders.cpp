@@ -256,6 +256,10 @@ void StoryGameOrders::tick(GameSession& session, const ruleset::ClockAdvance& ad
   }
 }
 
+std::vector<StoryMapEdit> StoryGameOrders::takeMapEdits() {
+  return std::exchange(context_->mapEdits, {});
+}
+
 void StoryGameOrders::bind(GameSession& session) {
   context_->session = &session;
   if (published_) {
@@ -267,7 +271,8 @@ void StoryGameOrders::bind(GameSession& session) {
     return;
   }
   script::ApiRegistry api = vm->api();
-  for (auto* publish : {&publishBagOrders, &publishPartnerOrders, &publishDateOrders}) {
+  for (auto* publish :
+       {&publishBagOrders, &publishPartnerOrders, &publishDateOrders, &publishMapOrders}) {
     if (auto published = publish(api, *context_); !published) {
       core::logError("{}", published.error().message);
     }

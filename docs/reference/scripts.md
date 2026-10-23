@@ -412,7 +412,7 @@ a 360); 5 la apertura; 6 el final; 7 vida perdida por enfermedad; 8 aparece Mach
 
 | Orden | Usos | Qué hace |
 |---|---|---|
-| `set_obj_visibility` | 1669 | fija la marca de un objeto del mapa (suposición: 0 oculto, otro visible) |
+| `set_obj_visibility` | 1669 | fija la marca de un objeto del mapa (`overworld.c: setMapObjectsFlag`); 1 lo oculta, como lee el dibujo de capas (`MapObjectInstance::HiddenFlag`) |
 | `move_object_to` | 293 | lleva un objeto 2D del mapa a un punto de pantalla en N pasos (huecos 12–21, varios a la vez) |
 | `rotate_3d_object` | 103 | anima una puerta, ascensor o corredera del mapa según su modelo (hueco 11, uno a la vez) |
 | `spawn_item` | 241 | deja un objeto en el suelo (11 huecos; lleno: nada) |

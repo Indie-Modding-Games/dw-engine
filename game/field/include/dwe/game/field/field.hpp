@@ -211,6 +211,10 @@ public:
 
   // The current map's collision grid, for the minimap.
   [[nodiscard]] const assets::MapCollision& collision() const { return collision_; }
+  // Makes a rectangle of the current map's cells stop movement until a map is entered again, as a
+  // script closes an area (map_collision.c: setImpassableRect); cells outside the grid are left
+  // alone.
+  void blockCells(assets::CollisionCell from, std::int32_t width, std::int32_t height);
 
   // The current map's region lists, which say how the partner feels about the map.
   [[nodiscard]] const assets::MapRegions& regions() const { return regions_; }

@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/session/session_system.hpp>
+#include <dwe/session/story_map_edits.hpp>
 
 #include <array>
 #include <cstdint>
@@ -94,10 +95,10 @@ struct StoryGameContext;
 
 // The story orders that change the game besides the story's own state (docs/reference/scripts.md,
 // "Objetos, dinero, técnicas, cartas y estadísticas" and "Disparadores, variables y fecha"): the
-// bag and the money, the partner's stats, conditions and moves, and the date. It publishes them in
-// the story's script VM the first time it ticks after the story built it, and points them at the
-// session it ticks with. It ticks before the story, so the orders a section runs see this tick's
-// session.
+// bag and the money, the partner's stats, conditions and moves, the date, and the map's objects
+// and collision. It publishes them in the story's script VM the first time it ticks after the
+// story built it, and points them at the session it ticks with. It ticks before the story, so the
+// orders a section runs see this tick's session.
 class StoryGameOrders final : public SessionSystem {
 public:
   explicit StoryGameOrders(StoryGameOrdersDesc desc);
@@ -113,6 +114,10 @@ public:
   // Binds the session, publishes the orders once, and on each day the clock crossed runs the
   // story's daily change (script_common.c: dailyPStatTrigger, called by clock.c: tickGameClock).
   void tick(GameSession& session, const ruleset::ClockAdvance& advance) override;
+
+  // The map edits the orders made since the last call, in order, for the field to apply to the map
+  // it shows (story_map_edits.hpp). Edits made while no field is shown are dropped.
+  [[nodiscard]] std::vector<StoryMapEdit> takeMapEdits();
 
 private:
   void bind(GameSession& session);
