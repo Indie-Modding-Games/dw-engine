@@ -148,6 +148,14 @@ void StoryRunner::freezeWorld() {
   }
 }
 
+void StoryRunner::addFrameListener(ScriptFrameListener& listener) {
+  frameListeners_.push_back(&listener);
+}
+
+void StoryRunner::removeFrameListener(const ScriptFrameListener& listener) {
+  std::erase(frameListeners_, &listener);
+}
+
 std::vector<SectionRef> StoryRunner::runningSections() const {
   return sections_ | std::views::transform(&RunningSection::ref) | std::ranges::to<std::vector>();
 }
@@ -168,6 +176,19 @@ void StoryRunner::runFrame() {
   if (sections_.empty()) {
     return;
   }
+  for (ScriptFrameListener* listener : frameListeners_) {
+    listener->frameBegan();
+  }
+  if (waitSource_ != nullptr) {
+    // script_interp.c: tickScript runs the next order once the system cleared the active one.
+    const std::optional<ResumeValue> done = waitSource_->poll();
+    if (!done) {
+      return;
+    }
+    waitSource_ = nullptr;
+    run(*done);
+    return;
+  }
   // script_interp.c: tickScript counts the wait down and, when it reaches 0, runs the next order in
   // the same frame.
   --framesToWait_;
@@ -185,6 +206,9 @@ void StoryRunner::beginScript(SectionRef section, SectionSource source) {
   core::logDebug("{}",
                  messages::formatMessage(messages::PortBeginScript, section.script, section.section,
                                          source == SectionSource::Event, variableAtStart_));
+  for (ScriptFrameListener* listener : frameListeners_) {
+    listener->scriptStarted();
+  }
   startSection(section);
 }
 
@@ -247,9 +271,23 @@ std::optional<ResumeValue> StoryRunner::follow(const Wait& wait) {
     changeMap(*change);
     return std::nullopt;
   }
+  if (const auto* source = std::get_if<SourceWait>(&wait)) {
+    DWE_ASSERT(source->source != nullptr);
+    return waitOn(*source->source);
+  }
   const auto& frames = std::get<FrameWait>(wait);
   framesToWait_ = std::max<std::int64_t>(frames.frames, 1);
   waitResult_ = frames.result;
+  return std::nullopt;
+}
+
+std::optional<ResumeValue> StoryRunner::waitOn(WaitSource& source) {
+  // A system that is done at once lets the section go on in the same frame, as an order that never
+  // set itself active does.
+  if (std::optional<ResumeValue> done = source.poll()) {
+    return done;
+  }
+  waitSource_ = &source;
   return std::nullopt;
 }
 
@@ -286,6 +324,7 @@ void StoryRunner::changeMap(const MapChangeWait& change) {
                                          change.arrival.value_or(NoArrivalSection), showName));
   continuations_.emplace_back(RunSection{.section = change.arrival});
   closeSections();
+  stopScript();
   setVariable(rules_.frozenVariable, variableAtStart_);
   changingMap_ = true;
   if (ports_.mapChange != nullptr) {
@@ -387,6 +426,7 @@ void StoryRunner::finishScript() {
   // script_interp.c: tickScript, once the script is over.
   core::logDebug("{}", messages::formatMessage(messages::PortFinish, rules_.frozenVariable,
                                                variableAtStart_, frozen_));
+  stopScript();
   setVariable(rules_.frozenVariable, variableAtStart_);
   if (std::exchange(frozen_, false) && ports_.control != nullptr) {
     ports_.control->release();
@@ -400,6 +440,13 @@ void StoryRunner::closeSections() {
   sections_.clear();
   framesToWait_ = 0;
   waitResult_.reset();
+  waitSource_ = nullptr;
+}
+
+void StoryRunner::stopScript() {
+  for (ScriptFrameListener* listener : frameListeners_) {
+    listener->scriptStopped();
+  }
 }
 
 bool StoryRunner::chooseShowName() {

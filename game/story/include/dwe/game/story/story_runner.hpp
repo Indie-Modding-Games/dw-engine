@@ -68,6 +68,25 @@ struct StoryFlowPorts {
   MapChangePort* mapChange = nullptr;
 };
 
+// A system that keeps time with the script, as script_interp.c: tickScript ticks the textboxes
+// before it runs the script's next order and closes them when the script stops.
+class ScriptFrameListener {
+public:
+  ScriptFrameListener() = default;
+  ScriptFrameListener(const ScriptFrameListener&) = delete;
+  ScriptFrameListener& operator=(const ScriptFrameListener&) = delete;
+  ScriptFrameListener(ScriptFrameListener&&) = delete;
+  ScriptFrameListener& operator=(ScriptFrameListener&&) = delete;
+  virtual ~ScriptFrameListener() = default;
+
+  // A script starts (script_interp.c: callScriptSection).
+  virtual void scriptStarted() = 0;
+  // A frame of the original begins while a script runs, before its section goes on.
+  virtual void frameBegan() = 0;
+  // The script ended or left for a map change (script_interp.c: tickScript, closeAllTextboxes).
+  virtual void scriptStopped() = 0;
+};
+
 class StoryRunner {
 public:
   // The script of the map-head sections, and the section of a map's script that runs when the
@@ -107,6 +126,10 @@ public:
   core::Result<void> sectionOnExit(std::int64_t section);
   // Holds the player still for the script (script_interp.c: scriptPauseGame).
   void freezeWorld();
+
+  // Tells `listener`, which must outlive the runner or be removed first, how the script runs.
+  void addFrameListener(ScriptFrameListener& listener);
+  void removeFrameListener(const ScriptFrameListener& listener);
 
   // Whether a script is running or about to start.
   [[nodiscard]] bool busy() const {
@@ -161,6 +184,8 @@ private:
   void continueWith(const RunSection& next);
   void finishScript();
   void closeSections();
+  void stopScript();
+  std::optional<ResumeValue> waitOn(WaitSource& source);
   bool chooseShowName();
   [[nodiscard]] std::int64_t variable(std::int64_t variable) const;
   // The state is the port's, not the runner's.
@@ -175,6 +200,9 @@ private:
   std::vector<RunningSection> sections_;
   std::int64_t framesToWait_ = 0;
   ResumeValue waitResult_;
+  // The system the running section waits on, if any.
+  WaitSource* waitSource_ = nullptr;
+  std::vector<ScriptFrameListener*> frameListeners_;
   // The script stack's continuations. The original never clears them between scripts, so one
   // left by a script that ended another way runs at the next script's end.
   std::vector<Continuation> continuations_;

@@ -57,8 +57,31 @@ struct MapChangeWait {
   friend bool operator==(const MapChangeWait&, const MapChangeWait&) = default;
 };
 
+// A system a section waits on, such as a textbox: the runner asks it whether the section goes on
+// when the order yields, and then once a frame of the original, as script_interp.c: tickScript
+// leaves an order active until the system clears it.
+class WaitSource {
+public:
+  WaitSource() = default;
+  WaitSource(const WaitSource&) = delete;
+  WaitSource& operator=(const WaitSource&) = delete;
+  WaitSource(WaitSource&&) = delete;
+  WaitSource& operator=(WaitSource&&) = delete;
+  virtual ~WaitSource() = default;
+
+  // Nothing while the section still waits; otherwise the value its order gives back.
+  [[nodiscard]] virtual std::optional<ResumeValue> poll() = 0;
+};
+
+// The section waits until `source` lets it go on; the source must outlive the wait.
+struct SourceWait {
+  WaitSource* source = nullptr;
+
+  friend bool operator==(const SourceWait&, const SourceWait&) = default;
+};
+
 // What a section waits for when it yields.
-using Wait = std::variant<FrameWait, FileJump, MapChangeWait>;
+using Wait = std::variant<FrameWait, FileJump, MapChangeWait, SourceWait>;
 
 // The section ended the script: end_section, end_script, a map change, or a routine that gave back
 // ENDED.

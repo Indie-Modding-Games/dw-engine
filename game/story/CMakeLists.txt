@@ -5,4 +5,5 @@ dwe_add_module(story
         src/story_state_yaml.cpp
         src/story_orders.cpp
         src/story_runner.cpp
+        src/dialogue.cpp
     DEPS core assets)
