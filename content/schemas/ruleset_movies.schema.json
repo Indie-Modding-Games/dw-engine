@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: movies",
+  "description": "rules/<id>/movies.yaml: the movie each moment of the game plays, whether Start skips it, and how long the title waits before the boot movie again (apps/game: MovieRules, docs/architecture/peliculas.md).",
+  "type": "object",
+  "required": ["movies", "landing_idle_frames"],
+  "additionalProperties": false,
+  "$defs": {
+    "movie": {
+      "type": "object",
+      "required": ["file", "skippable"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "description": "The movie folder in the packs: movie/<file>/.", "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "skippable": { "description": "Whether the Start action ends it early.", "type": "boolean" }
+      }
+    }
+  },
+  "properties": {
+    "movies": {
+      "type": "object",
+      "required": ["boot", "new_game", "cleared_load", "ending"],
+      "additionalProperties": false,
+      "properties": {
+        "boot": { "description": "At start and when the title is idle.", "$ref": "#/$defs/movie" },
+        "new_game": { "description": "Before a new game's first map.", "$ref": "#/$defs/movie" },
+        "cleared_load": { "description": "On continuing a game saved after the ending.", "$ref": "#/$defs/movie" },
+        "ending": { "description": "After the ending, before the title.", "$ref": "#/$defs/movie" }
+      }
+    },
+    "landing_idle_frames": { "description": "Frames at 60 a second without input on the title before the boot movie plays again.", "type": "integer", "minimum": 1 }
+  }
+}

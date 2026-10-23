@@ -58,15 +58,17 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
 - **Sincronía:** el audio manda. El reloj es `Audio::position(VoiceId)` (el frame del clip que el hilo de audio
   mezcló por última vez) entre la frecuencia del WAV; sin audio, el tiempo de juego. Si el juego se atasca, se
   saltan frames (como el original, que nunca espera al vídeo).
-- **`MovieScreen`** (`apps/game`): para la música, crea la textura de 320 × 176 una vez y la actualiza con
-  `queueTextureUpdate` cada frame nuevo, la dibuja centrada en 320 × 240 con bandas negras, toca el WAV en el bus
-  de música, salta con la acción `menu` (Start del mando, Tab) si la película es `skippable`, y al acabar: negro,
-  reinicia la música, fundido desde negro.
+- **`MovieScreen`** (`apps/game`): crea la textura de 320 × 176 una vez y la actualiza con `queueTextureUpdate`
+  cada frame nuevo, la dibuja centrada en 320 × 240 con bandas negras (la película tapa la escena y la UI), toca el
+  WAV en el bus de música y salta con la acción `menu` (Start del mando, Tab) si la película es `skippable`. Parar y
+  reanudar la música llega con la música (VAN-01 tramo 3), y el fundido desde negro tras la película, a la fase 5.
 - **Película que falta** (paquete sin `movie/`): aviso en el log y se sigue el flujo, como `CdSearchFile` fallido
   en US.
-- **Estados de la app:** arranque → OP1 → portada; portada sin entrada `landing_idle_frames` → OP1 → portada;
-  partida nueva → OP2 → mapa inicial; ganchos para ED2 (continuar una partida terminada) y EDR (final → cerrar la
-  partida → EDR → portada), que HIST-S7 llama al portar las rutinas 53 y 54.
+- **Estados de la app** (`game.cpp`): arranque → OP1 → portada; portada sin entrada `landing_idle_frames` ticks
+  (cualquier tecla, ratón o botón reinicia la cuenta, porque la portada de dwe es el menú) → OP1 → portada;
+  partida nueva → OP2 → mapa inicial; `PlaySession::requestMovie` es el gancho de ED2 (tras cargar una partida
+  terminada, la partida espera) y de EDR (cierra la partida → EDR → portada), que HIST-S7 llama al portar las
+  rutinas 53 y 54. Un autotest y los arranques directos (`--new-game`, `--load`, `--start`) no ven películas.
 
 ## Tramos (≤ ~800 líneas cambiadas cada uno, sin docs)
 

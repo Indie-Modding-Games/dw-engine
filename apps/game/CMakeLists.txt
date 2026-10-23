@@ -22,6 +22,8 @@ dwe_add_app(game
         src/free_exploration.cpp
         src/game_saves.cpp
         src/model_viewer.cpp
+        src/movie_rules.cpp
+        src/movie_screen.cpp
         src/options.cpp
         src/partner_events.cpp
         src/partner_menu.cpp
@@ -39,7 +41,7 @@ dwe_add_app(game
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
-    DEPS core platform audio rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens
+    DEPS core platform audio video rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang)

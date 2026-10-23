@@ -28,6 +28,8 @@ public:
 
   // Shows the main menu, with Continue greyed when there is no save.
   void show();
+  // Hides every document of the title screen, for a movie.
+  void hide();
 
   // Handles a command of the title screen's documents; false when it is not one of theirs.
   bool handle(const ui::UiCommand& command);

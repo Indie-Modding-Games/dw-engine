@@ -26,6 +26,7 @@
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
+#include "movie_rules.hpp"
 #include "options.hpp"
 #include "partner_menu.hpp"
 #include "save_command.hpp"
@@ -122,6 +123,14 @@ public:
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
 
+  // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is
+  // loaded (MAIN_STATE 2), EDR once the ending ends the game (MAIN_STATE 3). The ending's routines
+  // 53 and 54 (HIST-S7) ask for them. Taking the request clears it.
+  void requestMovie(MovieMoment moment) { movieRequest_ = moment; }
+  [[nodiscard]] std::optional<MovieMoment> takeMovieRequest() {
+    return std::exchange(movieRequest_, std::nullopt);
+  }
+
 private:
   [[nodiscard]] bool paused() const;
 
@@ -143,6 +152,7 @@ private:
   // Whether the dialog on screen asks to go back to the title screen.
   bool toTitleAsked_ = false;
   bool toTitle_ = false;
+  std::optional<MovieMoment> movieRequest_;
 };
 
 } // namespace dwe::app

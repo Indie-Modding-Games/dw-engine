@@ -73,6 +73,12 @@ void TitleScreen::show() {
   ui_->show(MainMenuDocument, true);
 }
 
+void TitleScreen::hide() {
+  ui_->hide(MainMenuDocument);
+  ui_->hide(SaveSlotsDocument);
+  ui_->hide(DialogDocument);
+}
+
 bool TitleScreen::handle(const ui::UiCommand& command) {
   const std::string& name = command.name;
   if (name == "play") {

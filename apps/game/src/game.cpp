@@ -50,6 +50,7 @@
 #include "language.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
+#include "movie_screen.hpp"
 #include "play_session.hpp"
 #include "text_font_setting.hpp"
 #include "title_screen.hpp"
@@ -287,6 +288,21 @@ bool isPointerOrKeyEvent(const SDL_Event& event) {
   }
 }
 
+// Where main.c calls playMovie for each moment.
+int movieCallSite(MovieMoment moment) {
+  switch (moment) {
+  case MovieMoment::Boot:
+    return 3427;
+  case MovieMoment::NewGame:
+    return 3442;
+  case MovieMoment::ClearedLoad:
+    return 3476;
+  case MovieMoment::Ending:
+    return 3527;
+  }
+  return 0;
+}
+
 bool isPointerOrKey(const platform::Event& event) {
   return std::holds_alternative<platform::KeyChanged>(event) ||
          std::holds_alternative<platform::MouseMoved>(event) ||
@@ -385,6 +401,18 @@ int runGame(const Options& options) {
     core::logError("{}", fade.error().message);
     return EXIT_FAILURE;
   }
+  // The original's movies (docs/architecture/peliculas.md). None in an autotest: its routes start
+  // where they say.
+  std::optional<MovieRules> movieRules;
+  std::unique_ptr<MovieScreen> movies;
+  if (!autotest) {
+    movieRules = loadMovieRules(files, options.ruleset);
+    if (auto screen = MovieScreen::create(**renderer, sound); screen && movieRules) {
+      movies = std::move(*screen);
+    } else if (!screen) {
+      core::logWarning("movies: {}", screen.error().message);
+    }
+  }
   const platform::PixelSize size = window->pixelSize();
   auto ui = ui::Ui::create({
       .files = &files,
@@ -470,6 +498,30 @@ int runGame(const Options& options) {
                                start);
   }};
   TitleScreen title{files, options, !autotest, **ui};
+  // What waits for the movie that plays: the title, or a game to start (main.c: main).
+  std::optional<PlayStart> startAfterMovie;
+  bool titleAfterMovie = false;
+  bool moviePlayed = false;
+  // The title's ticks without input, and whether the boot movie plays again after them
+  // (runLandingScreen); not when it could not play.
+  std::uint32_t titleIdleTicks = 0;
+  bool replayBootMovie = true;
+  const auto playMovie = [&](MovieMoment moment) {
+    if (!movies) {
+      return false;
+    }
+    // The music stops before a movie and starts again after it (main.c:3441 finalizeMusic,
+    // playMovie, initializeMusic); the game plays no music yet (VAN-01, slice 3).
+    core::logDebug("[port:movie] playMovie (main.c:{}): movie {} '{}'; finalizeMusic: no music to "
+                   "stop yet",
+                   movieCallSite(moment), static_cast<int>(moment), movieRules->of(moment).file);
+    if (!movies->play(files, movieRules->of(moment))) {
+      return false;
+    }
+    title.hide();
+    moviePlayed = true;
+    return true;
+  };
   // The game starts at the title screen, with no game; --new-game, --load, --start and an autotest
   // whose route does not ask for the main menu start playing.
   if ((autotest && !autotest->startsAtMainMenu()) || options.newGame || options.load ||
@@ -480,6 +532,8 @@ int runGame(const Options& options) {
       core::logError("game: {}", started.error().message);
       return EXIT_FAILURE;
     }
+  } else if (playMovie(MovieMoment::Boot)) {
+    titleAfterMovie = true;
   } else {
     title.show();
   }
@@ -510,6 +564,29 @@ int runGame(const Options& options) {
   const auto drawOverlay = [&](const rhi::Frame& frame) {
     (*debugUi)->draw(frame, overlayStats, input, **scripts, {.x = 0.0F, .y = 0.0F, .radius = 0.0F});
   };
+  const auto startPlaying = [&](const PlayStart& start) {
+    sessionCommands.drop(autotest.get());
+    if (auto started = flow.play(start); !started) {
+      core::logError("game: {}", started.error().message);
+      title.startFailed(start, flow.saveFailed());
+    } else {
+      // The load is not game time: the next frame must not run it as a burst of ticks.
+      step.reset();
+      previous = platform->nowSeconds();
+    }
+  };
+  // After a movie: the game that waited for it, or the title.
+  const auto afterMovie = [&] {
+    core::logDebug("[port:movie] playMovie (main.c:3443): the movie is over; initializeMusic: no "
+                   "music to start yet");
+    if (startAfterMovie) {
+      startPlaying(*std::exchange(startAfterMovie, std::nullopt));
+    } else if (std::exchange(titleAfterMovie, false)) {
+      title.show();
+    }
+    titleIdleTicks = 0;
+  };
+  std::array<render::Drawer*, 1> movieDrawers{movies ? &movies->drawer() : nullptr};
 
   while (running) {
     events.clear();
@@ -537,6 +614,9 @@ int runGame(const Options& options) {
       events.erase(real.begin(), real.end());
     }
     for (const platform::Event& event : events) {
+      if (isPointerOrKey(event) || std::holds_alternative<platform::GamepadButtonChanged>(event)) {
+        titleIdleTicks = 0;
+      }
       if (const auto* moved = std::get_if<platform::MouseMoved>(&event)) {
         mouse.pointerMoved(*moved);
       }
@@ -595,6 +675,21 @@ int runGame(const Options& options) {
         (*debugUi)->toggle();
       }
       (*ui)->tick(input, TickSeconds);
+      if (movies && movies->playing()) {
+        movies->tick(input);
+        input.endTick();
+        ++ticksRun;
+        continue;
+      }
+      if (flow.playing() == nullptr && movies && replayBootMovie &&
+          ++titleIdleTicks >= movieRules->landingIdleFrames) {
+        core::logDebug("[port:movie] runLandingScreen (main.c:3604): {} ticks without input on the "
+                       "title, the boot movie again",
+                       movieRules->landingIdleFrames);
+        titleIdleTicks = 0;
+        replayBootMovie = playMovie(MovieMoment::Boot);
+        titleAfterMovie = replayBootMovie;
+      }
       PlaySession* play = flow.playing();
       game::field::FieldInput intent;
       if (play != nullptr && !(*ui)->capturesInput()) {
@@ -628,14 +723,11 @@ int runGame(const Options& options) {
       }
       if (flow.playing() == nullptr && title.handle(command)) {
         if (const auto start = title.takeStart()) {
-          sessionCommands.drop(autotest.get());
-          if (auto started = flow.play(*start); !started) {
-            core::logError("game: {}", started.error().message);
-            title.startFailed(*start, flow.saveFailed());
+          // A new game's movie plays before its first map (main.c: main, MAIN_STATE 0).
+          if (!start->load && playMovie(MovieMoment::NewGame)) {
+            startAfterMovie = *start;
           } else {
-            // The load is not game time: the next frame must not run it as a burst of ticks.
-            step.reset();
-            previous = platform->nowSeconds();
+            startPlaying(*start);
           }
         }
         continue;
@@ -657,6 +749,16 @@ int runGame(const Options& options) {
                    static_cast<float>(step.alpha()));
       screenFade->setDarkness(play->fadeLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());
+      if (const auto moment = play->takeMovieRequest()) {
+        // The ending closes the game before its movie, then the title (main.c: main, MAIN_STATE 3).
+        if (*moment == MovieMoment::Ending) {
+          flow.toTitle();
+          titleAfterMovie = true;
+        }
+        if (!playMovie(*moment)) {
+          afterMovie();
+        }
+      }
     } else {
       sessionCommands.drop(autotest.get());
     }
@@ -665,6 +767,13 @@ int runGame(const Options& options) {
     }
     if (consoleTextFont) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
+    }
+    if (movies) {
+      movies->update(frameSeconds);
+      if (moviePlayed && !movies->playing()) {
+        moviePlayed = false;
+        afterMovie();
+      }
     }
     (*ui)->update();
 
@@ -677,11 +786,18 @@ int runGame(const Options& options) {
     // map's name on top, as the original draws it in front of the fade (map.c: renderMapName, layer
     // 0).
     const std::array<render::Drawer*, 2> uiDrawers{&*screenFade, uiRenderer->get()};
+    // A movie covers the game and the UI.
+    const bool showingMovie = movies && movies->playing();
+    std::span<render::Drawer* const> sceneDrawers;
+    if (showingMovie) {
+      sceneDrawers = movieDrawers;
+    } else if (flow.playing() != nullptr) {
+      sceneDrawers = flow.playing()->scene().drawers();
+    }
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
-        .scene = flow.playing() != nullptr ? flow.playing()->scene().drawers()
-                                           : std::span<render::Drawer* const>{},
-        .ui = uiDrawers,
+        .scene = sceneDrawers,
+        .ui = showingMovie ? std::span<render::Drawer* const>{} : uiDrawers,
         .overlay = std::ref(drawOverlay),
     });
     if (!drawn) {
