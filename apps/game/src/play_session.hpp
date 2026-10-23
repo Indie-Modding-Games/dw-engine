@@ -23,6 +23,7 @@
 #include "battle_screen.hpp"
 #include "care_commands.hpp"
 #include "death_scene.hpp"
+#include "egg_box_screen.hpp"
 #include "evolution_scene.hpp"
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
@@ -163,6 +164,7 @@ private:
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
+  EggBoxScreen eggBoxScreen_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
   FieldItemsScreen fieldItemsScreen_;

@@ -41,3 +41,6 @@ screens:
     styles: [ui/skins/modern/pause_menu/style]
   gym_slots:
     styles: [ui/skins/modern/pause_menu/style]
+  # La caja de los huevos tras una muerte, también.
+  egg_box:
+    styles: [ui/skins/modern/pause_menu/style]

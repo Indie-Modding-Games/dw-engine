@@ -48,6 +48,9 @@ screens:
     styles: [ui/skins/original/pause_menu/style]
   gym_slots:
     styles: [ui/skins/original/pause_menu/style]
+  # La caja de los huevos tras una muerte, también.
+  egg_box:
+    styles: [ui/skins/original/pause_menu/style]
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
   hud:

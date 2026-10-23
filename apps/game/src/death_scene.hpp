@@ -3,13 +3,16 @@
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/life_rules.hpp>
+#include <dwe/game/story/partner_routines.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_scenes.hpp>
 
 #include <cstdint>
 #include <deque>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "field_scene.hpp"
@@ -21,6 +24,9 @@ struct DeathSceneDesc {
   FieldScene* scene = nullptr;
   // The story's triggers and variables pick the wake map; nullptr wakes on the early one.
   const session::StoryAdapter* story = nullptr;
+  // When the story plays the deaths (StoryScenes::playsDeath), the scenes start when it asks;
+  // nullptr, or a story that does not, starts them from the partner's events.
+  const session::StoryScenes* scenes = nullptr;
   // The field's fades: the length of a frame and the shades of fade.c.
   game::field::TransitionRules transition;
 };
@@ -36,8 +42,11 @@ public:
   // (life.scenes); without them the partner changes at once.
   explicit DeathScene(const DeathSceneDesc& desc);
 
-  // Whether the field and the game time wait for the scene.
+  // Whether a scene runs or waits to.
   [[nodiscard]] bool active() const { return phase_ != Phase::Idle || !pending_.empty(); }
+  // Whether the field and the game time wait for the scene: a scene the story asked for leaves
+  // them to the story's script, which holds the player itself.
+  [[nodiscard]] bool holdsField() const { return active() && !storyScene_; }
 
   // How much the scene's fade takes away from the screen, from 0 (nothing) to 1 (black).
   [[nodiscard]] float fadeLevel() const { return fade_; }
@@ -50,6 +59,14 @@ public:
   // Runs the scene; a scene taken during a battle starts once the field is back.
   void tick(double seconds);
 
+  // Plays a scene of call_partner_routine the story asked for: 9 and 7, a lost life (murd.c), 3, a
+  // death (dooa.c: DOOA_tick), and 4, the rebirth (partnerTickDying2). False for another scene, or
+  // with no scenes in the rules.
+  bool play(game::story::PartnerScene scene);
+  // Whether the scene the story waits on is over, once. A death's is over when the partner is gone,
+  // and the scene waits on black for the rebirth.
+  [[nodiscard]] bool takeSceneOver() { return std::exchange(sceneOver_, false); }
+
 private:
   enum class Phase : std::uint8_t {
     Idle,
@@ -59,12 +76,14 @@ private:
     LostLifeFadeIn,
     // DOOA_tickDissolve.
     Dissolve,
+    // The story's death script runs between the death and the rebirth (the egg box).
+    AwaitRebirth,
     // DOOA_tickRebirth, and the wait for its last clip.
     Rebirth,
     RebirthFinish
   };
 
-  enum class SceneKind : std::uint8_t { LostLife, Death };
+  enum class SceneKind : std::uint8_t { LostLife, Death, Rebirth };
 
   struct Pending {
     SceneKind kind = SceneKind::LostLife;
@@ -89,6 +108,7 @@ private:
   session::GameSession* session_;
   FieldScene* scene_;
   const session::StoryAdapter* story_;
+  const session::StoryScenes* scenes_;
   // The scenes' rules as they were when the scene started: a tuned ruleset changes the next one.
   // Only read while a scene runs, which begin() starts after copying them.
   game::partner::LifeScenes rules_;
@@ -106,6 +126,9 @@ private:
   float fade_ = 0.0F;
   FieldStage stage_;
   std::int32_t waitFrames_ = 0;
+  // Whether the scene is one the story asked for, and whether the story's wait on it is over.
+  bool storyScene_ = false;
+  bool sceneOver_ = false;
 };
 
 } // namespace dwe::app

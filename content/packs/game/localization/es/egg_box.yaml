@@ -1,0 +1,4 @@
+# La caja de los huevos tras una muerte (doo2.c: DOO2_openEggBox). {number} es el número del huevo.
+title: "Elige un huevo"
+egg: "Huevo {number}"
+take: "Elegir"

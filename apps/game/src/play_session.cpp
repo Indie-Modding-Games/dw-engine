@@ -218,7 +218,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       deathScene_({.session = game_.session.get(),
                    .scene = scene_.get(),
                    .story = game_.systems.story,
+                   .scenes = game_.systems.scenes,
                    .transition = scene_->field().rules().transition}),
+      eggBoxScreen_(*game_.session, *context.ui),
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
                   .inventory = game_.systems.inventory,
@@ -241,6 +243,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyLink_ = std::make_unique<StoryFieldLink>(*game_.systems.story, *scene_);
   storyScenes_.attachShop(game_.systems.shop);
   storyScenes_.attachGym(&gymScreen_);
+  storyScenes_.attachDeath(&deathScene_);
+  storyScenes_.attachEggBox(&eggBoxScreen_);
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
@@ -265,7 +269,7 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, FieldItemNoticeDocument,
-        FishingBaitDocument, FishingNoticeDocument, FishingHudDocument}) {
+        FishingBaitDocument, FishingNoticeDocument, FishingHudDocument, EggBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -297,10 +301,11 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   if (evolutionScene_.active()) {
     return;
   }
-  // murd.c and dooa.c: a lost life's or a death's scene holds the field once a battle is over.
+  // murd.c and dooa.c: a lost life's or a death's scene holds the field once a battle is over; one
+  // the story asked for leaves it to the story's script.
   if (!battleScreen_.active()) {
     deathScene_.tick(TickSeconds);
-    if (deathScene_.active()) {
+    if (deathScene_.holdsField()) {
       return;
     }
   }
@@ -349,7 +354,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
-  if (shopScreen_.handle(command) || sleepScreen_.handle(command) || saveMachine_.handle(command) ||
+  if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
+      sleepScreen_.handle(command) || saveMachine_.handle(command) ||
       praiseScold_.handle(command) || fieldItemsScreen_.handle(command) ||
       fishingScreen_.handle(command) || battleScreen_.handle(command) ||
       freeExploration_.handle(command)) {

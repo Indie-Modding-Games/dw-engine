@@ -35,24 +35,30 @@ std::int32_t lerpFrames(std::int32_t start, std::int32_t end, std::int32_t t0, s
 }
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 7> Names{
-      "idle",     "lost life alone", "lost life fade out", "lost life fade in",
-      "dissolve", "rebirth",         "rebirth finish"};
+  constexpr std::array<const char*, 8> Names{
+      "idle",          "lost life alone", "lost life fade out", "lost life fade in", "dissolve",
+      "await rebirth", "rebirth",         "rebirth finish"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
 } // namespace
 
 DeathScene::DeathScene(const DeathSceneDesc& desc)
-    : session_(desc.session), scene_(desc.scene), story_(desc.story), transition_(desc.transition) {
-}
+    : session_(desc.session), scene_(desc.scene), story_(desc.story), scenes_(desc.scenes),
+      transition_(desc.transition) {}
 
 std::vector<PartnerEvent> DeathScene::take(std::span<const PartnerEvent> events) {
   if (!session_->partnerRules().life.scenes || transition_.frameSeconds <= 0.0F) {
     return {events.begin(), events.end()};
   }
+  // The story asks for the scenes itself (play).
+  const bool byStory = scenes_ != nullptr && scenes_->playsDeath();
   std::vector<PartnerEvent> rest;
   for (const PartnerEvent& event : events) {
+    if (byStory && (event.kind == EventKind::LostLife || event.kind == EventKind::Died)) {
+      rest.push_back(event);
+      continue;
+    }
     switch (event.kind) {
     case EventKind::LostLife:
       // tamer.c: tamerTickBattleLostLife and tamerTickSicknessLostLife run MURD_tick; with no lives
@@ -81,8 +87,34 @@ std::vector<PartnerEvent> DeathScene::take(std::span<const PartnerEvent> events)
   return rest;
 }
 
+bool DeathScene::play(game::story::PartnerScene scene) {
+  using game::story::PartnerScene;
+  if (!session_->partnerRules().life.scenes || transition_.frameSeconds <= 0.0F) {
+    return false;
+  }
+  switch (scene) {
+  case PartnerScene::SicknessLostLife:
+  case PartnerScene::BattleLostLife:
+    // tamer.c: tamerTickSicknessLostLife and tamerTickBattleLostLife run MURD_tick, which goes on
+    // into the death with no lives left.
+    pending_.push_back(
+        {.kind = SceneKind::LostLife, .lives = session_->partner().state().life.lives});
+    break;
+  case PartnerScene::Dying:
+    pending_.push_back({.kind = SceneKind::Death, .lives = 1});
+    break;
+  case PartnerScene::LostAllLives:
+    pending_.push_back({.kind = SceneKind::Rebirth, .lives = 0});
+    break;
+  default:
+    return false;
+  }
+  storyScene_ = true;
+  return true;
+}
+
 void DeathScene::tick(double seconds) {
-  if (phase_ == Phase::Idle) {
+  if (phase_ == Phase::Idle || phase_ == Phase::AwaitRebirth) {
     if (pending_.empty()) {
       return;
     }
@@ -111,6 +143,17 @@ void DeathScene::begin(const Pending& pending) {
   lives_ = pending.lives;
   pendingSeconds_ = 0.0;
   stage_ = {};
+  if (pending.kind == SceneKind::Rebirth) {
+    // partner.c: partnerTickDying2: the rebirth, on black, once the story's death script is over.
+    core::logDebug("[port:death] partnerTickDying2 (call_partner_routine 4): the rebirth");
+    session_->useSceneSounds(rules_.death.soundBank);
+    stage_.sceneryHidden = true;
+    stage_.partnerHidden = true;
+    showStage();
+    frame_ = 0;
+    setPhase(Phase::Rebirth);
+    return;
+  }
   if (pending.kind == SceneKind::Death && lives_ > 0) {
     // partner.c: partnerTickDying (natural death): the death's sound bank, then DOOA_tick.
     core::logDebug("[port:death] partnerTickDying (partner.c:640): natural death");
@@ -169,6 +212,7 @@ void DeathScene::step() {
     }
     break;
   case Phase::Idle:
+  case Phase::AwaitRebirth:
     break;
   }
 }
@@ -270,9 +314,17 @@ void DeathScene::stepDissolve() {
   if (reached(rules.rise.frame)) {
     playSound(rules.rise.sound);
   }
+  if (frame_ >= rules.endFrame && storyScene_) {
+    // partnerTickDying ends: the story's death script runs on the wake map (the egg box) and asks
+    // for the rebirth (partnerTickDying2); the partner stays gone on black until then.
+    core::logDebug("[port:death] DOOA_tick (dooa.c:1699): the death is over, the story goes on");
+    sceneOver_ = true;
+    setPhase(Phase::AwaitRebirth);
+    return;
+  }
   if (frame_ >= rules.endFrame) {
-    // The story's death script runs between the two in the original (partnerTickDying2); it does
-    // not run here yet, so the rebirth follows at once.
+    // Without the story's death script, which runs between the two in the original, the rebirth
+    // follows at once.
     core::logDebug("[port:death] DOOA_getSequenceState (dooa.c:1745): rebirth as {}", baby_);
     frame_ = 0;
     setPhase(Phase::Rebirth);
@@ -349,6 +401,8 @@ void DeathScene::finish() {
   showStage();
   fade_ = 0.0F;
   setPhase(Phase::Idle);
+  sceneOver_ = sceneOver_ || storyScene_;
+  storyScene_ = false;
 }
 
 } // namespace dwe::app

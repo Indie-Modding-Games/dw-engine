@@ -32,6 +32,17 @@ Hueco: el radio de colisión y las velocidades de andar y correr del compañero 
 (medidos en el compañero inicial), no los de la especie nueva (`DIGIMON_DATA[tipo].radius` y la raíz de sus
 animaciones).
 
+## Muerte y renacer
+
+`DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer
+(`DOOA_tickRebirth`). Sin historia, o si la historia no tiene `story_scenes.death`, empieza con los eventos del compañero
+y retiene el campo. Con ella, la historia pide cada escena con `call_partner_routine` (9 y 7, vida perdida; 3, muerte;
+4, renacer) y `StorySceneGlue` se la pasa: el campo sigue y lo retiene el guion. La muerte acaba con el compañero
+ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
+documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
+de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: los sprites de los huevos en VRAM
+(`EGG_ICONS`), la animación de la caja y la carga del overlay; el documento enumera los huevos.
+
 ## Exploración libre
 
 `free_exploration.cpp` lleva la [exploración libre](../../architecture/warps-de-script.md#exploración-libre):

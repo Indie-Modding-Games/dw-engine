@@ -36,8 +36,12 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
   shop_.update(scenes);
   gym_.update(scenes);
+  if (eggBox_ != nullptr) {
+    eggBox_->update(scenes);
+  }
   while (const auto screen = scenes.takeScreenRequest()) {
-    if (shop_.take(*screen, scene) || gym_.take(*screen)) {
+    if (shop_.take(*screen, scene) || gym_.take(*screen) ||
+        (eggBox_ != nullptr && eggBox_->take(*screen, scenes))) {
       continue;
     }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",
@@ -46,7 +50,15 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
       scenes.screenClosed();
     }
   }
+  if (deathScene_ && death_->takeSceneOver()) {
+    deathScene_ = false;
+    scenes.partnerSceneFinished();
+  }
   if (const auto partner = scenes.takePartnerScene()) {
+    if (scenes.playsDeath() && death_ != nullptr && death_->play(partner->scene)) {
+      deathScene_ = true;
+      return;
+    }
     core::logDebug("[port:partner] callDigimonRoutine {} (partner.c:1139): the app has no scene "
                    "for it yet, over at once",
                    static_cast<int>(partner->scene));
