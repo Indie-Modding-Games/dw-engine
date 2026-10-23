@@ -33,6 +33,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [battle](game/battle.md) | Las reglas del combate como simulación determinista |
 | [field](game/field.md) | El campo: movimiento, colisión, disparadores, warps y seguimiento |
 | [inventory](game/inventory.md) | La bolsa, el dinero, el uso de objetos y las tiendas |
+| [fishing](game/fishing.md) | La pesca: la caña, el corcho, el sedal y los peces del agua |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 
