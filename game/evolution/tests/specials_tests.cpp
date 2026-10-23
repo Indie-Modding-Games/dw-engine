@@ -44,7 +44,7 @@ std::optional<Species> praiseScoldTarget(const Evolution& evolution, const Evolu
 
 NaturalCheck checkAt(const Evolution& evolution, const EvolutionInputs& inputs) {
   ruleset::Random random{Seed};
-  return evolution.checkNatural(inputs, {}, 1, random);
+  return evolution.checkNatural(inputs, {}, CheckSpan::hourly(1), random);
 }
 
 constexpr PraiseScold Praise{.scolded = false, .disciplineBefore = 50, .happinessBefore = 50};
@@ -188,6 +188,39 @@ TEST_CASE(
   EvolutionRules fixed =
       withRolls(testing::originalRulesWithQuirk(TimerSpecialOverridesNormal, false), false);
   const NaturalCheck check = checkAt(fixture.makeEvolution(fixed), inputs);
+  REQUIRE(check.evolution);
+  CHECK(valueOf(check.evolution).target == TableFixture::index("species_e"));
+  CHECK(valueOf(check.evolution).reason == EvolutionReason::Normal);
+}
+
+TEST_CASE("at the timer hours the special rolls on every checked frame until one gives a form") {
+  const Evolution evolution = TableFixture{}.makeEvolution();
+  ruleset::Random random{Seed};
+  // 64 frames of the hour, each with its own roll below 50 of 100.
+  const NaturalCheck check =
+      evolution.checkNatural(inputsOf("species_b", 360), {},
+                             {.frames = 64, .frameInHour = 63, .framesPerHour = 1200}, random);
+  REQUIRE(check.evolution);
+  CHECK(valueOf(check.evolution).target == TableFixture::index("veda"));
+}
+
+TEST_CASE("a span checks each counter value its frames went through") {
+  TableFixture fixture;
+  fixture.setPath("species_b", {"species_e"});
+  fixture.requirement("species_e").offense = 0;
+  const Evolution evolution = fixture.makeEvolution(withRolls(testing::originalRules(), false));
+  EvolutionInputs inputs = inputsOf("species_b", 360);
+  inputs.stats.offense = 10;
+  ruleset::Random random{Seed};
+  // Two frames, both in the timer hour: the failed specials drop the normal target.
+  CHECK_FALSE(
+      evolution
+          .checkNatural(inputs, {}, {.frames = 2, .frameInHour = 1, .framesPerHour = 1200}, random)
+          .evolution);
+  // Three frames: two at 360 h, then the first of 361 h, where the normal check is back.
+  inputs.evolutionTimer = 361;
+  const NaturalCheck check = evolution.checkNatural(
+      inputs, {}, {.frames = 3, .frameInHour = 0, .framesPerHour = 1200}, random);
   REQUIRE(check.evolution);
   CHECK(valueOf(check.evolution).target == TableFixture::index("species_e"));
   CHECK(valueOf(check.evolution).reason == EvolutionReason::Normal);

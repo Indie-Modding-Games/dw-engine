@@ -1,15 +1,41 @@
+#include <dwe/core/log.hpp>
 #include <dwe/game/evolution/evolution.hpp>
 #include <dwe/game/evolution/messages.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <algorithm>
 #include <utility>
+#include <vector>
 
 #include "evolution_effects.hpp"
 
 namespace dwe::game::evolution {
 
 namespace {
+
+// How many checks a span makes at one counter value.
+struct HourChecks {
+  std::int32_t hour = 0;
+  std::int64_t frames = 0;
+};
+
+// The checks of a span by counter value, oldest first. partner_impl.c: tickConditions runs once a
+// frame of the game clock, and clock.c: tickGameClock raises the counter on the frame an hour
+// begins, so that frame already checks the new value. Counter values below 0 are not checked.
+std::vector<HourChecks> checksOf(const CheckSpan& span, std::int32_t timer) {
+  const std::int64_t perHour = std::max<std::int64_t>(span.framesPerHour, 1);
+  std::int64_t left = std::max<std::int64_t>(span.frames, 1);
+  std::vector<HourChecks> checks;
+  for (std::int32_t hour = timer; left > 0 && (hour == timer || hour >= 0); --hour) {
+    const std::int64_t room =
+        hour == timer ? std::clamp<std::int64_t>(span.frameInHour + 1, 1, perHour) : perHour;
+    const std::int64_t frames = std::min(left, room);
+    checks.push_back({.hour = hour, .frames = frames});
+    left -= frames;
+  }
+  std::ranges::reverse(checks);
+  return checks;
+}
 
 // The checks that every form and item the rules name is in the tables.
 class RuleIdCheck {
@@ -210,39 +236,52 @@ std::optional<Species> Evolution::specialTarget(const std::vector<SpecialRule>& 
 
 std::optional<Species> Evolution::timerSpecialTarget(const EvolutionInputs& inputs,
                                                      std::optional<Species> normal,
+                                                     std::int64_t frames,
                                                      ruleset::Random& random) const {
   const TimerSpecialRule& onTimer = rules_.specials.praiseScoldOnTimer;
   if (static_cast<std::int32_t>(tables_.levelOf(inputs.species)) != onTimer.level ||
       inputs.evolutionTimer != onTimer.hours) {
     return normal;
   }
-  const auto special = specialTarget(rules_.specials.praiseScold, inputs, std::nullopt, random);
-  if (special || rules_.quirks.on(TimerSpecialOverridesNormal)) {
-    return special;
+  // partner_impl.c: tickConditions calls handleSpecialEvolutions(3) on every frame of that hour,
+  // each with its own roll, until one gives a form; its result replaces the normal one.
+  const bool overrides = rules_.quirks.on(TimerSpecialOverridesNormal);
+  for (std::int64_t frame = 0; frame < frames; ++frame) {
+    if (const auto special =
+            specialTarget(rules_.specials.praiseScold, inputs, std::nullopt, random)) {
+      core::logDebug("[port:evolution] tickConditions (partner_impl.c:2123): special at {} h on "
+                     "check {} of {}: {}",
+                     inputs.evolutionTimer, frame + 1, frames, tables_.idOf(*special));
+      return special;
+    }
+    if (!overrides && normal) {
+      return normal;
+    }
   }
-  return normal;
+  return overrides ? std::nullopt : normal;
 }
 
 NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const EvolutionState& state,
-                                     std::int64_t hoursCrossed, ruleset::Random& random) const {
+                                     const CheckSpan& span, ruleset::Random& random) const {
   const Level level = tables_.levelOf(inputs.species);
   const std::int32_t timer = inputs.evolutionTimer;
-  const std::int64_t earlierHours =
-      std::min<std::int64_t>(std::max<std::int64_t>(hoursCrossed - 1, 0), std::max(timer, 0));
-  for (auto hour = timer - static_cast<std::int32_t>(earlierHours); hour <= timer; ++hour) {
+  for (const HourChecks& checks : checksOf(span, timer)) {
+    const std::int32_t hour = checks.hour;
     EvolutionInputs atHour = inputs;
     atHour.evolutionTimer = hour;
     std::optional<Species> target;
     EvolutionReason reason = EvolutionReason::Normal;
     if (inputs.tamerFree) {
       const auto normal = naturalTarget(atHour, state);
-      target = timerSpecialTarget(atHour, normal, random);
+      target = timerSpecialTarget(atHour, normal, checks.frames, random);
       if (target != normal) {
         reason = EvolutionReason::Special;
       }
     }
     if (target) {
       if (auto evolution = evolve(atHour, state, *target, reason); evolution) {
+        core::logDebug("[port:evolution] tickConditions (partner_impl.c:2111): {} -> {} at {} h",
+                       tables_.idOf(inputs.species), tables_.idOf(evolution->target), hour);
         // The hours crossed after the one it evolved at still count.
         evolution->evolutionTimer += timer - hour;
         return {.evolutionTimer = evolution->evolutionTimer, .evolution = evolution};
@@ -252,6 +291,9 @@ NaturalCheck Evolution::checkNatural(const EvolutionInputs& inputs, const Evolut
     const auto babyHours = checkHours(Level::Baby);
     if (inputs.tamerFree && level == Level::Baby && babyHours && hour >= *babyHours &&
         rules_.quirks.on(UnlistedBabyRestartsTimer)) {
+      core::logDebug("[port:evolution] getFreshEvolutionTarget (evolution.c:686): {} has no "
+                     "target, the counter restarts",
+                     tables_.idOf(inputs.species));
       return {.evolutionTimer = timer - hour, .evolution = std::nullopt};
     }
   }

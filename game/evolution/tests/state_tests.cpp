@@ -115,11 +115,14 @@ TEST_CASE("another selection strategy changes the target without touching the ru
                                             std::make_unique<OriginalScoring>());
   REQUIRE_MESSAGE(lastTarget.has_value(), errorOf(lastTarget));
   ruleset::Random random{1};
-  const NaturalCheck check = lastTarget->checkNatural(inputsOf("koro", 24), {}, 1, random);
+  const NaturalCheck check =
+      lastTarget->checkNatural(inputsOf("koro", 24), {}, CheckSpan::hourly(1), random);
   REQUIRE(check.evolution);
   CHECK(valueOf(check.evolution).target == TableFixture::index("species_c"));
   // The original finds no candidate with these inputs.
-  CHECK_FALSE(fixture.makeEvolution().checkNatural(inputsOf("koro", 24), {}, 1, random).evolution);
+  CHECK_FALSE(fixture.makeEvolution()
+                  .checkNatural(inputsOf("koro", 24), {}, CheckSpan::hourly(1), random)
+                  .evolution);
 }
 
 TEST_CASE("a value tuned in the ruleset store changes the evolution, and a bad one is refused") {
@@ -155,14 +158,15 @@ TEST_CASE("a value tuned in the ruleset store changes the evolution, and a bad o
   ruleset::Random random{1};
   CHECK(TableFixture{}
             .makeEvolution(rulesNow())
-            .checkNatural(inputsOf("bota", 4), {}, 1, random)
+            .checkNatural(inputsOf("bota", 4), {}, CheckSpan::hourly(1), random)
             .evolution == std::nullopt);
 
   const auto tuned = store->setValue(EvolutionSection, "check_hours.baby", "4");
   REQUIRE_MESSAGE(tuned.has_value(), errorOf(tuned));
   CHECK(store->revision() == 2);
-  const auto check =
-      TableFixture{}.makeEvolution(rulesNow()).checkNatural(inputsOf("bota", 4), {}, 1, random);
+  const auto check = TableFixture{}
+                         .makeEvolution(rulesNow())
+                         .checkNatural(inputsOf("bota", 4), {}, CheckSpan::hourly(1), random);
   REQUIRE(check.evolution);
   CHECK(valueOf(check.evolution).target != bota);
 

@@ -57,7 +57,7 @@ void asksFor(TableFixture& fixture, std::string_view target, std::int32_t BaseSt
 NaturalCheck checkAt(const Evolution& evolution, const EvolutionInputs& inputs,
                      std::int64_t hoursCrossed = 1) {
   ruleset::Random random{Seed};
-  return evolution.checkNatural(inputs, {}, hoursCrossed, random);
+  return evolution.checkNatural(inputs, {}, CheckSpan::hourly(hoursCrossed), random);
 }
 
 } // namespace

@@ -135,6 +135,39 @@ TEST_CASE(
   CHECK(autosavedFor(*session, AutosaveReason::Evolution));
 }
 
+TEST_CASE("the natural check runs on every frame of the game clock, not only when an hour begins") {
+  // partner_impl.c: tickConditions.
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  changePartner(*session, [](PartnerState& state) {
+    state.species = "bota";
+    state.evolution.hours = BabyHours;
+  });
+  session->clock().setSpeed(1.0);
+  session->tick(0.1);
+  CHECK(session->partner().state().species == "koro");
+}
+
+TEST_CASE("no natural evolution in the hour after waking") {
+  // partner_impl.c: tickConditions returns early in the immortal hour.
+  const TestPacks packs;
+  const TableFixture fixture;
+  EvolutionAdapter* adapter = nullptr;
+  auto session = sessionWithEvolution(packs, fixture, adapter);
+  const std::int32_t hour = session->clock().time().hour;
+  changePartner(*session, [hour](PartnerState& state) {
+    state.species = "bota";
+    state.evolution.hours = BabyHours;
+    state.life.protectedHour = hour;
+  });
+  session->clock().setSpeed(1.0);
+  session->tick(0.1);
+  CHECK(session->partner().state().species == "bota");
+  CHECK(adapter->takeEvolutions().empty());
+}
+
 TEST_CASE("no evolution before the check hour: the partner's counter keeps counting") {
   const TestPacks packs;
   const TableFixture fixture;

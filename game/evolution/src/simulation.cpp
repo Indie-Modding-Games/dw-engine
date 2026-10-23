@@ -8,7 +8,8 @@ EvolutionHistogram simulateRaisings(const Evolution& evolution, const RaisingGen
   EvolutionHistogram histogram;
   for (std::int32_t raising = 0; raising < raisings; ++raising) {
     const EvolutionInputs inputs = generator(random);
-    const NaturalCheck check = evolution.checkNatural(inputs, EvolutionState{}, 0, random);
+    const NaturalCheck check =
+        evolution.checkNatural(inputs, EvolutionState{}, CheckSpan{}, random);
     ++histogram.raisings;
     if (check.evolution) {
       ++histogram.targets[check.evolution->target];

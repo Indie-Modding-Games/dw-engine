@@ -136,8 +136,10 @@ le dan las suyas en `.tables`) y registra su comprobación de sección y la secc
   `evolution.c: getNumMasteredMoves`, y las que nombre `mastered_move_ids`, como las que añade un paquete). El adaptador de batalla se
   crea después (necesita el inventario, que necesita la evolución), así que se le da con
   `setMoveSource(batalla)`; sin él, la evolución no ve técnicas aprendidas.
-- **Cuándo mira**: en cada tick que cruza horas de juego, `checkNatural` con las horas cruzadas (el contador lo sube
-  el partner; si no evoluciona, el adaptador deja el que devuelve), salvo si la barra de virus se llenó en ese tick:
+- **Cuándo mira**: en cada tick en que corre el reloj de juego, `checkNatural` con los fotogramas corridos (una
+  comprobación por fotograma, como `tickConditions`; el contador lo sube el partner; si no evoluciona, el adaptador
+  deja el que devuelve), salvo en la hora protegida tras despertar (`HAS_IMMORTAL_HOUR`) o si la barra de virus se
+  llenó en ese tick:
   el virus gana (`partner_impl.c: tickConditions`) y la evolución natural espera. `VirusBarFull` → `fillVirusBar`;
   `Slept` → `wakeUp`; tras alabar o regañar → `praiseOrScold`; `Reborn` marca al bebé como criado
   (`evolution.c: reincarnatePartner`). Órdenes: `useItem(session, objeto)` (la llama el inventario),
@@ -243,7 +245,7 @@ quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `rec
 | Respuesta del partner al área (le gusta, no le gusta), calculada al entrar en cada mapa con las listas de regiones del mapa y la región favorita de la especie | `map.c: loadMapSetup` (`MAP_TILE_DATA.partnerAreaResponse`). En la decompilación lo llama `map.c: loadMap`, y a este el cambio de mapa de los guiones (`script_interp.c`); según eso, la evolución y el renacer no lo recalculan hasta que se carga otro mapa | `attachField` y `followMap` → `game::partner::areaResponseOf`; `careContext`, `partnerView` y el sueño (`care_commands.cpp`) | `how the partner feels about the map follows the map entered, ...`; en `game/partner`: `area response: ...` | Igual |
 | Montones de caca en el suelo | `partner.c` | `PoopedOnGround` no se reparte | — | **Hueco** |
 | El primer partner y cada bebé renacido quedan como criados | `main.c: main`, `evolution.c: reincarnatePartner` (`setDigimonRaised`) | `EvolutionAdapter::startNewGame`, `Reborn` | `the evolution adapter marks the first partner as raised ...` | Igual |
-| La evolución se mira cada hora de juego, aunque se adelante el reloj | `partner_impl.c: tickConditions` | `EvolutionAdapter::tick` → `checkNatural` con `advance.hours` | `a baby evolves when the clock's hour ...` | Igual |
+| La evolución se mira en cada fotograma del reloj de juego, aunque se adelante, salvo en la hora protegida | `partner_impl.c: tickConditions` | `EvolutionAdapter::tick` → `checkNatural` con `advance.frames` | `a baby evolves when the clock's hour ...`, `the natural check runs on every frame ...`, `no natural evolution in the hour after waking` | Igual |
 | Lo que cambia al evolucionar | `evl.c: EVL_applyEvolution`, `EVL_clampBaseStats` | `EvolutionAdapter::apply` | `an evolution item turns ...`, `back from the virus form ...` | Igual (vuelta del virus: decisión del 2026-10-20) |
 | Nivel de domador al evolucionar a campeón o definitivo | `evl.c: EVL_applyEvolution` (`addTamerLevel(20/100, 1)` si no corre un guion) | `tamer.evolution_level_gain`, `GameSession::addTamerLevel` | `a tamer level chance of 100 ...` | Igual |
 | Barra de virus llena y evolución natural en la misma hora | `partner_impl.c: tickConditions` (el virus se mira después y su destino gana) | `EvolutionAdapter::tick` no mira la evolución natural si el partner tiene pendiente `VirusBarFull` (`Partner::pendingEvents`); el evento la convierte en la forma virus | `the virus bar filling in the hour the counter reaches ...` | Igual (decidido el 2026-10-20): se decide por tick de la partida, no por fotograma |

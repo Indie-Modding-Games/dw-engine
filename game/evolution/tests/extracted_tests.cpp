@@ -165,7 +165,7 @@ TEST_CASE("the user's disc, extracted: every form runs every evolution check wit
           CHECK((!valueOf(result).restoredStats || species == virusForm));
         }
       };
-      checkTarget(evolution.checkNatural(inputs, state, 1, random).evolution);
+      checkTarget(evolution.checkNatural(inputs, state, CheckSpan::hourly(1), random).evolution);
       checkTarget(evolution.wakeUp(inputs, state, random));
       checkTarget(evolution.praiseOrScold(inputs, state, scold, random));
       for (const auto& [item, target] : evolution.rules().items.fixed) {
@@ -190,7 +190,7 @@ TEST_CASE("the user's disc, extracted: the known paths of the original") {
   // evolution.c: getFreshEvolutionTarget.
   for (const auto& [baby, inTraining] : evolution.rules().babyTargets) {
     EvolutionInputs inputs{.species = idOf(evolution, baby), .evolutionTimer = 6};
-    const NaturalCheck check = evolution.checkNatural(inputs, {}, 1, random);
+    const NaturalCheck check = evolution.checkNatural(inputs, {}, CheckSpan::hourly(1), random);
     REQUIRE_MESSAGE(check.evolution, baby);
     CHECK(valueOf(check.evolution).target == idOf(evolution, inTraining));
   }
@@ -218,7 +218,7 @@ TEST_CASE("the user's disc, extracted: the known paths of the original") {
   // A rookie with no candidate after the fallback hours becomes the fallback form.
   EvolutionInputs lost{.species = idOf(evolution, "agum"), .weight = 1000, .evolutionTimer = 96};
   lost.careMistakes = 1000;
-  const NaturalCheck fallback = evolution.checkNatural(lost, {}, 1, random);
+  const NaturalCheck fallback = evolution.checkNatural(lost, {}, CheckSpan::hourly(1), random);
   REQUIRE(fallback.evolution);
   CHECK(valueOf(fallback.evolution).target == idOf(evolution, "nume"));
 }

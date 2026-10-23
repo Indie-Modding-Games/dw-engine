@@ -18,8 +18,10 @@ auto evolution = dwe::game::evolution::Evolution::load(vfs, ruleset);   // secci
 dwe::game::evolution::EvolutionState state;                             // va en la partida guardada
 dwe::ruleset::Random random{seed};
 
-// Cada avance del reloj, con las horas que ha cruzado (GameClock):
-const auto check = evolution->checkNatural(inputs, state, advance.hours, random);
+// Cada avance del reloj, con los fotogramas que ha corrido (GameClock):
+const dwe::game::evolution::CheckSpan span{.frames = advance.frames, .frameInHour = frameInHour,
+                                           .framesPerHour = framesPerHour};
+const auto check = evolution->checkNatural(inputs, state, span, random);
 partner.evolutionTimer = check.evolutionTimer;
 if (check.evolution) {
     applyToPartner(*check.evolution);                                   // la sesión
@@ -36,8 +38,11 @@ evolution->evolveByScript(inputs, state, target);                       // rutin
 evolution->rebirth(inputs, random);                                     // al morir
 ```
 
-- **`checkNatural`** repasa una a una las horas cruzadas (para que adelantar el reloj dé lo mismo que jugarlo): la
-  elección normal desde el umbral de cada nivel y la especial de las 360 horas de campeón. La barra de virus no: su
+- **`checkNatural`** mira una vez por fotograma del reloj de juego, como `tickConditions`: repasa cada valor del
+  contador por el que pasó el tramo (`CheckSpan`; para que adelantar el reloj dé lo mismo que jugarlo), con la
+  elección normal desde el umbral de cada nivel, y la especial de las 360 horas de campeón tira una vez por cada
+  fotograma de esa hora hasta que sale una forma. `CheckSpan::hourly(n)` es una comprobación por hora (simulación,
+  tests). La barra de virus no: su
   límite y su forma son de la sección `care` (`toilet.virus_bar_limit`, `toilet.virus_form`), el partner avisa con
   `VirusBarFull` y `fillVirusBar` lleva a la forma de `EvolutionInputs::virusForm`. El
   contador que devuelve ya incluye las horas posteriores a la evolución. El partner sigue siendo quien sube el
@@ -95,7 +100,7 @@ hay que extraerlo de nuevo.
 | Regla | Decomp | Nuestro código / sección | Test | Estado |
 |---|---|---|---|---|
 | Umbrales 6/24/72/144 h y comprobación con el tamer libre | `partner_impl.c`: `tickConditions` | `Evolution::checkNatural`, `check_hours` | `each level checks from its own hours…`, `no natural evolution while the tamer is busy` | Igual |
-| Horas cruzadas al adelantar el reloj | `clock.c`, `partner_impl.c`: `skipHours` | `checkNatural(hoursCrossed)` | `a check over several hours…` | Igual |
+| Una comprobación por fotograma del reloj, también al adelantarlo | `clock.c`: `tickGameClock`; `partner_impl.c`: `tickConditions` | `checkNatural(CheckSpan)` | `a check over several hours…`, `a span checks each counter value…`, `at the timer hours the special rolls on every checked frame…` | Igual |
 | Bebé → entrenamiento fijo | `evolution.c`: `getFreshEvolutionTarget` | `OriginalSelection` (`babyTarget`), `baby_targets` | `a baby becomes its in-training form…` | Igual |
 | Bebé sin destino reinicia el contador | `evolution.c`: `getFreshEvolutionTarget` | `quirks.unlisted_baby_restarts_timer` | `quirk unlisted_baby_restarts_timer…` | Igual (el valor sin inicializar no se reproduce: no evoluciona); decidido por el responsable de diseño (2026-10-20): fiel al original |
 | Puntos de cuidado, peso, stats y bonus | `evolution.c`: `calculateRequirementScore` | `OriginalScoring`, `requirements` | `a target scores a point each…`, `the battles bonus…`, `the happiness and learned moves bonuses` | Igual |

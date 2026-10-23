@@ -124,7 +124,7 @@ public:
       inputs.evolutionTimer = static_cast<std::int32_t>(
           std::min<std::int64_t>(hoursLeft, std::numeric_limits<std::int32_t>::max()));
       const evolution::NaturalCheck check =
-          evolution_->checkNatural(inputs, state, hoursLeft, random);
+          evolution_->checkNatural(inputs, state, evolution::CheckSpan::hourly(hoursLeft), random);
       if (!check.evolution) {
         break;
       }

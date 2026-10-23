@@ -77,6 +77,25 @@ struct EvolutionInputs {
   std::optional<VirusBackup> virusBackup = std::nullopt;
 };
 
+// The stretch of game time a natural check covers. partner_impl.c: tickConditions checks once per
+// frame of the game clock (CURRENT_FRAME), so the check runs once for each frame the clock went
+// on, at the counter value of that frame.
+struct CheckSpan {
+  // Frames the clock went on in the stretch; with 1 the check runs once, at the counter now.
+  std::int64_t frames = 1;
+  // Frames of the current hour that had already gone at the end of the stretch: 0 when the hour
+  // began on its last frame.
+  std::int64_t frameInHour = 0;
+  // Frames per game hour (clock: frames_per_minute * 60).
+  std::int64_t framesPerHour = 1;
+
+  // One check for each counter value that `hoursCrossed` hours went through, and one at the
+  // counter now when no hour was crossed.
+  [[nodiscard]] static CheckSpan hourly(std::int64_t hoursCrossed) {
+    return {.frames = hoursCrossed > 1 ? hoursCrossed : 1, .frameInHour = 0, .framesPerHour = 1};
+  }
+};
+
 // A praise or a scold, for the rules that run after it: the discipline and happiness the partner
 // had before it.
 struct PraiseScold {

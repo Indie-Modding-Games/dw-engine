@@ -3,6 +3,7 @@
 #include <dwe/game/evolution/strategies.hpp>
 #include <dwe/game/partner/partner.hpp>
 #include <dwe/game/save/sections.hpp>
+#include <dwe/ruleset/game_clock.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_session.hpp>
@@ -10,6 +11,7 @@
 #include <dwe/session/story_adapter.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -49,6 +51,17 @@ StatBlock statBlockOf(const BaseStats& stats) {
   block[Stat::Speed] = stats.speed;
   block[Stat::Brain] = stats.brains;
   return block;
+}
+
+// The game frames a clock advance ran, for the natural check (partner_impl.c: tickConditions runs
+// once a frame of the game clock).
+game::evolution::CheckSpan checkSpanOf(const ruleset::GameClock& clock,
+                                       const ruleset::ClockAdvance& advance) {
+  const std::int64_t perHour =
+      std::max<std::int64_t>(clock.rules().framesPerMinute * ruleset::MinutesPerHour, 1);
+  return {.frames = advance.frames,
+          .frameInHour = clock.frameOfDay() % perHour,
+          .framesPerHour = perHour};
 }
 
 // Each stat at most its limit (evl.c: EVL_clampBaseStats: 9999 HP and MP, 999 the rest, from
@@ -208,10 +221,18 @@ core::Result<void> EvolutionAdapter::startNewGame(GameSession& session) {
 }
 
 void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& advance) {
-  if (advance.hours <= 0 || !evolution_ || !session.partner().alive()) {
+  if (advance.frames <= 0 || !evolution_ || !session.partner().alive()) {
     return;
   }
-  const auto inputs = inputsOf(session, NoScriptRunning);
+  // partner_impl.c: tickConditions returns before the evolution checks during the hour after
+  // waking (HAS_IMMORTAL_HOUR, IMMORTAL_HOUR == HOUR).
+  const game::partner::PartnerState& partner = session.partner().state();
+  if (partner.life.protectedHour == session.clock().time().hour) {
+    return;
+  }
+  // IS_SCRIPT_PAUSED: the check runs every frame, so a story script may be running.
+  const bool scriptRunning = desc_.story != nullptr && desc_.story->scriptRunning();
+  const auto inputs = inputsOf(session, scriptRunning);
   if (!inputs) {
     return;
   }
@@ -224,15 +245,18 @@ void EvolutionAdapter::tick(GameSession& session, const ruleset::ClockAdvance& a
                           })) {
     return;
   }
-  // partner_impl.c: tickConditions checks once a game hour.
+  // partner_impl.c: tickConditions checks once a frame of the game clock.
   syncRaised(desc_.story, state_);
-  const game::evolution::NaturalCheck check =
-      evolution_->checkNatural(*inputs, state_, advance.hours, session.random());
+  const game::evolution::NaturalCheck check = evolution_->checkNatural(
+      *inputs, state_, checkSpanOf(session.clock(), advance), session.random());
   if (check.evolution) {
     apply(session, *check.evolution);
     return;
   }
-  game::partner::EvolutionCounters counters = session.partner().state().evolution;
+  if (check.evolutionTimer == partner.evolution.hours) {
+    return;
+  }
+  game::partner::EvolutionCounters counters = partner.evolution;
   counters.hours = check.evolutionTimer;
   session.partner().setEvolutionCounters(counters);
 }

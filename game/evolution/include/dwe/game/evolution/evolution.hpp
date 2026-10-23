@@ -46,12 +46,13 @@ public:
 
   // The periodic check (partner_impl.c: tickConditions), for the session to call while the partner
   // is in its normal state, the clock runs and no map change or time-of-day fade is under way.
-  // `inputs.evolutionTimer` is the counter now and `hoursCrossed` the hours it went up since the
-  // last call: the counter values in between are checked one by one, so a fast-forward finds what
-  // playing would have. The virus bar is not part of it: the partner reports a full bar and the
-  // session calls fillVirusBar, skipping this check in that tick.
+  // `inputs.evolutionTimer` is the counter now and `span` the game frames since the last call: the
+  // original checks once a frame, so each counter value the span went through is checked, and the
+  // champion's special at the timer hour rolls once for each of its frames. A fast-forward finds
+  // what playing would have. The virus bar is not part of it: the partner reports a full bar and
+  // the session calls fillVirusBar, skipping this check in that tick.
   [[nodiscard]] NaturalCheck checkNatural(const EvolutionInputs& inputs,
-                                          const EvolutionState& state, std::int64_t hoursCrossed,
+                                          const EvolutionState& state, const CheckSpan& span,
                                           ruleset::Random& random) const;
 
   // The partner's virus bar filled up (partner_impl.c: tickConditions; the care section owns the
@@ -102,9 +103,11 @@ private:
                                                      const EvolutionInputs& inputs,
                                                      const std::optional<PraiseScold>& event,
                                                      ruleset::Random& random) const;
-  // At the special counter hour, the praise and scold rules replace or keep the normal target.
+  // At the special counter hour, the praise and scold rules replace or keep the normal target,
+  // once for each of the `frames` checks at that hour until one gives a form.
   [[nodiscard]] std::optional<Species> timerSpecialTarget(const EvolutionInputs& inputs,
                                                           std::optional<Species> normal,
+                                                          std::int64_t frames,
                                                           ruleset::Random& random) const;
   [[nodiscard]] std::optional<std::int32_t> checkHours(Level level) const;
   [[nodiscard]] Species require(std::string_view id) const;
