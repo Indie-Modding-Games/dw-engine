@@ -26,6 +26,16 @@ constexpr double IntroFrameSeconds = 1.0 / 20.0;
 // battle_setup.c: BTL_handleBattleIntro: the banner's sounds, in slot 0.
 constexpr std::int64_t BannerSound = 0x10;
 constexpr std::int64_t BurstSound = 0x11;
+// battle_main.c: BTL_handleVictorySequence: the fanfare as the victory starts, then, at least 0x29
+// battle frames on (while the map's sounds load), the sound of the victory poses; both in slot 0.
+constexpr std::int64_t VictorySound = 0x15;
+constexpr std::int64_t VictoryPoseSound = 0x18;
+constexpr int VictoryPoseFrames = 0x29;
+constexpr double VictoryPoseSeconds = VictoryPoseFrames * IntroFrameSeconds;
+// battle_ui.c: tickBitBox and renderPostBattleStatsBox: the end box's count, a sound for each point
+// and bit, and another once the bits are all in; both in slot 0.
+constexpr std::int64_t EndCountSound = 0x16;
+constexpr std::int64_t EndCountedSound = 0x17;
 
 } // namespace
 
@@ -69,6 +79,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
 }
 
 void BattleScreen::tick(double seconds) {
+  tickVictory(seconds);
   if (!battle_) {
     return;
   }
@@ -81,6 +92,26 @@ void BattleScreen::tick(double seconds) {
   if (battle_->finished()) {
     finish();
   }
+}
+
+void BattleScreen::playSound(std::int64_t sound) const {
+  if (game::story::SoundPort* port = desc_.session->sound(); port != nullptr) {
+    port->playSound(0, sound);
+  }
+}
+
+void BattleScreen::tickVictory(double seconds) {
+  if (!victoryPoseSeconds_) {
+    return;
+  }
+  *victoryPoseSeconds_ -= seconds;
+  if (*victoryPoseSeconds_ > 0.0) {
+    return;
+  }
+  victoryPoseSeconds_.reset();
+  core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:904): the victory poses; "
+                 "playSound(0, 0x18)");
+  playSound(VictoryPoseSound);
 }
 
 // The opening runs at the original's battle rate, a frame each 3 of the screen's
@@ -181,6 +212,18 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
     close();
     return true;
   }
+  if (command.name == BattleEndCountCommand) {
+    core::logDebug("[port:audio] tickBitBox (battle_ui.c:438), renderPostBattleStatsBox "
+                   "(battle_ui.c:609): a point or a bit counted; playSound(0, 0x16)");
+    playSound(EndCountSound);
+    return true;
+  }
+  if (command.name == BattleEndCountedCommand) {
+    core::logDebug("[port:audio] tickBitBox (battle_ui.c:448): the bits are in; "
+                   "playSound(0, 0x17)");
+    playSound(EndCountedSound);
+    return true;
+  }
   return false;
 }
 
@@ -256,6 +299,12 @@ void BattleScreen::finish() {
   const game::battle::BattleResult& result = *finished;
   outcome_ = result.outcome;
   won_ = result.outcome == game::battle::Outcome::Victory;
+  if (won_) {
+    core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
+                   "playSound(0, 0x15)");
+    playSound(VictorySound);
+    victoryPoseSeconds_ = VictoryPoseSeconds;
+  }
   core::logInfo("{}", core::formatMessage(messages::BattleFinished,
                                           game::battle::outcomeTextKey(result.outcome)));
   auto aftermath = desc_.battle->finish(*desc_.session, result);
@@ -295,6 +344,7 @@ void BattleScreen::close() {
     return;
   }
   ending_ = false;
+  victoryPoseSeconds_.reset();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&

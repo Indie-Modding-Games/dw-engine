@@ -42,7 +42,8 @@ Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseCo
 de abajo): `usable` dice qué objetos se pueden lanzar en combate.
 
 El juego añade `battle.phase` (`intro`, `fight` o `end`), y el documento envía `battle_command` (el número del comando),
-`battle_charge`, `battle_close`, `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
+`battle_charge`, `battle_close`, `battle_end_count` y `battle_end_counted` (la cuenta de la caja del final, para sus
+sonidos), `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
 ([ui.md](../../architecture/ui.md)).
 
 ### Apertura del combate

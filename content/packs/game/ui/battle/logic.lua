@@ -314,7 +314,8 @@ end
 -- (tickBitBox). Meanwhile the lines are typed a character a frame into two rows that scroll, and
 -- each waits battle.end.wait_frames (BTL_drawBattleEndText, BTL_tickBattleEndText). A press skips
 -- what runs: the count, the bits, the wait or the typing. The boxes close by themselves once all is
--- done; there is no button to close them.
+-- done; there is no button to close them. Each point and bit counted asks for the count's sound,
+-- and the bits all in for the sound that ends it (tickBitBox, renderPostBattleStatsBox).
 local end_rows_shown = 2
 local end_segments = 5
 local ending = nil
@@ -426,10 +427,15 @@ local function step_end()
     if stat ~= nil then
       ending.stats[stat] = ending.stats[stat] + 1
       ending.gains[stat] = ending.gains[stat] - 1
+      ui.send("battle_end_count")
     elseif ending.bits > 0 then
       ending.balance_open = true
       ending.bits = ending.bits - 1
       ending.balance = ending.balance + 1
+      ui.send("battle_end_count")
+      if ending.bits == 0 then
+        ui.send("battle_end_counted")
+      end
     else
       ending.balance_open = true
     end
@@ -465,6 +471,7 @@ function press_end()
     ending.balance_open = true
     ending.balance = ending.balance + ending.bits
     ending.bits = 0
+    ui.send("battle_end_counted")
   elseif ending.wait > 0 then
     ending.wait = 0
   elseif ending.row <= #ending.rows then

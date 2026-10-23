@@ -304,6 +304,8 @@ Los menús envían comandos con `ui.send(nombre, valor)` y la app los aplica. El
 
 La pantalla de combate (`ui/battle`) envía `battle_command` (el número del comando, `game::battle::Command`),
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
+`battle_end_count` y `battle_end_counted` (la cuenta de esa caja: cada punto o bit contado, y los bits ya sumados; el juego
+toca sus sonidos),
 `battle_bag_open` y `battle_bag_close` (la bolsa del domador, que también abre y cierra la acción `cancel`) y
 `battle_throw` (el número de la ranura cuyo objeto se lanza al compañero). El menú de
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el

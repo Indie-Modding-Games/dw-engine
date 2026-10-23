@@ -323,7 +323,11 @@ gramola va con la tienda de música.
   empezó el combate para el resto; aquí los dos son el primer enemigo de la petición. Un modo fuera de 0–10 deja la
   variante sin escribir en el original; aquí suena la canción 0. Sin `data/music.yaml` (o sin sus claves nuevas) los
   modos 2–10 tocan la canción 0 de la fuente pedida y el combate queda en silencio, con un aviso.
-- La fanfarria de victoria es un efecto (SS 0x15) y va con el paquete del combate (Q6), no aquí.
+- La fanfarria de victoria es un efecto de la ranura 0: `BattleScreen` toca el 0x15 al ganar y el 0x18 (las poses de
+  victoria) 0x29 fotogramas de combate después (`battle_main.c:889/904`), y la caja del final pide con
+  `battle_end_count` el 0x16 por cada punto y cada bit contados y con `battle_end_counted` el 0x17 cuando los bits ya
+  están sumados, también al saltar la cuenta (`battle_ui.c:438/448/609`). Las poses no se dibujan: la caja abre al
+  ganar, como antes.
 
 ## 7. Fidelidad: lo que oye el jugador
 

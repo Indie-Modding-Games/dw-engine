@@ -26,6 +26,9 @@ inline constexpr std::string_view BattleDocument = "battle";
 inline constexpr std::string_view BattleCommandName = "battle_command";
 inline constexpr std::string_view BattleChargeCommand = "battle_charge";
 inline constexpr std::string_view BattleCloseCommand = "battle_close";
+// The end box's count: a point or a bit counted, and the bits all in (the sounds of battle_ui.c).
+inline constexpr std::string_view BattleEndCountCommand = "battle_end_count";
+inline constexpr std::string_view BattleEndCountedCommand = "battle_end_counted";
 // The tamer's bag (battle_tick.c: tamerTickBattle opens it with its own button): open, close, and
 // throw the item of a slot (the command's number) to the partner.
 inline constexpr std::string_view BattleBagOpenCommand = "battle_bag_open";
@@ -79,6 +82,8 @@ private:
   [[nodiscard]] screens::NameKeys names() const;
   void publish() const;
   void tickIntro(double seconds);
+  void tickVictory(double seconds);
+  void playSound(std::int64_t sound) const;
   void publishIntro() const;
   void openBag();
   void throwItem(double slot);
@@ -99,6 +104,8 @@ private:
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
   bool won_ = false;
+  // The time left before the victory poses' sound, once a battle is won.
+  std::optional<double> victoryPoseSeconds_;
   // The battle's map and the items its beaten enemies left: they land on the ground when the end
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).
   std::string map_;
