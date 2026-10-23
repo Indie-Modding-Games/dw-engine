@@ -32,7 +32,7 @@ struct Sound {
   std::optional<SoundLoop> loop;
   // The MIDI key that plays the sound at its own pitch, for samplers.
   std::uint8_t unityNote = 60;
-  // The rate of the sound it was encoded from, as its header says; playback does not use it.
+  // The rate of the sound it was encoded from, as its header says; a sound bank pitches by it.
   std::uint32_t sourceRate = 0;
 };
 
@@ -41,5 +41,10 @@ struct Sound {
 // The loop comes from the LOOPSTART and LOOPLENGTH comments and the unity note from DWE_UNITY_NOTE,
 // all in decoded frames. Fails, with the reason, on a damaged file or one it does not take.
 core::Result<Sound> decodeOpus(std::span<const std::byte> file);
+
+// Decodes a WAV file of 16-bit PCM in one or two channels, as dwx writes its sounds. The loop and
+// the unity note come from the smpl chunk, if there is one. Fails, with the reason, on a damaged
+// file or one it does not take.
+core::Result<Sound> decodeWav(std::span<const std::byte> file);
 
 } // namespace dwe::assets

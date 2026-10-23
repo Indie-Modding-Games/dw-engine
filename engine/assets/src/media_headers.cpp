@@ -1,4 +1,5 @@
 #include <dwe/assets/media_headers.hpp>
+#include <dwe/assets/sound.hpp>
 
 #include <algorithm>
 #include <array>
@@ -140,6 +141,62 @@ constexpr std::array<std::pair<std::string_view, std::size_t>, 9> SoundFontTable
 
 constexpr std::size_t MaxY4mHeader = 1024;
 
+// WAVE_FORMAT_EXTENSIBLE names its format by a GUID after the plain fields; PCM's GUID is
+// 00000001-0000-0010-8000-00aa00389b71, the plain format tag followed by these bytes.
+constexpr std::size_t ExtensibleFormatSize = 40;
+constexpr std::size_t SubFormatAt = 24;
+constexpr std::array<std::uint8_t, 14> PcmGuidTail = {0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80,
+                                                      0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71};
+
+// Whether a 'fmt ' chunk says integer PCM: tag 1, or the extensible tag with PCM's GUID.
+bool isPcm(std::span<const std::byte> format) {
+  const Bytes fields{format};
+  const std::uint16_t tag = fields.u16(0);
+  if (tag == WaveFormatPcm) {
+    return true;
+  }
+  if (tag != WaveFormatExtensible || !fields.fits(0, ExtensibleFormatSize) ||
+      fields.u16(SubFormatAt) != WaveFormatPcm) {
+    return false;
+  }
+  return std::ranges::equal(
+      format.subspan(SubFormatAt + 2, PcmGuidTail.size()), PcmGuidTail,
+      [](std::byte b, std::uint8_t c) { return std::to_integer<std::uint8_t>(b) == c; });
+}
+
+// The smpl chunk: a fixed header, then its loops.
+constexpr std::size_t SamplerSize = 36;
+constexpr std::size_t SamplerLoopSize = 24;
+constexpr std::uint32_t MaxMidiNote = 127;
+
+// The unity note and the first loop of a smpl chunk; the loop's end is inclusive there.
+core::Result<void> readSampler(std::span<const std::byte> body, Sound& sound) {
+  const Bytes fields{body};
+  if (!fields.fits(0, SamplerSize)) {
+    return core::fail("the 'smpl' chunk is shorter than its header");
+  }
+  const std::uint32_t note = fields.u32(12);
+  if (note > MaxMidiNote) {
+    return core::fail(std::format("the unity note {} is not a MIDI note", note));
+  }
+  sound.unityNote = static_cast<std::uint8_t>(note);
+  if (fields.u32(28) == 0) {
+    return {};
+  }
+  if (!fields.fits(SamplerSize, SamplerLoopSize)) {
+    return core::fail("the 'smpl' chunk is too short for its loop");
+  }
+  const std::uint64_t start = fields.u32(SamplerSize + 8);
+  const std::uint64_t end = fields.u32(SamplerSize + 12);
+  const std::uint64_t frames = sound.pcm.size() / sound.channels;
+  if (start > end || end >= frames) {
+    return core::fail(
+        std::format("the loop {}..{} does not fit the sound's {} frames", start, end, frames));
+  }
+  sound.loop = SoundLoop{.start = start, .length = end - start + 1};
+  return {};
+}
+
 std::optional<std::uint32_t> parseDimension(std::string_view text) {
   std::uint32_t value = 0;
   const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
@@ -278,6 +335,46 @@ core::Result<VideoInfo> readY4mHeader(std::span<const std::byte> y4m) {
     return core::fail("the YUV4MPEG2 header has no width or height");
   }
   return info;
+}
+
+core::Result<Sound> decodeWav(std::span<const std::byte> file) {
+  auto info = readWavHeader(file);
+  if (!info) {
+    return std::unexpected{info.error()};
+  }
+  if (info->bitsPerSample != 16 || info->channels > 2) {
+    return core::fail(std::format("a WAV sound has 16-bit samples in 1 or 2 channels, not {} bits "
+                                  "in {}",
+                                  info->bitsPerSample, info->channels));
+  }
+  if (info->frames > MaxSoundFrames) {
+    return core::fail(std::format("{} frames is longer than the {} a sound may have", info->frames,
+                                  MaxSoundFrames));
+  }
+  const auto chunks = riffBody(file, "WAVE");
+  const Chunk* format = chunks ? findChunk(*chunks, "fmt ") : nullptr;
+  const Chunk* samples = chunks ? findChunk(*chunks, "data") : nullptr;
+  if (format == nullptr || samples == nullptr) {
+    return core::fail("a WAV file needs a 'fmt ' and a 'data' chunk");
+  }
+  if (!isPcm(format->body)) {
+    return core::fail("a WAV sound holds integer PCM samples");
+  }
+  const Bytes data{samples->body};
+  Sound sound;
+  sound.sampleRate = info->sampleRate;
+  sound.channels = info->channels;
+  sound.sourceRate = info->sampleRate;
+  sound.pcm.resize(info->frames * info->channels);
+  for (std::size_t i = 0; i < sound.pcm.size(); ++i) {
+    sound.pcm[i] = static_cast<std::int16_t>(data.u16(i * 2));
+  }
+  if (const Chunk* sampler = findChunk(*chunks, "smpl")) {
+    if (auto read = readSampler(sampler->body, sound); !read) {
+      return std::unexpected{read.error()};
+    }
+  }
+  return sound;
 }
 
 } // namespace dwe::assets
