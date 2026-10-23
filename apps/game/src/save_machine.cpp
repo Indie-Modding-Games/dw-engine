@@ -23,10 +23,12 @@ void SaveMachine::open() {
   const bool slot = session_->homeSlot().has_value() && session_->slots() != nullptr;
   core::logDebug("[port:save] openSaveMachine (main_menu.c:5273): home slot {}", slot);
   if (!slot) {
-    show({.text = "save.machine_no_slot", .file = {}, .question = false}, State::NoSlot);
+    show({.text = "save.machine_no_slot", .file = {}, .question = false, .startOnYes = false},
+         State::NoSlot);
     return;
   }
-  show({.text = "save.machine_confirm", .file = {}, .question = true}, State::Asking);
+  show({.text = "save.machine_confirm", .file = {}, .question = true, .startOnYes = false},
+       State::Asking);
 }
 
 bool SaveMachine::handle(const ui::UiCommand& command) {

@@ -23,7 +23,7 @@ slots.newer: "De una versión más nueva"
 slots.no_save: "Jugar sin guardar"
 slots.no_save_warning: "No podrás guardar esta partida. ¿Empezar igualmente?"
 slots.full: "No hay ranuras libres."
-confirm_new: "¿Empezar una nueva aventura?"
+confirm_new: "¿Grabar una nueva aventura?"
 confirm_continue: "¿Continuar esta aventura?"
 # El diálogo enseña debajo el nombre del fichero de la partida.
 failed: "No se ha podido guardar la partida."

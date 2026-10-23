@@ -30,6 +30,12 @@ body {
 	top: 50%;
 }
 
+/* The opening's questions put the speech box at the top, from y 42 to 101 (script_menu.c:
+   setupNewGameDialogueBox). */
+#box.top {
+	top: 126dp;
+}
+
 .row {
 	display: block;
 	height: 39dp;

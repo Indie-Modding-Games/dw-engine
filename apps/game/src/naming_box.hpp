@@ -23,10 +23,11 @@ enum class NameTarget : std::uint8_t { Tamer, Partner };
 // The naming box (script_menu.c: setupNameSelectorBox, setupNameDisplayBox, tickNamingBox): two
 // sides of letters, `columns` wide, with Back and OK beside them and the name above, at most
 // `length` letters. Confirm writes the letter under the cursor (the last one again once the name is
-// full, and the cursor goes to OK); cancel takes the last letter back; menu goes to OK; OK takes a
-// name that is not empty. The movement keys repeat while held. The keyboard can also type the name:
-// typed letters of the grid (and spaces) are written, and Return takes the name once something was
-// typed. It publishes naming_box.* settings and takes the field's buttons, not the UI's focus.
+// full, and the cursor goes to OK); cancel takes the last letter back; alt goes to Back and menu to
+// OK; extra clears the whole name; OK takes a name that is not empty. The movement keys repeat
+// while held. The keyboard can also type the name: typed letters of the grid (and spaces) are
+// written, and Return takes the name once something was typed. It publishes naming_box.* settings
+// and takes the field's buttons, not the UI's focus.
 class NamingBox {
 public:
   NamingBox(ui::Ui& ui, NamingRules rules, SceneSounds sounds);

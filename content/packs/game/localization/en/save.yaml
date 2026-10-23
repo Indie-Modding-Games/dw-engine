@@ -23,7 +23,7 @@ slots.newer: "From a newer version"
 slots.no_save: "Play without saving"
 slots.no_save_warning: "You won't be able to save this game. Start anyway?"
 slots.full: "There are no free slots."
-confirm_new: "Start a new adventure?"
+confirm_new: "Record new adventure?"
 confirm_continue: "Continue this adventure?"
 # The dialog shows the save file's name below these.
 failed: "The game could not be saved."

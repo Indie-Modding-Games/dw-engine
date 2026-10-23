@@ -99,8 +99,19 @@ entra andando sobre negro y, al girarse, pregunta si el jugador tiene Digivice, 
 o si tiene amigos (si dice que no); la primera respuesta da Agumon y la segunda Gabumon. Luego pide los dos nombres
 en la caja de nombres (`NamingBox`, documento `ui/naming_box`), con su confirmación, y se funde a negro. El
 resultado va en `PlayStart::choice` hasta `GameSession::startNewGame`. Las frases son las de la tabla 1238 de
-MAPHEAD y se ven en el documento `ui/story_textbox`. La misma caja de nombres sirve a la rutina 32 de los guiones
-(renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas.
+MAPHEAD y se ven en el documento `ui/story_textbox`, arriba de la pantalla como en el original
+(`setupNewGameDialogueBox`, ajuste `story_textbox.top`). En las elecciones (sí/no, día/noche) la fila del hablante
+queda vacía: el original la deja cortada por el borde de la caja, casi ilegible, y en la confirmación del nombre
+del compañero sería además el del jugador, porque la línea 0x1C sirve a las dos. Mientras corren la película, la
+entrevista o una caja de nombres, `menu` no abre el menú de pausa (allí salta la película o lleva el cursor a
+Aceptar), como el original, que no tiene pausa en esas pantallas. La misma caja de nombres sirve a la rutina 32 de
+los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas.
+
+Tras el «sí» al nombre del jugador se pasa directo a «What's your Digimon's name?» (`newGameStateMachine`: estado
+0x18, línea 0x1D); «Good Name.» (línea 0x1F) solo sale tras el nombre del compañero (estado 0x1C).
+
+Antes de la entrevista, la ranura vacía pregunta «Record new adventure?» con el cursor en «Sí», como el original
+(`SaveDialog::startOnYes`, ajuste `dialog.start_on_yes`); las demás preguntas de las ranuras empiezan en «No».
 
 Con la historia y `story_scenes.new_game.chain: original`, el campo empieza en `twna01` salida 9: la cabecera del
 mapa carga el guion 164 y la casilla de esa salida corre la apertura, que lleva a `topn01`, el despertar en casa de
@@ -108,11 +119,14 @@ Jijimon, y de ahí a File City (todo dentro de la etapa 1 del candado de histori
 estado de `data/new_game_story` y el inicio de `field/warps`, sin la apertura.
 
 La caja de nombres es la americana: dos mitades de 9 filas y 5 columnas (mayúsculas; minúsculas y dígitos), con
-Atrás y Aceptar a su izquierda, y el cursor se mueve como en `namingSelectionUp/Down/Left/Right` (arriba y abajo dan
+«Name», Atrás y OK a su izquierda y el nombre en una caja aparte debajo, con el subrayado amarillo en la letra
+siguiente (la piel original las coloca como el original: `ui/skins/original/naming_box`; el original solo dice
+«Name», no de quién es el nombre, y esa línea se oculta), y el cursor se mueve como en `namingSelectionUp/Down/Left/Right` (arriba y abajo dan
 la vuelta en cada mitad; a la derecha de la última columna se pasa a la otra mitad o a Atrás; desde un botón se entra
 por la fila de la Z). Las direcciones repiten al mantenerlas (a los 6 fotogramas y luego cada 2). Confirmar escribe
 la letra (un espacio no puede ser la primera); con el nombre lleno reescribe la última y el cursor va a Aceptar;
-cancelar borra la última, y con el nombre lleno borra dos, como la versión americana; menú lleva a Aceptar. A la vez se
+cancelar borra la última, y con el nombre lleno borra dos, como la versión americana; menú lleva a Aceptar, `alt`
+(el círculo del original) a Atrás, y `extra` (su cuadrado) borra todo el nombre. A la vez se
 puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
 nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
 versión americana.
@@ -124,12 +138,13 @@ original, que dibuja la página oculta una fila por fotograma y la muestra de go
 ningún cuadro del juego. Mientras se dibuja, la escena no atiende pulsaciones.
 
 El nombre propio del compañero sale de `PartnerView::nickname` (los nombres de la partida): en los diálogos, en la
-página de estado del menú del compañero (con la especie en su propia línea, `game_menu.c: drawDigimonStatsStrings`)
+página de estado del menú del compañero (con la especie en su propia línea, `game_menu.c: drawDigimonStatsStrings`;
+la piel original la pone en la fila de debajo del nombre, como el original, con los estados a su derecha)
 y en las ranuras de partida (`nickname`, junto a la especie, `main_menu.c: drawMainMenuStrings`). El combate, el HUD
 y las escenas de evolución y de muerte muestran la especie o ningún nombre, como el original.
 
-Diferencias con el original: en la caja de nombres no hay botón para llevar el cursor a Atrás (○) ni para borrar
-todo el nombre (□); las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
+Diferencias con el original: en el mando, `alt` está en el botón norte y no en el del círculo, que aquí es cancelar;
+las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
 enfermedad y los registros de combate y de la arena, que en el original nombran al compañero, aún no existen.
 
 ## Exploración libre

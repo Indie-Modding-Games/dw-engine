@@ -1,7 +1,9 @@
--- The naming box (script_menu.c: setupNameSelectorBox, tickNamingBox): the game publishes
--- naming_box.title (a text key), naming_box.length (the longest name), naming_box.name.<i> (the
--- letters so far), naming_box.rows and naming_box.columns (the grid's size; the document has room
--- for 9 rows of 10), naming_box.cell.<row>.<column> (a letter, or a space for an empty cell) and
+-- The naming box (script_menu.c: setupNameSelectorBox, setupNameDisplayBox, tickNamingBox): the
+-- letters' box and, apart, the name's box. The game publishes naming_box.title (a text key: whose
+-- name; the original's box only says "Name", so the original look hides it), naming_box.length
+-- (the longest name), naming_box.name.<i> (the letters so far), naming_box.rows and
+-- naming_box.columns (the grid's size; the document has room for 9 rows of 10),
+-- naming_box.cell.<row>.<column> (a letter, or a space for an empty cell) and
 -- naming_box.cursor_row / naming_box.cursor_column (-1 on a button) and naming_box.cursor_button
 -- (0 Back, 1 OK, -1 in the grid), and bumps naming_box.revision. The game takes the buttons and
 -- the keyboard's typing; the document never takes focus.
@@ -15,13 +17,24 @@ local function number(name, default)
 end
 
 local function refresh(document)
-  document:get("title"):set_text(t(ui.setting("naming_box.title") or ""))
+  document:get("whose"):set_text(t(ui.setting("naming_box.title") or ""))
   local length = number("naming_box.length", 0)
+  -- setupNameDisplayBox, renderNamingUnderscore: the underscore marks the next letter, or the last
+  -- one once the name is full.
+  local written = 0
+  for i = 0, max_letters - 1 do
+    local letter = ui.setting("naming_box.name." .. i) or ""
+    if letter ~= "" and i < length then
+      written = i + 1
+    end
+  end
+  local current = math.min(written, length - 1)
   for i = 0, max_letters - 1 do
     local slot = document:get("letter-" .. i)
     local letter = ui.setting("naming_box.name." .. i) or ""
-    slot:set_text(letter == "" and "_" or letter)
+    slot:set_text(letter == "" and " " or letter)
     slot:set_class("hidden", i >= length)
+    slot:set_class("current", i == current)
   end
   local rows = number("naming_box.rows", 0)
   local columns = number("naming_box.columns", 0)
@@ -45,6 +58,7 @@ local function refresh_prompts(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
   document:get("prompt-menu"):set_text(ui.prompt("menu"))
+  document:get("prompt-extra"):set_text(ui.prompt("extra"))
 end
 
 function on_show(document)

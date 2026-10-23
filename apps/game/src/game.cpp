@@ -750,6 +750,12 @@ int runGame(const Options& options) {
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();
       }
+      // The original has no pause menu on the title, over a movie, the opening's questions or a
+      // naming box: there `menu` skips the movie (Start, mov.c: MOV_playMovie) or puts the cursor
+      // on OK, and must not open it too.
+      const bool menuHeld = flow.playing() == nullptr || (movies && movies->playing()) ||
+                            interview || flow.playing()->takesText();
+      (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());
       if (movies && movies->playing()) {

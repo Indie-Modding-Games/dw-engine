@@ -89,6 +89,7 @@ screens::ScreenSettings textboxSettings(const TextboxLook& look, const std::vect
       {.name = std::format("{}.cursor_row", Prefix),
        .value = look.cursorRow ? static_cast<double>(*look.cursorRow) : -1.0},
       {.name = std::format("{}.row_count", Prefix), .value = static_cast<double>(rows.size())},
+      {.name = std::format("{}.top", Prefix), .value = look.top},
   };
   for (std::size_t row = 0; row < rows.size(); ++row) {
     settings.push_back({.name = screens::listEntryName(RowList, row, "runs"),

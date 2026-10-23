@@ -40,16 +40,25 @@ SaveStep GameSaves::save(const Playthrough& playthrough) {
   if (info != slots.end()) {
     switch (info->state) {
     case SlotInfo::State::Newer:
-      return {.dialog = SaveDialog{.text = "save.home_newer", .file = file, .question = false},
+      return {.dialog = SaveDialog{.text = "save.home_newer",
+                                   .file = file,
+                                   .question = false,
+                                   .startOnYes = false},
               .result = SaveResult::NotSaved};
     case SlotInfo::State::Damaged:
       pending_ = home;
-      return {.dialog = SaveDialog{.text = "save.home_damaged", .file = file, .question = true},
+      return {.dialog = SaveDialog{.text = "save.home_damaged",
+                                   .file = file,
+                                   .question = true,
+                                   .startOnYes = false},
               .result = std::nullopt};
     case SlotInfo::State::Saved:
       if (!info->header || info->header->created != playthrough.started) {
         pending_ = home;
-        return {.dialog = SaveDialog{.text = "save.home_other", .file = file, .question = true},
+        return {.dialog = SaveDialog{.text = "save.home_other",
+                                     .file = file,
+                                     .question = true,
+                                     .startOnYes = false},
                 .result = std::nullopt};
       }
       break;
@@ -76,7 +85,8 @@ SaveStep GameSaves::write(game::save::SlotId slot) {
     core::logError(messages::GameSaveFailed, written.error().message);
     return {.dialog = SaveDialog{.text = "save.failed",
                                  .file = game::save::slotFileName(slot),
-                                 .question = false},
+                                 .question = false,
+                                 .startOnYes = false},
             .result = SaveResult::Failed};
   }
   return {.dialog = std::nullopt, .result = SaveResult::Saved};

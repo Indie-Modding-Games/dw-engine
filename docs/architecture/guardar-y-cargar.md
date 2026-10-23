@@ -55,7 +55,7 @@ escribe con el reloj en marcha para que corra al cargarla (`main_menu.c: writeSa
 | Menú 0 | NEW GAME, CONTINUE GAME, DELETE GAME, BATTLE MODE; continuar y borrar en gris sin tarjeta | `main_menu.c: tickMainMenu: 3349-3385`, `main_menu.c: renderInitialMenu: 5359-5363` |
 | Partida nueva | Tarjeta 1, tarjeta 2 o **sin tarjeta** (aviso: no se podrá guardar). Una tarjeta sin formato se puede formatear aquí | `main_menu.c: tickMainMenu: 3454-3507` |
 | | Con 15 bloques usados: error «no hay bloque libre» | `main_menu.c: tickMainMenu: 3509-3520`, `main_menu.c: getCardUsedBlockCount: 4757-4790` |
-| | Solo se elige una ranura **vacía** (no se sobrescribe una partida) y se confirma «¿Empezar nueva aventura?» | `main_menu.c: tickMainMenu: 3522-3556` |
+| | Solo se elige una ranura **vacía** (no se sobrescribe una partida) y se confirma «¿Grabar una nueva aventura?» («Record new adventure?», con el cursor en «Sí») | `main_menu.c: tickMainMenu: 3522-3556` |
 | | Se crea el fichero ya, con una partida por defecto en estado «partida nueva» | `main_menu.c: tickMainMenu: 3558-3636`, `main_menu.c: initializeDefaultSavegame: 4911` |
 | Continuar | Tarjeta, lista de ranuras (solo las válidas se eligen), «¿Continuar la aventura?», leer | `main_menu.c: tickMainMenu: 3659-3776` |
 | Comprobación | Copia 0 si su suma cuadra; si no, la copia 1; si ninguna, «error de datos» y vuelta a la portada | `main_menu.c: tickMainMenu: 3758-3774` |
@@ -190,8 +190,8 @@ la regla de la fase 4 (IDs, no índices).
 ### 3.4 Partida nueva
 
 `Nueva partida` → lista de ranuras con **solo las vacías** elegibles y una entrada final «Jugar sin guardar» →
-«¿Empezar una nueva aventura?» (sí/no) → se crea la `PlaySession` de partida nueva y **se guarda ya en la ranura**,
-como el original crea el fichero al empezar. Con las 15 ocupadas: aviso «No hay ranuras libres» y solo «Jugar sin
+«¿Grabar una nueva aventura?» (sí/no; empieza en «Sí», como el original, y las demás preguntas en «No») → se crea
+la `PlaySession` de partida nueva y **se guarda ya en la ranura**, como el original crea el fichero al empezar. Con las 15 ocupadas: aviso «No hay ranuras libres» y solo «Jugar sin
 guardar» o volver. «Jugar sin guardar» avisa de que no se podrá guardar (como «sin tarjeta»).
 
 Sin carpeta de partidas (las rutas de humo de hoy) `Nueva partida` entra directo, sin lista: es el camino «sin
@@ -264,7 +264,7 @@ Claves nuevas; los textos son nuestros, no los del disco.
 | `save.slots.no_save` | Play without saving | Jugar sin guardar |
 | `save.slots.no_save_warning` | You won't be able to save this game. Start anyway? | No podrás guardar esta partida. ¿Empezar igualmente? |
 | `save.slots.full` | There are no free slots. | No hay ranuras libres. |
-| `save.confirm_new` | Start a new adventure? | ¿Empezar una nueva aventura? |
+| `save.confirm_new` | Record new adventure? | ¿Grabar una nueva aventura? |
 | `save.confirm_continue` | Continue this adventure? | ¿Continuar esta aventura? |
 | `save.sleep` | Go to sleep | Dormir |
 | `save.sleep_and_save` | Save and go to sleep | Guardar y dormir |

@@ -1,13 +1,14 @@
-/* How the naming box behaves whatever the skin: the name over a grid of letters, two sides of five
-   columns, with Back and OK to their left (script_menu.c: setupNameSelectorBox, rect -145, -91,
-   290 x 138; NAMING_CTRL_BOXES; setupNameDisplayBox). The look is the pause menu's panel (the
-   skins' pause_menu style). */
+/* How the naming box behaves whatever the skin: a box of letters, two sides of five columns, with Back and OK to
+   their left, and the name in a box of its own (script_menu.c: setupNameSelectorBox, rect -145, -91, 290 x 138;
+   NAMING_CTRL_BOXES; setupNameDisplayBox, rect -145, 60, 149 x 42). The look is the pause menu's panel (the skins'
+   pause_menu style); the original look places the boxes as the original (skins/original/naming_box). */
 
 body { pointer-events: none; }
-body #panel { left: 50%; margin-left: -280dp; top: 60dp; width: 560dp; }
+body #panel { left: 50%; margin-left: -280dp; top: 40dp; width: 560dp; }
 #title { margin: 0 0 6dp 0; }
-#name { margin: 0 0 10dp 0; }
+#whose { margin: 0 0 10dp 0; }
 .letter { display: inline-block; width: 28dp; text-align: center; }
+.letter.current { border-bottom: 3dp #d0d0d0; }
 .grid-row { display: block; height: 30dp; }
 .cell { display: inline-block; width: 40dp; height: 30dp; line-height: 30dp; text-align: center; }
 .cell:nth-child(5) { margin-right: 24dp; }
@@ -16,3 +17,16 @@ body #panel { left: 50%; margin-left: -280dp; top: 60dp; width: 560dp; }
 .button { display: block; height: 30dp; line-height: 30dp; margin: 0 0 30dp 0; text-align: center; }
 #grid { float: left; }
 #prompts { clear: both; }
+#name-box {
+	position: absolute;
+	left: 50%;
+	margin-left: -280dp;
+	top: 560dp;
+	width: 560dp;
+	padding: 12dp 24dp;
+	background-color: #151b24f0;
+}
+#typing { margin: 6dp 0 0 0; font-size: 22dp; }
+/* The letters past the longest name and the cells past the grid's size are hidden (the rules above would show
+   them over the common .hidden). */
+body .letter.hidden, body .cell.hidden, body .grid-row.hidden { display: none; }

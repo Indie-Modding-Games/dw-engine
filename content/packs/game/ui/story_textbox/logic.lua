@@ -63,6 +63,7 @@ end
 local function refresh(document)
   local box = document:get("box")
   place_box(box, ui.setting("story_textbox.kind") == "sized")
+  box:set_class("top", ui.setting("story_textbox.top") == true)
   -- The box grows over its opening frames (ui.c: tickAnimatedUIBox); its text shows once it is
   -- open.
   local opening = number("story_textbox.opening", 1)

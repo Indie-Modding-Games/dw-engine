@@ -31,6 +31,8 @@ struct SaveDialog {
   std::string text;
   std::string file;
   bool question = false;
+  // A question starts on yes (the original's "Record new adventure?") instead of no.
+  bool startOnYes = false;
 
   friend bool operator==(const SaveDialog&, const SaveDialog&) = default;
 };

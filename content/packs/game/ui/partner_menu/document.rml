@@ -19,10 +19,10 @@
 					<span class="original-look" id="status-name"></span>
 					<span class="original-look head-value" id="status-lives"></span>
 				</div>
-				<div class="status-line"><span class="original-look" text-key="partner_menu.species"></span><span class="original-look line-value" id="status-species"></span></div>
-				<div class="status-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
-				<div class="status-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
-				<div class="status-bars">
+				<div class="status-line" id="status-species-line"><span class="original-look" text-key="partner_menu.species"></span><span class="original-look line-value" id="status-species"></span></div>
+				<div class="status-line" id="status-age-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
+				<div class="status-line" id="status-weight-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
+				<div class="status-bars" id="status-parameters">
 					<div class="bar-row pool"><span class="label original-look" id="pool-0-label"></span><div class="bar stat"><div class="fill" id="pool-0-fill"></div></div><span class="value original-look" id="pool-0"></span></div>
 					<div class="bar-row pool"><span class="label original-look" id="pool-1-label"></span><div class="bar stat"><div class="fill" id="pool-1-fill"></div></div><span class="value original-look" id="pool-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
@@ -30,7 +30,7 @@
 					<div class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-3-label"></span><div class="bar stat"><div class="fill" id="stat-3-fill"></div></div><span class="value original-look" id="stat-3"></span></div>
 				</div>
-				<div class="status-bars">
+				<div class="status-bars" id="status-condition">
 					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div><div class="fill high" id="meter-0-high"></div></div><span class="value original-look" id="meter-0"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-1-label"></span><div class="bar meter"><div class="fill" id="meter-1-fill"></div><div class="fill high" id="meter-1-high"></div></div><span class="value original-look" id="meter-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-2-label"></span><div class="bar meter"><div class="fill" id="meter-2-fill"></div><div class="fill high" id="meter-2-high"></div></div><span class="value original-look" id="meter-2"></span></div>

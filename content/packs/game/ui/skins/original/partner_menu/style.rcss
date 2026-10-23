@@ -73,8 +73,10 @@
 }
 
 /* The profile (insets with lines #020202 at the top and left, #6987A0 at the bottom and right, fill #354B5C): the
-   name at y 52, the conditions on the row under it (the original's inset at y 68, 244 wide), the age and the weight
-   on the row at y 84 (insets at x 50 and 122), and the lives at (76, 154), here as text in the yellow of headings. */
+   name at y 52, the species on the row under it (the original's inset at y 68, 244 wide; the American version draws
+   the species at x 52, at most 120 pixels: game_menu.c: renderDigimonStatsView) and the conditions after it, where
+   the original has its special, type and active marks, the age and the weight on the row at y 84 (insets at x 50 and
+   122), and the lives at (76, 154), here as text in the yellow of headings. */
 #status-head {
 	position: absolute;
 	left: 30dp;
@@ -112,7 +114,12 @@
 	margin: 0;
 }
 
-#page-status > div:nth-child(3) {
+#status-species-line {
+	top: 108dp;
+	width: 480dp;
+}
+
+#status-weight-line {
 	left: 396dp;
 }
 
@@ -126,12 +133,16 @@
 	background-color: #354b5c;
 }
 
+/* The conditions in the rest of the species row (x 180 to 294), small like the original's marks' names, on up to
+   two lines. */
 #conditions {
 	position: absolute;
-	left: 30dp;
+	left: 510dp;
 	top: 108dp;
+	width: 360dp;
 	margin: 0;
-	font-size: 33dp;
+	font-size: 22dp;
+	line-height: 24dp;
 	color: #d0d0d0;
 }
 
@@ -139,7 +150,7 @@
    name, as the original, the bar inset whose fill is 2 pixels of #32C8C8 and the value. The original's HP and MP
    bars are 104 pixels and the others' 54; HP and MP keep room for their "800 / 800" here, so theirs are 82 pixels, a
    documented delta. */
-#page-status > div:nth-child(4) {
+#status-parameters {
 	position: absolute;
 	left: 396dp;
 	top: 280dp;
@@ -150,7 +161,7 @@
 /* The condition (from x 10): happiness, discipline and the virus bar at y 173, 188 and 202, with the icons at x 22
    and the names (small: the bars start at x 76, 54 pixels after the icons), the bars 50 x 6 (150dp), the pink #e04080 to #f0c0e8 under the blue #3060a0 to #b0d0e0, and the
    virus bar #C8C83C. The original shows no number for them, nor does this skin. */
-#page-status > div:nth-child(5) {
+#status-condition {
 	position: absolute;
 	left: 30dp;
 	top: 412dp;
@@ -174,7 +185,7 @@
 	color: #fff371;
 }
 
-#page-status > div:nth-child(4) .label {
+#status-parameters .label {
 	width: 48dp;
 	padding: 0;
 	height: 45dp;
@@ -246,7 +257,7 @@
 	width: 180dp;
 }
 
-#page-status > div:nth-child(5) .value {
+#status-condition .value {
 	display: none;
 }
 

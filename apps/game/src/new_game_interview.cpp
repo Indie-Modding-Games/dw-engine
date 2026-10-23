@@ -383,7 +383,12 @@ void NewGameInterview::showText(bool open) {
   std::vector<TextRow> rows;
   appendPageRows(rows, lineText(*shownLine_));
   inputFrom_ = ticks_ + ticksOf(static_cast<std::uint32_t>(rows.size()));
-  // The selection's rows come after the speaker's name.
+  // The selection's rows come after the speaker's name, which the original shows cut by the box's
+  // rim, barely readable (captures cp02-q1-choice-yes, cp05-name-right-yesno); here that row is
+  // left empty.
+  if (waiting_ == Waiting::Selection && !rows.empty()) {
+    rows.front().clear();
+  }
   const TextboxLook look{.open = true,
                          .speech = true,
                          .columns = 0,
@@ -393,7 +398,9 @@ void NewGameInterview::showText(bool open) {
                          .prompt = waiting_ == Waiting::Line,
                          .cursorRow = waiting_ == Waiting::Selection
                                           ? std::optional<std::size_t>{1 + cursor_}
-                                          : std::nullopt};
+                                          : std::nullopt,
+                         // setupNewGameDialogueBox: the box at (-130, -78), 262 x 59.
+                         .top = true};
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);
   ui_->show(StoryTextboxDocument);
 }

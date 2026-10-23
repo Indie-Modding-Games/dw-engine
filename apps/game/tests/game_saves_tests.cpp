@@ -62,7 +62,10 @@ SaveStep saved() {
 }
 
 SaveStep question(std::string text) {
-  return {.dialog = SaveDialog{.text = std::move(text), .file = "slot_01.yaml", .question = true},
+  return {.dialog = SaveDialog{.text = std::move(text),
+                               .file = "slot_01.yaml",
+                               .question = true,
+                               .startOnYes = false},
           .result = std::nullopt};
 }
 
@@ -120,11 +123,12 @@ TEST_CASE("another playthrough's save, started a second apart, is told apart and
 TEST_CASE("a newer game's save is never written over") {
   Game game;
   game.storage.put("slot_01.yaml", "format: dwe-save\nformat_version: 99\n");
-  CHECK(
-      game.saves.save(game.playthrough) ==
-      SaveStep{.dialog =
-                   SaveDialog{.text = "save.home_newer", .file = "slot_01.yaml", .question = false},
-               .result = SaveResult::NotSaved});
+  CHECK(game.saves.save(game.playthrough) ==
+        SaveStep{.dialog = SaveDialog{.text = "save.home_newer",
+                                      .file = "slot_01.yaml",
+                                      .question = false,
+                                      .startOnYes = false},
+                 .result = SaveResult::NotSaved});
   CHECK(game.saves.answer(true) == SaveStep{});
   CHECK(game.storage.read("slot_01.yaml").value() ==
         std::optional<std::string>{"format: dwe-save\nformat_version: 99\n"});
@@ -134,10 +138,11 @@ TEST_CASE("a save that fails says so and leaves the slot as it was") {
   Game game;
   REQUIRE(game.slots.save(Slot1, saveOf(startedAt(0), "before")).has_value());
   game.storage.failNextWrite();
-  CHECK(game.saves.save(game.playthrough) ==
-        SaveStep{.dialog =
-                     SaveDialog{.text = "save.failed", .file = "slot_01.yaml", .question = false},
-                 .result = SaveResult::Failed});
+  CHECK(game.saves.save(game.playthrough) == SaveStep{.dialog = SaveDialog{.text = "save.failed",
+                                                                           .file = "slot_01.yaml",
+                                                                           .question = false,
+                                                                           .startOnYes = false},
+                                                      .result = SaveResult::Failed});
   CHECK(game.saves.answer(false) == SaveStep{});
   CHECK(game.savedSpecies() == "before");
 }

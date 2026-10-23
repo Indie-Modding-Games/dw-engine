@@ -408,8 +408,10 @@ void PlaySession::showLockNotice(const std::string& textKey) {
   if (context_.ui->isVisible(DialogDocument)) {
     return;
   }
-  screens::publish(*context_.ui, dialogSettings({.text = textKey, .file = {}, .question = false}),
-                   "dialog.revision");
+  screens::publish(
+      *context_.ui,
+      dialogSettings({.text = textKey, .file = {}, .question = false, .startOnYes = false}),
+      "dialog.revision");
   context_.ui->show(DialogDocument, true);
   lockNoticeShown_ = true;
 }
@@ -431,7 +433,8 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
-          dialogSettings({.text = "save.to_title_confirm", .file = {}, .question = true}),
+          dialogSettings(
+              {.text = "save.to_title_confirm", .file = {}, .question = true, .startOnYes = false}),
           "dialog.revision");
       context_.ui->show(DialogDocument, true);
       toTitleAsked_ = true;

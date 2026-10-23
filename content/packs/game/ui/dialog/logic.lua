@@ -1,7 +1,7 @@
 -- The save dialog, at the title screen and in the game: a question (yes or no) or a notice
 -- (accept) about the save slots. The game publishes dialog.text (a text key), dialog.file (the save
--- file it is about, or "") and dialog.question, and shows this document; it sends dialog_answer,
--- true only for yes. Cancel answers no.
+-- file it is about, or ""), dialog.question and dialog.start_on_yes, and shows this document; it
+-- sends dialog_answer, true only for yes. Cancel answers no.
 
 local function question()
   return ui.setting("dialog.question") == true
@@ -24,8 +24,10 @@ end
 function on_show(document)
   refresh(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  -- A question starts on no, so that confirming in a hurry does not overwrite a save.
-  document:get(question() and "no" or "ok"):focus()
+  -- A question starts on no, so that confirming in a hurry does not overwrite a save, unless the
+  -- game says it starts on yes (dialog.start_on_yes: the new game's question, as the original).
+  local first = ui.setting("dialog.start_on_yes") == true and "yes" or "no"
+  document:get(question() and first or "ok"):focus()
 end
 
 function on_setting(document, _name)

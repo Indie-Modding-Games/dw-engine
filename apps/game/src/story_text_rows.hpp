@@ -49,6 +49,9 @@ struct TextboxLook {
   bool prompt = false;
   // The row of a selection's cursor, counted from the box's first row.
   std::optional<std::size_t> cursorRow;
+  // The speech box at the top of the screen instead of the bottom (script_menu.c:
+  // setupNewGameDialogueBox).
+  bool top = false;
 };
 
 // The story_textbox document's settings for a box and its rows; publish them with

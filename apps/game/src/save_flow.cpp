@@ -107,27 +107,32 @@ std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   case SlotInfo::State::Empty:
     pending_ = PlayStart{
         .load = std::nullopt, .backup = false, .saveTo = info.slot, .choice = std::nullopt};
-    return SaveDialog{.text = "save.confirm_new", .file = {}, .question = true};
+    // The original asks "Record new adventure?" with the cursor on yes (capture
+    // cp01-record-new-adventure).
+    return SaveDialog{.text = "save.confirm_new", .file = {}, .question = true, .startOnYes = true};
   case SlotInfo::State::Saved:
     pending_ = PlayStart{
         .load = info.slot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt};
-    return SaveDialog{.text = "save.confirm_continue", .file = {}, .question = true};
+    return SaveDialog{
+        .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = false};
   case SlotInfo::State::Damaged:
     if (!info.hasBackup) {
-      return SaveDialog{.text = "save.damaged_no_backup", .file = file, .question = false};
+      return SaveDialog{
+          .text = "save.damaged_no_backup", .file = file, .question = false, .startOnYes = false};
     }
     pending_ = PlayStart{
         .load = info.slot, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt};
-    return SaveDialog{.text = "save.damaged_use_backup", .file = file, .question = true};
+    return SaveDialog{
+        .text = "save.damaged_use_backup", .file = file, .question = true, .startOnYes = false};
   case SlotInfo::State::Newer:
     break;
   }
-  return SaveDialog{.text = "save.too_new", .file = file, .question = false};
+  return SaveDialog{.text = "save.too_new", .file = file, .question = false, .startOnYes = false};
 }
 
 SaveDialog SaveFlow::chooseWithoutSaving() {
   pending_ = PlayStart{};
-  return {.text = "save.slots.no_save_warning", .file = {}, .question = true};
+  return {.text = "save.slots.no_save_warning", .file = {}, .question = true, .startOnYes = false};
 }
 
 std::optional<PlayStart> SaveFlow::answer(bool yes) {
@@ -138,22 +143,26 @@ std::optional<PlayStart> SaveFlow::answer(bool yes) {
 
 SaveDialog SaveFlow::startFailed(const PlayStart& start, bool saveFailed) {
   if (saveFailed && start.saveTo) {
-    return {
-        .text = "save.failed", .file = game::save::slotFileName(*start.saveTo), .question = false};
+    return {.text = "save.failed",
+            .file = game::save::slotFileName(*start.saveTo),
+            .question = false,
+            .startOnYes = false};
   }
   if (!start.load) {
-    return {.text = "save.start_failed", .file = {}, .question = false};
+    return {.text = "save.start_failed", .file = {}, .question = false, .startOnYes = false};
   }
   return {.text = "save.load_failed",
           .file = start.backup ? game::save::slotBackupName(*start.load)
                                : game::save::slotFileName(*start.load),
-          .question = false};
+          .question = false,
+          .startOnYes = false};
 }
 
 screens::ScreenSettings dialogSettings(const SaveDialog& dialog) {
   return {{.name = "dialog.text", .value = dialog.text},
           {.name = "dialog.file", .value = dialog.file},
-          {.name = "dialog.question", .value = dialog.question}};
+          {.name = "dialog.question", .value = dialog.question},
+          {.name = "dialog.start_on_yes", .value = dialog.startOnYes}};
 }
 
 } // namespace dwe::app

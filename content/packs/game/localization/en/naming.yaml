@@ -1,6 +1,9 @@
 # The naming box (script_menu.c: setupNameSelectorBox): whose name it asks for and its buttons.
 tamer: "Your name"
 partner: "Your Digimon's name"
+title: "Name"
+ok: "OK"
 back: "Back"
+clear: "Clear"
 write: "Write"
 typing: "Or type the name and press Enter"

@@ -1,0 +1,30 @@
+/* The story's textboxes in the original look: the original's box (ui.c: renderUIBoxBorder) as the pause menu's, a
+   light cyan rim (#90D9FA, the right side #4A9FC5), the corner sprites and the fill #2D3840 at half opacity, so the
+   field shows through (capture cp09-arrival-first-dialog). A selection's row is marked by the original's grey bar
+   (script_textbox.c: renderDialogueSelectionCursor, renderSelectionCursor; capture cp02-q1-choice-yes): #525A63 with
+   a light top line (#B5B5B5), not by a square. */
+
+body #box {
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	background-color: #2d384080;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The opening's questions are over a black screen: the box is opaque there (capture cp01-jijimon-first-line). */
+body #box.top {
+	background-color: #2d3840;
+}
+
+body .row.selected .cursor {
+	width: 0dp;
+	height: 0dp;
+	margin-right: 0dp;
+	background-color: transparent;
+}
+
+body .row.selected .run {
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+}

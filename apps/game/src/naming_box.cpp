@@ -154,6 +154,13 @@ bool NamingBox::takeTyping() {
 }
 
 bool NamingBox::pressButtons(const input::InputState& input) {
+  // tickNamingBox: the square (`extra`) clears the whole name before anything else.
+  if (input.wasPressed("extra")) {
+    letters_.clear();
+    core::logDebug("[port:story] tickNamingBox (script_menu.c:2794): the name is cleared");
+    play(sounds_.confirm);
+    return false;
+  }
   if (input.wasPressed("confirm")) {
     if (!button_) {
       write(letterAt(side_, row_, column_));
@@ -162,6 +169,10 @@ bool NamingBox::pressButtons(const input::InputState& input) {
     } else {
       deleteLast();
     }
+  } else if (input.wasPressed("alt")) {
+    // tickNamingBox: the circle (ALT_BUTTON) puts the cursor on Back.
+    goTo(Button::Back);
+    play(sounds_.cursor);
   } else if (input.wasPressed("cancel")) {
     deleteLast();
   } else if (input.wasPressed("menu")) {

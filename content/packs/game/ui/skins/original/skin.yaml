@@ -41,9 +41,12 @@ screens:
   # El aviso de un objeto del suelo o de un cofre, también.
   field_item_notice:
     styles: [ui/skins/original/pause_menu/style]
-  # La caja de nombres de la partida nueva y de los guiones, también.
+  # Las cajas de texto de la historia: la caja del original y su barra de selección.
+  story_textbox:
+    styles: [ui/skins/original/story_textbox/style]
+  # La caja de nombres de la partida nueva y de los guiones: el panel del menú de pausa, colocado como el original.
   naming_box:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/naming_box/style]
   # El menú del cebo y los avisos de la pesca, también.
   fishing_bait:
     styles: [ui/skins/original/pause_menu/style]

@@ -92,7 +92,8 @@ TEST_CASE("a new game lists the empty slots and is saved to the one chosen") {
   CHECK(valueOf(list, "save.slot.0.state") == UiValue{std::string{"empty"}});
 
   CHECK_FALSE(flow.choose(1).has_value());
-  CHECK(flow.choose(0) == SaveDialog{.text = "save.confirm_new", .file = {}, .question = true});
+  CHECK(flow.choose(0) ==
+        SaveDialog{.text = "save.confirm_new", .file = {}, .question = true, .startOnYes = true});
   CHECK_FALSE(flow.answer(false).has_value());
   CHECK_FALSE(flow.answer(true).has_value());
   REQUIRE(flow.choose(0).has_value());
@@ -117,17 +118,22 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
   CHECK(valueOf(list, "save.slot.2.state") == UiValue{std::string{"newer"}});
 
   CHECK(flow.choose(0) ==
-        SaveDialog{.text = "save.confirm_continue", .file = {}, .question = true});
+        SaveDialog{
+            .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = false});
   CHECK(flow.answer(true) ==
         PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
 
-  CHECK(flow.choose(1) ==
-        SaveDialog{.text = "save.damaged_use_backup", .file = "slot_03.yaml", .question = true});
+  CHECK(flow.choose(1) == SaveDialog{.text = "save.damaged_use_backup",
+                                     .file = "slot_03.yaml",
+                                     .question = true,
+                                     .startOnYes = false});
   CHECK(flow.answer(true) ==
         PlayStart{.load = Slot3, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt});
 
-  CHECK(flow.choose(2) ==
-        SaveDialog{.text = "save.too_new", .file = "autosave_01.yaml", .question = false});
+  CHECK(flow.choose(2) == SaveDialog{.text = "save.too_new",
+                                     .file = "autosave_01.yaml",
+                                     .question = false,
+                                     .startOnYes = false});
   CHECK_FALSE(flow.answer(true).has_value());
 }
 
@@ -138,8 +144,10 @@ TEST_CASE("a damaged save with no backup is only a notice") {
   SaveFlow flow{&slots, {}};
   CHECK(valueOf(flow.open(SlotListMode::NewGame), "save.slots") == UiValue{0.0});
   static_cast<void>(flow.open(SlotListMode::Continue));
-  CHECK(flow.choose(0) ==
-        SaveDialog{.text = "save.damaged_no_backup", .file = "slot_01.yaml", .question = false});
+  CHECK(flow.choose(0) == SaveDialog{.text = "save.damaged_no_backup",
+                                     .file = "slot_01.yaml",
+                                     .question = false,
+                                     .startOnYes = false});
   CHECK_FALSE(flow.answer(true).has_value());
 }
 
@@ -147,15 +155,19 @@ TEST_CASE("a game that did not start says whether the start or the save failed, 
   const PlayStart inFirst{
       .load = std::nullopt, .backup = false, .saveTo = Slot1, .choice = std::nullopt};
   CHECK(SaveFlow::startFailed(inFirst, true) ==
-        SaveDialog{.text = "save.failed", .file = "slot_01.yaml", .question = false});
-  CHECK(SaveFlow::startFailed(inFirst, false) ==
-        SaveDialog{.text = "save.start_failed", .file = {}, .question = false});
+        SaveDialog{
+            .text = "save.failed", .file = "slot_01.yaml", .question = false, .startOnYes = false});
+  CHECK(
+      SaveFlow::startFailed(inFirst, false) ==
+      SaveDialog{.text = "save.start_failed", .file = {}, .question = false, .startOnYes = false});
   CHECK(SaveFlow::startFailed({}, false).text == "save.start_failed");
   CHECK(SaveFlow::startFailed(
             {.load = Slot3, .backup = true, .saveTo = std::nullopt, .choice = std::nullopt}, false)
             .file == "slot_03.yaml.bak");
   CHECK(SaveFlow::startFailed(
             {.load = Autosave1, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt},
-            false) ==
-        SaveDialog{.text = "save.load_failed", .file = "autosave_01.yaml", .question = false});
+            false) == SaveDialog{.text = "save.load_failed",
+                                 .file = "autosave_01.yaml",
+                                 .question = false,
+                                 .startOnYes = false});
 }
