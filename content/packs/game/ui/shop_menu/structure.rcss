@@ -1,0 +1,7 @@
+/* How the shop behaves whatever the skin: the choices and the list wrap around. The look is the pause menu's (the
+   skins' pause_menu style). */
+
+#choice-1 { nav-up: #choice-3; }
+#choice-3 { nav-down: #choice-1; }
+#row-1 { nav-up: #list-back; }
+#list-back { nav-down: #row-1; }

@@ -174,7 +174,8 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
         std::pair{"save_slots", "ui/save_slots/document"},
         std::pair{"dialog", "ui/dialog/document"},
         std::pair{"sleep_menu", "ui/sleep_menu/document"},
-        std::pair{"gym_stats", "ui/gym_stats/document"}}) {
+        std::pair{"gym_stats", "ui/gym_stats/document"},
+        std::pair{"shop_menu", "ui/shop_menu/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};

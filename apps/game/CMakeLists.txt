@@ -41,6 +41,7 @@ dwe_add_app(game
         src/session_start.cpp
         src/save_machine.cpp
         src/gym_screen.cpp
+        src/shop_screen.cpp
         src/sleep_screen.cpp
         src/story_field_link.cpp
         src/story_textbox.cpp

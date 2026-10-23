@@ -222,7 +222,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .story = game_.systems.story,
                   .inventory = game_.systems.inventory,
                   .scene = scene_.get(),
-                  .ui = context.ui}) {
+                  .ui = context.ui}),
+      shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -253,7 +254,7 @@ PlaySession::~PlaySession() {
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
-        SleepMenuDocument, DialogDocument}) {
+        SleepMenuDocument, DialogDocument, ShopMenuDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -268,7 +269,7 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
-  if (sleepScreen_.active()) {
+  if (sleepScreen_.active() || shopScreen_.active()) {
     return;
   }
   // partner.c: partnerTickEvolving stops the game time and holds the player for the scene.
@@ -314,7 +315,7 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
 }
 
 bool PlaySession::handle(const ui::UiCommand& command) {
-  if (sleepScreen_.handle(command) || saveMachine_.handle(command) ||
+  if (shopScreen_.handle(command) || sleepScreen_.handle(command) || saveMachine_.handle(command) ||
       battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
@@ -413,6 +414,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
 
   partnerMenu_.update();
+  shopScreen_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
   sleepScreen_.update(!battleScreen_.active() && !gymScreen_.active() &&
@@ -443,7 +445,8 @@ bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
-         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() || deathScene_.active();
+         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
+         shopScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

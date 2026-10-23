@@ -1,0 +1,25 @@
+# The shop the story opens (script_common.c: openShop). The keeper's lines are the story's texts
+# (MAPHEAD); these are the screen's own labels.
+next: "Next"
+back: "Back"
+previous: "Previous"
+next_page: "Next page"
+# {page} of {pages}.
+page: "{page}/{pages}"
+empty: "Nothing here."
+# Fallbacks for the choice line when the story's text is missing.
+buy: "Buy"
+sell: "Sell"
+leave: "Leave"
+bits: "Bits {bits}"
+# A row of the buy list: {name} and its {price}.
+buy_row: "{name}  {price}"
+# A row of the sell list: {name}, its {price} and how many the player has, {count}.
+sale_row: "{name} x{count}  {price}"
+price: "Price {price}"
+# The amount box: {value} of the most, {max}.
+amount: "{value} / {max}"
+total: "Total {total}"
+less: "-"
+more: "+"
+max: "Max"

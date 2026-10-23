@@ -1,0 +1,56 @@
+<rml>
+<head>
+	<title>Shop menu</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<div id="panel">
+			<p id="bits"></p>
+			<p id="line"></p>
+			<button id="next" onclick="ui.send('shop_next', true)" text-key="shop.next"></button>
+
+			<div id="choices">
+				<button id="choice-1" class="choice" onclick="choose(1)"></button>
+				<button id="choice-2" class="choice" onclick="choose(2)"></button>
+				<button id="choice-3" class="choice" onclick="choose(3)"></button>
+			</div>
+
+			<div id="list">
+				<button id="row-1" class="row" onclick="pick(1)"></button>
+				<button id="row-2" class="row" onclick="pick(2)"></button>
+				<button id="row-3" class="row" onclick="pick(3)"></button>
+				<button id="row-4" class="row" onclick="pick(4)"></button>
+				<button id="row-5" class="row" onclick="pick(5)"></button>
+				<button id="row-6" class="row" onclick="pick(6)"></button>
+				<button id="row-7" class="row" onclick="pick(7)"></button>
+				<button id="row-8" class="row" onclick="pick(8)"></button>
+				<p id="empty" text-key="shop.empty"></p>
+				<p id="page"></p>
+				<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="shop.previous"></button>
+				<button id="next-page" class="page-turn" onclick="turn(document, 1)" text-key="shop.next_page"></button>
+				<button id="list-back" class="back" onclick="ui.send('shop_back', true)" text-key="shop.back"></button>
+			</div>
+
+			<div id="amount">
+				<p id="amount-name"></p>
+				<p id="amount-price"></p>
+				<p id="amount-value"></p>
+				<p id="amount-total"></p>
+				<button id="amount-less" onclick="ui.send('shop_amount', -1)" text-key="shop.less"></button>
+				<button id="amount-more" onclick="ui.send('shop_amount', 1)" text-key="shop.more"></button>
+				<button id="amount-max" onclick="ui.send('shop_amount_max', true)" text-key="shop.max"></button>
+				<button id="amount-confirm" onclick="ui.send('shop_confirm', true)" text-key="common.accept"></button>
+				<button id="amount-back" class="back" onclick="ui.send('shop_back', true)" text-key="shop.back"></button>
+			</div>
+
+			<div id="prompts">
+				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="shop.back"></span></span>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

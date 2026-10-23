@@ -1,0 +1,25 @@
+# La tienda que abre la historia (script_common.c: openShop). Las frases del tendero son textos de la
+# historia (MAPHEAD); estas son las etiquetas propias de la pantalla.
+next: "Seguir"
+back: "Volver"
+previous: "Anterior"
+next_page: "Siguiente"
+# {page} de {pages}.
+page: "{page}/{pages}"
+empty: "No hay nada."
+# Por si falta el texto de la historia con las opciones.
+buy: "Comprar"
+sell: "Vender"
+leave: "Salir"
+bits: "Bits {bits}"
+# Una fila de la lista de compra: {name} y su precio, {price}.
+buy_row: "{name}  {price}"
+# Una fila de la lista de venta: {name}, su precio {price} y cuántos tienes, {count}.
+sale_row: "{name} x{count}  {price}"
+price: "Precio {price}"
+# La cantidad: {value} de un máximo de {max}.
+amount: "{value} / {max}"
+total: "Total {total}"
+less: "-"
+more: "+"
+max: "Máx"

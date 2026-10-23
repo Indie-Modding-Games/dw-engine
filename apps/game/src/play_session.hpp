@@ -35,6 +35,7 @@
 #include "save_command.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shop_screen.hpp"
 #include "sleep_screen.hpp"
 #include "story_field_link.hpp"
 #include "story_textbox.hpp"
@@ -160,6 +161,7 @@ private:
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
   GymScreen gymScreen_;
+  ShopScreen shopScreen_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
