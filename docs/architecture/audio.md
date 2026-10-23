@@ -286,7 +286,9 @@ gramola va con la tienda de música.
   reservados, para que el hilo de audio no reserve memoria); la orden de música lleva el puntero, y `Audio` guarda la
   fuente y la canción hasta que el mezclador acepta una orden de música posterior (`musicTaken`).
 - `TinySoundFont` entra como port de overlay (`vcpkg-ports/tinysoundfont`, commit `853a0a17`, MIT) con
-  `VCPKG_OVERLAY_PORTS` en los presets.
+  `VCPKG_OVERLAY_PORTS` en los presets. `SoundFont::load` le da los bytes con su propio `tsf_stream` y `tsf_load`, no
+  con `tsf_load_memory`: esta convierte funciones de otro tipo al de las del stream, y la comprobación `function` de
+  UBSan lo avisa en cada lectura (preset `ci`).
 - **Quién lo conecta:** `StoryAdapter` publica `publishStoryMusic` en la VM de la historia (en lugar de los
   marcadores mudos de antes) y, en cada tick, pasa las órdenes a `GameSession::music()` y `sound()`; una sesión muda
   (puerto nulo) no suena.

@@ -20,3 +20,8 @@ dwe_add_module(audio
 target_include_directories(dwe_audio SYSTEM PRIVATE ${TSF_INCLUDE_DIR})
 # The synthesizer reads SoundFonts from memory only, so it needs no file functions.
 target_compile_definitions(dwe_audio PRIVATE TSF_NO_STDIO)
+
+if(BUILD_TESTING)
+    # The SoundFont tests load the media files of the assets tests.
+    target_include_directories(dwe_audio_tests PRIVATE ${PROJECT_SOURCE_DIR}/engine/assets/tests)
+endif()
