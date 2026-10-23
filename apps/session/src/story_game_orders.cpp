@@ -267,7 +267,7 @@ void StoryGameOrders::bind(GameSession& session) {
     return;
   }
   script::ApiRegistry api = vm->api();
-  for (auto* publish : {&publishDateOrders}) {
+  for (auto* publish : {&publishBagOrders, &publishDateOrders}) {
     if (auto published = publish(api, *context_); !published) {
       core::logError("{}", published.error().message);
     }

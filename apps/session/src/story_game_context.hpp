@@ -62,6 +62,7 @@ struct StoryGameContext {
 };
 
 // Each area's orders (story_orders_<area>.cpp).
+core::Result<void> publishBagOrders(script::ApiRegistry& api, StoryGameContext& context);
 core::Result<void> publishDateOrders(script::ApiRegistry& api, StoryGameContext& context);
 
 // The story's change at the start of each day (script_common.c: dailyPStatTrigger).

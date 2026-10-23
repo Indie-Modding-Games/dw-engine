@@ -93,9 +93,10 @@ struct StoryGameOrdersDesc {
 struct StoryGameContext;
 
 // The story orders that change the game besides the story's own state (docs/reference/scripts.md,
-// "Disparadores, variables y fecha"): the date. It publishes them in the story's script VM the
-// first time it ticks after the story built it, and points them at the session it ticks with. It
-// ticks before the story, so the orders a section runs see this tick's session.
+// "Objetos, dinero, técnicas, cartas y estadísticas" and "Disparadores, variables y fecha"): the
+// bag and the money, and the date. It publishes them in the story's script VM the first time it
+// ticks after the story built it, and points them at the session it ticks with. It ticks before the
+// story, so the orders a section runs see this tick's session.
 class StoryGameOrders final : public SessionSystem {
 public:
   explicit StoryGameOrders(StoryGameOrdersDesc desc);
