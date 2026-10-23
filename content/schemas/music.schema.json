@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Music",
-  "description": "music.yaml: BGM_TRACK_NAMES (the music menu) and ENEMY_MUSIC_MAPPING of the executable.",
+  "description": "music.yaml: BGM_TRACK_NAMES (the music menu), ENEMY_MUSIC_MAPPING and the music the code picks with constants: the fixed font and song of the story's music modes (handleMusicOverride) and the battle music (loadBattleData). The last two are absent when the executable's layout does not locate them.",
   "type": "object",
   "required": ["bgm_tracks", "enemy_music_mapping"],
   "additionalProperties": false,
@@ -19,6 +19,35 @@
         }
       }
     },
-    "enemy_music_mapping": { "type": "array", "items": { "type": "integer" } }
+    "enemy_music_mapping": { "type": "array", "items": { "type": "integer" } },
+    "field_overrides": {
+      "description": "The music modes of variable 245 that play a fixed font and song, whatever font the map asked for.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mode", "font", "track"],
+        "additionalProperties": false,
+        "properties": {
+          "mode": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "font": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "track": { "type": "integer", "minimum": 0, "maximum": 255 }
+        }
+      }
+    },
+    "battle": {
+      "description": "The battle font and its songs: boss_track when the first enemy is the boss, scripted_track in a scripted battle, enemy_music_mapping[type - first_enemy_type] for the enemy types from first_enemy_type up to before end_enemy_type, default_track otherwise.",
+      "type": "object",
+      "required": ["font", "boss", "boss_track", "scripted_track", "default_track", "first_enemy_type", "end_enemy_type"],
+      "additionalProperties": false,
+      "properties": {
+        "font": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "boss": { "type": "string", "entryReference": "data/digimon" },
+        "boss_track": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "scripted_track": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "default_track": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "first_enemy_type": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "end_enemy_type": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    }
   }
 }

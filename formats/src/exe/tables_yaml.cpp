@@ -440,6 +440,30 @@ private:
     YamlNode root = YamlNode::mapping();
     root.set("bgm_tracks", std::move(list));
     root.set("enemy_music_mapping", numbers(tables_->enemyMusicMapping));
+    const MusicCode& code = tables_->musicCode;
+    if (!code.fieldOverrides.empty()) {
+      YamlNode overrides = YamlNode::sequence();
+      for (const FieldMusicOverride& entry : code.fieldOverrides) {
+        YamlNode node = YamlNode::mapping();
+        node.set("mode", number(entry.mode));
+        node.set("font", number(entry.font));
+        node.set("track", number(entry.track));
+        overrides.append(std::move(node));
+      }
+      root.set("field_overrides", std::move(overrides));
+    }
+    if (code.battle) {
+      const BattleMusicCode& battle = *code.battle;
+      YamlNode node = YamlNode::mapping();
+      node.set("font", number(battle.font));
+      node.set("boss", digimonRef(battle.bossType, "music battle boss"));
+      node.set("boss_track", number(battle.bossTrack));
+      node.set("scripted_track", number(battle.scriptedTrack));
+      node.set("default_track", number(battle.defaultTrack));
+      node.set("first_enemy_type", number(battle.firstEnemyType));
+      node.set("end_enemy_type", number(battle.endEnemyType));
+      root.set("battle", std::move(node));
+    }
     return root;
   }
 

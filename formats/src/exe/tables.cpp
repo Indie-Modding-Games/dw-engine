@@ -387,6 +387,7 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
       store(strings(layout.bgmTrackNames, "BGM_TRACK_NAMES"), tables.bgmTrackNames, error) &&
       store(readScalars<std::uint8_t>(image, layout.enemyMusicMapping, "ENEMY_MUSIC_MAPPING"),
             tables.enemyMusicMapping, error) &&
+      store(readMusicCode(image, layout), tables.musicCode, error) &&
       store(readScalars<std::int16_t>(image, layout.shopMaps, "SHOP_MAPS"), tables.shopMaps,
             error) &&
       store(readScalars<std::uint8_t>(image, layout.shopkeepDigimonTypes, "SHOPKEEP_DIGIMON_TYPES"),

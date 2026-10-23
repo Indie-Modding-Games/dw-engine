@@ -15,6 +15,11 @@ namespace {
 // A stack pointer for the run. The frame's words are kept apart from the image, so its value only
 // has to be known.
 constexpr std::uint32_t StackPointerStart = 0x801FFF00;
+// Where the out-parameters of a run point: past the end of the console's RAM, so no read of the
+// executable lands there.
+constexpr std::uint32_t OutParameterStart = 0x80300000;
+constexpr std::uint32_t OutParameterStride = 4;
+constexpr std::uint32_t ByteMask = 0xFFU;
 
 // More than any case of a switch needs; a path this long is a loop.
 constexpr std::size_t MaxSteps = 4096;
@@ -34,6 +39,7 @@ enum class Opcode : std::uint8_t {
   Ori = 0x0D,
   Lui = 0x0F,
   Lw = 0x23,
+  Sb = 0x28,
   Sw = 0x2B,
 };
 
@@ -88,14 +94,27 @@ std::uint32_t shiftRightArithmetic(std::uint32_t value, std::uint32_t amount) {
 
 // Runs one path of a switch: registers and the stack frame, with unknown values where the run
 // cannot know them.
+std::uint32_t littleEndianWord(std::span<const std::byte> bytes) {
+  std::uint32_t word = 0;
+  for (std::size_t i = 0; i < InstructionSize; ++i) {
+    word |= std::to_integer<std::uint32_t>(bytes[i]) << (8U * i);
+  }
+  return word;
+}
+
 class SwitchRun {
 public:
-  SwitchRun(const MemoryImage& image, std::uint32_t entry, std::uint32_t argument)
-      : image_(&image), pc_(entry) {
+  SwitchRun(const MemoryImage& image, const ConstantSwitch& code, std::uint32_t argument)
+      : image_(&image), pc_(code.function) {
     registers_.fill(std::nullopt);
     registers_[static_cast<std::size_t>(MipsRegister::Zero)] = 0;
-    registers_[static_cast<std::size_t>(MipsRegister::A0)] = argument;
+    registers_[static_cast<std::size_t>(code.argument)] = argument;
     registers_[static_cast<std::size_t>(MipsRegister::Sp)] = StackPointerStart;
+    for (std::size_t i = 0; i < code.values.size(); ++i) {
+      if (code.values[i].kind == ValueLocation::Kind::Pointed) {
+        registers_[static_cast<std::size_t>(code.values[i].reg)] = outParameter(i);
+      }
+    }
   }
 
   // Steps until the program counter reaches `join`.
@@ -114,10 +133,18 @@ public:
   // The value of a local at the join, as a signed number.
   [[nodiscard]] core::Result<std::int32_t> valueAt(const ValueLocation& location,
                                                    std::size_t index) const {
-    const Word value =
-        location.kind == ValueLocation::Kind::Register
-            ? registers_[static_cast<std::size_t>(location.reg)]
-            : stackWord(stackPointer() + static_cast<std::uint32_t>(location.stackOffset));
+    Word value;
+    switch (location.kind) {
+    case ValueLocation::Kind::Register:
+      value = registers_[static_cast<std::size_t>(location.reg)];
+      break;
+    case ValueLocation::Kind::Stack:
+      value = stackWord(stackPointer() + static_cast<std::uint32_t>(location.stackOffset));
+      break;
+    case ValueLocation::Kind::Pointed:
+      value = stackWord(outParameter(index));
+      break;
+    }
     if (!value) {
       return core::fail(messages::formatMessage(messages::UnknownLocal, index));
     }
@@ -125,6 +152,10 @@ public:
   }
 
 private:
+  static std::uint32_t outParameter(std::size_t index) {
+    return OutParameterStart + (static_cast<std::uint32_t>(index) * OutParameterStride);
+  }
+
   [[nodiscard]] std::uint32_t stackPointer() const {
     return registers_[static_cast<std::size_t>(MipsRegister::Sp)].value_or(StackPointerStart);
   }
@@ -140,14 +171,6 @@ private:
       return std::unexpected{bytes.error()};
     }
     return Instruction{.word = littleEndianWord(*bytes)};
-  }
-
-  static std::uint32_t littleEndianWord(std::span<const std::byte> bytes) {
-    std::uint32_t word = 0;
-    for (std::size_t i = 0; i < InstructionSize; ++i) {
-      word |= std::to_integer<std::uint32_t>(bytes[i]) << (8U * i);
-    }
-    return word;
   }
 
   // Runs the instruction at `address`, and for a branch its delay slot, then moves the program
@@ -255,6 +278,12 @@ private:
       }
       stack_[*rs + *immediate] = rt;
       return {};
+    case Opcode::Sb:
+      if (!rs) {
+        return core::fail(messages::formatMessage(messages::UnknownAddress, address));
+      }
+      stack_[*rs + *immediate] = rt ? Word{*rt & ByteMask} : std::nullopt;
+      return {};
     default:
       return core::fail(
           messages::formatMessage(messages::UnsupportedInstruction, instruction.word, address));
@@ -328,7 +357,7 @@ core::Result<std::vector<std::int32_t>> evaluateConstantSwitch(const MemoryImage
   if (!code.located()) {
     return core::fail(std::string{messages::SwitchNotLocated});
   }
-  SwitchRun run{image, code.function, argument};
+  SwitchRun run{image, code, argument};
   if (auto reached = run.runTo(code.join); !reached) {
     return std::unexpected{reached.error()};
   }
@@ -342,6 +371,37 @@ core::Result<std::vector<std::int32_t>> evaluateConstantSwitch(const MemoryImage
     values.push_back(*value);
   }
   return values;
+}
+
+core::Result<std::int32_t> readCodeConstant(const MemoryImage& image, std::uint32_t address) {
+  auto bytes = image.bytesAt(address, InstructionSize);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  const Instruction instruction{.word = littleEndianWord(*bytes)};
+  constexpr auto Zero = static_cast<std::size_t>(MipsRegister::Zero);
+  switch (instruction.opcode()) {
+  case Opcode::Addiu:
+  case Opcode::Ori:
+    if (instruction.rs() == Zero) {
+      return instruction.opcode() == Opcode::Ori
+                 ? static_cast<std::int32_t>(instruction.unsignedImmediate())
+                 : static_cast<std::int32_t>(instruction.signedImmediate());
+    }
+    break;
+  case Opcode::Slti:
+  case Opcode::Sltiu:
+    return static_cast<std::int32_t>(instruction.signedImmediate());
+  case Opcode::Special:
+    if (instruction.function() == Function::Addu && instruction.rs() == Zero &&
+        instruction.rt() == Zero) {
+      return 0;
+    }
+    break;
+  default:
+    break;
+  }
+  return core::fail(messages::formatMessage(messages::NotACodeConstant, instruction.word, address));
 }
 
 } // namespace dwe::formats::exe

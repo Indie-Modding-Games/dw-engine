@@ -41,6 +41,13 @@ constexpr std::array<ValueLocation, ChipValueCount> UsChipValues{
     ValueLocation::inRegister(Reg::S0),
 };
 
+// handleMusicOverride (US build) stores the font through s1 and the song through s0, the pointers
+// its caller passed.
+constexpr std::array UsMusicOverrideValues{
+    ValueLocation::pointedBy(Reg::S1),
+    ValueLocation::pointedBy(Reg::S0),
+};
+
 // US addresses: dw_decomp config/us/symbols.txt. Counts: the array declarations (evolution.c,
 // partner.h, model.c, map_object.h, tournament.c, sound.c, shop/script_menu.c) or, where there is
 // none, the symbol's size divided by the struct size. EU and JP are known but not located yet;
@@ -103,6 +110,24 @@ constexpr std::array Layouts = {
                 // The joins are the first instruction after the switches of the compiled functions.
                 .food = {.function = 0x800C396C, .join = 0x800C4314, .values = UsFoodValues},
                 .chips = {.function = 0x800C44C0, .join = 0x800C4658, .values = UsChipValues},
+            },
+        .musicCode =
+            {
+                // The run starts after the readPStat(0xF5) call, with its result in v0; the join is
+                // the function's epilogue.
+                .fieldOverrides = {.function = 0x80105578,
+                                   .join = 0x80105688,
+                                   .values = UsMusicOverrideValues,
+                                   .argument = Reg::V0},
+                .firstOverrideMode = 2,
+                .lastOverrideMode = 10,
+                .battle = {.font = 0x800E7520,
+                           .bossType = 0x800E750C,
+                           .bossTrack = 0x800E7528,
+                           .scriptedTrack = 0x800E7564,
+                           .defaultTrack = 0x800E75CC,
+                           .firstEnemyType = 0x800E7588,
+                           .endEnemyType = 0x800E7594},
             },
     },
     unlocated("eu", false),

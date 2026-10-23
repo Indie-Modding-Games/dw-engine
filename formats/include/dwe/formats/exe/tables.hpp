@@ -4,6 +4,7 @@
 #include <dwe/formats/exe/executable_layout.hpp>
 #include <dwe/formats/exe/item_effects.hpp>
 #include <dwe/formats/exe/memory_image.hpp>
+#include <dwe/formats/exe/music_code.hpp>
 
 #include <array>
 #include <cstdint>
@@ -253,6 +254,7 @@ struct ExecutableTables {
   std::vector<std::string> medalDescriptions;
   std::vector<std::string> bgmTrackNames;
   std::vector<std::uint8_t> enemyMusicMapping;
+  MusicCode musicCode; // the music modes' and the battle's constants of the code
   std::vector<std::int16_t> shopMaps;
   std::vector<std::uint8_t> shopkeepDigimonTypes;
   std::vector<MapEntry> mapEntries;

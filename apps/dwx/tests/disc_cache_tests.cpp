@@ -52,6 +52,9 @@ constexpr std::array Fingerprints{
                    .fingerprint = "a15a1611f17e6b57f42ccbf97dfc45003f671101",
                    .unseenBySyntheticDisc = true},
     FingerprintRow{.version = 6, .fingerprint = "c959df6d1682a5d0cbae84bdbdfb4ca301d43384"},
+    FingerprintRow{.version = 7,
+                   .fingerprint = "c959df6d1682a5d0cbae84bdbdfb4ca301d43384",
+                   .unseenBySyntheticDisc = true},
 };
 
 std::vector<std::byte> bytesOf(std::initializer_list<unsigned> values) {

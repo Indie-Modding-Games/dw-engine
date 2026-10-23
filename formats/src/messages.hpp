@@ -24,6 +24,13 @@ inline constexpr std::string_view BranchInDelaySlot = "the delay slot at {:08x} 
 inline constexpr std::string_view NoJoin = "the cases did not join after {} instructions";
 inline constexpr std::string_view UnknownLocal = "local {} is not known where the cases join";
 inline constexpr std::string_view SwitchArgument = "argument {}: {}";
+inline constexpr std::string_view NotACodeConstant =
+    "instruction {:08x} at {:08x} does not load or compare with a constant";
+
+// Music constants of the code (exe/music_code.cpp).
+inline constexpr std::string_view InCode = "{}: {}";
+inline constexpr std::string_view CodeConstantRange = "{}: {} is not a byte";
+inline constexpr std::string_view MusicModeUnread = "music mode {}: {}";
 
 // Item effects (exe/item_effects.cpp).
 inline constexpr std::string_view TableNotLocated = "{} is not located for this version";

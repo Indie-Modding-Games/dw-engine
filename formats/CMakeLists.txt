@@ -30,6 +30,7 @@ dwe_add_module(formats
         src/exe/constant_switch.cpp
         src/exe/executable_layout.cpp
         src/exe/item_effects.cpp
+        src/exe/music_code.cpp
         src/exe/memory_image.cpp
         src/exe/overlay.cpp
         src/exe/overlay_tables.cpp

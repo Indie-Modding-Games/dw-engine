@@ -42,6 +42,30 @@ struct ItemCodeLayout {
   ConstantSwitch chips;                // handleChips, values in ChipValue order
 };
 
+// The instructions whose constants say which song a battle plays (btl.c: loadBattleData), each the
+// address of one `addiu`, `slti` or `addu` (exe/music_code.hpp).
+struct BattleMusicCodeLayout {
+  std::uint32_t font = 0;           // playMusic(0x21, ..): the battle font
+  std::uint32_t bossType = 0;       // the first enemy's type that plays bossTrack
+  std::uint32_t bossTrack = 0;      // playMusic(.., 3)
+  std::uint32_t scriptedTrack = 0;  // IS_PREDEFINED_BATTLE: playMusic(.., 0)
+  std::uint32_t defaultTrack = 0;   // other enemies: playMusic(.., 1)
+  std::uint32_t firstEnemyType = 0; // type >= this reads ENEMY_MUSIC_MAPPING[type - this]
+  std::uint32_t endEnemyType = 0;   // type < this
+
+  [[nodiscard]] bool located() const { return font != 0; }
+};
+
+// The music the code picks with constants: the fixed font and song of the music modes of
+// handleMusicOverride (script_interp.c), a switch that stores them through its two pointers, and
+// the battle music.
+struct MusicCodeLayout {
+  ConstantSwitch fieldOverrides; // values: the font, then the song
+  std::uint8_t firstOverrideMode = 0;
+  std::uint8_t lastOverrideMode = 0;
+  BattleMusicCodeLayout battle;
+};
+
 // The tables of one version's main executable. Addresses and counts come from the decomp
 // (config/<version>/symbols.txt and the array declarations in src/main); the data itself is never
 // stored here.
@@ -90,6 +114,7 @@ struct ExecutableLayout {
   TableLocation evolutionItemTargets;  // u8[]: EVOLUTION_ITEM_TARGET
   TableLocation transportTargets;      // TransportTarget[]: BIRDRA_TRANSPORT_TARGETS
   ItemCodeLayout itemCode;
+  MusicCodeLayout musicCode;
 };
 
 // Returns every version the tools know, located or not.
