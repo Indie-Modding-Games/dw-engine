@@ -11,6 +11,7 @@ namespace dwe::session {
 
 core::Result<void> StoryAdapter::wireFlow() {
   mapChanges_ = std::make_unique<StoryMapChanges>();
+  fieldControl_ = std::make_unique<StoryFieldControl>();
   if (auto published =
           host_->publishFlowApi(*orders_, [this] { return runner_ ? &*runner_ : nullptr; });
       !published) {
@@ -19,15 +20,21 @@ core::Result<void> StoryAdapter::wireFlow() {
   return {};
 }
 
-// The field control waits for the field's control port: without it the runner leaves that part
-// alone (StoryFlowPorts). The story's state comes from startRunner, which knows its port.
+// The hold on the player (to the field the app sets, setFieldHoldTarget) and the map changes
+// (StoryFlowPorts). The story's state comes from startRunner, which knows its port.
 game::story::StoryFlowPorts StoryAdapter::flowPorts() const {
-  return {.state = nullptr, .control = nullptr, .mapChange = mapChanges_.get()};
+  return {.state = nullptr, .control = fieldControl_.get(), .mapChange = mapChanges_.get()};
 }
 
 void StoryAdapter::setMapChangeTarget(StoryMapChangeTarget target) {
   if (mapChanges_ != nullptr) {
     mapChanges_->setTarget(std::move(target));
+  }
+}
+
+void StoryAdapter::setFieldHoldTarget(StoryHoldTarget target) {
+  if (fieldControl_ != nullptr) {
+    fieldControl_->setTarget(std::move(target));
   }
 }
 

@@ -45,4 +45,25 @@ private:
   bool unplayed_ = false;
 };
 
+// Holds the player for a script or lets it go (map.c: scriptPauseGame, tickScript): true holds.
+using StoryHoldTarget = std::function<void(bool held)>;
+
+// The runner's hold on the player, to the target the app sets; a target set while held is held at
+// once, so a field entered during a script starts held.
+class StoryFieldControl final : public game::story::FieldControlPort {
+public:
+  StoryFieldControl() = default;
+
+  void setTarget(StoryHoldTarget target);
+
+  void freeze() override;
+  void release() override;
+
+private:
+  void apply();
+
+  StoryHoldTarget target_;
+  bool held_ = false;
+};
+
 } // namespace dwe::session

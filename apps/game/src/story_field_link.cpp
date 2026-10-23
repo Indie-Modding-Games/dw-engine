@@ -14,10 +14,12 @@ StoryFieldLink::StoryFieldLink(session::StoryAdapter& story, FieldScene& scene)
   story_->setMapChangeTarget([this](std::int32_t map, std::int32_t exit, bool showName) {
     return playMapChange(map, exit, showName);
   });
+  story_->setFieldHoldTarget([this](bool held) { scene_->holdForScript(held); });
 }
 
 StoryFieldLink::~StoryFieldLink() {
   story_->setMapChangeTarget({});
+  story_->setFieldHoldTarget({});
 }
 
 void StoryFieldLink::afterFieldTick() {

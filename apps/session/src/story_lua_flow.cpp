@@ -11,6 +11,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::session {
@@ -56,6 +57,28 @@ void StoryMapChanges::startMapChange(std::int32_t map, std::int32_t exit, bool s
   core::logError("[port:story] the map change to map {} exit {} is not played: the player stays",
                  map, exit);
   unplayed_ = true;
+}
+
+void StoryFieldControl::setTarget(StoryHoldTarget target) {
+  target_ = std::move(target);
+  apply();
+}
+
+void StoryFieldControl::freeze() {
+  held_ = true;
+  apply();
+}
+
+void StoryFieldControl::release() {
+  held_ = false;
+  apply();
+}
+
+void StoryFieldControl::apply() {
+  core::logDebug("[port:story] scriptPauseGame (script_interp.c:2727): player held {}", held_);
+  if (target_) {
+    target_(held_);
+  }
 }
 
 core::Result<void> StoryLuaHost::publishFlowApi(StoryOrders& orders,

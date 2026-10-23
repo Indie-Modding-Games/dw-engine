@@ -105,6 +105,9 @@ public:
   // Where the story's map changes play (story_flow.hpp); an empty target drops them, and the story
   // goes on as if the player stayed.
   void setMapChangeTarget(StoryMapChangeTarget target);
+  // Where the story's hold on the player goes while a script runs frozen (story_flow.hpp); an
+  // empty target holds nothing.
+  void setFieldHoldTarget(StoryHoldTarget target);
   // The player is on the map with this number of the original (walked there, loaded a save or ended
   // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
   void mapEntered(std::int32_t map);
@@ -173,6 +176,7 @@ private:
   // Whether a script ran at the end of the last tick.
   bool scriptRan_ = false;
   std::unique_ptr<StoryMapChanges> mapChanges_;
+  std::unique_ptr<StoryFieldControl> fieldControl_;
   std::optional<std::int32_t> enteredMap_;
   std::unique_ptr<StoryLuaHost> host_;
   // Before the runner, which points to it.

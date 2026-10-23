@@ -130,6 +130,12 @@ public:
   // standing, and the new map's name only if `showName`. The app takes it as any other.
   void startScriptedMapChange(MapChange change, bool showName);
 
+  // The script's hold on the player (script_interp.c: scriptPauseGame; tickScript gives it back):
+  // while held, the player and the partner stand, game time stops and no cell asks for its section;
+  // map changes still fade and enter, and the NPCs go on.
+  void holdForScript(bool hold);
+  [[nodiscard]] bool heldForScript() const { return held_; }
+
   // The sections of the map's script the player's cell asks for in the last tick (tamer.c:
   // checkMapInteraction): a step cell (51-79) every tick the player stands on it, a confirm cell
   // (80-109) when confirm is pressed on it, both only while the player moves freely. The story
@@ -314,6 +320,14 @@ private:
   // it asks for the name.
   bool leavingWalks_ = true;
   bool leavingShowsName_ = true;
+  // Whether the fade in holds the player: after a warp it does (tamer.c: tamerTickChangeMap); after
+  // a script's map change only the script's hold does (map.c: scriptTickChangeMap).
+  bool fadeInHolds_ = true;
+  // A script's map change asked for while the app loaded a map: it starts once that map is in.
+  std::optional<std::pair<MapChange, bool>> queuedChange_;
+  bool held_ = false;
+  // The cell the player stood on at the last check, for the port log.
+  std::int32_t checkedCell_ = 0;
   std::optional<MapChange> pendingChange_;
   bool waitingForMap_ = false;
   // The map being changed to, from the warp until it is entered.

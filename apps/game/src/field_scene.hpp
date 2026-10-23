@@ -125,6 +125,7 @@ public:
     field_->startScriptedMapChange(std::move(change), showName);
   }
   void setStoryCells(bool storyCells) { field_->setStoryCells(storyCells); }
+  void holdForScript(bool hold) { field_->holdForScript(hold); }
   // The map table the scene names its maps with, if the packs have one.
   [[nodiscard]] const assets::MapTable* mapTable() const {
     return mapTable_ ? &*mapTable_ : nullptr;

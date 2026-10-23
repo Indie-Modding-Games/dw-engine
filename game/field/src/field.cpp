@@ -108,8 +108,12 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   if (warp == nullptr) {
     return core::fail(std::format("map '{}' has no exit {}", map.id, exit));
   }
+  const bool walked = leavingWalks_;
+  auto queued = std::exchange(queuedChange_, std::nullopt);
   enterMapAt(map, assets::warpSpawn(*warp));
   fadeInSeconds_ = 0.0F;
+  fadeInHolds_ = walked;
+  leavingWalks_ = true;
 
   const glm::ivec3 offset = partnerSpawnOffset(
       warp->rotation, static_cast<std::int32_t>(std::lround(rules_.partner.spawnDistance)));
@@ -118,6 +122,9 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   if (fitsOnGrid(collision_, position, rules_.partner.mover.radius)) {
     scene::place(world_->registry().get<Transform>(partner_), position,
                  assets::yawOfDirection(spawn.position - position));
+  }
+  if (queued) {
+    startScriptedMapChange(std::move(queued->first), queued->second);
   }
   return {};
 }
@@ -206,11 +213,19 @@ void Field::tick(float seconds) {
     const std::int32_t frame = fadeFrame(*fadeInSeconds_);
     if (frame > rules_.transition.fadeInFrames) {
       fadeInSeconds_.reset();
-    } else if (frame < rules_.transition.fadeInFrames) {
+    } else if (frame < rules_.transition.fadeInFrames && fadeInHolds_) {
       registry.get<AnimationIntent>(player_) = {};
       tickNpcs(seconds, false);
       return;
     }
+  }
+  if (held_) {
+    // script_interp.c: scriptPauseGame stops the player, the partner and game time; a press made
+    // while held is the script's, not the cell's.
+    registry.get<AnimationIntent>(player_) = {};
+    input_.confirm = false;
+    tickNpcs(seconds, false);
+    return;
   }
   // clock.c: tickGameClock runs while the player plays.
   gameTimeRan_ = true;
@@ -307,9 +322,26 @@ std::optional<std::string_view> Field::mapNameShown() const {
   return std::string_view{changeTarget_};
 }
 
+void Field::holdForScript(bool hold) {
+  if (held_ == hold) {
+    return;
+  }
+  held_ = hold;
+  core::logDebug("[port:field] scriptPauseGame (script_interp.c:2727): player held {}", hold);
+  if (hold) {
+    moveTarget_.reset();
+    path_.clear();
+  }
+}
+
 void Field::startScriptedMapChange(MapChange change, bool showName) {
-  core::logDebug("[port:field] scriptTickChangeMap (map.c:5277): to {} exit {}, name {}",
-                 change.map, change.exit, showName);
+  core::logDebug("[port:field] scriptTickChangeMap (map.c:5277): to {} exit {}, name {}, queued {}",
+                 change.map, change.exit, showName, waitingForMap_);
+  if (waitingForMap_) {
+    queuedChange_ = std::pair{std::move(change), showName};
+    return;
+  }
+  pendingChange_.reset();
   leave(std::move(change));
   leavingWalks_ = false;
   leavingShowsName_ = showName;
@@ -684,6 +716,10 @@ void Field::checkTriggers() {
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
   const CollisionCell cell = assets::collisionCellAt(position);
   const std::int32_t value = collision_.trigger(cell).value_or(0);
+  if (value != checkedCell_) {
+    checkedCell_ = value;
+    core::logDebug("[port:field] checkMapInteraction (tamer.c:660): map {} cell {}", mapId_, value);
+  }
   // tamer.c: checkMapInteraction asks for a step cell's section every frame on it.
   if (warpViaOf(value) == WarpVia::Step &&
       !(staticWarps() && std::ranges::contains(warpingStepCells_, value))) {
