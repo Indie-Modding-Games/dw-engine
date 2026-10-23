@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: fishing",
+  "description": "rules/<id>/fishing.yaml: the rules of the fishing (game/fishing: rules.hpp). Its tables are data/fishing.",
+  "type": "object",
+  "required": [
+    "sea_serpent",
+    "bites",
+    "population",
+    "hook",
+    "tension",
+    "junk",
+    "cast",
+    "shore_by_y",
+    "sounds"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "sea_serpent": {
+      "description": "The sea serpent's bites and how often its hour is checked.",
+      "type": "object",
+      "required": ["bite_chance", "bite_every", "check_every"],
+      "additionalProperties": false,
+      "properties": {
+        "bite_chance": { "type": "integer", "minimum": 0 },
+        "bite_every": { "type": "integer", "minimum": 1 },
+        "check_every": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "bites": {
+      "description": "How often a fish near the bobber rolls a bite.",
+      "type": "object",
+      "required": ["every", "reach", "attract_reach"],
+      "additionalProperties": false,
+      "properties": {
+        "every": { "type": "integer", "minimum": 1 },
+        "reach": { "type": "integer", "minimum": 0 },
+        "attract_reach": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "population": {
+      "description": "The fish of a map.",
+      "type": "object",
+      "required": ["pool", "spawn_below", "lifetime", "scared_pause"],
+      "additionalProperties": false,
+      "properties": {
+        "pool": { "type": "integer", "minimum": 1 },
+        "spawn_below": { "type": "integer", "minimum": 1 },
+        "lifetime": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "scared_pause": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "hook": {
+      "description": "A hooked fish's nibble, pull and power.",
+      "type": "object",
+      "required": ["large_size", "small", "large", "power_bonus", "power_max_bonus"],
+      "additionalProperties": false,
+      "properties": {
+        "large_size": { "type": "integer", "minimum": 0 },
+        "small": {
+          "type": "object",
+          "required": ["nibble", "pull"],
+          "additionalProperties": false,
+          "properties": {
+            "nibble": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "pull": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "large": {
+          "type": "object",
+          "required": ["nibble", "pull"],
+          "additionalProperties": false,
+          "properties": {
+            "nibble": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "pull": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "power_bonus": { "type": "integer", "minimum": 0 },
+        "power_max_bonus": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "tension": {
+      "description": "The line's tension while reeling.",
+      "type": "object",
+      "required": [
+        "limit",
+        "sizes",
+        "slack",
+        "fish_running",
+        "held",
+        "held_running",
+        "snap_steps",
+        "snap_frames_per_step"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "object",
+          "required": ["old_rod", "amazing_rod"],
+          "additionalProperties": false,
+          "properties": {
+            "old_rod": { "type": "integer", "minimum": 1 },
+            "amazing_rod": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "sizes": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "slack": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "fish_running": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "held": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "held_running": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "snap_steps": { "type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2 },
+        "snap_frames_per_step": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "junk": {
+      "description": "What gets stuck on a hook without bait.",
+      "type": "object",
+      "required": ["after", "every", "chance", "roll", "pick"],
+      "additionalProperties": false,
+      "properties": {
+        "after": { "type": "integer", "minimum": 0 },
+        "every": { "type": "integer", "minimum": 1 },
+        "chance": { "type": "integer", "minimum": 0 },
+        "roll": { "type": "integer", "minimum": 1 },
+        "pick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "cast": {
+      "description": "The throw.",
+      "type": "object",
+      "required": ["power_bonus", "power_max", "speed"],
+      "additionalProperties": false,
+      "properties": {
+        "power_bonus": { "type": "integer", "minimum": 0 },
+        "power_max": { "type": "integer", "minimum": 1 },
+        "speed": {
+          "type": "object",
+          "required": ["min", "old_rod", "amazing_rod"],
+          "additionalProperties": false,
+          "properties": {
+            "min": { "type": "integer", "minimum": 0 },
+            "old_rod": { "type": "integer", "minimum": 0 },
+            "amazing_rod": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "shore_by_y": {
+      "description": "The water test of a shoreline walked by y.",
+      "type": "object",
+      "required": ["right_limit", "open_above"],
+      "additionalProperties": false,
+      "properties": { "right_limit": {"type": "integer"}, "open_above": {"type": "integer"} }
+    },
+    "sounds": {
+      "description": "The sounds of the fishing's slot.",
+      "type": "object",
+      "required": [
+        "slot",
+        "cast",
+        "splash",
+        "nibble",
+        "bite",
+        "struggle",
+        "run",
+        "landed",
+        "item",
+        "lost",
+        "notice"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0 },
+        "cast": { "type": "integer", "minimum": 0 },
+        "splash": { "type": "integer", "minimum": 0 },
+        "nibble": { "type": "integer", "minimum": 0 },
+        "bite": { "type": "integer", "minimum": 0 },
+        "struggle": { "type": "integer", "minimum": 0 },
+        "run": { "type": "integer", "minimum": 0 },
+        "landed": { "type": "integer", "minimum": 0 },
+        "item": { "type": "integer", "minimum": 0 },
+        "lost": { "type": "integer", "minimum": 0 },
+        "notice": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

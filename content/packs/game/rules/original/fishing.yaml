@@ -1,0 +1,67 @@
+# La pesca (game/fishing: rules.hpp, fishing.hpp; apps/session: FishingAdapter). fish.c es el overlay FISH; main/fish.c,
+# la parte que vive en el ejecutable. Las tablas (las clases de pez, la tabla de picadas, lo que se engancha, las zonas, la
+# orilla y los mapas) son data/fishing, que dwx extrae del disco; aquí van las reglas de su lógica.
+
+# FISH_findFishToBite: la serpiente marina pica con cualquier cebo, un 20 % cada 8 fotogramas. FISH_tickFishPopulation
+# mira cada 20 fotogramas si es su hora (seadramon_times / 100 de data/fishing).
+sea_serpent: {bite_chance: 20, bite_every: 8, check_every: 20}
+
+# FISH_findFishToBite: cada 20 fotogramas pica un pez a 200 o menos del corcho, con el porcentaje de su clase para el
+# cebo (data/fishing: bite_chances). FISH_tickFish: el pez atraído por el cebo nada hacia el corcho desde menos de 600.
+bites: {every: 20, reach: 200, attract_reach: 600}
+
+# FISH_tickFishPopulation y FISH_allocFish: 33 peces a la vez; nace uno por fotograma mientras haya menos de 32, de la
+# clase con menos peces para el peso de su zona. FISH_spawnFish: cada pez vive de 600 a 1200 fotogramas. FISH_tickFish:
+# un pez que se asusta detiene los nacimientos 30 fotogramas.
+population: {pool: 33, spawn_below: 32, lifetime: [600, 1200], scared_pause: 30}
+
+# FISH_hookFish: un pez de menos de 150 mordisquea de 20 a 40 fotogramas y luego tira 30; uno mayor, de 40 a 60 y 60.
+# Su fuerza es la talla más 150, de un máximo de 100 más. FISH_tryStrike: tirar en la primera mitad del tirón engancha.
+hook:
+  large_size: 150
+  small: {nibble: [20, 40], pull: 30}
+  large: {nibble: [40, 60], pull: 60}
+  power_bonus: 150
+  power_max_bonus: 100
+
+# FISH_beginTension y FISH_updateTension: el límite de la tensión con la caña vieja y con la buena; lo que sube o baja
+# cada fotograma según se sujete el botón y según el pez huya o no, de la talla 50 a la 300 (remapClamped). En -límite
+# el pez se escapa; en +límite, sujeto 15, 10 o 5 fotogramas según la talla, el sedal se corta.
+tension:
+  limit: {old_rod: 5000, amazing_rod: 10000}
+  sizes: [50, 300]
+  slack: [-166, -166]
+  fish_running: [41, 83]
+  held: [71, 125]
+  held_running: [166, 500]
+  snap_steps: [1, 3]
+  snap_frames_per_step: 5
+
+# FISH_tickRod, estado 9: con el botón sujeto y el cebo ya comido, desde el fotograma 31 y cada 20, una tirada de
+# customRandom(1, 10000) menor que 1001 engancha algo; customRandom(0, 99) elige qué en data/fishing: bait_chances.
+junk: {after: 31, every: 20, chance: 1000, roll: 10000, pick: 99}
+
+# FISH_tickRod, release: la fuerza del lanzamiento son los fotogramas con el botón más 5 (20 con el botón de cámara),
+# de 0 a 20, y da una velocidad de 100 a 200 con la caña vieja o a 400 con la buena.
+cast:
+  power_bonus: 5
+  power_max: 20
+  speed: {min: 100, old_rod: 200, amazing_rod: 400}
+
+# FISH_isFishableWater2, la prueba de agua de la orilla que se recorre por y: nada desde x 429 y todo por encima de y 6.
+shore_by_y: {right_limit: 429, open_above: 6}
+
+# Los sonidos de la ranura 8 (playSound(8, n)): lanzar, el corcho cae al agua, un mordisco, un tirón, el pez lucha, el
+# pez huye con el sedal, el pez sale del agua, un objeto, el sedal se rompe o se pierde el anzuelo, y el aviso.
+sounds:
+  slot: 8
+  cast: 0
+  splash: 2
+  nibble: 3
+  bite: 4
+  struggle: 5
+  run: 6
+  landed: 7
+  item: 8
+  lost: 9
+  notice: 10

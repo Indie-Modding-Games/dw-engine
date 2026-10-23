@@ -152,6 +152,23 @@ comportamiento, no guardan datos.
 | `pack.rarity_roll`, `pack.rarity_below` | 100; 4 cotas | a | Probabilidades de rareza del sobre (rollCard): constantes de código, no datos de cartas. |
 | `lines.*` | números de línea | a | Referencias a las líneas del texto de MAPHEAD 0x4d3; el texto no se copia. |
 
+### `fishing.yaml`
+
+Las tablas de la pesca (las clases de pez, `FISH_BITE_CHANCE`, `FISH_BAIT_CHANCES`, las zonas, las orillas y los mapas)
+son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH del disco.
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `sea_serpent.*` | 20 %, cada 8 y cada 20 fotogramas | a | Probabilidad y frecuencias de la regla (fish.c: FISH_findFishToBite, FISH_tickFishPopulation). |
+| `bites.*` | cada 20 fotogramas; 200 y 600 | a | Frecuencia y distancias de la regla (FISH_findFishToBite, FISH_tickFish). |
+| `population.*` | 33, 32; 600 a 1200; 30 | a | Topes, vida y pausa de la regla (FISH_tickFishPopulation, FISH_spawnFish, FISH_tickFish). |
+| `hook.*` | 150; 20 a 40 y 30; 40 a 60 y 60; 150, 100 | a | Umbral, tiempos y fuerza de la regla (FISH_hookFish). |
+| `tension.*` | 5000 y 10000; rangos de ±500 o menos; 1 a 3, 5 | a | Límites y deltas de la fórmula (FISH_beginTension, FISH_updateTension). |
+| `junk.*` | desde 31, cada 20, 1000 de 10000, 0 a 99 | a | Frecuencia y probabilidad de la regla (FISH_tickRod); qué objeto sale es (b), de `data/fishing`. |
+| `cast.*` | 5, 20; 100, 200 y 400 | a | Fuerza y velocidades del lanzamiento (FISH_tickRod). |
+| `shore_by_y.*` | 429, 6 | a | Constantes de código de la prueba de agua (FISH_isFishableWater2). |
+| `sounds.*` | ranura 8, sonidos 0 a 10 | a | Referencias a sonidos (playSound). |
+
 ### `save.yaml`
 
 | Clave | Valor | Clase | Motivo |
