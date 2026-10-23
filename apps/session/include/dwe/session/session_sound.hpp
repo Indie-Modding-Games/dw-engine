@@ -28,11 +28,16 @@ public:
 
   // Slot 8 follows the map; the bank of the map before is let go.
   void enterMap(std::string_view mapId);
+  // A scene's bank in slot 8 instead of the map's (sound_async.c: loadMapSounds2, as the evolution
+  // and death scenes load theirs); nothing gives slot 8 back to the map's bank.
+  void useSceneBank(std::optional<std::int32_t> soundId);
   void playSound(std::int64_t slot, std::int64_t sound) override;
 
 private:
   [[nodiscard]] std::optional<std::string> folderOf(std::int64_t slot) const;
   const audio::EffectBank* bank(const std::string& folder);
+  // Lets go of the banks no slot uses.
+  void dropUnusedBanks();
   // Whether a sound has not warned yet; marks it as warned.
   bool firstWarning(std::int64_t slot, std::int64_t sound);
 
@@ -41,6 +46,7 @@ private:
   std::optional<assets::MapTable> maps_;
   bool mapsRead_ = false;
   std::optional<std::string> mapBank_;
+  std::optional<std::string> sceneBank_;
   std::map<std::string, audio::EffectBank, std::less<>> banks_;
   // Kept across maps, so a bank that failed to load is not tried (or reported) again.
   std::set<std::string, std::less<>> failedBanks_;

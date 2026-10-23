@@ -98,6 +98,11 @@ std::int32_t startHourOf(render::TimeOfDay time, const game::field::FieldRules& 
 } // namespace
 
 void FieldScene::CameraSync::prepare(render::PrepareContext& /*context*/) {
+  if (const std::optional<render::Camera>& staged = owner_->stage_.camera) {
+    owner_->models_->setCamera(
+        {.view = staged->view, .projection = staged->projection, .viewport = {}});
+    return;
+  }
   const render::MapCamera& camera = owner_->mapRenderer_->camera();
   owner_->models_->setCamera(
       {.view = camera.view(), .projection = camera.projection(), .viewport = {}});
@@ -127,6 +132,8 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   scene->drawers_ = {&scene->mapRenderer_->backgroundDrawer(), &scene->cameraSync_,
                      &scene->models_->opaque(), &scene->mapRenderer_->layerDrawer(),
                      &scene->models_->translucent()};
+  scene->stageDrawers_ = {&scene->cameraSync_, &scene->models_->opaque(),
+                          &scene->models_->translucent()};
 
   auto rules = game::field::loadFieldRules(files);
   if (!rules) {
@@ -201,7 +208,36 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   }
   models_->remove(partnerActor_->handle);
   partnerActor_ = std::move(*partner);
+  partnerClipStarted_ = false;
   return {};
+}
+
+void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId) {
+  partnerClip_ = clipId;
+  partnerClipStarted_ = false;
+  // The partner's motion picks its clip again from the next update.
+  partnerActor_->motion.reset();
+}
+
+bool FieldScene::partnerClipFinished() const {
+  // A clip the model lacks counts as finished, so that no scene waits for it.
+  return partnerClip_ && partnerClipStarted_ &&
+         (!partnerClipPlays_ || partnerActor_->player->finished());
+}
+
+void FieldScene::animatePartnerClip(double seconds) {
+  Actor& actor = *partnerActor_;
+  if (!partnerClipStarted_ && partnerClip_.has_value()) {
+    partnerClipStarted_ = true;
+    const std::uint32_t clip = *partnerClip_;
+    partnerClipPlays_ = actor.player->play(clip);
+    if (!partnerClipPlays_) {
+      core::logWarning("{}", core::formatMessage(messages::PartnerClipMissing, clip,
+                                                 actor.character.model.str()));
+    }
+    actor.player->setSpeed(1.0F);
+  }
+  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
 }
 
 core::Result<std::unique_ptr<FieldScene::Actor>>
@@ -403,23 +439,33 @@ void FieldScene::animate(Actor& actor, double seconds) {
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
 }
 
-void FieldScene::submit(const Actor& actor, float alpha) {
+void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
   const scene::Pose pose =
       scene::interpolate(world_.registry().get<scene::Transform>(actor.entity), alpha);
-  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position), pose.yaw,
-                                      glm::vec3{0.0F, 1.0F, 0.0F});
+  const glm::mat4 world = glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position),
+                                                 pose.yaw, glm::vec3{0.0F, 1.0F, 0.0F}),
+                                     scale);
   models_->submit({.model = actor.handle, .world = world, .joints = actor.player->jointMatrices()});
 }
 
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   const double animationSeconds = paused ? 0.0 : frameSeconds;
   animate(*playerActor_, animationSeconds);
-  animate(*partnerActor_, animationSeconds);
+  if (partnerClip_) {
+    // A scene's clip runs while the field waits for the scene.
+    animatePartnerClip(frameSeconds);
+  } else {
+    animate(*partnerActor_, animationSeconds);
+  }
   models_->clear();
-  submit(*playerActor_, alpha);
-  submit(*partnerActor_, alpha);
-  drawNpcs(animationSeconds, alpha);
-  submitMapObjects();
+  if (!stage_.sceneryHidden) {
+    submit(*playerActor_, alpha);
+    drawNpcs(animationSeconds, alpha);
+    submitMapObjects();
+  }
+  if (!stage_.partnerHidden) {
+    submit(*partnerActor_, alpha, stage_.partnerScale);
+  }
   const scene::Pose player =
       scene::interpolate(world_.registry().get<scene::Transform>(playerActor_->entity), alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:

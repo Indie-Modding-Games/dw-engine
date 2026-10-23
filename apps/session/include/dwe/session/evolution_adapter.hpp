@@ -78,6 +78,10 @@ public:
   [[nodiscard]] std::optional<game::evolution::Level> itemTargetLevel(std::string_view item) const;
 
   [[nodiscard]] const game::evolution::EvolutionState& state() const { return state_; }
+  // The ruleset's evolution scene, or nullptr when it has none (or no evolution rules are read).
+  [[nodiscard]] const game::evolution::EvolutionSceneRules* sceneRules() const {
+    return evolution_ && evolution_->rules().scene ? &*evolution_->rules().scene : nullptr;
+  }
   // The evolutions applied since the last call, oldest first, for the UI.
   [[nodiscard]] std::vector<game::evolution::EvolutionResult> takeEvolutions();
 

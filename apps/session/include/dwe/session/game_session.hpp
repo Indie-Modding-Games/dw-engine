@@ -239,6 +239,9 @@ public:
   [[nodiscard]] game::story::SoundPort* sound();
   // The story's music, or nullptr for a silent session.
   [[nodiscard]] game::story::MusicPort* music();
+  // A scene's sound bank in slot 8 instead of the map's, until nothing gives it back
+  // (SessionSound::useSceneBank); nothing happens in a silent session.
+  void useSceneSounds(std::optional<std::int32_t> soundId);
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);

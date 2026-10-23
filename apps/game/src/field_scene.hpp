@@ -9,6 +9,7 @@
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/render/camera.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_renderer.hpp>
 #include <dwe/render/map_scene.hpp>
@@ -69,6 +70,19 @@ struct MapChangeTiming {
 // looks a map's name up.
 [[nodiscard]] std::string mapNameKeyOf(const assets::MapTable& table, std::string_view mapId);
 
+// What a scene of the original (the evolution, the death) does to the field's picture.
+struct FieldStage {
+  // setMapLayerEnabled(0) and *_setOtherEntitiesVisible(0) (evl.c, dooa.c, murd.c): the map and
+  // the tamer are not drawn, only the partner on black.
+  bool sceneryHidden = false;
+  // The partner's isOnMap = 0.
+  bool partnerHidden = false;
+  // The partner's posData->scale, 1 being its model's size.
+  glm::vec3 partnerScale{1.0F};
+  // The camera the models are drawn with instead of the map's (the scene's GS_VIEWPOINT).
+  std::optional<render::Camera> camera;
+};
+
 class FieldScene {
 public:
   // Loads the field rules, the characters (models/tamer and models/partner) and the start map from
@@ -97,7 +111,10 @@ public:
   void update(double frameSeconds, float alpha, bool paused);
 
   // The scene drawers for FrameDesc::scene, in order.
-  [[nodiscard]] std::span<render::Drawer* const> drawers() { return drawers_; }
+  [[nodiscard]] std::span<render::Drawer* const> drawers() {
+    return stage_.sceneryHidden ? std::span<render::Drawer* const>{stageDrawers_}
+                                : std::span<render::Drawer* const>{drawers_};
+  }
 
   // The ground point under a window pixel (drawable pixels, as MouseMoved gives), for
   // click-to-move.
@@ -112,6 +129,17 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
+  // What a scene does to the picture; a default FieldStage gives the field its own back.
+  void setStage(const FieldStage& stage) { stage_ = stage; }
+  [[nodiscard]] const FieldStage& stage() const { return stage_; }
+  // Plays this clip of the partner (by the original's id, startAnimation) instead of the one its
+  // motion picks, until nothing gives the partner back to its motion. A clip the model lacks is
+  // logged and the partner keeps its motion.
+  void playPartnerClip(std::optional<std::uint32_t> clipId);
+  // Whether the partner's scene clip holds its last pose (animFrame == frameCount).
+  [[nodiscard]] bool partnerClipFinished() const;
+  // The map's camera, which a scene's camera starts from.
+  [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }
   // The model the partner is drawn with.
   [[nodiscard]] const assets::AssetId& partnerModel() const {
     return partnerActor_->character.model;
@@ -200,7 +228,8 @@ private:
   void animate(Actor& actor, double seconds);
   // Plays the clip a script picked for the actor; false when it has none.
   bool animateScripted(Actor& actor, double seconds);
-  void submit(const Actor& actor, float alpha);
+  void animatePartnerClip(double seconds);
+  void submit(const Actor& actor, float alpha, glm::vec3 scale = glm::vec3{1.0F});
   // Places the map's 3D objects in the field and loads their models (map.c: loadMap, loadDoors).
   void placeMapObjects(const assets::MapEntry* entry);
   // Draws them (map_object.c: renderDoors).
@@ -217,6 +246,13 @@ private:
   std::unique_ptr<render::ModelRenderer> models_;
   CameraSync cameraSync_{*this};
   std::array<render::Drawer*, 5> drawers_{};
+  // The drawers while a scene hides the scenery: the models only.
+  std::array<render::Drawer*, 3> stageDrawers_{};
+  FieldStage stage_;
+  // The partner's scene clip, and whether its actor plays it already (a new model's does not).
+  std::optional<std::uint32_t> partnerClip_;
+  bool partnerClipStarted_ = false;
+  bool partnerClipPlays_ = false;
 
   scene::World world_;
   std::unique_ptr<game::field::Field> field_;

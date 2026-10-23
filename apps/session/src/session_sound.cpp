@@ -16,6 +16,11 @@ constexpr std::int64_t MapSlot = 8;
 constexpr std::string_view SystemBank = "sound/ss";
 constexpr std::string_view SecondSystemBank = "sound/sl";
 
+// The folder of a bank of slot 8: sound/esall/<sound id>.
+std::string bankFolderOf(std::int32_t soundId) {
+  return std::format("sound/esall/{:03}", soundId);
+}
+
 } // namespace
 
 SessionSound::SessionSound(audio::Audio& audio, const assets::VirtualFileSystem& files)
@@ -33,10 +38,25 @@ void SessionSound::enterMap(std::string_view mapId) {
   const assets::MapEntry* map = maps_ ? maps_->find(mapId) : nullptr;
   mapBank_.reset();
   if (map != nullptr && map->soundId >= 0) {
-    mapBank_ = std::format("sound/esall/{:03}", map->soundId);
+    mapBank_ = bankFolderOf(map->soundId);
   }
+  dropUnusedBanks();
+}
+
+void SessionSound::useSceneBank(std::optional<std::int32_t> soundId) {
+  sceneBank_.reset();
+  if (soundId) {
+    sceneBank_ = bankFolderOf(*soundId);
+  }
+  core::logDebug("[port:sound] loadMapSounds2 (sound_async.c:233): slot 8 bank={}",
+                 sceneBank_.value_or(mapBank_.value_or(std::string{})));
+  dropUnusedBanks();
+}
+
+void SessionSound::dropUnusedBanks() {
   std::erase_if(banks_, [&](const auto& entry) {
-    return entry.first != SystemBank && entry.first != SecondSystemBank && entry.first != mapBank_;
+    return entry.first != SystemBank && entry.first != SecondSystemBank &&
+           entry.first != mapBank_ && entry.first != sceneBank_;
   });
 }
 
@@ -77,7 +97,7 @@ std::optional<std::string> SessionSound::folderOf(std::int64_t slot) const {
   case SecondSystemSlot:
     return std::string{SecondSystemBank};
   case MapSlot:
-    return mapBank_;
+    return sceneBank_ ? sceneBank_ : mapBank_;
   default:
     return std::nullopt;
   }

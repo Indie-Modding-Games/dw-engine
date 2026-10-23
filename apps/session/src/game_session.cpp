@@ -134,6 +134,12 @@ game::story::MusicPort* GameSession::music() {
   return music_.get();
 }
 
+void GameSession::useSceneSounds(std::optional<std::int32_t> soundId) {
+  if (sound_) {
+    sound_->useSceneBank(soundId);
+  }
+}
+
 core::Result<void> GameSession::setUp() {
   const ruleset::Ruleset& current = store_.current();
   auto species = speciesOf(desc_, current);

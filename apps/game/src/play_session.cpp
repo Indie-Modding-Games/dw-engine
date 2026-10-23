@@ -204,7 +204,14 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .ui = context.ui}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
-      saveMachine_(*game_.session, *context.ui) {
+      saveMachine_(*game_.session, *context.ui),
+      evolutionScene_({.session = game_.session.get(),
+                       .scene = scene_.get(),
+                       .species = species_ ? &*species_ : nullptr,
+                       .rules = game_.systems.evolution != nullptr
+                                    ? game_.systems.evolution->sceneRules()
+                                    : nullptr,
+                       .frameSeconds = scene_->field().rules().transition.frameSeconds}) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -251,6 +258,11 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
   if (sleepScreen_.active()) {
+    return;
+  }
+  // partner.c: partnerTickEvolving stops the game time and holds the player for the scene.
+  evolutionScene_.tick(TickSeconds);
+  if (evolutionScene_.active()) {
     return;
   }
   if (battleScreen_.active()) {
@@ -375,10 +387,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   partnerMenu_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
-  sleepScreen_.update(!battleScreen_.active() && !field.mapChangePending() &&
-                      field.fadeLevel() == 0.0F);
+  sleepScreen_.update(!battleScreen_.active() && !evolutionScene_.active() &&
+                      !field.mapChangePending() && field.fadeLevel() == 0.0F);
   const auto partnerEvents = session.takePartnerEvents();
-  showPartnerEvents(partnerEvents, session, *scene_);
+  showPartnerEvents(evolutionScene_.take(partnerEvents), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
                       (battleRanLastFrame_ && !battleScreen_.active());
   battleRanLastFrame_ = battleScreen_.active();
@@ -401,7 +413,7 @@ bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() || sleepScreen_.active() ||
-         saveMachine_.active() || toTitleAsked_;
+         saveMachine_.active() || toTitleAsked_ || evolutionScene_.active();
 }
 
 float PlaySession::fadeLevel() const {
