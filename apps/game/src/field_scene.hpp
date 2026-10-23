@@ -106,6 +106,24 @@ public:
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
 
+  // The fishing's hold on the player (FishingScreen): one of the original's clips in place of the
+  // walk's, nothing to give the player back to the field.
+  void setPlayerClip(std::optional<std::uint32_t> clip);
+  // Whether the clip setPlayerClip gave still plays.
+  [[nodiscard]] bool playerClipPlaying() const;
+  // A point in the space of one of the player's model nodes (the original's object index), in
+  // original axes and units, in the world; nothing if the node is no joint of the skin.
+  [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
+                                                         glm::vec3 offset) const;
+  // Turns the player in place.
+  void setPlayerYaw(float yaw);
+  // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
+  void setExtraMarkers(std::vector<render::MapMarker> markers) {
+    extraMarkers_ = std::move(markers);
+  }
+  // The map's camera, while a map is shown.
+  [[nodiscard]] const render::MapCamera* camera() const;
+
   // Prepares the next frame: advances the animations by frameSeconds (not while paused; a
   // time-of-day fade under way goes on), places the characters between the last two ticks (alpha
   // from core::FixedStep) and points the camera at the player, except while the player walks out of
@@ -208,6 +226,8 @@ private:
     std::optional<scene::Motion> motion;
     // The clip a script plays on it (game::field::ScriptedActor), while it plays one.
     std::optional<std::uint32_t> scriptedClip;
+    // A clip that replaces the motion's (setPlayerClip).
+    std::optional<std::uint32_t> heldClip;
   };
 
   // Gives the model renderer the map camera once the background drawer has sized it to the frame.
@@ -279,6 +299,7 @@ private:
   render::MapSceneData map_;
   std::string mapNameKey_;
   std::uint32_t mapSerial_ = 0;
+  std::vector<render::MapMarker> extraMarkers_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;

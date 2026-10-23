@@ -290,6 +290,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .runSpeed = rules.runSpeed,
       .motion = std::nullopt,
       .scriptedClip = std::nullopt,
+      .heldClip = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
   return actor;
@@ -423,6 +424,11 @@ void FieldScene::applyLighting() {
 }
 
 void FieldScene::animate(Actor& actor, double seconds) {
+  if (actor.heldClip) {
+    actor.player->setSpeed(1.0F);
+    static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+    return;
+  }
   if (animateScripted(actor, seconds)) {
     return;
   }
@@ -498,14 +504,66 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
       applyLighting();
     }
   }
+  std::vector<render::MapMarker> markers = extraMarkers_;
   if (field_->hasMoveTarget() && !field_->path().empty()) {
     render::MapMarker marker = TargetMarker;
     marker.feet = field_->path().back();
-    const std::array markers{marker};
-    mapRenderer_->setMarkers(markers);
-  } else {
-    mapRenderer_->setMarkers({});
+    markers.push_back(marker);
   }
+  mapRenderer_->setMarkers(markers);
+}
+
+void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {
+  Actor& actor = *playerActor_;
+  if (clip == actor.heldClip) {
+    return;
+  }
+  actor.heldClip = clip;
+  if (clip) {
+    if (!actor.player->play(*clip, ClipFadeSeconds)) {
+      core::logWarning("{}", core::formatMessage(messages::NoPlayerClip, *clip));
+    }
+  } else {
+    // The motion's clip starts again on the next frame.
+    actor.motion.reset();
+  }
+}
+
+bool FieldScene::playerClipPlaying() const {
+  return playerActor_->heldClip && !playerActor_->player->finished();
+}
+
+std::optional<glm::vec3> FieldScene::playerNodePoint(std::uint32_t node, glm::vec3 offset) const {
+  const Actor& actor = *playerActor_;
+  if (!actor.model->skin) {
+    return std::nullopt;
+  }
+  const auto joints = actor.player->jointMatrices();
+  const auto& skin = *actor.model->skin;
+  const auto found = std::ranges::find(skin.joints, node);
+  const auto joint = static_cast<std::size_t>(found - skin.joints.begin());
+  if (found == skin.joints.end() || joint >= joints.size() ||
+      joint >= skin.inverseBindMatrices.size()) {
+    return std::nullopt;
+  }
+  const auto& inverseBind = skin.inverseBindMatrices;
+  // A skin matrix is the joint's model-space transform times its inverse bind matrix.
+  const glm::mat4 jointSpace = joints[joint] * glm::inverse(inverseBind[joint]);
+  const auto& transform = world_.registry().get<scene::Transform>(actor.entity);
+  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
+                                      transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
+  // The original's axes: y and z point the other way.
+  return glm::vec3{world * jointSpace * glm::vec4{offset.x, -offset.y, -offset.z, 1.0F}};
+}
+
+void FieldScene::setPlayerYaw(float yaw) {
+  auto& transform = world_.registry().get<scene::Transform>(playerActor_->entity);
+  transform.yaw = yaw;
+  transform.previousYaw = yaw;
+}
+
+const render::MapCamera* FieldScene::camera() const {
+  return mapRenderer_->hasMap() ? &mapRenderer_->camera() : nullptr;
 }
 
 std::optional<glm::vec3> FieldScene::pickGround(glm::vec2 windowPixel) const {

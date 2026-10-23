@@ -70,6 +70,7 @@ inline constexpr std::string_view SessionStarted = "game: new game, seed {}";
 inline constexpr std::string_view SessionLoaded = "game: loaded {}";
 inline constexpr std::string_view SessionNoSaves = "game: the game is not saved: {}";
 inline constexpr std::string_view NoGameClock = "field scene: no game clock";
+inline constexpr std::string_view NoPlayerClip = "field scene: the player has no clip {}";
 
 // The title screen (title_screen.cpp).
 inline constexpr std::string_view TitleCommand = "game: command {}";
