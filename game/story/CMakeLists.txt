@@ -8,4 +8,8 @@ dwe_add_module(story
         src/story_runner.cpp
         src/dialogue.cpp
         src/script_motion.cpp
+        src/story_routines.cpp
+        src/story_battle.cpp
+        src/screen_history.cpp
+        src/partner_routines.cpp
     DEPS core assets)

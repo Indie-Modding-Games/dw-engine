@@ -169,6 +169,11 @@ void StoryRunner::removeFrameListener(const ScriptFrameListener& listener) {
   std::erase(frameListeners_, &listener);
 }
 
+void StoryRunner::setVariableAtStart(std::int64_t value) {
+  core::logDebug("{}", messages::formatMessage(messages::PortVariableAtStart, value));
+  variableAtStart_ = value;
+}
+
 std::vector<SectionRef> StoryRunner::runningSections() const {
   return sections_ | std::views::transform(&RunningSection::ref) | std::ranges::to<std::vector>();
 }

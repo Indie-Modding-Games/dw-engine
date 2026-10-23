@@ -146,6 +146,10 @@ public:
   void addFrameListener(ScriptFrameListener& listener);
   void removeFrameListener(const ScriptFrameListener& listener);
 
+  // The value the frozen variable goes back to when the script ends: routine 25 sets it
+  // (script_interp.c: scriptInstruction64to7E, MAIN_D_80134FE7).
+  void setVariableAtStart(std::int64_t value);
+
   // Whether a script is running or about to start.
   [[nodiscard]] bool busy() const {
     return pending_.has_value() || !sections_.empty() || continueAt_.has_value() || changingMap_;

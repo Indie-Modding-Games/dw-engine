@@ -86,4 +86,7 @@ inline constexpr std::string_view PortMapHeadEnd =
 inline constexpr std::string_view PortSectionFailed =
     "[port:story] section failed, ends as end_section; {} continuations left";
 
+inline constexpr std::string_view PortVariableAtStart =
+    "[port:story] routine 25 (script_interp.c:1775): var 0 goes back to {} at the script's end";
+
 } // namespace dwe::game::story::messages
