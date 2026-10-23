@@ -1,10 +1,13 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/core/message.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <fstream>
+#include <memory>
 #include <system_error>
+#include <utility>
 
 #include "messages.hpp"
 
@@ -24,7 +27,65 @@ std::string keyOf(const std::filesystem::path& path) {
   return key;
 }
 
+// A file held whole in memory, read in pieces.
+class BufferReader final : public FileReader {
+public:
+  explicit BufferReader(std::vector<std::byte> bytes) : bytes_(std::move(bytes)) {}
+
+  core::Result<std::size_t> read(std::span<std::byte> into) override {
+    const std::size_t count = std::min(into.size(), bytes_.size() - next_);
+    std::copy_n(bytes_.begin() + static_cast<std::ptrdiff_t>(next_), count, into.begin());
+    next_ += count;
+    return count;
+  }
+
+private:
+  std::vector<std::byte> bytes_;
+  std::size_t next_ = 0;
+};
+
+// A file on disk, read as it is asked for.
+class DiskFileReader final : public FileReader {
+public:
+  DiskFileReader(std::filesystem::path file, std::ifstream stream)
+      : file_(std::move(file)), stream_(std::move(stream)) {}
+
+  core::Result<std::size_t> read(std::span<std::byte> into) override {
+    stream_.read(reinterpret_cast<char*>(into.data()), static_cast<std::streamsize>(into.size()));
+    if (stream_.bad()) {
+      return core::fail(std::format("cannot read '{}'", pathText(file_)));
+    }
+    return static_cast<std::size_t>(stream_.gcount());
+  }
+
+private:
+  std::filesystem::path file_;
+  std::ifstream stream_;
+};
+
 } // namespace
+
+core::Result<std::unique_ptr<FileReader>>
+FileSystem::openFile(const std::filesystem::path& file) const {
+  auto bytes = readFile(file);
+  if (!bytes) {
+    return std::unexpected{bytes.error()};
+  }
+  return std::make_unique<BufferReader>(std::move(*bytes));
+}
+
+core::Result<std::unique_ptr<FileReader>>
+DiskFileSystem::openFile(const std::filesystem::path& file) const {
+  std::error_code error;
+  if (std::filesystem::is_symlink(file, error)) {
+    return core::fail(std::format("'{}' is a symbolic link", pathText(file)));
+  }
+  std::ifstream stream{file, std::ios::binary};
+  if (!stream) {
+    return core::fail(std::format("cannot open '{}'", pathText(file)));
+  }
+  return std::make_unique<DiskFileReader>(file, std::move(stream));
+}
 
 std::string pathText(const std::filesystem::path& path) {
   const std::u8string text = path.generic_u8string();

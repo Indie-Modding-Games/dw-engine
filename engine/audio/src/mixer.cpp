@@ -27,7 +27,8 @@ constexpr std::size_t busVolume(Bus bus) {
 
 } // namespace
 
-Mixer::Mixer(OrderQueue& orders, EndQueue& ends) : orders_{orders}, ends_{ends} {}
+Mixer::Mixer(OrderQueue& orders, EndQueue& ends, VoicePositions& positions)
+    : orders_{orders}, ends_{ends}, positions_{positions} {}
 
 void Mixer::render(std::span<float> frames) noexcept {
   applyOrders();
@@ -74,10 +75,13 @@ void Mixer::renderPass(std::span<float> frames) {
   std::ranges::fill(frames, 0.0F);
   const std::size_t frameCount = frames.size() / OutputChannels;
   rampBusGains(frameCount);
-  for (VoicePlayer& voice : voices_) {
+  for (std::size_t slot = 0; slot < voices_.size(); ++slot) {
+    VoicePlayer& voice = voices_[slot];
     if (voice.state() == VoicePlayer::State::Playing) {
       const auto& gains = busGains_[std::to_underlying(voice.bus())];
       voice.mixInto(frames, std::span{gains}.first(frameCount));
+      positions_[slot].store(packVoicePosition(voice.voice().generation, voice.playedFrames()),
+                             std::memory_order_relaxed);
     }
     if (voice.state() == VoicePlayer::State::Ended) {
       reportEnd(voice);

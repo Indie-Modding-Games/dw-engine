@@ -14,6 +14,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <thread>
@@ -351,6 +352,90 @@ void writeBytes(std::ofstream& stream, std::span<const std::byte> bytes) {
                static_cast<std::streamsize>(bytes.size()));
 }
 
+// How much of an entry's stored bytes a reader takes from the archive at a time.
+constexpr std::size_t ReaderChunk = std::size_t{256} << 10U;
+
+// An entry of an archive read as it is asked for: its stored bytes straight from the archive, or
+// expanded by zstd piece by piece.
+class PakEntryReader final : public FileReader {
+public:
+  PakEntryReader(std::string path, std::ifstream stream, const PakEntry& entry,
+                 std::unique_ptr<ZSTD_DCtx, FreeDecompressor> context)
+      : path_(std::move(path)), stream_(std::move(stream)), entry_(entry),
+        context_(std::move(context)), storedLeft_(entry.storedSize) {
+    stream_.seekg(static_cast<std::streamoff>(entry.offset));
+  }
+
+  core::Result<std::size_t> read(std::span<std::byte> into) override {
+    std::size_t written = 0;
+    while (written < into.size() && produced_ < entry_.size) {
+      const std::span<std::byte> rest = into.subspan(written).first(static_cast<std::size_t>(
+          std::min<std::uint64_t>(into.size() - written, entry_.size - produced_)));
+      auto count = context_ ? expandInto(rest) : copyInto(rest);
+      if (!count) {
+        return std::unexpected{count.error()};
+      }
+      sha1_.update(rest.first(*count));
+      written += *count;
+      produced_ += *count;
+    }
+    if (produced_ == entry_.size && !checked_) {
+      checked_ = true;
+      if (sha1_.finish() != entry_.sha1) {
+        return damaged("its bytes do not match their SHA-1");
+      }
+    }
+    return written;
+  }
+
+private:
+  core::Result<std::size_t> damaged(std::string_view why) const {
+    return core::fail(std::format("cannot read '{}': {}; the archive is damaged", path_, why));
+  }
+
+  core::Result<std::size_t> copyInto(std::span<std::byte> into) {
+    stream_.read(reinterpret_cast<char*>(into.data()), static_cast<std::streamsize>(into.size()));
+    if (stream_.gcount() != static_cast<std::streamsize>(into.size())) {
+      return damaged("it ends early");
+    }
+    return into.size();
+  }
+
+  core::Result<std::size_t> expandInto(std::span<std::byte> into) {
+    if (input_.pos == input_.size) {
+      if (storedLeft_ == 0) {
+        return damaged("it ends early");
+      }
+      const auto count =
+          static_cast<std::size_t>(std::min<std::uint64_t>(ReaderChunk, storedLeft_));
+      stored_.resize(count);
+      stream_.read(reinterpret_cast<char*>(stored_.data()), static_cast<std::streamsize>(count));
+      if (stream_.gcount() != static_cast<std::streamsize>(count)) {
+        return damaged("it ends early");
+      }
+      storedLeft_ -= count;
+      input_ = ZSTD_inBuffer{.src = stored_.data(), .size = count, .pos = 0};
+    }
+    ZSTD_outBuffer output{.dst = into.data(), .size = into.size(), .pos = 0};
+    const std::size_t result = ZSTD_decompressStream(context_.get(), &output, &input_);
+    if (ZSTD_isError(result) != 0) {
+      return damaged(ZSTD_getErrorName(result));
+    }
+    return output.pos;
+  }
+
+  std::string path_;
+  std::ifstream stream_;
+  PakEntry entry_;
+  std::unique_ptr<ZSTD_DCtx, FreeDecompressor> context_;
+  std::vector<std::byte> stored_;
+  ZSTD_inBuffer input_{.src = nullptr, .size = 0, .pos = 0};
+  std::uint64_t storedLeft_ = 0;
+  std::uint64_t produced_ = 0;
+  core::Sha1 sha1_;
+  bool checked_ = false;
+};
+
 } // namespace
 
 core::Result<std::unique_ptr<PakFileSystem>>
@@ -590,6 +675,30 @@ core::Result<OpenedPacks> openPacks(const FileSystem& folders, std::span<const F
     opened.archives.push_back(std::move(*archive));
   }
   return opened;
+}
+
+core::Result<std::unique_ptr<FileReader>>
+PakFileSystem::openFile(const std::filesystem::path& file) const {
+  auto found = entryOf(file);
+  if (!found) {
+    return std::unexpected{found.error()};
+  }
+  if (*found == nullptr) {
+    return FileSystem::openFile(file);
+  }
+  std::ifstream stream{archive_, std::ios::binary};
+  if (!stream) {
+    return core::fail(std::format("cannot open '{}'", pathText(archive_)));
+  }
+  std::unique_ptr<ZSTD_DCtx, FreeDecompressor> context;
+  if ((*found)->compression == PakCompression::Zstd) {
+    context.reset(ZSTD_createDCtx());
+    if (!context) {
+      return core::fail("cannot create a zstd context");
+    }
+  }
+  return std::make_unique<PakEntryReader>(normalized(file), std::move(stream), **found,
+                                          std::move(context));
 }
 
 } // namespace dwe::assets

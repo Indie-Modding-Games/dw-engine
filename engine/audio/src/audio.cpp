@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <utility>
@@ -20,7 +22,8 @@ namespace dwe::audio {
 struct Audio::Shared {
   OrderQueue orders;
   EndQueue ends;
-  Mixer mixer{orders, ends};
+  VoicePositions positions{};
+  Mixer mixer{orders, ends, positions};
 };
 
 namespace {
@@ -137,6 +140,17 @@ float Audio::volume(VolumeControl control) const {
 bool Audio::isActive(VoiceId voice) const {
   return voice.slot < slots_.size() && slots_[voice.slot].active &&
          slots_[voice.slot].generation == voice.generation;
+}
+
+std::optional<std::uint64_t> Audio::position(VoiceId voice) const {
+  if (voice.slot >= shared_->positions.size()) {
+    return std::nullopt;
+  }
+  const std::uint64_t packed = shared_->positions[voice.slot].load(std::memory_order_relaxed);
+  if (static_cast<std::uint32_t>(packed >> 32U) != voice.generation) {
+    return std::nullopt;
+  }
+  return packed & 0xFFFF'FFFFU;
 }
 
 std::size_t Audio::activeVoiceCount() const {

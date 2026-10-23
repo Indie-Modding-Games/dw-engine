@@ -27,7 +27,8 @@ constexpr std::size_t FadeFrames = 240;
 struct MixerRig {
   OrderQueue orders;
   EndQueue ends;
-  Mixer mixer{orders, ends};
+  VoicePositions positions{};
+  Mixer mixer{orders, ends, positions};
 
   void send(const Order& order) { REQUIRE(orders.push(order)); }
 

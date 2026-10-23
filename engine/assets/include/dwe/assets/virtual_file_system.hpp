@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
@@ -73,6 +74,8 @@ public:
 
   // Reads the bytes of an asset from the pack that wins.
   [[nodiscard]] core::Result<std::vector<std::byte>> read(const AssetId& id) const;
+  // Opens the winning file of an asset to read it in pieces (FileSystem::openFile).
+  [[nodiscard]] core::Result<std::unique_ptr<FileReader>> open(const AssetId& id) const;
   // The size in bytes of the file read() would return, without reading it.
   [[nodiscard]] core::Result<std::uint64_t> size(const AssetId& id) const;
 

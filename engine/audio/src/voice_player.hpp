@@ -42,6 +42,8 @@ public:
   [[nodiscard]] State state() const { return state_; }
   [[nodiscard]] VoiceId voice() const { return voice_; }
   [[nodiscard]] Bus bus() const { return bus_; }
+  // The clip frame the voice has reached; with a loop it wraps back into the loop.
+  [[nodiscard]] std::uint64_t playedFrames() const { return static_cast<std::uint64_t>(position_); }
 
 private:
   [[nodiscard]] float sampleAt(std::uint64_t frame, std::uint16_t channel) const;

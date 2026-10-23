@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <unordered_map>
 #include <vector>
@@ -44,6 +45,10 @@ public:
   // Whether a voice has not reported its end yet.
   [[nodiscard]] bool isActive(VoiceId voice) const;
   [[nodiscard]] std::size_t activeVoiceCount() const;
+  // The clip frame a voice had reached when the audio thread last mixed it (it keeps the last one
+  // after the voice ends), or nothing before it started or once another voice took its slot. A
+  // clock for what must follow the sound, like a movie's frames.
+  [[nodiscard]] std::optional<std::uint64_t> position(VoiceId voice) const;
 
   // Once per game frame: takes the voices that ended, sends this frame's orders and lets the output
   // advance by seconds.

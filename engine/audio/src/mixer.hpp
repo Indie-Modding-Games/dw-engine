@@ -17,7 +17,7 @@ namespace dwe::audio {
 // allocates, locks or logs.
 class Mixer final : public MixSource {
 public:
-  Mixer(OrderQueue& orders, EndQueue& ends);
+  Mixer(OrderQueue& orders, EndQueue& ends, VoicePositions& positions);
 
   void render(std::span<float> frames) noexcept override;
 
@@ -39,6 +39,7 @@ private:
 
   OrderQueue& orders_;
   EndQueue& ends_;
+  VoicePositions& positions_;
   std::array<VoicePlayer, MaxVoices> voices_{};
   std::array<Ramp, VolumeControlCount> volumes_{};
   std::array<std::array<float, MaxRenderFrames>, BusCount> busGains_{};

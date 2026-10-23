@@ -4,6 +4,10 @@
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/voice.hpp>
 
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <cstdint>
 #include <optional>
 #include <variant>
 
@@ -41,6 +45,17 @@ struct VoiceEnded {
 };
 
 using OrderQueue = SpscQueue<Order, CommandQueueCapacity>;
+
+// Where each slot's voice is in its clip, as the audio thread last mixed it: the voice's
+// generation in the high 32 bits and the clip frame in the low 32 (packVoicePosition). The game
+// reads it to follow a voice, for instance a movie's sound as its clock.
+using VoicePositions = std::array<std::atomic<std::uint64_t>, MaxVoices>;
+
+[[nodiscard]] constexpr std::uint64_t packVoicePosition(std::uint32_t generation,
+                                                        std::uint64_t frame) {
+  constexpr std::uint64_t FrameMask = 0xFFFF'FFFFU;
+  return (std::uint64_t{generation} << 32U) | std::min(frame, FrameMask);
+}
 // Every voice id ends exactly once, and the mixer takes an order only while the end it may cause
 // fits, so a full queue delays orders and never loses an end. The game empties this queue at every
 // update. Between two updates the ends that can arrive are those of the voices playing at the first

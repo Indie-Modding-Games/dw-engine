@@ -81,6 +81,10 @@ public:
   readFile(const std::filesystem::path& file) const override;
   [[nodiscard]] core::Result<std::uint64_t>
   fileSize(const std::filesystem::path& file) const override;
+  // Reads an entry as it is asked for, expanding it piece by piece; its SHA-1 is checked when its
+  // last byte is read.
+  [[nodiscard]] core::Result<std::unique_ptr<FileReader>>
+  openFile(const std::filesystem::path& file) const override;
 
 private:
   // The entry a path names: nullptr for pack.yaml, an error for a path outside the archive or with

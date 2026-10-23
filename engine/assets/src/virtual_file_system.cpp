@@ -234,6 +234,14 @@ core::Result<std::vector<std::byte>> VirtualFileSystem::read(const AssetId& id) 
   return packs_[indexOf(packs_, source->packId)].fileSystem->readFile(source->file);
 }
 
+core::Result<std::unique_ptr<FileReader>> VirtualFileSystem::open(const AssetId& id) const {
+  const AssetSource* source = resolve(id);
+  if (source == nullptr) {
+    return core::fail(core::formatMessage(messages::NoPackHasAsset, id.str()));
+  }
+  return packs_[indexOf(packs_, source->packId)].fileSystem->openFile(source->file);
+}
+
 core::Result<std::uint64_t> VirtualFileSystem::size(const AssetId& id) const {
   const AssetSource* source = resolve(id);
   if (source == nullptr) {
