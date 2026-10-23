@@ -249,26 +249,11 @@
 	display: none;
 }
 
-/* The original opens the bag with its own button and draws nothing for it; here the bag also has an entry after the
-   last icon, for the pointer, in the ink colour on a box at half opacity. */
+/* The original draws nothing for the bag in the strip (command_menu.c: BTL_renderCommandMenu draws only the
+   commands' icons): the bag opens with its own button, cancel here (Esc, East, or a right click). The entry the
+   modern look shows after the strip is left out. */
 #open-bag, #open-bag:focus {
-	top: 60dp;
-	width: auto;
-	height: 30dp;
-	padding: 0 9dp;
-	font-size: 22dp;
-	line-height: 24dp;
-	color: #d0d0d0;
-	border: 3dp transparent;
-	background-color: #00000080;
-}
-
-#open-bag:focus {
-	border-color: #f8d000;
-}
-
-#open-bag.unavailable {
-	color: #828282;
+	display: none;
 }
 
 .command.place-0 { left: 63dp; }

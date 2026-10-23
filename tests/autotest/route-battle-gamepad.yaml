@@ -21,8 +21,8 @@ steps:
   - wait: {seconds: 4}
   - expect_setting: {battle.phase: fight}
   - screenshot: battle-fight
-  # The tamer's bag: open-bag (or cancel) opens it while the battle goes on, a slot throws its item to the partner.
-  - menu_select: open-bag
+  # The tamer's bag: cancel opens it (the original look draws no entry for it) while the battle goes on, a slot throws its item to the partner.
+  - tap: {button: east}
   - expect_setting: {battle.bag.open: true}
   - screenshot: battle-bag
   - menu_select: bag-slot-0
