@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Menu sounds",
+  "description": "ui/ui_sounds.yaml of the game pack: the sound effect each menu cue plays (docs/architecture/audio.md). A cue left out stays silent.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": { "$ref": "#/$defs/sound", "description": "The focus or a menu's cursor moved; a move that moves nothing is silent." },
+    "confirm": { "$ref": "#/$defs/sound", "description": "The player confirmed." },
+    "cancel": { "$ref": "#/$defs/sound", "description": "The player backed out of a menu." }
+  },
+  "$defs": {
+    "sound": {
+      "type": "object",
+      "required": ["bank", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "bank": { "description": "A bank folder under sound/, such as ss or esall/003.", "type": "string", "pattern": "^[a-z0-9_]{1,64}(/[a-z0-9_]{1,64})?$" },
+        "sound": { "description": "The sound's value in the bank (the sounds list of its bank_meta.yaml).", "type": "integer", "minimum": 0, "maximum": 4294967295 }
+      }
+    }
+  }
+}

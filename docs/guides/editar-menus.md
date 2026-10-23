@@ -24,6 +24,8 @@ content/packs/game/ui/
   save_slots/, dialog/       la lista de ranuras de la portada y el diálogo de guardar
   hud/document.rml           el HUD con el minimapa
   hud/logic.lua
+  ui_sounds.yaml             qué sonido toca cada aviso de los menús (mover, confirmar, cancelar): un banco de
+                             sound/ y un sonido de él (ver docs/architecture/audio.md)
 ```
 
 Cada documento va en su carpeta porque los ficheros se leen por asset id, que es la ruta sin extensión:

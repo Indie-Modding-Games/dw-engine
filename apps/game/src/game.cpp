@@ -439,6 +439,7 @@ int runGame(const Options& options) {
     return EXIT_FAILURE;
   }
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
+  MenuSounds menuSounds{sound, files};
   (*ui)->setSetting(LanguageSetting, texts->language());
   MinimapChanger minimapChanger{userSettings, settingsFile};
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
@@ -677,6 +678,7 @@ int runGame(const Options& options) {
         (*debugUi)->toggle();
       }
       (*ui)->tick(input, TickSeconds);
+      menuSounds.play((*ui)->takeCues());
       if (movies && movies->playing()) {
         movies->tick(input);
         input.endTick();

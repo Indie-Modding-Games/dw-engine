@@ -14,6 +14,12 @@ inline constexpr std::string_view ListSeparator = ", ";
 
 // The sound device (game_audio.cpp).
 inline constexpr std::string_view AudioSilent = "game: no sound: {}; the game goes on silent";
+// The menus' sounds (ui/ui_sounds.yaml): a cue that cannot play stays silent.
+inline constexpr std::string_view MenuSoundsSilent = "game: the menus are silent: {}";
+inline constexpr std::string_view MenuSoundProblem = "game: a menu sound stays silent: {}";
+inline constexpr std::string_view MenuSoundsNotMapping = "ui/ui_sounds is not a mapping of cues";
+inline constexpr std::string_view MenuSoundUnknownCue = "ui/ui_sounds has no cue '{}'";
+inline constexpr std::string_view MenuSoundMissing = "ui/ui_sounds gives no sound for '{}'";
 
 // The dev assets banner (dev_assets_banner.cpp), logged in the player's language.
 inline constexpr std::string_view DevAssetsBanner = "game: {}";

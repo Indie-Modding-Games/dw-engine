@@ -10,6 +10,7 @@
 #include <dwe/ui/skin_catalog.hpp>
 #include <dwe/ui/text_font.hpp>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -29,6 +30,15 @@ using UiValue = std::variant<std::monostate, bool, double, std::string>;
 struct UiCommand {
   std::string name;
   UiValue value;
+};
+
+// What the player just did in a menu, for the app's feedback sounds: moved the focus (or a menu's
+// own cursor), confirmed or backed out. A move that moves nothing and opening the menu give none,
+// as in the original. The UI does not know what each sounds like.
+enum class UiCue : std::uint8_t {
+  Move,
+  Confirm,
+  Cancel,
 };
 
 // The HUD contract: the ids of the elements the UI fills in every document that has them
@@ -131,6 +141,9 @@ public:
 
   // The commands the menus sent since the last call, oldest first.
   [[nodiscard]] std::vector<UiCommand> takeCommands();
+
+  // The cues of the menu actions since the last call, oldest first. Mouse clicks give none.
+  [[nodiscard]] std::vector<UiCue> takeCues();
 
   // Publishes a value the menus can read with ui.setting(name), such as the current window mode.
   // Shown documents are told through their on_setting handler when it changes.

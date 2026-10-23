@@ -234,6 +234,7 @@ struct Ui::Impl {
   std::array<bool, 3> rmlButtonsDown{};
 
   std::vector<UiCommand> commands;
+  std::vector<UiCue> cues;
   std::map<std::string, UiValue, std::less<>> settings;
   const input::InputState* input = nullptr;
   input::DeviceKind device = input::DeviceKind::KeyboardMouse;
@@ -740,6 +741,30 @@ struct Ui::Impl {
     return false;
   }
 
+  void cue(UiCue what) {
+    if (cues.size() < MaxPendingCommands) {
+      cues.push_back(what);
+    }
+  }
+
+  // As the original's menus (main_menu.c: tickMenuInput): confirm and cancel always sound, a move
+  // only when the cursor moved, and opening the menu is silent (main_menu.c: tickMainMenu).
+  static std::optional<UiCue> pressCue(NavCommand command) {
+    switch (command) {
+    case NavCommand::Confirm:
+      return UiCue::Confirm;
+    case NavCommand::Cancel:
+    case NavCommand::Menu:
+      return UiCue::Cancel;
+    case NavCommand::Up:
+    case NavCommand::Down:
+    case NavCommand::Left:
+    case NavCommand::Right:
+      break;
+    }
+    return std::nullopt;
+  }
+
   void step(NavCommand command) {
     Document* modal = topModal();
     if (modal == nullptr) {
@@ -750,12 +775,24 @@ struct Ui::Impl {
       return;
     }
     capturedThisTick = true;
+    const std::optional<UiCue> pressed = pressCue(command);
+    if (pressed) {
+      cue(*pressed);
+    }
     if (modal->element->callHandler("on_action", std::string{actionName(command)})) {
+      // The document moves its own cursor, so a move sounds whenever it takes one.
+      if (!pressed) {
+        cue(UiCue::Move);
+      }
       return;
     }
     if (auto key = keyOf(command)) {
+      const Rml::Element* before = context->GetFocusElement();
       context->ProcessKeyDown(*key, 0);
       context->ProcessKeyUp(*key, 0);
+      if (!pressed && context->GetFocusElement() != before) {
+        cue(UiCue::Move);
+      }
     } else {
       hide(modal->element->name());
     }
@@ -1093,6 +1130,10 @@ bool Ui::capturesInput() const {
 
 std::vector<UiCommand> Ui::takeCommands() {
   return std::exchange(impl_->commands, {});
+}
+
+std::vector<UiCue> Ui::takeCues() {
+  return std::exchange(impl_->cues, {});
 }
 
 void Ui::setSetting(std::string_view name, UiValue value) {

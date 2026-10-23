@@ -40,6 +40,8 @@ schemas:
     - ui/skins/*/skin
   ui_skin_choice:
     - ui/ui_skin
+  ui_sounds:
+    - ui/ui_sounds
   ruleset_new_game:
     - rules/*/new_game
   ruleset_tamer:
