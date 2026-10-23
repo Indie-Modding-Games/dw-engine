@@ -13,6 +13,8 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <ostream>
@@ -340,4 +342,25 @@ TEST_CASE("a ruleset's list of entries mixes ids and ranges of the original's nu
     dwe::assets::readEntryList(badReader, *badNode, "meals", ignored);
     CHECK_FALSE(badReader.ok());
   }
+}
+
+TEST_CASE("the reader takes unsigned numbers up to their own limit") {
+  const auto twelve = dwe::core::parseYaml("12");
+  REQUIRE_MESSAGE(twelve.has_value(), errorOf(twelve));
+  dwe::assets::YamlReader reader;
+  CHECK(reader.integer<std::size_t>(*twelve) == 12);
+  CHECK(reader.integer<std::uint64_t>(*twelve) == 12);
+  CHECK(reader.ok());
+
+  const auto negative = dwe::core::parseYaml("-1");
+  REQUIRE(negative.has_value());
+  dwe::assets::YamlReader negativeReader;
+  CHECK(negativeReader.integer<std::size_t>(*negative) == 0);
+  CHECK_FALSE(negativeReader.ok());
+
+  const auto tooBig = dwe::core::parseYaml("300");
+  REQUIRE(tooBig.has_value());
+  dwe::assets::YamlReader tooBigReader;
+  CHECK(tooBigReader.integer<std::uint8_t>(*tooBig) == 0);
+  CHECK_FALSE(tooBigReader.ok());
 }

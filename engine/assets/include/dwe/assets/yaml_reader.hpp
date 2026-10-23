@@ -6,7 +6,6 @@
 #include <concepts>
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <optional>
 #include <span>
 #include <string>
@@ -48,8 +47,7 @@ public:
     if (!value) {
       return T{};
     }
-    if (*value < static_cast<std::int64_t>(std::numeric_limits<T>::min()) ||
-        *value > static_cast<std::int64_t>(std::numeric_limits<T>::max())) {
+    if (!std::in_range<T>(*value)) {
       fail(node, "the number is out of range");
       return T{};
     }
