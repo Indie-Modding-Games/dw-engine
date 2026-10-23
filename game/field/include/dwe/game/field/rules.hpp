@@ -126,6 +126,13 @@ struct NpcRules {
   float talkReach = 50.0F;
 };
 
+// The story's scripted moves (script_interp.c: tickScriptedMovement).
+struct ScriptMotionRules {
+  // How fast entity_look_at_entity turns a character, radians a second (overworld.c: rotateEntity
+  // turns 0x200 of 4096 a frame).
+  float lookTurnSpeed = 0.0F;
+};
+
 struct FieldRules {
   MoverRules player;
   PartnerRules partner;
@@ -133,6 +140,8 @@ struct FieldRules {
   TransitionRules transition;
   TimeOfDayRules timeOfDay;
   NpcRules npc;
+  // Optional in the document: without it, the defaults.
+  ScriptMotionRules scriptMotion;
 };
 
 // Where a new field session starts (`field/warps` in the game pack,

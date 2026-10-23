@@ -6,6 +6,7 @@ dwe_add_module(field
         src/grid.cpp
         src/field.cpp
         src/npcs.cpp
+        src/field_script.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 

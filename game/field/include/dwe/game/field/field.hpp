@@ -89,6 +89,14 @@ struct CharacterState {
   scene::Motion motion = scene::Motion::Idle;
 };
 
+// A character a script holds (script_interp.c: scriptSetEntityWalking, scriptStartAnimation): it
+// glides at `velocity` (world units a second) with no collision, and plays `clip` (the original's
+// animation id) instead of the clip of its motion.
+struct ScriptedActor {
+  glm::vec3 velocity{};
+  std::optional<std::uint32_t> clip;
+};
+
 // The field's logic for one map at a time (docs/reference/campo.md): the player moves by intents
 // with the original's grid collision, steps on triggers and warps, and the partner follows. Player
 // and partner are entities of the scene world, with the shared components the app draws (Transform,
@@ -129,12 +137,6 @@ public:
   // A script's map change (map.c: scriptTickChangeMap): the same fades as a warp, with the player
   // standing, and the new map's name only if `showName`. The app takes it as any other.
   void startScriptedMapChange(MapChange change, bool showName);
-
-  // The script's hold on the player (script_interp.c: scriptPauseGame; tickScript gives it back):
-  // while held, the player and the partner stand, game time stops and no cell asks for its section;
-  // map changes still fade and enter, and the NPCs go on.
-  void holdForScript(bool hold);
-  [[nodiscard]] bool heldForScript() const { return held_; }
 
   // The sections of the map's script the player's cell asks for in the last tick (tamer.c:
   // checkMapInteraction): a step cell (51-79) every tick the player stands on it, a confirm cell
@@ -218,6 +220,23 @@ public:
   [[nodiscard]] scene::Entity playerEntity() const { return player_; }
   [[nodiscard]] scene::Entity partnerEntity() const { return partner_; }
 
+  // A script holds the player and the partner (script_interp.c: scriptPauseGame, overworld.c:
+  // setMovementEnabled): no input, no following, no triggers and no game time, and the camera stays
+  // where it is. The script moves them and picks their clips (ScriptedActor). Letting go gives
+  // them, the camera and the clock back (script_interp.c: tickScript).
+  void holdForScript(bool held);
+  [[nodiscard]] bool heldByScript() const { return scriptHeld_; }
+  // A held character's scripted move, place, facing and clip.
+  void driveByScript(scene::Entity entity, glm::vec3 velocity);
+  void placeByScript(scene::Entity entity, glm::vec3 position);
+  void turnByScript(scene::Entity entity, float yaw);
+  void animateByScript(scene::Entity entity, std::uint32_t clip);
+  // Where the camera looks while a script holds it; nothing: at the player.
+  [[nodiscard]] std::optional<glm::vec3> scriptCamera() const { return scriptCamera_; }
+  // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).
+  void panCameraByScript(glm::vec3 focus, float seconds);
+  [[nodiscard]] bool cameraPanning() const { return cameraPan_.has_value(); }
+
   // The ground waypoints left of the click-to-move path, for debug drawing.
   [[nodiscard]] std::span<const glm::vec3> path() const { return path_; }
 
@@ -275,6 +294,7 @@ private:
   void updateTrail();
   void movePartner(float seconds);
   void placePartnerNearPlayer();
+  void tickScripted(float seconds);
 
   scene::World* world_;
   FieldRules rules_;
@@ -325,7 +345,6 @@ private:
   bool fadeInHolds_ = true;
   // A script's map change asked for while the app loaded a map: it starts once that map is in.
   std::optional<std::pair<MapChange, bool>> queuedChange_;
-  bool held_ = false;
   // The cell the player stood on at the last check, for the port log.
   std::int32_t checkedCell_ = 0;
   std::optional<MapChange> pendingChange_;
@@ -344,6 +363,16 @@ private:
   scene::Motion partnerMotion_ = scene::Motion::Idle;
   float partnerStuckSeconds_ = 0.0F;
   std::int32_t partnerTeleports_ = 0;
+
+  struct CameraPan {
+    glm::vec3 from{};
+    glm::vec3 to{};
+    float seconds = 0.0F;
+    float elapsed = 0.0F;
+  };
+  bool scriptHeld_ = false;
+  std::optional<glm::vec3> scriptCamera_;
+  std::optional<CameraPan> cameraPan_;
 };
 
 } // namespace dwe::game::field

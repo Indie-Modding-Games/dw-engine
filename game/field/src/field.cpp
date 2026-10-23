@@ -175,6 +175,9 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   partnerStuckSeconds_ = 0.0F;
   placePartnerNearPlayer();
   partnerTeleports_ = 0;
+  if (scriptHeld_) {
+    scriptCamera_ = spawn.position;
+  }
 }
 
 void Field::setInput(const FieldInput& input) {
@@ -205,6 +208,12 @@ void Field::tick(float seconds) {
     registry.get<AnimationIntent>(player_) = {};
     return;
   }
+  if (scriptHeld_) {
+    // A press made while held is the script's, not the cell's.
+    input_.confirm = false;
+    tickScripted(seconds);
+    return;
+  }
   if (fadeInSeconds_) {
     // tamer.c: tamerTickChangeMap gives the player back control on the fade in's last frame
     // (FADE_IN_CURRENT reaching 20); fade.c: renderFadeIn still draws that frame and ends on the
@@ -218,14 +227,6 @@ void Field::tick(float seconds) {
       tickNpcs(seconds, false);
       return;
     }
-  }
-  if (held_) {
-    // script_interp.c: scriptPauseGame stops the player, the partner and game time; a press made
-    // while held is the script's, not the cell's.
-    registry.get<AnimationIntent>(player_) = {};
-    input_.confirm = false;
-    tickNpcs(seconds, false);
-    return;
   }
   // clock.c: tickGameClock runs while the player plays.
   gameTimeRan_ = true;
@@ -320,18 +321,6 @@ std::optional<std::string_view> Field::mapNameShown() const {
     return std::nullopt;
   }
   return std::string_view{changeTarget_};
-}
-
-void Field::holdForScript(bool hold) {
-  if (held_ == hold) {
-    return;
-  }
-  held_ = hold;
-  core::logDebug("[port:field] scriptPauseGame (script_interp.c:2727): player held {}", hold);
-  if (hold) {
-    moveTarget_.reset();
-    path_.clear();
-  }
 }
 
 void Field::startScriptedMapChange(MapChange change, bool showName) {

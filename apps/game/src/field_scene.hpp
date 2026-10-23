@@ -130,6 +130,11 @@ public:
   [[nodiscard]] const assets::MapTable* mapTable() const {
     return mapTable_ ? &*mapTable_ : nullptr;
   }
+  // The field the story's scripted moves drive (game::field::Field::holdForScript).
+  [[nodiscard]] game::field::Field& field() { return *field_; }
+  // How fast the clip with the original's animation id carries the player or the partner over the
+  // ground, world units a second: its root's speed (anim.c: applyRootMomentum); 0 without it.
+  [[nodiscard]] float clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const;
   // Free exploration (game::field::Field::setExplore) and the answer to its choice
   // (Field::chooseDestination).
   void setExplore(bool explore) { field_->setExplore(explore); }
@@ -158,6 +163,8 @@ private:
     float walkSpeed = 0.0F;
     float runSpeed = 0.0F;
     std::optional<scene::Motion> motion;
+    // The clip a script plays on it (game::field::ScriptedActor), while it plays one.
+    std::optional<std::uint32_t> scriptedClip;
   };
 
   // Gives the model renderer the map camera once the background drawer has sized it to the frame.
@@ -182,6 +189,8 @@ private:
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt);
   void animate(Actor& actor, double seconds);
+  // Plays the clip a script picked for the actor; false when it has none.
+  bool animateScripted(Actor& actor, double seconds);
   void submit(const Actor& actor, float alpha);
   void followClock();
   void applyLighting();

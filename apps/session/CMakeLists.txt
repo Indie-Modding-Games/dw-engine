@@ -25,6 +25,7 @@ dwe_add_module(session
         src/story_lua_flow.cpp
         src/story_lua_npc.cpp
         src/story_npcs.cpp
+        src/story_motion_lua.cpp
     DEPS core assets audio scene ruleset field partner save evolution inventory battle story script
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})

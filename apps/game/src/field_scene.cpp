@@ -245,6 +245,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .walkSpeed = rules.walkSpeed,
       .runSpeed = rules.runSpeed,
       .motion = std::nullopt,
+      .scriptedClip = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
   return actor;
@@ -373,6 +374,9 @@ void FieldScene::applyLighting() {
 }
 
 void FieldScene::animate(Actor& actor, double seconds) {
+  if (animateScripted(actor, seconds)) {
+    return;
+  }
   const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
   const std::optional<std::uint32_t> clipId =
       actor.character.clipOf(scene::motionName(intent.motion));
@@ -419,7 +423,9 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
   // the player walks out.
-  if (!field_->mapChangePending() || !cameraFocus_) {
+  if (const std::optional<glm::vec3> held = field_->scriptCamera()) {
+    cameraFocus_ = *held;
+  } else if (!field_->mapChangePending() || !cameraFocus_) {
     cameraFocus_ = player.position;
   }
   // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:

@@ -213,6 +213,13 @@ float shadeDarkness(const TransitionRules& rules, std::int32_t shade) {
   return std::clamp(static_cast<float>(shade) / static_cast<float>(rules.shadeFull), 0.0F, 1.0F);
 }
 
+ScriptMotionRules readScriptMotion(YamlReader& reader, const YamlNode* node) {
+  if (node == nullptr || !reader.expectKeys(*node, "script_motion", {"look_turn_speed"})) {
+    return {};
+  }
+  return {.lookTurnSpeed = readPositive(reader, reader.field(*node, "look_turn_speed"))};
+}
+
 core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
   auto tree = core::parseYaml(yaml);
   if (!tree) {
@@ -220,7 +227,8 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
   }
   YamlReader reader;
   if (!reader.expectKeys(*tree, "the field rules",
-                         {"player", "partner", "input", "transition", "time_of_day"}, {"npc"})) {
+                         {"player", "partner", "input", "transition", "time_of_day"},
+                         {"npc", "script_motion"})) {
     return std::unexpected{reader.error("field rules")};
   }
   FieldRules rules{.player = readMover(reader, reader.field(*tree, "player"), "player"),
@@ -228,7 +236,8 @@ core::Result<FieldRules> parseFieldRules(std::string_view yaml) {
                    .input = readInput(reader, reader.field(*tree, "input")),
                    .transition = readTransition(reader, reader.field(*tree, "transition")),
                    .timeOfDay = readTimeOfDay(reader, reader.field(*tree, "time_of_day")),
-                   .npc = {}};
+                   .npc = {},
+                   .scriptMotion = readScriptMotion(reader, tree->find("script_motion"))};
   if (const YamlNode* npc = tree->find("npc"); npc != nullptr) {
     rules.npc = readNpc(reader, *npc);
   }

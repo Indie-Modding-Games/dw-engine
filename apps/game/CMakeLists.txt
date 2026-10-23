@@ -13,6 +13,7 @@ dwe_add_app(game
         src/field_hud.cpp
         src/field_scene.cpp
         src/field_scene_npcs.cpp
+        src/field_scene_script.cpp
         src/frame_stats.cpp
         src/game.cpp
         src/game_audio.cpp
@@ -38,6 +39,7 @@ dwe_add_app(game
         src/sleep_screen.cpp
         src/story_field_link.cpp
         src/story_textbox.cpp
+        src/story_stage.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
         src/title_screen.cpp

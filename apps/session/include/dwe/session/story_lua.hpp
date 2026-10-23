@@ -2,9 +2,11 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/game/story/npc_orders.hpp>
+#include <dwe/game/story/script_motion.hpp>
 #include <dwe/game/story/section_host.hpp>
 #include <dwe/game/story/story_orders.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/script/script_coroutine.hpp>
 
 #include <array>
@@ -89,6 +91,11 @@ public:
   // the base pack always has) must carry its header, so outdated content stops the game when it
   // starts. Packs without story modules pass, and the log says no section can run.
   [[nodiscard]] core::Result<void> checkModules() const;
+
+  // Once per VM: the scripted moves' orders (story_motion_api.hpp); the freezing ones freeze
+  // through the runner. Both must outlive every script call of the VM.
+  core::Result<void> publishMotionApi(game::story::StoryRunner& runner,
+                                      game::story::ScriptMotion& motion);
 
   core::Result<game::story::SectionHandle> start(game::story::SectionRef section) override;
   game::story::SectionStep resume(game::story::SectionHandle handle,
