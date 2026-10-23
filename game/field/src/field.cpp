@@ -214,6 +214,11 @@ void Field::tick(float seconds) {
     tickScripted(seconds);
     return;
   }
+  if (careHeld_) {
+    input_.confirm = false;
+    tickCare(seconds);
+    return;
+  }
   if (fadeInSeconds_) {
     // tamer.c: tamerTickChangeMap gives the player back control on the fade in's last frame
     // (FADE_IN_CURRENT reaching 20); fade.c: renderFadeIn still draws that frame and ends on the
@@ -826,6 +831,105 @@ void Field::updateTrail() {
       trail_.resize(trail_.size() - back + 1);
       break;
     }
+  }
+}
+
+void Field::holdForCare(bool held) {
+  if (held == careHeld_) {
+    return;
+  }
+  careHeld_ = held;
+  careWalk_.reset();
+  moveTarget_.reset();
+  path_.clear();
+  partnerStuckSeconds_ = 0.0F;
+  entt::registry& registry = world_->registry();
+  registry.get<AnimationIntent>(player_) = {};
+  registry.get<AnimationIntent>(partner_) = {};
+  core::logDebug("[port:care] tamerSetState({}) (partner.c: the care scenes hold the player)",
+                 held ? "6" : "0");
+}
+
+void Field::walkPartnerToRange(float range) {
+  if (!careHeld_) {
+    return;
+  }
+  entt::registry& registry = world_->registry();
+  const float distance = groundDistance(registry.get<Transform>(partner_).position,
+                                        registry.get<Transform>(player_).position);
+  // partner.c: checkEatDistance is close at the range or nearer; close walks away (sub state 1),
+  // far walks up (sub state 2).
+  careWalk_ = CareWalk{.range = range, .away = distance <= range};
+  partnerStuckSeconds_ = 0.0F;
+  core::logDebug("[port:care] partnerTickFeedItem (partner.c:434): distance {:.0f}, range {:.0f}: "
+                 "sub state {}",
+                 distance, range, careWalk_->away ? 1 : 2);
+}
+
+void Field::tickCare(float seconds) {
+  // clock.c: tickGameClock runs: the partner states that hold the player keep the game time.
+  gameTimeRan_ = true;
+  entt::registry& registry = world_->registry();
+  registry.get<AnimationIntent>(player_) = {};
+  tickCareWalk(seconds);
+  tickNpcs(seconds, false);
+}
+
+void Field::faceEachOther() {
+  entt::registry& registry = world_->registry();
+  auto& partner = registry.get<Transform>(partner_);
+  auto& player = registry.get<Transform>(player_);
+  const glm::vec3 toPlayer = player.position - partner.position;
+  if (toPlayer.x != 0.0F || toPlayer.z != 0.0F) {
+    partner.yaw = assets::yawOfDirection(toPlayer);
+    player.yaw = assets::yawOfDirection(-toPlayer);
+  }
+}
+
+void Field::tickCareWalk(float seconds) {
+  if (!careWalk_) {
+    return;
+  }
+  entt::registry& registry = world_->registry();
+  auto& transform = registry.get<Transform>(partner_);
+  const glm::vec3 playerPosition = registry.get<Transform>(player_).position;
+  const float distance = groundDistance(transform.position, playerPosition);
+  const bool there = careWalk_->away ? distance > careWalk_->range : distance <= careWalk_->range;
+  // The original walks on into a wall; the engine gives up once stuck, where it stands.
+  if (there || partnerStuckSeconds_ > rules_.partner.stuckSeconds) {
+    if (!there) {
+      core::logDebug("[port:care] partnerTickFeedItem: the partner is stuck at {:.0f}, short of "
+                     "{:.0f}: it stops there",
+                     distance, careWalk_->range);
+    }
+    careWalk_.reset();
+    partnerStuckSeconds_ = 0.0F;
+    faceEachOther();
+    return;
+  }
+  const glm::vec2 toPlayer = ground(playerPosition) - ground(transform.position);
+  const glm::vec2 heading = glm::length(toPlayer) == 0.0F
+                                ? ground(assets::forwardOfYaw(transform.yaw))
+                                : glm::normalize(toPlayer) * (careWalk_->away ? -1.0F : 1.0F);
+  const PartnerRules& rules = rules_.partner;
+  const float expected = rules.mover.walkSpeed * seconds;
+  const GridMove move =
+      moveOnGrid(collision_, transform.position, heading * expected, rules.mover.radius);
+  const glm::vec3 reached = npcs_.blocks(transform.position, move.position, rules.mover.radius)
+                                ? transform.position
+                                : move.position;
+  const float moved = groundDistance(reached, transform.position);
+  transform.position = reached;
+  transform.yaw = assets::yawOfDirection({heading.x, 0.0F, heading.y});
+  registry.get<AnimationIntent>(partner_) = {
+      .motion = Motion::Walk,
+      .speedScale = expected > 0.0F ? std::clamp(moved / expected, 0.0F, 1.0F) : 1.0F};
+  partnerStuckSeconds_ = moved < expected * StuckFraction ? partnerStuckSeconds_ + seconds : 0.0F;
+  // partner.c: entityLookAtLocation: the player looks at the partner meanwhile.
+  auto& player = registry.get<Transform>(player_);
+  const glm::vec3 toPartner = transform.position - player.position;
+  if (toPartner.x != 0.0F || toPartner.z != 0.0F) {
+    player.yaw = assets::yawOfDirection(toPartner);
   }
 }
 

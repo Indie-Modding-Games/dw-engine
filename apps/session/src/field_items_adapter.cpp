@@ -25,6 +25,21 @@ constexpr std::string_view ToiletSoundKey = "toilet_sound";
 constexpr std::string_view SleepSoundKey = "sleep_sound";
 constexpr std::string_view PraiseSoundKey = "praise_sound";
 constexpr std::string_view ScoldSoundKey = "scold_sound";
+constexpr std::string_view FeedKey = "feed";
+constexpr std::string_view FeedSoundKey = "sound";
+constexpr std::string_view RangeBaseKey = "range_base";
+constexpr std::string_view RangePerDistanceKey = "range_per_distance";
+constexpr std::string_view TakeDistanceKey = "take_distance";
+constexpr std::string_view DefaultKey = "default";
+constexpr std::string_view SpeciesKey = "species";
+constexpr std::string_view OfferFrameKey = "offer_frame";
+constexpr std::string_view HandDownFrameKey = "hand_down_frame";
+constexpr std::string_view ClipsKey = "clips";
+constexpr std::string_view PlayerOfferKey = "player_offer";
+constexpr std::string_view PlayerRefusedKey = "player_refused";
+constexpr std::string_view PartnerIdleKey = "partner_idle";
+constexpr std::string_view PartnerEatKey = "partner_eat";
+constexpr std::string_view PartnerRefuseKey = "partner_refuse";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
 
@@ -46,14 +61,71 @@ SoundCue soundCue(YamlReader& reader, const YamlNode& root, std::string_view key
           .sound = reader.integer<std::int64_t>(reader.field(node, SoundKey))};
 }
 
+FeedClips feedClips(YamlReader& reader, const YamlNode& root) {
+  const YamlNode& node = reader.field(root, ClipsKey);
+  if (!reader.expectKeys(
+          node, ClipsKey,
+          {PlayerOfferKey, PlayerRefusedKey, PartnerIdleKey, PartnerEatKey, PartnerRefuseKey})) {
+    return {};
+  }
+  const auto clip = [&](std::string_view key) {
+    return reader.integer<std::uint32_t>(reader.field(node, key));
+  };
+  return {.playerOffer = clip(PlayerOfferKey),
+          .playerRefused = clip(PlayerRefusedKey),
+          .partnerIdle = clip(PartnerIdleKey),
+          .partnerEat = clip(PartnerEatKey),
+          .partnerRefuse = clip(PartnerRefuseKey)};
+}
+
+std::optional<FeedRules> feedRules(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(FeedKey);
+  if (node == nullptr) {
+    return std::nullopt;
+  }
+  if (!reader.expectKeys(*node, FeedKey,
+                         {FeedSoundKey, RangeBaseKey, RangePerDistanceKey, TakeDistanceKey,
+                          OfferFrameKey, HandDownFrameKey, ClipsKey})) {
+    return std::nullopt;
+  }
+  const YamlNode& take = reader.field(*node, TakeDistanceKey);
+  if (!reader.expectKeys(take, TakeDistanceKey, {DefaultKey, SpeciesKey})) {
+    return std::nullopt;
+  }
+  FeedRules rules{.sound = soundCue(reader, *node, FeedSoundKey),
+                  .rangeBase = positive(reader, *node, RangeBaseKey),
+                  .rangePerDistance = positive(reader, *node, RangePerDistanceKey),
+                  .defaultDistance = positive(reader, take, DefaultKey),
+                  .distances = {},
+                  .offerFrame = positive(reader, *node, OfferFrameKey),
+                  .handDownFrame = positive(reader, *node, HandDownFrameKey),
+                  .clips = feedClips(reader, *node)};
+  const YamlNode& species = reader.field(take, SpeciesKey);
+  if (reader.ok() && !species.isMapping()) {
+    reader.fail(species, core::formatMessage(field_items_messages::NotMapping, SpeciesKey));
+    return rules;
+  }
+  for (const core::YamlEntry& entry : species.entries()) {
+    rules.distances.emplace(entry.key, positive(reader, species, entry.key));
+  }
+  return rules;
+}
+
 } // namespace
+
+float FeedRules::rangeOf(std::string_view species) const {
+  const auto found = distances.find(species);
+  const std::int32_t distance = found == distances.end() ? defaultDistance : found->second;
+  return static_cast<float>(rangeBase + (rangePerDistance * distance));
+}
 
 core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section) {
   YamlReader reader;
   const YamlNode& root = section.node;
   if (!reader.expectKeys(root, field_items_messages::SectionText,
                          {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
-                          ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey})) {
+                          ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey},
+                         {FeedKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const FieldItemsRules rules{.items = {.groundSlots = positive(reader, root, GroundSlotsKey),
@@ -63,7 +135,8 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
                               .toiletSound = soundCue(reader, root, ToiletSoundKey),
                               .sleepSound = soundCue(reader, root, SleepSoundKey),
                               .praiseSound = soundCue(reader, root, PraiseSoundKey),
-                              .scoldSound = soundCue(reader, root, ScoldSoundKey)};
+                              .scoldSound = soundCue(reader, root, ScoldSoundKey),
+                              .feed = feedRules(reader, root)};
   return reader.finish(rules, section.file);
 }
 

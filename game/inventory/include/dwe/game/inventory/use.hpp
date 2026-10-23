@@ -22,6 +22,8 @@ enum class UseOutcome : std::uint8_t {
   NotInBag,
   // It does nothing and the quirk useless_items_consumed is off, so it was kept.
   Useless,
+  // The partner takes it (offerItem): nothing was consumed yet; giveItem consumes and applies it.
+  Accepted,
 };
 
 // What came of using an item, and whether it is a key item (isKeyItem), for the session's autosave.
@@ -37,5 +39,18 @@ struct UseResult {
 core::Result<UseResult> useItem(Inventory& inventory, assets::ItemHandle item, UseContext context,
                                 const assets::ItemTable& items, const ItemEffects& effects,
                                 ItemEffectTarget& target);
+
+// The first half of useItem, as the player holds the item out to the partner (partner.c:
+// partnerTickFeedItem sub state 4): the same checks and the partner's refusal; nothing is consumed.
+// Accepted means giveItem may finish it.
+core::Result<UseResult> offerItem(const Inventory& inventory, assets::ItemHandle item,
+                                  UseContext context, const assets::ItemTable& items,
+                                  const ItemEffects& effects, ItemEffectTarget& target);
+
+// The second half, once the partner ate it (sub state 6): consumes one and applies it, with no
+// second refusal; NotInBag when the bag has none left.
+core::Result<UseResult> giveItem(Inventory& inventory, assets::ItemHandle item, UseContext context,
+                                 const assets::ItemTable& items, const ItemEffects& effects,
+                                 ItemEffectTarget& target);
 
 } // namespace dwe::game::inventory

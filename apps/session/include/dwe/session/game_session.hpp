@@ -250,7 +250,8 @@ public:
   void afterSystemCommand();
 
   // Whether the player walks the field freely (tamer.c: tamerGetState() == 0): no map change, no
-  // script holding them, and the field ran game time last tick. Always true without a field.
+  // script or care scene holding them, and the field ran game time last tick. Always true without
+  // a field.
   [[nodiscard]] bool playerFree() const;
   // Whether a story script ran at the end of the last tick (IS_SCRIPT_PAUSED == 0): the story
   // tells it each tick. The partner's death and sickness wait for the player free and no script.

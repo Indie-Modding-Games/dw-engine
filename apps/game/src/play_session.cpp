@@ -212,10 +212,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      .inventory = game_.systems.inventory,
                      .species = species_ ? &*species_ : nullptr,
                      .ui = context.ui}),
+      feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
       partnerMenu_({.session = game_.session.get(),
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
-                    .ui = context.ui}),
+                    .ui = context.ui,
+                    .feed = &feedScene_}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
       saveMachine_(*game_.session, *context.ui),
@@ -319,6 +321,10 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   if (sleepScreen_.active() || shopScreen_.active()) {
     return;
   }
+  if (feedScene_.active()) {
+    guardFactsChanged_ = feedScene_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    return;
+  }
   if (praiseScold_.active()) {
     guardFactsChanged_ =
         praiseScold_.tick(*scene_, static_cast<float>(TickSeconds), *game_.systems.fieldItems) ||
@@ -398,15 +404,15 @@ void PlaySession::showLockNotice(const std::string& textKey) {
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       sleepScreen_.handle(command) || saveMachine_.handle(command) ||
-      praiseScold_.handle(command) || fieldItemsScreen_.handle(command) ||
-      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
-      freeExploration_.handle(command)) {
+      praiseScold_.handle(command) || feedScene_.handle(command) ||
+      fieldItemsScreen_.handle(command) || fishingScreen_.handle(command) ||
+      battleScreen_.handle(command) || freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
     // Not over a sleep or a battle, whose state a later save would not see whole.
     if (!sleepScreen_.active() && !battleScreen_.active() && !saveMachine_.active() &&
-        !praiseScold_.active()) {
+        !praiseScold_.active() && !feedScene_.active()) {
       context_.ui->hide(MenuDocument);
       screens::publish(
           *context_.ui,
@@ -511,11 +517,12 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // text boxes yet.
   const bool fieldIdle = !battleScreen_.active() && !gymScreen_.active() &&
                          !fishingScreen_.active() && !evolutionScene_.active() &&
-                         !deathScene_.active() && !field.mapChangePending() &&
-                         field.fadeLevel() == 0.0F;
+                         !deathScene_.active() && !feedScene_.active() &&
+                         !field.mapChangePending() && field.fadeLevel() == 0.0F;
   sleepScreen_.update(fieldIdle);
   gymScreen_.update();
   praiseScold_.update(fieldIdle);
+  feedScene_.update(fieldIdle);
   fishingScreen_.update(fieldIdle);
   if (fieldIdle && !paused()) {
     guardFactsChanged =

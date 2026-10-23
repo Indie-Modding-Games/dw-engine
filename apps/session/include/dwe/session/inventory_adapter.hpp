@@ -59,6 +59,10 @@ public:
   // Uses one of an item on the partner in the field: it may refuse it; an item used that is a key
   // item asks for the KeyItem autosave.
   core::Result<game::inventory::UseResult> use(GameSession& session, assets::ItemHandle item);
+  // The two halves of `use` for the field's feeding scene: offer checks the item and lets the
+  // partner refuse it (Accepted or why not), give consumes and applies it once the partner ate it.
+  core::Result<game::inventory::UseResult> offer(GameSession& session, assets::ItemHandle item);
+  core::Result<game::inventory::UseResult> give(GameSession& session, assets::ItemHandle item);
   // Uses one of an item in battle on `target` (inventory.c: selectOptionMenu with GAME_STATE 1):
   // only the items whose item_color allows battle; the partner never refuses it and it is consumed
   // when thrown (main.c: startThrowingItem).

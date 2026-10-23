@@ -343,12 +343,35 @@ core::Result<void> InventoryAdapter::startNewGame(GameSession& /*session*/) {
 
 core::Result<game::inventory::UseResult> InventoryAdapter::use(GameSession& session,
                                                                assets::ItemHandle item) {
+  auto offered = offer(session, item);
+  if (!offered || offered->outcome != game::inventory::UseOutcome::Accepted) {
+    return offered;
+  }
+  return give(session, item);
+}
+
+core::Result<game::inventory::UseResult> InventoryAdapter::offer(GameSession& session,
+                                                                 assets::ItemHandle item) {
+  if (!inventory_ || !effects_) {
+    return core::fail(std::string{messages::InventoryNotRead});
+  }
+  PartnerTarget target{session, *this};
+  auto offered =
+      game::inventory::offerItem(*inventory_, item, UseContext::Field, items(), *effects_, target);
+  if (offered && offered->outcome == game::inventory::UseOutcome::Refused) {
+    session.afterSystemCommand();
+  }
+  return offered;
+}
+
+core::Result<game::inventory::UseResult> InventoryAdapter::give(GameSession& session,
+                                                                assets::ItemHandle item) {
   if (!inventory_ || !effects_) {
     return core::fail(std::string{messages::InventoryNotRead});
   }
   PartnerTarget target{session, *this};
   auto used =
-      game::inventory::useItem(*inventory_, item, UseContext::Field, items(), *effects_, target);
+      game::inventory::giveItem(*inventory_, item, UseContext::Field, items(), *effects_, target);
   if (!used) {
     return used;
   }

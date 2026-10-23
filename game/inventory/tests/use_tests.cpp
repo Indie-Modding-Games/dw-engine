@@ -127,3 +127,29 @@ TEST_CASE(
   // A key item not used is still reported, so the caller knows what it was.
   CHECK(fixture.useResult(GateKey, UseContext::Field).keyItem);
 }
+
+TEST_CASE("offering an item asks the partner and keeps it; giving it consumes and applies it") {
+  UseFixture fixture;
+  fixture.inventory.add(handleOf(Tonic), 1);
+  const auto offered = offerItem(fixture.inventory, handleOf(Tonic), UseContext::Field,
+                                 fixture.items, fixture.effects, fixture.target);
+  REQUIRE(offered.has_value());
+  CHECK(offered->outcome == UseOutcome::Accepted);
+  CHECK(fixture.target.asked == 1);
+  CHECK(fixture.inventory.countOf(handleOf(Tonic)) == 1);
+  CHECK(fixture.target.applied.empty());
+
+  const auto given = giveItem(fixture.inventory, handleOf(Tonic), UseContext::Field, fixture.items,
+                              fixture.effects, fixture.target);
+  REQUIRE(given.has_value());
+  CHECK(given->outcome == UseOutcome::Used);
+  CHECK(fixture.target.asked == 1);
+  CHECK(fixture.inventory.countOf(handleOf(Tonic)) == 0);
+  CHECK(fixture.target.applied.size() == 1);
+
+  const auto none = giveItem(fixture.inventory, handleOf(Tonic), UseContext::Field, fixture.items,
+                             fixture.effects, fixture.target);
+  REQUIRE(none.has_value());
+  CHECK(none->outcome == UseOutcome::NotInBag);
+  CHECK(fixture.target.applied.size() == 1);
+}

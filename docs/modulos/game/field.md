@@ -54,6 +54,11 @@ if (auto change = field.takeMapChange()) {
   (`overworld.c: NPCEntityTickOverworld`). Mientras reacciona no sigue su ruta. Si un NPC con `autotalk` choca con
   el jugador, el contacto (`contacts()`) lanza su sección del guion, que es la que empieza el combate. El original
   no tiene encuentros aleatorios: todos los enemigos del campo son NPC del mapa.
+- **Escenas de cuidado** (`holdForCare`): retienen al jugador sin parar el tiempo de juego, como el estado 6 del
+  tamer en el original. No hay entrada ni casillas, y el compañero no sigue al jugador. `walkPartnerToRange(rango)`
+  lleva al compañero hasta esa distancia del jugador: se acerca si está más lejos y se aleja si está más cerca
+  (`partner.c: partnerTickFeedItem`, `checkEatDistance`). Al llegar, los dos se miran. Si se atasca, se para donde
+  está.
 - **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
   su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
   sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.

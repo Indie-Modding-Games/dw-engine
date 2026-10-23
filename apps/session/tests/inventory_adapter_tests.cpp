@@ -195,6 +195,26 @@ TEST_CASE("a healing item heals the partner within its maximum and is used up") 
   CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 0);
 }
 
+TEST_CASE("the feeding scene offers an item first and gives it once the partner ate it") {
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithItems(packs, adapters);
+  PartnerState state = session->partner().state();
+  state.stats.currentHp = 1;
+  REQUIRE(session->partner().restore(state).has_value());
+  adapters.inventory->inventory().add(items::handleOf(items::Tonic), 1);
+  const auto offered = adapters.inventory->offer(*session, items::handleOf(items::Tonic));
+  REQUIRE_MESSAGE(offered.has_value(), errorOf(offered));
+  CHECK(offered->outcome == UseOutcome::Accepted);
+  CHECK(session->partner().state().stats.currentHp == 1);
+  CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 1);
+  const auto given = adapters.inventory->give(*session, items::handleOf(items::Tonic));
+  REQUIRE_MESSAGE(given.has_value(), errorOf(given));
+  CHECK(given->outcome == UseOutcome::Used);
+  CHECK(session->partner().state().stats.currentHp > 1);
+  CHECK(adapters.inventory->inventory().countOf(items::handleOf(items::Tonic)) == 0);
+}
+
 TEST_CASE("food feeds the partner: energy, weight and the training boost of its flag's stats") {
   const TestPacks packs;
   Adapters adapters;

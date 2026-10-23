@@ -60,6 +60,7 @@ dwe_add_app(game
         src/field_toilet.cpp
         src/partner_walk_up.cpp
         src/praise_scold_call.cpp
+        src/feed_scene.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp
         src/title_screen.cpp

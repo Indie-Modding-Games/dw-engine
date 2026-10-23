@@ -46,6 +46,7 @@ constexpr char MoveSeparator = ' ';
 std::string_view keyOf(game::inventory::UseOutcome outcome) {
   switch (outcome) {
   case game::inventory::UseOutcome::Used:
+  case game::inventory::UseOutcome::Accepted:
     return UsedKey;
   case game::inventory::UseOutcome::Refused:
     return RefusedKey;
@@ -181,6 +182,10 @@ void PartnerMenu::use(double value) {
     return;
   }
   const assets::ItemHandle item = *inSlot;
+  if (desc_.feed != nullptr && desc_.feed->canStart()) {
+    feed(item);
+    return;
+  }
   auto used = desc_.inventory->use(*desc_.session, item);
   if (!used) {
     core::logWarning(
@@ -189,6 +194,23 @@ void PartnerMenu::use(double value) {
     return;
   }
   bagResult(keyOf(used->outcome), item);
+}
+
+void PartnerMenu::feed(assets::ItemHandle item) {
+  auto started = desc_.feed->start(item);
+  if (!started) {
+    core::logWarning("{}", core::formatMessage(messages::BagCommandFailed, BagUseCommand,
+                                               started.error().message));
+    bagResult(FailedKey, item);
+    return;
+  }
+  if (*started == game::inventory::UseOutcome::Accepted ||
+      *started == game::inventory::UseOutcome::Refused) {
+    // inventory.c: tickInventoryUI: the menu closes as the partner comes for the item.
+    desc_.ui->hide(PartnerMenuDocument);
+    return;
+  }
+  bagResult(keyOf(*started), item);
 }
 
 void PartnerMenu::move(const std::string& text) {

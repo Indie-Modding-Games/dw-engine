@@ -18,7 +18,46 @@
     "toilet_sound": { "description": "The sound of the partner at the toilet.", "$ref": "#/$defs/sound" },
     "sleep_sound": { "description": "The sound of the partner come to the player to sleep.", "$ref": "#/$defs/sound" },
     "praise_sound": { "description": "The sound of praising the partner.", "$ref": "#/$defs/sound" },
-    "scold_sound": { "description": "The sound of scolding the partner.", "$ref": "#/$defs/sound" }
+    "scold_sound": { "description": "The sound of scolding the partner.", "$ref": "#/$defs/sound" },
+    "feed": {
+      "description": "Giving the partner an item from the bag in the field (partner.c: partnerTickFeedItem); without it the item goes to the partner at once.",
+      "type": "object",
+      "required": ["sound", "range_base", "range_per_distance", "take_distance", "offer_frame", "hand_down_frame", "clips"],
+      "additionalProperties": false,
+      "properties": {
+        "sound": { "description": "The sound as the player holds the item out.", "$ref": "#/$defs/sound" },
+        "range_base": { "description": "The take range with a take distance of 0.", "type": "integer", "minimum": 1 },
+        "range_per_distance": { "description": "What each step of take distance adds to the range.", "type": "integer", "minimum": 1 },
+        "take_distance": {
+          "type": "object",
+          "required": ["default", "species"],
+          "additionalProperties": false,
+          "properties": {
+            "default": { "description": "The take distance of the species not listed.", "type": "integer", "minimum": 1 },
+            "species": {
+              "description": "The take distance by species id.",
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "offer_frame": { "description": "The player's offer clip frame past which the partner takes or refuses it.", "type": "integer", "minimum": 1 },
+        "hand_down_frame": { "description": "The partner's eat clip frame on which the player lowers the hand.", "type": "integer", "minimum": 1 },
+        "clips": {
+          "description": "The clips, by the original's animation ids.",
+          "type": "object",
+          "required": ["player_offer", "player_refused", "partner_idle", "partner_eat", "partner_refuse"],
+          "additionalProperties": false,
+          "properties": {
+            "player_offer": { "type": "integer", "minimum": 0 },
+            "player_refused": { "type": "integer", "minimum": 0 },
+            "partner_idle": { "type": "integer", "minimum": 0 },
+            "partner_eat": { "type": "integer", "minimum": 0 },
+            "partner_refuse": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
   },
   "$defs": {
     "sound": {

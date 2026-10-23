@@ -260,6 +260,18 @@ public:
   // them, the camera and the clock back (script_interp.c: tickScript).
   void holdForScript(bool held);
   [[nodiscard]] bool heldByScript() const { return scriptHeld_; }
+  // A care scene holds the player while the game time runs (partner.c: partnerTickFeedItem and
+  // the other partner states that set tamer state 6): no input, no triggers and no following; the
+  // camera stays on the player. The partner stands unless walkPartnerToRange moves it.
+  void holdForCare(bool held);
+  [[nodiscard]] bool heldForCare() const { return careHeld_; }
+  // While held for care: the partner walks until its ground distance to the player crosses
+  // `range`, toward the player from farther and away from it from closer, while the player looks
+  // at it (partner.c: partnerTickFeedItem sub states 0 to 2, checkEatDistance).
+  void walkPartnerToRange(float range);
+  // Whether that walk goes on; once over, the two face each other.
+  [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
+
   // A held character's scripted move, place, facing and clip.
   void driveByScript(scene::Entity entity, glm::vec3 velocity);
   void placeByScript(scene::Entity entity, glm::vec3 position);
@@ -344,6 +356,9 @@ private:
   void movePartner(float seconds);
   void placePartnerNearPlayer();
   void tickScripted(float seconds);
+  void tickCare(float seconds);
+  void tickCareWalk(float seconds);
+  void faceEachOther();
 
   scene::World* world_;
   FieldRules rules_;
@@ -425,6 +440,13 @@ private:
     float elapsed = 0.0F;
   };
   bool scriptHeld_ = false;
+  // A care scene's walk of the partner: to `range` of the player, `away` from it when closer.
+  struct CareWalk {
+    float range = 0.0F;
+    bool away = false;
+  };
+  bool careHeld_ = false;
+  std::optional<CareWalk> careWalk_;
   std::optional<glm::vec3> scriptCamera_;
   std::optional<CameraPan> cameraPan_;
   std::vector<std::optional<MapObject3D>> mapObjects_;

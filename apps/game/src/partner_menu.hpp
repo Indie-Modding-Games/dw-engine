@@ -10,6 +10,8 @@
 #include <string>
 #include <string_view>
 
+#include "feed_scene.hpp"
+
 namespace dwe::app {
 
 // The partner's menu document and the commands it sends.
@@ -40,6 +42,9 @@ struct PartnerMenuDesc {
   // For the partner's name; it may be null.
   const assets::DigimonTable* species = nullptr;
   ui::Ui* ui = nullptr;
+  // The field's feeding scene, which the bag's Use starts when it can; null: the bag uses the
+  // item at once.
+  FeedScene* feed = nullptr;
 };
 
 // The partner's menu: its status page, the item bag and the care commands. It publishes the views
@@ -70,6 +75,7 @@ private:
   void open();
   void publish() const;
   void use(double value);
+  void feed(assets::ItemHandle item);
   void move(const std::string& text);
   void drop(double value);
   void sort(double value);

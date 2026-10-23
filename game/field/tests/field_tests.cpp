@@ -447,6 +447,46 @@ TEST_CASE("a stuck partner is placed behind the player") {
   CHECK(field.partner().position.z < field.player().position.z);
 }
 
+TEST_CASE("a care scene holds the player and walks the partner to a range, toward or away") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  const MapDocument map = roomMap("room");
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+
+  // From far, it walks up to 360 (a take distance of 10).
+  dwe::scene::place(partner, {-1000.0F, 0.0F, 0.0F}, 0.0F);
+  field.holdForCare(true);
+  field.walkPartnerToRange(360.0F);
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+  }
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(partnerDistance(field) <= 360.0F);
+  CHECK(partnerDistance(field) > 300.0F);
+  // The player stayed put and the game time ran.
+  CHECK(field.player().position.x == doctest::Approx(0.0F));
+  CHECK(field.gameTimeRan());
+
+  // From close, it walks away past the range.
+  dwe::scene::place(partner, {-100.0F, 0.0F, 0.0F}, 0.0F);
+  field.walkPartnerToRange(360.0F);
+  for (int i = 0; i < 200 && field.partnerWalking(); ++i) {
+    field.tick(Tick);
+  }
+  CHECK_FALSE(field.partnerWalking());
+  CHECK(partnerDistance(field) > 360.0F);
+  // The two face each other.
+  const glm::vec3 toPlayer = field.player().position - field.partner().position;
+  CHECK(field.partner().yaw ==
+        doctest::Approx(dwe::assets::yawOfDirection(toPlayer)).epsilon(1e-3));
+
+  field.holdForCare(false);
+  field.tick(Tick);
+  CHECK(field.player().position.x > 0.0F);
+}
+
 TEST_CASE("click-to-move walks around walls to the target") {
   auto map = roomMap("room");
   fill(map, {.column = 50, .row = 30}, {.column = 50, .row = 65}, Blocked); // gap at z 1600 to 2000

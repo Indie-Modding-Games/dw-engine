@@ -411,8 +411,8 @@ void GameSession::advanceGameTime(double realSeconds) {
 
 bool GameSession::playerFree() const {
   const game::field::Field* field = state_->field;
-  return field == nullptr ||
-         (field->gameTimeRan() && !field->mapChangePending() && !field->heldByScript());
+  return field == nullptr || (field->gameTimeRan() && !field->mapChangePending() &&
+                              !field->heldByScript() && !field->heldForCare());
 }
 
 game::partner::CareContext GameSession::careContext() const {

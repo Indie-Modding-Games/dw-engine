@@ -15,3 +15,19 @@ sleep_sound: {slot: 0, sound: 15}
 # regañar.
 praise_sound: {slot: 0, sound: 14}
 scold_sound: {slot: 0, sound: 13}
+# Dar un objeto de la bolsa en el campo (game_menu.c: startFeedingItem; partner.c: partnerTickFeedItem). El compañero se
+# acerca o se aleja hasta la distancia de tomarlo (checkEatDistance: distancia * 200 / 10 + 160, con la distancia de
+# ITEM_TAKE_DISTANCE por especie), el jugador se lo tiende con playSound(0, 12) y la animación 5, y pasado su cuadro 7 el
+# compañero lo come (animación 8; el jugador baja la mano en el cuadro 15) o lo rechaza (animación 13; el jugador hace la
+# animación 4).
+feed:
+  sound: {slot: 0, sound: 12}
+  range_base: 160
+  range_per_distance: 20
+  take_distance:
+    default: 10
+    species: {grey: 15, tyra: 15, sead: 15, mtgr: 15, kabu: 15, garu: 15, hoee: 15, skul: 25, shel: 15, cent: 15,
+      kuwa: 15, hkab: 15, mgsd: 15}
+  offer_frame: 7
+  hand_down_frame: 15
+  clips: {player_offer: 5, player_refused: 4, partner_idle: 0, partner_eat: 8, partner_refuse: 13}

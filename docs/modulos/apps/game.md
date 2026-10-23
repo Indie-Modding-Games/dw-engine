@@ -32,6 +32,23 @@ Hueco: el radio de colisión y las velocidades de andar y correr del compañero 
 (medidos en el compañero inicial), no los de la especie nueva (`DIGIMON_DATA[tipo].radius` y la raíz de sus
 animaciones).
 
+## Dar un objeto en el campo
+
+Usar un objeto de la bolsa en el campo no lo aplica al momento: juega la escena del original (`game_menu.c:
+startFeedingItem`, `partner.c: partnerTickFeedItem`, en `feed_scene.cpp`). El menú se cierra y el jugador queda quieto
+mientras el tiempo corre (`Field::holdForCare`). El compañero anda hasta la distancia a la que toma objetos: se acerca si
+está lejos y se aleja si está cerca (`Field::walkPartnerToRange`, `checkEatDistance`). Esa distancia va por especie en
+`field_items.feed.take_distance` (`ITEM_TAKE_DISTANCE`). El jugador le tiende el objeto y suena el sonido. Pasado el
+cuadro 7, el compañero lo come y el objeto se aplica al acabar, o lo rechaza y el objeto queda en la bolsa. Mientras
+dura, la muerte y la evolución esperan, porque el jugador no está libre. Sin el bloque `feed` del ruleset, la bolsa usa
+el objeto al momento, como antes. `use_item` de la consola también lo usa al momento.
+
+Diferencias con el original:
+
+- El compañero decide si lo toma al elegir el objeto, no al tendérselo: es la misma tirada, un momento antes.
+- El objeto en la mano del jugador no se dibuja (`renderFeedingItem`).
+- Si el compañero se atasca contra una pared, se para donde está; el original sigue andando.
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

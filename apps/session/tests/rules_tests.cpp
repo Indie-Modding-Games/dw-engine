@@ -1,6 +1,8 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/core/json_schema.hpp>
 #include <dwe/core/yaml.hpp>
+#include <dwe/ruleset/ruleset.hpp>
+#include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/session_rules.hpp>
 
 #include <doctest/doctest.h>
@@ -13,6 +15,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "session_fixture.hpp"
 
@@ -75,4 +78,25 @@ TEST_CASE("the session's checks refuse values it cannot use") {
   CHECK(store.setValue("new_game", "stats.hp", "600").has_value());
   session->tick(dwe::session::testing::Tick);
   CHECK(session->sessionRules().newGame.stats[dwe::game::partner::Stat::Hp] == 600);
+}
+
+TEST_CASE("the original's feeding takes the item at 360, or farther for the big species") {
+  const dwe::assets::DiskFileSystem disk;
+  const auto bytes =
+      disk.readFile(std::filesystem::path{DWE_GAME_PACK} / "rules/original/field_items.yaml");
+  REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
+  auto document = dwe::core::parseYaml(textOf(*bytes));
+  REQUIRE_MESSAGE(document.has_value(), errorOf(document));
+  const dwe::ruleset::Section section{.name = "field_items",
+                                      .owner = "original",
+                                      .file = "field_items.yaml",
+                                      .node = std::move(*document)};
+  const auto rules = dwe::session::readFieldItemRules(section);
+  REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+  REQUIRE(rules->feed.has_value());
+  const dwe::session::FeedRules feed = rules->feed.value_or(dwe::session::FeedRules{});
+  CHECK(feed.rangeOf("agu") == doctest::Approx(360.0F));
+  CHECK(feed.rangeOf("grey") == doctest::Approx(460.0F));
+  CHECK(feed.rangeOf("skul") == doctest::Approx(660.0F));
+  CHECK(feed.clips.partnerEat == 8);
 }

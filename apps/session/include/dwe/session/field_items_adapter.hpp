@@ -10,7 +10,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace dwe::session {
@@ -27,6 +30,35 @@ struct SoundCue {
   std::int64_t sound = 0;
 };
 
+// The clips of the feeding scene, by the original's animation ids (startAnimation).
+struct FeedClips {
+  std::uint32_t playerOffer = 0;
+  std::uint32_t playerRefused = 0;
+  std::uint32_t partnerIdle = 0;
+  std::uint32_t partnerEat = 0;
+  std::uint32_t partnerRefuse = 0;
+};
+
+// Giving the partner an item in the field (partner.c: partnerTickFeedItem, checkEatDistance,
+// ITEM_TAKE_DISTANCE).
+struct FeedRules {
+  SoundCue sound;
+  // The partner takes the item at rangeBase + rangePerDistance * its take distance or nearer.
+  std::int32_t rangeBase = 0;
+  std::int32_t rangePerDistance = 0;
+  // The take distance of a species, by species id; defaultDistance for the others.
+  std::int32_t defaultDistance = 0;
+  std::map<std::string, std::int32_t, std::less<>> distances;
+  // The player's offer clip frame past which the partner takes or refuses it, and the partner's
+  // eat clip frame on which the player lowers the hand.
+  std::int32_t offerFrame = 0;
+  std::int32_t handDownFrame = 0;
+  FeedClips clips;
+
+  // The range for a species (checkEatDistance's targetDistance).
+  [[nodiscard]] float rangeOf(std::string_view species) const;
+};
+
 // The field_items section: the ground items and the chests, and the field's sounds.
 struct FieldItemsRules {
   game::field::FieldItemRules items;
@@ -35,6 +67,8 @@ struct FieldItemsRules {
   SoundCue sleepSound;
   SoundCue praiseSound;
   SoundCue scoldSound;
+  // Without one, an item from the bag goes to the partner at once.
+  std::optional<FeedRules> feed;
 };
 
 // Reads the field_items section; errors name the file and line.

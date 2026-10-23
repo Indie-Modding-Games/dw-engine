@@ -26,6 +26,7 @@
 #include "death_scene.hpp"
 #include "egg_box_screen.hpp"
 #include "evolution_scene.hpp"
+#include "feed_scene.hpp"
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
 #include "field_scene.hpp"
@@ -164,6 +165,7 @@ private:
   StorySceneGlue storyScenes_;
   // The naming box the story's renaming opens, when the ruleset has the new game's scene.
   std::unique_ptr<NamingBox> namingBox_;
+  FeedScene feedScene_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;
