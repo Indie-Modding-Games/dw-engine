@@ -131,6 +131,11 @@ public:
   core::Result<void> sectionOnExit(std::int64_t section);
   // Holds the player still for the script (script_interp.c: scriptPauseGame).
   void freezeWorld();
+  // Whether set_script set up `map`'s script: until then the map's cells and NPCs have no
+  // sections to run.
+  [[nodiscard]] bool scriptsMap(std::int32_t map) const {
+    return mapScript_.has_value() && scriptMap_ == map;
+  }
 
   // Tells `listener`, which must outlive the runner or be removed first, how the script runs.
   void addFrameListener(ScriptFrameListener& listener);
@@ -215,6 +220,8 @@ private:
   // The current map's script (set_script) and the map entered last.
   std::optional<std::uint16_t> mapScript_;
   std::optional<std::int32_t> enteredMap_;
+  // The map set_script named last.
+  std::optional<std::int32_t> scriptMap_;
   bool changingMap_ = false;
   bool frozen_ = false;
   SectionSource source_ = SectionSource::Plain;

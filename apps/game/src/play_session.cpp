@@ -210,6 +210,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   }
   session.attachField(scene_->field());
   game_.systems.story->attachNpcs(&scene_->npcs());
+  storyLink_ = std::make_unique<StoryFieldLink>(*game_.systems.story, *scene_);
   // A loaded game's partner may be another species than the game pack's partner model.
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
@@ -229,6 +230,7 @@ PlaySession::~PlaySession() {
   context_.device->waitIdle();
   context_.debugUi->detachTuning();
   game_.session->detachField();
+  storyLink_.reset();
   game_.systems.story->attachNpcs(nullptr);
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
@@ -267,8 +269,10 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
     }
     scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
+    storyLink_->afterFieldTick();
     game_.session->tick(TickSeconds);
     scene_->finishTick();
+    storyLink_->afterMapChange();
   }
 }
 

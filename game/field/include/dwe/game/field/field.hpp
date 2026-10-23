@@ -96,11 +96,14 @@ struct CharacterState {
 // the app feeds input and map documents, and reads state and changes.
 class Field {
 public:
-  // Creates the player and the partner in the world. The world must outlive the field. The scripts'
-  // map changes fire on stepping on (or confirming on) their cells when their facts decide them
-  // taken, under the setup's unknown policy for a recursion or a trigger it is told it cannot know
-  // (logged once per warp); the ones it cannot decide are logged once and not taken. A warp taken
-  // writes the triggers it sets on its way.
+  // Creates the player and the partner in the world. The world must outlive the field. The cells of
+  // the map's script ask the story for their sections (cellSections), which change the map
+  // themselves (startScriptedMapChange). Until the story runs the map's cells (setStoryCells), and
+  // under free exploration, the scripts' map changes of field/script_warps fire instead on stepping
+  // on (or confirming on) their cells when their facts decide them taken, under the setup's unknown
+  // policy for a recursion or a trigger it is told it cannot know (logged once per warp); the ones
+  // it cannot decide are logged once and not taken. A warp taken writes the triggers it sets on its
+  // way.
   Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps = {});
 
   // Enters a map through one of its exits: the player appears at the exit's spawn and the partner
@@ -122,6 +125,17 @@ public:
   // The warp the player stepped on, once the fade out has ended: after taking it the app loads the
   // map and calls enterMap.
   std::optional<MapChange> takeMapChange();
+
+  // A script's map change (map.c: scriptTickChangeMap): the same fades as a warp, with the player
+  // standing, and the new map's name only if `showName`. The app takes it as any other.
+  void startScriptedMapChange(MapChange change, bool showName);
+
+  // The sections of the map's script the player's cell asks for in the last tick (tamer.c:
+  // checkMapInteraction): a step cell (51-79) every tick the player stands on it, a confirm cell
+  // (80-109) when confirm is pressed on it, both only while the player moves freely. The story
+  // drops them while a script runs. A cell whose map change field/script_warps takes
+  // (setStoryCells) asks for none.
+  [[nodiscard]] std::span<const std::int32_t> cellSections() const { return cellSections_; }
 
   // Whether a map change is fading out, waiting to be taken or waiting for its map.
   [[nodiscard]] bool mapChangePending() const {
@@ -171,6 +185,12 @@ public:
   // playing; the map's cells are decided again at once.
   void setExplore(bool explore);
   [[nodiscard]] bool explores() const { return explore_; }
+
+  // Whether the story runs the sections of this map's cells (it set up the map's script): then
+  // field/script_warps only serves free exploration. Off, the static graph stands in for the
+  // story.
+  void setStoryCells(bool storyCells);
+  [[nodiscard]] bool storyCells() const { return storyCells_; }
 
   // Free exploration's choice waiting for the player; nothing moves while it waits.
   [[nodiscard]] const std::optional<DestinationChoice>& destinationChoice() const {
@@ -236,6 +256,7 @@ private:
   std::optional<MapChange> takeScriptWarp(WarpVia via, std::int32_t value);
   void writeTriggersOf(const ScriptWarp& warp);
   // takeScriptWarp under free exploration, given what the original's conditions take (`cell`).
+  [[nodiscard]] bool staticWarps() const { return explore_ || !storyCells_; }
   std::optional<MapChange> exploreScriptWarp(WarpVia via, std::int32_t value, const CellWarp& cell);
   // The warp taken, as the map change it makes; logs what free exploration opened if the original
   // would not take it.
@@ -256,6 +277,7 @@ private:
   TriggerWriter writeTrigger_;
   UnknownPolicy unknownPolicy_;
   bool explore_;
+  bool storyCells_ = false;
   MapFilter hasMap_;
   std::optional<DestinationChoice> choice_;
   // The warp of each place of the choice, and the one the original's conditions take.
@@ -288,6 +310,10 @@ private:
   // The warp being faded out to, and for how long; then the change waiting to be taken.
   std::optional<MapChange> leaving_;
   float leavingSeconds_ = 0.0F;
+  // A walked warp walks on and always shows the name; a script's map change does neither, unless
+  // it asks for the name.
+  bool leavingWalks_ = true;
+  bool leavingShowsName_ = true;
   std::optional<MapChange> pendingChange_;
   bool waitingForMap_ = false;
   // The map being changed to, from the warp until it is entered.
@@ -297,6 +323,7 @@ private:
 
   bool gameTimeRan_ = false;
   std::vector<TriggerStep> triggerSteps_;
+  std::vector<std::int32_t> cellSections_;
 
   assets::CollisionCell lastPlayerCell_;
   std::deque<assets::CollisionCell> trail_;

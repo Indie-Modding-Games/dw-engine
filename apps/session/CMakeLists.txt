@@ -18,9 +18,11 @@ dwe_add_module(session
         src/session_sound.cpp
         src/slot_names.cpp
         src/story_adapter.cpp
+        src/story_adapter_flow.cpp
         src/story_adapter_npc.cpp
         src/story_lua.cpp
         src/story_dialogue.cpp
+        src/story_lua_flow.cpp
         src/story_lua_npc.cpp
         src/story_npcs.cpp
     DEPS core assets audio scene ruleset field partner save evolution inventory battle story script

@@ -183,6 +183,7 @@ void Field::setInput(const FieldInput& input) {
 
 void Field::tick(float seconds) {
   triggerSteps_.clear();
+  cellSections_.clear();
   npcs_.clearContacts();
   gameTimeRan_ = false;
   entt::registry& registry = world_->registry();
@@ -258,8 +259,12 @@ void Field::walkOut(float seconds) {
   // tamer.c: tamerTickChangeMap plays the walk animation while the screen fades out and tests no
   // collision: the root motion carries the player on the way it faces.
   auto& transform = world_->registry().get<Transform>(player_);
-  transform.position += assets::forwardOfYaw(transform.yaw) * (rules_.player.walkSpeed * seconds);
-  world_->registry().get<AnimationIntent>(player_) = {.motion = Motion::Walk, .speedScale = 1.0F};
+  if (leavingWalks_) {
+    transform.position += assets::forwardOfYaw(transform.yaw) * (rules_.player.walkSpeed * seconds);
+    world_->registry().get<AnimationIntent>(player_) = {.motion = Motion::Walk, .speedScale = 1.0F};
+  } else {
+    world_->registry().get<AnimationIntent>(player_) = {};
+  }
   leavingSeconds_ += seconds;
   // The new map loads when FADE_OUT_CURRENT reaches 20.
   if (fadeFrame(leavingSeconds_) >= rules_.transition.fadeOutFrames) {
@@ -293,12 +298,23 @@ float Field::fadeLevel() const {
 std::optional<std::string_view> Field::mapNameShown() const {
   // tamer.c: tamerTickChangeMap adds the name on frame 10 of the fade out and changeMap's frame
   // removes it.
-  const bool shown = (leaving_ && fadeFrame(leavingSeconds_) >= rules_.transition.nameFrame) ||
-                     pendingChange_ || waitingForMap_;
+  const bool shown = leavingShowsName_ &&
+                     ((leaving_ && fadeFrame(leavingSeconds_) >= rules_.transition.nameFrame) ||
+                      pendingChange_ || waitingForMap_);
   if (!shown) {
     return std::nullopt;
   }
   return std::string_view{changeTarget_};
+}
+
+void Field::startScriptedMapChange(MapChange change, bool showName) {
+  core::logDebug("[port:field] scriptTickChangeMap (map.c:5277): to {} exit {}, name {}",
+                 change.map, change.exit, showName);
+  leave(std::move(change));
+  leavingWalks_ = false;
+  leavingShowsName_ = showName;
+  fadeInSeconds_.reset();
+  choice_.reset();
 }
 
 std::optional<MapChange> Field::takeMapChange() {
@@ -462,6 +478,15 @@ std::optional<MapChange> Field::takeExplored(const ScriptWarp& warp, const Scrip
   return MapChange{.map = *warp.targetMap, .exit = warp.targetExit, .trigger = value};
 }
 
+void Field::setStoryCells(bool storyCells) {
+  if (storyCells_ == storyCells) {
+    return;
+  }
+  storyCells_ = storyCells;
+  core::logDebug("[port:field] checkMapInteraction (tamer.c:660): map {} cells run by {}", mapId_,
+                 storyCells ? "the story" : "field/script_warps");
+}
+
 void Field::setExplore(bool explore) {
   if (explore_ == explore) {
     return;
@@ -498,6 +523,8 @@ void Field::chooseDestination(std::optional<std::size_t> place) {
 void Field::leave(MapChange change) {
   leaving_ = std::move(change);
   leavingSeconds_ = 0.0F;
+  leavingWalks_ = true;
+  leavingShowsName_ = true;
   changeTarget_ = leaving_->map;
   moveTarget_.reset();
   path_.clear();
@@ -657,6 +684,11 @@ void Field::checkTriggers() {
   const glm::vec3 position = world_->registry().get<Transform>(player_).position;
   const CollisionCell cell = assets::collisionCellAt(position);
   const std::int32_t value = collision_.trigger(cell).value_or(0);
+  // tamer.c: checkMapInteraction asks for a step cell's section every frame on it.
+  if (warpViaOf(value) == WarpVia::Step &&
+      !(staticWarps() && std::ranges::contains(warpingStepCells_, value))) {
+    cellSections_.push_back(value);
+  }
   if (value == lastTrigger_) {
     return;
   }
@@ -673,7 +705,7 @@ void Field::checkTriggers() {
       return;
     }
   }
-  if (warpViaOf(value) == WarpVia::Step) {
+  if (staticWarps() && warpViaOf(value) == WarpVia::Step) {
     if (auto scripted = takeScriptWarp(WarpVia::Step, value)) {
       leave(std::move(*scripted));
       return;
@@ -687,11 +719,11 @@ void Field::checkTriggers() {
 
 // tamer.c: checkMapInteraction runs the section of a cell of 80-109 the player stands on when
 // confirm is pressed, only while TAMER_STATE is 0 (tamer.c:685; tamerTickOverworld runs
-// tamerTickWalkingState, tamer.c:455) and no script runs (IS_SCRIPT_PAUSED 1). Here: while the tick
-// gets this far (no fade in, not leaving). That is the same only because the field has none of the
-// other states yet (6 idle, 7 item pickup, 8 training, 11 fishing, 14 chest, 15-20 opening, ending
-// and life loss) nor running scripts. Before the cell, the original lets confirm talk to an NPC the
-// player faces: then the cell's section loses (touchNpcs).
+// tamerTickWalkingState, tamer.c:455) and no script runs (IS_SCRIPT_PAUSED 1: the story drops the
+// section). Here: while the tick gets this far (no fade in, not leaving). That is the same only
+// because the field has none of the other states yet (6 idle, 7 item pickup, 8 training, 11
+// fishing, 14 chest, 15-20 opening, ending and life loss). Before the cell, the original lets
+// confirm talk to an NPC the player faces: then the cell's section loses (touchNpcs).
 void Field::checkConfirm() {
   if (!std::exchange(input_.confirm, false) || leaving_) {
     return;
@@ -701,9 +733,13 @@ void Field::checkConfirm() {
   if (warpViaOf(value) != WarpVia::Confirm) {
     return;
   }
-  if (auto scripted = takeScriptWarp(WarpVia::Confirm, value)) {
-    leave(std::move(*scripted));
+  if (staticWarps()) {
+    if (auto scripted = takeScriptWarp(WarpVia::Confirm, value)) {
+      leave(std::move(*scripted));
+      return;
+    }
   }
+  cellSections_.push_back(value);
 }
 
 void Field::updateTrail() {

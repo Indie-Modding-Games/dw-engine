@@ -33,6 +33,7 @@
 #include "save_machine.hpp"
 #include "session_start.hpp"
 #include "sleep_screen.hpp"
+#include "story_field_link.hpp"
 #include "story_textbox.hpp"
 #include "user_settings.hpp"
 
@@ -149,6 +150,7 @@ private:
   SaveMachine saveMachine_;
   // The story's textboxes, when the game runs the story.
   std::optional<StoryTextbox> storyTextbox_;
+  std::unique_ptr<StoryFieldLink> storyLink_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

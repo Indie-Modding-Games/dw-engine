@@ -348,6 +348,9 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
   if (auto npcs = wireNpcs(); !npcs) {
     return npcs;
   }
+  if (auto flow = wireFlow(); !flow) {
+    return flow;
+  }
   if (auto checked = host_->checkModules(); !checked) {
     return checked;
   }
@@ -355,9 +358,10 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
 }
 
 core::Result<void> StoryAdapter::startRunner(const StorySectionRules& story) {
-  auto runner = game::story::StoryRunner::create(
-      *host_, story.ticksPerFrame, game::story::StoryFlowPorts{.state = statePort_.get()},
-      story.flow);
+  game::story::StoryFlowPorts ports = flowPorts();
+  ports.state = statePort_.get();
+  auto runner =
+      game::story::StoryRunner::create(*host_, story.ticksPerFrame, std::move(ports), story.flow);
   if (!runner) {
     return std::unexpected{runner.error()};
   }
@@ -393,6 +397,7 @@ void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*adv
   DWE_ASSERT(runner_.has_value());
   randomPort_->bind(session.random());
   dialogue_->dialogue().bindSound(session.sound());
+  playUnplayedChange();
   runner_->tick();
 }
 

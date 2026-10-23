@@ -10,6 +10,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/session_system.hpp>
 #include <dwe/session/story_dialogue.hpp>
+#include <dwe/session/story_flow.hpp>
 #include <dwe/session/story_lua.hpp>
 #include <dwe/session/story_npcs.hpp>
 
@@ -98,6 +99,18 @@ public:
   // events, at the next frame; a running script drops them (tamer.c: checkMapInteraction).
   void runNpcContacts(std::span<const game::field::NpcContact> contacts);
 
+  // Where the story's map changes play (story_flow.hpp); an empty target drops them, and the story
+  // goes on as if the player stayed.
+  void setMapChangeTarget(StoryMapChangeTarget target);
+  // The player is on the map with this number of the original (walked there, loaded a save or ended
+  // a script's map change): the map-head section runs at once (StoryRunner::enterMap).
+  void mapEntered(std::int32_t map);
+  // Asks for the sections of the map's script that the player's cell asked for in the last field
+  // tick (game::field::Field::cellSections), at the next frame; a running script drops them.
+  void runCellSections(std::span<const std::int32_t> sections);
+  // Whether the story set up the script of the map with this number (StoryRunner::scriptsMap).
+  [[nodiscard]] bool scriptsMap(std::int32_t map) const;
+
   // The story as a new game with this first partner leaves it: the triggers data/new_game_story
   // sets, the ones its opening sets when field/warps starts after it, and the partner's raised
   // trigger. A trigger the document does not know at the start (its paths disagree, or game code
@@ -131,6 +144,9 @@ private:
   core::Result<void> wire(const StorySectionRules& story,
                           const game::story::DialogueRules& dialogue);
   core::Result<void> wireNpcs();
+  core::Result<void> wireFlow();
+  [[nodiscard]] game::story::StoryFlowPorts flowPorts() const;
+  void playUnplayedChange();
   void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
   core::Result<void> startRunner(const StorySectionRules& story);
 
@@ -150,6 +166,8 @@ private:
   std::unique_ptr<game::story::StoryOrders> orders_;
   std::unique_ptr<StoryNpcs> npcs_;
   std::unique_ptr<game::story::NpcOrders> npcOrders_;
+  std::unique_ptr<StoryMapChanges> mapChanges_;
+  std::optional<std::int32_t> enteredMap_;
   std::unique_ptr<StoryLuaHost> host_;
   // Before the runner, which points to it.
   std::unique_ptr<StoryDialogue> dialogue_;

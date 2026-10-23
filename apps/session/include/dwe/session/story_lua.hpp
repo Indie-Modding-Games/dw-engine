@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -17,6 +18,10 @@ namespace dwe::assets {
 class AssetId;
 class VirtualFileSystem;
 } // namespace dwe::assets
+
+namespace dwe::game::story {
+class StoryRunner;
+} // namespace dwe::game::story
 
 namespace dwe::script {
 class ScriptVm;
@@ -70,6 +75,11 @@ public:
   // The NPC orders (story_npcs.hpp: story_api::NpcPublished), once per VM; the orders must outlive
   // every script call of the VM.
   core::Result<void> publishNpcApi(game::story::NpcOrders& orders);
+  // The script flow orders (story_flow.hpp: story_api::FlowPublished), once per VM: set_script and
+  // section_on_exit go to the runner `runner` gives (none yet: the order fails), warp_to and
+  // teleport end the section with a map change. The orders must outlive every script call.
+  core::Result<void> publishFlowApi(game::story::StoryOrders& orders,
+                                    std::function<game::story::StoryRunner*()> runner);
 
   // Once per VM, after publishApi: the textbox orders (story_dialogue.cpp), which point to the
   // dialogue; it must outlive every script call of the VM.

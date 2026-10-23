@@ -36,6 +36,7 @@ dwe_add_app(game
         src/session_start.cpp
         src/save_machine.cpp
         src/sleep_screen.cpp
+        src/story_field_link.cpp
         src/story_textbox.cpp
         src/test_scene.cpp
         src/text_font_setting.cpp

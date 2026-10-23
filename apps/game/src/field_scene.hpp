@@ -25,6 +25,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::app {
@@ -118,6 +119,16 @@ public:
   [[nodiscard]] const game::field::Field& field() const { return *field_; }
   // The field's NPCs, for the story's NPC orders.
   [[nodiscard]] game::field::FieldNpcs& npcs() { return field_->npcs(); }
+  // The story's side of the field (story_field_link.hpp): a script's map change, and whether the
+  // story runs the map's cells (Field::startScriptedMapChange, Field::setStoryCells).
+  void startScriptedMapChange(game::field::MapChange change, bool showName) {
+    field_->startScriptedMapChange(std::move(change), showName);
+  }
+  void setStoryCells(bool storyCells) { field_->setStoryCells(storyCells); }
+  // The map table the scene names its maps with, if the packs have one.
+  [[nodiscard]] const assets::MapTable* mapTable() const {
+    return mapTable_ ? &*mapTable_ : nullptr;
+  }
   // Free exploration (game::field::Field::setExplore) and the answer to its choice
   // (Field::chooseDestination).
   void setExplore(bool explore) { field_->setExplore(explore); }

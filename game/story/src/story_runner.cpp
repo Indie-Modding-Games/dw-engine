@@ -116,6 +116,7 @@ core::Result<void> StoryRunner::setScript(std::int64_t script, std::int64_t map)
     return core::fail(messages::formatMessage(messages::NoSuchScript, script));
   }
   mapScript_ = static_cast<std::uint16_t>(script);
+  scriptMap_ = static_cast<std::int32_t>(map);
   core::logDebug("{}", messages::formatMessage(messages::PortSetScript, script, map));
   if (enteredMap_ != map) {
     // The original loads the map here (script_interp.c: scriptInstructionFBtoFF); the engine
