@@ -58,6 +58,7 @@ dwe_add_app(game
         src/field_items_screen.cpp
         src/fishing_screen.cpp
         src/field_toilet.cpp
+        src/field_poop.cpp
         src/partner_walk_up.cpp
         src/praise_scold_call.cpp
         src/feed_scene.cpp

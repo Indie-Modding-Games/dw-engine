@@ -1,0 +1,7 @@
+# Las cacas del compañero en el suelo (game/partner: poop_piles.hpp; apps/session: PoopAdapter). Cuántas caben por mapa y
+# en total son reglas del cuidado (care.yaml: toilet); aquí va cómo se ven en el campo.
+look:
+  # partner_impl.c: initializePoop carga el modelo ETCNA/UNTI.TMD.
+  model: model/etcna/unti
+  # renderPoop: la escala es tamaño × 4096 / 10, así que una caca de tamaño 10 se dibuja a la escala del modelo.
+  model_size: 10

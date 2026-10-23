@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: poop_piles",
+  "description": "rules/<id>/poop_piles.yaml: how the field shows the partner's poop piles (apps/session: PoopAdapter).",
+  "type": "object",
+  "required": ["look"],
+  "additionalProperties": false,
+  "properties": {
+    "look": {
+      "description": "How a pile is drawn (partner_impl.c: initializePoop, renderPoop).",
+      "type": "object",
+      "required": ["model", "model_size"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "description": "The asset id of the pile's model.", "type": "string" },
+        "model_size": {
+          "description": "The pile size drawn at the model's own scale; other sizes in proportion.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

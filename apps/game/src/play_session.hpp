@@ -29,6 +29,7 @@
 #include "feed_scene.hpp"
 #include "field_hud.hpp"
 #include "field_items_screen.hpp"
+#include "field_poop.hpp"
 #include "field_scene.hpp"
 #include "field_toilet.hpp"
 #include "fishing_screen.hpp"
@@ -168,6 +169,7 @@ private:
   std::unique_ptr<NamingBox> namingBox_;
   FeedScene feedScene_;
   FieldToilet fieldToilet_;
+  FieldPoop fieldPoop_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

@@ -59,6 +59,14 @@ acabarla, el compañero hace sus necesidades (`handleToilet`), la cámara vuelve
 punto. Entonces suena el sonido del baño. Sin `field_items.toilet_walk`, o en un mapa sin puntos de baño, el compañero
 va donde está, como antes. Si se atasca de camino, se para donde está.
 
+## Las cacas en el suelo
+
+`FieldPoop` (`field_poop.cpp`) coloca en el mapa los montones que el compañero deja (`partner_impl.c: createPoopPile`):
+con el campo libre, cada montón pendiente de la sesión (`PoopAdapter`) va a la casilla delante del compañero según hacia
+dónde mira, o a una vecina al azar si ya hay uno. Cada fotograma pasa a `FieldScene::setProps` los montones del mapa: el
+modelo de `poop_piles.look.model` en el centro de su casilla, a la altura del compañero y a la escala de su tamaño entre
+`model_size` (`renderPoop`). Sin la sección `poop_piles` los montones se guardan pero no se ven.
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

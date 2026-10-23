@@ -163,5 +163,7 @@ inline constexpr std::string_view DoorModelId = "model/door/door{:02}";
 inline constexpr std::string_view DoorModelMissing =
     "[port:field-objects] loadDoors (map_object.c:355 loadStaticTMD): {}: {}; the object is not "
     "drawn";
+inline constexpr std::string_view PropModelMissing =
+    "[port:field-objects] the model {} of the field's props: {}; they are not drawn";
 
 } // namespace dwe::app::messages

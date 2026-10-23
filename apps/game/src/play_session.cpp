@@ -213,6 +213,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                      .ui = context.ui}),
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
       fieldToilet_(*game_.session, *game_.systems.fieldItems, *scene_),
+      fieldPoop_(*game_.session, *game_.systems.poop, *scene_),
       partnerMenu_({.session = game_.session.get(),
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
@@ -536,6 +537,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (fieldIdle && !paused()) {
     guardFactsChanged = fieldToilet_.checkCell() || guardFactsChanged;
   }
+  // partner_impl.c: createPoopPile: the piles the partner left go in front of it.
+  if (fieldIdle && !paused()) {
+    fieldPoop_.placePending();
+  }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
@@ -552,6 +557,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (storyTextbox_) {
     storyTextbox_->update(*scene_, species);
   }
+  fieldPoop_.show();
   scene_->update(frameSeconds, alpha, paused());
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/animation/animation_player.hpp>
+#include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/character_model.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
@@ -125,6 +126,10 @@ public:
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
   }
+  // Copies of a model of the packs drawn on the map at these world transforms until replaced (the
+  // partner's poop piles: partner_impl.c: renderPoop). The model loads on first use; one that
+  // fails is logged and not drawn.
+  void setProps(const assets::AssetId& model, std::vector<glm::mat4> places);
   // The map's camera, while a map is shown.
   [[nodiscard]] const render::MapCamera* camera() const;
 
@@ -270,6 +275,7 @@ private:
   void placeMapObjects(const assets::MapEntry* entry);
   // Draws them (map_object.c: renderDoors).
   void submitMapObjects();
+  void submitProps();
   void followClock();
   void applyLighting();
   // The map's NPCs drawn as their species with models/partner's animations (field_scene_npcs.cpp):
@@ -320,6 +326,10 @@ private:
   std::vector<scene::Entity> npcsNotShown_;
   // The models of the map's 3D objects, by door model id.
   std::map<std::int32_t, render::ModelHandle> mapObjectModels_;
+  // setProps: the model asked for, its handle once loaded, and the copies.
+  std::optional<assets::AssetId> propModelId_;
+  std::optional<render::ModelHandle> propModel_;
+  std::vector<glm::mat4> props_;
 };
 
 } // namespace dwe::app

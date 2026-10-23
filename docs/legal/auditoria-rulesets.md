@@ -160,6 +160,13 @@ comportamiento, no guardan datos.
 | `toilet_walk.camera_frames` | 20 | a | Duración (partner.c: tickPartnerToilet, createCameraMovement). |
 | `toilet_walk.partner_clip` | 10 | a | Id de animación (referencia). |
 
+### `poop_piles.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `look.model` | `model/etcna/unti` | a | Referencia al modelo que extrae dwx (partner_impl.c: initializePoop); el modelo no se copia. |
+| `look.model_size` | 10 | a | Constante de la regla de dibujo (renderPoop: tamaño × 4096 / 10). |
+
 ### `cards.yaml`
 
 | Clave | Valor | Clase | Motivo |

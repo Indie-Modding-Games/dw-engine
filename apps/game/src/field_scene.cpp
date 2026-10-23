@@ -500,6 +500,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     submit(*playerActor_, alpha);
     drawNpcs(animationSeconds, alpha);
     submitMapObjects();
+    submitProps();
   }
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha, stage_.partnerScale);

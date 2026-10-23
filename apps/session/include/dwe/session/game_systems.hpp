@@ -31,6 +31,7 @@ class CardsAdapter;
 class EvolutionAdapter;
 class FishingAdapter;
 class InventoryAdapter;
+class PoopAdapter;
 class ShopCounter;
 class StoryAdapter;
 class StoryGameOrders;
@@ -72,6 +73,8 @@ struct GameSystems {
   FieldItemsAdapter* fieldItems = nullptr;
   CardsAdapter* cards = nullptr;
   FishingAdapter* fishing = nullptr;
+  // The partner's poop piles on the ground.
+  PoopAdapter* poop = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

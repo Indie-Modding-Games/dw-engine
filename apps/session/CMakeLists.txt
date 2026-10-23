@@ -10,6 +10,7 @@ dwe_add_module(session
         src/field_facts.cpp
         src/field_items_adapter.cpp
         src/fishing_adapter.cpp
+        src/poop_adapter.cpp
         src/cards_adapter.cpp
         src/game_session.cpp
         src/game_systems.cpp

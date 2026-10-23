@@ -6,6 +6,8 @@
 
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "field_scene.hpp"
 #include "messages.hpp"
@@ -59,6 +61,40 @@ void FieldScene::submitMapObjects() {
     const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, object->position),
                                         object->yaw, glm::vec3{0.0F, 1.0F, 0.0F});
     models_->submit({.model = found->second, .world = world, .joints = {}});
+  }
+}
+
+void FieldScene::setProps(const assets::AssetId& model, std::vector<glm::mat4> places) {
+  props_ = std::move(places);
+  if (propModelId_ == model) {
+    return;
+  }
+  if (propModel_) {
+    models_->remove(*propModel_);
+    propModel_.reset();
+  }
+  propModelId_ = model;
+  auto data = assets::loadModel(*files_, model);
+  if (!data) {
+    core::logWarning(
+        "{}", core::formatMessage(messages::PropModelMissing, model.str(), data.error().message));
+    return;
+  }
+  auto handle = models_->add(*data);
+  if (!handle) {
+    core::logWarning(
+        "{}", core::formatMessage(messages::PropModelMissing, model.str(), handle.error().message));
+    return;
+  }
+  propModel_ = *handle;
+}
+
+void FieldScene::submitProps() {
+  if (!propModel_) {
+    return;
+  }
+  for (const glm::mat4& place : props_) {
+    models_->submit({.model = *propModel_, .world = place, .joints = {}});
   }
 }
 

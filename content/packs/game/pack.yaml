@@ -62,3 +62,5 @@ schemas:
     - rules/*/movies
   ruleset_story_lock:
     - rules/*/story_lock
+  ruleset_poop_piles:
+    - rules/*/poop_piles
