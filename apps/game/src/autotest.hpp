@@ -95,6 +95,8 @@ struct AutotestStep {
   bool walk = false;
   // walk_to a trigger: done when its warp starts the map change, without waiting for the new map.
   bool stopOnWarp = false;
+  // walk_to: an encounter on the way (a script holds the player, or a fight) is waited out.
+  bool encounters = false;
   bool flag = false; // menu open, fullscreen on
   int width = 0;
   int height = 0;

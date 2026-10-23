@@ -1,11 +1,11 @@
 # Free exploration (docs/architecture/warps-de-script.md) with the keyboard, from a new game: the pause menu turns it
-# on, and the scripts' map changes go past the story's gates to three zones a new game does not reach yet (mayo02_2,
-# mayo08b, mayo02), through the chooser of the places a cell leads to, with a way back. The chooser starts on the
+# on, and the scripts' map changes go past the story's gates to two zones a new game does not reach yet (mayo02_2 and
+# mayo08b), through the chooser of the places a cell leads to, with a way back. The chooser starts on the
 # place the story takes, turns its pages and lets the player stay on the cell. Every place it takes is logged as a gate
 # opened. It runs once per language, like route-language.yaml. How to run it: docs/guides/prueba-vertical.md.
 name: free-exploration
 device: keyboard
-timeout: 600
+timeout: 900
 steps:
   - wait: {map: twna01, seconds: 1}
   - resize: [1280, 720]
@@ -31,8 +31,17 @@ steps:
   - wait: {hidden: battle, seconds: 1, timeout: 60}
   - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
   - wait: {partner_within: 400, seconds: 0.5, timeout: 10}
+  # mayo00's wild Betamon may come on any walk below, a fight no one can flee (a script's) that a worn partner can
+  # lose (home to Jijimon): the partner gets its HP back first, as a player would see to; a refusal is scolded away
+  # (the next item is taken), as in the game.
+  - script: give_item("sm_recovery 2")
+  - script: use_item("sm_recovery")
+  - script: scold("")
+  - script: use_item("sm_recovery")
+  # From here a wild Betamon on mayo00 may walk up, talk and start a fight whenever its timing says (as the original
+  # does), and the NPCs of the zones ahead may talk when touched: the walks wait it out (encounters).
   # The script of mayo00's cell 52 waits for the story; free exploration offers its two places.
-  - walk_to: {trigger: 52}
+  - walk_to: {trigger: 52, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - screenshot: chooser-mayo00
   - menu_select: place-1
@@ -40,11 +49,11 @@ steps:
   - wait: {map: mayo02_2, partner_within: 400, seconds: 0.5}
   - screenshot: mayo02_2
   # The way back: mayo02_2's warp table.
-  - walk_to: {trigger: 110}
+  - walk_to: {trigger: 110, encounters: true}
   - wait: {map: mayo00, partner_within: 400, seconds: 0.5}
   # Cell 51 leads to File City's 24 phases: the chooser starts on the story's (twnb01) and turns its pages; staying
   # keeps the player on the map.
-  - walk_to: {trigger: 51}
+  - walk_to: {trigger: 51, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - screenshot: chooser-phases
   - menu_select: next
@@ -55,24 +64,22 @@ steps:
   - wait: {hidden: destination_choice, seconds: 0.5}
   - wait: {map: mayo00}
   # Off the cell to the other one and back: it asks again, and confirm takes the story's place, where it starts.
-  - walk_to: {trigger: 52}
+  - walk_to: {trigger: 52, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - tap: {key: escape}
   - wait: {hidden: destination_choice, seconds: 0.5}
-  - walk_to: {trigger: 51}
+  - walk_to: {trigger: 51, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - tap: {key: return}
   - wait: {hidden: destination_choice}
   - wait: {map: twnb01, partner_within: 400, seconds: 0.5}
   # File City's other half: its cell 53, which the story keeps closed.
-  - walk_to: {trigger: 53}
+  - walk_to: {trigger: 53, encounters: true}
   - wait: {shown: destination_choice, seconds: 0.5}
   - screenshot: chooser-twnb01
   - menu_select: place-2
   - wait: {hidden: destination_choice}
   - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
   - screenshot: mayo08b
-  # And on through mayo08b's warp table.
-  - walk_to: {trigger: 111}
-  - wait: {map: mayo02, partner_within: 400, seconds: 0.5}
-  - screenshot: mayo02
+  # The route ends here: mayo08b's wild encounter is a fight no one can flee (a script's) that a new game's partner
+  # loses after the two before it, and a lost fight sends the player home to Jijimon, as the original does.
