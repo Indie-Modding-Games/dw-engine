@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <string>
 #include <utility>
 
 namespace dwe::session {
@@ -23,10 +24,19 @@ struct MusicFacts {
   std::function<std::int32_t()> hour;
 };
 
+// The first enemy of a battle and how the battle started, for its song (btl.c: loadBattleData).
+struct BattleMusicFacts {
+  // The species id of the first enemy, and its type in the original's Digimon table.
+  std::string firstEnemy;
+  std::optional<std::int64_t> firstEnemyType;
+  bool scripted = false;
+};
+
 // The original's background music on the game's audio (docs/architecture/audio.md, "Música
 // (tramo 3)"): the story's set_bgm and stop_bgm pick a font, the music mode and the hour its song,
-// and music/<font>/ holds the SoundFont, the songs and font_meta.yaml. A font is loaded when its
-// song first plays and kept until another one plays. A font that does not load warns once.
+// and music/<font>/ holds the SoundFont, the songs and font_meta.yaml. data/music.yaml gives the
+// fixed songs of the music modes and the battle's songs. A font is loaded when its song first plays
+// and kept until another one plays. A font or a data/music.yaml that does not load warns once.
 class SessionMusic final : public game::story::MusicPort {
 public:
   // The audio and the file system must outlive the session.
@@ -35,6 +45,18 @@ public:
   void playBgm(std::int64_t font) override;
   void resetBgm() override;
 
+  // script_interp.c: updateBGM, each tick of the game clock: the song again when the mode or the
+  // hour picks another one. Nothing during a battle.
+  void updateBgm();
+  // script_interp.c: START_BATTLE and btl.c: loadBattleData: stops the field's music and plays the
+  // battle's song.
+  void startBattle(const BattleMusicFacts& facts);
+  // battle_main.c: BTL_handleVictorySequence and BTL_deinitializeCombat: the battle's song stops.
+  void endBattle();
+  // tamer.c: startBattle, back on the field: a victory plays the field's song again from the start;
+  // after a defeat or an escape the music stays stopped.
+  void leaveBattle(bool won);
+
 private:
   struct LoadedFont {
     std::int64_t font = 0;
@@ -42,7 +64,10 @@ private:
     assets::MusicFont meta;
   };
 
-  [[nodiscard]] std::pair<std::int64_t, std::int64_t> overridden(std::int64_t font) const;
+  [[nodiscard]] std::pair<std::int64_t, std::int64_t> overridden(std::int64_t font);
+  [[nodiscard]] std::int64_t battleTrack(const assets::BattleMusic& battle,
+                                         const BattleMusicFacts& facts) const;
+  const assets::MusicTable* table();
   void stopBgm();
   void playMusic(std::int64_t font, std::int64_t track);
   const LoadedFont* load(std::int64_t font);
@@ -57,6 +82,11 @@ private:
   std::optional<std::int64_t> currentTrack_;
   std::optional<LoadedFont> loaded_;
   std::set<std::int64_t> failedFonts_;
+  // data/music.yaml, read on first use.
+  std::optional<assets::MusicTable> table_;
+  bool tableRead_ = false;
+  // tamer.c: GAME_STATE: the clock does not update the music during a battle.
+  bool battling_ = false;
 };
 
 } // namespace dwe::session

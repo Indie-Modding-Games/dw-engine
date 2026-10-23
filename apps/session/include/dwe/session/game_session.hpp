@@ -237,8 +237,8 @@ public:
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
   // The story's sound slots, or nullptr for a silent session.
   [[nodiscard]] game::story::SoundPort* sound();
-  // The story's music, or nullptr for a silent session.
-  [[nodiscard]] game::story::MusicPort* music();
+  // The music: the story's, the clock's and the battles', or nullptr for a silent session.
+  [[nodiscard]] SessionMusic* music();
   // A scene's sound bank in slot 8 instead of the map's, until nothing gives it back
   // (SessionSound::useSceneBank); nothing happens in a silent session.
   void useSceneSounds(std::optional<std::int32_t> soundId);

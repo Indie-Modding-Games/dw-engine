@@ -233,4 +233,44 @@ core::Result<MusicFont> readMusicFont(std::string_view yaml) {
   return reader.finish(std::move(font), Context);
 }
 
+const FieldMusicOverride* MusicTable::overrideOf(std::int64_t mode) const {
+  const auto found = std::ranges::find(fieldOverrides, mode, &FieldMusicOverride::mode);
+  return found == fieldOverrides.end() ? nullptr : &*found;
+}
+
+core::Result<MusicTable> readMusicTable(std::string_view yaml) {
+  constexpr std::string_view TableContext = "data/music";
+  auto tree = core::parseYaml(yaml);
+  if (!tree) {
+    return std::unexpected{core::Error{std::format("{}: {}", TableContext, tree.error().message)}};
+  }
+  YamlReader reader;
+  MusicTable table;
+  for (const YamlNode& value :
+       reader.sequence(reader.field(*tree, "enemy_music_mapping"), "enemy_music_mapping")) {
+    table.enemyMusicMapping.push_back(reader.integer<std::int64_t>(value));
+  }
+  if (const YamlNode* overrides = tree->find("field_overrides"); overrides != nullptr) {
+    for (const YamlNode& node : reader.sequence(*overrides, "field_overrides")) {
+      table.fieldOverrides.push_back(
+          {.mode = reader.integer<std::int64_t>(reader.field(node, "mode")),
+           .font = reader.integer<std::int64_t>(reader.field(node, "font")),
+           .track = reader.integer<std::int64_t>(reader.field(node, "track"))});
+    }
+  }
+  if (const YamlNode* battle = tree->find("battle"); battle != nullptr) {
+    const auto at = [&](std::string_view key) {
+      return reader.integer<std::int64_t>(reader.field(*battle, key));
+    };
+    table.battle = BattleMusic{.font = at("font"),
+                               .boss = reader.text(reader.field(*battle, "boss")),
+                               .bossTrack = at("boss_track"),
+                               .scriptedTrack = at("scripted_track"),
+                               .defaultTrack = at("default_track"),
+                               .firstEnemyType = at("first_enemy_type"),
+                               .endEnemyType = at("end_enemy_type")};
+  }
+  return reader.finish(std::move(table), TableContext);
+}
+
 } // namespace dwe::assets

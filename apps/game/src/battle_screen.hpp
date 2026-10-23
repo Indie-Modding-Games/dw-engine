@@ -7,6 +7,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/session_music.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <optional>
@@ -66,11 +67,14 @@ private:
   void throwItem(double slot);
   void finish();
   void close();
+  [[nodiscard]] session::BattleMusicFacts musicFactsOf(const session::BattleRequest& request) const;
 
   BattleScreenDesc desc_;
   std::optional<game::battle::Battle> battle_;
   bool ending_ = false;
   std::optional<game::battle::Outcome> outcome_;
+  // Whether the battle on the end box was won: the field's music comes back when it closes.
+  bool won_ = false;
 };
 
 } // namespace dwe::app

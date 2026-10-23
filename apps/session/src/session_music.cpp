@@ -4,8 +4,11 @@
 #include <dwe/session/messages.hpp>
 #include <dwe/session/session_music.hpp>
 
+#include <cstddef>
 #include <format>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::session {
@@ -25,6 +28,7 @@ constexpr std::int64_t DayNightMode = 0;
 constexpr std::int64_t DaySongMode = 1;
 constexpr std::int32_t DayStart = 6;
 constexpr std::int32_t NightStart = 21;
+constexpr std::string_view MusicTableId = "data/music";
 
 core::Result<std::vector<std::byte>> readAsset(const assets::VirtualFileSystem& files,
                                                const std::string& id) {
@@ -52,6 +56,9 @@ void SessionMusic::playBgm(std::int64_t font) {
     return;
   }
   const auto [chosen, track] = overridden(font);
+  core::logDebug("[port:audio] handleMusicOverride (script_interp.c:1584): font={} -> font={} "
+                 "track={}",
+                 font, chosen, track);
   activeFont_ = chosen;
   activeTrack_ = track;
   stopBgm();
@@ -64,24 +71,125 @@ void SessionMusic::resetBgm() {
   stopBgm();
 }
 
-// script_interp.c: handleMusicOverride. Modes 2 to 10 name a fixed font and song, data of the
-// executable that the extractor does not write yet (docs/architecture/audio.md, Q7): until then
-// they play the font's first song.
-std::pair<std::int64_t, std::int64_t> SessionMusic::overridden(std::int64_t font) const {
+// script_interp.c: handleMusicOverride. Mode 0 picks the day or the night song of the font, mode 1
+// the first one, and the modes of data/music.yaml's field_overrides a fixed font and song. Any
+// other mode leaves the song unset in the original; here it plays the font's first song.
+std::pair<std::int64_t, std::int64_t> SessionMusic::overridden(std::int64_t font) {
   const std::int64_t mode = facts_.mode ? facts_.mode() : DayNightMode;
-  const std::int32_t hour = facts_.hour ? facts_.hour() : DayStart;
-  std::int64_t track = 0;
   if (mode == DayNightMode) {
-    track = hour >= DayStart && hour < NightStart ? 0 : 1;
-  } else if (mode != DaySongMode) {
-    core::logDebug("[port:audio] handleMusicOverride (script_interp.c:1584): mode {} has no data "
-                   "yet; font {} plays song 0",
-                   mode, font);
+    const std::int32_t hour = facts_.hour ? facts_.hour() : DayStart;
+    return {font, hour >= DayStart && hour < NightStart ? 0 : 1};
   }
-  core::logDebug("[port:audio] handleMusicOverride (script_interp.c:1584): mode={} hour={} -> "
-                 "font={} track={}",
-                 mode, hour, font, track);
-  return {font, track};
+  if (mode == DaySongMode) {
+    return {font, 0};
+  }
+  if (const assets::MusicTable* music = table(); music != nullptr) {
+    if (const assets::FieldMusicOverride* fixed = music->overrideOf(mode); fixed != nullptr) {
+      return {fixed->font, fixed->track};
+    }
+  }
+  return {font, 0};
+}
+
+void SessionMusic::updateBgm() {
+  if (battling_) {
+    return;
+  }
+  if (!activeFont_) {
+    if (currentTrack_) {
+      resetBgm();
+    }
+    return;
+  }
+  const std::int64_t active = *activeFont_;
+  const auto [font, track] = overridden(active);
+  if (font == active && track == activeTrack_) {
+    return;
+  }
+  core::logDebug("[port:audio] updateBGM (script_interp.c:2607): font={} track={} -> font={} "
+                 "track={}",
+                 active, activeTrack_, font, track);
+  activeFont_ = font;
+  activeTrack_ = track;
+  stopBgm();
+  playMusic(font, track);
+}
+
+void SessionMusic::startBattle(const BattleMusicFacts& facts) {
+  battling_ = true;
+  core::logDebug("[port:audio] scriptInstruction64to7E START_BATTLE (script_interp.c:1913): "
+                 "stopBGM");
+  stopBgm();
+  const assets::MusicTable* music = table();
+  if (music == nullptr || !music->battle) {
+    core::logDebug("[port:audio] loadBattleData (btl.c:346): {} has no battle music", MusicTableId);
+    return;
+  }
+  const std::int64_t track = battleTrack(*music->battle, facts);
+  core::logDebug("[port:audio] loadBattleData (btl.c:346): enemy={} scripted={} -> font={} "
+                 "track={}",
+                 facts.firstEnemy, facts.scripted, music->battle->font, track);
+  playMusic(music->battle->font, track);
+}
+
+// btl.c: loadBattleData. The original checks the type of the first enemy for the boss and of the
+// enemy that started the battle for the rest; here both are the first enemy.
+std::int64_t SessionMusic::battleTrack(const assets::BattleMusic& battle,
+                                       const BattleMusicFacts& facts) const {
+  if (facts.firstEnemy == battle.boss) {
+    return battle.bossTrack;
+  }
+  if (facts.scripted) {
+    return battle.scriptedTrack;
+  }
+  const std::optional<std::int64_t> type = facts.firstEnemyType;
+  if (type && *type >= battle.firstEnemyType && *type < battle.endEnemyType && table_) {
+    const auto index = static_cast<std::size_t>(*type - battle.firstEnemyType);
+    if (index < table_->enemyMusicMapping.size()) {
+      return table_->enemyMusicMapping[index];
+    }
+  }
+  return battle.defaultTrack;
+}
+
+void SessionMusic::endBattle() {
+  core::logDebug("[port:audio] BTL_deinitializeCombat (battle_main.c:814): stopBGM");
+  stopBgm();
+}
+
+void SessionMusic::leaveBattle(bool won) {
+  battling_ = false;
+  if (!won) {
+    return;
+  }
+  core::logDebug("[port:audio] startBattle (tamer.c:862): playBGM(ACTIVE_BGM_FONT)");
+  if (activeFont_) {
+    playBgm(*activeFont_);
+  } else {
+    resetBgm();
+  }
+}
+
+// data/music.yaml, read once; a table that does not read warns once and leaves the music modes and
+// the battle without their songs.
+const assets::MusicTable* SessionMusic::table() {
+  if (!std::exchange(tableRead_, true)) {
+    auto read = [&]() -> core::Result<assets::MusicTable> {
+      auto bytes = readAsset(*files_, std::string{MusicTableId});
+      if (!bytes) {
+        return std::unexpected{bytes.error()};
+      }
+      return assets::readMusicTable(
+          std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+    }();
+    if (read) {
+      table_ = std::move(*read);
+    } else {
+      core::logWarning("{}", core::formatMessage(messages::MusicTableFailed, MusicTableId,
+                                                 read.error().message));
+    }
+  }
+  return table_ ? &*table_ : nullptr;
 }
 
 // sound.c: stopBGM.

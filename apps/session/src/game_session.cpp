@@ -130,7 +130,7 @@ game::story::SoundPort* GameSession::sound() {
   return sound_.get();
 }
 
-game::story::MusicPort* GameSession::music() {
+SessionMusic* GameSession::music() {
   return music_.get();
 }
 
@@ -391,6 +391,10 @@ void GameSession::advanceGameTime(double realSeconds) {
     return;
   }
   playSeconds_ += realSeconds;
+  // clock.c: tickGameClock ends with updateBGM while game time runs.
+  if (timeRuns && music_) {
+    music_->updateBgm();
+  }
   state_->partner.tick(state_->clock, advance, careContext());
   for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
     system->tick(*this, advance);

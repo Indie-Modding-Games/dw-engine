@@ -10,6 +10,7 @@
 #include <dwe/script/script_vm.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/session_music.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_music_api.hpp>
 

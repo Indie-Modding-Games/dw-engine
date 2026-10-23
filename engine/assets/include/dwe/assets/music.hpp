@@ -69,4 +69,39 @@ struct MusicFont {
 // Reads a font_meta.yaml. Keys the player does not need are left alone.
 core::Result<MusicFont> readMusicFont(std::string_view yaml);
 
+// A music mode of the story's variable 245 that plays a fixed font and song, whatever font the map
+// asked for (script_interp.c: handleMusicOverride).
+struct FieldMusicOverride {
+  std::int64_t mode = 0;
+  std::int64_t font = 0;
+  std::int64_t track = 0;
+};
+
+// Which song of the battle font a battle plays (btl.c: loadBattleData).
+struct BattleMusic {
+  std::int64_t font = 0;
+  // The species id of the first enemy that plays bossTrack.
+  std::string boss;
+  std::int64_t bossTrack = 0;
+  std::int64_t scriptedTrack = 0;
+  std::int64_t defaultTrack = 0;
+  // Enemy types from firstEnemyType up to before endEnemyType play
+  // enemyMusicMapping[type - firstEnemyType].
+  std::int64_t firstEnemyType = 0;
+  std::int64_t endEnemyType = 0;
+};
+
+// What the game reads of data/music.yaml (content/schemas/music.schema.json). A pack extracted
+// before the music modes and the battle music were written has none of them.
+struct MusicTable {
+  std::vector<std::int64_t> enemyMusicMapping;
+  std::vector<FieldMusicOverride> fieldOverrides;
+  std::optional<BattleMusic> battle;
+
+  [[nodiscard]] const FieldMusicOverride* overrideOf(std::int64_t mode) const;
+};
+
+// Reads data/music.yaml. bgm_tracks, the music shop's list, is left alone.
+core::Result<MusicTable> readMusicTable(std::string_view yaml);
+
 } // namespace dwe::assets

@@ -153,5 +153,7 @@ inline constexpr std::string_view SoundNotPlayed = "sound: {} does not play soun
 inline constexpr std::string_view SoundOutOfRange = "no sound has that number";
 inline constexpr std::string_view MusicFontFailed = "music: {} does not load ({}); it stays silent";
 inline constexpr std::string_view MusicSongFailed = "music: {} track {} does not play: {}";
+inline constexpr std::string_view MusicTableFailed =
+    "music: {} does not load ({}); the music modes and battles play no fixed songs";
 
 } // namespace dwe::session::messages

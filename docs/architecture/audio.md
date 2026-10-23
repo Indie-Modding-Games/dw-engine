@@ -19,7 +19,8 @@ el gate y se sube por separado.
 | 2a | Efectos (§6.4): decodificar WAV, leer `bank_meta.yaml`, envolvente ADSR, resolver `banco + sonido` a sus tonos y muestras, y el puerto `SoundPort` con sus ranuras en la sesión | La sesión ya puede tocar efectos por su puerto (nadie los pide todavía) |
 | 2b | Los sonidos de los menús (`ui/ui_sounds.yaml`) y la orden `story.play_sound` de los scripts sobre el puerto de 2a, cuando la API `story` de S2 esté en `main` | Suenan los menús y los efectos de los scripts; se publica `story.play_sound` |
 | 3 | Música: el secuenciador MIDI (tempo, bucles), el sintetizador SF2 y las transiciones de música; las órdenes `set_bgm` y `stop_bgm` | Suena la música del mapa, del combate y de los scripts; se publican `story.set_bgm` y `story.stop_bgm` |
-| 3b | La reverberación del chip (§7.4, Q10) | Envío por voz según el bit de reverberación del tono |
+| 3b | La música de los modos 2–10 de la variable 245, el cambio de día y noche (`updateBGM`) y la del combate (§6.6) | Suena la variante de la hora y la música del combate; `data/music.yaml` lleva los pares fijos y las pistas del combate |
+| 3c | La reverberación del chip (§7.4, Q10) | Envío por voz según el bit de reverberación del tono |
 | 4 | El volumen en la pantalla de opciones (maestro, música, efectos), guardado con los demás ajustes, y una ruta de autotest | La ruta cambia los volúmenes y comprueba el estado del mezclador con la salida nula |
 
 ## 2. Módulos y dependencias
@@ -160,7 +161,7 @@ los carga (la sesión, con el VFS) usa lo que ya produce `dwx` ([Audio](../forma
 | Muestras de efectos: `sound/<banco>/sample_<n>` (`ss`, `sl`, `sb`) y `sound/<banco>/<entrada>/sample_<n>` (`esall`, `vball`, `vlall`) | WAV PCM 16 bits mono, a la frecuencia de su tecla, con `smpl` si tiene bucle | Ogg Opus a 48 kHz con `LOOPSTART`, `LOOPLENGTH` y `DWE_UNITY_NOTE`; **mismo id** |
 | Bancos: `bank.sf2` y `bank_meta.yaml` | SF2 sin pérdida + YAML (programas, tonos, envolventes, `sounds`: valor → programa, nota y tonos) | Copiados tal cual |
 | Música: `music/<fuente>/font.sf2`, `track_<nn>.mid`, `font_meta.yaml` | SF2 + SMF de formato 0 con marcadores `loopStart`/`loopEnd` (meta 06) + YAML (`plays: forever` u `once`, la cuenta de vueltas) | Copiados tal cual |
-| `data/music.yaml` | `bgm_tracks` (la lista de la tienda de música) y `enemy_music_mapping` | Igual |
+| `data/music.yaml` | `bgm_tracks` (la lista de la tienda de música), `enemy_music_mapping` y, desde el tramo 3b, `field_overrides` (los pares fijos de los modos de la variable 245) y `battle` (la fuente del combate y sus pistas) | Igual |
 | `data/maps` | `sound_id` de cada mapa (el trozo de `ESALL` del mapa) | Igual |
 
 Los ids de asset no llevan extensión, así que la misma referencia (`sound/ss/sample_002`) da el WAV en el camino de
@@ -264,7 +265,8 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 ### 6.5 El tramo 3 en detalle (música del mapa)
 
 Primero lo que pide el hito 1 («Inicio jugable»): la música que pone el script del mapa. El combate, el cambio de
-día y noche con la hora (`updateBGM`, desde `tickGameClock`), los modos 2–10 y la gramola quedan para el tramo 3b.
+día y noche con la hora (`updateBGM`, desde `tickGameClock`) y los modos 2–10 llegan en el tramo 3b (§6.6); la
+gramola va con la tienda de música.
 
 | Función del original | Dónde vive ahora |
 |---|---|
@@ -279,8 +281,7 @@ día y noche con la hora (`updateBGM`, desde `tickGameClock`), los modos 2–10 
   canciones; volumen de secuencia 0x50 de 0x7F; `plays: once` para al final y deja sonar las colas; el resto vuelve
   del marcador `loopEnd` (o del final) al `loopStart` (o al principio). Los cortes son secos.
 - **Diferencias con el original:** el volumen de canal (CC 7) se aplica lineal, como la librería de sonido, no con la
-  curva cúbica del sintetizador; los modos 2–10 de la variable 245 suenan de momento la canción 0 de la fuente pedida
-  (sus pares fuente/canción son datos del ejecutable, Q7, tramo 3b) y lo dicen en el log de depuración.
+  curva cúbica del sintetizador. Los modos 2–10 de la variable 245 llegan en el tramo 3b (§6.6).
 - **Hilos:** el SoundFont se carga en el hilo del juego (`audio::SoundFont`, con las voces y los 16 canales ya
   reservados, para que el hilo de audio no reserve memoria); la orden de música lleva el puntero, y `Audio` guarda la
   fuente y la canción hasta que el mezclador acepta una orden de música posterior (`musicTaken`).
@@ -289,6 +290,38 @@ día y noche con la hora (`updateBGM`, desde `tickGameClock`), los modos 2–10 
 - **Quién lo conecta:** `StoryAdapter` publica `publishStoryMusic` en la VM de la historia (en lugar de los
   marcadores mudos de antes) y, en cada tick, pasa las órdenes a `GameSession::music()` y `sound()`; una sesión muda
   (puerto nulo) no suena.
+
+### 6.6 El tramo 3b en detalle (modos, día y noche, combate)
+
+| Función del original | Dónde vive ahora |
+|---|---|
+| `handleMusicOverride` (`script_interp.c:1584`, modos 2–10) | `SessionMusic::overridden` con `field_overrides` de `data/music.yaml` |
+| `updateBGM` (`script_interp.c:2607`), llamada al final de `tickGameClock` (`clock.c:171`) | `SessionMusic::updateBgm`, en cada tick de `GameSession` mientras corre el tiempo del juego |
+| `START_BATTLE` (`script_interp.c:1913`) y `loadBattleData` (`btl.c:346`) | `SessionMusic::startBattle`, desde `BattleScreen::start` (`apps/game`) |
+| `stopBGM` de `BTL_handleVictorySequence` y `BTL_deinitializeCombat` (`battle_main.c:887`, `:814`) | `SessionMusic::endBattle`, al acabar el combate |
+| `playBGM(ACTIVE_BGM_FONT)` tras ganar (`tamer.c:862`) | `SessionMusic::leaveBattle`, al cerrar el cuadro del final |
+
+- **De dónde salen los números (Q7):** `dwx` los lee del código del ejecutable del usuario
+  (`formats/src/exe/music_code.cpp`). Los pares de los modos salen de ejecutar el `switch` de `handleMusicOverride`
+  con `evaluateConstantSwitch`, que ahora sabe leer lo que una función guarda por los punteros que le pasan
+  (`ValueLocation::pointedBy`, la instrucción `sb`) y empezar tras una llamada con el valor en otro registro. Los del
+  combate son inmediatos de instrucciones concretas de `loadBattleData` (`readCodeConstant`). Las direcciones están
+  en el layout de la versión US; en las otras versiones las claves no se escriben.
+- **CAMBIO DE CONTRATO** (aditivo, 2026-10-23): `data/music.yaml` gana `field_overrides` (`mode`, `font`, `track`) y
+  `battle` (`font`, `boss`, `boss_track`, `scripted_track`, `default_track`, `first_enemy_type`, `end_enemy_type`);
+  el esquema `music` las describe (opcionales) y `ExtractorVersion` sube a 7. Un mod puede cambiar la canción de un
+  modo o la música del combate sustituyendo `data/music.yaml`.
+- **Como el original:** `updateBGM` solo reinicia la canción si cambia la fuente o la variante (al pasar las 6:00 y
+  las 21:00, o si un script cambia la variable 245); durante el combate no actúa. El combate para la música del
+  campo y toca la fuente `battle.font`: `boss_track` si el primer enemigo es `boss`, `scripted_track` en un combate
+  con guion, `enemy_music_mapping[tipo − first_enemy_type]` para los tipos de `first_enemy_type` a
+  `end_enemy_type − 1` y `default_track` para el resto. Al acabar para la música; si se gana, al volver al campo la
+  música del mapa empieza desde el principio; tras huir o perder sigue parada hasta que un script la pone.
+- **Diferencias con el original:** el original mira el tipo del primer enemigo para el jefe y el de la entidad que
+  empezó el combate para el resto; aquí los dos son el primer enemigo de la petición. Un modo fuera de 0–10 deja la
+  variante sin escribir en el original; aquí suena la canción 0. Sin `data/music.yaml` (o sin sus claves nuevas) los
+  modos 2–10 tocan la canción 0 de la fuente pedida y el combate queda en silencio, con un aviso.
+- La fanfarria de victoria es un efecto (SS 0x15) y va con el paquete del combate (Q6), no aquí.
 
 ## 7. Fidelidad: lo que oye el jugador
 
@@ -308,7 +341,7 @@ ticks por segundo. Lo que es regla del juego queda igual en el ruleset `original
 | La música del campo la pone el script del mapa (`set_bgm` con la fuente: el operando que el listado llama `track` es la fuente, 1–28 en el disco); la variante sale de la variable 245: modo 0 día (6–20 h) o noche, modo 1 siempre la 0, modos 2–10 pares fijos | `script_interp.c: handleMusicOverride` | Igual, en el juego; los pares fijos son datos del ejecutable (pregunta Q7) |
 | Al pasar las 6:00 y las 21:00 la música corta a la otra variante desde el principio | `clock.c: tickGameClock` → `updateBGM` | Igual |
 | Cambiar de mapa no toca la música; la toca el script; `set_script` (0xFB) la para | `map.c: changeMap`, `script_interp.c: scriptInstructionFBtoFF` | Igual |
-| Combate: `start_battle` para la música; el combate toca la fuente 0x21: pista 3 contra el jefe final, 0 en los combates con guion, `enemy_music_mapping` para los tipos 0x43–0x6F y 1 para los demás | `script_interp.c` (`START_BATTLE`), `btl.c: loadBattleData` | Igual (en el combate, tramo 3) |
+| Combate: `start_battle` para la música; el combate toca la fuente 0x21: pista 3 contra el jefe final, 0 en los combates con guion, `enemy_music_mapping` para los tipos 0x43–0x6F y 1 para los demás | `script_interp.c` (`START_BATTLE`), `btl.c: loadBattleData` | Igual (tramo 3b, §6.6), con los números de `data/music.yaml` |
 | Victoria: para música y efectos y suena la fanfarria, que es un **efecto** (SS 0x15); al volver al campo la música del mapa empieza **desde el principio** (no se reanuda) | `battle_main.c: BTL_handleVictorySequence`, `tamer.c: startBattle` | Igual |
 | No se pausa ni se reanuda nunca una secuencia | (no hay `SsSeqPause`) | Igual: la música del campo no se reanuda tras un combate |
 | Bucles: los marcadores NRPN de la secuencia (en el MIDI, `loopStart`/`loopEnd`); las pistas de torneo de la fuente 0x1D (salvo la 1) y de las 0x1E–0x20 (salvo la 2) suenan una vez; el resto, sin fin | `sound.c: seqPlay`; la librería de sonido para los marcadores | Igual: `plays` de `font_meta.yaml` y los marcadores |
@@ -350,7 +383,8 @@ hará el tramo en que funcione y tenga test («publicar solo lo que funciona»).
 
 | Superficie | Hoy | Plan | Contrato |
 |---|---|---|---|
-| Assets de sonido y música (`sound/**`, `music/**`, sus `*_meta.yaml`, `data/music.yaml`) | Los escribe `dwx`; esquemas `sound_bank` y `music` | Sin cambios: un mod que sustituye un `sample_<n>`, un `font.sf2` o un `track_<nn>.mid` por id ya se oye en los tramos 2 y 3 | Ninguno |
+| Assets de sonido y música (`sound/**`, `music/**`, sus `*_meta.yaml`, `data/music.yaml`) | Los escribe `dwx`; esquemas `sound_bank` y `music` | Un mod que sustituye un `sample_<n>`, un `font.sf2` o un `track_<nn>.mid` por id ya se oye en los tramos 2 y 3 | Ninguno |
+| `field_overrides` y `battle` de `data/music.yaml` | Los escribe `dwx` desde el tramo 3b (§6.6) | El juego los lee: un mod cambia la canción de un modo o la del combate | **CAMBIO DE CONTRATO** (aditivo, tramo 3b): claves nuevas del esquema `music`, `ExtractorVersion` 7 |
 | Formato cocinado (Opus, SF2 y MIDI copiados) | ADR 0017 | Sin cambios | Ninguno |
 | `pack.yaml` | — | Sin claves nuevas | Ninguno |
 | `story.play_sound(ranura, sonido)` | Lo emite `dwx` en el Lua convertido | Publicada en el tramo 2b (Q14) sobre el `SoundPort` | **CAMBIO DE CONTRATO** (aditivo, tramo 2b): `LuaApiVersion` sube de 1.2.0 a 1.3.0 |

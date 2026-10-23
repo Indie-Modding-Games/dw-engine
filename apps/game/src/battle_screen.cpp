@@ -27,11 +27,15 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
         enemies.empty() ? enemy.species : std::string{messages::ListSeparator} + enemy.species;
   }
   const std::string map = request.map;
+  const session::BattleMusicFacts music = musicFactsOf(request);
   auto battle = desc_.battle->start(*desc_.session, std::move(request));
   if (!battle) {
     return std::unexpected{battle.error()};
   }
   battle_.emplace(std::move(*battle));
+  if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {
+    sessionMusic->startBattle(music);
+  }
   core::logInfo("{}", core::formatMessage(messages::BattleStarted, enemies, map));
   desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
   publish();
@@ -152,11 +156,19 @@ void BattleScreen::finish() {
   const std::optional<game::battle::BattleResult> finished =
       battle_ ? battle_->result() : std::nullopt;
   battle_.reset();
+  session::SessionMusic* music = desc_.session->music();
+  if (music != nullptr) {
+    music->endBattle();
+  }
   if (!finished) {
+    if (music != nullptr) {
+      music->leaveBattle(false);
+    }
     return;
   }
   const game::battle::BattleResult& result = *finished;
   outcome_ = result.outcome;
+  won_ = result.outcome == game::battle::Outcome::Victory;
   core::logInfo("{}", core::formatMessage(messages::BattleFinished,
                                           game::battle::outcomeTextKey(result.outcome)));
   auto aftermath = desc_.battle->finish(*desc_.session, result);
@@ -185,6 +197,23 @@ void BattleScreen::close() {
   }
   ending_ = false;
   desc_.ui->hide(BattleDocument);
+  if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
+    music->leaveBattle(std::exchange(won_, false));
+  }
+}
+
+session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleRequest& request) const {
+  session::BattleMusicFacts facts{
+      .firstEnemy = {}, .firstEnemyType = std::nullopt, .scripted = request.scripted};
+  if (!request.enemies.empty()) {
+    facts.firstEnemy = request.enemies.front().species;
+    const assets::DigimonRow* row =
+        desc_.species != nullptr ? desc_.species->find(facts.firstEnemy) : nullptr;
+    if (row != nullptr) {
+      facts.firstEnemyType = row->index;
+    }
+  }
+  return facts;
 }
 
 } // namespace dwe::app
