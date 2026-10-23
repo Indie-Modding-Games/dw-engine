@@ -32,6 +32,9 @@ public:
   // A scene's bank in slot 8 instead of the map's (sound_async.c: loadMapSounds2, as the evolution
   // and death scenes load theirs); nothing gives slot 8 back to the map's bank.
   void useSceneBank(std::optional<std::int32_t> soundId);
+  // A battle's bank in slot 8 (btl.c: loadBattleData, sound_async.c: loadSB) while it lasts; after
+  // it the map's or the scene's again, as the map's reload does (sound.c: loadMapSounds).
+  void useBattleBank(bool inBattle);
   void playSound(std::int64_t slot, std::int64_t sound) override;
   std::optional<std::int64_t> playHeldSound(std::int64_t slot, std::int64_t sound) override;
   void stopHeldSound(std::int64_t held) override;
@@ -52,6 +55,7 @@ private:
   bool mapsRead_ = false;
   std::optional<std::string> mapBank_;
   std::optional<std::string> sceneBank_;
+  bool inBattle_ = false;
   std::map<std::string, audio::EffectBank, std::less<>> banks_;
   // Kept across maps, so a bank that failed to load is not tried (or reported) again.
   std::set<std::string, std::less<>> failedBanks_;

@@ -285,6 +285,9 @@ public:
   // A scene's sound bank in slot 8 instead of the map's, until nothing gives it back
   // (SessionSound::useSceneBank); nothing happens in a silent session.
   void useSceneSounds(std::optional<std::int32_t> soundId);
+  // The battle bank in slot 8 while a battle lasts (SessionSound::useBattleBank); nothing happens
+  // in a silent session.
+  void useBattleSounds(bool inBattle);
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);

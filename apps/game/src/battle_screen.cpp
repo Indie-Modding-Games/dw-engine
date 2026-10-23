@@ -58,6 +58,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
   battle_.emplace(std::move(*battle));
   battle_->setGround(desc_.ground);
   effects_.reset();
+  desc_.session->useBattleSounds(true);
   if (game::story::SoundPort* sound = desc_.session->sound();
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
@@ -300,6 +301,7 @@ void BattleScreen::finish() {
     effects_->end();
     effects_.reset();
   }
+  desc_.session->useBattleSounds(false);
   session::SessionMusic* music = desc_.session->music();
   if (music != nullptr) {
     music->endBattle();

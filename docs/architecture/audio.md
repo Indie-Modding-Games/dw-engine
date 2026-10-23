@@ -244,8 +244,9 @@ publica la API `story` en `apps/session` y todavía no está en `main`:
 
 **Juego (2a).**
 - `game/story` declara `SoundPort` (`playSound(slot, value)`), como `StoryStatePort`; el runner no sabe de bancos.
-- `apps/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>` (o
-  `sb` en combate y VS, cuando existan). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
+- `apps/session` lo implementa: ranura 0 → `sound/ss`, 1 → `sound/sl`, 8 → `sound/esall/<sound_id del mapa>`, o
+  `sound/sb` mientras dura un combate (`btl.c: loadBattleData` → `sound_async.c: loadSB`; al acabar vuelve el del
+  mapa, `useBattleBank`). El mapa en que arranca o se carga la partida también da su banco (`attachField`). Cada banco se carga la primera vez que su ranura lo pide, y el del mapa
   anterior se suelta al cambiar de mapa; un banco que no carga deja su ranura en silencio con un solo aviso. Las ranuras 3–7 no
   las piden los scripts del disco (§10, Q3): la tabla tipo → entrada se aplaza al paquete de los gritos (Q13).
 - `SoundPort` también tiene `playHeldSound(slot, value)` → asa y `stopHeldSound(asa)` (`sound.c: playSound2` y

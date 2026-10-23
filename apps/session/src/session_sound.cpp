@@ -16,6 +16,8 @@ constexpr std::int64_t SecondSystemSlot = 1;
 constexpr std::int64_t MapSlot = 8;
 constexpr std::string_view SystemBank = "sound/ss";
 constexpr std::string_view SecondSystemBank = "sound/sl";
+// The battle bank (sound_async.c: loadSB), which a battle loads into slot 8.
+constexpr std::string_view BattleBank = "sound/sb";
 
 // The folder of a bank of slot 8: sound/esall/<sound id>.
 std::string bankFolderOf(std::int32_t soundId) {
@@ -57,8 +59,17 @@ void SessionSound::useSceneBank(std::optional<std::int32_t> soundId) {
 void SessionSound::dropUnusedBanks() {
   std::erase_if(banks_, [&](const auto& entry) {
     return entry.first != SystemBank && entry.first != SecondSystemBank &&
-           entry.first != mapBank_ && entry.first != sceneBank_;
+           entry.first != mapBank_ && entry.first != sceneBank_ &&
+           !(inBattle_ && entry.first == BattleBank);
   });
+}
+
+void SessionSound::useBattleBank(bool inBattle) {
+  inBattle_ = inBattle;
+  core::logDebug("[port:sound] {}: slot 8 bank={}",
+                 inBattle ? "loadSB (sound_async.c:208)" : "loadMapSounds (sound.c:721)",
+                 folderOf(MapSlot).value_or("none"));
+  dropUnusedBanks();
 }
 
 std::optional<std::vector<audio::VoiceId>> SessionSound::playVoices(std::int64_t slot,
@@ -136,6 +147,9 @@ std::optional<std::string> SessionSound::folderOf(std::int64_t slot) const {
   case SecondSystemSlot:
     return std::string{SecondSystemBank};
   case MapSlot:
+    if (inBattle_) {
+      return std::string{BattleBank};
+    }
     return sceneBank_ ? sceneBank_ : mapBank_;
   default:
     return std::nullopt;

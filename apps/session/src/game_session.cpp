@@ -140,6 +140,12 @@ void GameSession::useSceneSounds(std::optional<std::int32_t> soundId) {
   }
 }
 
+void GameSession::useBattleSounds(bool inBattle) {
+  if (sound_) {
+    sound_->useBattleBank(inBattle);
+  }
+}
+
 core::Result<void> GameSession::setUp() {
   const ruleset::Ruleset& current = store_.current();
   auto species = speciesOf(desc_, current);
@@ -431,6 +437,10 @@ game::partner::CareContext GameSession::careContext() const {
 void GameSession::attachField(const game::field::Field& field) {
   state_->field = &field;
   lastMap_ = field.mapId();
+  // followMap only sees later maps: slot 8 takes the bank of the map the field starts on here.
+  if (sound_) {
+    sound_->enterMap(lastMap_);
+  }
   area_ = areaOfFieldMap();
 }
 

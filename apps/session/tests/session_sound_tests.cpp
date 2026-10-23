@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -90,6 +91,7 @@ assets::VirtualFileSystem mountedPack(assets::MemoryFileSystem& memory) {
   memory.addFile("pack/data/maps.yaml", maps);
   addBank(memory, "ss", 3);
   addBank(memory, "esall/009", 5);
+  addBank(memory, "sb", 34);
   const std::vector<std::filesystem::path> roots{"pack"};
   return assets::VirtualFileSystem::mount(memory, roots).value();
 }
@@ -124,6 +126,30 @@ TEST_CASE("the story's slots play the system bank and the bank of the map") {
   sound.enterMap("base:room08");
   sound.playSound(8, 5);
   CHECK(rig.audio.activeVoiceCount() == 2);
+}
+
+TEST_CASE("a battle holds the battle bank in slot 8, and held sounds keep a handle") {
+  SoundRig rig;
+  session::SessionSound sound{rig.audio, rig.files};
+  sound.enterMap("base:twna01");
+  sound.useBattleBank(true);
+  // The map's sound 5 is not in the battle bank; the battle's 34 is.
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 0);
+  sound.playSound(8, 34);
+  CHECK(rig.audio.activeVoiceCount() == 1);
+
+  const std::optional<std::int64_t> held = sound.playHeldSound(8, 34);
+  REQUIRE(held.has_value());
+  CHECK(rig.audio.activeVoiceCount() == 2);
+  CHECK_FALSE(sound.playHeldSound(8, 5).has_value());
+  sound.stopHeldSound(held.value_or(0));
+  sound.stopHeldSound(held.value_or(0)); // a second stop finds nothing to stop
+
+  // After the battle the map's bank is back.
+  sound.useBattleBank(false);
+  sound.playSound(8, 5);
+  CHECK(rig.audio.activeVoiceCount() == 3);
 }
 
 namespace {
