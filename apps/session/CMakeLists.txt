@@ -9,6 +9,7 @@ dwe_add_module(session
         src/field_facts.cpp
         src/game_session.cpp
         src/game_systems.cpp
+        src/gym_adapter.cpp
         src/inventory_adapter.cpp
         src/item_use_rules.cpp
         src/partner_moves.cpp
@@ -62,7 +63,7 @@ dwe_add_module(session
         src/story_routines/routine_trade_shop.cpp
         src/story_routines/routine_variable_at_start.cpp
         src/story_routines/screen_routines.cpp
-    DEPS core assets audio scene ruleset field partner save evolution inventory battle story script
+    DEPS core assets audio scene ruleset field partner save evolution inventory battle story gym script
     # The story tests check the API against the Lua emitter and run its listings' reference.
     TEST_LIBS dwe::formats ${LUA_LIBRARIES})
 

@@ -93,7 +93,7 @@ const std::vector<DepthLayerQuad>& MapDepthLayers::quads() {
     quads_.push_back({
         .instance = index,
         .sprite = static_cast<std::size_t>(sprite),
-        .position = instance.position,
+        .position = instance.position + instance.offset,
         .size = {static_cast<float>(definition.width), static_cast<float>(definition.height)},
         .viewDepth = mapSpriteDepth(instance.orderValue),
         .blend = assets::spriteBlend(definition.transparency),
@@ -124,6 +124,16 @@ void MapDepthLayers::setPosition(std::size_t instance, glm::vec2 position) {
   if (instance < instances_.size()) {
     instances_[instance].position = position;
   }
+}
+
+void MapDepthLayers::setOffset(std::size_t instance, glm::vec2 offset) {
+  if (instance < instances_.size()) {
+    instances_[instance].offset = offset;
+  }
+}
+
+glm::vec2 MapDepthLayers::offset(std::size_t instance) const {
+  return instance < instances_.size() ? instances_[instance].offset : glm::vec2{0.0F};
 }
 
 } // namespace dwe::render

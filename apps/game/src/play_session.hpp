@@ -28,6 +28,7 @@
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
+#include "gym_screen.hpp"
 #include "movie_rules.hpp"
 #include "options.hpp"
 #include "partner_menu.hpp"
@@ -70,6 +71,7 @@ struct SessionCommands {
   CareCommands care;
   SaveCommand save;
   bool saveMachine = false;
+  std::optional<std::string> gym;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
@@ -157,6 +159,7 @@ private:
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
+  GymScreen gymScreen_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;

@@ -52,5 +52,7 @@ schemas:
     - rules/*/partner_moves
   ruleset_evolution:
     - rules/*/evolution
+  ruleset_gym:
+    - rules/*/gym
   ruleset_movies:
     - rules/*/movies

@@ -66,11 +66,17 @@ public:
   // (overworld.c: tickMoveObjectTo).
   [[nodiscard]] std::optional<glm::vec2> position(std::size_t instance) const;
   void setPosition(std::size_t instance, glm::vec2 position);
+  // Moves an instance away from where the map places it, in background pixels, as the training
+  // courses move the gym's weights (overworld.c: moveMapObjectsWithLimit); a zero offset puts it
+  // back (loadMapObjectPosition).
+  void setOffset(std::size_t instance, glm::vec2 offset);
+  [[nodiscard]] glm::vec2 offset(std::size_t instance) const;
 
 private:
   struct Instance {
     std::vector<assets::MapSpriteFrame> frames;
     glm::vec2 position{0.0F};
+    glm::vec2 offset{0.0F};
     std::int32_t orderValue = 0;
     bool hidden = false;
     bool screenSpace = false;

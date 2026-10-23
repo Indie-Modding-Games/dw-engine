@@ -318,7 +318,7 @@ objetos en la bolsa. `evolve("species_b")` hace evolucionar al compañero a esa 
 el original empieza los combates desde los scripts de los NPC (`script_interp.c`: la operación `START_BATTLE`) y la
 partida nueva empieza con la bolsa vacía. Decisión del responsable de diseño (2026-10-21): hasta que corran los guiones
 de los mapas en la fase 4, `battle("")` es el único disparador de combates. `use_item("medicine")` usa uno de la bolsa
-con el compañero, y `toilet("")`, `sleep("")`, `save_machine("")` (la máquina de guardado), `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
+con el compañero, y `toilet("")`, `sleep("")`, `save_machine("")` (la máquina de guardado), `gym("hp")` (un curso del gimnasio, solo en su mapa), `scold("")`, `train("trn brain")` y `clock_speed("600")` llaman a los
 comandos de cuidado de la sesión y aceleran el reloj, hasta que existan los baños, las camas, las pantallas de
 entrenamiento y las opciones del reloj (fase 4); la lista está en [la guía de la prueba
 vertical](../guides/prueba-vertical.md). Decisión del responsable de diseño (2026-10-21): `toilet`, `sleep`, `train`, `scold` y

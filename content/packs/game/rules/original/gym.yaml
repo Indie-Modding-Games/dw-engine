@@ -1,0 +1,57 @@
+# El gimnasio del pueblo (src/trn: TRN_setup*Training y TRN_tick*Training). Lo leen game/gym y apps/game. Las
+# ganancias de cada sesión son de training.yaml; aquí está la coreografía de cada curso, contada en fotogramas del
+# original (20 por segundo). Los puntos son unidades del mundo; los objetos, píxeles del fondo.
+# map.c: loadTrainingLibrary y TRN_setup*Training: el gimnasio solo funciona en trai00 (mapa 0x70).
+map: trai00
+# training.yaml: el lugar cuyas ganancias da cada curso.
+place: trn
+# script_interp.c: rutina 7: el curso sale de la variable 0xfe (254), en este orden.
+course_variable: 254
+course_by_choice: [hp, offense, speed, defense, mp, brain]
+# TRN_setup*Training: la variable 0xf6 (246) activa la ruleta.
+slot_variable: 246
+# TRN_calculateTrainingMultiplier: el manual de entrenamiento (getItemCount(0x21)).
+manual_item: trn_manual
+# playSound(8, ...): el banco del mapa.
+sound_slot: 8
+# TRN_createCloudFXLine: cada nube se desvía randomLimit(100) de su línea.
+cloud_scatter: 100
+# trn_hud.c: la caja de estadísticas espera 100 fotogramas, luego cuenta un punto por fotograma con playSound(0, 0x16),
+# con tope 9999 para HP y MP y 999 para el resto.
+count:
+  delay_frames: 100
+  sound_slot: 0
+  sound: 22
+  hp_mp_max: 9999
+  stat_max: 999
+courses:
+  # trn_hp.c: TRN_setupHpTraining y TRN_tickHpTraining.
+  - id: hp
+    # El aparato: el compañero anda hasta él (tickEntityWalkTo) y la cámara lo sigue a velocidad 10.
+    spot: { x: 1420, z: -1744 }
+    camera_speed: 10
+    # Mira hacia el aparato: 0xa00 de 4096 por vuelta.
+    facing: 2560
+    # Los objetos 0x53 a 0x62 del mapa (las pesas).
+    objects: { first: 83, count: 16 }
+    # El ciclo dura 1200 fotogramas (o hasta cancelar); cada 120 un golpe, en los fotogramas 0 a 1200, sube las
+    # pesas (1, -2); cada fotograma tiemblan ±2 en x; cada 10 suena el golpe.
+    cycle_frames: 1200
+    beat_frames: 120
+    beat_move: { x: 1, y: -2 }
+    jitter: 2
+    sound_every_frames: 10
+    # Al volver, las pesas bajan (-1, 2) un fotograma por golpe dado.
+    return_move: { x: -1, y: 2 }
+    # Fotogramas de pausa tras la cuenta antes de volver.
+    rest_frames: 20
+    # Sonidos del banco del mapa: al empezar, el golpe y al acabar.
+    sounds: { start: 9, beat: 0, end: 10 }
+    # Animaciones del compañero: andar, trabajar y terminar.
+    animations: { walk: 4, work: 27, done: 18 }
+    # TRN_createCloudFXLine: cada `every` fotogramas, `count` nubes desde (x, z) con paso (dx, dz), corridas por los
+    # golpes dados × every.
+    clouds:
+      - { every: 15, x: 1360, z: -1540, dx: 100, dz: -50, count: 8 }
+      - { every: 20, x: 1461, z: -1639, dx: 50, dz: -50, count: 6 }
+      - { every: 18, x: 1300, z: -1317, dx: 20, dz: -50, count: 4 }

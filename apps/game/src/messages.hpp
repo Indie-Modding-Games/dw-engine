@@ -147,6 +147,7 @@ inline constexpr std::string_view PartnerEventNotShown =
     "game: partner event {} (value {}) is not shown yet";
 inline constexpr std::string_view EvolveFailed = "game: evolve: {}";
 inline constexpr std::string_view SaveMachineFailed = "game: save_machine: {}";
+inline constexpr std::string_view GymFailed = "game: gym: {}";
 inline constexpr std::string_view EvolveRefused = "game: evolve: the partner cannot become {} now";
 
 // A problem of a warp of the map entered (assets::warpIssueMessage): the field disables the warp,

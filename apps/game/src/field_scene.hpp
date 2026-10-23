@@ -165,7 +165,8 @@ public:
   }
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
-  // The map's sprite objects, which scripts move (overworld.c: tickMoveObjectTo).
+  // The map's sprite objects, which scripts and the gym's courses move (overworld.c:
+  // tickMoveObjectTo, moveMapObjectsWithLimit).
   [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
   // How fast the clip with the original's animation id carries the player or the partner over the
   // ground, world units a second: its root's speed (anim.c: applyRootMomentum); 0 without it.

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: gym",
+  "description": "rules/<id>/gym.yaml: the town gym's courses (game/gym, docs/reference/vanilla). Frames are frames of the original's game loop; points are world units; object moves are background pixels.",
+  "type": "object",
+  "required": ["map", "place", "course_variable", "course_by_choice", "slot_variable", "manual_item", "sound_slot", "cloud_scatter", "count", "courses"],
+  "additionalProperties": false,
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "z"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "integer" }, "z": { "type": "integer" } }
+    },
+    "move": {
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }
+    },
+    "frames": { "type": "integer", "minimum": 1 }
+  },
+  "properties": {
+    "map": { "description": "The map the gym works on.", "type": "string", "minLength": 1 },
+    "place": { "description": "The training place (training.yaml) whose gains the courses give.", "type": "string", "minLength": 1 },
+    "course_variable": { "description": "Story variable that picks the course.", "type": "integer", "minimum": 0 },
+    "course_by_choice": { "description": "Course id for each value of the course variable.", "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "slot_variable": { "description": "Story variable that enables the roulette.", "type": "integer", "minimum": 0 },
+    "manual_item": { "description": "Item that counts as the training manual.", "type": "string", "minLength": 1 },
+    "sound_slot": { "description": "Sound slot of the course sounds.", "type": "integer", "minimum": 0 },
+    "cloud_scatter": { "description": "Each cloud strays below this from its line.", "$ref": "#/$defs/frames" },
+    "count": {
+      "description": "The stats box after a session.",
+      "type": "object",
+      "required": ["delay_frames", "sound_slot", "sound", "hp_mp_max", "stat_max"],
+      "additionalProperties": false,
+      "properties": {
+        "delay_frames": { "type": "integer", "minimum": 0 },
+        "sound_slot": { "type": "integer", "minimum": 0 },
+        "sound": { "type": "integer", "minimum": 0 },
+        "hp_mp_max": { "type": "integer", "minimum": 1 },
+        "stat_max": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "courses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "spot", "camera_speed", "facing", "objects", "cycle_frames", "beat_frames", "beat_move", "jitter", "sound_every_frames", "return_move", "rest_frames", "sounds", "animations", "clouds"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "spot": { "$ref": "#/$defs/point" },
+          "camera_speed": { "type": "integer", "minimum": 0 },
+          "facing": { "description": "4096 per turn.", "type": "integer" },
+          "objects": {
+            "type": "object",
+            "required": ["first", "count"],
+            "additionalProperties": false,
+            "properties": { "first": { "type": "integer", "minimum": 0 }, "count": { "type": "integer", "minimum": 0 } }
+          },
+          "cycle_frames": { "$ref": "#/$defs/frames" },
+          "beat_frames": { "$ref": "#/$defs/frames" },
+          "beat_move": { "$ref": "#/$defs/move" },
+          "jitter": { "type": "integer" },
+          "sound_every_frames": { "$ref": "#/$defs/frames" },
+          "return_move": { "$ref": "#/$defs/move" },
+          "rest_frames": { "type": "integer", "minimum": 0 },
+          "sounds": {
+            "type": "object",
+            "required": ["start", "beat", "end"],
+            "additionalProperties": false,
+            "properties": { "start": { "type": "integer" }, "beat": { "type": "integer" }, "end": { "type": "integer" } }
+          },
+          "animations": {
+            "type": "object",
+            "required": ["walk", "work", "done"],
+            "additionalProperties": false,
+            "properties": { "walk": { "type": "integer" }, "work": { "type": "integer" }, "done": { "type": "integer" } }
+          },
+          "clouds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["every", "x", "z", "dx", "dz", "count"],
+              "additionalProperties": false,
+              "properties": {
+                "every": { "$ref": "#/$defs/frames" },
+                "x": { "type": "integer" }, "z": { "type": "integer" },
+                "dx": { "type": "integer" }, "dz": { "type": "integer" },
+                "count": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

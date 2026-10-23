@@ -1,0 +1,9 @@
+/* The gym's stats box whatever the skin: a column of the six stats over the field, which goes on behind it. The look
+   is the pause menu's panel (the skins' pause_menu style); the box sits in a corner, so the more specific rule here
+   moves the panel there. */
+
+body { pointer-events: none; }
+body #panel { left: auto; margin-left: 0; right: 24dp; top: 24dp; width: 260dp; }
+.row { display: block; }
+.label { display: inline-block; width: 150dp; }
+.value { display: inline-block; width: 90dp; text-align: right; }

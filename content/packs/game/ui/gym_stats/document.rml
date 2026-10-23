@@ -1,0 +1,18 @@
+<rml>
+<head>
+	<title>Gym stats</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="panel">
+		<div class="row"><span class="label" id="stat-0-label"></span><span class="value" id="stat-0"></span></div>
+		<div class="row"><span class="label" id="stat-1-label"></span><span class="value" id="stat-1"></span></div>
+		<div class="row"><span class="label" id="stat-2-label"></span><span class="value" id="stat-2"></span></div>
+		<div class="row"><span class="label" id="stat-3-label"></span><span class="value" id="stat-3"></span></div>
+		<div class="row"><span class="label" id="stat-4-label"></span><span class="value" id="stat-4"></span></div>
+		<div class="row"><span class="label" id="stat-5-label"></span><span class="value" id="stat-5"></span></div>
+	</div>
+</body>
+</rml>

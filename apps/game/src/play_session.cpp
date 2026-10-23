@@ -131,6 +131,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(evolution, std::nullopt)) {
     dropped(messages::EvolveFailed);
   }
+  if (std::exchange(gym, std::nullopt)) {
+    dropped(messages::GymFailed);
+  }
   if (care.pending()) {
     dropped(messages::CareCommandFailed);
     care = {};
@@ -153,6 +156,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   care.bind(scripts);
   save.bind(scripts);
   scripts.bindCommand(SaveMachineCommand, [this](std::string_view) { saveMachine = true; });
+  scripts.bindCommand(GymCommand, [this](std::string_view course) { gym = std::string{course}; });
 }
 
 core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext& context,
@@ -213,7 +217,12 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       deathScene_({.session = game_.session.get(),
                    .scene = scene_.get(),
                    .story = game_.systems.story,
-                   .transition = scene_->field().rules().transition}) {
+                   .transition = scene_->field().rules().transition}),
+      gymScreen_({.session = game_.session.get(),
+                  .story = game_.systems.story,
+                  .inventory = game_.systems.inventory,
+                  .scene = scene_.get(),
+                  .ui = context.ui}) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -289,6 +298,11 @@ void PlaySession::tick(const game::field::FieldInput& intent) {
                      "script runs");
       fieldIntent.confirm = false;
     }
+    // A gym course takes the player's control; its buttons are the course's.
+    if (gymScreen_.active()) {
+      gymScreen_.tick(TickSeconds, intent);
+      fieldIntent = {};
+    }
     scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();
@@ -362,6 +376,11 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (std::exchange(commands.saveMachine, false)) {
     saveMachine_.open();
   }
+  if (const auto course = std::exchange(commands.gym, std::nullopt)) {
+    if (auto started = gymScreen_.start(*course); !started) {
+      core::logWarning("{}", core::formatMessage(messages::GymFailed, started.error().message));
+    }
+  }
   // Before a queued evolve, so a script that saves and then evolves saves the form it had when it
   // asked.
   if (auto saved = commands.save.apply(session); !saved) {
@@ -396,9 +415,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   partnerMenu_.update();
   // tamer.c: the menu opens with no script, no fade and no text box; the field has no scripts or
   // text boxes yet.
-  sleepScreen_.update(!battleScreen_.active() && !evolutionScene_.active() &&
-                      !deathScene_.active() && !field.mapChangePending() &&
-                      field.fadeLevel() == 0.0F);
+  sleepScreen_.update(!battleScreen_.active() && !gymScreen_.active() &&
+                      !evolutionScene_.active() && !deathScene_.active() &&
+                      !field.mapChangePending() && field.fadeLevel() == 0.0F);
+  gymScreen_.update();
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||

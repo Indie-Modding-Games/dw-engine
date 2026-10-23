@@ -3,6 +3,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/game_systems.hpp>
+#include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -100,6 +101,7 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(storyOrders));
   game.systems.push_back(std::move(scenes));
   game.systems.push_back(std::move(story));
+  game.systems.push_back(std::make_unique<GymAdapter>());
   return game;
 }
 

@@ -26,3 +26,5 @@ screens:
     styles: [ui/skins/modern/pause_menu/style]
   sleep_menu:
     styles: [ui/skins/modern/pause_menu/style]
+  gym_stats:
+    styles: [ui/skins/modern/pause_menu/style]
