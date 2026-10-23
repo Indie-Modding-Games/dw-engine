@@ -60,7 +60,7 @@ std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& optio
 }
 
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves, const PlayStart& play) {
+                                  bool keepsSaves, const PlayStart& play, audio::Audio* sound) {
   GameStart start{.storage = saveStorageFor(options, keepsSaves),
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
@@ -73,6 +73,7 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
                                                .storage = start.storage.get(),
                                                .gameVersion = DWE_GAME_VERSION,
                                                .wallClock = wallClock,
+                                               .sound = sound,
                                                .systems = std::move(start.systems.systems)});
   if (!session) {
     return core::fail(core::formatMessage(messages::SessionFailed, session.error().message));

@@ -5,6 +5,7 @@
 #include <dwe/ruleset/random.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/messages.hpp>
+#include <dwe/session/session_sound.hpp>
 #include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
@@ -92,9 +93,17 @@ core::Result<std::unique_ptr<GameSession>> GameSession::create(SessionDesc desc)
 }
 
 GameSession::GameSession(SessionDesc desc, ruleset::RulesetStore store)
-    : desc_(std::move(desc)), store_(std::move(store)), seed_(desc_.seed) {}
+    : desc_(std::move(desc)), store_(std::move(store)), seed_(desc_.seed) {
+  if (desc_.sound != nullptr && desc_.files != nullptr) {
+    sound_ = std::make_unique<SessionSound>(*desc_.sound, *desc_.files);
+  }
+}
 
 GameSession::~GameSession() = default;
+
+game::story::SoundPort* GameSession::sound() {
+  return sound_.get();
+}
 
 core::Result<void> GameSession::setUp() {
   const ruleset::Ruleset& current = store_.current();
@@ -386,6 +395,9 @@ void GameSession::followMap() {
   }
   const bool changed = !lastMap_.empty();
   lastMap_ = state_->field->mapId();
+  if (sound_) {
+    sound_->enterMap(lastMap_);
+  }
   // The original works the area out on every map load (map.c: loadMap), also when a script loads
   // the map the player is on again; only a new map id gets here, so a species that changed on the
   // map keeps the old response until the next different map.

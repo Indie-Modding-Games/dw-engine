@@ -462,6 +462,7 @@ int runGame(const Options& options) {
                                 .device = device->get(),
                                 .renderer = renderer->get(),
                                 .ui = ui->get(),
+                                .sound = &sound,
                                 .debugUi = debugUi->get(),
                                 .userSettings = &userSettings,
                                 .settingsFile = settingsFile},

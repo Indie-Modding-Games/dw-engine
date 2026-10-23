@@ -121,4 +121,13 @@ inline constexpr std::string_view WaitWithoutStoryWait =
 inline constexpr std::string_view BadSectionReturn =
     "a section returns story.ENDED or nothing, and this one returned another value";
 
+// The story's sound slots (session_sound.hpp). A sound that cannot play stays silent.
+inline constexpr std::string_view SoundNoMaps = "sound: no map table ({}); slot 8 stays silent";
+inline constexpr std::string_view SoundNoSlot =
+    "sound: slot {} holds no bank here; sound {} stays silent";
+inline constexpr std::string_view SoundBankFailed =
+    "sound: bank {} does not load ({}); it stays silent";
+inline constexpr std::string_view SoundNotPlayed = "sound: {} does not play sound {}: {}";
+inline constexpr std::string_view SoundOutOfRange = "no sound has that number";
+
 } // namespace dwe::session::messages

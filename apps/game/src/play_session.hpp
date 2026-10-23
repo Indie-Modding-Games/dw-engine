@@ -42,6 +42,8 @@ struct PlayContext {
   rhi::Device* device = nullptr;
   render::Renderer* renderer = nullptr;
   ui::Ui* ui = nullptr;
+  // Where the game's sounds play; nullptr plays none.
+  audio::Audio* sound = nullptr;
   debug::DebugUi* debugUi = nullptr;
   UserSettings* userSettings = nullptr;
   // Where the player's settings are saved; nothing for runs that must not touch them (autotests).

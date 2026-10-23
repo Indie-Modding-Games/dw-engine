@@ -13,6 +13,7 @@
 #include <dwe/game/save/save_file.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
+#include <dwe/game/story/story_ports.hpp>
 #include <dwe/ruleset/game_clock.hpp>
 #include <dwe/ruleset/random.hpp>
 #include <dwe/ruleset/ruleset.hpp>
@@ -29,7 +30,13 @@
 #include <string>
 #include <vector>
 
+namespace dwe::audio {
+class Audio;
+}
+
 namespace dwe::session {
+
+class SessionSound;
 
 // The tamer as far as the session keeps it until a tamer system exists.
 struct TamerState {
@@ -73,6 +80,9 @@ struct SessionDesc {
   // The real date for the saves' created and updated times; the epoch when not given, so tests are
   // repeatable.
   std::function<std::chrono::sys_seconds()> wallClock;
+  // Where the story's sounds play, or nullptr for a silent session (dwe-sim, tests); it must
+  // outlive the session.
+  audio::Audio* sound = nullptr;
   // The adapters of the systems besides the partner, in the order they tick.
   std::vector<std::unique_ptr<SessionSystem>> systems;
 };
@@ -195,6 +205,8 @@ public:
 
   [[nodiscard]] double playSeconds() const { return playSeconds_; }
   [[nodiscard]] std::uint64_t seed() const { return seed_; }
+  // The story's sound slots, or nullptr for a silent session.
+  [[nodiscard]] game::story::SoundPort* sound();
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);
@@ -243,6 +255,7 @@ private:
   std::optional<game::save::SlotId> homeSlot_;
   std::vector<game::partner::PartnerEvent> partnerEvents_;
   std::string lastMap_;
+  std::unique_ptr<SessionSound> sound_;
   game::partner::AreaResponse area_ = game::partner::AreaResponse::Neutral;
   double playSeconds_ = 0.0;
 };

@@ -49,4 +49,20 @@ public:
   virtual std::int64_t next() = 0;
 };
 
+// The sound effects the story asks for. A slot is the original's sound slot (sound.c: playSound):
+// 0 system sounds, 1 the second system bank, 8 the bank of the map or the battle. The owner knows
+// which bank each slot holds. Effects never wait and never fail a script: a sound that cannot play
+// stays silent.
+class SoundPort {
+public:
+  SoundPort() = default;
+  SoundPort(const SoundPort&) = delete;
+  SoundPort& operator=(const SoundPort&) = delete;
+  SoundPort(SoundPort&&) = delete;
+  SoundPort& operator=(SoundPort&&) = delete;
+  virtual ~SoundPort() = default;
+
+  virtual void playSound(std::int64_t slot, std::int64_t sound) = 0;
+};
+
 } // namespace dwe::game::story

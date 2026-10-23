@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dwe/assets/virtual_file_system.hpp>
+#include <dwe/audio/audio.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/game/save/storage.hpp>
@@ -30,8 +31,8 @@ std::unique_ptr<game::save::DiskSaveStorage> saveStorageFor(const Options& optio
                                                             bool keepsSaves);
 
 // Starts the game `play` asks for with the command line's --clock-speed, --ruleset and --seed on
-// the packs, which must outlive it.
+// the packs, which must outlive it, as must `sound` (nullptr: a silent game).
 core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const Options& options,
-                                  bool keepsSaves, const PlayStart& play);
+                                  bool keepsSaves, const PlayStart& play, audio::Audio* sound);
 
 } // namespace dwe::app
