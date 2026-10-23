@@ -117,7 +117,10 @@ Antes de la entrevista, la ranura vacía pregunta «Record new adventure?» con 
 Con la historia y `story_scenes.new_game.chain: original`, el campo empieza en `twna01` salida 9: la cabecera del
 mapa carga el guion 164 y la casilla de esa salida corre la apertura, que lleva a `topn01`, el despertar en casa de
 Jijimon, y de ahí a File City (todo dentro de la etapa 1 del candado de historia). `seeded` sigue disponible: el
-estado de `data/new_game_story` y el inicio de `field/warps`, sin la apertura.
+estado de `data/new_game_story` y el inicio de `field/warps`, sin la apertura. `--new-game-chain original|seeded`
+elige la cadena de esta ejecución en vez de la del ruleset (`StoryScenes::setNewGameChain`). Un autotest, como deja
+fuera las preguntas y las películas, empieza en `seeded` (el campo libre de File City) salvo que la ruta diga
+`new_game: original` (hoy solo `route-etapa1`); `--new-game-chain` manda sobre los dos.
 
 La caja de nombres es la americana: dos mitades de 9 filas y 5 columnas (mayúsculas; minúsculas y dígitos), con
 «Name», Atrás y OK a su izquierda y el nombre en una caja aparte debajo, con el subrayado amarillo en la letra

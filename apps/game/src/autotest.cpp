@@ -32,6 +32,7 @@
 #include "common.hpp"
 #include "device_names.hpp"
 #include "messages.hpp"
+#include "options.hpp"
 
 namespace dwe::app {
 namespace {
@@ -495,7 +496,7 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   assets::YamlReader reader;
   AutotestRoute route;
   reader.expectKeys(*document, "route", {"name", "device", "steps"},
-                    {"gamepad", "timeout", "main_menu"});
+                    {"gamepad", "timeout", "main_menu", "new_game"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -512,6 +513,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   }
   if (const core::YamlNode* mainMenu = document->find("main_menu")) {
     route.mainMenu = reader.boolean(*mainMenu);
+  }
+  if (const core::YamlNode* newGame = document->find("new_game")) {
+    route.newGameChain = newGameChainNamed(reader.text(*newGame));
+    if (!route.newGameChain) {
+      reader.fail(*newGame, "new_game must be original or seeded");
+    }
   }
   if (const core::YamlNode* timeout = document->find("timeout")) {
     route.timeout = reader.number(*timeout);

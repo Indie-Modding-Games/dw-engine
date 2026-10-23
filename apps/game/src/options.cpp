@@ -61,6 +61,20 @@ bool readStart(Options& options, std::string_view value) {
          options.startExit >= 0;
 }
 
+} // namespace
+
+std::optional<session::NewGameChain> newGameChainNamed(std::string_view name) {
+  if (name == "original") {
+    return session::NewGameChain::Original;
+  }
+  if (name == "seeded") {
+    return session::NewGameChain::Seeded;
+  }
+  return std::nullopt;
+}
+
+namespace {
+
 // Reads one option that takes a value; false if the value is not valid for it or the option is
 // unknown.
 bool readOption(Options& options, std::string_view argument, std::string_view value) {
@@ -84,6 +98,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   if (argument == StoryStageOption) {
     options.storyStage = value;
     return !value.empty();
+  }
+  if (argument == NewGameChainOption) {
+    options.newGameChain = newGameChainNamed(value);
+    return options.newGameChain.has_value();
   }
   if (argument == "--autotest") {
     options.autotest = value;

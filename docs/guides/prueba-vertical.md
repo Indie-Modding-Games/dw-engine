@@ -32,6 +32,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--fullscreen` | Empieza a pantalla completa |
 | `--no-vsync` | Presenta cada frame en cuanto está listo (para medir fps) |
 | `--start <mapa>[,<salida>]` | Empieza en otro mapa y salida |
+| `--new-game-chain original\|seeded` | Cómo empieza una partida nueva, en vez de la cadena `story_scenes.new_game.chain` del ruleset: `original` corre la apertura desde `twna01` salida 9, `seeded` empieza en el campo libre con el estado de `data/new_game_story` ([game](../modulos/apps/game.md)). Un autotest usa `seeded` salvo que su ruta diga `new_game` |
 | `--time day\|dusk\|night` | Pone el reloj del juego a las 8:00, 16:00 o 20:00 (por defecto, la hora de la partida: las 8:00 de la sección `clock` en una nueva) |
 | `--new-game` | Empieza una partida nueva (es lo que hace sin `--load`): el partner, las estadísticas y el nivel de domador de la sección `new_game` del ruleset |
 | `--load <hueco>` | Carga una partida guardada, `slot_01` o `autosave_01` de la carpeta de partidas, y empieza donde se guardó (salvo con `--start`) |
@@ -175,7 +176,8 @@ done
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
-los ajustes del usuario.
+los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
+cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --autotest tests/autotest/route-keyboard.yaml --shots <carpeta de capturas>
@@ -296,6 +298,7 @@ device: keyboard          # keyboard | gamepad | mouse: el de los pasos que no d
 gamepad: xbox             # familia del mando virtual (xbox, playstation, nintendo...)
 timeout: 600              # segundos para toda la ruta
 main_menu: false          # true: empieza en el menú principal en vez de en el campo
+new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 steps:
   - wait: {map: twna01, seconds: 1}
   - walk_to: {trigger: 112}

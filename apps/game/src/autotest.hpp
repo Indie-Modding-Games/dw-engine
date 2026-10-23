@@ -9,6 +9,7 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <atomic>
@@ -109,6 +110,9 @@ struct AutotestRoute {
   double timeout = 600.0;
   // Whether the route starts at the main menu; without it the game goes straight to the field.
   bool mainMenu = false;
+  // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
+  // routes through the opening say original.
+  std::optional<session::NewGameChain> newGameChain;
   std::vector<AutotestStep> steps;
 };
 
@@ -160,6 +164,11 @@ public:
 
   // Whether the route starts at the main menu (AutotestRoute::mainMenu).
   [[nodiscard]] bool startsAtMainMenu() const { return route_.mainMenu; }
+
+  // How the route's new game starts (AutotestRoute::newGameChain), if it says.
+  [[nodiscard]] std::optional<session::NewGameChain> newGameChain() const {
+    return route_.newGameChain;
+  }
 
   // Logs what the run measured (steps, map changes, frame times), while the game is still up.
   void summarize(const AutotestHost& host) const;

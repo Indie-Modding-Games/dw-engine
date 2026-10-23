@@ -39,6 +39,8 @@ struct StoryScenesContext {
 
   StoryScenesDesc desc;
   StoryScenesRules rules;
+  // How a new game starts instead of the ruleset's chain (StoryScenes::setNewGameChain).
+  std::optional<NewGameChain> chainOverride;
   std::optional<assets::DigimonTable> digimon;
   GameSession* session = nullptr;
   // Whether the ruleset has the section, and whether the orders are published in the story's VM.

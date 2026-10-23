@@ -159,6 +159,9 @@ public:
   StoryScenes& operator=(StoryScenes&&) = delete;
 
   [[nodiscard]] ruleset::SectionChecks sectionChecks() const override;
+  // How a new game starts instead of the section's chain (--new-game-chain, an autotest route's
+  // new_game); call it before the session reads its rules.
+  void setNewGameChain(std::optional<NewGameChain> chain);
   // Reads the section and tells the story how a new game starts.
   core::Result<void> readRules(const ruleset::Ruleset& rules) override;
   core::Result<void> startNewGame(GameSession& session) override;

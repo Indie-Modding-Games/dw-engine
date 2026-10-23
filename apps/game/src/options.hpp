@@ -4,6 +4,7 @@
 #include <dwe/game/save/slots.hpp>
 #include <dwe/render/map_scene.hpp>
 #include <dwe/ruleset/ruleset.hpp>
+#include <dwe/session/story_scenes.hpp>
 #include <dwe/ui/text_font.hpp>
 
 #include <cstdint>
@@ -54,6 +55,9 @@ struct Options {
   // <slot>, as slot_01 or autosave_01).
   bool newGame = false;
   std::optional<game::save::SlotId> load;
+  // How a new game's story starts (--new-game-chain original|seeded, or an autotest route's
+  // new_game) instead of the ruleset's story_scenes chain: seeded skips the opening.
+  std::optional<session::NewGameChain> newGameChain;
   // The game clock's speed (--clock-speed <x>): 1 is the original's (a game minute per real
   // second), 60 a game hour per real second.
   std::optional<double> clockSpeed;
@@ -103,13 +107,19 @@ inline constexpr std::string_view Usage =
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
     "<language>] "
-    "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] [--clock-speed <x>] "
+    "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] "
+    "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view StoryStageOption = "--story-stage";
+inline constexpr std::string_view NewGameChainOption = "--new-game-chain";
+
+// A new game's chain by its name in --new-game-chain and in a route's new_game: original or
+// seeded.
+std::optional<session::NewGameChain> newGameChainNamed(std::string_view name);
 inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view LanguageOption = "--lang";

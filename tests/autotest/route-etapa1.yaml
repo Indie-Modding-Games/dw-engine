@@ -5,6 +5,9 @@
 name: etapa1
 device: keyboard
 timeout: 1800
+# La única ruta que corre la cadena original de partida nueva (el arranque en twna01 lleva a topn01 y al despertar);
+# las demás empiezan en la cadena sembrada, en el campo libre.
+new_game: original
 steps:
   - resize: [1280, 720]
   - wait: {map: topn01, seconds: 1, timeout: 60}

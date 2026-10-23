@@ -323,7 +323,8 @@ bool isPointerOrKey(const platform::Event& event) {
 
 } // namespace
 
-int runGame(const Options& options) {
+int runGame(const Options& requested) {
+  Options options = requested;
   auto platform = platform::Platform::create();
   if (!platform) {
     core::logError("{}", platform.error().message);
@@ -339,6 +340,12 @@ int runGame(const Options& options) {
       return EXIT_FAILURE;
     }
     autotest = std::move(*loaded);
+    // Like the opening's questions and the movies, the opening's chain is left out of an
+    // autotest: its routes start on a free field, unless one says new_game: original
+    // (--new-game-chain still wins).
+    if (!options.newGameChain) {
+      options.newGameChain = autotest->newGameChain().value_or(session::NewGameChain::Seeded);
+    }
   }
   auto window =
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});

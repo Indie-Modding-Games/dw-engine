@@ -4,6 +4,7 @@
 #include <dwe/core/message.hpp>
 #include <dwe/game/save/slots.hpp>
 #include <dwe/session/story_adapter.hpp>
+#include <dwe/session/story_scenes.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -67,6 +68,9 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
                   .session = nullptr,
                   .systems = session::createGameSystems(files)};
   start.systems.story->setStoryStage(options.storyStage);
+  if (start.systems.scenes != nullptr) {
+    start.systems.scenes->setNewGameChain(options.newGameChain);
+  }
   const std::uint64_t seed = options.seed ? *options.seed : newSeed();
   auto session = session::GameSession::create({.files = &files,
                                                .rulesetId = options.ruleset,

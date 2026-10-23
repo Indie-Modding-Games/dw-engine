@@ -213,6 +213,10 @@ StoryScenes::StoryScenes(StoryScenesDesc desc)
 
 StoryScenes::~StoryScenes() = default;
 
+void StoryScenes::setNewGameChain(std::optional<NewGameChain> chain) {
+  context_->chainOverride = chain;
+}
+
 ruleset::SectionChecks StoryScenes::sectionChecks() const {
   return {
       {std::string{StoryScenesSection}, [](const ruleset::Section& section) -> core::Result<void> {
@@ -237,6 +241,9 @@ core::Result<void> StoryScenes::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{read.error()};
   }
   scenes.rules = std::move(*read);
+  if (scenes.chainOverride) {
+    scenes.rules.newGameChain = *scenes.chainOverride;
+  }
   scenes.enabled = true;
   scenes.screens = game::story::ScreenHistory{scenes.rules.screens};
   scenes.desc.story->seedNewGame(scenes.rules.newGameChain == NewGameChain::Seeded);
