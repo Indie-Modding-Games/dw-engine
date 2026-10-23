@@ -9,6 +9,7 @@
 #include <dwe/game/story/story_state.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/session_system.hpp>
+#include <dwe/session/story_dialogue.hpp>
 #include <dwe/session/story_lua.hpp>
 
 #include <cstdint>
@@ -104,6 +105,12 @@ public:
   // the evolution section's); without it such a save starts with none raised.
   void setSavedRaised(RaisedSource source) { savedRaised_ = std::move(source); }
 
+  // The story's textboxes: what the UI shows and where it sends the player's keys. Only once the
+  // rules were read.
+  [[nodiscard]] game::story::Dialogue& dialogue();
+  // Whether a script runs or is about to start (the original's IS_SCRIPT_PAUSED is 0).
+  [[nodiscard]] bool scriptRunning() const { return runner_.has_value() && runner_->busy(); }
+
   [[nodiscard]] game::story::StoryState& state() { return state_; }
   [[nodiscard]] const game::story::StoryState& state() const { return state_; }
 
@@ -112,8 +119,9 @@ private:
   class StatePort;
   class RandomPort;
 
-  core::Result<void> wire(const StorySectionRules& story);
-  void followRules(const StorySectionRules& story);
+  core::Result<void> wire(const StorySectionRules& story,
+                          const game::story::DialogueRules& dialogue);
+  void followRules(const StorySectionRules& story, const game::story::DialogueRules& dialogue);
   core::Result<void> startRunner(const StorySectionRules& story);
 
   StoryAdapterDesc desc_;
@@ -131,6 +139,8 @@ private:
   std::unique_ptr<RandomPort> randomPort_;
   std::unique_ptr<game::story::StoryOrders> orders_;
   std::unique_ptr<StoryLuaHost> host_;
+  // Before the runner, which points to it.
+  std::unique_ptr<StoryDialogue> dialogue_;
   std::optional<game::story::StoryRunner> runner_;
   std::uint32_t ticksPerFrame_ = 0;
   game::story::StoryFlowRules flow_;

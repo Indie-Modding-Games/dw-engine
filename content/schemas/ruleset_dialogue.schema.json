@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: dialogue",
+  "description": "rules/<id>/dialogue.yaml: the rules of the story's textboxes (game/story: DialogueRules, apps/session: readDialogueRules).",
+  "type": "object",
+  "required": ["open_frames", "no_cancel_trigger", "speech_box", "sounds", "name_colors"],
+  "additionalProperties": false,
+  "$defs": {
+    "sound": {
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "description": "The sound slot.", "type": "integer", "minimum": 0 },
+        "sound": { "description": "The sound in the slot's bank.", "type": "integer", "minimum": 0 }
+      }
+    },
+    "color": { "description": "A text colour of the font.", "type": "integer", "minimum": 0 }
+  },
+  "properties": {
+    "open_frames": {
+      "description": "Frames of the original a box takes to grow from its speaker before it answers the player.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "no_cancel_trigger": {
+      "description": "While this story trigger is set, a selection cannot be cancelled.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "speech_box": {
+      "description": "The speech box's size in characters and rows, its name row included.",
+      "type": "object",
+      "required": ["columns", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "columns": { "type": "integer", "minimum": 1 },
+        "rows": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "sounds": {
+      "description": "The sounds of the boxes.",
+      "type": "object",
+      "required": ["open", "advance", "cancel", "cursor", "refused"],
+      "additionalProperties": false,
+      "properties": {
+        "open": { "$ref": "#/$defs/sound" },
+        "advance": { "$ref": "#/$defs/sound" },
+        "cancel": { "$ref": "#/$defs/sound" },
+        "cursor": { "$ref": "#/$defs/sound" },
+        "refused": { "$ref": "#/$defs/sound" }
+      }
+    },
+    "name_colors": {
+      "description": "The colour of the speaker's name, by kind of speaker.",
+      "type": "object",
+      "required": ["player", "partner", "character", "special"],
+      "additionalProperties": false,
+      "properties": {
+        "player": { "$ref": "#/$defs/color" },
+        "partner": { "$ref": "#/$defs/color" },
+        "character": { "$ref": "#/$defs/color" },
+        "special": { "$ref": "#/$defs/color" }
+      }
+    }
+  }
+}

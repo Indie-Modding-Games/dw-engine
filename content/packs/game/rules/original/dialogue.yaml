@@ -1,0 +1,25 @@
+# Las cajas de texto de la historia (game/story: Dialogue, apps/session: StoryDialogue).
+# Una caja que sale de quien habla crece durante 5 fotogramas antes de atender al jugador
+# (ui.c: renderUIBoxAnimated pasa al estado abierto cuando su fotograma pasa de 4).
+open_frames: 5
+# Con este disparador puesto una selección no se puede cancelar (script_textbox.c: tickSelectionDialogue, 0x31).
+no_cancel_trigger: 49
+# La caja de diálogo: 21 caracteres por fila y 4 filas, la primera con el nombre de quien habla
+# (script_textbox.c: setupDialogueBox, registerTextbox).
+speech_box:
+  columns: 21
+  rows: 4
+# Los sonidos de las cajas: ranura y sonido (sound.c: playSound; ui.c: createAnimatedUIBox;
+# script_textbox.c: tickConfirmDialogue, tickSelectionDialogue, tickCustomSizedTextbox).
+sounds:
+  open: {slot: 0, sound: 0}
+  advance: {slot: 0, sound: 3}
+  cancel: {slot: 0, sound: 4}
+  cursor: {slot: 0, sound: 2}
+  refused: {slot: 0, sound: 11}
+# El color del nombre de quien habla (script_textbox.c: showTextbox).
+name_colors:
+  player: 6
+  partner: 10
+  character: 7
+  special: 5

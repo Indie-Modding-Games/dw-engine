@@ -21,6 +21,10 @@ namespace dwe::script {
 class ScriptVm;
 } // namespace dwe::script
 
+namespace dwe::game::story {
+class Dialogue;
+} // namespace dwe::game::story
+
 namespace dwe::session {
 
 inline constexpr std::string_view StoryNamespace = "story";
@@ -62,6 +66,10 @@ public:
   // outlive every script call of the VM.
   core::Result<void> publishApi(game::story::StoryStatePort& state,
                                 game::story::StoryOrders& orders);
+
+  // Once per VM, after publishApi: the textbox orders (story_dialogue.cpp), which point to the
+  // dialogue; it must outlive every script call of the VM.
+  core::Result<void> publishDialogue(game::story::Dialogue& dialogue);
 
   // Whether the packs' story modules come from this engine's dwx: the first one (script 0, which
   // the base pack always has) must carry its header, so outdated content stops the game when it

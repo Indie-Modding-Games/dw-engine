@@ -154,6 +154,16 @@ comportamiento, no guardan datos.
 | `talk_facing_trigger` | 44 | a | Número de disparador de una regla. |
 | `show_name_variable` y sus valores | 6; 0, 1, 2 | a | Número de variable y valores de una regla (`consumeMapChangeShowName`). |
 
+### `dialogue.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `open_frames` | 5 | a | Ritmo: fotogramas que tarda en crecer una caja (`ui.c: renderUIBoxAnimated`). |
+| `no_cancel_trigger` | 49 | a | Número de disparador que bloquea cancelar una selección. |
+| `speech_box.columns`, `speech_box.rows` | 21, 4 | a | Tamaño de la caja de diálogo en caracteres y filas. |
+| `sounds.*` | 5 pares ranura/sonido | a | Números de sonido del sistema que suenan al abrir, avanzar, cancelar, mover el cursor y rechazar. |
+| `name_colors.*` | 6, 10, 7, 5 | a | Índices de color del nombre de quien habla. |
+
 ### `item_use.yaml`
 
 | Clave | Valor | Clase | Motivo |

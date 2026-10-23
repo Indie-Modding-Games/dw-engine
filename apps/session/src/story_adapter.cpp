@@ -234,8 +234,15 @@ StoryAdapter::StoryAdapter(StoryAdapterDesc desc)
 StoryAdapter::~StoryAdapter() = default;
 
 ruleset::SectionChecks StoryAdapter::sectionChecks() const {
-  return {{std::string{StorySection}, [](const ruleset::Section& section) -> core::Result<void> {
+  return {{std::string{StorySection},
+           [](const ruleset::Section& section) -> core::Result<void> {
              if (auto read = readStoryRules(section); !read) {
+               return std::unexpected{read.error()};
+             }
+             return {};
+           }},
+          {std::string{DialogueSection}, [](const ruleset::Section& section) -> core::Result<void> {
+             if (auto read = readDialogueRules(section); !read) {
                return std::unexpected{read.error()};
              }
              return {};
@@ -254,12 +261,20 @@ core::Result<void> StoryAdapter::readRules(const ruleset::Ruleset& rules) {
   if (!storyRules) {
     return std::unexpected{storyRules.error()};
   }
+  auto dialogueSection = rules.requireSection(DialogueSection);
+  if (!dialogueSection) {
+    return std::unexpected{dialogueSection.error()};
+  }
+  const auto dialogueRules = readDialogueRules(**dialogueSection);
+  if (!dialogueRules) {
+    return std::unexpected{dialogueRules.error()};
+  }
   if (vm_ == nullptr) {
-    if (auto wired = wire(*storyRules); !wired) {
+    if (auto wired = wire(*storyRules, *dialogueRules); !wired) {
       return wired;
     }
   } else {
-    followRules(*storyRules);
+    followRules(*storyRules, *dialogueRules);
   }
   auto story = assets::loadNewGameStory(*desc_.files);
   if (!story) {
@@ -309,7 +324,8 @@ core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& secti
   return sections.add(std::string{StorySaveName}, *serializer_, game::save::MigrationChain{});
 }
 
-core::Result<void> StoryAdapter::wire(const StorySectionRules& story) {
+core::Result<void> StoryAdapter::wire(const StorySectionRules& story,
+                                      const game::story::DialogueRules& dialogue) {
   core::logDebug("[port:story] initializeScripts (script_interp.c:2190): the game's script VM, "
                  "ticks_per_frame {}, variable_max {}",
                  story.ticksPerFrame, story.rules.variableMax);
@@ -325,6 +341,10 @@ core::Result<void> StoryAdapter::wire(const StorySectionRules& story) {
   if (auto published = host_->publishApi(*statePort_, *orders_); !published) {
     return core::fail(formatMessage(messages::StoryApiFailed, published.error().message));
   }
+  dialogue_ = std::make_unique<StoryDialogue>(*statePort_, dialogue);
+  if (auto published = host_->publishDialogue(dialogue_->dialogue()); !published) {
+    return published;
+  }
   if (auto checked = host_->checkModules(); !checked) {
     return checked;
   }
@@ -339,13 +359,16 @@ core::Result<void> StoryAdapter::startRunner(const StorySectionRules& story) {
     return std::unexpected{runner.error()};
   }
   runner_.emplace(std::move(*runner));
+  dialogue_->attach(*runner_);
   ticksPerFrame_ = story.ticksPerFrame;
   flow_ = story.flow;
   return {};
 }
 
-void StoryAdapter::followRules(const StorySectionRules& story) {
+void StoryAdapter::followRules(const StorySectionRules& story,
+                               const game::story::DialogueRules& dialogue) {
   *orders_ = game::story::StoryOrders{*statePort_, *randomPort_, story.rules};
+  dialogue_->dialogue().setRules(dialogue);
   if (story.ticksPerFrame == ticksPerFrame_ && sameFlow(story.flow, flow_)) {
     return;
   }
@@ -358,9 +381,15 @@ void StoryAdapter::followRules(const StorySectionRules& story) {
   }
 }
 
+game::story::Dialogue& StoryAdapter::dialogue() {
+  DWE_ASSERT(dialogue_ != nullptr);
+  return dialogue_->dialogue();
+}
+
 void StoryAdapter::tick(GameSession& session, const ruleset::ClockAdvance& /*advance*/) {
   DWE_ASSERT(runner_.has_value());
   randomPort_->bind(session.random());
+  dialogue_->dialogue().bindSound(session.sound());
   runner_->tick();
 }
 
