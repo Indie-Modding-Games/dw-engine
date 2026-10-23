@@ -1,0 +1,49 @@
+# Stage 1 of the story with the keyboard, from a new game (without the opening's questions, which an autotest skips)
+# to the broken bridge: the waking scene and the elder's talk, File City, the gym, the forest's first fight and its
+# recruit, and the forest's maps up to the bridge. Captures at the points the original's reference frames show.
+# How to run it: docs/guides/prueba-vertical.md.
+name: etapa1
+device: keyboard
+timeout: 1800
+steps:
+  - resize: [1280, 720]
+  - wait: {map: topn01, seconds: 1, timeout: 60}
+  - screenshot: topn01-wake
+  - repeat: {times: 8, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - screenshot: topn01-talk
+  - repeat: {times: 34, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {map: room08, seconds: 1, timeout: 60}
+  - screenshot: room08-talk
+  - repeat: {times: 50, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {map: twna01, partner_within: 400, seconds: 1, timeout: 60}
+  - screenshot: twna01-free
+  # File City to the gym and on to the forest.
+  - walk_to: {trigger: 111}
+  - wait: {map: trai00, partner_within: 400, seconds: 0.5}
+  - screenshot: trai00
+  - walk_to: {trigger: 110}
+  - wait: {map: mayo00, seconds: 2}
+  - screenshot: mayo00-event
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - screenshot: battle-start
+  - wait: {setting: {battle.phase: end}, timeout: 300}
+  - screenshot: battle-end
+  - menu_select: end-continue
+  - wait: {hidden: battle, seconds: 1, timeout: 30}
+  - screenshot: mayo00-after-battle
+  - repeat: {times: 20, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - screenshot: mayo00-recruit
+  # The forest: mayo00's cell to its second half, then on to the bridge.
+  - walk_to: {trigger: 52}
+  - wait: {map: mayo01_2, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo01_2
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo01, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo01
+  - walk_to: {trigger: 113}
+  - wait: {map: mayo02, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo02
+  - walk_to: {trigger: 51}
+  - wait: {map: mayo08b, partner_within: 400, seconds: 0.5}
+  - screenshot: mayo08b-bridge
