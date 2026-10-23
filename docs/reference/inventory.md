@@ -94,6 +94,16 @@ puede tirar.
 - Los objetos que suelta un enemigo caen al suelo (hasta 11 a la vez; los demás se pierden). Al recogerlos o abrir un
   cofre se intenta meter uno en la bolsa; si no entra, se queda donde estaba **(comprobado)**.
 
+### Cartas
+
+- El jugador guarda hasta 9 copias de cada carta (`script_interp.c: getCardAmount`, cuatro bits por carta)
+  **(comprobado)**. Un sobre da 3 cartas (`rollCardPack`); cada una tira la rareza con `randomLimit(100)` (0: rareza
+  0; menos de 5: 1; de 20: 2; de 50: 3; si no, 4) y luego una carta de esa rareza al azar (`rollCard`)
+  **(comprobado)**. La línea del texto (MAPHEAD 0x4d3) dice si es nueva (según su rareza) o repetida, y la variable
+  249 lleva su Digimon (`showCardTextbox`) **(comprobado)**.
+- Motor: `game/inventory/cards`, `session::CardsAdapter` (reglas `cards`, sección de guardado `cards`). La tienda de
+  cartas, la venta, el canje por méritos y el álbum quedan para después del Hito 1.
+
 ## Datos
 
 | Tabla | Tamaño del registro | Entradas (US) | Qué guarda |

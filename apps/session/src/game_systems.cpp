@@ -2,6 +2,7 @@
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/calendar_adapter.hpp>
+#include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/game_systems.hpp>
@@ -59,11 +60,16 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
   if (!moves) {
     return std::unexpected{moves.error()};
   }
+  auto cards = assets::loadCardTable(files);
+  if (!cards) {
+    return std::unexpected{cards.error()};
+  }
   return SystemTables{.evolution = std::move(*evolution),
                       .items = std::move(*items),
                       .itemEffects = std::move(*effects),
                       .digimon = std::move(*digimon),
-                      .moves = std::move(*moves)};
+                      .moves = std::move(*moves),
+                      .cards = std::move(*cards)};
 }
 
 GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTables tables) {
@@ -73,6 +79,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto evolution = std::make_unique<EvolutionAdapter>(EvolutionAdapterDesc{
       .files = &files, .tables = std::move(tables.evolution), .story = story.get()});
   story->setSavedRaised([evolution = evolution.get()] { return evolution->state().raised; });
+  // The cards name their Digimon by number; the table goes to the battle next.
+  auto cards = std::make_unique<CardsAdapter>(*story, std::move(tables.cards),
+                                              tables.digimon ? &*tables.digimon : nullptr);
   auto inventory = std::make_unique<InventoryAdapter>(
       InventoryAdapterDesc{.files = &files,
                            .items = std::move(tables.items),
@@ -121,6 +130,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto fieldItems = std::make_unique<FieldItemsAdapter>(*game.inventory, *game.story);
   game.fieldItems = fieldItems.get();
   game.systems.push_back(std::move(fieldItems));
+  game.cards = cards.get();
+  game.systems.push_back(std::move(cards));
   return game;
 }
 

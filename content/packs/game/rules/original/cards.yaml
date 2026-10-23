@@ -1,0 +1,18 @@
+# Las cartas del jugador y el sobre de cartas (game/inventory: cards.hpp; session: CardsAdapter).
+# script_menu.c: showCardTextbox: una carta no pasa de 9 copias.
+max_copies: 9
+# shopFillSellCardList: las listas de cartas van de la 1 a la 0x40.
+listed: {first: 1, last: 64}
+# rollCardPack: 3 cartas; rollCard: randomLimit(100): 0 es rareza 0, menos de 5 la 1, de 20 la 2, de 50 la 3, y si
+# no la 4; luego una carta de esa rareza, todas igual de probables.
+pack:
+  draws: 3
+  rarity_roll: 100
+  rarity_below: [1, 5, 20, 50]
+# showCardTextbox: la línea del texto de la sección 0x4d3 de MAPHEAD: carta nueva por rareza (0, 1, y el resto), repetida
+# con menos de 6 copias, o con más.
+lines:
+  new_by_rarity: [2, 3, 4]
+  few_copies: 6
+  again: 5
+  many: 6

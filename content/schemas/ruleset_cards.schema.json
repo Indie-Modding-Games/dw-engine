@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: cards",
+  "description": "rules/<id>/cards.yaml: the player's cards and the card pack (game/inventory: cards.hpp).",
+  "type": "object",
+  "required": ["max_copies", "listed", "pack", "lines"],
+  "additionalProperties": false,
+  "properties": {
+    "max_copies": { "description": "The most copies of one card.", "type": "integer", "minimum": 1 },
+    "listed": {
+      "description": "The card numbers a list of the held cards shows.",
+      "type": "object",
+      "required": ["first", "last"],
+      "additionalProperties": false,
+      "properties": {
+        "first": { "type": "integer", "minimum": 0 },
+        "last": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "pack": {
+      "description": "A card pack: its draws and the rarity roll.",
+      "type": "object",
+      "required": ["draws", "rarity_roll", "rarity_below"],
+      "additionalProperties": false,
+      "properties": {
+        "draws": { "type": "integer", "minimum": 1 },
+        "rarity_roll": { "type": "integer", "minimum": 1 },
+        "rarity_below": {
+          "description": "A roll below the bound at r (and no earlier one) is rarity r; past the last, the next.",
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "lines": {
+      "description": "The line of the pack's text for a card drawn.",
+      "type": "object",
+      "required": ["new_by_rarity", "few_copies", "again", "many"],
+      "additionalProperties": false,
+      "properties": {
+        "new_by_rarity": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "few_copies": { "type": "integer", "minimum": 0 },
+        "again": { "type": "integer", "minimum": 0 },
+        "many": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

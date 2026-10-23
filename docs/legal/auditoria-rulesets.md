@@ -142,6 +142,16 @@ comportamiento, no guardan datos.
 | `reach_cells` | 1 | a | Distancia de la regla (tamer.c: checkItemPickup, checkChestCollision). |
 | `pickup_sound`, `toilet_sound`, `sleep_sound`, `praise_sound`, `scold_sound` | ranura y sonido | a | Referencias a sonidos (ranura, número), no datos. |
 
+### `cards.yaml`
+
+| Clave | Valor | Clase | Motivo |
+|---|---|---|---|
+| `max_copies` | 9 | a | Límite de la regla (script_menu.c: showCardTextbox). |
+| `listed.first`, `listed.last` | 1, 64 | a | Rango de números de carta (referencias). |
+| `pack.draws` | 3 | a | Cantidad de la regla (rollCardPack). |
+| `pack.rarity_roll`, `pack.rarity_below` | 100; 4 cotas | a | Probabilidades de rareza del sobre (rollCard): constantes de código, no datos de cartas. |
+| `lines.*` | números de línea | a | Referencias a las líneas del texto de MAPHEAD 0x4d3; el texto no se copia. |
+
 ### `save.yaml`
 
 | Clave | Valor | Clase | Motivo |
