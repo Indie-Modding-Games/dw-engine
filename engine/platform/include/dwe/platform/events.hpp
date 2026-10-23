@@ -104,8 +104,14 @@ struct GamepadAxisMoved {
   float value;
 };
 
+// Text the keyboard typed while the window takes text (Window::setTextInput), in UTF-8: the
+// characters of the keyboard's layout, not its keys.
+struct TextTyped {
+  std::string text;
+};
+
 using Event = std::variant<QuitRequested, FocusLost, WindowResized, KeyChanged, MouseMoved,
                            MouseWheelMoved, MouseButtonChanged, GamepadConnected,
-                           GamepadDisconnected, GamepadButtonChanged, GamepadAxisMoved>;
+                           GamepadDisconnected, GamepadButtonChanged, GamepadAxisMoved, TextTyped>;
 
 } // namespace dwe::platform

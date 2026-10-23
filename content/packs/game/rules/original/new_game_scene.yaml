@@ -27,12 +27,24 @@ host:
   turned_clip: 0
   yaw: 1024
   turned_yaw: 113
+# Los sonidos de la escena y de la caja de nombres (sound.c: playSound, banco 0): el cursor, una confirmación (una
+# página, una elección, una letra, borrar) y una pulsación rechazada (cancelar una elección con el disparador 49
+# puesto, un nombre vacío, un espacio como primera letra). La escena no pone música (main.c: newGameScene).
+sounds:
+  cursor: {slot: 0, sound: 2}
+  confirm: {slot: 0, sound: 3}
+  refused: {slot: 0, sound: 11}
 # La caja de nombres (setupNameSelectorBox, tickNamingBox): 6 letras como mucho, 5 columnas; la primera mitad de las
 # filas es el lado izquierdo de la rejilla y la segunda el derecho (NAMING_CHAR_PAGES de la versión americana). Un
 # espacio es una celda vacía.
 naming:
   length: 6
   columns: 5
+  # Rareza de la versión americana (namingDeleteLast): con el nombre lleno, borrar quita dos letras.
+  full_delete_takes_two: true
+  # Una tecla de dirección mantenida repite a los 6 fotogramas y luego cada 2 (script_common.c, setInputRepeatMask).
+  repeat_delay_frames: 6
+  repeat_frames: 2
   rows:
     - "ABCDE"
     - "FGHIJ"

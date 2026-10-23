@@ -68,6 +68,16 @@ core::Result<void> Window::setFullscreen(bool fullscreen) {
   return {};
 }
 
+core::Result<void> Window::setTextInput(bool on) {
+  if (SDL_TextInputActive(window_) == on) {
+    return {};
+  }
+  if (!(on ? SDL_StartTextInput(window_) : SDL_StopTextInput(window_))) {
+    return core::fail(std::format("could not switch the text input: {}", SDL_GetError()));
+  }
+  return {};
+}
+
 bool Window::isFullscreen() const {
   return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
 }

@@ -16,6 +16,8 @@ namespace dwe::screens {
 // PartnerRevisionSetting.
 inline constexpr std::string_view PartnerRevisionSetting = "partner.revision";
 inline constexpr std::string_view PartnerNameSetting = "partner.name";
+// The name the player gave the partner (PARTNER_ENTITY.name), empty when none.
+inline constexpr std::string_view PartnerNicknameSetting = "partner.nickname";
 inline constexpr std::string_view PartnerAgeSetting = "partner.age";
 inline constexpr std::string_view PartnerWeightSetting = "partner.weight";
 inline constexpr std::string_view PartnerLivesSetting = "partner.lives";
@@ -45,7 +47,10 @@ struct MeterView {
 // name, age and weight; HP and MP, now and at most, with a bar of the maximum; offense, defense,
 // speed and brain; the lives; the conditions; and the bars of happiness, discipline and the virus.
 struct PartnerStatusView {
+  // The species' name key and the partner's own name (game_menu.c: drawDigimonStatsStrings draws
+  // both).
   std::string nameKey;
+  std::string nickname;
   std::int32_t ageDays = 0;
   std::int32_t weight = 0;
   std::int32_t lives = 0;

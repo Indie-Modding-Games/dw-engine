@@ -60,10 +60,30 @@ mapa carga el guion 164 y la casilla de esa salida corre la apertura, que lleva 
 Jijimon, y de ahí a File City (todo dentro de la etapa 1 del candado de historia). `seeded` sigue disponible: el
 estado de `data/new_game_story` y el inicio de `field/warps`, sin la apertura.
 
-Diferencias con el original: el texto sale entero (no letra a letra); la caja de nombres es una sola página (las
-dos mitades de la americana) y no admite teclear con el teclado; no suenan los cursores ni las confirmaciones de la
-escena; no se enciende el disparador 49 mientras dura (el original lo apaga al final); el nombre del compañero sale
-en los diálogos, no aún en los menús ni en el HUD.
+La caja de nombres es la americana: dos mitades de 9 filas y 5 columnas (mayúsculas; minúsculas y dígitos), con
+Atrás y Aceptar a su izquierda, y el cursor se mueve como en `namingSelectionUp/Down/Left/Right` (arriba y abajo dan
+la vuelta en cada mitad; a la derecha de la última columna se pasa a la otra mitad o a Atrás; desde un botón se entra
+por la fila de la Z). Las direcciones repiten al mantenerlas (a los 6 fotogramas y luego cada 2). Confirmar escribe
+la letra (un espacio no puede ser la primera); con el nombre lleno reescribe la última y el cursor va a Aceptar;
+cancelar borra la última, y con el nombre lleno borra dos, como la versión americana; menú lleva a Aceptar. A la vez se
+puede teclear: las letras de la rejilla y el espacio se escriben (otra tecla suena rechazada) e Intro acepta el
+nombre si se ha tecleado algo desde el último movimiento del cursor. El nombre del jugador empieza vacío, como en la
+versión americana.
+
+Los sonidos son los del original (`playSound`, banco 0, sección `sounds`): cursor 2, confirmar 3 (una página, una
+elección, una letra, borrar), rechazo 0xB (cancelar una elección, porque la escena tiene puesto el disparador 49; un
+nombre vacío; un espacio primero). La escena no tiene música. El texto aparece por páginas enteras, como en el
+original, que dibuja la página oculta una fila por fotograma y la muestra de golpe: no hay texto letra a letra en
+ningún cuadro del juego. Mientras se dibuja, la escena no atiende pulsaciones.
+
+El nombre propio del compañero sale de `PartnerView::nickname` (los nombres de la partida): en los diálogos, en la
+página de estado del menú del compañero (con la especie en su propia línea, `game_menu.c: drawDigimonStatsStrings`)
+y en las ranuras de partida (`nickname`, junto a la especie, `main_menu.c: drawMainMenuStrings`). El combate, el HUD
+y las escenas de evolución y de muerte muestran la especie o ningún nombre, como el original.
+
+Diferencias con el original: en la caja de nombres no hay botón para llevar el cursor a Atrás (○) ni para borrar
+todo el nombre (□); las letras son de media anchura y no las de ancho fijo de la fuente del original; el mensaje de
+enfermedad y los registros de combate y de la arena, que en el original nombran al compañero, aún no existen.
 
 ## Exploración libre
 

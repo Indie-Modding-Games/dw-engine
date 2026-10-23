@@ -1,6 +1,9 @@
 # platform
 
 Ventana, eventos y mandos sobre SDL3 ([ADR 0003](../../adr/0003-vulkan-y-sdl3.md)). Traduce los eventos de SDL a tipos propios (`dwe::platform::Event`), así que el resto del motor no ve SDL.
+`Window::setTextInput` enciende la entrada de texto de la ventana; mientras está encendida, lo que escribe el
+teclado llega como `TextTyped` (UTF-8, según la distribución del teclado, no sus teclas). El juego la enciende solo
+mientras una caja de nombres está abierta.
 
 `process.hpp` ejecuta otros programas (`runProcess`: sin shell, con su salida estándar recogida y sus errores a los
 del programa que lo llama) y dice dónde está el ejecutable que corre (`executableFolder`) y cómo se llama un programa

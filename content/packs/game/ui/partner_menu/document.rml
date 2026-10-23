@@ -19,6 +19,7 @@
 					<span class="original-look" id="status-name"></span>
 					<span class="original-look head-value" id="status-lives"></span>
 				</div>
+				<div class="status-line"><span class="original-look" text-key="partner_menu.species"></span><span class="original-look line-value" id="status-species"></span></div>
 				<div class="status-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
 				<div class="status-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
 				<div class="status-bars">

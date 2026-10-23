@@ -241,6 +241,9 @@ void Platform::pollEvents(std::vector<Event>& events, const RawEventObserver& ob
                                      .down = event.key.down,
                                      .repeat = event.key.repeat});
       break;
+    case SDL_EVENT_TEXT_INPUT:
+      events.emplace_back(TextTyped{.text = event.text.text});
+      break;
     case SDL_EVENT_MOUSE_MOTION: {
       // SDL reports the pointer in window coordinates, which are not pixels on high-density
       // displays.

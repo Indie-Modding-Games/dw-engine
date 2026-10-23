@@ -177,7 +177,7 @@ std::string StoryTextbox::tamerName() const {
 
 std::string StoryTextbox::partnerName(const screens::NameKeys& names) const {
   // PARTNER_ENTITY.name: the name the opening asked for, else the species'.
-  if (const std::string& name = session_->names().partner; !name.empty()) {
+  if (std::string name = session_->partnerView().nickname; !name.empty()) {
     return name;
   }
   return localization::tr(names.species(session_->partnerView().species));

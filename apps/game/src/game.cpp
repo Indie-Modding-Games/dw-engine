@@ -8,6 +8,7 @@
 #include <dwe/debug/debug_ui.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/input/keys.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/platform/locale.hpp>
 #include <dwe/platform/platform.hpp>
@@ -17,6 +18,7 @@
 #include <dwe/rhi/device.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
+#include <dwe/session/session_sound.hpp>
 #include <dwe/ui/ui.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
@@ -427,6 +429,8 @@ int runGame(const Options& options) {
   const std::optional<NewGameSceneRules> newGameScene =
       autotest ? std::nullopt : loadNewGameSceneRules(files, options.ruleset);
   std::unique_ptr<NewGameInterview> interview;
+  // The opening plays the system sounds before any game exists (sound.c: playSound, bank 0).
+  session::SessionSound openingSound{sound, files};
   const platform::PixelSize size = window->pixelSize();
   auto ui = ui::Ui::create({
       .files = &files,
@@ -620,7 +624,7 @@ int runGame(const Options& options) {
       beginNewGame(start);
       return;
     }
-    auto made = NewGameInterview::create(**renderer, **ui, files, *newGameScene);
+    auto made = NewGameInterview::create(**renderer, **ui, files, *newGameScene, &openingSound);
     if (!made) {
       core::logWarning("new game scene: {}; the game starts without the questions",
                        made.error().message);
@@ -662,7 +666,18 @@ int runGame(const Options& options) {
           events.begin() + static_cast<std::ptrdiff_t>(injected), events.end(), isPointerOrKey);
       events.erase(real.begin(), real.end());
     }
+    // The keyboard's text this frame, for a naming box (Window::setTextInput).
+    std::string typed;
+    bool typedEnter = false;
     for (const platform::Event& event : events) {
+      if (const auto* text = std::get_if<platform::TextTyped>(&event)) {
+        typed += text->text;
+        continue;
+      }
+      if (const auto* key = std::get_if<platform::KeyChanged>(&event);
+          key != nullptr && key->key == input::keys::Return && key->down && !key->repeat) {
+        typedEnter = true;
+      }
       if (isPointerOrKey(event) || std::holds_alternative<platform::GamepadButtonChanged>(event)) {
         titleIdleTicks = 0;
       }
@@ -694,6 +709,18 @@ int runGame(const Options& options) {
       if (!(*ui)->capturesInput() && flow.playing() != nullptr) {
         mouse.handle(event, flow.playing()->scene());
       }
+    }
+
+    // A naming box open takes the keyboard's text as well as its keys.
+    const bool takesText = (interview && interview->takesText()) ||
+                           (flow.playing() != nullptr && flow.playing()->takesText());
+    if (auto switched = window->setTextInput(takesText); !switched) {
+      core::logDebug("game: {}", switched.error().message);
+    }
+    if (interview && interview->takesText()) {
+      interview->type(typed, typedEnter);
+    } else if (flow.playing() != nullptr && flow.playing()->takesText()) {
+      flow.playing()->type(typed, typedEnter);
     }
 
     const double now = platform->nowSeconds();

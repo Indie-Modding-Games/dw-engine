@@ -50,6 +50,8 @@ void addEntry(screens::ScreenSettings& settings, std::size_t index, const SlotIn
   add("number", static_cast<double>(info.slot.index));
   add("state", std::string{stateName(info.state)});
   const game::save::SaveHeader header = info.header.value_or(game::save::SaveHeader{});
+  // main_menu.c: drawMainMenuStrings shows the partner's own name beside its species.
+  add("nickname", header.summary.nickname);
   add("species", header.summary.species);
   add("species_key", keyOf(names.species, header.summary.species));
   add("map", header.summary.map);

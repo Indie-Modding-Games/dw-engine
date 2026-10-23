@@ -3,6 +3,8 @@
 tab.status: "Status"
 tab.items: "Items"
 tab.care: "Care"
+# The partner's species, under its own name (game_menu.c: drawDigimonStatsStrings).
+species: "Species"
 age: "Age"
 # {days} is the partner's age in days.
 age.value: "{days} days"

@@ -16,6 +16,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "app_flow.hpp"
@@ -125,6 +126,9 @@ public:
   [[nodiscard]] float fadeLevel() const;
   // Feeds the story's textboxes the player's keys, once per tick while no menu takes them.
   void pressStory(const input::InputState& input);
+  // What the keyboard typed, for the story's naming box while it is open (takesText).
+  [[nodiscard]] bool takesText() const;
+  void type(std::string_view text, bool enter);
 
   // Saves the game to a slot (AppFlow, for a new game's slot).
   [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {

@@ -255,7 +255,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   if (auto newGameScene = loadNewGameSceneRules(*context.files, session.rules().current().id())) {
-    namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming));
+    namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming),
+                                             newGameScene->sounds);
+    namingBox_->setSound(session.sound());
     storyScenes_.attachNaming(namingBox_.get(), &session);
   }
   // A loaded game's partner may be another species than the game pack's partner model.
@@ -285,6 +287,16 @@ PlaySession::~PlaySession() {
         FishingBaitDocument, FishingNoticeDocument, FishingHudDocument, EggBoxDocument,
         NamingBoxDocument}) {
     context_.ui->hide(document);
+  }
+}
+
+bool PlaySession::takesText() const {
+  return namingBox_ != nullptr && namingBox_->isOpen();
+}
+
+void PlaySession::type(std::string_view text, bool enter) {
+  if (namingBox_ != nullptr) {
+    namingBox_->type(text, enter);
   }
 }
 

@@ -25,6 +25,9 @@ struct CareMeter {
 // state and rules, so they bind to plain values and never change the partner.
 struct PartnerView {
   std::string species;
+  // The name the player gave it (PARTNER_ENTITY.name, GameSession::names), empty when none: the one
+  // place screens read the partner's own name from.
+  std::string nickname;
   game::partner::Level level = game::partner::Level::None;
   bool alive = false;
   std::int32_t ageDays = 0;

@@ -17,6 +17,7 @@ PartnerView viewOf(const game::partner::Partner& partner, const game::partner::C
   const game::partner::CareLimits& limits = rules.limits;
   return {
       .species = state.species,
+      .nickname = {},
       .level = partner.species().level,
       .alive = partner.alive(),
       .ageDays = state.life.age,

@@ -2,6 +2,7 @@
 
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/story/dialogue.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <glm/vec3.hpp>
@@ -22,6 +23,22 @@ struct NamingRules {
   std::size_t length = 0;
   std::size_t columns = 0;
   std::vector<std::string> rows;
+  // The American version's delete: with the name full it takes two letters back (namingDeleteLast
+  // steps back before it clears, from a position that stopped at the last letter).
+  bool fullDeleteTakesTwo = false;
+  // A held movement key moves again after `repeatDelayFrames` frames and then every `repeatFrames`
+  // (script_common.c: the input's repeat counter), with `frameTicks` engine ticks a frame.
+  std::uint32_t repeatDelayFrames = 0;
+  std::uint32_t repeatFrames = 0;
+  std::uint32_t frameTicks = 1;
+};
+
+// The sounds of the opening and of the naming box (sound.c: playSound): the cursor moving, a
+// confirm (a page, a choice, a letter), and a press that is refused.
+struct SceneSounds {
+  game::story::DialogueSound cursor;
+  game::story::DialogueSound confirm;
+  game::story::DialogueSound refused;
 };
 
 // The old Digimon of the new game's opening (new_game.c: loadNewGameScene, tickNewGameJijimon):
@@ -58,6 +75,7 @@ struct NewGameSceneRules {
   float cameraProjection = 0.0F;
   float cameraCentreLine = 0.0F;
   InterviewHost host;
+  SceneSounds sounds;
   NamingRules naming;
 };
 

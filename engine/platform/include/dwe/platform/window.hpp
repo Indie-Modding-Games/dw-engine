@@ -51,6 +51,10 @@ public:
   core::Result<void> setFullscreen(bool fullscreen);
   [[nodiscard]] bool isFullscreen() const;
 
+  // Whether the keyboard types text into the window (TextTyped events); off by default. A system
+  // may show an on-screen keyboard while it is on.
+  core::Result<void> setTextInput(bool on);
+
   [[nodiscard]] SDL_Window* sdlWindow() const { return window_; }
 
 private:

@@ -648,6 +648,7 @@ const game::partner::Partner& GameSession::partner() const {
 
 PartnerView GameSession::partnerView() const {
   PartnerView view = viewOf(state_->partner, state_->partnerRules.care);
+  view.nickname = names_.partner;
   view.area = area_;
   return view;
 }

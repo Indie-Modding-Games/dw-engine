@@ -1,7 +1,8 @@
 -- The title screen's slot list (docs/architecture/guardar-y-cargar.md, 3.4 and 3.5): the empty
 -- slots for a new game, or the saves to continue. The game publishes the slots as settings
 -- (save.slots.mode, "new" or "continue"; save.slots, the count; save.slot.<n>.kind, number, state,
--- species, species_key, map, map_key, play_seconds and updated, from 0) and shows this document; it
+-- nickname, species, species_key, map, map_key, play_seconds and updated, from 0) and shows this
+-- document; it
 -- sends choose_slot with the entry, from 0, play_without_saving or slots_back. Pages of six
 -- entries, turned with left and right or the page buttons. The page and the row chosen stay while a
 -- dialog about it is open, and start over when the list is opened from the main menu.
@@ -41,6 +42,16 @@ local function named(entry, name)
   return key ~= "" and t(key) or field(entry, name)
 end
 
+-- The partner's own name and its species (main_menu.c: drawMainMenuStrings), or the species.
+local function partner_of(entry)
+  local species = named(entry, "species")
+  local nickname = field(entry, "nickname")
+  if nickname == "" or nickname == species then
+    return species
+  end
+  return nickname .. " (" .. species .. ")"
+end
+
 local function played(entry)
   local seconds = math.floor(tonumber(field(entry, "play_seconds")) or 0)
   return string.format("%d:%02d", seconds // 3600, (seconds // 60) % 60)
@@ -53,7 +64,7 @@ local function label_of(entry)
   local state = field(entry, "state")
   if state == "saved" then
     for _, part in ipairs({
-      named(entry, "species"),
+      partner_of(entry),
       named(entry, "map"),
       played(entry),
       field(entry, "updated"),

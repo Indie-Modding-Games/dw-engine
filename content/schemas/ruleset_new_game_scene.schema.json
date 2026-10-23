@@ -3,7 +3,7 @@
   "title": "Ruleset: new_game_scene",
   "description": "rules/<id>/new_game_scene.yaml: the new game's opening questions before the first map (apps/game: NewGameInterview): the line table, the partner each answer picks, the host, the camera, the fades and the naming box. Optional: without it a new game starts without the questions.",
   "type": "object",
-  "required": ["lines", "partners", "fade_in_frames", "fade_out_frames", "frame_ticks", "camera_distance", "camera_projection", "camera_centre_line", "host", "naming"],
+  "required": ["lines", "partners", "fade_in_frames", "fade_out_frames", "frame_ticks", "camera_distance", "camera_projection", "camera_centre_line", "host", "sounds", "naming"],
   "additionalProperties": false,
   "properties": {
     "lines": { "description": "The MAPHEAD section of the scene's line table (resolveMapHeadEntry).", "type": "integer", "minimum": 0 },
@@ -29,16 +29,39 @@
         "turned_yaw": { "type": "integer" }
       }
     },
+    "sounds": {
+      "description": "The scene's and the naming box's sounds (playSound): the cursor, a confirm and a refused press.",
+      "type": "object",
+      "required": ["cursor", "confirm", "refused"],
+      "additionalProperties": false,
+      "properties": {
+        "cursor": { "$ref": "#/$defs/sound" },
+        "confirm": { "$ref": "#/$defs/sound" },
+        "refused": { "$ref": "#/$defs/sound" }
+      }
+    },
     "naming": {
       "description": "The naming box: the longest name, the grid's columns and its rows of letters (the first half is the left side, the second the right; a space is an empty cell).",
       "type": "object",
-      "required": ["length", "columns", "rows"],
+      "required": ["length", "columns", "rows", "full_delete_takes_two", "repeat_delay_frames", "repeat_frames"],
       "additionalProperties": false,
       "properties": {
         "length": { "type": "integer", "minimum": 1 },
         "columns": { "type": "integer", "minimum": 1 },
-        "rows": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+        "rows": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+        "full_delete_takes_two": { "description": "The American version's delete: a full name loses two letters.", "type": "boolean" },
+        "repeat_delay_frames": { "description": "Frames a held movement key waits before it repeats.", "type": "integer", "minimum": 0 },
+        "repeat_frames": { "description": "Frames between the repeats of a held movement key.", "type": "integer", "minimum": 1 }
       }
+    }
+  },
+  "$defs": {
+    "sound": {
+      "description": "A sound of the original's slots: slot and sound.",
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": { "slot": { "type": "integer", "minimum": 0 }, "sound": { "type": "integer", "minimum": 0 } }
     }
   }
 }

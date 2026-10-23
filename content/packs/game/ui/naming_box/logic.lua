@@ -2,8 +2,9 @@
 -- naming_box.title (a text key), naming_box.length (the longest name), naming_box.name.<i> (the
 -- letters so far), naming_box.rows and naming_box.columns (the grid's size; the document has room
 -- for 9 rows of 10), naming_box.cell.<row>.<column> (a letter, or a space for an empty cell) and
--- naming_box.cursor_row / naming_box.cursor_column (the row after the grid is Back and OK), and
--- bumps naming_box.revision. The game takes the buttons; the document never takes focus.
+-- naming_box.cursor_row / naming_box.cursor_column (-1 on a button) and naming_box.cursor_button
+-- (0 Back, 1 OK, -1 in the grid), and bumps naming_box.revision. The game takes the buttons and
+-- the keyboard's typing; the document never takes focus.
 
 local max_rows = 9
 local max_columns = 10
@@ -35,10 +36,9 @@ local function refresh(document)
       cell:set_class("selected", row == cursor_row and column == cursor_column)
     end
   end
-  local on_buttons = cursor_row == rows
-  local half = columns / 2
-  document:get("button-back"):set_class("selected", on_buttons and cursor_column < half)
-  document:get("button-ok"):set_class("selected", on_buttons and cursor_column >= half)
+  local cursor_button = number("naming_box.cursor_button", -1)
+  document:get("button-back"):set_class("selected", cursor_button == 0)
+  document:get("button-ok"):set_class("selected", cursor_button == 1)
 end
 
 local function refresh_prompts(document)

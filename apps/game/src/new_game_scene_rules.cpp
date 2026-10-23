@@ -41,19 +41,45 @@ InterviewHost readHost(YamlReader& reader, const YamlNode& node) {
   };
 }
 
-NamingRules readNaming(YamlReader& reader, const YamlNode& node) {
-  if (!reader.expectKeys(node, "the naming box", {"length", "columns", "rows"})) {
+game::story::DialogueSound readSound(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "a sound", {"slot", "sound"})) {
     return {};
   }
-  NamingRules naming{.length = reader.integer<std::size_t>(reader.field(node, "length")),
-                     .columns = reader.integer<std::size_t>(reader.field(node, "columns")),
-                     .rows = {}};
+  return {.slot = reader.integer<std::int64_t>(reader.field(node, "slot")),
+          .sound = reader.integer<std::int64_t>(reader.field(node, "sound"))};
+}
+
+SceneSounds readSounds(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "the scene's sounds", {"cursor", "confirm", "refused"})) {
+    return {};
+  }
+  return {.cursor = readSound(reader, reader.field(node, "cursor")),
+          .confirm = readSound(reader, reader.field(node, "confirm")),
+          .refused = readSound(reader, reader.field(node, "refused"))};
+}
+
+NamingRules readNaming(YamlReader& reader, const YamlNode& node) {
+  if (!reader.expectKeys(node, "the naming box",
+                         {"length", "columns", "rows", "full_delete_takes_two",
+                          "repeat_delay_frames", "repeat_frames"})) {
+    return {};
+  }
+  NamingRules naming{
+      .length =
+          static_cast<std::size_t>(reader.integer<std::uint32_t>(reader.field(node, "length"))),
+      .columns =
+          static_cast<std::size_t>(reader.integer<std::uint32_t>(reader.field(node, "columns"))),
+      .rows = {},
+      .fullDeleteTakesTwo = reader.boolean(reader.field(node, "full_delete_takes_two")),
+      .repeatDelayFrames = reader.integer<std::uint32_t>(reader.field(node, "repeat_delay_frames")),
+      .repeatFrames = reader.integer<std::uint32_t>(reader.field(node, "repeat_frames")),
+      .frameTicks = 1};
   for (const YamlNode& row : reader.sequence(reader.field(node, "rows"), "the letters' rows")) {
     naming.rows.push_back(reader.text(row));
   }
   if (reader.ok() && (naming.length == 0 || naming.columns == 0 || naming.rows.empty() ||
-                      naming.rows.size() % 2 != 0)) {
-    reader.fail(node, "a name needs a length, columns and an even number of rows");
+                      naming.rows.size() % 2 != 0 || naming.repeatFrames == 0)) {
+    reader.fail(node, "a name needs a length, columns, an even number of rows and a repeat");
   }
   return naming;
 }
@@ -66,7 +92,7 @@ core::Result<NewGameSceneRules> readNewGameSceneRules(const ruleset::Section& se
   if (!reader.expectKeys(root, "the new_game_scene section",
                          {"lines", "partners", "fade_in_frames", "fade_out_frames", "frame_ticks",
                           "camera_distance", "camera_projection", "camera_centre_line", "host",
-                          "naming"})) {
+                          "sounds", "naming"})) {
     return std::unexpected{reader.error(section.file)};
   }
   NewGameSceneRules rules;
@@ -82,7 +108,9 @@ core::Result<NewGameSceneRules> readNewGameSceneRules(const ruleset::Section& se
   rules.cameraProjection = reader.number(reader.field(root, "camera_projection"));
   rules.cameraCentreLine = reader.number(reader.field(root, "camera_centre_line"));
   rules.host = readHost(reader, reader.field(root, "host"));
+  rules.sounds = readSounds(reader, reader.field(root, "sounds"));
   rules.naming = readNaming(reader, reader.field(root, "naming"));
+  rules.naming.frameTicks = rules.frameTicks;
   if (reader.ok() && (rules.partners.empty() || rules.frameTicks == 0)) {
     reader.fail(root, "the scene needs a partner for each answer and at least a tick a frame");
   }

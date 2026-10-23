@@ -73,6 +73,7 @@ std::string countName(std::string_view list) {
 
 PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const NameKeys& names) {
   PartnerStatusView view{.nameKey = names.species(partner.species),
+                         .nickname = partner.nickname,
                          .ageDays = partner.ageDays,
                          .weight = partner.weight.value,
                          .lives = partner.lives,
@@ -115,6 +116,7 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
 ScreenSettings settingsOf(const PartnerStatusView& view) {
   ScreenSettings settings{
       {.name = std::string{PartnerNameSetting}, .value = view.nameKey},
+      {.name = std::string{PartnerNicknameSetting}, .value = view.nickname},
       {.name = std::string{PartnerAgeSetting}, .value = static_cast<double>(view.ageDays)},
       {.name = std::string{PartnerWeightSetting}, .value = static_cast<double>(view.weight)},
       {.name = std::string{PartnerLivesSetting}, .value = static_cast<double>(view.lives)},

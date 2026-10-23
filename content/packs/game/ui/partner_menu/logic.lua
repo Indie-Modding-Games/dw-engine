@@ -96,7 +96,12 @@ local function draw_meter(document, index)
 end
 
 local function draw_status(document)
-  document:get("status-name"):set_text(text(setting("partner.name", "")))
+  -- The partner's own name when the player gave one, else its species' (PARTNER_ENTITY.name); the
+  -- species on its own line.
+  local species = text(setting("partner.name", ""))
+  local nickname = setting("partner.nickname", "")
+  document:get("status-name"):set_text(nickname ~= "" and nickname or species)
+  document:get("status-species"):set_text(species)
   document
     :get("status-lives")
     :set_text(t("partner_menu.lives", { lives = number("partner.lives") }))

@@ -7,7 +7,6 @@
 #include <dwe/core/math.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/render/camera.hpp>
-#include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/map_head_lines.hpp>
 
@@ -64,9 +63,6 @@ constexpr float NearPlane = 10.0F;
 constexpr float FarPlane = 20000.0F;
 constexpr std::string_view SpeciesModelFolder = "digimon/";
 constexpr std::string_view SpeciesModelName = "/model";
-// The player's name is the species table's first name until the player gives one (script_value.c:
-// getSpeakerName, speaker 0xFD: DIGIMON_NAME(0)).
-constexpr std::size_t PlayerNameSlot = 0;
 constexpr std::string_view TamerArgument = "tamer";
 // new_game.c: loadNewGameScene: three flat lights (where they travel, in the original's axes, and
 // 8-bit colours where 256 is full) and the ambient 0x800, half of the GTE's 4096; as the field's
@@ -93,7 +89,8 @@ constexpr std::string_view PartnerArgument = "partner";
 
 core::Result<std::unique_ptr<NewGameInterview>>
 NewGameInterview::create(render::Renderer& renderer, ui::Ui& ui,
-                         const assets::VirtualFileSystem& files, NewGameSceneRules rules) {
+                         const assets::VirtualFileSystem& files, NewGameSceneRules rules,
+                         game::story::SoundPort* sound) {
   auto tables = session::readMapHeadLineTables(files);
   if (!tables) {
     return std::unexpected{tables.error()};
@@ -126,6 +123,8 @@ NewGameInterview::create(render::Renderer& renderer, ui::Ui& ui,
     return std::unexpected{handle.error()};
   }
   interview->hostHandle_ = *handle;
+  interview->sound_ = sound;
+  interview->naming_.setSound(sound);
   return interview;
 }
 
@@ -136,7 +135,8 @@ NewGameInterview::NewGameInterview(ui::Ui& ui, NewGameSceneRules rules,
     : ui_(&ui), rules_(std::move(rules)), lines_(std::move(lines)), models_(std::move(models)),
       host_(std::move(host)), hostPlayer_(std::make_unique<animation::AnimationPlayer>(*host_)),
       hostPosition_(core::fromOriginalAxes(rules_.host.position)),
-      hostYaw_(assets::yawFromOriginal(rules_.host.yaw)), naming_(ui, rules_.naming) {
+      hostYaw_(assets::yawFromOriginal(rules_.host.yaw)),
+      naming_(ui, rules_.naming, rules_.sounds) {
   drawers_ = {&models_->opaque(), &models_->translucent()};
   models_->setLighting(sceneLighting());
   // new_game.c: loadNewGameScene: the host walks in with its first clip, turned away.
@@ -181,12 +181,25 @@ void NewGameInterview::turnHost() {
                  rules_.host.turnFrame, rules_.host.turnedYaw, rules_.host.turnedClip);
 }
 
+void NewGameInterview::play(const game::story::DialogueSound& sound) {
+  if (sound_ != nullptr) {
+    sound_->playSound(sound.slot, sound.sound);
+  }
+}
+
 void NewGameInterview::take(const input::InputState& input) {
+  // script_textbox.c: flipIdleTextboxPage: no press counts while the page is still being drawn,
+  // one row a frame.
+  if (ticks_ < inputFrom_) {
+    return;
+  }
   switch (waiting_) {
   case Waiting::Nothing:
     return;
   case Waiting::Line:
+    // script_textbox.c: tickConfirmDialogue: confirm closes the page (playSound(0, 3)).
     if (input.wasPressed("confirm")) {
+      play(rules_.sounds.confirm);
       waiting_ = Waiting::Nothing;
       state_ = next_;
     }
@@ -195,13 +208,20 @@ void NewGameInterview::take(const input::InputState& input) {
     // script_textbox.c: the selection's cursor moves over the box's rows; confirm picks the row and
     // the state machine goes on to the next state plus the row (nextState + choice).
     constexpr std::size_t Choices = 2;
+    // tickSelectionDialogue: the cursor wraps and moves with playSound(0, 2); confirm plays 3; the
+    // scene keeps trigger 49 set, so cancel is refused (playSound(0, 0xB)).
     if (input.wasPressed("move_up")) {
       cursor_ = (cursor_ + Choices - 1) % Choices;
+      play(rules_.sounds.cursor);
       showText(true);
     } else if (input.wasPressed("move_down")) {
       cursor_ = (cursor_ + 1) % Choices;
+      play(rules_.sounds.cursor);
       showText(true);
+    } else if (input.wasPressed("cancel")) {
+      play(rules_.sounds.refused);
     } else if (input.wasPressed("confirm")) {
+      play(rules_.sounds.confirm);
       waiting_ = Waiting::Nothing;
       state_ = static_cast<std::uint8_t>(next_ + cursor_);
       core::logDebug(
@@ -362,6 +382,7 @@ void NewGameInterview::showText(bool open) {
   }
   std::vector<TextRow> rows;
   appendPageRows(rows, lineText(*shownLine_));
+  inputFrom_ = ticks_ + ticksOf(static_cast<std::uint32_t>(rows.size()));
   // The selection's rows come after the speaker's name.
   const TextboxLook look{.open = true,
                          .speech = true,
@@ -385,10 +406,8 @@ std::string NewGameInterview::lineText(std::size_t line) const {
 }
 
 std::string NewGameInterview::tamerName() const {
-  if (!tamerName_.empty()) {
-    return tamerName_;
-  }
-  return localization::tr(screens::mainLabelKey(screens::SpeciesNamesBlock, PlayerNameSlot));
+  // The American version starts the player's name empty (newGameStateMachine: MAIN_D_80134600[7]).
+  return tamerName_;
 }
 
 void NewGameInterview::update(double frameSeconds, rhi::Extent extent) {

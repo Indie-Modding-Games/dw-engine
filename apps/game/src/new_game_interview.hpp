@@ -4,6 +4,7 @@
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/story/story_ports.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/model_renderer.hpp>
@@ -21,6 +22,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "naming_box.hpp"
@@ -36,7 +38,7 @@ class NewGameInterview {
 public:
   static core::Result<std::unique_ptr<NewGameInterview>>
   create(render::Renderer& renderer, ui::Ui& ui, const assets::VirtualFileSystem& files,
-         NewGameSceneRules rules);
+         NewGameSceneRules rules, game::story::SoundPort* sound);
   ~NewGameInterview();
   NewGameInterview(const NewGameInterview&) = delete;
   NewGameInterview& operator=(const NewGameInterview&) = delete;
@@ -45,6 +47,9 @@ public:
 
   // One engine tick: the player's buttons and the scene's frame count.
   void tick(const input::InputState& input);
+  // What the keyboard typed, for the naming box while it is open (takesText).
+  [[nodiscard]] bool takesText() const { return naming_.isOpen(); }
+  void type(std::string_view text, bool enter) { naming_.type(text, enter); }
   // Once per frame: the host's animation and the camera.
   void update(double frameSeconds, rhi::Extent extent);
   [[nodiscard]] std::span<render::Drawer* const> drawers() const { return drawers_; }
@@ -65,6 +70,7 @@ private:
   // The state machine's states (newGameStateMachine's switch), each run once until it waits.
   void step();
   void take(const input::InputState& input);
+  void play(const game::story::DialogueSound& sound);
   void turnHost();
   void say(std::size_t line, std::uint8_t next);
   void ask(std::size_t line, std::uint8_t next);
@@ -84,8 +90,11 @@ private:
   float hostYaw_ = 0.0F;
   std::array<render::Drawer*, 2> drawers_{};
   NamingBox naming_;
+  game::story::SoundPort* sound_ = nullptr;
 
   std::uint64_t ticks_ = 0;
+  // The tick the shown page is drawn by; presses before it do not count.
+  std::uint64_t inputFrom_ = 0;
   // The questions start once the host turned to the player (pstat 0xF3 = 0).
   bool turned_ = false;
   std::uint8_t state_ = 0;
