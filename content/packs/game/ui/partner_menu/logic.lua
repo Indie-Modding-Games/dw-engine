@@ -148,6 +148,14 @@ local function draw_bag(document)
         :get("slot-" .. index .. "-count")
         :set_text(filled and tostring(number(slot_setting(index, "count"))) or "")
       slot:set_class("dimmed", filled and setting(slot_setting(index, "dimmed"), false))
+      -- The item's icon in the gap before its name (utils2.c: setItemTexture).
+      local icon = document:get("slot-" .. index .. "-icon")
+      local source = filled and setting(slot_setting(index, "icon"), "") or ""
+      icon:set_class("hidden", source == "")
+      if source ~= "" then
+        icon:set_attribute("src", source)
+        icon:set_attribute("rect", setting(slot_setting(index, "icon_rect"), ""))
+      end
       slot:set_class("moving", moving == index)
     end
   end

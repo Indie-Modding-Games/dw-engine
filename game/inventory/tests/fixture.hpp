@@ -171,7 +171,8 @@ inline const assets::ItemTable& fixtureItems() {
                          .meritValue = 0,
                          .sortingValue = item.sortingValue,
                          .itemColor = item.itemColor,
-                         .droppable = item.droppable});
+                         .droppable = item.droppable,
+                         .iconPalette = std::uint8_t{3}});
     }
     for (const RulesetItem& item : RulesetItems) {
       entries.push_back({.id = std::string{item.id},

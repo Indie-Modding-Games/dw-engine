@@ -46,7 +46,7 @@
 	color: #1a1f27;
 }
 
-.page.hidden, .box.hidden, .slot.hidden, .condition.hidden, #no-condition.hidden {
+.page.hidden, .box.hidden, .slot.hidden, .slot-icon.hidden, .condition.hidden, #no-condition.hidden {
 	display: none;
 }
 
@@ -157,6 +157,13 @@
 
 .slot-count {
 	float: right;
+}
+
+.slot-icon {
+	width: 24dp;
+	height: 24dp;
+	margin-right: 8dp;
+	vertical-align: middle;
 }
 
 #bag-description {

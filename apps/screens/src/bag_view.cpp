@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <format>
 #include <optional>
 #include <string>
 
@@ -18,6 +20,14 @@ constexpr std::string_view DescriptionField = "description";
 constexpr std::string_view CountField = "count";
 constexpr std::string_view DimmedField = "dimmed";
 constexpr std::string_view UsableField = "usable";
+constexpr std::string_view IconField = "icon";
+constexpr std::string_view IconRectField = "icon_rect";
+
+// The items' icons (utils2.c: setItemTexture): ETCDAT/ITEM.TIM, a 16 x 16 cell per item in rows of
+// 16, by the item's original number, with the item's palette.
+constexpr std::string_view ItemIconImage = "/texture/etcdat/item";
+constexpr std::int32_t ItemIconSide = 16;
+constexpr std::int32_t ItemIconsPerRow = 16;
 constexpr std::string_view CountSuffix = ".count";
 
 bool usableIn(const assets::ItemEntry* entry, const game::inventory::UseRules& rules,
@@ -35,13 +45,23 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
     return {};
   }
   const assets::ItemEntry* entry = &items.at(slot->item);
+  std::string icon;
+  std::string iconRect;
+  if (entry->iconPalette && entry->originalIndex) {
+    icon = std::format("{}?palette={}", ItemIconImage, *entry->iconPalette);
+    iconRect =
+        std::format("{} {} {} {}", (entry->index % ItemIconsPerRow) * ItemIconSide,
+                    (entry->index / ItemIconsPerRow) * ItemIconSide, ItemIconSide, ItemIconSide);
+  }
   return {.empty = false,
           .item = entry->id,
           .nameKey = names.item(slot->item),
           .descriptionKey = names.itemDescription(slot->item),
           .count = slot->count,
           .dimmed = entry != nullptr && entry->itemColor == NeverUsedColor,
-          .usable = usableIn(entry, rules, context)};
+          .usable = usableIn(entry, rules, context),
+          .icon = std::move(icon),
+          .iconRect = std::move(iconRect)};
 }
 
 } // namespace
@@ -75,6 +95,9 @@ ScreenSettings settingsOf(const BagView& view) {
         {.name = listEntryName(BagSlotList, index, DimmedField), .value = slot.dimmed});
     settings.push_back(
         {.name = listEntryName(BagSlotList, index, UsableField), .value = slot.usable});
+    settings.push_back({.name = listEntryName(BagSlotList, index, IconField), .value = slot.icon});
+    settings.push_back(
+        {.name = listEntryName(BagSlotList, index, IconRectField), .value = slot.iconRect});
   }
   return settings;
 }

@@ -26,9 +26,13 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
                                                    .descriptionKey = "main.item_descs.0000",
                                                    .count = 3,
                                                    .dimmed = false,
-                                                   .usable = true});
+                                                   .usable = true,
+                                                   .icon = "/texture/etcdat/item?palette=3",
+                                                   .iconRect = "0 0 16 16"});
   CHECK(view.slots[1].item == GateKey);
   CHECK(view.slots[1].dimmed);
+  // utils2.c: setItemTexture: the cell of the item's number in rows of 16.
+  CHECK(view.slots[1].iconRect == "176 112 16 16");
   CHECK(view.slots[2].empty);
 
   const auto settings = dwe::screens::settingsOf(view);

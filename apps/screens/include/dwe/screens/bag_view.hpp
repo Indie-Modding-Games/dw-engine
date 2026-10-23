@@ -35,6 +35,11 @@ struct BagSlotView {
   bool dimmed = false;
   // Whether its item_color lets it be used where the bag is open (inventory.c: selectOptionMenu).
   bool usable = false;
+  // The item's icon (utils2.c: setItemTexture): the image with the item's palette, as a document
+  // names it, and the icon's rectangle in it, "x y width height"; both empty for an item without an
+  // icon (ItemEntry::iconPalette).
+  std::string icon;
+  std::string iconRect;
 
   friend bool operator==(const BagSlotView&, const BagSlotView&) = default;
 };
