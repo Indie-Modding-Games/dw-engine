@@ -113,4 +113,17 @@ void MapDepthLayers::setHidden(std::size_t instance, bool hidden) {
   }
 }
 
+std::optional<glm::vec2> MapDepthLayers::position(std::size_t instance) const {
+  if (instance < instances_.size()) {
+    return instances_[instance].position;
+  }
+  return std::nullopt;
+}
+
+void MapDepthLayers::setPosition(std::size_t instance, glm::vec2 position) {
+  if (instance < instances_.size()) {
+    instances_[instance].position = position;
+  }
+}
+
 } // namespace dwe::render

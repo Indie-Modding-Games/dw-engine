@@ -64,6 +64,10 @@ public:
   // Ticks one frame of the turn or slide of a 3D object of the map, toward `direction` (-1 or 1);
   // true when it is done (map_object.c: tickRotateDoor).
   [[nodiscard]] virtual bool turnMapObject(std::int64_t object, std::int64_t direction) = 0;
+  // The place of a sprite object of the map in background pixels, nothing when the map has no
+  // such object; and moving it (overworld.c: MAP_TILE_DATA.objects, tickMoveObjectTo).
+  [[nodiscard]] virtual std::optional<glm::ivec2> mapSpritePosition(std::int64_t object) const = 0;
+  virtual void placeMapSprite(std::int64_t object, glm::ivec2 position) = 0;
 };
 
 // The rules of the scripted moves, from the field rules.
@@ -115,6 +119,10 @@ public:
   // rotate_3d_object: turns or slides a 3D object of the map in the first object slot
   // (SCRIPT_MOVEMENT[11]); `direction` is the original's signed byte.
   void turnMapObject(std::int64_t object, std::int64_t direction);
+  // move_object_to: moves the map's sprite object to (x, y) in background pixels in `steps`
+  // frames, in the object slot `slot` (SCRIPT_MOVEMENT[12 + slot]).
+  void moveMapSprite(std::int64_t slot, std::int64_t object, std::int64_t steps, std::int64_t x,
+                     std::int64_t y);
   // move_camera_to and move_camera_to_entity: pans the camera in `frames` frames.
   void cameraTo(std::int64_t frames, std::int64_t x, std::int64_t z);
   void cameraToCharacter(std::int64_t character, std::int64_t frames);
@@ -163,16 +171,21 @@ private:
   struct MapObjectTurn {
     std::int64_t direction = 0;
   };
+  struct SpriteMove {
+    glm::ivec2 target{};
+    std::int64_t steps = 0;
+    std::optional<glm::ivec2> perFrame;
+  };
   struct CameraPan {
     std::optional<std::int64_t> target;
     glm::vec3 point{};
     std::int64_t frames = 1;
     bool started = false;
   };
-  using Move =
-      std::variant<LookAt, SetRotation, Walk, MoveTo, MoveToAxis, CameraPan, MapObjectTurn>;
+  using Move = std::variant<LookAt, SetRotation, Walk, MoveTo, MoveToAxis, CameraPan, MapObjectTurn,
+                            SpriteMove>;
   struct Slot {
-    // The character, or the map object of a MapObjectTurn.
+    // The character, or the map object of a MapObjectTurn or a SpriteMove.
     std::int64_t character = 0;
     Move move;
     // Where the mover stood on the last frame the camera followed it (PREVIOUS_CAMERA_POS).
@@ -197,6 +210,7 @@ private:
   bool tick(std::int64_t character, MoveTo& move);
   bool tick(std::int64_t character, MoveToAxis& move);
   bool tick(CameraPan& move);
+  bool tick(std::int64_t object, SpriteMove& move);
   [[nodiscard]] static float frames(std::int64_t count);
   [[nodiscard]] bool partnerSynced() const;
 

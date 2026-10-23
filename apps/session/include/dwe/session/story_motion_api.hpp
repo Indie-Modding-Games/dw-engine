@@ -27,6 +27,7 @@ inline constexpr std::string_view MoveToEntityWithCamera = "entity_move_to_entit
 inline constexpr std::string_view MoveToAxisWithCamera = "entity_move_to_axis_with_camera";
 inline constexpr std::string_view ResetEntityOrigin = "reset_entity_origin";
 inline constexpr std::string_view Rotate3dObject = "rotate_3d_object";
+inline constexpr std::string_view MoveObjectTo = "move_object_to";
 
 inline constexpr std::array Published{Player,
                                       Partner,
@@ -47,6 +48,7 @@ inline constexpr std::array Published{Player,
                                       MoveToEntityWithCamera,
                                       MoveToAxisWithCamera,
                                       ResetEntityOrigin,
-                                      Rotate3dObject};
+                                      Rotate3dObject,
+                                      MoveObjectTo};
 
 } // namespace dwe::session::story_motion_api

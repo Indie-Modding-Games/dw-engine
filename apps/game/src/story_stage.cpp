@@ -175,4 +175,22 @@ bool StoryStage::turnMapObject(std::int64_t object, std::int64_t direction) {
   return scene_->field().turnMapObjectByScript(object, direction);
 }
 
+std::optional<glm::ivec2> StoryStage::mapSpritePosition(std::int64_t object) const {
+  if (object < 0) {
+    return std::nullopt;
+  }
+  const std::optional<glm::vec2> position =
+      scene_->mapLayers().position(static_cast<std::size_t>(object));
+  if (!position) {
+    return std::nullopt;
+  }
+  return glm::ivec2{glm::round(*position)};
+}
+
+void StoryStage::placeMapSprite(std::int64_t object, glm::ivec2 position) {
+  if (object >= 0) {
+    scene_->mapLayers().setPosition(static_cast<std::size_t>(object), glm::vec2{position});
+  }
+}
+
 } // namespace dwe::app

@@ -134,6 +134,8 @@ public:
   }
   // The field the story's scripted moves drive (game::field::Field::holdForScript).
   [[nodiscard]] game::field::Field& field() { return *field_; }
+  // The map's sprite objects, which scripts move (overworld.c: tickMoveObjectTo).
+  [[nodiscard]] render::MapDepthLayers& mapLayers() { return mapRenderer_->layers(); }
   // How fast the clip with the original's animation id carries the player or the partner over the
   // ground, world units a second: its root's speed (anim.c: applyRootMomentum); 0 without it.
   [[nodiscard]] float clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const;

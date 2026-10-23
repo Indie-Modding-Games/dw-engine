@@ -26,6 +26,8 @@ constexpr std::int64_t WaitPartnerSync = 0xC9;
 constexpr std::int64_t WaitFirstObject = 0xCA;
 constexpr std::int64_t WaitLastObject = 0xD4;
 constexpr std::int64_t FirstObjectSlot = 11;
+// move_object_to's slots start here (script_interp.c: SCRIPT_OP_MOVE_OBJECT_TO adds 0xc).
+constexpr std::int64_t FirstSpriteSlot = 12;
 constexpr std::int64_t WaitClearedPartnerSync = 0xD5;
 // The training overlay's load: the engine has no overlays, so it is always loaded.
 constexpr std::int64_t WaitTrainingLoaded = 0xD6;
@@ -48,6 +50,28 @@ glm::vec3 groundPoint(std::int64_t x, std::int64_t z, float y) {
 // steps of 2 (script_interp.c: scriptSetEntityWalking).
 std::int64_t walkClip(std::int64_t character, std::int64_t animation) {
   return character == PlayerScriptId ? animation + 2 : (animation + 1) * 2;
+}
+
+// A division as the original's processor gives it: by zero it gives -1, or 1 for a negative
+// dividend, as its div does without a check (overworld.c: tickMoveObjectTo has none).
+std::int32_t divideLikeOriginal(std::int32_t dividend, std::int32_t divisor) {
+  if (divisor == 0) {
+    return dividend >= 0 ? -1 : 1;
+  }
+  return dividend / divisor;
+}
+
+// One coordinate of tickMoveObjectTo's step: it stops at the target once past it, and a zero step
+// lands on it.
+std::int32_t spriteStep(std::int32_t value, std::int32_t target, std::int32_t step) {
+  const std::int32_t next = value + step;
+  if (step > 0) {
+    return next >= target ? target : next;
+  }
+  if (step < 0) {
+    return next <= target ? target : next;
+  }
+  return target;
 }
 
 // The world axis and sign of the original's axis (0 x, 1 y, 2 z).
@@ -229,6 +253,17 @@ void ScriptMotion::resetOrigin(std::int64_t character) {
   actors_->resetOrigin(character);
 }
 
+void ScriptMotion::moveMapSprite(std::int64_t slot, std::int64_t object, std::int64_t steps,
+                                 std::int64_t x, std::int64_t y) {
+  // The steps are a signed byte (overworld.c: tickMoveObjectTo).
+  const auto signedSteps =
+      static_cast<std::int64_t>(static_cast<std::int8_t>(static_cast<std::uint8_t>(steps)));
+  fill(FirstSpriteSlot + slot, object,
+       SpriteMove{.target = {static_cast<std::int32_t>(x), static_cast<std::int32_t>(y)},
+                  .steps = signedSteps,
+                  .perFrame = std::nullopt});
+}
+
 void ScriptMotion::turnMapObject(std::int64_t object, std::int64_t direction) {
   // script_interp.c: SCRIPT_OP_ROTATE_3D_OBJECT keeps the direction as a signed byte.
   const auto signedDirection =
@@ -339,6 +374,9 @@ bool ScriptMotion::tick(Slot& slot) {
   if (const auto* turn = std::get_if<MapObjectTurn>(&slot.move)) {
     return actors_->turnMapObject(slot.character, turn->direction);
   }
+  if (auto* sprite = std::get_if<SpriteMove>(&slot.move)) {
+    return tick(slot.character, *sprite);
+  }
   if (!std::holds_alternative<CameraPan>(slot.move) && !actors_->slotOf(slot.character)) {
     return true;
   }
@@ -352,7 +390,8 @@ bool ScriptMotion::tick(Slot& slot) {
           return true;
         } else if constexpr (std::is_same_v<Kind, CameraPan>) {
           return tick(move);
-        } else if constexpr (std::is_same_v<Kind, MapObjectTurn>) {
+        } else if constexpr (std::is_same_v<Kind, MapObjectTurn> ||
+                             std::is_same_v<Kind, SpriteMove>) {
           return true;
         } else {
           return tick(slot.character, move);
@@ -507,6 +546,25 @@ bool ScriptMotion::tick(CameraPan& move) {
   actors_->panCamera(point, frames(move.frames) * rules_.frameSeconds);
   move.started = true;
   return false;
+}
+
+bool ScriptMotion::tick(std::int64_t object, SpriteMove& move) {
+  // overworld.c: tickMoveObjectTo takes the step and moves on the same frame, and ends once both
+  // coordinates are on the target.
+  const std::optional<glm::ivec2> position = actors_->mapSpritePosition(object);
+  if (!position) {
+    core::logWarning("{}", messages::formatMessage(messages::NoMapSprite, object));
+    return true;
+  }
+  if (!move.perFrame) {
+    const auto steps = static_cast<std::int32_t>(move.steps);
+    move.perFrame = glm::ivec2{divideLikeOriginal(move.target.x - position->x, steps),
+                               divideLikeOriginal(move.target.y - position->y, steps)};
+  }
+  const glm::ivec2 next{spriteStep(position->x, move.target.x, move.perFrame->x),
+                        spriteStep(position->y, move.target.y, move.perFrame->y)};
+  actors_->placeMapSprite(object, next);
+  return next == move.target;
 }
 
 float ScriptMotion::frames(std::int64_t count) {

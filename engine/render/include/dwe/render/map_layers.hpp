@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace dwe::render {
@@ -60,6 +61,11 @@ public:
   // Hides or shows instances, as scripts and the day/night objects do
   // (MapObjectInstance::HiddenFlag).
   void setHidden(std::size_t instance, bool hidden);
+
+  // An instance's place in background pixels, nothing past the last; and moving it, as scripts do
+  // (overworld.c: tickMoveObjectTo).
+  [[nodiscard]] std::optional<glm::vec2> position(std::size_t instance) const;
+  void setPosition(std::size_t instance, glm::vec2 position);
 
 private:
   struct Instance {

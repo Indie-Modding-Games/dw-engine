@@ -20,7 +20,7 @@ using game::story::ScriptMotion;
 using script::ApiCall;
 using script::ApiValue;
 
-constexpr std::size_t MaxOperands = 5;
+constexpr std::size_t MaxOperands = 6;
 using Operands = std::array<std::int64_t, MaxOperands>;
 
 struct MotionOrder {
@@ -117,6 +117,12 @@ std::vector<MotionOrder> motionOrders(ScriptMotion& motion) {
        .operands = 3,
        .freezes = true,
        .run = [&motion](const Operands& o) { motion.turnMapObject(o[0], o[2]); }},
+      // move_object_to (slot, object, speed, steps, x, y): the emitter names the steps
+      // target_entity; the original never reads the speed (script_interp.c:2070, 2335).
+      {.name = api::MoveObjectTo,
+       .operands = 6,
+       .freezes = true,
+       .run = [&motion](const Operands& o) { motion.moveMapSprite(o[0], o[1], o[3], o[4], o[5]); }},
   };
 }
 

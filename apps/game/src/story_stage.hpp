@@ -37,6 +37,8 @@ public:
   void shiftCamera(glm::vec3 by) override;
   void resetOrigin(std::int64_t character) override;
   [[nodiscard]] bool turnMapObject(std::int64_t object, std::int64_t direction) override;
+  [[nodiscard]] std::optional<glm::ivec2> mapSpritePosition(std::int64_t object) const override;
+  void placeMapSprite(std::int64_t object, glm::ivec2 position) override;
 
 private:
   // The entity of a character on the map.

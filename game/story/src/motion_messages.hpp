@@ -49,5 +49,8 @@ inline constexpr std::string_view MoveToWithCamera =
 inline constexpr std::string_view ResetOrigin =
     "[port:story-motion] reset_entity_origin (script_interp.c:1516, overworld.c:1829 "
     "resetEntityOrigin): character {}";
+inline constexpr std::string_view NoMapSprite =
+    "[port:story-motion] move_object_to (overworld.c:874 tickMoveObjectTo): the map has no sprite "
+    "object {}, the move ends";
 
 } // namespace dwe::game::story::motion_messages

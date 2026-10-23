@@ -83,6 +83,16 @@ bool StoryActorsLink::turnMapObject(std::int64_t object, std::int64_t direction)
   return target_ == nullptr || target_->turnMapObject(object, direction);
 }
 
+std::optional<glm::ivec2> StoryActorsLink::mapSpritePosition(std::int64_t object) const {
+  return target_ != nullptr ? target_->mapSpritePosition(object) : std::nullopt;
+}
+
+void StoryActorsLink::placeMapSprite(std::int64_t object, glm::ivec2 position) {
+  if (target_ != nullptr) {
+    target_->placeMapSprite(object, position);
+  }
+}
+
 // The scripted moves' rules come with the stage, from the field rules: until then the moves have
 // none, which no order reaches since no character is on the map.
 void StoryAdapter::attachStage(game::story::ScriptActorsPort* stage,
