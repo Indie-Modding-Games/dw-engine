@@ -617,12 +617,14 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
       progress_->start = now;
       progress_->mapSerial = host.scene != nullptr ? host.scene->mapSerial() : 0;
     }
+    // A step that is done counts even past its timeout: the press that starts a new game ends the
+    // step only once its release has gone through, and the load in between can run long.
     if (host.scene == nullptr && (step.kind == Kind::WalkTo || step.kind == Kind::Click)) {
       failStep(messages::NoGame);
-    } else if (now - progress_->start > step.timeout && step.kind != Kind::Wait) {
-      failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
     } else if (runStep(host, step, now)) {
       finishStep(now);
+    } else if (!finished() && now - progress_->start > step.timeout && step.kind != Kind::Wait) {
+      failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
     }
     runActions(ticks, events);
   }
