@@ -49,6 +49,7 @@
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
 #include "game_audio.hpp"
+#include "game_documents.hpp"
 #include "language.hpp"
 #include "messages.hpp"
 #include "minimap_setting.hpp"
@@ -168,23 +169,7 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
 }
 
 core::Result<void> loadDocuments(ui::Ui& ui) {
-  for (const auto& [name, id] :
-       {std::pair{"hud", "ui/hud/document"},
-        std::pair{"story_textbox", "ui/story_textbox/document"},
-        std::pair{"pause_menu", "ui/pause_menu/document"},
-        std::pair{"main_menu", "ui/main_menu/document"}, std::pair{"battle", "ui/battle/document"},
-        std::pair{"partner_menu", "ui/partner_menu/document"},
-        std::pair{"destination_choice", "ui/destination_choice/document"},
-        std::pair{"save_slots", "ui/save_slots/document"},
-        std::pair{"dialog", "ui/dialog/document"},
-        std::pair{"sleep_menu", "ui/sleep_menu/document"},
-        std::pair{"gym_stats", "ui/gym_stats/document"},
-        std::pair{"shop_menu", "ui/shop_menu/document"},
-        std::pair{"field_item_notice", "ui/field_item_notice/document"},
-        std::pair{"gym_slots", "ui/gym_slots/document"},
-        std::pair{"naming_box", "ui/naming_box/document"},
-        std::pair{"egg_box", "ui/egg_box/document"},
-        std::pair{"lives_box", "ui/lives_box/document"}}) {
+  for (const auto& [name, id] : GameDocuments) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};

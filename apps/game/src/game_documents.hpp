@@ -1,0 +1,40 @@
+#pragma once
+
+#include <array>
+#include <string_view>
+
+namespace dwe::app {
+
+// A document of the game pack the game loads at start: the name the screens show it by and its
+// asset.
+struct GameDocument {
+  std::string_view name;
+  std::string_view asset;
+};
+
+// Every document under the game pack's ui/ (a test checks none is missing), except
+// ui/dev_assets, which DevAssetsBanner loads itself.
+inline constexpr std::array GameDocuments{
+    GameDocument{.name = "hud", .asset = "ui/hud/document"},
+    GameDocument{.name = "story_textbox", .asset = "ui/story_textbox/document"},
+    GameDocument{.name = "pause_menu", .asset = "ui/pause_menu/document"},
+    GameDocument{.name = "main_menu", .asset = "ui/main_menu/document"},
+    GameDocument{.name = "battle", .asset = "ui/battle/document"},
+    GameDocument{.name = "partner_menu", .asset = "ui/partner_menu/document"},
+    GameDocument{.name = "destination_choice", .asset = "ui/destination_choice/document"},
+    GameDocument{.name = "save_slots", .asset = "ui/save_slots/document"},
+    GameDocument{.name = "dialog", .asset = "ui/dialog/document"},
+    GameDocument{.name = "sleep_menu", .asset = "ui/sleep_menu/document"},
+    GameDocument{.name = "gym_stats", .asset = "ui/gym_stats/document"},
+    GameDocument{.name = "shop_menu", .asset = "ui/shop_menu/document"},
+    GameDocument{.name = "field_item_notice", .asset = "ui/field_item_notice/document"},
+    GameDocument{.name = "gym_slots", .asset = "ui/gym_slots/document"},
+    GameDocument{.name = "naming_box", .asset = "ui/naming_box/document"},
+    GameDocument{.name = "egg_box", .asset = "ui/egg_box/document"},
+    GameDocument{.name = "lives_box", .asset = "ui/lives_box/document"},
+    GameDocument{.name = "fishing_bait", .asset = "ui/fishing_bait/document"},
+    GameDocument{.name = "fishing_notice", .asset = "ui/fishing_notice/document"},
+    GameDocument{.name = "fishing_hud", .asset = "ui/fishing_hud/document"},
+};
+
+} // namespace dwe::app
