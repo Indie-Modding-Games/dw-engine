@@ -6,7 +6,9 @@
    outline from x 78. The original fills the box with a gradient from four corners (#000070, #000050, #000030,
    #000010); a gradient from top to bottom of the corners' averages (#000060 to #000020) stands in for it, since a
    four-corner gradient needs shaders the UI does not have. The box is as tall as its entries: this menu has five and
-   the prompt, the original four. Its own title stays hidden: the title image carries the game's name. */
+   the prompt, the original four. Its own title stays hidden: the title image carries the game's name. It is wider
+   than the original's, 640dp, so that the longest label (Spanish's "Texto con aspecto original") and its value keep
+   a gap: the original's options had no values. */
 
 #scrim {
 	background-color: #000000;
@@ -17,8 +19,8 @@
 	position: absolute;
 	left: 50%;
 	top: 150dp;
-	width: 528dp;
-	margin-left: -264dp;
+	width: 640dp;
+	margin-left: -320dp;
 	padding: 12dp 0 12dp 18dp;
 	border: 3dp #90d9fa;
 	border-right-color: #4a9fc5;
@@ -33,7 +35,7 @@
 }
 
 #panel button {
-	width: 456dp;
+	width: 568dp;
 }
 
 #prompts {
