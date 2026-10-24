@@ -111,6 +111,13 @@ cuando las necesita, cada pocos milisegundos).
 - **Sin dispositivo no es un error.** Si SDL no puede abrir el audio (un contenedor sin servidor de sonido, el Xvfb de
   las rutas, un equipo sin tarjeta), `apps/game` registra un **aviso** con el motivo y sigue con la salida nula. Las
   rutas de autotest siguen con 0 `[error]`.
+- **Backends de Linux.** El SDL3 estático de vcpkg trae de serie sin ningún backend de audio de Linux, y el juego no
+  encontraba dispositivo en el escritorio. El port superpuesto `vcpkg-ports/sdl3` añade la característica
+  `system-audio`, que `vcpkg.json` activa en Linux: compila los backends de ALSA, PulseAudio y PipeWire contra las
+  cabeceras del sistema (`libasound2-dev`, `libpulse-dev`, `libpipewire-0.3-dev`, ya en `.devcontainer/Dockerfile` y en
+  las imágenes de desarrollo) y carga sus bibliotecas al arrancar (`SDL_*_SHARED`). Un equipo con PipeWire o PulseAudio
+  suena sin configurar nada (`SDL_AUDIO_DRIVER` sin definir), y uno sin ellos sigue arrancando, en silencio y con el
+  aviso de arriba.
 - **Pausa del dispositivo.** Al minimizar o perder el foco el juego sigue como hoy (el bucle decide); la salida no se
   pausa sola. Lo que haga el original al pausar (si la música sigue) se aplica en el tramo 3 desde el juego.
 
