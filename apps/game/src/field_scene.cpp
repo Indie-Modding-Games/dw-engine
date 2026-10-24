@@ -488,7 +488,7 @@ void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
 
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   const double animationSeconds = paused ? 0.0 : frameSeconds;
-  animate(*playerActor_, animationSeconds);
+  animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   if (partnerClip_) {
     // A scene's clip runs while the field waits for the scene.
     animatePartnerClip(frameSeconds);
@@ -536,6 +536,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
 }
 
 void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {
+  playerSceneClip_ = false;
   Actor& actor = *playerActor_;
   if (clip == actor.heldClip) {
     return;
@@ -553,6 +554,11 @@ void FieldScene::setPlayerClip(std::optional<std::uint32_t> clip) {
 
 bool FieldScene::playerClipPlaying() const {
   return playerActor_->heldClip && !playerActor_->player->finished();
+}
+
+void FieldScene::playPlayerSceneClip(std::optional<std::uint32_t> clip) {
+  setPlayerClip(clip);
+  playerSceneClip_ = clip.has_value();
 }
 
 bool FieldScene::playerClipPlayedThrough() const {

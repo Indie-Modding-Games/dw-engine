@@ -44,6 +44,8 @@ inline constexpr std::string_view FightPhase = "fight";
 inline constexpr std::string_view VictoryPhase = "victory";
 inline constexpr std::string_view EndPhase = "end";
 
+class FieldScene;
+
 struct BattleScreenDesc {
   session::GameSession* session = nullptr;
   session::BattleAdapter* battle = nullptr;
@@ -53,6 +55,9 @@ struct BattleScreenDesc {
   // What the fighters walk on: the field's camera and map; it may be null (then the ruleset's arena
   // radius holds them).
   const game::battle::BattleGround* ground = nullptr;
+  // Where the player and the partner strike the victory poses; it may be null (then the end box
+  // opens with the poses' sound).
+  FieldScene* scene = nullptr;
   // For the fighters' names; it may be null.
   const assets::DigimonTable* species = nullptr;
   // The mounted packs, for the techniques' effect scripts; without them (or without sound) the
@@ -93,6 +98,10 @@ private:
   void publish() const;
   void tickIntro(double seconds);
   void tickVictory(double seconds);
+  void startPoses();
+  void tickPoses(double seconds);
+  void releasePoses();
+  void openEndBox() const;
   void playSound(std::int64_t sound) const;
   void publishIntro() const;
   void openBag();
@@ -117,6 +126,10 @@ private:
   bool won_ = false;
   // The time left before the victory poses' sound, once a battle is won.
   std::optional<double> victoryPoseSeconds_;
+  // The time the victory poses have played, while they do, and which of the two still plays.
+  std::optional<double> posesSeconds_;
+  bool playerPosing_ = false;
+  bool partnerPosing_ = false;
   // The battle's map and the items its beaten enemies left: they land on the ground when the end
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).
   std::string map_;

@@ -41,7 +41,7 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
 de abajo): `usable` dice qué objetos se pueden lanzar en combate.
 
-El juego añade `battle.phase` (`intro`, `fight`, `victory` o `end`; `victory` son las poses de victoria, sin caja ni entrada, durante la espera de 0x29 fotogramas de `BTL_handleVictorySequence` antes de que se abra la caja final), y el documento envía `battle_command` (el número del comando),
+El juego añade `battle.phase` (`intro`, `fight`, `victory` o `end`; `victory` es la victoria antes de la caja final, sin caja ni entrada: la espera de 0x29 fotogramas de `BTL_handleVictorySequence`, el sonido 0x18 y las poses del jugador (clip 0xb) y del compañero (clip 0x2a), hasta que ambas terminan; el port corta las poses a los 200 fotogramas de batalla si alguna no termina), y el documento envía `battle_command` (el número del comando),
 `battle_charge`, `battle_close`, `battle_end_count` y `battle_end_counted` (la cuenta de la caja del final, para sus
 sonidos), `battle_bag_open`, `battle_bag_close` y `battle_throw` (el número de la ranura)
 ([ui.md](../../architecture/ui.md)).

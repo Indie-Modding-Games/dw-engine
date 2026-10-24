@@ -260,6 +260,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                              .inventory = game_.systems.inventory,
                                              .fieldItems = game_.systems.fieldItems,
                                              .ground = &battleGround_,
+                                             .scene = scene_.get(),
                                              .species = species_ ? &*species_ : nullptr,
                                              .files = context.files,
                                              .ui = context.ui}),

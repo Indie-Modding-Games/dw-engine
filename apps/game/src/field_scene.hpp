@@ -123,6 +123,10 @@ public:
   // The fishing's hold on the player (FishingScreen): one of the original's clips in place of the
   // walk's, nothing to give the player back to the field.
   void setPlayerClip(std::optional<std::uint32_t> clip);
+  // A scene's clip of the player (by the original's id, startAnimation) held as setPlayerClip
+  // holds it, but running while the field waits for the scene, as the partner's scene clip does;
+  // nothing gives the player back to its motion.
+  void playPlayerSceneClip(std::optional<std::uint32_t> clip);
   // Whether the clip setPlayerClip gave still plays.
   [[nodiscard]] bool playerClipPlaying() const;
   // Whether that clip has reached the end of its first pass, one that repeats too (animFrame ==
@@ -314,6 +318,8 @@ private:
   std::optional<std::uint32_t> partnerClip_;
   bool partnerClipStarted_ = false;
   bool partnerClipPlays_ = false;
+  // Whether the player's held clip is a scene's (playPlayerSceneClip), which runs while paused.
+  bool playerSceneClip_ = false;
 
   scene::World world_;
   std::unique_ptr<game::field::Field> field_;

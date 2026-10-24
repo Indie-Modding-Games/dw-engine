@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "bag_slots.hpp"
+#include "field_scene.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -32,6 +33,14 @@ constexpr std::int64_t VictorySound = 0x15;
 constexpr std::int64_t VictoryPoseSound = 0x18;
 constexpr int VictoryPoseFrames = 0x29;
 constexpr double VictoryPoseSeconds = VictoryPoseFrames * IntroFrameSeconds;
+// battle_main.c: BTL_handleVictorySequence: with that sound the player and the partner strike their
+// poses (startAnimation), and the end box opens once both clips have played through.
+constexpr std::uint32_t PlayerPoseClip = 0xb;
+constexpr std::uint32_t PartnerPoseClip = 0x2a;
+// The port's safeguard, not the original's: a pose that never plays through holds the box no longer
+// than this many battle frames.
+constexpr int PoseGuardFrames = 200;
+constexpr double PoseGuardSeconds = PoseGuardFrames * IntroFrameSeconds;
 // battle_ui.c: tickBitBox and renderPostBattleStatsBox: the end box's count, a sound for each point
 // and bit, and another once the bits are all in; both in slot 0.
 constexpr std::int64_t EndCountSound = 0x16;
@@ -113,6 +122,7 @@ void BattleScreen::playSound(std::int64_t sound) const {
 
 void BattleScreen::tickVictory(double seconds) {
   if (!victoryPoseSeconds_) {
+    tickPoses(seconds);
     return;
   }
   *victoryPoseSeconds_ -= seconds;
@@ -123,8 +133,62 @@ void BattleScreen::tickVictory(double seconds) {
   core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:904): the victory poses; "
                  "playSound(0, 0x18)");
   playSound(VictoryPoseSound);
-  // The end box opens only after the wait (handleBattleEndBox follows the poses), so nothing
-  // pressed during it reaches the box.
+  startPoses();
+}
+
+void BattleScreen::startPoses() {
+  if (desc_.scene == nullptr) {
+    openEndBox();
+    return;
+  }
+  desc_.scene->playPlayerSceneClip(PlayerPoseClip);
+  desc_.scene->playPartnerClip(PartnerPoseClip);
+  playerPosing_ = true;
+  partnerPosing_ = true;
+  posesSeconds_ = 0.0;
+}
+
+// battle_main.c: BTL_handleVictorySequence: each fighter whose pose has played through goes back to
+// its stance, and the end box waits for both.
+void BattleScreen::tickPoses(double seconds) {
+  if (!posesSeconds_) {
+    return;
+  }
+  FieldScene& scene = *desc_.scene;
+  *posesSeconds_ += seconds;
+  const bool timedOut = *posesSeconds_ >= PoseGuardSeconds;
+  if (playerPosing_ && (scene.playerClipPlayedThrough() || timedOut)) {
+    scene.playPlayerSceneClip(std::nullopt);
+    playerPosing_ = false;
+  }
+  if (partnerPosing_ && (scene.partnerClipFinished() || timedOut)) {
+    scene.playPartnerClip(std::nullopt);
+    partnerPosing_ = false;
+  }
+  if (playerPosing_ || partnerPosing_) {
+    return;
+  }
+  posesSeconds_.reset();
+  core::logDebug("[port:battle] BTL_handleVictorySequence (battle_main.c:919): the poses are over; "
+                 "handleBattleEndBox");
+  openEndBox();
+}
+
+void BattleScreen::releasePoses() {
+  if (playerPosing_) {
+    desc_.scene->playPlayerSceneClip(std::nullopt);
+  }
+  if (partnerPosing_) {
+    desc_.scene->playPartnerClip(std::nullopt);
+  }
+  playerPosing_ = false;
+  partnerPosing_ = false;
+  posesSeconds_.reset();
+}
+
+// The end box opens only after the poses (handleBattleEndBox follows them), so nothing pressed
+// before reaches the box.
+void BattleScreen::openEndBox() const {
   if (ending_) {
     desc_.ui->setSetting(BattlePhaseSetting, std::string{EndPhase});
   }
@@ -367,6 +431,7 @@ void BattleScreen::close() {
   }
   ending_ = false;
   victoryPoseSeconds_.reset();
+  releasePoses();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&
