@@ -123,6 +123,11 @@ void BattleScreen::tickVictory(double seconds) {
   core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:904): the victory poses; "
                  "playSound(0, 0x18)");
   playSound(VictoryPoseSound);
+  // The end box opens only after the wait (handleBattleEndBox follows the poses), so nothing
+  // pressed during it reaches the box.
+  if (ending_) {
+    desc_.ui->setSetting(BattlePhaseSetting, std::string{EndPhase});
+  }
 }
 
 // The opening runs at the original's battle rate, a frame each 3 of the screen's
@@ -344,7 +349,8 @@ void BattleScreen::finish() {
   view.countDelayFrames = hud.endCountDelayFrames;
   view.waitFrames = hud.endWaitFrames;
   screens::publish(*desc_.ui, screens::settingsOf(view), screens::BattleRevisionSetting);
-  desc_.ui->setSetting(BattlePhaseSetting, std::string{EndPhase});
+  desc_.ui->setSetting(BattlePhaseSetting,
+                       std::string{victoryPoseSeconds_ ? VictoryPhase : EndPhase});
   ending_ = true;
 }
 

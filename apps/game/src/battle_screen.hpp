@@ -39,6 +39,9 @@ inline constexpr std::string_view BattleThrowCommand = "battle_throw";
 inline constexpr std::string_view BattlePhaseSetting = "battle.phase";
 inline constexpr std::string_view IntroPhase = "intro";
 inline constexpr std::string_view FightPhase = "fight";
+// A victory's poses before the end box (battle_main.c: BTL_handleVictorySequence): no box, no
+// input.
+inline constexpr std::string_view VictoryPhase = "victory";
 inline constexpr std::string_view EndPhase = "end";
 
 struct BattleScreenDesc {

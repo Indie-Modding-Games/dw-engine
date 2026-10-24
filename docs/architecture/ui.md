@@ -310,8 +310,8 @@ toca sus sonidos),
 `battle_throw` (el número de la ranura cuyo objeto se lanza al compañero). El menú de
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
 número de la ranura), `bag_move` (`"<desde> <hasta>"`), `bag_sort` (el orden, 0 a 2), `partner_praise` y
-`partner_scold`. Lo que dibujan lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `fight` o
-`end`), `partner.` y `bag.`; el contrato está en el [página de apps/screens](../modulos/apps/screens.md).
+`partner_scold`. Lo que dibujan lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `intro`,
+`fight`, `victory` o `end`), `partner.` y `bag.`; el contrato está en el [página de apps/screens](../modulos/apps/screens.md).
 
 En la consola de depuración (y en los pasos `script` de los autotests), `battle("")` empieza un combate contra el
 primer NPC del mapa que puede luchar, o contra los NPC que se le den (`battle("0,2")`), y `give_item("meat 3")` mete

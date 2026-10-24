@@ -644,6 +644,11 @@ local function draw(document)
   document:get("fight"):set_class("hidden", phase ~= "fight" and phase ~= "intro")
   document:get("end"):set_class("hidden", phase ~= "end")
   draw_intro(document)
+  -- The victory poses before the end box: nothing of the battle's own is drawn.
+  if phase == "victory" then
+    ending = nil
+    return
+  end
   if phase == "end" then
     if ending == nil then
       start_end()
@@ -743,8 +748,9 @@ end
 -- original's own button) and closes it again; up and down move through the open bag; confirm
 -- charges the finisher while its aura lasts.
 function on_action(_document, action)
-  -- Nothing answers while the battle opens.
-  if phase == "intro" then
+  -- Nothing answers while the battle opens, nor during the victory poses before the end box
+  -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox).
+  if phase == "intro" or phase == "victory" then
     return true
   end
   if phase == "end" then
