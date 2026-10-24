@@ -115,6 +115,14 @@ local function show_page(document, name, focus)
   end
   current = name
   document:get("title"):set_text(t("pause_menu.title." .. name))
+  -- The original's menu box heads its icons with the date (game_menu.c: renderGameMenu); a skin
+  -- shows it on the main page through the panel's class "on-main".
+  document:get("panel"):set_class("on-main", name == "main")
+  local year, day = ui.setting("hud.clock.year"), ui.setting("hud.clock.day")
+  document:get("title-date"):set_text(t("pause_menu.date", {
+    year = type(year) == "number" and year or 0,
+    day = type(day) == "number" and day or 0,
+  }))
   document:get(focus or first_entry[name]):focus()
 end
 

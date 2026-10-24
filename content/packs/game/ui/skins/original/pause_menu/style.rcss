@@ -7,9 +7,10 @@
    documented limit of this skin.
 
    Placement: the original's menu box (game_menu.c: renderGameMenu) is centred and 40 pixels from the top. Its 132
-   pixels hold six icons; this menu holds options with values in the player's language, so it is 184 pixels wide
-   (552dp), a documented widening. The header is the original's yellow (#fff371) over a rule, as the menu's
-   Year/Day line. */
+   pixels hold six icons with their names in small capitals; the main page here is that box, 132 pixels wide (396dp),
+   headed by the original's Year/Day line in its yellow (#fff371) over a rule, with the entries as centred names in
+   capitals, one per row: this menu has more entries than the original's six and no icons for them (a documented
+   delta). The options pages hold values in the player's language, so they widen the box to 184 pixels (552dp). */
 
 #scrim {
 	background-color: transparent;
@@ -31,7 +32,20 @@
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
-#title {
+#panel.on-main {
+	width: 396dp;
+	margin-left: -198dp;
+}
+
+#panel.on-main #title {
+	display: none;
+}
+
+#panel.on-main #title-date {
+	display: block;
+}
+
+#title, #title-date {
 	font-size: 33dp;
 	font-weight: normal;
 	color: #fff371;
@@ -56,4 +70,11 @@
 	border-top: 3dp #90d9fa;
 	font-size: 22dp;
 	color: #b2b2b2;
+}
+
+#page-main button {
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 24dp;
+	line-height: 30dp;
 }

@@ -10,6 +10,7 @@
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title"></h1>
+			<h1 id="title-date"></h1>
 
 			<div id="page-main" class="page">
 				<button id="continue" autofocus="autofocus" onclick="resume()" text-key="pause_menu.continue"></button>

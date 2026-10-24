@@ -1,6 +1,7 @@
 title.main: "Pausa"
 title.minimap: "Minimapa"
 title.options: "Opciones"
+date: "Año {year}   Día {day}"
 continue: "Continuar"
 partner: "Compañero"
 minimap: "Minimapa"

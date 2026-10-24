@@ -10,3 +10,5 @@
 /* Sleep is greyed while the partner is not sleepy, as in the original. */
 #sleep.unavailable { opacity: 0.45; focus: none; tab-index: none; }
 #fish.unavailable { opacity: 0.45; focus: none; tab-index: none; }
+/* The date over the main page is the original look's; other skins keep the page title. */
+#title-date { display: none; }

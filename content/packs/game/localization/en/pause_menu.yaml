@@ -1,6 +1,7 @@
 title.main: "Pause"
 title.minimap: "Minimap"
 title.options: "Options"
+date: "Year {year}   Day {day}"
 continue: "Continue"
 partner: "Partner"
 minimap: "Minimap"
