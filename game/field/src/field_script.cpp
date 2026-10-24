@@ -56,6 +56,17 @@ void Field::animateByScript(scene::Entity entity, std::uint32_t clip) {
   world_->registry().get_or_emplace<ScriptedActor>(entity).clip = clip;
 }
 
+void Field::freezeByScript(scene::Entity entity, bool frozen) {
+  world_->registry().get_or_emplace<ScriptedActor>(entity).frozen = frozen;
+}
+
+void Field::releaseClipByScript(scene::Entity entity) {
+  if (auto* actor = world_->registry().try_get<ScriptedActor>(entity); actor != nullptr) {
+    actor->clip.reset();
+    actor->frozen = false;
+  }
+}
+
 void Field::panCameraByScript(glm::vec3 focus, float seconds) {
   const glm::vec3 from =
       scriptCamera_.value_or(world_->registry().get<Transform>(player_).position);

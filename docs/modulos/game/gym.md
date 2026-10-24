@@ -33,6 +33,10 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
   pagos y los sonidos.
 - **Puertos** (`GymPorts`): todo lo que el curso pide al juego (caminar, animar, mover objetos del mapa, nubes,
   partículas, sonidos, cámara y la recompensa). Los implementa `apps/game` (`GymScreen`).
+  Como la historia retiene el campo mientras espera al gimnasio, `GymScreen` mueve a los actores
+  igual que un guion: caminan a la casilla del puesto a la velocidad de su clip, giran, animan (o
+  congelan el cuadro) y la cámara se desplaza al puesto en los cuadros del curso. Las nubes y
+  partículas siguen sin dibujarse (fase 5).
 - **Inteligencia** (`brain_learning.hpp`): `brainMilestones` dice qué órdenes nuevas abre la ganancia y si toca
   intentar un movimiento (`TRN_tryLearnMove`); `trainingMove` elige el movimiento por los especiales de la especie y
   sus pesos.
