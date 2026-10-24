@@ -101,6 +101,8 @@ struct CharacterState {
 struct ScriptedActor {
   glm::vec3 velocity{};
   std::optional<std::uint32_t> clip;
+  // anim.c: animFlag 2 holds the clip on its frame.
+  bool frozen = false;
 };
 
 // A 3D object of the map, a door model (map_object.c: loadDoors, Map3DObject), in world space.
@@ -290,6 +292,10 @@ public:
   void placeByScript(scene::Entity entity, glm::vec3 position);
   void turnByScript(scene::Entity entity, float yaw);
   void animateByScript(scene::Entity entity, std::uint32_t clip);
+  // Holds the held character's clip on its frame, or lets it run on (anim.c: animFlag 2).
+  void freezeByScript(scene::Entity entity, bool frozen);
+  // The held character's motion picks its clip again, as before any animateByScript.
+  void releaseClipByScript(scene::Entity entity);
   // Where the camera looks while a script holds it; nothing: at the player.
   [[nodiscard]] std::optional<glm::vec3> scriptCamera() const { return scriptCamera_; }
   // Pans the held camera to `focus` in `seconds` (map.c: tickCameraMovement).

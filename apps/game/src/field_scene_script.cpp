@@ -30,9 +30,10 @@ bool FieldScene::animateScripted(Actor& actor, double seconds) {
     actor.motion.reset();
     actor.player->play(*scripted->clip, ScriptedClipFadeSeconds);
   }
-  // The script moves the character at the clip's own ground speed, so the clip plays at its speed.
+  // The script moves the character at the clip's own ground speed, so the clip plays at its speed;
+  // a frozen clip stays on its frame.
   actor.player->setSpeed(1.0F);
-  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+  static_cast<void>(actor.player->advance(scripted->frozen ? 0.0F : static_cast<float>(seconds)));
   return true;
 }
 

@@ -1,5 +1,6 @@
 #include "gym_screen.hpp"
 
+#include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/game/gym/brain_learning.hpp>
 #include <dwe/game/partner/state.hpp>
@@ -7,6 +8,7 @@
 #include <dwe/screens/screen_settings.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -52,9 +54,9 @@ GymStats statsOf(const game::partner::StatBlock& block) {
 
 } // namespace
 
-// The course's ports on the game. The actors' walks, animations and placing and the camera wait
-// for the field's scripted movement (sprint lane S4b): they log and a walk arrives at once. The
-// clouds and particles wait for the effects (phase 5).
+// The course's ports on the game. The story holds the field while a course runs (it waits for the
+// gym), so the actors move, turn and animate as a script moves them, and the camera pans as a
+// script pans it. The clouds and particles wait for the effects (phase 5).
 class GymScreen::Ports final : public game::gym::GymPorts {
 public:
   Ports(const GymScreenDesc& desc, const game::gym::GymRules& rules,
@@ -63,29 +65,86 @@ public:
         random_(static_cast<std::uint_fast32_t>(desc.session->partner().randomState())) {}
 
   void setTraining(bool training) override {
-    core::logDebug("[port:gym] tamerSetState({}) partnerSetState({}): pending S4b",
-                   training ? 8 : 0, training ? 10 : 1);
+    // The player's state 8 and partner.c: partnerSetState(10): both stand for the course. A
+    // course the console starts finds the field free and holds it itself.
+    game::field::Field& field = desc_->scene->field();
+    if (training) {
+      ownHold_ = !field.heldByScript();
+      field.holdForScript(true);
+      return;
+    }
+    for (const Actor actor : std::array{Actor::Tamer, Actor::Partner}) {
+      field.driveByScript(entityOf(actor), {});
+      field.releaseClipByScript(entityOf(actor));
+    }
+    walks_ = {};
+    clips_ = {};
+    if (std::exchange(ownHold_, false)) {
+      field.holdForScript(false);
+    }
   }
   void animate(Actor actor, std::int32_t animation) override {
-    core::logDebug("[port:gym] startAnimation({}, {}): pending S4b", nameOf(actor), animation);
+    if (animation < 0) {
+      return;
+    }
+    clips_.at(indexOf(actor)) = static_cast<std::uint32_t>(animation);
+    desc_->scene->field().animateByScript(entityOf(actor), static_cast<std::uint32_t>(animation));
   }
-  void holdAnimation(Actor /*actor*/, bool /*hold*/) override {}
+  void holdAnimation(Actor actor, bool hold) override {
+    desc_->scene->field().freezeByScript(entityOf(actor), hold);
+  }
   void face(Actor actor, std::int32_t angle) override {
-    core::logDebug("[port:gym] {} rotation {}: pending S4b", nameOf(actor), angle);
+    desc_->scene->field().turnByScript(entityOf(actor), assets::yawFromOriginal(angle));
   }
   void faceEachOther() override {
-    core::logDebug("[port:gym] entityLookAtLocation(tamer, partner): pending S4b");
+    // map.c: entityLookAtLocation, both ways.
+    game::field::Field& field = desc_->scene->field();
+    const glm::vec3 toPartner = field.partner().position - field.player().position;
+    if (toPartner.x != 0.0F || toPartner.z != 0.0F) {
+      field.turnByScript(field.playerEntity(), assets::yawOfDirection(toPartner));
+      field.turnByScript(field.partnerEntity(), assets::yawOfDirection(-toPartner));
+    }
   }
   bool walk(Actor actor, std::optional<Point> spot) override {
-    if (spot) {
-      core::logDebug("[port:gym] tickEntityWalkTo({}, {}, {}): pending S4b", nameOf(actor), spot->x,
-                     spot->z);
+    // The original's tickEntityWalkTo faces the target every frame and walks at the walk clip's
+    // speed; it ends on the spot's cell, or, walking back, on touching the player.
+    game::field::Field& field = desc_->scene->field();
+    const scene::Entity entity = entityOf(actor);
+    const glm::vec3 position = positionOf(actor);
+    const bool toPlayer = !spot.has_value();
+    const glm::vec3 target =
+        toPlayer ? field.player().position
+                 : glm::vec3{static_cast<float>(spot->x), position.y, static_cast<float>(spot->z)};
+    glm::vec3 toward = target - position;
+    toward.y = 0.0F;
+    const float distance = glm::length(toward);
+    const game::field::FieldRules& rules = field.rules();
+    const float touch = rules.player.radius + rules.partner.mover.radius;
+    const bool there = toPlayer
+                           ? distance <= touch
+                           : assets::collisionCellAt(position) == assets::collisionCellAt(target);
+    if (there) {
+      field.driveByScript(entity, {});
+      walks_.at(indexOf(actor)) = false;
+      return true;
     }
-    return true;
+    if (!std::exchange(walks_.at(indexOf(actor)), true)) {
+      core::logDebug("[port:gym] tickEntityWalkTo({}, {:.0f}, {:.0f})", nameOf(actor), target.x,
+                     target.z);
+    }
+    const float yaw = assets::yawOfDirection(toward);
+    field.turnByScript(entity, yaw);
+    field.driveByScript(entity, assets::forwardOfYaw(yaw) * walkSpeed(actor));
+    return false;
   }
   void moveCamera(std::optional<Point> spot, std::int32_t speed) override {
-    core::logDebug("[port:gym] createCameraMovement({}, speed {}): pending S4b",
-                   spot ? std::format("{}, {}", spot->x, spot->z) : std::string{"tamer"}, speed);
+    // map.c: tickCameraMovement steps the camera to the target in `speed` frames.
+    game::field::Field& field = desc_->scene->field();
+    const glm::vec3 focus = spot ? glm::vec3{static_cast<float>(spot->x), field.player().position.y,
+                                             static_cast<float>(spot->z)}
+                                 : field.player().position;
+    const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
+    field.panCameraByScript(focus, static_cast<float>(speed / framesPerSecond));
   }
   void playSound(std::int32_t slot, std::int32_t sound) override {
     if (game::story::SoundPort* port = desc_->session->sound(); port != nullptr) {
@@ -129,7 +188,7 @@ public:
     }
   }
   std::optional<std::int32_t> partnerHeadRow() override {
-    core::logDebug("[port:gym] getDrawPosition(partner head): pending S4b");
+    core::logDebug("[port:gym] getDrawPosition(partner head): not ported yet");
     return std::nullopt;
   }
   std::optional<Point> partnerPosition() override {
@@ -137,11 +196,17 @@ public:
     return Point{.x = static_cast<std::int32_t>(at.x), .z = static_cast<std::int32_t>(at.z)};
   }
   void movePartner(Point delta) override {
-    core::logDebug("[port:gym] partner location += ({}, {}): pending S4b", delta.x, delta.z);
+    game::field::Field& field = desc_->scene->field();
+    field.placeByScript(field.partnerEntity(),
+                        field.partner().position + glm::vec3{static_cast<float>(delta.x), 0.0F,
+                                                             static_cast<float>(delta.z)});
   }
   bool partnerOnScreen() override { return true; }
   void placePartnerX(std::int32_t x) override {
-    core::logDebug("[port:gym] partner location x = {}: pending S4b", x);
+    game::field::Field& field = desc_->scene->field();
+    glm::vec3 position = field.partner().position;
+    position.x = static_cast<float>(x);
+    field.placeByScript(field.partnerEntity(), position);
   }
   std::string partnerSpecies() override { return desc_->session->partner().state().species; }
   void addCloud(Point /*at*/) override { ++effects_; }
@@ -193,6 +258,25 @@ public:
 private:
   static std::string_view nameOf(Actor actor) {
     return actor == Actor::Tamer ? "tamer" : "partner";
+  }
+  static std::size_t indexOf(Actor actor) { return actor == Actor::Tamer ? 0 : 1; }
+  [[nodiscard]] scene::Entity entityOf(Actor actor) const {
+    const game::field::Field& field = desc_->scene->field();
+    return actor == Actor::Tamer ? field.playerEntity() : field.partnerEntity();
+  }
+  [[nodiscard]] glm::vec3 positionOf(Actor actor) const {
+    const game::field::Field& field = desc_->scene->field();
+    return actor == Actor::Tamer ? field.player().position : field.partner().position;
+  }
+  // The last clip's ground speed (anim.c: applyRootMomentum); a clip without one walks at the
+  // field's walk speed.
+  [[nodiscard]] float walkSpeed(Actor actor) const {
+    const game::field::FieldRules& rules = desc_->scene->field().rules();
+    const float fallback =
+        actor == Actor::Tamer ? rules.player.walkSpeed : rules.partner.mover.walkSpeed;
+    const std::optional<std::uint32_t> clip = clips_.at(indexOf(actor));
+    const float speed = clip ? desc_->scene->clipGroundSpeed(entityOf(actor), *clip) : 0.0F;
+    return speed > 0.0F ? speed : fallback;
   }
 
   // trn_reward.c: TRN_awardBrainsTrainingGains: new orders, or else maybe a move.
@@ -300,6 +384,10 @@ private:
   std::vector<glm::vec2> stored_;
   std::int32_t effects_ = 0;
   std::int32_t loops_ = 0;
+  // Whether the course holds the field itself; each actor's walk and last clip (player, partner).
+  bool ownHold_ = false;
+  std::array<bool, 2> walks_{};
+  std::array<std::optional<std::uint32_t>, 2> clips_{};
   // Only the clouds' scatter and the moves taught are random; seeded from the partner's numbers, a
   // replayed game does the same.
   std::minstd_rand random_;
