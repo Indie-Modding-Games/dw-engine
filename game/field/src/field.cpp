@@ -87,6 +87,21 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
   return {-distance, 0, 0};
 }
 
+// partner.c: partnerTickWalking: a change of the partner's walk waits until the clip under way ends
+// its pass (it sets loopCount to 1 and changes when it reaches 0), but for two that start at once:
+// from standing to running (closeness 0 starts animation 4) and from running to walking
+// (setPartnerSlowWalking when the animation is 4).
+Motion heldPartnerMotion(Motion shown, Motion wanted, bool passEnded) {
+  if (wanted == shown || passEnded) {
+    return wanted;
+  }
+  if ((shown == Motion::Idle && wanted == Motion::Run) ||
+      (shown == Motion::Run && wanted == Motion::Walk)) {
+    return wanted;
+  }
+  return shown;
+}
+
 } // namespace
 
 Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
@@ -362,6 +377,11 @@ CharacterState Field::player() const {
   return {.position = transform.position,
           .yaw = transform.yaw,
           .motion = world_->registry().get<AnimationIntent>(player_).motion};
+}
+
+void Field::notePartnerPassEnded() {
+  partnerPassesNoted_ = true;
+  partnerPassEnded_ = true;
 }
 
 CharacterState Field::partner() const {
@@ -1013,6 +1033,9 @@ void Field::movePartner(float seconds) {
   } else if (distance >= rules.walkDistance * radius || !trail_.empty()) {
     motion = Motion::Walk;
   }
+  const Motion wanted = motion;
+  const bool passEnded = !partnerPassesNoted_ || std::exchange(partnerPassEnded_, false);
+  motion = heldPartnerMotion(animation.motion, wanted, passEnded);
   partnerMotion_ = motion;
 
   // map.c: partnerTickCollision heads for the oldest trail cell, or for the player without a trail.
@@ -1037,6 +1060,16 @@ void Field::movePartner(float seconds) {
   const glm::vec3 reached =
       npcs_.blocks(transform.position, move.position, radius) ? transform.position : move.position;
   const float moved = groundDistance(reached, transform.position);
+  // partner.c:906: a walk ending its pass by the player stops at once when it collides
+  // (entityCheckCollision): with the map, an NPC or the player.
+  if (wanted == Motion::Idle && motion != Motion::Idle &&
+      (moved == 0.0F || groundDistance(reached, playerPosition) < radius + rules_.player.radius)) {
+    core::logDebug("[port:partner] partnerTickWalking (partner.c:906): the walk collides before "
+                   "its pass ends; it stands");
+    animation = {.motion = Motion::Idle, .speedScale = 1.0F};
+    partnerStuckSeconds_ = 0.0F;
+    return;
+  }
   transform.position = reached;
   transform.yaw =
       turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),

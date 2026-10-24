@@ -57,6 +57,16 @@ bool AnimationPlayer::finished() const {
   return clip_ != nullptr && !clip_->repeat && time_ >= static_cast<double>(clip_->duration);
 }
 
+std::uint64_t AnimationPlayer::passes() const {
+  if (clip_ == nullptr) {
+    return 0;
+  }
+  if (!clip_->repeat) {
+    return finished() ? 1 : 0;
+  }
+  return locate(*clip_, time_).repeats;
+}
+
 bool AnimationPlayer::playedThrough() const {
   return clip_ != nullptr && time_ >= static_cast<double>(clip_->duration);
 }

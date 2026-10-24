@@ -455,10 +455,19 @@ void FieldScene::animate(Actor& actor, double seconds) {
   const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
   const std::optional<std::uint32_t> clipId =
       actor.character.clipOf(scene::motionName(intent.motion));
+  const bool partner = &actor == partnerActor_.get();
   if (!clipId) {
+    if (partner) {
+      // Nothing to wait for: the partner's walk changes at once.
+      field_->notePartnerPassEnded();
+    }
     return;
   }
   if (actor.motion != intent.motion) {
+    core::logDebug("[port:anim] startAnimation (anim.c:201): entity {} {} (clip {}) after {:.2f} s "
+                   "of the last clip",
+                   static_cast<std::uint32_t>(actor.entity), scene::motionName(intent.motion),
+                   *clipId, actor.player->time());
     actor.motion = intent.motion;
     actor.player->play(*clipId, ClipFadeSeconds);
   }
@@ -473,8 +482,13 @@ void FieldScene::animate(Actor& actor, double seconds) {
     }
   }
   actor.player->setSpeed(speed);
+  const std::uint64_t passes = actor.player->passes();
   // The field moves the entity with its own speeds; the clip's root motion is left out.
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+  // A clip that does not repeat ends its pass on every frame once it holds its last pose.
+  if (partner && (actor.player->passes() != passes || actor.player->finished())) {
+    field_->notePartnerPassEnded();
+  }
 }
 
 void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
