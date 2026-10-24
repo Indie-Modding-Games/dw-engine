@@ -25,8 +25,10 @@ namespace {
 using Clock = std::chrono::steady_clock;
 using Milliseconds = std::chrono::duration<double, std::milli>;
 
-// The original switches clips at once; a short blend hides the pop when a walk turns into a run.
-constexpr float ClipFadeSeconds = 0.1F;
+// anim.c: startAnimation switches clips at once, for the player, the partner and the NPCs alike;
+// the partner ends a clip's pass before its walk changes (Field::movePartner), which is what keeps
+// it from popping.
+constexpr float ClipFadeSeconds = 0.0F;
 
 constexpr std::string_view PlayerCharacter = "models/tamer";
 constexpr std::string_view PartnerCharacter = "models/partner";
