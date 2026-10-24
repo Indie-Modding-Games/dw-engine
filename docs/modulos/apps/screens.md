@@ -64,6 +64,23 @@ con `battle.intro.revision`:
 | `battle.intro.flash` | 0 a 2 | La paleta con la que parpadea el rótulo cuando todas sus piezas han llegado |
 | `battle.intro.pieces` | texto | Las piezas que se ven, siete números cada una en píxeles de la pantalla de 320 × 240 del original: x, y, ancho, alto, textura (0 a 2), estela y 1 si la estela va a la izquierda |
 
+## Caja de vidas
+
+`LivesBox` es la caja de vidas de una vida perdida (`murd.c: MURD_createLivesBox`, `MURD_tickLivesBox`,
+`MURD_renderLivesBox`, `MURD_animateLivesBoxOut`, `MURD_removeLivesBox`) sobre la caja animada del original (`ui.c:
+createAnimatedUIBox`, `renderUIBoxAnimated`), fotograma a fotograma al ritmo de la escena: su contorno gris crece
+desde el compañero durante 5 fotogramas, la caja enseña un hueco por vida, con la recién perdida llena hasta el
+fotograma 0xa, parpadeando de dos en dos hasta 0x1e y vacía después; al cerrarse encoge otros 5 fotogramas hacia el
+compañero. Al abrirse suena el 0 y al empezar a cerrarse el 1, en el canal 0. El documento `ui/lives_box` redibuja
+con `lives_box.revision`:
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `lives_box.shown`, `lives_box.outline` | booleanos | Si la caja se ve, y si solo su contorno (mientras crece o encoge) |
+| `lives_box.grow` | número | Cuánto ha crecido: 0 en el compañero, 1 en su sitio |
+| `lives_box.anchor_x`, `lives_box.anchor_y` | números | El punto medio del compañero en pantalla, en porcentaje de la ventana |
+| `lives_box.lives`, `lives_box.slots` | números | Las vidas que quedan tras perder una y los huecos (las vidas con las que se empieza) |
+| `lives_box.lost_full` | booleano | Si la vida recién perdida se ve llena este fotograma |
 ## HUD del campo
 
 `fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,

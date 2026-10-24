@@ -284,7 +284,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                    .scene = scene_.get(),
                    .story = game_.systems.story,
                    .scenes = game_.systems.scenes,
-                   .transition = scene_->field().rules().transition}),
+                   .transition = scene_->field().rules().transition,
+                   .ui = context.ui,
+                   .species = species_ ? &*species_ : nullptr}),
       eggBoxScreen_(*game_.session, *context.ui),
       gymScreen_({.session = game_.session.get(),
                   .story = game_.systems.story,
@@ -341,7 +343,7 @@ PlaySession::~PlaySession() {
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, FieldItemNoticeDocument,
         FishingBaitDocument, FishingNoticeDocument, FishingHudDocument, EggBoxDocument,
-        NamingBoxDocument}) {
+        NamingBoxDocument, LivesBoxDocument}) {
     context_.ui->hide(document);
   }
 }

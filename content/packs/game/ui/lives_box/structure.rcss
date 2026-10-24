@@ -1,0 +1,62 @@
+/* The lost life's lives box (murd.c: MURD_createLivesBox, MURD_renderLivesBox). One pixel of the original is 3dp (240
+   lines over 720 dp).
+
+   The box is the original's animated box (ui.c: createAnimatedUIBox) at -95, -50, 190 x 44 from the screen's centre:
+   x 65 to 255 and y 70 to 114 of the original's 320 x 240 screen, centred on a wide screen. While it grows from the
+   partner or shrinks back to it only its grey outline shows (renderUIBoxAnim: 0x808080); logic.lua places it then.
+   Inside, ETCHI/LIFE.TIM's sprites: the label (MURD_LIVES_BACKDROP, 64 x 24 at x 75, y 80) and a slot per life
+   (MURD_LIFE_FULL and MURD_LIFE_EMPTY, 24 x 24 every 34 pixels from x 149). */
+
+body {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+#box {
+	position: absolute;
+	left: 50%;
+	top: 29.1667%;
+	width: 570dp;
+	height: 132dp;
+	margin-left: -285dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+}
+
+/* Over the skins' box: only the outline while it grows or shrinks. */
+body #box.outline {
+	background-color: transparent;
+	border-color: #808080;
+	decorator: none;
+}
+
+#lives {
+	position: absolute;
+	left: 27dp;
+	top: 27dp;
+	width: 510dp;
+	height: 72dp;
+}
+
+#label {
+	position: absolute;
+	left: 0dp;
+	top: 0dp;
+	width: 192dp;
+	height: 72dp;
+}
+
+.slot {
+	position: absolute;
+	top: 0dp;
+	width: 72dp;
+	height: 72dp;
+}
+
+#slot-0 { left: 222dp; }
+#slot-1 { left: 324dp; }
+#slot-2 { left: 426dp; }
+#slot-3 { left: 528dp; }
+#slot-4 { left: 630dp; }

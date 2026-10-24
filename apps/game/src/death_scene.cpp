@@ -23,6 +23,12 @@ constexpr std::int32_t ClipWaitGuardFrames = 200;
 constexpr std::int64_t SceneSoundSlot = 8;
 // fadeoutCLUT1's full level: the palettes are black.
 constexpr float PaletteLevelMax = 255.0F;
+// The lives box's sounds are the UI's, in slot 0 (ui.c: createAnimatedUIBox, renderUIBoxAnim).
+constexpr std::int64_t BoxSoundSlot = 0;
+// MURD_createLivesBox grows the box from the partner's middle: half its height over its feet.
+constexpr float PartnerMiddle = 0.5F;
+constexpr double Percent = 100.0;
+constexpr screens::WindowFraction WindowMiddle{.x = 50.0, .y = 50.0};
 
 // A linear step from `start` at t0 to `end` at t1 (effect_common.c: lerp, inside its range).
 std::int32_t lerpFrames(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
@@ -44,8 +50,8 @@ const char* phaseName(std::uint8_t phase) {
 } // namespace
 
 DeathScene::DeathScene(const DeathSceneDesc& desc)
-    : session_(desc.session), scene_(desc.scene), story_(desc.story), scenes_(desc.scenes),
-      transition_(desc.transition) {}
+    : session_(desc.session), scene_(desc.scene), ui_(desc.ui), species_(desc.species),
+      story_(desc.story), scenes_(desc.scenes), transition_(desc.transition) {}
 
 std::vector<PartnerEvent> DeathScene::take(std::span<const PartnerEvent> events) {
   if (!session_->partnerRules().life.scenes || transition_.frameSeconds <= 0.0F) {
@@ -141,6 +147,7 @@ void DeathScene::begin(const Pending& pending) {
   }
   rules_ = *scenes;
   lives_ = pending.lives;
+  livesBox_.remove();
   pendingSeconds_ = 0.0;
   stage_ = {};
   if (pending.kind == SceneKind::Rebirth) {
@@ -194,8 +201,10 @@ bool DeathScene::reached(std::int32_t frame) const {
 }
 
 void DeathScene::step() {
-  // The scenes count their frame first (scene->timer++, seq->frame++).
+  // The scenes count their frame first (scene->timer++, seq->frame++); the boxes, which the
+  // original ticks as objects of their own, before the scene's moments.
   frame_ += 1;
+  livesBox_.step();
   switch (phase_) {
   case Phase::LostLifeAlone:
   case Phase::LostLifeFadeOut:
@@ -218,15 +227,50 @@ void DeathScene::step() {
   case Phase::AwaitRebirth:
     break;
   }
+  showLivesBox();
+}
+
+screens::WindowFraction DeathScene::partnerPoint() const {
+  const assets::DigimonRow* row =
+      species_ != nullptr ? species_->find(session_->partnerView().species) : nullptr;
+  glm::vec3 middle = scene_->field().partner().position;
+  if (row != nullptr) {
+    middle.y += static_cast<float>(row->height) * PartnerMiddle;
+  }
+  const std::optional<glm::vec2> fraction = scene_->worldToWindowFraction(middle);
+  if (!fraction) {
+    return WindowMiddle;
+  }
+  return {.x = fraction->x * Percent, .y = fraction->y * Percent};
+}
+
+void DeathScene::showLivesBox() {
+  if (const std::optional<std::int64_t> sound = livesBox_.takeSound()) {
+    if (game::story::SoundPort* port = session_->sound()) {
+      port->playSound(BoxSoundSlot, *sound);
+    }
+  }
+  if (ui_ == nullptr) {
+    return;
+  }
+  if (!livesBox_.shown()) {
+    ui_->hide(LivesBoxDocument);
+    return;
+  }
+  screens::publish(*ui_, livesBox_.settings(), screens::LivesBoxRevisionSetting);
+  ui_->show(LivesBoxDocument);
 }
 
 void DeathScene::stepLostLife() {
-  // MURD_tickScene (murd.c:188). The iris and the lives box are not drawn yet.
+  // MURD_tickScene (murd.c:188). The iris is not drawn yet.
   const game::partner::LostLifeScene& rules = rules_.lostLife;
   if (reached(rules.irisFrames)) {
-    // Phase 1: the partner alone on black.
+    // Phase 1: the partner alone on black (MURD_setOtherEntitiesVisible), and the lives box over it
+    // (MURD_createLivesBox) with a slot per life the partner starts with.
     stage_.sceneryHidden = true;
     showStage();
+    core::logDebug("[port:death] MURD_createLivesBox (murd.c:416): lives={}", lives_);
+    livesBox_.open(partnerPoint(), lives_, session_->partnerRules().life.lives);
   }
   switch (phase_) {
   case Phase::LostLifeAlone:
@@ -234,7 +278,16 @@ void DeathScene::stepLostLife() {
       break;
     }
     if (lives_ == 0) {
-      // Phase 0x65: the dissolve goes on from the lost life's scene, the partner already gone.
+      // Phase 2 with no life left: the box shrinks back to the partner (MURD_animateLivesBoxOut),
+      // phase 0x64 waits for it to go, and in phase 0x65 the dissolve goes on from the lost life's
+      // scene, the partner already gone.
+      if (livesBox_.shown()) {
+        if (!livesBox_.closing()) {
+          core::logDebug("[port:death] MURD_animateLivesBoxOut (murd.c:438)");
+          livesBox_.close(partnerPoint());
+        }
+        break;
+      }
       startDissolve(false);
       break;
     }
@@ -243,6 +296,8 @@ void DeathScene::stepLostLife() {
   case Phase::LostLifeFadeOut:
     setShade(lerpFrames(0, rules.shadeMax, rules.aloneUntil, rules.fadeOutEnd, frame_));
     if (frame_ >= rules.fadeOutEnd) {
+      // Phase 3 ends taking the box away (MURD_removeLivesBox).
+      livesBox_.remove();
       // Phases 4 and 5: black, and the tamer wakes up on the wake map.
       setShade(rules.shadeHold);
       enterWakeMap();
@@ -414,6 +469,8 @@ void DeathScene::finish() {
   stage_ = {};
   showStage();
   fade_ = 0.0F;
+  livesBox_.remove();
+  showLivesBox();
   setPhase(Phase::Idle);
   sceneOver_ = sceneOver_ || storyScene_;
   storyScene_ = false;

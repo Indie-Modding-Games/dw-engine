@@ -1,2 +1,7 @@
 /* How the egg box behaves whatever the skin: the eggs wrap around, up from the first to the last and down from the
    last to the first. The look is the pause menu's (the skins' pause_menu style). */
+
+/* RmlUi refuses a style sheet with no rule. */
+.egg {
+	display: block;
+}

@@ -182,7 +182,9 @@ core::Result<void> loadDocuments(ui::Ui& ui) {
         std::pair{"shop_menu", "ui/shop_menu/document"},
         std::pair{"field_item_notice", "ui/field_item_notice/document"},
         std::pair{"gym_slots", "ui/gym_slots/document"},
-        std::pair{"naming_box", "ui/naming_box/document"}}) {
+        std::pair{"naming_box", "ui/naming_box/document"},
+        std::pair{"egg_box", "ui/egg_box/document"},
+        std::pair{"lives_box", "ui/lives_box/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       return std::unexpected{asset.error()};

@@ -1,17 +1,21 @@
 #pragma once
 
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/partner/events.hpp>
 #include <dwe/game/partner/life_rules.hpp>
 #include <dwe/game/story/partner_routines.hpp>
+#include <dwe/screens/lives_box.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <cstdint>
 #include <deque>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,7 +33,15 @@ struct DeathSceneDesc {
   const session::StoryScenes* scenes = nullptr;
   // The field's fades: the length of a frame and the shades of fade.c.
   game::field::TransitionRules transition;
+  // Where the lost life's lives box shows; nullptr shows none.
+  ui::Ui* ui = nullptr;
+  // The species' heights, for the partner's middle the lives box grows from; nullptr grows it from
+  // the partner's feet.
+  const assets::DigimonTable* species = nullptr;
 };
+
+// The lost life's lives box on its document (ui/lives_box/document).
+inline constexpr std::string_view LivesBoxDocument = "lives_box";
 
 // The scenes of a lost life (murd.c: MURD_tickScene), a death (dooa.c: DOOA_tickDissolve) and the
 // rebirth that follows it (DOOA_tickRebirth): the field and the game time wait while the partner
@@ -105,9 +117,16 @@ private:
   void setShade(std::int32_t shade);
   // Whether a moment that runs once has come: the frame reached it and it has not run yet.
   [[nodiscard]] bool reached(std::int32_t frame) const;
+  // The partner's middle on the screen (murd.c: MURD_createLivesBox projects it), in percent of
+  // the window; the window's middle when it is behind the camera.
+  [[nodiscard]] screens::WindowFraction partnerPoint() const;
+  // Plays the lives box's sound and shows it as it is this frame.
+  void showLivesBox();
 
   session::GameSession* session_;
   FieldScene* scene_;
+  ui::Ui* ui_;
+  const assets::DigimonTable* species_;
   const session::StoryAdapter* story_;
   const session::StoryScenes* scenes_;
   // The scenes' rules as they were when the scene started: a tuned ruleset changes the next one.
@@ -132,6 +151,7 @@ private:
   // Whether the scene is one the story asked for, and whether the story's wait on it is over.
   bool storyScene_ = false;
   bool sceneOver_ = false;
+  screens::LivesBox livesBox_;
 };
 
 } // namespace dwe::app
