@@ -47,7 +47,7 @@ public:
 
   [[nodiscard]] bool playing() const { return player_.has_value(); }
 
-  // Once per tick: Start ends a skippable movie.
+  // Once per tick: Start, confirm or cancel ends a skippable movie.
   void tick(const input::InputState& input);
 
   // Once per frame: moves the clock, shows the picture of the moment and ends the movie at its
@@ -72,6 +72,8 @@ private:
   std::uint32_t soundRate_ = 0;
   std::string file_;
   bool skippable_ = true;
+  // Set once a tick has seen no skip key since the movie started.
+  bool armed_ = false;
   double clock_ = 0.0;
   // Game time since the start, and the drift last logged.
   double elapsed_ = 0.0;

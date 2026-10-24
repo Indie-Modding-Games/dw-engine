@@ -3,6 +3,7 @@
 #include <dwe/core/log.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <memory>
 #include <string_view>
@@ -18,8 +19,10 @@ constexpr float ScreenWidth = 320.0F;
 constexpr float ScreenHeight = 240.0F;
 constexpr float PictureTop = 32.0F;
 
-// The action that skips a movie: Start on a gamepad (mov.c: MOV_playMovie reads PadRead & 0x800).
-constexpr std::string_view SkipAction = "menu";
+// The actions that skip a movie. The original reads only Start (mov.c: MOV_playMovie reads
+// PadRead & 0x800), here "menu"; on a PC confirm and cancel skip too, as Return or Escape would be
+// the first key a player tries.
+constexpr std::array<std::string_view, 3> SkipActions = {"menu", "confirm", "cancel"};
 
 } // namespace
 
@@ -71,6 +74,7 @@ bool MovieScreen::play(const assets::VirtualFileSystem& files, const MovieRule& 
   player_.emplace(std::move(*player));
   file_ = rule.file;
   skippable_ = rule.skippable;
+  armed_ = false;
   clock_ = 0.0;
   elapsed_ = 0.0;
   loggedDrift_ = 0.0;
@@ -81,16 +85,24 @@ bool MovieScreen::play(const assets::VirtualFileSystem& files, const MovieRule& 
 }
 
 void MovieScreen::tick(const input::InputState& input) {
-  if (!player_ || !input.wasPressed(SkipAction)) {
+  if (!player_ || std::ranges::none_of(SkipActions, [&](std::string_view action) {
+        return input.wasPressed(action);
+      })) {
+    armed_ = player_.has_value();
+    return;
+  }
+  // The press that started the movie (the interview's last answer) does not skip it: only a press
+  // on a later tick, after one without a press, does.
+  if (!armed_) {
     return;
   }
   if (!skippable_) {
-    core::logDebug("[port:movie] MOV_playMovie (mov.c:265): Start at {:.2f} s does not skip '{}'",
-                   clock_, file_);
+    core::logDebug("[port:movie] MOV_playMovie (mov.c:265): a skip at {:.2f} s keeps '{}'", clock_,
+                   file_);
     return;
   }
   core::logInfo("movie skipped");
-  core::logDebug("[port:movie] MOV_playMovie (mov.c:265): Start skips '{}' at {:.2f} s", file_,
+  core::logDebug("[port:movie] MOV_playMovie (mov.c:265): a skip key ends '{}' at {:.2f} s", file_,
                  clock_);
   stop();
 }

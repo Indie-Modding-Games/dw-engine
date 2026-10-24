@@ -108,7 +108,9 @@ nombre recién dado, en azul, como en el original: vacía antes de nombrar a nad
 la del compañero tras el suyo, aunque la línea 0x1C sirva a las dos (capturas cp05-name-right-yesno,
 cp06-partner-name-yesno). Mientras corren la película, la
 entrevista o una caja de nombres, `menu` no abre el menú de pausa (allí salta la película o lleva el cursor a
-Aceptar), como el original, que no tiene pausa en esas pantallas. La misma caja de nombres sirve a la rutina 32 de
+Aceptar), como el original, que no tiene pausa en esas pantallas. La película también se salta con `confirm` o
+`cancel` (Intro, Espacio, Esc): mejora para PC, el original solo lee Start; la pulsación que la arranca (la última
+respuesta de la entrevista) no cuenta. La misma caja de nombres sirve a la rutina 32 de
 los guiones (renombrar al jugador o al compañero, `StoryNaming`). No corre en un autotest, como las películas.
 
 Tras el «sí» al nombre del jugador se pasa directo a «What's your Digimon's name?» (`newGameStateMachine`: estado
