@@ -32,6 +32,11 @@ partner:
   # Propios del motor: el original no tiene este rescate.
   stuck_seconds: 1.0
   teleport_distance: 2000
+  # partner.c: updateConditionAnimation: sin estado, contento desde 0x1F de felicidad y descontento por debajo de
+  # -0x1E; tras pararse espera de 1 a 5 vueltas de su animación de quieto (randomLimit(5) + 1) antes del gesto.
+  happy_gesture_from: 31
+  unhappy_gesture_below: -30
+  gesture_idle_plays: 5
 input:
   dead_zone: 0.25
   arrive_distance: 25

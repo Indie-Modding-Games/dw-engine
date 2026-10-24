@@ -10,6 +10,8 @@
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/rules.hpp>
+#include <dwe/game/partner/field_animation.hpp>
+#include <dwe/game/partner/state.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_renderer.hpp>
@@ -17,6 +19,7 @@
 #include <dwe/render/model_renderer.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/ruleset/game_clock.hpp>
+#include <dwe/ruleset/random.hpp>
 #include <dwe/scene/world.hpp>
 
 #include <array>
@@ -157,6 +160,9 @@ public:
   // from core::FixedStep) and points the camera at the player, except while the player walks out of
   // the map.
   void update(double frameSeconds, float alpha, bool paused);
+  // The partner's conditions and happiness, which pick the clips it stands, walks and gestures
+  // with (partner.c: setPartnerIdle, setPartnerSlowWalking, updateConditionAnimation).
+  void setPartnerMood(const game::partner::Conditions& conditions, std::int32_t happiness);
 
   // The scene drawers for FrameDesc::scene, in order.
   [[nodiscard]] std::span<render::Drawer* const> drawers() {
@@ -253,6 +259,8 @@ private:
     float walkSpeed = 0.0F;
     float runSpeed = 0.0F;
     std::optional<scene::Motion> motion;
+    // The clip the motion plays.
+    std::optional<std::uint32_t> motionClip;
     // The clip a script plays on it (game::field::ScriptedActor), while it plays one.
     std::optional<std::uint32_t> scriptedClip;
     // A clip that replaces the motion's (setPlayerClip).
@@ -290,6 +298,9 @@ private:
   // Plays the clip a script picked for the actor; false when it has none.
   bool animateScripted(Actor& actor, double seconds);
   void animatePartnerClip(double seconds);
+  // The partner's animation for its motion (partner.c: partnerTickWalking).
+  game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
+                                                 double seconds);
   void submit(const Actor& actor, float alpha, glm::vec3 scale = glm::vec3{1.0F});
   // Places the map's 3D objects in the field and loads their models (map.c: loadMap, loadDoors).
   void placeMapObjects(const assets::MapEntry* entry);
@@ -318,6 +329,22 @@ private:
   std::optional<std::uint32_t> partnerClip_;
   bool partnerClipStarted_ = false;
   bool partnerClipPlays_ = false;
+  // What the partner shows while it follows (partner.c: partnerTickWalking): the motion it last
+  // had, the clip it walks or stands with, the gesture under way, how long it has stood
+  // (STOP_DISTANCE_TIMER) and how many plays of its idle clip it stands before the gesture
+  // (EMOTION_ANIM_TIMEOUT).
+  struct PartnerLook {
+    std::optional<scene::Motion> motion;
+    game::partner::FieldAnimation base = game::partner::FieldAnimation::Idle;
+    std::optional<game::partner::FieldAnimation> gesture;
+    double standingSeconds = 0.0;
+    std::int32_t idlePlays = 1;
+  };
+  PartnerLook partnerLook_;
+  game::partner::Conditions partnerConditions_;
+  std::int32_t partnerHappiness_ = 0;
+  // The original rolls the wait with randomLimit; any sequence will do.
+  ruleset::Random gestureRandom_{0};
   // Whether the player's held clip is a scene's (playPlayerSceneClip), which runs while paused.
   bool playerSceneClip_ = false;
 

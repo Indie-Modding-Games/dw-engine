@@ -51,6 +51,13 @@ struct PartnerRules {
   // teleportDistance, it is placed behind the player.
   float stuckSeconds = 1.0F;
   float teleportDistance = 2000.0F;
+  // partner.c: updateConditionAnimation: without a condition, its gesture is happy from this
+  // happiness up and unhappy below unhappyGestureBelow.
+  std::int32_t happyGestureFrom = 0;
+  std::int32_t unhappyGestureBelow = 0;
+  // partner.c:907: once it stops it stands from 1 to this many plays of its idle clip before its
+  // gesture (EMOTION_ANIM_TIMEOUT, randomLimit + 1).
+  std::int32_t gestureIdlePlays = 1;
 };
 
 // How the player's intents are read.

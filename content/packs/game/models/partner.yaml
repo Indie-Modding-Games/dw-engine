@@ -8,3 +8,13 @@ animations:
   walk: 2
   walk_tired: 3
   run: 4
+  # partner.c: updateConditionAnimation, quieto un rato: 5 contento, 7 descontento, 0xE herido o enfermo,
+  # 0xF hambre, 0x10 ganas de ir al baño, 0x11 sueño, 0x12 cansado, 0x13 enfurruñado.
+  happy: 5
+  unhappy: 7
+  hurt: 14
+  hungry: 15
+  toilet: 16
+  sleepy: 17
+  tired: 18
+  sulking: 19

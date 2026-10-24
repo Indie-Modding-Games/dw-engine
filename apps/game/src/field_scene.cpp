@@ -240,6 +240,8 @@ core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t
 void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId) {
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
+  // Back from the scene it stands again with a new wait.
+  partnerLook_ = {};
   // The partner's motion picks its clip again from the next update.
   partnerActor_->motion.reset();
 }
@@ -311,6 +313,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .walkSpeed = rules.walkSpeed,
       .runSpeed = rules.runSpeed,
       .motion = std::nullopt,
+      .motionClip = std::nullopt,
       .scriptedClip = std::nullopt,
       .heldClip = std::nullopt,
   });
@@ -455,9 +458,14 @@ void FieldScene::animate(Actor& actor, double seconds) {
     return;
   }
   const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
-  const std::optional<std::uint32_t> clipId =
-      actor.character.clipOf(scene::motionName(intent.motion));
   const bool partner = &actor == partnerActor_.get();
+  const std::string_view animation =
+      partner ? game::partner::nameOf(partnerAnimation(actor, intent.motion, seconds))
+              : scene::motionName(intent.motion);
+  std::optional<std::uint32_t> clipId = actor.character.clipOf(animation);
+  if (!clipId) {
+    clipId = actor.character.clipOf(scene::motionName(intent.motion));
+  }
   if (!clipId) {
     if (partner) {
       // Nothing to wait for: the partner's walk changes at once.
@@ -465,12 +473,13 @@ void FieldScene::animate(Actor& actor, double seconds) {
     }
     return;
   }
-  if (actor.motion != intent.motion) {
+  if (actor.motion != intent.motion || actor.motionClip != clipId) {
     core::logDebug("[port:anim] startAnimation (anim.c:201): entity {} {} (clip {}) after {:.2f} s "
                    "of the last clip",
-                   static_cast<std::uint32_t>(actor.entity), scene::motionName(intent.motion),
-                   *clipId, actor.player->time());
+                   static_cast<std::uint32_t>(actor.entity), animation, *clipId,
+                   actor.player->time());
     actor.motion = intent.motion;
+    actor.motionClip = clipId;
     actor.player->play(*clipId, ClipFadeSeconds);
   }
   float speed = intent.speedScale;
@@ -491,6 +500,72 @@ void FieldScene::animate(Actor& actor, double seconds) {
   if (partner && (actor.player->passes() != passes || actor.player->finished())) {
     field_->notePartnerPassEnded();
   }
+}
+
+void FieldScene::setPartnerMood(const game::partner::Conditions& conditions,
+                                std::int32_t happiness) {
+  partnerConditions_ = conditions;
+  partnerHappiness_ = happiness;
+}
+
+game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor,
+                                                           scene::Motion motion, double seconds) {
+  using game::partner::FieldAnimation;
+  PartnerLook& look = partnerLook_;
+  const game::field::PartnerRules& rules = field_->rules().partner;
+  const auto standAgain = [&] {
+    // partner.c:907: setPartnerIdle, and a new wait of 1 to gesture_idle_plays idle plays.
+    look.base = game::partner::idleAnimation(partnerConditions_);
+    look.gesture.reset();
+    look.standingSeconds = 0.0;
+    look.idlePlays = gestureRandom_.below(rules.gestureIdlePlays) + 1;
+  };
+  const bool changed = look.motion != motion;
+  look.motion = motion;
+  if (motion != scene::Motion::Idle) {
+    // The walk is picked as it starts (setPartnerSlowWalking).
+    if (changed) {
+      look.base = motion == scene::Motion::Run
+                      ? FieldAnimation::Run
+                      : game::partner::walkAnimation(partnerConditions_);
+      look.gesture.reset();
+    }
+    return look.base;
+  }
+  if (changed) {
+    standAgain();
+    return look.base;
+  }
+  if (look.gesture) {
+    // partner.c:922: a gesture that ends stands again; one that repeats goes on until it walks.
+    if (actor.motionClip == actor.character.clipOf(game::partner::nameOf(*look.gesture)) &&
+        actor.player->finished()) {
+      standAgain();
+    }
+    return look.gesture.value_or(look.base);
+  }
+  look.standingSeconds += seconds;
+  const assets::AnimationClip* idle = actor.player->clip();
+  const double idleSeconds =
+      idle == nullptr ? 0.0
+      : idle->ticksPerSecond > 0
+          ? static_cast<double>(idle->frameCount) / static_cast<double>(idle->ticksPerSecond)
+          : static_cast<double>(idle->duration);
+  // partner.c:916: STOP_DISTANCE_TIMER > frameCount * EMOTION_ANIM_TIMEOUT.
+  if (look.standingSeconds > idleSeconds * look.idlePlays) {
+    const FieldAnimation chosen = game::partner::conditionAnimation(
+        partnerConditions_, partnerHappiness_,
+        {.happyFrom = rules.happyGestureFrom, .unhappyBelow = rules.unhappyGestureBelow});
+    // A neutral mood keeps the idle it has; a model without the gesture's clip stands on.
+    if (!game::partner::isIdle(chosen) &&
+        actor.character.clipOf(game::partner::nameOf(chosen)).has_value()) {
+      core::logDebug("[port:partner] updateConditionAnimation (partner.c:1012): {} after {:.2f} s "
+                     "standing",
+                     game::partner::nameOf(chosen), look.standingSeconds);
+      look.gesture = chosen;
+    }
+  }
+  return look.gesture.value_or(look.base);
 }
 
 void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
