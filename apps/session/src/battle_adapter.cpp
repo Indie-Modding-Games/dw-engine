@@ -467,6 +467,17 @@ core::Result<void> BattleAdapter::equip(const GameSession& session, std::size_t 
   return {};
 }
 
+TechniqueToggle BattleAdapter::toggleTechnique(const GameSession& session, MoveSlot slot) {
+  const auto* species = rowOf(session.partner().state().species);
+  return species && catalog_ ? session::toggleTechnique(moves_, *species, *catalog_, slot)
+                             : TechniqueToggle::Unavailable;
+}
+
+bool BattleAdapter::canFinishTechniqueEdit(const GameSession& session) const {
+  const auto* species = rowOf(session.partner().state().species);
+  return species && catalog_ && session::canFinishTechniqueEdit(moves_, *species, *catalog_);
+}
+
 const game::battle::BattleRules& BattleAdapter::rules() const {
   return *rules_;
 }

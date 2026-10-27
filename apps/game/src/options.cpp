@@ -129,6 +129,12 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.virtualGamepad = value;
     return true;
   }
+  if (argument == "--ui-demo-bag-size") {
+    if (value != "10" && value != "20" && value != "30") return false;
+    options.uiDemo = true;
+    options.uiDemoBagSlots = value == "10" ? 10 : value == "20" ? 20 : 30;
+    return true;
+  }
   if (argument == "--map") {
     options.maps.clear();
     for (const auto part : std::views::split(value, ',')) {
@@ -193,6 +199,9 @@ bool readFlag(Options& options, std::string_view argument) {
     options.testScene = true;
   } else if (argument == "--ui-demo") {
     options.uiDemo = true;
+  } else if (argument == "--ui-demo-fishing") {
+    options.uiDemo = true;
+    options.uiDemoFishing = true;
   } else if (argument == "--fullscreen") {
     options.fullscreen = true;
   } else if (argument == "--no-vsync") {
