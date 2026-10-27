@@ -35,6 +35,10 @@ struct BagSlotView {
   bool dimmed = false;
   // Whether its item_color lets it be used where the bag is open (inventory.c: selectOptionMenu).
   bool usable = false;
+  // Context and rules decide whether the whole stack can be discarded.
+  bool discardable = false;
+  // The original skin uses item_color to distinguish field, battle and shared items.
+  std::int32_t itemColor = 255;
   // The item's icon (utils2.c: setItemTexture): the image with the item's palette, as a document
   // names it, and the icon's rectangle in it, "x y width height"; both empty for an item without an
   // icon (ItemEntry::iconPalette).

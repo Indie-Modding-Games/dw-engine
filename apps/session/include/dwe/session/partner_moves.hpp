@@ -6,6 +6,9 @@
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <array>
+#include <dwe/assets/digimon_table.hpp>
+#include <dwe/game/battle/moves.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -32,6 +35,18 @@ struct PartnerMoves {
 
   friend bool operator==(const PartnerMoves&, const PartnerMoves&) = default;
 };
+
+// Las variantes de animación comparten aprendizaje y selección con su técnica base.
+[[nodiscard]] bool knowsTechnique(const PartnerMoves& moves,
+                                  const game::battle::MoveCatalog& catalog, std::string_view id);
+
+// Operaciones del editor: alternar una técnica compatible/aprendida, sin tocar el final.
+enum class TechniqueToggle { Equipped, Removed, Unavailable, Full };
+TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& species,
+                                const game::battle::MoveCatalog& catalog, MoveSlot slot);
+[[nodiscard]] bool canFinishTechniqueEdit(const PartnerMoves& moves,
+                                          const assets::DigimonRow& species,
+                                          const game::battle::MoveCatalog& catalog);
 
 // Which positions the partner equips when it starts and when it is reborn.
 struct PartnerMoveRules {

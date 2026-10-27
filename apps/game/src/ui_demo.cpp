@@ -3,6 +3,14 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
+#include <dwe/assets/item_table.hpp>
+#include <dwe/game/inventory/inventory.hpp>
+#include <dwe/screens/bag_view.hpp>
+#include <dwe/screens/partner_status_view.hpp>
+#include <dwe/session/partner_moves.hpp>
+#include <dwe/assets/move_table.hpp>
+#include <dwe/assets/raise_table.hpp>
+#include <dwe/game/battle/rules.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/fixed_step.hpp>
@@ -16,6 +24,8 @@
 #include <dwe/render/renderer.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/ui/minimap.hpp>
+#include <dwe/ui/skin.hpp>
+#include <dwe/ui/text_font.hpp>
 #include <dwe/ui/ui.hpp>
 #include <dwe/ui/ui_renderer.hpp>
 
@@ -389,9 +399,97 @@ struct Settings {
   double uiScale = 1.0;
 };
 
+// The preview owns this state; it is never loaded from or written to a player's save.
+struct DemoBag {
+  assets::ItemTable items;
+  game::inventory::Inventory inventory;
+
+  void publish(ui::Ui& ui) const {
+    const screens::NameKeys names{nullptr, &items, nullptr};
+    screens::publish(ui, screens::settingsOf(screens::bagViewOf(inventory, items, names,
+                         game::inventory::UseContext::Field)), screens::BagRevisionSetting);
+  }
+
+  bool handle(const ui::UiCommand& command, ui::Ui& ui) {
+    if (command.name == "bag_use") {
+      core::logInfo("ui demo: Use requires a game session; preview bag unchanged");
+      return true;
+    }
+    if (command.name != "bag_move" && command.name != "bag_sort" && command.name != "bag_drop") return false;
+    core::Result<void> changed = core::fail("Invalid preview bag command");
+    if (command.name == "bag_move") {
+      if (const auto* text = std::get_if<std::string>(&command.value)) {
+        std::istringstream words{*text};
+        int from = -1;
+        int to = -1;
+        if (words >> from >> to && from >= 0 && to >= 0) {
+          changed = inventory.move(static_cast<std::size_t>(from), static_cast<std::size_t>(to));
+        }
+      }
+    } else if (const auto* number = std::get_if<double>(&command.value)) {
+      if (command.name == "bag_sort" && *number >= 0 &&
+          *number < static_cast<double>(inventory.rules().sortOrders.size())) {
+        changed = inventory.sort(static_cast<std::size_t>(*number), items);
+      } else if (command.name == "bag_drop" && *number >= 0 &&
+                 *number < static_cast<double>(inventory.slots().size())) {
+        changed = inventory.discard(static_cast<std::size_t>(*number), items,
+                                    game::inventory::UseContext::Field);
+      }
+    }
+    if (!changed) {
+      core::logWarning("ui demo: {} failed: {}", command.name, changed.error().message);
+      return true;
+    }
+    publish(ui);
+    const auto occupied = std::ranges::count_if(inventory.slots(), [](const auto& slot) { return slot.has_value(); });
+    core::logInfo("ui demo: applied {}; {} occupied preview slots", command.name, occupied);
+    return true;
+  }
+};
+
+// Estado aislado del editor; usa las mismas operaciones que BattleAdapter, sin sesión ni saves.
+struct DemoTechniques {
+  assets::DigimonRow species;
+  game::battle::MoveCatalog catalog;
+  session::PartnerMoves moves;
+  screens::PartnerStatusView status;
+
+  void publish(ui::Ui& ui) {
+    game::battle::Combatant partner;
+    for (std::size_t i = 0; i < moves.equipped.size(); ++i) {
+      if (moves.equipped[i]) partner.moves[i] = species.moves[static_cast<std::size_t>(*moves.equipped[i])];
+    }
+    const screens::NameKeys names{nullptr, nullptr, &catalog};
+    status.techniques = screens::equippedTechniqueViewsOf(partner, catalog, names);
+    status.techniqueChoices = {};
+    screens::setTechniqueChoices(status, species, moves, catalog, names);
+    screens::publish(ui, screens::settingsOf(status), screens::PartnerRevisionSetting);
+  }
+
+  void toggle(ui::Ui& ui, session::MoveSlot slot) {
+    const auto result = session::toggleTechnique(moves, species, catalog, slot);
+    core::logInfo("ui demo: technique slot {} outcome {}", slot, static_cast<int>(result));
+    ui.setSetting("partner.technique.result", std::string{
+        result == session::TechniqueToggle::Full ? "partner_menu.tech.full" :
+        result == session::TechniqueToggle::Unavailable ? "partner_menu.tech.unavailable" : ""});
+    publish(ui);
+  }
+};
+
 // Applies a menu command and publishes the resulting state. Returns false for quit.
-bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings) {
+bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, Settings& settings,
+           DemoBag* bag, DemoTechniques* techniques) {
   core::logInfo("ui demo: command {} = {}", command.name, describe(command.value));
+  if (bag != nullptr && bag->handle(command, ui)) return true;
+  if (command.name == "partner_toggle_technique") {
+    if (techniques != nullptr) {
+      if (const auto* slot = std::get_if<double>(&command.value); slot && *slot >= 0 && *slot < 16
+          && *slot == static_cast<double>(static_cast<int>(*slot))) {
+        techniques->toggle(ui, static_cast<session::MoveSlot>(*slot));
+      }
+    }
+    return true;
+  }
   if (command.name == "quit") {
     return false;
   }
@@ -414,6 +512,13 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
     // The device picks its present mode when it is created; the menu keeps showing the real one.
     core::logInfo("ui demo: vsync cannot change while running yet");
     ui.setSetting("vsync", true);
+  } else if (command.name == "open_partner_menu") {
+    const auto* page = std::get_if<std::string>(&command.value);
+    const bool items = page != nullptr && *page == "items";
+    ui.setSetting("partner_menu.start_page", std::string{items ? "items" : "status"});
+    ui.setSetting("pause_menu.start_entry", std::string{items ? "open-items" : "open-partner"});
+    ui.hide("pause_menu");
+    ui.show("partner_menu", true);
   }
   return true;
 }
@@ -476,8 +581,20 @@ int runUiDemo(const UiDemoOptions& options) {
     core::logError("{}", ui.error().message);
     return EXIT_FAILURE;
   }
+  if (options.uiSkin) {
+    if (auto changed = (*ui)->setSkin(*options.uiSkin); !changed) {
+      core::logError("ui demo: {}", changed.error().message);
+      return EXIT_FAILURE;
+    }
+  }
+  (*ui)->setSetting(ui::UiSkinSetting, std::string{(*ui)->skin()});
+  if (options.textFont) {
+    (*ui)->setTextFont(*options.textFont);
+    (*ui)->setSetting(ui::TextFontSetting, std::string{ui::textFontName(*options.textFont)});
+  }
   for (const auto& [name, id] :
-       {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"}}) {
+       {std::pair{"hud", "ui/hud/document"}, std::pair{"pause_menu", "ui/pause_menu/document"},
+        std::pair{"partner_menu", "ui/partner_menu/document"}}) {
     auto asset = assets::AssetId::parse(id);
     if (!asset) {
       core::logError("ui demo: {}", asset.error().message);
@@ -494,9 +611,134 @@ int runUiDemo(const UiDemoOptions& options) {
   (*ui)->setSetting("fullscreen", settings.fullscreen);
   (*ui)->setSetting("ui_scale", settings.uiScale);
   (*ui)->setSetting("vsync", true);
+  // Representative menu values; the demo has no running game session.
+  (*ui)->setSetting("hud.clock.year", 1.0);
+  (*ui)->setSetting("hud.clock.day", 1.0);
+  (*ui)->setSetting("pause_menu.fishing", options.fishing ? 2.0 : 0.0);
+  // Valores ficticios para revisar Status sin cargar ni modificar una partida.
+  screens::PartnerStatusView status;
+  status.nameKey = "partner_menu.species";
+  status.nickname = "CODEX";
+  status.ageDays = 3;
+  status.conditionKeys = {"partner_menu.condition.hungry"};
+  status.weight = 17;
+  status.lives = 3;
+  status.hp = 1234;
+  status.maxHp = 4321;
+  status.mp = 234;
+  status.maxMp = 678;
+  status.pools = {{{"main.stat_labels.0000", 4321, 0, 9999},
+                   {"main.stat_labels.0001", 678, 0, 9999}}};
+  status.stats = {{{"main.stat_labels.0002", 123, 0, 999},
+                   {"main.stat_labels.0003", 234, 0, 999},
+                   {"main.stat_labels.0004", 345, 0, 999},
+                   {"main.stat_labels.0005", 456, 0, 999}}};
+  status.meters = {{"partner_menu.happiness", 75, -100, 100, true},
+                   {"partner_menu.discipline", 25, 0, 100, true},
+                   {"partner_menu.virus", 10, 0, 100, false}};
+  status.techniques[0] = screens::TechniqueView{.nameKey = "dev.technique", .power = 123,
+                                               .mpCost = 45, .range = 2, .effect = 1};
+  status.techniques[2] = screens::TechniqueView{.nameKey = "dev.technique", .power = 0,
+                                               .mpCost = 12, .range = 4, .effect = 0};
+  status.techniques[3] = screens::TechniqueView{.nameKey = "dev.finisher", .power = 234,
+                                               .mpCost = 0, .range = 3, .effect = 3};
+  for (const auto& setting : screens::settingsOf(status)) {
+    (*ui)->setSetting(setting.name, setting.value);
+  }
+  (*ui)->setSetting(screens::PartnerRevisionSetting, 1.0);
+  // An empty ten-slot bag exercises layout and navigation without a save or inventory effects.
+  (*ui)->setSetting("bag.slot.count", 10.0);
+  (*ui)->setSetting("bag.money", 0.0);
+  for (int slot = 0; slot < 10; ++slot) {
+    (*ui)->setSetting(std::format("bag.slot.{}.empty", slot), true);
+  }
+  (*ui)->setSetting("bag.revision", 1.0);
+  std::optional<DemoBag> demoBag;
+  if (options.bagSlots != 0) {
+    auto items = assets::loadItemTable(content->files);
+    auto rules = ruleset::loadRuleset(content->files, "original");
+    if (!items || !rules) {
+      core::logError("ui demo bag: {}", !items ? items.error().message : rules.error().message);
+      return EXIT_FAILURE;
+    }
+    auto bag = game::inventory::Inventory::fromRuleset(*rules);
+    if (!bag) {
+      core::logError("ui demo bag: {}", bag.error().message);
+      return EXIT_FAILURE;
+    }
+    if (auto resized = bag->setSlotCount(options.bagSlots); !resized) {
+      core::logError("ui demo bag: {}", resized.error().message);
+      return EXIT_FAILURE;
+    }
+    int filled = 0;
+    for (const auto& entry : items->entries()) {
+      if (entry.droppable != 1 || !entry.iconPalette) continue;
+      const auto added = bag->add(items->handleOf(entry), filled % 4 + 1);
+      if (added.added > 0) ++filled;
+      if (filled >= options.bagSlots - 1) break;
+    }
+    if (filled >= 2) {
+      if (auto moved = bag->move(static_cast<std::size_t>(filled - 1),
+                                  static_cast<std::size_t>(options.bagSlots - 1)); !moved) {
+        core::logError("ui demo bag: {}", moved.error().message);
+        return EXIT_FAILURE;
+      }
+    }
+    // Include one read-only item to exercise unavailable Use/Drop without altering game data.
+    for (const auto& entry : items->entries()) {
+      if (entry.itemColor != 255 || !entry.iconPalette ||
+          entry.droppable == bag->rules().use.discardDroppable) continue;
+      const auto added = bag->add(items->handleOf(entry), 1);
+      core::logInfo("ui demo: restricted sample {} (color {}, droppable {}, added {})",
+                    entry.id, entry.itemColor, entry.droppable, added.added);
+      break;
+    }
+    demoBag.emplace(DemoBag{.items = std::move(*items), .inventory = std::move(*bag)});
+    demoBag->publish(**ui);
+    core::logInfo("ui demo: populated {} isolated bag slots; Use effects are not simulated", options.bagSlots);
+  }
   (*ui)->setMenuDocument("pause_menu");
   (*ui)->show("hud");
 
+  std::optional<DemoTechniques> demoTechniques;
+  if (options.bagSlots != 0) {
+    auto moveId = assets::AssetId::parse("data/moves");
+    auto speciesId = assets::AssetId::parse("data/digimon");
+    auto raiseId = assets::AssetId::parse("data/raise");
+    auto raiseTable = assets::loadRaiseTable(content->files, *raiseId);
+    auto table = assets::loadMoveTable(content->files, *moveId);
+    auto speciesTable = assets::loadDigimonTable(content->files, *speciesId);
+    auto rules = ruleset::loadRuleset(content->files, "original");
+    if (table && speciesTable && rules) {
+      auto battleRules = game::battle::readBattleRules(*rules);
+      if (battleRules) {
+        auto catalog = game::battle::MoveCatalog::build(*table, *battleRules);
+        if (catalog) {
+          for (const auto& species : speciesTable->digimon) {
+            session::PartnerMoves moves;
+            for (std::size_t slot = 0; slot < species.moves.size(); ++slot) {
+              if (!species.moves[slot]) continue;
+              const auto ref = catalog->find(*species.moves[slot]);
+              if (!ref) continue;
+              if (catalog->at(*ref).finisher) moves.equipped[game::battle::FinisherSlot] = static_cast<session::MoveSlot>(slot);
+              else if (moves.learned.size() < 4) {
+                session::learn(moves, *species.moves[slot]);
+                if (!moves.equipped[0] && catalog->at(*ref).power > 0) moves.equipped[0] = static_cast<session::MoveSlot>(slot);
+              }
+            }
+            if (moves.learned.size() < 4 || !moves.equipped[0]) continue;
+            core::logInfo("ui demo: isolated technique editor species {}, four learned, one equipped", species.id);
+            demoTechniques.emplace(DemoTechniques{species, std::move(*catalog), std::move(moves), status});
+            const auto* raise = raiseTable ? raiseTable->find(species.id) : nullptr;
+            screens::setProfileSpecies(demoTechniques->status, species, raise ? raise->sleepCycle : -1);
+            core::logInfo("ui demo: profile type {}, active {}", species.type, demoTechniques->status.activePattern);
+            demoTechniques->publish(**ui);
+            break;
+          }
+        }
+      }
+    }
+  }
   const LoadedMap map = loadMap(&content->files, options.map);
   (*ui)->setMinimap(ui::minimapGridOf(map.document), map.nameKey);
   Walkers walkers{map.document};
@@ -536,15 +778,16 @@ int runUiDemo(const UiDemoOptions& options) {
     const int ticks = step.advance(frameSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
       (*ui)->tick(input, TickSeconds);
-      if (!(*ui)->isVisible("pause_menu")) {
+      if (!(*ui)->isVisible("pause_menu") && !(*ui)->isVisible("partner_menu")) {
         walkers.tick(TickSeconds);
       }
       input.endTick();
     }
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
-      running = apply(command, **ui, *window, settings) && running;
+      running = apply(command, **ui, *window, settings, demoBag ? &*demoBag : nullptr, demoTechniques ? &*demoTechniques : nullptr) && running;
     }
-    if (std::string current = (*ui)->focusedElementId("pause_menu"); current != focused) {
+    const std::string_view focusedDocument = (*ui)->isVisible("partner_menu") ? "partner_menu" : "pause_menu";
+    if (std::string current = (*ui)->focusedElementId(focusedDocument); current != focused) {
       focused = std::move(current);
       core::logInfo("ui demo: focus {}", focused.empty() ? "-" : focused);
     }

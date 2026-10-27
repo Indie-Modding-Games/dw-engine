@@ -1,11 +1,14 @@
 #pragma once
 
 #include <dwe/screens/name_keys.hpp>
+#include <dwe/game/battle/combatant.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/partner_view.hpp>
+#include <dwe/session/partner_moves.hpp>
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -46,11 +49,31 @@ struct MeterView {
 // What the status page shows, in the original's order (game_menu.c: renderDigimonStatsView): the
 // name, age and weight; HP and MP, now and at most, with a bar of the maximum; offense, defense,
 // speed and brain; the lives; the conditions; and the bars of happiness, discipline and the virus.
+struct TechniqueView {
+  std::string nameKey;
+  std::int32_t power = 0;
+  std::int32_t mpCost = 0;
+  std::int32_t range = 0;
+  std::int32_t effect = 0;
+};
+
+struct TechniqueChoiceView {
+  std::optional<TechniqueView> technique;
+  bool available = false;
+  bool equipped = false;
+  bool known = false;
+  std::int32_t speciesSlot = -1;
+  std::int32_t special = -1;
+};
+
 struct PartnerStatusView {
   // The species' name key and the partner's own name (game_menu.c: drawDigimonStatsStrings draws
   // both).
   std::string nameKey;
   std::string nickname;
+  std::array<std::optional<std::int32_t>, 3> specials{};
+  std::int32_t type = 0;
+  std::int32_t activePattern = -1;
   std::int32_t ageDays = 0;
   std::int32_t weight = 0;
   std::int32_t lives = 0;
@@ -65,10 +88,25 @@ struct PartnerStatusView {
   std::vector<MeterView> meters;
   // The keys of the conditions it has (partner_menu.condition.<name>).
   std::vector<std::string> conditionKeys;
+  std::array<TechniqueChoiceView, 56> techniqueChoices{};
+  bool canFinishTechniqueEdit = false;
+  // Tres técnicas y el final: datos del catálogo que también utiliza el combate.
+  std::array<std::optional<TechniqueView>, game::battle::EquippedSlots> techniques{};
 };
 
 [[nodiscard]] PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner,
                                                     const NameKeys& names);
+
+[[nodiscard]] std::array<std::optional<TechniqueView>, game::battle::EquippedSlots>
+equippedTechniqueViewsOf(const game::battle::Combatant& partner,
+                        const game::battle::MoveCatalog& catalog, const NameKeys& names);
+
+void setProfileSpecies(PartnerStatusView& view, const assets::DigimonRow& species,
+                       std::int32_t activePattern);
+
+void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& species,
+                         const session::PartnerMoves& moves,
+                         const game::battle::MoveCatalog& catalog, const NameKeys& names);
 
 [[nodiscard]] ScreenSettings settingsOf(const PartnerStatusView& view);
 

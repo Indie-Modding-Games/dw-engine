@@ -100,7 +100,15 @@ actualizan son el contrato de datos de cualquier aspecto: están en [ui.md](../.
 | `partner.stat.<i>.{label,value,min,max}` | clave, números | Las barras de ataque, defensa, velocidad y cerebro, sobre 999 |
 | `partner.meter.<i>.{label,value,min,max,two_tone}` | clave, números, booleano | Felicidad, disciplina y virus, con sus límites del ruleset. Felicidad y disciplina son barras de dos tonos: la barra se llena del mínimo a la mitad del rango y vuelve a llenarse en otro color de la mitad al máximo (`game_menu.c: renderDigimonStatsView`) |
 | `partner.condition.<i>.key` | clave | Lo que le pasa ahora (sueño, cansancio, hambre, baño, enfado, herida, enfermedad) |
+| `partner.profile.special.<i>` | número | Especialidades de especie (0–6); -1 representa una posición ausente. |
+| `partner.profile.type` | número | Tipo original de especie; 0 no dibuja icono. |
+| `partner.profile.active` | número | Patrón de actividad de SpeciesCare; -1 cuando falta la fuente. La presentación original toma los rótulos del texto local del disco. |
+| `partner.technique.<i>.{empty,name,power,mp,range,effect}` | booleano, clave, números | Tres equipadas (0–2) y final (3), resueltas del catálogo de combate; MP ya convertido por sus reglas. Un hueco no presenta cifras ni efecto. |
+| `partner.technique.choice.<i>.{name,available,equipped,known,slot,special,power,mp,range,effect}` | clave, booleanos | 56 celdas de la cuadrícula original; slot resuelve la posición compatible de especie (o -1). Aprendizaje, variantes y selección proceden de sesión; Lua no decide reglas. |
+| `partner.technique.can_finish` | booleano | El editor puede terminar si queda una técnica ofensiva equipada; el final no cuenta. |
 | `bag.slot.<i>.{empty,item,name,description,count,dimmed,usable,icon,icon_rect}` | booleano, número, claves, número, booleanos, textos | Las ranuras que tiene la bolsa, en orden (`inventory.c: renderInventoryTop`); `dimmed` es un objeto que no se usa desde la bolsa (`item_color` 255), que el original pinta de otro color; `usable`, si su `item_color` deja usarlo en ese contexto (`inventory.c: selectOptionMenu`); `icon`, la imagen de su icono con su paleta (`/texture/etcdat/item?palette=N`, de `icon_palette`), e `icon_rect`, su celda de 16 × 16 en ella, `"x y ancho alto"` (`utils2.c: setItemTexture`); los dos vacíos si el objeto no tiene icono |
+| `bag.slot.<i>.item_color` | número | Clasificación del objeto; el aspecto original distingue campo (0), combate (1), ambos (2) y nunca (255) con su tinta. |
+| `bag.slot.<i>.discardable` | booleano | Objeto presente, contexto Field y valor droppable aceptado por UseRules; la UI desactiva Drop sin duplicar reglas. |
 | `bag.money` | número | Los bits |
 | `bag.result` | clave | Qué hizo la última orden sobre la bolsa (`partner_menu.bag_result.*`); el juego añade `bag.result_item`, la clave del nombre del objeto |
 

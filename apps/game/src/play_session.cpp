@@ -271,6 +271,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
                     .ui = context.ui,
+                    .battle = game_.systems.battle,
                     .feed = &feedScene_}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),

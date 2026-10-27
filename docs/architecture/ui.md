@@ -623,6 +623,10 @@ Si alguno cambió, carga el documento de nuevo y solo lo cambia por el viejo si 
 deja el viejo funcionando (con un error en el log) hasta la siguiente edición. Un documento visible se vuelve a
 mostrar en su sitio: si era modal, los documentos que estaban encima siguen encima.
 
+El juego activa esta recarga con `--tuning`. Permite ajustar RML, RCSS y Lua sobre la partida abierta;
+los cambios de C++ requieren volver a compilar y reiniciar la instancia. Cambiar la declaración de sprites en
+`skin.yaml` o el catálogo de textos requiere volver a cargar esos recursos, no solo el documento.
+
 ## Demo
 
 `dwe-game --ui-demo [--map <id>] [--size <ancho>x<alto>] [--virtual-gamepad <fichero>]` abre el HUD con el minimapa
@@ -630,6 +634,14 @@ del mapa (por defecto `twna01`; uno de prueba si no hay contenido extraído) con
 solos, y el menú de pausa con sus comandos aplicados (`quit`, ventana completa, escala, minimapa). Registra en el log
 cada comando y cada cambio de foco del menú. Con `--virtual-gamepad`, lee del fichero, según crece, órdenes para un
 mando virtual: `attach playstation`, `tap dpad_down`, `press south`, `release south`, `axis left_y 0.8`.
+
+También acepta `--ui-skin original --text-font original` para revisar distribución, iconos y tipografía sin repetir
+la introducción de una partida. La demo publica el aspecto elegido a Lua, igual que el juego; sus datos ficticios
+no validan el estado ni las acciones del compañero en una partida real. La cabecera usa una fecha ficticia Year 1 / Day 1.
+`--ui-demo-fishing` habilita la variante del menú con FISH y SLEEP a la vez para revisar sus siete entradas
+sin iniciar una partida ni desplazarse a una zona de pesca. La demo permite abrir ITEM desde el principal
+con una bolsa vacía de diez posiciones; comprueba presentación, opciones y retorno, sin validar sus efectos sobre una sesión. Con --ui-demo-bag-size, Move/Sort/Drop sí modifican
+el inventario aislado del preview; Use continúa sin simularse.
 
 ## Tests
 
@@ -646,3 +658,15 @@ ajustes del juego) comprueba el orden de arranque de `ui_skin` y que el ajuste s
 
 La demo registra cada pocos segundos lo que cuesta la UI en la CPU por frame (marcadores, layout y grabación de las
 llamadas) y cuántas llamadas de dibujo hace.
+
+### Escenario de inventario de la demo
+
+`--ui-demo-bag-size 10|20|30` prepara una bolsa con objetos, nombres e iconos de los paquetes locales del usuario,
+mediante ItemTable, Inventory y BagView. Permite revisar cantidades, descripciones y la ventana de cinco/nueve filas
+sin recorrer una partida. Las cantidades son ficticias. DemoBag conserva ItemTable e Inventory y aplica Move/Sort/Drop mediante los métodos
+del modelo, refrescando BagView. No hay sesión ni guardados y Use solo se registra. Sin esta opción se conserva la
+bolsa vacía de diez posiciones. Los logs incluyen también el foco del menú de compañero para revisar navegación.
+
+El inventario original muestra una barra de posición proporcional, sin flechas ni scrollbar del navegador. La ventana
+de nueve filas publica su desplazamiento en el rail; cancelar Move restaura el foco y la ventana del origen aunque
+este haya salido de pantalla. Estos comportamientos se revisan en la demo sin iniciar una partida.

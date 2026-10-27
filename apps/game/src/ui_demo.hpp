@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dwe/ui/text_font.hpp>
+
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -17,6 +19,10 @@ struct UiDemoOptions {
   // A file of virtual gamepad commands, read as it grows (see ui_demo.cpp), to drive the menu
   // without hardware.
   std::optional<std::filesystem::path> virtualGamepad;
+  std::optional<std::string> uiSkin;
+  std::optional<ui::TextFont> textFont;
+  bool fishing = false;
+  int bagSlots = 0;
 };
 
 // `dwe-game --ui-demo`: the pause menu and the HUD with the minimap of a map, a player and a

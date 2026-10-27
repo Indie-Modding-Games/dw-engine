@@ -118,9 +118,19 @@ void StoryStage::drive(std::int64_t character, glm::vec3 velocity) {
 void StoryStage::animate(std::int64_t character, std::int64_t animation) {
   // overworld.c: setActiveAnim: an NPC's script animation keeps its own tick off it.
   if (character != PlayerScriptId && character != PartnerScriptId) {
-    if (std::in_range<std::int32_t>(character) && std::in_range<std::int32_t>(animation)) {
-      scene_->field().npcs().setScriptedAnimation(static_cast<std::int32_t>(character),
-                                                  static_cast<std::int32_t>(animation));
+    if (std::in_range<std::int32_t>(character) && std::in_range<std::int32_t>(animation) &&
+        animation >= 0 &&
+        scene_->field().npcs().setScriptedAnimation(static_cast<std::int32_t>(character),
+                                                  static_cast<std::int32_t>(animation))) {
+      if (const auto entity = entityOf(character)) {
+        // Holding the NPC's AI does not start its visible clip. Use the same playback path as
+        // the player and partner; animation zero hands playback back to the NPC's motion.
+        if (animation == 0) {
+          scene_->field().releaseClipByScript(*entity);
+        } else {
+          scene_->field().animateByScript(*entity, static_cast<std::uint32_t>(animation));
+        }
+      }
     }
     return;
   }

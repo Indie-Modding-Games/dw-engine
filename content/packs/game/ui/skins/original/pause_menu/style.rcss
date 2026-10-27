@@ -8,9 +8,8 @@
 
    Placement: the original's menu box (game_menu.c: renderGameMenu) is centred and 40 pixels from the top. Its 132
    pixels hold six icons with their names in small capitals; the main page here is that box, 132 pixels wide (396dp),
-   headed by the original's Year/Day line in its yellow (#fff371) over a rule, with the entries as centred names in
-   capitals, one per row: this menu has more entries than the original's six and no icons for them (a documented
-   delta). The options pages hold values in the player's language, so they widen the box to 184 pixels (552dp). */
+   headed by the Year/Day line. The six field commands occupy three columns and two rows, with their FI_INFO icons
+   above their labels. Engine settings live under Player instead of occupying the field grid. */
 
 #scrim {
 	background-color: transparent;
@@ -33,7 +32,9 @@
 }
 
 #panel.on-main {
-	width: 396dp;
+	width: 390dp;
+	height: 324dp;
+	padding: 0;
 	margin-left: -198dp;
 }
 
@@ -43,6 +44,15 @@
 
 #panel.on-main #title-date {
 	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 390dp;
+	height: 66dp;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	line-height: 36dp;
 }
 
 #title, #title-date {
@@ -78,3 +88,158 @@
 	font-size: 24dp;
 	line-height: 30dp;
 }
+
+#panel.on-main #page-main {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 390dp;
+	height: 324dp;
+	display: block;
+}
+
+#panel.on-main #page-main .menu-utility, #panel.on-main #prompts {
+	display: none;
+}
+
+#panel.on-main #page-main .field-entry {
+	position: absolute;
+	width: 84dp;
+	height: 105dp;
+	padding: 0;
+	margin: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: transparent;
+}
+
+#panel.on-main .field-menu-icon {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 60dp;
+	height: 60dp;
+	padding: 6dp 9dp;
+	margin: 0;
+	border: 3dp transparent;
+	border-radius: 6dp;
+}
+
+#panel.on-main .menu-label {
+	display: block;
+	position: absolute;
+	top: 84dp;
+	left: -12dp;
+	width: 108dp;
+	margin: 0;
+	font-size: 15dp;
+	line-height: 24dp;
+	text-align: center;
+	color: #d6d6d6;
+}
+
+.menu-item { decorator: image(menu-item scale-none center center); }
+.menu-digimon { decorator: image(menu-digimon scale-none center center); }
+.menu-player { decorator: image(menu-player scale-none center center); }
+.menu-praise { decorator: image(menu-praise scale-none center center); }
+.menu-scold { decorator: image(menu-scold scale-none center center); }
+.menu-sleep { decorator: image(menu-sleep scale-none center center); }
+.menu-fish { decorator: image(menu-fish scale-none center center); }
+#panel.on-main .menu-fish { height: 57dp; padding-bottom: 9dp; }
+
+/* English labels are FI_INFO sprites; translated labels retain localized text. */
+#panel.on-main.use-menu-art .menu-label {
+	width: 84dp;
+	height: 21dp;
+	margin: 0 auto;
+	line-height: 21dp;
+	color: transparent;
+}
+.use-menu-art .menu-item-label { decorator: image(menu-label-item scale-none center center); }
+.use-menu-art .menu-digimon-label { decorator: image(menu-label-digimon scale-none center center); }
+.use-menu-art .menu-player-label { decorator: image(menu-label-player scale-none center center); }
+.use-menu-art .menu-praise-label { decorator: image(menu-label-praise scale-none center center); }
+.use-menu-art .menu-scold-label { decorator: image(menu-label-scold scale-none center center); }
+.use-menu-art .menu-sleep-label { decorator: image(menu-label-sleep scale-none center center); }
+.use-menu-art .menu-fish-label { decorator: image(menu-label-fish scale-none center center); }
+
+/* Unavailable commands remain selectable as in the original; their handlers reject them. */
+#panel.on-main #sleep.unavailable, #panel.on-main #fish.unavailable {
+	focus: auto;
+	tab-index: auto;
+}
+
+.player-line { color: #fff371; padding: 6dp 12dp; }
+.player-value { color: #d6d6d6; }
+
+/* Field stage: 132 × 110 original pixels (149 with the fishing entry).
+   The six regular icons start at (20,31), (56,31), (91,31), then y=71.
+   Coordinates below account for the panel's one-pixel RCSS border. */
+
+#panel.on-main.has-fishing { height: 441dp; }
+
+#panel.on-main #open-items { left: 45dp; top: 81dp; }
+#panel.on-main #open-partner { left: 153dp; top: 81dp; }
+#panel.on-main #open-player { left: 258dp; top: 81dp; }
+#panel.on-main #praise { left: 45dp; top: 201dp; }
+#panel.on-main #scold { left: 153dp; top: 201dp; }
+#panel.on-main #sleep { left: 258dp; top: 201dp; }
+#panel.on-main #fish { left: 45dp; top: 81dp; }
+#panel.on-main.has-fishing #open-items, #panel.on-main.has-fishing #open-partner, #panel.on-main.has-fishing #open-player { top: 201dp; }
+#panel.on-main.has-fishing #praise, #panel.on-main.has-fishing #scold, #panel.on-main.has-fishing #sleep { top: 321dp; }
+#panel.on-main.use-menu-art .menu-item-label { left: 9dp; width: 72dp; }
+#panel.on-main.use-menu-art .menu-digimon-label { left: 3dp; width: 84dp; }
+#panel.on-main.use-menu-art .menu-player-label { left: 9dp; width: 84dp; }
+#panel.on-main.use-menu-art .menu-praise-label { left: 15dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-scold-label { left: 15dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-sleep-label { left: 27dp; width: 60dp; }
+#panel.on-main.use-menu-art .menu-fish-label { left: 21dp; width: 48dp; }
+#panel.on-main.icon-flash .field-entry:focus .menu-item { decorator: image(menu-item-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-digimon { decorator: image(menu-digimon-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-player { decorator: image(menu-player-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-praise { decorator: image(menu-praise-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-scold { decorator: image(menu-scold-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-sleep { decorator: image(menu-sleep-active scale-none center center); }
+#panel.on-main.icon-flash .field-entry:focus .menu-fish { decorator: image(menu-fish-active scale-none center center); }
+
+/* Keep the selection frame bright even when the command is unavailable. */
+#panel.on-main .field-menu-focus { position: absolute; left: 0; top: 0; width: 87dp; height: 78dp; }
+#panel.on-main .field-entry:focus .field-menu-focus { display: block; }
+#panel.on-main #sleep.unavailable, #panel.on-main #fish.unavailable { opacity: 1; }
+#panel.on-main .unavailable .field-menu-icon, #panel.on-main .unavailable .menu-label { opacity: 0.45; }
+
+/* The selection frame uses the same three small sprites as the original. */
+.cursor-part { display: block; position: absolute; pointer-events: none; }
+.cursor-left, .cursor-right { top: 0; width: 12dp; height: 66dp; decorator: image(menu-cursor-side); }
+.cursor-left { left: 0; }
+.cursor-right { left: 75dp; }
+.cursor-top, .cursor-bottom { left: 12dp; width: 72dp; height: 12dp; decorator: image(menu-cursor-bar); }
+.cursor-top { top: 0; }
+.cursor-bottom { top: 66dp; transform: scaleY(-1); }
+.cursor-tl, .cursor-tr, .cursor-bl, .cursor-br { width: 12dp; height: 12dp; decorator: image(menu-cursor-corner); }
+.cursor-tl { left: 0; top: 0; }
+.cursor-tr { left: 72dp; top: 0; transform: scaleX(-1); }
+.cursor-bl { left: 0; top: 66dp; transform: scaleY(-1); }
+.cursor-br { left: 72dp; top: 66dp; transform: scale(-1, -1); }
+
+
+#field-year-label, #field-day-label { position: absolute; top: 18dp; font-size: 33dp; line-height: 36dp; }
+#field-year-label { left: 15dp; }
+#field-day-label { left: 213dp; }
+#field-year-digits, #field-day-digits { position: absolute; top: 15dp; height: 36dp; white-space: nowrap; font-size: 0dp; }
+#field-year-digits { left: 129dp; }
+#field-day-digits { left: 306dp; }
+.date-digit { display: inline-block; width: 21dp; height: 36dp; margin-right: 6dp; color: transparent; }
+.date-digit.hidden { display: none; }
+#field-date-separator { position: absolute; left: 9dp; top: 60dp; width: 372dp; height: 3dp; background-color: #90d9fa; border-top: 3dp #020202; border-bottom: 3dp #020202; }
+.digit-0 { decorator: image(menu-digit-0 scale-none center center); }
+.digit-1 { decorator: image(menu-digit-1 scale-none center center); }
+.digit-2 { decorator: image(menu-digit-2 scale-none center center); }
+.digit-3 { decorator: image(menu-digit-3 scale-none center center); }
+.digit-4 { decorator: image(menu-digit-4 scale-none center center); }
+.digit-5 { decorator: image(menu-digit-5 scale-none center center); }
+.digit-6 { decorator: image(menu-digit-6 scale-none center center); }
+.digit-7 { decorator: image(menu-digit-7 scale-none center center); }
+.digit-8 { decorator: image(menu-digit-8 scale-none center center); }
+.digit-9 { decorator: image(menu-digit-9 scale-none center center); }
