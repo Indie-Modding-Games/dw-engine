@@ -8,35 +8,131 @@
 	<div id="scrim">
 		<div id="panel">
 			<div id="tabs">
-				<button id="tab-status" class="tab" onclick="open_page(document, 'status')" text-key="partner_menu.tab.status"></button>
-				<button id="tab-items" class="tab" onclick="open_page(document, 'items')" text-key="partner_menu.tab.items"></button>
+				<button id="tab-status" class="tab" onclick="open_page(document, 'status')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.status"></span></button>
+				<button id="tab-tech" class="tab" onclick="open_page(document, 'tech')"><span class="tab-edge tab-left"></span><span class="tab-edge tab-middle"></span><span class="tab-edge tab-right"></span><span class="tab-label" text-key="partner_menu.tab.tech"></span></button>
+                <button id="tab-items" class="tab" onclick="open_page(document, 'items')" text-key="partner_menu.tab.items"></button>
 				<button id="tab-care" class="tab" onclick="open_page(document, 'care')" text-key="partner_menu.tab.care"></button>
-				<button id="close" class="tab" onclick="ui.hide(document_name)" text-key="common.back"></button>
+				<button id="close" class="tab" onclick="close_menu()" text-key="common.back"></button>
 			</div>
 
 			<div id="page-status" class="page">
+                <div id="profile-heading" class="status-decoration" text-key="partner_menu.section.profile"></div>
+                <div id="condition-heading" class="status-decoration" text-key="partner_menu.section.condition"></div>
+                <div id="parameter-heading" class="status-decoration" text-key="partner_menu.section.parameter"></div>
+                <div id="status-horizontal" class="status-decoration"></div>
+                <div id="status-vertical" class="status-decoration"></div>
+                <span id="status-name-label" class="status-decoration" text-key="partner_menu.name"></span>
+                <span id="status-special-heading" class="profile-meta"></span><span id="status-type-heading" class="profile-meta"></span><span id="status-active-heading" class="profile-meta"></span>
+                <div id="status-specials" class="profile-meta"><span id="status-special-0" class="status-special"></span><span id="status-special-1" class="status-special"></span><span id="status-special-2" class="status-special"></span></div>
+                <span id="status-type" class="profile-meta"></span><span id="status-active" class="profile-meta original-look"></span>
 				<div id="status-head">
 					<span class="original-look" id="status-name"></span>
 					<span class="original-look head-value" id="status-lives"></span>
 				</div>
-				<div class="status-line" id="status-species-line"><span class="original-look" text-key="partner_menu.species"></span><span class="original-look line-value" id="status-species"></span></div>
-				<div class="status-line" id="status-age-line"><span class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
-				<div class="status-line" id="status-weight-line"><span class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
+                <span id="status-life-label" class="status-native-life original-look"></span><div id="status-life-hearts" class="status-native-life"><span class="life-heart" id="life-heart-0"><span class="life-outline"></span><span class="life-fill" id="life-fill-0"></span></span><span class="life-heart" id="life-heart-1"><span class="life-outline"></span><span class="life-fill" id="life-fill-1"></span></span><span class="life-heart" id="life-heart-2"><span class="life-outline"></span><span class="life-fill" id="life-fill-2"></span></span></div>
+				<div class="status-line" id="status-species-line"><span id="status-species-label" class="original-look" text-key="partner_menu.species"></span><span class="original-look line-value" id="status-species"></span></div>
+				<div class="status-line" id="status-age-line"><span id="status-age-label" class="original-look" text-key="partner_menu.age"></span><span class="original-look line-value" id="status-age"></span></div>
+				<div class="status-line" id="status-weight-line"><span id="status-weight-label" class="original-look" text-key="partner_menu.weight"></span><span class="original-look line-value" id="status-weight"></span></div>
 				<div class="status-bars" id="status-parameters">
-					<div class="bar-row pool"><span class="label original-look" id="pool-0-label"></span><div class="bar stat"><div class="fill" id="pool-0-fill"></div></div><span class="value original-look" id="pool-0"></span></div>
-					<div class="bar-row pool"><span class="label original-look" id="pool-1-label"></span><div class="bar stat"><div class="fill" id="pool-1-fill"></div></div><span class="value original-look" id="pool-1"></span></div>
+					<div class="bar-row pool"><span class="label original-look" id="pool-0-label"></span><div class="bar stat"><div class="fill" id="pool-0-fill"></div></div><span class="value original-look" id="pool-0"></span><span class="pool-max original-look" id="pool-0-max"></span></div>
+					<div class="bar-row pool"><span class="label original-look" id="pool-1-label"></span><div class="bar stat"><div class="fill" id="pool-1-fill"></div></div><span class="value original-look" id="pool-1"></span><span class="pool-max original-look" id="pool-1-max"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-0-label"></span><div class="bar stat"><div class="fill" id="stat-0-fill"></div></div><span class="value original-look" id="stat-0"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-1-label"></span><div class="bar stat"><div class="fill" id="stat-1-fill"></div></div><span class="value original-look" id="stat-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-2-label"></span><div class="bar stat"><div class="fill" id="stat-2-fill"></div></div><span class="value original-look" id="stat-2"></span></div>
 					<div class="bar-row"><span class="label original-look" id="stat-3-label"></span><div class="bar stat"><div class="fill" id="stat-3-fill"></div></div><span class="value original-look" id="stat-3"></span></div>
 				</div>
 				<div class="status-bars" id="status-condition">
-					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div><div class="fill high" id="meter-0-high"></div></div><span class="value original-look" id="meter-0"></span></div>
+					<div class="bar-row"><span class="label original-look" id="meter-0-label"></span><span class="status-native-happiness"></span><div class="bar meter"><div class="fill" id="meter-0-fill"></div><div class="fill high" id="meter-0-high"></div></div><span class="value original-look" id="meter-0"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-1-label"></span><div class="bar meter"><div class="fill" id="meter-1-fill"></div><div class="fill high" id="meter-1-high"></div></div><span class="value original-look" id="meter-1"></span></div>
 					<div class="bar-row"><span class="label original-look" id="meter-2-label"></span><div class="bar meter"><div class="fill" id="meter-2-fill"></div><div class="fill high" id="meter-2-high"></div></div><span class="value original-look" id="meter-2"></span></div>
 				</div>
 				<div id="conditions"><span class="condition original-look hidden" id="condition-0"></span><span class="condition original-look hidden" id="condition-1"></span><span class="condition original-look hidden" id="condition-2"></span><span class="condition original-look hidden" id="condition-3"></span><span class="condition original-look hidden" id="condition-4"></span><span class="condition original-look hidden" id="condition-5"></span><span class="condition original-look hidden" id="condition-6"></span><span class="original-look" id="no-condition" text-key="partner_menu.condition.none"></span></div>
 			</div>
+
+            <div id="page-tech" class="page hidden">
+                <div id="techset-heading" class="tech-heading original-look" text-key="partner_menu.tech.set"></div>
+                <div id="tech-columns" class="tech-columns original-look"><span class="tech-power" text-key="partner_menu.tech.power"></span><span class="tech-mp" text-key="partner_menu.tech.mp"></span><span class="tech-range" text-key="partner_menu.tech.range"></span><span class="tech-effect" text-key="partner_menu.tech.effect"></span></div>
+<div id="tech-row-0" class="tech-row"><span id="tech-name-0" class="tech-name original-look"></span><span id="tech-power-0" class="tech-power original-look"></span><span id="tech-mp-0" class="tech-mp original-look"></span><span id="tech-range-0" class="tech-range original-look"></span><span id="tech-effect-0" class="tech-effect original-look"></span></div>
+<div id="tech-row-1" class="tech-row"><span id="tech-name-1" class="tech-name original-look"></span><span id="tech-power-1" class="tech-power original-look"></span><span id="tech-mp-1" class="tech-mp original-look"></span><span id="tech-range-1" class="tech-range original-look"></span><span id="tech-effect-1" class="tech-effect original-look"></span></div>
+<div id="tech-row-2" class="tech-row"><span id="tech-name-2" class="tech-name original-look"></span><span id="tech-power-2" class="tech-power original-look"></span><span id="tech-mp-2" class="tech-mp original-look"></span><span id="tech-range-2" class="tech-range original-look"></span><span id="tech-effect-2" class="tech-effect original-look"></span></div>
+
+                <div id="final-heading" class="tech-heading original-look" text-key="partner_menu.tech.final"></div>
+                <div id="final-columns" class="tech-columns original-look"><span class="tech-power" text-key="partner_menu.tech.power"></span><span class="tech-range" text-key="partner_menu.tech.range"></span><span class="tech-effect" text-key="partner_menu.tech.effect"></span></div>
+<div id="tech-row-3" class="tech-row"><span id="tech-name-3" class="tech-name original-look"></span><span id="tech-power-3" class="tech-power original-look"></span><span id="tech-mp-3" class="tech-mp original-look"></span><span id="tech-range-3" class="tech-range original-look"></span><span id="tech-effect-3" class="tech-effect original-look"></span></div>
+                <button id="tech-change" class="original-look" onclick="start_tech_edit(document)" text-key="partner_menu.tech.change"></button>
+                <div id="tech-picker" class="hidden"><button id="tech-choice-0" class="tech-choice" onclick="toggle_technique(document, 0)"><span class="tech-cell" id="tech-cell-0"></span></button>
+<button id="tech-choice-1" class="tech-choice" onclick="toggle_technique(document, 1)"><span class="tech-cell" id="tech-cell-1"></span></button>
+<button id="tech-choice-2" class="tech-choice" onclick="toggle_technique(document, 2)"><span class="tech-cell" id="tech-cell-2"></span></button>
+<button id="tech-choice-3" class="tech-choice" onclick="toggle_technique(document, 3)"><span class="tech-cell" id="tech-cell-3"></span></button>
+<button id="tech-choice-4" class="tech-choice" onclick="toggle_technique(document, 4)"><span class="tech-cell" id="tech-cell-4"></span></button>
+<button id="tech-choice-5" class="tech-choice" onclick="toggle_technique(document, 5)"><span class="tech-cell" id="tech-cell-5"></span></button>
+<button id="tech-choice-6" class="tech-choice" onclick="toggle_technique(document, 6)"><span class="tech-cell" id="tech-cell-6"></span></button>
+<button id="tech-choice-7" class="tech-choice" onclick="toggle_technique(document, 7)"><span class="tech-cell" id="tech-cell-7"></span></button>
+<button id="tech-choice-8" class="tech-choice" onclick="toggle_technique(document, 8)"><span class="tech-cell" id="tech-cell-8"></span></button>
+<button id="tech-choice-9" class="tech-choice" onclick="toggle_technique(document, 9)"><span class="tech-cell" id="tech-cell-9"></span></button>
+<button id="tech-choice-10" class="tech-choice" onclick="toggle_technique(document, 10)"><span class="tech-cell" id="tech-cell-10"></span></button>
+<button id="tech-choice-11" class="tech-choice" onclick="toggle_technique(document, 11)"><span class="tech-cell" id="tech-cell-11"></span></button>
+<button id="tech-choice-12" class="tech-choice" onclick="toggle_technique(document, 12)"><span class="tech-cell" id="tech-cell-12"></span></button>
+<button id="tech-choice-13" class="tech-choice" onclick="toggle_technique(document, 13)"><span class="tech-cell" id="tech-cell-13"></span></button>
+<button id="tech-choice-14" class="tech-choice" onclick="toggle_technique(document, 14)"><span class="tech-cell" id="tech-cell-14"></span></button>
+<button id="tech-choice-15" class="tech-choice" onclick="toggle_technique(document, 15)"><span class="tech-cell" id="tech-cell-15"></span></button>
+<button id="tech-choice-16" class="tech-choice" onclick="toggle_technique(document, 16)"><span class="tech-cell" id="tech-cell-16"></span></button>
+<button id="tech-choice-17" class="tech-choice" onclick="toggle_technique(document, 17)"><span class="tech-cell" id="tech-cell-17"></span></button>
+<button id="tech-choice-18" class="tech-choice" onclick="toggle_technique(document, 18)"><span class="tech-cell" id="tech-cell-18"></span></button>
+<button id="tech-choice-19" class="tech-choice" onclick="toggle_technique(document, 19)"><span class="tech-cell" id="tech-cell-19"></span></button>
+<button id="tech-choice-20" class="tech-choice" onclick="toggle_technique(document, 20)"><span class="tech-cell" id="tech-cell-20"></span></button>
+<button id="tech-choice-21" class="tech-choice" onclick="toggle_technique(document, 21)"><span class="tech-cell" id="tech-cell-21"></span></button>
+<button id="tech-choice-22" class="tech-choice" onclick="toggle_technique(document, 22)"><span class="tech-cell" id="tech-cell-22"></span></button>
+<button id="tech-choice-23" class="tech-choice" onclick="toggle_technique(document, 23)"><span class="tech-cell" id="tech-cell-23"></span></button>
+<button id="tech-choice-24" class="tech-choice" onclick="toggle_technique(document, 24)"><span class="tech-cell" id="tech-cell-24"></span></button>
+<button id="tech-choice-25" class="tech-choice" onclick="toggle_technique(document, 25)"><span class="tech-cell" id="tech-cell-25"></span></button>
+<button id="tech-choice-26" class="tech-choice" onclick="toggle_technique(document, 26)"><span class="tech-cell" id="tech-cell-26"></span></button>
+<button id="tech-choice-27" class="tech-choice" onclick="toggle_technique(document, 27)"><span class="tech-cell" id="tech-cell-27"></span></button>
+<button id="tech-choice-28" class="tech-choice" onclick="toggle_technique(document, 28)"><span class="tech-cell" id="tech-cell-28"></span></button>
+<button id="tech-choice-29" class="tech-choice" onclick="toggle_technique(document, 29)"><span class="tech-cell" id="tech-cell-29"></span></button>
+<button id="tech-choice-30" class="tech-choice" onclick="toggle_technique(document, 30)"><span class="tech-cell" id="tech-cell-30"></span></button>
+<button id="tech-choice-31" class="tech-choice" onclick="toggle_technique(document, 31)"><span class="tech-cell" id="tech-cell-31"></span></button>
+<button id="tech-choice-32" class="tech-choice" onclick="toggle_technique(document, 32)"><span class="tech-cell" id="tech-cell-32"></span></button>
+<button id="tech-choice-33" class="tech-choice" onclick="toggle_technique(document, 33)"><span class="tech-cell" id="tech-cell-33"></span></button>
+<button id="tech-choice-34" class="tech-choice" onclick="toggle_technique(document, 34)"><span class="tech-cell" id="tech-cell-34"></span></button>
+<button id="tech-choice-35" class="tech-choice" onclick="toggle_technique(document, 35)"><span class="tech-cell" id="tech-cell-35"></span></button>
+<button id="tech-choice-36" class="tech-choice" onclick="toggle_technique(document, 36)"><span class="tech-cell" id="tech-cell-36"></span></button>
+<button id="tech-choice-37" class="tech-choice" onclick="toggle_technique(document, 37)"><span class="tech-cell" id="tech-cell-37"></span></button>
+<button id="tech-choice-38" class="tech-choice" onclick="toggle_technique(document, 38)"><span class="tech-cell" id="tech-cell-38"></span></button>
+<button id="tech-choice-39" class="tech-choice" onclick="toggle_technique(document, 39)"><span class="tech-cell" id="tech-cell-39"></span></button>
+<button id="tech-choice-40" class="tech-choice" onclick="toggle_technique(document, 40)"><span class="tech-cell" id="tech-cell-40"></span></button>
+<button id="tech-choice-41" class="tech-choice" onclick="toggle_technique(document, 41)"><span class="tech-cell" id="tech-cell-41"></span></button>
+<button id="tech-choice-42" class="tech-choice" onclick="toggle_technique(document, 42)"><span class="tech-cell" id="tech-cell-42"></span></button>
+<button id="tech-choice-43" class="tech-choice" onclick="toggle_technique(document, 43)"><span class="tech-cell" id="tech-cell-43"></span></button>
+<button id="tech-choice-44" class="tech-choice" onclick="toggle_technique(document, 44)"><span class="tech-cell" id="tech-cell-44"></span></button>
+<button id="tech-choice-45" class="tech-choice" onclick="toggle_technique(document, 45)"><span class="tech-cell" id="tech-cell-45"></span></button>
+<button id="tech-choice-46" class="tech-choice" onclick="toggle_technique(document, 46)"><span class="tech-cell" id="tech-cell-46"></span></button>
+<button id="tech-choice-47" class="tech-choice" onclick="toggle_technique(document, 47)"><span class="tech-cell" id="tech-cell-47"></span></button>
+<button id="tech-choice-48" class="tech-choice" onclick="toggle_technique(document, 48)"><span class="tech-cell" id="tech-cell-48"></span></button>
+<button id="tech-choice-49" class="tech-choice" onclick="toggle_technique(document, 49)"><span class="tech-cell" id="tech-cell-49"></span></button>
+<button id="tech-choice-50" class="tech-choice" onclick="toggle_technique(document, 50)"><span class="tech-cell" id="tech-cell-50"></span></button>
+<button id="tech-choice-51" class="tech-choice" onclick="toggle_technique(document, 51)"><span class="tech-cell" id="tech-cell-51"></span></button>
+<button id="tech-choice-52" class="tech-choice" onclick="toggle_technique(document, 52)"><span class="tech-cell" id="tech-cell-52"></span></button>
+<button id="tech-choice-53" class="tech-choice" onclick="toggle_technique(document, 53)"><span class="tech-cell" id="tech-cell-53"></span></button>
+<button id="tech-choice-54" class="tech-choice" onclick="toggle_technique(document, 54)"><span class="tech-cell" id="tech-cell-54"></span></button>
+<button id="tech-choice-55" class="tech-choice" onclick="toggle_technique(document, 55)"><span class="tech-cell" id="tech-cell-55"></span></button>
+<span class="tech-category category-0 category-left"></span><span class="tech-category category-0 category-right"></span>
+<span class="tech-category category-1 category-left"></span><span class="tech-category category-1 category-right"></span>
+<span class="tech-category category-2 category-left"></span><span class="tech-category category-2 category-right"></span>
+<span class="tech-category category-3 category-left"></span><span class="tech-category category-3 category-right"></span>
+<span class="tech-category category-4 category-left"></span><span class="tech-category category-4 category-right"></span>
+<span class="tech-category category-5 category-left"></span><span class="tech-category category-5 category-right"></span>
+<span class="tech-category category-6 category-left"></span><span class="tech-category category-6 category-right"></span>
+<span class="tech-column column-0"></span>
+<span class="tech-column column-1"></span>
+<span class="tech-column column-2"></span>
+<span class="tech-column column-3"></span>
+<span class="tech-column column-4"></span>
+<span class="tech-column column-5"></span>
+<span class="tech-column column-6"></span>
+<span class="tech-column column-7"></span>
+</div><div id="tech-info" class="hidden"><span id="tech-info-heading"></span><span id="tech-info-tl" class="info-corner"></span><span id="tech-info-tr" class="info-corner"></span><span id="tech-info-bl" class="info-corner"></span><span id="tech-info-br" class="info-corner"></span><span id="tech-info-notch" class="info-corner"></span><div id="tech-info-name" class="original-look"></div><div id="tech-info-stats"><span class="info-label info-power" text-key="partner_menu.tech.power"></span><span class="info-colon info-power"></span><span class="info-value original-look info-power" id="tech-info-power"></span><span class="info-label info-mp" text-key="partner_menu.tech.mp"></span><span class="info-colon info-mp"></span><span class="info-value original-look info-mp" id="tech-info-mp"></span><span class="info-label info-range" text-key="partner_menu.tech.range"></span><span class="info-colon info-range"></span><span class="info-value original-look info-range" id="tech-info-range"></span><span class="info-label info-effect" text-key="partner_menu.tech.effect"></span><span class="info-colon info-effect"></span><span class="info-value original-look info-effect" id="tech-info-effect"></span></div></div><div id="tech-message"></div>
+            </div>
 
 			<div id="page-items" class="page hidden">
 				<div id="bag-grid">
@@ -71,6 +167,7 @@
 					<button id="slot-28" class="slot hidden" onclick="pick_slot(document, 28)"><img class="slot-icon hidden" id="slot-28-icon"/><span class="original-look slot-name" id="slot-28-name"></span><span class="original-look slot-count" id="slot-28-count"></span></button>
 					<button id="slot-29" class="slot hidden" onclick="pick_slot(document, 29)"><img class="slot-icon hidden" id="slot-29-icon"/><span class="original-look slot-name" id="slot-29-name"></span><span class="original-look slot-count" id="slot-29-count"></span></button>
 				</div>
+				<div id="bag-scrollbar" class="hidden"><div id="bag-scroll-thumb"></div></div>
 				<p id="bag-description" class="original-look"></p>
 				<div id="bag-foot">
 					<span class="original-look" id="bag-result"></span>

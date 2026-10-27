@@ -23,7 +23,11 @@ int main(int argc, char** argv) {
     UiDemoOptions demo{.content = options->content,
                        .width = options->width,
                        .height = options->height,
-                       .virtualGamepad = options->virtualGamepad};
+                       .virtualGamepad = options->virtualGamepad,
+                       .uiSkin = options->uiSkin,
+                       .textFont = options->textFont,
+                       .fishing = options->uiDemoFishing,
+                       .bagSlots = options->uiDemoBagSlots};
     if (!options->maps.empty()) {
       demo.map = options->maps.front();
     }

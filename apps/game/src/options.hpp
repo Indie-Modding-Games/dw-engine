@@ -95,6 +95,8 @@ struct Options {
   std::optional<glm::vec2> focus;
   // The UI demo (--ui-demo), with this file of virtual gamepad commands.
   bool uiDemo = false;
+  bool uiDemoFishing = false;
+  int uiDemoBagSlots = 0;
   std::optional<std::filesystem::path> virtualGamepad;
   // Characters of the game pack shown by app::ModelViewer (--model-viewer [id...]).
   bool modelViewer = false;
@@ -111,7 +113,8 @@ inline constexpr std::string_view Usage =
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
     "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
-    "[--focus <x>,<z>] | --ui-demo [--virtual-gamepad <file>] | --model-viewer [character id...]";
+    "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-bag-size <10|20|30>] "
+    "[--virtual-gamepad <file>] | --model-viewer [character id...]";
 
 inline constexpr std::string_view RulesetOption = "--ruleset";
 inline constexpr std::string_view StoryStageOption = "--story-stage";

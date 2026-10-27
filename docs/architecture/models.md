@@ -71,7 +71,7 @@ Las funciones de `clip_sampling.hpp` son puras y el `AnimationPlayer` las usa po
   suelo a la que los pies no patinan. Si el campo mueve a otra velocidad, reproduce el clip con
   `speed = velocidad del campo / repeatGroundSpeed`.
 - **Fundido.** `play(clip, fadeSeconds)` mezcla desde la pose actual durante ese tiempo. El original no funde; por
-  defecto es 0. Un clip de otro modelo se rechaza (`play` devuelve `false`).
+  defecto es 0, y el campo tampoco funde (jugador, compañero y NPC cambian de clip de golpe, como el original). Un clip de otro modelo se rechaza (`play` devuelve `false`).
 - **Matrices.** `computeJointMatrices` da, por hueso de la piel, su transformación en el espacio del modelo por su
   matriz de bind inversa. Es lo que `render` sube por instancia para el skinning en la GPU. Usa un espacio de trabajo
   que le da quien llama (el reproductor guarda el suyo), así que reproducir no reserva memoria en cada frame.

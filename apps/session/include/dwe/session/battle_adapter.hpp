@@ -123,6 +123,9 @@ public:
   core::Result<void> equip(const GameSession& session, std::size_t place,
                            std::optional<MoveSlot> slot);
 
+  TechniqueToggle toggleTechnique(const GameSession& session, MoveSlot slot);
+  [[nodiscard]] bool canFinishTechniqueEdit(const GameSession& session) const;
+
   // Teaches the partner a move outside battle (the gym's brains course: trn_reward.c:
   // TRN_tryLearnMove), with the moves learned along with it (utils2.c: learnMove). The ids it did
   // not know.

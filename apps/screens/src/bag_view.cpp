@@ -20,6 +20,8 @@ constexpr std::string_view DescriptionField = "description";
 constexpr std::string_view CountField = "count";
 constexpr std::string_view DimmedField = "dimmed";
 constexpr std::string_view UsableField = "usable";
+constexpr std::string_view DiscardableField = "discardable";
+constexpr std::string_view ItemColorField = "item_color";
 constexpr std::string_view IconField = "icon";
 constexpr std::string_view IconRectField = "icon_rect";
 
@@ -60,6 +62,8 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
           .count = slot->count,
           .dimmed = entry != nullptr && entry->itemColor == NeverUsedColor,
           .usable = usableIn(entry, rules, context),
+          .discardable = context == game::inventory::UseContext::Field && entry->droppable == rules.discardDroppable,
+          .itemColor = entry->itemColor,
           .icon = std::move(icon),
           .iconRect = std::move(iconRect)};
 }
@@ -95,6 +99,10 @@ ScreenSettings settingsOf(const BagView& view) {
         {.name = listEntryName(BagSlotList, index, DimmedField), .value = slot.dimmed});
     settings.push_back(
         {.name = listEntryName(BagSlotList, index, UsableField), .value = slot.usable});
+    settings.push_back(
+        {.name = listEntryName(BagSlotList, index, DiscardableField), .value = slot.discardable});
+    settings.push_back({.name = listEntryName(BagSlotList, index, ItemColorField),
+                        .value = static_cast<double>(slot.itemColor)});
     settings.push_back({.name = listEntryName(BagSlotList, index, IconField), .value = slot.icon});
     settings.push_back(
         {.name = listEntryName(BagSlotList, index, IconRectField), .value = slot.iconRect});

@@ -246,6 +246,11 @@ public:
 
   [[nodiscard]] CharacterState player() const;
   [[nodiscard]] CharacterState partner() const;
+  // The partner's clip ended a pass (it went round its repeat, or a clip that does not repeat
+  // reached its end). Once the drawing side says so, a change of the partner's walk waits for the
+  // end of the pass under way, as partner.c: partnerTickWalking lets the clip finish (loopCount =
+  // 1); without it the partner changes at once.
+  void notePartnerPassEnded();
 
   // Whether the partner stands beside the player, closer than its walking distance (partner.c:
   // getPartnerTamerCloseness returns 2), as it comes to the player to sleep or to be praised.
@@ -447,6 +452,8 @@ private:
   assets::CollisionCell lastPlayerCell_;
   std::deque<assets::CollisionCell> trail_;
   scene::Motion partnerMotion_ = scene::Motion::Idle;
+  bool partnerPassesNoted_ = false;
+  bool partnerPassEnded_ = false;
   float partnerStuckSeconds_ = 0.0F;
   std::int32_t partnerTeleports_ = 0;
 

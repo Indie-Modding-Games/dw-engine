@@ -31,3 +31,10 @@ scripts/dev.sh docs       # el sitio en build/docs-site; falla con un enlace rot
 ## Licencia
 
 Por definir (ver [ADR 0011](docs/adr/0011-politica-legal-de-assets.md)).
+
+## Repositorios relacionados
+
+- [dw-engine-ai](https://github.com/Indie-Modding-Games/dw-engine-ai): configuración y continuidad de trabajo privadas.
+- [dw-engine-assets](https://github.com/Indie-Modding-Games/dw-engine-assets): snapshot privado del contenido procesado y su restaurador.
+
+El motor conserva su código y documentación técnica. Los repositorios relacionados requieren acceso independiente y no se incorporan como submódulos ni se descargan al compilar.

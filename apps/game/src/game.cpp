@@ -433,7 +433,7 @@ int runGame(const Options& requested) {
       .width = size.width,
       .height = size.height,
       .scale = 1.0F,
-      .hotReload = false,
+      .hotReload = options.tuning,
       .clock = [&platform] { return platform->nowSeconds(); },
       .scripts = {},
   });
@@ -874,6 +874,9 @@ int runGame(const Options& requested) {
         moviePlayed = false;
         afterMovie();
       }
+    }
+    if (options.tuning) {
+      (*ui)->reloadChanged();
     }
     (*ui)->update();
 

@@ -10,18 +10,33 @@
 	<div id="scrim">
 		<div id="panel">
 			<h1 id="title"></h1>
+			<h1 id="title-date"><span id="field-year-label" text-key="pause_menu.year_label"></span><span id="field-year-digits"><span id="field-year-1" class="date-digit"></span><span id="field-year-2" class="date-digit"></span><span id="field-year-3" class="date-digit"></span></span><span id="field-day-label" text-key="pause_menu.day_label"></span><span id="field-day-digits"><span id="field-day-1" class="date-digit"></span><span id="field-day-2" class="date-digit"></span></span><span id="field-date-separator"></span></h1>
 
 			<div id="page-main" class="page">
-				<button id="continue" autofocus="autofocus" onclick="resume()" text-key="pause_menu.continue"></button>
-				<button id="open-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
-				<button id="open-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
-				<button id="open-partner" onclick="ui.send('open_partner_menu')" text-key="pause_menu.partner"></button>
-				<button id="praise" onclick="ui.send('praise')" text-key="pause_menu.praise"></button>
-				<button id="scold" onclick="ui.send('scold')" text-key="pause_menu.scold"></button>
-				<button id="sleep" onclick="sleep()" text-key="pause_menu.sleep"></button>
-				<button id="fish" class="hidden" onclick="fish()" text-key="pause_menu.fish"></button>
-				<button id="to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
-				<button id="quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
+				<button id="continue" class="menu-utility" autofocus="autofocus" onclick="resume()" text-key="pause_menu.continue"></button>
+				<button id="open-minimap" class="menu-utility" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
+				<button id="open-options" class="menu-utility" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
+				<button id="open-items" class="field-entry" onclick="open_partner('items')"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-item"></span><span class="menu-label menu-item-label" text-key="pause_menu.items"></span></button>
+				<button id="open-partner" class="field-entry" onclick="open_partner('status')"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-digimon"></span><span class="menu-label menu-digimon-label" text-key="pause_menu.digimon"></span></button>
+				<button id="open-player" class="field-entry" onclick="open_page(document, 'player')"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-player"></span><span class="menu-label menu-player-label" text-key="pause_menu.player"></span></button>
+				<button id="praise" class="field-entry" onclick="ui.send('praise')"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-praise"></span><span class="menu-label menu-praise-label" text-key="pause_menu.praise"></span></button>
+				<button id="scold" class="field-entry" onclick="ui.send('scold')"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-scold"></span><span class="menu-label menu-scold-label" text-key="pause_menu.scold"></span></button>
+				<button id="sleep" class="field-entry" onclick="sleep()"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-sleep"></span><span class="menu-label menu-sleep-label" text-key="pause_menu.sleep"></span></button>
+				<button id="fish" class="field-entry hidden" onclick="fish()"><span class="field-menu-focus"><span class="cursor-part cursor-left"></span><span class="cursor-part cursor-right"></span><span class="cursor-part cursor-top"></span><span class="cursor-part cursor-bottom"></span><span class="cursor-part cursor-tl"></span><span class="cursor-part cursor-tr"></span><span class="cursor-part cursor-bl"></span><span class="cursor-part cursor-br"></span></span><span class="field-menu-icon menu-fish"></span><span class="menu-label menu-fish-label" text-key="pause_menu.fish"></span></button>
+				<button id="to-title" class="menu-utility" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
+				<button id="quit" class="menu-utility" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
+			</div>
+
+			<div id="page-player" class="page hidden">
+				<div class="player-line"><span text-key="pause_menu.player_name"></span><span class="player-value" id="player-name"></span></div>
+				<div class="player-line"><span text-key="pause_menu.player_level"></span><span class="player-value" id="player-level"></span></div>
+				<div class="player-line"><span text-key="pause_menu.player_bits"></span><span class="player-value" id="player-bits"></span></div>
+				<div class="player-line"><span text-key="pause_menu.player_time"></span><span class="player-value" id="player-time"></span></div>
+				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
+				<button id="player-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
+				<button id="player-to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
+				<button id="player-quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
+				<button id="player-back" class="back" onclick="back(document)" text-key="common.back"></button>
 			</div>
 
 			<div id="page-minimap" class="page hidden">

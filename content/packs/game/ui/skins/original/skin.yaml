@@ -70,6 +70,59 @@ document_classes:
 # Una hoja por imagen y paleta: el original elige la paleta de cada sprite al dibujarlo. Rectángulos en píxeles del
 # original (los de la decompilación); la copia x4 de ui_original los multiplica sola.
 sprite_sheets:
+  # Los seis iconos del menú del campo, medidos en FI_INFO del disco del usuario.
+  - name: ow-field-menu
+    image: texture/etcdat/fi_info
+    palette: 12
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      menu-item: [0, 0, 20, 20]
+      menu-player: [0, 20, 20, 20]
+      menu-item-active: [20, 0, 20, 20]
+      menu-player-active: [20, 20, 20, 20]
+      menu-cursor-corner: [0, 59, 4, 4]
+      menu-cursor-bar: [4, 59, 4, 4]
+      menu-cursor-side: [8, 59, 4, 4]
+  - name: ow-field-menu-digits
+    image: texture/etcdat/fi_info
+    palette: 4
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      menu-digit-0: [121, 52, 7, 12]
+      menu-digit-1: [97, 40, 7, 12]
+      menu-digit-2: [105, 40, 7, 12]
+      menu-digit-3: [113, 40, 7, 12]
+      menu-digit-4: [121, 40, 7, 12]
+      menu-digit-5: [81, 52, 7, 12]
+      menu-digit-6: [89, 52, 7, 12]
+      menu-digit-7: [97, 52, 7, 12]
+      menu-digit-8: [105, 52, 7, 12]
+      menu-digit-9: [113, 52, 7, 12]
+  - name: ow-field-menu-neutral
+    image: texture/etcdat/fi_info
+    palette: 13
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      menu-digimon: [40, 0, 20, 20]
+      menu-praise: [40, 20, 20, 20]
+      menu-scold: [0, 40, 20, 20]
+      menu-sleep: [40, 40, 20, 20]
+      menu-fish: [80, 0, 20, 19]
+      menu-digimon-active: [60, 0, 20, 20]
+      menu-praise-active: [60, 20, 20, 20]
+      menu-scold-active: [20, 40, 20, 20]
+      menu-sleep-active: [60, 40, 20, 20]
+      menu-fish-active: [100, 0, 20, 19]
+      menu-label-item: [80, 19, 24, 7]
+      menu-label-digimon: [80, 26, 28, 7]
+      menu-label-player: [80, 33, 28, 7]
+      menu-label-praise: [108, 19, 20, 7]
+      menu-label-scold: [108, 26, 20, 7]
+      menu-label-sleep: [108, 33, 20, 7]
+      menu-label-fish: [80, 40, 16, 7]
   # La esquina redondeada de las cajas (ui.c: renderUIBoxBorder, paleta 4).
   - name: ow-box
     image: texture/etcdat/system_w
@@ -112,6 +165,174 @@ sprite_sheets:
     sprites:
       discipline-high: [22, 116, 11, 11]
       discipline-low: [33, 116, 11, 11]
+  # Rótulos de sección de Status; la imagen procede únicamente del disco local del usuario.
+  - name: status-profile-meta
+    image: texture/etcdat/system_w
+    palette: 9
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-special-heading: [25, 56, 25, 8]
+      status-type-heading: [0, 56, 25, 8]
+      status-active-heading: [50, 56, 25, 8]
+  - name: status-types-conditions
+    image: texture/etcdat/system_w
+    palette: 0
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-type-1: [0, 0, 12, 12]
+      status-type-2: [12, 0, 12, 12]
+      status-type-3: [24, 0, 12, 12]
+      status-condition-injured: [60, 12, 12, 12]
+      status-condition-hungry: [72, 12, 12, 12]
+      status-condition-sleepy: [84, 12, 12, 12]
+      status-condition-toilet: [96, 72, 12, 12]
+  - name: status-condition-mood
+    image: texture/etcdat/system_w
+    palette: 2
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-condition-sick: [48, 12, 12, 12]
+      status-condition-sulking: [96, 12, 12, 12]
+  - name: status-condition-fatigue
+    image: texture/etcdat/system_w
+    palette: 1
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-condition-tired: [108, 12, 12, 12]
+  - name: status-profile-labels
+    image: texture/etcdat/system_w
+    palette: 9
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-name-label: [128, 48, 26, 10]
+      status-species-label: [154, 48, 26, 10]
+      status-age-label: [128, 58, 19, 10]
+      status-weight-label: [180, 48, 28, 10]
+  - name: status-lives
+    image: texture/etcdat/system_w
+    palette: 6
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-life-full: [232, 12, 12, 11]
+      status-life-outline: [244, 12, 12, 11]
+  - name: status-happiness-title
+    image: texture/etcdat/system_w
+    palette: 4
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-happiness-name: [212, 58, 36, 12]
+  - name: status-meter-icons
+    image: texture/etcdat/system_w
+    palette: 10
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-happy: [0, 116, 11, 11]
+      status-sad: [11, 116, 11, 11]
+      status-virus: [44, 116, 9, 11]
+  - name: status-sections
+    image: texture/etcdat/system_w
+    palette: 8
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      status-profile: [0, 75, 53, 11]
+      status-condition: [0, 86, 53, 11]
+      status-parameter: [0, 97, 53, 11]
+  - name: tech-column-labels
+    image: texture/etcdat/system_w
+    palette: 4
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-power-label: [92, 34, 23, 7]
+      tech-mp-label: [116, 34, 11, 7]
+      tech-range-label: [76, 41, 19, 7]
+      tech-effect-label: [0, 48, 16, 7]
+  # Editor Tech: etiquetas, cursor y pictogramas de SYSTEM_W del disco local.
+  - name: tech-grid-labels
+    image: texture/etcdat/system_w
+    palette: 4
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-grid-cursor: [192, 12, 18, 16]
+      tech-info-heading: [17, 48, 37, 7]
+      tech-info-colon: [138, 12, 10, 10]
+      tech-info-tl: [120, 16, 4, 4]
+      tech-info-tr: [124, 16, 4, 4]
+      tech-info-bl: [120, 20, 4, 4]
+      tech-info-br: [124, 20, 4, 4]
+      digimon-tab-left-active: [212, 12, 7, 16]
+      digimon-tab-left-idle: [212, 12, 7, 15]
+      digimon-tab-middle-active: [226, 12, 4, 16]
+      digimon-tab-middle-idle: [226, 12, 4, 15]
+      digimon-tab-right-active: [219, 12, 7, 16]
+      digimon-tab-right-idle: [219, 12, 7, 15]
+      tech-category-0: [0, 24, 20, 10]
+      tech-category-1: [20, 24, 20, 10]
+      tech-category-2: [40, 24, 20, 10]
+      tech-category-3: [60, 24, 20, 10]
+      tech-category-4: [80, 24, 20, 10]
+      tech-category-5: [100, 24, 20, 10]
+      tech-category-6: [120, 24, 20, 10]
+      tech-column-0: [148, 12, 4, 5]
+      tech-column-1: [152, 12, 4, 5]
+      tech-column-2: [156, 12, 4, 5]
+      tech-column-3: [160, 12, 4, 5]
+      tech-column-4: [164, 12, 4, 5]
+      tech-column-5: [168, 12, 4, 5]
+      tech-column-6: [172, 12, 4, 5]
+      tech-column-7: [176, 12, 4, 5]
+  - name: tech-grid-glyphs-0
+    image: texture/etcdat/system_w
+    palette: 0
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-glyph-0-0: [36, 0, 12, 12]
+      tech-glyph-0-1: [48, 0, 12, 12]
+      tech-glyph-1-0: [60, 0, 12, 12]
+      tech-glyph-1-1: [72, 0, 12, 12]
+      tech-glyph-6-0: [180, 0, 12, 12]
+      tech-glyph-6-1: [192, 0, 12, 12]
+  - name: tech-grid-glyphs-1
+    image: texture/etcdat/system_w
+    palette: 1
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-glyph-2-0: [84, 0, 12, 12]
+      tech-glyph-2-1: [96, 0, 12, 12]
+      tech-glyph-3-0: [108, 0, 12, 12]
+      tech-glyph-3-1: [120, 0, 12, 12]
+      tech-glyph-4-0: [132, 0, 12, 12]
+      tech-glyph-4-1: [144, 0, 12, 12]
+  - name: tech-grid-glyphs-2
+    image: texture/etcdat/system_w
+    palette: 2
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-glyph-5-0: [156, 0, 12, 12]
+      tech-glyph-5-1: [168, 0, 12, 12]
+  - name: tech-effects
+    image: texture/etcdat/system_w
+    palette: 0
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      tech-poison: [0, 12, 12, 12]
+      tech-confusion: [12, 12, 12, 12]
+      tech-stun: [24, 12, 12, 12]
+      tech-flatten: [36, 12, 12, 12]
   # Los iconos de los parámetros en el menú del compañero (renderDigimonStatsView, paleta 11).
   - name: ow-stat
     image: texture/etcdat/system_w

@@ -65,7 +65,7 @@ public:
         random_(static_cast<std::uint_fast32_t>(desc.session->partner().randomState())) {}
 
   void setTraining(bool training) override {
-    // tamer.c: tamerSetState(8), partner.c: partnerSetState(10): both stand for the course. A
+    // The player's state 8 and partner.c: partnerSetState(10): both stand for the course. A
     // course the console starts finds the field free and holds it itself.
     game::field::Field& field = desc_->scene->field();
     if (training) {
@@ -106,21 +106,21 @@ public:
     }
   }
   bool walk(Actor actor, std::optional<Point> spot) override {
-    // tamer.c: tickEntityWalkTo faces the target every frame and walks at the walk clip's speed;
-    // it ends on the spot's cell, or, walking back, on touching the tamer.
+    // The original's tickEntityWalkTo faces the target every frame and walks at the walk clip's
+    // speed; it ends on the spot's cell, or, walking back, on touching the player.
     game::field::Field& field = desc_->scene->field();
     const scene::Entity entity = entityOf(actor);
     const glm::vec3 position = positionOf(actor);
-    const bool toTamer = !spot.has_value();
+    const bool toPlayer = !spot.has_value();
     const glm::vec3 target =
-        toTamer ? field.player().position
-                : glm::vec3{static_cast<float>(spot->x), position.y, static_cast<float>(spot->z)};
+        toPlayer ? field.player().position
+                 : glm::vec3{static_cast<float>(spot->x), position.y, static_cast<float>(spot->z)};
     glm::vec3 toward = target - position;
     toward.y = 0.0F;
     const float distance = glm::length(toward);
     const game::field::FieldRules& rules = field.rules();
     const float touch = rules.player.radius + rules.partner.mover.radius;
-    const bool there = toTamer
+    const bool there = toPlayer
                            ? distance <= touch
                            : assets::collisionCellAt(position) == assets::collisionCellAt(target);
     if (there) {

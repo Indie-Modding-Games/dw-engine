@@ -35,6 +35,9 @@ public:
   [[nodiscard]] double time() const { return time_; }
   // A clip that does not repeat is finished once it holds its last pose.
   [[nodiscard]] bool finished() const;
+  // How many passes the clip has ended: the times it went round its repeat, or 1 once a clip that
+  // does not repeat holds its last pose.
+  [[nodiscard]] std::uint64_t passes() const;
   // Any clip, one that repeats too, has played through once its first pass reaches its end
   // (anim.c: animFrame reaching frameCount, which the care scenes wait for).
   [[nodiscard]] bool playedThrough() const;

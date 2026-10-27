@@ -2,6 +2,7 @@
 /build/
 /out/
 /.cache/
+/.dwe-studio/
 compile_commands.json
 
 # vcpkg
