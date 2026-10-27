@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#181818" />
+    <title>DWE Studio — prueba de concepto</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #181818;
+        --panel: #1f1f1f;
+        --panel-raised: #252526;
+        --panel-soft: #2a2d2e;
+        --border: #333333;
+        --muted: #9da0a2;
+        --text: #cccccc;
+        --bright: #f2f2f2;
+        --blue: #007acc;
+        --blue-light: #4fc1ff;
+        --green: #89d185;
+        --yellow: #e2c08d;
+        --red: #f14c4c;
+        --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+        --ui: "Segoe UI", Inter, system-ui, sans-serif;
+        font-family: var(--ui);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 900px; min-height: 660px; height: 100vh; overflow: hidden; }
+      button, input { font: inherit; }
+      button { color: inherit; }
+      button:focus-visible, input:focus-visible { outline: 1px solid var(--blue-light); outline-offset: -1px; }
+      .workbench { height: 100%; display: grid; grid-template-rows: 36px 1fr 22px; }
+
+      .titlebar {
+        display: flex; align-items: center; gap: 14px; padding: 0 10px;
+        background: #181818; border-bottom: 1px solid #111; user-select: none;
+      }
+      .brand { display: flex; align-items: center; gap: 8px; color: var(--bright); font-weight: 650; white-space: nowrap; }
+      .brand-mark { width: 17px; height: 17px; border: 1px solid #45a5e8; border-radius: 4px; color: #58b8fa; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+      .menu { display: flex; gap: 13px; color: #bcbcbc; font-size: 12px; }
+      .command-center { margin: 0 auto; width: min(340px, 27vw); height: 26px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #343434; border-radius: 6px; background: #222; color: #d1d1d1; box-shadow: 0 1px 2px #0006; }
+      .command-center span:first-child { color: var(--muted); }
+      .window-actions { display: flex; gap: 15px; color: #aaa; margin-left: auto; font-size: 12px; }
+
+      .body { min-height: 0; display: grid; grid-template-columns: 48px 224px minmax(440px, 1fr) 318px; }
+      .activitybar { background: #181818; border-right: 1px solid #252525; display: flex; flex-direction: column; align-items: center; padding: 5px 0; gap: 7px; }
+      .activity { border: 0; border-left: 2px solid transparent; width: 46px; height: 43px; background: transparent; color: #858585; display: grid; place-items: center; cursor: pointer; position: relative; }
+      .activity:hover { color: #eee; }
+      .activity.active { color: #fff; border-left-color: #fff; }
+      .activity svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+      .activity.bottom { margin-top: auto; }
+      .activity-tip { display: none; position: absolute; left: 42px; z-index: 20; padding: 5px 8px; border: 1px solid var(--border); background: #252526; border-radius: 3px; white-space: nowrap; font-size: 11px; }
+      .activity:hover .activity-tip { display: block; }
+
+      .sidebar { background: #181818; border-right: 1px solid var(--border); min-width: 0; display: flex; flex-direction: column; }
+      .side-heading { height: 35px; display: flex; align-items: center; justify-content: space-between; padding: 0 17px; font-size: 11px; letter-spacing: .07em; color: #bbb; }
+      .side-tools { color: #999; letter-spacing: 5px; }
+      .project-name { display: flex; align-items: center; gap: 7px; height: 31px; padding: 0 11px; color: #ddd; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+      .chevron { width: 10px; color: #999; font-size: 10px; }
+      .tree { overflow: auto; padding: 2px 0 10px; font-size: 12px; }
+      .tree-row { height: 24px; display: flex; align-items: center; gap: 7px; padding-left: 13px; white-space: nowrap; cursor: pointer; }
+      .tree-row:hover { background: #2a2d2e; }
+      .tree-row.selected { background: #04395e; color: #fff; }
+      .tree-row.depth-1 { padding-left: 27px; }
+      .tree-row.depth-2 { padding-left: 44px; }
+      .tree-icon { width: 15px; color: #79b8ff; text-align: center; font-family: var(--mono); font-size: 11px; }
+      .tree-icon.cpp { color: #9cdbff; }
+      .tree-icon.folder { color: #dcb67a; }
+      .tree-icon.lua { color: #83aaff; }
+      .tree-icon.yaml { color: #cb9cff; }
+      .side-section { min-height: 30px; border-top: 1px solid var(--border); padding: 8px 12px; color: #bbb; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+
+      .editor { min-width: 0; min-height: 0; display: grid; grid-template-rows: 38px 39px minmax(360px, 1fr) 190px; background: var(--bg); }
+      .editor-tabs { min-width: 0; display: flex; align-items: stretch; border-bottom: 1px solid var(--border); background: #181818; overflow: hidden; }
+      .tab { border: 0; border-right: 1px solid #252525; background: #1f1f1f; color: #999; min-width: 120px; padding: 0 13px; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; cursor: pointer; }
+      .tab.active { background: var(--bg); color: #eee; border-top: 1px solid var(--blue); }
+      .tab-icon { color: #83c4ff; font-family: var(--mono); }
+      .tab-close { color: #777; margin-left: 4px; }
+      .tab-spacer { flex: 1; }
+      .editor-action { border: 0; background: transparent; padding: 0 10px; color: #aaa; cursor: pointer; }
+
+      .debugbar { grid-column: 1 / -1; height: 39px; background: #1f1f1f; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+      .debug-title { color: #ddd; margin-right: 8px; font-size: 11px; }
+      .select { min-width: 98px; border: 1px solid #424242; background: #252526; border-radius: 3px; padding: 4px 7px; color: #ddd; font-size: 11px; }
+      .debug-button { height: 26px; min-width: 29px; border: 1px solid #3c3c3c; border-radius: 3px; background: #2b2b2b; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; cursor: pointer; color: #d0d0d0; }
+      .debug-button:hover { background: #383838; }
+      .debug-button.run { border-color: #2b6c43; color: #9cdc9c; }
+      .debug-button.stop { color: #f48771; }
+      .debug-status { margin-left: auto; display: flex; align-items: center; gap: 7px; color: #aaa; font-size: 11px; }
+      .dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; background: #89d185; box-shadow: 0 0 7px #89d18577; }
+
+      .workspace-grid { min-height: 0; display: grid; grid-template-columns: minmax(300px, 1.08fr) minmax(270px, .92fr); }
+      .compare { min-width: 0; min-height: 0; display: grid; grid-template-rows: 30px 270px minmax(62px, 1fr); border-right: 1px solid var(--border); }
+      .pane-heading { display: flex; align-items: center; gap: 8px; padding: 0 11px; color: #c5c5c5; font-size: 11px; border-bottom: 1px solid var(--border); background: #1f1f1f; }
+      .pane-heading .secondary { color: #858585; margin-left: auto; font-size: 10px; }
+      .viewports { min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+      .viewport { min-width: 0; position: relative; overflow: hidden; background: #342d29; display: grid; grid-template-rows: 28px 1fr 24px; }
+      .viewport-head { position: relative; z-index: 1; background: #252526eF; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; color: #ddd; font-size: 10px; }
+      .viewport-head strong { font-weight: 550; }
+      .viewport-head .source { color: #aaa; font-size: 9px; }
+      .scene { width: 100%; height: 100%; min-height: 0; image-rendering: pixelated; }
+      .scene.engine-scene { filter: saturate(.94) hue-rotate(-2deg); }
+      .scene svg { display: block; width: 100%; height: 100%; }
+      .view-status { z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-family: var(--mono); font-size: 9px; color: #c9dcf0; background: #161a20eb; }
+      .frame-chip { color: #a8d8ff; }
+      .diff-chip { color: #e2c08d; }
+      .compare-details { min-height: 0; overflow: auto; background: #1b1b1b; }
+      .details-head { height: 21px; padding: 0 10px; display: flex; align-items: center; border-bottom: 1px solid var(--border); color: #aaa; font-size: 9px; font-weight: 650; letter-spacing: .04em; }
+      .details-head span:last-child { margin-left: auto; color: #777; font-weight: 400; letter-spacing: 0; }
+      .diff-row { min-height: 20px; display: grid; grid-template-columns: minmax(90px, 1.2fr) 1fr 1fr 55px; align-items: center; gap: 5px; padding: 0 10px; border-bottom: 1px solid #292929; font: 9px var(--mono); }
+      .diff-label { color: #aaa; }
+      .diff-ref { color: #c5d8eb; }
+      .diff-engine { color: #b9dda9; }
+      .diff-value { text-align: right; color: #e2c08d; }
+      .diff-row.head { min-height: 18px; color: #777; font-size: 8px; }
+      .diff-row.head span:not(:first-child) { text-align: right; }
+
+      .code-editor { min-width: 0; min-height: 0; display: grid; grid-template-rows: 30px 34px 1fr; }
+      .breadcrumbs { height: 30px; padding: 0 12px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border); color: #aaa; font-size: 10px; white-space: nowrap; overflow: hidden; }
+      .breadcrumbs b { color: #ddd; font-weight: 500; }
+      .paused-banner { display: flex; align-items: center; gap: 7px; padding: 0 11px; background: #242424; border-bottom: 1px solid #333; color: #e3c98b; font-size: 10px; }
+      .code { min-height: 0; overflow: auto; padding: 10px 0 18px; font-family: var(--mono); font-size: 11px; line-height: 1.68; white-space: pre; }
+      .line { min-width: max-content; height: 18.5px; display: grid; grid-template-columns: 36px 18px auto; padding-right: 12px; cursor: pointer; }
+      .line:hover { background: #ffffff08; }
+      .line.current { background: #264f784f; border-top: 1px solid #315f8b; border-bottom: 1px solid #315f8b; }
+      .line-number { color: #858585; text-align: right; padding-right: 8px; user-select: none; }
+      .breakpoint { color: var(--red); font-size: 13px; line-height: 18px; text-align: center; }
+      .code-text { color: #d4d4d4; }
+      .kw { color: #c586c0; }
+      .type { color: #4ec9b0; }
+      .fn { color: #dcdcaa; }
+      .num { color: #b5cea8; }
+      .comment { color: #6a9955; }
+      .var { color: #9cdcfe; }
+
+      .bottom-panel { min-height: 0; border-top: 1px solid #444; display: grid; grid-template-rows: 32px 1fr; background: #181818; }
+      .panel-tabs { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); gap: 2px; padding-left: 8px; }
+      .panel-tab { border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 0 10px; color: #aaa; font-size: 10px; cursor: pointer; }
+      .panel-tab.active { color: #f2f2f2; border-bottom-color: #007acc; }
+      .terminal-tools { margin-left: auto; display: flex; align-items: center; gap: 13px; padding: 0 12px; color: #999; }
+      .terminal-content { min-height: 0; overflow: auto; padding: 8px 13px; font: 10px/1.65 var(--mono); color: #ccc; }
+      .term-line { display: block; }
+      .term-muted { color: #888; }
+      .term-green { color: #89d185; }
+      .prompt-line { color: #9cdcfe; margin-top: 5px; }
+      .cursor { display: inline-block; width: 7px; height: 13px; background: #ddd; vertical-align: -2px; animation: blink 1.1s steps(2, start) infinite; }
+      @keyframes blink { to { visibility: hidden; } }
+
+      .auxbar { min-width: 0; min-height: 0; background: #181818; border-left: 1px solid var(--border); display: grid; grid-template-rows: 34px minmax(190px, .86fr) minmax(260px, 1.14fr); }
+      .aux-tabs { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); background: #181818; }
+      .aux-tab { border: 0; border-bottom: 1px solid transparent; background: transparent; color: #999; padding: 0 12px; font-size: 10px; cursor: pointer; }
+      .aux-tab.active { color: #ddd; border-bottom-color: #007acc; }
+      .aux-actions { margin-left: auto; align-self: center; color: #888; padding-right: 12px; }
+      .inspect { overflow: auto; border-bottom: 1px solid var(--border); }
+      .inspect-title { height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; font-size: 10px; color: #ddd; font-weight: 600; }
+      .inspect-title small { color: #888; margin-left: auto; font-weight: 400; }
+      .var-row { height: 25px; padding: 0 10px; display: grid; grid-template-columns: minmax(83px, .9fr) 1fr; align-items: center; border-top: 1px solid #292929; font-family: var(--mono); font-size: 10px; }
+      .var-name { color: #9cdcfe; }
+      .var-value { color: #dcdcaa; display: flex; justify-content: space-between; gap: 3px; }
+      .var-value .x { color: #f48771; }
+      .var-value .y { color: #89d185; }
+      .var-value .z { color: #79b8ff; }
+      .physics-mini { padding: 8px 10px 10px; border-top: 1px solid #292929; }
+      .physics-label { font-size: 9px; color: #999; margin-bottom: 7px; }
+      .meter { height: 5px; border-radius: 5px; background: #353535; overflow: hidden; margin: 7px 0 4px; }
+      .meter > span { display: block; width: 58%; height: 100%; background: linear-gradient(90deg,#007acc,#4fc1ff); }
+      .meter-caption { display: flex; justify-content: space-between; color: #888; font: 9px var(--mono); }
+
+      .assistant { min-height: 0; display: grid; grid-template-rows: 34px 30px 1fr auto; }
+      .assistant-heading { display: flex; align-items: center; padding: 0 10px; gap: 7px; font-size: 11px; font-weight: 600; color: #ddd; }
+      .assistant-heading small { margin-left: auto; color: #888; font-size: 9px; font-weight: 400; }
+      .chat-tabs { display: flex; border-top: 1px solid #303030; border-bottom: 1px solid #303030; }
+      .chat-tab { height: 29px; min-width: 74px; border: 0; border-right: 1px solid #303030; background: transparent; color: #999; font-size: 10px; cursor: pointer; }
+      .chat-tab.active { color: #fff; background: #242424; border-bottom: 1px solid #007acc; }
+      .chat-body { overflow: auto; padding: 10px 9px; display: flex; flex-direction: column; gap: 9px; }
+      .message { border: 1px solid #343434; background: #222; border-radius: 4px; padding: 8px; font-size: 10px; line-height: 1.5; }
+      .message.user { background: #252a2e; }
+      .message-head { display: flex; justify-content: space-between; color: #aaa; font-size: 9px; margin-bottom: 5px; }
+      .message-head b { color: #c8ddf0; font-weight: 600; }
+      .message p { margin: 0; color: #d2d2d2; }
+      .chat-input { margin: 0 8px 8px; min-height: 31px; display: flex; border: 1px solid #474747; border-radius: 4px; background: #252526; }
+      .chat-input input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; padding: 6px 8px; color: #ddd; font-size: 10px; }
+      .chat-input button { width: 31px; border: 0; background: transparent; color: #8ab4d8; cursor: pointer; }
+
+      .statusbar { background: #007acc; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 10px; user-select: none; }
+      .status-left, .status-right { display: flex; align-items: center; gap: 13px; white-space: nowrap; }
+      .statusbar .muted { color: #d5ebf9; }
+      .poc-tag { color: #ffde9e; }
+
+      @media (max-width: 1180px) {
+        .body { grid-template-columns: 43px 184px minmax(460px, 1fr) 278px; }
+        .sidebar { display: flex; }
+        .workspace-grid { grid-template-columns: 1fr; grid-template-rows: minmax(312px, .54fr) minmax(263px, .46fr); }
+        .compare { grid-template-rows: 30px 220px minmax(62px, 1fr); }
+        .compare { border-right: 0; border-bottom: 1px solid var(--border); }
+        .debug-status .status-detail { display: none; }
+      }
+      @media (max-width: 1000px) {
+        body { min-width: 760px; }
+        .body { grid-template-columns: 42px 165px minmax(400px, 1fr); }
+        .sidebar { display: flex; }
+        .auxbar { display: none; }
+        .menu { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="workbench">
+      <header class="titlebar">
+        <div class="brand"><span class="brand-mark">D</span><span>DWE Studio</span></div>
+        <nav class="menu" aria-label="Menú principal"><span>Archivo</span><span>Editar</span><span>Selección</span><span>Ver</span><span>Ir</span><span>Ejecutar</span><span>Terminal</span><span>Ayuda</span></nav>
+        <button class="command-center" title="Abrir proyecto"><span>⌕</span><span>Digimon World Engine</span><span>⌄</span></button>
+        <div class="window-actions" aria-hidden="true"><span>—</span><span>□</span><span>×</span></div>
+      </header>
+
+      <div class="body">
+        <nav class="activitybar" aria-label="Vistas">
+          <button class="activity active" aria-label="Explorador"><svg viewBox="0 0 24 24"><path d="M3.5 5.5h7l2 2h8v11h-17z"/><path d="M3.5 8h17"/></svg><span class="activity-tip">Explorador</span></button>
+          <button class="activity" aria-label="Buscar"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.5 4.5"/></svg><span class="activity-tip">Buscar</span></button>
+          <button class="activity" aria-label="Control de código fuente"><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 7v7a5 5 0 0 0 5 5h5M18 7v2a5 5 0 0 1-5 5h-2"/></svg><span class="activity-tip">Control de código fuente</span></button>
+          <button class="activity" aria-label="Ejecutar y depurar"><svg viewBox="0 0 24 24"><path d="M8 5.5 19 12 8 18.5z"/><path d="M5 4v16"/></svg><span class="activity-tip">Ejecutar y depurar</span></button>
+          <button class="activity" aria-label="Extensiones"><svg viewBox="0 0 24 24"><path d="M8 3.5h4a2 2 0 1 1 4 0h4v6a2 2 0 1 0 0 4v6h-6a2 2 0 1 0-4 0H4v-6a2 2 0 1 1 0-4V3.5z"/></svg><span class="activity-tip">Extensiones</span></button>
+          <button class="activity bottom" aria-label="Cuenta"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0z"/></svg><span class="activity-tip">Cuenta</span></button>
+          <button class="activity" aria-label="Configuración"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.8 0l-.2.1h-3.6l-.1-.2a1.7 1.7 0 0 0-1.5-1.1 1.7 1.7 0 0 0-1.2.5l-.2.2-3.1-1.8.1-.2a1.7 1.7 0 0 0 0-1.8l-.1-.2v-3.6l.2-.1a1.7 1.7 0 0 0 1.1-1.5 1.7 1.7 0 0 0-.5-1.2l-.2-.2 1.8-3.1.2.1a1.7 1.7 0 0 0 1.8 0l.2-.1h3.6l.1.2a1.7 1.7 0 0 0 1.5 1.1 1.7 1.7 0 0 0 1.2-.5l.2-.2 3.1 1.8-.1.2a1.7 1.7 0 0 0 0 1.8l.1.2v3.6z"/></svg><span class="activity-tip">Configuración</span></button>
+        </nav>
+
+        <aside class="sidebar">
+          <div class="side-heading"><span>EXPLORADOR</span><span class="side-tools">···</span></div>
+          <div class="project-name"><span class="chevron">⌄</span><span>DIGIMON WORLD ENGINE</span></div>
+          <div class="tree" role="tree" aria-label="Archivos del proyecto">
+            <div class="tree-row"><span class="chevron">›</span><span class="tree-icon folder">▰</span>apps</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>content</div>
+            <div class="tree-row depth-1"><span class="chevron">⌄</span><span class="tree-icon folder">▰</span>game</div>
+            <div class="tree-row depth-2"><span class="tree-icon cpp">C</span>field_scene.cpp</div>
+            <div class="tree-row depth-2"><span class="tree-icon cpp">C</span>physics_controller.cpp</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>dwx</div>
+            <div class="tree-row"><span class="chevron">⌄</span><span class="tree-icon folder">▰</span>engine</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>animation</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>debug</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>physics</div>
+            <div class="tree-row depth-2 selected"><span class="tree-icon cpp">C</span>physics_controller.cpp</div>
+            <div class="tree-row depth-2"><span class="tree-icon cpp">C</span>collision_world.cpp</div>
+            <div class="tree-row depth-1"><span class="chevron">›</span><span class="tree-icon folder">▰</span>scene</div>
+            <div class="tree-row"><span class="chevron">›</span><span class="tree-icon folder">▰</span>tests</div>
+            <div class="tree-row"><span class="tree-icon yaml">◇</span>CMakeLists.txt</div>
+            <div class="tree-row"><span class="tree-icon yaml">◇</span>launch.json</div>
+          </div>
+          <div class="side-section">⌄ ESQUEMA</div>
+          <div class="side-section">› LÍNEA DE TIEMPO</div>
+        </aside>
+
+        <main class="editor" aria-label="Área de trabajo">
+          <div class="editor-tabs">
+            <button class="tab"><span class="tab-icon">▧</span>Dual Run<span class="tab-close">×</span></button>
+            <button class="tab active"><span class="tab-icon">C</span>physics_controller.cpp<span class="tab-close">×</span></button>
+            <button class="tab"><span class="tab-icon">◇</span>launch.json<span class="tab-close">×</span></button>
+            <span class="tab-spacer"></span><button class="editor-action" title="Dividir editor">▥</button><button class="editor-action" title="Más acciones">···</button>
+          </div>
+          <div class="debugbar">
+            <span class="debug-title">DEPURAR</span>
+            <select class="select" id="targetSelect" aria-label="Objetivo"><option>Dual Run</option><option>DWE Engine</option><option>DuckStation</option></select>
+            <button class="debug-button run" id="runBtn" title="Continuar (F5)">▶ <span id="runLabel">Continuar</span></button>
+            <button class="debug-button" id="stepBtn" title="Avanzar un paso (F10)">▸│ Paso</button>
+            <button class="debug-button" id="restartBtn" title="Reiniciar">↻</button>
+            <button class="debug-button stop" id="stopBtn" title="Detener">■</button>
+            <div class="debug-status"><span class="dot" id="connectionDot"></span><span id="debugState">DuckStation conectado</span><span class="status-detail">· Frame <b id="frameTop">218</b></span></div>
+          </div>
+
+          <div class="workspace-grid">
+            <section class="compare" aria-label="Comparación de ejecución">
+              <div class="pane-heading"><span>◫</span><span>COMPARACIÓN DE EJECUCIÓN</span><span class="secondary">Sincronizar entrada&nbsp; ☑ &nbsp;···</span></div>
+              <div class="viewports">
+                <section class="viewport">
+                  <div class="viewport-head"><strong>DuckStation · Binario PS1</strong><span class="source">SLUS_014.44</span></div>
+                  <div class="scene"><svg viewBox="0 0 520 330" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Vista de juego de referencia estilo PS1">
+                    <defs><linearGradient id="wallA" x2="0" y2="1"><stop stop-color="#746047"/><stop offset="1" stop-color="#463c36"/></linearGradient><linearGradient id="floorA" x2="0" y2="1"><stop stop-color="#83725b"/><stop offset="1" stop-color="#51483d"/></linearGradient></defs>
+                    <rect width="520" height="330" fill="#292d35"/><path d="M0 0h520v192L0 211z" fill="url(#wallA)"/><path d="M0 210 520 188v142H0z" fill="url(#floorA)"/><path d="m0 214 520-23M0 252l520-34M0 296l520-54M80 330l85-125m140 125-10-130m175 130-95-135" stroke="#a38a68" opacity=".24" stroke-width="2"/>
+                    <path d="m24 210 185-8 57 62-204 14z" fill="#9e302d"/><path d="m38 215 160-7 40 45-173 12z" fill="#e1d2b5"/><path d="m60 221 126-6 26 33-137 8z" fill="#394962"/><path d="m115 217 18-1 7 40-20 1z" fill="#d5b657"/>
+                    <path d="M375 99h98v94h-98z" fill="#302b29"/><path d="m362 96 110-7 13 12-110 7z" fill="#9d6d34"/><path d="M369 109h13v77h-13zM454 104h12v83h-12z" fill="#76502b"/><path d="M382 122h68v6h-68zM382 151h68v6h-68z" fill="#b98642"/><rect x="393" y="129" width="18" height="19" fill="#553d2d"/><rect x="420" y="132" width="22" height="15" fill="#6a4c34"/><rect x="392" y="161" width="30" height="18" fill="#5b4230"/>
+                    <path d="M28 109h74v63H28z" fill="#765435"/><path d="m22 106 80-8 8 8-82 9z" fill="#b17e40"/><path d="M34 118h9v47h-9zm51-4h9v50h-9z" fill="#bd8a4c"/><rect x="49" y="132" width="32" height="24" fill="#4a3b34"/>
+                    <path d="M150 116h42v39h-42z" fill="#b8ac91"/><path d="m144 112 49-3 3 8-48 3z" fill="#ded0b2"/><path d="M162 104c-1-22 9-32 15-34 10 7 15 21 14 36" fill="#507849"/><circle cx="176" cy="90" r="18" fill="#65884b"/><circle cx="165" cy="96" r="12" fill="#789e58"/><circle cx="186" cy="100" r="13" fill="#527643"/>
+                    <g transform="translate(279 160)"><ellipse cx="0" cy="91" rx="43" ry="10" fill="#302a25" opacity=".5"/><path d="M-21 42q-20-11-26-30l12-6q10 11 22 13" fill="none" stroke="#8cc765" stroke-width="10" stroke-linecap="round"/><path d="M20 43q22-14 28-31l10 5q-5 26-30 40" fill="none" stroke="#7fbd5c" stroke-width="10" stroke-linecap="round"/><path d="M-23 37q0-40 23-47 28 7 26 46l-10 31h-31z" fill="#65a947"/><ellipse cy="31" rx="17" ry="20" fill="#d2d6b7"/><path d="M-20-8q2-40 27-41 29 4 29 37L22 3 1-7-13 4z" fill="#75bc4e"/><ellipse cx="-2" cy="-19" rx="22" ry="18" fill="#7bc653"/><ellipse cx="-9" cy="-24" rx="7" ry="9" fill="#faf3df"/><ellipse cx="9" cy="-25" rx="7" ry="9" fill="#faf3df"/><circle cx="-8" cy="-23" r="3" fill="#202321"/><circle cx="10" cy="-24" r="3" fill="#202321"/><path d="M-4-9q9 6 17-1" fill="none" stroke="#294328" stroke-width="2"/><path d="m-13 65-10 18m28-17 13 17" stroke="#5e943d" stroke-width="8" stroke-linecap="round"/></g>
+                    <g transform="translate(202 245)"><ellipse cy="60" rx="41" ry="8" fill="#302a25" opacity=".45"/><path d="M-22 16 20 16 24 46 6 52h-35z" fill="#d6a93b"/><path d="M-21 16-31 2l5-12 17 16M18 17l11-17-4-11-18 15" fill="#d9ab45" stroke="#816432" stroke-width="4"/><circle cx="-5" cy="-12" r="16" fill="#e0bb77"/><path d="M-22-17q7-25 26-21 17 4 18 20l-8 7-31-2z" fill="#8a806e"/><path d="m-18 52-8 10 24 2 5-10m5-1 2 10 23 0-5-11" fill="#453f41"/><path d="M-22 22h44v6h-44z" fill="#ead18b"/><path d="M-10-21h16" stroke="#ddd" stroke-width="2"/></g>
+                    <rect x="7" y="7" width="76" height="23" rx="3" fill="#161a20d9"/><text x="15" y="23" fill="#d7e5f5" font-family="monospace" font-size="10">CAM 01 · REF</text><rect x="434" y="7" width="77" height="23" rx="3" fill="#15191dcc"/><text x="442" y="23" fill="#9cdcfe" font-family="monospace" font-size="9">FPS 29.97</text>
+                  </svg></div>
+                  <div class="view-status"><span>Frame <b class="frameValue">218</b> · PS1</span><span class="frame-chip">● conectado</span></div>
+                </section>
+                <section class="viewport">
+                  <div class="viewport-head"><strong>DWE Engine · Build actual</strong><span class="source">debug</span></div>
+                  <div class="scene"><svg class="engine-scene" viewBox="0 0 520 330" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Vista del motor actual en la misma escena">
+                    <rect width="520" height="330" fill="#292d35"/><path d="M0 0h520v192L0 211z" fill="#6e5944"/><path d="M0 210 520 188v142H0z" fill="#806e56"/><path d="m0 214 520-23M0 252l520-34M0 296l520-54M80 330l85-125m140 125-10-130m175 130-95-135" stroke="#a38a68" opacity=".24" stroke-width="2"/>
+                    <path d="m24 210 185-8 57 62-204 14z" fill="#9e302d"/><path d="m38 215 160-7 40 45-173 12z" fill="#e1d2b5"/><path d="m60 221 126-6 26 33-137 8z" fill="#394962"/><path d="m115 217 18-1 7 40-20 1z" fill="#d5b657"/>
+                    <path d="M375 99h98v94h-98z" fill="#302b29"/><path d="m362 96 110-7 13 12-110 7z" fill="#9d6d34"/><path d="M369 109h13v77h-13zM454 104h12v83h-12z" fill="#76502b"/><path d="M382 122h68v6h-68zM382 151h68v6h-68z" fill="#b98642"/><rect x="393" y="129" width="18" height="19" fill="#553d2d"/><rect x="420" y="132" width="22" height="15" fill="#6a4c34"/><rect x="392" y="161" width="30" height="18" fill="#5b4230"/>
+                    <path d="M28 109h74v63H28z" fill="#765435"/><path d="m22 106 80-8 8 8-82 9z" fill="#b17e40"/><path d="M34 118h9v47h-9zm51-4h9v50h-9z" fill="#bd8a4c"/><rect x="49" y="132" width="32" height="24" fill="#4a3b34"/>
+                    <path d="M150 116h42v39h-42z" fill="#b8ac91"/><path d="m144 112 49-3 3 8-48 3z" fill="#ded0b2"/><path d="M162 104c-1-22 9-32 15-34 10 7 15 21 14 36" fill="#507849"/><circle cx="176" cy="90" r="18" fill="#65884b"/><circle cx="165" cy="96" r="12" fill="#789e58"/><circle cx="186" cy="100" r="13" fill="#527643"/>
+                    <g transform="translate(283 159)"><ellipse cx="0" cy="91" rx="43" ry="10" fill="#302a25" opacity=".5"/><path d="M-21 42q-20-11-26-30l12-6q10 11 22 13" fill="none" stroke="#8cc765" stroke-width="10" stroke-linecap="round"/><path d="M20 43q22-14 28-31l10 5q-5 26-30 40" fill="none" stroke="#7fbd5c" stroke-width="10" stroke-linecap="round"/><path d="M-23 37q0-40 23-47 28 7 26 46l-10 31h-31z" fill="#65a947"/><ellipse cy="31" rx="17" ry="20" fill="#d2d6b7"/><path d="M-20-8q2-40 27-41 29 4 29 37L22 3 1-7-13 4z" fill="#75bc4e"/><ellipse cx="1" cy="-19" rx="22" ry="18" fill="#7bc653"/><ellipse cx="-8" cy="-24" rx="7" ry="9" fill="#faf3df"/><ellipse cx="10" cy="-25" rx="7" ry="9" fill="#faf3df"/><circle cx="-7" cy="-23" r="3" fill="#202321"/><circle cx="11" cy="-24" r="3" fill="#202321"/><path d="M-3-9q9 6 17-1" fill="none" stroke="#294328" stroke-width="2"/><path d="m-13 65-10 18m28-17 13 17" stroke="#5e943d" stroke-width="8" stroke-linecap="round"/></g>
+                    <g transform="translate(205 246)"><ellipse cy="60" rx="41" ry="8" fill="#302a25" opacity=".45"/><path d="M-22 16 20 16 24 46 6 52h-35z" fill="#d6a93b"/><path d="M-21 16-31 2l5-12 17 16M18 17l11-17-4-11-18 15" fill="#d9ab45" stroke="#816432" stroke-width="4"/><circle cx="-5" cy="-12" r="16" fill="#e0bb77"/><path d="M-22-17q7-25 26-21 17 4 18 20l-8 7-31-2z" fill="#8a806e"/><path d="m-18 52-8 10 24 2 5-10m5-1 2 10 23 0-5-11" fill="#453f41"/><path d="M-22 22h44v6h-44z" fill="#ead18b"/></g>
+                    <rect x="7" y="7" width="76" height="23" rx="3" fill="#161a20d9"/><text x="15" y="23" fill="#d7e5f5" font-family="monospace" font-size="10">CAM 01 · DWE</text><rect x="434" y="7" width="77" height="23" rx="3" fill="#15191dcc"/><text x="442" y="23" fill="#9cdcfe" font-family="monospace" font-size="9">FPS 60.00</text>
+                  </svg></div>
+                  <div class="view-status"><span>Frame <b class="frameValue">218</b> · Motor</span><span class="diff-chip">Δ posición 0.08 m</span></div>
+                </section>
+              </div>
+              <div class="compare-details">
+                <div class="details-head"><span>DIFERENCIAS EN FRAME <b class="frameValue">218</b></span><span>mismo input · tolerancia 0.01</span></div>
+                <div class="diff-row head"><span>ESTADO</span><span>DUCKSTATION</span><span>DWE ENGINE</span><span>DELTA</span></div>
+                <div class="diff-row"><span class="diff-label">position.x</span><span class="diff-ref">14.12</span><span class="diff-engine">14.20</span><span class="diff-value">+0.08</span></div>
+                <div class="diff-row"><span class="diff-label">vel.y · grounded</span><span class="diff-ref">−0.16 · true</span><span class="diff-engine">−0.18 · false</span><span class="diff-value">diff</span></div>
+              </div>
+            </section>
+
+            <section class="code-editor" aria-label="Editor de código">
+              <div class="breadcrumbs"><span>engine</span><span>›</span><span>physics</span><span>›</span><b>physics_controller.cpp</b><span>›</span><span>updatePhysics</span></div>
+              <div class="paused-banner"><span>Ⅱ</span><span id="pauseText">Pausado en punto de interrupción</span><span>·</span><span>player.updatePhysics()</span></div>
+              <div class="code" id="codeLines" aria-label="Código C++">
+                <div class="line" data-line="42"><span class="line-number">42</span><span class="breakpoint"></span><span class="code-text"><span class="type">void</span> <span class="fn">PhysicsController::updatePhysics</span>(<span class="type">float</span> dt) {</span></div>
+                <div class="line" data-line="43"><span class="line-number">43</span><span class="breakpoint"></span><span class="code-text">  <span class="comment">// Aplicar gravedad si está en el aire</span></span></div>
+                <div class="line" data-line="44"><span class="line-number">44</span><span class="breakpoint"></span><span class="code-text">  <span class="kw">if</span> (!<span class="var">grounded</span>) {</span></div>
+                <div class="line" data-line="45"><span class="line-number">45</span><span class="breakpoint"></span><span class="code-text">    <span class="type">const</span> <span class="type">glm::vec3</span> gravityAccel{<span class="num">0.0F</span>, -<span class="var">gravity</span>, <span class="num">0.0F</span>};</span></div>
+                <div class="line" data-line="46"><span class="line-number">46</span><span class="breakpoint"></span><span class="code-text">    <span class="var">velocity</span> += gravityAccel * dt;</span></div>
+                <div class="line" data-line="47"><span class="line-number">47</span><span class="breakpoint"></span><span class="code-text">  }</span></div>
+                <div class="line" data-line="48"><span class="line-number">48</span><span class="breakpoint"></span><span class="code-text"></span></div>
+                <div class="line" data-line="49"><span class="line-number">49</span><span class="breakpoint"></span><span class="code-text">  <span class="comment">// Limitar velocidad de caída</span></span></div>
+                <div class="line" data-line="50"><span class="line-number">50</span><span class="breakpoint"></span><span class="code-text">  <span class="kw">if</span> (<span class="var">velocity</span>.y &lt; -<span class="var">maxFallSpeed</span>) {</span></div>
+                <div class="line" data-line="51"><span class="line-number">51</span><span class="breakpoint"></span><span class="code-text">    <span class="var">velocity</span>.y = -<span class="var">maxFallSpeed</span>;</span></div>
+                <div class="line" data-line="52"><span class="line-number">52</span><span class="breakpoint"></span><span class="code-text">  }</span></div>
+                <div class="line current" data-line="53"><span class="line-number">53</span><span class="breakpoint">●</span><span class="code-text">  <span class="var">velocity</span>.y -= <span class="var">gravity</span> * dt;</span></div>
+                <div class="line" data-line="54"><span class="line-number">54</span><span class="breakpoint"></span><span class="code-text"></span></div>
+                <div class="line" data-line="55"><span class="line-number">55</span><span class="breakpoint"></span><span class="code-text">  <span class="comment">// Aplicar movimiento y resolver colisión</span></span></div>
+                <div class="line" data-line="56"><span class="line-number">56</span><span class="breakpoint"></span><span class="code-text">  <span class="type">const glm::vec3</span> displacement = <span class="var">velocity</span> * dt;</span></div>
+                <div class="line" data-line="57"><span class="line-number">57</span><span class="breakpoint"></span><span class="code-text">  <span class="fn">moveAndCollide</span>(displacement);</span></div>
+                <div class="line" data-line="58"><span class="line-number">58</span><span class="breakpoint"></span><span class="code-text"></span></div>
+                <div class="line" data-line="59"><span class="line-number">59</span><span class="breakpoint"></span><span class="code-text">  <span class="var">grounded</span> = <span class="fn">checkGrounded</span>();</span></div>
+                <div class="line" data-line="60"><span class="line-number">60</span><span class="breakpoint"></span><span class="code-text">  <span class="kw">if</span> (<span class="var">grounded</span> &amp;&amp; <span class="var">velocity</span>.y &lt; <span class="num">0.0F</span>) {</span></div>
+                <div class="line" data-line="61"><span class="line-number">61</span><span class="breakpoint"></span><span class="code-text">    <span class="var">velocity</span>.y = <span class="num">0.0F</span>;</span></div>
+                <div class="line" data-line="62"><span class="line-number">62</span><span class="breakpoint"></span><span class="code-text">  }</span></div>
+                <div class="line" data-line="63"><span class="line-number">63</span><span class="breakpoint"></span><span class="code-text">}</span></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="bottom-panel" aria-label="Panel inferior">
+            <div class="panel-tabs" role="tablist">
+              <button class="panel-tab">PROBLEMAS <span class="term-muted">0</span></button>
+              <button class="panel-tab">SALIDA</button>
+              <button class="panel-tab active" data-panel="terminal">TERMINAL</button>
+              <button class="panel-tab" data-panel="debug">CONSOLA DE DEPURACIÓN</button>
+              <button class="panel-tab" data-panel="breakpoints">PUNTOS DE INTERRUPCIÓN</button>
+              <div class="terminal-tools"><span>⌄ dwe-debug</span><span>＋</span><span>⊞</span><span>×</span></div>
+            </div>
+            <div class="terminal-content" id="terminalContent">
+              <span class="term-line"><span class="term-muted">PS C:\dwe\engine&gt;</span> dwe --run --debug --compare duckstation</span>
+              <span class="term-line"><span class="term-green">[DWE]</span> Iniciando sesión Dual Run…</span>
+              <span class="term-line"><span class="term-green">[DWE]</span> DuckStation conectado · SLUS_014.44</span>
+              <span class="term-line"><span class="term-green">[DWE]</span> Entrada sincronizada · Frame <span class="frameValue">218</span></span>
+              <span class="term-line"><span class="term-green">[DWE]</span> Punto de interrupción alcanzado · physics_controller.cpp:53</span>
+              <span class="term-line prompt-line">PS C:\dwe\engine&gt; <span class="cursor"></span></span>
+            </div>
+          </section>
+        </main>
+
+        <aside class="auxbar" aria-label="Panel auxiliar">
+          <div class="aux-tabs"><button class="aux-tab">CONTORNO</button><button class="aux-tab active">DEPURAR</button><span class="aux-actions">···</span></div>
+          <section class="inspect">
+            <div class="inspect-title"><span>⌄</span><span>VARIABLES</span><small>player</small></div>
+            <div class="var-row"><span class="var-name">gravity</span><span class="var-value">9.8</span></div>
+            <div class="var-row"><span class="var-name">velocity</span><span class="var-value"><span class="x">2.41</span><span class="y">-0.18</span><span class="z">0.63</span></span></div>
+            <div class="var-row"><span class="var-name">position</span><span class="var-value"><span class="x">14.2</span><span class="y">0.0</span><span class="z">-8.6</span></span></div>
+            <div class="var-row"><span class="var-name">grounded</span><span class="var-value">false</span></div>
+            <div class="var-row"><span class="var-name">on_slope</span><span class="var-value">false</span></div>
+            <div class="var-row"><span class="var-name">floor_normal</span><span class="var-value"><span class="x">0.0</span><span class="y">1.0</span><span class="z">0.0</span></span></div>
+            <div class="physics-mini">
+              <div class="physics-label">FÍSICA · DIFERENCIA DE VELOCIDAD VERTICAL</div>
+              <div class="meter"><span></span></div>
+              <div class="meter-caption"><span>DuckStation −0.16</span><span>DWE −0.18</span></div>
+            </div>
+            <div class="inspect-title"><span>›</span><span>PILA DE LLAMADAS</span><small>3 marcos</small></div>
+          </section>
+          <section class="assistant">
+            <div class="assistant-heading"><span>CHAT</span><small>acoplado</small><span>···</span></div>
+            <div class="chat-tabs" role="tablist"><button class="chat-tab active" data-agent="Codex">Codex</button><button class="chat-tab" data-agent="Claude">Claude</button><button class="chat-tab" aria-label="Nuevo chat">＋</button></div>
+            <div class="chat-body" id="chatBody" aria-live="polite">
+              <article class="message user"><div class="message-head"><b>Tú</b><span>ahora</span></div><p>¿Por qué difiere el salto?</p></article>
+              <article class="message"><div class="message-head"><b id="assistantName">Codex</b><span>ahora</span></div><p id="assistantReply">La velocidad vertical difiere 0.02 m/s en este frame. Revisa si la gravedad se aplica una sola vez por paso de simulación; después compara el resultado de la colisión con el binario.</p></article>
+            </div>
+            <form class="chat-input" id="chatForm"><input id="chatInput" placeholder="Preguntar a Codex…" autocomplete="off" aria-label="Mensaje al asistente" /><button aria-label="Enviar mensaje">➤</button></form>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="statusbar">
+        <div class="status-left"><span>⑂ main*</span><span>↻</span><span>0 errores</span><span class="poc-tag">● PoC · datos simulados</span></div>
+        <div class="status-right"><span>Ln 53, Col 17</span><span>Espacios: 2</span><span>UTF-8</span><span>C++</span><span>Frame <b id="frameBottom">218</b></span><span>◖ DuckStation conectado</span></div>
+      </footer>
+    </div>
+
+    <script>
+      // The prototype is intentionally local and simulated: no engine or emulator is launched.
+      const frameTop = document.querySelector("#frameTop");
+      const frameBottom = document.querySelector("#frameBottom");
+      const runBtn = document.querySelector("#runBtn");
+      const runLabel = document.querySelector("#runLabel");
+      const debugState = document.querySelector("#debugState");
+      const pauseText = document.querySelector("#pauseText");
+      const connectionDot = document.querySelector("#connectionDot");
+      let frame = 218;
+      let running = false;
+      let runTimer;
+      let activeAgent = "Codex";
+
+      function updateFrame() {
+        document.querySelectorAll(".frameValue").forEach(node => node.textContent = frame);
+        frameTop.textContent = frame;
+        frameBottom.textContent = frame;
+      }
+
+      function setRunning(next) {
+        running = next;
+        runLabel.textContent = running ? "Pausar" : "Continuar";
+        runBtn.classList.toggle("run", !running);
+        debugState.textContent = running ? "Ejecutando Dual Run" : "DuckStation conectado";
+        pauseText.textContent = running ? "Ejecución en curso" : "Pausado en punto de interrupción";
+        connectionDot.style.background = running ? "#89d185" : "#e2c08d";
+        clearInterval(runTimer);
+        if (running) runTimer = setInterval(() => { frame += 1; updateFrame(); }, 800);
+      }
+
+      runBtn.addEventListener("click", () => setRunning(!running));
+      document.querySelector("#stepBtn").addEventListener("click", () => {
+        setRunning(false);
+        frame += 1;
+        updateFrame();
+        const lines = [...document.querySelectorAll(".line")];
+        const current = document.querySelector(".line.current");
+        const next = current?.nextElementSibling?.classList.contains("line") ? current.nextElementSibling : lines[0];
+        current?.classList.remove("current");
+        next.classList.add("current");
+        const lineNumber = next.dataset.line;
+        document.querySelector(".status-right span:first-child").textContent = `Ln ${lineNumber}, Col 17`;
+      });
+      document.querySelector("#stopBtn").addEventListener("click", () => {
+        setRunning(false);
+        frame = 0;
+        updateFrame();
+        debugState.textContent = "Sesión detenida";
+      });
+      document.querySelector("#restartBtn").addEventListener("click", () => {
+        setRunning(false);
+        frame = 218;
+        updateFrame();
+        document.querySelectorAll(".line.current").forEach(line => line.classList.remove("current"));
+        document.querySelector('.line[data-line="53"]').classList.add("current");
+        document.querySelector(".status-right span:first-child").textContent = "Ln 53, Col 17";
+      });
+
+      document.querySelectorAll(".line").forEach(line => line.addEventListener("click", event => {
+        if (event.target.classList.contains("line-number") || event.target.classList.contains("breakpoint") || event.target.classList.contains("code-text")) {
+          const marker = line.querySelector(".breakpoint");
+          marker.textContent = marker.textContent ? "" : "●";
+        }
+      }));
+      document.querySelector(".line.current")?.scrollIntoView({ block: "center" });
+
+      const panelContent = document.querySelector("#terminalContent");
+      const terminalViews = {
+        terminal: '<span class="term-line"><span class="term-muted">PS C:\\dwe\\engine&gt;</span> dwe --run --debug --compare duckstation</span><span class="term-line"><span class="term-green">[DWE]</span> Entrada sincronizada · Frame <span class="frameValue">218</span></span><span class="term-line"><span class="term-green">[DWE]</span> Punto de interrupción alcanzado · physics_controller.cpp:53</span><span class="term-line prompt-line">PS C:\\dwe\\engine&gt; <span class="cursor"></span></span>',
+        debug: '<span class="term-line">[debug] Objetivo: Dual Run</span><span class="term-line">[debug] player.velocity = (2.41, -0.18, 0.63)</span><span class="term-line">[debug] DuckStation PC = 0x800A42C0 · símbolo aproximado</span><span class="term-line term-muted">La dirección del binario no equivale siempre a una línea original.</span>',
+        breakpoints: '<span class="term-line"><span class="term-green">●</span> engine/physics/physics_controller.cpp:53 · activa</span><span class="term-line">○ engine/physics/collision_world.cpp:141 · desactivada</span><span class="term-line term-muted">Pulsa el margen junto a una línea para alternar un punto.</span>'
+      };
+      document.querySelectorAll(".panel-tab[data-panel]").forEach(tab => tab.addEventListener("click", () => {
+        document.querySelectorAll(".panel-tab").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        panelContent.innerHTML = terminalViews[tab.dataset.panel];
+      }));
+
+      const agentReplies = {
+        Codex: "La velocidad vertical difiere 0.02 m/s en este frame. Revisa si la gravedad se aplica una sola vez por paso de simulación; después compara el resultado de la colisión con el binario.",
+        Claude: "La captura muestra una diferencia pequeña. Avanza un frame y compara gravedad, dt y grounded antes de cambiar la física. El panel usa datos simulados."
+      };
+      const chatBody = document.querySelector("#chatBody");
+      document.querySelectorAll(".chat-tab[data-agent]").forEach(tab => tab.addEventListener("click", () => {
+        document.querySelectorAll(".chat-tab").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        activeAgent = tab.dataset.agent;
+        document.querySelector("#assistantName").textContent = activeAgent;
+        document.querySelector("#chatInput").placeholder = `Preguntar a ${activeAgent}…`;
+        document.querySelector("#assistantReply").textContent = agentReplies[activeAgent];
+      }));
+      document.querySelector("#chatForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const input = document.querySelector("#chatInput");
+        const value = input.value.trim();
+        if (!value) return;
+        const userMessage = document.createElement("article");
+        userMessage.className = "message user";
+        userMessage.innerHTML = `<div class="message-head"><b>Tú</b><span>ahora</span></div><p></p>`;
+        userMessage.querySelector("p").textContent = value;
+        chatBody.append(userMessage);
+        const reply = document.createElement("article");
+        reply.className = "message";
+        reply.innerHTML = `<div class="message-head"><b>${activeAgent}</b><span>PoC</span></div><p></p>`;
+        reply.querySelector("p").textContent = "Esta prueba de concepto no conecta con un modelo. La integración real podría adjuntar frame, variables y archivo activo como contexto.";
+        chatBody.append(reply);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        input.value = "";
+      });
+    </script>
+  </body>
+</html>
