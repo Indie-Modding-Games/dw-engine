@@ -20,6 +20,7 @@ void CourseRun::speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymI
     }
     break;
   case 2:
+    ports.runOn(Actor::Partner);
     ++counter_;
     // A lap: once it ran off screen, it starts across again.
     if (!ports.partnerOnScreen() && counter_ % speed.lapFrames == 0) {
