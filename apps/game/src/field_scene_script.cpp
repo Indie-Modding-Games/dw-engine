@@ -25,8 +25,9 @@ bool FieldScene::animateScripted(Actor& actor, double seconds) {
     }
     return false;
   }
-  if (actor.scriptedClip != scripted->clip) {
+  if (actor.scriptedClip != scripted->clip || actor.scriptedStarts != scripted->starts) {
     actor.scriptedClip = scripted->clip;
+    actor.scriptedStarts = scripted->starts;
     actor.motion.reset();
     actor.player->play(*scripted->clip, ScriptedClipFadeSeconds);
   }

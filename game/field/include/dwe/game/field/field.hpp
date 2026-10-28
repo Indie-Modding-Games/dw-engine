@@ -101,6 +101,9 @@ struct CharacterState {
 struct ScriptedActor {
   glm::vec3 velocity{};
   std::optional<std::uint32_t> clip;
+  // How many times a script started a clip: anim.c: startAnimation restarts even the clip that
+  // plays, as each push of the gym's log does.
+  std::uint32_t starts = 0;
   // anim.c: animFlag 2 holds the clip on its frame.
   bool frozen = false;
 };
