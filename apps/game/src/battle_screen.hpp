@@ -113,6 +113,9 @@ public:
 
   // Takes the battle document's commands; false for any other command.
   bool handle(const ui::UiCommand& command);
+  // The original's square button (battle_tick.c: handleCommands): calls the finisher once its
+  // gauge is full, whatever command the strip has.
+  void pressFinisher();
 
 private:
   [[nodiscard]] screens::NameKeys names() const;

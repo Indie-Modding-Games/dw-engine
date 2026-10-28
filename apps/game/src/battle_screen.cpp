@@ -391,6 +391,20 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   return false;
 }
 
+void BattleScreen::pressFinisher() {
+  // Nothing is taken while the battle opens, as for the strip's commands.
+  if (!battle_ || intro_) {
+    return;
+  }
+  // Before the gauge is full the button does nothing, as in the original.
+  if (auto taken = battle_->command(game::battle::Command::Finisher); !taken) {
+    core::logDebug(
+        "{}", core::formatMessage(messages::BattleCommandRefused,
+                                  game::battle::commandTextKey(game::battle::Command::Finisher),
+                                  taken.error().message));
+  }
+}
+
 screens::NameKeys BattleScreen::names() const {
   return {desc_.species, desc_.inventory != nullptr ? &desc_.inventory->items() : nullptr,
           &desc_.battle->catalog()};

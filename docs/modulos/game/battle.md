@@ -96,6 +96,7 @@ probable y está marcado en el código), **Hueco** (falta).
 | Técnicas de apoyo | `battle_main.c: BTL_applyBuffMove` | `applyBuff` | support moves raise stats | Igual |
 | Estados alterados | `battle_main.c: BTL_applyMoveStatus`, `BTL_tickStatusEffects`, `BTL_healStatusEffect` | `status_effects.cpp` | poison; stun and confusion; flattening | Igual |
 | Remate y su barra | `battle_main.c: BTL_tickFighterAction`, `BTL_addFinisherProgress`, `command_menu.c: BTL_tickFinisherChargeup` | `beginFinisher`, `addFinisherProgress` | the finisher gauge fills | Igual |
+| El botón cuadrado llama al remate en cuanto su barra está llena, esté donde esté el cursor de la tira | `battle_tick.c: handleCommands` (botón 0x80), `battle_hud.c: BTL_renderFinisherReadyIcon` | `BattleScreen::pressFinisher` (acción `extra`, vía `PlaySession::pressBattle`); en la UI, `prompt-finisher` | — | Igual; adaptación al PC del aviso (abajo) |
 | Victoria, huida, derrota, revivir | `battle_setup.c: BTL_isBattleFinished` | `Battle::step`, `revivePartner` | victory; flee; falls and revives | Igual |
 | Cuidado tras el combate | `tamer.c: startBattle`, `partner_impl.c: handlePostBattleTiredness`, `tamer.c: advanceBattleTime` | `settleBattle`, `addPostBattleTiredness` (dueña de los números: `battle.consequences`; la pérdida de objetos es de `inventory`) | a battle plays to a victory; fleeing costs happiness and discipline and tires more | Igual |
 | HP y MP tras perder | guion del mapa de la derrota (script 212, sección 0x48); `murd.c: MURD_tick`; `script_value.c: enforceStatsLimits` | `settleBattle` con `consequences.defeat_restore` | a lost battle gives the partner back the section's HP and MP | Igual en efecto: lo hace la batalla, no un guion (decisión pendiente: moverlo al motor de guiones en la fase 4) |
@@ -151,6 +152,17 @@ probable y está marcado en el código), **Hueco** (falta).
   directamente (`battle_throw`). Desviación documentada.
 - **Fotograma 7 del lanzamiento (pendiente):** que el objeto salga en el fotograma 7 de la animación del domador
   (`main.c: startThrowingItem`) sigue como suposición; se comprueba cuando llegue el sistema de animación del combate.
+
+### Adaptaciones al PC (2026-10-28)
+
+- **Aviso del remate:** con la barra llena el original escribe «FINISH!!» y, en una caja gris, el botón cuadrado del
+  mando y «PUSH» (un solo sprite de `BI_IN`). En el PC el cuadrado no dice nada, así que el aspecto original recorta
+  el sprite a «PUSH» y pone en su sitio el aviso de la interfaz (`ui.prompt("extra")`, la clase `key` del tema) con
+  la tecla de `extra` (Supr por defecto) o el botón del mando en uso (el oeste: Cuadrado, X…), según el último
+  dispositivo y los controles que haya asignado el jugador. Con un nombre de una o dos letras (X, Y…) la caja queda
+  donde la pone el original, a la derecha de «FINISH!!»; con uno más largo (Supr, Cuadrado…) baja una fila, debajo
+  de «FINISH!!», con el mismo borde derecho, y el botón del remate para el ratón (`.command.no-icon`) baja con ella.
+  Con el ratón el remate sigue respondiendo al clic sobre la caja.
 
 ## Scripts de efecto
 

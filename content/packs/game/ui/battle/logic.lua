@@ -578,6 +578,12 @@ local function draw_prompts(document)
   lookup(document, "prompt-confirm"):set_text(ui.prompt("confirm"))
   lookup(document, "prompt-charge"):set_text(ui.prompt("confirm"))
   lookup(document, "prompt-cancel"):set_text(ui.prompt("cancel"))
+  -- The original's square button calls the finisher (battle_tick.c: handleCommands); here it is
+  -- the `extra` action, so the gauge's box names its key or button instead of the square. A name
+  -- of more than two letters does not fit where the square was: a skin may move the box for it.
+  local finisher_key = ui.prompt("extra")
+  lookup(document, "prompt-finisher"):set_text(finisher_key)
+  lookup(document, "fight"):set_class("long-finisher-key", (utf8.len(finisher_key) or 0) > 2)
 end
 
 -- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the

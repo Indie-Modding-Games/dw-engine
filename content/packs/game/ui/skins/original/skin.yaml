@@ -479,13 +479,16 @@ sprite_sheets:
       finish-5: [30, 29, 8, 15]
       finish-6: [38, 29, 5, 15]
       finish-7: [43, 29, 5, 15]
+  # "PUSH" del remate listo (battle_hud.c: BTL_renderFinisherReadyIcon; BI_IN, paleta 2): el original dibuja [128, 8,
+  # 37, 9], el botón cuadrado del mando (9 píxeles y uno de hueco) y la palabra; aquí solo la palabra, y la tecla o el
+  # botón que llama al remate la pone el aviso de la interfaz.
   - name: ow-battle-push
     image: texture/etcdat/bi_in
     palette: 2
     original_size: [256, 64]
     dp_per_pixel: 3
     sprites:
-      finish-push: [128, 8, 37, 9]
+      finish-push: [138, 8, 27, 9]
   # Los iconos de las órdenes en combate (command_menu.c: BTL_renderCommandMenu; BTLCOMND, paleta 0): uno por orden,
   # de huir a cambiar, y uno por tipo de técnica, cada uno con su segundo fotograma al lado para el parpadeo. Las v son
   # las de la decompilación menos 192, el borde de la imagen en su página.

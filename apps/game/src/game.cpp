@@ -842,6 +842,8 @@ int runGame(const Options& requested) {
         mouse.release();
       }
       if (play != nullptr) {
+        // The battle's document holds the input, but not the finisher's button.
+        play->pressBattle(input);
         play->tick(intent, fishing);
       }
       input.endTick();
