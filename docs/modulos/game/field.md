@@ -110,6 +110,16 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
     hay sitio, se queda y se registra (`[positions] release ... no free spot`).
   - Tras un guion o una charla espera a que el compañero termine de apartarse andando (`makeRoomForPlayer`, la
     salida suave); el salto solo llega si después sigue pisando a alguien.
+- **Interpolación** (del motor: el original dibuja cada personaje en su sitio de cada fotograma, sin nada en medio).
+  La lógica corre a 60 ticks por segundo y el dibujo interpola entre el sitio anterior y el actual de cada
+  `Transform`. Cada tick de la partida empieza con `Field::settle` (`FieldScene::settleActors`, al principio de
+  `PlaySession::tick`), que hace anterior = actual en jugador, compañero y NPC; también `Field::tick` lo hace siempre,
+  aunque solo corra el fundido de un cambio de mapa o la espera del mapa nuevo. Así, en los ticks en que el campo no
+  corre (combate para los que no luchan, evolución, sueño, pesca, menús, aviso de objeto) nadie se dibuja deslizándose
+  desde donde lo dejó un tick viejo. Un salto de guion se dibuja de golpe: `placeByScript` a más de media casilla y
+  `turnByScript` de más de un octavo de vuelta igualan también el anterior; los pasos cortos (el gimnasio, el final de
+  un deslizamiento) se siguen interpolando en su tick. `playerFacePartner` y el mirarse al acabar un paseo de cuidado
+  (`entityLookAtLocation`) giran de golpe, como el original.
 - **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
   jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de

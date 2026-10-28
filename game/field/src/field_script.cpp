@@ -3,6 +3,8 @@
 #include <dwe/game/field/field.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <numbers>
 
 #include "script_messages.hpp"
 
@@ -10,6 +12,14 @@ namespace dwe::game::field {
 
 using scene::AnimationIntent;
 using scene::Transform;
+
+namespace {
+
+// A script's place or turn this big is a jump: it is drawn at once, not slid over a tick.
+constexpr float JumpDistance = 50.0F;
+constexpr float JumpTurn = std::numbers::pi_v<float> / 4.0F;
+
+} // namespace
 
 void Field::holdForScript(bool held) {
   if (held == scriptHeld_) {
@@ -48,11 +58,21 @@ void Field::driveByScript(scene::Entity entity, glm::vec3 velocity) {
 }
 
 void Field::placeByScript(scene::Entity entity, glm::vec3 position) {
-  world_->registry().get<Transform>(entity).position = position;
+  auto& transform = world_->registry().get<Transform>(entity);
+  const glm::vec3 delta = position - transform.position;
+  transform.position = position;
+  if (std::hypot(delta.x, delta.z) > JumpDistance) {
+    transform.previousPosition = position;
+  }
 }
 
 void Field::turnByScript(scene::Entity entity, float yaw) {
-  world_->registry().get<Transform>(entity).yaw = yaw;
+  auto& transform = world_->registry().get<Transform>(entity);
+  const float delta = std::remainder(yaw - transform.yaw, 2.0F * std::numbers::pi_v<float>);
+  transform.yaw = yaw;
+  if (std::abs(delta) > JumpTurn) {
+    transform.previousYaw = yaw;
+  }
 }
 
 void Field::animateByScript(scene::Entity entity, std::uint32_t clip) {

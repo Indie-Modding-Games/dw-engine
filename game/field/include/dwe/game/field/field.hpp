@@ -290,7 +290,9 @@ public:
   // Whether either walk goes on; once a walk to a range is over, the two face each other.
   [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
 
-  // A held character's scripted move, place, facing and clip.
+  // A held character's scripted move, place, facing and clip. A place farther than half a cell
+  // and a turn of more than an eighth are a jump, drawn at once; nearer ones are drawn as a move
+  // over the tick.
   void driveByScript(scene::Entity entity, glm::vec3 velocity);
   void placeByScript(scene::Entity entity, glm::vec3 position);
   void turnByScript(scene::Entity entity, float yaw);
@@ -348,6 +350,10 @@ public:
   // their summed half sides on both axes. The original's squares are wide, and a partner stopped
   // by the player on a diagonal overlaps it by a corner (partner.c:971 measures a circle).
   [[nodiscard]] static bool overlaps(const GroundSquare& a, const GroundSquare& b);
+  // Starts a tick of every character's transform without moving it, for the ticks the field does
+  // not run (a battle, the evolution, a sleep, the fishing, a menu, an item's notice): what they
+  // draw is where they stand, not a move from an older tick.
+  void settle();
   // How many times two characters (or one and a wall) stood in each other longer than a second
   // while the player moved freely; each such episode is logged once ("[positions] overlap").
   [[nodiscard]] std::int32_t overlapEpisodes() const { return overlapEpisodes_; }
