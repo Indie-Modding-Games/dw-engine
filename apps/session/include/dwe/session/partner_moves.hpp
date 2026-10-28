@@ -1,14 +1,13 @@
 #pragma once
 
+#include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/game/battle/moves.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <array>
-#include <dwe/assets/digimon_table.hpp>
-#include <dwe/game/battle/moves.hpp>
-
 #include <cstdint>
 #include <optional>
 #include <string>

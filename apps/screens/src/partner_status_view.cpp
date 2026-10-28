@@ -115,12 +115,14 @@ PartnerStatusView partnerStatusViewOf(const session::PartnerView& partner, const
 
 std::array<std::optional<TechniqueView>, game::battle::EquippedSlots>
 equippedTechniqueViewsOf(const game::battle::Combatant& partner,
-                        const game::battle::MoveCatalog& catalog, const NameKeys& names) {
+                         const game::battle::MoveCatalog& catalog, const NameKeys& names) {
   std::array<std::optional<TechniqueView>, game::battle::EquippedSlots> result{};
   for (std::size_t index = 0; index < partner.moves.size(); ++index) {
-    if (!partner.moves[index]) continue;
+    if (!partner.moves[index])
+      continue;
     const auto move = catalog.find(*partner.moves[index]);
-    if (!move) continue;
+    if (!move)
+      continue;
     const auto& entry = catalog.at(*move);
     result[index] = TechniqueView{.nameKey = names.move(*move),
                                   .power = entry.power,
@@ -152,27 +154,35 @@ void setTechniqueChoices(PartnerStatusView& view, const assets::DigimonRow& spec
     std::optional<game::battle::MoveRef> selected;
     for (std::size_t ref = 0; ref < catalog.size(); ++ref) {
       const auto& entry = catalog.at(ref);
-      if (entry.index != canonical && entry.index != variant) continue;
-      if (entry.index == canonical || !selected) selected = ref;
+      if (entry.index != canonical && entry.index != variant)
+        continue;
+      if (entry.index == canonical || !selected)
+        selected = ref;
       choice.known = choice.known || session::knowsTechnique(moves, catalog, entry.id);
       for (std::size_t slot = 0; slot < species.moves.size(); ++slot) {
-        if (species.moves[slot] == entry.id && (choice.speciesSlot < 0 || std::cmp_less(slot, choice.speciesSlot)) && !entry.finisher) {
+        if (species.moves[slot] == entry.id &&
+            (choice.speciesSlot < 0 || std::cmp_less(slot, choice.speciesSlot)) &&
+            !entry.finisher) {
           choice.speciesSlot = static_cast<std::int32_t>(slot);
         }
       }
     }
-    if (!selected) continue;
+    if (!selected)
+      continue;
     const auto& entry = catalog.at(*selected);
     choice.technique = TechniqueView{names.move(*selected), entry.power, entry.mpCost,
-                                      static_cast<std::int32_t>(entry.range),
-                                      static_cast<std::int32_t>(entry.status)};
+                                     static_cast<std::int32_t>(entry.range),
+                                     static_cast<std::int32_t>(entry.status)};
     choice.special = entry.special;
     choice.available = choice.known && choice.speciesSlot >= 0;
     for (std::size_t place = 0; place < game::battle::FinisherSlot; ++place) {
       const auto slot = moves.equipped[place];
-      if (!slot || *slot < 0 || std::cmp_greater_equal(*slot, species.moves.size()) || !species.moves[static_cast<std::size_t>(*slot)]) continue;
+      if (!slot || *slot < 0 || std::cmp_greater_equal(*slot, species.moves.size()) ||
+          !species.moves[static_cast<std::size_t>(*slot)])
+        continue;
       const auto ref = catalog.find(*species.moves[static_cast<std::size_t>(*slot)]);
-      if (ref && (catalog.at(*ref).index == canonical || catalog.at(*ref).index == variant)) choice.equipped = true;
+      if (ref && (catalog.at(*ref).index == canonical || catalog.at(*ref).index == variant))
+        choice.equipped = true;
     }
   }
   view.canFinishTechniqueEdit = session::canFinishTechniqueEdit(moves, species, catalog);
@@ -191,7 +201,8 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
       {.name = std::string{PartnerMaxMpSetting}, .value = static_cast<double>(view.maxMp)},
   };
   settings.push_back({.name = "partner.profile.type", .value = static_cast<double>(view.type)});
-  settings.push_back({.name = "partner.profile.active", .value = static_cast<double>(view.activePattern)});
+  settings.push_back(
+      {.name = "partner.profile.active", .value = static_cast<double>(view.activePattern)});
   for (std::size_t index = 0; index < view.specials.size(); ++index) {
     settings.push_back({.name = "partner.profile.special." + std::to_string(index),
                         .value = static_cast<double>(view.specials[index].value_or(-1))});
@@ -218,23 +229,37 @@ ScreenSettings settingsOf(const PartnerStatusView& view) {
     const auto base = std::string{"partner.technique."} + std::to_string(index) + ".";
     settings.push_back({.name = base + "empty", .value = !move.has_value()});
     settings.push_back({.name = base + "name", .value = move ? move->nameKey : std::string{}});
-    settings.push_back({.name = base + "power", .value = static_cast<double>(move ? move->power : 0)});
-    settings.push_back({.name = base + "mp", .value = static_cast<double>(move ? move->mpCost : 0)});
-    settings.push_back({.name = base + "range", .value = static_cast<double>(move ? move->range : 0)});
-    settings.push_back({.name = base + "effect", .value = static_cast<double>(move ? move->effect : 0)});
+    settings.push_back(
+        {.name = base + "power", .value = static_cast<double>(move ? move->power : 0)});
+    settings.push_back(
+        {.name = base + "mp", .value = static_cast<double>(move ? move->mpCost : 0)});
+    settings.push_back(
+        {.name = base + "range", .value = static_cast<double>(move ? move->range : 0)});
+    settings.push_back(
+        {.name = base + "effect", .value = static_cast<double>(move ? move->effect : 0)});
   }
-  settings.push_back({.name = "partner.technique.can_finish", .value = view.canFinishTechniqueEdit});
+  settings.push_back(
+      {.name = "partner.technique.can_finish", .value = view.canFinishTechniqueEdit});
   for (std::size_t index = 0; index < view.techniqueChoices.size(); ++index) {
     const auto& choice = view.techniqueChoices[index];
     const auto base = std::string{"partner.technique.choice."} + std::to_string(index) + ".";
-    settings.push_back({.name = base + "name", .value = choice.technique ? choice.technique->nameKey : std::string{}});
+    settings.push_back({.name = base + "name",
+                        .value = choice.technique ? choice.technique->nameKey : std::string{}});
     settings.push_back({.name = base + "available", .value = choice.available});
     settings.push_back({.name = base + "equipped", .value = choice.equipped});
     settings.push_back({.name = base + "known", .value = choice.known});
-    settings.push_back({.name = base + "power", .value = static_cast<double>(choice.technique ? choice.technique->power : 0)});
-    settings.push_back({.name = base + "mp", .value = static_cast<double>(choice.technique ? choice.technique->mpCost : 0)});
-    settings.push_back({.name = base + "range", .value = static_cast<double>(choice.technique ? choice.technique->range : 0)});
-    settings.push_back({.name = base + "effect", .value = static_cast<double>(choice.technique ? choice.technique->effect : 0)});
+    settings.push_back(
+        {.name = base + "power",
+         .value = static_cast<double>(choice.technique ? choice.technique->power : 0)});
+    settings.push_back(
+        {.name = base + "mp",
+         .value = static_cast<double>(choice.technique ? choice.technique->mpCost : 0)});
+    settings.push_back(
+        {.name = base + "range",
+         .value = static_cast<double>(choice.technique ? choice.technique->range : 0)});
+    settings.push_back(
+        {.name = base + "effect",
+         .value = static_cast<double>(choice.technique ? choice.technique->effect : 0)});
     settings.push_back({.name = base + "slot", .value = static_cast<double>(choice.speciesSlot)});
     settings.push_back({.name = base + "special", .value = static_cast<double>(choice.special)});
   }

@@ -121,7 +121,7 @@ void StoryStage::animate(std::int64_t character, std::int64_t animation) {
     if (std::in_range<std::int32_t>(character) && std::in_range<std::int32_t>(animation) &&
         animation >= 0 &&
         scene_->field().npcs().setScriptedAnimation(static_cast<std::int32_t>(character),
-                                                  static_cast<std::int32_t>(animation))) {
+                                                    static_cast<std::int32_t>(animation))) {
       if (const auto entity = entityOf(character)) {
         // Holding the NPC's AI does not start its visible clip. Use the same playback path as
         // the player and partner; animation zero hands playback back to the NPC's motion.
