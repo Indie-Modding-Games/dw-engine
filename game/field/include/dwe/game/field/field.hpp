@@ -354,6 +354,11 @@ public:
   // not run (a battle, the evolution, a sleep, the fishing, a menu, an item's notice): what they
   // draw is where they stand, not a move from an older tick.
   void settle();
+  // The partner's collision size, its species' radius (the original's species table): it sizes
+  // the grid collision, the NPCs' and the follow distances (partner.c:971), and asks for the
+  // release check when it changes, as a bigger partner after an evolution may stand in someone.
+  // Zero or less keeps the size.
+  void setPartnerRadius(float radius);
   // How many times two characters (or one and a wall) stood in each other longer than a second
   // while the player moved freely; each such episode is logged once ("[positions] overlap").
   [[nodiscard]] std::int32_t overlapEpisodes() const { return overlapEpisodes_; }

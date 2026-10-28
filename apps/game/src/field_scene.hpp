@@ -25,6 +25,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -189,6 +190,11 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
+  // The radius of a species in the species table, 0 when unknown: it sizes the partner on the field
+  // (showPartnerSpecies). Without it the field keeps the radius of field/rules.
+  void attachSpeciesRadius(std::function<float(std::string_view)> radius) {
+    speciesRadius_ = std::move(radius);
+  }
   // Enters the original's map with this index at this exit, keeping the partner (a scene's map
   // change: map.c: changeToDeathMap).
   core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
@@ -423,6 +429,7 @@ private:
   std::unique_ptr<Actor> partnerActor_;
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
+  std::function<float(std::string_view)> speciesRadius_;
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;

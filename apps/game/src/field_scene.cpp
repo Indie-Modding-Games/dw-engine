@@ -212,6 +212,10 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
 }
 
 core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
+  // map.c and partner.c size the partner by its species' radius in the species table.
+  if (speciesRadius_) {
+    field_->setPartnerRadius(speciesRadius_(species));
+  }
   auto model = assets::AssetId::parse(speciesModelOf(species));
   if (!model) {
     return std::unexpected{model.error()};

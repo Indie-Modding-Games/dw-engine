@@ -76,6 +76,16 @@ void Field::settle() {
   npcs_.beginTick();
 }
 
+void Field::setPartnerRadius(float radius) {
+  if (radius <= 0.0F || radius == rules_.partner.mover.radius) {
+    return;
+  }
+  core::logDebug("[positions] the partner's radius {:.0f} -> {:.0f} (its species')",
+                 rules_.partner.mover.radius, radius);
+  rules_.partner.mover.radius = radius;
+  requestSeparation("partner size");
+}
+
 void Field::releaseHandoff(std::string_view why) {
   // Where the partner followed the player before the hold says nothing now: the trail, the stuck
   // time and the player's last cell start over, as on entering a map.

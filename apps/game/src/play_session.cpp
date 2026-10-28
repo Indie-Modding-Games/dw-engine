@@ -325,6 +325,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     storyScenes_.attachNaming(namingBox_.get(), &session);
   }
   // A loaded game's partner may be another species than the game pack's partner model.
+  scene_->attachSpeciesRadius([this](std::string_view species) {
+    const auto* row = species_ ? species_->find(species) : nullptr;
+    return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
+  });
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
                      core::formatMessage(messages::PartnerModelNotShown,
