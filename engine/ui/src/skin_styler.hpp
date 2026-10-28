@@ -44,6 +44,9 @@ public:
   // Forgets the sheets built so far, so the next style() reads the files again (hot reload).
   void forget();
 
+  // The images of the skin's sprite sheets, by the path RmlUi reads each one with.
+  [[nodiscard]] std::vector<std::string> spriteImages() const;
+
 private:
   struct ScreenSheet {
     Rml::SharedPtr<Rml::StyleSheetContainer> sheet;

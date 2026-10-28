@@ -14,6 +14,7 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Factory.h>
 #include <RmlUi/Core/Input.h>
+#include <RmlUi/Core/RenderManager.h>
 #include <RmlUi/Core/StringUtilities.h>
 #include <RmlUi/Core/StyleSheetContainer.h>
 
@@ -216,6 +217,8 @@ struct Ui::Impl {
   Rml::Context* context = nullptr;
   SkinCatalog skins;
   SkinStyler styler{*desc.files, skins};
+  // The skin's sprite sheet images not yet loaded ahead (warmOne).
+  std::vector<std::string> warming;
 
   std::map<std::string, Document, std::less<>> documents;
   std::vector<std::string> modalStack;
@@ -531,6 +534,7 @@ struct Ui::Impl {
     for (auto& [name, document] : *fresh) {
       swapIn(name, std::move(document));
     }
+    warming = styler.spriteImages();
     core::logInfo("{}", core::formatMessage(messages::SkinChanged, id));
     // Before the game loads its documents (the skin set at start) there is nothing to check yet.
     if (!documents.empty()) {
@@ -580,6 +584,21 @@ struct Ui::Impl {
   }
 
   // Makes RmlUi read style sheets and templates from their files again.
+  // Loads one of the skin's sprite sheet images ahead of its first use, a frame each: one loaded
+  // where a screen first draws it (the battle's opening banner) stalls that frame.
+  void warmOne() {
+    if (warming.empty()) {
+      return;
+    }
+    const std::string source = std::move(warming.back());
+    warming.pop_back();
+    // The game hands over a runtime image (a portrait) itself: there is nothing to load ahead.
+    if (source.starts_with("runtime/")) {
+      return;
+    }
+    static_cast<void>(context->GetRenderManager().LoadTexture(source).GetDimensions());
+  }
+
   static void clearRmlCaches() {
     Rml::Factory::ClearStyleSheetCache();
     Rml::Factory::ClearTemplateCache();
@@ -1063,6 +1082,7 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   impl->resize(desc.width, desc.height);
   impl->skins = SkinCatalog::load(*desc.files);
   impl->styler.use(impl->skins.find(impl->skins.defaultSkin()));
+  impl->warming = impl->styler.spriteImages();
   core::logInfo("RmlUi {} started", Rml::GetVersion());
   return std::unique_ptr<Ui>{new Ui{std::move(impl)}};
 }
@@ -1181,6 +1201,7 @@ void Ui::setMinimapMarkers(const MinimapMarker& player,
 }
 
 void Ui::update() {
+  impl_->warmOne();
   impl_->context->Update();
   impl_->render.beginFrame();
   impl_->context->Render();
