@@ -28,9 +28,9 @@ local function refresh(document)
     mode = "auto"
   end
   -- Each skin decides what auto means in its style sheets (#minimap.auto); on shows it and off
-  -- hides it.
+  -- hides it. A battle hides it too: its HP bars and end box take that corner.
   minimap:set_class("auto", mode == "auto")
-  minimap:set_class("hidden", mode == "off")
+  minimap:set_class("hidden", mode == "off" or ui.setting("battle.active") == true)
   local size = ui.setting("minimap_size")
   if not sizes[size] then
     size = "medium"
