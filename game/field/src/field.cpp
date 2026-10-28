@@ -217,6 +217,7 @@ void Field::tick(float seconds) {
   entt::registry& registry = world_->registry();
   scene::beginTick(registry.get<Transform>(player_));
   scene::beginTick(registry.get<Transform>(partner_));
+  partnerShownMotion_ = registry.get<AnimationIntent>(partner_).motion;
   registry.get<AnimationIntent>(partner_) = {};
   if (leaving_) {
     walkOut(seconds);
@@ -1035,7 +1036,7 @@ void Field::movePartner(float seconds) {
   }
   const Motion wanted = motion;
   const bool passEnded = !partnerPassesNoted_ || std::exchange(partnerPassEnded_, false);
-  motion = heldPartnerMotion(animation.motion, wanted, passEnded);
+  motion = heldPartnerMotion(partnerShownMotion_, wanted, passEnded);
   partnerMotion_ = motion;
 
   // map.c: partnerTickCollision heads for the oldest trail cell, or for the player without a trail.

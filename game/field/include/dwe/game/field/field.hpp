@@ -455,6 +455,9 @@ private:
   assets::CollisionCell lastPlayerCell_;
   std::deque<assets::CollisionCell> trail_;
   scene::Motion partnerMotion_ = scene::Motion::Idle;
+  // The partner's motion as the last tick left it, before tick() clears its intent: the motion its
+  // clip shows, which a change of walk waits on.
+  scene::Motion partnerShownMotion_ = scene::Motion::Idle;
   bool partnerPassesNoted_ = false;
   bool partnerPassEnded_ = false;
   float partnerStuckSeconds_ = 0.0F;
