@@ -22,7 +22,7 @@ original.battle_mode: "BATTLE MODE"
 original.options: "OPTIONS"
 original.battle_mode_message: "Use the competition data of player 1 from a save? Battle mode is not available yet."
 original.language_heading: "LANGUAGE - IDIOMA"
-original.language_done: "OK"
+original.language_done: "START"
 # The options box of the original look: short names, in capitals, so a name and its value fit a row of the 4:3 picture.
 original.option.language: "LANGUAGE"
 original.option.text_font: "ORIGINAL TEXT"

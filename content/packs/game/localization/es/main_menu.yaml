@@ -22,7 +22,7 @@ original.battle_mode: "MODO BATALLA"
 original.options: "OPCIONES"
 original.battle_mode_message: "¿Usar los datos de combate del jugador 1 de una partida? El modo batalla aún no está disponible."
 original.language_heading: "LANGUAGE - IDIOMA"
-original.language_done: "ACEPTAR"
+original.language_done: "COMENZAR"
 # La caja de opciones del aspecto original: nombres cortos, en mayúsculas, para que un nombre y su valor quepan en una
 # fila de la imagen 4:3.
 original.option.language: "IDIOMA"

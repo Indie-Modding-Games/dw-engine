@@ -82,7 +82,7 @@
 	display: none;
 }
 
-#panel button, #language-box button, #battle-answers button {
+#panel button, #language-done, #battle-answers button {
 	line-height: 30dp;
 	white-space: nowrap;
 }
@@ -126,14 +126,20 @@
 	display: none;
 }
 
-/* The language box, an addition, in the original's box: a heading, a row per language with the current one in
-   yellow, and the row that closes it. */
+/* The language box, an addition, after a remaster's (reference 12): the original's box, taller and in the middle of
+   the 4:3 picture, 212 pixels wide; the heading small at its top left; a row per language, 20 pixels apart, its flag
+   (24 x 16) and its name in capitals; START at the bottom, in the middle. logic.lua sets its top, so that the box
+   stays in the middle of the screen whatever the number of languages. */
 #language-box {
 	position: absolute;
-	left: 376dp;
-	top: 90dp;
-	min-width: 528dp;
-	padding: 12dp 18dp 15dp 18dp;
+	left: 322dp;
+	top: 150dp;
+	width: 636dp;
+	min-height: 420dp;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	padding: 18dp 24dp 21dp 24dp;
 	border: 3dp #90d9fa;
 	border-right-color: #4a9fc5;
 	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
@@ -141,21 +147,36 @@
 		vertical-gradient(#000060 #000020);
 }
 
-#language-heading {
-	font-size: 33dp;
-	font-weight: normal;
-	line-height: 36dp;
-	padding: 0 12dp 6dp 12dp;
-	margin-bottom: 6dp;
-	border-bottom: 3dp #90d9fa;
+/* The display above outweighs the structure's .hidden, so hidden is said again here. */
+#language-box.hidden, #language-box .flag.hidden {
+	display: none;
 }
 
-.language-row.current {
-	color: #fff371;
+#language-heading {
+	font-size: 22dp;
+	font-weight: normal;
+	line-height: 30dp;
+	padding: 0 0 18dp 0;
+	margin: 0;
+}
+
+#language-box .language-row {
+	padding: 3dp 12dp;
+	margin: 0 18dp;
+	line-height: 48dp;
+	white-space: nowrap;
+}
+
+#language-box .flag {
+	display: inline-block;
+	width: 72dp;
+	height: 48dp;
+	margin-right: 30dp;
+	vertical-align: middle;
 }
 
 #language-done {
-	margin-top: 6dp;
+	margin-top: auto;
 	text-align: center;
 }
 

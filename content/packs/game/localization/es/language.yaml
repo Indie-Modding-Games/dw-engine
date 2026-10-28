@@ -3,3 +3,7 @@ name: "Español"
 # El nombre de cada idioma en ese idioma, igual en los textos de todos los idiomas: así los lista la caja de idiomas.
 native.en: "English"
 native.es: "Español"
+# La bandera de cada idioma, el asset id de su imagen (ui/flags, scripts/art/make_flags.py), igual en los textos de
+# todos los idiomas: la caja de idiomas la muestra junto al nombre. Un idioma nuevo trae su imagen y su clave aquí.
+flag.en: "ui/flags/en"
+flag.es: "ui/flags/es"

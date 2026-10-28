@@ -185,8 +185,15 @@ local function refresh(document)
     local button = document:get("language-" .. row)
     local code = languages[row]
     button:set_class("hidden", code == nil or view ~= "language")
-    button:set_text(code ~= nil and native_name(code) or "")
-    button:set_class("current", code ~= nil and code == ui.setting("language"))
+    document:get("language-name-" .. row):set_text(code ~= nil and upper(native_name(code)) or "")
+    -- The language's flag (language.flag.<code>, an image's asset id), when it has one.
+    local flag = code ~= nil and t("language.flag." .. code) or ""
+    local has_flag = flag ~= "" and flag ~= "language.flag." .. code
+    local image = document:get("language-flag-" .. row)
+    image:set_class("hidden", not has_flag)
+    if has_flag then
+      image:set_attribute("src", "/" .. flag)
+    end
   end
 end
 
@@ -245,6 +252,12 @@ local function lay_out(document)
   end
   show("prompt-back", orig and shown ~= "menu" and shown ~= "boot")
   show("language-box", shown == "language")
+  if shown == "language" then
+    -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
+    -- row of 60dp per language, 420dp at least (the skin's min-height).
+    local height = math.max(420, 180 + 60 * math.min(#ui.languages(), #entries.language - 1))
+    document:get("language-box"):set_property("top", string.format("%ddp", math.floor((720 - height) / 2)))
+  end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")
   document:get("scrim"):set_class("view-options", shown == "options")

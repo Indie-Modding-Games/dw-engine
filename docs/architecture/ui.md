@@ -608,7 +608,12 @@ marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigu
 | Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
 | Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
 | Opciones | Nombre en blanco y valor en amarillo, en mayúsculas: idioma, texto original, aspecto, minimapa, su tamaño, pantalla, escala y salir. Izquierda y derecha o confirmar cambian el valor; confirmar en el idioma abre su caja | Añadido, con el aspecto de un remaster de fans (capturas 8 y 10) |
-| Idioma | Caja «LANGUAGE - IDIOMA» sobre TITLE2 con una fila por idioma de los paquetes, cada uno en su idioma (`language.native.<código>`), el actual en amarillo, y «ACEPTAR». Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». Desde OPCIONES elegir deja el cursor en «ACEPTAR». Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 9 (un remaster); sin banderas: los paquetes no traen imágenes de banderas |
+| Idioma | Caja alta en el centro, con el encabezado «LANGUAGE - IDIOMA» pequeño arriba a la izquierda, una fila por idioma de los paquetes con su bandera y su nombre en su idioma y en mayúsculas (`language.native.<código>`), y «START» / «COMENZAR» abajo en el centro. Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». Desde OPCIONES elegir deja el cursor en «START». Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 12 (un remaster) |
+
+**Banderas.** Cada idioma nombra la suya con `language.flag.<código>`, el asset id de una imagen, igual en los
+textos de todos los idiomas (como `language.native.<código>`); sin clave, la fila va sin bandera. Las de `en` y `es`
+(`ui/flags/en.png`, `ui/flags/es.png`, 144 × 96, a 72 × 48dp) son dibujo propio, formas planas sin escudos, que
+genera `scripts/art/make_flags.py` (solo la biblioteca estándar de Python). Un idioma nuevo trae su imagen y su clave.
 
 Los sonidos son los del original: mover 2, confirmar 3, cancelar 4 (`ui_sounds.yaml`, `main_menu.c: tickMenuInput`).
 El juego publica `title.boot` (la portada empieza en «Press Start»: al arrancar, tras la película y al volver de una

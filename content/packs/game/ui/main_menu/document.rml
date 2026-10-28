@@ -45,17 +45,17 @@
 				<span class="prompt hidden" id="prompt-back"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
 			</div>
 		</div>
-		<!-- The original look's language box: one row per language the packs offer, each named in its own language. -->
+		<!-- The original look's language box: one row per language the packs offer, its flag and its name in its own language. -->
 		<div id="language-box" class="hidden">
 			<h2 id="language-heading" text-key="main_menu.original.language_heading"></h2>
-			<button id="language-1" class="language-row" onclick="pick_language(document, 1)"></button>
-			<button id="language-2" class="language-row" onclick="pick_language(document, 2)"></button>
-			<button id="language-3" class="language-row" onclick="pick_language(document, 3)"></button>
-			<button id="language-4" class="language-row" onclick="pick_language(document, 4)"></button>
-			<button id="language-5" class="language-row" onclick="pick_language(document, 5)"></button>
-			<button id="language-6" class="language-row" onclick="pick_language(document, 6)"></button>
-			<button id="language-7" class="language-row" onclick="pick_language(document, 7)"></button>
-			<button id="language-8" class="language-row" onclick="pick_language(document, 8)"></button>
+			<button id="language-1" class="language-row" onclick="pick_language(document, 1)"><img id="language-flag-1" class="flag hidden"/><span id="language-name-1" class="language-name"></span></button>
+			<button id="language-2" class="language-row" onclick="pick_language(document, 2)"><img id="language-flag-2" class="flag hidden"/><span id="language-name-2" class="language-name"></span></button>
+			<button id="language-3" class="language-row" onclick="pick_language(document, 3)"><img id="language-flag-3" class="flag hidden"/><span id="language-name-3" class="language-name"></span></button>
+			<button id="language-4" class="language-row" onclick="pick_language(document, 4)"><img id="language-flag-4" class="flag hidden"/><span id="language-name-4" class="language-name"></span></button>
+			<button id="language-5" class="language-row" onclick="pick_language(document, 5)"><img id="language-flag-5" class="flag hidden"/><span id="language-name-5" class="language-name"></span></button>
+			<button id="language-6" class="language-row" onclick="pick_language(document, 6)"><img id="language-flag-6" class="flag hidden"/><span id="language-name-6" class="language-name"></span></button>
+			<button id="language-7" class="language-row" onclick="pick_language(document, 7)"><img id="language-flag-7" class="flag hidden"/><span id="language-name-7" class="language-name"></span></button>
+			<button id="language-8" class="language-row" onclick="pick_language(document, 8)"><img id="language-flag-8" class="flag hidden"/><span id="language-name-8" class="language-name"></span></button>
 			<button id="language-done" onclick="close_language(document)" text-key="main_menu.original.language_done"></button>
 		</div>
 		<!-- The original look's battle mode question. -->
