@@ -91,6 +91,11 @@ void FieldScene::releaseFighters() {
     actor.fighter.reset();
     actor.motion.reset();
     scene::beginTick(world_.registry().get<scene::Transform>(actor.entity));
+    // The battle moved it: an NPC's path starts over from where it stands (the engine's, as a
+    // hold does), so it does not head back to a waypoint target it had before the fight.
+    if (const auto* tag = world_.registry().try_get<game::field::NpcTag>(actor.entity)) {
+      static_cast<void>(field_->npcs().restartPath(tag->scriptId));
+    }
   };
   release(*partnerActor_);
   for (const std::unique_ptr<Actor>& actor : npcActors_) {
@@ -99,6 +104,9 @@ void FieldScene::releaseFighters() {
   // The partner stands again with a new wait before its gestures.
   partnerLook_ = {};
   fighterSecondsDue_ = 0.0;
+  // The player is no obstacle in battle (as in the original), so the partner may end the fight on
+  // the player: the release rule sets whoever stands in someone apart.
+  field_->releaseHandoff("battle");
   core::logDebug("[port:battle] BTL_battleMain (battle_main.c:778): the field takes the fighters "
                  "back where they stand");
 }

@@ -34,8 +34,10 @@ void Field::holdForScript(bool held) {
     registry.remove<ScriptedActor>(player_);
     registry.remove<ScriptedActor>(partner_);
     // The original leaves the partner where the script did, even against the player or inside an
-    // NPC after a talk; the engine has it make room first (Field::makeRoomForPlayer).
+    // NPC after a talk; the engine has it make room first (Field::makeRoomForPlayer), then the
+    // release rule moves whoever still stands in someone (releaseHandoff).
     partnerMakesRoom_ = true;
+    releaseHandoff("script");
   }
   registry.get<AnimationIntent>(player_) = {};
   registry.get<AnimationIntent>(partner_) = {};

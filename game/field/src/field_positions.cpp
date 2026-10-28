@@ -3,7 +3,10 @@
 #include <dwe/game/field/grid.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <format>
+#include <numbers>
 #include <utility>
 
 // Where the characters stand against each other (docs/modulos/game/field.md, "Posiciones"): the
@@ -20,6 +23,11 @@ constexpr float DeepOverlap = 0.5F;
 // How long two characters may stand in each other while the player plays before the watch logs
 // it: a player walking through the partner takes about half a second.
 constexpr float OverlapGraceSeconds = 1.0F;
+// The release rule's search: rings this far apart around where the character stood, out to this
+// many (six cells).
+constexpr float SpotStep = 25.0F;
+constexpr int SpotRings = 24;
+constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
 
 glm::vec2 ground(glm::vec3 v) {
   return {v.x, v.z};
@@ -59,6 +67,110 @@ GroundSquare Field::squareOf(const Body& body) const {
 
 bool Field::inWall(glm::vec3 position) const {
   return collision_.isBlocked(assets::collisionCellAt(position));
+}
+
+void Field::releaseHandoff(std::string_view why) {
+  // Where the partner followed the player before the hold says nothing now: the trail, the stuck
+  // time and the player's last cell start over, as on entering a map.
+  trail_.clear();
+  partnerStuckSeconds_ = 0.0F;
+  lastPlayerCell_ = assets::collisionCellAt(world_->registry().get<Transform>(player_).position);
+  requestSeparation(why);
+}
+
+void Field::requestSeparation(std::string_view why) {
+  if (!separationDue_) {
+    separationDue_ = std::string{why};
+  } else if (!separationDue_->contains(why)) {
+    separationDue_->append(", ").append(why);
+  }
+}
+
+bool Field::freeFor(const Body& self, glm::vec3 at, std::span<const Body> others) const {
+  if (!fitsOnGrid(collision_, at, self.half) ||
+      warpsOn(collision_.trigger(assets::collisionCellAt(at)).value_or(0))) {
+    return false;
+  }
+  const GroundSquare square{.centre = ground(at), .half = self.half};
+  return std::ranges::none_of(others, [&](const Body& other) {
+    return other.entity != self.entity && squaresOverlap(square, squareOf(other));
+  });
+}
+
+std::optional<glm::vec3> Field::freeSpotNear(const Body& self, glm::vec3 from, glm::vec2 away,
+                                             bool walled, std::span<const Body> others) const {
+  const float base = glm::length(away) > 0.0F ? std::atan2(away.y, away.x) : 0.0F;
+  for (int ring = 1; ring <= SpotRings; ++ring) {
+    const float distance = SpotStep * static_cast<float>(ring);
+    const int count = std::max(8, static_cast<int>(std::ceil(Turn * distance / SpotStep)));
+    // The spots straight away from what it stands in first, then alternately to either side.
+    for (int index = 0; index < count; ++index) {
+      const int side = (index + 1) / 2;
+      const float angle =
+          base + (static_cast<float>(index % 2 == 0 ? side : -side) * Turn / static_cast<float>(count));
+      const glm::vec3 spot =
+          from + (glm::vec3{std::cos(angle), 0.0F, std::sin(angle)} * distance);
+      // Out of a wall it may cross the wall's cells; otherwise it does not go through a wall.
+      if (freeFor(self, spot, others) && (walled || isLineClear(collision_, from, spot, 0.0F))) {
+        return spot;
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+std::int32_t Field::separateActors(std::string_view why) {
+  entt::registry& registry = world_->registry();
+  const std::vector<Body> all = bodies();
+  std::int32_t moved = 0;
+  for (std::size_t index = 0; index < all.size(); ++index) {
+    const Body& body = all[index];
+    auto& transform = registry.get<Transform>(body.entity);
+    const bool walled = inWall(transform.position);
+    // The player gives way to nobody; the partner to everybody; an NPC to the player, the partner
+    // and the NPCs before it.
+    std::optional<std::size_t> under;
+    if (body.who != 0) {
+      for (std::size_t other = 0; other < all.size() && !under; ++other) {
+        if (other != index && (body.who == 1 || other < index) &&
+            overlaps(squareOf(body), squareOf(all[other]))) {
+          under = other;
+        }
+      }
+    }
+    if (!walled && !under) {
+      continue;
+    }
+    const std::string reason = walled ? std::string{"in a wall"} : nameOf(all[*under]);
+    const glm::vec2 away =
+        under ? ground(transform.position) - squareOf(all[*under]).centre : glm::vec2{0.0F};
+    const std::optional<glm::vec3> spot =
+        freeSpotNear(body, transform.position, away, walled, all);
+    if (!spot) {
+      core::logWarning("[positions] release ({}): no free spot near {} ({}); it stays", why,
+                       nameOf(body), reason);
+      continue;
+    }
+    core::logDebug("[positions] release ({}): {} from ({:.0f}, {:.0f}) to ({:.0f}, {:.0f}): {}",
+                   why, nameOf(body), transform.position.x, transform.position.z, spot->x,
+                   spot->z, reason);
+    scene::place(transform, {spot->x, transform.position.y, spot->z}, transform.yaw);
+    ++moved;
+    if (body.who == 0) {
+      lastPlayerCell_ = assets::collisionCellAt(*spot);
+      lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
+      moveTarget_.reset();
+      path_.clear();
+    } else if (body.who == 1) {
+      trail_.clear();
+      partnerStuckSeconds_ = 0.0F;
+      partnerMakesRoom_ = false;
+      registry.get<scene::AnimationIntent>(partner_) = {};
+    } else {
+      static_cast<void>(npcs_.restartPath(static_cast<std::int32_t>(body.who - 2)));
+    }
+  }
+  return moved;
 }
 
 void Field::watchOverlaps(float seconds) {

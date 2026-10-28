@@ -1078,3 +1078,188 @@ TEST_CASE(
   CHECK(glm::distance(field.player().position, target) <=
         field.rules().input.arriveDistance + 1.0F);
 }
+
+namespace {
+
+// Adds an NPC record standing at world (x, z) to the map; its slot is the record's index.
+std::size_t addNpc(MapDocument& map, float x, float z, std::int32_t scriptId) {
+  dwe::assets::MapNpc npc;
+  npc.typeId = 1;
+  npc.position = {static_cast<std::int32_t>(x), 0, static_cast<std::int32_t>(-z)};
+  npc.scriptId = scriptId;
+  npc.hp = 10;
+  npc.currentHp = 10;
+  map.npcs.push_back(npc);
+  return map.npcs.size() - 1;
+}
+
+float groundDistance(glm::vec3 a, glm::vec3 b) {
+  return std::hypot(a.x - b.x, a.z - b.z);
+}
+
+bool spawnNpc(Field& field, std::size_t slot) {
+  return field.npcs().spawn(
+      {.slot = slot, .species = 1, .autotalk = false, .model = "npc", .radius = 100.0F});
+}
+
+dwe::game::field::GroundSquare squareAt(glm::vec3 position, float half) {
+  return {.centre = {position.x, position.z}, .half = half};
+}
+
+void placeAt(dwe::scene::World& world, dwe::scene::Entity entity, float x, float z) {
+  dwe::scene::place(world.registry().get<dwe::scene::Transform>(entity), {x, 0.0F, z}, 0.0F);
+}
+
+} // namespace
+
+TEST_CASE("the release rule leaves characters standing apart where they are") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  run(field, 0.5F);
+  const glm::vec3 player = field.player().position;
+  const glm::vec3 partner = field.partner().position;
+  CHECK(field.separateActors("test") == 0);
+  CHECK(field.player().position == player);
+  CHECK(field.partner().position == partner);
+  CHECK(field.overlapEpisodes() == 0);
+}
+
+TEST_CASE("the release rule puts a partner left on the player on the nearest free spot") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  const auto& rules = field.rules();
+  placeAt(world, field.partnerEntity(), 40.0F, 10.0F);
+  CHECK(field.separateActors("test") == 1);
+  // The player stays; the partner touches it no more, close by and on the side it was.
+  CHECK(field.player().position == glm::vec3{0.0F});
+  CHECK_FALSE(dwe::game::field::squaresOverlap(
+      squareAt(field.player().position, rules.player.radius),
+      squareAt(field.partner().position, rules.partner.mover.radius)));
+  CHECK(partnerDistance(field) < rules.partner.walkDistance * rules.partner.mover.radius);
+  CHECK(field.partner().position.x > 0.0F);
+  // Snapped, not slid: nothing to draw between two places.
+  const auto& transform = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  CHECK(transform.previousPosition == transform.position);
+}
+
+TEST_CASE("the release rule takes a character out of a wall, and the player only out of one") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  // A pillar of 3 x 3 cells around world (1050, 1050).
+  fill(map, {.column = 59, .row = 59}, {.column = 61, .row = 61}, Blocked);
+  field.enterMapAt(map, at(-1000.0F, -1000.0F, 0.0F));
+  const MapCollision& grid = field.collision();
+  const auto blockedAt = [&](glm::vec3 position) {
+    return grid.isBlocked(dwe::assets::collisionCellAt(position));
+  };
+  SUBCASE("the partner") {
+    placeAt(world, field.partnerEntity(), 1050.0F, 1050.0F);
+    CHECK(field.separateActors("test") == 1);
+    CHECK_FALSE(blockedAt(field.partner().position));
+    CHECK(dwe::game::field::fitsOnGrid(grid, field.partner().position,
+                                       field.rules().partner.mover.radius));
+  }
+  SUBCASE("the player") {
+    placeAt(world, field.playerEntity(), 1050.0F, 1050.0F);
+    placeAt(world, field.partnerEntity(), -1000.0F, -1000.0F);
+    CHECK(field.separateActors("test") == 1);
+    CHECK_FALSE(blockedAt(field.player().position));
+    CHECK(groundDistance(field.player().position, {1050.0F, 0.0F, 1050.0F}) < 400.0F);
+  }
+}
+
+TEST_CASE("an NPC put on the player steps off it on the next tick; the player stays") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 30.0F, 0.0F, 7);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  run(field, 0.2F);
+  REQUIRE(spawnNpc(field, slot));
+  field.tick(Tick);
+  const glm::vec3 npc = *field.npcs().positionOf(7);
+  CHECK(field.player().position == glm::vec3{0.0F});
+  CHECK_FALSE(dwe::game::field::squaresOverlap(squareAt(field.player().position, 100.0F),
+                                               squareAt(npc, 100.0F)));
+  CHECK_FALSE(Field::overlaps(squareAt(field.partner().position, 120.0F), squareAt(npc, 100.0F)));
+  run(field, 2.0F);
+  CHECK(field.overlapEpisodes() == 0);
+}
+
+TEST_CASE("a partner placed by the player keeps off the NPCs, and a map entry checks them too") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  // Right where the partner appears, spawnDistance behind the player facing +Z.
+  const std::size_t slot = addNpc(map, 0.0F, -200.0F, 9);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  placeAt(world, field.partnerEntity(), -1500.0F, -1500.0F);
+  // Too far: it is placed by the player, not on the NPC.
+  run(field, 0.1F);
+  CHECK(field.partnerTeleports() >= 1);
+  CHECK_FALSE(
+      Field::overlaps(squareAt(field.partner().position, 120.0F),
+                      squareAt(*field.npcs().positionOf(9), 100.0F)));
+}
+
+TEST_CASE("a care scene or a script let go with the partner on the player sets them apart") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  run(field, 0.2F);
+  const auto apart = [&] {
+    return !Field::overlaps(squareAt(field.player().position, 100.0F),
+                            squareAt(field.partner().position, 120.0F));
+  };
+  SUBCASE("care: at once") {
+    field.holdForCare(true);
+    placeAt(world, field.partnerEntity(), 5.0F, 5.0F);
+    field.tick(Tick);
+    field.holdForCare(false);
+    field.tick(Tick);
+    CHECK(apart());
+  }
+  SUBCASE("a script: the partner walks off first, and is never snapped if that is enough") {
+    field.holdForScript(true);
+    placeAt(world, field.partnerEntity(), 60.0F, 0.0F);
+    field.tick(Tick);
+    field.holdForScript(false);
+    run(field, 2.0F);
+    CHECK(apart());
+    CHECK(field.partner().position.z == doctest::Approx(0.0F));
+  }
+  SUBCASE("a script, the partner left in an NPC away from the player: it is set apart") {
+    MapDocument map = roomMap("room");
+    const std::size_t slot = addNpc(map, 620.0F, 0.0F, 4);
+    field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+    REQUIRE(spawnNpc(field, slot));
+    field.holdForScript(true);
+    placeAt(world, field.partnerEntity(), 600.0F, 0.0F);
+    field.tick(Tick);
+    field.holdForScript(false);
+    field.tick(Tick);
+    field.tick(Tick);
+    CHECK_FALSE(Field::overlaps(squareAt(field.partner().position, 120.0F),
+                                squareAt(*field.npcs().positionOf(4), 100.0F)));
+  }
+  run(field, 2.0F);
+  CHECK(field.overlapEpisodes() == 0);
+}
+
+TEST_CASE("the overlap watch logs a player standing on the partner once per episode") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  run(field, 0.2F);
+  placeAt(world, field.partnerEntity(), 10.0F, 0.0F);
+  run(field, 0.5F);
+  CHECK(field.overlapEpisodes() == 0);
+  run(field, 1.0F);
+  CHECK(field.overlapEpisodes() == 1);
+  run(field, 1.0F);
+  CHECK(field.overlapEpisodes() == 1);
+}

@@ -142,7 +142,11 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
       warp->rotation, static_cast<std::int32_t>(std::lround(rules_.partner.spawnDistance)));
   const glm::vec3 position = assets::toWorldPosition(warp->spawn + offset);
   const assets::SpawnPoint spawn = assets::warpSpawn(*warp);
-  if (fitsOnGrid(collision_, position, rules_.partner.mover.radius)) {
+  const GroundSquare there{.centre = ground(position), .half = rules_.partner.mover.radius};
+  const bool clearOfOthers = std::ranges::none_of(bodies(), [&](const Body& body) {
+    return body.who != 1 && overlaps(there, squareOf(body));
+  });
+  if (fitsOnGrid(collision_, position, rules_.partner.mover.radius) && clearOfOthers) {
     scene::place(world_->registry().get<Transform>(partner_), position,
                  assets::yawOfDirection(spawn.position - position));
   }
@@ -204,6 +208,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   if (scriptHeld_) {
     scriptCamera_ = spawn.position;
   }
+  releaseHandoff("map entry");
 }
 
 void Field::setInput(const FieldInput& input) {
@@ -240,6 +245,9 @@ void Field::tick(float seconds) {
     registry.get<AnimationIntent>(player_) = {};
     return;
   }
+  if (npcs_.takeArrivals()) {
+    requestSeparation("npc on the map or let go");
+  }
   if (scriptHeld_) {
     // A press made while held is the script's, not the cell's.
     input_.confirm = false;
@@ -250,6 +258,10 @@ void Field::tick(float seconds) {
     input_.confirm = false;
     tickCare(seconds);
     return;
+  }
+  // The release rule (releaseHandoff): after a script the partner first makes room on foot.
+  if (separationDue_ && !partnerMakesRoom_) {
+    separateActors(*std::exchange(separationDue_, std::nullopt));
   }
   if (fadeInSeconds_) {
     // tamer.c: tamerTickChangeMap gives the player back control on the fade in's last frame
@@ -892,6 +904,9 @@ void Field::holdForCare(bool held) {
   registry.get<AnimationIntent>(partner_) = {};
   core::logDebug("[port:care] tamerSetState({}) (partner.c: the care scenes hold the player)",
                  held ? "6" : "0");
+  if (!held) {
+    releaseHandoff("care");
+  }
 }
 
 void Field::walkPartnerToRange(float range) {
@@ -1188,9 +1203,15 @@ void Field::placePartnerNearPlayer() {
                          (glm::vec3{offset.x, 0.0F, offset.y} * rules_.partner.spawnDistance));
   }
   glm::vec3 chosen = player.position;
+  const std::vector<Body> others = bodies();
+  const auto clearOfOthers = [&](glm::vec3 candidate) {
+    const GroundSquare there{.centre = ground(candidate), .half = radius};
+    return std::ranges::none_of(
+        others, [&](const Body& body) { return body.who != 1 && overlaps(there, squareOf(body)); });
+  };
   for (const glm::vec3 candidate : candidates) {
     if (fitsOnGrid(collision_, candidate, radius) &&
-        isLineClear(collision_, player.position, candidate, 0.0F)) {
+        isLineClear(collision_, player.position, candidate, 0.0F) && clearOfOthers(candidate)) {
       chosen = candidate;
       break;
     }
