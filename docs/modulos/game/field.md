@@ -135,6 +135,21 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de
   suelta lo aparta en el tick siguiente.
 
+Estado: **Igual** (hace lo mismo que el decomp), **Mejora documentada** (del motor, a propósito), **Suposición** (el
+decomp no lo deja claro) o **Hueco** (falta).
+
+| Qué | Original | Motor | Prueba | Estado |
+|---|---|---|---|---|
+| Separar a quien queda pisando a otro o en una pared al soltarlo | nada: cada uno queda donde lo dejó quien lo retenía | `releaseHandoff`, `separateActors` | `field_tests`: "the release rule ..."; rutas de `_work/routes-e2/positions` | Mejora documentada |
+| Vigilancia de solapes | — | `watchOverlaps`, `field.overlaps` | `field_tests`: "the overlap watch ..." | Mejora documentada (depuración) |
+| Al cargar, un NPC sobre el jugador | `main.c:3821`: lleva al jugador a la entrada del mapa si pisa a ciertos NPC | la regla de suelta aparta al NPC; el jugador no se mueve | `field_tests`: "an NPC put on the player ..." | Suposición (se prefiere no mover al jugador) |
+| Tamaño del compañero en el campo | radio de la especie | `setPartnerRadius` | `field_tests`: "the partner's size follows its species ..." | Igual |
+| NPC tras un guion | `NPC_ACTIVE_ANIM` sigue hasta que un guion lo quita | `holdForScript(false)` quita la velocidad y el `ScriptedActor` sin animación | `field_tests`: "a script let go ..." | Igual |
+| Interpolación sin tick de campo y saltos de guion | sin interpolación | `settle`, `placeByScript`/`turnByScript` con salto | `field_tests`: "settling ...", "a script's jump ..." | Mejora documentada |
+| El jugador choca con el compañero | `map.c: entityCheckCollision` prueba a todos, también el compañero (índice 1) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Hueco |
+| Deslizamientos de guion contra paredes y NPC; `wouldTouchCharacter` sin NPC | — | sin cambiar; la regla de suelta arregla el resultado | — | Hueco |
+| Vuelta andando tras un combate de historia | `story_scenes.cpp:75-79` es un esbozo | sin cambiar | — | Hueco |
+
 ## Datos
 
 - `field/rules` (`content/packs/game/field/rules.yaml`, [esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/field_rules.schema.json)):
@@ -154,6 +169,7 @@ Los dos se pueden cambiar desde un paquete de mod con el mismo id.
 
 `grid_tests.cpp` (colisión con trayectorias fijas, deslizamiento, sin atravesar paredes, caminos), `field_tests.cpp`
 (movimiento, warps con su fundido y su nombre fotograma a fotograma, seguimiento, desatasco y sitio tras un guion del
-partner) y
+partner; la regla de suelta, la vigilancia de solapes, la interpolación, el tamaño del compañero y los NPC tras un
+guion) y
 `rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
 `DWE_CONTENT` apunta a él: File City (`twna01`) → casa de Jijimon (`room08`) → File City, con el stick y con clics.
