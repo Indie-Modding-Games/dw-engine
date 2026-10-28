@@ -62,7 +62,8 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
           .count = slot->count,
           .dimmed = entry != nullptr && entry->itemColor == NeverUsedColor,
           .usable = usableIn(entry, rules, context),
-          .discardable = context == game::inventory::UseContext::Field && entry->droppable == rules.discardDroppable,
+          .discardable = context == game::inventory::UseContext::Field &&
+                         entry->droppable == rules.discardDroppable,
           .itemColor = entry->itemColor,
           .icon = std::move(icon),
           .iconRect = std::move(iconRect)};

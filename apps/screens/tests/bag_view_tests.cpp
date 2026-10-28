@@ -27,6 +27,8 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
                                                    .count = 3,
                                                    .dimmed = false,
                                                    .usable = true,
+                                                   .discardable = false,
+                                                   .itemColor = 2,
                                                    .icon = "/texture/etcdat/item?palette=3",
                                                    .iconRect = "0 0 16 16"});
   CHECK(view.slots[1].item == GateKey);

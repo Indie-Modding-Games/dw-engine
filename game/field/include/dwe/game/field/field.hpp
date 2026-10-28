@@ -101,6 +101,9 @@ struct CharacterState {
 struct ScriptedActor {
   glm::vec3 velocity{};
   std::optional<std::uint32_t> clip;
+  // How many times a script started a clip: anim.c: startAnimation restarts even the clip that
+  // plays, as each push of the gym's log does.
+  std::uint32_t starts = 0;
   // anim.c: animFlag 2 holds the clip on its frame.
   bool frozen = false;
 };
@@ -452,6 +455,9 @@ private:
   assets::CollisionCell lastPlayerCell_;
   std::deque<assets::CollisionCell> trail_;
   scene::Motion partnerMotion_ = scene::Motion::Idle;
+  // The partner's motion as the last tick left it, before tick() clears its intent: the motion its
+  // clip shows, which a change of walk waits on.
+  scene::Motion partnerShownMotion_ = scene::Motion::Idle;
   bool partnerPassesNoted_ = false;
   bool partnerPassEnded_ = false;
   float partnerStuckSeconds_ = 0.0F;

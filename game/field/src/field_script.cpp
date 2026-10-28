@@ -53,7 +53,9 @@ void Field::turnByScript(scene::Entity entity, float yaw) {
 void Field::animateByScript(scene::Entity entity, std::uint32_t clip) {
   core::logDebug(
       "{}", core::formatMessage(script_messages::Clip, static_cast<std::uint32_t>(entity), clip));
-  world_->registry().get_or_emplace<ScriptedActor>(entity).clip = clip;
+  auto& scripted = world_->registry().get_or_emplace<ScriptedActor>(entity);
+  scripted.clip = clip;
+  ++scripted.starts;
 }
 
 void Field::freezeByScript(scene::Entity entity, bool frozen) {

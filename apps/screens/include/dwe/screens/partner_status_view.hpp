@@ -1,10 +1,10 @@
 #pragma once
 
-#include <dwe/screens/name_keys.hpp>
 #include <dwe/game/battle/combatant.hpp>
+#include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
-#include <dwe/session/partner_view.hpp>
 #include <dwe/session/partner_moves.hpp>
+#include <dwe/session/partner_view.hpp>
 
 #include <array>
 #include <cstdint>
@@ -99,7 +99,7 @@ struct PartnerStatusView {
 
 [[nodiscard]] std::array<std::optional<TechniqueView>, game::battle::EquippedSlots>
 equippedTechniqueViewsOf(const game::battle::Combatant& partner,
-                        const game::battle::MoveCatalog& catalog, const NameKeys& names);
+                         const game::battle::MoveCatalog& catalog, const NameKeys& names);
 
 void setProfileSpecies(PartnerStatusView& view, const assets::DigimonRow& species,
                        std::int32_t activePattern);

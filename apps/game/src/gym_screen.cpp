@@ -39,6 +39,21 @@ constexpr std::string_view GymOffMap = "game: gym: the courses run on {} only";
 constexpr std::string_view NewOrderText = "gym.new_order";
 constexpr std::string_view MoveLearnedText = "gym.move_learned";
 constexpr std::int32_t Hundred = 100;
+// How far from where the camera looks the gym's view reaches, in world units.
+constexpr float OffScreenDistance = 1800.0F;
+
+// The gym's points are in the original's axes (gym.yaml), whose z runs the other way to the
+// world's: a course spot taken as a world point sent the partner and the camera off the map.
+glm::vec3 worldOf(Point spot, float height) {
+  glm::vec3 world = assets::toWorldPosition({spot.x, 0, spot.z});
+  world.y = height;
+  return world;
+}
+
+// A world point in the original's axes, as the courses read the partner's position.
+Point originalOf(glm::vec3 world) {
+  return Point{.x = static_cast<std::int32_t>(world.x), .z = static_cast<std::int32_t>(-world.z)};
+}
 
 std::size_t objectOf(const ObjectGroup& group, std::int32_t index) {
   return static_cast<std::size_t>(group.first) + static_cast<std::size_t>(index);
@@ -112,9 +127,7 @@ public:
     const scene::Entity entity = entityOf(actor);
     const glm::vec3 position = positionOf(actor);
     const bool toPlayer = !spot.has_value();
-    const glm::vec3 target =
-        toPlayer ? field.player().position
-                 : glm::vec3{static_cast<float>(spot->x), position.y, static_cast<float>(spot->z)};
+    const glm::vec3 target = toPlayer ? field.player().position : worldOf(*spot, position.y);
     glm::vec3 toward = target - position;
     toward.y = 0.0F;
     const float distance = glm::length(toward);
@@ -140,9 +153,8 @@ public:
   void moveCamera(std::optional<Point> spot, std::int32_t speed) override {
     // map.c: tickCameraMovement steps the camera to the target in `speed` frames.
     game::field::Field& field = desc_->scene->field();
-    const glm::vec3 focus = spot ? glm::vec3{static_cast<float>(spot->x), field.player().position.y,
-                                             static_cast<float>(spot->z)}
-                                 : field.player().position;
+    const glm::vec3 focus =
+        spot ? worldOf(*spot, field.player().position.y) : field.player().position;
     const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
     field.panCameraByScript(focus, static_cast<float>(speed / framesPerSecond));
   }
@@ -192,16 +204,30 @@ public:
     return std::nullopt;
   }
   std::optional<Point> partnerPosition() override {
-    const glm::vec3 at = desc_->scene->field().partner().position;
-    return Point{.x = static_cast<std::int32_t>(at.x), .z = static_cast<std::int32_t>(at.z)};
+    return originalOf(desc_->scene->field().partner().position);
   }
   void movePartner(Point delta) override {
     game::field::Field& field = desc_->scene->field();
-    field.placeByScript(field.partnerEntity(),
-                        field.partner().position + glm::vec3{static_cast<float>(delta.x), 0.0F,
-                                                             static_cast<float>(delta.z)});
+    field.placeByScript(field.partnerEntity(), field.partner().position + worldOf(delta, 0.0F));
   }
-  bool partnerOnScreen() override { return true; }
+  void runOn(Actor actor) override {
+    // The original's run clip moves its entity itself; a script's clip here does not, so the actor
+    // is carried at the clip's ground speed, through the scenery as in the original.
+    game::field::Field& field = desc_->scene->field();
+    const float yaw = actor == Actor::Tamer ? field.player().yaw : field.partner().yaw;
+    const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
+    const float step = walkSpeed(actor) / static_cast<float>(framesPerSecond);
+    field.placeByScript(entityOf(actor), positionOf(actor) + assets::forwardOfYaw(yaw) * step);
+  }
+  bool partnerOnScreen() override {
+    // entity.isOnScreen, without the camera's projection: the partner is off screen once it is
+    // farther from where the camera looks than the gym's view reaches.
+    const game::field::Field& field = desc_->scene->field();
+    glm::vec3 apart =
+        field.partner().position - field.scriptCamera().value_or(field.player().position);
+    apart.y = 0.0F;
+    return glm::length(apart) <= OffScreenDistance;
+  }
   void placePartnerX(std::int32_t x) override {
     game::field::Field& field = desc_->scene->field();
     glm::vec3 position = field.partner().position;

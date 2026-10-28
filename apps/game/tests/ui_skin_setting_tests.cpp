@@ -79,6 +79,7 @@ struct Content {
     for (const Stand& image :
          {Stand{.path = "texture/etcdat/system_w.png", .width = 256, .height = 128},
           Stand{.path = "texture/etcdat/fi_info.png", .width = 256, .height = 64},
+          Stand{.path = "texture/etcdat/sboy.png", .width = 256, .height = 256},
           Stand{.path = "texture/etcdat/bi_in.png", .width = 256, .height = 64},
           Stand{.path = "texture/etcdat/feel_ef.png", .width = 256, .height = 64},
           Stand{.path = "texture/etcdat/btlcomnd.png", .width = 256, .height = 64},

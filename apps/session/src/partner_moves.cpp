@@ -104,24 +104,28 @@ namespace {
 int techniqueFamily(int index) {
   return index == 48 ? 44 : index == 57 ? 55 : index;
 }
-}
+} // namespace
 
 bool knowsTechnique(const PartnerMoves& moves, const game::battle::MoveCatalog& catalog,
                     std::string_view id) {
-  if (knows(moves, id)) return true;
+  if (knows(moves, id))
+    return true;
   const auto target = catalog.find(id);
-  if (!target) return false;
+  if (!target)
+    return false;
   const auto family = techniqueFamily(catalog.at(*target).index);
   for (const auto& learned : moves.learned) {
     const auto ref = catalog.find(learned);
-    if (ref && techniqueFamily(catalog.at(*ref).index) == family) return true;
+    if (ref && techniqueFamily(catalog.at(*ref).index) == family)
+      return true;
   }
   return false;
 }
 
 TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& species,
                                 const game::battle::MoveCatalog& catalog, MoveSlot slot) {
-  if (slot < 0 || std::cmp_greater_equal(slot, species.moves.size()) || !species.moves[static_cast<std::size_t>(slot)]) {
+  if (slot < 0 || std::cmp_greater_equal(slot, species.moves.size()) ||
+      !species.moves[static_cast<std::size_t>(slot)]) {
     return TechniqueToggle::Unavailable;
   }
   const auto& id = *species.moves[static_cast<std::size_t>(slot)];
@@ -131,9 +135,13 @@ TechniqueToggle toggleTechnique(PartnerMoves& moves, const assets::DigimonRow& s
   }
   for (std::size_t place = 0; place < game::battle::FinisherSlot; ++place) {
     const auto equipped = moves.equipped[place];
-    const auto current = equipped && *equipped >= 0 && std::cmp_less(*equipped, species.moves.size())
-        && species.moves[static_cast<std::size_t>(*equipped)] ? catalog.find(*species.moves[static_cast<std::size_t>(*equipped)]) : std::nullopt;
-    if (current && techniqueFamily(catalog.at(*current).index) == techniqueFamily(catalog.at(*ref).index)) {
+    const auto current = equipped && *equipped >= 0 &&
+                                 std::cmp_less(*equipped, species.moves.size()) &&
+                                 species.moves[static_cast<std::size_t>(*equipped)]
+                             ? catalog.find(*species.moves[static_cast<std::size_t>(*equipped)])
+                             : std::nullopt;
+    if (current &&
+        techniqueFamily(catalog.at(*current).index) == techniqueFamily(catalog.at(*ref).index)) {
       moves.equipped[place].reset();
       return TechniqueToggle::Removed;
     }
@@ -151,9 +159,12 @@ bool canFinishTechniqueEdit(const PartnerMoves& moves, const assets::DigimonRow&
                             const game::battle::MoveCatalog& catalog) {
   for (std::size_t place = 0; place < game::battle::FinisherSlot; ++place) {
     const auto slot = moves.equipped[place];
-    if (!slot || *slot < 0 || std::cmp_greater_equal(*slot, species.moves.size()) || !species.moves[static_cast<std::size_t>(*slot)]) continue;
+    if (!slot || *slot < 0 || std::cmp_greater_equal(*slot, species.moves.size()) ||
+        !species.moves[static_cast<std::size_t>(*slot)])
+      continue;
     const auto move = catalog.find(*species.moves[static_cast<std::size_t>(*slot)]);
-    if (move && catalog.at(*move).power > 0) return true;
+    if (move && catalog.at(*move).power > 0)
+      return true;
   }
   return false;
 }

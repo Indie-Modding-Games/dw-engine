@@ -263,6 +263,7 @@ private:
     std::optional<std::uint32_t> motionClip;
     // The clip a script plays on it (game::field::ScriptedActor), while it plays one.
     std::optional<std::uint32_t> scriptedClip;
+    std::uint32_t scriptedStarts = 0;
     // A clip that replaces the motion's (setPlayerClip).
     std::optional<std::uint32_t> heldClip;
   };
