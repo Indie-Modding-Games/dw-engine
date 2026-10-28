@@ -511,8 +511,9 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   }
   assets::YamlReader reader;
   AutotestRoute route;
-  reader.expectKeys(*document, "route", {"name", "device", "steps"},
-                    {"gamepad", "timeout", "main_menu", "boot_screen", "new_game"});
+  reader.expectKeys(
+      *document, "route", {"name", "device", "steps"},
+      {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -534,6 +535,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
     route.bootScreen = reader.boolean(*boot);
     if (route.bootScreen && !route.mainMenu) {
       reader.fail(*boot, "boot_screen needs main_menu: true");
+    }
+  }
+  if (const core::YamlNode* language = document->find("language_first")) {
+    route.languageFirst = reader.boolean(*language);
+    if (route.languageFirst && !route.bootScreen) {
+      reader.fail(*language, "language_first needs boot_screen: true");
     }
   }
   if (const core::YamlNode* newGame = document->find("new_game")) {

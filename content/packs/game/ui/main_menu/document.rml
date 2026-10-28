@@ -7,9 +7,9 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
-	<div id="scrim">
+	<div id="scrim" onmousemove="pointer_moved(document)">
 		<!-- The original look's screen before the menu: the whole screen is the button, so any confirm or click goes on. -->
-		<button id="press-start" class="hidden" onclick="leave_boot(document)"><span id="press-start-text" text-key="main_menu.press_start"></span></button>
+		<button id="press-start" class="hidden" onclick="leave_boot(document)"><span id="press-start-text"></span></button>
 		<div id="panel">
 			<h1 id="title" text-key="main_menu.title"></h1>
 			<button id="play" autofocus="autofocus" onclick="play()"></button>

@@ -603,25 +603,31 @@ marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigu
 
 | Pantalla | Cómo es | Fuente |
 |---|---|---|
-| «Press Start» | TITLE256 hasta la fila 206 (sin la línea del copyright) sobre negro, y «Pulsa el botón Start» en verde, centrada en la línea del original, que parpadea 30 de cada 60 frames; tras pulsar alterna cada frame hasta el negro. Fundido desde negro de 40 frames al entrar y a negro al salir. Start, confirmar o un clic siguen | `main.c: runLandingScreen`, `main.c: renderPressStartToContinue`, `fade.c` |
+| «Press Start» | TITLE256 hasta la fila 206 (sin la línea del copyright) sobre negro, y la línea en verde, centrada en la del original, que parpadea 30 de cada 60 frames; tras pulsar alterna cada frame hasta el negro. Fundido desde negro de 40 frames al entrar y a negro al salir. Start, confirmar o un clic siguen | `main.c: runLandingScreen`, `main.c: renderPressStartToContinue`, `fade.c` |
 | Menú | NUEVA PARTIDA, CONTINUAR PARTIDA, BORRAR PARTIDA, MODO BATALLA, OPCIONES en el cuadro de (72, 50) sobre TITLE2. Continuar y borrar en gris sin partidas: el cursor se para en ellas y confirmar no hace nada. El cursor no da la vuelta; el menú recuerda la entrada al volver | `main_menu.c: renderInitialMenu`, `main_menu.c: tickMainMenu`, `main_menu.c: tickMenuInput` |
 | Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
 | Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
 | Opciones | Nombre en blanco y valor en amarillo, en mayúsculas: idioma, texto original, aspecto, minimapa, su tamaño, pantalla, escala y salir. Izquierda y derecha o confirmar cambian el valor; confirmar en el idioma abre su caja | Añadido, con el aspecto de un remaster de fans (capturas 8 y 10) |
-| Idioma | Caja «LANGUAGE - IDIOMA» con una fila por idioma de los paquetes, cada uno en su idioma (`language.native.<código>`), el actual en amarillo, y «ACEPTAR». Elegir cambia todos los textos al momento | Captura 9; sin banderas: los paquetes no traen imágenes de banderas |
+| Idioma | Caja «LANGUAGE - IDIOMA» sobre TITLE2 con una fila por idioma de los paquetes, cada uno en su idioma (`language.native.<código>`), el actual en amarillo, y «ACEPTAR». Sale antes de cada pantalla de «Press Start», con el cursor en el idioma actual (el de los ajustes o `--lang`): un confirmar elige y pasa, con fundido, a «Press Start». Desde OPCIONES elegir deja el cursor en «ACEPTAR». Elegir cambia todos los textos al momento y se guarda en los ajustes | Captura 9 (un remaster); sin banderas: los paquetes no traen imágenes de banderas |
 
 Los sonidos son los del original: mover 2, confirmar 3, cancelar 4 (`ui_sounds.yaml`, `main_menu.c: tickMenuInput`).
 El juego publica `title.boot` (la portada empieza en «Press Start»: al arrancar, tras la película y al volver de una
-partida) y `title.choose_language` (no se ha elegido idioma nunca, ni en los ajustes ni con `--lang`). Las preguntas
+partida) y `title.language_first` (la caja de idiomas va antes; un autotest solo la ve si su ruta dice
+`language_first: true`). Las preguntas
 de la portada llevan `dialog.at_title`, y el aspecto original las dibuja con su cuadro sobre la lista.
 
 **Mejoras documentadas** (opcionales, a propósito): con partidas guardadas el cursor empieza en CONTINUAR PARTIDA
 (`FocusContinueWhenSaved` en `logic.lua`; el original empieza en NUEVA PARTIDA); Escape y cancelar vuelven un nivel
-(el menú del original no tiene «atrás»); Start se acepta también durante el fundido de entrada; la primera vez, la
-caja de idiomas sale antes del menú; el cuadro de resumen de la partida enfocada y el paso de ocho en ocho filas con
+(el menú del original no tiene «atrás»); Start se acepta también durante el fundido de entrada; la caja de idiomas
+antes de «Press Start», en cada arranque y cada vuelta a la portada (añadido nuestro, como el remaster de la
+captura 9; el original no la tiene); el cuadro de resumen de la partida enfocada y el paso de ocho en ocho filas con
 izquierda y derecha; el ratón enfoca al pasar y confirma con clic, y el mando hace lo mismo que el teclado.
 
-**Diferencias y huecos:** la línea «Press Start» es texto en el idioma del jugador, no la imagen del original; sin la
+**Diferencias y huecos:** la línea «Press Start» es texto en el idioma del jugador, no la imagen del original, y es
+nuestra adaptación al PC: nombra lo que sigue con el dispositivo en uso, con los nombres de los avisos de botones
+(`ui.prompt`): «PULSA INTRO» / «PRESS ENTER» con el teclado (la tecla de confirmar de los controles), «PULSA» y el
+botón Start con el mando, «HAZ CLIC» / «CLICK» si el ratón se movió el último (el motor junta teclado y ratón en un
+dispositivo, así que lo distingue el documento); el original dice «Press Start Button»; sin la
 línea del copyright; las cajas crecen a la derecha con textos más largos que los del original (español); no hay
 avisos de botones en estas cajas, como en el original; la pregunta del modo batalla dice que aún no existe y el modo
 batalla queda pendiente; la exploración libre no sale en las opciones de la portada (solo funciona en partida) ni la

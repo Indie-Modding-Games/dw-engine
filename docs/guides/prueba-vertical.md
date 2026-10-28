@@ -302,7 +302,8 @@ device: keyboard          # keyboard | gamepad | mouse: el de los pasos que no d
 gamepad: xbox             # familia del mando virtual (xbox, playstation, nintendo...)
 timeout: 600              # segundos para toda la ruta
 main_menu: false          # true: empieza en el menú principal en vez de en el campo
-boot_screen: false        # true (con main_menu): la portada empieza en «Press Start», como al arrancar
+boot_screen: false        # true (con main_menu): la portada empieza en «Press Start»
+language_first: false     # true (con boot_screen): antes, la caja de idiomas, como al arrancar el juego
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
 steps:
   - wait: {map: twna01, seconds: 1}

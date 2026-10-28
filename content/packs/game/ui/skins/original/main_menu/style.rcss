@@ -38,8 +38,8 @@
 }
 
 /* "Press Start Button" (renderPressStartToContinue): at (106, 170), 121 x 10, its white drawn with the colour
-   (0, 128, 0), full green. The original's line is a picture of English text; this one is text, in the player's
-   language, centred on the original's line. */
+   (0, 128, 0), full green. The original's line is a picture of English text naming Start; this one is text, in
+   the player's language, centred on the original's line, naming what goes on with the device in use (logic.lua). */
 #press-start-text {
 	position: absolute;
 	left: 160dp;

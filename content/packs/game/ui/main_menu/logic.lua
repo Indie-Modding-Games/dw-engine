@@ -18,8 +18,9 @@
 --     row, in the original's boxes. Free exploration is set from the pause menu, during a game, and
 --     vsync cannot change while the game runs, so neither is here.
 --   - "language": a box with one row per language the packs offer, each named in its own language.
---     It opens from options, and before the menu on the first start, when the player never chose a
---     language (title.choose_language): an addition.
+--     It opens from options, and before the "Press Start" screen each time the title starts there
+--     (title.language_first), as a remaster's: an addition. There one confirm picks the language
+--     and goes on, with a fade, to the "Press Start" screen.
 --   - "battle": the original's battle mode question (renderConfirmVSSlot), on no. Battle mode is
 --     not made yet: both answers come back to the menu.
 --   The cursor does not wrap: it stops at the first and the last entry (tickMenuInput), and each
@@ -30,7 +31,7 @@
 local view = "menu"
 -- The entry each view had focused last.
 local remembered = { menu = nil, options = "language" }
--- Where the language box goes back to: options, or the menu after the first start's choice.
+-- Where the language box goes back to: options, or on to the "Press Start" screen (boot).
 local language_return = "options"
 -- The layout seen last, to lay the document out again when a skin switch changes it.
 local was_original = nil
@@ -54,8 +55,6 @@ local fade_target = 0.0
 local blink = 0.0
 local leaving = false
 local pending_view = nil
--- Whether the first start's language box was shown already.
-local language_asked = false
 
 local entries = {
   menu = { "play", "continue", "erase", "battle", "options" },
@@ -191,9 +190,36 @@ local function refresh(document)
   end
 end
 
+-- Whether the pointer moved last (the UI tells the keyboard and the mouse apart only as one device).
+local pointer = false
+
+-- The "Press Start" line names what goes on with the device in use, in the prompts' names: the
+-- confirm key on a keyboard, Start on a gamepad, a click with the mouse. The original names its
+-- Start button; this is the PC's.
+local function refresh_press(document)
+  local text
+  if ui.device() == "gamepad" then
+    text = t("main_menu.press_key", { key = ui.prompt("menu") })
+  elseif pointer then
+    text = t("main_menu.press_click")
+  else
+    text = t("main_menu.press_key", { key = ui.prompt("confirm") })
+  end
+  document:get("press-start-text"):set_text(upper(text))
+end
+
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  refresh_press(document)
+end
+
+-- The pointer moved over the title screen: the "Press Start" line asks for a click.
+function pointer_moved(document)
+  if not pointer then
+    pointer = true
+    refresh_press(document)
+  end
 end
 
 -- Shows what the layout and the view show, and hides the rest.
@@ -253,6 +279,8 @@ end
 local function enter(document, name)
   if name == "menu" then
     set_view(document, "menu", remembered.menu or first_entry())
+  elseif name == "boot" then
+    set_view(document, "boot", "press-start")
   elseif name == "battle" then
     -- The question starts on no each time, as the original's.
     set_view(document, "battle", "battle-no")
@@ -275,12 +303,7 @@ function leave_boot(document)
   if view == "boot" and not leaving then
     leaving = true
     fade_target = 1.0
-    -- The first start asks for the language before the menu.
-    pending_view = (ui.setting("title.choose_language") == true and not language_asked)
-        and "language"
-      or "menu"
-    language_asked = true
-    language_return = "menu"
+    pending_view = "menu"
   end
 end
 
@@ -373,16 +396,30 @@ function language_entry(document)
   end
 end
 
--- A row of the language box: the language at once, then the cursor on the box's last row.
+-- A row of the language box: the language at once, then the cursor on the box's last row; before
+-- the "Press Start" screen, on to it.
 function pick_language(document, row)
   local code = ui.languages()[row]
-  if code ~= nil then
+  if code ~= nil and not leaving then
     ui.send("language", code)
-    document:get("language-done"):focus()
+    if language_return == "boot" then
+      close_language(document)
+    else
+      document:get("language-done"):focus()
+    end
   end
 end
 
 function close_language(document)
+  if language_return == "boot" then
+    -- Out to black and into the "Press Start" screen; a second confirm in the fade does nothing.
+    if not leaving then
+      leaving = true
+      fade_target = 1.0
+      pending_view = "boot"
+    end
+    return
+  end
   enter(document, language_return)
 end
 
@@ -393,7 +430,12 @@ function on_show(document)
     remembered.menu = nil
     set_fade(document, 1.0)
     fade_target = 0.0
-    set_view(document, "boot", "press-start")
+    if ui.setting("title.language_first") == true then
+      language_return = "boot"
+      enter(document, "language")
+    else
+      set_view(document, "boot", "press-start")
+    end
   elseif original(document) then
     -- Back from a slot list, on the entry that opened it; from a game, on the first entry.
     set_fade(document, 0.0)
@@ -415,6 +457,7 @@ function on_language(document)
 end
 
 function on_device(document)
+  pointer = false
   refresh_prompts(document)
 end
 
@@ -497,6 +540,10 @@ end
 -- cancel and menu do nothing (the player leaves with play or quit) and up and down are the
 -- structure's; in the original one cancel goes back a view, and up and down are here.
 function on_action(document, action)
+  if pointer then
+    pointer = false
+    refresh_press(document)
+  end
   if original(document) then
     if view == "boot" then
       -- Start, confirm or a click goes on (runLandingScreen takes Start; confirm and the pointer

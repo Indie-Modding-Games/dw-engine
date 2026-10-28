@@ -115,6 +115,8 @@ struct AutotestRoute {
   // Whether a route that starts at the main menu starts at the screen before it, where the
   // original look says "Press Start" (boot_screen); the game itself always shows it.
   bool bootScreen = false;
+  // Whether that screen comes after the language box, as the game shows it (language_first).
+  bool languageFirst = false;
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
@@ -171,6 +173,8 @@ public:
   [[nodiscard]] bool startsAtMainMenu() const { return route_.mainMenu; }
   // Whether it starts at the screen before the main menu (AutotestRoute::bootScreen).
   [[nodiscard]] bool startsAtBootScreen() const { return route_.bootScreen; }
+  // Whether the language box comes before that screen (AutotestRoute::languageFirst).
+  [[nodiscard]] bool asksLanguageFirst() const { return route_.languageFirst; }
 
   // How the route's new game starts (AutotestRoute::newGameChain), if it says.
   [[nodiscard]] std::optional<session::NewGameChain> newGameChain() const {

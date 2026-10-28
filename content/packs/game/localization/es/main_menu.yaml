@@ -11,7 +11,10 @@ quit: "Salir del juego"
 ui_skin: "Aspecto de la interfaz"
 # La portada con el aspecto original (ui/main_menu): la línea de la pantalla de antes del menú, las entradas del menú,
 # la pregunta del modo batalla y la caja de idiomas, en mayúsculas como el original.
-press_start: "Pulsa el botón Start"
+# La línea de la pantalla de «Press Start» del aspecto original: lo que sigue con el dispositivo en uso, la tecla
+# como la nombran los avisos de botones ({key}), o un clic con el ratón. En mayúsculas en pantalla.
+press_key: "Pulsa {key}"
+press_click: "Haz clic"
 original.new_game: "NUEVA PARTIDA"
 original.continue: "CONTINUAR PARTIDA"
 original.erase: "BORRAR PARTIDA"

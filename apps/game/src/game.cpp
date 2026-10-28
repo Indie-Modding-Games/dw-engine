@@ -486,11 +486,9 @@ int runGame(const Options& requested) {
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   (*ui)->setSetting(LanguageSetting, texts->language());
-  // The original look's title screen asks for the language first when the player never chose one
-  // (title.choose_language; a documented improvement): not when --lang gives it, nor in an
-  // autotest, which reads no saved settings.
-  (*ui)->setSetting("title.choose_language",
-                    !userSettings.language && !options.language && autotest == nullptr);
+  // The original look's title screen asks for the language before each "Press Start" screen
+  // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
+  (*ui)->setSetting("title.language_first", autotest == nullptr || autotest->asksLanguageFirst());
   MinimapChanger minimapChanger{userSettings, settingsFile};
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});

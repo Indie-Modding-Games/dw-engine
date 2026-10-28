@@ -11,7 +11,10 @@ quit: "Quit game"
 ui_skin: "Interface style"
 # The original look's title screen (ui/main_menu): the line of the screen before the menu, the menu's entries, the
 # battle mode question and the language box, in the original's capitals.
-press_start: "Press Start Button"
+# The line of the original look's "Press Start" screen: what goes on with the device in use, the key named as the
+# button prompts name it ({key}), or a click with the mouse. In capitals on screen.
+press_key: "Press {key}"
+press_click: "Click"
 original.new_game: "NEW GAME"
 original.continue: "CONTINUE GAME"
 original.erase: "DELETE GAME"
