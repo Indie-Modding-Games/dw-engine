@@ -37,6 +37,9 @@ inline constexpr std::string_view BattleBagCloseCommand = "battle_bag_close";
 inline constexpr std::string_view BattleThrowCommand = "battle_throw";
 // What the battle screen shows: the fight or the end box.
 inline constexpr std::string_view BattlePhaseSetting = "battle.phase";
+// Whether a battle runs, from its opening to the end box's close: the HUD hides what the battle's
+// panels would overlap (the minimap, which the original lacks).
+inline constexpr std::string_view BattleActiveSetting = "battle.active";
 inline constexpr std::string_view IntroPhase = "intro";
 inline constexpr std::string_view FightPhase = "fight";
 // A victory's poses before the end box (battle_main.c: BTL_handleVictorySequence): no box, no
@@ -80,6 +83,8 @@ public:
   [[nodiscard]] bool active() const { return battle_.has_value() || ending_; }
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
+  // The battle_win debug command: the enemies fall at once; false when no fight is running.
+  bool defeatEnemies();
 
   // One logic tick of the battle and the view of it. The battle runs once its opening is over.
   void tick(double seconds);

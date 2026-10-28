@@ -16,6 +16,8 @@ namespace dwe::app {
 
 // The name of the console's and the scripts' battle command: battle("") or battle("2,3").
 inline constexpr std::string_view BattleCommand = "battle";
+// The debug command that ends the running fight with the enemies beaten: battle_win("").
+inline constexpr std::string_view BattleWinCommand = "battle_win";
 
 // The Digimon table of the ruleset, for the battle's enemies and the names the screens show.
 core::Result<assets::DigimonTable> speciesTable(const assets::VirtualFileSystem& files,

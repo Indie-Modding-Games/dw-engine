@@ -299,6 +299,13 @@ core::Result<void> Battle::command(Command command) {
   return {};
 }
 
+void Battle::defeatEnemies() {
+  for (std::size_t enemy = 1; enemy < state_.fighters.size(); ++enemy) {
+    Fighter& fighter = state_.fighters.at(enemy);
+    fighter.pendingDamage = std::max(fighter.pendingDamage, fighter.hp);
+  }
+}
+
 void Battle::pressFinisherCharge() {
   chargePressed_ = true;
 }

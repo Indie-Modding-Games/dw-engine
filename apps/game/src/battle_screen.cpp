@@ -418,6 +418,14 @@ void BattleScreen::finish() {
   ending_ = true;
 }
 
+bool BattleScreen::defeatEnemies() {
+  if (!battle_ || intro_ || ending_) {
+    return false;
+  }
+  battle_->defeatEnemies();
+  return true;
+}
+
 std::optional<game::battle::Outcome> BattleScreen::takeOutcome() {
   if (active()) {
     return std::nullopt;

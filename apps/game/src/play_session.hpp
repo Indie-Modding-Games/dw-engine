@@ -79,6 +79,7 @@ struct SessionCommands {
   std::optional<std::string> use;
   std::optional<std::string> groundDrop;
   std::optional<std::string> battle;
+  bool battleWin = false;
   std::optional<std::string> evolution;
   CareCommands care;
   SaveCommand save;
