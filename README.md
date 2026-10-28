@@ -75,13 +75,6 @@ scripts/dev.sh docs-dev   # Local site at http://localhost:5173
 scripts/dev.sh docs       # Build the site into build/docs-site
 ```
 
-## Related repositories
-
-- [dw-engine-ai](https://github.com/Indie-Modding-Games/dw-engine-ai): private project instructions and work continuity.
-- [dw-engine-assets](https://github.com/Indie-Modding-Games/dw-engine-assets): private processed-content backup and restoration tooling.
-
-These repositories require separate access. They are not submodules and are not downloaded as part of the engine build. Engine source and technical documentation remain in this repository.
-
 ## License
 
 The project's license is not yet finalized. See [ADR 0011](docs/adr/0011-politica-legal-de-assets.md). Third-party dependencies retain their respective licenses; original game content is governed separately by the [asset policy](docs/legal/assets.md).
