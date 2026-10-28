@@ -115,6 +115,27 @@ core::Result<void> DiskSaveStorage::write(std::string_view name, std::string_vie
   return written;
 }
 
+core::Result<void> DiskSaveStorage::remove(std::string_view name, std::string_view backup) {
+  if (auto valid = checkNames(name, backup); !valid) {
+    return valid;
+  }
+  const std::filesystem::path file = folder_ / name;
+  std::error_code error;
+  if (!std::filesystem::exists(file, error)) {
+    return {};
+  }
+  // A rename, which the file system does in one step: the save is either still there or already
+  // the backup.
+  if (!backup.empty()) {
+    return replace(file, folder_ / backup);
+  }
+  std::filesystem::remove(file, error);
+  if (error) {
+    return core::fail(std::format(messages::CannotRemove, assets::pathText(file), error.message()));
+  }
+  return {};
+}
+
 core::Result<std::optional<std::string>> MemorySaveStorage::read(std::string_view name) const {
   if (auto valid = checkName(name); !valid) {
     return std::unexpected{valid.error()};
@@ -140,6 +161,21 @@ core::Result<void> MemorySaveStorage::write(std::string_view name, std::string_v
     files_.insert_or_assign(std::string{backup}, found->second);
   }
   files_.insert_or_assign(std::string{name}, std::string{text});
+  return {};
+}
+
+core::Result<void> MemorySaveStorage::remove(std::string_view name, std::string_view backup) {
+  if (auto valid = checkNames(name, backup); !valid) {
+    return valid;
+  }
+  const auto found = files_.find(name);
+  if (found == files_.end()) {
+    return {};
+  }
+  if (!backup.empty()) {
+    files_.insert_or_assign(std::string{backup}, found->second);
+  }
+  files_.erase(found);
   return {};
 }
 

@@ -44,3 +44,15 @@ machine_confirm: "Do you want to save?"
 machine_no_slot: "This adventure has no save slot, so it cannot be saved."
 # Back to the title screen from the pause menu (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Anything not saved will be lost. Return to the title screen?"
+# Erasing a save from the title screen (docs/architecture/guardar-y-cargar.md). The dialog shows the save's file
+# name below.
+confirm_erase: "Erase this adventure?"
+erase_failed: "The save could not be erased."
+# The original look's slot list (ui/save_slots), in the original's capitals. {number} counts from 1.
+slots.original.new_slot: "SLOT {number}"
+slots.original.continue_slot: "CONTINUE SLOT {number}"
+slots.original.continue_autosave: "CONTINUE AUTOSAVE {number}"
+slots.original.erase_slot: "ERASE SLOT {number}"
+slots.original.erase_autosave: "ERASE AUTOSAVE {number}"
+slots.original.no_save: "PLAY WITHOUT SAVING"
+slots.original.in_use: "This slot holds an adventure already."

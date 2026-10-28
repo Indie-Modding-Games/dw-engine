@@ -1,2 +1,9 @@
 # The language's own name, as the language selector shows it.
 name: "English"
+# Every language's name in that language, the same in every language's texts: the language box lists them so.
+native.en: "English"
+native.es: "Español"
+# Every language's flag, the asset id of its image (ui/flags, scripts/art/make_flags.py), the same in every
+# language's texts: the language box shows it by the name. A new language brings its image and its key here.
+flag.en: "ui/flags/en"
+flag.es: "ui/flags/es"

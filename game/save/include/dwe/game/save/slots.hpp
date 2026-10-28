@@ -76,6 +76,10 @@ public:
   // kept over a backup it already has.
   core::Result<void> save(SlotId slot, const SaveFile& file);
 
+  // Erases a slot's save: the slot reads as empty after it. The save is kept as the slot's backup
+  // (replacing the one it had), until the next save to the slot replaces that backup in turn.
+  core::Result<void> erase(SlotId slot);
+
   // Reads a slot's save, its header already migrated; SaveSections::read loads the systems from it.
   // Fails on an empty slot.
   [[nodiscard]] core::Result<SaveFile> load(SlotId slot) const;

@@ -77,6 +77,8 @@ inline constexpr std::string_view SeaSerpentScene =
 
 // The title screen (title_screen.cpp).
 inline constexpr std::string_view TitleCommand = "game: command {}";
+inline constexpr std::string_view SaveErased = "game: erased {}";
+inline constexpr std::string_view CannotEraseSave = "game: erase: {}";
 
 // The saves and the sleep in the game (game_saves.cpp, sleep_screen.cpp).
 inline constexpr std::string_view GameSaveFailed = "game: save: {}";

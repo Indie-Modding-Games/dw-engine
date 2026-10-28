@@ -9,3 +9,29 @@ text_font.modern: "No"
 text_font.original: "Sí"
 quit: "Salir del juego"
 ui_skin: "Aspecto de la interfaz"
+# La portada con el aspecto original (ui/main_menu): la línea de la pantalla de antes del menú, las entradas del menú,
+# la pregunta del modo batalla y la caja de idiomas, en mayúsculas como el original.
+# La línea de la pantalla de «Press Start» del aspecto original: lo que sigue con el dispositivo en uso, la tecla
+# como la nombran los avisos de botones ({key}), o un clic con el ratón. En mayúsculas en pantalla.
+press_key: "Pulsa {key}"
+press_click: "Haz clic"
+original.new_game: "NUEVA PARTIDA"
+original.continue: "CONTINUAR PARTIDA"
+original.erase: "BORRAR PARTIDA"
+original.battle_mode: "MODO BATALLA"
+original.options: "OPCIONES"
+original.battle_mode_message: "¿Usar los datos de combate del jugador 1 de una partida? El modo batalla aún no está disponible."
+original.language_heading: "LANGUAGE - IDIOMA"
+original.language_done: "COMENZAR"
+# La caja de opciones del aspecto original: nombres cortos, en mayúsculas, para que un nombre y su valor quepan en una
+# fila de la imagen 4:3.
+original.option.language: "IDIOMA"
+original.option.text_font: "TEXTO ORIGINAL"
+original.option.ui_skin: "ASPECTO"
+original.option.minimap: "MINIMAPA"
+original.option.minimap_size: "TAMAÑO MINIMAPA"
+original.option.display_mode: "PANTALLA"
+original.option.ui_scale: "ESCALA"
+original.option.minimap.auto: "AUTO"
+original.option.minimap.on: "SÍ"
+original.option.minimap.off: "NO"

@@ -17,8 +17,9 @@ screens:
     styles: [ui/skins/original/hud/style]
   pause_menu:
     styles: [ui/skins/original/pause_menu/style]
+  # La portada: la pantalla de "Press Start", el menú del original y sus cajas (main.c: main; main_menu.c).
   main_menu:
-    styles: [ui/skins/original/pause_menu/style, ui/skins/original/main_menu/style]
+    styles: [ui/skins/original/main_menu/style]
   partner_menu:
     styles: [ui/skins/original/partner_menu/style]
   battle:
@@ -28,9 +29,9 @@ screens:
     styles: [ui/skins/original/pause_menu/style]
   # La lista de ranuras, el diálogo de guardar y el menú de dormir, también.
   save_slots:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_slots/style]
   dialog:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/dialog/style]
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   gym_stats:
@@ -62,6 +63,11 @@ screens:
     styles: [ui/skins/original/pause_menu/style]
 # Las barras del estado del campo se llenan a cuadritos, 25 por barra (partner_impl.c: renderStatusBars).
 document_classes:
+  # La portada y su lista de ranuras se maquetan como las del original (ui/main_menu/logic.lua, ui/save_slots/logic.lua).
+  main_menu:
+    panel: [title-original]
+  save_slots:
+    panel: [slots-original]
   hud:
     field-meter-0-bar: [pips]
     field-meter-1-bar: [pips]
@@ -572,3 +578,12 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       title-screen: [0, 0, 320, 240]
+  # La pantalla de antes del menú (main.c: runLandingScreen dibuja TITLE256 con su única CLUT, (0, 480)). El sprite
+  # se para en la fila 206: debajo está el aviso de copyright del original, que se deja fuera.
+  - name: ow-boot
+    image: texture/etcna/title256
+    palette: 0
+    original_size: [320, 256]
+    dp_per_pixel: 3
+    sprites:
+      boot-screen: [0, 0, 320, 206]

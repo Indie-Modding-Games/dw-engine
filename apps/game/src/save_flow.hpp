@@ -15,8 +15,9 @@
 
 namespace dwe::app {
 
-// Which list the title screen shows: the empty slots for a new game, or the saves to continue.
-enum class SlotListMode : std::uint8_t { NewGame, Continue };
+// Which list the title screen shows: the empty slots for a new game, the saves to continue, or the
+// saves to erase.
+enum class SlotListMode : std::uint8_t { NewGame, Continue, Erase };
 
 // The text keys of what a save's summary names by ID; an empty key when the packs do not know it,
 // and the list shows the ID.
@@ -43,7 +44,7 @@ struct SaveDialog {
 class SaveFlow {
 public:
   // `slots` is null when the game is not saved, and must outlive the flow.
-  SaveFlow(const game::save::SaveSlots* slots, SaveNames names);
+  SaveFlow(game::save::SaveSlots* slots, SaveNames names);
 
   // Whether there are slots to list; without them a new game starts with no list.
   [[nodiscard]] bool keepsSaves() const { return slots_ != nullptr; }
@@ -62,19 +63,27 @@ public:
   [[nodiscard]] SaveDialog chooseWithoutSaving();
   // The answer to the dialog shown last: the game to start, or nothing to go back to the list.
   [[nodiscard]] std::optional<PlayStart> answer(bool yes);
+  // Whether the dialog shown last asks to erase a save; its answer goes to answerErase.
+  [[nodiscard]] bool erasing() const { return pendingErase_.has_value(); }
+  // The answer to the question to erase a save: erases it on yes. The notice to show when the save
+  // could not be erased (the error goes to the log), nothing to go back to the list.
+  [[nodiscard]] std::optional<SaveDialog> answerErase(bool yes);
   // The notice of a game that did not start, or whose new game could not be saved to its slot
   // (`saveFailed`); the error itself goes to the log.
   [[nodiscard]] static SaveDialog startFailed(const PlayStart& start, bool saveFailed);
 
 private:
-  const game::save::SaveSlots* slots_;
+  game::save::SaveSlots* slots_;
   SaveNames names_;
   SlotListMode mode_ = SlotListMode::NewGame;
   std::vector<game::save::SlotInfo> entries_;
   std::optional<PlayStart> pending_;
+  std::optional<game::save::SlotId> pendingErase_;
 };
 
-// A dialog as the settings of the dialog document.
-[[nodiscard]] screens::ScreenSettings dialogSettings(const SaveDialog& dialog);
+// A dialog as the settings of the dialog document; `atTitle` when the title screen shows it, over
+// its boxes (dialog.at_title).
+[[nodiscard]] screens::ScreenSettings dialogSettings(const SaveDialog& dialog,
+                                                     bool atTitle = false);
 
 } // namespace dwe::app

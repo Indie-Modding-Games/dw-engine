@@ -1,7 +1,8 @@
 -- The save dialog, at the title screen and in the game: a question (yes or no) or a notice
 -- (accept) about the save slots. The game publishes dialog.text (a text key), dialog.file (the save
--- file it is about, or ""), dialog.question and dialog.start_on_yes, and shows this document; it
--- sends dialog_answer, true only for yes. Cancel answers no.
+-- file it is about, or ""), dialog.question, dialog.start_on_yes and dialog.at_title (shown by the
+-- title screen, which a skin can style apart: the scrim's at-title class), and shows this document;
+-- it sends dialog_answer, true only for yes. Cancel answers no.
 
 local function question()
   return ui.setting("dialog.question") == true
@@ -15,6 +16,7 @@ local function refresh(document)
   document:get("yes"):set_class("hidden", not question())
   document:get("no"):set_class("hidden", not question())
   document:get("ok"):set_class("hidden", question())
+  document:get("scrim"):set_class("at-title", ui.setting("dialog.at_title") == true)
 end
 
 function answer(yes)

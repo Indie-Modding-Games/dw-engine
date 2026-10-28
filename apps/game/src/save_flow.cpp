@@ -1,13 +1,18 @@
 #include "save_flow.hpp"
 
+#include <dwe/core/log.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <format>
 #include <utility>
 
+#include "messages.hpp"
+
 namespace dwe::app {
 namespace {
 
+using game::save::SlotId;
 using game::save::SlotInfo;
 using game::save::SlotKind;
 
@@ -28,12 +33,30 @@ std::string_view stateName(SlotInfo::State state) {
 }
 
 // Whether a list shows a slot: a new game is started only in an empty manual slot; any other slot
-// with a file can be continued from, or says why it cannot.
+// with a file can be continued from, or says why it cannot; any slot with a file this game can
+// write can be erased (a newer game's save is neither written over nor erased).
 bool listedIn(SlotListMode mode, const SlotInfo& info) {
-  if (mode == SlotListMode::NewGame) {
+  switch (mode) {
+  case SlotListMode::NewGame:
     return info.slot.kind == SlotKind::Manual && info.state == SlotInfo::State::Empty;
+  case SlotListMode::Erase:
+    return info.state != SlotInfo::State::Empty && info.state != SlotInfo::State::Newer;
+  case SlotListMode::Continue:
+    break;
   }
   return info.state != SlotInfo::State::Empty;
+}
+
+std::string_view modeName(SlotListMode mode) {
+  switch (mode) {
+  case SlotListMode::NewGame:
+    return "new";
+  case SlotListMode::Erase:
+    return "erase";
+  case SlotListMode::Continue:
+    break;
+  }
+  return "continue";
 }
 
 std::string keyOf(const std::function<std::string(std::string_view)>& name, std::string_view id) {
@@ -62,7 +85,7 @@ void addEntry(screens::ScreenSettings& settings, std::size_t index, const SlotIn
 
 } // namespace
 
-SaveFlow::SaveFlow(const game::save::SaveSlots* slots, SaveNames names)
+SaveFlow::SaveFlow(game::save::SaveSlots* slots, SaveNames names)
     : slots_(slots), names_(std::move(names)) {}
 
 screens::ScreenSettings SaveFlow::titleSettings() const {
@@ -79,17 +102,24 @@ screens::ScreenSettings SaveFlow::open(SlotListMode mode) {
   mode_ = mode;
   entries_.clear();
   pending_.reset();
+  pendingErase_.reset();
+  double manual = 0.0;
+  double autosave = 0.0;
   if (slots_ != nullptr) {
     for (SlotInfo& info : slots_->list()) {
+      (info.slot.kind == SlotKind::Manual ? manual : autosave) += 1.0;
       if (listedIn(mode, info)) {
         entries_.push_back(std::move(info));
       }
     }
   }
+  // How many slots of each kind there are, listed or not: a list that shows every slot (the
+  // original look's, ui/main_menu) greys the ones with no entry.
   screens::ScreenSettings settings{
-      {.name = "save.slots.mode",
-       .value = std::string{mode_ == SlotListMode::NewGame ? "new" : "continue"}},
-      {.name = "save.slots", .value = static_cast<double>(entries_.size())}};
+      {.name = "save.slots.mode", .value = std::string{modeName(mode_)}},
+      {.name = "save.slots", .value = static_cast<double>(entries_.size())},
+      {.name = "save.slots.manual", .value = manual},
+      {.name = "save.slots.autosave", .value = autosave}};
   for (std::size_t index = 0; index < entries_.size(); ++index) {
     addEntry(settings, index, entries_[index], names_);
   }
@@ -98,11 +128,18 @@ screens::ScreenSettings SaveFlow::open(SlotListMode mode) {
 
 std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   pending_.reset();
+  pendingErase_.reset();
   if (entry >= entries_.size()) {
     return std::nullopt;
   }
   const SlotInfo& info = entries_[entry];
   const std::string file = game::save::slotFileName(info.slot);
+  if (mode_ == SlotListMode::Erase) {
+    // Erasing starts on no, so that confirming in a hurry does not lose a save.
+    pendingErase_ = info.slot;
+    return SaveDialog{
+        .text = "save.confirm_erase", .file = file, .question = true, .startOnYes = false};
+  }
   switch (info.state) {
   case SlotInfo::State::Empty:
     pending_ = PlayStart{
@@ -113,8 +150,10 @@ std::optional<SaveDialog> SaveFlow::choose(std::size_t entry) {
   case SlotInfo::State::Saved:
     pending_ = PlayStart{
         .load = info.slot, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt};
+    // On yes, as the new game's question: the player chose this save a moment ago, and starting on
+    // no sent a hurried confirm back to the list.
     return SaveDialog{
-        .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = false};
+        .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = true};
   case SlotInfo::State::Damaged:
     if (!info.hasBackup) {
       return SaveDialog{
@@ -138,7 +177,25 @@ SaveDialog SaveFlow::chooseWithoutSaving() {
 std::optional<PlayStart> SaveFlow::answer(bool yes) {
   std::optional<PlayStart> start = yes ? pending_ : std::nullopt;
   pending_.reset();
+  pendingErase_.reset();
   return start;
+}
+
+std::optional<SaveDialog> SaveFlow::answerErase(bool yes) {
+  const std::optional<SlotId> slot = std::exchange(pendingErase_, std::nullopt);
+  pending_.reset();
+  if (!yes || !slot || slots_ == nullptr) {
+    return std::nullopt;
+  }
+  if (auto erased = slots_->erase(*slot); !erased) {
+    core::logError(messages::CannotEraseSave, erased.error().message);
+    return SaveDialog{.text = "save.erase_failed",
+                      .file = game::save::slotFileName(*slot),
+                      .question = false,
+                      .startOnYes = false};
+  }
+  core::logInfo(messages::SaveErased, game::save::slotFileName(*slot));
+  return std::nullopt;
 }
 
 SaveDialog SaveFlow::startFailed(const PlayStart& start, bool saveFailed) {
@@ -158,11 +215,12 @@ SaveDialog SaveFlow::startFailed(const PlayStart& start, bool saveFailed) {
           .startOnYes = false};
 }
 
-screens::ScreenSettings dialogSettings(const SaveDialog& dialog) {
+screens::ScreenSettings dialogSettings(const SaveDialog& dialog, bool atTitle) {
   return {{.name = "dialog.text", .value = dialog.text},
           {.name = "dialog.file", .value = dialog.file},
           {.name = "dialog.question", .value = dialog.question},
-          {.name = "dialog.start_on_yes", .value = dialog.startOnYes}};
+          {.name = "dialog.start_on_yes", .value = dialog.startOnYes},
+          {.name = "dialog.at_title", .value = atTitle}};
 }
 
 } // namespace dwe::app

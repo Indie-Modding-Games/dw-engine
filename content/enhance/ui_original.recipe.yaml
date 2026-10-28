@@ -14,6 +14,7 @@ select:
     - texture/etcdat/btlcomnd
     - texture/etcdat/feel_ef
     - texture/etcna/title2
+    - texture/etcna/title256
 scale: 4
 steps:
   - id: upscale

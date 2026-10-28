@@ -68,8 +68,19 @@ TitleScreen::TitleScreen(const assets::VirtualFileSystem& files, const Options& 
       flow_(slots_ ? &*slots_ : nullptr, namesOf(files, options)) {}
 
 void TitleScreen::show() {
+  showMenu(false);
+}
+
+void TitleScreen::showBoot() {
+  showMenu(true);
+}
+
+void TitleScreen::showMenu(bool boot) {
   listShown_ = false;
-  screens::publish(*ui_, flow_.titleSettings(), "save.revision");
+  screens::ScreenSettings settings = flow_.titleSettings();
+  // Read by the main menu as it shows (title.boot): whether it starts at the "Press Start" screen.
+  settings.push_back({.name = "title.boot", .value = boot});
+  screens::publish(*ui_, settings, "save.revision");
   ui_->show(MainMenuDocument, true);
 }
 
@@ -89,6 +100,8 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
     }
   } else if (name == "continue") {
     showList(SlotListMode::Continue);
+  } else if (name == "erase") {
+    showList(SlotListMode::Erase);
   } else if (name == "slots_back") {
     ui_->hide(SaveSlotsDocument);
     show();
@@ -104,9 +117,20 @@ bool TitleScreen::handle(const ui::UiCommand& command) {
   } else if (name == "dialog_answer") {
     const bool* yes = std::get_if<bool>(&command.value);
     ui_->hide(DialogDocument);
-    start_ = flow_.answer(yes != nullptr && *yes);
-    if (!start_) {
-      back();
+    if (flow_.erasing()) {
+      if (const auto notice = flow_.answerErase(yes != nullptr && *yes)) {
+        showDialog(*notice);
+      } else {
+        back();
+      }
+    } else {
+      start_ = flow_.answer(yes != nullptr && *yes);
+      if (start_) {
+        // The list stayed behind the question; the game starts without it.
+        ui_->hide(SaveSlotsDocument);
+      } else {
+        back();
+      }
     }
   } else {
     return false;
@@ -132,8 +156,12 @@ void TitleScreen::showList(SlotListMode mode) {
 
 void TitleScreen::showDialog(const SaveDialog& dialog) {
   ui_->hide(MainMenuDocument);
-  ui_->hide(SaveSlotsDocument);
-  screens::publish(*ui_, dialogSettings(dialog), "dialog.revision");
+  // A question about a slot shows over the list it came from, as the original's boxes over its
+  // menus.
+  if (!listShown_) {
+    ui_->hide(SaveSlotsDocument);
+  }
+  screens::publish(*ui_, dialogSettings(dialog, true), "dialog.revision");
   ui_->show(DialogDocument, true);
 }
 

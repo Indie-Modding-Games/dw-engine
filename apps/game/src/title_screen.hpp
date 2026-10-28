@@ -28,6 +28,10 @@ public:
 
   // Shows the main menu, with Continue greyed when there is no save.
   void show();
+  // Shows the title screen from its start: the original look's "Press Start" screen first, then
+  // the main menu (main.c: main, runLandingScreen then runMainMenu); a look without that screen
+  // shows the main menu.
+  void showBoot();
   // Hides every document of the title screen, for a movie.
   void hide();
 
@@ -42,6 +46,7 @@ public:
   void startFailed(const PlayStart& start, bool saveFailed);
 
 private:
+  void showMenu(bool boot);
   void showList(SlotListMode mode);
   void showDialog(const SaveDialog& dialog);
   // Back from a dialog that started nothing: to the list, or to the main menu without one.

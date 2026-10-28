@@ -9,13 +9,16 @@ steps:
   - wait: {shown: main_menu, seconds: 1}
   - resize: [1280, 720]
   - screenshot: main-menu
-  # The language entry moves to the next language the packs have; with two, a second press comes back.
-  - menu_select: language
+  # The language is in the original look's options; right on it moves to the next language the packs have, and with
+  # two, a second press comes back. Escape goes back to the menu.
+  - menu_select: options
+  - tap: {key: right}
   - wait: {seconds: 0.5}
   - screenshot: main-menu-switched
-  - menu_select: language
+  - tap: {key: right}
   - wait: {seconds: 0.5}
   - screenshot: main-menu-back
+  - tap: {key: escape}
   - menu_select: play
   - wait: {map: twna01, hidden: main_menu, seconds: 0.5}
   - screenshot: field

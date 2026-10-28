@@ -1,29 +1,77 @@
-/* The main menu in the original look, over the pause menu's (../pause_menu/style.rcss): the title screen with the
-   original's start menu box (main_menu.c: renderInitialMenu; capture title_menu).
+/* The title screen in the original look (main.c: main; main_menu.c). Every box is the original's menu box
+   (main_menu.c: renderMenuBox): the light cyan rim of renderUIBoxBorder (#90D9FA, the right side's inner line the
+   darker #4A9FC5), its rounded corner sprites, and a fill that the original shades from four corners (#000070,
+   #000050, #000030, #000010); a gradient from top to bottom of the corners' averages (#000060 to #000020) stands in
+   for it, since a four-corner gradient needs shaders the UI does not have. Text is the original's: #d0d0d0, greyed
+   at half (#686868, the 0x40 of renderText's colours against 0x80), values in yellow (#fff371), the cursor a 1-pixel
+   #A0A000 outline (renderMenuSelector).
 
-   The title image (TITLE2, 320 x 240) keeps its 4:3 proportions in the middle of a wide screen, on black. The box is
-   at (72, 50), 176 pixels wide; its rows start at x 82 and are 12 pixels apart, and the selector is a 152-pixel
-   outline from x 78. The original fills the box with a gradient from four corners (#000070, #000050, #000030,
-   #000010); a gradient from top to bottom of the corners' averages (#000060 to #000020) stands in for it, since a
-   four-corner gradient needs shaders the UI does not have. The box is as tall as its entries: this menu has five and
-   the prompt, the original four. Its own title stays hidden: the title image carries the game's name. It is wider
-   than the original's, 640dp, so that the longest label (Spanish's "Texto con aspecto original") and its value keep
-   a gap: the original's options had no values. */
+   Positions are the original's pixels times 3dp inside the 4:3 picture, which is 960dp wide in the middle of a
+   1280dp screen: x in dp is 160 + 3x, y is 3y. */
 
+/* The title image (TITLE2, 320 x 240) behind every box keeps its 4:3 proportions in the middle, on black. */
 #scrim {
 	background-color: #000000;
 	decorator: image(title-screen contain center center);
 }
 
+/* The screen before the menu (runLandingScreen): TITLE256 above the line where the original's copyright notice is,
+   which is left out (the boot-screen sprite stops at row 206), on black. The whole screen is the button. */
+#scrim.boot {
+	decorator: none;
+}
+
+#press-start {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background-color: #000000;
+	decorator: image(boot-screen scale-none center top);
+}
+
+#press-start:focus {
+	border: 0;
+}
+
+/* "Press Start Button" (renderPressStartToContinue): at (106, 170), 121 x 10, its white drawn with the colour
+   (0, 128, 0), full green. The original's line is a picture of English text naming Start; this one is text, in
+   the player's language, centred on the original's line, naming what goes on with the device in use (logic.lua). */
+#press-start-text {
+	position: absolute;
+	left: 160dp;
+	top: 504dp;
+	width: 960dp;
+	text-align: center;
+	color: #00f800;
+	line-height: 36dp;
+}
+
+#fade {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #000000;
+}
+
+/* The menu box (renderInitialMenu): at (72, 50), 176 pixels wide, rows from x 82 and y 55, 12 pixels apart, and the
+   cursor 152 pixels wide from x 78. The original's four rows are five here (options), so the box is 70 pixels tall
+   instead of 58. A label wider than the original's (Spanish) widens the box to the right. */
 #panel {
 	position: absolute;
-	left: 50%;
+	left: 376dp;
 	top: 150dp;
-	width: 640dp;
-	margin-left: -320dp;
-	padding: 12dp 0 12dp 18dp;
+	width: auto;
+	min-width: 528dp;
+	padding: 12dp 18dp 15dp 18dp;
 	border: 3dp #90d9fa;
 	border-right-color: #4a9fc5;
+	border-radius: 0;
 	background-color: transparent;
 	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
@@ -34,10 +82,144 @@
 	display: none;
 }
 
-#panel button {
-	width: 568dp;
+#panel button, #language-done, #battle-answers button {
+	line-height: 30dp;
+	white-space: nowrap;
 }
 
+.dimmed, button.dimmed:focus {
+	color: #686868;
+}
+
+/* Options, an addition: the original's box, a row per setting with its name in white and its value in yellow, as
+   the boxes of this game's other settings in the original look. */
+#scrim.view-options #panel {
+	left: 172dp;
+	min-width: 900dp;
+}
+
+#panel .option .label {
+	display: none;
+}
+
+#panel .option {
+	position: relative;
+}
+
+#panel .option .label-original {
+	display: inline;
+}
+
+#panel .option .value {
+	position: absolute;
+	left: 555dp;
+	top: 0;
+	color: #fff371;
+}
+
+#quit {
+	text-transform: uppercase;
+}
+
+/* The original names no buttons on screen, and these boxes leave them out, as the pause menu's first page does. */
 #prompts {
-	margin-right: 18dp;
+	display: none;
+}
+
+/* The language box, an addition, after a remaster's (reference 12): the original's box, taller and in the middle of
+   the 4:3 picture, 212 pixels wide; the heading small at its top left; a row per language, 20 pixels apart, its flag
+   (24 x 16) and its name in capitals; START at the bottom, in the middle. logic.lua sets its top, so that the box
+   stays in the middle of the screen whatever the number of languages. */
+#language-box {
+	position: absolute;
+	left: 322dp;
+	top: 150dp;
+	width: 636dp;
+	min-height: 420dp;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	padding: 18dp 24dp 21dp 24dp;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+/* The display above outweighs the structure's .hidden, so hidden is said again here. */
+#language-box.hidden, #language-box .flag.hidden {
+	display: none;
+}
+
+#language-heading {
+	font-size: 22dp;
+	font-weight: normal;
+	line-height: 30dp;
+	padding: 0 0 18dp 0;
+	margin: 0;
+}
+
+#language-box .language-row {
+	padding: 3dp 12dp;
+	margin: 0 18dp;
+	line-height: 48dp;
+	white-space: nowrap;
+}
+
+#language-box .flag {
+	display: inline-block;
+	width: 72dp;
+	height: 48dp;
+	margin-right: 30dp;
+	vertical-align: middle;
+}
+
+#language-done {
+	margin-top: auto;
+	text-align: center;
+}
+
+/* The battle mode question (renderConfirmVSSlot): a title box at (60, 28), 224 x 22, its text at (70, 33); the
+   message box at (60, 50), 230 x 46, three lines from (70, 55); the answers' box at (60, 96), 56 x 34, Yes and No
+   at (70, 101) and (70, 113). The boxes touch, one under the other, so a longer message grows its box and moves the
+   answers down. */
+#battle-box {
+	position: absolute;
+	left: 340dp;
+	top: 84dp;
+	width: 690dp;
+}
+
+#battle-heading, #battle-message, #battle-answers {
+	box-sizing: border-box;
+	border: 3dp #90d9fa;
+	border-right-color: #4a9fc5;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
+		vertical-gradient(#000060 #000020);
+}
+
+#battle-heading {
+	width: 672dp;
+	height: 60dp;
+	padding: 0 0 0 27dp;
+	line-height: 60dp;
+}
+
+#battle-message {
+	width: 690dp;
+	padding: 12dp 27dp 12dp 27dp;
+	min-height: 138dp;
+	line-height: 36dp;
+}
+
+#battle-answers {
+	width: 168dp;
+	min-height: 102dp;
+	padding: 9dp 0 0 15dp;
+}
+
+#battle-answers button {
+	width: 120dp;
 }

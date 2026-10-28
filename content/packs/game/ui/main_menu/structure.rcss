@@ -5,3 +5,11 @@
 #quit { nav-down: #play; }
 /* Continue with no save to continue, greyed in any skin and skipped, as the original greys it with no memory card. */
 #continue.unavailable { opacity: 0.45; focus: none; tab-index: none; }
+/* The original look's short option names, which only its skin shows. */
+.label-original { display: none; }
+/* The original look's entries (the skin's title-original layout): logic.lua moves the cursor and stops it at the
+   ends, as the original's, so the wrapping moves above stay out; the line of the screen before the menu blinks by
+   this class; the fade over everything never takes the pointer. */
+#panel.title-original button, .title-original ~ div button, #press-start { nav: none; }
+.blink-off { visibility: hidden; }
+#fade { pointer-events: none; }
