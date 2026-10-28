@@ -28,15 +28,105 @@
 			</div>
 
 			<div id="page-player" class="page hidden">
-				<div class="player-line"><span text-key="pause_menu.player_name"></span><span class="player-value" id="player-name"></span></div>
-				<div class="player-line"><span text-key="pause_menu.player_level"></span><span class="player-value" id="player-level"></span></div>
-				<div class="player-line"><span text-key="pause_menu.player_bits"></span><span class="player-value" id="player-bits"></span></div>
-				<div class="player-line"><span text-key="pause_menu.player_time"></span><span class="player-value" id="player-time"></span></div>
+                <div id="player-tabs" class="player-native">
+                  <button id="player-tab-player" class="player-tab selected" onclick="show_player_tab(document, 'player')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player"></span></button>
+                  <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_chart"></span></button>
+                  <button id="player-tab-medals" class="player-tab" disabled="disabled"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
+                  <button id="player-tab-card" class="player-tab" disabled="disabled"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
+                </div>
+                <div id="player-profile">
+                <div id="player-portrait-clip" class="player-native"><img id="player-portrait" src="/runtime/player-portrait"/></div>
+                <div id="player-name-box" class="player-inset player-native"></div>
+                <div id="player-level-box" class="player-inset player-native"></div>
+                <div id="player-rank-box" class="player-inset player-native"></div>
+                <div id="player-raised-box" class="player-inset player-native"></div>
+                <div id="player-bits-box" class="player-inset player-native"></div>
+                <div id="player-time-box" class="player-inset player-native"></div>
+                <div id="player-medals-box" class="player-inset player-native"></div>
+                <div id="player-item-box-0" class="player-inset player-item-box player-native"></div><div id="player-item-box-1" class="player-inset player-item-box player-native"></div><div id="player-item-box-2" class="player-inset player-item-box player-native"></div><div id="player-item-box-3" class="player-inset player-item-box player-native"></div>
+                <div id="player-header-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span></div><div id="player-vertical-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span><span class="rule-tail"></span></div><div id="player-items-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span></div>
+                <div id="player-raised-line" class="player-line player-native"><span text-key="pause_menu.player_raised"></span><span class="player-value" id="player-raised"></span></div>
+                <div id="player-items-line-label" class="player-line player-native"><span text-key="pause_menu.player_items"></span></div>
+                <div id="player-medals-line" class="player-line player-native"><span text-key="pause_menu.player_medals"></span><span class="player-value" id="player-medals"></span></div>
+				<div class="player-line" id="player-name-line"><span text-key="pause_menu.player_name"></span><span class="player-value" id="player-name"></span></div>
+				<div class="player-line" id="player-level-line"><span text-key="pause_menu.player_level"></span><span class="player-value" id="player-level"></span><span class="player-rank" id="player-rank"></span></div>
+				<div class="player-line" id="player-bits-line"><span text-key="pause_menu.player_bits"></span><span class="player-value" id="player-bits"></span></div>
+				<div class="player-line" id="player-time-line"><span text-key="pause_menu.player_time"></span><span class="player-value" id="player-time"></span></div>
+                </div>
+                <div id="player-chart" class="player-native">
+                  <div class="chart-stage" id="chart-stage-0"></div><div class="chart-stage" id="chart-stage-1"></div><div class="chart-stage" id="chart-stage-2"></div><div class="chart-stage" id="chart-stage-3"></div><div class="chart-stage" id="chart-stage-4"></div>
+                  <button id="chart-cell-0" class="chart-cell hidden" onclick="chart_pick(document, 0)"><img id="chart-icon-0" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-1" class="chart-cell hidden" onclick="chart_pick(document, 1)"><img id="chart-icon-1" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-2" class="chart-cell hidden" onclick="chart_pick(document, 2)"><img id="chart-icon-2" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-3" class="chart-cell hidden" onclick="chart_pick(document, 3)"><img id="chart-icon-3" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-4" class="chart-cell hidden" onclick="chart_pick(document, 4)"><img id="chart-icon-4" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-5" class="chart-cell hidden" onclick="chart_pick(document, 5)"><img id="chart-icon-5" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-6" class="chart-cell hidden" onclick="chart_pick(document, 6)"><img id="chart-icon-6" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-7" class="chart-cell hidden" onclick="chart_pick(document, 7)"><img id="chart-icon-7" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-8" class="chart-cell hidden" onclick="chart_pick(document, 8)"><img id="chart-icon-8" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-9" class="chart-cell hidden" onclick="chart_pick(document, 9)"><img id="chart-icon-9" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-10" class="chart-cell hidden" onclick="chart_pick(document, 10)"><img id="chart-icon-10" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-11" class="chart-cell hidden" onclick="chart_pick(document, 11)"><img id="chart-icon-11" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-12" class="chart-cell hidden" onclick="chart_pick(document, 12)"><img id="chart-icon-12" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-13" class="chart-cell hidden" onclick="chart_pick(document, 13)"><img id="chart-icon-13" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-14" class="chart-cell hidden" onclick="chart_pick(document, 14)"><img id="chart-icon-14" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-15" class="chart-cell hidden" onclick="chart_pick(document, 15)"><img id="chart-icon-15" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-16" class="chart-cell hidden" onclick="chart_pick(document, 16)"><img id="chart-icon-16" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-17" class="chart-cell hidden" onclick="chart_pick(document, 17)"><img id="chart-icon-17" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-18" class="chart-cell hidden" onclick="chart_pick(document, 18)"><img id="chart-icon-18" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-19" class="chart-cell hidden" onclick="chart_pick(document, 19)"><img id="chart-icon-19" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-20" class="chart-cell hidden" onclick="chart_pick(document, 20)"><img id="chart-icon-20" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-21" class="chart-cell hidden" onclick="chart_pick(document, 21)"><img id="chart-icon-21" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-22" class="chart-cell hidden" onclick="chart_pick(document, 22)"><img id="chart-icon-22" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-23" class="chart-cell hidden" onclick="chart_pick(document, 23)"><img id="chart-icon-23" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-24" class="chart-cell hidden" onclick="chart_pick(document, 24)"><img id="chart-icon-24" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-25" class="chart-cell hidden" onclick="chart_pick(document, 25)"><img id="chart-icon-25" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-26" class="chart-cell hidden" onclick="chart_pick(document, 26)"><img id="chart-icon-26" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-27" class="chart-cell hidden" onclick="chart_pick(document, 27)"><img id="chart-icon-27" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-28" class="chart-cell hidden" onclick="chart_pick(document, 28)"><img id="chart-icon-28" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-29" class="chart-cell hidden" onclick="chart_pick(document, 29)"><img id="chart-icon-29" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-30" class="chart-cell hidden" onclick="chart_pick(document, 30)"><img id="chart-icon-30" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-31" class="chart-cell hidden" onclick="chart_pick(document, 31)"><img id="chart-icon-31" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-32" class="chart-cell hidden" onclick="chart_pick(document, 32)"><img id="chart-icon-32" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-33" class="chart-cell hidden" onclick="chart_pick(document, 33)"><img id="chart-icon-33" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-34" class="chart-cell hidden" onclick="chart_pick(document, 34)"><img id="chart-icon-34" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-35" class="chart-cell hidden" onclick="chart_pick(document, 35)"><img id="chart-icon-35" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-36" class="chart-cell hidden" onclick="chart_pick(document, 36)"><img id="chart-icon-36" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-37" class="chart-cell hidden" onclick="chart_pick(document, 37)"><img id="chart-icon-37" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-38" class="chart-cell hidden" onclick="chart_pick(document, 38)"><img id="chart-icon-38" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-39" class="chart-cell hidden" onclick="chart_pick(document, 39)"><img id="chart-icon-39" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-40" class="chart-cell hidden" onclick="chart_pick(document, 40)"><img id="chart-icon-40" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-41" class="chart-cell hidden" onclick="chart_pick(document, 41)"><img id="chart-icon-41" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-42" class="chart-cell hidden" onclick="chart_pick(document, 42)"><img id="chart-icon-42" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-43" class="chart-cell hidden" onclick="chart_pick(document, 43)"><img id="chart-icon-43" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-44" class="chart-cell hidden" onclick="chart_pick(document, 44)"><img id="chart-icon-44" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-45" class="chart-cell hidden" onclick="chart_pick(document, 45)"><img id="chart-icon-45" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-46" class="chart-cell hidden" onclick="chart_pick(document, 46)"><img id="chart-icon-46" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-47" class="chart-cell hidden" onclick="chart_pick(document, 47)"><img id="chart-icon-47" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-48" class="chart-cell hidden" onclick="chart_pick(document, 48)"><img id="chart-icon-48" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-49" class="chart-cell hidden" onclick="chart_pick(document, 49)"><img id="chart-icon-49" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-50" class="chart-cell hidden" onclick="chart_pick(document, 50)"><img id="chart-icon-50" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-51" class="chart-cell hidden" onclick="chart_pick(document, 51)"><img id="chart-icon-51" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-52" class="chart-cell hidden" onclick="chart_pick(document, 52)"><img id="chart-icon-52" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-53" class="chart-cell hidden" onclick="chart_pick(document, 53)"><img id="chart-icon-53" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-54" class="chart-cell hidden" onclick="chart_pick(document, 54)"><img id="chart-icon-54" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-55" class="chart-cell hidden" onclick="chart_pick(document, 55)"><img id="chart-icon-55" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-56" class="chart-cell hidden" onclick="chart_pick(document, 56)"><img id="chart-icon-56" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-57" class="chart-cell hidden" onclick="chart_pick(document, 57)"><img id="chart-icon-57" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-58" class="chart-cell hidden" onclick="chart_pick(document, 58)"><img id="chart-icon-58" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-59" class="chart-cell hidden" onclick="chart_pick(document, 59)"><img id="chart-icon-59" class="chart-icon hidden"/></button>
+                  <button id="chart-cell-60" class="chart-cell hidden" onclick="chart_pick(document, 60)"><img id="chart-icon-60" class="chart-icon hidden"/></button>
+                  <img id="chart-cursor" class="hidden" source="texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <div id="chart-select-help"><span id="chart-cross"></span><span class="chart-help-text" text-key="pause_menu.chart_select"></span></div>
+                  <div id="chart-cancel-help"><span id="chart-triangle"></span><span class="chart-help-text" text-key="common.cancel"></span></div>
+                </div>
+                <div id="player-tools">
 				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
 				<button id="player-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
 				<button id="player-to-title" onclick="ui.send('to_title')" text-key="pause_menu.to_title"></button>
 				<button id="player-quit" onclick="ui.send('quit')" text-key="pause_menu.quit"></button>
 				<button id="player-back" class="back" onclick="back(document)" text-key="common.back"></button>
+                </div>
 			</div>
 
 			<div id="page-minimap" class="page hidden">

@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
                        .uiSkin = options->uiSkin,
                        .textFont = options->textFont,
                        .fishing = options->uiDemoFishing,
+                       .player = options->uiDemoPlayer,
+                       .chart = options->uiDemoChart,
                        .bagSlots = options->uiDemoBagSlots};
     if (!options->maps.empty()) {
       demo.map = options->maps.front();

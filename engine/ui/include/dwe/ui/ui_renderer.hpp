@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <string>
 
 namespace dwe::ui {
 
@@ -26,6 +27,10 @@ public:
 
   // How many draws the last Ui::update() recorded.
   [[nodiscard]] std::size_t drawCount() const;
+
+  // Bind before loading documents. An <img src="/runtime/name"> samples this texture without
+  // owning it. The texture and renderer must outlive the Ui; bindings cannot be replaced.
+  core::Result<void> bindTexture(std::string source, render::TextureId texture);
 
   // The state shared with the module's RmlUi render interface.
   struct Impl;

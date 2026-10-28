@@ -14,6 +14,14 @@ frame en `render`, y cómo enchufan sus dibujos el mapa, los modelos y la UI.
 Las llamadas a Vulkan solo están en `rhi`. `render`, `ui` y los demás usan sus tipos (`rhi::CommandList`,
 `rhi::Buffer`...), nunca funciones `vk*`. La excepción es `debug`, que inicia Dear ImGui con los handles nativos.
 
+## Modelos dentro de la UI
+
+`Renderer::createSceneTexture(extent)` crea un color muestreable compatible con los pipelines de escena y una profundidad independiente. `FrameDesc::textureScenes` recibe el identificador y sus drawers: se preparan antes de aplicar las subidas y se dibujan antes de los pases de la ventana. RHI sincroniza la transición de lectura de textura a attachment y de vuelta; cada uso limpia color transparente y profundidad.
+
+`UiRenderer::bindTexture("runtime/nombre", id)` permite usar `<img src="/runtime/nombre"/>` sin copiar píxeles a CPU. Registra el préstamo antes de cargar el documento: RmlUi conoce las dimensiones y dibuja la imagen entre sus demás elementos, aplicando su recorte. El dueño conserva la textura hasta destruir la UI; liberarla desde RmlUi no destruye el recurso. No se reemplazan bindings, porque los documentos conservan las imágenes en caché. El contenido debe respetar el alpha premultiplicado de la UI; las partes opacas de un modelo ya tienen alpha uno.
+
+La ficha de compañero usa este mecanismo con un modelo independiente del actor de campo, su colocación de crianza y una pose fija. Abrir la ficha no cambia posición, rotación ni animación del actor del mundo. El target solo se dibuja mientras Status está visible. Se libera con `destroyTexture`, después de cerrar la UI y antes de destruir Renderer.
+
 ## Flujo de un frame
 
 `Renderer::renderFrame(FrameDesc)` hace, en orden:

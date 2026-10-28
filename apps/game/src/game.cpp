@@ -56,7 +56,9 @@
 #include "movie_screen.hpp"
 #include "new_game_interview.hpp"
 #include "new_game_scene_rules.hpp"
+#include "partner_portrait.hpp"
 #include "play_session.hpp"
+#include "player_chart.hpp"
 #include "text_font_setting.hpp"
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
@@ -398,6 +400,38 @@ int runGame(const Options& requested) {
     core::logError("{}", uiRenderer.error().message);
     return EXIT_FAILURE;
   }
+  auto portrait = PartnerPortrait::create(**renderer);
+  if (portrait) {
+    if (auto bound = (*uiRenderer)->bindTexture("runtime/partner-portrait", (*portrait)->texture());
+        !bound) {
+      core::logError("Status portrait: {}", bound.error().message);
+      return EXIT_FAILURE;
+    }
+  } else {
+    core::logWarning("Status portrait: {}", portrait.error().message);
+  }
+  const auto raiseId = assets::AssetId::parse("data/raise");
+  auto portraitRaise = assets::loadRaiseTable(files, *raiseId);
+  if (!portraitRaise)
+    core::logWarning("Status portrait: {}", portraitRaise.error().message);
+  std::string portraitSpecies;
+  auto playerPortrait = PartnerPortrait::create(**renderer);
+  if (playerPortrait) {
+    if (auto bound =
+            (*uiRenderer)->bindTexture("runtime/player-portrait", (*playerPortrait)->texture());
+        !bound) {
+      core::logError("Player portrait: {}", bound.error().message);
+      return EXIT_FAILURE;
+    }
+    if (const auto* placement = portraitRaise ? portraitRaise->find("boys") : nullptr; placement) {
+      if (auto loaded = (*playerPortrait)->load(files, "boys", *placement); !loaded)
+        core::logWarning("Player portrait: {}", loaded.error().message);
+    } else {
+      core::logWarning("Player portrait: missing tamer placement in raise table");
+    }
+  } else {
+    core::logWarning("Player portrait: {}", playerPortrait.error().message);
+  }
   // The map change's fade, subtracted from the scene before the UI is drawn (fade.c: renderFade).
   std::optional<render::ScreenFade> screenFade;
   if (auto fade = render::ScreenFade::create(**renderer)) {
@@ -448,6 +482,7 @@ int runGame(const Options& requested) {
     core::logError("game: {}", loaded.error().message);
     return EXIT_FAILURE;
   }
+  loadPlayerChart(**ui, files);
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   (*ui)->setSetting(LanguageSetting, texts->language());
@@ -899,11 +934,35 @@ int runGame(const Options& requested) {
     } else if (interview) {
       sceneDrawers = interview->drawers();
     }
+    std::vector<render::TextureScene> portraitScenes;
+    if (!showingMovie && portrait && flow.playing() != nullptr &&
+        (*ui)->isVisible("partner_menu") &&
+        !(*ui)->elementHasClass("partner_menu", "page-status", "hidden")) {
+      const std::string species{flow.playing()->partnerSpecies()};
+      if (species != portraitSpecies) {
+        portraitSpecies = species;
+        (*portrait)->clear();
+        const auto* raise = portraitRaise ? portraitRaise->find(species) : nullptr;
+        if (raise) {
+          if (auto loaded = (*portrait)->load(files, species, *raise); !loaded)
+            core::logWarning("Status portrait {}: {}", species, loaded.error().message);
+        } else {
+          core::logWarning("Status portrait {}: no raise-table placement", species);
+        }
+      }
+      portraitScenes.push_back((*portrait)->scene());
+    }
+    if (!showingMovie && playerPortrait && (*ui)->isVisible("pause_menu") &&
+        (*ui)->elementHasClass("pause_menu", "panel", "on-player") &&
+        !(*ui)->elementHasClass("pause_menu", "panel", "player-tools-open") &&
+        !(*ui)->elementHasClass("pause_menu", "panel", "player-chart"))
+      portraitScenes.push_back((*playerPortrait)->scene());
     const bool drawn = (*renderer)->renderFrame({
         .clearColor = {0.0F, 0.0F, 0.0F, 1.0F},
         .scene = sceneDrawers,
         .ui = showingMovie ? std::span<render::Drawer* const>{} : uiDrawers,
         .overlay = std::ref(drawOverlay),
+        .textureScenes = portraitScenes,
     });
     if (!drawn) {
       platform->waitForEvents(IdleWait);
@@ -924,6 +983,10 @@ int runGame(const Options& requested) {
   flow.toTitle();
   scripts->reset();
   ui->reset();
+  if (portrait)
+    portrait->reset();
+  if (playerPortrait)
+    playerPortrait->reset();
   uiRenderer->reset();
   screenFade.reset();
   renderer->reset();

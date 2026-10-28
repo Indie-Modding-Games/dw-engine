@@ -4,7 +4,8 @@
 -- does, whether the partner takes it, how the bag sorts: all of it is the game's.
 
 local pages = { "status", "tech", "items", "care" }
-local first_entry = { status = "tab-status", tech = "tech-change", items = "slot-0", care = "care-praise" }
+local first_entry =
+  { status = "tab-status", tech = "tech-change", items = "slot-0", care = "care-praise" }
 local max_slots = 30
 local pool_bars = 2
 local stat_bars = 4
@@ -103,7 +104,9 @@ local function draw_meter(document, index)
     local value, low, top = number(base .. "value"), number(base .. "min"), number(base .. "max")
     local pink = percent(value, low, (low + top) / 2)
     if index == 2 then
-      document:get(prefix .. "-fill"):set_property("width", math.max(0, math.min(150, value * 9)) .. "dp")
+      document
+        :get(prefix .. "-fill")
+        :set_property("width", math.max(0, math.min(150, value * 9)) .. "dp")
     else
       document:get(prefix .. "-fill"):set_property("width", math.floor(pink / 2) * 3 .. "dp")
     end
@@ -124,27 +127,33 @@ local function draw_status(document)
     :get("status-lives")
     :set_text(t("partner_menu.lives", { lives = number("partner.lives") }))
   local original = ui.setting("ui_skin") == "original"
-  document:get("status-age"):set_text(original and tostring(number("partner.age"))
-    or t("partner_menu.age.value", { days = number("partner.age") }))
-  document
-    :get("status-weight")
-    :set_text(original and tostring(number("partner.weight"))
-      or t("partner_menu.weight.value", { weight = number("partner.weight") }))
+  document:get("status-age"):set_text(
+    original and tostring(number("partner.age"))
+      or t("partner_menu.age.value", { days = number("partner.age") })
+  )
+  document:get("status-weight"):set_text(
+    original and tostring(number("partner.weight"))
+      or t("partner_menu.weight.value", { weight = number("partner.weight") })
+  )
   for index = 0, 2 do
     local icon = document:get("status-special-" .. index)
     local value = math.floor(setting("partner.profile.special." .. index, -1))
     icon:set_class("hidden", value < 0 or value > 6)
-    for special = 0, 6 do icon:set_class("profile-special-" .. special, value == special) end
+    for special = 0, 6 do
+      icon:set_class("profile-special-" .. special, value == special)
+    end
   end
   local kind = number("partner.profile.type")
   document:get("status-type"):set_class("hidden", kind < 1 or kind > 3)
-  for value = 1, 3 do document:get("status-type"):set_class("profile-type-" .. value, kind == value) end
+  for value = 1, 3 do
+    document:get("status-type"):set_class("profile-type-" .. value, kind == value)
+  end
   local pattern = math.floor(setting("partner.profile.active", -1))
   local activity = ""
   if pattern >= 0 and pattern < 5 then
     local labels = original_label("status_view_labels", 2)
     local joined = labels:gsub("%s+", "")
-    local starts, widths = {1, 6, 9, 15, 21}, {5, 3, 6, 6, 6}
+    local starts, widths = { 1, 6, 9, 15, 21 }, { 5, 3, 6, 6, 6 }
     if #labels == 36 and #joined == 26 then
       local start = starts[pattern + 1]
       activity = string.sub(joined, start, start + widths[pattern + 1] - 1)
@@ -154,9 +163,13 @@ local function draw_status(document)
   end
   document:get("status-active"):set_text(activity)
   local lives = math.max(0, math.min(3, number("partner.lives")))
-  for index = 0, 2 do document:get("life-fill-" .. index):set_class("hidden", index >= lives) end
+  for index = 0, 2 do
+    document:get("life-fill-" .. index):set_class("hidden", index >= lives)
+  end
   local words = {}
-  for word in string.gmatch(original_label("status_view_labels", 1), "%S+") do words[#words + 1] = word end
+  for word in string.gmatch(original_label("status_view_labels", 1), "%S+") do
+    words[#words + 1] = word
+  end
   document:get("status-life-label"):set_text(words[2] or "")
   -- HP and MP: the numbers, now and at most, and a bar of the maximum (game_menu.c:
   -- renderDigimonStatsView).
@@ -164,8 +177,9 @@ local function draw_status(document)
   for index = 0, pool_bars - 1 do
     draw_bar(document, "pool-" .. index, "partner.pool", index)
     local maximum = number("partner.pool." .. index .. ".value")
-    document:get("pool-" .. index):set_text(original and tostring(pool_now[index + 1])
-      or (pool_now[index + 1] .. " / " .. maximum))
+    document:get("pool-" .. index):set_text(
+      original and tostring(pool_now[index + 1]) or (pool_now[index + 1] .. " / " .. maximum)
+    )
     document:get("pool-" .. index .. "-max"):set_text(tostring(maximum))
   end
   for index = 0, stat_bars - 1 do
@@ -187,7 +201,15 @@ local function draw_status(document)
     if index < count then
       local key = setting("partner.condition." .. index .. ".key", "")
       condition:set_text(text(key))
-      for _, name in ipairs({"sleepy", "tired", "hungry", "needs_toilet", "sulking", "injured", "sick"}) do
+      for _, name in ipairs({
+        "sleepy",
+        "tired",
+        "hungry",
+        "needs_toilet",
+        "sulking",
+        "injured",
+        "sick",
+      }) do
         condition:set_class("profile-condition-" .. name, key == "partner_menu.condition." .. name)
       end
     end
@@ -197,37 +219,58 @@ end
 
 -- Las abreviaturas se leen de las tablas del disco local, sin duplicar sus textos en el pack.
 local function tech_value_label(field, value)
-  if value <= 0 then return "" end
+  if value <= 0 then
+    return ""
+  end
   if ui.setting("ui_skin") == "original" then
     if field == "range" then
       local labels = original_label("tech_view_labels", 0)
       local entries = {}
-      for label in string.gmatch(labels, "%S+") do entries[#entries + 1] = label end
-      if #entries == 4 and entries[value] ~= nil then return entries[value] end
+      for label in string.gmatch(labels, "%S+") do
+        entries[#entries + 1] = label
+      end
+      if #entries == 4 and entries[value] ~= nil then
+        return entries[value]
+      end
     elseif field == "effect" then
       local labels = original_label("status_view_labels", 6)
-      if #labels == 16 then return string.sub(labels, (value - 1) * 4 + 1, value * 4) end
+      if #labels == 16 then
+        return string.sub(labels, (value - 1) * 4 + 1, value * 4)
+      end
     end
   end
   return t("partner_menu.tech." .. field .. "." .. value)
 end
 
 local function draw_tech(document)
+  if ui.setting("ui_skin") == "original" then
+    -- Use the disc's control glyphs: their bitmap meanings need not match Unicode shapes.
+    document
+      :get("tech-change-icon")
+      :set_text(string.match(original_label("status_view_labels", 5), "^(%S+)") or "")
+    document
+      :get("tech-cancel-icon")
+      :set_text(string.match(original_label("status_view_labels", 7), "^(%S+)") or "")
+  end
   for index = 0, 3 do
     local base = "partner.technique." .. index .. "."
     local filled = not setting(base .. "empty", true)
     document:get("tech-name-" .. index):set_text(filled and text(setting(base .. "name", "")) or "")
-    for _, field in ipairs({"power", "mp"}) do
-      document:get("tech-" .. field .. "-" .. index):set_text(filled and tostring(number(base .. field)) or "")
+    for _, field in ipairs({ "power", "mp" }) do
+      document
+        :get("tech-" .. field .. "-" .. index)
+        :set_text(filled and tostring(number(base .. field)) or "")
     end
-    for _, field in ipairs({"range", "effect"}) do
+    for _, field in ipairs({ "range", "effect" }) do
       local value = number(base .. field)
-      document:get("tech-" .. field .. "-" .. index):set_text(filled and value > 0
-        and tech_value_label(field, value) or "")
+      document
+        :get("tech-" .. field .. "-" .. index)
+        :set_text(filled and value > 0 and tech_value_label(field, value) or "")
     end
     for effect = 1, 4 do
-      document:get("tech-effect-" .. index):set_class("effect-" .. effect,
-        filled and number(base .. "effect") == effect)
+      document
+        :get("tech-effect-" .. index)
+        :set_class("effect-" .. effect, filled and number(base .. "effect") == effect)
     end
   end
 end
@@ -236,16 +279,25 @@ local function draw_tech_info(document)
   for index = 0, 55 do
     if document:get("tech-choice-" .. index):has_focus() then
       local revision = ui.setting("partner.revision")
-      if tech_info_focus == index and tech_info_revision == revision then return end
+      if tech_info_focus == index and tech_info_revision == revision then
+        return
+      end
       tech_info_focus, tech_info_revision = index, revision
       local base = "partner.technique.choice." .. index .. "."
       local known = setting(base .. "known", false)
       document:get("tech-info"):set_class("info-right", index % 8 <= 2)
       document:get("tech-info-name"):set_text(known and text(setting(base .. "name", "")) or "")
-      for _, field in ipairs({"power", "mp", "range", "effect"}) do
+      for _, field in ipairs({ "power", "mp", "range", "effect" }) do
         local value = number(base .. field)
-        document:get("tech-info-" .. field):set_text(known and ((field == "power" or field == "mp")
-          and tostring(value) or (value > 0 and tech_value_label(field, value) or "")) or "")
+        local label = ""
+        if known then
+          if field == "power" or field == "mp" then
+            label = tostring(value)
+          elseif value > 0 then
+            label = tech_value_label(field, value)
+          end
+        end
+        document:get("tech-info-" .. field):set_text(label)
       end
       return
     end
@@ -324,8 +376,10 @@ local function draw_bag(document)
   end
   for index = 0, max_slots - 1 do
     local slot = document:get("slot-" .. index)
-    slot:set_class("hidden", index >= count or (original
-      and (index < row_offset * 2 or index >= (row_offset + rows) * 2)))
+    slot:set_class(
+      "hidden",
+      index >= count or (original and (index < row_offset * 2 or index >= (row_offset + rows) * 2))
+    )
     if index < count then
       local filled = slot_filled(index)
       document:get("slot-" .. index .. "-name"):set_text(
@@ -360,8 +414,11 @@ local function focus_slot(document, index)
   if ui.setting("ui_skin") == "original" then
     local row = math.floor(index / 2)
     local rows = number("bag.slot.count") > 10 and 9 or 5
-    if row < row_offset then row_offset = row
-    elseif row >= row_offset + rows then row_offset = row - rows + 1 end
+    if row < row_offset then
+      row_offset = row
+    elseif row >= row_offset + rows then
+      row_offset = row - rows + 1
+    end
     draw_bag(document)
   end
   document:get("slot-" .. index):focus()
@@ -427,7 +484,9 @@ local function close_box(document, focus)
     box_parent = nil
   end
   document:get("scrim"):set_class("sub-box-open", false)
-  for _, name in ipairs(option_names) do document:get("opt-" .. name):set_class("active-option", false) end
+  for _, name in ipairs(option_names) do
+    document:get("opt-" .. name):set_class("active-option", false)
+  end
   if focus ~= nil then
     document:get(focus):focus()
   end
@@ -440,7 +499,9 @@ local function back_box(document)
     box = box_parent
     box_parent = nil
     document:get("scrim"):set_class("sub-box-open", false)
-    for _, name in ipairs(option_names) do document:get("opt-" .. name):set_class("active-option", false) end
+    for _, name in ipairs(option_names) do
+      document:get("opt-" .. name):set_class("active-option", false)
+    end
     document:get(child == "sort-box" and "opt-sort" or "opt-drop"):focus()
   else
     close_box(document, "slot-" .. picked)
@@ -450,11 +511,23 @@ end
 local function open_box(document, name)
   if name == "options" then
     local filled = picked ~= nil and slot_filled(picked)
-    document:get("opt-use"):set_class("unavailable", not filled or not setting(slot_setting(picked, "usable"), false))
-    document:get("opt-drop"):set_class("unavailable", not filled or not setting(slot_setting(picked, "discardable"), false))
+    document
+      :get("opt-use")
+      :set_class("unavailable", not filled or not setting(slot_setting(picked, "usable"), false))
+    document
+      :get("opt-drop")
+      :set_class(
+        "unavailable",
+        not filled or not setting(slot_setting(picked, "discardable"), false)
+      )
   end
-  local parent = ui.setting("ui_skin") == "original" and box == "options" and name ~= "options" and "options" or nil
-  if parent == nil then close_box(document)
+  local parent = ui.setting("ui_skin") == "original"
+      and box == "options"
+      and name ~= "options"
+      and "options"
+    or nil
+  if parent == nil then
+    close_box(document)
   else
     for _, option in ipairs(option_names) do
       local element = document:get("opt-" .. option)
@@ -477,16 +550,22 @@ local function show_page(document, name, focus)
     document:get("tab-" .. page):set_class("selected", page == name)
   end
   current = name
-  document:get("scrim"):set_class("digimon-screen", (name == "status" or name == "tech")
-    and ui.setting("ui_skin") == "original")
-  document:get("scrim"):set_class("item-screen", name == "items" and ui.setting("ui_skin") == "original")
+  document:get("scrim"):set_class(
+    "digimon-screen",
+    (name == "status" or name == "tech") and ui.setting("ui_skin") == "original"
+  )
+  document
+    :get("scrim")
+    :set_class("item-screen", name == "items" and ui.setting("ui_skin") == "original")
   document:get("scrim"):set_class("large-bag", number("bag.slot.count") > 10)
   draw(document)
   document:get(focus or first_entry[name]):focus()
 end
 
 function open_page(document, name)
-  if editing_tech then return end
+  if editing_tech then
+    return
+  end
   show_page(document, name)
 end
 
@@ -512,9 +591,15 @@ function pick_slot(document, index)
 end
 
 function choose_option(document, name)
-  if (name == "use" or name == "drop") and not slot_filled(picked) then return end
-  if name == "use" and not setting(slot_setting(picked, "usable"), false) then return end
-  if name == "drop" and not setting(slot_setting(picked, "discardable"), false) then return end
+  if (name == "use" or name == "drop") and not slot_filled(picked) then
+    return
+  end
+  if name == "use" and not setting(slot_setting(picked, "usable"), false) then
+    return
+  end
+  if name == "drop" and not setting(slot_setting(picked, "discardable"), false) then
+    return
+  end
   local slot = "slot-" .. picked
   if name == "use" then
     close_box(document, slot)
@@ -538,7 +623,10 @@ function choose_sort(document, mode)
 end
 
 function confirm_drop(document, yes)
-  if not yes then back_box(document); return end
+  if not yes then
+    back_box(document)
+    return
+  end
   close_box(document, "slot-" .. picked)
   if yes then
     ui.send("bag_drop", picked)
@@ -548,7 +636,9 @@ end
 -- Back: out of a box, out of a move, from a page to its tab, from the tabs out of the menu.
 function close_menu()
   ui.hide(document_name)
-  if ui.setting("ui_skin") == "original" then ui.show("pause_menu") end
+  if ui.setting("ui_skin") == "original" then
+    ui.show("pause_menu")
+  end
 end
 
 local function back(document)
@@ -579,7 +669,8 @@ local function step_box(document, step)
     end
   end
   local next_index = ui.setting("ui_skin") == "original"
-    and math.max(1, math.min(#entries, at + step)) or ((at - 1 + step) % #entries) + 1
+      and math.max(1, math.min(#entries, at + step))
+    or ((at - 1 + step) % #entries) + 1
   document:get(entries[next_index]):focus()
 end
 
@@ -623,8 +714,10 @@ function on_tick(document, seconds)
   if current == "status" and ui.setting("ui_skin") == "original" then
     document:get("scrim"):set_class("status-alternate", math.floor(tech_icon_time * 20) % 10 >= 5)
     local phase = math.floor(tech_icon_time * 20) % 16
-    local bob = (phase < 3 or phase >= 13) and 130 or (phase < 5 or phase >= 11) and 128
-      or (phase < 7 or phase >= 9) and 125 or 121
+    local bob = (phase < 3 or phase >= 13) and 130
+      or (phase < 5 or phase >= 11) and 128
+      or (phase < 7 or phase >= 9) and 125
+      or 121
     if status_condition_bob ~= bob then
       status_condition_bob = bob
       document:get("conditions"):set_property("top", ((bob - 32) * 3) .. "dp")
@@ -656,15 +749,26 @@ function on_action(document, action)
     return true
   end
   if action == "menu" then
-    if editing_tech then finish_tech_edit(document); return true end
+    if editing_tech then
+      finish_tech_edit(document)
+      return true
+    end
     ui.hide(document_name)
     return true
   end
   if box ~= nil then
     if box == "confirm-box" and ui.setting("ui_skin") == "original" then
-      if action == "left" then document:get("confirm-yes"):focus(); return true end
-      if action == "right" then document:get("confirm-no"):focus(); return true end
-      if action == "up" or action == "down" then return true end
+      if action == "left" then
+        document:get("confirm-yes"):focus()
+        return true
+      end
+      if action == "right" then
+        document:get("confirm-no"):focus()
+        return true
+      end
+      if action == "up" or action == "down" then
+        return true
+      end
     end
     if action == "up" or action == "down" then
       step_box(document, action == "up" and -1 or 1)
@@ -676,30 +780,55 @@ function on_action(document, action)
     for index = 0, 55 do
       if document:get("tech-choice-" .. index):has_focus() then
         local target = index
-        if action == "left" and index % 8 > 0 then target = index - 1
-        elseif action == "right" and index % 8 < 7 then target = index + 1
-        elseif action == "up" and index >= 8 then target = index - 8
-        elseif action == "down" and index < 48 then target = index + 8 end
-        if target ~= index then document:get("tech-choice-" .. target):focus() end
-        if action == "left" or action == "right" or action == "up" or action == "down" then return true end
+        if action == "left" and index % 8 > 0 then
+          target = index - 1
+        elseif action == "right" and index % 8 < 7 then
+          target = index + 1
+        elseif action == "up" and index >= 8 then
+          target = index - 8
+        elseif action == "down" and index < 48 then
+          target = index + 8
+        end
+        if target ~= index then
+          document:get("tech-choice-" .. target):focus()
+        end
+        if action == "left" or action == "right" or action == "up" or action == "down" then
+          return true
+        end
       end
     end
     return false
   end
   if (current == "status" or current == "tech") and ui.setting("ui_skin") == "original" then
-    if action == "right" then show_page(document, "tech"); return true end
-    if action == "left" then show_page(document, "status"); return true end
-    if action == "up" or action == "down" then return true end
+    if action == "right" then
+      show_page(document, "tech")
+      return true
+    end
+    if action == "left" then
+      show_page(document, "status")
+      return true
+    end
+    if action == "up" or action == "down" then
+      return true
+    end
   end
-  if current == "items" and ui.setting("ui_skin") == "original"
-    and (action == "up" or action == "down" or action == "left" or action == "right") then
+  if
+    current == "items"
+    and ui.setting("ui_skin") == "original"
+    and (action == "up" or action == "down" or action == "left" or action == "right")
+  then
     for index = 0, number("bag.slot.count") - 1 do
       if document:get("slot-" .. index):has_focus() then
         local next_index = index
-        if action == "up" and index >= 2 then next_index = index - 2
-        elseif action == "down" and index < number("bag.slot.count") - 2 then next_index = index + 2
-        elseif action == "left" and index % 2 == 1 then next_index = index - 1
-        elseif action == "right" and index % 2 == 0 and index + 1 < number("bag.slot.count") then next_index = index + 1 end
+        if action == "up" and index >= 2 then
+          next_index = index - 2
+        elseif action == "down" and index < number("bag.slot.count") - 2 then
+          next_index = index + 2
+        elseif action == "left" and index % 2 == 1 then
+          next_index = index - 1
+        elseif action == "right" and index % 2 == 0 and index + 1 < number("bag.slot.count") then
+          next_index = index + 1
+        end
         focus_slot(document, next_index)
         return true
       end

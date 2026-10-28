@@ -52,6 +52,8 @@ public:
     out.documents.push_back({.name = std::string{ItemEffectsKey}, .document = itemEffects()});
     out.documents.push_back({.name = "evolution", .document = evolution()});
     out.documents.push_back({.name = "raise", .document = raise()});
+    if (!tables_->evolutionChart.empty())
+      out.documents.push_back({.name = "evolution_chart", .document = evolutionChart()});
     out.documents.push_back({.name = "cards", .document = cards()});
     out.documents.push_back({.name = "tournaments", .document = tournaments()});
     out.documents.push_back({.name = "medals", .document = medals()});
@@ -326,6 +328,30 @@ private:
     root.set("requirements", std::move(requirements));
     root.set("stats_gains", std::move(gains));
     root.set("paths", std::move(paths));
+    return root;
+  }
+
+  YamlNode evolutionChart() {
+    YamlNode entries = YamlNode::sequence();
+    for (std::size_t i = 0; i < tables_->evolutionChart.size(); ++i) {
+      const auto& entry = tables_->evolutionChart[i];
+      if (i + 1 >= ids_.digimon.size()) {
+        notes_.push_back("EVO_CHART_BOXES entry has no species id");
+        continue;
+      }
+      YamlNode node = YamlNode::mapping();
+      node.set("digimon", quoted(ids_.digimon[i + 1]));
+      node.set("index", number(i + 1));
+      node.set("x", number(entry.x));
+      node.set("y", number(entry.y));
+      node.set("u", number(entry.u));
+      node.set("v", number(entry.v));
+      node.set("palette", number(entry.palette));
+      entries.append(std::move(node));
+    }
+    YamlNode root = YamlNode::mapping();
+    root.set("image", quoted("texture/etcdat/sboy"));
+    root.set("entries", std::move(entries));
     return root;
   }
 

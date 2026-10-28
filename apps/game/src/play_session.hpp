@@ -146,6 +146,9 @@ public:
 
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
+  [[nodiscard]] std::string_view partnerSpecies() const {
+    return game_.session->partner().state().species;
+  }
 
   // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is
   // loaded (MAIN_STATE 2), EDR once the ending ends the game (MAIN_STATE 3). The ending's routines

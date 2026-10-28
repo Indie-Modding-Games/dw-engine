@@ -17,3 +17,7 @@
 .player-value { float: right; }
 
 .field-menu-focus { display: none; pointer-events: none; }
+
+.player-rank { display: none; }
+
+.player-native { display: none; }

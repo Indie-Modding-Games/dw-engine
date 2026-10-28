@@ -16,11 +16,12 @@
 			</div>
 
 			<div id="page-status" class="page">
+                <div id="partner-portrait-clip" class="original-look"><img id="partner-portrait" src="/runtime/partner-portrait"/></div>
                 <div id="profile-heading" class="status-decoration" text-key="partner_menu.section.profile"></div>
                 <div id="condition-heading" class="status-decoration" text-key="partner_menu.section.condition"></div>
                 <div id="parameter-heading" class="status-decoration" text-key="partner_menu.section.parameter"></div>
-                <div id="status-horizontal" class="status-decoration"></div>
-                <div id="status-vertical" class="status-decoration"></div>
+                <div id="status-horizontal" class="status-decoration"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
+                <div id="status-vertical" class="status-decoration"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
                 <span id="status-name-label" class="status-decoration" text-key="partner_menu.name"></span>
                 <span id="status-special-heading" class="profile-meta"></span><span id="status-type-heading" class="profile-meta"></span><span id="status-active-heading" class="profile-meta"></span>
                 <div id="status-specials" class="profile-meta"><span id="status-special-0" class="status-special"></span><span id="status-special-1" class="status-special"></span><span id="status-special-2" class="status-special"></span></div>
@@ -50,6 +51,10 @@
 			</div>
 
             <div id="page-tech" class="page hidden">
+                <div id="techset-separator" class="tech-separator original-look"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
+                <div id="tech-final-separator" class="tech-separator original-look"><span class="separator-first"></span><span class="separator-light"></span><span class="separator-last"></span></div>
+                <div id="tech-dots" class="original-look"><span class="tech-dot dot-power dot-row-0"></span><span class="tech-dot dot-mp dot-row-0"></span><span class="tech-dot dot-range dot-row-0"></span><span class="tech-dot dot-power dot-row-1"></span><span class="tech-dot dot-mp dot-row-1"></span><span class="tech-dot dot-range dot-row-1"></span><span class="tech-dot dot-power dot-row-2"></span><span class="tech-dot dot-mp dot-row-2"></span><span class="tech-dot dot-range dot-row-2"></span></div>
+                <span id="tech-final-dot" class="tech-dot original-look"></span>
                 <div id="techset-heading" class="tech-heading original-look" text-key="partner_menu.tech.set"></div>
                 <div id="tech-columns" class="tech-columns original-look"><span class="tech-power" text-key="partner_menu.tech.power"></span><span class="tech-mp" text-key="partner_menu.tech.mp"></span><span class="tech-range" text-key="partner_menu.tech.range"></span><span class="tech-effect" text-key="partner_menu.tech.effect"></span></div>
 <div id="tech-row-0" class="tech-row"><span id="tech-name-0" class="tech-name original-look"></span><span id="tech-power-0" class="tech-power original-look"></span><span id="tech-mp-0" class="tech-mp original-look"></span><span id="tech-range-0" class="tech-range original-look"></span><span id="tech-effect-0" class="tech-effect original-look"></span></div>
@@ -59,7 +64,8 @@
                 <div id="final-heading" class="tech-heading original-look" text-key="partner_menu.tech.final"></div>
                 <div id="final-columns" class="tech-columns original-look"><span class="tech-power" text-key="partner_menu.tech.power"></span><span class="tech-range" text-key="partner_menu.tech.range"></span><span class="tech-effect" text-key="partner_menu.tech.effect"></span></div>
 <div id="tech-row-3" class="tech-row"><span id="tech-name-3" class="tech-name original-look"></span><span id="tech-power-3" class="tech-power original-look"></span><span id="tech-mp-3" class="tech-mp original-look"></span><span id="tech-range-3" class="tech-range original-look"></span><span id="tech-effect-3" class="tech-effect original-look"></span></div>
-                <button id="tech-change" class="original-look" onclick="start_tech_edit(document)" text-key="partner_menu.tech.change"></button>
+                <button id="tech-change" class="original-look" onclick="start_tech_edit(document)"><span id="tech-change-icon" class="tech-action-symbol"></span><span class="tech-action-label" text-key="partner_menu.tech.change"></span></button>
+                <div id="tech-cancel" class="original-look"><span id="tech-cancel-icon" class="tech-action-symbol"></span><span class="tech-action-label" text-key="common.cancel"></span></div>
                 <div id="tech-picker" class="hidden"><button id="tech-choice-0" class="tech-choice" onclick="toggle_technique(document, 0)"><span class="tech-cell" id="tech-cell-0"></span></button>
 <button id="tech-choice-1" class="tech-choice" onclick="toggle_technique(document, 1)"><span class="tech-cell" id="tech-cell-1"></span></button>
 <button id="tech-choice-2" class="tech-choice" onclick="toggle_technique(document, 2)"><span class="tech-cell" id="tech-cell-2"></span></button>

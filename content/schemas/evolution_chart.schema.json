@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Metadatos del árbol de evolución",
+  "description": "Posiciones y referencias de iconos extraídas del ejecutable local, sin imágenes ni código.",
+  "type": "object",
+  "required": ["image", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "image": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 61,
+      "items": {
+        "type": "object",
+        "required": ["digimon", "index", "x", "y", "u", "v", "palette"],
+        "additionalProperties": false,
+        "properties": {
+          "digimon": { "type": "string" },
+          "index": { "type": "integer", "minimum": 1 },
+          "x": { "type": "integer", "minimum": 0, "maximum": 304 },
+          "y": { "type": "integer", "minimum": 0, "maximum": 224 },
+          "u": { "type": "integer", "minimum": 0, "maximum": 224 },
+          "v": { "type": "integer", "minimum": 0, "maximum": 240 },
+          "palette": { "type": "integer", "minimum": 0, "maximum": 15 }
+        }
+      }
+    }
+  }
+}

@@ -26,6 +26,12 @@ namespace dwe::render {
 // A texture of the renderer: its index in the bindless table, which shaders take to sample it.
 using TextureId = rhi::TextureId;
 
+// A depth-tested scene rendered into a texture before the window passes.
+struct TextureScene {
+  TextureId target;
+  std::span<Drawer* const> drawers;
+};
+
 struct RendererDesc {
   // How many textures may exist at once (clamped to what the GPU supports).
   std::uint32_t maxTextures = 4096;
@@ -45,6 +51,7 @@ struct FrameDesc {
   // Nothing is recorded after it in the frame, so it may change any state (pipelines, descriptor
   // sets) it likes.
   std::function<void(const rhi::Frame&)> overlay = nullptr;
+  std::span<const TextureScene> textureScenes = {};
 };
 
 // The render foundation (docs/architecture/render.md): owns the bindless table, the upload ring,
@@ -74,6 +81,10 @@ public:
   // top), or a transparent one when pixels is empty. Sampled with the bindless table's samplers. It
   // waits for the GPU: for load time. While the game runs, use queueTexture.
   core::Result<TextureId> createTexture(rhi::Extent extent, std::span<const std::byte> pixels = {});
+
+  // A transparent sampled target compatible with scene pipelines, with its own depth buffer.
+  // Release with destroyTexture. Do not upload pixels into this target.
+  core::Result<TextureId> createSceneTexture(rhi::Extent extent);
 
   // Replaces a region of a texture (region.width * region.height * 4 bytes). Frames already
   // submitted keep the old pixels. It waits for the GPU: for load time. While the game runs, use
@@ -150,6 +161,11 @@ private:
   rhi::Extent extent_;
   // Indexed by TextureId::index.
   std::vector<std::optional<rhi::Image>> textures_;
+  struct SceneTarget {
+    TextureId color;
+    rhi::Image depth;
+  };
+  std::vector<SceneTarget> sceneTargets_;
   TextureId white_;
   std::vector<PendingWrite> pending_;
   std::function<void(core::Result<rhi::CapturedImage>)> captureDone_;

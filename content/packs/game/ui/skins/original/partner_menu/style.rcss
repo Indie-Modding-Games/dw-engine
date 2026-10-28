@@ -63,7 +63,8 @@
 
 #page-status {
 	position: relative;
-	height: 552dp;
+	height: 570dp;
+	box-sizing: border-box;
 	padding: 0;
 	border: 3dp #90d9fa;
 	border-right-color: #4a9fc5;
@@ -498,13 +499,20 @@ button:focus .original-look, button.original-look:focus {
 #condition-heading { left: 30dp; top: 231dp; decorator: image(status-condition); }
 #parameter-heading { left: 396dp; top: 231dp; decorator: image(status-parameter); }
 #status-horizontal {
-    left: 0; top: 210dp; width: 894dp; height: 3dp;
-    background-color: #020202; border-top: 3dp #6987a0;
+    left: 6dp; top: 210dp; width: 885dp; height: 9dp;
 }
 #status-vertical {
-    left: 366dp; top: 216dp; width: 3dp; height: 336dp;
-    background-color: #020202; border-left: 3dp #6987a0;
+    left: 366dp; top: 216dp; width: 9dp; height: 351dp;
 }
+/* STATS_VIEW_LINES: three native-pixel lines; the light extends one pixel at each end. */
+#status-horizontal span, #status-vertical span { position: absolute; display: block; background-color: #020202; }
+#status-horizontal .separator-light, #status-vertical .separator-light { background-color: #6987a0; }
+#status-horizontal .separator-first { left: 3dp; right: 3dp; top: 0; height: 3dp; }
+#status-horizontal .separator-light { left: 0; right: 0; top: 3dp; height: 3dp; }
+#status-horizontal .separator-last { left: 3dp; right: 3dp; top: 6dp; height: 3dp; }
+#status-vertical .separator-first { left: 0; top: 3dp; bottom: 3dp; width: 3dp; }
+#status-vertical .separator-light { left: 3dp; top: 0; bottom: 0; width: 3dp; }
+#status-vertical .separator-last { left: 6dp; top: 3dp; bottom: 3dp; width: 3dp; }
 #status-name-label { left: 30dp; top: 63dp; width: 84dp; font-size: 22dp; color: #80e8f8; }
 #status-head { left: 120dp; top: 60dp; width: 750dp; }
 #status-species-line { top: 108dp; width: 870dp; }
@@ -542,22 +550,22 @@ button:focus .original-look, button.original-look:focus {
     position: relative; height: 552dp; padding: 0; border: 3dp #90d9fa;
     border-right-color: #4a9fc5; background-color: #2d3840;
 }
-.tech-heading { position: absolute; left: 12dp; top: 0; color: #fff371; font-size: 33dp; }
-#final-heading { top: 222dp; width: 870dp; padding-top: 6dp; border-top: 3dp #90d9fa; }
+.tech-heading { position: absolute; left: 21dp; top: 3dp; color: #fff371; font-size: 36dp; }
+#final-heading { top: 219dp; width: 870dp; padding-top: 0; border-width: 0; }
 .tech-columns { position: absolute; left: 0; top: 36dp; width: 894dp; height: 24dp; font-size: 18dp; }
-#final-columns { top: 258dp; }
-.tech-row { position: absolute; left: 0; width: 894dp; height: 45dp; font-size: 33dp; }
+#final-columns { top: 237dp; }
+.tech-row { position: absolute; left: 0; width: 894dp; height: 45dp; font-size: 36dp; }
 #tech-row-0 { top: 66dp; }
 #tech-row-1 { top: 111dp; }
 #tech-row-2 { top: 156dp; }
-#tech-row-3 { top: 288dp; }
+#tech-row-3 { top: 267dp; }
 .tech-row span, .tech-columns span { position: absolute; display: block; }
-.tech-name { left: 60dp; width: 450dp; white-space: nowrap; overflow: hidden; }
-.tech-power { left: 516dp; width: 108dp; }
-.tech-mp { left: 639dp; width: 108dp; }
-.tech-range { left: 771dp; width: 72dp; }
+.tech-name { left: 75dp; width: 414dp; white-space: nowrap; overflow: hidden; }
+.tech-power { left: 495dp; width: 72dp; }
+.tech-mp { left: 618dp; width: 72dp; }
+.tech-range { left: 750dp; width: 36dp; }
 .tech-row .tech-range { font-size: 18dp; }
-.tech-effect { left: 843dp; width: 36dp; }
+.tech-effect { left: 822dp; width: 36dp; }
 #tech-mp-3 { display: none; }
 .tech-row .tech-effect { font-size: 0; color: transparent; height: 36dp; }
 .effect-1 { decorator: image(tech-poison); }
@@ -580,7 +588,38 @@ button:focus .original-look, button.original-look:focus {
 #scrim.tech-editing #tabs { pointer-events: none; }
 .tech-choice.unavailable { color: #717171; }
 
-#tech-change { position: absolute; left: 42dp; top: 366dp; width: 810dp; text-align: left; }
+#tech-change, #tech-change:focus, #tech-cancel { position: absolute; left: 57dp; width: 810dp; height: 36dp; margin: 0; padding: 0; border-width: 0; background-color: transparent; text-align: left; font-size: 36dp; }
+#tech-change { top: 339dp; }
+#tech-cancel { top: 381dp; }
+.tech-action-symbol { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
+#tech-cancel .tech-action-symbol { color: #3cff3c; }
+.tech-action-label { position: absolute; left: 36dp; top: 0; white-space: nowrap; }
+#scrim.digimon-screen #prompts { display: none; }
+.tech-row .tech-power, .tech-row .tech-mp { top: -3dp; text-align: right; }
+.tech-row .tech-effect { top: -3dp; }
+.tech-columns .tech-power { left: 513dp; width: 69dp; }
+.tech-columns .tech-mp { left: 651dp; width: 33dp; }
+.tech-columns .tech-range { left: 741dp; width: 57dp; }
+.tech-columns .tech-effect { left: 813dp; width: 48dp; }
+.tech-row .tech-range { font-size: 36dp; }
+.tech-separator { position: absolute; left: 6dp; width: 885dp; height: 9dp; }
+#techset-separator { top: 201dp; }
+#tech-final-separator { top: 312dp; }
+.tech-separator span { position: absolute; display: block; height: 3dp; background-color: #020202; }
+.tech-separator .separator-first { left: 3dp; right: 3dp; top: 0; }
+.tech-separator .separator-light { left: 0; right: 0; top: 3dp; background-color: #6987a0; }
+.tech-separator .separator-last { left: 3dp; right: 3dp; top: 6dp; }
+#tech-final-separator .separator-last { right: 0; }
+#tech-dots { position: absolute; left: 0; top: 0; }
+.tech-dot { position: absolute; display: block; width: 12dp; height: 12dp; decorator: image(tech-table-dot); }
+.dot-power { left: 606dp; }
+.dot-mp { left: 729dp; }
+.dot-range { left: 798dp; }
+.dot-row-0 { top: 75dp; }
+.dot-row-1 { top: 120dp; }
+.dot-row-2 { top: 168dp; }
+#tech-final-dot { left: 798dp; top: 276dp; }
+#scrim.tech-editing #tech-final-separator, #scrim.tech-editing #tech-final-dot, #scrim.tech-editing #tech-cancel { display: none; }
 #tech-picker { position: absolute; left: 12dp; top: 228dp; width: 870dp; height: 216dp; }
 .tech-choice { display: inline-block; width: 210dp; height: 48dp; padding: 3dp; margin: 0; overflow: hidden; white-space: nowrap; font-size: 18dp; }
 #tech-message { position: absolute; left: 12dp; top: 474dp; width: 870dp; font-size: 21dp; color: #fff371; }
@@ -759,7 +798,7 @@ button:focus .original-look, button.original-look:focus {
 #tech-info.info-right #tech-info-br { left: 873dp; }
 #tech-info.info-right #tech-info-notch { left: 486dp; decorator: image(tech-info-bl); }
 
-.info-value.info-range, .info-value.info-effect, .tech-row .tech-range { font-size: 33dp; }
+.info-value.info-range, .info-value.info-effect { font-size: 33dp; }
 
 /* Profile: insets nativos de STATS_VIEW_INSETS y rótulos de STATS_VIEW_ELEMENTS.
    Los offsets descuentan el borde de 1px de la página. */
@@ -845,7 +884,12 @@ button:focus .original-look, button.original-look:focus {
 #meter-1-label.low { decorator: image(discipline-low scale-none left top); }
 #meter-2-label { decorator: image(status-virus scale-none left top); }
 .status-native-happiness { display: block; position: absolute; left: 36dp; top: -6dp; width: 108dp; height: 36dp; decorator: image(status-happiness-name); }
-#status-condition .meter { position: absolute; left: 159dp; top: 0; width: 150dp; height: 24dp; box-sizing: border-box; margin: 0; overflow: hidden; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; decorator: none; }
-#status-condition .meter .fill { position: absolute; left: 0; top: 3dp; height: 18dp; decorator: vertical-gradient(#e04080 #f0c0e8); }
-#status-condition .meter .fill.high { decorator: vertical-gradient(#3060a0 #b0d0e0); }
-#status-condition #meter-2-fill { decorator: none; background-color: #c8c83c; }
+/* renderInsetBox includes its right/bottom outline; the fills draw over the right outline at full width. */
+#status-condition .meter { position: absolute; left: 159dp; top: 0; width: 153dp; height: 27dp; box-sizing: border-box; margin: 0; overflow: visible; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; decorator: none; }
+#status-condition .meter .fill { position: absolute; left: 0; top: 3dp; height: 18dp; decorator: image(status-meter-pink scale-none left top); }
+#status-condition .meter .fill.high { decorator: image(status-meter-blue scale-none left top); }
+#status-condition #meter-2-fill { top: 0; decorator: none; background-color: #c8c83c; }
+
+/* The portrait uses the original full-screen projection, clipped to Condition. */
+#partner-portrait-clip { position: absolute; left: 0; top: 216dp; width: 366dp; height: 330dp; overflow: hidden; }
+#partner-portrait { position: absolute; left: -33dp; top: -285dp; width: 960dp; height: 720dp; }

@@ -638,6 +638,10 @@ mando virtual: `attach playstation`, `tap dpad_down`, `press south`, `release so
 También acepta `--ui-skin original --text-font original` para revisar distribución, iconos y tipografía sin repetir
 la introducción de una partida. La demo publica el aspecto elegido a Lua, igual que el juego; sus datos ficticios
 no validan el estado ni las acciones del compañero en una partida real. La cabecera usa una fecha ficticia Year 1 / Day 1.
+`--ui-demo-player` abre directamente Player, sin pasar por el principal ni inyectar teclas. El fixture publica CODEX, nivel0, Bits0 y7h42m; el rango se consulta por nivel en la tabla de títulos del contenido local. Estos valores son de la demo, no de una partida. Esta entrada permite revisar por separado la reconstrucción de Player y documentar sus diferencias pendientes.
+
+En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Esc regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart/Med./Card todavía no tienen contenido funcional y sus pestañas permanecen deshabilitadas. Para Chart, el extractor ya obtiene [los metadatos de posiciones e iconos](../formats/arbol-de-evolucion.md) de la copia local; falta conectarlos a la presentación y al estado de formas criadas.
+
 `--ui-demo-fishing` habilita la variante del menú con FISH y SLEEP a la vez para revisar sus siete entradas
 sin iniciar una partida ni desplazarse a una zona de pesca. La demo permite abrir ITEM desde el principal
 con una bolsa vacía de diez posiciones; comprueba presentación, opciones y retorno, sin validar sus efectos sobre una sesión. Con --ui-demo-bag-size, Move/Sort/Drop sí modifican

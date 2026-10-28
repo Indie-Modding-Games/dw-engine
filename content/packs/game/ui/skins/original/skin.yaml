@@ -237,6 +237,21 @@ sprite_sheets:
       status-happy: [0, 116, 11, 11]
       status-sad: [11, 116, 11, 11]
       status-virus: [44, 116, 9, 11]
+  # Native meter strips: page 0x18, CLUT rows 501/502 of the user's SBOY texture.
+  - name: status-meter-pink
+    image: texture/etcdat/sboy
+    palette: 13
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      status-meter-pink: [74, 240, 50, 6]
+  - name: status-meter-blue
+    image: texture/etcdat/sboy
+    palette: 14
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      status-meter-blue: [24, 240, 50, 6]
   - name: status-sections
     image: texture/etcdat/system_w
     palette: 8
@@ -256,6 +271,7 @@ sprite_sheets:
       tech-mp-label: [116, 34, 11, 7]
       tech-range-label: [76, 41, 19, 7]
       tech-effect-label: [0, 48, 16, 7]
+      tech-table-dot: [120, 12, 4, 4]
   # Editor Tech: etiquetas, cursor y pictogramas de SYSTEM_W del disco local.
   - name: tech-grid-labels
     image: texture/etcdat/system_w
