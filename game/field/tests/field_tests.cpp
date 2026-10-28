@@ -1335,3 +1335,34 @@ TEST_CASE("the partner's size follows its species: follow distances, and a relea
   CHECK_FALSE(Field::overlaps(squareAt(field.player().position, 100.0F),
                               squareAt(field.partner().position, 300.0F)));
 }
+
+TEST_CASE("a script let go takes its glide and its finished clips off the NPCs") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t walker = addNpc(map, 600.0F, 0.0F, 3);
+  const std::size_t posed = addNpc(map, -600.0F, 0.0F, 5);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, walker));
+  REQUIRE(spawnNpc(field, posed));
+  const dwe::scene::Entity walking = *field.npcs().entityOf(3);
+  const dwe::scene::Entity posing = *field.npcs().entityOf(5);
+  field.holdForScript(true);
+  field.driveByScript(walking, {100.0F, 0.0F, 0.0F});
+  field.animateByScript(walking, 2);
+  REQUIRE(field.npcs().setScriptedAnimation(5, 7));
+  field.animateByScript(posing, 7);
+  field.driveByScript(posing, {0.0F, 0.0F, 50.0F});
+  field.tick(Tick);
+  field.holdForScript(false);
+  auto& registry = world.registry();
+  CHECK_FALSE(registry.all_of<dwe::game::field::ScriptedActor>(walking));
+  REQUIRE(registry.all_of<dwe::game::field::ScriptedActor>(posing));
+  CHECK(registry.get<dwe::game::field::ScriptedActor>(posing).clip == 7U);
+  CHECK(registry.get<dwe::game::field::ScriptedActor>(posing).velocity == glm::vec3{0.0F});
+  // The next hold does not glide them with an old velocity.
+  const glm::vec3 before = *field.npcs().positionOf(5);
+  field.holdForScript(true);
+  run(field, 0.5F);
+  CHECK(*field.npcs().positionOf(5) == before);
+}

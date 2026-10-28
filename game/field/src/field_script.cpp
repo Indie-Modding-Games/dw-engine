@@ -3,8 +3,11 @@
 #include <dwe/game/field/field.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <cmath>
 #include <numbers>
+#include <utility>
+#include <vector>
 
 #include "script_messages.hpp"
 
@@ -43,6 +46,20 @@ void Field::holdForScript(bool held) {
     cameraPan_.reset();
     registry.remove<ScriptedActor>(player_);
     registry.remove<ScriptedActor>(partner_);
+    // The NPCs the script drove stop gliding; one whose script animation is over (setActiveAnim
+    // back to 0) is the NPCs' own again, and one still on its animation keeps it, as
+    // NPC_ACTIVE_ANIM stays in the original until a script sets it back.
+    std::vector<std::pair<scene::Entity, std::int32_t>> scripted;
+    for (const auto [entity, tag, actor] : registry.view<NpcTag, ScriptedActor>().each()) {
+      scripted.emplace_back(entity, tag.scriptId);
+    }
+    for (const auto& [entity, scriptId] : scripted) {
+      if (npcs_.scriptedAnimationOf(scriptId).value_or(0) == 0) {
+        registry.remove<ScriptedActor>(entity);
+      } else {
+        registry.get<ScriptedActor>(entity).velocity = {};
+      }
+    }
     // The original leaves the partner where the script did, even against the player or inside an
     // NPC after a talk; the engine has it make room first (Field::makeRoomForPlayer), then the
     // release rule moves whoever still stands in someone (releaseHandoff).
