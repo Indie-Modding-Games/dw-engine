@@ -261,6 +261,42 @@ core::Result<std::vector<EvolutionChartEntry>> readEvolutionChart(const MemoryIm
   return entries;
 }
 
+core::Result<EvolutionChartDetail> readChartDetail(const MemoryImage& image,
+                                                   const ExecutableLayout& layout) {
+  constexpr std::size_t DetailBytes = 564;
+  auto bytes = image.bytesAt(layout.evolutionChartDetail.address, DetailBytes);
+  if (!bytes)
+    return std::unexpected{bytes.error()};
+  ByteCursor cursor{*bytes};
+  EvolutionChartDetail detail;
+  for (auto& line : detail.lines) {
+    for (auto& coordinate : line) {
+      coordinate = cursor.i16();
+      if (coordinate < -320 || coordinate > 320)
+        return core::fail("Chart detail line is outside its canvas");
+    }
+  }
+  for (auto& color : detail.colors)
+    for (auto& channel : color)
+      channel = cursor.u8();
+  for (auto& sprite : detail.sprites) {
+    for (auto& coordinate : sprite) {
+      coordinate = cursor.i16();
+      if (coordinate < -320 || coordinate > 320)
+        return core::fail("Chart detail sprite is outside its canvas");
+    }
+    cursor.skip(4);
+  }
+  for (auto& inset : detail.insets) {
+    for (auto& value : inset)
+      value = cursor.i16();
+    if (inset[0] < 0 || inset[1] < 0 || inset[2] <= 0 || inset[3] <= 0 ||
+        inset[0] + inset[2] > 320 || inset[1] + inset[3] > 240)
+      return core::fail("Chart detail inset is outside its canvas");
+  }
+  return detail;
+}
+
 core::Result<std::vector<RaiseData>> readRaiseData(const MemoryImage& image,
                                                    const ExecutableLayout& layout) {
   return readRecords<RaiseData>(image, layout.raiseData, "RAISE_DATA", 28, [](ByteCursor& c) {
@@ -368,6 +404,12 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
   ExecutableTables tables;
   core::Error error;
   // Older/custom layouts may not locate UI metadata yet; the existing gameplay tables still load.
+  if (layout.evolutionChartDetail.located()) {
+    auto detail = readChartDetail(image, layout);
+    if (!detail)
+      return std::unexpected{detail.error()};
+    tables.evolutionChartDetail = std::move(*detail);
+  }
   if (layout.evolutionChart.located() &&
       !store(readEvolutionChart(image, layout), tables.evolutionChart, error))
     return std::unexpected{error};

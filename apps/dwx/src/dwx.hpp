@@ -26,6 +26,8 @@ core::Result<void> writeFile(const std::filesystem::path& file, std::span<const 
 int verify(const std::filesystem::path& path);
 
 // Exports Chart metadata from an original executable without extracting the whole disc.
+int extractUiChartDetail(const std::filesystem::path& executable,
+                         const std::filesystem::path& output);
 int extractUiChart(const std::filesystem::path& executable, const std::filesystem::path& output);
 
 // dwx extract --list: lists every file of a disc image and checks it against the executable's file

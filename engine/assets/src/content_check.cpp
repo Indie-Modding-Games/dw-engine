@@ -1,5 +1,6 @@
 #include <dwe/assets/content_check.hpp>
 #include <dwe/assets/digimon_table.hpp>
+#include <dwe/assets/evolution_chart.hpp>
 #include <dwe/assets/evolution_table.hpp>
 #include <dwe/assets/image.hpp>
 #include <dwe/assets/item_effect_table.hpp>
@@ -163,7 +164,7 @@ constexpr std::array<std::pair<std::string_view, Opener>, 18> Openers = {{
 
 // The YAML documents the game reads with a reader of their own, which is strict about their keys
 // and values.
-constexpr std::array<std::pair<std::string_view, Opener>, 12> DocumentReaders = {{
+constexpr std::array<std::pair<std::string_view, Opener>, 14> DocumentReaders = {{
     {"map/*/data", discardParsed<parseMapDocument>},
     {"map/*/*/data", discardParsed<parseMapDocument>},
     {"data/digimon", discardParsed<parseDigimonTable>},
@@ -172,6 +173,8 @@ constexpr std::array<std::pair<std::string_view, Opener>, 12> DocumentReaders = 
     {"data/items", discardParsed<parseItems>},
     {"data/moves", discardParsed<parseMoves>},
     {"data/evolution", discardParsed<parseEvolutionTable>},
+    {"data/evolution_chart", discardParsed<parseEvolutionChart>},
+    {"data/evolution_chart_detail", discardParsed<parseChartDetailLayout>},
     {"data/item_effects", discardParsed<parseItemEffectTable>},
     {"data/shops", discardParsed<parseShopTable>},
     {"data/new_game_stats", discardParsed<parseNewGameStats>},

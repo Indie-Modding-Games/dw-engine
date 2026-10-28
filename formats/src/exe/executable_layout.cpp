@@ -70,6 +70,7 @@ constexpr std::array Layouts = {
         .evolutionPaths = {.address = 0x8012B66C, .count = 62},
         .raiseData = {.address = 0x801225BC, .count = 66},
         .evolutionChart = {.address = 0x80124544, .count = 61},
+        .evolutionChartDetail = {.address = 0x80124944, .count = 1},
         .cardData = {.address = 0x8012FFD8, .count = 66},
         .cardPrices = {.address = 0x8012FFC4, .count = 5},
         .tournamentNames = {.address = 0x801300E0, .count = 23},

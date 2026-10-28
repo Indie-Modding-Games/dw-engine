@@ -29,6 +29,8 @@ int main(int argc, char** argv) {
                        .fishing = options->uiDemoFishing,
                        .player = options->uiDemoPlayer,
                        .chart = options->uiDemoChart,
+                       .chartDetail = options->uiDemoChartDetail,
+                       .chartAllRaised = options->uiDemoChartAllRaised,
                        .bagSlots = options->uiDemoBagSlots};
     if (!options->maps.empty()) {
       demo.map = options->maps.front();

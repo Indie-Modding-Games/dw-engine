@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Geometría del detalle del árbol de evolución",
+  "type": "object",
+  "required": [
+    "lines",
+    "colors",
+    "sprites",
+    "insets"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "lines": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "items": {
+        "type": "array",
+        "minItems": 8,
+        "maxItems": 8,
+        "items": {
+          "type": "integer",
+          "minimum": -320,
+          "maximum": 320
+        }
+      }
+    },
+    "colors": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        }
+      }
+    },
+    "sprites": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "integer",
+          "minimum": -320,
+          "maximum": 320
+        }
+      }
+    },
+    "insets": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 320
+        }
+      }
+    }
+  }
+}

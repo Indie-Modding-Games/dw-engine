@@ -673,14 +673,37 @@ int runUiDemo(const UiDemoOptions& options) {
     const auto id = assets::AssetId::parse("data/digimon");
     auto species = assets::loadDigimonTable(content->files, *id);
     publishPlayerChart(**ui, *chart, species ? &*species : nullptr);
+    loadPlayerChartDetails(**ui, content->files, *chart);
     std::string raised;
-    for (const auto& cell : chart->entries)
-      if (cell.digimon == "agum")
-        raised = std::to_string(cell.index);
+    for (const auto& cell : chart->entries) {
+      if (options.chartAllRaised || cell.digimon == "agum") {
+        if (!raised.empty())
+          raised += ',';
+        raised += std::to_string(cell.index);
+      }
+    }
     (*ui)->setSetting("player.chart.raised", raised);
     (*ui)->setSetting("player.chart.preview", true);
-    core::logInfo("ui demo: Chart has {} cells; isolated raised Agumon fixture",
-                  chart->entries.size());
+    core::logInfo("ui demo: Chart has {} cells; all-raised fixture={}", chart->entries.size(),
+                  options.chartAllRaised);
+  }
+  if (options.chartDetail) {
+    std::ifstream file{*options.chartDetail, std::ios::binary | std::ios::ate};
+    const auto detailBytes = file.tellg();
+    if (detailBytes <= 0 || detailBytes > 65536) {
+      core::logError("ui demo: invalid chart detail metadata file");
+      return EXIT_FAILURE;
+    }
+    std::string text(static_cast<std::size_t>(detailBytes), '\0');
+    file.seekg(0);
+    file.read(text.data(), static_cast<std::streamsize>(text.size()));
+    auto detail = assets::parseChartDetailLayout(text);
+    if (!file || !detail) {
+      core::logError("ui demo: cannot read chart detail metadata");
+      return EXIT_FAILURE;
+    }
+    publishChartDetailLayout(**ui, *detail);
+    core::logInfo("ui demo: Chart detail layout loaded");
   }
   (*ui)->setSetting(MinimapSetting, std::string{MinimapAuto});
   (*ui)->setSetting("minimap_size", std::string{"medium"});

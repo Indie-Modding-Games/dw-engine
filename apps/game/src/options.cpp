@@ -136,6 +136,12 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.uiDemoBagSlots = value == "10" ? 10 : value == "20" ? 20 : 30;
     return true;
   }
+  if (argument == "--ui-demo-chart-detail") {
+    options.uiDemo = true;
+    options.uiDemoPlayer = true;
+    options.uiDemoChartDetail = value;
+    return true;
+  }
   if (argument == "--ui-demo-chart") {
     options.uiDemo = true;
     options.uiDemoPlayer = true;
@@ -209,6 +215,10 @@ bool readFlag(Options& options, std::string_view argument) {
   } else if (argument == "--ui-demo-fishing") {
     options.uiDemo = true;
     options.uiDemoFishing = true;
+  } else if (argument == "--ui-demo-chart-all-raised") {
+    options.uiDemo = true;
+    options.uiDemoPlayer = true;
+    options.uiDemoChartAllRaised = true;
   } else if (argument == "--ui-demo-player") {
     options.uiDemo = true;
     options.uiDemoPlayer = true;

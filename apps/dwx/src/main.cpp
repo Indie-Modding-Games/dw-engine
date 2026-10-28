@@ -20,6 +20,7 @@ constexpr std::string_view DefaultOutFolder = "content/base";
 
 void printUsage() {
   std::println(stderr, "Usage:");
+  std::println(stderr, "  dwx ui-chart-detail <original-executable> <new-output.yaml>");
   std::println(stderr, "  dwx ui-chart <original-executable> <new-output.yaml>");
   std::println(stderr, "  dwx verify <file>");
   std::println(
@@ -119,6 +120,9 @@ int main(int argc, char** argv) {
   using namespace dwe::dwx;
   const std::span arguments{argv, static_cast<std::size_t>(argc)};
   const std::string_view command = arguments.size() > 1 ? arguments[1] : "";
+  if (command == "ui-chart-detail" && arguments.size() == 4) {
+    return extractUiChartDetail(arguments[2], arguments[3]);
+  }
   if (command == "ui-chart" && arguments.size() == 4) {
     return extractUiChart(arguments[2], arguments[3]);
   }

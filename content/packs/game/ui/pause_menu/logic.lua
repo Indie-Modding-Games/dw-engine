@@ -20,6 +20,8 @@ local icon_flash = false
 local player_tools_open = false
 local player_tab = "player"
 local chart_selecting = false
+local chart_detail = false
+local chart_transition = nil
 local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
@@ -153,7 +155,7 @@ local function refresh_chart(document)
       local icon = document:get("chart-icon-" .. i)
       icon:set_class("hidden", not cell.raised)
       if cell.raised then
-        icon:set_attribute("source", ui.setting(base .. "source"))
+        icon:set_attribute("src", "/" .. ui.setting(base .. "source"))
         icon:set_attribute("rect", string.format("%d %d 16 16", cell.u, cell.v))
       end
     end
@@ -166,10 +168,158 @@ local function refresh_chart(document)
   chart_cursor(document)
 end
 
+local function detail_value(group, row, column)
+  return tonumber(ui.setting(string.format("player.chart.detail.%s.%d.%d", group, row, column)))
+    or 0
+end
+
+local function transition_box(document, frame)
+  local cell = chart_cells[chart_index + 1]
+  local start_x, start_y = cell.x + 5, cell.y + 8
+  local function interpolate(start, finish)
+    local delta = (finish - start) * frame / 4
+    return start + (delta < 0 and math.ceil(delta) or math.floor(delta))
+  end
+  local x = interpolate(start_x, 10)
+  local y = interpolate(start_y, 31)
+  local right = interpolate(start_x + 10, 310)
+  local bottom = interpolate(start_y + 10, 221)
+  local box = document:get("chart-detail-transition")
+  box:set_property("left", ((x - 11) * 3) .. "dp")
+  box:set_property("top", ((y - 32) * 3) .. "dp")
+  box:set_property("width", ((right - x + 1) * 3) .. "dp")
+  box:set_property("height", ((bottom - y + 1) * 3) .. "dp")
+end
+
+local function begin_chart_transition(document, closing)
+  chart_transition = { closing = closing, elapsed = 0 }
+  document:get("panel"):set_class("chart-detail-open", false)
+  document:get("chart-detail-transition"):set_class("hidden", false)
+  transition_box(document, closing and 4 or 0)
+end
+
+local function open_chart_detail(document)
+  local selected = chart_cells[chart_index + 1]
+  if
+    not selected
+    or not selected.raised
+    or ui.setting("player.chart.detail.layout_ready") ~= true
+    or ui.setting("player.chart.detail.paths_ready") ~= true
+  then
+    return
+  end
+  for i = 0, 98 do
+    document:get("chart-detail-line-" .. i):set_class("hidden", true)
+  end
+  for i = 0, 11 do
+    document:get("chart-detail-cell-" .. i):set_class("hidden", true)
+  end
+  for i = 0, 5 do
+    local inset = document:get("chart-detail-inset-" .. i)
+    inset:set_property("left", ((detail_value("insets", i, 0) - 11) * 3) .. "dp")
+    inset:set_property("top", ((detail_value("insets", i, 1) - 32) * 3) .. "dp")
+    inset:set_property("width", ((detail_value("insets", i, 2) + 1) * 3) .. "dp")
+    inset:set_property("height", ((detail_value("insets", i, 3) + 1) * 3) .. "dp")
+  end
+  local function draw_cell(slot, target, x, y)
+    local box = document:get("chart-detail-cell-" .. slot)
+    box:set_class("hidden", false)
+    box:set_property("left", ((x - 11) * 3) .. "dp")
+    box:set_property("top", ((y - 32) * 3) .. "dp")
+    local cell = chart_cells[target + 1]
+    local icon = document:get("chart-detail-icon-" .. slot)
+    icon:set_class("hidden", not cell or not cell.raised)
+    if cell and cell.raised then
+      icon:set_attribute("src", "/" .. ui.setting(string.format("player.chart.%d.source", target)))
+      icon:set_attribute("rect", string.format("%d %d 16 16", cell.u, cell.v))
+    end
+  end
+  draw_cell(0, chart_index, 151, 99)
+  local line_slot = 0
+  local cell_slot = 1
+  local function color(row)
+    return string.format(
+      "#%02x%02x%02x",
+      detail_value("colors", row, 0),
+      detail_value("colors", row, 1),
+      detail_value("colors", row, 2)
+    )
+  end
+  local function draw_path(row, primary, edge)
+    for segment = 0, 2 do
+      local x1 = detail_value("lines", row, segment)
+      local y1 = detail_value("lines", row, segment + 4)
+      local dx = detail_value("lines", row, segment + 1) - x1
+      local dy = detail_value("lines", row, segment + 5) - y1
+      for band = -1, 1 do
+        local line = document:get("chart-detail-line-" .. line_slot)
+        line_slot = line_slot + 1
+        line:set_class("hidden", false)
+        line:set_property("left", ((x1 + 149) * 3) .. "dp")
+        line:set_property("top", ((y1 + 88 + band) * 3) .. "dp")
+        line:set_property("width", ((math.sqrt(dx * dx + dy * dy) + 1) * 3) .. "dp")
+        line:set_property("background-color", band == 0 and primary or edge)
+        line:set_property(
+          "transform",
+          string.format("rotate(%fdeg)", math.atan(dy, dx) * 180 / math.pi)
+        )
+      end
+    end
+  end
+  for _, side in ipairs({ "from", "to" }) do
+    local refs = {}
+    local count = 0
+    local slots = side == "from" and 5 or 6
+    for j = 0, slots - 1 do
+      local value = tonumber(
+        ui.setting(string.format("player.chart.%d.%s.%d", chart_index, side, j))
+      ) or -1
+      refs[j + 1] = value
+      if value ~= -1 then
+        count = count + 1
+      end
+    end
+    local odd = count % 2 == 1
+    local offset = side == "from" and (odd and 4 or 0) or (odd and 15 or 9)
+    local length = side == "from" and (odd and 5 or 4) or (odd and 5 or 6)
+    for j = 0, length - 1 do
+      local target = refs[j + 1]
+      if target and target >= 0 then
+        draw_path(
+          offset + j,
+          side == "from" and "#e39407" or color(j * 2),
+          side == "from" and "#db6500" or color(j * 2 + 1)
+        )
+        draw_cell(
+          cell_slot,
+          target,
+          detail_value("sprites", offset + j, 0) + 159,
+          detail_value("sprites", offset + j, 1) + 119
+        )
+        cell_slot = cell_slot + 1
+      end
+    end
+  end
+  local base = string.format("player.chart.%d.", chart_index)
+  document:get("chart-detail-name"):set_text(t(ui.setting(base .. "name") or ""))
+  document
+    :get("chart-detail-level")
+    :set_text(
+      t("pause_menu.chart_level." .. tostring(math.floor(ui.setting(base .. "level") or 0)))
+    )
+  chart_detail = true
+  begin_chart_transition(document, false)
+  document:get("player-tab-chart"):focus()
+end
+
 function show_player_tab(document, tab)
   if tab == "chart" and (tonumber(ui.setting("player.chart.count")) or 0) == 0 then
     return
   end
+  chart_detail = false
+  chart_transition = nil
+  document:get("chart-detail-transition"):set_class("hidden", true)
+  document:get("panel"):set_class("chart-detail-open", false)
   player_tab = tab
   chart_selecting = false
   document:get("panel"):set_class("player-chart", tab == "chart")
@@ -397,6 +547,10 @@ function adjust(_document, id, step)
 end
 
 function on_show(document)
+  chart_detail = false
+  chart_transition = nil
+  document:get("chart-detail-transition"):set_class("hidden", true)
+  document:get("panel"):set_class("chart-detail-open", false)
   parents = {}
   icon_time = 0
   refresh(document)
@@ -414,6 +568,22 @@ function on_show(document)
 end
 
 function on_tick(document, seconds)
+  if chart_transition then
+    chart_transition.elapsed = chart_transition.elapsed + seconds
+    local step = math.floor(chart_transition.elapsed * 20 + 0.000001)
+    if step >= 5 then
+      local closing = chart_transition.closing
+      chart_transition = nil
+      document:get("chart-detail-transition"):set_class("hidden", true)
+      document:get("panel"):set_class("chart-detail-open", not closing)
+      if closing then
+        chart_detail = false
+        document:get("chart-cell-" .. chart_index):focus()
+      end
+    else
+      transition_box(document, chart_transition.closing and 4 - step or step)
+    end
+  end
   if current == "player" and player_tab == "chart" and not player_tools_open then
     icon_time = icon_time + seconds
     local flash = math.floor(icon_time * 20) % 10 < 5
@@ -463,6 +633,15 @@ end
 -- Navigation steps arrive here first. Returning true means the step was handled here and suppresses
 -- the default (moving the focus, confirming, closing); returning false lets the default run.
 function on_action(document, action)
+  if chart_transition then
+    return true
+  end
+  if chart_detail then
+    if action == "cancel" then
+      begin_chart_transition(document, true)
+    end
+    return true
+  end
   if current == "player" and not player_tools_open and ui.setting("ui_skin") == "original" then
     if player_tab == "chart" and chart_selecting then
       if action == "cancel" then
@@ -476,8 +655,9 @@ function on_action(document, action)
         return true
       end
       if action == "confirm" then
+        open_chart_detail(document)
         return true
-      end -- Detail view is a separate unfinished unit.
+      end
     else
       if action == "right" then
         show_player_tab(document, "chart")

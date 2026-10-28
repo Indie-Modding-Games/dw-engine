@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -237,6 +238,13 @@ struct JukeboxTrack {
 };
 
 // Every table of ExecutableLayout, read.
+struct EvolutionChartDetail {
+  std::array<std::array<std::int16_t, 8>, 20> lines{};
+  std::array<std::array<std::uint8_t, 3>, 12> colors{};
+  std::array<std::array<std::int16_t, 2>, 20> sprites{};
+  std::array<std::array<std::int16_t, 4>, 6> insets{};
+};
+
 struct ExecutableTables {
   std::vector<DigimonPara> digimonData;
   std::vector<std::string> digimonFileNames;
@@ -255,6 +263,7 @@ struct ExecutableTables {
   std::vector<EvolutionPath> evolutionPaths;
   std::vector<RaiseData> raiseData;
   std::vector<EvolutionChartEntry> evolutionChart;
+  std::optional<EvolutionChartDetail> evolutionChartDetail;
   std::vector<CardData> cardData;
   std::vector<std::int32_t> cardPrices;
   std::vector<std::string> tournamentNames;
