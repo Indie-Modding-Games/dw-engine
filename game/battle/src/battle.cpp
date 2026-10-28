@@ -228,6 +228,8 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   for (FighterId id = 1; id < state.fighters.size(); ++id) {
     lookAt(state.fighters[id], state.partner().position);
   }
+  // btl.c: loadBattleData: everyone stands as the battle loads.
+  startShownClips(state);
   battle.setup_ = std::move(setup);
   return battle;
 }
@@ -433,6 +435,7 @@ const BattleEvents& Battle::step() {
   chargePressed_ = false;
   drainPendingDamage(context);
   tickHpBars(context);
+  updateShownClips(context);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

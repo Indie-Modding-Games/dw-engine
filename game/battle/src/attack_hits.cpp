@@ -164,6 +164,7 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
   }
   addPendingDamage(context, fighter, damage);
   fighter.knockedBack = true;
+  fighter.hitFromBehind = turnForHit(fighter, attack.origin);
   fighter.struck = true;
   fighter.pose = Pose::HitReaction;
   fighter.poseFrames = context.rules->timing.hitReactionFrames;
