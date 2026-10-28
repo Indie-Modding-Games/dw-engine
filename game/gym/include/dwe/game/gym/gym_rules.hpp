@@ -17,7 +17,7 @@ namespace dwe::game::gym {
 // (content/schemas/ruleset_gym.schema.json). Frames are the original's, 20 per second.
 inline constexpr std::string_view GymSectionName = "gym";
 
-// A point of the field, in world units (x and z).
+// A point of the field in the original's axes (x and z; world z = -z), as gym.yaml stores it.
 struct Point {
   std::int32_t x = 0;
   std::int32_t z = 0;

@@ -40,6 +40,19 @@ constexpr std::string_view NewOrderText = "gym.new_order";
 constexpr std::string_view MoveLearnedText = "gym.move_learned";
 constexpr std::int32_t Hundred = 100;
 
+// The gym's points are in the original's axes (gym.yaml), whose z runs the other way to the
+// world's: a course spot taken as a world point sent the partner and the camera off the map.
+glm::vec3 worldOf(Point spot, float height) {
+  glm::vec3 world = assets::toWorldPosition({spot.x, 0, spot.z});
+  world.y = height;
+  return world;
+}
+
+// A world point in the original's axes, as the courses read the partner's position.
+Point originalOf(glm::vec3 world) {
+  return Point{.x = static_cast<std::int32_t>(world.x), .z = static_cast<std::int32_t>(-world.z)};
+}
+
 std::size_t objectOf(const ObjectGroup& group, std::int32_t index) {
   return static_cast<std::size_t>(group.first) + static_cast<std::size_t>(index);
 }
@@ -112,9 +125,7 @@ public:
     const scene::Entity entity = entityOf(actor);
     const glm::vec3 position = positionOf(actor);
     const bool toPlayer = !spot.has_value();
-    const glm::vec3 target =
-        toPlayer ? field.player().position
-                 : glm::vec3{static_cast<float>(spot->x), position.y, static_cast<float>(spot->z)};
+    const glm::vec3 target = toPlayer ? field.player().position : worldOf(*spot, position.y);
     glm::vec3 toward = target - position;
     toward.y = 0.0F;
     const float distance = glm::length(toward);
@@ -140,9 +151,8 @@ public:
   void moveCamera(std::optional<Point> spot, std::int32_t speed) override {
     // map.c: tickCameraMovement steps the camera to the target in `speed` frames.
     game::field::Field& field = desc_->scene->field();
-    const glm::vec3 focus = spot ? glm::vec3{static_cast<float>(spot->x), field.player().position.y,
-                                             static_cast<float>(spot->z)}
-                                 : field.player().position;
+    const glm::vec3 focus =
+        spot ? worldOf(*spot, field.player().position.y) : field.player().position;
     const double framesPerSecond = desc_->session->clock().rules().framesPerSecond;
     field.panCameraByScript(focus, static_cast<float>(speed / framesPerSecond));
   }
@@ -192,14 +202,11 @@ public:
     return std::nullopt;
   }
   std::optional<Point> partnerPosition() override {
-    const glm::vec3 at = desc_->scene->field().partner().position;
-    return Point{.x = static_cast<std::int32_t>(at.x), .z = static_cast<std::int32_t>(at.z)};
+    return originalOf(desc_->scene->field().partner().position);
   }
   void movePartner(Point delta) override {
     game::field::Field& field = desc_->scene->field();
-    field.placeByScript(field.partnerEntity(),
-                        field.partner().position + glm::vec3{static_cast<float>(delta.x), 0.0F,
-                                                             static_cast<float>(delta.z)});
+    field.placeByScript(field.partnerEntity(), field.partner().position + worldOf(delta, 0.0F));
   }
   bool partnerOnScreen() override { return true; }
   void placePartnerX(std::int32_t x) override {
