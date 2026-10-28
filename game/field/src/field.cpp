@@ -227,6 +227,11 @@ void Field::tick(float seconds) {
   scene::beginTick(registry.get<Transform>(partner_));
   partnerShownMotion_ = registry.get<AnimationIntent>(partner_).motion;
   registry.get<AnimationIntent>(partner_) = {};
+  // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
+  if (leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
+      careHeld_) {
+    overlapWatch_.clear();
+  }
   if (leaving_) {
     walkOut(seconds);
     return;
@@ -257,6 +262,7 @@ void Field::tick(float seconds) {
     } else if (frame < rules_.transition.fadeInFrames && fadeInHolds_) {
       registry.get<AnimationIntent>(player_) = {};
       tickNpcs(seconds, false);
+      overlapWatch_.clear();
       return;
     }
   }
@@ -273,6 +279,7 @@ void Field::tick(float seconds) {
   updateTrail();
   movePartner(seconds);
   tickNpcs(seconds, true);
+  watchOverlaps(seconds);
 }
 
 bool Field::touchNpcs() {

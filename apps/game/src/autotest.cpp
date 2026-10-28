@@ -186,7 +186,14 @@ std::optional<std::pair<std::string, std::string>> readSetting(assets::YamlReade
 
 // The value of a setting as text: the partner's live status for partner.* settings, the UI's
 // published ones otherwise.
+// The field's own value a route can read as a setting: how many times two characters stood in
+// each other (Field::overlapEpisodes).
+constexpr std::string_view FieldOverlapsSetting = "field.overlaps";
+
 std::string settingText(const AutotestHost& host, std::string_view name) {
+  if (name == FieldOverlapsSetting && host.scene != nullptr) {
+    return std::to_string(host.scene->field().overlapEpisodes());
+  }
   if (host.partner != nullptr) {
     const auto found = std::ranges::find(*host.partner, name, &screens::ScreenSetting::name);
     if (found != host.partner->end()) {
