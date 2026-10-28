@@ -70,7 +70,8 @@ PartnerRules readPartner(YamlReader& reader, const YamlNode& node) {
   PartnerRules partner{
       .mover = readMover(reader, node, "partner",
                          {"run_distance", "walk_distance", "spawn_distance", "trail_length",
-                          "sight_half_width", "stuck_seconds", "teleport_distance"})};
+                          "sight_half_width", "stuck_seconds", "teleport_distance",
+                          "happy_gesture_from", "unhappy_gesture_below", "gesture_idle_plays"})};
   if (!reader.ok()) {
     return partner;
   }
@@ -81,11 +82,21 @@ PartnerRules readPartner(YamlReader& reader, const YamlNode& node) {
   partner.sightHalfWidth = readNonNegative(reader, reader.field(node, "sight_half_width"));
   partner.stuckSeconds = readPositive(reader, reader.field(node, "stuck_seconds"));
   partner.teleportDistance = readPositive(reader, reader.field(node, "teleport_distance"));
+  partner.happyGestureFrom = reader.integer<std::int32_t>(reader.field(node, "happy_gesture_from"));
+  partner.unhappyGestureBelow =
+      reader.integer<std::int32_t>(reader.field(node, "unhappy_gesture_below"));
+  partner.gestureIdlePlays = reader.integer<std::int32_t>(reader.field(node, "gesture_idle_plays"));
   if (reader.ok() && partner.runDistance < partner.walkDistance) {
     reader.fail(node, "partner: run_distance cannot be less than walk_distance");
   }
   if (reader.ok() && partner.trailLength < 1) {
     reader.fail(node, "partner: trail_length must be at least 1");
+  }
+  if (reader.ok() && partner.gestureIdlePlays < 1) {
+    reader.fail(node, "partner: gesture_idle_plays must be at least 1");
+  }
+  if (reader.ok() && partner.happyGestureFrom <= partner.unhappyGestureBelow) {
+    reader.fail(node, "partner: happy_gesture_from must be above unhappy_gesture_below");
   }
   return partner;
 }

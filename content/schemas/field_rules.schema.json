@@ -10,7 +10,7 @@
     "partner": {
       "$ref": "#/$defs/moverFields",
       "type": "object",
-      "required": ["model", "radius", "walk_speed", "run_speed", "turn_speed", "run_distance", "walk_distance", "spawn_distance", "trail_length", "sight_half_width", "stuck_seconds", "teleport_distance"],
+      "required": ["model", "radius", "walk_speed", "run_speed", "turn_speed", "run_distance", "walk_distance", "spawn_distance", "trail_length", "sight_half_width", "stuck_seconds", "teleport_distance", "happy_gesture_from", "unhappy_gesture_below", "gesture_idle_plays"],
       "properties": {
         "model": {}, "radius": {}, "walk_speed": {}, "run_speed": {}, "turn_speed": {},
         "run_distance": { "description": "In partner radii: beyond it runs.", "type": "number", "exclusiveMinimum": 0 },
@@ -19,7 +19,10 @@
         "trail_length": { "description": "Most player cells remembered while the partner cannot see the player.", "type": "integer", "minimum": 1 },
         "sight_half_width": { "description": "Half width of the corridor that must be free to see the player.", "type": "number", "minimum": 0 },
         "stuck_seconds": { "description": "Time without progress before the partner is placed behind the player.", "type": "number", "exclusiveMinimum": 0 },
-        "teleport_distance": { "description": "Farther than this, the partner is placed behind the player.", "type": "number", "exclusiveMinimum": 0 }
+        "teleport_distance": { "description": "Farther than this, the partner is placed behind the player.", "type": "number", "exclusiveMinimum": 0 },
+        "happy_gesture_from": { "description": "Happiness from which the gesture without a condition is happy.", "type": "integer" },
+        "unhappy_gesture_below": { "description": "Happiness below which the gesture without a condition is unhappy.", "type": "integer" },
+        "gesture_idle_plays": { "description": "Most plays of the idle clip after stopping before the gesture.", "type": "integer", "minimum": 1 }
       },
       "additionalProperties": false
     },

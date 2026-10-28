@@ -35,6 +35,9 @@ partner:
   sight_half_width: 200
   stuck_seconds: 1.5
   teleport_distance: 2000
+  happy_gesture_from: 31
+  unhappy_gesture_below: -30
+  gesture_idle_plays: 5
 input:
   dead_zone: 0.2
   arrive_distance: 25
@@ -72,6 +75,9 @@ TEST_CASE("field rules read every tunable") {
   CHECK(rules->partner.mover.turnSpeed == doctest::Approx(12.5F));
   CHECK(rules->partner.trailLength == 30);
   CHECK(rules->partner.stuckSeconds == doctest::Approx(1.5F));
+  CHECK(rules->partner.happyGestureFrom == 31);
+  CHECK(rules->partner.unhappyGestureBelow == -30);
+  CHECK(rules->partner.gestureIdlePlays == 5);
   CHECK(rules->input.deadZone == doctest::Approx(0.2F));
   CHECK(rules->transition.frameSeconds == doctest::Approx(0.05F));
   CHECK(rules->transition.fadeInFrames == 10);
@@ -91,6 +97,12 @@ TEST_CASE("broken field rules are refused") {
   CHECK_FALSE(
       dwe::game::field::parseFieldRules(replaced(Rules, "walk_distance: 2.5", "walk_distance: 4"))
           .has_value());
+  CHECK_FALSE(dwe::game::field::parseFieldRules(
+                  replaced(Rules, "gesture_idle_plays: 5", "gesture_idle_plays: 0"))
+                  .has_value());
+  CHECK_FALSE(dwe::game::field::parseFieldRules(
+                  replaced(Rules, "happy_gesture_from: 31", "happy_gesture_from: -40"))
+                  .has_value());
   CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "dead_zone: 0.2", "dead_zone: 1"))
                   .has_value());
   CHECK_FALSE(dwe::game::field::parseFieldRules(replaced(Rules, "turn_speed: 0", "turn_speed: -1"))
