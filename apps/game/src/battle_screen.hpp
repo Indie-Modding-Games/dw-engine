@@ -20,6 +20,8 @@
 #include <string_view>
 #include <vector>
 
+#include "fighter_figure.hpp"
+
 namespace dwe::app {
 
 // The battle screen's document and the commands it sends.
@@ -37,6 +39,9 @@ inline constexpr std::string_view BattleBagCloseCommand = "battle_bag_close";
 inline constexpr std::string_view BattleThrowCommand = "battle_throw";
 // What the battle screen shows: the fight or the end box.
 inline constexpr std::string_view BattlePhaseSetting = "battle.phase";
+// Whether a battle runs, from its opening to the end box's close: the HUD hides what the battle's
+// panels would overlap (the minimap, which the original lacks).
+inline constexpr std::string_view BattleActiveSetting = "battle.active";
 inline constexpr std::string_view IntroPhase = "intro";
 inline constexpr std::string_view FightPhase = "fight";
 // A victory's poses before the end box (battle_main.c: BTL_handleVictorySequence): no box, no
@@ -70,16 +75,31 @@ struct BattleScreenDesc {
 // the game loop's ticks, passes the player's commands to it, publishes its view, and once it ends
 // gives the result to the session and shows the end box until the player closes it. The rules are
 // the battle's; this only shows and forwards.
+// An NPC leaving the battle's ground after a victory: the field shows it on `figure`; it walks to
+// its flee point once it has got up.
+struct Leaver {
+  std::int32_t npc = 0;
+  FighterFigure figure;
+  bool walking = false;
+};
+
 class BattleScreen {
 public:
   explicit BattleScreen(BattleScreenDesc desc) : desc_(desc) {}
 
-  core::Result<void> start(session::BattleRequest request);
+  // `enemyNpcs` are the script ids of the map's NPCs the enemies are, in their order: each enemy is
+  // shown on its NPC (none: the enemies are not shown). A fixed fight cannot be fled
+  // (FLEE_DISABLED): its enemies stay on the map after it.
+  core::Result<void> start(session::BattleRequest request, std::vector<std::int32_t> enemyNpcs,
+                           bool fixedFight = false);
 
-  // Whether the battle or its end box is on screen: the field and the game clock wait meanwhile.
-  [[nodiscard]] bool active() const { return battle_.has_value() || ending_; }
+  // Whether the battle, its end box or the beaten enemies' exit is on screen: the field and the
+  // game clock wait meanwhile.
+  [[nodiscard]] bool active() const { return battle_.has_value() || ending_ || exit_.has_value(); }
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
+  // The battle_win debug command: the enemies fall at once; false when no fight is running.
+  bool defeatEnemies();
 
   // One logic tick of the battle and the view of it. The battle runs once its opening is over.
   void tick(double seconds);
@@ -104,10 +124,22 @@ private:
   void openEndBox() const;
   void playSound(std::int64_t sound) const;
   void publishIntro() const;
+  void tickBattle(double seconds);
+  void takeFigures();
+  void showFighters(double seconds);
+  void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
   void throwItem(double slot);
   void finish();
   void close();
+  // battle_screen_exit.cpp: what the battle leaves on the map.
+  [[nodiscard]] bool offScreen(std::int32_t npc, float x, float z) const;
+  [[nodiscard]] std::vector<std::int32_t> npcsOnScreen() const;
+  void startExit();
+  [[nodiscard]] float walkSpeed(std::int32_t npc) const;
+  void startWalk(Leaver& leaver) const;
+  void tickExit(double seconds);
+  void endExit();
   [[nodiscard]] session::BattleMusicFacts musicFactsOf(const session::BattleRequest& request) const;
 
   BattleScreenDesc desc_;
@@ -134,6 +166,22 @@ private:
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).
   std::string map_;
   std::vector<game::battle::Drop> drops_;
+  // The fighters as the field shows them, the partner first, from the battle's state while it runs
+  // and as it left them until the end box closes; the NPC each enemy is.
+  std::vector<FighterFigure> figures_;
+  std::vector<std::int32_t> enemyNpcs_;
+  std::uint32_t partnerStance_ = 0;
+  // FLEE_DISABLED, and the NPCs on screen when the battle started (overworld.c:1352 keeps
+  // isOnScreen from the last field tick): the battle's end takes those off the map.
+  bool fixedFight_ = false;
+  std::vector<std::int32_t> onScreenAtStart_;
+  // The NPCs leaving after a victory (BTL_handleVictorySequence), each on its own figure, and how
+  // long they have walked.
+  struct Exit {
+    std::vector<Leaver> leavers;
+    double seconds = 0.0;
+  };
+  std::optional<Exit> exit_;
 };
 
 } // namespace dwe::app

@@ -393,6 +393,20 @@ void lookAt(Fighter& fighter, Point point) {
                     .z = static_cast<std::int32_t>(dz * FacingScale / length)};
 }
 
+bool turnForHit(Fighter& fighter, Point attack) {
+  const Facing toAttack{.x = attack.x - fighter.position.x, .z = attack.z - fighter.position.z};
+  if (toAttack.x == 0 && toAttack.z == 0) {
+    return false;
+  }
+  const std::int32_t facing = wrapAngle(angleOf(fighter.facing));
+  const std::int32_t toward = wrapAngle(angleOf(toAttack));
+  // The three cases of the original come to the attack within a quarter turn either way.
+  const std::int32_t apart = wrapAngle(toward - facing + HalfTurn) - HalfTurn;
+  const bool fromBehind = !fighter.status.flattened && std::abs(apart) > QuarterTurn;
+  fighter.facing = facingOf(fromBehind ? toward + HalfTurn : toward);
+  return fromBehind;
+}
+
 void walkToward(BattleContext& context, FighterId id, Point point) {
   Fighter& fighter = context.fighter(id);
   fighter.collidedWhileBacking = false;

@@ -406,8 +406,11 @@
 	margin-left: -480dp;
 }
 
+/* Each piece sits at the banner's corner and moves by its transform (logic.lua: draw_piece). */
 .bp, .bs {
 	position: absolute;
+	left: 0;
+	top: 0;
 }
 
 .bp {

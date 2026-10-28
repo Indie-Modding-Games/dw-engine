@@ -34,7 +34,8 @@ inline constexpr std::string_view UnknownMove = "the move '{}' is not in the mov
 inline constexpr std::string_view UnknownSpecies = "the Digimon '{}' is not in the Digimon table";
 inline constexpr std::string_view RuleMoveMissing =
     "the battle section names the move '{}', which the moves table lacks";
-inline constexpr std::string_view NoSpeciesMove = "{} has no move {} in its list (equipped as {})";
+inline constexpr std::string_view NoSpeciesMove =
+    "loadBattleData (btl.c:466): {} has no move {} in its list, the slot equipped as {} is empty";
 inline constexpr std::string_view NoEnemies = "a battle needs from 1 to {} enemies, not {}";
 inline constexpr std::string_view NotFinisherSlot =
     "{}: the fourth slot is for a finisher, not '{}'";

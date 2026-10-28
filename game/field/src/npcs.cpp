@@ -323,11 +323,18 @@ void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool stan
   }
 }
 
+void FieldNpcs::beginTick() {
+  entt::registry& registry = world_->registry();
+  for (const Npc& npc : npcs_) {
+    scene::beginTick(registry.get<Transform>(npc.entity));
+  }
+}
+
 void FieldNpcs::tick(float seconds, const assets::MapCollision& collision,
                      const NpcSurroundings& surroundings) {
   entt::registry& registry = world_->registry();
+  beginTick();
   for (Npc& npc : npcs_) {
-    scene::beginTick(registry.get<Transform>(npc.entity));
     // overworld.c:1237: a script's animation leaves the NPC to the script.
     if (npc.scriptedAnimation != 0) {
       continue;

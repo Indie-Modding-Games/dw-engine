@@ -68,10 +68,10 @@ core::Result<std::vector<std::size_t>> npcsOf(std::string_view argument) {
   return npcs;
 }
 
-core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& field,
-                                                      const assets::MapDocument& map,
-                                                      const assets::DigimonTable& species,
-                                                      const std::vector<std::size_t>& npcs) {
+core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
+                                         const assets::MapDocument& map,
+                                         const assets::DigimonTable& species,
+                                         const std::vector<std::size_t>& npcs) {
   std::vector<std::size_t> chosen = npcs;
   if (chosen.empty()) {
     for (std::size_t index = 0; index < map.npcs.size(); ++index) {
@@ -84,14 +84,16 @@ core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& 
       return core::fail(core::formatMessage(messages::NoMapFighter, field.mapId()));
     }
   }
-  session::BattleRequest request{.enemies = {},
-                                 .scripted = false,
-                                 .tamerless = false,
-                                 .map = field.mapId(),
-                                 .tamer = battlePointOf(field.player().position),
-                                 .partner = battlePointOf(field.partner().position),
-                                 .kind = game::battle::BattleKind::Normal,
-                                 .recruitOnVictory = std::nullopt};
+  MapBattle battle;
+  session::BattleRequest& request = battle.request;
+  request = {.enemies = {},
+             .scripted = false,
+             .tamerless = false,
+             .map = field.mapId(),
+             .tamer = battlePointOf(field.player().position),
+             .partner = battlePointOf(field.partner().position),
+             .kind = game::battle::BattleKind::Normal,
+             .recruitOnVictory = std::nullopt};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {
       return core::fail(core::formatMessage(messages::NoMapNpc, field.mapId(), index));
@@ -110,8 +112,9 @@ core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& 
         "({}, {})",
         npc.scriptId, enemy->species, enemy->position.x, enemy->position.z);
     request.enemies.push_back(std::move(*enemy));
+    battle.enemyNpcs.push_back(npc.scriptId);
   }
-  return request;
+  return battle;
 }
 
 } // namespace dwe::app

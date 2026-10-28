@@ -316,6 +316,7 @@ FieldScene::loadActor(std::string_view characterId, scene::Entity entity,
       .motionClip = std::nullopt,
       .scriptedClip = std::nullopt,
       .heldClip = std::nullopt,
+      .fighter = std::nullopt,
   });
   actor->player = std::make_unique<animation::AnimationPlayer>(*actor->model);
   return actor;
@@ -449,6 +450,9 @@ void FieldScene::applyLighting() {
 }
 
 void FieldScene::animate(Actor& actor, double seconds) {
+  if (animateFighter(actor)) {
+    return;
+  }
   if (actor.heldClip) {
     actor.player->setSpeed(1.0F);
     static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
@@ -579,6 +583,7 @@ void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
 
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   const double animationSeconds = paused ? 0.0 : frameSeconds;
+  fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
   animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   if (partnerClip_) {
     // A scene's clip runs while the field waits for the scene.

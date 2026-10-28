@@ -120,7 +120,7 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     if (!request) {
       return std::unexpected{request.error()};
     }
-    return screen.start(std::move(*request));
+    return screen.start(std::move(request->request), std::move(request->enemyNpcs));
   }();
   if (!started) {
     core::logWarning("{}",
@@ -173,6 +173,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(battle, std::nullopt)) {
     dropped(messages::BattleStartFailed);
   }
+  if (std::exchange(battleWin, false)) {
+    dropped(messages::BattleWinFailed);
+  }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
   }
@@ -201,6 +204,7 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(DropItemCommand,
                       [this](std::string_view item) { groundDrop = std::string{item}; });
   scripts.bindCommand(BattleCommand, [this](std::string_view npcs) { battle = std::string{npcs}; });
+  scripts.bindCommand(BattleWinCommand, [this](std::string_view) { battleWin = true; });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -548,6 +552,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {
     startBattle(battleScreen_, species, *scene_, *npcs);
   }
+  if (std::exchange(commands.battleWin, false) && !battleScreen_.defeatEnemies()) {
+    core::logWarning("{}", core::formatMessage(messages::BattleWinFailed, messages::NoFight));
+  }
   if (game_.systems.scenes != nullptr) {
     storyScenes_.update(*game_.systems.scenes, battleScreen_, species, *scene_);
   }
@@ -618,6 +625,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
                       (battleRanLastFrame_ && !battleScreen_.active());
+  if (battleRanLastFrame_ != battleScreen_.active()) {
+    context_.ui->setSetting(BattleActiveSetting, battleScreen_.active());
+  }
   battleRanLastFrame_ = battleScreen_.active();
   if (guardFactsChanged) {
     scene_->refreshScriptWarps();

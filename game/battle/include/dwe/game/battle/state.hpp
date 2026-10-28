@@ -49,6 +49,21 @@ enum class Pose : std::uint8_t {
   Fainted,
 };
 
+// The animation a fighter shows, by the original's animation id (anim.c: startAnimation; the same
+// ids for every species, the moves' from FirstMoveAnimation on): what the view plays on its model.
+// The battle picks it as the original starts it; nothing here draws.
+struct ShownClip {
+  std::int32_t clip = 0;
+  // Grows each time the original starts the clip, even the same one again (startAnimation restarts
+  // it).
+  std::uint32_t starts = 0;
+  // The clip stands on its frame (the original clears animFlag bit 0): a stun, a finisher's aura,
+  // and a hit or a block while the invulnerability lasts.
+  bool frozen = false;
+  // The pose it was picked for.
+  Pose pose = Pose::Standing;
+};
+
 // A unit vector scaled by FacingScale: where a fighter looks.
 struct Facing {
   std::int32_t x = 0;
@@ -145,6 +160,9 @@ struct Fighter {
 
   std::optional<ActiveAttack> attack;
   bool knockedBack = false;
+  // The last hit came from behind: it turned its back to the attack (battle_main.c:
+  // BTL_handleHitReaction).
+  bool hitFromBehind = false;
   bool blocking = false;
   // A fighter that was just hit takes no other attack until its reaction ends.
   bool struck = false;
@@ -164,6 +182,7 @@ struct Fighter {
   // Frames since its HP bar last showed damage (battle_main.c: BTL_renderEnemyHPBars); it starts
   // hidden.
   std::int32_t hpBarFrames = 0;
+  ShownClip shown;
 
   // Out of the fight: the damage on its way is enough to beat it (battle_main.c:
   // BTL_isFighterDefeated).
@@ -245,6 +264,10 @@ struct BattleState {
   [[nodiscard]] std::int32_t livingEnemies() const;
   [[nodiscard]] bool frozenByFinisher() const { return finisher.fighter.has_value(); }
 };
+
+// The clip a fighter stands with (btl.c: startBattleIdleAnimation): weak while poisoned or at a
+// fifth of its HP or less.
+std::int32_t stanceClipOf(const Fighter& fighter);
 
 // The squared distance between two points.
 std::int64_t distanceSquared(Point a, Point b);

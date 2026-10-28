@@ -113,6 +113,17 @@ const SkinStyler::ScreenSheet& SkinStyler::sheetOf(std::string_view screen) {
   return sheets_.emplace(std::string{screen}, std::move(built)).first->second;
 }
 
+std::vector<std::string> SkinStyler::spriteImages() const {
+  std::vector<std::string> images;
+  if (skin_ == nullptr) {
+    return images;
+  }
+  for (const SkinSpriteSheet& sheet : catalog_->spriteSheetsOf(*skin_)) {
+    images.push_back(imageReferenceText(sheet.image));
+  }
+  return images;
+}
+
 Rml::SharedPtr<Rml::StyleSheetContainer> SkinStyler::buildSpriteSheets() const {
   std::string rcss;
   for (const SkinSpriteSheet& sheet : catalog_->spriteSheetsOf(*skin_)) {

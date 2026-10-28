@@ -100,6 +100,8 @@ inline constexpr std::string_view NoMapFighter = "the map {} has no NPC to fight
 inline constexpr std::string_view BadNpcList = "'{}' is not a list of NPC numbers";
 inline constexpr std::string_view BattleAlreadyRunning = "a battle is already under way";
 inline constexpr std::string_view BattleStartFailed = "game: battle: {}";
+inline constexpr std::string_view BattleWinFailed = "game: battle_win: {}";
+inline constexpr std::string_view NoFight = "no fight is running";
 inline constexpr std::string_view BattleStarted = "game: battle against {} on {}";
 inline constexpr std::string_view BattleFinished = "game: battle over: {}";
 inline constexpr std::string_view BattleDropLost = "game: no room on the ground for the dropped {}";
@@ -147,6 +149,12 @@ inline constexpr std::string_view WakeMapNotEntered = "game: the wake map {} can
 // The clip id, the model.
 inline constexpr std::string_view PartnerClipMissing =
     "field: the partner's model {1} has no clip {0}";
+inline constexpr std::string_view FighterNotShown =
+    "battle: fighter {} is not shown: the field draws no NPC with script id {}";
+inline constexpr std::string_view FighterClipMissing =
+    "field: the fighter's model {1} has no battle clip {0}; it keeps the clip it plays";
+inline constexpr std::string_view ExitTimedOut =
+    "battle: an NPC leaving after the battle is still on screen after {} s; the battle ends";
 inline constexpr std::string_view PartnerModelNotShown =
     "game: the partner cannot be drawn as {}: {}";
 inline constexpr std::string_view PartnerEventNotShown =

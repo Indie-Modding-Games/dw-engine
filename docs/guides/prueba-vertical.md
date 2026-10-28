@@ -341,6 +341,7 @@ fase 4:
 | Comando | Qué hace |
 |---|---|
 | `battle("")` | Empieza un combate contra el primer NPC del mapa que puede luchar; `battle("2,3")`, contra esos NPC del mapa |
+| `battle_win("")` | Termina el combate en curso con los enemigos vencidos: caen como con un golpe final y siguen la victoria, los objetos y las estadísticas ganadas |
 | `give_item("<id> <cantidad>")` | Mete objetos en la bolsa (`give_item("meat 3")`) |
 | `evolve("<especie>")` | Hace evolucionar al compañero a esa forma como un guion de mapa (`evolve("species_b")`); el campo lo dibuja con su modelo |
 | `use_item("<id>")` | Usa uno de la bolsa con el compañero, como «Usar» en la bolsa; el compañero puede rechazarlo |

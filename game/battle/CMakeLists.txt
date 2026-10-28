@@ -17,6 +17,7 @@ dwe_add_module(battle
         src/attack_hits.cpp
         src/status_effects.cpp
         src/movement.cpp
+        src/shown_clips.cpp
         src/aftermath.cpp
         src/battle.cpp
         src/thrown_item.cpp

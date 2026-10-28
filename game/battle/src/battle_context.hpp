@@ -93,9 +93,19 @@ void revivePartner(BattleContext& context, std::int32_t hp);
 // damage drain.
 void tickHpBars(BattleContext& context);
 
+// shown_clips.cpp: the animation each fighter shows, started as the original starts it
+// (startAnimation): the stances when the battle starts, then each frame from the poses and the
+// frame's events.
+void startShownClips(BattleState& state);
+void updateShownClips(const BattleContext& context);
+
 // movement.cpp: walking on the battle ground. Distances squared, as the original compares them.
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b);
 void lookAt(Fighter& fighter, Point point);
+// battle_main.c: BTL_handleHitReaction: a fighter hit from the front (within a quarter turn of
+// where it looks) or while flattened turns to the attack; one hit from behind turns its back to it.
+// True for the latter.
+bool turnForHit(Fighter& fighter, Point attack);
 // The walks stop at whatever the step would run into (map.c: entityCheckCollision): the combat
 // area, the map and the other fighters. battle_main.c: BTL_moveTowardLocation: blocked, the fighter
 // keeps its facing and turns a little toward a free way (collisionGrace).

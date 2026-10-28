@@ -49,6 +49,41 @@ local function entry(list, index, field)
   return list .. "." .. index .. "." .. field
 end
 
+-- Elements looked up once: a lookup walks the whole document, and the opening moves over a hundred
+-- banner pieces each frame.
+local elements = {}
+-- The properties last set on each element, by "id property": setting one parses its value again
+-- even when it is the same.
+local applied = {}
+local function lookup(document, id)
+  local found = elements[id]
+  if found == nil or not found:valid() then
+    if found ~= nil then
+      -- The document was loaded again (hot reload): none of what was set holds.
+      applied = {}
+    end
+    found = document:get(id)
+    elements[id] = found
+  end
+  return found
+end
+
+local function set_property(document, id, property, value)
+  local key = id .. " " .. property
+  if applied[key] ~= value then
+    applied[key] = value
+    lookup(document, id):set_property(property, value)
+  end
+end
+
+local function set_class(document, id, class, on)
+  local key = id .. " ." .. class
+  if applied[key] ~= on then
+    applied[key] = on
+    lookup(document, id):set_class(class, on)
+  end
+end
+
 -- A key's text, or nothing for an empty key.
 local function text(key, arguments)
   if key == nil or key == "" then
@@ -65,7 +100,7 @@ local function percent(value, maximum)
 end
 
 local function draw_fighter(document, index)
-  local panel = document:get("fighter-" .. index)
+  local panel = lookup(document, "fighter-" .. index)
   local count = number("battle.fighter.count")
   panel:set_class("hidden", index >= count)
   if index >= count then
@@ -82,14 +117,14 @@ local function draw_fighter(document, index)
   document
     :get(prefix .. "-status")
     :set_text(text(setting(entry("battle.fighter", index, "status"), "")))
-  document:get(prefix .. "-hp-label"):set_text(t(stat_label_keys[0]))
-  document:get(prefix .. "-hp"):set_text(tostring(hp))
-  document:get(prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
+  lookup(document, prefix .. "-hp-label"):set_text(t(stat_label_keys[0]))
+  lookup(document, prefix .. "-hp"):set_text(tostring(hp))
+  lookup(document, prefix .. "-hp-fill"):set_property("width", percent(hp, max_hp) .. "%")
   if index == 0 then
     -- The partner's HUD shows HP and MP all the time (battle_hud.c: BTL_renderPartnerStatusBars).
-    document:get(prefix .. "-mp-label"):set_text(t(stat_label_keys[1]))
-    document:get(prefix .. "-mp"):set_text(tostring(mp))
-    document:get(prefix .. "-mp-fill"):set_property("width", percent(mp, max_mp) .. "%")
+    lookup(document, prefix .. "-mp-label"):set_text(t(stat_label_keys[1]))
+    lookup(document, prefix .. "-mp"):set_text(tostring(mp))
+    lookup(document, prefix .. "-mp-fill"):set_property("width", percent(mp, max_mp) .. "%")
   else
     -- An enemy's HP bar only shows for a while after it takes damage, and it has no MP bar
     -- (battle_main.c: BTL_renderEnemyHPBars).
@@ -138,9 +173,9 @@ end
 local function draw_commands(document)
   local count = number("battle.menu.count")
   for index = 0, max_commands - 1 do
-    local button = document:get("command-" .. index)
+    local button = lookup(document, "command-" .. index)
     local id = "command-" .. index
-    local frame = document:get("command-frame-" .. index)
+    local frame = lookup(document, "command-frame-" .. index)
     button:set_class("hidden", index >= count)
     frame:set_class("hidden", index >= count)
     if index < count then
@@ -158,16 +193,16 @@ local function draw_commands(document)
     end
   end
   -- The bag's entry follows the strip, where a skin that draws it wants it.
-  swap_class(document:get("open-bag"), frame_classes, "open-bag", "place-" .. count)
+  swap_class(lookup(document, "open-bag"), frame_classes, "open-bag", "place-" .. count)
 end
 
 -- The cursor round the hovered icon, and its blink; nothing while the battle opens.
 local function draw_cursor(document)
-  local cursor = document:get("command-cursor")
+  local cursor = lookup(document, "command-cursor")
   local count = number("battle.menu.count")
   local hovered = nil
   for index = 0, count - 1 do
-    local button = document:get("command-" .. index)
+    local button = lookup(document, "command-" .. index)
     local focused = button:has_focus() and setting(entry("battle.menu", index, "icon"), "") ~= ""
     button:set_class("blink", focused and blink_on)
     if focused then
@@ -187,31 +222,31 @@ end
 local function draw_command_name(document)
   local name = ""
   for index = 0, number("battle.menu.count") - 1 do
-    if document:get("command-" .. index):has_focus() then
+    if lookup(document, "command-" .. index):has_focus() then
       name = text(setting(entry("battle.menu", index, "label"), ""))
     end
   end
-  document:get("command-name"):set_text(name)
+  lookup(document, "command-name"):set_text(name)
 end
 
 local function focus_command(document)
   local count = number("battle.menu.count")
-  if document:get("open-bag"):has_focus() then
+  if lookup(document, "open-bag"):has_focus() then
     return
   end
   for index = 0, count - 1 do
-    if document:get("command-" .. index):has_focus() then
+    if lookup(document, "command-" .. index):has_focus() then
       return
     end
   end
   for index = 0, count - 1 do
     if setting(entry("battle.menu", index, "current"), false) then
-      document:get("command-" .. index):focus()
+      lookup(document, "command-" .. index):focus()
       return
     end
   end
   if count > 0 then
-    document:get("command-0"):focus()
+    lookup(document, "command-0"):focus()
   end
 end
 
@@ -224,11 +259,11 @@ local function draw_finisher(document)
     filled = finisher_marks
   end
   for index = 0, finisher_marks - 1 do
-    document:get("finisher-" .. index):set_class("filled", index < filled)
+    lookup(document, "finisher-" .. index):set_class("filled", index < filled)
   end
-  document:get("finisher"):set_class("ready", ready)
+  lookup(document, "finisher"):set_class("ready", ready)
   local charging = setting("battle.finisher.charging", false)
-  document:get("charge"):set_class("hidden", not charging)
+  lookup(document, "charge"):set_class("hidden", not charging)
   document
     :get("charge-fill")
     :set_property("width", math.min(100, number("battle.finisher.charge")) .. "%")
@@ -236,9 +271,9 @@ end
 
 local function draw_revive(document)
   local seconds = number("battle.revive_seconds")
-  document:get("revive"):set_class("hidden", seconds < 0)
+  lookup(document, "revive"):set_class("hidden", seconds < 0)
   if seconds >= 0 then
-    document:get("revive"):set_text(t("battle.revive_countdown", { seconds = seconds }))
+    lookup(document, "revive"):set_text(t("battle.revive_countdown", { seconds = seconds }))
   end
 end
 
@@ -259,16 +294,19 @@ end
 -- The tamer's bag: open with its own button while the battle goes on (battle_tick.c:
 -- tamerTickBattle); the command row waits meanwhile (handleCommands returns while it is open).
 local function draw_bag(document)
-  document:get("commands"):set_class("hidden", bag_open)
-  document:get("bag"):set_class("hidden", not bag_open)
-  document:get("open-bag"):set_class("unavailable", not setting("battle.bag.available", false))
-  document:get("item-in-flight"):set_class("hidden", not setting("battle.item_in_flight", false))
+  lookup(document, "commands"):set_class("hidden", bag_open)
+  lookup(document, "bag"):set_class("hidden", not bag_open)
+  lookup(document, "open-bag"):set_class("unavailable", not setting("battle.bag.available", false))
+  lookup(document, "item-in-flight"):set_class(
+    "hidden",
+    not setting("battle.item_in_flight", false)
+  )
   if not bag_open then
     return
   end
   local count = number("bag.slot.count")
   for index = 0, max_bag_slots - 1 do
-    local slot = document:get("bag-slot-" .. index)
+    local slot = lookup(document, "bag-slot-" .. index)
     slot:set_class("hidden", index >= count)
     if index < count then
       local filled = slot_filled(index)
@@ -289,22 +327,22 @@ end
 local function draw_bag_description(document)
   local description = ""
   for index = 0, number("bag.slot.count") - 1 do
-    if document:get("bag-slot-" .. index):has_focus() and slot_filled(index) then
+    if lookup(document, "bag-slot-" .. index):has_focus() and slot_filled(index) then
       description = text(setting(slot_setting(index, "description"), ""))
     end
   end
-  document:get("bag-description"):set_text(description)
+  lookup(document, "bag-description"):set_text(description)
 end
 
 local function focus_bag(document)
   local count = math.min(number("bag.slot.count"), max_bag_slots)
   for index = 0, count - 1 do
-    if document:get("bag-slot-" .. index):has_focus() then
+    if lookup(document, "bag-slot-" .. index):has_focus() then
       return
     end
   end
   if count > 0 then
-    document:get("bag-slot-0"):focus()
+    lookup(document, "bag-slot-0"):focus()
   end
 end
 
@@ -494,32 +532,32 @@ local function draw_end_rows(document)
       local piece = row ~= nil and row.segments[segment] or ""
       local shown = piece:sub(1, math.max(0, left))
       left = left - #piece
-      document:get("end-row-" .. slot .. "-" .. (segment - 1)):set_text(shown)
+      lookup(document, "end-row-" .. slot .. "-" .. (segment - 1)):set_text(shown)
     end
   end
 end
 
 local function draw_end(document)
-  document:get("end-title"):set_text(text(setting("battle.end.outcome", "")))
+  lookup(document, "end-title"):set_text(text(setting("battle.end.outcome", "")))
   for index = 0, stat_count - 1 do
     local gain = ending.gains[index]
-    document:get("gain-" .. index .. "-label"):set_text(t(stat_label_keys[index]))
-    document:get("stat-" .. index):set_text(tostring(ending.stats[index]))
+    lookup(document, "gain-" .. index .. "-label"):set_text(t(stat_label_keys[index]))
+    lookup(document, "stat-" .. index):set_text(tostring(ending.stats[index]))
     document
       :get("stat-" .. index .. "-fill")
       :set_property("width", percent(ending.stats[index], ending.maxima[index]) .. "%")
     document
       :get("stat-" .. index .. "-bar")
       :set_class("raised", number(entry("battle.end.gain", index, "value")) > 0)
-    document:get("gain-" .. index .. "-arrow"):set_class("hidden", gain <= 0)
-    document:get("gain-" .. index):set_text(gain > 0 and tostring(gain) or "")
+    lookup(document, "gain-" .. index .. "-arrow"):set_class("hidden", gain <= 0)
+    lookup(document, "gain-" .. index):set_text(gain > 0 and tostring(gain) or "")
   end
-  document:get("bits-label"):set_text(t(bits_label_key))
-  document:get("bits-value"):set_text(tostring(ending.bits))
-  document:get("balance"):set_class("hidden", not ending.balance_open)
-  document:get("balance-label"):set_text(t(bits_label_key))
-  document:get("balance-value"):set_text(tostring(ending.balance))
-  document:get("end-boxes"):set_class("with-text", #ending.rows > 0)
+  lookup(document, "bits-label"):set_text(t(bits_label_key))
+  lookup(document, "bits-value"):set_text(tostring(ending.bits))
+  lookup(document, "balance"):set_class("hidden", not ending.balance_open)
+  lookup(document, "balance-label"):set_text(t(bits_label_key))
+  lookup(document, "balance-value"):set_text(tostring(ending.balance))
+  lookup(document, "end-boxes"):set_class("with-text", #ending.rows > 0)
   draw_end_rows(document)
 end
 
@@ -537,9 +575,9 @@ local function tick_end(document, seconds)
 end
 
 local function draw_prompts(document)
-  document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
-  document:get("prompt-charge"):set_text(ui.prompt("confirm"))
-  document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  lookup(document, "prompt-confirm"):set_text(ui.prompt("confirm"))
+  lookup(document, "prompt-charge"):set_text(ui.prompt("confirm"))
+  lookup(document, "prompt-cancel"):set_text(ui.prompt("cancel"))
 end
 
 -- The battle's opening (apps/screens: battle_intro.hpp): the anger marks over the enemies, then the
@@ -547,7 +585,7 @@ end
 local function draw_anger(document)
   local scale = number("battle.intro.anger.scale") / 100
   for index = 0, max_anger - 1 do
-    local mark = document:get("anger-" .. index)
+    local mark = lookup(document, "anger-" .. index)
     local shown = intro_step == "anger"
       and setting(entry("battle.intro.anger", index, "shown"), false)
     mark:set_class("hidden", not shown)
@@ -569,40 +607,38 @@ local function banner_numbers()
   return numbers
 end
 
+-- A piece moves by its transform, not by left and top: the banner's hundred and more pieces fly in
+-- each frame and a transform leaves the document's layout as it was.
 local function draw_piece(document, index, piece)
   local key = table.concat(piece, " ")
   if shown_pieces[index] == key then
     return
   end
   shown_pieces[index] = key
-  local block = document:get("bp-" .. index)
-  local shadow = document:get("bs-" .. index)
-  local trail = document:get("bt-" .. index)
-  block:set_class("hidden", piece[1] == nil)
-  shadow:set_class("hidden", piece[1] == nil)
+  local block, shadow, trail = "bp-" .. index, "bs-" .. index, "bt-" .. index
+  set_class(document, block, "hidden", piece[1] == nil)
+  set_class(document, shadow, "hidden", piece[1] == nil)
   if piece[1] == nil then
     return
   end
   local x, y = piece[1] * 3, piece[2] * 3
   local width, height = piece[3] * 3, piece[4] * 3
-  for _, element in ipairs({ block, shadow }) do
-    element:set_property("width", width .. "dp")
-    element:set_property("height", height .. "dp")
+  for _, id in ipairs({ block, shadow }) do
+    set_property(document, id, "width", width .. "dp")
+    set_property(document, id, "height", height .. "dp")
   end
-  block:set_property("left", x .. "dp")
-  block:set_property("top", y .. "dp")
+  set_property(document, block, "transform", "translate(" .. x .. "dp, " .. y .. "dp)")
   -- The shadow lies 2 pixels down and right (battle_hud.c: BTL_renderBattleStartText).
-  shadow:set_property("left", (x + 6) .. "dp")
-  shadow:set_property("top", (y + 6) .. "dp")
+  set_property(document, shadow, "transform", "translate(" .. (x + 6) .. "dp, " .. (y + 6) .. "dp)")
   for texture = 0, 2 do
-    block:set_class("texture-" .. texture, piece[5] == texture)
+    set_class(document, block, "texture-" .. texture, piece[5] == texture)
   end
   local length = piece[6] * 3
-  trail:set_class("hidden", length <= 0)
-  trail:set_class("left", piece[7] == 1)
+  set_class(document, trail, "hidden", length <= 0)
+  set_class(document, trail, "left", piece[7] == 1)
   if length > 0 then
-    trail:set_property("width", length .. "dp")
-    trail:set_property("left", (piece[7] == 1 and -length or width) .. "dp")
+    set_property(document, trail, "width", length .. "dp")
+    set_property(document, trail, "left", (piece[7] == 1 and -length or width) .. "dp")
   end
 end
 
@@ -618,7 +654,7 @@ local function draw_banner(document)
     end
     draw_piece(document, index, piece)
   end
-  local banner = document:get("banner")
+  local banner = lookup(document, "banner")
   for flash = 0, 2 do
     banner:set_class("flash-" .. flash, number("battle.intro.flash") == flash)
   end
@@ -626,9 +662,9 @@ end
 
 local function draw_intro(document)
   intro_step = phase == "intro" and setting("battle.intro.step", "done") or "done"
-  document:get("intro"):set_class("hidden", phase ~= "intro")
+  lookup(document, "intro"):set_class("hidden", phase ~= "intro")
   -- The HUD is already there under the banner, without the cursor or the hovered command's name.
-  document:get("fight"):set_class("opening", phase == "intro")
+  lookup(document, "fight"):set_class("opening", phase == "intro")
   if phase ~= "intro" then
     return
   end
@@ -636,13 +672,13 @@ local function draw_intro(document)
   draw_banner(document)
   -- Veiled, not hidden: the commands keep their boxes, so the focus and the keyboard and gamepad
   -- navigation work on them from the first frame of the fight.
-  document:get("fight"):set_class("veiled", intro_step == "anger")
+  lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
 local function draw(document)
   phase = setting("battle.phase", "fight")
-  document:get("fight"):set_class("hidden", phase ~= "fight" and phase ~= "intro")
-  document:get("end"):set_class("hidden", phase ~= "end")
+  lookup(document, "fight"):set_class("hidden", phase ~= "fight" and phase ~= "intro")
+  lookup(document, "end"):set_class("hidden", phase ~= "end")
   draw_intro(document)
   -- The victory poses before the end box: nothing of the battle's own is drawn.
   if phase == "victory" then

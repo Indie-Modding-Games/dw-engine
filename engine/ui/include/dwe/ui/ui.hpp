@@ -200,7 +200,8 @@ public:
   void setMinimapMarkers(const MinimapMarker& player, const std::optional<MinimapMarker>& partner);
 
   // Lays out the documents and records their geometry for the renderer. Once per frame, before
-  // drawing.
+  // drawing. Until the skin's sprite sheet images are all loaded it also loads one ahead of its
+  // first use.
   void update();
 
   // Re-reads the documents whose files changed, when hot reload is on. Cheap enough to call every
