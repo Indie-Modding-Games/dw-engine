@@ -30,8 +30,8 @@ namespace {
 constexpr double Tick = 1.0 / 60.0;
 
 // The screens the game loads, each by the name its skin styles it under.
-constexpr std::array<std::string_view, 5> Screens{"hud", "pause_menu", "main_menu", "battle",
-                                                  "partner_menu"};
+constexpr std::array<std::string_view, 6> Screens{"hud",    "pause_menu",   "main_menu",
+                                                  "battle", "partner_menu", "save_slots"};
 
 assets::AssetId idOf(std::string_view text) {
   auto id = assets::AssetId::parse(text);
@@ -144,7 +144,8 @@ void addOriginalArt(Content& content) {
         Stand{.path = "texture/etcdat/bi_in.png", .width = 256, .height = 64},
         Stand{.path = "texture/etcdat/feel_ef.png", .width = 256, .height = 64},
         Stand{.path = "texture/etcdat/btlcomnd.png", .width = 256, .height = 64},
-        Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240}}) {
+        Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240},
+        Stand{.path = "texture/etcna/title256.png", .width = 320, .height = 256}}) {
     content.memory.addFile(std::filesystem::path{"packs/base"} / image.path,
                            whitePng(image.width, image.height));
   }

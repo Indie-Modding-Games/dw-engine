@@ -10,12 +10,14 @@
 		<div id="panel">
 			<h1 id="title"></h1>
 			<p id="full" text-key="save.slots.full"></p>
-			<button id="slot-1" class="slot" onclick="choose(1)"></button>
-			<button id="slot-2" class="slot" onclick="choose(2)"></button>
-			<button id="slot-3" class="slot" onclick="choose(3)"></button>
-			<button id="slot-4" class="slot" onclick="choose(4)"></button>
-			<button id="slot-5" class="slot" onclick="choose(5)"></button>
-			<button id="slot-6" class="slot" onclick="choose(6)"></button>
+			<button id="slot-1" class="slot" onclick="choose(document, 1)"></button>
+			<button id="slot-2" class="slot" onclick="choose(document, 2)"></button>
+			<button id="slot-3" class="slot" onclick="choose(document, 3)"></button>
+			<button id="slot-4" class="slot" onclick="choose(document, 4)"></button>
+			<button id="slot-5" class="slot" onclick="choose(document, 5)"></button>
+			<button id="slot-6" class="slot" onclick="choose(document, 6)"></button>
+			<button id="slot-7" class="slot hidden" onclick="choose(document, 7)"></button>
+			<button id="slot-8" class="slot hidden" onclick="choose(document, 8)"></button>
 			<p id="page"></p>
 			<button id="previous" class="page-turn" onclick="turn(document, -1)" text-key="exploration.previous"></button>
 			<button id="next" class="page-turn" onclick="turn(document, 1)" text-key="exploration.next"></button>
@@ -26,6 +28,14 @@
 				<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
 				<span class="prompt"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
 			</div>
+		</div>
+		<!-- The original look's list scrolls: these show there are rows above or below, and a click scrolls. -->
+		<div id="more-up" class="hidden" onclick="scroll_rows(document, -1)"></div>
+		<div id="more-down" class="hidden" onclick="scroll_rows(document, 1)"></div>
+		<!-- The original look's box with the focused save's summary. -->
+		<div id="detail" class="hidden">
+			<p id="detail-line-1"></p>
+			<p id="detail-line-2"></p>
 		</div>
 	</div>
 </body>

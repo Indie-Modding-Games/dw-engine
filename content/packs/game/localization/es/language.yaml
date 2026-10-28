@@ -1,2 +1,5 @@
 # El nombre del idioma en el propio idioma, como lo muestra el selector de idioma.
 name: "Español"
+# El nombre de cada idioma en ese idioma, igual en los textos de todos los idiomas: así los lista la caja de idiomas.
+native.en: "English"
+native.es: "Español"

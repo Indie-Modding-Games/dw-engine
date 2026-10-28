@@ -109,6 +109,8 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
   SaveFlow flow{&slots.slots, names()};
   const ScreenSettings list = flow.open(SlotListMode::Continue);
   CHECK(valueOf(list, "save.slots") == UiValue{3.0});
+  CHECK(valueOf(list, "save.slots.manual") == UiValue{3.0});
+  CHECK(valueOf(list, "save.slots.autosave") == UiValue{1.0});
   CHECK(valueOf(list, "save.slot.0.number") == UiValue{2.0});
   CHECK(valueOf(list, "save.slot.0.species_key") == UiValue{std::string{"names.agumon"}});
   CHECK(valueOf(list, "save.slot.0.map") == UiValue{std::string{"twna01"}});
@@ -119,7 +121,7 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
 
   CHECK(flow.choose(0) ==
         SaveDialog{
-            .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = false});
+            .text = "save.confirm_continue", .file = {}, .question = true, .startOnYes = true});
   CHECK(flow.answer(true) ==
         PlayStart{.load = Slot2, .backup = false, .saveTo = std::nullopt, .choice = std::nullopt});
 
@@ -135,6 +137,34 @@ TEST_CASE("continue lists the saves and says why one cannot be loaded") {
                                      .question = false,
                                      .startOnYes = false});
   CHECK_FALSE(flow.answer(true).has_value());
+}
+
+TEST_CASE("erase lists the saves this game can write and erases the one confirmed") {
+  Slots slots;
+  SaveFlow flow{&slots.slots, names()};
+  const ScreenSettings list = flow.open(SlotListMode::Erase);
+  CHECK(valueOf(list, "save.slots.mode") == UiValue{std::string{"erase"}});
+  CHECK(valueOf(list, "save.slots") == UiValue{2.0});
+  CHECK(valueOf(list, "save.slot.0.number") == UiValue{2.0});
+  CHECK(valueOf(list, "save.slot.1.state") == UiValue{std::string{"damaged"}});
+
+  CHECK(flow.choose(0) == SaveDialog{.text = "save.confirm_erase",
+                                     .file = "slot_02.yaml",
+                                     .question = true,
+                                     .startOnYes = false});
+  CHECK(flow.erasing());
+  CHECK_FALSE(flow.answerErase(false).has_value());
+  CHECK_FALSE(flow.erasing());
+  CHECK(slots.slots.list()[1].state == dwe::game::save::SlotInfo::State::Saved);
+
+  REQUIRE(flow.choose(0).has_value());
+  CHECK_FALSE(flow.answerErase(true).has_value());
+  CHECK(slots.slots.list()[1].state == dwe::game::save::SlotInfo::State::Empty);
+  CHECK(valueOf(flow.open(SlotListMode::Erase), "save.slots") == UiValue{1.0});
+  // A start answer forgets an erase question left open.
+  REQUIRE(flow.choose(0).has_value());
+  CHECK_FALSE(flow.answer(true).has_value());
+  CHECK_FALSE(flow.erasing());
 }
 
 TEST_CASE("a damaged save with no backup is only a notice") {

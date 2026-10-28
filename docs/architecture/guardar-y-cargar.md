@@ -200,7 +200,23 @@ tarjeta». Así `route-loop-keyboard` y las demás siguen igual, con el botón `
 ### 3.5 Continuar
 
 `Continuar` (en gris si no hay ninguna partida, como sin tarjeta) → lista con las ranuras guardadas elegibles →
-«¿Continuar la aventura?» → carga transaccional ([3.2](#32-los-estados-de-la-app)) → `Playing` con fundido desde negro.
+«¿Continuar esta aventura?», **con el cursor en «Sí»** (mejora documentada: es la respuesta esperada; el original
+pregunta igual) → carga transaccional ([3.2](#32-los-estados-de-la-app)) → `Playing` con fundido desde negro.
+
+Con el aspecto original la lista es la del original (`main_menu.c: renderSelectCardSlot`): una fila por ranura,
+«CONTINUAR RANURA n» y luego «CONTINUAR AUTOGUARDADO n», las vacías en gris y sin elegir, ocho a la vista con
+flechas si hay más. El juego publica cuántas hay de cada clase (`save.slots.manual`, `save.slots.autosave`). Bajo la
+lista, un cuadro con el resumen de la fila enfocada (compañero; lugar, tiempo de juego y fecha), que el original no
+tiene (mejora documentada). La pregunta sale sobre la lista (`dialog.at_title`).
+
+### 3.5b Borrar
+
+`Borrar partida` (en gris sin partidas, como `Continuar`) → la misma lista con «BORRAR RANURA n» y las ranuras que este
+juego puede escribir (no las de un juego más nuevo) → «¿Borrar esta aventura?» **con el cursor en «No»** → la
+ranura queda vacía (`SaveSlots::erase`). El fichero no se pierde: pasa a ser la copia `.bak` de la ranura
+(`SaveStorage::remove`), así que un borrado por error se recupera a mano; la siguiente partida guardada en esa
+ranura la sustituye. Si no se puede borrar, aviso «save.erase_failed» y el error al registro. Tras borrar vuelve a la
+lista. El original borra el fichero de la tarjeta sin copia (`main_menu.c: tickMainMenu`).
 
 ### 3.6 Dormir
 
@@ -320,7 +336,8 @@ fichero (`dialog.file`).
 | Al guardar durmiendo se mira antes la ranura de la partida (otra partida, dañada, de un juego más nuevo) | Mejora documentada | El original escribe encima sin mirar; un PC deja tocar la carpeta fuera del juego |
 | Dormir: el partner no camina a la cama ni hay animaciones ni sonido del sueño (`partner.c: 281-321`) | Pendiente: VAN-04 | El fundido, el momento del guardado y el del despertar ya son los del original |
 | Sin registro para el modo versus en la máquina | Pendiente (fase 5) | Pregunta 3 |
-| Borrar partida en la portada | Pendiente | Pregunta 4 |
+| Borrar partida en la portada; lo borrado queda como `.bak` | Vanilla + mejora documentada | Pregunta 4; la copia evita perder una partida por error |
+| Las preguntas de continuar y borrar empiezan en «Sí» y «No» | Mejora documentada | La respuesta esperada y la segura |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
 
 ## 6. Rutas y tests
@@ -413,7 +430,7 @@ cambio de contrato del formato de la partida. Las 3, 4 y 7 van a la fase 5 (la f
 | 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
 | 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar |
 | 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | No: va a la fase 5 con el modo versus; la máquina pregunta solo «¿Quieres guardar?», documentado como pendiente |
-| 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | A la fase 5. Sin él no se libera una ranura salvo borrando el fichero; «sin guardar» cubre el caso lleno |
+| 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | Hecho (3.5b): borra a la copia `.bak` |
 | 5 | ¿«Volver a la portada» siempre, o detrás de un ajuste por ser una mejora? | FIDELITY | Siempre: es interfaz como «Salir del juego», no cambia reglas; queda en la tabla de desviaciones |
 | 6 | Una partida recién creada y nunca guardada en el juego: el original repite la escena de partida nueva al cargarla; ¿aquí? | minor | Cargar en el mapa de inicio con el estado de partida nueva; repetir la escena cuando la escena de inicio sea del intérprete de historia |
 | 7 | ¿Recolocar al partner en la salida guardada si aparece encima de un NPC (`main.c: initializeLoadedMap: 3821-3857`)? | FIDELITY | A la lista de fase 5: necesita los NPC del campo, que aún no existen |

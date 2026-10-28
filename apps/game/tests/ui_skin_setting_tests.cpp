@@ -83,7 +83,8 @@ struct Content {
           Stand{.path = "texture/etcdat/bi_in.png", .width = 256, .height = 64},
           Stand{.path = "texture/etcdat/feel_ef.png", .width = 256, .height = 64},
           Stand{.path = "texture/etcdat/btlcomnd.png", .width = 256, .height = 64},
-          Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240}}) {
+          Stand{.path = "texture/etcna/title2.png", .width = 320, .height = 240},
+          Stand{.path = "texture/etcna/title256.png", .width = 320, .height = 256}}) {
       const assets::Image blank{
           .width = image.width,
           .height = image.height,

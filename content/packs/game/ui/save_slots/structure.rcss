@@ -4,3 +4,6 @@
 #slot-1 { nav-up: #back; }
 #back { nav-down: #slot-1; }
 #full { margin: 0 0 12dp 18dp; }
+/* The original look's rows (the skin's slots-original layout): logic.lua moves the cursor and stops it at the ends, as
+   the original's, so the wrapping moves above stay out. */
+#panel.slots-original button { nav: none; }

@@ -13,7 +13,9 @@ steps:
   - resize: [1280, 720]
   - expect_setting: {ui_skin: original}
   - screenshot: main-menu-original
-  # The skin entry moves to the next skin the packs offer: the test pack's.
+  # The skin entry, in the original look's options, moves to the next skin the packs offer: the test pack's, which
+  # lays the main menu out as the modern one, its entries all in one box.
+  - menu_select: options
   - menu_select: ui-skin
   - expect_setting: {ui_skin: test_contrast}
   - wait: {seconds: 0.5}

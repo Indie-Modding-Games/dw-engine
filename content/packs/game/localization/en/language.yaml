@@ -1,2 +1,5 @@
 # The language's own name, as the language selector shows it.
 name: "English"
+# Every language's name in that language, the same in every language's texts: the language box lists them so.
+native.en: "English"
+native.es: "Español"

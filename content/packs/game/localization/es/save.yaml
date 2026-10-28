@@ -44,3 +44,16 @@ machine_confirm: "¿Quieres guardar?"
 machine_no_slot: "Esta aventura no tiene ranura, así que no se puede guardar."
 # Volver a la portada desde el menú de pausa (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Se perderá lo que no hayas guardado. ¿Volver a la portada?"
+# Borrar una partida desde la portada (docs/architecture/guardar-y-cargar.md). El diálogo enseña debajo el nombre
+# del fichero de la partida.
+confirm_erase: "¿Borrar esta aventura?"
+erase_failed: "No se ha podido borrar la partida."
+# La lista de ranuras con el aspecto original (ui/save_slots), en mayúsculas como el original. {number} cuenta
+# desde 1.
+slots.original.new_slot: "RANURA {number}"
+slots.original.continue_slot: "CONTINUAR RANURA {number}"
+slots.original.continue_autosave: "CONTINUAR AUTOGUARDADO {number}"
+slots.original.erase_slot: "BORRAR RANURA {number}"
+slots.original.erase_autosave: "BORRAR AUTOGUARDADO {number}"
+slots.original.no_save: "JUGAR SIN GUARDAR"
+slots.original.in_use: "Esta ranura ya tiene una aventura."

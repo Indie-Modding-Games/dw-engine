@@ -486,6 +486,11 @@ int runGame(const Options& requested) {
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   (*ui)->setSetting(LanguageSetting, texts->language());
+  // The original look's title screen asks for the language first when the player never chose one
+  // (title.choose_language; a documented improvement): not when --lang gives it, nor in an
+  // autotest, which reads no saved settings.
+  (*ui)->setSetting("title.choose_language",
+                    !userSettings.language && !options.language && autotest == nullptr);
   MinimapChanger minimapChanger{userSettings, settingsFile};
   (*ui)->setSetting(MinimapSetting, std::string{startMinimapMode(userSettings.minimap)});
   (*ui)->setSetting("minimap_size", std::string{"medium"});
@@ -587,8 +592,11 @@ int runGame(const Options& requested) {
     }
   } else if (playMovie(MovieMoment::Boot)) {
     titleAfterMovie = true;
-  } else {
+  } else if (autotest && !autotest->startsAtBootScreen()) {
+    // A route starts at the main menu itself, unless it asks for the screen before it.
     title.show();
+  } else {
+    title.showBoot();
   }
 
   FrameStats frameStats;
@@ -635,7 +643,8 @@ int runGame(const Options& requested) {
     if (startAfterMovie) {
       startPlaying(*std::exchange(startAfterMovie, std::nullopt));
     } else if (std::exchange(titleAfterMovie, false)) {
-      title.show();
+      // After the boot movie, the "Press Start" screen (main.c: main, runLandingScreen).
+      title.showBoot();
     }
     titleIdleTicks = 0;
   };
@@ -865,7 +874,7 @@ int runGame(const Options& requested) {
       core::logDebug("[port:save] main (main.c:3522-3527): back to the title screen");
       flow.toTitle();
       screenFade->setDarkness(0.0F);
-      title.show();
+      title.showBoot();
     }
     if (interview) {
       interview->update(frameSeconds, (*renderer)->targetExtent());

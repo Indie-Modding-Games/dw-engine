@@ -556,7 +556,7 @@ del disco; el resto de imágenes de la UI se siguen filtrando.
 
 | Pantalla | Qué dibuja | Fuente |
 |---|---|---|
-| Menú principal | La portada (TITLE2) en 4:3 en el centro, sobre negro, y el cuadro del menú de inicio con su degradado y el selector amarillo de 1 píxel | `main_menu.c: renderInitialMenu`, captura del título |
+| Portada | La pantalla de «Press Start», el menú de inicio, las listas de ranuras, la pregunta del modo batalla, las opciones y la caja de idiomas ([La portada](#la-portada-del-aspecto-original)) | `main.c: runLandingScreen`, `main_menu.c`; capturas del título |
 | Menú de pausa | Un cuadro del original (borde cian, esquinas de SYSTEM_W, relleno #2D3840 a media opacidad) sobre el campo sin oscurecer | `ui.c: renderUIBoxBorder`, `game_menu.c: renderGameMenu` |
 | Menú del compañero | La ficha (cuadro opaco, recuadros hundidos, iconos de parámetros, barras de felicidad, disciplina y virus) y la bolsa (dos columnas de filas de 18 píxeles, el selector claro arriba y oscuro abajo, el cuadro de opciones, los de orden y de tirar) | `game_menu.c: renderDigimonStatsView`, `inventory.c`; capturas de la ficha y de la bolsa |
 | HUD del campo | El reloj de esfera (esfera, campanas, martillo, minutero y punto de la hora), las barras de felicidad y disciplina a cuadritos (`pips`) con sus iconos, la burbuja de la necesidad sobre el compañero y el nombre del mapa | `clock.c`, `partner_impl.c`, `bubble.c`, `map.c`; capturas del campo |
@@ -594,6 +594,38 @@ las posiciones dentro de un elemento van en %.
 | El botón del menú del HUD, mientras el campo corre (en combates, escenas y menús se esconde, como los demás paneles del HUD); los avisos de botones de los menús | El juego también se usa con teclado y ratón; el combate no los lleva, como el original |
 | El parpadeo de la cara de la felicidad empieza cuando el compañero entra en una zona que le gusta o le disgusta (o cuando cambia la cara), no al compás del contador de tiempo de juego del original (`PLAYTIME_FRAMES % 10`): el ritmo es el mismo, 5 frames y 5 frames, pero la fase puede ir hasta 0,25 s desplazada | La animación del aspecto (RCSS) empieza al ponerse la clase; el contrato no publica el contador de frames, y publicarlo cada frame obligaría a redibujar el estado del campo 20 veces por segundo |
 | La burbuja parpadea con su propio reloj de 3 s, no con el de la burbuja del original, y sin su vaivén de 12 unidades; solo se dibuja el primer cuadro de la animación de cada necesidad y la «Z» baja del sueño | El contrato no publica los frames de la burbuja; el vaivén y los cuadros son animación opcional |
+
+#### La portada del aspecto original
+
+El mismo documento `main_menu` sirve a los dos aspectos: el original le pone la clase `title-original` a `#panel`
+(`document_classes` de su `skin.yaml`) y `logic.lua` cambia de disposición al verla, también al cambiar de aspecto en
+marcha. Lo mismo hace `save_slots` con `slots-original`. El aspecto moderno sigue con su menú de siempre.
+
+| Pantalla | Cómo es | Fuente |
+|---|---|---|
+| «Press Start» | TITLE256 hasta la fila 206 (sin la línea del copyright) sobre negro, y «Pulsa el botón Start» en verde, centrada en la línea del original, que parpadea 30 de cada 60 frames; tras pulsar alterna cada frame hasta el negro. Fundido desde negro de 40 frames al entrar y a negro al salir. Start, confirmar o un clic siguen | `main.c: runLandingScreen`, `main.c: renderPressStartToContinue`, `fade.c` |
+| Menú | NUEVA PARTIDA, CONTINUAR PARTIDA, BORRAR PARTIDA, MODO BATALLA, OPCIONES en el cuadro de (72, 50) sobre TITLE2. Continuar y borrar en gris sin partidas: el cursor se para en ellas y confirmar no hace nada. El cursor no da la vuelta; el menú recuerda la entrada al volver | `main_menu.c: renderInitialMenu`, `main_menu.c: tickMainMenu`, `main_menu.c: tickMenuInput` |
+| Listas | «CONTINUAR/BORRAR RANURA n» y los autoguardados, una fila por ranura, en el cuadro de (60, 50) ([guardar-y-cargar.md](guardar-y-cargar.md#35-continuar)) | `main_menu.c: renderSelectCardSlot` |
+| Modo batalla | Cuadro de título, de mensaje y de Sí/No con «No» enfocado; las dos respuestas vuelven al menú | `main_menu.c: renderConfirmVSSlot` |
+| Opciones | Nombre en blanco y valor en amarillo, en mayúsculas: idioma, texto original, aspecto, minimapa, su tamaño, pantalla, escala y salir. Izquierda y derecha o confirmar cambian el valor; confirmar en el idioma abre su caja | Añadido, con el aspecto de un remaster de fans (capturas 8 y 10) |
+| Idioma | Caja «LANGUAGE - IDIOMA» con una fila por idioma de los paquetes, cada uno en su idioma (`language.native.<código>`), el actual en amarillo, y «ACEPTAR». Elegir cambia todos los textos al momento | Captura 9; sin banderas: los paquetes no traen imágenes de banderas |
+
+Los sonidos son los del original: mover 2, confirmar 3, cancelar 4 (`ui_sounds.yaml`, `main_menu.c: tickMenuInput`).
+El juego publica `title.boot` (la portada empieza en «Press Start»: al arrancar, tras la película y al volver de una
+partida) y `title.choose_language` (no se ha elegido idioma nunca, ni en los ajustes ni con `--lang`). Las preguntas
+de la portada llevan `dialog.at_title`, y el aspecto original las dibuja con su cuadro sobre la lista.
+
+**Mejoras documentadas** (opcionales, a propósito): con partidas guardadas el cursor empieza en CONTINUAR PARTIDA
+(`FocusContinueWhenSaved` en `logic.lua`; el original empieza en NUEVA PARTIDA); Escape y cancelar vuelven un nivel
+(el menú del original no tiene «atrás»); Start se acepta también durante el fundido de entrada; la primera vez, la
+caja de idiomas sale antes del menú; el cuadro de resumen de la partida enfocada y el paso de ocho en ocho filas con
+izquierda y derecha; el ratón enfoca al pasar y confirma con clic, y el mando hace lo mismo que el teclado.
+
+**Diferencias y huecos:** la línea «Press Start» es texto en el idioma del jugador, no la imagen del original; sin la
+línea del copyright; las cajas crecen a la derecha con textos más largos que los del original (español); no hay
+avisos de botones en estas cajas, como en el original; la pregunta del modo batalla dice que aún no existe y el modo
+batalla queda pendiente; la exploración libre no sale en las opciones de la portada (solo funciona en partida) ni la
+sincronía vertical (no cambia en marcha); el reinicio de la película por inactividad sigue como estaba.
 
 **Pendiente:** el cuadro de texto llega con el intérprete de historia, que lo trae; el aspecto lo dibujará entonces
 (`docs/plan/fase-4-contenido-y-modos.md`).
