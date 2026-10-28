@@ -22,9 +22,14 @@ constexpr double MaxFrameSeconds = 0.25;
 // battle_setup.c: BTL_initializeCombat: BATTLE_FRAME_COUNT starts at 1.
 constexpr std::int64_t FirstFrame = 1;
 
-// Resolves the equipped moves: the first three are techniques, the fourth a finisher.
+// Which side a fighter is made for: the partner's slots are fixed, an enemy's are not.
+enum class Side : std::uint8_t { Partner, Enemy };
+
+// Resolves the equipped moves. The partner's first three are techniques and its fourth a finisher;
+// an enemy's NPC record may equip any of its species' moves in any slot (btl.c: loadBattleData
+// loads each one), and a finisher there starts as a finisher wherever it sits.
 core::Result<std::array<std::optional<MoveRef>, EquippedSlots>>
-resolveMoves(const Combatant& combatant, const MoveCatalog& moves) {
+resolveMoves(const Combatant& combatant, const MoveCatalog& moves, Side side) {
   std::array<std::optional<MoveRef>, EquippedSlots> resolved{};
   for (std::size_t slot = 0; slot < EquippedSlots; ++slot) {
     const std::optional<std::string>& id = combatant.moves.at(slot);
@@ -36,6 +41,10 @@ resolveMoves(const Combatant& combatant, const MoveCatalog& moves) {
       return core::fail(messages::formatMessage(messages::UnknownMove, *id));
     }
     const bool finisher = moves.at(*ref).finisher;
+    if (side == Side::Enemy) {
+      resolved.at(slot) = ref;
+      continue;
+    }
     if (slot == FinisherSlot && !finisher) {
       return core::fail(messages::formatMessage(messages::NotFinisherSlot, combatant.species, *id));
     }
@@ -60,11 +69,11 @@ std::int32_t buffUses(const BuffUseRules& rules, std::int32_t brain) {
 }
 
 core::Result<Fighter> makeFighter(const Combatant& combatant, const BattleRules& rules,
-                                  const MoveCatalog& moves) {
+                                  const MoveCatalog& moves, Side side) {
   if (combatant.stats.maxHp < 1) {
     return core::fail(messages::formatMessage(messages::NoMaxHp, combatant.species));
   }
-  auto resolved = resolveMoves(combatant, moves);
+  auto resolved = resolveMoves(combatant, moves, side);
   if (!resolved) {
     return std::unexpected{resolved.error()};
   }
@@ -198,13 +207,13 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   }
   Battle battle{rules, moves, std::move(strategies), seed};
   BattleState& state = battle.state_;
-  auto partner = makeFighter(setup.partner, rules, moves);
+  auto partner = makeFighter(setup.partner, rules, moves, Side::Partner);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
   state.fighters.push_back(std::move(*partner));
   for (const Combatant& combatant : setup.enemies) {
-    auto enemy = makeFighter(combatant, rules, moves);
+    auto enemy = makeFighter(combatant, rules, moves, Side::Enemy);
     if (!enemy) {
       return std::unexpected{enemy.error()};
     }

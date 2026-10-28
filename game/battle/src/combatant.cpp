@@ -1,5 +1,6 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/messages.hpp>
 
@@ -60,10 +61,13 @@ core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const as
       continue;
     }
     const std::int32_t index = animation - FirstMoveAnimation;
+    // btl.c: loadBattleData empties a slot whose animation names no move of the species
+    // (entityGetTechFromAnim gives 0xff), and the enemy fights with the others.
     if (index < 0 || std::cmp_greater_equal(index, SpeciesMoves) ||
         !species.moves.at(static_cast<std::size_t>(index)).has_value()) {
-      return std::unexpected{core::Error{
-          messages::formatMessage(messages::NoSpeciesMove, species.id, index, animation)}};
+      core::logDebug("[port:battle] {}", messages::formatMessage(messages::NoSpeciesMove,
+                                                                 species.id, index, animation));
+      continue;
     }
     enemy.moves.at(slot) = species.moves.at(static_cast<std::size_t>(index));
   }
