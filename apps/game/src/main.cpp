@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
   }
   if (options->uiDemo) {
     UiDemoOptions demo{.content = options->content,
+                       .language = options->language,
                        .width = options->width,
                        .height = options->height,
                        .virtualGamepad = options->virtualGamepad,

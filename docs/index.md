@@ -36,6 +36,8 @@ actualiza en el mismo PR que cambia el código (ver [Cómo contribuir](contribui
 
 El diseño del juego (GDD, historia, personajes) vive en el repositorio de diseño del equipo. Aquí solo va lo técnico.
 
+Para empezar: [Ejecutar el juego](getting-started/jugar.md) · [Extensiones y archivos](formats/extensiones.md).
+
 ## Por dónde empezar según tu rol
 
 | Rol | Lee primero |

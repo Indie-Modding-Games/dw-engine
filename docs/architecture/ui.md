@@ -629,7 +629,7 @@ los cambios de C++ requieren volver a compilar y reiniciar la instancia. Cambiar
 
 ## Demo
 
-`dwe-game --ui-demo [--map <id>] [--size <ancho>x<alto>] [--virtual-gamepad <fichero>]` abre el HUD con el minimapa
+`dwe-game --ui-demo [--lang <idioma>] [--map <id>] [--size <ancho>x<alto>] [--virtual-gamepad <fichero>]` abre el HUD con el minimapa
 del mapa (por defecto `twna01`; uno de prueba si no hay contenido extraído) con un jugador y un compañero que pasean
 solos, y el menú de pausa con sus comandos aplicados (`quit`, ventana completa, escala, minimapa). Registra en el log
 cada comando y cada cambio de foco del menú. Con `--virtual-gamepad`, lee del fichero, según crece, órdenes para un
@@ -640,7 +640,7 @@ la introducción de una partida. La demo publica el aspecto elegido a Lua, igual
 no validan el estado ni las acciones del compañero en una partida real. La cabecera usa una fecha ficticia Year 1 / Day 1.
 `--ui-demo-player` abre directamente Player, sin pasar por el principal ni inyectar teclas. El fixture publica CODEX, nivel0, Bits0 y7h42m; el rango se consulta por nivel en la tabla de títulos del contenido local. Estos valores son de la demo, no de una partida. Esta entrada permite revisar por separado la reconstrucción de Player y documentar sus diferencias pendientes.
 
-En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Esc regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart/Med./Card todavía no tienen contenido funcional y sus pestañas permanecen deshabilitadas. Para Chart, el extractor ya obtiene [los metadatos de posiciones e iconos](../formats/arbol-de-evolucion.md) de la copia local; falta conectarlos a la presentación y al estado de formas criadas.
+En el aspecto original, Player usa su marco y retrato3D independientes del campo. Tab abre las utilidades del motor en un panel separado; Esc regresa al perfil. La demo muestra Raised1 y0medallas como fixture; el juego deja esas cifras vacías hasta recibir datos reales. Chart consume [metadatos de posiciones, iconos y detalle](../formats/arbol-de-evolucion.md) de la copia local y las formas criadas de la historia. Su vista, detalle y transiciones están implementados y tienen escenarios de demo; queda pendiente el contraste final y la integración completa. Med./Card siguen pendientes. `--lang` permite comprobar explícitamente el idioma de la demo sin modificar las preferencias del jugador.
 
 `--ui-demo-fishing` habilita la variante del menú con FISH y SLEEP a la vez para revisar sus siete entradas
 sin iniciar una partida ni desplazarse a una zona de pesca. La demo permite abrir ITEM desde el principal
