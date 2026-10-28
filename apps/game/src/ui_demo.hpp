@@ -13,6 +13,7 @@ struct UiDemoOptions {
   std::filesystem::path content;
   // The map whose minimap is shown; a built-in test grid when the map cannot be loaded.
   std::string map = "twna01";
+  std::optional<std::string> language;
   // The window's size in pixels.
   int width = 1280;
   int height = 720;

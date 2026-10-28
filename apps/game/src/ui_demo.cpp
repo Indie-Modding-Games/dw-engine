@@ -569,9 +569,9 @@ int runUiDemo(const UiDemoOptions& options) {
     core::logError("{}", uiRenderer.error().message);
     return EXIT_FAILURE;
   }
-  auto texts = localization::Catalog::load(
-      content->files, localization::pickLanguage(localization::availableLanguages(content->files),
-                                                 platform::systemLanguage()));
+  const auto demoLanguage = options.language.value_or(localization::pickLanguage(
+      localization::availableLanguages(content->files), platform::systemLanguage()));
+  auto texts = localization::Catalog::load(content->files, demoLanguage);
   if (!texts) {
     core::logError("ui demo: {}", texts.error().message);
     return EXIT_FAILURE;
