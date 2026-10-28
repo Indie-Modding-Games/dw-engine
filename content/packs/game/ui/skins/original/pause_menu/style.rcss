@@ -273,7 +273,7 @@
 #player-name-line { left: 75dp; top: 21dp; }
 #panel.on-player #player-name { left: 120dp; top: 3dp; width: 216dp; white-space: nowrap; }
 #player-level-line { left: 336dp; top: 105dp; }
-#panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals { left: 270dp; width: 48dp; text-align: right; }
+#panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals-view { left: 270dp; width: 48dp; text-align: right; }
 #panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 231dp; top: 51dp; width: 288dp; margin: 0; text-align: left; white-space: nowrap; }
 #player-raised-line { left: 336dp; top: 216dp; }
 #player-bits-line { left: 336dp; top: 273dp; }
@@ -354,3 +354,32 @@
 
 #panel.on-player #chart-detail-transition { display: block; position: absolute; box-sizing: border-box; border: 3dp #808080; background-color: transparent; pointer-events: none; }
 #panel.on-player #chart-detail-transition.hidden { display: none; }
+
+#panel.on-player #player-medals-view { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-medals #player-profile, #panel.on-player.player-medals #player-chart { display: none; }
+#panel.on-player.player-medals #player-medals-view { display: block; }
+#panel.on-player.player-tools-open #player-medals-view { display: none; }
+#medals-title { position: absolute; left: 285dp; top: 21dp; width: 324dp; font-size: 36dp; line-height: 36dp; text-align: center; color: #fff371; }
+.medals-rule { position: absolute; left: 6dp; width: 885dp; height: 9dp; }
+.medals-rule span { position: absolute; height: 3dp; background-color: #020202; }
+.medals-rule .first { left: 3dp; right: 3dp; top: 0; }
+.medals-rule .light { left: 0; right: 0; top: 3dp; background-color: #90d9fa; }
+.medals-rule .last { left: 3dp; right: 3dp; top: 6dp; }
+#medals-rule-header { top: 63dp; }
+#medals-rule-middle { top: 306dp; }
+#medals-rule-footer { top: 501dp; }
+#medals-rule-vertical { left: 654dp; top: 72dp; width: 9dp; height: 234dp; }
+#medals-rule-vertical .first { left: 0; right: auto; top: 0; width: 3dp; height: 228dp; }
+#medals-rule-vertical .light { left: 3dp; right: auto; top: -3dp; width: 3dp; height: 243dp; }
+#medals-rule-vertical .last { left: 6dp; right: auto; top: 0; width: 3dp; height: 234dp; }
+#panel.on-player .medal-cell, #panel.on-player .medal-cell:focus { position: absolute; width: 51dp; height: 72dp; margin: 0; padding: 0; border-width: 0; background-color: transparent; }
+.medal-ribbon, .medal-shadow { position: absolute; top: 0; width: 45dp; height: 72dp; pointer-events: none; }
+.medal-ribbon { left: 6dp; } .medal-shadow { left: 0; }
+#medals-cursor { position: absolute; width: 72dp; height: 72dp; pointer-events: none; }
+#medals-cursor.hidden { display: none; }
+#medals-name-box { left: 153dp; top: 327dp; width: 531dp; height: 45dp; }
+#medals-select-help, #medals-cancel-help { position: absolute; top: 519dp; height: 36dp; font-size: 36dp; color: #d6d6d6; white-space: nowrap; }
+#medals-select-help { left: 342dp; } #medals-cancel-help { left: 576dp; }
+#medals-cross, #medals-triangle { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
+#medals-triangle { color: #3cff3c; }
+.medals-help-text { position: absolute; left: 36dp; top: 0; }

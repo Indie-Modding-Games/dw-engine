@@ -57,3 +57,5 @@ chart_level.2: "Entrenamiento"
 chart_level.3: "Novato"
 chart_level.4: "Campeón"
 chart_level.5: "Definitivo"
+
+medals_chart: "Medallero"

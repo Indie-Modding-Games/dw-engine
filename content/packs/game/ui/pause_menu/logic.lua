@@ -22,6 +22,8 @@ local player_tab = "player"
 local chart_selecting = false
 local chart_detail = false
 local chart_transition = nil
+local medals_selecting = false
+local medal_index = 0
 local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
@@ -312,7 +314,44 @@ local function open_chart_detail(document)
   document:get("player-tab-chart"):focus()
 end
 
+local function medals_cursor(document)
+  local cursor = document:get("medals-cursor")
+  cursor:set_class("hidden", not medals_selecting)
+  cursor:set_property("left", ((23 + (medal_index % 5) * 38) * 3) .. "dp")
+  cursor:set_property("top", ((27 + math.floor(medal_index / 5) * 24) * 3) .. "dp")
+end
+
+function medal_pick(document, index)
+  if ui.setting("player.medals.owned") ~= "" then
+    return
+  end
+  medal_index = math.max(0, math.min(14, index))
+  medals_selecting = true
+  medals_cursor(document)
+  document:get("medal-" .. medal_index):focus()
+end
+
+local function refresh_medals(document)
+  document
+    :get("player-tab-medals")
+    :set_class("unavailable", ui.setting("player.medals.owned") ~= "")
+  for i = 0, 14 do
+    local cell = document:get("medal-" .. i)
+    cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
+    cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+  end
+  for id, index in pairs({ ["medals-cross"] = 5, ["medals-triangle"] = 7 }) do
+    local key = string.format("main.status_view_labels.%04d", index)
+    local label = t(key)
+    document:get(id):set_text(label ~= key and string.match(label, "^(%S+)") or "")
+  end
+  medals_cursor(document)
+end
+
 function show_player_tab(document, tab)
+  if tab == "medals" and ui.setting("player.medals.owned") ~= "" then
+    return
+  end
   if tab == "chart" and (tonumber(ui.setting("player.chart.count")) or 0) == 0 then
     return
   end
@@ -320,11 +359,15 @@ function show_player_tab(document, tab)
   chart_transition = nil
   document:get("chart-detail-transition"):set_class("hidden", true)
   document:get("panel"):set_class("chart-detail-open", false)
+  medals_selecting = false
+  medals_cursor(document)
   player_tab = tab
   chart_selecting = false
   document:get("panel"):set_class("player-chart", tab == "chart")
   document:get("player-tab-player"):set_class("selected", tab == "player")
   document:get("player-tab-chart"):set_class("selected", tab == "chart")
+  document:get("player-tab-medals"):set_class("selected", tab == "medals")
+  document:get("panel"):set_class("player-medals", tab == "medals")
   chart_cursor(document)
   document:get("player-tab-" .. tab):focus()
 end
@@ -396,6 +439,7 @@ local function chart_move(document, action)
 end
 
 local function refresh(document)
+  refresh_medals(document)
   refresh_chart(document)
   draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
   draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
@@ -470,10 +514,12 @@ local function show_page(document, name, focus, tools)
     chart_selecting = false
     document:get("player-tab-player"):set_class("selected", true)
     document:get("player-tab-chart"):set_class("selected", false)
+    document:get("player-tab-medals"):set_class("selected", false)
     chart_cursor(document)
   end
   current = name
   document:get("panel"):set_class("player-chart", name == "player" and player_tab == "chart")
+  document:get("panel"):set_class("player-medals", name == "player" and player_tab == "medals")
   player_tools_open = tools == true
   document:get("panel"):set_class("player-tools-open", player_tools_open)
   document
@@ -643,6 +689,23 @@ function on_action(document, action)
     return true
   end
   if current == "player" and not player_tools_open and ui.setting("ui_skin") == "original" then
+    if player_tab == "medals" and medals_selecting then
+      if action == "cancel" then
+        medals_selecting = false
+        medals_cursor(document)
+        document:get("player-tab-medals"):focus()
+      elseif action == "left" and medal_index % 5 > 0 then
+        medal_pick(document, medal_index - 1)
+      elseif action == "right" and medal_index % 5 < 4 then
+        medal_pick(document, medal_index + 1)
+      elseif action == "up" and medal_index >= 5 then
+        medal_pick(document, medal_index - 5)
+      elseif action == "down" and medal_index < 10 then
+        medal_pick(document, medal_index + 5)
+      end
+      return true
+    end
+
     if player_tab == "chart" and chart_selecting then
       if action == "cancel" then
         chart_selecting = false
@@ -659,12 +722,21 @@ function on_action(document, action)
         return true
       end
     else
-      if action == "right" then
-        show_player_tab(document, "chart")
+      if action == "right" or action == "left" then
+        local tabs = { "player" }
+        if (tonumber(ui.setting("player.chart.count")) or 0) > 0 then
+          table.insert(tabs, "chart")
+        end
+        if ui.setting("player.medals.owned") == "" then
+          table.insert(tabs, "medals")
+        end
+        local current_index = index_of(tabs, player_tab)
+        local delta = action == "left" and -1 or 1
+        show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
         return true
       end
-      if action == "left" then
-        show_player_tab(document, "player")
+      if action == "confirm" and player_tab == "medals" then
+        medal_pick(document, medal_index)
         return true
       end
       if action == "confirm" and player_tab == "chart" then

@@ -25,3 +25,5 @@
 #chart-detail { display: none; }
 
 #chart-detail-transition { display: none; }
+
+#player-medals-view { display: none; }

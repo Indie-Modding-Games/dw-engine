@@ -57,3 +57,5 @@ chart_level.2: "Training"
 chart_level.3: "Rookie"
 chart_level.4: "Champion"
 chart_level.5: "Ultimate"
+
+medals_chart: "Medals Chart"

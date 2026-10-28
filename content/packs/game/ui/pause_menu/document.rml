@@ -31,7 +31,7 @@
                 <div id="player-tabs" class="player-native">
                   <button id="player-tab-player" class="player-tab selected" onclick="show_player_tab(document, 'player')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player"></span></button>
                   <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_chart"></span></button>
-                  <button id="player-tab-medals" class="player-tab" disabled="disabled"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
+                  <button id="player-tab-medals" class="player-tab" onclick="show_player_tab(document, 'medals')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
                   <button id="player-tab-card" class="player-tab" disabled="disabled"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
                 </div>
                 <div id="player-profile">
@@ -243,6 +243,32 @@
                   <div id="chart-detail-name"></div>
                 </div>
                 <div id="chart-detail-transition" class="hidden"></div>
+                <div id="player-medals-view" class="player-native">
+                  <div id="medals-title" text-key="pause_menu.medals_chart"></div>
+                  <div id="medals-rule-header" class="medals-rule"><span class="first"></span><span class="light"></span><span class="last"></span></div>
+                  <div id="medals-rule-middle" class="medals-rule"><span class="first"></span><span class="light"></span><span class="last"></span></div>
+                  <div id="medals-rule-footer" class="medals-rule"><span class="first"></span><span class="light"></span><span class="last"></span></div>
+                  <div id="medals-rule-vertical" class="medals-rule"><span class="first"></span><span class="light"></span><span class="last"></span></div>
+                  <button id="medal-0" class="medal-cell" onclick="medal_pick(document, 0)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-1" class="medal-cell" onclick="medal_pick(document, 1)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-2" class="medal-cell" onclick="medal_pick(document, 2)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-3" class="medal-cell" onclick="medal_pick(document, 3)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-4" class="medal-cell" onclick="medal_pick(document, 4)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-5" class="medal-cell" onclick="medal_pick(document, 5)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-6" class="medal-cell" onclick="medal_pick(document, 6)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-7" class="medal-cell" onclick="medal_pick(document, 7)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-8" class="medal-cell" onclick="medal_pick(document, 8)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-9" class="medal-cell" onclick="medal_pick(document, 9)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-10" class="medal-cell" onclick="medal_pick(document, 10)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-11" class="medal-cell" onclick="medal_pick(document, 11)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-12" class="medal-cell" onclick="medal_pick(document, 12)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-13" class="medal-cell" onclick="medal_pick(document, 13)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <button id="medal-14" class="medal-cell" onclick="medal_pick(document, 14)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
+                  <img id="medals-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 208 24 24"/>
+                  <div id="medals-name-box" class="player-inset"></div>
+                  <div id="medals-select-help"><span id="medals-cross"></span><span class="medals-help-text" text-key="pause_menu.chart_select"></span></div>
+                  <div id="medals-cancel-help"><span id="medals-triangle"></span><span class="medals-help-text" text-key="common.cancel"></span></div>
+                </div>
                 <div id="player-tools">
 				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
 				<button id="player-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>
