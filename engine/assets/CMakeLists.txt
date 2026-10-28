@@ -50,6 +50,7 @@ dwe_add_module(assets
         src/game_table_document.cpp
         src/move_table.cpp
         src/evolution_table.cpp
+        src/evolution_chart.cpp
         src/dev_asset_sources.cpp
         src/dev_pack_selection.cpp
     DEPS core

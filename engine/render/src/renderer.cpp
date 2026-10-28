@@ -103,7 +103,39 @@ bool Renderer::renderFrame(const FrameDesc& frame) {
       drawer->prepare(prepare);
     }
   }
+  for (const TextureScene& scene : frame.textureScenes) {
+    const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
+    const rhi::Image* color = findTexture(scene.target);
+    if (target == sceneTargets_.end() || color == nullptr)
+      continue;
+    const rhi::Extent size = color->extent();
+    PrepareContext targetPrepare{upload_, size};
+    for (Drawer* drawer : scene.drawers)
+      drawer->prepare(targetPrepare);
+  }
   applyPendingWrites(commands);
+
+  for (const TextureScene& scene : frame.textureScenes) {
+    const auto target = std::ranges::find(sceneTargets_, scene.target, &SceneTarget::color);
+    const rhi::Image* color = findTexture(scene.target);
+    if (target == sceneTargets_.end() || color == nullptr)
+      continue;
+    const rhi::Extent size = color->extent();
+    commands.prepareSampledTarget(*color);
+    commands.prepareDepthTarget(target->depth);
+    commands.beginRendering(
+        {.extent = size,
+         .color = {.view = color->view(), .clear = std::array{0.F, 0.F, 0.F, 0.F}},
+         .depth = {.view = target->depth.view(), .clear = 1.F}});
+    DrawContext targetContext{commands, upload_, Pass::Scene, size};
+    for (Drawer* drawer : scene.drawers) {
+      commands.setViewport(fullViewport(size));
+      commands.setScissor({.x = 0, .y = 0, .width = size.width, .height = size.height});
+      drawer->draw(targetContext);
+    }
+    commands.endRendering();
+    commands.finishSampledTarget(*color);
+  }
 
   const rhi::Image* depth = depthTarget(extent);
   const rhi::Viewport viewport = fullViewport(extent);
@@ -210,6 +242,24 @@ core::Result<TextureId> Renderer::queueTexture(rhi::Extent extent,
   return texture;
 }
 
+core::Result<TextureId> Renderer::createSceneTexture(rhi::Extent extent) {
+  auto depth = rhi::Image::create(
+      *device_, {.extent = extent, .format = depthFormat_, .usage = rhi::ImageUsage::DepthTarget});
+  if (!depth)
+    return std::unexpected{depth.error()};
+  auto color = rhi::Image::create(
+      *device_, {.extent = extent,
+                 .format = colorFormat_,
+                 .usage = rhi::ImageUsage::Sampled | rhi::ImageUsage::ColorTarget});
+  if (!color)
+    return std::unexpected{color.error()};
+  auto texture = addTexture(std::move(*color));
+  if (!texture)
+    return std::unexpected{texture.error()};
+  sceneTargets_.push_back({.color = *texture, .depth = std::move(*depth)});
+  return *texture;
+}
+
 core::Result<void> Renderer::queueTextureUpdate(TextureId texture, const rhi::Rect& region,
                                                 std::span<const std::byte> pixels) {
   const rhi::Image* image = findTexture(texture);
@@ -295,6 +345,8 @@ void Renderer::destroyTexture(TextureId texture) {
   std::erase_if(pending_,
                 [texture](const PendingWrite& write) { return write.texture == texture; });
   bindless_->remove(texture);
+  std::erase_if(sceneTargets_,
+                [texture](const SceneTarget& target) { return target.color == texture; });
   textures_[texture.index].reset();
 }
 

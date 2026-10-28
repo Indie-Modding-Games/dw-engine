@@ -242,6 +242,25 @@ core::Result<std::vector<EvolutionPath>> readEvolutionPaths(const MemoryImage& i
                                     });
 }
 
+core::Result<std::vector<EvolutionChartEntry>> readEvolutionChart(const MemoryImage& image,
+                                                                  const ExecutableLayout& layout) {
+  auto entries = readRecords<EvolutionChartEntry>(
+      image, layout.evolutionChart, "EVO_CHART_BOXES", 8, [](ByteCursor& c) {
+        EvolutionChartEntry entry{
+            .x = c.i16(), .y = c.i16(), .u = c.u8(), .v = c.u8(), .palette = c.u8()};
+        c.skip(1);
+        return entry;
+      });
+  if (!entries)
+    return std::unexpected{entries.error()};
+  for (const auto& entry : *entries) {
+    if (entry.x < 0 || entry.x > 304 || entry.y < 0 || entry.y > 224 || entry.u > 224 ||
+        entry.v > 240 || entry.palette > 4)
+      return core::fail("EVO_CHART_BOXES contains an invalid viewport position or icon reference");
+  }
+  return entries;
+}
+
 core::Result<std::vector<RaiseData>> readRaiseData(const MemoryImage& image,
                                                    const ExecutableLayout& layout) {
   return readRecords<RaiseData>(image, layout.raiseData, "RAISE_DATA", 28, [](ByteCursor& c) {
@@ -348,6 +367,10 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
                                                     const ExecutableLayout& layout) {
   ExecutableTables tables;
   core::Error error;
+  // Older/custom layouts may not locate UI metadata yet; the existing gameplay tables still load.
+  if (layout.evolutionChart.located() &&
+      !store(readEvolutionChart(image, layout), tables.evolutionChart, error))
+    return std::unexpected{error};
   const auto strings = [&](const TableLocation& table, std::string_view name) {
     return readNamedStringTable(image, table, name);
   };

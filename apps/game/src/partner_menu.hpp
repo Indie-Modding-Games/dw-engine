@@ -3,9 +3,10 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/screens/screen_settings.hpp>
-#include <dwe/session/game_session.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/story_adapter.hpp>
 #include <dwe/ui/ui.hpp>
 
 #include <string>
@@ -44,6 +45,7 @@ struct PartnerMenuDesc {
   const assets::DigimonTable* species = nullptr;
   ui::Ui* ui = nullptr;
   session::BattleAdapter* battle = nullptr;
+  session::StoryAdapter* story = nullptr;
   // The field's feeding scene, which the bag's Use starts when it can; null: the bag uses the
   // item at once.
   FeedScene* feed = nullptr;

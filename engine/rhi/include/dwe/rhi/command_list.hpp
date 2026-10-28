@@ -57,6 +57,10 @@ public:
   // finish with it. For depth targets cleared every frame.
   void prepareDepthTarget(const Image& depth);
 
+  // A sampled color target, cleared every use. Call outside rendering; finish before sampling.
+  void prepareSampledTarget(const Image& color);
+  void finishSampledTarget(const Image& color);
+
   // Records a clear of a sampled image created with ImageDesc::initialize off, which it must be
   // before anything samples it. Outside rendering only.
   void initializeImage(const Image& image);

@@ -116,6 +116,14 @@ struct EvolutionPath {
 };
 
 // partner.h: RaiseData, indexed by Digimon type.
+struct EvolutionChartEntry {
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::uint8_t u = 0;
+  std::uint8_t v = 0;
+  std::uint8_t palette = 0;
+};
+
 struct RaiseData {
   std::array<std::int8_t, 8> hungerTimes{};
   std::uint8_t energyCap = 0;
@@ -246,6 +254,7 @@ struct ExecutableTables {
   std::vector<EvoStatsGains> evolutionStatsGains;
   std::vector<EvolutionPath> evolutionPaths;
   std::vector<RaiseData> raiseData;
+  std::vector<EvolutionChartEntry> evolutionChart;
   std::vector<CardData> cardData;
   std::vector<std::int32_t> cardPrices;
   std::vector<std::string> tournamentNames;
@@ -300,6 +309,8 @@ core::Result<std::vector<EvolutionPath>> readEvolutionPaths(const MemoryImage& i
                                                             const ExecutableLayout& layout);
 core::Result<std::vector<RaiseData>> readRaiseData(const MemoryImage& image,
                                                    const ExecutableLayout& layout);
+core::Result<std::vector<EvolutionChartEntry>> readEvolutionChart(const MemoryImage& image,
+                                                                  const ExecutableLayout& layout);
 core::Result<std::vector<CardData>> readCardData(const MemoryImage& image,
                                                  const ExecutableLayout& layout);
 core::Result<std::vector<MapEntry>> readMapEntries(const MemoryImage& image,

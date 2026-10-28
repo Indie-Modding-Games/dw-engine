@@ -125,6 +125,19 @@ Rml::TextureHandle RenderBridge::createTexture(Rml::Vector2i dimensions,
 }
 
 Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) {
+  if (gpu_ != nullptr) {
+    const auto borrowed = gpu_->borrowedTextures.find(source);
+    if (borrowed != gpu_->borrowedTextures.end()) {
+      const auto extent = gpu_->renderer->textureExtent(borrowed->second);
+      if (!extent)
+        return 0;
+      dimensions = {static_cast<int>(extent->width), static_cast<int>(extent->height)};
+      return handleOf(borrowed->second);
+    }
+  }
+  // Optional runtime images have no file fallback (for example when a species has no model).
+  if (source.starts_with("runtime/"))
+    return 0;
   auto image = sources_->load(source);
   if (!image) {
     core::logWarning("ui: {}", image.error().message);
@@ -147,6 +160,10 @@ Rml::TextureHandle RenderBridge::GenerateTexture(Rml::Span<const Rml::byte> sour
 void RenderBridge::ReleaseTexture(Rml::TextureHandle texture) {
   sharpTextures_.erase(texture);
   if (gpu_ != nullptr && texture != 0) {
+    if (std::ranges::any_of(gpu_->borrowedTextures, [texture](const auto& binding) {
+          return handleOf(binding.second) == texture;
+        }))
+      return;
     gpu_->renderer->destroyTexture(textureOf(texture));
   }
 }

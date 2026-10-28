@@ -10,8 +10,10 @@
 #include <RmlUi/Core/Vertex.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace dwe::ui {
@@ -42,6 +44,7 @@ struct UiRenderer::Impl {
   render::Renderer* renderer = nullptr;
   rhi::GraphicsPipeline pipeline;
   std::vector<UiDraw> draws;
+  std::map<std::string, render::TextureId, std::less<>> borrowedTextures;
 };
 
 } // namespace dwe::ui

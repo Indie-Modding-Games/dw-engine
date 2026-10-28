@@ -114,6 +114,15 @@ void PartnerMenu::update() {
     desc_.ui->setSetting("player.bits", static_cast<double>(desc_.inventory->inventory().money()));
     const auto minutes = static_cast<std::int64_t>(desc_.session->playSeconds()) / 60;
     desc_.ui->setSetting("player.seconds", static_cast<double>(minutes * 60));
+    if (desc_.story != nullptr) {
+      std::string raised;
+      for (const auto index : desc_.story->raisedSpecies()) {
+        if (!raised.empty())
+          raised += ',';
+        raised += std::to_string(index);
+      }
+      desc_.ui->setSetting("player.chart.raised", std::move(raised));
+    }
   }
   if (desc_.ui->isVisible(PartnerMenuDocument)) {
     publish();
@@ -126,15 +135,20 @@ bool PartnerMenu::handle(const ui::UiCommand& command) {
     const auto* page = std::get_if<std::string>(&command.value);
     const bool items = page != nullptr && *page == "items";
     desc_.ui->setSetting("partner_menu.start_page", std::string{items ? "items" : "status"});
-    desc_.ui->setSetting("pause_menu.start_entry", std::string{items ? "open-items" : "open-partner"});
+    desc_.ui->setSetting("pause_menu.start_entry",
+                         std::string{items ? "open-items" : "open-partner"});
     open();
   } else if (command.name == "partner_toggle_technique" && number != nullptr) {
-    if (desc_.battle != nullptr && desc_.session->playing()
-        && *number >= 0 && *number < 16 && *number == static_cast<double>(static_cast<int>(*number))) {
-      const auto result = desc_.battle->toggleTechnique(*desc_.session, static_cast<session::MoveSlot>(*number));
-      desc_.ui->setSetting("partner.technique.result", std::string{
-          result == session::TechniqueToggle::Full ? "partner_menu.tech.full" :
-          result == session::TechniqueToggle::Unavailable ? "partner_menu.tech.unavailable" : ""});
+    if (desc_.battle != nullptr && desc_.session->playing() && *number >= 0 && *number < 16 &&
+        *number == static_cast<double>(static_cast<int>(*number))) {
+      const auto result =
+          desc_.battle->toggleTechnique(*desc_.session, static_cast<session::MoveSlot>(*number));
+      desc_.ui->setSetting("partner.technique.result",
+                           std::string{result == session::TechniqueToggle::Full
+                                           ? "partner_menu.tech.full"
+                                       : result == session::TechniqueToggle::Unavailable
+                                           ? "partner_menu.tech.unavailable"
+                                           : ""});
       publish();
     }
   } else if (command.name == BagUseCommand && number != nullptr) {
@@ -194,10 +208,7 @@ void PartnerMenu::publish() const {
     return;
   }
   const screens::NameKeys names{desc_.species, &desc_.inventory->items(), nullptr};
-  screens::publish(
-      *desc_.ui,
-      statusSettings(),
-      screens::PartnerRevisionSetting);
+  screens::publish(*desc_.ui, statusSettings(), screens::PartnerRevisionSetting);
   screens::publish(*desc_.ui,
                    screens::settingsOf(screens::bagViewOf(desc_.inventory->inventory(),
                                                           desc_.inventory->items(), names)),

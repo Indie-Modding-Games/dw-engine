@@ -22,6 +22,8 @@ struct UiDemoOptions {
   std::optional<std::string> uiSkin;
   std::optional<ui::TextFont> textFont;
   bool fishing = false;
+  bool player = false;
+  std::optional<std::filesystem::path> chart;
   int bagSlots = 0;
 };
 

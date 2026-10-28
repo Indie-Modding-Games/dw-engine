@@ -243,3 +243,100 @@
 .digit-7 { decorator: image(menu-digit-7 scale-none center center); }
 .digit-8 { decorator: image(menu-digit-8 scale-none center center); }
 .digit-9 { decorator: image(menu-digit-9 scale-none center center); }
+
+/* The title follows the actual tamer level (renderPlayerInfoView), from the local disc's table. */
+.player-rank { display: block; clear: both; margin-top: 3dp; text-align: right; color: #d6d6d6; }
+
+/* renderPlayerInfoView: a 300x190 box; one native pixel is 3dp. */
+#panel.on-player { top: 93dp; width: 900dp; height: 570dp; margin-left: -450dp; padding: 0; box-sizing: border-box; background-color: #2d3840; }
+#panel.on-player #title, #panel.on-player #title-date, #panel.on-player #prompts, #panel.on-player #player-tools { display: none; }
+#panel.on-player #page-player { position: relative; height: 564dp; padding: 0; margin: 0; }
+#panel.on-player .player-native { display: block; }
+#panel.on-player #player-profile { position: relative; height: 564dp; }
+#player-tabs { position: absolute; left: 12dp; top: -48dp; height: 48dp; }
+#panel.on-player .player-tab, #panel.on-player .player-tab:focus, #panel.on-player .player-tab:disabled { position: absolute; top: 0; height: 45dp; padding: 0; margin: 0; border-width: 0; box-sizing: border-box; background-color: transparent; opacity: 1; color: #288ad0; font-size: 36dp; text-align: left; }
+#panel.on-player .player-tab.selected { height: 48dp; color: #243640; }
+#player-tab-player { left: 0; width: 222dp; }
+#player-tab-chart { left: 225dp; width: 222dp; }
+#player-tab-medals { left: 450dp; width: 150dp; }
+#player-tab-card { left: 603dp; width: 150dp; }
+.player-tab-left, .player-tab-middle, .player-tab-right { position: absolute; display: block; top: 0; height: 100%; opacity: 0.25; }
+.player-tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
+.player-tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
+.player-tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
+.selected .player-tab-left { decorator: image(digimon-tab-left-active); opacity: 1; }
+.selected .player-tab-middle { decorator: image(digimon-tab-middle-active); opacity: 1; }
+.selected .player-tab-right { decorator: image(digimon-tab-right-active); opacity: 1; }
+.player-tab-label { position: relative; left: 21dp; top: 9dp; white-space: nowrap; }
+#panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 36dp; line-height: 36dp; font-size: 36dp; color: #fff371; }
+#panel.on-player .player-value { position: absolute; top: -3dp; float: none; color: #d6d6d6; }
+#player-name-line { left: 75dp; top: 21dp; }
+#panel.on-player #player-name { left: 120dp; top: 3dp; width: 216dp; white-space: nowrap; }
+#player-level-line { left: 336dp; top: 105dp; }
+#panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals { left: 270dp; width: 48dp; text-align: right; }
+#panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 231dp; top: 51dp; width: 288dp; margin: 0; text-align: left; white-space: nowrap; }
+#player-raised-line { left: 336dp; top: 216dp; }
+#player-bits-line { left: 336dp; top: 273dp; }
+#panel.on-player #player-bits { left: 234dp; width: 144dp; text-align: right; }
+#player-time-line { left: 336dp; top: 333dp; }
+#panel.on-player #player-time { left: 261dp; width: 228dp; white-space: nowrap; }
+#player-items-line-label { left: 336dp; top: 438dp; }
+#player-medals-line { left: 336dp; top: 498dp; }
+.player-inset { position: absolute; height: 45dp; box-sizing: border-box; border: 3dp #020202; border-right-color: #6987a0; border-bottom-color: #6987a0; background-color: #354b5c; }
+#player-name-box { left: 189dp; top: 18dp; width: 228dp; }
+#player-level-box { left: 600dp; top: 96dp; width: 84dp; }
+#player-rank-box { left: 561dp; top: 150dp; width: 300dp; }
+#player-raised-box { left: 600dp; top: 207dp; width: 84dp; }
+#player-bits-box { left: 564dp; top: 264dp; width: 228dp; }
+#player-time-box { left: 564dp; top: 324dp; width: 228dp; }
+#player-medals-box { left: 600dp; top: 489dp; width: 84dp; }
+#panel.on-player .player-item-box { top: 426dp; width: 57dp; height: 57dp; }
+#player-item-box-0 { left: 600dp; } #player-item-box-1 { left: 660dp; } #player-item-box-2 { left: 720dp; } #player-item-box-3 { left: 780dp; }
+.player-separator, .player-separator span { position: absolute; }
+.player-separator span { display: block; background-color: #020202; }
+.player-separator .rule-light { background-color: #6987a0; }
+#player-header-line { left: 6dp; top: 69dp; width: 885dp; height: 9dp; }
+#player-header-line span { height: 3dp; }
+#player-header-line .rule-first { left: 3dp; right: 3dp; top: 0; }
+#player-header-line .rule-light { left: 0; right: 0; top: 3dp; }
+#player-header-line .rule-last { left: 3dp; right: 3dp; top: 6dp; }
+#player-vertical-line { left: 306dp; top: 72dp; width: 9dp; height: 495dp; }
+#player-vertical-line span { width: 3dp; }
+#player-vertical-line .rule-first { left: 0; top: 3dp; bottom: 6dp; }
+#player-vertical-line .rule-light { left: 3dp; top: 0; bottom: 3dp; }
+#player-vertical-line .rule-last { left: 6dp; top: 3dp; height: 321dp; }
+#player-vertical-line .rule-tail { left: 6dp; top: 333dp; bottom: 0; }
+#player-items-line { left: 309dp; top: 396dp; width: 582dp; height: 9dp; }
+#player-items-line span { height: 3dp; }
+#player-items-line .rule-first { left: 0; right: 6dp; top: 0; }
+#player-items-line .rule-light { left: 3dp; right: 0; top: 3dp; }
+#player-items-line .rule-last { left: 3dp; right: 6dp; top: 6dp; }
+#player-portrait-clip { position: absolute; left: 0; top: 75dp; width: 306dp; height: 492dp; overflow: hidden; }
+#player-portrait { position: absolute; left: -33dp; top: -171dp; width: 960dp; height: 720dp; }
+/* Tab opens the engine's utilities separately; they are not part of the original profile. */
+#panel.on-player.player-tools-open { top: 120dp; width: 552dp; height: auto; margin-left: -276dp; padding: 6dp 9dp 9dp 9dp; box-sizing: content-box; background-color: #2d384080; }
+#panel.on-player.player-tools-open #title, #panel.on-player.player-tools-open #prompts, #panel.on-player.player-tools-open #player-tools { display: block; }
+#panel.on-player.player-tools-open #page-player { height: auto; }
+#panel.on-player.player-tools-open #player-tabs, #panel.on-player.player-tools-open #player-profile { display: none; }
+
+#panel.on-player #player-chart { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-chart #player-profile { display: none; }
+#panel.on-player.player-chart #player-chart { display: block; }
+#panel.on-player.player-tools-open #player-chart { display: none; }
+#panel.on-player .player-tab.unavailable { focus: none; tab-index: none; }
+.chart-stage { position: absolute; top: 21dp; height: 480dp; box-sizing: border-box; border-width: 3dp; border-style: solid; }
+#chart-stage-0 { left: 30dp; width: 105dp; border-color: #c8a0aa; border-right-color: #8c3c5a; border-bottom-color: #8c3c5a; background-color: #a55a73; }
+#chart-stage-1 { left: 141dp; width: 105dp; border-color: #a578a0; border-right-color: #4b1446; border-bottom-color: #4b1446; background-color: #6e2d5a; }
+#chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
+#chart-stage-3 { left: 363dp; width: 321dp; border-color: #5aaf6e; border-right-color: #005a28; border-bottom-color: #005a28; background-color: #008741; }
+#chart-stage-4 { left: 690dp; width: 171dp; border-color: #d29669; border-right-color: #78411e; border-bottom-color: #78411e; background-color: #af642d; }
+#panel.on-player .chart-cell, #panel.on-player .chart-cell:focus { position: absolute; width: 57dp; height: 57dp; margin: 0; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
+#panel.on-player .chart-cell.hidden, .chart-icon.hidden { display: none; }
+.chart-icon { display: block; width: 48dp; height: 48dp; pointer-events: none; }
+#chart-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+#chart-cursor.hidden { display: none; }
+#chart-select-help, #chart-cancel-help { position: absolute; top: 516dp; height: 36dp; font-size: 36dp; color: #d6d6d6; white-space: nowrap; }
+#chart-select-help { left: 369dp; } #chart-cancel-help { left: 621dp; }
+#chart-cross, #chart-triangle { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
+#chart-triangle { color: #3cff3c; }
+.chart-help-text { position: absolute; left: 36dp; top: 0; }

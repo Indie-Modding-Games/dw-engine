@@ -64,8 +64,10 @@ core::Result<std::unique_ptr<UiRenderer>> UiRenderer::create(render::Renderer& r
   if (!pipeline) {
     return std::unexpected{pipeline.error()};
   }
-  auto impl = std::make_unique<Impl>(
-      Impl{.renderer = &renderer, .pipeline = std::move(*pipeline), .draws = {}});
+  auto impl = std::make_unique<Impl>(Impl{.renderer = &renderer,
+                                          .pipeline = std::move(*pipeline),
+                                          .draws = {},
+                                          .borrowedTextures = {}});
   return std::unique_ptr<UiRenderer>{new UiRenderer{std::move(impl)}};
 }
 
@@ -75,6 +77,16 @@ UiRenderer::~UiRenderer() = default;
 
 std::size_t UiRenderer::drawCount() const {
   return impl_->draws.size();
+}
+
+core::Result<void> UiRenderer::bindTexture(std::string source, render::TextureId texture) {
+  if (!source.starts_with("runtime/") || !impl_->renderer->textureExtent(texture)) {
+    return core::fail("UI texture binding requires a runtime/ path and a live renderer texture");
+  }
+  if (!impl_->borrowedTextures.emplace(std::move(source), texture).second) {
+    return core::fail("UI texture binding already exists");
+  }
+  return {};
 }
 
 void UiRenderer::draw(render::DrawContext& context) {

@@ -37,6 +37,8 @@ dwe_add_app(game
         src/options.cpp
         src/partner_events.cpp
         src/partner_menu.cpp
+        src/player_chart.cpp
+        src/partner_portrait.cpp
         src/partner_tab.cpp
         src/play_session.cpp
         src/story_scene_glue.cpp

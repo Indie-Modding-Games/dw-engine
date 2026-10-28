@@ -34,6 +34,7 @@ dwe_add_module(dwx
         src/script_maps.cpp
         src/story_conversion.cpp
         src/table_extractors.cpp
+        src/chart_extract.cpp
         src/model_extractors.cpp
         src/model_textures.cpp
         src/pack.cpp
