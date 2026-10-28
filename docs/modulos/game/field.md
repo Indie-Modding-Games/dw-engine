@@ -53,7 +53,9 @@ if (auto change = field.takeMapChange()) {
   registro, un NPC mira al jugador, corre adonde lo vio y vuelve, o lo sigue mientras está en su radio
   (`overworld.c: NPCEntityTickOverworld`). Mientras reacciona no sigue su ruta. Si un NPC con `autotalk` choca con
   el jugador, el contacto (`contacts()`) lanza su sección del guion, que es la que empieza el combate. El original
-  no tiene encuentros aleatorios: todos los enemigos del campo son NPC del mapa.
+  no tiene encuentros aleatorios: todos los enemigos del campo son NPC del mapa. Mientras un guion retiene el campo,
+  los NPC no hacen su tick, pero su `Transform` empieza cada tick igual (`FieldNpcs::beginTick`): así un NPC que el
+  guion lleva andando se dibuja donde está, no entre ese punto y donde estaba al empezar el guion.
 - **Escenas de cuidado** (`holdForCare`): retienen al jugador sin parar el tiempo de juego, como el estado 6 del
   tamer en el original. No hay entrada ni casillas, y el compañero no sigue al jugador. `walkPartnerToRange(rango)`
   lleva al compañero hasta esa distancia del jugador: se acerca si está más lejos y se aleja si está más cerca

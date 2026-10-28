@@ -98,7 +98,11 @@ void Field::tickScripted(float seconds) {
   entt::registry& registry = world_->registry();
   registry.get<AnimationIntent>(player_) = {};
   // The characters a script holds glide where it drives them; the player's and the partner's
-  // transforms began this tick in Field::tick.
+  // transforms began this tick in Field::tick. The NPCs' begin here too: their own tick does not
+  // run while the script holds the field, and a transform left on the tick the hold started draws
+  // the NPC between that spot and where the script walks it (overworld.c: the NPC's place is its
+  // position each frame, with nothing in between).
+  npcs_.beginTick();
   registry.view<ScriptedActor, Transform>().each(
       [seconds](const ScriptedActor& actor, Transform& transform) {
         transform.position += actor.velocity * seconds;

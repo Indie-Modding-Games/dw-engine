@@ -122,6 +122,9 @@ public:
   void tick(float seconds, const assets::MapCollision& collision,
             const NpcSurroundings& surroundings);
 
+  // Starts a tick of every NPC's transform, so it is drawn between this tick's start and end.
+  void beginTick();
+
   // The touches and talks since clearContacts.
   [[nodiscard]] std::span<const NpcContact> contacts() const { return contacts_; }
   void clearContacts() { contacts_.clear(); }
