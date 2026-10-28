@@ -332,6 +332,18 @@ public:
   // The rules in use.
   [[nodiscard]] const FieldRules& rules() const { return rules_; }
 
+  // Something that held the characters let them go: a script, a care scene, a battle, a gym
+  // course, a map entry or load (docs/modulos/game/field.md, "Posiciones", the engine's). The
+  // partner's trail and stuck time and the player's last cell start over, and on the next tick the
+  // field runs unheld, separateActors puts whoever stands in another character or in a wall on
+  // the nearest free spot. After a script, it waits for the partner to make room on foot first
+  // (makeRoomForPlayer). An NPC put on the map or let go asks for the same check by itself.
+  void releaseHandoff(std::string_view why);
+  // The release rule now, the engine's (the original has none): a character in a wall cell, or
+  // deep in another's collision square (overlaps), goes to the nearest spot where it fits on the
+  // grid, touches nobody, reaches from where it stood and warps nothing. The partner moves first,
+  // then the NPCs in slot order; the player moves only out of a wall. How many it moved.
+  std::int32_t separateActors(std::string_view why);
   // Whether two characters' squares overlap deep enough to stand in each other: by more than half
   // their summed half sides on both axes. The original's squares are wide, and a partner stopped
   // by the player on a diagonal overlaps it by a corner (partner.c:971 measures a circle).
@@ -339,6 +351,7 @@ public:
   // How many times two characters (or one and a wall) stood in each other longer than a second
   // while the player moved freely; each such episode is logged once ("[positions] overlap").
   [[nodiscard]] std::int32_t overlapEpisodes() const { return overlapEpisodes_; }
+
   // The map's NPCs, which the story puts on the map and takes off (npcs.hpp).
   [[nodiscard]] FieldNpcs& npcs() { return npcs_; }
   [[nodiscard]] const FieldNpcs& npcs() const { return npcs_; }
@@ -398,6 +411,14 @@ private:
   [[nodiscard]] std::string nameOf(const Body& body) const;
   [[nodiscard]] GroundSquare squareOf(const Body& body) const;
   [[nodiscard]] bool inWall(glm::vec3 position) const;
+  // Whether a character may stand at `at`: it fits on the grid, warps nothing and touches none of
+  // `others` but `self`.
+  [[nodiscard]] bool freeFor(const Body& self, glm::vec3 at, std::span<const Body> others) const;
+  // The nearest free spot around `from`, rings outward; the ones toward `away` first.
+  [[nodiscard]] std::optional<glm::vec3> freeSpotNear(const Body& self, glm::vec3 from,
+                                                      glm::vec2 away, bool walled,
+                                                      std::span<const Body> others) const;
+  void requestSeparation(std::string_view why);
   void watchOverlaps(float seconds);
   void tickScripted(float seconds);
   void tickCare(float seconds);
@@ -510,6 +531,8 @@ private:
   std::optional<CameraPan> cameraPan_;
   std::vector<std::optional<MapObject3D>> mapObjects_;
 
+  // The release check waiting for the next unheld tick, and why.
+  std::optional<std::string> separationDue_;
   // The pairs standing in each other now (a wall is entt::null), for how long.
   struct OverlapWatch {
     scene::Entity a{};

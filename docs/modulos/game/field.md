@@ -91,6 +91,29 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   la especie) son anchos, y un compañero parado en diagonal a 2,5 radios del jugador (`partner.c:971` mide un
   círculo) ya los pisa por la esquina sin que se vea. El segundo de margen deja pasar al jugador por encima del
   compañero (lo cruza en medio segundo andando).
+- **Regla de suelta** (Mejora documentada: el original no tiene nada parecido; deja a cada uno donde lo dejó quien lo
+  retenía). Todo lo que retiene a los personajes y los suelta llama a `Field::releaseHandoff(motivo)`: el final de un
+  guion o de una charla (`holdForScript(false)`, también el del gimnasio), el de una escena de cuidado
+  (`holdForCare(false)`), el final de un combate (`FieldScene::releaseFighters`, también el de un combate fijo y
+  después de que los que huyen salgan andando), la entrada en un mapa por un warp o al cargar (`enterMapAt`). Un NPC
+  puesto en el mapa (`FieldNpcs::spawn`) o soltado por un guion (`hold(id, false)`, `holdAll(false)`) lo pide por su
+  cuenta. La suelta:
+  - olvida el rastro del compañero, su tiempo atascado y la última casilla del jugador (`trail_`,
+    `partnerStuckSeconds_`, `lastPlayerCell_`): lo que el compañero seguía antes ya no vale;
+  - en el siguiente tick sin retención, `separateActors` mira a todos: quien tiene el centro en una casilla bloqueada
+    o pisa a fondo a otro (`Field::overlaps`) va al sitio libre más cercano (anillos cada 25 unidades hasta seis
+    casillas, primero en la dirección contraria a lo que pisa) donde cabe en la rejilla (`fitsOnGrid`), no toca a
+    nadie, no es un warp y se llega en línea recta sin pared (salvo si sale de una pared), y se coloca de golpe
+    (`scene::place`, sin interpolar el salto). Se mueve primero el compañero (cede ante todos), luego los NPC en orden
+    de ranura (ceden ante el jugador, el compañero y los NPC anteriores); el jugador solo sale de una pared. Un NPC
+    movido empieza su ruta otra vez (`restartPath`, como `clearMapAITable`); lo mismo los NPC que lucharon. Si no
+    hay sitio, se queda y se registra (`[positions] release ... no free spot`).
+  - Tras un guion o una charla espera a que el compañero termine de apartarse andando (`makeRoomForPlayer`, la
+    salida suave); el salto solo llega si después sigue pisando a alguien.
+- **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
+  jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
+  nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de
+  suelta lo aparta en el tick siguiente.
 
 ## Datos
 
