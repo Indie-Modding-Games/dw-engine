@@ -126,6 +126,10 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   cargar, al evolucionar, al renacer y al cambiar de compañero; con él cambian la colisión con la rejilla, la que ven
   los NPC y las distancias de seguir (correr más allá de 3,5 radios, andar más allá de 2,5). Si crece, pide la regla
   de suelta, por si ahora pisa a alguien.
+- **NPC tras un guion** (Igual): al soltar el guion (`holdForScript(false)`) los NPC que movió dejan de deslizarse
+  (su `ScriptedActor` pierde la velocidad, que si no volvía a moverlos en la siguiente retención), y el que ya no
+  tiene animación de guion (`setActiveAnim` a 0) vuelve a sus propias animaciones; el que la tiene la conserva, como
+  `NPC_ACTIVE_ANIM` en el original hasta que un guion la quita.
 - **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
   jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de
