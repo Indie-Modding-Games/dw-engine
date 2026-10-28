@@ -6,5 +6,8 @@
 namespace dwe::app {
 void publishPlayerChart(ui::Ui& ui, const assets::EvolutionChart& chart,
                         const assets::DigimonTable* species);
+void publishChartDetailLayout(ui::Ui& ui, const assets::ChartDetailLayout& detail);
+void loadPlayerChartDetails(ui::Ui& ui, const assets::VirtualFileSystem& files,
+                            const assets::EvolutionChart& chart);
 void loadPlayerChart(ui::Ui& ui, const assets::VirtualFileSystem& files);
 } // namespace dwe::app

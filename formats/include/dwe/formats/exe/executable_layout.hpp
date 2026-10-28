@@ -90,6 +90,7 @@ struct ExecutableLayout {
   TableLocation evolutionPaths;        // EvolutionPath[], entry i is Digimon i + 1
   TableLocation raiseData;             // RaiseData[]
   TableLocation evolutionChart;        // EvoChartEntry[]: layout and icon UVs, not executable code
+  TableLocation evolutionChartDetail;  // Line, sprite, color and inset records for Chart detail
   TableLocation cardData;              // CardData[]
   TableLocation cardPrices;            // int32[]
   TableLocation tournamentNames;       // char*[]

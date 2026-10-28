@@ -24,6 +24,8 @@ struct UiDemoOptions {
   bool fishing = false;
   bool player = false;
   std::optional<std::filesystem::path> chart;
+  std::optional<std::filesystem::path> chartDetail;
+  bool chartAllRaised = false;
   int bagSlots = 0;
 };
 

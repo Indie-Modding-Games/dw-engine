@@ -116,10 +116,133 @@
                   <button id="chart-cell-58" class="chart-cell hidden" onclick="chart_pick(document, 58)"><img id="chart-icon-58" class="chart-icon hidden"/></button>
                   <button id="chart-cell-59" class="chart-cell hidden" onclick="chart_pick(document, 59)"><img id="chart-icon-59" class="chart-icon hidden"/></button>
                   <button id="chart-cell-60" class="chart-cell hidden" onclick="chart_pick(document, 60)"><img id="chart-icon-60" class="chart-icon hidden"/></button>
-                  <img id="chart-cursor" class="hidden" source="texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <img id="chart-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
                   <div id="chart-select-help"><span id="chart-cross"></span><span class="chart-help-text" text-key="pause_menu.chart_select"></span></div>
                   <div id="chart-cancel-help"><span id="chart-triangle"></span><span class="chart-help-text" text-key="common.cancel"></span></div>
                 </div>
+                <div id="chart-detail" class="player-native">
+                  <div id="chart-detail-inset-0" class="player-inset"></div>
+                  <div id="chart-detail-inset-1" class="player-inset"></div>
+                  <div id="chart-detail-inset-2" class="player-inset"></div>
+                  <div id="chart-detail-inset-3" class="player-inset"></div>
+                  <div id="chart-detail-inset-4" class="player-inset"></div>
+                  <div id="chart-detail-inset-5" class="player-inset"></div>
+                  <div id="chart-detail-line-0" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-1" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-2" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-3" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-4" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-5" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-6" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-7" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-8" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-9" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-10" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-11" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-12" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-13" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-14" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-15" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-16" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-17" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-18" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-19" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-20" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-21" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-22" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-23" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-24" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-25" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-26" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-27" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-28" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-29" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-30" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-31" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-32" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-33" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-34" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-35" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-36" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-37" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-38" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-39" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-40" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-41" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-42" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-43" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-44" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-45" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-46" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-47" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-48" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-49" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-50" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-51" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-52" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-53" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-54" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-55" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-56" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-57" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-58" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-59" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-60" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-61" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-62" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-63" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-64" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-65" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-66" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-67" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-68" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-69" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-70" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-71" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-72" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-73" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-74" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-75" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-76" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-77" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-78" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-79" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-80" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-81" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-82" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-83" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-84" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-85" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-86" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-87" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-88" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-89" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-90" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-91" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-92" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-93" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-94" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-95" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-96" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-97" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-line-98" class="chart-detail-line hidden"></div>
+                  <div id="chart-detail-cell-0" class="chart-detail-cell hidden"><img id="chart-detail-icon-0" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-1" class="chart-detail-cell hidden"><img id="chart-detail-icon-1" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-2" class="chart-detail-cell hidden"><img id="chart-detail-icon-2" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-3" class="chart-detail-cell hidden"><img id="chart-detail-icon-3" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-4" class="chart-detail-cell hidden"><img id="chart-detail-icon-4" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-5" class="chart-detail-cell hidden"><img id="chart-detail-icon-5" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-6" class="chart-detail-cell hidden"><img id="chart-detail-icon-6" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-7" class="chart-detail-cell hidden"><img id="chart-detail-icon-7" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-8" class="chart-detail-cell hidden"><img id="chart-detail-icon-8" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-9" class="chart-detail-cell hidden"><img id="chart-detail-icon-9" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-10" class="chart-detail-cell hidden"><img id="chart-detail-icon-10" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-cell-11" class="chart-detail-cell hidden"><img id="chart-detail-icon-11" class="chart-icon hidden"/></div>
+                  <div id="chart-detail-tree" text-key="pause_menu.chart_tree"></div>
+                  <div id="chart-detail-level"></div>
+                  <div id="chart-detail-name"></div>
+                </div>
+                <div id="chart-detail-transition" class="hidden"></div>
                 <div id="player-tools">
 				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>
 				<button id="player-options" onclick="open_page(document, 'options')" text-key="pause_menu.options"></button>

@@ -54,6 +54,8 @@ public:
     out.documents.push_back({.name = "raise", .document = raise()});
     if (!tables_->evolutionChart.empty())
       out.documents.push_back({.name = "evolution_chart", .document = evolutionChart()});
+    if (tables_->evolutionChartDetail)
+      out.documents.push_back({.name = "evolution_chart_detail", .document = chartDetail()});
     out.documents.push_back({.name = "cards", .document = cards()});
     out.documents.push_back({.name = "tournaments", .document = tournaments()});
     out.documents.push_back({.name = "medals", .document = medals()});
@@ -352,6 +354,22 @@ private:
     YamlNode root = YamlNode::mapping();
     root.set("image", quoted("texture/etcdat/sboy"));
     root.set("entries", std::move(entries));
+    return root;
+  }
+
+  YamlNode chartDetail() {
+    const auto& detail = *tables_->evolutionChartDetail;
+    YamlNode root = YamlNode::mapping();
+    const auto records = [](const auto& values) {
+      YamlNode list = YamlNode::sequence();
+      for (const auto& value : values)
+        list.append(numbers(value));
+      return list;
+    };
+    root.set("lines", records(detail.lines));
+    root.set("colors", records(detail.colors));
+    root.set("sprites", records(detail.sprites));
+    root.set("insets", records(detail.insets));
     return root;
   }
 

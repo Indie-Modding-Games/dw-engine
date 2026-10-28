@@ -324,7 +324,7 @@
 #panel.on-player.player-chart #player-chart { display: block; }
 #panel.on-player.player-tools-open #player-chart { display: none; }
 #panel.on-player .player-tab.unavailable { focus: none; tab-index: none; }
-.chart-stage { position: absolute; top: 21dp; height: 480dp; box-sizing: border-box; border-width: 3dp; border-style: solid; }
+.chart-stage { position: absolute; top: 21dp; height: 480dp; box-sizing: border-box; border: 3dp #bebebe; }
 #chart-stage-0 { left: 30dp; width: 105dp; border-color: #c8a0aa; border-right-color: #8c3c5a; border-bottom-color: #8c3c5a; background-color: #a55a73; }
 #chart-stage-1 { left: 141dp; width: 105dp; border-color: #a578a0; border-right-color: #4b1446; border-bottom-color: #4b1446; background-color: #6e2d5a; }
 #chart-stage-2 { left: 252dp; width: 105dp; height: 531dp; border-color: #5082c8; border-right-color: #0a375f; border-bottom-color: #0a375f; background-color: #0f5082; }
@@ -340,3 +340,17 @@
 #chart-cross, #chart-triangle { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
 #chart-triangle { color: #3cff3c; }
 .chart-help-text { position: absolute; left: 36dp; top: 0; }
+
+#panel.on-player.chart-detail-open #player-chart { display: none; }
+#panel.on-player.chart-detail-open #chart-detail { display: block; }
+#panel.on-player #chart-detail { display: none; position: absolute; left: 0; top: 0; width: 894dp; height: 564dp; }
+.chart-detail-cell { position: absolute; width: 57dp; height: 57dp; padding: 0; border: 3dp #bebebe; border-right-color: #3c3c3c; border-bottom-color: #3c3c3c; box-sizing: border-box; background-color: #878787; }
+.chart-detail-cell.hidden, .chart-detail-line.hidden { display: none; }
+.chart-detail-line { position: absolute; height: 3dp; transform-origin: 0dp 0dp; pointer-events: none; }
+#chart-detail-tree, #chart-detail-level, #chart-detail-name { position: absolute; font-size: 36dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
+#chart-detail-tree { left: 387dp; top: 27dp; color: #fff371; }
+#chart-detail-level { left: 81dp; top: 438dp; width: 324dp; text-align: center; }
+#chart-detail-name { left: 45dp; top: 495dp; width: 396dp; text-align: center; }
+
+#panel.on-player #chart-detail-transition { display: block; position: absolute; box-sizing: border-box; border: 3dp #808080; background-color: transparent; pointer-events: none; }
+#panel.on-player #chart-detail-transition.hidden { display: none; }

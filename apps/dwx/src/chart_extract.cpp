@@ -10,7 +10,9 @@
 
 namespace dwe::dwx {
 
-int extractUiChart(const std::filesystem::path& executable, const std::filesystem::path& output) {
+namespace {
+int extractChartDocument(const std::filesystem::path& executable,
+                         const std::filesystem::path& output, std::string_view documentName) {
   if (std::filesystem::exists(output)) {
     std::println(stderr, "refusing to overwrite {}", output.string());
     return ExitFailed;
@@ -50,7 +52,7 @@ int extractUiChart(const std::filesystem::path& executable, const std::filesyste
   }
   const auto documents = formats::exe::tablesToYaml(tables->tables);
   for (const auto& document : documents.documents) {
-    if (document.name != "evolution_chart")
+    if (document.name != documentName)
       continue;
     const auto yaml = core::emitYaml(document.document);
     if (!yaml) {
@@ -61,12 +63,20 @@ int extractUiChart(const std::filesystem::path& executable, const std::filesyste
       std::println(stderr, "{}", written.error().message);
       return ExitFailed;
     }
-    std::println("wrote {} chart entries to {}", tables->tables.evolutionChart.size(),
-                 output.string());
+    std::println("wrote {} to {}", documentName, output.string());
     return ExitOk;
   }
   std::println(stderr, "no chart metadata was extracted");
   return ExitUnknown;
 }
 
+} // namespace
+
+int extractUiChart(const std::filesystem::path& executable, const std::filesystem::path& output) {
+  return extractChartDocument(executable, output, "evolution_chart");
+}
+int extractUiChartDetail(const std::filesystem::path& executable,
+                         const std::filesystem::path& output) {
+  return extractChartDocument(executable, output, "evolution_chart_detail");
+}
 } // namespace dwe::dwx
