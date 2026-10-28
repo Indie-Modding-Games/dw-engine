@@ -1,5 +1,7 @@
 # Preparar el entorno
 
+Si buscas el recorrido completo desde la compilación hasta el arranque con tu disco, consulta [Ejecutar el juego](jugar.md).
+
 Todo se compila dentro de un contenedor Docker ([ADR 0015](../adr/0015-desarrollo-en-contenedor.md)). En tu máquina
 solo necesitas Docker, git y el driver de tu GPU con soporte de Vulkan 1.3.
 

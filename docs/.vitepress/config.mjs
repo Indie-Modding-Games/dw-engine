@@ -66,7 +66,7 @@ const sidebar = [
       ...folderItems("modulos/tests"),
     ]),
   ]),
-  group("Formatos del original", folderItems("formats")),
+  group("Formatos y archivos", folderItems("formats")),
   group("Guías", folderItems("guides")),
   group("Referencia del original", folderItems("reference")),
   group("Modding", folderItems("modding")),

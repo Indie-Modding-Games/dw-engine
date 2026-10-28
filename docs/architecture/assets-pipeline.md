@@ -29,11 +29,11 @@ cobertura que lista lo que falte.
 
 | Tipo | Original | Fuente | Cocinado |
 |---|---|---|---|
-| Modelos y animaciones | TMD/MMD | glTF 2.0 (malla, esqueleto y animaciones) | Malla binaria + paquete de animaciones |
+| Modelos y animaciones | TMD/MMD | glTF 2.0 binario (`.glb`, con malla, esqueleto y animaciones) | El mismo `.glb`, validado por el cocinador actual |
 | Texturas | TIM con paletas de 4/8 bits | PNG, con la paleta guardada como metadato | KTX2 UASTC con zstd, transcodificado a BC7 al cargar; PNG si la paleta se elige al jugar |
 | Fondos de mapa | Imagen prerenderizada de día, atardecer y noche | PNG por capa + máscara de profundidad | KTX2 |
-| Datos de mapa | Colisión, warps, NPCs, cámara | YAML | Binario |
-| Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | Binario |
+| Datos de mapa | Colisión, warps, NPCs, cámara | YAML | YAML conservado por el cocinador actual |
+| Tablas del juego | Datos del ejecutable: stats, evoluciones, técnicas, objetos | YAML; siembran el primer ruleset | YAML conservado por el cocinador actual |
 | Textos | Por región, en su codificación | UTF-8, un fichero por idioma | Igual |
 | Eventos e historia | Bytecode de scripts | Lua (y el listado YAML) | Igual: texto Lua, sin bytecode (el sandbox solo carga texto) |
 | Música | VAB + SEQ | SF2 + MIDI | Igual, u Opus si es un remaster |

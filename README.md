@@ -48,6 +48,8 @@ The content pipeline separates editable source files from cooked runtime files. 
 
 ## Build and run
 
+Follow the [step-by-step launch guide](docs/getting-started/jugar.md) (Spanish) for disc extraction, content paths, controls, and troubleshooting. The [file extension guide](docs/formats/extensiones.md) explains character models, maps, and other content files.
+
 The documented development workflow targets Linux. You need Git, Docker, and a GPU driver supporting Vulkan 1.3. The development image provides the compiler and build dependencies. See [environment setup](docs/getting-started/setup.md) for details.
 
 ```bash
