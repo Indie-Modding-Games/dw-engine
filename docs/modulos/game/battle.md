@@ -89,7 +89,7 @@ probable y está marcado en el código), **Hueco** (falta).
 | MP, usabilidad y redondeo | `battle_main.c: BTL_isMoveUsable`, `BTL_setupMoveExecution` | `usability.cpp`, `beginAttack` | MP check and payment | Igual |
 | Estados del luchador (carga, enfriamiento, confusión, aplastado) | `battle_main.c: BTL_tickFighterStates` y sus `tick*State` | `fighter_actions.cpp` | flattening; stun and confusion | Igual |
 | Ataque cuerpo a cuerpo y a distancia | `battle_main.c: BTL_tickMeleeAttack`, `BTL_tickRangedAttack`, `BTL_startQueuedMove` | `tickMeleeAttack`, `tickRangedAttack`, `startQueuedMove` | a battle plays to a victory | Igual |
-| Viaje del proyectil, ataques de área | `battle_main.c` (animaciones y efectos) | `releaseAttack`, `tickAttacksInFlight` | seeded replay | Suposición |
+| Viaje del proyectil, ataques de área | `battle_main.c` (animaciones y efectos) | `releaseAttack`, `tickAttacksInFlight`; el efecto dibujado termina con su golpe (ver Scripts de efecto) | seeded replay | Suposición: una velocidad para todos (`projectile_speed`), no la de cada script |
 | Acierto y bloqueo | `battle_main.c: BTL_calculateHitChance`, `BTL_tickAttackHits` | `OriginalDamage`, `handleAttack`, `block` | the hit chance | Igual |
 | Daño y su goteo | `battle_main.c: BTL_calculateDamage`, `utils.c: damageTick` | `OriginalDamage`, `drainPendingDamage` | the damage formula; pending damage drains | Igual |
 | Contraataque | `battle_main.c: BTL_tickAttackHits` | `tryCounter` | a counter needs 165 MP | Igual |
@@ -161,12 +161,49 @@ inicio (`BTL_startEFE`) y devuelve la primera instancia que lanzó, `tick` es un
 (`BTL_removeMoveEffect`). Cada ranura tiene su copia de los datos, la pila, las llamadas, `spawn` y los sub-efectos
 siguen al original, así que cada sonido suena en el fotograma en que suena en el original.
 
-Solo los sonidos salen fuera: `play_sound` llama a `EffectSounds::play` (banco 8) y los ids 0x12 y 0x20–0x22 a
-`playHeld`, que guarda la voz; la voz se para cuando su sub-efecto termina, como `EFE_SOUND_DATA`. Las sub-operaciones
-de dibujo se saltan (sacan sus argumentos de la pila). Las de golpe (`check_collision`, `apply_*_hit`,
-`check_target_collision`, `is_target_unhit`) responden con el golpe de la simulación (`noteHit`) en vez de las cajas de
-colisión del original; `random_in_range` es `customRandom`. Mejora documentada: `stopAll` para todas las voces
-guardadas, mientras que `BTL_stopEFESounds` solo mira la primera (no avanza el puntero).
+Los sonidos salen por `EffectSounds`: `play_sound` llama a `play` (banco 8) y los ids 0x12 y 0x20–0x22 a `playHeld`,
+que guarda la voz; la voz se para cuando su sub-efecto termina, como `EFE_SOUND_DATA`. Las sub-operaciones de golpe
+(`check_collision`, `apply_*_hit`, `check_target_collision`, `is_target_unhit`) responden con el golpe de la simulación
+(`noteHit`) en vez de las cajas de colisión del original; `random_in_range` es `customRandom`. Mejora documentada:
+`stopAll` para todas las voces guardadas, mientras que `BTL_stopEFESounds` solo mira la primera (no avanza el puntero).
+
+### Dibujo
+
+Las demás sub-operaciones (`effect_runner_subops.cpp`) hacen las cuentas del original en sus ejes (y hacia abajo) y
+unidades (4096 es 1; ángulos de 4096 por vuelta, 512 en `_sin`/`_cos`), con las matrices de libgte (`RotMatrix`,
+`RotMatrixYXZ`, `RotMatrixZYX`) y `matrixToEuler1`/`2` en `effect_math.cpp`. Los luchadores se leen por el puerto
+`EffectBodies`: sitio, giro (`rotation.vy`), radio y alto de la tabla de especies, el tipo original
+(`battle.effects.original_types`, la tabla de tipos originales de `effect_common.c`) y la matriz de cada nodo del
+modelo que dibuja la app. `start` recibe atacante y objetivo (los del combate, como en el original); los
+hijos heredan los del padre. Después de `tick`, `render` corre los scripts de render (`BTL_renderEFEEngine`) y deja en
+`draws()` lo que dibujaron: `EffectSprite` (`BTL_renderProjectedSprite`, `BTL_renderCenteredSprite`: posición, color,
+escala, texeles, pivote, giro, mezcla y fila de paleta) y `EffectModel` (`BTL_drawTMD`, `BTL_drawTMDYXZ`: objeto del
+modelo, matriz con escala, color de `set_model_object_color` y desplazamiento de la animación UV). La batalla no sabe
+de renderers.
+
+La sesión (`BattleEffects`) pasa los luchadores y expone `draws()`; la app (`BattleEffectBodies`, `FieldScene::setEffects`)
+pone cada sprite como billboard con la textura `effect/<técnica>/texture` y su paleta (los colores con STP se mezclan con
+la mezcla del sprite; tamaño en el mundo = texeles × escala / 32, que es lo que da la proyección del original con
+`VIEWPORT_DISTANCE` 500) y cada objeto del modelo `effect/<técnica>/model` como su hueso con la matriz del efecto (los
+demás huesos a cero), teñido con su color.
+
+| Comportamiento | Original | Aquí | Prueba | Estado |
+|---|---|---|---|---|
+| Transformaciones (hueso, `init_transform`, padre, seguir, girar, dispersar) | `battle_effect.c: BTL_setTransformTo*`, `BTL_initializeEFETransform`, `BTL_steerTransformTowardPoint`, `BTL_applyHomingMovement`, `BTL_getScatteredSpawnPosition` | `transformOp` | a render script's sprite and model come out as draws on the source's bone | Igual |
+| Cuentas de vectores, ángulos e interpolación | `battle_effect.c` (operaciones de vector), `vecmath.c`, `effect_common.c: lerp` | `vectorOp`, `effect_math` | Spit Fire's trail of sprites flies from the attacker toward its target | Suposición en senos y arcotangentes: se calculan y redondean, no se leen las tablas |
+| Lista de huesos por especie | `BTL_checkTechCompatibility`, `getOriginalType` | `fighterOp`, `battle.effects.original_types` | an effect's bone list decodes by species; ... lacks the source's species draws nothing | Igual; el port además libera la instancia que el inicio ya creó |
+| Sprites | `BTL_renderProjectedSprite`, `BTL_renderCenteredSprite`, `GsSortSprite` | `drawOp`, billboards de `MapRenderer` (pivote y giro) | a render script's sprite ... | Igual en sitio, tamaño, color, mezcla y paleta; el orden es el de los billboards, no la tabla de orden por profundidad |
+| Modelos | `BTL_drawTMD`, `BTL_drawTMDYXZ`, `BTL_setEFEModelObjectColor` | `drawOp`, `ModelRenderer` con `tint` | Sonic Jab and Poison Claw draw their model's object | Igual en matriz y color; Hueco: el desplazamiento UV (`BTL_offsetEFEPrimitiveUVs`) se calcula pero no se dibuja |
+| Animación UV | `BTL_initializeUVAnim`, `BTL_tickEFEUVAnimation` | `tickUvAnims` | every extracted effect runs and draws on two fighters | Igual en cuentas; Hueco en pantalla (ver Modelos) |
+| Elegir objetivo, tamaños, posición del objetivo | `BTL_selectNextTargetEntity`, `BTL_selectRandomTargetEntity`, `BTL_get*Size`, `BTL_copyTargetEntityPosition` | `fighterOp`, `selectTarget` | every extracted effect runs ... | Igual |
+| Girar al atacante, golpear la entidad | `BTL_faceTargetEntity`, `BTL_setTargetToHitEntity` | nada | — | Desviación: la batalla ya gira al luchador y elige el objetivo |
+| Cámara, sprites en pantalla, partículas, nubes, cintas, destellos, cargas de CLUT, `mark_finished` | `BTL_*Camera*`, `BTL_renderScreen*`, `BTL_*Particle*`, `BTL_*Ribbon*`, `BTL_loadCLUT*` | se saltan (sacan sus argumentos) | — | Hueco |
+
+El proyectil dibujado sigue su propio script (Spit Fire avanza 35 unidades por fotograma desde el fotograma 11) y
+termina cuando la simulación golpea (`noteHit`): la simulación manda, como pide la fila «Viaje del proyectil». Su
+velocidad (`timing.projectile_speed`, 60) no es la de cada técnica, así que un proyectil lento se corta antes de llegar
+y uno rápido pasa de largo hasta que llega el golpe. Hueco: medir la velocidad de cada técnica en su script y llevarla a
+la simulación.
 
 ## Tests
 

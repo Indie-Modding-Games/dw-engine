@@ -18,6 +18,8 @@ dwe_add_app(game
         src/field_scene.cpp
         src/field_scene_npcs.cpp
         src/field_scene_ground_items.cpp
+        src/field_scene_effects.cpp
+        src/battle_effect_bodies.cpp
         src/field_scene_script.cpp
         src/field_scene_fighters.cpp
         src/field_scene_objects.cpp

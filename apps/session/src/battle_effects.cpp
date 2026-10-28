@@ -45,7 +45,7 @@ void BattleEffects::frame(const game::battle::BattleEvents& events,
     switch (event.kind) {
     case EventKind::AttackStarted:
       if (event.move) {
-        startAttack(event.fighter, moves.at(*event.move).id);
+        startAttack(event.fighter, event.other, moves.at(*event.move).id);
       }
       break;
     case EventKind::AttackHit:
@@ -67,6 +67,7 @@ void BattleEffects::frame(const game::battle::BattleEvents& events,
     }
   }
   runner_.tick();
+  runner_.render();
 }
 
 void BattleEffects::end() {
@@ -106,13 +107,15 @@ std::optional<std::size_t> BattleEffects::slotOf(const std::string& move) {
   return slot;
 }
 
-void BattleEffects::startAttack(game::battle::FighterId fighter, const std::string& move) {
+void BattleEffects::startAttack(game::battle::FighterId fighter,
+                                std::optional<game::battle::FighterId> target,
+                                const std::string& move) {
   removeEffect(fighter);
   const std::optional<std::size_t> slot = slotOf(move);
   if (!slot) {
     return;
   }
-  const std::optional<std::size_t> section = runner_.start(*slot);
+  const std::optional<std::size_t> section = runner_.start(*slot, fighter, target);
   core::logDebug("[port:battle] BTL_startEFE (battle_effect.c:2181): fighter={} move={} slot={}",
                  fighter, move, *slot);
   running_[fighter] = Running{.slot = *slot, .section = section};

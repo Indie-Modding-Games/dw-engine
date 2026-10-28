@@ -45,6 +45,10 @@ struct MapBillboard {
   assets::SpriteBlend blend = assets::SpriteBlend::Opaque;
   // Multiplies the texels' colours: the original's 0x80 is 1.
   glm::vec3 color{1.0F};
+  // An upright one's point on the centre, as fractions of its size from its top-left corner, and
+  // its turn on screen around it, clockwise in radians (GsSPRITE mx, my and rotate).
+  glm::vec2 pivot{0.5F};
+  float turn = 0.0F;
 };
 
 // How long the original fades the background palette when the time of day changes: 25 frames of its

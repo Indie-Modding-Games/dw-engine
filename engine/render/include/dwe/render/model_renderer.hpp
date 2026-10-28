@@ -45,6 +45,8 @@ struct ModelInstance {
   ModelHandle model;
   glm::mat4 world{1.0F};
   std::span<const glm::mat4> joints;
+  // Multiplies every material's base colour (the battle effects' object colours).
+  glm::vec4 tint{1.0F};
 };
 
 // How a material is blended, from its alpha mode and the original's semi-transparency equation.
@@ -132,12 +134,14 @@ private:
     glm::mat4 world;
     std::size_t firstJoint = 0;
     std::size_t jointCount = 0;
+    glm::vec4 tint{1.0F};
   };
   // An instance taken for the frame, with its joints in the upload ring.
   struct Prepared {
     ModelHandle model;
     float viewDepth = 0.0F;
     std::uint64_t joints = 0;
+    glm::vec4 tint{1.0F};
   };
   struct Translucent {
     float viewDepth = 0.0F;
