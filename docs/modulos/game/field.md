@@ -120,6 +120,12 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   `turnByScript` de más de un octavo de vuelta igualan también el anterior; los pasos cortos (el gimnasio, el final de
   un deslizamiento) se siguen interpolando en su tick. `playerFacePartner` y el mirarse al acabar un paseo de cuidado
   (`entityLookAtLocation`) giran de golpe, como el original.
+- **Tamaño del compañero** (Igual): el campo lo mide con el radio de su especie en la tabla de especies, como el
+  original (`map.c: entityCheckEntityCollision`, `partner.c:971`), no con el fijo de `field/rules` (que queda para las
+  pruebas y para cuando no hay tabla). `FieldScene::showPartnerSpecies` se lo pasa (`Field::setPartnerRadius`) al
+  cargar, al evolucionar, al renacer y al cambiar de compañero; con él cambian la colisión con la rejilla, la que ven
+  los NPC y las distancias de seguir (correr más allá de 3,5 radios, andar más allá de 2,5). Si crece, pide la regla
+  de suelta, por si ahora pisa a alguien.
 - **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
   jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de

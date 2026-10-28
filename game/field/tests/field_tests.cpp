@@ -1314,3 +1314,24 @@ TEST_CASE("settling, or a tick the field holds still, draws every character wher
   CHECK(field.mapChangePending());
   CHECK(npc.previousPosition == npc.position);
 }
+
+TEST_CASE("the partner's size follows its species: follow distances, and a release check if bigger") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  // Standing still 260 away: within 2.5 radii of 120 (300).
+  placeAt(world, field.partnerEntity(), 260.0F, 0.0F);
+  run(field, 0.5F);
+  CHECK(field.partner().position.x == doctest::Approx(260.0F));
+  // A small species (radius 90) walks up to under 225; zero keeps the size.
+  field.setPartnerRadius(0.0F);
+  CHECK(field.rules().partner.mover.radius == doctest::Approx(120.0F));
+  field.setPartnerRadius(90.0F);
+  run(field, 1.0F);
+  CHECK(partnerDistance(field) < 225.0F);
+  // A big one (radius 300) standing there now stands in the player: it is set apart.
+  field.setPartnerRadius(300.0F);
+  field.tick(Tick);
+  CHECK_FALSE(Field::overlaps(squareAt(field.player().position, 100.0F),
+                              squareAt(field.partner().position, 300.0F)));
+}
