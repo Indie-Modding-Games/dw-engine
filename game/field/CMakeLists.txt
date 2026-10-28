@@ -11,6 +11,7 @@ dwe_add_module(field
         src/map_objects.cpp
         src/field_items.cpp
         src/field_partner_call.cpp
+        src/field_positions.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 

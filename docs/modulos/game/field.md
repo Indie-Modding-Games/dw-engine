@@ -77,6 +77,21 @@ if (auto change = field.takeMapChange()) {
   su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
   sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.
 
+## Posiciones
+
+Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y a las paredes.
+
+- **Vigilancia de solapes** (propia del motor, para depurar y para las rutas de prueba): en cada tick en que el
+  jugador se mueve libre (sin guion, sin cuidado, sin cambio de mapa ni fundido que lo retenga), `Field` busca
+  parejas de personajes cuyos cuadrados de colisión se pisan a fondo y personajes con el centro en una casilla
+  bloqueada. Un solape que dura más de un segundo se registra una vez por episodio
+  (`[positions] overlap a=player b=partner ticks=61 on mayo03`) y cuenta en `overlapEpisodes()`; la ruta lo lee con
+  `expect_setting: {field.overlaps: 0}`. «A fondo» es pisarse más de la mitad de la suma de los medios lados en los
+  dos ejes (`Field::overlaps`): los cuadrados del original (`map.c: entityCheckEntityCollision`, medio lado = radio de
+  la especie) son anchos, y un compañero parado en diagonal a 2,5 radios del jugador (`partner.c:971` mide un
+  círculo) ya los pisa por la esquina sin que se vea. El segundo de margen deja pasar al jugador por encima del
+  compañero (lo cruza en medio segundo andando).
+
 ## Datos
 
 - `field/rules` (`content/packs/game/field/rules.yaml`, [esquema](https://github.com/Indie-Modding-Games/dw-engine/blob/main/content/schemas/field_rules.schema.json)):

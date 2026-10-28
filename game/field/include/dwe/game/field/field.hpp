@@ -332,6 +332,13 @@ public:
   // The rules in use.
   [[nodiscard]] const FieldRules& rules() const { return rules_; }
 
+  // Whether two characters' squares overlap deep enough to stand in each other: by more than half
+  // their summed half sides on both axes. The original's squares are wide, and a partner stopped
+  // by the player on a diagonal overlaps it by a corner (partner.c:971 measures a circle).
+  [[nodiscard]] static bool overlaps(const GroundSquare& a, const GroundSquare& b);
+  // How many times two characters (or one and a wall) stood in each other longer than a second
+  // while the player moved freely; each such episode is logged once ("[positions] overlap").
+  [[nodiscard]] std::int32_t overlapEpisodes() const { return overlapEpisodes_; }
   // The map's NPCs, which the story puts on the map and takes off (npcs.hpp).
   [[nodiscard]] FieldNpcs& npcs() { return npcs_; }
   [[nodiscard]] const FieldNpcs& npcs() const { return npcs_; }
@@ -380,6 +387,18 @@ private:
   // player from the camera steps off first; whether it took this tick.
   bool makeRoomForPlayer(float seconds);
   void placePartnerNearPlayer();
+  // A character's body for the release rule and the overlap watch.
+  struct Body {
+    scene::Entity entity{};
+    float half = 0.0F;
+    // 0 the player, 1 the partner, an NPC's script id + 2 otherwise.
+    std::int64_t who = 0;
+  };
+  [[nodiscard]] std::vector<Body> bodies() const;
+  [[nodiscard]] std::string nameOf(const Body& body) const;
+  [[nodiscard]] GroundSquare squareOf(const Body& body) const;
+  [[nodiscard]] bool inWall(glm::vec3 position) const;
+  void watchOverlaps(float seconds);
   void tickScripted(float seconds);
   void tickCare(float seconds);
   void tickCareWalk(float seconds);
@@ -490,6 +509,18 @@ private:
   std::optional<glm::vec3> scriptCamera_;
   std::optional<CameraPan> cameraPan_;
   std::vector<std::optional<MapObject3D>> mapObjects_;
+
+  // The pairs standing in each other now (a wall is entt::null), for how long.
+  struct OverlapWatch {
+    scene::Entity a{};
+    scene::Entity b{};
+    std::string names;
+    std::int32_t ticks = 0;
+    float seconds = 0.0F;
+    bool reported = false;
+  };
+  std::vector<OverlapWatch> overlapWatch_;
+  std::int32_t overlapEpisodes_ = 0;
 };
 
 } // namespace dwe::game::field

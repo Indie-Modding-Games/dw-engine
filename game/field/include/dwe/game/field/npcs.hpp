@@ -11,6 +11,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 // The map's NPCs on the field (overworld.c: loadMapDigimon, scriptSetDigimon,
@@ -56,6 +57,17 @@ struct NpcContact {
 // A character's collision square on the ground: centre and half its side (DIGIMON_DATA radius).
 struct GroundSquare {
   glm::vec2 centre{};
+  float half = 0.0F;
+};
+
+// Whether two squares overlap: on both axes the centres are no farther apart than the sum of the
+// half sides less `slack` (0: touching counts, as map.c: entityCheckEntityCollision).
+[[nodiscard]] bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack = 0.0F);
+
+// A solid NPC's square on the field, for the checks that look at every character.
+struct NpcBody {
+  std::int32_t scriptId = 0;
+  scene::Entity entity{};
   float half = 0.0F;
 };
 
@@ -107,6 +119,17 @@ public:
   // while it is not 0 the NPC's own tick leaves it to the script. False when no NPC has that
   // script id.
   bool setScriptedAnimation(std::int32_t scriptId, std::int32_t animation);
+
+  // The solid NPCs (map.c: entityCheckCollision skips those with no HP left), by slot.
+  [[nodiscard]] std::vector<NpcBody> bodies() const;
+  // The animation a script left on an NPC (setScriptedAnimation), or nothing without such an NPC.
+  [[nodiscard]] std::optional<std::int32_t> scriptedAnimationOf(std::int32_t scriptId) const;
+  // Starts an NPC's path and reaction to the player over, as a hold does (clearMapAITable), after
+  // something else moved it. False when no NPC has that script id.
+  bool restartPath(std::int32_t scriptId);
+  // Whether an NPC was put on the map or let go since the last call: the field then checks that
+  // nobody stands in anybody (Field::releaseHandoff).
+  [[nodiscard]] bool takeArrivals() { return std::exchange(arrivals_, false); }
 
   // Whether a character moving from `from` to `to` walks into an NPC (map.c:
   // entityCheckEntityCollision): its square at `to` overlaps an NPC's it was not getting away from.
@@ -163,7 +186,8 @@ private:
   [[nodiscard]] Npc* find(std::int32_t scriptId);
   [[nodiscard]] const Npc* find(std::int32_t scriptId) const;
   void remove(std::size_t index);
-  static void setHeld(Npc& npc, bool held);
+  void setHeld(Npc& npc, bool held);
+  static void restart(Npc& npc);
   void tickPath(Npc& npc, float seconds);
   // overworld.c:1247-1303: the reaction of the NPC's follow mode, if the rules have one.
   [[nodiscard]] static const NpcTrackingMode* trackingOf(const NpcTrackingRules& tracking,
@@ -202,6 +226,7 @@ private:
   std::vector<assets::MapNpc> records_;
   std::vector<Npc> npcs_;
   std::vector<NpcContact> contacts_;
+  bool arrivals_ = false;
 };
 
 } // namespace dwe::game::field

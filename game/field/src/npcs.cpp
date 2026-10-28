@@ -45,10 +45,6 @@ bool spansOverlap(float aMin, float aMax, float bMin, float bMax) {
   return aMax >= bMin && aMin <= bMax;
 }
 
-bool squaresOverlap(const GroundSquare& a, const GroundSquare& b) {
-  return std::abs(a.centre.x - b.centre.x) <= a.half + b.half &&
-         std::abs(a.centre.y - b.centre.y) <= a.half + b.half;
-}
 
 // map.c: entityCheckEntityCollision for any character but the player: after the step, an edge of
 // its square on a side it moves toward lies inside the other's square.
@@ -93,6 +89,11 @@ std::array<float, 4> graceFacings(float yaw) {
 }
 
 } // namespace
+
+bool squaresOverlap(const GroundSquare& a, const GroundSquare& b, float slack) {
+  const float reach = a.half + b.half - slack;
+  return std::abs(a.centre.x - b.centre.x) <= reach && std::abs(a.centre.y - b.centre.y) <= reach;
+}
 
 FieldNpcs::FieldNpcs(scene::World& world, NpcRules rules, float frameSeconds)
     : world_{&world}, rules_{std::move(rules)}, frameSeconds_{frameSeconds} {}
@@ -155,6 +156,7 @@ bool FieldNpcs::spawn(const NpcSpawn& spawn) {
                  record->position.z, spawn.autotalk, spawn.model, spawn.radius);
   const auto place = std::ranges::upper_bound(npcs_, spawn.slot, {}, &Npc::slot);
   npcs_.insert(place, npc);
+  arrivals_ = true;
   return true;
 }
 
@@ -223,13 +225,44 @@ void FieldNpcs::setHeld(Npc& npc, bool held) {
     core::logDebug("[port:npc] setMovementEnabled (overworld.c:1887): script id {} held {}",
                    npc.scriptId, held);
   }
+  if (npc.held && !held) {
+    arrivals_ = true;
+  }
   npc.held = held;
   if (held) {
-    // overworld.c: clearMapAITable: the path and the reaction to the player start over.
-    npc.activeSection = 0;
-    npc.hasTarget = false;
-    npc.trackState = TrackUnseen;
+    restart(npc);
   }
+}
+
+void FieldNpcs::restart(Npc& npc) {
+  // overworld.c: clearMapAITable: the path and the reaction to the player start over.
+  npc.activeSection = 0;
+  npc.hasTarget = false;
+  npc.trackState = TrackUnseen;
+}
+
+bool FieldNpcs::restartPath(std::int32_t scriptId) {
+  Npc* npc = find(scriptId);
+  if (npc == nullptr) {
+    return false;
+  }
+  restart(*npc);
+  return true;
+}
+
+std::vector<NpcBody> FieldNpcs::bodies() const {
+  std::vector<NpcBody> bodies;
+  for (const Npc& npc : npcs_) {
+    if (npc.solid) {
+      bodies.push_back({.scriptId = npc.scriptId, .entity = npc.entity, .half = npc.half});
+    }
+  }
+  return bodies;
+}
+
+std::optional<std::int32_t> FieldNpcs::scriptedAnimationOf(std::int32_t scriptId) const {
+  const Npc* npc = find(scriptId);
+  return npc != nullptr ? std::optional{npc->scriptedAnimation} : std::nullopt;
 }
 
 bool FieldNpcs::setScriptedAnimation(std::int32_t scriptId, std::int32_t animation) {
