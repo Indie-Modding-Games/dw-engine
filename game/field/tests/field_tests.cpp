@@ -447,6 +447,49 @@ TEST_CASE("a stuck partner is placed behind the player") {
   CHECK(field.partner().position.z < field.player().position.z);
 }
 
+TEST_CASE("after a script the partner makes room by the player, then stops") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  const auto& rules = field.rules();
+  const float touching = rules.player.radius + rules.partner.mover.radius;
+  const float stops = rules.partner.walkDistance * rules.partner.mover.radius;
+  // Entering a map it stands spawnDistance behind the player and stays there, as the original.
+  run(field, 1.0F);
+  CHECK(partnerDistance(field) == doctest::Approx(rules.partner.spawnDistance));
+
+  const auto releaseWithPartnerAt = [&](float x, float z) {
+    field.holdForScript(true);
+    dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
+                      {x, 0.0F, z}, 0.0F);
+    run(field, 0.5F);
+    CHECK(partnerDistance(field) == doctest::Approx(std::hypot(x, z)));
+    field.holdForScript(false);
+    field.tick(Tick);
+    CHECK(field.partner().motion == Motion::Walk);
+    run(field, 2.0F);
+    CHECK(field.partner().motion == Motion::Idle);
+    CHECK(partnerDistance(field) > touching);
+    CHECK(partnerDistance(field) < stops);
+    // Then it looks back at the player.
+    const glm::vec3 toPlayer = field.player().position - field.partner().position;
+    CHECK(field.partner().yaw ==
+          doctest::Approx(dwe::assets::yawOfDirection(toPlayer)).epsilon(1e-3));
+  };
+
+  SUBCASE("left against the player's side, it steps straight away") {
+    releaseWithPartnerAt(60.0F, 0.0F);
+    CHECK(field.partner().position.z == doctest::Approx(0.0F));
+    CHECK(field.partner().position.x > 0.0F);
+  }
+  SUBCASE("left between the camera and the player, it also steps out of the camera's line") {
+    // The map's camera looks toward -Z: +Z is nearer the camera.
+    releaseWithPartnerAt(0.0F, 60.0F);
+    CHECK(std::abs(field.partner().position.x) >= (touching * 0.75F) - 1.0F);
+  }
+  CHECK(field.partnerTeleports() == 0);
+}
+
 TEST_CASE("a care scene holds the player and walks the partner to a range, toward or away") {
   dwe::scene::World world;
   Field field{world, originalRules()};

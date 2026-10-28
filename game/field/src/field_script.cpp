@@ -33,6 +33,9 @@ void Field::holdForScript(bool held) {
     cameraPan_.reset();
     registry.remove<ScriptedActor>(player_);
     registry.remove<ScriptedActor>(partner_);
+    // The original leaves the partner where the script did, even against the player or inside an
+    // NPC after a talk; the engine has it make room first (Field::makeRoomForPlayer).
+    partnerMakesRoom_ = true;
   }
   registry.get<AnimationIntent>(player_) = {};
   registry.get<AnimationIntent>(partner_) = {};

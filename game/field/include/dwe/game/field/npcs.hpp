@@ -111,6 +111,8 @@ public:
   // Whether a character moving from `from` to `to` walks into an NPC (map.c:
   // entityCheckEntityCollision): its square at `to` overlaps an NPC's it was not getting away from.
   [[nodiscard]] bool blocks(glm::vec3 from, glm::vec3 to, float half) const;
+  // Whether a character's square at `at` overlaps a solid NPC's.
+  [[nodiscard]] bool overlaps(glm::vec3 at, float half) const;
 
   // The player's side (tamer.c: checkMapInteraction): the NPC under the player's square, reaching
   // talkReach further the way it faces when confirm is pressed while standing. A touch when it has

@@ -62,6 +62,17 @@ if (auto change = field.takeMapChange()) {
   (`partner.c: partnerTickFeedItem`, `checkEatDistance`). Al llegar, los dos se miran. Si se atasca, se para donde
   está. `runPartnerUp()` hace correr al compañero hacia el jugador hasta su distancia de correr, como antes de una caca
   en el campo (`partner.c: tickWildPoop`, `getPartnerTamerCloseness > 0`); si ya está, no se mueve.
+- **Al acabar un guion o una charla** (`holdForScript(false)`, adaptación al PC del 2026-10-28): el original deja al
+  compañero donde lo dejó el guion o donde estaba al hablar (`script_interp.c: scriptPauseGame`, `tickScript` no
+  devuelve a nadie a su sitio; `partner.c:971`, la cercanía al jugador, lo tiene quieto más cerca de 2,5 radios), así
+  que podía quedar pegado al jugador, metido en el NPC con el que hablaba o entre la cámara y el jugador, tapándolo.
+  Aquí, mientras el jugador sigue quieto, el compañero se aparta andando (`Field::makeRoomForPlayer`): primero de
+  lado si tapa al jugador desde la cámara, y luego hacia fuera hasta la mitad entre tocar al jugador (radio del
+  jugador + el suyo) y su distancia de pararse; después vuelve a seguir como el original. Si el jugador echa a andar,
+  lo sigue como siempre; si no tiene sitio, se queda. El NPC no se mueve en la charla y sigue mirando al jugador al
+  acabar, como en el original (`overworld.c: tickWaypointWait` no lo gira). También, al seguir el rastro (propio del
+  motor) el compañero ya no se mete en el jugador: el rastro acaba al tocarlo (como `partner.c:906` al acabar un
+  paso).
 - **Exploración libre** (`setExplore`, apagada por defecto): un warp de script lleva a cualquiera de los sitios de
   su casilla (`explorationWarps`). Con varios, el campo se para y `destinationChoice()` da el mapa, la casilla, los
   sitios y el de vainilla; `chooseDestination(índice)` toma uno y `chooseDestination(std::nullopt)` se queda.
@@ -84,6 +95,7 @@ Los dos se pueden cambiar desde un paquete de mod con el mismo id.
 ## Tests
 
 `grid_tests.cpp` (colisión con trayectorias fijas, deslizamiento, sin atravesar paredes, caminos), `field_tests.cpp`
-(movimiento, warps con su fundido y su nombre fotograma a fotograma, seguimiento y desatasco del partner) y
+(movimiento, warps con su fundido y su nombre fotograma a fotograma, seguimiento, desatasco y sitio tras un guion del
+partner) y
 `rules_tests.cpp` (lectura de los YAML, también los del paquete `game`, y la curva del fundido) usan mapas de prueba. `route_tests.cpp` recorre la ruta de la fase 2 en el contenido extraído si
 `DWE_CONTENT` apunta a él: File City (`twna01`) → casa de Jijimon (`room08`) → File City, con el stick y con clics.

@@ -289,6 +289,12 @@ bool FieldNpcs::blocks(glm::vec3 from, glm::vec3 to, float half) const {
   });
 }
 
+bool FieldNpcs::overlaps(glm::vec3 at, float half) const {
+  const GroundSquare square{.centre = ground(at), .half = half};
+  return std::ranges::any_of(
+      npcs_, [&](const Npc& npc) { return npc.solid && squaresOverlap(square, squareOf(npc)); });
+}
+
 void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing,
                                 bool confirm) {
   glm::vec2 low = player.centre - glm::vec2{player.half};
