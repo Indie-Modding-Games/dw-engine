@@ -146,7 +146,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 | Tamaño del compañero en el campo | radio de la especie | `setPartnerRadius` | `field_tests`: "the partner's size follows its species ..." | Igual |
 | NPC tras un guion | `NPC_ACTIVE_ANIM` sigue hasta que un guion lo quita | `holdForScript(false)` quita la velocidad y el `ScriptedActor` sin animación | `field_tests`: "a script let go ..." | Igual |
 | Interpolación sin tick de campo y saltos de guion | sin interpolación | `settle`, `placeByScript`/`turnByScript` con salto | `field_tests`: "settling ...", "a script's jump ..." | Mejora documentada |
-| El jugador choca con el compañero | `map.c: entityCheckCollision` prueba a todos, también el compañero (índice 1) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Hueco |
+| El jugador atraviesa al compañero | `tamer.c: checkMapInteraction` pasa al compañero como `source` a `entityCheckCollision`, que lo salta (`other != source`) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Igual |
 | Deslizamientos de guion contra paredes y NPC; `wouldTouchCharacter` sin NPC | — | sin cambiar; la regla de suelta arregla el resultado | — | Hueco |
 | Vuelta andando tras un combate de historia | `story_scenes.cpp:75-79` es un esbozo | sin cambiar | — | Hueco |
 
