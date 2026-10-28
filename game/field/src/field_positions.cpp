@@ -69,6 +69,13 @@ bool Field::inWall(glm::vec3 position) const {
   return collision_.isBlocked(assets::collisionCellAt(position));
 }
 
+void Field::settle() {
+  entt::registry& registry = world_->registry();
+  scene::beginTick(registry.get<Transform>(player_));
+  scene::beginTick(registry.get<Transform>(partner_));
+  npcs_.beginTick();
+}
+
 void Field::releaseHandoff(std::string_view why) {
   // Where the partner followed the player before the hold says nothing now: the trail, the stuck
   // time and the player's last cell start over, as on entering a map.

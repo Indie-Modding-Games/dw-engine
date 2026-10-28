@@ -1263,3 +1263,54 @@ TEST_CASE("the overlap watch logs a player standing on the partner once per epis
   run(field, 1.0F);
   CHECK(field.overlapEpisodes() == 1);
 }
+
+TEST_CASE("a script's jump is drawn at once, its small moves over the tick") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 600.0F, 0.0F, 3);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  field.holdForScript(true);
+  field.tick(Tick);
+  const dwe::scene::Entity npc = *field.npcs().entityOf(3);
+  const auto& transform = world.registry().get<dwe::scene::Transform>(npc);
+  field.placeByScript(npc, {610.0F, 0.0F, 0.0F});
+  CHECK(transform.previousPosition.x == doctest::Approx(600.0F));
+  field.tick(Tick);
+  field.placeByScript(npc, {-600.0F, 0.0F, 0.0F});
+  CHECK(transform.previousPosition == transform.position);
+  field.turnByScript(npc, 0.01F);
+  CHECK(transform.previousYaw != transform.yaw);
+  field.tick(Tick);
+  field.turnByScript(npc, Pi);
+  CHECK(transform.previousYaw == transform.yaw);
+  // The player turns to the partner at once.
+  field.playerFacePartner();
+  const auto& player = world.registry().get<dwe::scene::Transform>(field.playerEntity());
+  CHECK(player.previousYaw == player.yaw);
+}
+
+TEST_CASE("settling, or a tick the field holds still, draws every character where it stands") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 600.0F, 0.0F, 3);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  auto& npc = world.registry().get<dwe::scene::Transform>(*field.npcs().entityOf(3));
+  auto& partner = world.registry().get<dwe::scene::Transform>(field.partnerEntity());
+  // Something outside the field moved them during an earlier tick.
+  npc.position.x += 30.0F;
+  partner.position.x += 30.0F;
+  field.settle();
+  CHECK(npc.previousPosition == npc.position);
+  CHECK(partner.previousPosition == partner.position);
+  // While a map change waits for its map, the NPCs' ticks begin too.
+  field.startScriptedMapChange({.map = "other", .exit = 0, .trigger = 0}, false);
+  run(field, 1.0F);
+  npc.position.x += 30.0F;
+  field.tick(Tick);
+  CHECK(field.mapChangePending());
+  CHECK(npc.previousPosition == npc.position);
+}

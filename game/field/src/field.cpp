@@ -228,8 +228,10 @@ void Field::tick(float seconds) {
   npcs_.clearContacts();
   gameTimeRan_ = false;
   entt::registry& registry = world_->registry();
-  scene::beginTick(registry.get<Transform>(player_));
-  scene::beginTick(registry.get<Transform>(partner_));
+  // Every character starts its tick here, the NPCs too: while a map change fades out or waits for
+  // its map their own tick does not run, and a transform left as an older tick left it would draw
+  // a move that is not happening.
+  settle();
   partnerShownMotion_ = registry.get<AnimationIntent>(partner_).motion;
   registry.get<AnimationIntent>(partner_) = {};
   // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
@@ -942,8 +944,11 @@ void Field::faceEachOther() {
   auto& player = registry.get<Transform>(player_);
   const glm::vec3 toPlayer = player.position - partner.position;
   if (toPlayer.x != 0.0F || toPlayer.z != 0.0F) {
+    // At once (partner.c: entityLookAtLocation): nothing to draw between the old facings.
     partner.yaw = assets::yawOfDirection(toPlayer);
     player.yaw = assets::yawOfDirection(-toPlayer);
+    partner.previousYaw = partner.yaw;
+    player.previousYaw = player.yaw;
   }
 }
 

@@ -19,7 +19,9 @@ void Field::playerFacePartner() {
   const glm::vec3 partner = world_->registry().get<scene::Transform>(partner_).position;
   const glm::vec3 toPartner = partner - player.position;
   if (toPartner.x != 0.0F || toPartner.z != 0.0F) {
+    // At once: nothing to draw between the old facing and the new.
     player.yaw = assets::yawOfDirection(toPartner);
+    player.previousYaw = player.yaw;
   }
 }
 

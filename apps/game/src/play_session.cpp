@@ -381,6 +381,10 @@ void PlaySession::pressBattle(const input::InputState& input) {
 
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
   const ui::Ui& ui = *context_.ui;
+  // Every tick starts with the characters where they stand: the screens below that run instead of
+  // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
+  // at all, and none is drawn sliding from where an older tick left it.
+  scene_->settleActors();
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
   const auto& fieldRules = game_.systems.fieldItems->rules();

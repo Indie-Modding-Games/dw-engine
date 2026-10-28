@@ -125,6 +125,9 @@ public:
   void finishTick();
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
+  // Starts a logic tick of every character on the field without moving it (Field::settle): each
+  // tick begins with it, so a tick the field does not run draws them where they stand.
+  void settleActors() { field_->settle(); }
 
   // The fishing's hold on the player (FishingScreen): one of the original's clips in place of the
   // walk's, nothing to give the player back to the field.
