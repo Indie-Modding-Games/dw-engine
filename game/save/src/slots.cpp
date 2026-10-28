@@ -125,6 +125,13 @@ core::Result<void> SaveSlots::save(SlotId slot, const SaveFile& file) {
   return storage_->write(slotFileName(slot), *text, keepBackup ? "" : slotBackupName(slot));
 }
 
+core::Result<void> SaveSlots::erase(SlotId slot) {
+  if (auto valid = checkSlot(slot); !valid) {
+    return valid;
+  }
+  return storage_->remove(slotFileName(slot), slotBackupName(slot));
+}
+
 core::Result<SaveFile> SaveSlots::readFile(SlotId slot, const std::string& name) const {
   if (auto valid = checkSlot(slot); !valid) {
     return std::unexpected{valid.error()};

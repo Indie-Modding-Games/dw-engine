@@ -45,6 +45,7 @@ inline constexpr std::string_view CannotCreateFolder = "cannot create '{}': {}";
 inline constexpr std::string_view CannotWrite = "cannot write '{}'";
 inline constexpr std::string_view CannotBackUp = "cannot back up '{}': {}";
 inline constexpr std::string_view CannotReplace = "cannot replace '{}': {}";
+inline constexpr std::string_view CannotRemove = "cannot remove '{}': {}";
 inline constexpr std::string_view StorageFull = "cannot write '{}': the storage is full";
 
 // Settings and the ruleset's save section.

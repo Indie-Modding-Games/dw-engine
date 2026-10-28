@@ -93,6 +93,38 @@ TEST_CASE("the disk storage replaces a file and keeps the old one as backup") {
   CHECK_FALSE(storage.write("slot_01.yaml", "x", "a/b"));
 }
 
+TEST_CASE("the disk storage removes a file into its backup, or with no copy") {
+  const TempFolder folder;
+  DiskSaveStorage storage{folder.path() / "saves"};
+  REQUIRE(storage.remove("slot_01.yaml", "slot_01.yaml.bak"));
+  REQUIRE(storage.write("slot_01.yaml", "first\n", "slot_01.yaml.bak"));
+  REQUIRE(storage.write("slot_01.yaml", "second\n", "slot_01.yaml.bak"));
+  REQUIRE(storage.remove("slot_01.yaml", "slot_01.yaml.bak"));
+  CHECK_FALSE(storage.read("slot_01.yaml").value().has_value());
+  CHECK(storage.read("slot_01.yaml.bak").value() == "second\n");
+  REQUIRE(storage.write("slot_02.yaml", "other\n", ""));
+  REQUIRE(storage.remove("slot_02.yaml", ""));
+  CHECK_FALSE(storage.read("slot_02.yaml").value().has_value());
+  CHECK_FALSE(storage.remove("slot_01.yaml", "a/b"));
+}
+
+TEST_CASE("an erased slot is empty and keeps its save as the backup") {
+  MemorySaveStorage storage;
+  SaveSlots slots{storage, parseSaveSettings(Settings).value()};
+  const SlotId first{.kind = SlotKind::Manual, .index = 1};
+  REQUIRE(slots.save(first, fileLabelled("first", at(8))));
+  REQUIRE(slots.save(first, fileLabelled("second", at(9))));
+  REQUIRE(slots.erase(first));
+  const SlotInfo info = slots.list()[0];
+  CHECK(info.state == SlotInfo::State::Empty);
+  CHECK(info.hasBackup);
+  CHECK(slots.loadBackup(first).value().header.label == "second");
+  // A new save to the erased slot keeps the erased one as the backup until the save after it.
+  REQUIRE(slots.save(first, fileLabelled("third", at(10))));
+  CHECK(slots.loadBackup(first).value().header.label == "second");
+  CHECK(errorOf(slots.erase({.kind = SlotKind::Manual, .index = 4})) == "there is no save slot 4");
+}
+
 TEST_CASE("the save settings are read and checked") {
   const auto settings = parseSaveSettings(Settings);
   REQUIRE_MESSAGE(settings, errorOf(settings));

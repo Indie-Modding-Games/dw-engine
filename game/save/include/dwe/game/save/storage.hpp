@@ -38,6 +38,11 @@ public:
   // an earlier backup); an empty `backup` keeps no copy and leaves any earlier backup alone.
   virtual core::Result<void> write(std::string_view name, std::string_view text,
                                    std::string_view backup) = 0;
+
+  // Takes a file away. Its text, if there was one, is kept in `backup` (replacing an earlier
+  // backup), so a file erased by mistake can still be brought back by hand; an empty `backup`
+  // keeps no copy. A file that does not exist is not an error.
+  virtual core::Result<void> remove(std::string_view name, std::string_view backup) = 0;
 };
 
 // Whether a name can name a file of a save storage.
@@ -55,6 +60,7 @@ public:
   [[nodiscard]] core::Result<std::optional<std::string>> read(std::string_view name) const override;
   core::Result<void> write(std::string_view name, std::string_view text,
                            std::string_view backup) override;
+  core::Result<void> remove(std::string_view name, std::string_view backup) override;
 
 private:
   std::filesystem::path folder_;
@@ -66,6 +72,7 @@ public:
   [[nodiscard]] core::Result<std::optional<std::string>> read(std::string_view name) const override;
   core::Result<void> write(std::string_view name, std::string_view text,
                            std::string_view backup) override;
+  core::Result<void> remove(std::string_view name, std::string_view backup) override;
 
   // Puts a file as it is, without a backup: for files written by an older game or damaged ones.
   void put(std::string name, std::string text);
