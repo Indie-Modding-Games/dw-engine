@@ -120,7 +120,7 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     if (!request) {
       return std::unexpected{request.error()};
     }
-    return screen.start(std::move(*request));
+    return screen.start(std::move(request->request), std::move(request->enemyNpcs));
   }();
   if (!started) {
     core::logWarning("{}",

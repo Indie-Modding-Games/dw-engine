@@ -1,5 +1,6 @@
 #include "battle_screen.hpp"
 
+#include <dwe/assets/map_document.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/battle/text_keys.hpp>
@@ -37,6 +38,8 @@ constexpr double VictoryPoseSeconds = VictoryPoseFrames * IntroFrameSeconds;
 // poses (startAnimation), and the end box opens once both clips have played through.
 constexpr std::uint32_t PlayerPoseClip = 0xb;
 constexpr std::uint32_t PartnerPoseClip = 0x2a;
+// Before the fanfare the partner takes its stance, the healthy one whatever its HP.
+constexpr std::uint32_t VictoryStanceClip = 0x21;
 // The port's safeguard, not the original's: a pose that never plays through holds the box no longer
 // than this many battle frames.
 constexpr int PoseGuardFrames = 200;
@@ -48,7 +51,8 @@ constexpr std::int64_t EndCountedSound = 0x17;
 
 } // namespace
 
-core::Result<void> BattleScreen::start(session::BattleRequest request) {
+core::Result<void> BattleScreen::start(session::BattleRequest request,
+                                       std::vector<std::int32_t> enemyNpcs) {
   if (active()) {
     return core::fail(std::string{messages::BattleAlreadyRunning});
   }
@@ -74,6 +78,9 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
   }
   map_ = map;
   drops_.clear();
+  enemyNpcs_ = std::move(enemyNpcs);
+  takeFigures();
+  showFighters(0.0);
   if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {
     sessionMusic->startBattle(music);
   }
@@ -96,9 +103,13 @@ core::Result<void> BattleScreen::start(session::BattleRequest request) {
 
 void BattleScreen::tick(double seconds) {
   tickVictory(seconds);
-  if (!battle_) {
-    return;
+  if (battle_) {
+    tickBattle(seconds);
   }
+  showFighters(seconds);
+}
+
+void BattleScreen::tickBattle(double seconds) {
   if (intro_) {
     tickIntro(seconds);
     return;
@@ -109,9 +120,59 @@ void BattleScreen::tick(double seconds) {
     }
   });
   publish();
+  takeFigures();
   if (battle_->finished()) {
     finish();
   }
+}
+
+// Each fighter's place, facing and clip are the battle's (battle_main.c: the fighters are the
+// partner's and the NPCs' entities, which the battle moves, turns and animates itself).
+void BattleScreen::takeFigures() {
+  const game::battle::BattleState& state = battle_->state();
+  figures_.clear();
+  for (const game::battle::Fighter& fighter : state.fighters) {
+    figures_.push_back({.x = static_cast<float>(fighter.position.x),
+                        .z = static_cast<float>(fighter.position.z),
+                        .yaw = assets::yawOfDirection({static_cast<float>(fighter.facing.x), 0.0F,
+                                                       static_cast<float>(fighter.facing.z)}),
+                        .clip = static_cast<std::uint32_t>(fighter.shown.clip),
+                        .starts = fighter.shown.starts,
+                        .frozen = fighter.shown.frozen});
+  }
+  partnerStance_ = static_cast<std::uint32_t>(game::battle::stanceClipOf(state.partner()));
+}
+
+void BattleScreen::showFighters(double seconds) {
+  if (desc_.scene == nullptr || figures_.empty()) {
+    return;
+  }
+  for (std::size_t index = 0; index < figures_.size(); ++index) {
+    std::optional<std::int32_t> npc;
+    if (index > 0) {
+      if (index > enemyNpcs_.size()) {
+        continue;
+      }
+      npc = enemyNpcs_[index - 1];
+    }
+    if (!desc_.scene->holdFighter(npc, figures_[index]) && seconds == 0.0) {
+      core::logWarning("{}",
+                       core::formatMessage(messages::FighterNotShown, index, npc.value_or(-1)));
+    }
+  }
+  desc_.scene->runFighters(seconds);
+}
+
+// The partner stands again (BTL_handleVictorySequence restarts its stance around the poses).
+void BattleScreen::standPartner(std::uint32_t clip, std::string_view origin) {
+  if (figures_.empty()) {
+    return;
+  }
+  FighterFigure& partner = figures_.front();
+  partner.clip = clip;
+  ++partner.starts;
+  partner.frozen = false;
+  core::logDebug("[port:battle] {}: the partner startAnimation({:#x})", origin, clip);
 }
 
 void BattleScreen::playSound(std::int64_t sound) const {
@@ -164,6 +225,7 @@ void BattleScreen::tickPoses(double seconds) {
   if (partnerPosing_ && (scene.partnerClipFinished() || timedOut)) {
     scene.playPartnerClip(std::nullopt);
     partnerPosing_ = false;
+    standPartner(partnerStance_, "BTL_handleVictorySequence (battle_main.c:910)");
   }
   if (playerPosing_ || partnerPosing_) {
     return;
@@ -385,6 +447,7 @@ void BattleScreen::finish() {
   outcome_ = result.outcome;
   won_ = result.outcome == game::battle::Outcome::Victory;
   if (won_) {
+    standPartner(VictoryStanceClip, "BTL_handleVictorySequence (battle_main.c:886)");
     core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
                    "playSound(0, 0x15)");
     playSound(VictorySound);
@@ -440,6 +503,10 @@ void BattleScreen::close() {
   ending_ = false;
   victoryPoseSeconds_.reset();
   releasePoses();
+  if (desc_.scene != nullptr && !figures_.empty()) {
+    desc_.scene->releaseFighters();
+  }
+  figures_.clear();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&

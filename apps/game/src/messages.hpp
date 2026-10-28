@@ -149,6 +149,10 @@ inline constexpr std::string_view WakeMapNotEntered = "game: the wake map {} can
 // The clip id, the model.
 inline constexpr std::string_view PartnerClipMissing =
     "field: the partner's model {1} has no clip {0}";
+inline constexpr std::string_view FighterNotShown =
+    "battle: fighter {} is not shown: the field draws no NPC with script id {}";
+inline constexpr std::string_view FighterClipMissing =
+    "field: the fighter's model {1} has no battle clip {0}; it keeps the clip it plays";
 inline constexpr std::string_view PartnerModelNotShown =
     "game: the partner cannot be drawn as {}: {}";
 inline constexpr std::string_view PartnerEventNotShown =

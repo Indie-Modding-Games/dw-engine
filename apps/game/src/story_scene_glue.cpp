@@ -90,7 +90,7 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
     if (!battleRequest) {
       return std::unexpected{battleRequest.error()};
     }
-    return battle.start(std::move(*battleRequest));
+    return battle.start(std::move(battleRequest->request), std::move(battleRequest->enemyNpcs));
   }();
   if (!started) {
     core::logWarning("[port:battle] startBattle (tamer.c:832): {}; the story reads a victory",

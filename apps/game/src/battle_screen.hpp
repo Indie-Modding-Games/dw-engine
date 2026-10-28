@@ -20,6 +20,8 @@
 #include <string_view>
 #include <vector>
 
+#include "fighter_figure.hpp"
+
 namespace dwe::app {
 
 // The battle screen's document and the commands it sends.
@@ -77,7 +79,9 @@ class BattleScreen {
 public:
   explicit BattleScreen(BattleScreenDesc desc) : desc_(desc) {}
 
-  core::Result<void> start(session::BattleRequest request);
+  // `enemyNpcs` are the script ids of the map's NPCs the enemies are, in their order: each enemy is
+  // shown on its NPC (none: the enemies are not shown).
+  core::Result<void> start(session::BattleRequest request, std::vector<std::int32_t> enemyNpcs);
 
   // Whether the battle or its end box is on screen: the field and the game clock wait meanwhile.
   [[nodiscard]] bool active() const { return battle_.has_value() || ending_; }
@@ -109,6 +113,10 @@ private:
   void openEndBox() const;
   void playSound(std::int64_t sound) const;
   void publishIntro() const;
+  void tickBattle(double seconds);
+  void takeFigures();
+  void showFighters(double seconds);
+  void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
   void throwItem(double slot);
   void finish();
@@ -139,6 +147,11 @@ private:
   // box closes (battle_ui.c: handleBattleEndBox calls spawnDroppedItems last).
   std::string map_;
   std::vector<game::battle::Drop> drops_;
+  // The fighters as the field shows them, the partner first, from the battle's state while it runs
+  // and as it left them until the end box closes; the NPC each enemy is.
+  std::vector<FighterFigure> figures_;
+  std::vector<std::int32_t> enemyNpcs_;
+  std::uint32_t partnerStance_ = 0;
 };
 
 } // namespace dwe::app

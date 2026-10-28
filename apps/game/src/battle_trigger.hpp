@@ -9,6 +9,7 @@
 #include <dwe/session/battle_adapter.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 #include <vector>
 
@@ -27,6 +28,13 @@ core::Result<assets::DigimonTable> speciesTable(const assets::VirtualFileSystem&
 // first NPC that can fight.
 core::Result<std::vector<std::size_t>> npcsOf(std::string_view argument);
 
+// A battle against the map's NPCs, and the script id of the NPC each enemy is, in the enemies'
+// order: the battle screen shows each enemy on its NPC.
+struct MapBattle {
+  session::BattleRequest request;
+  std::vector<std::int32_t> enemyNpcs;
+};
+
 // A battle against NPCs of the field's map, as the original's scripts start one (script_interp.c:
 // SCRIPT_OP_START_BATTLE, btl.c: the enemies are NPCs of the map): each enemy is its NPC record on
 // the Digimon table (game::battle::enemyFromMap) where the NPC stands, the tamer where the player
@@ -35,9 +43,9 @@ core::Result<std::vector<std::size_t>> npcsOf(std::string_view argument);
 //
 // This is the engine's debug trigger until the map scripts run (phase 4): it changes no rule of the
 // battle.
-core::Result<session::BattleRequest> mapBattleRequest(const game::field::Field& field,
-                                                      const assets::MapDocument& map,
-                                                      const assets::DigimonTable& species,
-                                                      const std::vector<std::size_t>& npcs);
+core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
+                                         const assets::MapDocument& map,
+                                         const assets::DigimonTable& species,
+                                         const std::vector<std::size_t>& npcs);
 
 } // namespace dwe::app

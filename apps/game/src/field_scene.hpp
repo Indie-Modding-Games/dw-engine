@@ -34,6 +34,8 @@
 #include <utility>
 #include <vector>
 
+#include "fighter_figure.hpp"
+
 namespace dwe::app {
 
 // An item lying on the field's ground (item.c: spawnItem, spawnDroppedItems): its world point and
@@ -196,6 +198,15 @@ public:
   // Whether the partner's scene clip has reached the end of its first pass (animFrame ==
   // frameCount), one that repeats too.
   [[nodiscard]] bool partnerClipFinished() const;
+
+  // The battle holds the partner (no script id) or the map's NPC with this script id: it stands,
+  // faces and plays as the figure says, the field's motion (following, wandering, looking at the
+  // player) set aside until releaseFighters. False when no such NPC is drawn.
+  bool holdFighter(std::optional<std::int32_t> npc, const FighterFigure& figure);
+  // The battle's time for the held fighters' clips, which run while the field waits.
+  void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
+  // The field takes the fighters back where they stand.
+  void releaseFighters();
   // The map's camera, which a scene's camera starts from.
   [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }
   // The model the partner is drawn with.
@@ -266,6 +277,8 @@ private:
     std::uint32_t scriptedStarts = 0;
     // A clip that replaces the motion's (setPlayerClip).
     std::optional<std::uint32_t> heldClip;
+    // The battle's hold on it (holdFighter).
+    std::optional<FighterFigure> fighter;
   };
 
   // Gives the model renderer the map camera once the background drawer has sized it to the frame.
@@ -298,6 +311,10 @@ private:
   void animate(Actor& actor, double seconds);
   // Plays the clip a script picked for the actor; false when it has none.
   bool animateScripted(Actor& actor, double seconds);
+  // Plays the clip the battle holds the actor in; false when it holds none
+  // (field_scene_fighters.cpp).
+  bool animateFighter(Actor& actor) const;
+  [[nodiscard]] Actor* fighterActor(std::optional<std::int32_t> npc);
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
@@ -381,6 +398,9 @@ private:
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;
+  // The battle time given to the held fighters since the last update, and in this update.
+  double fighterSecondsDue_ = 0.0;
+  double fighterSeconds_ = 0.0;
   // The models of the map's 3D objects, by door model id.
   std::map<std::int32_t, render::ModelHandle> mapObjectModels_;
   // setProps: the model asked for, its handle once loaded, and the copies.
