@@ -205,6 +205,10 @@ public:
   bool holdFighter(std::optional<std::int32_t> npc, const FighterFigure& figure);
   // The battle's time for the held fighters' clips, which run while the field waits.
   void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
+  // Whether the held fighter's clip, the figure's, has played through once (anim.c: animFlag 1
+  // off); true when the field does not show it.
+  [[nodiscard]] bool fighterPlayedThrough(std::optional<std::int32_t> npc,
+                                          const FighterFigure& figure);
   // The field takes the fighters back where they stand.
   void releaseFighters();
   // The map's camera, which a scene's camera starts from.

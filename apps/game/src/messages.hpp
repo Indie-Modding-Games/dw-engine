@@ -153,6 +153,8 @@ inline constexpr std::string_view FighterNotShown =
     "battle: fighter {} is not shown: the field draws no NPC with script id {}";
 inline constexpr std::string_view FighterClipMissing =
     "field: the fighter's model {1} has no battle clip {0}; it keeps the clip it plays";
+inline constexpr std::string_view ExitTimedOut =
+    "battle: an NPC leaving after the battle is still on screen after {} s; the battle ends";
 inline constexpr std::string_view PartnerModelNotShown =
     "game: the partner cannot be drawn as {}: {}";
 inline constexpr std::string_view PartnerEventNotShown =

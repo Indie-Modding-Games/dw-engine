@@ -52,7 +52,7 @@ constexpr std::int64_t EndCountedSound = 0x17;
 } // namespace
 
 core::Result<void> BattleScreen::start(session::BattleRequest request,
-                                       std::vector<std::int32_t> enemyNpcs) {
+                                       std::vector<std::int32_t> enemyNpcs, bool fixedFight) {
   if (active()) {
     return core::fail(std::string{messages::BattleAlreadyRunning});
   }
@@ -79,6 +79,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   map_ = map;
   drops_.clear();
   enemyNpcs_ = std::move(enemyNpcs);
+  fixedFight_ = fixedFight;
+  onScreenAtStart_ = npcsOnScreen();
   takeFigures();
   showFighters(0.0);
   if (session::SessionMusic* sessionMusic = desc_.session->music(); sessionMusic != nullptr) {
@@ -105,6 +107,9 @@ void BattleScreen::tick(double seconds) {
   tickVictory(seconds);
   if (battle_) {
     tickBattle(seconds);
+  }
+  if (exit_) {
+    tickExit(seconds);
   }
   showFighters(seconds);
 }
@@ -503,10 +508,6 @@ void BattleScreen::close() {
   ending_ = false;
   victoryPoseSeconds_.reset();
   releasePoses();
-  if (desc_.scene != nullptr && !figures_.empty()) {
-    desc_.scene->releaseFighters();
-  }
-  figures_.clear();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&
@@ -516,8 +517,9 @@ void BattleScreen::close() {
       core::logInfo("{}", core::formatMessage(messages::BattleDropLost, drop.item));
     }
   }
-  if (session::SessionMusic* music = desc_.session->music(); music != nullptr) {
-    music->leaveBattle(std::exchange(won_, false));
+  startExit();
+  if (!exit_) {
+    endExit();
   }
 }
 

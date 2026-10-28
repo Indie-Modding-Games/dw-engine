@@ -73,6 +73,16 @@ bool FieldScene::animateFighter(Actor& actor) const {
   return true;
 }
 
+bool FieldScene::fighterPlayedThrough(std::optional<std::int32_t> npc,
+                                      const FighterFigure& figure) {
+  const Actor* actor = fighterActor(npc);
+  if (actor == nullptr || !actor->fighter) {
+    return true;
+  }
+  return actor->fighter->clip == figure.clip && actor->fighter->starts == figure.starts &&
+         actor->player->playedThrough();
+}
+
 void FieldScene::releaseFighters() {
   const auto release = [this](Actor& actor) {
     if (!actor.fighter) {

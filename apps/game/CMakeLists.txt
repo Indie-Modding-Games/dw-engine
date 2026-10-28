@@ -4,6 +4,7 @@ dwe_add_app(game
         src/autotest.cpp
         src/battle_ground.cpp
         src/battle_screen.cpp
+        src/battle_screen_exit.cpp
         src/battle_trigger.cpp
         src/care_commands.cpp
         src/common.cpp
