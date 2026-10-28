@@ -176,7 +176,10 @@ siguen al original, así que cada sonido suena en el fotograma en que suena en e
 Los sonidos salen por `EffectSounds`: `play_sound` llama a `play` (banco 8) y los ids 0x12 y 0x20–0x22 a `playHeld`,
 que guarda la voz; la voz se para cuando su sub-efecto termina, como `EFE_SOUND_DATA`. Las sub-operaciones de golpe
 (`check_collision`, `apply_*_hit`, `check_target_collision`, `is_target_unhit`) responden con el golpe de la simulación
-(`noteHit`) en vez de las cajas de colisión del original; `random_in_range` es `customRandom`. Mejora documentada:
+(`noteHit`) en vez de las cajas de colisión del original. `hit_target` (`BTL_addAttackObjectToTarget`) marca al
+objetivo como golpeado, que es lo que mira `is_target_unhit` (el `isHit` del original), y el daño sigue en la
+simulación; Suposición: la marca dura hasta el siguiente inicio del efecto. Sin ella, el bucle de objetivos de Poison
+Powder repetía su sonido sin fin. `random_in_range` es `customRandom`. Mejora documentada:
 `stopAll` para todas las voces guardadas, mientras que `BTL_stopEFESounds` solo mira la primera (no avanza el puntero).
 
 ### Dibujo

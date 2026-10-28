@@ -161,6 +161,102 @@ data:
 // for its species, 100 units over the node, and each frame draws a centred sprite there (scale 64,
 // texels 0 to 31, colour 50, 50, 80) and its model's object 1 (scale 1, 0.5, 1), which the init
 // script coloured 50, 50, 80.
+// A made-up cloud: each frame it runs through the targets and sounds 7 on every one it has not hit
+// yet, the way Poison Powder does (select_next_target, is_target_unhit, hit_target).
+constexpr std::string_view TargetLoopEffectYaml = R"(move: "made_up_cloud"
+header:
+  sub_effect_count: 1
+)";
+constexpr std::string_view TargetLoopScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: spawn
+  count: 1
+  table: "base+0x0010"
+  stride: 8
+  ordinal: 0
+- at: "0x0110"
+  op: push_address
+  address: "base+0x0200"
+- at: "0x0120"
+  op: push_address
+  address: "base+0x0300"
+- at: "0x0130"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0200"
+    render_script: "l_0300"
+- at: "0x0140"
+  op: return
+- label: "l_0200"
+  at: "0x0200"
+  op: push_address
+  address: "base+0x0000"
+- at: "0x0210"
+  op: sub
+  sub: select_next_target
+  args:
+    index: "&base+0x0000"
+- at: "0x0220"
+  op: load_immediate
+  value: 0
+- at: "0x0230"
+  op: branch_if
+  variable: "base+0x0000"
+  width: 4
+  comparison: less
+  target: "l_0300"
+- at: "0x0240"
+  op: push_address
+  address: "base+0x0000"
+- at: "0x0250"
+  op: sub
+  sub: is_target_unhit
+  args:
+    out: "&base+0x0000"
+- at: "0x0260"
+  op: load_immediate
+  value: 0
+- at: "0x0270"
+  op: branch_if
+  variable: "base+0x0000"
+  width: 4
+  comparison: equal
+  target: "l_0200"
+- at: "0x0280"
+  op: push_immediate
+  value: 7
+- at: "0x0290"
+  op: sub
+  sub: play_sound
+  args:
+    sound: 7
+- at: "0x02a0"
+  op: sub
+  sub: hit_target
+- at: "0x02b0"
+  op: jump
+  target: "l_0200"
+- label: "l_0300"
+  at: "0x0300"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0310"
+  op: stop
+data:
+- at: "0x0000"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0010"
+  kind: instances
+  count: 1
+  stride: 8
+  free: true
+)";
+
 constexpr std::string_view DrawingEffectYaml = R"(move: "made_up_spark"
 header:
   sub_effect_count: 1
@@ -630,6 +726,25 @@ TEST_CASE("an effect whose bone list lacks the source's species draws nothing") 
   const TwoFighters bodies{"gabu"};
   const auto frames = drawsOf(drawingScript(), bodies, 2);
   CHECK(std::ranges::all_of(frames, [](const auto& drawn) { return drawn.empty(); }));
+}
+
+TEST_CASE("a target loop sounds once on each target it hits, not every frame") {
+  const auto effect = dwe::core::parseYaml(TargetLoopEffectYaml);
+  const auto script = dwe::core::parseYaml(TargetLoopScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  const TwoFighters bodies{"agum"};
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  runner.setBodies(bodies);
+  const std::size_t slot = runner.load(std::move(*read));
+  runner.start(slot, 0, 1);
+  for (int frame = 0; frame < 4; ++frame) {
+    runner.tick();
+  }
+  CHECK(sounds.log == std::vector<Recorded>{{"play", 7}});
 }
 
 TEST_CASE("every extracted effect runs and draws on two fighters") {

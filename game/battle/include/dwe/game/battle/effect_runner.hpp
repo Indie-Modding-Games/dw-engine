@@ -216,6 +216,8 @@ private:
     std::vector<std::optional<EffectVector>> objectColors;
     bool hitPending = false;
     bool hitSinceStart = false;
+    // The fighters hit_target marked since the start (the targets' isHit flags).
+    std::vector<FighterId> hitTargets;
     // Its init script failed (EFE_ACTIVE_SECTION -2): it never starts.
     bool failed = false;
   };

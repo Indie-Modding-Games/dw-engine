@@ -42,6 +42,7 @@ constexpr std::string_view PlaySound = "play_sound";
 constexpr std::string_view SetSubEffectScripts = "set_sub_effect_scripts";
 constexpr std::string_view RandomInRange = "random_in_range";
 constexpr std::string_view IsTargetUnhit = "is_target_unhit";
+constexpr std::string_view HitTarget = "hit_target";
 constexpr std::string_view CheckTargetCollision = "check_target_collision";
 // The hit checks that register a hit, and where their `hit` argument is.
 constexpr std::array<std::string_view, 4> RegisteringHits = {"check_collision", "apply_box_hit",
@@ -138,6 +139,7 @@ std::optional<std::size_t> EffectRunner::start(std::size_t slot, std::optional<F
   Slot& effect = slots_[slot];
   effect.hitPending = false;
   effect.hitSinceStart = false;
+  effect.hitTargets.clear();
   subEffect_ = 0;
   current_.reset();
   previous_.reset();
@@ -397,7 +399,17 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
   } else if (in.sub == RandomInRange && args.size() == 3) {
     write(slot, args[0], EffectWidth::Int32, randomInRange(random_, args[1], args[2]));
   } else if (in.sub == IsTargetUnhit && !args.empty()) {
-    write(slot, args[0], EffectWidth::Int32, slot.hitSinceStart ? 0 : 1);
+    // battle_effect.c: BTL_isTargetUnhit reads the target's isHit, which hit_target sets.
+    const std::optional<FighterId> target = context(slot).target;
+    const bool marked = target && std::ranges::contains(slot.hitTargets, *target);
+    write(slot, args[0], EffectWidth::Int32, slot.hitSinceStart || marked ? 0 : 1);
+  } else if (in.sub == HitTarget) {
+    // battle_effect.c: BTL_addAttackObjectToTarget marks the target hit; the damage stays with
+    // the battle, which already lands the move's hit.
+    const std::optional<FighterId> target = context(slot).target;
+    if (target && !std::ranges::contains(slot.hitTargets, *target)) {
+      slot.hitTargets.push_back(*target);
+    }
   } else if (in.sub == CheckTargetCollision && args.size() > TargetCollisionHitArg) {
     writeHit(slot, args[TargetCollisionHitArg], false);
   } else if (std::ranges::contains(RegisteringHits, in.sub) && args.size() > RegisteringHitArg) {
