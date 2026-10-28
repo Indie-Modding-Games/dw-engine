@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -56,6 +57,12 @@ constexpr std::uint32_t ByteMask = 0xFF;
 // one).
 constexpr std::int64_t FreeInstanceFrame = -1;
 constexpr std::size_t Int32Size = 4;
+constexpr std::size_t Int16Size = 2;
+// battle_effect.c: EfeTechBoneOffset is 10 bytes; a negative type ends a list.
+constexpr std::size_t BoneOffsetEntrySize = 10;
+constexpr std::int64_t BoneOffsetsEnd = -1;
+// EfeUvKeyframe.
+constexpr std::size_t UvKeyframeSize = 4;
 
 template <typename T>
 std::optional<T> parseNumber(std::string_view text, int base) {
@@ -96,6 +103,9 @@ public:
       if (auto count = integerOf(*header, "sub_effect_count")) {
         program_.subEffectCount = static_cast<std::uint16_t>(*count);
       }
+    }
+    if (const YamlNode* objects = effect.find("uv_anim_count"); objects != nullptr) {
+      program_.modelObjects = static_cast<std::uint16_t>(parseInteger(objects->text()).value_or(0));
     }
     const YamlNode* start = root.find("start_script");
     const YamlNode* init = root.find("init_script");
@@ -482,6 +492,90 @@ private:
     }
     if (*kind == "unused" || *kind == "unreferenced") {
       return writeBytes(node, "bytes", offset);
+    }
+    if (*kind == "bone_offsets") {
+      return boneOffsets(node, offset);
+    }
+    if (*kind == "uv_keyframes") {
+      return uvKeyframes(node, offset);
+    }
+    return {};
+  }
+
+  // EfeTechBoneOffset: s16 type, s16 bone, s16 x, y, z; the type stays a name.
+  core::Result<void> boneOffsets(const YamlNode& node, std::uint32_t at) {
+    std::vector<EffectBoneOffset> list;
+    if (const YamlNode* entries = node.find("entries"); entries != nullptr) {
+      for (const YamlNode& entry : entries->items()) {
+        EffectBoneOffset item;
+        auto species = textOf(entry, "digimon");
+        auto bone = integerOf(entry, "bone");
+        const YamlNode* offset = entry.find("offset");
+        if (!species || !bone || offset == nullptr ||
+            offset->items().size() != item.offset.size()) {
+          return core::fail(
+              std::format("line {}: a bone offset needs a species, bone and offset", entry.line()));
+        }
+        item.species = *species;
+        item.bone = static_cast<std::int16_t>(*bone);
+        const std::uint32_t entryAt =
+            at + static_cast<std::uint32_t>(list.size() * BoneOffsetEntrySize);
+        if (auto written = write(entry, entryAt + Int16Size, item.bone, Int16Size); !written) {
+          return written;
+        }
+        for (std::size_t axis = 0; axis < item.offset.size(); ++axis) {
+          const auto value = parseInteger(offset->items()[axis].text());
+          if (!value) {
+            return core::fail(std::format("line {}: {} is not a number", entry.line(),
+                                          offset->items()[axis].text()));
+          }
+          item.offset.at(axis) = static_cast<std::int16_t>(*value);
+          const auto axisAt = entryAt + static_cast<std::uint32_t>((2 + axis) * Int16Size);
+          if (auto written = write(entry, axisAt, *value, Int16Size); !written) {
+            return written;
+          }
+        }
+        list.push_back(std::move(item));
+      }
+    }
+    // The end of the list: a negative type.
+    if (auto written =
+            write(node, at + static_cast<std::uint32_t>(list.size() * BoneOffsetEntrySize),
+                  BoneOffsetsEnd, Int16Size);
+        !written) {
+      return written;
+    }
+    program_.boneOffsets[at] = std::move(list);
+    return {};
+  }
+
+  // s32 count, then per keyframe s16 frames, s8 du, s8 dv (EfeUvKeyframe).
+  core::Result<void> uvKeyframes(const YamlNode& node, std::uint32_t at) {
+    const YamlNode* keyframes = node.find("keyframes");
+    if (keyframes == nullptr) {
+      return {};
+    }
+    const std::size_t count = keyframes->items().size();
+    if (auto written = write(node, at, static_cast<std::int64_t>(count), Int32Size); !written) {
+      return written;
+    }
+    std::uint32_t entryAt = at + static_cast<std::uint32_t>(Int32Size);
+    for (const YamlNode& keyframe : keyframes->items()) {
+      auto frames = integerOf(keyframe, "frames");
+      auto du = integerOf(keyframe, "du");
+      auto dv = integerOf(keyframe, "dv");
+      if (!frames || !du || !dv) {
+        return core::fail(
+            std::format("line {}: a UV keyframe needs frames, du and dv", keyframe.line()));
+      }
+      for (auto [value, offset, size] :
+           std::array{std::tuple{*frames, 0U, Int16Size}, std::tuple{*du, 2U, std::size_t{1}},
+                      std::tuple{*dv, 3U, std::size_t{1}}}) {
+        if (auto written = write(keyframe, entryAt + offset, value, size); !written) {
+          return written;
+        }
+      }
+      entryAt += static_cast<std::uint32_t>(UvKeyframeSize);
     }
     return {};
   }

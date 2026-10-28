@@ -3,8 +3,10 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/yaml.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -86,17 +88,34 @@ struct EffectInstruction {
   std::uint8_t argCount = 0; // sub: the values it pops
 };
 
+// An entry of a bone-offset list (battle_effect.c: EfeTechBoneOffset): where on a species the
+// effect starts, as a node of its model and an offset in that node's space. The list ends at the
+// first entry with a negative type, which the YAML leaves out.
+struct EffectBoneOffset {
+  std::string species; // the species table's id of the original type (getOriginalType)
+  std::int16_t bone = 0;
+  std::array<std::int16_t, 3> offset{};
+
+  bool operator==(const EffectBoneOffset&) const = default;
+};
+
 struct EffectScript {
   std::string move;                 // the technique, as the move table names it
   std::uint16_t subEffectCount = 0; // the sub-effects that can run at once
-  std::uint32_t startScript = 0;    // offsets from the slot's base
+  // The objects of the slot's model: one UV animation each (uv_anim_count; numObjects), 0 without
+  // a model.
+  std::uint16_t modelObjects = 0;
+  std::uint32_t startScript = 0; // offsets from the slot's base
   std::uint32_t initScript = 0;
   std::vector<EffectInstruction> instructions; // in offset order
   // The slot's bytes from its base up to the start script, fill (0xCD) where the YAML gives no
-  // value: the variables, tables, instance tables and the numbers, vectors and colours the sub-ops
-  // point at get their values; what only drawing reads (bone offsets, sprites, UV keyframes, CLUTs,
-  // tile maps, ribbons) stays fill.
+  // value: the variables, tables, instance tables, the numbers, vectors and colours the sub-ops
+  // point at and the UV keyframes get their values, and each bone-offset entry its bone and offset
+  // (its type is a name: boneOffsets); the CLUT colours, parallax sprites, tile maps and ribbons
+  // stay fill.
   std::vector<std::byte> data;
+  // The bone-offset lists by their offset from the base.
+  std::map<std::uint32_t, std::vector<EffectBoneOffset>> boneOffsets;
 
   // The index of the instruction at an offset, or nothing.
   [[nodiscard]] std::optional<std::size_t> instructionAt(std::uint32_t offset) const;

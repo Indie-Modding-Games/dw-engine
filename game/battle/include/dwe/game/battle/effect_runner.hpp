@@ -1,14 +1,125 @@
 #pragma once
 
 #include <dwe/assets/effect_script.hpp>
+#include <dwe/game/battle/state.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
 namespace dwe::game::battle {
+
+// A vector of the effect scripts (battle_effect.c: EfeVector, EfeColor), in the console's axes
+// (y down) and units.
+struct EffectVector {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+
+  bool operator==(const EffectVector&) const = default;
+};
+
+// A transform of the console (MATRIX): a rotation and scale where 4096 is 1, and a translation.
+struct EffectMatrix {
+  std::array<std::array<std::int32_t, 3>, 3> m{{{4096, 0, 0}, {0, 4096, 0}, {0, 0, 4096}}};
+  EffectVector t;
+
+  bool operator==(const EffectMatrix&) const = default;
+};
+
+// What an effect knows of a fighter (its Entity and species data), in the console's axes.
+struct EffectBody {
+  // The species table's id of its original type (effect_common.c: getOriginalType), which the
+  // bone-offset lists name.
+  std::string species;
+  // posData->location and rotation.vy (4096 per turn).
+  EffectVector location;
+  std::int32_t rotationY = 0;
+  // The species data's radius and height.
+  std::int32_t radius = 0;
+  std::int32_t height = 0;
+  // Whether it can still be picked (currentHP > 0, on the map).
+  bool standing = true;
+};
+
+// Where the effects read the fighters: the battle's places and the models' nodes, which the app
+// animates.
+class EffectBodies {
+public:
+  EffectBodies() = default;
+  EffectBodies(const EffectBodies&) = delete;
+  EffectBodies& operator=(const EffectBodies&) = delete;
+  EffectBodies(EffectBodies&&) = delete;
+  EffectBodies& operator=(EffectBodies&&) = delete;
+  virtual ~EffectBodies() = default;
+
+  [[nodiscard]] virtual std::optional<EffectBody> body(FighterId fighter) const = 0;
+  // A node of the fighter's model in the world (effect_common.c: calculateBoneMatrix; the node's
+  // posMatrix.workm), the model's node 0 for one it lacks; nothing when the fighter is not drawn.
+  [[nodiscard]] virtual std::optional<EffectMatrix> node(FighterId fighter,
+                                                         std::int32_t index) const = 0;
+  // The battle's fighters in the original's entity order (ENTITY_TABLE 1 to 9).
+  [[nodiscard]] virtual std::vector<FighterId> fighters() const = 0;
+};
+
+// How a sprite mixes with what is behind it (GsSPRITE attribute bits 28 to 30): one of the four
+// semi-transparency rates, or opaque.
+enum class EffectBlend : std::uint8_t { Average, Add, Subtract, AddQuarter, Opaque };
+
+// A sprite at a world point, facing the screen (battle_effect.c: BTL_renderProjectedSprite and
+// BTL_renderCenteredSprite: GsSortSprite at the point's projection). Its size on screen is the
+// texels' times scale / 4096 at the original's projection, which in the world is
+// texels * scale / 32 units (scale * VIEWPORT_DISTANCE << 5 over the depth / 4).
+struct EffectSprite {
+  EffectVector position;
+  // The texel colours times color / 128.
+  EffectVector color{128, 128, 128};
+  std::int32_t scaleX = 4096;
+  std::int32_t scaleY = 4096;
+  // The texels of the slot's texture, from its top left corner.
+  std::int32_t u = 0;
+  std::int32_t v = 0;
+  std::int32_t width = 0;
+  std::int32_t height = 0;
+  // The texel drawn on the point, which the sprite turns and scales around.
+  std::int32_t pivotX = 0;
+  std::int32_t pivotY = 0;
+  // A clockwise turn on screen around the pivot, in degrees (GsSPRITE rotate / 4096).
+  std::int32_t rotate = 0;
+  EffectBlend blend = EffectBlend::Opaque;
+  // The palette row of the slot's texture, from its first.
+  std::int32_t clutRow = 0;
+
+  bool operator==(const EffectSprite&) const = default;
+};
+
+// An object of the slot's model drawn with a world transform (battle_effect.c: BTL_drawTMD,
+// BTL_drawTMDYXZ: the instance's position, its rotation and a scale), with the colour the scripts
+// gave its primitives (BTL_setEFEModelObjectColor; 128 is 1) and the texels its UV animation moved
+// them by (BTL_offsetEFEPrimitiveUVs).
+struct EffectModel {
+  std::int32_t object = 0;
+  EffectMatrix transform;
+  std::optional<EffectVector> color;
+  std::int32_t uOffset = 0;
+  std::int32_t vOffset = 0;
+
+  bool operator==(const EffectModel&) const = default;
+};
+
+// One thing a slot's render scripts drew this frame.
+struct EffectDraw {
+  std::size_t slot = 0;
+  std::variant<EffectSprite, EffectModel> shape;
+
+  bool operator==(const EffectDraw&) const = default;
+};
 
 // Where the effect scripts' sounds go: bank 8 of the sound player (battle_effect.c:
 // BTL_playEFESound). A held sound keeps its voice so the runner can stop it when its sub-effect
@@ -30,23 +141,29 @@ public:
 };
 
 // The battle's effect scripts, run as the original runs them once per battle frame
-// (battle_effect.c: BTL_startEFE, BTL_tickEFEEngine, BTL_runEFEScript) over each slot's own copy of
-// its data. Only the sounds have an effect outside the scripts: the drawing sub-ops are skipped
-// (their arguments still leave the stack), and the hit checks answer from the battle's own hits
-// (noteHit) instead of the original's collision boxes. Frames, spawns, branches and calls follow
-// the original, so each sound plays on the frame the original plays it.
+// (battle_effect.c: BTL_startEFE, BTL_tickEFEEngine, BTL_renderEFEEngine, BTL_runEFEScript) over
+// each slot's own copy of its data. The sub-ops do the original's maths and read the fighters
+// through EffectBodies; their sounds go to EffectSounds and what the render scripts draw to
+// draws(). The hit checks answer from the battle's own hits (noteHit) instead of the original's
+// collision boxes. Frames, spawns, branches and calls follow the original, so each sound plays and
+// each sprite moves on the frame the original's does.
 class EffectRunner {
 public:
   explicit EffectRunner(EffectSounds& sounds, std::uint32_t seed = 0);
 
-  // Loads a technique's effect for the battle (battle_effect.c: BTL_loadMoveEFE) and returns its
-  // slot.
+  // The fighters the effects read; without them the effects start at the world's origin.
+  void setBodies(const EffectBodies& bodies) { bodies_ = &bodies; }
+
+  // Loads a technique's effect for the battle and runs its init script (battle_effect.c:
+  // BTL_loadMoveEFE, BTL_loadNextEFEFile), returning its slot.
   std::size_t load(assets::EffectScript script);
   [[nodiscard]] std::size_t slotCount() const { return slots_.size(); }
 
-  // Runs a slot's start script (BTL_startEFE). Returns the first instance it spawned, which
-  // stop() takes, or nothing.
-  std::optional<std::size_t> start(std::size_t slot);
+  // Runs a slot's start script for an attack of `source` at `target` (BTL_startEFE; the first
+  // spawn takes the battle's attacker and its target). Returns the first instance
+  // it spawned, which stop() takes, or nothing.
+  std::optional<std::size_t> start(std::size_t slot, std::optional<FighterId> source = std::nullopt,
+                                   std::optional<FighterId> target = std::nullopt);
   // Ends a running effect early (battle_main.c: BTL_removeMoveEffect, BTL_stopEFESubEffect).
   void stop(std::size_t slot, std::size_t section);
   // One battle frame: every running sub-effect's tick script, then the held sounds of the
@@ -56,6 +173,10 @@ public:
   void noteHit(std::size_t slot);
   // Stops every held sound (battle_effect.c: BTL_removeEFEEngine, BTL_stopEFESounds).
   void stopAll();
+  // Runs every running sub-effect's render script (BTL_renderEFEEngine) and keeps what they drew
+  // for draws(), until the next render.
+  void render();
+  [[nodiscard]] const std::vector<EffectDraw>& draws() const { return draws_; }
 
   // Whether a sub-effect of the slot still runs.
   [[nodiscard]] bool running(std::size_t slot) const;
@@ -68,14 +189,35 @@ private:
     std::optional<std::uint32_t> render;
     std::optional<std::uint32_t> instance;
     std::optional<std::uint32_t> parent;
+    // EfeSubEffect sourceEntity, targetEntity and boneOffset.
+    std::optional<FighterId> source;
+    std::optional<FighterId> target;
+    std::optional<assets::EffectBoneOffset> boneOffset;
+  };
+
+  // An object's UV animation (battle_effect.c: EfeUvAnim): its keyframes' offset, the keyframe and
+  // its frame, the frame of the whole loop, and how far it moved the object's texels.
+  struct UvAnim {
+    std::optional<std::uint32_t> keyframes;
+    std::int32_t count = 0;
+    std::int32_t keyframe = 0;
+    std::int32_t keyframeFrame = 0;
+    std::int32_t frame = 0;
+    std::int32_t loopFrames = 0;
+    std::int32_t u = 0;
+    std::int32_t v = 0;
   };
 
   struct Slot {
     assets::EffectScript script;
     std::vector<std::byte> data;
     std::vector<SubEffect> subEffects;
+    std::vector<UvAnim> uvAnims;
+    std::vector<std::optional<EffectVector>> objectColors;
     bool hitPending = false;
     bool hitSinceStart = false;
+    // Its init script failed (EFE_ACTIVE_SECTION -2): it never starts.
+    bool failed = false;
   };
 
   struct CallFrame {
@@ -96,7 +238,25 @@ private:
   std::optional<std::size_t> spawn(Slot& slot, const assets::EffectInstruction& in,
                                    std::size_t next);
   void subOp(Slot& slot, const assets::EffectInstruction& in);
+  // The sub-ops by kind (effect_runner_subops.cpp); false for one that is not theirs.
+  bool transformOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  bool vectorOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  bool drawOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  bool fighterOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  void homeTowardPoint(Slot& slot, const std::vector<std::int32_t>& args);
+  void selectTarget(Slot& slot, bool random, std::int32_t argument);
+  void tickUvAnims(Slot& slot);
   void playSound(std::int32_t sound);
+  // Ends the running script: the sub-op found nothing to run on (EFE_SCRIPT_PTR = NULL).
+  void abort() { aborted_ = true; }
+  [[nodiscard]] SubEffect& context(Slot& slot) { return slot.subEffects[subEffect_]; }
+  [[nodiscard]] std::optional<EffectBody> bodyOf(std::optional<FighterId> fighter) const;
+  [[nodiscard]] std::optional<EffectMatrix> nodeOf(std::optional<FighterId> fighter,
+                                                   std::int32_t index) const;
+  // The running instance's transform (EfeInstance.transform, from offset 4).
+  [[nodiscard]] EffectVector vectorAt(const Slot& slot, std::int32_t address) const;
+  void setVector(Slot& slot, std::int32_t address, const EffectVector& value) const;
+  [[nodiscard]] std::int32_t instanceAddress(std::int32_t offset) const;
   static void writeHit(Slot& slot, std::int32_t address, bool consume);
 
   [[nodiscard]] std::int32_t address(const assets::EffectVariable& variable) const;
@@ -109,9 +269,11 @@ private:
   static void setFrame(Slot& slot, std::optional<std::uint32_t> instance, std::int32_t frame);
 
   EffectSounds* sounds_;
+  const EffectBodies* bodies_ = nullptr;
   std::minstd_rand random_;
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
+  std::vector<EffectDraw> draws_;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;
@@ -122,6 +284,12 @@ private:
   std::int32_t register_ = 0;
   std::vector<std::int32_t> stack_;
   std::vector<CallFrame> calls_;
+  bool aborted_ = false;
+  // The fighter the start's first spawn takes as source and target, and the entity cursors of
+  // select_next_target and the hit checks (EFE_TARGET_ENTITY_INDEX).
+  std::optional<FighterId> startSource_;
+  std::optional<FighterId> startTarget_;
+  std::size_t targetCursor_ = 0;
 };
 
 } // namespace dwe::game::battle

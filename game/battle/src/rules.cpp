@@ -690,6 +690,24 @@ TimingRules readTiming(ValueReader& in, const YamlNode& node) {
   return timing;
 }
 
+// The optional `effects` group: without it every species is its own original type.
+EffectRules readEffects(ValueReader& in, const YamlNode& root) {
+  EffectRules effects;
+  const YamlNode* node = root.find("effects");
+  if (node == nullptr || !in.group(*node, "effects", {"original_types"})) {
+    return effects;
+  }
+  const YamlNode& types = in.field(*node, "original_types");
+  if (!types.isMapping()) {
+    in.yaml().fail(types, messages::formatMessage(messages::NotSpeciesMap, "original_types"));
+    return effects;
+  }
+  for (const core::YamlEntry& entry : types.entries()) {
+    effects.originalTypes.emplace(entry.key, in.yaml().text(entry.value));
+  }
+  return effects;
+}
+
 void checkEnemyFactors(YamlReader& reader, const YamlNode& node, const BattleRules& rules) {
   if (reader.ok() &&
       std::cmp_not_equal(rules.rewards.enemyFactors.size(), rules.limits.maxEnemies)) {
@@ -708,7 +726,8 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                  "speed_reserve", "pacing",    "spacing",     "obedience",  "commands",
                  "partner_ai",    "enemy_ai",  "hit",         "damage",     "status",
                  "finisher",      "condition", "ending",      "item_throw", "hud",
-                 "consequences",  "rewards",   "joining",     "timing",     "quirks"})) {
+                 "consequences",  "rewards",   "joining",     "timing",     "quirks"},
+                {"effects"})) {
     return std::unexpected{reader.error(section.file)};
   }
   BattleRules rules{.strategies = readStrategies(in, in.field(root, "strategies")),
@@ -735,7 +754,8 @@ core::Result<BattleRules> readBattleRules(const ruleset::Section& section) {
                     .rewards = readRewards(in, in.field(root, "rewards")),
                     .joining = readJoining(in, in.field(root, "joining")),
                     .timing = readTiming(in, in.field(root, "timing")),
-                    .quirks = {}};
+                    .quirks = {},
+                    .effects = readEffects(in, root)};
   checkEnemyFactors(reader, in.field(root, "rewards"), rules);
   rules.quirks = ruleset::readQuirks(
       reader, in.field(root, ruleset::QuirksKey),

@@ -1150,6 +1150,23 @@
       },
       "description": "Which enemies on screen join a battle (btl.c: handleBattleStart)."
     },
+    "effects": {
+      "type": "object",
+      "required": [
+        "original_types"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "original_types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The species whose entries an effect's bone list gives each variant (effect_common.c: the original-type table); the others are their own."
+        }
+      },
+      "description": "What the techniques' effect scripts read of the fighters (battle_effect.c)."
+    },
     "timing": {
       "type": "object",
       "required": [

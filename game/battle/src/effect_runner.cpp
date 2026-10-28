@@ -113,23 +113,38 @@ std::size_t EffectRunner::load(assets::EffectScript script) {
   Slot slot;
   slot.data = script.data;
   slot.subEffects.resize(script.subEffectCount);
+  slot.uvAnims.resize(script.modelObjects);
+  slot.objectColors.resize(script.modelObjects);
   slot.script = std::move(script);
   slots_.push_back(std::move(slot));
-  return slots_.size() - 1;
-}
-
-std::optional<std::size_t> EffectRunner::start(std::size_t slot) {
-  if (slot >= slots_.size()) {
-    return std::nullopt;
-  }
-  Slot& target = slots_[slot];
-  target.hitPending = false;
-  target.hitSinceStart = false;
+  const std::size_t index = slots_.size() - 1;
+  // battle_effect.c: BTL_setupLoadedEFEFile runs the init script from sub-effect 0, with no
+  // instance, a few instructions a frame while the slot loads; it has no sounds to time.
   subEffect_ = 0;
   current_.reset();
   previous_.reset();
   activeSection_.reset();
-  run(slot, target.script.startScript);
+  startSource_.reset();
+  startTarget_.reset();
+  run(index, slots_[index].script.initScript);
+  return index;
+}
+
+std::optional<std::size_t> EffectRunner::start(std::size_t slot, std::optional<FighterId> source,
+                                               std::optional<FighterId> target) {
+  if (slot >= slots_.size() || slots_[slot].failed) {
+    return std::nullopt;
+  }
+  Slot& effect = slots_[slot];
+  effect.hitPending = false;
+  effect.hitSinceStart = false;
+  subEffect_ = 0;
+  current_.reset();
+  previous_.reset();
+  activeSection_.reset();
+  startSource_ = source;
+  startTarget_ = target;
+  run(slot, effect.script.startScript);
   return activeSection_;
 }
 
@@ -155,6 +170,7 @@ void EffectRunner::tick() {
       setFrame(slots_[slot], current_, frameOf(slots_[slot], current_) + 1);
       run(slot, *subEffect.tick);
     }
+    tickUvAnims(slots_[slot]);
   }
   for (std::optional<HeldSound>& held : held_) {
     if (held &&
@@ -182,6 +198,23 @@ void EffectRunner::stopAll() {
   }
 }
 
+// battle_effect.c: BTL_renderEFEEngine: every sub-effect with a tick script runs its render script.
+void EffectRunner::render() {
+  draws_.clear();
+  for (std::size_t slot = 0; slot < slots_.size(); ++slot) {
+    for (std::size_t index = 0; index < slots_[slot].subEffects.size(); ++index) {
+      const SubEffect& subEffect = slots_[slot].subEffects[index];
+      if (!subEffect.tick || !subEffect.render) {
+        continue;
+      }
+      subEffect_ = index;
+      current_ = subEffect.instance;
+      previous_ = subEffect.parent;
+      run(slot, *subEffect.render);
+    }
+  }
+}
+
 bool EffectRunner::running(std::size_t slot) const {
   return slot < slots_.size() &&
          std::ranges::any_of(
@@ -195,8 +228,9 @@ void EffectRunner::run(std::size_t slot, std::uint32_t script) {
   Slot& target = slots_[slot];
   stack_.clear();
   calls_.clear();
+  aborted_ = false;
   std::optional<std::size_t> at = target.script.instructionAt(script);
-  for (std::size_t steps = 0; at && steps < MaxStepsPerRun; ++steps) {
+  for (std::size_t steps = 0; at && !aborted_ && steps < MaxStepsPerRun; ++steps) {
     at = step(target, *at);
   }
   if (subEffect_ < target.subEffects.size()) {
@@ -325,11 +359,18 @@ std::optional<std::size_t> EffectRunner::spawn(Slot& slot, const EffectInstructi
   if (free >= slot.subEffects.size()) {
     return returnFrom();
   }
+  const std::optional<FighterId> source = slot.subEffects[subEffect_].source;
+  const std::optional<FighterId> target = slot.subEffects[subEffect_].target;
   subEffect_ = free;
   previous_ = current_;
   current_ = instance;
-  slot.subEffects[free].instance = current_;
-  slot.subEffects[free].parent = previous_;
+  SubEffect& spawned = slot.subEffects[free];
+  spawned.instance = current_;
+  spawned.parent = previous_;
+  // The first spawn of a start takes the attacker and its target; the others their parent's.
+  spawned.source = previous_ ? source : startSource_;
+  spawned.target = previous_ ? target : startTarget_;
+  targetCursor_ = 0;
   return next;
 }
 
@@ -340,6 +381,10 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
       args[k] = stack_.back();
       stack_.pop_back();
     }
+  }
+  if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
+      drawOp(slot, in.sub, args) || fighterOp(slot, in.sub, args)) {
+    return;
   }
   if (in.sub == PlaySound && !args.empty()) {
     playSound(args[0]);
