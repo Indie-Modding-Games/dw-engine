@@ -39,6 +39,11 @@ constexpr float CareArrival = 1.0F;
 constexpr float PathStallSeconds = 0.5F;
 // How many cells around a clicked cell to look for one the player can get to.
 constexpr int ClickSearchCells = 3;
+// The directions a partner making room tries, in turns from straight away from the player.
+constexpr std::array<float, 5> RoomTurns = {0.0F, 0.125F, -0.125F, 0.25F, -0.25F};
+// A partner nearer the camera than the player hides it unless this fraction of the two's touching
+// distance to a side of the camera's line to the player.
+constexpr float HiddenFraction = 0.75F;
 // tamer.c: getMapRotation rounds the camera's heading to 512 of the original's 4096: an eighth of a
 // turn.
 constexpr float CameraHeadingStep = Turn / 8.0F;
@@ -165,6 +170,8 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   const auto eighth = static_cast<std::size_t>((std::lround(heading / CameraHeadingStep) + 8) % 8);
   assert(eighth < HeadingDirections.size());
   cameraForward_ = HeadingDirections[eighth];
+  cameraView_ =
+      glm::length(ground(view)) > 0.0F ? glm::normalize(ground(view)) : ground(cameraForward_);
 
   entt::registry& registry = world_->registry();
   scene::place(registry.get<Transform>(player_), spawn.position, spawn.yaw);
@@ -191,6 +198,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   trail_.clear();
   partnerMotion_ = Motion::Idle;
   partnerStuckSeconds_ = 0.0F;
+  partnerMakesRoom_ = false;
   placePartnerNearPlayer();
   partnerTeleports_ = 0;
   if (scriptHeld_) {
@@ -1024,6 +1032,9 @@ void Field::movePartner(float seconds) {
     placePartnerNearPlayer();
     return;
   }
+  if (partnerMakesRoom_ && makeRoomForPlayer(seconds)) {
+    return;
+  }
   const float radius = rules.mover.radius;
   // partner.c: getPartnerTamerCloseness runs beyond 3.5 radii, walks beyond 2.5 and stops closer.
   // Walking while it follows the trail is the engine's: the original's partner keeps its distance
@@ -1062,9 +1073,13 @@ void Field::movePartner(float seconds) {
       npcs_.blocks(transform.position, move.position, radius) ? transform.position : move.position;
   const float moved = groundDistance(reached, transform.position);
   // partner.c:906: a walk ending its pass by the player stops at once when it collides
-  // (entityCheckCollision): with the map, an NPC or the player.
-  if (wanted == Motion::Idle && motion != Motion::Idle &&
-      (moved == 0.0F || groundDistance(reached, playerPosition) < radius + rules_.player.radius)) {
+  // (entityCheckCollision): with the map, an NPC or the player. The trail is the engine's: one that
+  // brings the partner against the player is over, and it stands there too.
+  const bool againstPlayer =
+      groundDistance(reached, playerPosition) < radius + rules_.player.radius;
+  if (motion != Motion::Idle && ((wanted == Motion::Idle && (moved == 0.0F || againstPlayer)) ||
+                                 (!trail_.empty() && againstPlayer))) {
+    trail_.clear();
     core::logDebug("[port:partner] partnerTickWalking (partner.c:906): the walk collides before "
                    "its pass ends; it stands");
     animation = {.motion = Motion::Idle, .speedScale = 1.0F};
@@ -1086,6 +1101,67 @@ void Field::movePartner(float seconds) {
   } else if (partnerStuckSeconds_ > rules.stuckSeconds) {
     placePartnerNearPlayer();
   }
+}
+
+bool Field::makeRoomForPlayer(float seconds) {
+  // The engine's: the original's partner stays where a script or talk left it until the player
+  // walks out of its stopping distance (partner.c:971, its closeness), against the player,
+  // inside the NPC it talked to, or between the camera and the player, hiding it. Here, while the
+  // player stands, it first walks off to halfway between touching the player and its stopping
+  // distance, and out of the camera's line to the player, then follows as the original.
+  entt::registry& registry = world_->registry();
+  auto& transform = registry.get<Transform>(partner_);
+  const glm::vec3 playerPosition = registry.get<Transform>(player_).position;
+  const PartnerRules& rules = rules_.partner;
+  const float radius = rules.mover.radius;
+  const float touching = rules_.player.radius + radius;
+  const float stops = rules.walkDistance * radius;
+  const float roomy = (touching + stops) / 2.0F;
+  const glm::vec2 away = ground(transform.position) - ground(playerPosition);
+  const float distance = glm::length(away);
+  const glm::vec2 side{-cameraView_.y, cameraView_.x};
+  const float across = glm::dot(away, side);
+  const bool hides =
+      glm::dot(away, cameraView_) < 0.0F && std::abs(across) < touching * HiddenFraction;
+  const bool tight = distance < roomy || npcs_.overlaps(transform.position, radius);
+  // Once the player walks off, the partner follows it as the original.
+  const bool playerMoves = registry.get<AnimationIntent>(player_).motion != Motion::Idle;
+  if ((!tight && !hides) || distance >= stops || playerMoves) {
+    partnerMakesRoom_ = false;
+    return false;
+  }
+  const glm::vec2 straight =
+      distance > 0.0F ? away / distance : -ground(assets::forwardOfYaw(transform.yaw));
+  const float expected = rules.mover.walkSpeed * seconds;
+  const float step = hides || distance >= roomy ? expected : std::min(expected, roomy - distance);
+  std::vector<glm::vec2> headings;
+  if (hides) {
+    headings.push_back(across < 0.0F ? -side : side);
+  }
+  for (const float turn : RoomTurns) {
+    const float angle = turn * Turn;
+    headings.emplace_back((straight.x * std::cos(angle)) - (straight.y * std::sin(angle)),
+                          (straight.x * std::sin(angle)) + (straight.y * std::cos(angle)));
+  }
+  for (const glm::vec2 heading : headings) {
+    const GridMove move = moveOnGrid(collision_, transform.position, heading * step, radius);
+    if (npcs_.blocks(transform.position, move.position, radius) ||
+        groundDistance(move.position, transform.position) < step * StuckFraction ||
+        groundDistance(move.position, playerPosition) <= distance) {
+      continue;
+    }
+    transform.position = move.position;
+    transform.yaw = assets::yawOfDirection({heading.x, 0.0F, heading.y});
+    registry.get<AnimationIntent>(partner_) = {.motion = Motion::Walk, .speedScale = 1.0F};
+    partnerStuckSeconds_ = 0.0F;
+    return true;
+  }
+  // Walled in: it stays, as the original does.
+  core::logDebug("[port:partner] no room to step away from the player: the partner stays {:.0f} "
+                 "from it",
+                 distance);
+  partnerMakesRoom_ = false;
+  return false;
 }
 
 void Field::placePartnerNearPlayer() {

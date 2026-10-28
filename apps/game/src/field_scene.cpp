@@ -512,8 +512,8 @@ void FieldScene::setPartnerMood(const game::partner::Conditions& conditions,
   partnerHappiness_ = happiness;
 }
 
-game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor,
-                                                           scene::Motion motion, double seconds) {
+game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, scene::Motion motion,
+                                                           double seconds) {
   using game::partner::FieldAnimation;
   PartnerLook& look = partnerLook_;
   const game::field::PartnerRules& rules = field_->rules().partner;
@@ -529,9 +529,8 @@ game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor,
   if (motion != scene::Motion::Idle) {
     // The walk is picked as it starts (setPartnerSlowWalking).
     if (changed) {
-      look.base = motion == scene::Motion::Run
-                      ? FieldAnimation::Run
-                      : game::partner::walkAnimation(partnerConditions_);
+      look.base = motion == scene::Motion::Run ? FieldAnimation::Run
+                                               : game::partner::walkAnimation(partnerConditions_);
       look.gesture.reset();
     }
     return look.base;
@@ -598,6 +597,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     submitMapObjects();
     submitProps();
   }
+  submitEffectModels();
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha, stage_.partnerScale);
   }

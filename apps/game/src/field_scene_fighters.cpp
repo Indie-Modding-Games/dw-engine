@@ -19,7 +19,7 @@ constexpr float FighterClipFadeSeconds = 0.0F;
 
 } // namespace
 
-FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) {
+FieldScene::Actor* FieldScene::fighterActor(std::optional<std::int32_t> npc) const {
   if (!npc) {
     return partnerActor_.get();
   }

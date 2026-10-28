@@ -381,6 +381,99 @@ joining:
   repel_item: enemy_repel
   repel_roll: 20
 
+# battle_effect.c: BTL_checkTechCompatibility busca el tipo original del atacante (effect_common.c: getOriginalType,
+# su tabla de tipos originales) en la lista de huesos de cada efecto: las variantes de enemigo y las de la historia usan las
+# entradas de su especie base. Las que no salen aquí son su propio tipo.
+effects:
+  original_types:
+    panj: leom
+    ggdr: mgdr
+    mtet: etem
+    ykag: agum
+    hyog: ogre
+    pcsc: scum
+    doku: kune
+    sima: unim
+    redv: vegi
+    jmoj: moja
+    nise: dori
+    tuti: yuki
+    psyc: gabu
+    modo: beta
+    pidd: ange
+    arur: palm
+    gere: nume
+    varm: mono
+    fuga: ogre
+    tkka: giro
+    mris: shel
+    mcho: penm
+    akat: coca
+    tuka: pata
+    sham: gobr
+    clea: agum
+    zass: vegi
+    icdv: devi
+    dkrz: flar
+    sngb: gobr
+    blmr: mera
+    grur: garu
+    sabd: bird
+    gole: yuki
+    wrse: mgsd
+    ebet: beta
+    egre: grey
+    edev: devi
+    eair: aird
+    etyr: tyra
+    emer: mera
+    esea: sead
+    enum: nume
+    emtg: mtgr
+    emam: mame
+    emon: monz
+    egab: gabu
+    eele: elec
+    ekab: kabu
+    eang: ange
+    ebir: bird
+    egar: garu
+    eyuk: yuki
+    ehoe: hoee
+    eveg: vegi
+    esku: skul
+    emtm: mtma
+    eved: veda
+    epat: pata
+    ekun: kune
+    euni: unim
+    eogr: ogre
+    eshe: shel
+    ecen: cent
+    ebak: bake
+    edor: dori
+    escu: scum
+    eand: andr
+    egir: giro
+    eete: etem
+    epiy: piyo
+    epal: palm
+    emno: mono
+    eleo: leom
+    esir: sira
+    ecoc: coca
+    ekuw: kuwa
+    emoj: moja
+    enan: nani
+    emgd: mgdr
+    epic: picc
+    edig: digi
+    eiga: igam
+    epen: penm
+    evan: vand
+    cegr: grey
+    cemg: mtgr
+
 # Tiempos que en el original marcan las animaciones de cada modelo y la colisión del mapa, no una tabla. Hueco: son
 # valores del motor, medios y aproximados, hasta medirlos en las animaciones; la interfaz puede sustituirlos.
 timing:

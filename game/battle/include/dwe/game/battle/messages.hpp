@@ -17,6 +17,7 @@ inline constexpr std::string_view NotPositive = "{} must be more than zero";
 inline constexpr std::string_view NotPercent = "{} must be a percentage from 0 to 100";
 inline constexpr std::string_view NotOrdered = "{}: {} must not be more than {}";
 inline constexpr std::string_view NotAffinityKey = "'{}' is not an affinity";
+inline constexpr std::string_view NotSpeciesMap = "'{}' is not a map of species to species";
 inline constexpr std::string_view UnknownMenuEntry = "unknown menu entry '{}'";
 inline constexpr std::string_view MenusNotSorted =
     "the menus must go from brain 0 up, without repeating a brain";

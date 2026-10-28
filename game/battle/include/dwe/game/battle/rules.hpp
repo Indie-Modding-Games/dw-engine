@@ -6,6 +6,8 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -374,6 +376,18 @@ struct TimingRules {
   std::int32_t combatAreaCornerHeight = 0;
 };
 
+// What the techniques' effect scripts read of the fighters (battle_effect.c): the species whose
+// bone-list entries each variant uses (effect_common.c: getOriginalType and its table);
+// one not listed is its own.
+struct EffectRules {
+  std::map<std::string, std::string, std::less<>> originalTypes;
+
+  [[nodiscard]] std::string_view originalTypeOf(std::string_view species) const {
+    const auto found = originalTypes.find(species);
+    return found != originalTypes.end() ? std::string_view{found->second} : species;
+  }
+};
+
 struct BattleRules {
   StrategyNames strategies;
   LimitRules limits;
@@ -400,6 +414,7 @@ struct BattleRules {
   JoiningRules joining;
   TimingRules timing;
   ruleset::Quirks quirks;
+  EffectRules effects;
 };
 
 // Reads the `battle` section. The errors name the file, line and column.

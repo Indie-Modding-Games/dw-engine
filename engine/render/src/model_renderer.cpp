@@ -288,8 +288,11 @@ bool ModelRenderer::submit(const ModelInstance& instance) {
   for (const glm::mat4& joint : joints) {
     joints_.push_back(instance.world * joint);
   }
-  submitted_.push_back(
-      {.model = instance.model, .world = instance.world, .firstJoint = first, .jointCount = count});
+  submitted_.push_back({.model = instance.model,
+                        .world = instance.world,
+                        .firstJoint = first,
+                        .jointCount = count,
+                        .tint = instance.tint});
   return true;
 }
 
@@ -331,7 +334,8 @@ void ModelRenderer::prepare(PrepareContext& context) {
       }
       prepared_.push_back({.model = instance.model,
                            .viewDepth = (camera_.view * instance.world[3]).z,
-                           .joints = joints->address});
+                           .joints = joints->address,
+                           .tint = instance.tint});
     }
   }
   const std::size_t dropped = submitted - prepared_.size();
@@ -361,7 +365,7 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
   commands.bindIndexBuffer(model.geometry, rhi::IndexType::Uint32, model.indexOffset);
   commands.pushConstants(ModelPush{.joints = instance.joints,
                                    .frame = frameAddress_,
-                                   .baseColor = material.baseColor,
+                                   .baseColor = material.baseColor * instance.tint,
                                    .texture = material.texture.index,
                                    .flags = material.flags,
                                    .alphaCutoff = material.alphaCutoff,

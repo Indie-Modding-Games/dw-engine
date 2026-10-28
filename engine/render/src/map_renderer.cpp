@@ -435,15 +435,24 @@ void MapRenderer::drawLayers(DrawContext& context) {
     }
     const SpriteTexture& texture = billboardTextures_[billboard.texture];
     const glm::vec2 half = billboard.size * 0.5F;
-    // Upright: the camera's right and up. Flat: the world's x and z, the far side first.
-    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F} : right * half.x;
-    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y} : up * half.y;
+    // Upright: the camera's right and up, turned on screen. Flat: the world's x and z, the far side
+    // first.
+    const float cosine = std::cos(billboard.turn);
+    const float sine = std::sin(billboard.turn);
+    const glm::vec3 screenRight = (right * cosine) - (up * sine);
+    const glm::vec3 screenUp = (up * cosine) + (right * sine);
+    const glm::vec3 across = billboard.flat ? glm::vec3{half.x, 0.0F, 0.0F} : screenRight * half.x;
+    const glm::vec3 along = billboard.flat ? glm::vec3{0.0F, 0.0F, -half.y} : screenUp * half.y;
+    // The pivot on the centre: the quad's middle moves away from it.
+    const glm::vec2 shift = billboard.flat ? glm::vec2{0.0F} : (glm::vec2{0.5F} - billboard.pivot);
+    const glm::vec3 middle = billboard.centre + (screenRight * (shift.x * billboard.size.x)) -
+                             (screenUp * (shift.y * billboard.size.y));
     const auto clip = [&viewProjection](glm::vec3 world) {
       return viewProjection * glm::vec4{world, 1.0F};
     };
     const std::array<glm::vec4, 4> corners{
-        clip(billboard.centre - across + along), clip(billboard.centre + across + along),
-        clip(billboard.centre - across - along), clip(billboard.centre + across - along)};
+        clip(middle - across + along), clip(middle + across + along), clip(middle - across - along),
+        clip(middle + across - along)};
     const glm::vec2 uvMin = billboard.texel / texture.size;
     const glm::vec2 uvMax = (billboard.texel + billboard.texels) / texture.size;
     const glm::uvec2 textures{texture.id.index, NoPalette};

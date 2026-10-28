@@ -116,6 +116,7 @@ void FieldScene::drawGroundItems() {
                           .blend = assets::SpriteBlend::Opaque,
                           .color = glm::vec3{1.0F}});
   }
+  addEffectBillboards(billboards);
   mapRenderer_->setBillboards(billboards);
 }
 

@@ -373,6 +373,12 @@ void PlaySession::pressStory(const input::InputState& input) {
   }
 }
 
+void PlaySession::pressBattle(const input::InputState& input) {
+  if (input.wasPressed("extra")) {
+    battleScreen_.pressFinisher();
+  }
+}
+
 void PlaySession::tick(const game::field::FieldInput& intent, const FishingButtons& fishing) {
   const ui::Ui& ui = *context_.ui;
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.

@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "fighter_figure.hpp"
+#include "scene_effect.hpp"
 
 namespace dwe::app {
 
@@ -211,6 +212,14 @@ public:
                                           const FighterFigure& figure);
   // The field takes the fighters back where they stand.
   void releaseFighters();
+  // A node of a held fighter's model (the original's object index; the first for one it lacks) in
+  // the world, in world axes; nothing when the field does not draw it.
+  [[nodiscard]] std::optional<glm::mat4> fighterNode(std::optional<std::int32_t> npc,
+                                                     std::uint32_t node) const;
+  // What the techniques' effects drew on the battle's last frame, drawn until replaced: sprites
+  // with the move's effect texture, objects of its effect model. Each texture and model loads on
+  // first use; one that fails is logged and not drawn.
+  void setEffects(std::vector<SceneEffect> effects) { effects_ = std::move(effects); }
   // The map's camera, which a scene's camera starts from.
   [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }
   // The model the partner is drawn with.
@@ -318,7 +327,16 @@ private:
   // Plays the clip the battle holds the actor in; false when it holds none
   // (field_scene_fighters.cpp).
   bool animateFighter(Actor& actor) const;
-  [[nodiscard]] Actor* fighterActor(std::optional<std::int32_t> npc);
+  [[nodiscard]] Actor* fighterActor(std::optional<std::int32_t> npc) const;
+  // field_scene_effects.cpp: the effects' textures (by move and palette) and models.
+  struct EffectModelEntry {
+    render::ModelHandle handle;
+    std::size_t joints = 0;
+  };
+  std::optional<std::size_t> effectTexture(const std::string& move, std::int32_t palette);
+  const EffectModelEntry* effectModel(const std::string& move);
+  void addEffectBillboards(std::vector<render::MapBillboard>& billboards);
+  void submitEffectModels();
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
@@ -394,6 +412,9 @@ private:
   // The billboard textures of the items' image by palette, and of the shadow (nullopt as the key),
   // or nothing for one that failed to load.
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
+  std::vector<SceneEffect> effects_;
+  std::map<std::pair<std::string, std::int32_t>, std::optional<std::size_t>> effectTextures_;
+  std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;

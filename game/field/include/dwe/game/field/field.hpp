@@ -376,6 +376,9 @@ private:
   [[nodiscard]] std::int32_t fadeFrame(float seconds) const;
   void updateTrail();
   void movePartner(float seconds);
+  // After a script lets the player go: a partner left against the player, in an NPC or hiding the
+  // player from the camera steps off first; whether it took this tick.
+  bool makeRoomForPlayer(float seconds);
   void placePartnerNearPlayer();
   void tickScripted(float seconds);
   void tickCare(float seconds);
@@ -415,6 +418,8 @@ private:
   assets::MapRegions regions_;
   std::vector<assets::MapWarp> warps_;
   glm::vec3 cameraForward_{0.0F, 0.0F, -1.0F};
+  // The ground direction the map's camera looks, unrounded.
+  glm::vec2 cameraView_{0.0F, -1.0F};
 
   FieldInput input_;
   std::optional<glm::vec3> moveTarget_;
@@ -462,6 +467,8 @@ private:
   bool partnerPassEnded_ = false;
   float partnerStuckSeconds_ = 0.0F;
   std::int32_t partnerTeleports_ = 0;
+  // Set when a script lets the player go, until the partner has made room (makeRoomForPlayer).
+  bool partnerMakesRoom_ = false;
 
   struct CameraPan {
     glm::vec3 from{};

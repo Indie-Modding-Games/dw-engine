@@ -20,6 +20,7 @@
 #include <string_view>
 #include <vector>
 
+#include "battle_effect_bodies.hpp"
 #include "fighter_figure.hpp"
 
 namespace dwe::app {
@@ -112,6 +113,9 @@ public:
 
   // Takes the battle document's commands; false for any other command.
   bool handle(const ui::UiCommand& command);
+  // The original's square button (battle_tick.c: handleCommands): calls the finisher once its
+  // gauge is full, whatever command the strip has.
+  void pressFinisher();
 
 private:
   [[nodiscard]] screens::NameKeys names() const;
@@ -126,6 +130,7 @@ private:
   void publishIntro() const;
   void tickBattle(double seconds);
   void takeFigures();
+  void showEffects() const;
   void showFighters(double seconds);
   void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
@@ -144,6 +149,8 @@ private:
 
   BattleScreenDesc desc_;
   std::optional<game::battle::Battle> battle_;
+  // What the effects read of the fighters; it outlives effects_.
+  std::optional<BattleEffectBodies> bodies_;
   std::optional<session::BattleEffects> effects_;
   bool ending_ = false;
   // The opening before the fight (battle_setup.c: BTL_handleBattleIntro), the enemies it marks and

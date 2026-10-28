@@ -71,14 +71,16 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   battle_.emplace(std::move(*battle));
   battle_->setGround(desc_.ground);
   effects_.reset();
+  enemyNpcs_ = std::move(enemyNpcs);
+  bodies_.emplace(*battle_, desc_.scene, desc_.species, enemyNpcs_);
   desc_.session->useBattleSounds(true);
   if (game::story::SoundPort* sound = desc_.session->sound();
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
+    effects_->setBodies(*bodies_);
   }
   map_ = map;
   drops_.clear();
-  enemyNpcs_ = std::move(enemyNpcs);
   fixedFight_ = fixedFight;
   onScreenAtStart_ = npcsOnScreen();
   takeFigures();
@@ -126,9 +128,24 @@ void BattleScreen::tickBattle(double seconds) {
   });
   publish();
   takeFigures();
+  showEffects();
   if (battle_->finished()) {
     finish();
   }
+}
+
+// battle_effect.c: BTL_renderEFEEngine: what the effects drew on the battle's last frame.
+void BattleScreen::showEffects() const {
+  if (desc_.scene == nullptr) {
+    return;
+  }
+  std::vector<SceneEffect> shown;
+  if (effects_) {
+    for (const game::battle::EffectDraw& draw : effects_->draws()) {
+      shown.push_back({.move = effects_->moveOf(draw.slot), .shape = draw.shape});
+    }
+  }
+  desc_.scene->setEffects(std::move(shown));
 }
 
 // Each fighter's place, facing and clip are the battle's (battle_main.c: the fighters are the
@@ -374,6 +391,20 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
   return false;
 }
 
+void BattleScreen::pressFinisher() {
+  // Nothing is taken while the battle opens, as for the strip's commands.
+  if (!battle_ || intro_) {
+    return;
+  }
+  // Before the gauge is full the button does nothing, as in the original.
+  if (auto taken = battle_->command(game::battle::Command::Finisher); !taken) {
+    core::logDebug(
+        "{}", core::formatMessage(messages::BattleCommandRefused,
+                                  game::battle::commandTextKey(game::battle::Command::Finisher),
+                                  taken.error().message));
+  }
+}
+
 screens::NameKeys BattleScreen::names() const {
   return {desc_.species, desc_.inventory != nullptr ? &desc_.inventory->items() : nullptr,
           &desc_.battle->catalog()};
@@ -436,7 +467,9 @@ void BattleScreen::finish() {
   if (effects_) {
     effects_->end();
     effects_.reset();
+    showEffects();
   }
+  bodies_.reset();
   desc_.session->useBattleSounds(false);
   session::SessionMusic* music = desc_.session->music();
   if (music != nullptr) {

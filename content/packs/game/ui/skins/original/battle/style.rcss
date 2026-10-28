@@ -106,7 +106,12 @@
 
 /* The finisher's word (battle_hud.c: BTL_renderFinisherGauge; BI_IN, palette 12): "FINISH!!" from x 215, y 35, one
    letter more for each sixth of the gauge and the last two marks once it is full; nothing while it is empty. Once
-   full, "PUSH" (palette 2) shows at (270, 39) on a grey box at half opacity from (268, 38), 41 x 11. */
+   full, "PUSH" (palette 2) shows at (270, 39) on a grey box at half opacity from (268, 38), 41 x 11. The original's
+   sprite starts with the pad's square button, which calls the finisher; here the box shows the prompt of the action
+   that does it (`extra`: its key, or the button of the pad in use) in that place: a documented delta. "PUSH" keeps
+   its pixels and its place at the box's right. A name of one or two letters fits where the square was; a longer one
+   would run into "FINISH!!", so the box grows to the left one row lower, under the word, and the finisher's
+   command, which answers on the box, goes with it. */
 #finisher {
 	position: absolute;
 	left: 0;
@@ -166,16 +171,41 @@
 #finisher-ready {
 	display: none;
 	position: absolute;
-	left: 186dp;
+	right: 3dp;
 	top: 72dp;
-	width: 123dp;
-	height: 33dp;
+	min-width: 111dp;
+	height: 27dp;
+	padding: 3dp 6dp;
+	white-space: nowrap;
+	text-align: right;
 	background-color: #80808080;
-	decorator: image(finish-push scale-none center center);
 }
 
 #finisher.ready #finisher-ready {
 	display: block;
+}
+
+#fight.long-finisher-key #finisher-ready {
+	top: 111dp;
+}
+
+#prompt-finisher {
+	display: inline-block;
+	vertical-align: top;
+	min-width: 15dp;
+	height: 21dp;
+	line-height: 21dp;
+	padding: 0 3dp;
+	margin-right: 3dp;
+	text-align: center;
+}
+
+#finisher-push {
+	display: inline-block;
+	vertical-align: top;
+	width: 81dp;
+	height: 27dp;
+	decorator: image(finish-push);
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -243,6 +273,10 @@
 	top: 114dp;
 	width: 123dp;
 	height: 33dp;
+}
+
+#fight.long-finisher-key .command.no-icon, #fight.long-finisher-key .command.no-icon:focus {
+	top: 153dp;
 }
 
 .command.no-icon.unavailable {

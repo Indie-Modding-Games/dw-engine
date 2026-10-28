@@ -21,7 +21,9 @@ dwe_add_module(battle
         src/aftermath.cpp
         src/battle.cpp
         src/thrown_item.cpp
+        src/effect_math.cpp
         src/effect_runner.cpp
+        src/effect_runner_subops.cpp
         src/joining.cpp
         src/simulation.cpp
         src/text_keys.cpp

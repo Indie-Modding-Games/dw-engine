@@ -14,15 +14,18 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
-// The techniques' effect scripts in a battle, for their sounds (battle_effect.c): each move's
-// effect/<move>/ loads the first time a fighter uses it, starts when its attack starts
-// (battle_main.c: BTL_setupMoveExecution, BTL_startEFE) and runs one step per battle frame
-// (BTL_tickEFEEngine). Its sounds go to slot 8 of the sound port. An attack that hits tells its
-// effect, whose hit checks answer with it; a fighter that is hit loses its own effect, as does one
-// that starts another attack (BTL_removeMoveEffect). A move without an effect plays nothing.
+// The techniques' effect scripts in a battle (battle_effect.c): each move's effect/<move>/ loads
+// the first time a fighter uses it, starts when its attack starts (battle_main.c:
+// BTL_setupMoveExecution, BTL_startEFE) from the attacker at its target and runs one step per
+// battle frame (BTL_tickEFEEngine, then BTL_renderEFEEngine for what it draws). Its sounds go to
+// slot 8 of the sound port; what it draws, placed on the fighters the bodies give, to draws(). An
+// attack that hits tells its effect, whose hit checks answer with it; a fighter that is hit loses
+// its own effect, as does one that starts another attack (BTL_removeMoveEffect). A move without an
+// effect plays nothing.
 class BattleEffects {
 public:
   // Both must outlive this.
@@ -32,6 +35,13 @@ public:
   void frame(const game::battle::BattleEvents& events, const game::battle::MoveCatalog& moves);
   // The battle ended: every held sound stops (battle_effect.c: BTL_removeEFEEngine).
   void end();
+  // The fighters the effects start from and aim at; it must outlive this.
+  void setBodies(const game::battle::EffectBodies& bodies) { runner_.setBodies(bodies); }
+  // What the effects drew on the last frame, and the move whose effect/<move>/ a slot is.
+  [[nodiscard]] const std::vector<game::battle::EffectDraw>& draws() const {
+    return runner_.draws();
+  }
+  [[nodiscard]] const std::string& moveOf(std::size_t slot) const;
 
 private:
   class Sounds final : public game::battle::EffectSounds {
@@ -52,9 +62,9 @@ private:
   };
 
   std::optional<std::size_t> slotOf(const std::string& move);
-  void startAttack(game::battle::FighterId fighter, const std::string& move);
+  void startAttack(game::battle::FighterId fighter, std::optional<game::battle::FighterId> target,
+                   const std::string& move);
   void removeEffect(game::battle::FighterId fighter);
-  [[nodiscard]] const std::string& moveOf(std::size_t slot) const;
 
   const assets::VirtualFileSystem* files_;
   game::story::SoundPort* sound_;
