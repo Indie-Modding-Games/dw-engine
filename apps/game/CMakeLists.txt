@@ -48,6 +48,7 @@ dwe_add_app(game
         src/player_chart.cpp
         src/partner_portrait.cpp
         src/partner_tab.cpp
+        src/pause_box.cpp
         src/place_command.cpp
         src/play_session.cpp
         src/play_session_report.cpp
@@ -113,7 +114,7 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
-                                  src/device_names.cpp src/game_saves.cpp src/minimap_setting.cpp src/place_command.cpp
+                                  src/device_names.cpp src/game_saves.cpp src/minimap_setting.cpp src/pause_box.cpp src/place_command.cpp
                                   src/remote_control.cpp src/save_command.cpp src/save_flow.cpp src/state_trace.cpp
                                   src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content

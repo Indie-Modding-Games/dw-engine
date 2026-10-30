@@ -62,7 +62,8 @@ Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--mo
 | Andar en vez de correr | Mayúsculas (mantener) | Botón oeste (X en Xbox, cuadrado) o RB/R1 (mantener) |
 | Ir a un punto | Clic izquierdo en el suelo; mantener y mover lo arrastra | |
 | Olvidar el punto | Esc o clic derecho | Este (B, círculo) |
-| Menú | Tab o el botón «Menú» del HUD | Start |
+| Menú | Tab o el botón «Menú» del HUD | Norte (Y, triángulo) |
+| Pausa (caja «Pause», todo se congela) | P o Pausa | Start |
 | Aceptar / volver en el menú | Enter, Espacio o clic / Esc, Retroceso o clic derecho | Sur / Este |
 | Consola de depuración | F1 o `º` | |
 | Guardar un reporte de bug | F12 (acción `report_bug`) | |

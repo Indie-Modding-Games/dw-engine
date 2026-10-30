@@ -1,0 +1,26 @@
+/* The pause box (utils2.c: handlePause, createPauseBox): Start freezes the game and a small box saying "Pause" sits
+   in the middle of the screen until Start is pressed again. Placement, whatever the skin: the original's box at -26,
+   -14, 56 x 24 from the screen's centre (US version), x 134 to 190 and y 106 to 130 of its 320 x 240 screen. One
+   pixel of the original is 3dp. The skins give it its look. */
+
+/* Over every other document, menus included: the original draws it last (pauseFrame). */
+body {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 100;
+}
+
+#box {
+	position: absolute;
+	left: 50%;
+	top: 318dp;
+	width: 168dp;
+	height: 72dp;
+	margin-left: -78dp;
+	text-align: center;
+	line-height: 66dp;
+	border: 3dp #c9d3de;
+	border-radius: 8dp;
+	background-color: #1a1f27e0;
+}

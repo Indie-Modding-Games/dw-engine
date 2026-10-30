@@ -111,7 +111,8 @@ En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas ex
 | Moverse | WASD o flechas | Cruceta o stick izquierdo |
 | Confirmar | Intro o Espacio | Botón sur |
 | Cancelar o volver | Esc o Retroceso | Botón este |
-| Abrir o cerrar el menú | Tab | Start |
+| Abrir o cerrar el menú | Tab | Botón norte (triángulo) |
+| Pausa | P o Pausa | Start |
 
 | Guardar un reporte de bug | F12 | |
 

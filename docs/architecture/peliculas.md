@@ -60,7 +60,7 @@ apps/game (MovieScreen) ──► engine/video ──► engine/assets (VFS por 
   saltan frames (como el original, que nunca espera al vídeo).
 - **`MovieScreen`** (`apps/game`): crea la textura de 320 × 176 una vez y la actualiza con `queueTextureUpdate`
   cada frame nuevo, la dibuja centrada en 320 × 240 con bandas negras (la película tapa la escena y la UI), toca el
-  WAV en el bus de música y salta con la acción `menu` (Start del mando, Tab) si la película es `skippable`. Parar y
+  WAV en el bus de música y salta con la acción `pause` (Start del mando) o `menu` (Tab) si la película es `skippable`. Parar y
   reanudar la música llega con la música (VAN-01 tramo 3), y el fundido desde negro tras la película, a la fase 5.
 - **Película que falta** (paquete sin `movie/`): aviso en el log y se sigue el flujo, como `CdSearchFile` fallido
   en US.

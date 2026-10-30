@@ -827,6 +827,11 @@ struct Ui::Impl {
     }
     std::vector<NavCommand> steps = std::exchange(pendingSteps, {});
     navigation.tick(state, seconds, steps);
+    // Without a game menu to open (the title, a movie, a naming box), Start does what the
+    // original's Start does there, the same as `menu`; in a game the app takes it to pause.
+    if (menuDocument.empty() && state.wasPressed("pause") && !state.wasPressed("menu")) {
+      steps.push_back(NavCommand::Menu);
+    }
     for (const NavCommand command : steps) {
       step(command);
     }

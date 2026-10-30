@@ -77,7 +77,7 @@ TEST_CASE("confirm, cancel and menu come from every device") {
       platform::GamepadButtonChanged{.id = Pad, .button = GamepadButton::East, .down = true});
   CHECK(tick(navigation, input) == std::vector{NavCommand::Cancel});
   input.handle(
-      platform::GamepadButtonChanged{.id = Pad, .button = GamepadButton::Start, .down = true});
+      platform::GamepadButtonChanged{.id = Pad, .button = GamepadButton::North, .down = true});
   CHECK(tick(navigation, input) == std::vector{NavCommand::Menu});
   // Held buttons do not repeat.
   CHECK(tick(navigation, input).empty());

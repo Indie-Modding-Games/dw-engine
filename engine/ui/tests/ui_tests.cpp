@@ -623,7 +623,8 @@ TEST_CASE("the pause menu works with a gamepad alone, and the prompts follow it"
   input.handle(platform::GamepadConnected{
       .id = Pad, .family = platform::GamepadFamily::PlayStation, .name = "pad"});
 
-  press(*ui, input, GamepadButton::Start);
+  // Triangle opens the game menu, as on the original's pad.
+  press(*ui, input, GamepadButton::North);
   REQUIRE(ui->isVisible("pause_menu"));
   CHECK(ui->elementText("pause_menu", "prompt-confirm") == "Cross");
   CHECK(ui->elementText("pause_menu", "prompt-cancel") == "Circle");

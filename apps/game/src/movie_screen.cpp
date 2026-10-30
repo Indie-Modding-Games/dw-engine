@@ -20,9 +20,9 @@ constexpr float ScreenHeight = 240.0F;
 constexpr float PictureTop = 32.0F;
 
 // The actions that skip a movie. The original reads only Start (mov.c: MOV_playMovie reads
-// PadRead & 0x800), here "menu"; on a PC confirm and cancel skip too, as Return or Escape would be
-// the first key a player tries.
-constexpr std::array<std::string_view, 3> SkipActions = {"menu", "confirm", "cancel"};
+// PadRead & 0x800), here "pause"; on a PC menu, confirm and cancel skip too, as Tab, Return or
+// Escape would be the first key a player tries.
+constexpr std::array<std::string_view, 4> SkipActions = {"pause", "menu", "confirm", "cancel"};
 
 } // namespace
 

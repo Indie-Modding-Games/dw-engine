@@ -65,8 +65,10 @@ TEST_CASE("prompts name the control of the device in use, in the game pack's wor
         "Círculo");
   // The same position is labelled B on Nintendo gamepads.
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Nintendo, "confirm", labels) == "B");
-  CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Steam, "menu", labels) == "Menú");
-  CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Generic, "menu", labels) == "Start");
+  // Start pauses; the game menu is the north button, Triangle on the original's pad.
+  CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Steam, "pause", labels) == "Menú");
+  CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Generic, "pause", labels) == "Start");
+  CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Steam, "menu", labels) == "Y");
   CHECK(
       promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "debug_console", labels).empty());
   CHECK(promptLabel(map, DeviceKind::Gamepad, GamepadFamily::Xbox, "unknown", labels).empty());

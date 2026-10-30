@@ -197,7 +197,8 @@ local function refresh(document)
   end
 end
 
--- Whether the pointer moved last (the UI tells the keyboard and the mouse apart only as one device).
+-- Whether the pointer moved last (the UI tells the keyboard and the mouse apart only as one
+-- device).
 local pointer = false
 
 -- The "Press Start" line names what goes on with the device in use, in the prompts' names: the
@@ -206,7 +207,7 @@ local pointer = false
 local function refresh_press(document)
   local text
   if ui.device() == "gamepad" then
-    text = t("main_menu.press_key", { key = ui.prompt("menu") })
+    text = t("main_menu.press_key", { key = ui.prompt("pause") })
   elseif pointer then
     text = t("main_menu.press_click")
   else
@@ -256,7 +257,9 @@ local function lay_out(document)
     -- The box in the middle of the screen: its heading and START (180dp with its padding) and a
     -- row of 60dp per language, 420dp at least (the skin's min-height).
     local height = math.max(420, 180 + 60 * math.min(#ui.languages(), #entries.language - 1))
-    document:get("language-box"):set_property("top", string.format("%ddp", math.floor((720 - height) / 2)))
+    document
+      :get("language-box")
+      :set_property("top", string.format("%ddp", math.floor((720 - height) / 2)))
   end
   show("battle-box", shown == "battle")
   document:get("scrim"):set_class("boot", shown == "boot")
@@ -312,7 +315,7 @@ local function fade_into(document, name)
   enter(document, name)
 end
 
-function leave_boot(document)
+function leave_boot(_document)
   if view == "boot" and not leaving then
     leaving = true
     fade_target = 1.0

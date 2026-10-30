@@ -17,6 +17,9 @@ screens:
     styles: [ui/skins/original/hud/style]
   pause_menu:
     styles: [ui/skins/original/pause_menu/style]
+  # La caja de pausa de Start (utils2.c: createPauseBox).
+  pause_box:
+    styles: [ui/skins/original/pause_box/style]
   # La portada: la pantalla de "Press Start", el menú del original y sus cajas (main.c: main; main_menu.c).
   main_menu:
     styles: [ui/skins/original/main_menu/style]

@@ -175,7 +175,7 @@ bool NamingBox::pressButtons(const input::InputState& input) {
     play(sounds_.cursor);
   } else if (input.wasPressed("cancel")) {
     deleteLast();
-  } else if (input.wasPressed("menu")) {
+  } else if (input.wasPressed("pause") || input.wasPressed("menu")) {
     // tickNamingBox: Start puts the cursor on OK.
     goTo(Button::Ok);
     play(sounds_.cursor);

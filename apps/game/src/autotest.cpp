@@ -1501,8 +1501,9 @@ void Autotest::tapAction(AutotestDevice device, std::string_view action) {
     platform::KeyCode key;
     GamepadButton button;
   };
-  constexpr std::array<Control, 7> Controls{{
-      {.action = "menu", .key = keys::Tab, .button = GamepadButton::Start},
+  constexpr std::array<Control, 8> Controls{{
+      {.action = "menu", .key = keys::Tab, .button = GamepadButton::North},
+      {.action = "pause", .key = keys::P, .button = GamepadButton::Start},
       {.action = "confirm", .key = keys::Return, .button = GamepadButton::South},
       {.action = "cancel", .key = keys::Escape, .button = GamepadButton::East},
       {.action = "up", .key = keys::Up, .button = GamepadButton::DpadUp},

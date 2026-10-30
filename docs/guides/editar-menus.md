@@ -123,7 +123,7 @@ etiquetas siempre dicen la verdad (por ejemplo, si la pantalla completa no se pu
 ## Probar
 
 - `scripts/dev.sh run -- --ui-demo --content <contenido extraído>` abre la demo de la UI con el minimapa de un mapa
-  (`--map <id>`) y un jugador que pasea; la acción `menu` (Tab, Start) abre el menú. Editar y guardar un `.rml`,
+  (`--map <id>`) y un jugador que pasea; la acción `menu` (Tab, botón norte) abre el menú. Editar y guardar un `.rml`,
   `.rcss` o `.lua` de `content/packs/game/ui/` lo recarga al momento.
 - Los errores de RML, RCSS y Lua salen en el log con el fichero y la línea.
 - `dwe_ui_tests` recorre el menú de pausa con teclado, mando y ratón; si se cambian los ids de sus elementos hay que

@@ -1,0 +1,10 @@
+<rml>
+<head>
+	<title>Pause box</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+</head>
+<body>
+	<div id="box"><span id="label" text-key="main.utils2_pause.0000"></span></div>
+</body>
+</rml>

@@ -42,8 +42,15 @@ ActionMap defaultActionMap() {
   map.bind("cancel", MouseBinding{MouseButton::Right});
   map.bind("cancel", GamepadButtonBinding{GamepadButton::East});
 
+  // The original's pad: Triangle opens the game menu on the field (game_menu.c: addGameMenu) and
+  // Start pauses the game (utils2.c: handlePause). Where there is no game to pause (the title, a
+  // movie, a naming box) Start does what the original's Start does there, through `pause`.
   map.bind("menu", KeyBinding{keys::Tab});
-  map.bind("menu", GamepadButtonBinding{GamepadButton::Start});
+  map.bind("menu", GamepadButtonBinding{GamepadButton::North});
+
+  map.bind("pause", KeyBinding{keys::P});
+  map.bind("pause", KeyBinding{keys::Pause});
+  map.bind("pause", GamepadButtonBinding{GamepadButton::Start});
 
   map.bind("move_left", KeyBinding{keys::A});
   map.bind("move_left", KeyBinding{keys::Left});
@@ -75,7 +82,8 @@ ActionMap defaultActionMap() {
   // The original pad's other two face buttons (dw/input.h: ALT_BUTTON, the circle on the American
   // version, and the square, 0x80). The naming box uses them to put the cursor on Back and to clear
   // the whole name (script_menu.c: tickNamingBox). On the pad `alt` takes the north button because
-  // the east one is `cancel` here; on the keyboard both use keys that type no text.
+  // the east one is `cancel` here; on the keyboard both use keys that type no text. North is also
+  // `menu`; the naming box reads `alt` first.
   map.bind("alt", KeyBinding{keys::Home});
   map.bind("alt", GamepadButtonBinding{GamepadButton::North});
 

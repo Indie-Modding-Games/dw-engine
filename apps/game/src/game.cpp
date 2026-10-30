@@ -67,6 +67,7 @@
 #include "new_game_interview.hpp"
 #include "new_game_scene_rules.hpp"
 #include "partner_portrait.hpp"
+#include "pause_box.hpp"
 #include "play_session.hpp"
 #include "player_chart.hpp"
 #include "remote_control.hpp"
@@ -597,6 +598,7 @@ int runGame(const Options& requested) {
   loadPlayerChart(**ui, files);
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
+  PauseBox pauseBox;
   (*ui)->setSetting(LanguageSetting, texts->language());
   // The original look's title screen asks for the language before each "Press Start" screen
   // (title.language_first; an addition, as a remaster's); an autotest only when its route asks.
@@ -1069,6 +1071,21 @@ int runGame(const Options& requested) {
       const bool menuHeld = flow.playing() == nullptr || (movies && movies->playing()) ||
                             interview || flow.playing()->holdsMenu();
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
+      // Start's pause freezes everything but the box, menus and battle included (handlePause).
+      if (const PauseStep pause = pauseBox.tick(input.wasPressed("pause"), !menuHeld);
+          pause.opened || pause.closed || pause.paused) {
+        if (pause.opened) {
+          (*ui)->show(PauseBoxDocument);
+          menuSounds.play(ui::UiCue::Confirm);
+        } else if (pause.closed) {
+          (*ui)->hide(PauseBoxDocument);
+        }
+        if (pause.paused) {
+          input.endTick();
+          ++ticksRun;
+          continue;
+        }
+      }
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());
       if (movies && movies->playing()) {
