@@ -170,33 +170,45 @@ bool leavesArena(const BattleContext& context, Point from, Point to) {
 
 // map.c: hasMovedOutsideCombatArea: past the rectangle around the screen's centre and moving
 // further out on either axis.
-bool movesOutOfArea(ScreenPoint before, ScreenPoint after, const TimingRules& timing) {
-  const std::int32_t halfWidth = timing.combatAreaWidth / 2;
-  const std::int32_t halfHeight = timing.combatAreaHeight / 2;
+bool movesOutOfArea(ScreenPoint before, ScreenPoint after, std::int32_t width,
+                    std::int32_t height) {
+  const std::int32_t halfWidth = width / 2;
+  const std::int32_t halfHeight = height / 2;
   return (after.x < -halfWidth && after.x < before.x) ||
          (after.x > halfWidth && after.x > before.x) ||
          (after.y < -halfHeight && after.y < before.y) ||
          (after.y > halfHeight && after.y > before.y);
 }
 
-// map.c: entityCheckCombatArea: the step leaves the combat area, a rectangle of the screen. Two
-// corners of the fighter's box are tested, as its loop over QUADRANTS ignores its inner index:
-// the near left one on the ground and the near right one corner_height up.
+} // namespace
+
+// map.c: entityCheckCombatArea: the step leaves a rectangle of the screen. Two corners of the
+// mover's box are tested, as its loop over QUADRANTS ignores its inner index: the near left one on
+// the ground and the near right one corner_height up.
+bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,
+                      std::int32_t radius, std::int32_t width, std::int32_t height) {
+  const std::array<std::pair<std::int32_t, std::int32_t>, 2> corners{
+      {{-radius, 0}, {radius, timing.combatAreaCornerHeight}}};
+  return std::ranges::any_of(corners, [&](const std::pair<std::int32_t, std::int32_t>& corner) {
+    const auto [side, lift] = corner;
+    const std::optional<ScreenPoint> before =
+        ground.screenPointOf({.x = from.x + side, .z = from.z - radius}, lift);
+    const std::optional<ScreenPoint> after =
+        ground.screenPointOf({.x = to.x + side, .z = to.z - radius}, lift);
+    return before && after && movesOutOfArea(*before, *after, width, height);
+  });
+}
+
+namespace {
+
+// The fighters' combat area (entityCheckCollision with the battle's width and height).
 bool leavesCombatArea(const BattleContext& context, Point from, Point to, std::int32_t radius) {
   if (context.ground == nullptr) {
     return leavesArena(context, from, to);
   }
   const TimingRules& timing = context.rules->timing;
-  const std::array<std::pair<std::int32_t, std::int32_t>, 2> corners{
-      {{-radius, 0}, {radius, timing.combatAreaCornerHeight}}};
-  return std::ranges::any_of(corners, [&](const std::pair<std::int32_t, std::int32_t>& corner) {
-    const auto [side, height] = corner;
-    const std::optional<ScreenPoint> before =
-        context.ground->screenPointOf({.x = from.x + side, .z = from.z - radius}, height);
-    const std::optional<ScreenPoint> after =
-        context.ground->screenPointOf({.x = to.x + side, .z = to.z - radius}, height);
-    return before && after && movesOutOfArea(*before, *after, timing);
-  });
+  return leavesScreenArea(*context.ground, timing, from, to, radius, timing.combatAreaWidth,
+                          timing.combatAreaHeight);
 }
 
 // The leading edge of the mover's square, on each axis it moves along, against the other's square

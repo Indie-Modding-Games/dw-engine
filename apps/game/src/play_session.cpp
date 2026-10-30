@@ -445,6 +445,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
       return;
     }
   }
+  scene_->holdCamera(battleScreen_.active());
   if (battleScreen_.active()) {
     if (!ui.isVisible(MenuDocument)) {
       battleScreen_.tick(TickSeconds);

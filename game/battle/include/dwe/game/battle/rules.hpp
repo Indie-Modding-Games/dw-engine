@@ -374,6 +374,15 @@ struct TimingRules {
   std::int32_t combatAreaWidth = 0;
   std::int32_t combatAreaHeight = 0;
   std::int32_t combatAreaCornerHeight = 0;
+  // battle_setup.c: BTL_handleBattleIntro: the player runs back (animation 3, this far a frame,
+  // its radius the box the area test uses) until its step leaves the combat area, which is this
+  // big while it follows its way back and this big on the last stretch to where it entered the map.
+  std::int32_t retreatStep = 0;
+  std::int32_t retreatRadius = 0;
+  std::int32_t retreatTrailAreaWidth = 0;
+  std::int32_t retreatTrailAreaHeight = 0;
+  std::int32_t retreatEntryAreaWidth = 0;
+  std::int32_t retreatEntryAreaHeight = 0;
 };
 
 // What the techniques' effect scripts read of the fighters (battle_effect.c): the species whose

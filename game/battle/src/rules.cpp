@@ -670,7 +670,10 @@ TimingRules readTiming(ValueReader& in, const YamlNode& node) {
   if (!in.group(node, "timing",
                 {"attack_frames", "hit_frame", "hit_reaction_frames", "block_animation_frames",
                  "faint_frames", "walk_speed", "projectile_speed", "arena_radius",
-                 "combat_area_width", "combat_area_height", "combat_area_corner_height"})) {
+                 "combat_area_width", "combat_area_height", "combat_area_corner_height",
+                 "retreat_step", "retreat_radius", "retreat_trail_area_width",
+                 "retreat_trail_area_height", "retreat_entry_area_width",
+                 "retreat_entry_area_height"})) {
     return {};
   }
   TimingRules timing{.attackFrames = in.positive(node, "attack_frames"),
@@ -683,7 +686,13 @@ TimingRules readTiming(ValueReader& in, const YamlNode& node) {
                      .arenaRadius = in.positive(node, "arena_radius"),
                      .combatAreaWidth = in.positive(node, "combat_area_width"),
                      .combatAreaHeight = in.positive(node, "combat_area_height"),
-                     .combatAreaCornerHeight = in.count(node, "combat_area_corner_height")};
+                     .combatAreaCornerHeight = in.count(node, "combat_area_corner_height"),
+                     .retreatStep = in.positive(node, "retreat_step"),
+                     .retreatRadius = in.count(node, "retreat_radius"),
+                     .retreatTrailAreaWidth = in.positive(node, "retreat_trail_area_width"),
+                     .retreatTrailAreaHeight = in.positive(node, "retreat_trail_area_height"),
+                     .retreatEntryAreaWidth = in.positive(node, "retreat_entry_area_width"),
+                     .retreatEntryAreaHeight = in.positive(node, "retreat_entry_area_height")};
   if (in.yaml().ok() && timing.hitFrame >= timing.attackFrames) {
     in.yaml().fail(node, messages::HitAfterAttack);
   }

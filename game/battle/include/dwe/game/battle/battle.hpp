@@ -136,6 +136,9 @@ public:
   // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
   // BTL_tickFinisherChargeup); at most one counts per frame.
   void pressFinisherCharge();
+  // Where the player stands now: it runs back as the battle opens (PlayerRetreat), and a fleeing
+  // partner runs there.
+  void movePlayer(Point point) { state_.tamer = point; }
   // A debug shortcut to the end of the fight: every enemy takes damage enough to fall, which then
   // runs as a beating blow would (fainting, the victory, the drops, the stat gains).
   void defeatEnemies();

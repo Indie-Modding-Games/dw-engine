@@ -494,6 +494,16 @@ timing:
   combat_area_width: 280
   combat_area_height: 200
   combat_area_corner_height: 200
+  # battle_setup.c: BTL_handleBattleIntro: mientras se forma el rótulo, el domador corre (animación 3, 50 unidades por
+  # fotograma; su radio, DIGIMON_DATA[0].radius, es la caja de la prueba del área) por su camino de vuelta y luego
+  # hacia la celda por la que entró al mapa, hasta llegar a ella o hasta que su paso salga del área de combate: de
+  # 310 x 230 píxeles por el camino y de 300 x 220 en el último tramo.
+  retreat_step: 50
+  retreat_radius: 100
+  retreat_trail_area_width: 310
+  retreat_trail_area_height: 230
+  retreat_entry_area_width: 300
+  retreat_entry_area_height: 220
 
 # Rarezas del original (docs/reference/battle.md, "Rarezas"). true reproduce el original; otro ruleset las apaga.
 quirks:

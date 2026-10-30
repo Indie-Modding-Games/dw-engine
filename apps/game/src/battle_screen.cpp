@@ -95,6 +95,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   introEnemies_ = std::move(introEnemies);
   angerAnchors_.assign(introEnemies_.size(), std::nullopt);
   introSeconds_ = 0.0;
+  retreat_.reset();
   core::logDebug("[port:battle] handleBattleStart (btl.c:237): {} anger bubbles; "
                  "BTL_handleBattleIntro (battle_setup.c:207) follows",
                  introEnemies_.size());
@@ -122,6 +123,7 @@ void BattleScreen::tickBattle(double seconds) {
     return;
   }
   battle_->advance(seconds, [this](const game::battle::BattleEvents& frame) {
+    facePlayerToPartner();
     if (effects_) {
       effects_->frame(frame, battle_->moves());
     }
@@ -285,6 +287,9 @@ void BattleScreen::tickIntro(double seconds) {
   while (intro_ && introSeconds_ >= IntroFrameSeconds) {
     introSeconds_ -= IntroFrameSeconds;
     const screens::IntroStep before = intro_->current();
+    if (before == screens::IntroStep::Banner) {
+      stepRetreat();
+    }
     intro_->step();
     const screens::IntroStep after = intro_->current();
     if (after == before) {
@@ -292,12 +297,14 @@ void BattleScreen::tickIntro(double seconds) {
     }
     game::story::SoundPort* sound = desc_.session->sound();
     if (after == screens::IntroStep::Banner) {
+      startRetreat();
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:226): the banner "
                      "gathers; playSound(0, 0x10)");
       if (sound != nullptr) {
         sound->playSound(0, BannerSound);
       }
     } else if (after == screens::IntroStep::Burst) {
+      endRetreat();
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:321): the banner "
                      "bursts; playSound(0, 0x11)");
       if (sound != nullptr) {

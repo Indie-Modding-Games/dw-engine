@@ -160,6 +160,9 @@ public:
   // partner's poop piles: partner_impl.c: renderPoop). The model loads on first use; one that
   // fails is logged and not drawn.
   void setProps(const assets::AssetId& model, std::vector<glm::mat4> places);
+  // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
+  // only in its state 0, never in a battle, where the player runs back on screen.
+  void holdCamera(bool held) { cameraHeld_ = held; }
   // The map's camera, while a map is shown.
   [[nodiscard]] const render::MapCamera* camera() const;
 
@@ -417,6 +420,7 @@ private:
   double lightingDelay_ = 0.0;
   // What the camera centres on; it stays put during a map change's walk-out.
   std::optional<glm::vec3> cameraFocus_;
+  bool cameraHeld_ = false;
   render::MapSceneData map_;
   std::string mapNameKey_;
   std::uint32_t mapSerial_ = 0;

@@ -121,6 +121,10 @@ void turnAtRandom(BattleContext& context, Fighter& fighter);
 // Walks the way it faces.
 void walkForward(BattleContext& context, FighterId id);
 bool isWalking(const Fighter& fighter);
+// map.c: entityCheckCombatArea: whether the step of a mover of `radius` from `from` to `to` leaves
+// the rectangle of width x height pixels around the screen's centre, moving further out.
+bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,
+                      std::int32_t radius, std::int32_t width, std::int32_t height);
 // The integer square root, rounded down.
 std::int64_t integerSqrt(std::int64_t value);
 // battle_main.c: BTL_handlePartnerMoveCommand: the partner's flee, defend and distance commands

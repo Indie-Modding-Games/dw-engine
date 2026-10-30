@@ -1180,7 +1180,13 @@
         "arena_radius",
         "combat_area_width",
         "combat_area_height",
-        "combat_area_corner_height"
+        "combat_area_corner_height",
+        "retreat_step",
+        "retreat_radius",
+        "retreat_trail_area_width",
+        "retreat_trail_area_height",
+        "retreat_entry_area_width",
+        "retreat_entry_area_height"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1215,6 +1221,24 @@
           "type": "integer"
         },
         "combat_area_corner_height": {
+          "type": "integer"
+        },
+        "retreat_step": {
+          "type": "integer"
+        },
+        "retreat_radius": {
+          "type": "integer"
+        },
+        "retreat_trail_area_width": {
+          "type": "integer"
+        },
+        "retreat_trail_area_height": {
+          "type": "integer"
+        },
+        "retreat_entry_area_width": {
+          "type": "integer"
+        },
+        "retreat_entry_area_height": {
           "type": "integer"
         }
       },

@@ -143,9 +143,8 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   const glm::vec3 position = assets::toWorldPosition(warp->spawn + offset);
   const assets::SpawnPoint spawn = assets::warpSpawn(*warp);
   const GroundSquare there{.centre = ground(position), .half = rules_.partner.mover.radius};
-  const bool clearOfOthers = std::ranges::none_of(bodies(), [&](const Body& body) {
-    return body.who != 1 && overlaps(there, squareOf(body));
-  });
+  const bool clearOfOthers = std::ranges::none_of(
+      bodies(), [&](const Body& body) { return body.who != 1 && overlaps(there, squareOf(body)); });
   if (fitsOnGrid(collision_, position, rules_.partner.mover.radius) && clearOfOthers) {
     scene::place(world_->registry().get<Transform>(partner_), position,
                  assets::yawOfDirection(spawn.position - position));
@@ -198,6 +197,8 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   // The original has no guard against warping again at once; its spawns are never on triggers.
   // Remembering the value under the spawn makes a trigger fire only when stepped onto.
   lastPlayerCell_ = assets::collisionCellAt(spawn.position);
+  // map.c: loadMap starts the way back on the cell the player enters on (initializeTamerWaypoints).
+  playerTrail_.enter(lastPlayerCell_);
   lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
   trail_.clear();
   partnerMotion_ = Motion::Idle;
@@ -282,6 +283,8 @@ void Field::tick(float seconds) {
   }
   // clock.c: tickGameClock runs while the player plays.
   gameTimeRan_ = true;
+  // tamer.c: tamerTickWalkingState keeps the way back before it moves the player.
+  playerTrail_.tick(assets::collisionCellAt(registry.get<Transform>(player_).position), collision_);
   movePlayer(seconds);
   // tamer.c: checkMapInteraction: an NPC's section starts the script, so a confirm cell's section
   // that frame finds a script running and is dropped.

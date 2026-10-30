@@ -609,10 +609,10 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
       scene::interpolate(world_.registry().get<scene::Transform>(playerActor_->entity), alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
-  // the player walks out.
+  // the player walks out, and in a battle (holdCamera).
   if (const std::optional<glm::vec3> held = field_->scriptCamera()) {
     cameraFocus_ = *held;
-  } else if (!field_->mapChangePending() || !cameraFocus_) {
+  } else if (!cameraFocus_ || (!cameraHeld_ && !field_->mapChangePending())) {
     cameraFocus_ = player.position;
   }
   // The sprite animations wait while paused. A time-of-day fade under way does not: map.c:

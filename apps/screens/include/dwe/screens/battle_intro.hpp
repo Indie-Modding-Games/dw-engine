@@ -61,6 +61,9 @@ public:
   // One frame of the original's battle.
   void step();
 
+  // The player has stopped running back (BTL_handleBattleIntro sets its timer to 198): the banner
+  // bursts once its pieces are in place.
+  void playerBack();
   [[nodiscard]] IntroStep current() const { return step_; }
   [[nodiscard]] bool done() const { return step_ == IntroStep::Done; }
 

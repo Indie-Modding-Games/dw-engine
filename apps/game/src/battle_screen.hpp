@@ -3,6 +3,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/battle/battle.hpp>
+#include <dwe/game/battle/player_retreat.hpp>
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -126,6 +127,12 @@ private:
   [[nodiscard]] screens::NameKeys names() const;
   void publish() const;
   void tickIntro(double seconds);
+  // battle_screen_retreat.cpp: the player's run back during the banner.
+  void startRetreat();
+  void stepRetreat();
+  void endRetreat();
+  void placePlayer() const;
+  void facePlayerToPartner() const;
   void tickVictory(double seconds);
   void startPoses();
   void tickPoses(double seconds);
@@ -164,6 +171,8 @@ private:
   std::vector<game::battle::Combatant> introEnemies_;
   std::vector<screens::AngerAnchor> angerAnchors_;
   double introSeconds_ = 0.0;
+  // The player running back while the banner shows (BTL_handleBattleIntro).
+  std::optional<game::battle::PlayerRetreat> retreat_;
   std::uint32_t battlesStarted_ = 0;
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
