@@ -116,6 +116,10 @@ struct AttackInFlight {
   // on (0 the frame it started) and the attacker's clip, to ask again each frame where both stand.
   std::optional<std::int32_t> age;
   std::optional<std::int32_t> clip;
+  // Where the effect touches the defender (addAttackObject's position), which it turns to as it
+  // is hit or blocks. Without one it turns to the attacker: where it stands as the hit lands for a
+  // followed effect, its place at the release otherwise.
+  std::optional<Point> hitPoint;
 };
 
 // The attack a fighter is performing.

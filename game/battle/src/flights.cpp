@@ -53,6 +53,7 @@ public:
     return attacker_ < defender_ ? std::vector{attacker_, defender_}
                                  : std::vector{defender_, attacker_};
   }
+  [[nodiscard]] Point ground(const EffectVector& at) const override { return bodies_->ground(at); }
 
 private:
   const EffectBodies* bodies_;
@@ -69,9 +70,9 @@ ScriptedFlights::ScriptedFlights(ScriptSource scripts, const EffectBodies& bodie
                                  const FlightPoses* poses)
     : scripts_(std::move(scripts)), bodies_(&bodies), poses_(poses) {}
 
-std::optional<std::int32_t> ScriptedFlights::landingFrame(std::string_view move, FighterId attacker,
-                                                          FighterId defender,
-                                                          std::optional<std::int32_t> clip) const {
+std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, FighterId attacker,
+                                                      FighterId defender,
+                                                      std::optional<std::int32_t> clip) const {
   auto found = loaded_.find(move);
   if (found == loaded_.end()) {
     found = loaded_.emplace(std::string{move}, scripts_(move)).first;
@@ -89,8 +90,11 @@ std::optional<std::int32_t> ScriptedFlights::landingFrame(std::string_view move,
   for (std::int32_t frame = 0; frame < MaxFrames; ++frame) {
     bodies.setFrame(frame);
     runner.tick();
-    if (std::ranges::contains(runner.touched(), defender)) {
-      return frame;
+    const auto touch = std::ranges::find(runner.touched(), defender, &EffectTouch::fighter);
+    if (touch != runner.touched().end()) {
+      return EffectLanding{.frame = frame,
+                           .at = touch->onBody ? std::nullopt
+                                               : std::optional{bodies.ground(touch->at)}};
     }
     if (!runner.running(slot)) {
       break;

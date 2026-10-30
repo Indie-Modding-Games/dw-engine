@@ -33,6 +33,7 @@ public:
   [[nodiscard]] std::optional<game::battle::EffectMatrix> node(game::battle::FighterId fighter,
                                                                std::int32_t index) const override;
   [[nodiscard]] std::vector<game::battle::FighterId> fighters() const override;
+  [[nodiscard]] game::battle::Point ground(const game::battle::EffectVector& at) const override;
   [[nodiscard]] std::optional<game::battle::EffectMatrix>
   node(game::battle::FighterId fighter, std::int32_t clip, std::int32_t frame,
        const game::battle::EffectBody& place, std::int32_t index) const override;

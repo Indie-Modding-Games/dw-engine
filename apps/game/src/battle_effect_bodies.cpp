@@ -94,6 +94,11 @@ BattleEffectBodies::body(game::battle::FighterId fighter) const {
   return out;
 }
 
+game::battle::Point BattleEffectBodies::ground(const EffectVector& at) const {
+  // The way back from originalOf: the battle's ground is the world's x and z.
+  return {.x = at.x, .z = -at.z};
+}
+
 std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fighter,
                                                      std::int32_t index) const {
   const std::optional<std::optional<std::int32_t>> npc = npcOf(fighter);

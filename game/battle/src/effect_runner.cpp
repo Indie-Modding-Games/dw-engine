@@ -418,7 +418,8 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     if (target && !std::ranges::contains(slot.hitTargets, *target)) {
       slot.hitTargets.push_back(*target);
       if (touchBodies_) {
-        touched_.push_back(*target);
+        // The hit is registered at the instance.
+        touched_.push_back({.fighter = *target, .at = instancePosition(slot), .onBody = false});
       }
     }
   } else if (in.sub == CheckTargetCollision && args.size() > TargetCollisionHitArg) {

@@ -13,6 +13,18 @@
 
 namespace dwe::game::battle {
 
+// When and where a move's effect touches a fighter: the attack frame (0 the frame it starts,
+// BTL_startEFE) and the point of the hit on the battle's ground, which the defender turns to
+// (BTL_handleHitReaction, and BTL_tickAttackHits for a block). A radius or line check hits the
+// body toward the attacker (BTL_calculateAttackHitPosition): no point, the battle takes the
+// attacker's place as the hit lands.
+struct EffectLanding {
+  std::int32_t frame = 0;
+  std::optional<Point> at;
+
+  bool operator==(const EffectLanding&) const = default;
+};
+
 // When a technique's attack reaches a fighter. In the original the hit lands when the move's effect
 // touches the fighter (battle_effect.c: the hit checks of its scripts), so each technique flies at
 // its own frame and speed. The battle asks as the attack leaves; without an answer it uses the
@@ -26,12 +38,11 @@ public:
   AttackFlights& operator=(AttackFlights&&) = delete;
   virtual ~AttackFlights() = default;
 
-  // The frame of the attack (0 the frame it starts, BTL_startEFE) on which the effect of `move`
-  // that `attacker` plays with its clip `clip` touches `defender`, both where they stand now;
-  // nothing when it never does or the move has no effect.
-  [[nodiscard]] virtual std::optional<std::int32_t>
-  landingFrame(std::string_view move, FighterId attacker, FighterId defender,
-               std::optional<std::int32_t> clip) const = 0;
+  // Where the effect of `move` that `attacker` plays with its clip `clip` first touches `defender`,
+  // both where they stand now; nothing when it never does or the move has no effect.
+  [[nodiscard]] virtual std::optional<EffectLanding>
+  landing(std::string_view move, FighterId attacker, FighterId defender,
+          std::optional<std::int32_t> clip) const = 0;
 };
 
 // Where a fighter's model puts its nodes on a frame of one of its clips, for the flight probe:
@@ -68,9 +79,9 @@ public:
   ScriptedFlights(ScriptSource scripts, const EffectBodies& bodies,
                   const FlightPoses* poses = nullptr);
 
-  [[nodiscard]] std::optional<std::int32_t>
-  landingFrame(std::string_view move, FighterId attacker, FighterId defender,
-               std::optional<std::int32_t> clip) const override;
+  [[nodiscard]] std::optional<EffectLanding>
+  landing(std::string_view move, FighterId attacker, FighterId defender,
+          std::optional<std::int32_t> clip) const override;
 
 private:
   ScriptSource scripts_;

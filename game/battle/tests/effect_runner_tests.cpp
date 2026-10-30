@@ -600,6 +600,10 @@ public:
     return out;
   }
   [[nodiscard]] std::vector<FighterId> fighters() const override { return {0, 1}; }
+  [[nodiscard]] dwe::game::battle::Point
+  ground(const dwe::game::battle::EffectVector& at) const override {
+    return {.x = at.x, .z = at.z};
+  }
 
   static constexpr std::int32_t Distance = 1000;
   static constexpr std::int32_t FacingPlusX = 3072;
@@ -820,6 +824,11 @@ public:
   [[nodiscard]] std::vector<dwe::game::battle::FighterId> fighters() const override {
     return {0, 1};
   }
+  // The battle's ground mirrors the console's z, as the game's does.
+  [[nodiscard]] dwe::game::battle::Point
+  ground(const dwe::game::battle::EffectVector& at) const override {
+    return {.x = at.x, .z = -at.z};
+  }
 
 private:
   std::int32_t defenderX_;
@@ -829,10 +838,36 @@ private:
 constexpr std::int32_t Wide = 4000;
 constexpr std::int32_t FarOff = 100000;
 
+// The breath's box check, and a line check in its place (apply_line_hit: from the instance to the
+// source, its height at base+0x20).
+constexpr std::string_view BoxCheck = R"(- at: "0x0220"
+  op: sub
+  sub: check_collision
+  args:
+    extent: "&base+0x0020"
+    hit: "&base+0x0000"
+)";
+constexpr std::string_view LineCheck = R"(- at: "0x0218"
+  op: push_address
+  address: "base+0x0024"
+- at: "0x0220"
+  op: sub
+  sub: apply_line_hit
+  args:
+    height: "&base+0x0020"
+    hit: "&base+0x0000"
+    unused: "&base+0x0024"
+)";
+
 // The made-up breath with its instance at the origin and a check box of no size (the instance's
-// place at instance+4 and the extent at base+0x20, which the breath leaves unset).
-EffectScript placedBreath() {
-  const std::string script = std::string{ScriptYaml} + R"(- at: "0x0014"
+// place at instance+4 and the extent at base+0x20, which the breath leaves unset); with `line`, its
+// check is a line to the source instead.
+EffectScript placedBreath(bool line = false) {
+  std::string checked{ScriptYaml};
+  if (line) {
+    checked.replace(checked.find(BoxCheck), BoxCheck.size(), LineCheck);
+  }
+  const std::string script = checked + R"(- at: "0x0014"
   kind: variable
   width: 4
   value: 0
@@ -876,11 +911,36 @@ TEST_CASE("touching bodies, an effect's box check hits a fighter in reach and no
     sounds.log.clear();
     runner.tick();
     // aabb.c: findAABBHitEntity: the fighter's box around the instance, the attacker never itself.
-    CHECK(runner.touched() == (hits ? std::vector<dwe::game::battle::FighterId>{1}
-                                    : std::vector<dwe::game::battle::FighterId>{}));
+    REQUIRE(runner.touched().size() == (hits ? 1U : 0U));
+    if (hits) {
+      // The hit is registered at the instance, at the origin (BTL_applyBoxAttackHit's
+      // addAttackObject).
+      const dwe::game::battle::EffectTouch& touch = runner.touched().front();
+      CHECK(touch.fighter == 1);
+      CHECK(touch.at.x == 0);
+      CHECK(touch.at.z == 0);
+    }
     CHECK((sounds.log ==
            std::vector<Recorded>{{"play", 16}, {"stop", RecordingSounds::HeldVoice}}) == hits);
   }
+}
+
+TEST_CASE("touching bodies, a line check hits the fighter on its body toward the source") {
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  // The source stands at x 1000 and the instance at the origin: the line crosses a defender of
+  // radius 50 at x 500.
+  const StandingPair bodies{500, 50};
+  runner.setBodies(bodies);
+  runner.touchBodies(true);
+  const std::size_t slot = runner.load(placedBreath(true));
+  runner.start(slot, 0, 1);
+  runner.tick();
+  // BTL_applyLineAttackHit registers the hit at BTL_calculateAttackHitPosition: the defender's
+  // radius from its root toward the source, at its height.
+  CHECK(runner.touched() ==
+        std::vector<dwe::game::battle::EffectTouch>{
+            {.fighter = 1, .at = {.x = 550, .y = -50, .z = 0}, .onBody = true}});
 }
 
 TEST_CASE("a scripted flight lands on the frame the move's effect touches the defender") {
@@ -894,11 +954,16 @@ TEST_CASE("a scripted flight lands on the frame the move's effect touches the de
   const StandingPair far{FarOff, Wide};
   const dwe::game::battle::ScriptedFlights nearFlights{source, near};
   const dwe::game::battle::ScriptedFlights farFlights{source, far};
-  CHECK(nearFlights.landingFrame("made_up_breath", 0, 1, std::nullopt) == std::optional{0});
+  const std::optional<dwe::game::battle::EffectLanding> landing =
+      nearFlights.landing("made_up_breath", 0, 1, std::nullopt);
+  REQUIRE(landing.has_value());
+  CHECK(landing->frame == 0);
+  // The point of the hit on the battle's ground: the box check's instance at the origin.
+  CHECK(landing->at == std::optional{dwe::game::battle::Point{.x = 0, .z = 0}});
   // The breath gives up on its third frame without touching anyone.
-  CHECK_FALSE(farFlights.landingFrame("made_up_breath", 0, 1, std::nullopt).has_value());
-  CHECK_FALSE(nearFlights.landingFrame("no_effect", 0, 1, std::nullopt).has_value());
-  CHECK_FALSE(nearFlights.landingFrame("made_up_breath", 1, 1, std::nullopt).has_value());
+  CHECK_FALSE(farFlights.landing("made_up_breath", 0, 1, std::nullopt).has_value());
+  CHECK_FALSE(nearFlights.landing("no_effect", 0, 1, std::nullopt).has_value());
+  CHECK_FALSE(nearFlights.landing("made_up_breath", 1, 1, std::nullopt).has_value());
 }
 
 TEST_CASE("with the battle's rolls an effect's random load takes one of the battle's draws") {

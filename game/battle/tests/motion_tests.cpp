@@ -97,16 +97,22 @@ std::optional<std::int64_t> firstSpan(Battle& battle, EventKind kind, FighterId 
   return std::nullopt;
 }
 
-// A made-up flight: every move touches its defender on the same attack frame.
+// A made-up flight: every move touches its defender on the same attack frame, at a fixed point
+// or, without one, at the attacker's place.
 class FixedFlights final : public AttackFlights {
 public:
-  explicit FixedFlights(std::int32_t frame) : frame_(frame) {}
+  explicit FixedFlights(std::int32_t frame, std::optional<Point> at = std::nullopt)
+      : frame_(frame), at_(at) {}
 
-  [[nodiscard]] std::optional<std::int32_t>
-  landingFrame(std::string_view move, FighterId attacker, FighterId defender,
-               std::optional<std::int32_t> clip) const override {
+  void setBattle(const Battle& battle) { battle_ = &battle; }
+
+  [[nodiscard]] std::optional<EffectLanding>
+  landing(std::string_view move, FighterId attacker, FighterId defender,
+          std::optional<std::int32_t> clip) const override {
     asked.push_back({std::string{move}, attacker, defender, clip});
-    return frame_;
+    const Point attackerAt =
+        battle_ != nullptr ? battle_->state().fighters.at(attacker).position : Point{};
+    return EffectLanding{.frame = frame_, .at = at_.has_value() ? at_ : std::optional{attackerAt}};
   }
 
   struct Question {
@@ -119,6 +125,8 @@ public:
 
 private:
   std::int32_t frame_;
+  std::optional<Point> at_;
+  const Battle* battle_ = nullptr;
 };
 
 } // namespace
@@ -308,10 +316,10 @@ class ShiftingFlights final : public AttackFlights {
 public:
   ShiftingFlights(std::int32_t first, std::int32_t later) : first_(first), later_(later) {}
 
-  [[nodiscard]] std::optional<std::int32_t>
-  landingFrame(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
-               std::optional<std::int32_t> /*clip*/) const override {
-    return asked_++ == 0 ? first_ : later_;
+  [[nodiscard]] std::optional<EffectLanding>
+  landing(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
+          std::optional<std::int32_t> /*clip*/) const override {
+    return EffectLanding{.frame = asked_++ == 0 ? first_ : later_, .at = std::nullopt};
   }
 
 private:
@@ -375,4 +383,53 @@ TEST_CASE("a melee move lands from its effect: it leaves as it starts and lands 
     REQUIRE_FALSE(flights.asked.empty());
     CHECK(flights.asked.front().move == "punch");
   }
+}
+
+namespace {
+
+// Whether the first fighter hit or blocking faces along the line to `point(battle, event)`: toward
+// it, or away from it for a hit from behind; nothing when no hit lands.
+template <typename PointOf>
+std::optional<bool> turnsToward(Battle& battle, PointOf point) {
+  while (!battle.finished() && battle.state().frame < 3000) {
+    const BattleEvents events = battle.step();
+    for (const BattleEvent& event : events) {
+      if (event.kind != EventKind::AttackHit && event.kind != EventKind::AttackBlocked) {
+        continue;
+      }
+      const Fighter& defender = battle.state().fighters.at(event.fighter);
+      const Point to = point(battle, event);
+      const auto dx = static_cast<double>(to.x - defender.position.x);
+      const auto dz = static_cast<double>(to.z - defender.position.z);
+      const double cross = (defender.facing.x * dz) - (defender.facing.z * dx);
+      return std::abs(cross / (std::hypot(dx, dz) * FacingScale)) < 0.01;
+    }
+  }
+  return std::nullopt;
+}
+
+} // namespace
+
+TEST_CASE("a fighter hit or blocking turns to the point where the effect touched it") {
+  // battle_main.c: BTL_handleHitReaction faces the attack object's position (a box check's
+  // instance, BTL_applyBoxAttackHit), and a block looks at it (entityLookAtLocation); in the forest
+  // fight the Spit Fire touches at (256, 2987) and the partner turns from 33 to 72.
+  const Point point{.x = 400, .z = 300};
+  FixedFlights flights{10, point};
+  Battle battle = clippedBattle(farShots(), 3);
+  flights.setBattle(battle);
+  battle.setFlights(&flights);
+  CHECK(turnsToward(battle, [&](const Battle&, const BattleEvent&) { return point; }) ==
+        std::optional{true});
+}
+
+TEST_CASE("a fighter a line or radius check hit turns to its attacker where it stands then") {
+  // BTL_calculateAttackHitPosition puts the hit on the defender's body toward the source as the
+  // check runs: Sonic Jab turns the partner to the enemy (yaw 860 on frame 221).
+  ShiftingFlights flights{10, 10};
+  Battle battle = clippedBattle(farShots(), 3);
+  battle.setFlights(&flights);
+  CHECK(turnsToward(battle, [](const Battle& fight, const BattleEvent& event) {
+          return fight.state().fighters.at(*event.other).position;
+        }) == std::optional{true});
 }

@@ -579,9 +579,8 @@ void beginAttack(BattleContext& context, FighterId id) {
   // it (BTL_setupMoveExecution, BTL_startEFE) and its touch, not the clip's hit frame, decides when
   // it lands. The original has no other hit: a melee move only waits for contact to start
   // (BTL_tickMeleeAttack) and its effect's checks (apply_line_hit for Sonic Jab...) strike.
-  const bool followed = move.range != MoveRange::Self && fighter.target &&
-                        *fighter.target != id &&
-                        effectLandingFrame(context, id, *fighter.target, ref, clip).has_value();
+  const bool followed = move.range != MoveRange::Self && fighter.target && *fighter.target != id &&
+                        effectLanding(context, id, *fighter.target, ref, clip).has_value();
   fighter.attack = ActiveAttack{
       .move = ref,
       .target = fighter.target,

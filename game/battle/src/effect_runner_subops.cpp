@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -115,6 +116,10 @@ EffectVector EffectRunner::vectorAt(const Slot& slot, std::int32_t address) cons
   return {.x = read(slot, address, EffectWidth::Int32),
           .y = read(slot, address + Int32Bytes, EffectWidth::Int32),
           .z = read(slot, address + PairBytes, EffectWidth::Int32)};
+}
+
+EffectVector EffectRunner::instancePosition(const Slot& slot) const {
+  return vectorAt(slot, instanceAddress(PositionOffset));
 }
 
 void EffectRunner::setVector(Slot& slot, std::int32_t address, const EffectVector& value) const {
@@ -234,8 +239,7 @@ bool EffectRunner::transformOp(Slot& slot, std::string_view name,
     }
     if (const std::int32_t range = args[1]; range > 0) {
       const auto scatter = [&] {
-        return static_cast<std::int32_t>(randomDraw() %
-                                         static_cast<std::uint32_t>(range)) -
+        return static_cast<std::int32_t>(randomDraw() % static_cast<std::uint32_t>(range)) -
                (range >> 1);
       };
       out.x += scatter();
@@ -663,6 +667,20 @@ bool segmentCrossesSquare(std::int64_t x0, std::int64_t z0, std::int64_t x1, std
   return true;
 }
 
+// battle_effect.c: BTL_calculateAttackHitPosition: the point `radius` from the fighter's root
+// toward `other`, at its height.
+EffectVector bodyPointToward(const EffectBody& body, const EffectVector& other) {
+  const double dx = static_cast<double>(other.x) - body.location.x;
+  const double dz = static_cast<double>(other.z) - body.location.z;
+  const double length = std::hypot(dx, dz);
+  if (length == 0.0) {
+    return body.location;
+  }
+  return {.x = body.location.x + static_cast<std::int32_t>(std::lround(dx * body.radius / length)),
+          .y = body.location.y - body.height,
+          .z = body.location.z + static_cast<std::int32_t>(std::lround(dz * body.radius / length))};
+}
+
 } // namespace
 
 bool EffectRunner::touchOp(Slot& slot, std::string_view name,
@@ -674,7 +692,7 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
   if (!box && !radius && !line && !target) {
     return false;
   }
-  const EffectVector at = vectorAt(slot, instanceAddress(PositionOffset));
+  const EffectVector at = instancePosition(slot);
   SubEffect& self = context(slot);
   if (target) {
     // BTL_checkTargetCollision: within `radius` of the target's root on the ground; it marks
@@ -735,7 +753,12 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
       continue;
     }
     slot.hitTargets.push_back(fighter);
-    touched_.push_back(fighter);
+    // The box check registers the hit at the instance; the radius and line checks on the
+    // fighter's body, its radius toward the source (BTL_calculateAttackHitPosition).
+    const bool onBody = !box && source.has_value();
+    touched_.push_back({.fighter = fighter,
+                        .at = onBody ? bodyPointToward(*body, source->location) : at,
+                        .onBody = onBody});
     any = true;
     // BTL_applyBoxAttackHit stops at the first fighter it hits.
     if (box) {

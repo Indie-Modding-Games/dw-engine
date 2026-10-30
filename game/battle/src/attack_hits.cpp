@@ -179,7 +179,16 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
   }
   addPendingDamage(context, fighter, damage);
   fighter.knockedBack = true;
-  fighter.hitFromBehind = turnForHit(fighter, attack.origin);
+  // A followed effect without a point of its own hit the body toward its source, where the
+  // attacker stands now (BTL_calculateAttackHitPosition).
+  const Point hitPoint = attack.hitPoint ? *attack.hitPoint
+                         : attack.age    ? context.fighter(attack.attacker).position
+                                         : attack.origin;
+  fighter.hitFromBehind = turnForHit(fighter, hitPoint);
+  core::logDebug("[port:battle] BTL_handleHitReaction (battle_main.c:3093): fighter {} at ({}, {}) "
+                 "turns to ({}, {}){}",
+                 id, fighter.position.x, fighter.position.z, hitPoint.x, hitPoint.z,
+                 fighter.hitFromBehind ? " from behind" : "");
   fighter.struck = true;
   fighter.pose = Pose::HitReaction;
   fighter.poseFrames = context.rules->timing.hitReactionFrames;
@@ -224,7 +233,9 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   if (id == PartnerId) {
     ++context.state->counters.blocks;
   }
-  lookAt(fighter, attack.origin);
+  lookAt(fighter, attack.hitPoint ? *attack.hitPoint
+                  : attack.age    ? context.fighter(attack.attacker).position
+                                  : attack.origin);
   fighter.blocking = true;
   fighter.pose = Pose::Blocking;
   fighter.poseFrames = context.rules->timing.blockAnimationFrames;
@@ -288,22 +299,25 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .origin = fighter.position,
                         .framesLeft = 0,
                         .age = std::nullopt,
-                        .clip = std::nullopt};
+                        .clip = std::nullopt,
+                        .hitPoint = std::nullopt};
   if (!travels) {
     return flight;
   }
   const std::optional<std::int32_t> clip = moveClipOf(context, fighter, attack.move);
-  if (const std::optional<std::int32_t> landing =
-          effectLandingFrame(context, id, defender, attack.move, clip)) {
+  if (const std::optional<EffectLanding> landing =
+          effectLanding(context, id, defender, attack.move, clip)) {
     core::logDebug(
         "[port:battle] BTL_tickEFEEngine (battle_effect.c): {} of fighter {} touches "
-        "fighter {} {} away on attack frame {} (released on {})",
+        "fighter {} {} away on attack frame {} (released on {}) at ({}, {})",
         context.moves->at(attack.move).id, id, defender,
         integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position)),
-        *landing, attack.frame);
-    flight.framesLeft = std::max(*landing - attack.frame, 0);
+        landing->frame, attack.frame, landing->at ? landing->at->x : fighter.position.x,
+        landing->at ? landing->at->z : fighter.position.z);
+    flight.framesLeft = std::max(landing->frame - attack.frame, 0);
     flight.age = attack.frame;
     flight.clip = clip;
+    flight.hitPoint = landing->at;
     return flight;
   }
   const std::int64_t distance =
@@ -315,13 +329,13 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
 
 } // namespace
 
-std::optional<std::int32_t> effectLandingFrame(const BattleContext& context, FighterId attacker,
-                                               FighterId defender, MoveRef move,
-                                               std::optional<std::int32_t> clip) {
+std::optional<EffectLanding> effectLanding(const BattleContext& context, FighterId attacker,
+                                           FighterId defender, MoveRef move,
+                                           std::optional<std::int32_t> clip) {
   if (context.flights == nullptr) {
     return std::nullopt;
   }
-  return context.flights->landingFrame(context.moves->at(move).id, attacker, defender, clip);
+  return context.flights->landing(context.moves->at(move).id, attacker, defender, clip);
 }
 
 void releaseAttack(BattleContext& context, FighterId id) {
@@ -339,9 +353,9 @@ void releaseAttack(BattleContext& context, FighterId id) {
                 .status = StatusEffect::None,
                 .command = Command::None});
   // A followed melee move reaches its target as a shot does: its effect decides the touch.
-  const std::vector<FighterId> reached =
-      attack.followed && attack.target ? std::vector{*attack.target}
-                                       : reachedBy(context, id, move, attack.target);
+  const std::vector<FighterId> reached = attack.followed && attack.target
+                                             ? std::vector{*attack.target}
+                                             : reachedBy(context, id, move, attack.target);
   if (reached.empty()) {
     context.emit({.kind = EventKind::AttackMissed,
                   .fighter = id,
@@ -367,9 +381,10 @@ void tickAttacksInFlight(BattleContext& context) {
       // battle_effect.c: BTL_tickEFEEngine checks the effect's hit boxes against where the fighters
       // stand on each frame: a defender walking into the effect is touched sooner, one walking
       // away later. Where the effect would never touch it now, the last answer holds.
-      if (const std::optional<std::int32_t> landing = effectLandingFrame(
-              context, attack.attacker, attack.defender, attack.move, attack.clip)) {
-        attack.framesLeft = std::max(*landing - *attack.age, 0);
+      if (const std::optional<EffectLanding> landing =
+              effectLanding(context, attack.attacker, attack.defender, attack.move, attack.clip)) {
+        attack.framesLeft = std::max(landing->frame - *attack.age, 0);
+        attack.hitPoint = landing->at;
       }
       ++*attack.age;
     }

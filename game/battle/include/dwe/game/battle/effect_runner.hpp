@@ -67,6 +67,20 @@ public:
                                                          std::int32_t index) const = 0;
   // The battle's fighters in the original's entity order (ENTITY_TABLE 1 to 9).
   [[nodiscard]] virtual std::vector<FighterId> fighters() const = 0;
+  // Where a point of the original's world stands on the battle's ground (the way back from
+  // body()'s location).
+  [[nodiscard]] virtual Point ground(const EffectVector& at) const = 0;
+};
+
+// A fighter a hit check touched and the point of the hit, the attack object's position
+// (graphics.c: addAttackObject), in the console's axes: the instance's for a box check or
+// hit_target, the fighter's body toward the source for a radius or line check (onBody).
+struct EffectTouch {
+  FighterId fighter = 0;
+  EffectVector at;
+  bool onBody = false;
+
+  bool operator==(const EffectTouch&) const = default;
 };
 
 // How a sprite mixes with what is behind it (GsSPRITE attribute bits 28 to 30): one of the four
@@ -193,7 +207,7 @@ public:
   // BTL_checkTargetCollision), instead of answering from the battle's hits; every fighter they or
   // hit_target hit is kept in touched(), in order. For the battle's flight probe (flights.hpp).
   void touchBodies(bool on) { touchBodies_ = on; }
-  [[nodiscard]] const std::vector<FighterId>& touched() const { return touched_; }
+  [[nodiscard]] const std::vector<EffectTouch>& touched() const { return touched_; }
 
 private:
   // A sub-effect of a slot (battle_effect.c: EfeSubEffect): the script it runs each frame and the
@@ -275,6 +289,8 @@ private:
                                                    std::int32_t index) const;
   // The running instance's transform (EfeInstance.transform, from offset 4).
   [[nodiscard]] EffectVector vectorAt(const Slot& slot, std::int32_t address) const;
+  // The running instance's place (EfeInstance transform position, instance+4).
+  [[nodiscard]] EffectVector instancePosition(const Slot& slot) const;
   void setVector(Slot& slot, std::int32_t address, const EffectVector& value) const;
   [[nodiscard]] std::int32_t instanceAddress(std::int32_t offset) const;
   static void writeHit(Slot& slot, std::int32_t address, bool consume);
@@ -312,7 +328,7 @@ private:
   std::optional<FighterId> startTarget_;
   std::size_t targetCursor_ = 0;
   bool touchBodies_ = false;
-  std::vector<FighterId> touched_;
+  std::vector<EffectTouch> touched_;
 };
 
 } // namespace dwe::game::battle
