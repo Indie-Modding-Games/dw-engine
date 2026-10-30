@@ -223,6 +223,16 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
     --autotest tests/autotest/route-etapa2-jungla.yaml --shots <capturas>/etapa2
 ```
 
+- Los reclutamientos de la Etapa 2, una ruta cada uno, con el mismo candado y la partida sembrada; cada una comprueba
+  el disparador del reclutamiento con `story.trigger.<n>`. `route-etapa2-coelamon.yaml` (`--start trop00`) cruza las
+  casillas del puente roto de la jungla (disparador 185), vuelve por mayo08a, mayo02 y mayo04b a mayo05 y pisa la
+  orilla, donde Coelamon sube del río y se une (249).
+
+```sh
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-coelamon.yaml --shots <capturas>/etapa2
+```
+
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la
 cadena sembrada (el campo libre de File City) salvo que la ruta diga `new_game: original`, como `route-etapa1`.

@@ -1,0 +1,41 @@
+# Stage 2 of the story with the keyboard, Coelamon: from trop00 on a seeded game (run with --start trop00 and the
+# stage-2 lock, docs/guides/prueba-vertical.md) the player crosses the cells around the broken bridge (section 0x35
+# of script 12: "Oh, a bridge!", trigger 185), walks back through mayo08a, mayo02 and mayo04b to mayo05, and steps
+# on the river bank (section 0x33 of script 6): Coelamon comes up the river, talks, and lies down as the bridge
+# (trigger 249, the recruit). The afternoon ride on its back to trop01 (hours 15-19) is the other branch of that
+# section and not this route's.
+name: etapa2-coelamon
+device: keyboard
+timeout: 900
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop00, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.185: "false"}
+  - expect_setting: {story.trigger.249: "false"}
+  - screenshot: trop00
+  # The jungle's wild ones fight whoever walks into them: a Champion partner wins those fights by itself.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The player starts by the exit to mayo08a, inside the cells of section 0x35 that fence the bridge's side of
+  # the jungle (x -1450..-150): the walk east crosses them and confirms the player's line.
+  - walk_to: {point: [150, -1000], radius: 80, encounters: true, timeout: 120}
+  - wait: {setting: {story.trigger.185: "true"}, timeout: 30}
+  - repeat: {times: 2, steps: [{tap: {key: return}}, {wait: {seconds: 1.0}}]}
+  - walk_to: {trigger: 110, encounters: true, timeout: 180}
+  - wait: {map: mayo08a, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: true, timeout: 240}
+  - wait: {map: mayo02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: true, timeout: 240}
+  - wait: {map: mayo04b, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 111, encounters: true, timeout: 240}
+  - wait: {map: mayo05, partner_within: 400, seconds: 2, timeout: 30}
+  - screenshot: mayo05
+  # The cells of section 0x33 cover the river bank (x 1050..1950, z -350..550); the first one on the way starts
+  # the scene.
+  - walk_to: {point: [1250, -50], radius: 150, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 60}
+  - screenshot: mayo05-coelamon
+  - repeat: {times: 12, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.249: "true"}, timeout: 120}
+  - wait: {seconds: 3}
+  - screenshot: mayo05-bridge
