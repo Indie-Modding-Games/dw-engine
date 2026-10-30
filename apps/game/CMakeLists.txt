@@ -78,6 +78,7 @@ dwe_add_app(game
         src/story_item_keeper.cpp
         src/story_shop.cpp
         src/field_items_screen.cpp
+        src/award_screen.cpp
         src/fishing_screen.cpp
         src/field_toilet.cpp
         src/field_poop.cpp

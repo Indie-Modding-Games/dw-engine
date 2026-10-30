@@ -6,6 +6,8 @@ dwe_add_module(session
     SOURCES
         src/battle_adapter.cpp
         src/calendar_adapter.cpp
+        src/city_adapter.cpp
+        src/medals_adapter.cpp
         src/evolution_adapter.cpp
         src/field_facts.cpp
         src/field_items_adapter.cpp

@@ -188,6 +188,18 @@ marca de enfado no se inclina hacia su enemigo ni cambia de tamaño con la dista
 El aviso del menú del HUD («Tab Menu») va con el reloj y las barras del campo (`hud.shown`): no sale en combates,
 escenas ni menús, como en el original.
 
+## Aviso de premio
+
+`AwardScreen` (`award_screen.cpp`) es `tamer.c: checkPendingAwards` y `tamerTickAwardSomething`: mientras el jugador
+anda libre (sin script, menú, cambio de mapa ni curso del gimnasio) comprueba las medallas (`MedalsAdapter::check`) y,
+si hay una medalla o un nivel de domador pendiente, abre el cuadro de diálogo de la historia (`ui/award_notice`) con
+las tres líneas de la medalla en el color 7 («Congratulations!», `main.tamer_messages.0005` a `0007`) o la del nivel
+(subida en el color 7, bajada en el 3), suena `award_sound` (0, 7) y el campo y el reloj esperan hasta confirmar
+(Intro / Espacio; cruz en el mando), que borra los dos avisos. Medido en el original: el cuadro sale con 999999 bits en
+twna01, el HUD se oculta mientras está y vuelve al cerrarlo (igual en dwe). Hueco: el icono de confirmar de la
+esquina del cuadro, como en el aviso de objetos. Las medallas son los disparadores 0x16c + medalla que la
+página del jugador ya lee (`StoryAdapter::hasMedal`).
+
 ## Exploración libre
 
 `free_exploration.cpp` lleva la [exploración libre](../../architecture/warps-de-script.md#exploración-libre):

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: medals",
+  "description": "rules/<id>/medals.yaml: the medals the field gives while the player walks and the award notice's sound (apps/session: MedalsAdapter; game/story: medals.hpp).",
+  "type": "object",
+  "required": ["first_trigger", "medal_limit", "conditions", "award_sound"],
+  "additionalProperties": false,
+  "$defs": {
+    "medal": { "description": "The medal's number.", "type": "integer", "minimum": 0 },
+    "count": { "type": "integer", "minimum": 0 }
+  },
+  "properties": {
+    "first_trigger": { "description": "Medal n is trigger first_trigger + n.", "type": "integer", "minimum": 0 },
+    "medal_limit": { "description": "Medals from this number up are never given.", "type": "integer", "minimum": 0 },
+    "conditions": {
+      "description": "Each condition's medal and numbers; a condition left out is not checked.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "all_moves": {
+          "description": "Every move with a number below count learned.",
+          "type": "object", "required": ["medal", "count"], "additionalProperties": false,
+          "properties": { "medal": { "$ref": "#/$defs/medal" }, "count": { "$ref": "#/$defs/count" } }
+        },
+        "max_stats": {
+          "description": "The partner's base stats exactly these.",
+          "type": "object", "required": ["medal", "hp", "mp", "offense", "defense", "speed", "brain"],
+          "additionalProperties": false,
+          "properties": {
+            "medal": { "$ref": "#/$defs/medal" },
+            "hp": { "type": "integer" }, "mp": { "type": "integer" }, "offense": { "type": "integer" },
+            "defense": { "type": "integer" }, "speed": { "type": "integer" }, "brain": { "type": "integer" }
+          }
+        },
+        "money": {
+          "description": "The money exactly this amount.",
+          "type": "object", "required": ["medal", "amount"], "additionalProperties": false,
+          "properties": { "medal": { "$ref": "#/$defs/medal" }, "amount": { "type": "integer", "minimum": 0 } }
+        },
+        "year": {
+          "description": "The calendar's year exactly this.",
+          "type": "object", "required": ["medal", "year"], "additionalProperties": false,
+          "properties": { "medal": { "$ref": "#/$defs/medal" }, "year": { "type": "integer", "minimum": 0 } }
+        },
+        "all_raised": {
+          "description": "Every species from first up to end (not included) raised; adds tamer_levels with no notice.",
+          "type": "object", "required": ["medal", "first", "end", "tamer_levels"], "additionalProperties": false,
+          "properties": {
+            "medal": { "$ref": "#/$defs/medal" }, "first": { "$ref": "#/$defs/count" },
+            "end": { "$ref": "#/$defs/count" }, "tamer_levels": { "type": "integer" }
+          }
+        },
+        "fish": {
+          "description": "At least count fish caught.",
+          "type": "object", "required": ["medal", "count"], "additionalProperties": false,
+          "properties": { "medal": { "$ref": "#/$defs/medal" }, "count": { "$ref": "#/$defs/count" } }
+        },
+        "all_cards": {
+          "description": "At least one copy of every card with a number below count.",
+          "type": "object", "required": ["medal", "count"], "additionalProperties": false,
+          "properties": { "medal": { "$ref": "#/$defs/medal" }, "count": { "$ref": "#/$defs/count" } }
+        }
+      }
+    },
+    "award_sound": {
+      "description": "The sound the award notice plays when it opens: its bank slot and sound.",
+      "type": "object", "required": ["slot", "sound"], "additionalProperties": false,
+      "properties": { "slot": { "type": "integer", "minimum": 0 }, "sound": { "type": "integer", "minimum": 0 } }
+    }
+  }
+}

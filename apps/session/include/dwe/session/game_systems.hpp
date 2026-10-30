@@ -26,6 +26,8 @@ namespace dwe::session {
 
 class BattleAdapter;
 class CalendarAdapter;
+class CityAdapter;
+class MedalsAdapter;
 class FieldItemsAdapter;
 class CardsAdapter;
 class EvolutionAdapter;
@@ -58,9 +60,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper,
-// calendar, field items, cards, fishing), and the adapters by type for the commands of the game
-// and its menus. The session owns the adapters once given them: the typed pointers are valid while
-// it lives.
+// calendar, field items, cards, fishing, poop, city, medals), and the adapters by type for the
+// commands of the game and its menus. The session owns the adapters once given them: the typed
+// pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -79,6 +81,9 @@ struct GameSystems {
   FishingAdapter* fishing = nullptr;
   // The partner's poop piles on the ground.
   PoopAdapter* poop = nullptr;
+  // The city's prosperity and the medals the field gives.
+  CityAdapter* city = nullptr;
+  MedalsAdapter* medals = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

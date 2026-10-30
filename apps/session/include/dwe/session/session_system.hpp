@@ -57,6 +57,13 @@ public:
 
   // Runs when the partner wakes up after a sleep, before its events are routed.
   virtual void afterWakeUp(GameSession& /*session*/) {}
+
+  // Runs before a save of the player's writes the sections (main_menu.c: writeSavegame), not before
+  // an autosave, which the original does not have.
+  virtual void beforeSave(GameSession& /*session*/) {}
+
+  // Runs after a save was loaded and every section read, before the game goes on.
+  virtual void afterLoad(GameSession& /*session*/) {}
 };
 
 } // namespace dwe::session

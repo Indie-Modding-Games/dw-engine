@@ -319,6 +319,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       itemKeeperScreen_({.keeper = game_.systems.itemKeeper, .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
                         game_.session->sound()),
+      awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
       praiseScold_(*game_.session, *context.ui),
       fishingScreen_(*game_.systems.fishing, *game_.systems.inventory, *game_.session, *context.ui,
                      game_.session->sound()) {
@@ -376,8 +377,8 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, ItemKeeperDocument,
-        FieldItemNoticeDocument, FishingBaitDocument, FishingNoticeDocument, FishingHudDocument,
-        EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
+        FieldItemNoticeDocument, AwardNoticeDocument, FishingBaitDocument, FishingNoticeDocument,
+        FishingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -503,6 +504,15 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
     if (fieldItemsScreen_.active()) {
       return;
     }
+    // tamer.c: tamerTickWalkingState checks the medals and opens a due award notice while the
+    // player walks freely; the notice stops the field and the game time until it is confirmed.
+    if (!field.mapChangePending() && field.fadeLevel() == 0.0F && !gymScreen_.active() &&
+        !field.heldByScript() && !game_.systems.story->scriptRunning()) {
+      awardScreen_.tick();
+    }
+    if (awardScreen_.active()) {
+      return;
+    }
     // A gym course takes the player's control; its buttons are the course's.
     if (gymScreen_.active()) {
       fieldIntent = {};
@@ -539,8 +549,9 @@ bool PlaySession::handle(const ui::UiCommand& command) {
       itemKeeperScreen_.handle(command) || sleepScreen_.handle(command) ||
       saveMachine_.handle(command) || praiseScold_.handle(command) || feedScene_.handle(command) ||
       fieldToilet_.handle(command) || fieldPoop_.handle(command) ||
-      fieldItemsScreen_.handle(command) || fishingScreen_.handle(command) ||
-      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      fieldItemsScreen_.handle(command) || awardScreen_.handle(command) ||
+      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
+      freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
@@ -742,7 +753,8 @@ bool PlaySession::paused() const {
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() ||
          (sleepScreen_.active() && !sleepScreen_.walkingUp()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
-         shopScreen_.active() || itemKeeperScreen_.active() || fieldItemsScreen_.active();
+         shopScreen_.active() || itemKeeperScreen_.active() || fieldItemsScreen_.active() ||
+         awardScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

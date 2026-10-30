@@ -23,6 +23,7 @@
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
+#include "award_screen.hpp"
 #include "battle_ground.hpp"
 #include "battle_screen.hpp"
 #include "bug_report.hpp"
@@ -229,6 +230,7 @@ private:
   ShopScreen shopScreen_;
   ItemKeeperScreen itemKeeperScreen_;
   FieldItemsScreen fieldItemsScreen_;
+  AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;
   FishingScreen fishingScreen_;
   std::uint32_t mapSerial_ = 0;

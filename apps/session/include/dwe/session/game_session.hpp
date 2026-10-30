@@ -58,6 +58,9 @@ struct TamerRecord {
 // The most partners the player counts as raised; the count stays there (partner_impl.c:804).
 inline constexpr std::int32_t MaxRaisedCount = 99;
 
+// Which way a tamer level change the field announces went (tamer.c: TAMER_LEVELS_AWARDED).
+enum class TamerLevelChange : std::uint8_t { Up, Down };
+
 // The tamer as far as the session keeps it until a tamer system exists.
 struct TamerState {
   std::int32_t level = 0;
@@ -228,6 +231,13 @@ public:
   // A tamer level change with its chance (tamer.c: addTamerLevel), kept within the tamer section's
   // limits.
   void addTamerLevel(std::int32_t chancePercent, std::int32_t amount);
+  // The change addTamerLevel made that the field has not announced yet (tamer.c:
+  // TAMER_LEVEL_AWARD_PENDING): only one that left the level within the limits before they were
+  // applied. Not saved, as in the original.
+  [[nodiscard]] const std::optional<TamerLevelChange>& tamerLevelAward() const {
+    return tamerLevelAward_;
+  }
+  void clearTamerLevelAward() { tamerLevelAward_.reset(); }
   // A story order sets the tamer level (script_interp.c: scriptInstruction28to3F), kept within the
   // tamer section's limits.
   void setTamerLevel(std::int32_t level);
@@ -344,6 +354,7 @@ private:
   game::save::SaveSections sections_;
   game::save::SaveFile file_;
   std::optional<game::save::SlotId> homeSlot_;
+  std::optional<TamerLevelChange> tamerLevelAward_;
   std::vector<game::partner::PartnerEvent> partnerEvents_;
   bool rebirthByStory_ = false;
   bool scriptRunning_ = false;

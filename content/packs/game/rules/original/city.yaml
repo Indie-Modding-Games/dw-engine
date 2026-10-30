@@ -1,0 +1,33 @@
+# La ciudad (apps/session: CityAdapter; game/story: prosperity.hpp).
+# main.c: recalculatePPandArena rehace los puntos de prosperidad (variable 1) a partir de los disparadores de
+# reclutamiento al empezar el bucle del juego (partida nueva o carga) y antes de cada guardado; los scripts los suben
+# al reclutar y leen la variable y los disparadores para hacer crecer la ciudad.
+prosperity:
+  points_variable: 1
+  # Cuenta la especie n (de 3 a 0x3a) si el disparador 200 + n está puesto y su nivel es 3 (novato) o más.
+  recruit_trigger: 200
+  first_species: 3
+  end_species: 59
+  min_level: 3
+  # Suma su nivel menos 2; Numemon, Sukamon y Nanimon (11, 39, 53) suman 1.
+  level_offset: 2
+  one_point_species: [11, 39, 53]
+  # Sin copa inscrita (variable 3 de 0x17 en adelante) se borran los disparadores de inscripción 0x25 a 0x27.
+  cup_variable: 3
+  no_cup_from: 23
+  registration_triggers: [37, 38, 39]
+# map.c: getFileCityTopMap: la pantalla de Ciudad Archivo donde sigue una partida guardada tras el final, la primera
+# cuyos disparadores están todos puestos (0xdc y 0xd6 la ciudad grande; 0xdd, 0xe1 y 0xf6 sus otras obras).
+cleared_map:
+  - { triggers: [220, 214, 221, 225], map: 179 }
+  - { triggers: [220, 214, 221, 246], map: 178 }
+  - { triggers: [220, 214, 221], map: 177 }
+  - { triggers: [220, 214, 225], map: 176 }
+  - { triggers: [220, 214, 246], map: 175 }
+  - { triggers: [220, 214], map: 174 }
+  - { triggers: [221, 225], map: 173 }
+  - { triggers: [221, 246], map: 172 }
+  - { triggers: [221], map: 171 }
+  - { triggers: [225], map: 170 }
+  - { triggers: [246], map: 169 }
+  - { triggers: [], map: 168 }

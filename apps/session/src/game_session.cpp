@@ -303,6 +303,7 @@ core::Result<void> GameSession::startNewGame(const NewGameChoice& choice) {
   playSeconds_ = 0.0;
   names_ = {.tamer = choice.tamerName, .partner = choice.partnerName};
   partnerEvents_.clear();
+  tamerLevelAward_.reset();
   state_->playing = true;
   for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
     if (auto started = system->startNewGame(*this); !started) {
@@ -350,7 +351,11 @@ core::Result<void> GameSession::loadFile(const game::save::SaveFile& file) {
   names_ = {.tamer = file.header.summary.tamer, .partner = file.header.summary.nickname};
   playSeconds_ = static_cast<double>(file.header.playSeconds);
   partnerEvents_.clear();
+  tamerLevelAward_.reset();
   state_->playing = true;
+  for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
+    system->afterLoad(*this);
+  }
   return {};
 }
 
@@ -373,6 +378,11 @@ core::Result<void> GameSession::save(game::save::SlotId slot) {
   const std::optional<game::save::SlotId> previousHome = homeSlot_;
   if (slot.kind == game::save::SlotKind::Manual) {
     homeSlot_ = slot;
+  }
+  if (state_->playing) {
+    for (const std::unique_ptr<SessionSystem>& system : desc_.systems) {
+      system->beforeSave(*this);
+    }
   }
   auto file = saveFile();
   if (!file) {
@@ -538,9 +548,19 @@ void GameSession::routePartnerEvent(const PartnerEvent& event) {
 }
 
 void GameSession::addTamerLevel(std::int32_t chancePercent, std::int32_t amount) {
-  if (state_->random.below(PercentRoll) < chancePercent) {
-    changeTamerLevel(amount);
+  if (state_->random.below(PercentRoll) >= chancePercent) {
+    return;
   }
+  // tamer.c: addTamerLevel announces the change when the new level, before it is kept within the
+  // limits, is still within them (TAMER_LEVEL_AWARD_PENDING; up for a positive amount).
+  const TamerRules& rules = state_->rules.tamer;
+  const std::int32_t level = state_->tamer.level + amount;
+  if (level >= rules.levelMin && level <= rules.levelMax) {
+    tamerLevelAward_ = amount >= 1 ? TamerLevelChange::Up : TamerLevelChange::Down;
+    core::logDebug("[port:medals] addTamerLevel (tamer.c:1309): level {} -> {}, announced",
+                   state_->tamer.level, level);
+  }
+  changeTamerLevel(amount);
 }
 
 void GameSession::setTamerLevel(std::int32_t level) {

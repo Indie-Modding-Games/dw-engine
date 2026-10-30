@@ -66,3 +66,7 @@ schemas:
     - rules/*/story_lock
   ruleset_poop_piles:
     - rules/*/poop_piles
+  ruleset_city:
+    - rules/*/city
+  ruleset_medals:
+    - rules/*/medals

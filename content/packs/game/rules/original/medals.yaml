@@ -1,0 +1,23 @@
+# Las medallas que da el campo (apps/session: MedalsAdapter; game/story: medals.hpp).
+# tamer.c: checkMedalConditions, en cada fotograma que el jugador anda libre: cada medalla que no tiene y cuya
+# condición se cumple se da (script_common.c: unlockMedal pone el disparador first_trigger + medalla) y deja el aviso
+# pendiente (tamerTickAwardSomething). Las medallas de los torneos son del guion.
+first_trigger: 364
+medal_limit: 19
+conditions:
+  # Todas las técnicas de número menor que count aprendidas (hasMove).
+  all_moves: { medal: 5, count: 57 }
+  # Las estadísticas base del compañero exactamente estas.
+  max_stats: { medal: 7, hp: 9999, mp: 9999, offense: 999, defense: 999, speed: 999, brain: 999 }
+  # El dinero exactamente esta cantidad.
+  money: { medal: 13, amount: 999999 }
+  # El año del calendario exactamente este.
+  year: { medal: 14, year: 10 }
+  # Criadas todas las especies de first a end (sin incluir); además sube tamer_levels el nivel de domador sin aviso.
+  all_raised: { medal: 6, first: 1, end: 62, tamer_levels: 1 }
+  # Al menos count peces pescados.
+  fish: { medal: 9, count: 100 }
+  # Al menos una copia de cada carta de número menor que count (getCardAmount).
+  all_cards: { medal: 12, count: 66 }
+# El sonido al abrirse el cuadro del aviso (playSound(0, 7)).
+award_sound: { slot: 0, sound: 7 }

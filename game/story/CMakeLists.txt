@@ -13,4 +13,6 @@ dwe_add_module(story
         src/screen_history.cpp
         src/partner_routines.cpp
         src/new_day.cpp
+        src/prosperity.cpp
+        src/medals.cpp
     DEPS core assets)

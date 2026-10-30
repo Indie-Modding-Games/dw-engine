@@ -22,6 +22,10 @@ inline constexpr std::string_view TriggerDigitsWrong = "triggers must be {} hex 
 // A saved variable outside a byte (the value).
 inline constexpr std::string_view VariableNotAByte = "a variable must be 0-255, not {}";
 
+// The File City screen a finished game continues on: no choice matched the triggers.
+inline constexpr std::string_view NoClearedCityMap =
+    "no File City screen matches the city's triggers";
+
 // The orders.
 inline constexpr std::string_view NoSuchTrigger = "trigger {} is outside the story's {} triggers";
 inline constexpr std::string_view NoSuchVariable =

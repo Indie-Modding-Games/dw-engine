@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: city",
+  "description": "rules/<id>/city.yaml: the city's prosperity rebuilt from the recruit triggers, and the File City screen a finished game continues on (apps/session: CityAdapter; game/story: prosperity.hpp).",
+  "type": "object",
+  "required": ["prosperity", "cleared_map"],
+  "additionalProperties": false,
+  "properties": {
+    "prosperity": {
+      "type": "object",
+      "required": ["points_variable", "recruit_trigger", "first_species", "end_species", "min_level", "level_offset",
+                   "one_point_species", "cup_variable", "no_cup_from", "registration_triggers"],
+      "additionalProperties": false,
+      "properties": {
+        "points_variable": { "description": "The story variable that holds the points.", "type": "integer", "minimum": 0, "maximum": 255 },
+        "recruit_trigger": { "description": "A species is recruited when trigger recruit_trigger + its number is set.", "type": "integer", "minimum": 0 },
+        "first_species": { "description": "The first species number counted.", "type": "integer", "minimum": 0 },
+        "end_species": { "description": "The species number where the count stops (not included).", "type": "integer", "minimum": 0 },
+        "min_level": { "description": "The lowest level that counts (3 rookie).", "type": "integer", "minimum": 0 },
+        "level_offset": { "description": "A counted species adds its level minus this.", "type": "integer" },
+        "one_point_species": { "description": "Species that add one point whatever their level.", "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "cup_variable": { "description": "The story variable of the registered cup.", "type": "integer", "minimum": 0, "maximum": 255 },
+        "no_cup_from": { "description": "From this value up the cup variable holds no cup.", "type": "integer", "minimum": 0, "maximum": 255 },
+        "registration_triggers": { "description": "Triggers cleared when no cup is registered.", "type": "array", "items": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "cleared_map": {
+      "description": "The File City screens, first match wins: the first whose triggers are all set.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["triggers", "map"],
+        "additionalProperties": false,
+        "properties": {
+          "triggers": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+          "map": { "description": "The original's screen number.", "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

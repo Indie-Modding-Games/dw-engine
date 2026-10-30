@@ -80,6 +80,9 @@ std::string_view PlaySession::busyWith() const {
   if (fieldItemsScreen_.active()) {
     return "field_item";
   }
+  if (awardScreen_.active()) {
+    return "award";
+  }
   if (field.mapChangePending() || field.fadeLevel() > 0.0F) {
     return "map_change";
   }

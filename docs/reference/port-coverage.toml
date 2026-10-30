@@ -403,17 +403,17 @@ reinitializeAfterTournament = { status = "falta", what = "Vuelve al mapa tras un
 createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
 tickMeramonShake = { status = "parcial", dwe = "apps/game/src/field_story_props.cpp", note = "El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no.", what = "Hace temblar la pantalla en esa escena." }
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
-getFileCityTopMap = { status = "falta", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "comprobar si las ediciones de mapa del guion lo cubren" }
+getFileCityTopMap = { status = "parcial", dwe = "game/story/src/prosperity.cpp", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa" }
 loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }
 setupTamerOnWarp = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Coloca al jugador al llegar por un warp." }
 tamerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Mueve al jugador cada fotograma según su estado." }
-checkMedalConditions = { status = "falta", what = "Da la medalla de aprender todas las técnicas y la anuncia." }
-checkPendingAwards = { status = "falta", what = "Lanza el anuncio pendiente de un premio (medalla o nivel del jugador)." }
+checkMedalConditions = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Da las medallas del campo (técnicas, estadísticas, dinero, año, criados, peces, cartas) y las anuncia." }
+checkPendingAwards = { status = "portado", dwe = "apps/game/src/award_screen.cpp", what = "Lanza el anuncio pendiente de un premio (medalla o nivel del jugador)." }
 getEntityFromScriptId = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Da el personaje de un id de guion." }
 tamerTickIdle = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "El jugador quieto." }
 tamerTickTraining = { status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "El jugador pone su clip 10 y mira al compañero cada cuadro mientras entrena (gym.yaml: watch_animation)." }
 tamerTickMachinedramonSpawn = { status = "falta", what = "El jugador asiste a la aparición del jefe final.", note = "la escena acaba al momento (story_scene_glue.cpp:58)" }
-tamerTickAwardSomething = { status = "falta", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
+tamerTickAwardSomething = { status = "portado", dwe = "apps/game/src/award_screen.cpp", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
 calculatePosition = { status = "portado", dwe = "game/battle/src/bone_matrix.cpp", what = "Calcula una posición con una matriz.", note = "para el hueso de los efectos, en coma fija 4.12 como el original" }
 
 # --- Compañero
@@ -508,8 +508,8 @@ getTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Da 
 terminateString = { status = "no-aplica", note = "cadenas del original", what = "Cierra una cadena." }
 padWithSpaces = { status = "no-aplica", note = "cadenas del original", what = "Rellena con espacios." }
 showMapheadSelection = { status = "portado", dwe = "content/packs/game/ui/destination_choice/logic.lua", what = "Enseña una elección en la cabecera del mapa." }
-unlockMedal = { status = "falta", what = "Da una medalla al jugador.", note = "no hay medallas en el motor" }
-hasMedal = { status = "portado", dwe = "apps/session/src/story_adapter.cpp", what = "Dice si el jugador tiene una medalla.", note = "StoryAdapter::medalCount cuenta los disparadores 0x16c + medalla; aún nada da medallas" }
+unlockMedal = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Da una medalla al jugador." }
+hasMedal = { status = "portado", dwe = "game/story/src/medals.cpp", what = "Dice si el jugador tiene una medalla.", note = "también StoryAdapter::medalCount y medalsHeld para la página del jugador" }
 createMonochromonMoodBubble = { status = "falta", what = "Burbuja de humor del rival de la tienda de cambio.", note = "scripts.md: más tarde" }
 triggerSeadramonCutscene = { status = "falta", what = "Lanza la escena de la serpiente marina al pescarla." }
 initializeLoadedNPCModels = { status = "no-aplica", note = "tabla de modelos del original", what = "Vacía la tabla de modelos cargados." }
@@ -695,7 +695,7 @@ addAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp",
 popAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Saca el siguiente golpe a aplicar." }
 updateTMDTextureData = { status = "no-aplica", note = "texturas del original", what = "Ajusta las texturas de un modelo." }
 initializeLoadedMap = { status = "portado", dwe = "apps/game/src/session_start.cpp", what = "Monta el mapa al cargar una partida." }
-recalculatePPandArena = { status = "falta", what = "Recalcula los puntos de prosperidad de la ciudad según quién se ha unido.", note = "no se encontró en el motor" }
+recalculatePPandArena = { status = "portado", dwe = "game/story/src/prosperity.cpp", what = "Recalcula los puntos de prosperidad de la ciudad según quién se ha unido.", note = "CityAdapter la llama al empezar partida, al cargar y antes de cada guardado del jugador" }
 tickTrialEnd = { status = "no-aplica", note = "solo la demo de prueba", what = "Fin de la versión de prueba." }
 pollInputGame = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en el juego." }
 pollInputMenu = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en los menús." }

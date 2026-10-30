@@ -165,6 +165,10 @@ public:
   [[nodiscard]] std::int32_t medalCount() const;
   // Whether the player page's item box `slot` (0 to PlayerItemCount - 1) shows its item.
   [[nodiscard]] bool hasPlayerItem(std::int32_t slot) const;
+  // The ruleset's digimon table, when the rules named one the packs have.
+  [[nodiscard]] const assets::DigimonTable* digimonTable() const {
+    return digimon_ ? &*digimon_ : nullptr;
+  }
   // Where a save from before the story section takes its raised species from (createGameSystems:
   // the evolution section's); without it such a save starts with none raised.
   void setSavedRaised(RaisedSource source) { savedRaised_ = std::move(source); }

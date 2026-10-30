@@ -33,8 +33,8 @@ std::string_view textOf(std::span<const std::byte> bytes) {
 
 TEST_CASE("the session's sections follow their schemas") {
   const dwe::assets::DiskFileSystem disk;
-  constexpr std::array<std::string_view, 4> Sections{"new_game", "tamer", "item_use",
-                                                     "partner_moves"};
+  constexpr std::array<std::string_view, 6> Sections{"new_game",      "tamer", "item_use",
+                                                     "partner_moves", "city",  "medals"};
   for (const std::string_view section : Sections) {
     CAPTURE(section);
     const auto schemaBytes = disk.readFile(std::filesystem::path{DWE_SCHEMA_DIR} /

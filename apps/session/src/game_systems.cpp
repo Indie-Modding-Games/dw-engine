@@ -4,6 +4,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
+#include <dwe/session/city_adapter.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_items_adapter.hpp>
 #include <dwe/session/fishing_adapter.hpp>
@@ -11,6 +12,7 @@
 #include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/item_keeper.hpp>
+#include <dwe/session/medals_adapter.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/poop_adapter.hpp>
 #include <dwe/session/shop_counter.hpp>
@@ -167,6 +169,16 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto poop = std::make_unique<PoopAdapter>();
   game.poop = poop.get();
   game.systems.push_back(std::move(poop));
+  // After the story, whose digimon table and new game they read.
+  auto city = std::make_unique<CityAdapter>(*game.story);
+  game.city = city.get();
+  game.systems.push_back(std::move(city));
+  auto medals = std::make_unique<MedalsAdapter>(MedalsAdapterDesc{.story = game.story,
+                                                                  .battle = game.battle,
+                                                                  .inventory = game.inventory,
+                                                                  .cards = game.cards});
+  game.medals = medals.get();
+  game.systems.push_back(std::move(medals));
   return game;
 }
 
