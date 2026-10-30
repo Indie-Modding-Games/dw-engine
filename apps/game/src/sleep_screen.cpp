@@ -26,8 +26,8 @@ std::int32_t shadeStep(const game::field::TransitionRules& rules, std::int32_t f
 }
 
 const char* phaseName(std::uint8_t phase) {
-  constexpr std::array<const char*, 6> Names{"awake",     "fading out", "menu",
-                                             "fading in", "fade tail",  "walking up"};
+  constexpr std::array<const char*, 7> Names{"awake",     "fading out", "menu",    "fading in",
+                                             "fade tail", "walking up", "settling"};
   return phase < Names.size() ? Names.at(phase) : "?";
 }
 
@@ -36,12 +36,18 @@ const char* phaseName(std::uint8_t phase) {
 SleepScreen::SleepScreen(session::GameSession& session, ui::Ui& ui,
                          const game::field::TransitionRules& transition)
     : session_(&session), ui_(&ui), transition_(transition),
-      saves_(session.slots(), [&session](game::save::SlotId slot) { return session.save(slot); }) {
+      saves_(session.slots(), [&session](game::save::SlotId slot) { return session.save(slot); }),
+      steps_(session.partnerRules().care.sleep.scene) {
   ui.setSetting("save.last_result", std::string{});
 }
 
 bool SleepScreen::active() const {
   return phase_ != Phase::Awake && phase_ != Phase::FadeTail;
+}
+
+bool SleepScreen::fieldRuns() const {
+  return phase_ == Phase::WalkingUp || phase_ == Phase::Settling || phase_ == Phase::FadingOut ||
+         phase_ == Phase::FadingIn;
 }
 
 std::int32_t SleepScreen::fadeFrame() const {
@@ -72,6 +78,7 @@ float SleepScreen::fadeLevel() const {
   }
   case Phase::Awake:
   case Phase::WalkingUp:
+  case Phase::Settling:
     break;
   }
   return 0.0F;
@@ -82,7 +89,7 @@ void SleepScreen::tick(double seconds) {
   if (active() && ui_->isVisible(MenuDocument)) {
     ui_->hide(MenuDocument);
   }
-  if (phase_ == Phase::Awake || phase_ == Phase::WalkingUp) {
+  if (phase_ == Phase::Awake || phase_ == Phase::WalkingUp || phase_ == Phase::Settling) {
     return;
   }
   fadeSeconds_ += seconds;
@@ -95,6 +102,7 @@ void SleepScreen::tick(double seconds) {
     // partner.c: partnerTickSleep gives control back once FADE_IN_CURRENT passes 34, and only then
     // runs the wake-up evolution and the game time.
     setPhase(Phase::FadeTail);
+    releasePending_ = true;
     if (std::exchange(asleep_, false)) {
       core::logDebug("[port:save] partnerTickSleep (partner.c:354): awake at frame {}", frame);
       session_->wakeUp();
@@ -110,7 +118,7 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
     if (canSleep(fieldIdle_)) {
       ui_->hide(MenuDocument);
       setPhase(Phase::WalkingUp);
-      walkUp_.start();
+      holdPending_ = true;
     }
     return true;
   }
@@ -138,18 +146,81 @@ bool SleepScreen::handle(const ui::UiCommand& command) {
   return true;
 }
 
-void SleepScreen::walkUp(FieldScene& scene, float seconds,
-                         const std::optional<session::SoundCue>& arrived) {
-  if (phase_ != Phase::WalkingUp || !walkUp_.tick(scene, seconds, nullptr)) {
+void SleepScreen::tickField(FieldScene& scene, float seconds,
+                            const std::optional<session::SoundCue>& arrived) {
+  if (std::exchange(wakePending_, false)) {
+    apply(scene, steps_.wakeUp());
+  }
+  if (std::exchange(releasePending_, false)) {
+    // partner.c:356-358: the partner's state 1 and the player's state 0: the two are the field's
+    // again.
+    scene.setPlayerClip(std::nullopt);
+    scene.playPartnerClip(std::nullopt);
+    scene.field().holdForCare(false);
+  }
+  switch (phase_) {
+  case Phase::WalkingUp: {
+    game::field::Field& field = scene.field();
+    if (std::exchange(holdPending_, false)) {
+      // partner.c:281-289: sub state 0 stops the game time, holds the player (its state 6) and,
+      // unless the partner is beside the player already, walks it straight up to the player (clip
+      // 2, looking at the player every frame) until getPartnerTamerCloseness gives 2.
+      field.holdForCare(true);
+      if (!field.partnerBeside()) {
+        const game::field::PartnerRules& rules = field.rules().partner;
+        field.walkPartnerToRange(rules.walkDistance * rules.mover.radius);
+      }
+    }
+    scene.tick({}, seconds);
+    scene.finishTick();
+    if (field.partnerWalking()) {
+      return;
+    }
+    // partner.c:292-300: beside the player, the two look at each other, the sound plays and their
+    // clips start.
+    field.faceEachOther();
+    core::logDebug("[port:sleep] partnerTickSleep (partner.c:296): the partner is beside the "
+                   "player");
+    if (arrived && session_->sound() != nullptr) {
+      session_->sound()->playSound(arrived->slot, arrived->sound);
+    }
+    apply(scene, steps_.start());
+    setPhase(Phase::Settling);
     return;
   }
-  // partner.c: partnerTickSleep plays the sound when the partner is beside the player; the
-  // tamer's and the partner's sleep animations come before the fade there.
-  if (arrived && session_->sound() != nullptr) {
-    session_->sound()->playSound(arrived->slot, arrived->sound);
+  case Phase::Settling: {
+    scene.tick({}, seconds);
+    scene.finishTick();
+    const SleepSteps::Order order =
+        steps_.tick({.playerPlayedThrough = scene.playerClipPlayedThrough(),
+                     .partnerFramesLeft = scene.partnerClipFramesLeft()});
+    apply(scene, order);
+    if (order.fadeOut) {
+      setPhase(Phase::FadingOut);
+      fadeSeconds_ = 0.0;
+    }
+    return;
   }
-  setPhase(Phase::FadingOut);
-  fadeSeconds_ = 0.0;
+  case Phase::FadingOut:
+  case Phase::FadingIn:
+    // The field goes on under the fade, the two holding their clips.
+    scene.tick({}, seconds);
+    scene.finishTick();
+    return;
+  case Phase::Awake:
+  case Phase::Menu:
+  case Phase::FadeTail:
+    return;
+  }
+}
+
+void SleepScreen::apply(FieldScene& scene, const SleepSteps::Order& order) {
+  if (order.playerClip) {
+    scene.setPlayerClip(order.playerClip);
+  }
+  if (order.partnerClip) {
+    scene.playPartnerClip(order.partnerClip, order.partnerMoves);
+  }
 }
 
 bool SleepScreen::canSleep(bool fieldIdle) const {
@@ -218,6 +289,7 @@ void SleepScreen::setPhase(Phase phase) {
 void SleepScreen::startFadeIn() {
   setPhase(Phase::FadingIn);
   fadeSeconds_ = 0.0;
+  wakePending_ = true;
 }
 
 } // namespace dwe::app

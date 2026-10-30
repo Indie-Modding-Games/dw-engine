@@ -107,6 +107,10 @@ sleep:
   # partnerTickSleep: fadeToBlack(40), el sueño cuando FADE_OUT_CURRENT pasa de 39; fadeFromBlack(40), y el control
   # vuelve (con la evolución especial al despertar) cuando FADE_IN_CURRENT pasa de 34. En fotogramas del original.
   fade: { out_frames: 40, in_frames: 40, control_frame: 35 }
+  # partnerTickSleep: con el compañero junto al jugador, el jugador hace la animación 8 y el compañero la 0; al acabar la
+  # del jugador el compañero hace la 11 (bosteza) y luego la 9 (se acuesta), y el fundido a negro empieza 5 fotogramas
+  # antes del final de la 9. Al volver el fundido el compañero se despierta de pie (animación 0).
+  scene: { player_clip: 8, partner_idle_clip: 0, partner_yawn_clip: 11, partner_lie_down_clip: 9, fade_lead_frames: 5 }
 toilet:
   # tickPoopingMechanic: el temporizador del baño (poopLevel) baja 1 cada 200 fotogramas.
   poop_step_minutes: 10

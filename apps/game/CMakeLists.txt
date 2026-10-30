@@ -75,6 +75,7 @@ dwe_add_app(game
         src/jukebox_screen.cpp
         src/shop_screen.cpp
         src/sleep_screen.cpp
+        src/sleep_steps.cpp
         src/state_trace.cpp
         src/story_field_link.cpp
         src/story_text_rows.cpp
@@ -129,7 +130,7 @@ if(BUILD_TESTING)
                                   src/evolution_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
-                                  src/save_machine_flow.cpp src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
+                                  src/save_machine_flow.cpp src/sleep_steps.cpp src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render

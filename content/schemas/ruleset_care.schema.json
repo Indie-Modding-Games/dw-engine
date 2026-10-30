@@ -189,7 +189,8 @@
         "sick_penalty",
         "injured_penalty",
         "hungry_weight_loss",
-        "fade"
+        "fade",
+        "scene"
       ],
       "additionalProperties": false,
       "properties": {
@@ -403,6 +404,34 @@
               "type": "integer"
             },
             "control_frame": {
+              "type": "integer"
+            }
+          }
+        },
+        "scene": {
+          "type": "object",
+          "required": [
+            "player_clip",
+            "partner_idle_clip",
+            "partner_yawn_clip",
+            "partner_lie_down_clip",
+            "fade_lead_frames"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "player_clip": {
+              "type": "integer"
+            },
+            "partner_idle_clip": {
+              "type": "integer"
+            },
+            "partner_yawn_clip": {
+              "type": "integer"
+            },
+            "partner_lie_down_clip": {
+              "type": "integer"
+            },
+            "fade_lead_frames": {
               "type": "integer"
             }
           }

@@ -224,10 +224,13 @@ lista. El original borra el fichero de la tarjeta sin copia (`main_menu.c: tickM
 podría abrirse sobre el campo: sin combate ni fundido (`tamer.c: 517-528`; las condiciones de guion y caja de texto
 llegarán con el intérprete de historia y las cajas de texto). Al elegirlo, como `partner.c: partnerTickSleep`:
 
-1. Se cierra el menú y la pantalla funde a negro: `sleep.fade.out_frames` (40) frames del original, con la curva
+1. Se cierra el menú, el compañero se acerca al jugador y los dos juegan sus animaciones de dormir (`sleep.scene`,
+   [módulo game](../modulos/apps/game.md#dormir)); después la pantalla funde a negro: `sleep.fade.out_frames` (40)
+   frames del original, con la curva
    escalonada de `fade.c` (el paso es `160 / (frames + 1)`, el mismo cálculo que da el 7 del cambio de mapa). En el
    último frame, `GameSession::fallAsleep` (el reloj salta a la mañana; ya existía). Lo lleva `SleepScreen`
-   (`apps/game/src/sleep_screen.cpp`); el campo y el reloj esperan y el menú de pausa no se abre encima.
+   (`apps/game/src/sleep_screen.cpp`); el reloj espera, el campo sigue sin el jugador y el menú de pausa no se abre
+   encima.
 2. Si la partida tiene ranura, `sleep_menu`: «Dormir» / «Guardar y dormir». Cancelar no hace nada, como el original.
    Sin ranura no sale nada.
 3. «Guardar y dormir» guarda en la ranura (`GameSaves`, `apps/game/src/game_saves.cpp`). Antes mira la ranura

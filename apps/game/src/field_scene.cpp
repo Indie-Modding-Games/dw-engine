@@ -14,7 +14,9 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <format>
+#include <limits>
 #include <tuple>
 #include <utility>
 
@@ -280,9 +282,10 @@ core::Result<void> FieldScene::enterOriginalMap(std::int32_t index, std::int32_t
   return enterMap(entry->id, exit);
 }
 
-void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId) {
+void FieldScene::playPartnerClip(std::optional<std::uint32_t> clipId, bool moves) {
   partnerClip_ = clipId;
   partnerClipStarted_ = false;
+  partnerClipMoves_ = moves && clipId.has_value();
   // Back from the scene it stands again with a new wait.
   partnerLook_ = {};
   // The partner's motion picks its clip again from the next update.
@@ -293,6 +296,23 @@ bool FieldScene::partnerClipFinished() const {
   // A clip the model lacks counts as finished, so that no scene waits for it.
   return partnerClip_ && partnerClipStarted_ &&
          (!partnerClipPlays_ || partnerActor_->player->playedThrough());
+}
+
+double FieldScene::partnerClipFramesLeft() const {
+  if (!partnerClip_ || !partnerClipStarted_) {
+    return std::numeric_limits<double>::infinity();
+  }
+  const animation::AnimationPlayer& player = *partnerActor_->player;
+  const assets::AnimationClip* clip = player.clip();
+  if (!partnerClipPlays_ || clip == nullptr) {
+    return 0.0;
+  }
+  if (clip->ticksPerSecond == 0 || clip->tickCount == 0) {
+    return player.playedThrough() ? 0.0 : 1.0;
+  }
+  // The keyframes have the counted loops unrolled, so the clip's ticks are all its frames.
+  return static_cast<double>(clip->tickCount) -
+         (player.time() * static_cast<double>(clip->ticksPerSecond));
 }
 
 void FieldScene::animatePartnerClip(double seconds) {
@@ -307,7 +327,17 @@ void FieldScene::animatePartnerClip(double seconds) {
     }
     actor.player->setSpeed(1.0F);
   }
-  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+  const glm::vec3 root = actor.player->advance(static_cast<float>(seconds));
+  if (!partnerClipMoves_ || (root.x == 0.0F && root.z == 0.0F)) {
+    return;
+  }
+  // The root motion is in the model's space, facing +z at yaw 0 (assets::forwardOfYaw).
+  const scene::Transform& transform = world_.registry().get<scene::Transform>(actor.entity);
+  const float sine = std::sin(transform.yaw);
+  const float cosine = std::cos(transform.yaw);
+  const glm::vec3 step{(root.x * cosine) + (root.z * sine), 0.0F,
+                       (root.z * cosine) - (root.x * sine)};
+  field_->placeByScript(actor.entity, transform.position + step);
 }
 
 core::Result<std::unique_ptr<FieldScene::Actor>>

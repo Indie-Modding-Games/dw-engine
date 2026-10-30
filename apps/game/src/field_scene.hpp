@@ -255,11 +255,17 @@ public:
   [[nodiscard]] const FieldStage& stage() const { return stage_; }
   // Plays this clip of the partner (by the original's id, startAnimation) instead of the one its
   // motion picks, until nothing gives the partner back to its motion. A clip the model lacks is
-  // logged and the partner keeps its motion.
-  void playPartnerClip(std::optional<std::uint32_t> clipId);
+  // logged and the partner keeps its motion. With `moves` the clip's root motion carries the
+  // partner over the ground, turned to where it faces (anim.c: applyRootMomentum), as the sleep's
+  // lie-down does; without it the partner stays where it stands.
+  void playPartnerClip(std::optional<std::uint32_t> clipId, bool moves = false);
   // Whether the partner's scene clip has reached the end of its first pass (animFrame ==
   // frameCount), one that repeats too.
   [[nodiscard]] bool partnerClipFinished() const;
+  // Frames of the original left in the partner's scene clip, all its rounds counted (anim.c:
+  // frameCount - animFrame): infinite before it starts, 0 or less once it has ended, and 0 for a
+  // clip the model lacks.
+  [[nodiscard]] double partnerClipFramesLeft() const;
 
   // The battle holds the partner (no script id) or the map's NPC with this script id: it stands,
   // faces and plays as the figure says, the field's motion (following, wandering, looking at the
@@ -551,6 +557,7 @@ private:
   std::optional<std::uint32_t> partnerClip_;
   bool partnerClipStarted_ = false;
   bool partnerClipPlays_ = false;
+  bool partnerClipMoves_ = false;
   // What the partner shows while something else than the field's follow moves it (a care walk,
   // making room; partner.c: partnerTickWalking): the motion it last had, the clip it walks or
   // stands with, the gesture under way, how long it has stood (STOP_DISTANCE_TIMER) and how many

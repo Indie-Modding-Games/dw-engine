@@ -330,7 +330,7 @@ Portado 37, parcial 1, falta 0, no aplica 12.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:225` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
+| `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:229` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
 
 No aplica: copias de otra función, que cuenta por las dos (9); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1); igual que TRN_func_800888A0: solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1).
 

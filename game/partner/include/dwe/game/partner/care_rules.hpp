@@ -99,6 +99,19 @@ struct SleepFade {
   std::int32_t controlFrame = 0;
 };
 
+// The partner's and the player's clips on the way to a sleep (partner.c: partnerTickSleep, sub
+// states 1 to 4), by the original's animation ids (startAnimation): beside the player the player
+// plays its clip and the partner stands; once the player's clip ends the partner plays its yawn,
+// then lies down, and the screen fades out that many frames before the lie-down clip ends. The fade
+// in wakes the partner up standing.
+struct SleepScene {
+  std::int32_t playerClip = 0;
+  std::int32_t partnerIdleClip = 0;
+  std::int32_t partnerYawnClip = 0;
+  std::int32_t partnerLieDownClip = 0;
+  std::int32_t fadeLeadFrames = 0;
+};
+
 struct SleepRules {
   std::int32_t tirednessPercentPerMinute = 0;
   std::int32_t tirednessThreshold = 0;
@@ -116,6 +129,7 @@ struct SleepRules {
   MoodChange injuredPenalty;
   std::int32_t hungryWeightLoss = 0;
   SleepFade fade;
+  SleepScene scene;
 };
 
 // Eating a poop pile of a size range (handleEatingPoop).

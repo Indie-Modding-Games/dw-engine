@@ -467,8 +467,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   sleepScreen_.tick(TickSeconds);
   saveMachine_.tick(TickSeconds);
   const auto& fieldRules = game_.systems.fieldItems->rules();
-  sleepScreen_.walkUp(*scene_, static_cast<float>(TickSeconds),
-                      fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
+  sleepScreen_.tickField(*scene_, static_cast<float>(TickSeconds),
+                         fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
       cardShopScreen_.active()) {
@@ -790,7 +790,7 @@ bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() ||
-         (sleepScreen_.active() && !sleepScreen_.walkingUp()) || saveMachine_.active() ||
+         (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
          jukeboxScreen_.active() || tradeScreen_.active() || cardShopScreen_.active() || fieldItemsScreen_.active() ||

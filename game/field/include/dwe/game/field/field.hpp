@@ -317,6 +317,9 @@ public:
   void runPartnerUp();
   // Whether either walk goes on; once a walk to a range is over, the two face each other.
   [[nodiscard]] bool partnerWalking() const { return careWalk_.has_value(); }
+  // The partner and the player turn to each other at once (partner.c: entityLookAtLocation on
+  // both).
+  void faceEachOther();
 
   // A held character's scripted move, place, facing and clip. A place farther than half a cell
   // and a turn of more than an eighth are a jump, drawn at once; nearer ones are drawn as a move
@@ -489,7 +492,6 @@ private:
   void tickCameraPan(float seconds);
   // One step of the partner's care walk along `heading`; whether it moved.
   void stepCareWalk(glm::vec2 heading, float distance, scene::Motion motion, float seconds);
-  void faceEachOther();
 
   scene::World* world_;
   FieldRules rules_;

@@ -52,6 +52,31 @@ Diferencias con el original:
 - El objeto en la mano del jugador no se dibuja (`renderFeedingItem`).
 - Si el compañero se atasca contra una pared, se para donde está; el original sigue andando.
 
+## Dormir
+
+«Dormir» del menú del campo juega la escena del original (`partner.c: partnerTickSleep`, en `sleep_screen.cpp` y
+`sleep_steps.cpp`); el guardado y los fundidos están en [guardar y cargar](../../architecture/guardar-y-cargar.md#36-dormir).
+
+Igual: el reloj se para y el jugador queda quieto (`Field::holdForCare`, estado 6 del jugador). Si el compañero no está
+ya junto al jugador (más cerca de 2,5 radios, `getPartnerTamerCloseness` 2), anda recto hacia él
+(`Field::walkPartnerToRange`) y los dos se miran. Entonces suena `playSound(0, 15)`, el jugador hace la animación 8
+(le da una palmada) y el compañero la 0; al acabar la del jugador (31 fotogramas, 89 vblanks medidos) el compañero
+bosteza con la 11 (51 fotogramas, 150 vblanks) y se acuesta con la 9; el fundido a negro empieza 5 fotogramas antes
+del final de la 9 (57 vblanks después de empezarla). La 9 lleva al compañero hacia el jugador por su movimiento raíz
+(`applyRootMomentum`: 70 unidades medidas en el original y en dwe; `FieldScene::playPartnerClip(clip, true)`). El campo
+sigue (los NPC se mueven) mientras ellos juegan sus animaciones y durante los dos fundidos; solo espera con el menú de
+dormir. El fundido de entrada enseña al compañero de pie (animación 0) y al jugador en la última pose de la 8, hasta
+que recupera el control. Los números de las animaciones están en `care.yaml` (`sleep.scene`). Medido con un Agumon en
+la ciudad (estado 3 del compañero escrito en RAM).
+
+Igual: el compañero no se duerme solo. Con sueño hace su gesto (animación 0x11, `updateConditionAnimation`) y, si
+llega la hora de despertar sin dormir, es un descuido (`tickSleepMechanics`); en el original no hay cama ni otro
+sitio donde dormir que este menú.
+
+Hueco: el original, si el compañero está fuera de la pantalla al empezar, lo pone en la casilla fuera de pantalla más
+cercana al jugador (`tickPartnerWaypoints`); aquí anda desde donde está. Si se queda atascado contra algo, el original
+sigue andando contra la pared y aquí se para donde está y sigue la escena.
+
 ## El baño
 
 Si el jugador pisa la casilla del baño y el compañero tiene ganas, el compañero va al baño del mapa (`FieldToilet`, en

@@ -455,6 +455,8 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `sleep.fade.out_frames` | 40 | a | Temporizador o duración. |
 | `sleep.fade.in_frames` | 40 | a | Temporizador o duración. |
 | `sleep.fade.control_frame` | 35 | a | Temporizador o duración. |
+| `sleep.scene.*_clip` | 8, 0, 11, 9 | a | Ids de animación (referencias). |
+| `sleep.scene.fade_lead_frames` | 5 | a | Cuadros de animación de la escena (referencia de tiempo). |
 | `toilet.poop_step_minutes` | 10 | a | Temporizador o duración. |
 | `toilet.urge_discipline_offset` | 20 | a | Término de una fórmula. |
 | `toilet.urge_frames_per_hundred` | 1200 | a | Temporizador o duración. |
