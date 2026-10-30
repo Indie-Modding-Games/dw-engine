@@ -92,6 +92,14 @@ std::optional<glm::vec2> FieldScene::fighterNodeOnWindow(std::optional<std::int3
   return worldToWindowFraction(*point);
 }
 
+std::optional<glm::vec2> FieldScene::playerNodeOnWindow(std::uint32_t node) const {
+  const std::optional<glm::vec3> point = nodePoint(*playerActor_, node, glm::vec3{0.0F});
+  if (!point) {
+    return std::nullopt;
+  }
+  return worldToWindowFraction(*point);
+}
+
 bool FieldScene::animateFighter(Actor& actor) const {
   if (!actor.fighter) {
     return false;

@@ -82,7 +82,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 137 | 4 | 9 | 21 | 93 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 139 | 4 | 9 | 19 | 93 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 151 | 3 | 67 | 64 | 69 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
-| **Total** | 2438 funciones | 936 | 34 | 361 | 1107 | 72 % |
+| **Total** | 2438 funciones | 938 | 34 | 361 | 1105 | 72 % |
 
 ## Batalla
 
@@ -109,7 +109,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 137, parcial 4, falta 9, no aplica 21.
+Portado 139, parcial 4, falta 9, no aplica 19.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -127,7 +127,7 @@ Portado 137, parcial 4, falta 9, no aplica 21.
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (8); limpieza de objetos y memoria del original: el motor libera lo suyo (7); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
+No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (7); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
 
 ## Efectos de batalla
 

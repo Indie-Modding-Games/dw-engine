@@ -853,6 +853,49 @@ local function draw_hp_bars(document)
   end
 end
 
+-- The player's shout (command_shout.c: BTL_drawCommandShout, BTL_renderCommandShout): the game
+-- gives the anchor and its line; the shout is as wide as 12 pixels a character (the original's,
+-- strlen * 12) and keeps 140 pixels of the middle on each side, then hops and grows from its
+-- centre.
+local shout_glyph = 12
+local shout_edge = 140
+local function draw_shout(document)
+  local shown = setting("battle.shout.shown", false)
+  set_class(document, "shout", "hidden", not shown)
+  if not shown then
+    return
+  end
+  local line = text(setting("battle.shout.text", ""))
+  if applied["shout text"] ~= line then
+    applied["shout text"] = line
+    lookup(document, "shout-text"):set_text(line)
+    lookup(document, "shout-shadow"):set_text(line)
+  end
+  local half = math.floor(((utf8.len(line) or #line) * shout_glyph) / 2)
+  local node_x, node_y = number("battle.shout.node_x"), number("battle.shout.node_y")
+  local x = node_x
+  if x - half < -shout_edge then
+    x = half - shout_edge
+  end
+  if x + half > shout_edge then
+    x = shout_edge - half
+  end
+  local y = number("battle.shout.y") + number("battle.shout.hop")
+  set_property(document, "shout", "left", setting("battle.shout.anchor_x", 50) .. "%")
+  set_property(document, "shout", "top", setting("battle.shout.anchor_y", 50) .. "%")
+  set_property(
+    document,
+    "shout",
+    "transform",
+    string.format(
+      "translate(%ddp, %ddp) scale(%.2f)",
+      (x - node_x) * 3,
+      (y - node_y) * 3,
+      setting("battle.shout.scale", 1)
+    )
+  )
+end
+
 -- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
 -- width, height, texture, trail and 1 for a trail on the left.
 local function banner_numbers()
@@ -1063,6 +1106,7 @@ function on_show(document)
   draw_bars(document)
   draw_damage(document)
   draw_hp_bars(document)
+  draw_shout(document)
   draw_prompts(document)
 end
 
@@ -1081,6 +1125,8 @@ function on_setting(document, name)
     draw_damage(document)
   elseif name == "battle.hp_bars.revision" then
     draw_hp_bars(document)
+  elseif name == "battle.shout.revision" then
+    draw_shout(document)
   end
 end
 

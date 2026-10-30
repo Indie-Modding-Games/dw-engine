@@ -274,6 +274,10 @@ public:
   // behind the camera.
   [[nodiscard]] std::optional<glm::vec2> fighterNodeOnWindow(std::optional<std::int32_t> npc,
                                                              std::uint32_t node) const;
+  // Where one node of the player's model shows in the window, as fractions of its size (utils.c:
+  // getEntityScreenPos(ENTITY_TABLE[0], node), as for a fighter's); nothing when the node is no
+  // joint of its skin or it is behind the camera.
+  [[nodiscard]] std::optional<glm::vec2> playerNodeOnWindow(std::uint32_t node) const;
   // The battle's time for the held fighters' clips, which run while the field waits.
   void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
   // Whether the held fighter's clip, the figure's, has played through once (anim.c: animFlag 1

@@ -46,6 +46,10 @@
 		<div id="dn-31" class="dn hidden"><div id="di-31" class="di hidden"></div><div id="dd-31-0" class="dd hidden"></div><div id="dd-31-1" class="dd hidden"></div><div id="dd-31-2" class="dd hidden"></div><div id="dd-31-3" class="dd hidden"></div></div>
 	</div>
 
+	<div id="shout-layer">
+		<div id="shout" class="hidden"><p id="shout-shadow" class="shout-line original-look"></p><p id="shout-text" class="shout-line original-look"></p></div>
+	</div>
+
 	<div id="fight">
 		<div id="commands">
 			<div id="command-frame-0" class="command-frame hidden"></div>

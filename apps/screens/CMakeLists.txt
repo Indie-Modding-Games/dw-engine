@@ -6,6 +6,7 @@ dwe_add_module(screens
     SOURCES
         src/bag_view.cpp
         src/command_menu.cpp
+        src/command_shout.cpp
         src/battle_intro.cpp
         src/battle_view.cpp
         src/damage_numbers.cpp

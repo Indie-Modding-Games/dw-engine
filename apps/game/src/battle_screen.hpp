@@ -7,6 +7,7 @@
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/command_menu.hpp>
+#include <dwe/screens/command_shout.hpp>
 #include <dwe/screens/damage_numbers.hpp>
 #include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/screens/partner_bars.hpp>
@@ -180,6 +181,10 @@ private:
   void stepMenu(bool fighting);
   // The strip's and the partner's bars' settings, under the strip's revision.
   void publishMenu() const;
+  // command_shout.c: the player's shout with a command the partner takes, and its frames.
+  void shout(game::battle::Command command);
+  void stepShout();
+  void publishShout() const;
   void tickMenu(double seconds);
   void closeMenu();
   [[nodiscard]] session::BattleMusicFacts musicFactsOf(const session::BattleRequest& request) const;
@@ -244,6 +249,7 @@ private:
   // after the fight, and whether it is going back up before the battle ends.
   screens::CommandMenuMotion menu_;
   screens::PartnerBarsMotion bars_;
+  screens::CommandShout shout_;
   double menuSeconds_ = 0.0;
   bool closing_ = false;
 };

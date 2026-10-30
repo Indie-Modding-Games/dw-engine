@@ -50,6 +50,9 @@ constexpr int PoseGuardFrames = 200;
 // battle_main.c: BTL_renderEnemyHPBars points each bar at the enemy's model node 1
 // (getEntityScreenPos(entity, 1)).
 constexpr std::uint32_t HpBarNode = 1;
+// command_shout.c: BTL_drawCommandShout hangs the shout where the player's node 4 shows
+// (getEntityScreenPos(ENTITY_TABLE[0], 4)).
+constexpr std::uint32_t ShoutNode = 4;
 constexpr double PoseGuardSeconds = PoseGuardFrames * IntroFrameSeconds;
 // battle_ui.c: tickBitBox and renderPostBattleStatsBox: the end box's count, a sound for each point
 // and bit, and another once the bits are all in; both in slot 0.
@@ -131,6 +134,8 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   menu_ = {};
   // BTL_initializePartnerStatusBars: the partner's bars wait off the right edge.
   bars_.reset();
+  shout_.clear();
+  publishShout();
   menuSeconds_ = 0.0;
   closing_ = false;
   publishMenu();
@@ -183,6 +188,7 @@ void BattleScreen::tickBattle(double seconds) {
     }
     stepNumbers(frame);
     stepMenu(true);
+    stepShout();
   });
   publish();
   takeFigures();
@@ -531,6 +537,8 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
         core::logInfo("{}", core::formatMessage(messages::BattleCommandRefused,
                                                 game::battle::commandTextKey(chosen),
                                                 taken.error().message));
+      } else {
+        shout(chosen);
       }
     }
     return true;
@@ -590,6 +598,8 @@ void BattleScreen::pressFinisher() {
         "{}", core::formatMessage(messages::BattleCommandRefused,
                                   game::battle::commandTextKey(game::battle::Command::Finisher),
                                   taken.error().message));
+  } else {
+    shout(game::battle::Command::Finisher);
   }
 }
 
@@ -836,6 +846,7 @@ void BattleScreen::tickMenu(double seconds) {
       return;
     }
     stepMenu(false);
+    stepShout();
   }
 }
 
@@ -845,6 +856,44 @@ void BattleScreen::closeMenu() {
   menuSeconds_ = 0.0;
   core::logDebug("[port:battle] BTL_deinitializeCombat (battle_main.c:777): the command strip goes "
                  "back up");
+}
+
+// battle_tick.c (the player's battle tick): a command the partner takes (with an enemy still
+// standing) is shouted at once (BTL_drawCommandShout), over where the player's node 4 shows then.
+void BattleScreen::shout(game::battle::Command command) {
+  if (!battle_ || battle_->state().livingEnemies() == 0) {
+    return;
+  }
+  std::optional<screens::WindowFraction> node;
+  double aspect = 1.0;
+  if (desc_.scene != nullptr) {
+    if (const std::optional<glm::vec2> shown = desc_.scene->playerNodeOnWindow(ShoutNode)) {
+      node = screens::WindowFraction{.x = shown->x, .y = shown->y};
+    }
+    if (const render::MapCamera* camera = desc_.scene->camera();
+        camera != nullptr && camera->viewportSize().y > 0.0F) {
+      aspect = static_cast<double>(camera->viewportSize().x) /
+               static_cast<double>(camera->viewportSize().y);
+    }
+  }
+  shout_.shout(screens::shoutTextKey(command, battle_->state().partner(), names()), node, aspect);
+  core::logDebug("[port:battle] BTL_drawCommandShout (command_shout.c:54): command {}{}",
+                 static_cast<int>(command), node ? "" : " off the camera");
+  publishShout();
+}
+
+// BTL_renderCommandShout counts its frames as the battle's frames are drawn, through the victory
+// and the end box too.
+void BattleScreen::stepShout() {
+  if (!shout_.shown()) {
+    return;
+  }
+  shout_.step();
+  publishShout();
+}
+
+void BattleScreen::publishShout() const {
+  screens::publish(*desc_.ui, shout_.settings(), screens::ShoutRevisionSetting);
 }
 
 } // namespace dwe::app

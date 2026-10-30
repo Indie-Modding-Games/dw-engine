@@ -224,6 +224,8 @@ BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/ga
 BTL_initializeCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:21", what = "Abre el menú de órdenes del jugador en combate: la tira baja desde arriba." }
 BTL_tickCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:36", what = "Mueve el cursor y elige una orden del menú de combate; desliza la tira y hace parpadear la orden señalada." }
 BTL_isCommandMenuClosed = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:61", what = "Dice si el menú de órdenes se cerró: la tira subió y pasaron 3 fotogramas más." }
+BTL_drawCommandShout = { status = "portado", dwe = "apps/screens/src/command_shout.cpp:61", what = "Grito del jugador al dar una orden: el texto de la orden o el nombre de la técnica sobre el compañero." }
+BTL_renderCommandShout = { status = "portado", dwe = "apps/screens/src/command_shout.cpp:70", what = "Dibuja el grito: crece de 0,2 a 1 en 4 fotogramas, salta o cae 20 fotogramas, con sombra negra." }
 BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Prepara la cuenta atrás para revivir al compañero caído." }
 BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Enseña la cuenta atrás del compañero caído." }
 BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Baja la cuenta atrás del compañero caído." }
