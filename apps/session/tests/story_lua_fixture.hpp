@@ -250,6 +250,7 @@ public:
   ~StoryPlay() = default;
 
   [[nodiscard]] dwe::script::ScriptVm& vm() const { return *vm_; }
+  [[nodiscard]] dwe::session::StoryLuaHost& host() { return host_; }
 
   // Runs a section through a StoryRunner of one tick per frame until the script is done.
   Played play(SectionRef section, std::uint32_t seed) {

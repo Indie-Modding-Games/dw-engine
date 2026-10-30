@@ -287,4 +287,8 @@ TEST_CASE("the story API publishes the names the Lua emitter writes, free of for
   }
   CHECK(std::set<std::string_view>(api::Published.begin(), api::Published.end()).size() ==
         api::Published.size());
+  for (const std::string_view name : api::PropPublished) {
+    CAPTURE(name);
+    CHECK(opNames.contains(name));
+  }
 }

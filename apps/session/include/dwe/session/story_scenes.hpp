@@ -5,6 +5,7 @@
 #include <dwe/game/story/screen_history.hpp>
 #include <dwe/game/story/story_battle.hpp>
 #include <dwe/session/session_system.hpp>
+#include <dwe/session/story_props.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -174,6 +175,8 @@ public:
   // The battle and its end box are over.
   void battleFinished(game::story::BattleOutcome outcome);
   [[nodiscard]] std::optional<StoryScreenRequest> takeScreenRequest();
+  // What the story puts on the field (story_props.hpp), in order, each once.
+  [[nodiscard]] std::optional<StoryPropRequest> takePropRequest();
   // The screen the story waits for is closed.
   void screenClosed();
   [[nodiscard]] std::optional<PartnerSceneRequest> takePartnerScene();

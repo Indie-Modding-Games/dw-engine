@@ -46,6 +46,7 @@ dwe_add_module(session
         src/story_orders_field_items.cpp
         src/story_orders_map.cpp
         src/story_orders_partner.cpp
+        src/story_props.cpp
         src/story_scene_api.cpp
         src/story_scenes.cpp
         src/story_scenes_rules.cpp
@@ -53,6 +54,7 @@ dwe_add_module(session
         src/story_routines/routine_animation_loop.cpp
         src/story_routines/routine_card_shop.cpp
         src/story_routines/routine_close_text_box.cpp
+        src/story_routines/routine_dirt_cart.cpp
         src/story_routines/routine_discard_item.cpp
         src/story_routines/routine_egg_box.cpp
         src/story_routines/routine_forget_moves.cpp
@@ -65,6 +67,7 @@ dwe_add_module(session
         src/story_routines/routine_object_animation.cpp
         src/story_routines/routine_remove_item.cpp
         src/story_routines/routine_save_menu.cpp
+        src/story_routines/routine_screen_shake.cpp
         src/story_routines/routine_shop.cpp
         src/story_routines/routine_shop_overlay.cpp
         src/story_routines/routine_shop_tally.cpp

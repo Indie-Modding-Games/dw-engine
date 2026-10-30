@@ -6,6 +6,8 @@
 #include <dwe/game/story/story_battle.hpp>
 #include <dwe/game/story/story_ports.hpp>
 #include <dwe/game/story/story_routines.hpp>
+#include <dwe/session/story_lua.hpp>
+#include <dwe/session/story_props.hpp>
 #include <dwe/session/story_scenes.hpp>
 
 #include <cstddef>
@@ -54,6 +56,7 @@ struct StoryScenesContext {
   std::unique_ptr<game::story::PartnerScenePort> partnerPort;
   std::unique_ptr<game::story::StoryBattles> battles;
   std::unique_ptr<game::story::PartnerRoutines> partner;
+  std::unique_ptr<StoryPropOrders> propOrders;
 
   // The app's queues.
   std::optional<game::story::ScriptedBattle> battleRequest;
@@ -61,9 +64,14 @@ struct StoryScenesContext {
   std::deque<StoryScreenRequest> screenRequests;
   bool screenOpen = false;
   std::optional<PartnerSceneRequest> partnerScene;
+  std::deque<StoryPropRequest> propRequests;
 
   // The shop's tally of routines 30, 31 and 56 (script_interp.c: SHOP_VARIABLE).
   std::int64_t shopTally = 0;
+  // The dirt pile's size (map_object.c: DIRT_PILE_SIZE_COUNTER), which nothing resets, and the
+  // boulder (MAP_3D_OBJ[0]); story_props.hpp.
+  std::int32_t dirtPileSize = DirtPileFullSize;
+  BoulderShown boulder;
   // The recruit triggers as last seen, to tell a new resident.
   std::vector<bool> recruits;
   // A lost life or a death whose section has not run yet, and the egg box's egg (rules.death).
@@ -75,5 +83,8 @@ struct StoryScenesContext {
 
 // The routines of the opening (story_routines/*.cpp), one file each; each registers its own.
 core::Result<void> registerOpeningRoutines(StoryScenesContext& scenes);
+
+// The props' orders on the context's state and queue (story_props.cpp).
+std::unique_ptr<StoryPropOrders> makePropOrders(StoryScenesContext& scenes);
 
 } // namespace dwe::session

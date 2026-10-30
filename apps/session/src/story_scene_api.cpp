@@ -5,6 +5,9 @@
 #include <dwe/session/story_lua.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -77,6 +80,55 @@ core::Result<void> StoryLuaHost::publishSceneApi(StorySceneOrders orders) {
                            pendingTask_ = std::make_shared<game::story::DoneTask>();
                            return ApiValue{};
                          }));
+  const auto failed = std::ranges::find_if(published, [](const auto& result) { return !result; });
+  return failed == published.end() ? core::Result<void>{} : *failed;
+}
+
+// The props' orders (script_interp.c: scriptInstruction64to7E, SCRIPT_OP_SPAWN_BOULDER,
+// SCRIPT_OP_MOVE_BOULDER, SCRIPT_OP_DESPAWN_BOULDER, SCRIPT_OP_SPAWN_SPRITE_AT_ENTITY). The
+// boulder's orders read a first byte they never use. move_boulder waits a frame (its longjmp 2), so
+// each move of the boulder shows; the others go on in the same frame.
+core::Result<void> StoryLuaHost::publishPropApi(StoryPropOrders& props) {
+  script::ApiRegistry api = vm_->api();
+  std::vector<core::Result<void>> published;
+  published.push_back(api.publish(StoryNamespace, story_api::SpawnBoulder,
+                                  [&props](const ApiCall& /*call*/) -> core::Result<ApiValue> {
+                                    props.spawnBoulder();
+                                    return ApiValue{};
+                                  }));
+  published.push_back(
+      api.publishWaiting(StoryNamespace, story_api::MoveBoulder,
+                         [this, &props](const ApiCall& call) -> core::Result<ApiValue> {
+                           const auto down = call.integer(1);
+                           if (!down) {
+                             return std::unexpected{down.error()};
+                           }
+                           const auto forward = call.integer(2);
+                           if (!forward) {
+                             return std::unexpected{forward.error()};
+                           }
+                           props.moveBoulder(*down, *forward);
+                           pendingWait_ = game::story::FrameWait{.frames = 1, .result = {}};
+                           return ApiValue{};
+                         }));
+  published.push_back(api.publish(StoryNamespace, story_api::DespawnBoulder,
+                                  [&props](const ApiCall& /*call*/) -> core::Result<ApiValue> {
+                                    props.despawnBoulder();
+                                    return ApiValue{};
+                                  }));
+  published.push_back(api.publish(StoryNamespace, story_api::SpawnSpriteAtEntity,
+                                  [&props](const ApiCall& call) -> core::Result<ApiValue> {
+                                    std::array<std::int64_t, 3> operands{};
+                                    for (std::size_t index = 0; index < operands.size(); ++index) {
+                                      const auto operand = call.integer(index);
+                                      if (!operand) {
+                                        return std::unexpected{operand.error()};
+                                      }
+                                      operands.at(index) = *operand;
+                                    }
+                                    props.spriteAtCharacter(operands[0], operands[1], operands[2]);
+                                    return ApiValue{};
+                                  }));
   const auto failed = std::ranges::find_if(published, [](const auto& result) { return !result; });
   return failed == published.end() ? core::Result<void>{} : *failed;
 }

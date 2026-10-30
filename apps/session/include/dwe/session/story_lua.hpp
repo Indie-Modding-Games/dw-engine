@@ -11,6 +11,7 @@
 #include <dwe/game/story/story_routines.hpp>
 #include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_task.hpp>
+#include <dwe/script/api_registry.hpp>
 #include <dwe/script/script_coroutine.hpp>
 
 #include <array>
@@ -20,6 +21,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace dwe::assets {
 class AssetId;
@@ -68,8 +70,39 @@ inline constexpr std::string_view CallRoutine = "call_routine";
 inline constexpr std::string_view StartBattle = "start_battle";
 inline constexpr std::string_view CallPartnerRoutine = "call_partner_routine";
 
+// The props' orders (story_props.hpp), published apart (StoryLuaHost::publishPropApi).
+inline constexpr std::string_view SpawnBoulder = "spawn_boulder";
+inline constexpr std::string_view MoveBoulder = "move_boulder";
+inline constexpr std::string_view DespawnBoulder = "despawn_boulder";
+inline constexpr std::string_view SpawnSpriteAtEntity = "spawn_sprite_at_entity";
+
 inline constexpr std::array ScenePublished{CallRoutine, StartBattle, CallPartnerRoutine};
+inline constexpr std::array PropPublished{SpawnBoulder, MoveBoulder, DespawnBoulder,
+                                          SpawnSpriteAtEntity};
 } // namespace story_api
+
+// What the props' orders change (story_props.hpp): the story's state of the boulder and the map
+// sprites it moves to a character.
+class StoryPropOrders {
+public:
+  StoryPropOrders() = default;
+  StoryPropOrders(const StoryPropOrders&) = delete;
+  StoryPropOrders& operator=(const StoryPropOrders&) = delete;
+  StoryPropOrders(StoryPropOrders&&) = delete;
+  StoryPropOrders& operator=(StoryPropOrders&&) = delete;
+  virtual ~StoryPropOrders() = default;
+
+  // spawn_boulder (map_object.c: spawnBoulder): the boulder at its start, unturned.
+  virtual void spawnBoulder() = 0;
+  // move_boulder (map_object.c: moveBoulder): the boulder goes `down` lower (the original's y)
+  // and `forward` along z, and turns a step about its x axis; the section waits a frame.
+  virtual void moveBoulder(std::int64_t down, std::int64_t forward) = 0;
+  // despawn_boulder: the boulder goes away.
+  virtual void despawnBoulder() = 0;
+  // spawn_sprite_at_entity (overworld.c: spawnSpriteAtEntity).
+  virtual void spriteAtCharacter(std::int64_t character, std::int64_t node,
+                                 std::int64_t object) = 0;
+};
 
 // What the scenes' orders run: the routine table, the scripted battles and the partner's scenes,
 // and how the world freezes for a scene. They must outlive every script call of the VM.
@@ -113,6 +146,9 @@ public:
   // that waits on one of them waits on its task (story_task.hpp), which the host ticks once a
   // frame.
   core::Result<void> publishSceneApi(StorySceneOrders orders);
+  // Once per VM, after publishApi: the props' orders (story_api::SpawnBoulder and the next three),
+  // which point to `props`; it must outlive every script call of the VM.
+  core::Result<void> publishPropApi(StoryPropOrders& props);
 
   // Whether the packs' story modules come from this engine's dwx: the first one (script 0, which
   // the base pack always has) must carry its header, so outdated content stops the game when it

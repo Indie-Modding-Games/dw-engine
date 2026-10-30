@@ -271,6 +271,7 @@ void StoryScenes::bind(GameSession& session) {
                                                                scenes.screens, scenes.rules.battle);
   scenes.partner = std::make_unique<game::story::PartnerRoutines>(
       scenes.state(), *scenes.partnerPort, scenes.sync, scenes.rules.partner);
+  scenes.propOrders = makePropOrders(scenes);
   if (auto registered = registerOpeningRoutines(scenes); !registered) {
     core::logError("{}", registered.error().message);
   }
@@ -283,6 +284,9 @@ void StoryScenes::bind(GameSession& session) {
   });
   if (!published) {
     core::logError("{}", published.error().message);
+  }
+  if (auto props = story->host()->publishPropApi(*scenes.propOrders); !props) {
+    core::logError("{}", props.error().message);
   }
 }
 
@@ -395,6 +399,16 @@ std::optional<StoryScreenRequest> StoryScenes::takeScreenRequest() {
   }
   StoryScreenRequest request = scenes.screenRequests.front();
   scenes.screenRequests.pop_front();
+  return request;
+}
+
+std::optional<StoryPropRequest> StoryScenes::takePropRequest() {
+  StoryScenesContext& scenes = *context_;
+  if (scenes.propRequests.empty()) {
+    return std::nullopt;
+  }
+  StoryPropRequest request = scenes.propRequests.front();
+  scenes.propRequests.pop_front();
   return request;
 }
 
