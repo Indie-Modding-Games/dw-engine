@@ -63,6 +63,9 @@ constexpr std::size_t BoneOffsetEntrySize = 10;
 constexpr std::int64_t BoneOffsetsEnd = -1;
 // EfeUvKeyframe.
 constexpr std::size_t UvKeyframeSize = 4;
+constexpr std::size_t ParallaxSpriteSize = 10;
+// The negative size that ends a list of parallax sprites.
+constexpr std::int64_t ListEnd = -1;
 
 template <typename T>
 std::optional<T> parseNumber(std::string_view text, int base) {
@@ -496,6 +499,15 @@ private:
     if (*kind == "bone_offsets") {
       return boneOffsets(node, offset);
     }
+    if (*kind == "tile_offsets") {
+      return writeValues(node, offset, Int16Size);
+    }
+    if (*kind == "tile_map") {
+      return tileMap(node, offset);
+    }
+    if (*kind == "parallax_sprites") {
+      return parallaxSprites(node, offset);
+    }
     if (*kind == "uv_keyframes") {
       return uvKeyframes(node, offset);
     }
@@ -547,6 +559,45 @@ private:
     }
     program_.boneOffsets[at] = std::move(list);
     return {};
+  }
+
+  // BTL_renderScrollingBackground's tiles: rows of s8 indices into its tile offsets.
+  core::Result<void> tileMap(const YamlNode& node, std::uint32_t at) {
+    const YamlNode* rows = node.find("tiles");
+    if (rows == nullptr || !rows->isSequence()) {
+      return {};
+    }
+    for (const YamlNode& row : rows->items()) {
+      for (const YamlNode& tile : row.items()) {
+        if (auto written = writeValue(node, tile, at, 1); !written) {
+          return written;
+        }
+        ++at;
+      }
+    }
+    return {};
+  }
+
+  // EfeParallaxSprite: s16 size, x, y, depth, u; a negative size ends the list.
+  core::Result<void> parallaxSprites(const YamlNode& node, std::uint32_t at) {
+    if (const YamlNode* entries = node.find("entries"); entries != nullptr) {
+      for (const YamlNode& entry : entries->items()) {
+        for (std::uint32_t field = 0; const char* key : {"size", "x", "y", "depth", "u"}) {
+          const YamlNode* value = entry.find(key);
+          if (value == nullptr) {
+            return core::fail(
+                std::format("line {}: a parallax sprite needs {}", entry.line(), key));
+          }
+          if (auto written = writeValue(entry, *value, at + (field * Int16Size), Int16Size);
+              !written) {
+            return written;
+          }
+          ++field;
+        }
+        at += static_cast<std::uint32_t>(ParallaxSpriteSize);
+      }
+    }
+    return write(node, at, ListEnd, Int16Size);
   }
 
   // s32 count, then per keyframe s16 frames, s8 du, s8 dv (EfeUvKeyframe).

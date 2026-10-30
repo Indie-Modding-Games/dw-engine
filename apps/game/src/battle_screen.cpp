@@ -184,6 +184,13 @@ void BattleScreen::tickBattle(double seconds) {
     facePlayerToPartner(*partnerBeforeFrame_);
     partnerBeforeFrame_ = battle_->state().partner().position;
     if (effects_) {
+      if (const render::MapCamera* camera =
+              desc_.scene != nullptr ? desc_.scene->camera() : nullptr) {
+        // A screen layer covers what the window shows past the original's 320 x 240.
+        const glm::vec2 shown = glm::ceil(camera->visibleSize());
+        effects_->setScreenSize(
+            {.x = static_cast<std::int32_t>(shown.x), .y = static_cast<std::int32_t>(shown.y)});
+      }
       effects_->frame(frame, battle_->moves());
     }
     stepNumbers(frame);

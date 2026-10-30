@@ -3,6 +3,7 @@
 #include <dwe/animation/animation_player.hpp>
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/character_model.hpp>
+#include <dwe/assets/image.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/model_data.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
@@ -34,6 +35,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -125,6 +127,10 @@ struct FieldStage {
 
 // The first state of the field effects' rolls (libc rand's increment).
 inline constexpr std::uint64_t FieldEffectsSeed = 0x3039;
+// field_scene_effects.cpp: a paletted image of the content (its asset id without the extension)
+// with a row of its CLUT (its _meta palettes), its colours with STP at SemiTransparentAlpha.
+core::Result<assets::Image> effectSheetImage(const assets::VirtualFileSystem& files,
+                                             const std::string& image, std::int32_t palette);
 
 class FieldScene {
 public:
@@ -512,6 +518,17 @@ private:
     StatusBody body;
   };
   [[nodiscard]] std::optional<StatusAnchor> statusAnchor(std::size_t fighter) const;
+  // field_scene_effect_screen.cpp: what the effects draw on the screen, as screen primitives with
+  // their own textures: a move's texture with a palette row, its texels with STP alone, those
+  // without alone, or all of them opaque (the console mixes only the texels with STP).
+  enum class TexelPart : std::uint8_t { All, SemiTransparent, Solid };
+  struct PrimTexture {
+    rhi::TextureId id{};
+    glm::vec2 size{1.0F};
+  };
+  std::optional<PrimTexture> effectPrimTexture(const std::string& move, std::int32_t palette,
+                                               TexelPart part);
+  void addEffectScreenPrims(std::vector<ScenePrim>& prims);
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   // The partner while the field's follow moves it: the clip it picked; false when something
@@ -642,6 +659,8 @@ private:
   std::map<std::pair<std::string, std::int32_t>, std::optional<std::size_t>> effectTextures_;
   std::optional<std::optional<std::size_t>> plainTexture_;
   std::map<std::int32_t, std::optional<std::size_t>> flashTextures_;
+  std::map<std::tuple<std::string, std::int32_t, TexelPart>, std::optional<PrimTexture>>
+      effectPrimTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
   std::optional<game::battle::StatusVisuals> statusVisuals_;
   std::vector<StatusBody> statusBodies_;

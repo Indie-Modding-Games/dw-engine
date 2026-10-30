@@ -42,6 +42,8 @@ public:
   void end();
   // The fighters the effects start from and aim at; it must outlive this.
   void setBodies(const game::battle::EffectBodies& bodies) { runner_.setBodies(bodies); }
+  // How much of the screen the battle shows (EffectRunner::setScreenSize).
+  void setScreenSize(game::battle::EffectScreenPoint size) { runner_.setScreenSize(size); }
   // The scripts roll with the battle's rolls when those are the original's
   // (game::battle::Battle::originalRolls, EffectRunner::useRolls); `rolls` must outlive this.
   void useRolls(ruleset::Random* rolls) { runner_.useRolls(rolls); }

@@ -397,7 +397,7 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     }
   }
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
-      drawOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
+      drawOp(slot, in.sub, args) || screenOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
       (touchBodies_ && touchOp(slot, in.sub, args)) ||
       (!touchBodies_ && fxOp(slot, in.sub, args))) {
     return;

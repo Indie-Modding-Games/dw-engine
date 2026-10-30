@@ -43,8 +43,8 @@ de inicio y los mapas cercanos, y reclutar.
 |---:|---|---|---|
 | 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
 | 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
-| 3 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
-| 4 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
+| 3 | Los efectos de las técnicas no dibujan cintas, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas (los emisores de partículas, las nubes y los destellos ya salen) | `battle_effect.c` (`BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
+| 4 | Cerrado: cada técnica llega cuando su script toca al defensor (`ScriptedFlights`, fila «Viaje del proyectil» de battle.md); `battle.timing.projectile_speed` solo vale sin scripts (simulación, pruebas) o si el script nunca toca | scripts de efecto de cada técnica | `game/battle/src/attack_hits.cpp` (`effectLanding`) |
 | 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
 | 6 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
 | 7 | Al dar de comer no se ve el objeto en la mano del jugador | `game_menu.c:2245` `renderFeedingItem` | `apps/game/src/feed_scene.cpp:81` |
@@ -83,7 +83,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 174 | 4 | 49 | 58 | 78 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 176 | 4 | 47 | 58 | 78 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 59 | 0 | 11 | 32 | 84 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1046 | 39 | 276 | 1077 | 78 % |
+| **Total** | 2438 funciones | 1048 | 39 | 274 | 1077 | 78 % |
 
 ## Batalla
 
@@ -131,13 +131,13 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 174, parcial 4, falta 49, no aplica 58.
+Portado 176, parcial 4, falta 47, no aplica 58.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `BTL_markEFEFinished` | `btl/battle_effect.c:2221` | falta | Marca el efecto como terminado para que la batalla siga. | mark_finished se salta (battle.md: Hueco) |
 | `BTL_disableMapLayer` | `btl/battle_effect.c:2234` | falta | Oculta una capa del mapa durante la técnica (fondos que cambian). | solo lo cita la extracción del disco |
-| `BTL_renderScreenFade` | `btl/battle_effect.c:2239` | falta | Funde la pantalla a un color durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
+| `BTL_renderScreenFade` | `btl/battle_effect.c:2239` | falta (citada en docs) | Funde la pantalla a un color durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_renderScreenOverlay` | `btl/battle_effect.c:2434` | falta | Pinta un velo de color sobre la pantalla durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_renderRingTube` | `btl/battle_effect.c:2461` | falta | Dibuja un tubo de anillos (rayos, torbellinos) de una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_tickRibbonPoints` | `btl/battle_effect.c:2562` | falta | Mueve los puntos de una cinta de luz de una técnica. | battle.md: las cintas no se dibujan |
@@ -155,12 +155,10 @@ Portado 174, parcial 4, falta 49, no aplica 58.
 | `BTL_restoreCameraView` | `btl/battle_effect.c:3183` | falta | Devuelve la cámara del combate a su sitio tras una técnica. | battle.md: Hueco |
 | `BTL_setupFixedCamera` | `btl/battle_effect.c:3199` | falta | Fija la cámara en un punto para lucir una técnica. | battle.md: Hueco |
 | `BTL_renderEFELine` | `btl/battle_effect.c:3269` | falta | Dibuja una línea de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_renderParallaxSprites` | `btl/battle_effect.c:3869` | falta | Dibuja capas de sprites con paralaje de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_renderScrollingBackground` | `btl/battle_effect.c:3917` | falta | Dibuja un fondo que se desplaza durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | falta (citada en docs) | Lanza partículas desde el atacante. | battle.md: Hueco |
 | `BTL_renderParticleFlashSprite` | `btl/battle_effect.c:4142` | falta | Dibuja el destello de una partícula. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_projectPositionToScreen` | `btl/battle_effect.c:4172` | falta | Proyecta una posición del efecto a la pantalla para sus sprites. | solo lo cita la extracción del disco |
-| `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
+| `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta (citada en docs) | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
 | `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | solo lo usan dibujos que faltan |
 | `BTL_setTMDObjectColor` | `btl/battle_effect.c:5829` | falta | Tiñe un objeto de un modelo (auras, brillos de estado). | — |
 | `BTL_tickFinisherAura` | `btl/battle_effect.c:5855` | falta | Anima el aura del remate cargado alrededor del compañero. | — |

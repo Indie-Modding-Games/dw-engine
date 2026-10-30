@@ -270,8 +270,8 @@ BTL_setupFixedCamera = { status = "falta", what = "Fija la cámara en un punto p
 BTL_renderEFELine = { status = "falta", what = "Dibuja una línea de un efecto." }
 BTL_findHitEntity = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp:587", what = "Busca a quién alcanza el golpe de un efecto." }
 BTL_printDebugValue = { status = "no-aplica", note = "depuración del original", what = "Escribe un valor de depuración." }
-BTL_renderParallaxSprites = { status = "falta", what = "Dibuja capas de sprites con paralaje de un efecto." }
-BTL_renderScrollingBackground = { status = "falta", what = "Dibuja un fondo que se desplaza durante una técnica." }
+BTL_renderParallaxSprites = { status = "portado", dwe = "game/battle/src/effect_runner_screen.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja capas de sprites con paralaje de un efecto." }
+BTL_renderScrollingBackground = { status = "portado", dwe = "game/battle/src/effect_runner_screen.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja un fondo que se desplaza durante una técnica." }
 BTL_addSourceEntityParticleFX = { status = "falta", what = "Lanza partículas desde el atacante.", note = "battle.md: Hueco" }
 BTL_renderParticleFlashSprite = { status = "falta", what = "Dibuja el destello de una partícula." }
 BTL_projectPositionToScreen = { status = "falta", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }

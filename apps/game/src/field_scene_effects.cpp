@@ -140,6 +140,11 @@ core::Result<assets::Image> sheetImage(const assets::VirtualFileSystem& files,
 
 } // namespace
 
+core::Result<assets::Image> effectSheetImage(const assets::VirtualFileSystem& files,
+                                             const std::string& image, std::int32_t palette) {
+  return sheetImage(files, image, palette);
+}
+
 std::optional<std::size_t> FieldScene::effectTexture(const std::string& move,
                                                      std::int32_t palette) {
   return sheetTexture(std::format("effect/{}/texture", move), palette);

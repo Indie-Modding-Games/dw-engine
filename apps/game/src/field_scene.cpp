@@ -800,13 +800,14 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     advanceObjectSmoke(frameSeconds);
   }
   mapRenderer_->setShade(1.0F - stage_.sceneryDarkness);
-  if (stage_.camera || fieldEffects_.empty()) {
-    primDrawer_->set(stage_.prims, mapRenderer_->camera().scale());
-  } else {
-    std::vector<ScenePrim> prims = stage_.prims;
+  std::vector<ScenePrim> prims = stage_.prims;
+  if (!stage_.camera && !fieldEffects_.empty()) {
     std::ranges::move(drawEffects(), std::back_inserter(prims));
-    primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
   }
+  if (mapRenderer_->hasMap()) {
+    addEffectScreenPrims(prims);
+  }
+  primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while

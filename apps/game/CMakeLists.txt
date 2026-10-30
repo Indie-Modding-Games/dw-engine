@@ -27,6 +27,7 @@ dwe_add_app(game
         src/field_scene_ground_items.cpp
         src/field_scene_effects.cpp
         src/field_scene_status.cpp
+        src/field_scene_effect_screen.cpp
         src/battle_effect_bodies.cpp
         src/battle_motion.cpp
         src/field_scene_script.cpp

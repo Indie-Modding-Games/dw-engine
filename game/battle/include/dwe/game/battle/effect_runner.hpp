@@ -195,7 +195,40 @@ struct EffectFlash {
   bool operator==(const EffectFlash&) const = default;
 };
 
-using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud, EffectFlash>;
+// A point on the screen, in the original's pixels from the screen's centre (x right, y down).
+struct EffectScreenPoint {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+
+  bool operator==(const EffectScreenPoint&) const = default;
+};
+
+// The original's 320 x 240 screen (main.c: GsInitGraph), around its centre.
+inline constexpr EffectScreenPoint OriginalScreen{.x = 320, .y = 240};
+
+// A quad a technique draws on the screen instead of in the world (battle_effect.c:
+// BTL_renderScrollingBackground, BTL_renderParallaxSprites: a POLY_FT4 at screen coordinates).
+// Corners 0, 1, 2 and 3 are the top left, top right, bottom left and bottom right; their texels
+// run from (u, v) over texelWidth x texelHeight of the slot's texture with palette row clutRow,
+// times color / 128, mixed by blend (a texel without STP is drawn opaque, as the console does). It
+// sorts at entry `order` of the original's ordering table: 0 in front, 0xFFF at the back, 16 units
+// of view depth each.
+struct EffectScreenQuad {
+  std::array<EffectScreenPoint, 4> corners{};
+  std::int32_t u = 0;
+  std::int32_t v = 0;
+  std::int32_t texelWidth = 0;
+  std::int32_t texelHeight = 0;
+  EffectVector color{128, 128, 128};
+  std::int32_t clutRow = 0;
+  EffectBlend blend = EffectBlend::Opaque;
+  std::int32_t order = 0;
+
+  bool operator==(const EffectScreenQuad&) const = default;
+};
+
+using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud, EffectFlash,
+                                 EffectScreenQuad>;
 
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
@@ -243,6 +276,10 @@ public:
   // original's numbers in the original's order (the effects run after the fighters each frame,
   // BTL_battleTickFrame: tickObjects). Nothing goes back to the runner's own sequence.
   void useRolls(ruleset::Random* rolls) { rolls_ = rolls; }
+  // How much of the screen the battle shows, in the original's pixels (at least its 320 x 240): a
+  // tiled screen layer (render_scrolling_background) repeats its tiles out to these edges, which
+  // a wider window shows past the original's.
+  void setScreenSize(EffectScreenPoint size) { screenSize_ = size; }
 
   // Loads a technique's effect for the battle and runs its init script (battle_effect.c:
   // BTL_loadMoveEFE, BTL_loadNextEFEFile), returning its slot.
@@ -400,6 +437,10 @@ private:
   // frame of them after the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters; the clouds and
   // flashes as the world's objects that follow), and their draws after the render scripts.
   bool fxOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  // The layers drawn on the screen (effect_runner_screen.cpp).
+  bool screenOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  void scrollingBackground(Slot& slot, const std::vector<std::int32_t>& args);
+  void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void tickFx();
   void renderFx();
   void playSound(std::int32_t sound);
@@ -440,6 +481,7 @@ private:
   std::array<std::optional<Emitter>, 4> emitters_;
   std::array<std::optional<Cloud>, 60> clouds_;
   std::array<std::optional<Flash>, 12> flashes_;
+  EffectScreenPoint screenSize_ = OriginalScreen;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;
