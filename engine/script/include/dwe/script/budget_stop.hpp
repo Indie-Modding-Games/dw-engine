@@ -14,7 +14,8 @@ enum class BudgetStop : std::uint8_t {
   Instructions,
   // It reached the time ceiling first. Only work that the instruction count does not see should get
   // there, such as
-  // comparing big texts; the ceiling is a loose safety net and depends on the machine.
+  // comparing big texts; the ceiling is a loose safety net and depends on the machine, not on its
+  // load: it counts the processor time the script ran, without the engine's published functions.
   TimeCeiling,
 };
 

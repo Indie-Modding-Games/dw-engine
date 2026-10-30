@@ -152,7 +152,7 @@ private:
   // What the outer call had when a nested one with its own budget started.
   struct OuterBudget {
     std::int64_t left = 0;
-    std::chrono::steady_clock::time_point deadline;
+    TimeCeiling deadline;
     lua_State* running = nullptr;
   };
 

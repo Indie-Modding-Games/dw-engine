@@ -17,8 +17,14 @@ al motor: una API de Lua versionada y aislada. Ningún otro módulo da Lua a los
   techo de tiempo (`callDeadline`, 1 s). **Las instrucciones deciden** dónde se para un script desbocado: la cuenta es
   la misma en cualquier máquina y con cualquier carga. El techo de tiempo es una red de seguridad holgada, unas diez
   veces lo que tardan las instrucciones en una compilación de release (de 100 a 200 millones de instrucciones de Lua
-  por segundo), para el trabajo que la cuenta no ve, como comparar textos grandes. Se lee con
-  `std::chrono::steady_clock`, igual en Linux y en Windows. Lo que agota uno de los dos se para con «the script ran
+  por segundo), para el trabajo que la cuenta no ve, como comparar textos grandes. Cuenta el tiempo de procesador
+  del hilo (`CLOCK_THREAD_CPUTIME_ID`; en Windows aún `std::chrono::steady_clock`), así que el tiempo que el hilo
+  espera un núcleo en una máquina cargada no cuenta; el reloj de procesador solo se lee cuando ya pasó el techo en
+  `steady_clock`, que es más barato. Tampoco cuenta lo que tardan las funciones que publica el motor (cargar un
+  modelo, colocar un personaje): es trabajo del motor, no del script, y aplaza el techo lo mismo que duró. Antes, las
+  secciones de entrada de mapa sin esperas (script 0, secciones 0xd7 de room05b y 0xd8 de room06: cargan modelos y
+  colocan NPC de un tirón, como el original, que las corre enteras en un tick) fallaban por el techo de 20 ms del
+  resume con la máquina a carga ~40; ahora pasan con carga ~49. Lo que agota uno de los dos se para con «the script ran
   too long and was stopped», seguido del motivo: «: it ran all the instructions of its budget» o «: it reached the
   time ceiling of its budget». `ScriptVm::lastBudgetStop()` da el mismo motivo como `BudgetStop` (`budget_stop.hpp`:
   `Instructions` o `TimeCeiling`) para la última llamada más externa, y los tests comprueban ese motivo, nunca cuánto
@@ -90,8 +96,9 @@ Cada llamada del motor a tu script tiene un presupuesto, para que un mod roto o 
   un bucle que se para en un PC lento se para en el mismo punto en uno rápido. Las funciones de la biblioteca que
   recorren textos o tablas grandes cobran también por lo que recorren (64 bytes, una instrucción).
 - **El reloj es solo un techo holgado**, unas diez veces lo que tardan esas instrucciones en una compilación de
-  release. Solo lo alcanza el trabajo que la cuenta no ve, como comparar textos grandes con `<` o `==` en un bucle, o
-  una máquina muy cargada. No cuentes con él: un manejador que necesita más de 250 000 instrucciones debe repartir el
+  release. Solo lo alcanza el trabajo que la cuenta no ve, como comparar textos grandes con `<` o `==` en un bucle.
+  Ni la carga de la máquina ni lo que tardan las funciones del motor lo acercan. No cuentes
+  con él: un manejador que necesita más de 250 000 instrucciones debe repartir el
   trabajo entre fotogramas.
 - Cuando se agota, el script se para con un error que dice el motivo:
   - `the script ran too long and was stopped: it ran all the instructions of its budget`: gastó sus instrucciones;

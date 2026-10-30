@@ -2,6 +2,7 @@
 
 #include <dwe/core/message.hpp>
 
+#include <chrono>
 #include <string>
 #include <type_traits>
 #include <variant>
@@ -96,7 +97,15 @@ int callPublished(lua_State* state) {
   // Where the script called from, for an error; and room for runPublished's protected call.
   luaL_where(state, 1);
   luaL_checkstack(state, 3, nullptr);
-  if (runPublished(state, count)) {
+  // The function is the engine's work, not the script's: loading a model on map entry may take
+  // longer than a story section's whole time ceiling on a busy machine. Its time moves the ceiling
+  // later; what nested calls did to the ceiling is dropped, so no time is excused twice. The
+  // instructions still bound how many such calls a script makes.
+  const TimeCeiling ceiling = budget.deadline;
+  const auto started = std::chrono::steady_clock::now();
+  const bool failed = runPublished(state, count);
+  budget.deadline = ceiling.postponed(std::chrono::steady_clock::now() - started);
+  if (failed) {
     lua_concat(state, 2);
     return lua_error(state);
   }

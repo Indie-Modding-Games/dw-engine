@@ -1,7 +1,6 @@
 #include "vm_state.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <functional>
 
 #include "lua_errors.hpp"
@@ -79,7 +78,7 @@ CallScope::CallScope(VmState& vm, MemoryOwner owner, const std::optional<CallBud
   if (outer_) {
     // Never more than the outer call has, never less than nothing.
     current.left = std::max<std::int64_t>(0, std::min(outer_->left, budget->instructions));
-    current.deadline = std::min(outer_->deadline, std::chrono::steady_clock::now() + budget->time);
+    current.deadline = TimeCeiling::earlier(outer_->deadline, TimeCeiling::after(budget->time));
     // The handlers run on the main thread, even when a coroutine fired the hook: its allocations
     // arm that one.
     current.running = current.state;

@@ -3,6 +3,7 @@
 
 #include <doctest/doctest.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -195,6 +196,42 @@ TEST_CASE("each resume has its own instruction budget") {
   CHECK(stopped.stop == BudgetStop::Instructions);
   CHECK(stopped.message.contains("ran too long"));
   CHECK(runaway.finished());
+}
+
+TEST_CASE("the time ceiling of a resume does not count the engine work of published functions") {
+  // A map's entry section loads models and places characters without waiting; on a busy machine
+  // that engine work took longer than the whole ceiling of the resume and failed the section.
+  static constexpr std::chrono::milliseconds EngineWork{60};
+  ScriptLimits limits = TestLimits;
+  limits.instructionsPerResume = script::testing::UnreachableInstructions;
+  limits.resumeDeadline = std::chrono::milliseconds{20};
+  Story story{"return { sections = {\n"
+              "  [1] = function()\n"
+              "    test.load() test.load() test.load()\n"
+              "    local placed = 0 for slot = 1, 1000 do placed = placed + 1 end\n"
+              "    test.report(placed)\n"
+              "  end,\n"
+              "  [2] = function() test.load() while true do end end,\n"
+              "} }",
+              limits};
+  REQUIRE(story.vm->api().publish("test", "load", [](const ApiCall&) {
+    // Busy, so the thread's processor time runs as well as the steady clock.
+    const auto started = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - started < EngineWork) {
+    }
+    return core::Result<ApiValue>{ApiValue{}};
+  }));
+  const ScriptModule module = story.load();
+  ScriptCoroutine entry = sectionOf(module, 1);
+  const CoroutineStep placed = entry.resume();
+  if (const auto* stopped = std::get_if<CoroutineFailed>(&placed)) {
+    FAIL_CHECK(stopped->message);
+  }
+  CHECK(std::holds_alternative<CoroutineFinished>(placed));
+  CHECK(*story.reported == std::vector<std::string>{"1000"});
+  // The script's own time still counts: a loop after the engine work stops at the ceiling.
+  ScriptCoroutine runaway = sectionOf(module, 2);
+  CHECK(failed(runaway.resume()).stop == BudgetStop::TimeCeiling);
 }
 
 TEST_CASE("errors and missing functions name the module") {

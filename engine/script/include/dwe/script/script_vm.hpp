@@ -59,7 +59,9 @@ struct ScriptLimits {
   // script. Lua instructions one call may run before it is stopped. C library functions charge for
   // the bytes they handle.
   std::uint64_t instructionsPerCall = 10'000'000;
-  // The time ceiling of one call, whatever it spends its time on.
+  // The time ceiling of one call: the processor time its thread runs the script, whatever the
+  // script spends it on. Neither the time the thread waits for a core on a loaded machine nor the
+  // time the engine's published functions take (loading a model) counts.
   std::chrono::milliseconds callDeadline{1000};
   // What the handlers of one pack may spend on one fired event (HookRegistry::fire), together:
   // hooks run inside the frame, so they get far less than a call.

@@ -1,6 +1,11 @@
 #include "budget.hpp"
 
+#include <algorithm>
 #include <string_view>
+
+#if !defined(_WIN32)
+#include <time.h>
+#endif
 
 #include "lua_errors.hpp"
 #include "messages.hpp"
@@ -57,6 +62,42 @@ void checkBudget(lua_State* state, lua_Debug* /*debug*/) {
 
 } // namespace
 
+ThreadCpuClock::time_point ThreadCpuClock::now() noexcept {
+#if defined(_WIN32)
+  return time_point{
+      std::chrono::duration_cast<duration>(std::chrono::steady_clock::now().time_since_epoch())};
+#else
+  timespec spent{};
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &spent);
+  return time_point{std::chrono::seconds{spent.tv_sec} + std::chrono::nanoseconds{spent.tv_nsec}};
+#endif
+}
+
+TimeCeiling TimeCeiling::after(std::chrono::steady_clock::duration time) {
+  TimeCeiling ceiling;
+  ceiling.steady_ = std::chrono::steady_clock::now() + time;
+  ceiling.processor_ = ThreadCpuClock::now() + time;
+  return ceiling;
+}
+
+bool TimeCeiling::passed() const {
+  return std::chrono::steady_clock::now() > steady_ && ThreadCpuClock::now() > processor_;
+}
+
+TimeCeiling TimeCeiling::postponed(std::chrono::steady_clock::duration time) const {
+  TimeCeiling later = *this;
+  later.steady_ += time;
+  later.processor_ += time;
+  return later;
+}
+
+TimeCeiling TimeCeiling::earlier(const TimeCeiling& first, const TimeCeiling& second) {
+  TimeCeiling ceiling;
+  ceiling.steady_ = std::min(first.steady_, second.steady_);
+  ceiling.processor_ = std::min(first.processor_, second.processor_);
+  return ceiling;
+}
+
 Budget& budgetOf(lua_State* state) {
   return **static_cast<Budget**>(lua_getextraspace(state));
 }
@@ -72,7 +113,7 @@ void Budget::reset() {
 void Budget::reset(std::int64_t instructions, std::chrono::steady_clock::duration time) {
   // Arming restarts the hook's count, so the instructions before its first check are paid up front.
   left = instructions - checkInterval(state);
-  deadline = std::chrono::steady_clock::now() + time;
+  deadline = TimeCeiling::after(time);
   sinceClockCheck = 0;
   stopped = false;
   leftAtStop = 0;
@@ -102,7 +143,7 @@ std::int64_t Budget::unspent() const {
 }
 
 bool Budget::pastDeadline() const {
-  return std::chrono::steady_clock::now() > deadline;
+  return deadline.passed();
 }
 
 std::int64_t Budget::checkInterval(const lua_State* thread) const {

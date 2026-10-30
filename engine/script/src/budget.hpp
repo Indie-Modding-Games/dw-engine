@@ -7,18 +7,54 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <ratio>
 
 namespace dwe::script::detail {
 
+// The processor time the calling thread has run: it stands still while the thread waits for a core,
+// so a loaded machine does not bring a script closer to its time ceiling. Where the system has no
+// such clock it is the steady clock.
+struct ThreadCpuClock {
+  using rep = std::int64_t;
+  using period = std::nano;
+  using duration = std::chrono::nanoseconds;
+  using time_point = std::chrono::time_point<ThreadCpuClock>;
+  static constexpr bool is_steady = true;
+
+  static time_point now() noexcept;
+};
+
+// The time ceiling of a call: the processor time its thread may run. The steady clock's ceiling is
+// a cheap first test: a thread never runs longer than the time that passed, so the processor clock
+// is read only once the steady one is past. The engine's own work inside a call (a published
+// function loading a model) does not count: only postpone() moves the ceiling, for that work.
+class TimeCeiling {
+public:
+  // The ceiling `time` from now.
+  [[nodiscard]] static TimeCeiling after(std::chrono::steady_clock::duration time);
+
+  [[nodiscard]] bool passed() const;
+
+  // The same ceiling, `time` later.
+  [[nodiscard]] TimeCeiling postponed(std::chrono::steady_clock::duration time) const;
+
+  // Whichever of the two comes first.
+  [[nodiscard]] static TimeCeiling earlier(const TimeCeiling& first, const TimeCeiling& second);
+
+private:
+  std::chrono::steady_clock::time_point steady_;
+  ThreadCpuClock::time_point processor_;
+};
+
 // What the running call may still spend: instructions, counted by a Lua count hook on each thread,
-// and time, a loose ceiling read at the same checks. The state's extra space points to it, so the
-// coroutines a script creates share it.
+// and time, a loose ceiling (TimeCeiling) read at the same checks. The state's extra space points
+// to it, so the coroutines a script creates share it.
 struct Budget {
   lua_State* state = nullptr;
   std::uint64_t perCall = 0;
   std::chrono::milliseconds timePerCall{};
   std::int64_t left = 0;
-  std::chrono::steady_clock::time_point deadline;
+  TimeCeiling deadline;
   // Steps charged by C code since the clock was last read.
   std::int64_t sinceClockCheck = 0;
   // The thread running now: the main one, or the coroutine it resumed.
