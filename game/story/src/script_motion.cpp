@@ -465,7 +465,9 @@ bool ScriptMotion::tick(std::int64_t character, const Walk& move) {
   const float yaw =
       glm::length(toward) > 0.0F ? assets::yawOfDirection(toward) : actors_->yaw(character);
   actors_->turn(character, yaw);
-  const bool onCell = assets::collisionCellAt(position) == assets::collisionCellAt(point);
+  // getModelTile's cells, as tickEntityWalkTo compares them: a point on a cell edge is in the cell
+  // away from 0, where the walk overshoots to.
+  const bool onCell = assets::originalCellAt(position) == assets::originalCellAt(point);
   const bool touching =
       move.target && actors_->wouldTouchCharacter(character, speed * rules_.frameSeconds);
   if (onCell || touching) {

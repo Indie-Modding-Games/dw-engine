@@ -212,6 +212,28 @@ TEST_CASE("collision cells follow the original's grid in world space") {
   CHECK(collisionCellAt(dwe::assets::collisionCellCenter(cell)) == cell);
 }
 
+TEST_CASE("the original's cell of a point on a cell edge is the one away from 0") {
+  // map_collision.c: getModelTile divides toward zero, then takes one column off for x < 0 and one
+  // row off for z > 0 (original axes).
+  using dwe::assets::collisionCellAt;
+  using dwe::assets::originalCellAt;
+  using dwe::assets::toWorldPosition;
+  // tunn09's Drimogemon walks off to x 600, z 1700: column 56, row 32 (x 600..699, z 1700..1799),
+  // where floor in world space puts the edge in row 33.
+  CHECK(originalCellAt(toWorldPosition({600, 0, 1700})) == CollisionCell{.column = 56, .row = 32});
+  CHECK(collisionCellAt(toWorldPosition({600, 0, 1700})) == CollisionCell{.column = 56, .row = 33});
+  CHECK(originalCellAt(toWorldPosition({609, 0, 1717})) == CollisionCell{.column = 56, .row = 32});
+  CHECK(originalCellAt(toWorldPosition({598, 0, 1697})) == CollisionCell{.column = 55, .row = 33});
+  // Negative edges: x -100 is column 48, z -1700 is row 67.
+  CHECK(originalCellAt(toWorldPosition({-100, 0, -1700})) ==
+        CollisionCell{.column = 48, .row = 67});
+  // Away from the edges it is collisionCellAt.
+  for (const glm::ivec3 point : {glm::ivec3{-2450, 0, -2525}, glm::ivec3{1750, 0, 1750},
+                                 glm::ivec3{-1, 0, 1}, glm::ivec3{4999, 0, -4999}}) {
+    CHECK(originalCellAt(toWorldPosition(point)) == collisionCellAt(toWorldPosition(point)));
+  }
+}
+
 TEST_CASE("original rotations become yaws that face the same way") {
   using dwe::assets::forwardOfYaw;
   using dwe::assets::yawFromOriginal;

@@ -525,6 +525,16 @@ CollisionCell collisionCellAt(glm::vec3 world) {
           .row = static_cast<std::int32_t>(std::floor(world.z / CollisionCellSize)) + GridOrigin};
 }
 
+CollisionCell originalCellAt(glm::vec3 world) {
+  // The original's whole units; a world position between two of them truncates as its integers
+  // would hold it.
+  const auto x = static_cast<std::int32_t>(world.x);
+  const auto z = static_cast<std::int32_t>(-world.z);
+  const auto size = static_cast<std::int32_t>(CollisionCellSize);
+  return {.column = (x / size) + GridOrigin - (x < 0 ? 1 : 0),
+          .row = GridOrigin - (z / size) - (z > 0 ? 1 : 0)};
+}
+
 glm::vec3 collisionCellMin(CollisionCell cell) {
   return {static_cast<float>(cell.column - GridOrigin) * CollisionCellSize, 0.0F,
           static_cast<float>(cell.row - GridOrigin) * CollisionCellSize};

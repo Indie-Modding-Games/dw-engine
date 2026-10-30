@@ -288,6 +288,13 @@ glm::vec3 toWorldPosition(glm::ivec3 original);
 // cell; this uses floor everywhere.
 CollisionCell collisionCellAt(glm::vec3 world);
 
+// The cell of a world position as the original's getModelTile gives it (map_collision.c), on the
+// whole units of its own axes: column x / 100 + 50 and row 50 - z / 100, divided toward zero, then
+// one column less for x < 0 and one row less for z > 0. It matches collisionCellAt everywhere but
+// on the cell edges, where the original picks the cell away from 0: a scripted walk to a point on
+// an edge (tickEntityWalkTo) ends on that cell.
+CollisionCell originalCellAt(glm::vec3 world);
+
 // The world-space corner of a cell with the lowest x and z.
 glm::vec3 collisionCellMin(CollisionCell cell);
 
