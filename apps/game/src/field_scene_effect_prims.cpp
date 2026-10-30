@@ -17,7 +17,8 @@
 
 // What the technique effects draw as the original's own primitives rather than sprites or models
 // (battle_effect.c: BTL_renderScrollingBackground, BTL_renderParallaxSprites,
-// BTL_renderRibbonStrip), as scene primitives.
+// BTL_renderScreenSprite, BTL_renderScreenFade, BTL_renderScreenOverlay, BTL_renderRibbonStrip), as
+// scene primitives.
 namespace dwe::app {
 
 namespace {
@@ -29,6 +30,7 @@ using game::battle::EffectVector;
 
 constexpr std::size_t Channels = 4;
 constexpr float ColorOne = 128.0F;
+constexpr float FlatColorOne = 255.0F;
 constexpr auto Opaque = std::byte{0xFF};
 constexpr auto Clear = std::byte{0};
 // The original's average mode (B/2 + F/2) and its quarter-added one (B + F/4).
@@ -51,6 +53,13 @@ glm::vec3 colorOf(const EffectVector& color) {
   return glm::vec3{static_cast<float>(color.x), static_cast<float>(color.y),
                    static_cast<float>(color.z)} /
          ColorOne;
+}
+
+// An untextured primitive's colour bytes, 255 is 1.
+glm::vec3 flatColorOf(const EffectVector& color) {
+  return glm::vec3{static_cast<float>(color.x), static_cast<float>(color.y),
+                   static_cast<float>(color.z)} /
+         FlatColorOne;
 }
 
 rhi::Extent extentOf(const assets::Image& image) {
@@ -209,6 +218,21 @@ void FieldScene::addEffectPrims(std::vector<ScenePrim>& prims) {
     // The screen's centre at that depth: the corners move from it in original pixels.
     const glm::vec4 centre{0.0F, 0.0F, onAxis.z / onAxis.w, 1.0F};
     Quad quad{.tint = colorOf(screen.color), .clutRow = screen.clutRow, .blend = screen.blend};
+    if (!screen.textured) {
+      // A POLY_F4: the renderer's white texture in the colour, the whole quad mixed by its blend.
+      const Mix mix = mixOf(screen.blend);
+      ScenePrim prim{.shape = ScenePrim::Shape::Quad,
+                     .color = glm::vec4{flatColorOf(screen.color), mix.alpha},
+                     .texture = renderer_->whiteTexture(),
+                     .blend = mix.blend};
+      for (std::size_t i = 0; i < prim.corners.size(); ++i) {
+        prim.corners.at(i) = {.clip = centre,
+                              .offset = {static_cast<float>(screen.corners.at(i).x),
+                                         static_cast<float>(screen.corners.at(i).y)}};
+      }
+      prims.push_back(prim);
+      continue;
+    }
     for (std::size_t i = 0; i < quad.corners.size(); ++i) {
       const bool right = (i & 1U) != 0;
       const bool bottom = (i & 2U) != 0;

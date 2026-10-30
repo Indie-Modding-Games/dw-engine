@@ -12,8 +12,9 @@
 #include "effect_math.hpp"
 
 // What the technique effects draw as the original's own GPU primitives rather than sprites or
-// models: the layers and sprites on the screen (battle_effect.c: BTL_renderScrollingBackground,
-// BTL_renderParallaxSprites, BTL_renderScreenSprite) and the ribbons of light
+// models: the layers, sprites and veils on the screen (battle_effect.c:
+// BTL_renderScrollingBackground, BTL_renderParallaxSprites, BTL_renderScreenSprite,
+// BTL_renderScreenFade, BTL_renderScreenOverlay) and the ribbons of light
 // (BTL_renderRibbonStrip), as EffectRunner members.
 namespace dwe::game::battle {
 
@@ -90,6 +91,15 @@ constexpr std::int32_t OrderingTableEntries = 0x1000;
 constexpr std::int32_t UnsignedShortMask = 0xFFFF;
 constexpr std::int32_t DegreesPerTurn = 360;
 constexpr std::int32_t AngleUnits = 4096;
+// BTL_renderScreenFade: the whole screen at entry 0xffe (behind everything but the background),
+// subtracting c / 128 of a texel at VRAM (832, 384) taken as white (255 for 1 as an untextured
+// colour).
+constexpr std::int32_t FadeOrder = 0xFFE;
+constexpr std::int32_t FullColor = 0xFF;
+constexpr std::int32_t ColorUnit = 0x80;
+// BTL_renderScreenOverlay: mode bit 2 makes it semi-transparent, bits 0 and 1 are the rate.
+constexpr std::int32_t OverlaySemiTransparentShift = 2;
+constexpr std::int32_t OverlayRateMask = 3;
 // The GTE's perspective (RTPS): IR saturates at 0x7fff, SZ at 0xffff, H / SZ at 0x1ffff (also when
 // SZ is at most H / 2), the screen x and y at -0x400 and 0x3ff; the ordering-table entry is SZ / 16
 // (BTL_projectPositionToScreen: otz << 2 >> 4).
@@ -187,6 +197,10 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     if (args.size() >= 13) {
       screenSprite(slot, args);
     }
+  } else if (name == "render_screen_fade" && !args.empty()) {
+    screenVeil(slot, args, true);
+  } else if (name == "render_screen_overlay" && args.size() >= 3) {
+    screenVeil(slot, args, false);
   } else if (name == "project_to_screen" && args.size() >= 4) {
     // battle_effect.c: BTL_projectPositionToScreen: position, x, y and depth out.
     const auto [pixel, depth] = project(vectorAt(slot, args[0]));
@@ -328,6 +342,39 @@ void EffectRunner::screenSprite(Slot& slot, const std::vector<std::int32_t>& arg
   quad.clutRow = std::abs(row);
   quad.blend = EffectBlend::Add;
   quad.order = order;
+  draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = quad});
+}
+
+// battle_effect.c: BTL_renderScreenFade (brightness) and BTL_renderScreenOverlay (entry, colour,
+// mode): a veil over the screen. The fade is placed from the screen's corner, whatever the drawing
+// offset, and subtracts its grey; the overlay is placed from the projection's centre, as the
+// original's is, in its colour, mixed by its mode. Both cover the original's 320 x 240 and, on a
+// wider screen, as much more of it.
+void EffectRunner::screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade) {
+  const EffectScreenPoint extra{.x = std::max(0, view_.screen.x - OriginalScreen.x) / 2,
+                                .y = std::max(0, view_.screen.y - OriginalScreen.y) / 2};
+  EffectScreenPoint corner{.x = -(OriginalScreen.x / 2) - extra.x,
+                           .y = -(OriginalScreen.y / 2) - extra.y};
+  EffectScreenQuad quad;
+  quad.textured = false;
+  if (fade) {
+    const std::int32_t grey = std::min(FullColor, (args[0] & ByteMask) * FullColor / ColorUnit);
+    quad.color = {.x = grey, .y = grey, .z = grey};
+    quad.blend = EffectBlend::Subtract;
+    quad.order = FadeOrder;
+  } else {
+    const EffectVector color = vectorAt(slot, args[1]);
+    quad.color = {.x = color.x & ByteMask, .y = color.y & ByteMask, .z = color.z & ByteMask};
+    const std::int32_t mode = args[2];
+    quad.blend = (mode >> OverlaySemiTransparentShift) != 0
+                     ? static_cast<EffectBlend>(mode & OverlayRateMask)
+                     : EffectBlend::Opaque;
+    quad.order = args[0];
+    corner.x += view_.centre.x;
+    corner.y += view_.centre.y;
+  }
+  quad.corners = rectangle(corner.x, corner.y, OriginalScreen.x + (2 * extra.x),
+                           OriginalScreen.y + (2 * extra.y));
   draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = quad});
 }
 

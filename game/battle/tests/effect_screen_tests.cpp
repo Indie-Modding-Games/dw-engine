@@ -526,3 +526,43 @@ TEST_CASE("a point projects to the screen as the original's perspective does") {
   CHECK(quads[0].corners[0] == EffectScreenPoint{.x = 43, .y = -57});
   CHECK(quads[0].order == 62);
 }
+
+TEST_CASE("a screen fade darkens the whole screen behind everything; an overlay veils it from "
+          "the projection's centre") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    std::string out = instruction(at, "  op: push_immediate\n  value: 64");
+    out += instruction(at, "  op: sub\n  sub: render_screen_fade\n  args:\n    brightness: 0");
+    out += instruction(at, "  op: push_immediate\n  value: 10");
+    out += instruction(at, "  op: push_address\n  address: \"base+0x00a0\"");
+    out += instruction(at, "  op: push_immediate\n  value: 6");
+    return out + instruction(at, "  op: sub\n  sub: render_screen_overlay\n  args:\n    depth: 0\n"
+                                 "    color: 0\n    blend: 0");
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: color
+  size: 12
+  values: [10, 20, 30]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.screen = {.x = 427, .y = 240};
+  view.centre = {.x = 5, .y = -3};
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 2);
+  // The fade: the screen's corners (53 more each side of the wider screen), 64 / 128 of white
+  // subtracted at entry 0xffe.
+  CHECK_FALSE(quads[0].textured);
+  CHECK(quads[0].corners[0] == EffectScreenPoint{.x = -213, .y = -120});
+  CHECK(quads[0].corners[3] == EffectScreenPoint{.x = 213, .y = 120});
+  CHECK(quads[0].color == dwe::game::battle::EffectVector{.x = 127, .y = 127, .z = 127});
+  CHECK(quads[0].blend == EffectBlend::Subtract);
+  CHECK(quads[0].order == 0xFFE);
+  // The overlay: from the projection's centre, its colour, mode 6 (semi-transparent, rate 2) at
+  // entry 10.
+  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = -208, .y = -123});
+  CHECK(quads[1].color == dwe::game::battle::EffectVector{.x = 10, .y = 20, .z = 30});
+  CHECK(quads[1].blend == EffectBlend::Subtract);
+  CHECK(quads[1].order == 10);
+}

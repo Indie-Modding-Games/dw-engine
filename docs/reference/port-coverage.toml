@@ -251,8 +251,8 @@ BTL_markEFEFinished = { status = "falta", what = "Marca el efecto como terminado
 BTL_disableMapLayer = { status = "falta", what = "Oculta una capa del mapa durante la técnica (fondos que cambian)." }
 BTL_tickRibbonPoints = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Mueve los puntos de una cinta de luz de una técnica." }
 BTL_initializeRibbonPoints = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Cintas de luz", what = "Prepara una cinta de luz de una técnica." }
-BTL_renderScreenFade = { status = "falta", what = "Funde la pantalla a un color durante una técnica." }
-BTL_renderScreenOverlay = { status = "falta", what = "Pinta un velo de color sobre la pantalla durante una técnica." }
+BTL_renderScreenFade = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Velos de pantalla", what = "Funde la pantalla a un color durante una técnica." }
+BTL_renderScreenOverlay = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Velos de pantalla", what = "Pinta un velo de color sobre la pantalla durante una técnica." }
 BTL_renderRingTube = { status = "falta", what = "Dibuja un tubo de anillos (rayos, torbellinos) de una técnica." }
 BTL_renderRadialWaves = { status = "falta", what = "Dibuja ondas que se abren en círculo de una técnica." }
 BTL_addClutLoadPrim = { status = "falta", what = "Cambia la paleta de un efecto mientras corre (destellos de color).", note = "battle.md: las cargas de CLUT se saltan" }

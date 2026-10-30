@@ -209,7 +209,8 @@ inline constexpr EffectScreenPoint OriginalScreen{.x = 320, .y = 240};
 
 // A quad a technique draws on the screen instead of in the world (battle_effect.c:
 // BTL_renderScrollingBackground, BTL_renderParallaxSprites: a POLY_FT4 at screen coordinates;
-// BTL_renderScreenSprite: a GsSPRITE).
+// BTL_renderScreenSprite: a GsSPRITE; BTL_renderScreenFade, BTL_renderScreenOverlay: a whole-screen
+// veil).
 // Corners 0, 1, 2 and 3 are the top left, top right, bottom left and bottom right; their texels
 // run from (u, v) over texelWidth x texelHeight of the slot's texture with palette row clutRow,
 // times color / 128, mixed by blend (a texel without STP is drawn opaque, as the console does). It
@@ -225,6 +226,8 @@ struct EffectScreenQuad {
   std::int32_t clutRow = 0;
   EffectBlend blend = EffectBlend::Opaque;
   std::int32_t order = 0;
+  // An untextured quad (POLY_F4) is all its colour, 255 for 1, and has no texels.
+  bool textured = true;
 
   bool operator==(const EffectScreenQuad&) const = default;
 };
@@ -480,6 +483,7 @@ private:
   std::int32_t customRandom(std::int32_t min, std::int32_t max);
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void screenSprite(Slot& slot, const std::vector<std::int32_t>& args);
+  void screenVeil(Slot& slot, const std::vector<std::int32_t>& args, bool fade);
   // worldPosToScreenPos: a world point's pixel from the projection's centre and its view depth.
   [[nodiscard]] std::pair<EffectScreenPoint, std::int32_t> project(const EffectVector& world) const;
   void tickFx();
