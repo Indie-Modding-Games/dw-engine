@@ -1,0 +1,39 @@
+# El trueque de objetos que abre la historia (script_interp.c: CALL_ROUTINE 2 -> shop/script_menu.c:
+# openMojyamonShop; apps/session: ItemTrader): el jugador da un objeto de la bolsa por el del comerciante.
+
+# showMapHeadTextbox(..., 0x4d6): las frases del comerciante son esta sección de MAPHEAD.
+lines_section: 1238
+# El número de cada frase dentro de la sección (resolveMapHeadEntry): el saludo (estado 0), «¿qué me das?»
+# (estado 3), la despedida sin trueque (estado 6), «¿de verdad me das ...?» (tickMojyaTradeMenu), el sí o no
+# (estado 4), las gracias y la bolsa llena (estado 5).
+lines:
+  greeting: 8
+  ask: 9
+  farewell: 10
+  confirm: 11
+  choices: 12
+  thanks: 13
+  bag_full: 14
+# El script pone en la variable 249 la tabla de trueques; el comerciante escribe ahí 255 al abrir y luego el
+# objeto que ofrece el jugador.
+table_variable: 249
+no_item: 255
+# setMojyaItemTradedTrigger: el trueque i (contado por todas las tablas) pone el trigger 5 + i; con los nueve
+# puestos pone también el 14.
+first_traded_trigger: 5
+all_traded_trigger: 14
+# tickSelectionDialogue: con el trigger 0x31 puesto, cancelar no contesta el sí o no.
+choice_lock_trigger: 49
+# tickMojyaTradeMenu: playSound(0, 0xb) si el jugador no tiene el objeto.
+refuse_sound: {slot: 0, sound: 11}
+# MOJYAMON_ITEMS_GIVE y MOJYAMON_ITEMS_GET: tres tablas de tres trueques, lo que toma y lo que da.
+tables:
+  - - {give: digimushrm, get: med_recovery}
+    - {give: supercarrot, get: omnipotent}
+    - {give: happymushrm, get: hair_grower}
+  - - {give: giant_meat, get: auto_pilot}
+    - {give: black_trout, get: restore}
+    - {give: hispeed_dsk, get: medicine}
+  - - {give: omnipotent, get: s_off_disk}
+    - {give: med_recovery, get: s_def_disk}
+    - {give: digianchovy, get: s_speed_disk}

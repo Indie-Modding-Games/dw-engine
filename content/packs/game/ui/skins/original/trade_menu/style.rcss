@@ -1,0 +1,14 @@
+/* The item trader in the original look: the original's boxes (theme.rcss .original-box) and the original's ink. */
+
+body #window, body #talk {
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.label, .row, #talk { font-family: original-look; color: #d0d0d0; }
+body .row.missing .give { color: #e03028; }
+body .row .mark { color: #f8f800; }
+body #speaker { color: #f8f800; }
+body #speaker.player { color: #d0d0d0; }

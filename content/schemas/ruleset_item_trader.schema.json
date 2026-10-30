@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: item_trader",
+  "description": "rules/<id>/item_trader.yaml: the item trader the story opens (apps/session: ItemTrader; shop/script_menu.c: openMojyamonShop).",
+  "type": "object",
+  "required": ["lines_section", "lines", "table_variable", "no_item", "first_traded_trigger", "all_traded_trigger", "choice_lock_trigger", "refuse_sound", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "lines_section": { "description": "The MAPHEAD section of the trader's lines.", "type": "integer", "minimum": 0 },
+    "lines": {
+      "description": "The line of each step in that section.",
+      "type": "object",
+      "required": ["greeting", "ask", "farewell", "confirm", "choices", "thanks", "bag_full"],
+      "additionalProperties": false,
+      "properties": {
+        "greeting": { "type": "integer", "minimum": 0 },
+        "ask": { "type": "integer", "minimum": 0 },
+        "farewell": { "type": "integer", "minimum": 0 },
+        "confirm": { "type": "integer", "minimum": 0 },
+        "choices": { "type": "integer", "minimum": 0 },
+        "thanks": { "type": "integer", "minimum": 0 },
+        "bag_full": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "table_variable": { "description": "The story variable that names the trade table, then holds the offered item.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "no_item": { "description": "The number that says no item is offered.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "first_traded_trigger": { "description": "Trade i across the tables sets this trigger plus i.", "type": "integer", "minimum": 0, "maximum": 799 },
+    "all_traded_trigger": { "description": "Set once every trade's trigger is.", "type": "integer", "minimum": 0, "maximum": 799 },
+    "choice_lock_trigger": { "description": "While set, cancel does not answer the yes-or-no.", "type": "integer", "minimum": 0, "maximum": 799 },
+    "refuse_sound": {
+      "description": "The sound of offering an item the bag does not hold.",
+      "type": "object",
+      "required": ["slot", "sound"],
+      "additionalProperties": false,
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0 },
+        "sound": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tables": {
+      "description": "The trade tables: the script picks one by number.",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["give", "get"],
+          "additionalProperties": false,
+          "properties": {
+            "give": { "description": "The item id the trader takes.", "type": "string" },
+            "get": { "description": "The item id the trader gives.", "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -598,9 +598,9 @@ jukeboxFillTitleList = { status = "portado", dwe = "apps/session/include/dwe/ses
 createJukeboxMenu = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:130", what = "Abre la gramola." }
 birdraFillTargetList = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Rellena los destinos del pájaro transportista." }
 createBirdraTransportMenu = { status = "portado", dwe = "content/packs/game/ui/destination_choice/logic.lua", what = "Abre la elección de destino del pájaro transportista." }
-mojyaTradeFillItemList = { status = "falta", what = "Rellena la lista del trueque de objetos.", note = "la rutina 2 se cierra sin pantalla" }
-createMojyaTradeMenu = { status = "falta", what = "Abre el trueque de objetos." }
-setMojyaItemTradedTrigger = { status = "falta", what = "Marca el objeto ya cambiado en el trueque." }
+mojyaTradeFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:100", what = "Rellena la lista del trueque de objetos: lo que tiene la bolsa y lo ya cambiado." }
+createMojyaTradeMenu = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Abre el trueque de objetos." }
+setMojyaItemTradedTrigger = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:107", what = "Marca el objeto ya cambiado en el trueque." }
 tickCardMenu = { status = "falta", what = "Compra o venta de cartas: cursor, precio y confirmación." }
 tickItemKeeperWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: mueve el cursor y pasa objetos entre la bolsa y lo guardado." }
 updateKeeperTextbox = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Ayuda del guardián de objetos, con las teclas del dispositivo en uso." }
@@ -611,8 +611,8 @@ keeperScrollLeftToItem = { status = "portado", dwe = "apps/game/src/item_keeper_
 keeperScrollRightToItem = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:33", what = "Guardián de objetos: la ventana de la bolsa enseña el objeto movido." }
 tickJukeboxMenu = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:136", what = "Gramola: elige y toca una canción." }
 tickBirdraTransportMenu = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Elige destino del pájaro transportista y viaja." }
-tickMojyaTradeMenu = { status = "falta", what = "Trueque: elige el objeto a cambiar." }
-updateMojyaTradeStrings = { status = "falta", what = "Textos del trueque." }
+tickMojyaTradeMenu = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Trueque: elige el objeto a cambiar." }
+updateMojyaTradeStrings = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Textos del trueque." }
 showNewGameDialogue = { status = "portado", dwe = "apps/game/src/new_game_interview.cpp", what = "Diálogo de la partida nueva." }
 showNewGameSelection = { status = "portado", dwe = "apps/game/src/new_game_interview.cpp", what = "Elección de la partida nueva." }
 fillNamingMenuStrings = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Textos del cuadro de nombre." }
@@ -624,7 +624,7 @@ namingSelectionDown = { status = "portado", dwe = "apps/game/src/naming_box.cpp"
 # Routine screens the story asks for and the app closes at once (story_scene_glue.cpp:48)
 openDiscardItem = { status = "portado", dwe = "apps/session/src/discard_menu.cpp", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
 openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla", what = "Abre el intercambio de objetos por puntos de mérito." }
-openMojyamonShop = { status = "parcial", note = "la rutina 2 se cierra sin pantalla", what = "Abre el trueque de objetos." }
+openMojyamonShop = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:128", what = "Trueque de objetos: saludo, lista, pregunta, sí o no, cambio y despedida." }
 openJukebox = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:44", what = "Abre la gramola." }
 tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: pregunta, sí o no, las ventanas y la despedida." }
 rollCardPack = { status = "parcial", dwe = "game/inventory/include/dwe/game/inventory/cards.hpp", note = "la tirada existe; la rutina 14 se cierra sin pantalla", what = "Saca las cartas de un sobre." }

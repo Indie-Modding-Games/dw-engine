@@ -58,6 +58,8 @@ schemas:
     - rules/*/discard_menu
   ruleset_jukebox:
     - rules/*/jukebox
+  ruleset_item_trader:
+    - rules/*/item_trader
   ruleset_shop:
     - rules/*/shop
   ruleset_evolution:

@@ -38,9 +38,10 @@ public:
   void press(const input::InputState& input);
   // Once per frame: publishes the view when it changed.
   void update(const FieldScene& scene, const assets::DigimonTable* species);
-  // A screen that says the owner's lines in its own box (the jukebox, whose showMapHeadTextbox
-  // writes over the story's box) covers the story's box while it is up, and after it until the
-  // story changes the box (the original's box closed with the screen's last line).
+  // A screen that says the owner's lines in its own box (the jukebox and the trade menu, whose
+  // showMapHeadTextbox writes over the story's box) covers the story's box while it is up, and
+  // after it until the story changes the box (the original's box closed with the screen's last
+  // line).
   void cover(bool covered);
 
 private:

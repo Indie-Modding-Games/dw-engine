@@ -266,6 +266,35 @@ original (la rutina forzada por RAM con la variable 254, sonando el tema de la c
 | Salir (Esc) | Cancelar: sonido 4, la lista se cierra y la despedida; al confirmarla vuelve la música del mapa desde el principio | Fase `farewell`; `Jukebox::close` → `playBGM` de la fuente activa | `…leaving plays the map's again`; ruta `jukebox` | Igual |
 | Sonido al chocar con un extremo | `itemMenuCursorUp/Down`: sonido 0xb | La UI no tiene ese sonido | — | Hueco |
 
+## Cambio de objetos
+
+El trueque de la rutina 2 (`shop/script_menu.c: openMojyamonShop`, `createMojyaTradeMenu`, `tickMojyaTradeMenu`,
+`updateMojyaTradeStrings`): saludo, lista de tres cambios, «¿De verdad me das…?», sí o no del jugador, y «Thanks!»,
+«Too many Items.» o la despedida. La sesión (`session::ItemTrader`) lleva las reglas; la pantalla `trade_menu`
+(`apps/game: TradeScreen`) las enseña. Mientras está abierta, el cuadro de texto del guion se oculta (el original
+escribe las frases del trueque en ese mismo cuadro). Medido con el original (rutina 2 forzada por RAM en el mostrador
+de room02 con la tabla 1; capturas `orig/trade-*.png` de la carpeta del trueque en `_work/routes-e2/menus-qa/`) y comprobado en dwe
+con la ruta `trade` en frzl14 (capturas `eng/`).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `trade.phase` | texto | `greeting`, `list`, `confirm`, `choice`, `thanks`, `bag_full`, `farewell` o `closed` |
+| `trade.{speaker,player,line_key,offered_key,label_key}` | texto, claves | Quién habla (en el sí o no, el nombre del jugador), la frase (MAPHEAD 1238), el objeto ofrecido y los títulos «You have» y «Will trade» |
+| `trade.{cursor,choice,total}` | números | La fila del cursor, la respuesta marcada (0 sí, 1 no) y cuántas filas hay |
+| `trade.row.<i>.{give,get,owned,traded}` | claves, booleanos | Cada cambio: lo que da el jugador, lo que recibe, si la bolsa lo tiene y si ya se hizo |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ventana de la lista | `createMojyaTradeMenu`: caja de (72, 40) a (295, 123); títulos en (bx + 20, by + 5) y (bx + 122, by + 5); raya en (4, 21) de 215; filas cada 18 px desde by + 27, nombre en bx + 8 y lo que da el otro 116 px más a la derecha; cursor de 212 × 18 | `trade_menu/structure.rcss` con esas medidas × 3 | Ruta `trade` | Igual |
+| Lo que la bolsa no tiene | `mojyaTradeFillItemList` (sin el bit 0x80): en rojo (color 3); confirmar suena `playSound(0, 0xb)` y no pasa nada | Fila `missing` en rojo; `refuse_sound` | `mojyaTradeFillItemList marks…`; ruta `trade` | Igual |
+| Cambio ya hecho | `updateMojyaTradeStrings`: un «-» amarillo (color 7) delante; el nombre se corre unos 12 px y la otra columna unos 9 | La marca y las dos columnas se corren 11 px | Ruta `trade` | Suposición: misma corrida en las dos columnas |
+| Frases | MAPHEAD 1238: 8 saludo, 9 «What will you give me?», 11 «You'll really give me…?», 12 sí o no, 13 «Thanks!», 14 «Too many Items.», 10 despedida | `item_trader.lines` | `the item trader reads the original ruleset…` | Igual |
+| Sí o no | `showMapheadSelection(0xc, 0xfd, 2)`: habla el jugador; la barra mide la opción más larga × 12 + 2 px; arriba y abajo dan la vuelta; cancelar es «no» salvo con el disparador 0x31 (entonces suena 0xb) | Fase `choice` con esas reglas | Ruta `trade`; `openMojyamonShop takes the table…` | Igual |
+| Moverse y saltar a los extremos (Mayús mantenida, R1 en el mando) | `itemMenuCursorUp/Down`, con R1 a la primera o la última fila; las filas no dan la vuelta | `TradeCursor` y la acción `walk` | Ruta `trade` | Igual |
+| Sonidos | Cursor (0, 2), confirmar (0, 3), cancelar (0, 4), rechazo (0, 0xb); abrir y cerrar la caja (0, 0) y (0, 1) | Las señales de la UI (mover, confirmar, cancelar) y el rechazo por `SoundPort` | — | Hueco: no suenan abrir y cerrar la caja; en una fila sin objeto suena también la señal de confirmar; mover suena en los extremos |
+| Sonido de la sabana | `playShopSoundOnlyInSavannah`: (0, 0x17) solo en la pantalla 0x83 | No está | — | Hueco: el trueque no está en ese mapa |
+| Títulos de las columnas | `MAIN_D_801307CC` («You have Will trade»), una sola cadena | `script_menu_trade_label`, partida en dos por los espacios | Ruta `trade` | Suposición |
+
 ## Caja del dinero de la tienda
 
 La caja con el dinero que la tienda abre junto a la compra y la venta (`script_common.c: createShopBitsBox`,

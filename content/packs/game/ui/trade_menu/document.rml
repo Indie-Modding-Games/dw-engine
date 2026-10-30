@@ -1,0 +1,26 @@
+<rml>
+<head>
+	<title>Trade menu</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="frame">
+		<div id="window" class="original-box">
+			<div class="label" id="label-give"></div><div class="label" id="label-get"></div>
+			<div id="rule"></div>
+			<div class="cursor" id="cursor"></div>
+			<div class="row" id="row-0"><span class="mark" id="mark-0">-</span><span class="give" id="give-0"></span><span class="get" id="get-0"></span></div>
+			<div class="row" id="row-1"><span class="mark" id="mark-1">-</span><span class="give" id="give-1"></span><span class="get" id="get-1"></span></div>
+			<div class="row" id="row-2"><span class="mark" id="mark-2">-</span><span class="give" id="give-2"></span><span class="get" id="get-2"></span></div>
+		</div>
+		<div id="talk" class="original-box original-look">
+			<div class="talk-row speaker" id="speaker"></div>
+			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>
+			<div class="talk-row" id="talk-1"><span class="run" id="talk-run-1"></span></div>
+			<div class="talk-row" id="talk-2"><span class="run" id="talk-run-2"></span></div>
+		</div>
+	</div>
+</body>
+</rml>

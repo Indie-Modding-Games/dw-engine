@@ -29,6 +29,7 @@ dwe_add_module(session
         src/session_sound.cpp
         src/battle_effects.cpp
         src/discard_menu.cpp
+        src/item_trader.cpp
         src/item_keeper.cpp
         src/jukebox.cpp
         src/shop_counter.cpp

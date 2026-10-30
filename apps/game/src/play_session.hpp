@@ -145,8 +145,8 @@ public:
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
-  // The item keeper's and the discard menu's buttons the menus do not navigate with (move by tens,
-  // move all, the jump to the ends, the description).
+  // The item keeper's, the discard menu's and the trade menu's buttons the menus do not navigate
+  // with (move by tens, move all, the jump to the ends, the description).
   void pressItemKeeper(const input::InputState& input);
   // The partner menu's buttons the menus do not navigate with: `extra` opens the tech help.
   void pressPartnerMenu(const input::InputState& input);
@@ -232,6 +232,7 @@ private:
   ItemKeeperScreen itemKeeperScreen_;
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;
+  TradeScreen tradeScreen_;
   FieldItemsScreen fieldItemsScreen_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;

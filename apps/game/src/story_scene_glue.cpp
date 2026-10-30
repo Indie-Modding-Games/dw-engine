@@ -47,6 +47,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (jukebox_ != nullptr) {
     jukebox_->update(scenes);
   }
+  if (trade_ != nullptr) {
+    trade_->update(scenes);
+  }
   if (saveMachine_ != nullptr && saveMachine_->takeClosed() && saveMachineWaits_) {
     saveMachineWaits_ = false;
     scenes.screenClosed();
@@ -55,7 +58,8 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
         naming_.take(*screen) || (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
         (discard_ != nullptr && discard_->take(*screen)) ||
-        (jukebox_ != nullptr && jukebox_->take(*screen, scene)) || takeSaveMachine(*screen)) {
+        (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||
+        (trade_ != nullptr && trade_->take(*screen, scene)) || takeSaveMachine(*screen)) {
       continue;
     }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",

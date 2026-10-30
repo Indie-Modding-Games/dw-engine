@@ -45,6 +45,9 @@ screens:
   # La gramola: las cajas del original y los rótulos de número y título de la lista.
   jukebox:
     styles: [ui/skins/original/jukebox/style]
+  # El trueque de objetos: las cajas del original.
+  trade_menu:
+    styles: [ui/skins/original/trade_menu/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_machine/style]

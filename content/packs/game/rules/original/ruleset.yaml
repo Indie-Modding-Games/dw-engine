@@ -38,6 +38,7 @@ sections:
   - item_keeper
   - discard_menu
   - jukebox
+  - item_trader
   - calendar
   - field_items
   - cards

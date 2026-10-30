@@ -17,6 +17,7 @@
 #include "story_item_keeper.hpp"
 #include "story_naming.hpp"
 #include "story_shop.hpp"
+#include "trade_screen.hpp"
 
 namespace dwe::app {
 
@@ -40,6 +41,8 @@ public:
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
   // The jukebox the story's Jukebox screen opens (call_routine 9).
   void attachJukebox(JukeboxScreen* jukebox) { jukebox_ = jukebox; }
+  // The item trader the story's TradeShop screen opens (call_routine 2).
+  void attachTrade(TradeScreen* trade) { trade_ = trade; }
   // The save machine the story's SaveMenu screen opens (call_routine 48).
   void attachSaveMachine(SaveMachine* machine) { saveMachine_ = machine; }
   // The naming box the story's renaming opens (call_routine 32).
@@ -62,6 +65,7 @@ private:
   EggBoxScreen* eggBox_ = nullptr;
   DiscardScreen* discard_ = nullptr;
   JukeboxScreen* jukebox_ = nullptr;
+  TradeScreen* trade_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   StoryNaming naming_;

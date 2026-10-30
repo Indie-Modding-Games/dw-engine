@@ -288,6 +288,20 @@ del ruleset ([esquema](../../content/schemas/ruleset_jukebox.schema.json)) da la
 de «ninguna»; sin ella la rutina se cierra al momento. La pantalla `jukebox` del juego (`apps/game: JukeboxScreen`) lo
 enseña.
 
+### Cambio de objetos (`ItemTrader`)
+
+El trueque que abre la historia (`script_interp.c: CALL_ROUTINE 2` → `shop/script_menu.c: openMojyamonShop`). El guion
+pone en la variable 249 cuál de las tres tablas usa y en la 254 quién cambia; `open(ItemTraderVisit)` lee la tabla y
+escribe 255 en la 249 (estado 0). `rows()` son las filas de `mojyaTradeFillItemList`: lo que da el jugador, lo que da
+el otro, si la bolsa lo tiene (si no, va en rojo) y si ese cambio ya se hizo (la marca). `offer(fila)` escribe el
+objeto ofrecido en la 249 (lo pide la frase «{item:pstat=249}») o falla si la bolsa no lo tiene; `trade()` es el estado
+5: primero da el objeto nuevo y, si cabe, quita el ofrecido y pone el disparador del cambio (`setMojyaItemTradedTrigger`:
+5 + 3 × tabla + fila, y el 14 cuando están los nueve); si no cabe no cambia nada («Too many Items.»). La sección
+`item_trader` del ruleset ([esquema](../../content/schemas/ruleset_item_trader.schema.json)) da la sección de MAPHEAD
+(1238, líneas 8 a 14), la variable, los disparadores, el sonido de rechazo y las tablas (`MOJYAMON_ITEMS_GIVE` y
+`MOJYAMON_ITEMS_GET`); sin ella la rutina se cierra al momento. La pantalla `trade_menu` del juego
+(`apps/game: TradeScreen`) lo enseña.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |
@@ -314,6 +328,7 @@ enseña.
 | Barra de virus llena y evolución natural en la misma hora | `partner_impl.c: tickConditions` (el virus se mira después y su destino gana) | `EvolutionAdapter::tick` no mira la evolución natural si el partner tiene pendiente `VirusBarFull` (`Partner::pendingEvents`); el evento la convierte en la forma virus | `the virus bar filling in the hour the counter reaches ...` | Igual (decidido el 2026-10-20): se decide por tick de la partida, no por fotograma |
 | Qué objetos rechaza el partner | `partner_impl.c: partnerWillRefuseItem` | `item_use.refusal`, `InventoryAdapter` (`RefusalCheck`) | `the partner never takes some items ...`, `a fixed evolution item is refused ...` | Igual |
 | Solo la comida responde al hambre | `partner_impl.c: partnerHandleFoodFeed` | `item_use.meals` → `FoodEffect::meal` | `food feeds the partner ...` | Igual |
+| Trueque de objetos: tabla de la variable 249, el objeto nuevo antes de quitar el ofrecido, disparador 5 + 3 × tabla + fila y el 14 con los nueve | `shop/script_menu.c: openMojyamonShop`, `mojyaTradeFillItemList`, `setMojyaItemTradedTrigger` | `ItemTrader`, `tradeRows`, `makeTrade`; sección `item_trader` | `item_trader_tests.cpp`; ruta `trade` (frzl14) | Igual |
 | Descuento de bebé en las tiendas | `script_common.c: isPartnerBaby` (`BABY_IDS`) | `item_use.shop_discount_levels` | `buying a key item asks ...` | Igual |
 | Probabilidad de las medicinas | `item.c: handleMedicineHealing` (`randomLimit(roll) < cure`) | `CureEffect` con `cure × 100 / roll` | — | Igual con los valores del original (3/3, 2/10, 10/10) |
 | Sección de guion de un chip | `item.c: handleChips` (0x16) | — | — | **Hueco** (fase 4) |

@@ -1,0 +1,135 @@
+/* The item trader (shop/script_menu.c: openMojyamonShop, createMojyaTradeMenu, renderMojyaTradeMenu). One pixel of the
+   original is 3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. From the decomp, measured on
+   the original with the routine forced at the item keeper's counter (box 1 at finalPos -88, -80, 223 x 83 from the
+   screen's centre): the window from x 72 to 295 and y 40 to 123; the column titles at (20, 5) and (122, 5) inside it;
+   the rule at (4, 21), 215 wide; three rows 18 pixels apart, the names from (8, 27), the second column 116 pixels to
+   the right of the first; the cursor 212 x 18 at (5, 25). The speech box is the story's (box 0: -130, 42, 262 x 59).
+   The skins give the look; this is the layout and a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#window {
+	position: absolute;
+	left: 216dp;
+	top: 120dp;
+	width: 669dp;
+	height: 249dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	display: none;
+}
+
+#frame.menu #window { display: block; }
+
+.label {
+	position: absolute;
+	top: 15dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#label-give { left: 60dp; }
+#label-get { left: 366dp; }
+
+/* renderHorizontalLine: a dark line over a light one. */
+#rule {
+	position: absolute;
+	left: 12dp;
+	top: 63dp;
+	width: 645dp;
+	height: 6dp;
+	box-sizing: border-box;
+	border-top: 3dp #101010;
+	border-bottom: 3dp #b0b0b0;
+}
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 15dp;
+	top: 75dp;
+	width: 636dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.row {
+	position: absolute;
+	left: 24dp;
+	width: 630dp;
+	height: 54dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#row-0 { top: 78dp; }
+#row-1 { top: 132dp; }
+#row-2 { top: 186dp; }
+
+/* The mark of a trade made before takes the room of one glyph and pushes the row to the right, as the original's
+   string does. */
+.mark {
+	display: none;
+	width: 33dp;
+	color: #f8f800;
+}
+
+.row.traded .mark { display: inline-block; }
+
+.give {
+	display: inline-block;
+	width: 348dp;
+}
+
+/* calculateItemListStrings: an item the bag does not hold is red (colour 3); what the trader gives stays white. */
+.row.missing .give { color: #e03028; }
+
+#talk {
+	position: absolute;
+	left: 90dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.talk-row.hidden, #speaker.hidden { display: none; }
+
+#speaker { color: #f8f800; }
+#speaker.player { color: #d0d0d0; }
+
+/* A choice's row: renderDialogueSelectionCursor's grey bar with a light top line. */
+.talk-row .run { display: inline-block; padding: 0 3dp; }
+.talk-row.selected .run {
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+}
