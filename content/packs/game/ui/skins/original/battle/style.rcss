@@ -696,6 +696,8 @@
 	border: 3dp transparent;
 	background-color: #00000080;
 	box-sizing: border-box;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 /* The rows start 9 pixels into the box (battle_ui.c: handleBattleEndBox), the border's 3dp included. */
@@ -705,14 +707,16 @@
 	padding-top: 24dp;
 }
 
+/* The line splitting the stats box: one light blue pixel and one black (capture battle_end_box_stats). */
 #gains-divider {
 	display: block;
 	position: absolute;
 	left: 366dp;
 	top: 0;
-	width: 6dp;
+	width: 3dp;
 	height: 100%;
-	background-color: #90d9fa;
+	border-right: 3dp #000000;
+	background-color: #94deff;
 }
 
 .gain {
@@ -802,26 +806,34 @@
 	display: block;
 }
 
+/* The line over the text: one grey pixel and one nearly black. */
 #bits-line {
 	position: absolute;
 	left: 0;
 	top: 93dp;
 	width: 100%;
 	height: 3dp;
-	background-color: #90d9fa;
+	border-bottom: 3dp #101010;
+	background-color: #8c8c8c;
 }
 
+/* The bits box's label is yellow and its bits pale cyan; the balance box's are light grey (captures). */
 #bits-label, #balance-label {
 	position: absolute;
 	left: 30dp;
 	top: 27dp;
+	color: #ffff52;
 }
 
 #bits-value, #balance-value {
 	position: absolute;
 	left: 210dp;
 	top: 27dp;
-	color: #69c2ff;
+	color: #adffff;
+}
+
+#balance-label, #balance-value {
+	color: #d6d6d6;
 }
 
 #balance {
@@ -829,7 +841,7 @@
 	height: 93dp;
 	font-size: 33dp;
 	line-height: 36dp;
-	background-color: #1c2a36;
+	background-color: #293942;
 }
 
 #balance.hidden {
