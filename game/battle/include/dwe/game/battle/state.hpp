@@ -257,6 +257,16 @@ struct ThrownItemState {
   std::int32_t frames = 0;
 };
 
+// A tournament match's clock (std_main.c: STD_addFighterCounter, STD_tickFighterCounter): the
+// seconds left, the frames counted (BATTLE_FRAME_COUNT, from 1) and the HP each side started with
+// (STD_STARTING_HP), which the time-up judgement compares (STD_checkEndCondition).
+struct MatchClock {
+  std::int32_t seconds = 0;
+  std::int64_t frames = 1;
+  std::int32_t partnerStartHp = 0;
+  std::int32_t enemyStartHp = 0;
+};
+
 struct BattleState {
   std::vector<Fighter> fighters;
   CommandState commands;
@@ -280,6 +290,8 @@ struct BattleState {
   Point arenaCenter;
   bool scripted = false;
   bool tamerless = false;
+  // Only in a tournament match.
+  std::optional<MatchClock> matchClock;
 
   [[nodiscard]] Fighter& partner() { return fighters.front(); }
   [[nodiscard]] const Fighter& partner() const { return fighters.front(); }

@@ -1,0 +1,174 @@
+#pragma once
+
+#include <dwe/core/error.hpp>
+#include <dwe/core/yaml.hpp>
+#include <dwe/ruleset/random.hpp>
+#include <dwe/ruleset/ruleset.hpp>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <span>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+// The arena's tournaments (docs/modulos/game/tournament.md): the rivals a cup draws, the bracket
+// of eight with the matches the player does not play rolled by level, the rivals' stats and
+// moves, and how many wins take the cup (main/utils2.c: startTournament, std/std_setup.c:
+// STD_tournamentMain and STD_initializeOpponent, std/std_main.c: STD_setupParticipants). Species
+// are the original's numbers (DIGIMON_DATA index); the session turns them into rows.
+namespace dwe::game::tournament {
+
+inline constexpr std::string_view TournamentSectionName = "tournament";
+
+// The fighters of a cup besides the player's partner, and the matches the partner plays.
+inline constexpr std::size_t Rivals = 7;
+inline constexpr std::size_t Entrants = 8;
+inline constexpr std::size_t Rounds = 3;
+
+// The stat scale of a rival's level (STD_initializeOpponent: x1, x2, x2.5).
+struct LevelScale {
+  std::int32_t level = 0;
+  std::int32_t multiply = 1;
+  std::int32_t divide = 1;
+};
+
+struct TournamentRules {
+  // The story values a tournament reads and writes: the cup entered (pstat 3), the wins it ends
+  // with (pstat 255), the registration (trigger 37), a cup won (trigger 15 + cup) and the
+  // residents of the city (trigger 200 + species).
+  std::int32_t cupVariable = 0;
+  std::int32_t resultVariable = 0;
+  std::int32_t registeredTrigger = 0;
+  std::int32_t wonTriggerBase = 0;
+  std::int32_t recruitTriggerBase = 0;
+  // A cup without a rival list draws from every resident of the species below this number.
+  std::int32_t speciesCount = 0;
+  // The cup whose rival list is taken whole, residents or not.
+  std::int32_t wholeListCup = 0;
+  // The wins that take a cup, and the cups that take another number (startTournament: cup 5, 2).
+  std::int32_t winsNeeded = 0;
+  std::vector<std::pair<std::int32_t, std::int32_t>> cupWinsNeeded;
+  // Species the arena has no fighter for, and the one that stands in (STD_tournamentMain).
+  std::vector<std::pair<std::int32_t, std::int32_t>> standIns;
+  // The match clock in seconds (STD_addFighterCounter) and the share of its maximum HP and MP the
+  // partner gets back after each match (STD_deinitializeCombat: a fifth).
+  std::int32_t timeLimit = 0;
+  std::int32_t recoveryDivisor = 1;
+  // A rival's stats: base +- spread percent, HP and MP `vitalityFactor` times that, scaled by
+  // level, at most `statCap` and `vitalityCap`.
+  std::int32_t statSpread = 0;
+  std::int32_t vitalityFactor = 1;
+  std::int32_t statCap = 0;
+  std::int32_t vitalityCap = 0;
+  std::vector<LevelScale> levels;
+  // The level of the win chances' first row and column (STD_WIN_CHANCES[level - 3]).
+  std::int32_t firstLevel = 0;
+  // A rival's moves: of the species' first `moveSlots`, the techniques (not the finishers, moves
+  // `finishers[0]` to `finishers[1] - 1`) whose MP cost times `mpCostFactor` its MP over
+  // `mpDivisor` pays.
+  std::int32_t moveSlots = 0;
+  std::array<std::int32_t, 2> finishers{};
+  std::int32_t mpCostFactor = 1;
+  std::int32_t mpDivisor = 1;
+  // How much a rival likes each equipped slot (STD_tickEnemyAI: 30, 30, 30, 0).
+  std::array<std::int32_t, 4> movePriorities{};
+
+  // data/stadium (the executable's STD tables): the rivals' base stat by cup and the chance in
+  // percent that a fighter of a level beats one of another (row: the first's level).
+  std::vector<std::int32_t> opponentBaseStats;
+  std::vector<std::vector<std::int32_t>> winChances;
+};
+
+// The ruleset's section and data/stadium's document.
+core::Result<TournamentRules> parseTournamentRules(const ruleset::Section& section,
+                                                   const core::YamlNode& stadium);
+
+// One cup's lists in the arena's map script (tournament.c: getCupDataJumpTable, section 10): the
+// entry requirements, the species too strong for it, the species it admits and its rivals. A list
+// that opens with the end mark (0xFE) is empty: for the rivals, every resident.
+struct CupData {
+  std::vector<std::int32_t> requirements;
+  std::vector<std::int32_t> overlevel;
+  std::vector<std::int32_t> eligible;
+  std::vector<std::int32_t> rivals;
+};
+
+// A list's species as the script stores them: bytes up to the first 0xFE or 0xFF.
+std::vector<std::int32_t> cupList(std::span<const std::uint8_t> bytes);
+
+// The section of a map script that holds the cups' lists (startTournament:
+// getCupDataJumpTable(10)).
+inline constexpr std::int32_t CupDataSection = 10;
+
+// tournament.c: getCupDataJumpTable: a cup's lists in a script listing as dwx writes it (sections,
+// instructions with `at`, `op`, `target` and a data block's `data` bytes): the section's jump table
+// leads to the cup's, whose entries 1 to 4 lead to its lists. Fails when the script has no such
+// cup.
+core::Result<CupData> cupDataOf(const core::YamlNode& listing, std::int32_t cup);
+
+// startTournament: the seven rivals. `resident(species)` tells whether the species lives in the
+// city. Fails when the cup has nobody to draw.
+core::Result<std::array<std::int32_t, Rivals>>
+drawRivals(const TournamentRules& rules, std::int32_t cup, const CupData& data,
+           const std::function<bool(std::int32_t)>& resident, std::int32_t partnerSpecies,
+           ruleset::Random& random);
+
+// The bracket (STD_setupParticipants): the partner in a random slot, the rivals shuffled into the
+// others, the matches it does not play rolled by level, and the three it plays.
+struct Bracket {
+  std::size_t playerSlot = 0;
+  std::array<std::int32_t, Entrants> entrants{};
+  // The slots that won the first round and the second round's half the partner is not in.
+  std::array<std::size_t, Entrants / 2> firstRound{};
+  std::array<std::size_t, 2> secondRound{};
+  // The species the partner meets in each round.
+  std::array<std::int32_t, Rounds> opponents{};
+};
+
+// `rivals` as drawRivals gave them; the stand-ins go in first (STD_tournamentMain).
+// `levelOf(species)` is the species' level (DIGIMON_DATA level).
+Bracket drawBracket(const TournamentRules& rules, std::array<std::int32_t, Rivals> rivals,
+                    std::int32_t partnerSpecies,
+                    const std::function<std::int32_t(std::int32_t)>& levelOf,
+                    ruleset::Random& random);
+
+// What STD_initializeOpponent reads of a species' move slot.
+struct SlotMove {
+  std::int32_t number = 0;
+  std::int32_t mpCost = 0;
+  std::int32_t range = 0;
+};
+
+// What it reads of the species: its level and its sixteen move slots (none: 0xFF).
+struct RivalSpecies {
+  std::int32_t level = 0;
+  std::array<std::optional<SlotMove>, 16> moves{};
+};
+
+// A rival as it enters the match: its stats and its four equipped slots (the species' move slot
+// each holds; the fourth is the finisher).
+struct Rival {
+  std::int32_t offense = 0;
+  std::int32_t defense = 0;
+  std::int32_t speed = 0;
+  std::int32_t brain = 0;
+  std::int32_t hp = 0;
+  std::int32_t mp = 0;
+  std::array<std::optional<std::size_t>, 4> slots{};
+};
+
+// STD_initializeOpponent, with the cup's base stat.
+Rival makeRival(const TournamentRules& rules, std::int32_t cup, const RivalSpecies& species,
+                ruleset::Random& random);
+
+// startTournament: the wins that take `cup`.
+std::int32_t winsNeeded(const TournamentRules& rules, std::int32_t cup);
+
+// The species the arena puts in for one it has no fighter for (STD_tournamentMain).
+std::int32_t standIn(const TournamentRules& rules, std::int32_t species);
+
+} // namespace dwe::game::tournament

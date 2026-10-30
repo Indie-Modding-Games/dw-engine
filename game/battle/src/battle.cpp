@@ -234,6 +234,13 @@ core::Result<Battle> Battle::start(BattleSetup setup, const BattleRules& rules,
   state.scripted = setup.scripted;
   state.tamerless = setup.tamerless;
   state.arenaCenter = centerOf(state.fighters);
+  if (setup.timeLimit) {
+    // std_main.c: STD_initializeCombat keeps each side's HP as the match starts (STD_STARTING_HP).
+    state.matchClock = MatchClock{.seconds = *setup.timeLimit,
+                                  .frames = 1,
+                                  .partnerStartHp = state.partner().hp,
+                                  .enemyStartHp = state.fighters.at(1).hp};
+  }
   lookAt(state.partner(), state.fighters.at(1).position);
   for (FighterId id = 1; id < state.fighters.size(); ++id) {
     lookAt(state.fighters[id], state.partner().position);
@@ -330,7 +337,8 @@ void Battle::setClips(FighterId fighter, FighterClips clips) {
 }
 
 bool Battle::bagAvailable() const {
-  return !result_ && !state_.tamerless && !state_.fleeFrames && !state_.thrownItem;
+  return !result_ && !state_.tamerless && !state_.fleeFrames && !state_.thrownItem &&
+         !state_.matchClock;
 }
 
 core::Result<void> Battle::openBag() {
@@ -422,19 +430,23 @@ const BattleEvents& Battle::step() {
                         .flights = flights_,
                         .particles = particleRolls_ ? &*particleRolls_ : nullptr,
                         .visuals = &statusVisuals_};
+  if (state_.matchClock && endMatch()) {
+    return events_;
+  }
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
-  if (state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
+  if (!state_.matchClock && state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames &&
+      !partner.defeated()) {
     finish(Outcome::Fled);
     return events_;
   }
   // The countdown waits while a thrown item is on its way (TAMER_ITEM.worldItem.type != 0xff).
-  if (partner.fainted && partner.pose == Pose::Fainted && !state_.thrownItem &&
-      ++state_.deathFrames >= rules_->ending.reviveFrames) {
+  if (!state_.matchClock && partner.fainted && partner.pose == Pose::Fainted &&
+      !state_.thrownItem && ++state_.deathFrames >= rules_->ending.reviveFrames) {
     finish(Outcome::Defeat);
     return events_;
   }
-  if (!partner.fainted && enemiesDown(state_)) {
+  if (!state_.matchClock && !partner.fainted && enemiesDown(state_)) {
     finish(Outcome::Victory);
     return events_;
   }
@@ -470,8 +482,57 @@ const BattleEvents& Battle::step() {
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }
+  // std_main.c: STD_tickFighterCounter, an object of the frame's end: a second goes every 20
+  // counted frames while neither side is down.
+  if (MatchClock* clock = state_.matchClock ? &*state_.matchClock : nullptr) {
+    ++clock->frames;
+    const bool anyoneDown = std::ranges::any_of(state_.fighters, &Fighter::fainted);
+    if (!anyoneDown && clock->frames % FramesPerSecond == 0 && clock->seconds > 0) {
+      --clock->seconds;
+    }
+  }
   ++state_.frame;
   return events_;
+}
+
+// std_main.c: STD_checkEndCondition. A side is down once its faint has played (anim 0x2B, done).
+bool Battle::endMatch() {
+  const Fighter& partner = state_.partner();
+  if (partner.pendingDamage != 0 || state_.fighters.at(1).pendingDamage != 0) {
+    return false;
+  }
+  const bool partnerDown = partner.fainted && partner.pose == Pose::Fainted;
+  if (partnerDown) {
+    if (state_.livingEnemies() > 0) {
+      finish(Outcome::Defeat);
+      return true;
+    }
+    if (!enemiesDown(state_)) {
+      return false;
+    }
+    finish(Outcome::Defeat, true);
+    return true;
+  }
+  if (enemiesDown(state_)) {
+    if (!partner.defeated()) {
+      finish(Outcome::Victory);
+      return true;
+    }
+    return false;
+  }
+  MatchClock& clock = *state_.matchClock;
+  if (clock.seconds != 0 || partner.defeated() || state_.livingEnemies() == 0) {
+    return false;
+  }
+  // STD_DAMAGE: the HP each side lost since the match started.
+  const std::int32_t partnerDamage = clock.partnerStartHp - partner.hp;
+  const std::int32_t enemyDamage = clock.enemyStartHp - state_.fighters.at(1).hp;
+  if (partnerDamage == enemyDamage) {
+    finish(Outcome::Defeat, true);
+  } else {
+    finish(partnerDamage < enemyDamage ? Outcome::Victory : Outcome::Defeat);
+  }
+  return true;
 }
 
 BattleEvents Battle::advance(double seconds) {
@@ -490,10 +551,14 @@ BattleEvents Battle::advance(double seconds,
   return all;
 }
 
-void Battle::finish(Outcome outcome) {
+void Battle::finish(Outcome outcome, bool draw) {
   // BTL_deinitializeCombat: BTL_removeStatusEffects for every fighter.
   statusVisuals_.clear();
   result_ = settleBattle(outcome, setup_, state_, *rules_, *moves_, random_);
+  if (state_.matchClock) {
+    result_->timeUp = state_.matchClock->seconds == 0;
+    result_->draw = draw;
+  }
   events_.push_back({.kind = EventKind::BattleEnded,
                      .fighter = PartnerId,
                      .other = std::nullopt,

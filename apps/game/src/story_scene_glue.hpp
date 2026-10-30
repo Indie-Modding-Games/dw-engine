@@ -18,6 +18,7 @@
 #include "story_item_keeper.hpp"
 #include "story_naming.hpp"
 #include "story_shop.hpp"
+#include "story_tournament.hpp"
 #include "trade_screen.hpp"
 
 namespace dwe::app {
@@ -35,6 +36,10 @@ public:
   void attachItemKeeper(session::ItemKeeper* keeper) { itemKeeper_.attach(keeper); }
   // The gym the story's GymLibrary and GymCourse screens run.
   void attachGym(GymScreen* gym) { gym_.attach(gym); }
+  // The tournaments the story's Tournament screen plays (call_routine 6).
+  void attachTournament(session::TournamentAdapter* tournament, session::GameSession* session) {
+    tournament_.attach(tournament, session);
+  }
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
   void attachDeath(DeathScene* death) { death_ = death; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
@@ -64,6 +69,7 @@ private:
   StoryShop shop_;
   StoryItemKeeper itemKeeper_;
   StoryGym gym_;
+  StoryTournament tournament_;
   DeathScene* death_ = nullptr;
   EggBoxScreen* eggBox_ = nullptr;
   DiscardScreen* discard_ = nullptr;

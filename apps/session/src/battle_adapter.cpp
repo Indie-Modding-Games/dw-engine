@@ -372,6 +372,7 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
       .startMinute = session.clock().time().minute,
       .tamer = request.tamer,
       .kind = request.kind,
+      .timeLimit = request.timeLimit,
       .recruitOnVictory = std::move(request.recruitOnVictory)};
   ruleset::Random& random = session.random();
   const std::uint64_t high = random.next();
@@ -392,7 +393,8 @@ void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result
   }
   game::inventory::Inventory& bag = desc_.inventory->inventory();
   bag.addMoney(result.bits);
-  if (result.outcome == Outcome::Defeat) {
+  // A lost tournament match takes nothing (std_main.c: STD_deinitializeCombat).
+  if (result.outcome == Outcome::Defeat && result.kind != game::battle::BattleKind::Tournament) {
     aftermath.itemsLost = desc_.inventory->loseOnDefeat(session);
   }
 }

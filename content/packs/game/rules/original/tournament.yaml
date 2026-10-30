@@ -1,0 +1,34 @@
+# Los torneos de la arena (game/tournament: tournament.hpp; apps/session: TournamentAdapter). main/utils2.c:
+# startTournament y std/std_setup.c: STD_tournamentMain y STD_initializeOpponent; std/std_main.c: STD_setupParticipants,
+# STD_addFighterCounter y STD_deinitializeCombat. La base de los rivales por copa y las probabilidades de victoria por
+# nivel son data/stadium, que dwx extrae del disco; las listas de cada copa, la sección 10 del guion de la arena.
+
+# Valores del guion: la copa inscrita (pstat 3), las victorias con que termina (pstat 255), la inscripción (disparador
+# 37), copa ganada (disparador 15 + copa) y los residentes de la ciudad (disparador 200 + especie).
+story: {cup_variable: 3, result_variable: 255, registered_trigger: 37, won_trigger_base: 15, recruit_trigger_base: 200}
+
+# startTournament: sin lista de rivales salen de todos los residentes de las especies 0 a 111; la Beetle Cup (22) usa
+# su lista entera aunque no vivan en la ciudad. Hacen falta 3 victorias, y 2 en la copa 5 (Grade R: con 3 cuenta como
+# perdida, rareza del original).
+rivals: {species_count: 112, whole_list_cup: 22}
+wins_needed: 3
+cup_wins_needed: [[5, 2]]
+
+# STD_tournamentMain: especies sin luchador en la arena y la que sale en su lugar (64 por 54, 63 por 48, 65 por 42).
+stand_ins: [[64, 54], [63, 48], [65, 42]]
+
+# STD_addFighterCounter(99): el reloj del combate en segundos. STD_deinitializeCombat: tras cada combate el compañero
+# recupera un quinto de su HP y MP máximos.
+time_limit: 99
+recovery_divisor: 5
+
+# STD_initializeOpponent: cada valor es la base de la copa ±30 % (0x1e - randomLimit(0x3d)); HP y MP, 10 veces eso. Se
+# escalan por nivel (novato ×1, campeón ×2, perfecto ×25/10) y se cortan en 999 y 9999.
+stats: {spread: 30, vitality_factor: 10, stat_cap: 999, vitality_cap: 9999}
+levels: [[3, 1, 1], [4, 2, 1], [5, 25, 10]]
+# STD_setupParticipants: STD_WIN_CHANCES[nivel - 3][nivel - 3].
+first_level: 3
+
+# STD_initializeOpponent: de las 15 primeras técnicas de la especie, las que no son remate (0x3a a 0x70) y cuyo coste
+# por 3 paga su MP / 10. STD_tickEnemyAI: preferencias 30, 30, 30 y 0.
+moves: {slots: 15, finishers: [58, 113], mp_cost_factor: 3, mp_divisor: 10, priorities: [30, 30, 30, 0]}

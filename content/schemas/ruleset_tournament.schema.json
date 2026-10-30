@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: tournament",
+  "description": "rules/<id>/tournament.yaml: the arena's tournaments (game/tournament; apps/session: TournamentAdapter). data/stadium holds the rivals' base stats and the win chances.",
+  "type": "object",
+  "required": [
+    "story",
+    "rivals",
+    "wins_needed",
+    "cup_wins_needed",
+    "stand_ins",
+    "time_limit",
+    "recovery_divisor",
+    "stats",
+    "levels",
+    "first_level",
+    "moves"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "story": {
+      "description": "The story values a tournament reads and writes.",
+      "type": "object",
+      "required": [
+        "cup_variable",
+        "result_variable",
+        "registered_trigger",
+        "won_trigger_base",
+        "recruit_trigger_base"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cup_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "result_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "registered_trigger": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "won_trigger_base": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recruit_trigger_base": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "rivals": {
+      "description": "Where the rivals come from (startTournament).",
+      "type": "object",
+      "required": [
+        "species_count",
+        "whole_list_cup"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "species_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "A cup without a rival list draws from the residents below this species number."
+        },
+        "whole_list_cup": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The cup whose list is taken whole."
+        }
+      }
+    },
+    "wins_needed": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The wins that take a cup."
+    },
+    "cup_wins_needed": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "description": "[cup, wins] for the cups that take another number."
+    },
+    "stand_ins": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "description": "[species, stand-in] for the species the arena has no fighter for."
+    },
+    "time_limit": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The match clock in seconds (STD_addFighterCounter)."
+    },
+    "recovery_divisor": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "After a match the partner gets back max HP and MP over this."
+    },
+    "stats": {
+      "description": "A rival's stats (STD_initializeOpponent).",
+      "type": "object",
+      "required": [
+        "spread",
+        "vitality_factor",
+        "stat_cap",
+        "vitality_cap"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "spread": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vitality_factor": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stat_cap": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "vitality_cap": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "levels": {
+      "description": "[level, multiply, divide]: a rival's stat scale by level.",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minItems": 3,
+        "maxItems": 3
+      }
+    },
+    "first_level": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The level of the win chances' first row and column."
+    },
+    "moves": {
+      "description": "A rival's moves (STD_initializeOpponent, STD_tickEnemyAI).",
+      "type": "object",
+      "required": [
+        "slots",
+        "finishers",
+        "mp_cost_factor",
+        "mp_divisor",
+        "priorities"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "finishers": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "mp_cost_factor": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mp_divisor": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "priorities": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    }
+  }
+}

@@ -93,6 +93,7 @@ core::Result<MapBattle> mapBattleRequest(const game::field::Field& field,
              .tamer = battlePointOf(field.player().position),
              .partner = battlePointOf(field.partner().position),
              .kind = game::battle::BattleKind::Normal,
+             .timeLimit = std::nullopt,
              .recruitOnVictory = std::nullopt};
   for (const std::size_t index : chosen) {
     if (index >= map.npcs.size()) {

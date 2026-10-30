@@ -54,6 +54,8 @@ struct BattleRequest {
   game::battle::Point tamer;
   game::battle::Point partner;
   game::battle::BattleKind kind = game::battle::BattleKind::Normal;
+  // A tournament match's clock in seconds (game::battle::BattleSetup::timeLimit).
+  std::optional<std::int32_t> timeLimit;
   // The resident that joins the city if the partner wins; the session decides it (the story's
   // recruit triggers).
   std::optional<std::string> recruitOnVictory;
@@ -145,6 +147,13 @@ public:
   core::Result<void> learnMoveNumber(std::int64_t number);
   [[nodiscard]] core::Result<bool> knowsMoveNumber(std::int64_t number) const;
   [[nodiscard]] const game::battle::BattleRules& rules() const;
+  // The tables the battles read, once the rules are read; null before.
+  [[nodiscard]] const assets::DigimonTable* digimonTable() const {
+    return desc_.digimon ? &*desc_.digimon : nullptr;
+  }
+  [[nodiscard]] const assets::MoveTable* moveTable() const {
+    return desc_.moves ? &*desc_.moves : nullptr;
+  }
   [[nodiscard]] const game::battle::MoveCatalog& catalog() const;
 
 private:

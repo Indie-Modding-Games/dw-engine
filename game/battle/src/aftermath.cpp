@@ -201,6 +201,10 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
   result.counters = state.counters;
   result.kind = setup.kind;
   result.partnerSpecies = setup.partner.species;
+  // std_main.c: STD_deinitializeCombat: a tournament match leaves the partner as it ends, no more.
+  if (setup.kind == BattleKind::Tournament) {
+    return result;
+  }
   switch (outcome) {
   case Outcome::Victory:
     for (const Combatant& enemy : setup.enemies) {

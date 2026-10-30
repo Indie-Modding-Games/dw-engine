@@ -89,6 +89,7 @@ dwe_add_app(game
         src/story_naming.cpp
         src/story_item_keeper.cpp
         src/story_shop.cpp
+        src/story_tournament.cpp
         src/field_items_screen.cpp
         src/award_screen.cpp
         src/fishing_screen.cpp
@@ -104,7 +105,7 @@ dwe_add_app(game
         src/ui_demo.cpp
         src/ui_skin_setting.cpp
         src/user_settings.cpp
-    DEPS core platform audio video rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing
+    DEPS core platform audio video rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing tournament
     OUTPUT_NAME dwe-game)
 
 dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang)

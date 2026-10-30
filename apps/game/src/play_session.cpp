@@ -350,6 +350,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachItemKeeper(game_.systems.itemKeeper);
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachGym(&gymScreen_);
+  storyScenes_.attachTournament(game_.systems.tournament, &session);
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);

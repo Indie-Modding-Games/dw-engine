@@ -638,7 +638,7 @@ renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
 initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
-scriptStartTournament = { status = "parcial", note = "la rutina 6 se cierra sin torneo", what = "Empieza un torneo." }
+scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
 tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
 tamerTickEnding = { status = "falta", note = "la escena 6 acaba al momento; solo se ve el vídeo final", what = "Escena final del jugador antes del vídeo." }
 KAR_start = { status = "falta", note = "la escena 1 acaba al momento: no hay minijuego de piedras", what = "Empieza el minijuego de piedras." }
@@ -709,7 +709,7 @@ handlePause = { status = "portado", dwe = "apps/game/src/pause_box.cpp", what = 
 createPauseBox = { status = "portado", dwe = "content/packs/game/ui/pause_box/document.rml", what = "Cuadro de pausa." }
 unlearnMove = { status = "parcial", dwe = "apps/session/src/story_routines/routine_forget_moves.cpp", note = "la rutina de olvidar técnicas se cierra sin pantalla", what = "Hace olvidar una técnica al compañero." }
 isTamerOnScreen = { status = "no-aplica", note = "consulta de dibujo", what = "Dice si el jugador está en pantalla." }
-startTournament = { status = "falta", what = "Carga y juega un torneo; suma los ganados.", note = "no hay torneos" }
+startTournament = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Carga y juega un torneo; suma los ganados." }
 
 # --- Fishing
 FISH_panCameraTo = { status = "falta", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "La app ignora el foco de cámara de la pesca; la cámara sigue siempre al jugador." }
@@ -877,7 +877,7 @@ tickTournamentSchedule = { status = "falta", what = "Mueve el cursor del calenda
 tickTournamentInfo = { status = "falta", what = "Cierra el recuadro de información de la copa al pulsar un botón." }
 updateTournamentRegistration = { status = "falta", what = "Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa." }
 minutesOfDay = { status = "no-aplica", note = "utilidad genérica de reloj", what = "Convierte la hora actual del juego en minutos del día." }
-getCupDataJumpTable = { status = "falta", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
+getCupDataJumpTable = { status = "portado", dwe = "game/tournament/src/cup_data.cpp:1", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
 getCupDataJumpTableEntry = { status = "no-aplica", note = "lectura de punteros del guion del original", what = "Resuelve una entrada de la tabla de saltos de los datos de copa." }
 STD_addChampionScene = { status = "falta", what = "Inicia la escena de celebración del campeón de la copa." }
 STD_tickChampionScene = { status = "falta", what = "Anima la escena del campeón: letras, giro de cámara y podio." }
@@ -925,13 +925,13 @@ STD_tickCameraChase = { status = "falta", what = "Cámara que persigue al luchad
 STD_tickCameraIntro = { status = "falta", what = "Avanza la secuencia de cámara de la presentación." }
 STD_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámara entre los dos luchadores." }
 STD_applyEntityViewpoint = { status = "falta", what = "Cámara anclada a la vista del luchador enfocado." }
-STD_addFighterCounter = { status = "falta", what = "Inicia el reloj de tiempo del combate de copa." }
-STD_tickFighterCounter = { status = "falta", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
+STD_addFighterCounter = { status = "parcial", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta; no se dibuja", what = "Inicia el reloj de tiempo del combate de copa." }
+STD_tickFighterCounter = { status = "parcial", dwe = "game/battle/src/battle.cpp:1", note = "el reloj cuenta; no se dibuja", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
 STD_updateBracket = { status = "falta", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
 STD_addBracketProjectile = { status = "falta", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
 STD_addBracketHitFlash = { status = "falta", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
 STD_initializeBracket = { status = "falta", what = "Reinicia el estado del cuadro de eliminatorias." }
-STD_setupParticipants = { status = "falta", what = "Reparte los ocho participantes de la copa en el cuadro." }
+STD_setupParticipants = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Reparte los ocho participantes de la copa en el cuadro." }
 STD_addBracket = { status = "falta", what = "Muestra el cuadro de eliminatorias de la copa." }
 STD_tickBracket = { status = "falta", what = "Anima el cuadro de eliminatorias entre combates." }
 STD_isBracketFinished = { status = "falta", what = "Indica si terminó la animación del cuadro de eliminatorias." }
@@ -939,7 +939,7 @@ STD_tickBracketHitFlash = { status = "falta", what = "Anima el destello de una c
 STD_addBracketIntro = { status = "falta", what = "Inicia la presentación del cuadro al empezar la copa." }
 STD_tickBracketIntro = { status = "falta", what = "Anima la presentación del cuadro de eliminatorias." }
 STD_combatSetup = { status = "falta", what = "Prepara los datos de combate del compañero y del rival en la copa." }
-STD_checkEndCondition = { status = "falta", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
+STD_checkEndCondition = { status = "portado", dwe = "game/battle/src/battle.cpp:1", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
 STD_tickBattle = { status = "falta", what = "Avanza un cuadro del combate de copa." }
 STD_areAllEnemyDigimonDead = { status = "falta", what = "Indica si todos los rivales del combate han caído." }
 STD_tickBattleResultScreen = { status = "falta", what = "Gestiona la pantalla de resultado tras el combate de copa." }
@@ -948,7 +948,7 @@ STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos
 STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
 STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
-STD_combatMain = { status = "falta", what = "Bucle principal de un combate de copa hasta el resultado." }
+STD_combatMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "el combate de copa es una batalla con reloj en el mapa actual; el rival no se dibuja", what = "Bucle principal de un combate de copa hasta el resultado." }
 STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
 STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
 STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }
@@ -957,11 +957,11 @@ STD_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de u
 STD_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados del luchador." }
 STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes del jugador en la copa." }
 STD_initializeTournament = { status = "falta", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
-STD_initializeOpponent = { status = "falta", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
-STD_runMatch = { status = "falta", what = "Juega un combate de copa: presentación, combate y cámara final." }
+STD_initializeOpponent = { status = "portado", dwe = "game/tournament/src/bracket.cpp:1", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
+STD_runMatch = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "sin presentación ni cámara final", what = "Juega un combate de copa: presentación, combate y cámara final." }
 STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
 STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
-STD_tournamentMain = { status = "falta", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
+STD_tournamentMain = { status = "parcial", dwe = "apps/game/src/story_tournament.cpp:1", note = "sustitutos, cuadro, tres combates y recuperación; sin arena, cuadro animado ni escenas (tournament.md: Hueco)", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
 VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }
 VS_setCameraOrbit = { status = "falta", what = "Cámara del versus que orbita según la distancia entre luchadores." }
 VS_setCameraYXZ = { status = "falta", what = "Cámara del versus que encuadra a ambos luchadores." }

@@ -188,6 +188,7 @@ BattleRequest duelWithFoe() {
           .tamer = {.x = 0, .z = -800},
           .partner = {.x = 0, .z = -600},
           .kind = BattleKind::Normal,
+          .timeLimit = std::nullopt,
           .recruitOnVictory = "foe"};
 }
 

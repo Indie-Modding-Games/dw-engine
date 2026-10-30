@@ -62,8 +62,13 @@ struct BattleSetup {
   std::int32_t startMinute = 0;
   // Where the tamer stands; a fleeing partner runs there.
   Point tamer;
-  // Set by the session and handed back in the result.
+  // Set by the session and handed back in the result. A tournament match gives no rewards and costs
+  // no care, lives or time (the STD overlay has no end box: std_main.c: STD_deinitializeCombat).
   BattleKind kind = BattleKind::Normal;
+  // A tournament match's clock in seconds (std_main.c: STD_addFighterCounter(99)): it ends the
+  // fight when it runs out, and a fallen partner loses at once, with no time to revive it
+  // (STD_checkEndCondition).
+  std::optional<std::int32_t> timeLimit;
   // The resident that joins the city when this battle is won: in the original the map's script
   // decides it after the battle (a recruitment fight), so the session names it here and reads it
   // back in the result.
@@ -129,6 +134,10 @@ struct BattleResult {
   // The setup's kind, and the resident that joins the city now (only after a victory).
   BattleKind kind = BattleKind::Normal;
   std::optional<std::string> recruitJoined;
+  // A tournament match: the clock ran out (the less damaged side won), or both sides fell or took
+  // the same damage; a draw is a defeat (std_main.c: STD_deinitializeCombat(1, 1)).
+  bool timeUp = false;
+  bool draw = false;
 };
 
 // One battle, frame by frame. A UI calls the inputs as the player acts and step() once per frame
@@ -156,6 +165,7 @@ public:
   // The tamer's bag (battle_tick.c: tamerTickBattle, inventory.c: addInventoryUI): it opens in a
   // battle with the tamer while the partner is not running away and no thrown item is on its way.
   // While it is open the partner takes no command; the battle goes on.
+  // No bag in a tournament match (std_hud.c: STD_tickTamerTournament only gives orders).
   [[nodiscard]] bool bagAvailable() const;
   [[nodiscard]] bool bagOpen() const { return state_.bagOpen; }
   core::Result<void> openBag();
@@ -224,7 +234,9 @@ private:
   Battle(const BattleRules& rules, const MoveCatalog& moves, BattleStrategies strategies,
          std::uint64_t seed);
 
-  void finish(Outcome outcome);
+  void finish(Outcome outcome, bool draw = false);
+  // std_main.c: STD_checkEndCondition, for a tournament match: whether it ended this frame.
+  bool endMatch();
   // The frame's context, with its events going to `events`.
   BattleContext contextOf(BattleEvents& events);
   // The events not yet returned by step(): those of the last frame are dropped once returned.

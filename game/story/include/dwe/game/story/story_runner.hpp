@@ -141,6 +141,8 @@ public:
   [[nodiscard]] bool scriptsMap(std::int32_t map) const {
     return mapScript_.has_value() && scriptMap_ == map;
   }
+  // The map's script set_script set up (ACTIVE_MAP_SCRIPT), if any.
+  [[nodiscard]] std::optional<std::uint16_t> mapScript() const { return mapScript_; }
 
   // Tells `listener`, which must outlive the runner or be removed first, how the script runs.
   void addFrameListener(ScriptFrameListener& listener);

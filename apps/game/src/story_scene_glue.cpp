@@ -30,6 +30,8 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (const auto outcome = battle.takeOutcome(); outcome && storyBattle_) {
     storyBattle_ = false;
     scenes.battleFinished(storyOutcome(*outcome));
+  } else if (outcome && tournament_.matchRunning()) {
+    tournament_.matchOver(*outcome);
   }
   if (const auto request = scenes.takeBattleRequest()) {
     startBattle(scenes, battle, species, scene, *request);
@@ -37,6 +39,7 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   shop_.update(scenes);
   itemKeeper_.update(scenes);
   gym_.update(scenes);
+  tournament_.update(scenes, battle, scene);
   if (eggBox_ != nullptr) {
     eggBox_->update(scenes);
   }
@@ -59,7 +62,8 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   }
   while (const auto screen = scenes.takeScreenRequest()) {
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
-        naming_.take(*screen) || (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
+        naming_.take(*screen) || tournament_.take(*screen, scenes) ||
+        (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
         (discard_ != nullptr && discard_->take(*screen)) ||
         (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||
         (trade_ != nullptr && trade_->take(*screen, scene)) ||

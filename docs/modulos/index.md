@@ -35,6 +35,7 @@ cada una están en las [reglas de dependencias](../architecture/dependency-rules
 | [inventory](game/inventory.md) | La bolsa, el dinero, el uso de objetos y las tiendas |
 | [fishing](game/fishing.md) | La pesca: la caña, el corcho, el sedal y los peces del agua |
 | [gym](game/gym.md) | El gimnasio del pueblo: la coreografía de los cursos y la cuenta de las ganancias |
+| [tournament](game/tournament.md) | Los torneos de la arena: rivales, cuadro, rivales generados y victorias |
 | [story](game/story.md) | El estado de la historia y el runtime de los scripts de eventos |
 | [save](game/save.md) | Partidas guardadas versionadas, ranuras y autoguardado |
 

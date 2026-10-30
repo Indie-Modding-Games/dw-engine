@@ -44,6 +44,7 @@ class ItemTrader;
 class StoryAdapter;
 class StoryGameOrders;
 class StoryScenes;
+class TournamentAdapter;
 
 // The tables the game systems read. Loaded once, they are shared by many sessions (dwe-sim's runs);
 // a table left empty is read by its adapter from the packs.
@@ -92,6 +93,8 @@ struct GameSystems {
   // The card shop the story opens (CALL_ROUTINE 14).
   CardShop* cardShop = nullptr;
   FishingAdapter* fishing = nullptr;
+  // The arena's tournaments the story starts (CALL_ROUTINE 6).
+  TournamentAdapter* tournament = nullptr;
   // The partner's poop piles on the ground.
   PoopAdapter* poop = nullptr;
   // The city's prosperity and the medals the field gives.

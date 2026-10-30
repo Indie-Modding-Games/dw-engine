@@ -24,6 +24,7 @@
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_game_orders.hpp>
 #include <dwe/session/story_scenes.hpp>
+#include <dwe/session/tournament_adapter.hpp>
 
 #include <string_view>
 #include <utility>
@@ -191,6 +192,10 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       std::make_unique<FishingAdapter>(*game.inventory, *game.story, std::move(tables.fishing));
   game.fishing = fishing.get();
   game.systems.push_back(std::move(fishing));
+  auto tournament = std::make_unique<TournamentAdapter>(
+      TournamentAdapterDesc{.files = &files, .story = game.story, .battle = game.battle});
+  game.tournament = tournament.get();
+  game.systems.push_back(std::move(tournament));
   auto poop = std::make_unique<PoopAdapter>();
   game.poop = poop.get();
   game.systems.push_back(std::move(poop));
