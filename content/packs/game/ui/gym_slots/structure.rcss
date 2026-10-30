@@ -1,11 +1,81 @@
-/* The gym's roulette whatever the skin: three reels in a row over the field, each a window two
-   cells high that the strip scrolls through. The look is the pause menu's panel (the skins'
-   pause_menu style); the more specific rule here makes the panel the machine's size. */
+/* The gym's roulette whatever the skin, laid out as the original's (trn_slots.c: TRN_createSlotMachineBox and
+   TRN_renderSlotMachine). One pixel of the original is 3dp, counted from the middle of its 320 x 240 screen: the box is
+   SLOTS_UI_START (-82, -87, 164, 90), so 492 x 270dp whose corner is 246dp left of the middle and 99dp from the top.
+   The three reels are centred at x -41, 0 and 41; each shows its 32-pixel symbols through a window from y -74 to -10
+   (32 x 64 pixels), the strip scrolling down through it. The frame is the skin's box (#panel); #outline is the box
+   growing out of the course's machine (ui.c: renderUIBoxAnim), which the script moves. */
 
 body { pointer-events: none; }
-body #panel { left: 50%; margin-left: -90dp; top: 40dp; width: 180dp; }
-.reel { display: inline-block; position: relative; overflow: hidden; width: 41dp; height: 65dp;
-        margin: 0 8dp; }
-.strip { position: absolute; left: 0; width: 41dp; }
-.cell { display: block; height: 32dp; line-height: 32dp; text-align: center; }
-.payout { text-align: center; }
+
+body #outline {
+	position: absolute;
+	border: 3dp #808080;
+}
+
+body #box {
+	position: absolute;
+	left: 50%;
+	top: 99dp;
+	width: 492dp;
+	height: 270dp;
+	margin-left: -246dp;
+}
+
+body #box #panel {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body .reel {
+	position: absolute;
+	top: 39dp;
+	width: 96dp;
+	height: 192dp;
+	overflow: hidden;
+}
+
+#reel-0 { left: 75dp; }
+#reel-1 { left: 198dp; }
+#reel-2 { left: 321dp; }
+
+body .strip {
+	position: relative;
+	left: 0;
+	width: 96dp;
+}
+
+/* The reel's shading over the strip, which the skin may draw: 28 pixels darkening towards the top and 28 towards
+   the bottom, around 8 lit in the middle. */
+body .shade {
+	position: absolute;
+	left: 0;
+	width: 96dp;
+	height: 84dp;
+}
+
+body .shade.top { top: 0; }
+body .shade.bottom { top: 108dp; }
+
+body .cell {
+	display: block;
+	width: 96dp;
+	height: 96dp;
+	line-height: 96dp;
+	text-align: center;
+	font-size: 48dp;
+}
+
+body .payout {
+	position: absolute;
+	left: 0;
+	top: 231dp;
+	width: 492dp;
+	margin: 0;
+	text-align: center;
+}

@@ -1062,11 +1062,12 @@ int runGame(const Options& requested) {
         (*debugUi)->toggle();
       }
       reportAsked = input.wasPressed("report_bug") || reportAsked;
-      // The original has no pause menu on the title, over a movie, the opening's questions or a
-      // naming box: there `menu` skips the movie (Start, mov.c: MOV_playMovie) or puts the cursor
-      // on OK, and must not open it too.
+      // The original has no pause menu on the title, over a movie, the opening's questions, a
+      // naming box or a gym course: there `menu` skips the movie (Start, mov.c: MOV_playMovie),
+      // puts the cursor on OK or ends the session (the American cancel, trn_*.c), and must not
+      // open it too.
       const bool menuHeld = flow.playing() == nullptr || (movies && movies->playing()) ||
-                            interview || flow.playing()->takesText();
+                            interview || flow.playing()->holdsMenu();
       (*ui)->setMenuDocument(menuHeld ? std::string_view{} : MenuDocument);
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());

@@ -381,7 +381,15 @@ void PlaySession::type(std::string_view text, bool enter) {
   }
 }
 
+bool PlaySession::holdsMenu() const {
+  return takesText() || gymScreen_.active();
+}
+
 void PlaySession::pressStory(const input::InputState& input) {
+  if (gymScreen_.active()) {
+    gymScreen_.pressCancel(input.wasPressed("menu"),
+                           input.isDown("menu") || input.isDown("cancel"));
+  }
   if (storyScenes_.pressNaming(input)) {
     return;
   }
@@ -477,9 +485,10 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
     }
     // A gym course takes the player's control; its buttons are the course's.
     if (gymScreen_.active()) {
-      gymScreen_.tick(TickSeconds, intent);
       fieldIntent = {};
     }
+    // Without a course it only closes the last one's stats box.
+    gymScreen_.tick(TickSeconds, intent);
     scene_->tick(fieldIntent, static_cast<float>(TickSeconds));
     game_.systems.story->runNpcContacts(scene_->field().npcContacts());
     storyLink_->afterFieldTick();

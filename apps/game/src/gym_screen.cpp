@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -39,6 +40,24 @@ constexpr std::string_view GymOffMap = "game: gym: the courses run on {} only";
 constexpr std::string_view NewOrderText = "gym.new_order";
 constexpr std::string_view MoveLearnedText = "gym.move_learned";
 constexpr std::int32_t Hundred = 100;
+// trn_hud.c: TRN_createPostTrainingStatsBox: the box, and the 10-pixel square round the partner's
+// node 1 it grows from (getEntityScreenPos(ENTITY_TABLE[1], 1)).
+constexpr game::gym::BoxRect StatsBoxRect{.x = -94, .y = -78, .w = 188, .h = 96};
+constexpr std::int32_t GrowFromHalf = 5;
+// trn_slots.c: TRN_createSlotMachineBox: the box (SLOTS_UI_START), grown from a 16-pixel square
+// 8 left and 6 up of the machine (0xa8 - DRAWING_OFFSET_X, 0x7e - DRAWING_OFFSET_Y).
+constexpr game::gym::BoxRect SlotsBoxRect{.x = -82, .y = -87, .w = 164, .h = 90};
+constexpr std::int32_t MachineLeft = 8;
+constexpr std::int32_t MachineUp = 6;
+constexpr std::int32_t MachineSquare = 16;
+constexpr std::uint32_t PartnerNode = 1;
+// ui.c: createAnimatedUIBox and renderUIBoxAnim: the system sounds 0 and 1 of slot 0.
+constexpr std::int32_t BoxSoundSlot = 0;
+constexpr std::int32_t BoxOpenSound = 0;
+constexpr std::int32_t BoxCloseSound = 1;
+// The original's screen is 240 lines tall; getEntityScreenPos counts from its middle.
+constexpr double ScreenLines = 240.0;
+constexpr double Middle = 0.5;
 // How far from where the camera looks the gym's view reaches, in world units.
 constexpr float OffScreenDistance = 1800.0F;
 
@@ -241,6 +260,7 @@ public:
     core::logDebug("[port:gym] removeAllCloudFX: {} effects, none drawn yet (phase 5)", effects_);
     effects_ = 0;
   }
+  void closeTextbox() override { static_cast<void>(desc_->story->dialogue().closeBox(0)); }
   std::int32_t randomBelow(std::int32_t limit) override {
     return std::uniform_int_distribution<std::int32_t>{0, limit - 1}(random_);
   }
@@ -488,45 +508,158 @@ bool GymScreen::takeComplete() {
   return std::exchange(complete_, false);
 }
 
+void GymScreen::pressCancel(bool pressed, bool held) {
+  cancelPressed_ = pressed;
+  cancelHeld_ = held;
+}
+
 void GymScreen::tick(double seconds, const game::field::FieldInput& intent) {
-  if (run_ == nullptr) {
-    return;
+  if (run_ != nullptr) {
+    const double framesPerSecond = desc_.session->clock().rules().framesPerSecond;
+    const bool pressed = intent.cancelTarget || std::exchange(cancelPressed_, false);
+    run_->tick(*ports_, seconds, 1.0 / framesPerSecond,
+               {.confirm = intent.confirm,
+                .cancel = pressed,
+                .cancelHeld = pressed || std::exchange(cancelHeld_, false)});
   }
-  const double framesPerSecond = desc_.session->clock().rules().framesPerSecond;
-  run_->tick(*ports_, seconds, 1.0 / framesPerSecond,
-             {.confirm = intent.confirm, .cancel = intent.cancelTarget});
-  if (run_->finished()) {
+  tickBoxes(seconds);
+  if (run_ != nullptr && run_->finished()) {
     run_.reset();
     complete_ = true;
   }
 }
 
-void GymScreen::updateSlots() {
-  ui::Ui& ui = *desc_.ui;
+void GymScreen::tickBoxes(double seconds) {
+  // TRN_createSlotMachineBox and TRN_tickSlotMachine (state 6): the roulette grows out of the
+  // course's machine and shrinks back into it once the line was seen.
   const game::gym::SlotMachine* slots =
       run_ != nullptr && run_->slots().has_value() ? &*run_->slots() : nullptr;
-  if (slots == nullptr) {
+  if (slots != nullptr && !slots->closing() && slotsBox_.closed()) {
+    openBox(slotsBox_, machineOnScreen(), SlotsBoxRect);
+  } else if ((slots == nullptr || slots->closing()) && slotsBox_.opened()) {
+    slotsBox_.close(run_ != nullptr ? std::optional{machineOnScreen()} : std::nullopt);
+    playUiSound(BoxCloseSound);
+  }
+  // TRN_createPostTrainingStatsBox and TRN_closeUIBox: the stats grow out of the partner and
+  // shrink back into it.
+  const bool counting = run_ != nullptr && run_->countup().has_value();
+  if (counting && statsBox_.closed()) {
+    openBox(statsBox_, partnerOnScreen(), StatsBoxRect);
+  } else if (!counting && statsBox_.opened()) {
+    statsBox_.close();
+    playUiSound(BoxCloseSound);
+  }
+  if (statsBox_.closed() && slotsBox_.closed()) {
+    boxSeconds_ = 0.0;
+    return;
+  }
+  const double frameSeconds = 1.0 / desc_.session->clock().rules().framesPerSecond;
+  boxSeconds_ += seconds;
+  while (boxSeconds_ >= frameSeconds) {
+    boxSeconds_ -= frameSeconds;
+    statsBox_.tickFrame();
+    slotsBox_.tickFrame();
+  }
+}
+
+void GymScreen::openBox(game::gym::GrowingBox& box, game::gym::BoxRect from,
+                        game::gym::BoxRect to) const {
+  // ui.c: createAnimatedUIBox sounds, and the frame that creates the box draws its first outline.
+  box.open(from, to);
+  playUiSound(BoxOpenSound);
+  box.tickFrame();
+}
+
+game::gym::BoxRect GymScreen::machineOnScreen() const {
+  // TRN_createSlotMachineBox: the 16-pixel square at the machine's screen position, 8 left and 6
+  // up of it; the screen's middle when it is not in view.
+  game::gym::BoxRect square{
+      .x = -MachineLeft, .y = -MachineUp, .w = MachineSquare, .h = MachineSquare};
+  if (run_ == nullptr) {
+    return square;
+  }
+  const std::optional<glm::vec2> point =
+      desc_.scene->worldToWindowFraction(worldOf(run_->course().machine, 0.0F));
+  if (const auto at = pixelsFromMiddle(point)) {
+    square.x += at->x;
+    square.y += at->z;
+  }
+  return square;
+}
+
+std::optional<game::gym::Point>
+GymScreen::pixelsFromMiddle(std::optional<glm::vec2> fraction) const {
+  // getEntityScreenPos and worldPosToScreenPos: the original's pixels from the screen's middle.
+  const render::MapCamera* camera = desc_.scene->camera();
+  if (camera == nullptr || !fraction || camera->viewportSize().y <= 0.0F) {
+    return std::nullopt;
+  }
+  const double aspect =
+      static_cast<double>(camera->viewportSize().x) / static_cast<double>(camera->viewportSize().y);
+  return game::gym::Point{
+      .x = static_cast<std::int32_t>(std::lround((fraction->x - Middle) * ScreenLines * aspect)),
+      .z = static_cast<std::int32_t>(std::lround((fraction->y - Middle) * ScreenLines))};
+}
+
+game::gym::BoxRect GymScreen::partnerOnScreen() const {
+  // getEntityScreenPos(partner, 1): the 10-pixel square round its node; the screen's middle when
+  // the partner is not drawn.
+  game::gym::BoxRect square{
+      .x = -GrowFromHalf, .y = -GrowFromHalf, .w = 2 * GrowFromHalf, .h = 2 * GrowFromHalf};
+  if (const auto at =
+          pixelsFromMiddle(desc_.scene->fighterNodeOnWindow(std::nullopt, PartnerNode))) {
+    square.x += at->x;
+    square.y += at->z;
+  }
+  return square;
+}
+
+void GymScreen::playUiSound(std::int32_t sound) const {
+  if (game::story::SoundPort* port = desc_.session->sound(); port != nullptr) {
+    port->playSound(BoxSoundSlot, sound);
+  }
+}
+
+void GymScreen::updateSlots() {
+  ui::Ui& ui = *desc_.ui;
+  if (slotsBox_.closed()) {
     if (slotsShown_) {
       ui.hide(GymSlotsDocument);
       slotsShown_ = false;
     }
     return;
   }
-  // trn_slots.c: TRN_renderSlotMachine draws each reel from two cells above its line.
-  constexpr std::int32_t FirstRow = -2;
-  constexpr std::int32_t Rows = 4;
+  const game::gym::SlotMachine* slots =
+      run_ != nullptr && run_->slots().has_value() ? &*run_->slots() : nullptr;
+  const std::optional<game::gym::BoxRect> outline = slotsBox_.outline();
   screens::ScreenSettings settings;
-  for (std::size_t reel = 0; reel < game::gym::SlotMachine::Reels; ++reel) {
-    for (std::int32_t row = 0; row < Rows; ++row) {
-      settings.push_back(
-          {.name = screens::listEntryName("gym.slots", reel, std::format("row{}", row)),
-           .value = static_cast<double>(slots->symbolAt(reel, FirstRow + row))});
-    }
-    settings.push_back({.name = screens::listEntryName("gym.slots", reel, "offset"),
-                        .value = static_cast<double>(slots->drawnScroll(reel))});
-  }
+  // ui.c: renderUIBoxAnim draws the outline while the box grows or shrinks; the machine only while
+  // it stands.
+  const bool standing = slotsBox_.standing() && slots != nullptr;
   settings.push_back(
-      {.name = "gym.slots.payout", .value = static_cast<double>(slots->payout().value_or(-1))});
+      {.name = "gym.slots.box.state", .value = outline ? 1.0 : (standing ? 2.0 : 0.0)});
+  if (outline) {
+    settings.push_back({.name = "gym.slots.box.x", .value = static_cast<double>(outline->x)});
+    settings.push_back({.name = "gym.slots.box.y", .value = static_cast<double>(outline->y)});
+    settings.push_back({.name = "gym.slots.box.w", .value = static_cast<double>(outline->w)});
+    settings.push_back({.name = "gym.slots.box.h", .value = static_cast<double>(outline->h)});
+  }
+  if (standing) {
+    // trn_slots.c: TRN_renderSlotMachine draws each reel from two cells above its line.
+    constexpr std::int32_t FirstRow = -2;
+    constexpr std::int32_t Rows = 4;
+    for (std::size_t reel = 0; reel < game::gym::SlotMachine::Reels; ++reel) {
+      for (std::int32_t row = 0; row < Rows; ++row) {
+        settings.push_back(
+            {.name = screens::listEntryName("gym.slots", reel, std::format("row{}", row)),
+             .value = static_cast<double>(slots->symbolAt(reel, FirstRow + row))});
+      }
+      settings.push_back({.name = screens::listEntryName("gym.slots", reel, "offset"),
+                          .value = static_cast<double>(slots->drawnScroll(reel))});
+    }
+    settings.push_back(
+        {.name = "gym.slots.payout", .value = static_cast<double>(slots->payout().value_or(-1))});
+  }
   screens::publish(ui, settings, "gym.slots.revision");
   if (!slotsShown_) {
     ui.show(GymSlotsDocument, false);
@@ -537,42 +670,77 @@ void GymScreen::updateSlots() {
 void GymScreen::update() {
   updateSlots();
   ui::Ui& ui = *desc_.ui;
-  const std::optional<game::gym::StatCountup>* countup =
-      run_ != nullptr ? &run_->countup() : nullptr;
-  if (countup == nullptr || !countup->has_value()) {
+  if (statsBox_.closed()) {
     if (boxShown_) {
       ui.hide(GymStatsDocument);
       boxShown_ = false;
       published_.reset();
       publishedNotices_ = 0;
+      publishedOutline_.reset();
+      publishedStanding_ = false;
     }
     return;
   }
-  const GymStats& shown = (*countup)->shown();
-  if (published_ != shown || publishedNotices_ != notices_.size()) {
+  const std::optional<game::gym::StatCountup>* countup =
+      run_ != nullptr ? &run_->countup() : nullptr;
+  const bool counting = countup != nullptr && countup->has_value();
+  const std::optional<game::gym::BoxRect> outline = statsBox_.outline();
+  const bool standing = statsBox_.standing() && counting;
+  const bool changed =
+      (counting && (published_ != (*countup)->shown() || publishedNotices_ != notices_.size())) ||
+      publishedOutline_ != outline || publishedStanding_ != standing;
+  if (changed) {
     screens::ScreenSettings settings;
-    // The brains course's notes under the stats (trn_reward.c: TRN_renderNewOrdersBox,
-    // TRN_renderMoveLearnedBox).
-    settings.push_back({.name = "gym.notice.count", .value = static_cast<double>(notices_.size())});
-    for (std::size_t index = 0; index < notices_.size(); ++index) {
-      settings.push_back({.name = screens::listEntryName("gym.notice", index, "text"),
-                          .value = notices_.at(index).text});
-      settings.push_back({.name = screens::listEntryName("gym.notice", index, "name"),
-                          .value = notices_.at(index).name});
+    // ui.c: renderUIBoxAnim draws the outline while the box grows or shrinks; the box and its
+    // contents only while it stands (renderUIBoxStatic).
+    const double state = outline ? 1.0 : (standing ? 2.0 : 0.0);
+    settings.push_back({.name = "gym.box.state", .value = state});
+    if (outline) {
+      settings.push_back({.name = "gym.box.x", .value = static_cast<double>(outline->x)});
+      settings.push_back({.name = "gym.box.y", .value = static_cast<double>(outline->y)});
+      settings.push_back({.name = "gym.box.w", .value = static_cast<double>(outline->w)});
+      settings.push_back({.name = "gym.box.h", .value = static_cast<double>(outline->h)});
     }
-    for (std::size_t stat = 0; stat < shown.size(); ++stat) {
-      settings.push_back({.name = screens::listEntryName("gym.stat", stat, "label"),
-                          .value = screens::mainLabelKey(screens::StatLabelsBlock, stat)});
-      settings.push_back({.name = screens::listEntryName("gym.stat", stat, "value"),
-                          .value = static_cast<double>(shown.at(stat))});
+    if (counting) {
+      publishCountup(settings, **countup);
+      published_ = (*countup)->shown();
     }
     screens::publish(ui, settings, "gym.revision");
-    published_ = shown;
     publishedNotices_ = notices_.size();
+    publishedOutline_ = outline;
+    publishedStanding_ = standing;
   }
   if (!boxShown_) {
     ui.show(GymStatsDocument, false);
     boxShown_ = true;
+  }
+}
+
+void GymScreen::publishCountup(screens::ScreenSettings& settings,
+                               const game::gym::StatCountup& countup) const {
+  // The brains course's box under the stats (trn_reward.c: TRN_renderNewOrdersBox,
+  // TRN_renderMoveLearnedBox).
+  settings.push_back({.name = "gym.notice.count", .value = static_cast<double>(notices_.size())});
+  for (std::size_t index = 0; index < notices_.size(); ++index) {
+    settings.push_back({.name = screens::listEntryName("gym.notice", index, "text"),
+                        .value = notices_.at(index).text});
+    settings.push_back({.name = screens::listEntryName("gym.notice", index, "name"),
+                        .value = notices_.at(index).name});
+  }
+  // trn_hud.c: TRN_renderPostTrainingStatsBox: each stat's value and bar (blue when the session
+  // changed it), and the gain left to count.
+  const GymStats& shown = countup.shown();
+  for (std::size_t stat = 0; stat < shown.size(); ++stat) {
+    settings.push_back({.name = screens::listEntryName("gym.stat", stat, "label"),
+                        .value = screens::mainLabelKey(screens::StatLabelsBlock, stat)});
+    settings.push_back({.name = screens::listEntryName("gym.stat", stat, "value"),
+                        .value = static_cast<double>(shown.at(stat))});
+    settings.push_back({.name = screens::listEntryName("gym.stat", stat, "gain"),
+                        .value = static_cast<double>(countup.left().at(stat))});
+    settings.push_back({.name = screens::listEntryName("gym.stat", stat, "changed"),
+                        .value = countup.changed().at(stat) ? 1.0 : 0.0});
+    settings.push_back({.name = screens::listEntryName("gym.stat", stat, "max"),
+                        .value = static_cast<double>(countup.capOf(stat))});
   }
 }
 

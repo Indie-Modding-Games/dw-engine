@@ -4,7 +4,9 @@
 #include <dwe/core/error.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/gym/course_flow.hpp>
+#include <dwe/game/gym/growing_box.hpp>
 #include <dwe/game/gym/gym_rules.hpp>
+#include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/inventory_adapter.hpp>
@@ -70,7 +72,12 @@ public:
   // Whether a course runs: the player has no control meanwhile.
   [[nodiscard]] bool active() const { return run_ != nullptr; }
 
-  // One logic tick of the course, with the player's buttons.
+  // The original's cancel (dw/input.h: CANCEL_BUTTON, the triangle on the American pad) is the
+  // menu button here: while a course runs it ends the session instead of opening the menu.
+  void pressCancel(bool pressed, bool held);
+
+  // One logic tick of the course, with the player's buttons. Without a course it only closes the
+  // stats box of the last one.
   void tick(double seconds, const game::field::FieldInput& intent);
 
   // Once per frame: shows the roulette while it runs, and the stats box while a course counts its
@@ -81,6 +88,16 @@ private:
   class Ports;
 
   void updateSlots();
+  // The roulette's and the stats' boxes grow and shrink (ui.c: renderUIBoxAnim).
+  void tickBoxes(double seconds);
+  void openBox(game::gym::GrowingBox& box, game::gym::BoxRect from, game::gym::BoxRect to) const;
+  [[nodiscard]] game::gym::BoxRect partnerOnScreen() const;
+  [[nodiscard]] game::gym::BoxRect machineOnScreen() const;
+  [[nodiscard]] std::optional<game::gym::Point>
+  pixelsFromMiddle(std::optional<glm::vec2> fraction) const;
+  void playUiSound(std::int32_t sound) const;
+  void publishCountup(screens::ScreenSettings& settings,
+                      const game::gym::StatCountup& countup) const;
 
   GymScreenDesc desc_;
   game::gym::GymRules rules_;
@@ -89,7 +106,14 @@ private:
   std::unique_ptr<game::gym::CourseRun> run_;
   // TRAINING_COMPLETE.
   bool complete_ = false;
+  bool cancelPressed_ = false;
+  bool cancelHeld_ = false;
   bool boxShown_ = false;
+  game::gym::GrowingBox statsBox_;
+  game::gym::GrowingBox slotsBox_;
+  double boxSeconds_ = 0.0;
+  std::optional<game::gym::BoxRect> publishedOutline_;
+  bool publishedStanding_ = false;
   bool slotsShown_ = false;
   std::optional<game::gym::GymStats> published_;
   std::size_t publishedNotices_ = 0;

@@ -83,15 +83,15 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 132 | 5 | 11 | 23 | 91 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 135 | 3 | 74 | 73 | 64 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 136 | 3 | 74 | 72 | 65 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 69 | 3 | 9 | 15 | 87 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 45 | 1 | 16 | 40 | 73 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 48 | 1 | 16 | 37 | 75 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 73 | 3 | 12 | 57 | 85 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 65 | 1 | 2 | 56 | 96 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 63 | 8 | 21 | 6 | 73 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
-| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 34 | 1 | 2 | 13 | 93 % |
+| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 36 | 1 | 1 | 12 | 96 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 13 | 0 | 16 | 27 | 45 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 7 | 1 | 3 | 24 | 68 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 40 | 1 | 2 | 43 | 94 % |
-| **Total** | 2438 funciones | 825 | 41 | 415 | 1157 | 66 % |
+| **Total** | 2438 funciones | 831 | 41 | 414 | 1152 | 66 % |
 
 ## Batalla
 
@@ -138,7 +138,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 135, parcial 3, falta 74, no aplica 73.
+Portado 136, parcial 3, falta 74, no aplica 72.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -220,7 +220,7 @@ Portado 135, parcial 3, falta 74, no aplica 73.
 | `initializeHealingParticles` | `main/particle.c:201` | falta | Prepara las partículas de curación. | — |
 | `addHealingParticleEffect` | `main/particle.c:209` | falta | Lanza las partículas de curación sobre el compañero. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (24); limpieza de objetos y memoria del original: el motor libera lo suyo (21); gráficos, memoria o ficheros del hardware original: los sustituye el motor (11); preparación de tablas, objetos o recursos del original: el motor monta los suyos (5); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (24); limpieza de objetos y memoria del original: el motor libera lo suyo (21); gráficos, memoria o ficheros del hardware original: los sustituye el motor (10); preparación de tablas, objetos o recursos del original: el motor monta los suyos (5); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
 
 ## Campo: movimiento, colisión y cámara
 
@@ -253,7 +253,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 45, parcial 1, falta 16, no aplica 40.
+Portado 48, parcial 1, falta 16, no aplica 37.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -275,7 +275,7 @@ Portado 45, parcial 1, falta 16, no aplica 40.
 | `createNinjamonEffect` | `main/overworld.c:777` | parcial | Nube de humo de un personaje que desaparece. | `apps/session/include/dwe/session/story_scenes.hpp:113` · la rutina 38 se cierra sin el humo |
 | `tickRemoveMist` | `main/overworld.c:1012` | falta | Disipa la niebla del mapa. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (19); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (16); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
 
 ## Compañero: IA y cuidado
 
@@ -402,15 +402,14 @@ El gimnasio: tragaperras, cursos y recompensas.
 
 Ficheros del decomp: `trn/trn_brain.c`, `trn/trn_hud.c`, `trn/trn_off.c`, `trn/trn_reward.c`, `trn/trn_slots.c`, `trn/trn_speed.c`, `trn2/trn2_def_map108.c`, `trn2/trn2_hp_map107.c`, `trn2/trn2_hud.c`, `trn2/trn2_reward.c`, `trn2/trn2_slots.c`.
 
-Portado 34, parcial 1, falta 2, no aplica 13.
+Portado 36, parcial 1, falta 1, no aplica 12.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `TRN_func_800888A0` | `trn/trn_reward.c:116` | falta | Función sin nombre del cálculo de recompensas del gimnasio. | sin identificar |
 | `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:225` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
 | `TRN2_func_8008AA84` | `trn2/trn2_reward.c:158` | falta | Función sin nombre del cálculo de recompensas del segundo gimnasio. | sin identificar |
 
-No aplica: copias de otra función, que cuenta por las dos (10); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2); posición en pantalla para dibujar (1).
+No aplica: copias de otra función, que cuenta por las dos (10); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1).
 
 ## Pesca
 

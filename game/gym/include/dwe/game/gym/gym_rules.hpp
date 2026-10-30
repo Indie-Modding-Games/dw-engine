@@ -187,6 +187,9 @@ struct CourseRules {
   std::int32_t doneAnimation = 0;
   // The roulette symbol that is the course's own, which pays more.
   std::int32_t slotSymbol = 0;
+  // The course's machine on screen (TRN_getTrainingSpotScreenPos): the roulette's box grows out
+  // of it and shrinks back into it.
+  Point machine;
   CourseDetail detail;
 };
 

@@ -71,6 +71,8 @@ public:
   virtual void addCloud(Point at) = 0;
   virtual void addParticle(Point3 at) = 0;
   virtual void removeClouds() = 0;
+  // closeBox(0): closes the story's textbox (the roulette's "Slot Game" help).
+  virtual void closeTextbox() = 0;
   // randomLimit: 0 to limit - 1.
   virtual std::int32_t randomBelow(std::int32_t limit) = 0;
   // Trains the partner with the roulette's result in tenths (0 for none).
@@ -81,8 +83,10 @@ public:
 struct GymInput {
   // Confirm newly pressed. With cancel, it ends the stats count at once.
   bool confirm = false;
-  // Cancel pressed or held: ends the session early.
+  // Cancel newly pressed: it ends the session early and, with confirm, the stats count.
   bool cancel = false;
+  // Cancel held (POLLED_INPUT & CANCEL_BUTTON): it also ends the session early.
+  bool cancelHeld = false;
 };
 
 // One run of a course, as trn_*.c: TRN_tick*Training: the actors walk to the machine, the partner

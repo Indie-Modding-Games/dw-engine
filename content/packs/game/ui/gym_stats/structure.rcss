@@ -1,10 +1,171 @@
-/* The gym's stats box whatever the skin: a column of the six stats over the field, which goes on behind it. The look
-   is the pause menu's panel (the skins' pause_menu style); the box sits in a corner, so the more specific rule here
-   moves the panel there. */
+/* The gym's stats box after a course, whatever the skin, laid out as the original's (trn_hud.c:
+   TRN_createPostTrainingStatsBox and TRN_renderPostTrainingStatsBox). One pixel of the original is 3dp and the box's
+   rectangles count from the middle of its 320 x 240 screen (160, 120), as the original's do: the box is
+   (-94, -78, 188, 96), so 564 x 288dp whose corner is 282dp left of the middle and 126dp from the top.
+
+   Inside the box (pixels from its corner): the stat names at x 10, their values right-aligned in four 8-pixel digits
+   at x 68, a 50-pixel bar in a 1-pixel frame from x 64 to 117 under each value, the divider at x 122, and on the right
+   the up arrow at x 130 and the gain, three digits at x 142. The rows are 13 pixels apart from y 9.
+
+   The frame itself is the skin's box (#panel, the pause menu's style); the more specific rules here make it the box's
+   size. The grow out of the partner (ui.c: renderUIBoxAnim) is #outline, which the script moves. */
 
 body { pointer-events: none; }
-body #panel { left: auto; margin-left: 0; right: 24dp; top: 24dp; width: 260dp; }
-.row { display: block; }
-.label { display: inline-block; width: 150dp; }
-.value { display: inline-block; width: 90dp; text-align: right; }
-.notice { margin: 6dp 0 0 0; }
+
+body #outline {
+	position: absolute;
+	border: 3dp #808080;
+}
+
+body #box {
+	position: absolute;
+	left: 50%;
+	top: 126dp;
+	width: 564dp;
+	height: 288dp;
+	margin-left: -282dp;
+}
+
+body #box #panel, body #notes #notes-panel {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body #notes #notes-panel {
+	border: 3dp #90d9fa;
+	background-color: #151b24f0;
+}
+
+/* trn_hud.c: drawLine2P at x 122 (#90D9FA) and 123 (#020202), from y 2 to h - 3. */
+body #divider {
+	position: absolute;
+	left: 366dp;
+	top: 6dp;
+	width: 3dp;
+	height: 276dp;
+	border-right: 3dp #020202;
+	background-color: #90d9fa;
+}
+
+body .row {
+	position: absolute;
+	left: 0;
+	width: 564dp;
+	height: 39dp;
+	font-size: 33dp;
+	line-height: 36dp;
+}
+
+#row-0 { top: 27dp; }
+#row-1 { top: 66dp; }
+#row-2 { top: 105dp; }
+#row-3 { top: 144dp; }
+#row-4 { top: 183dp; }
+#row-5 { top: 222dp; }
+
+/* trn_hud.c adds the bars last to the same ordering-table entry, so they are drawn first, under the text. */
+body .label {
+	position: absolute;
+	z-index: 1;
+	left: 30dp;
+	top: 0;
+}
+
+body .value {
+	position: absolute;
+	z-index: 1;
+	left: 204dp;
+	top: 0;
+	width: 96dp;
+	text-align: right;
+}
+
+/* The bar's frame: #020202 on the left and top, #666666 on the right and bottom; the 50-pixel bar inside it from
+   x 66, its track #282828 (#005A96 for a stat the session changed) and its fill #787878 (#69C2FF). */
+body .bar {
+	position: absolute;
+	left: 192dp;
+	top: 24dp;
+	width: 162dp;
+	height: 12dp;
+	padding: 0 3dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-top-color: #020202;
+	border-left-color: #020202;
+	border-right-color: #666666;
+	border-bottom-color: #666666;
+}
+
+body .track {
+	width: 150dp;
+	height: 6dp;
+	background-color: #282828;
+}
+
+body .bar.raised .track {
+	background-color: #005a96;
+}
+
+body .fill {
+	width: 0;
+	height: 6dp;
+	background-color: #787878;
+}
+
+body .bar.raised .fill {
+	background-color: #69c2ff;
+}
+
+body .arrow {
+	position: absolute;
+	left: 390dp;
+	top: 0;
+	width: 36dp;
+	height: 36dp;
+	text-align: center;
+	color: #69c2ff;
+}
+
+body .gain {
+	position: absolute;
+	left: 426dp;
+	top: 0;
+	width: 72dp;
+	text-align: right;
+	color: #69c2ff;
+}
+
+/* trn_reward.c: the brains course's box under the stats (createMenuBox(2, -88, 18, 176, 48), 35 tall for a move),
+   its text from (-78, 24): 10 pixels in, 6 down, 12-pixel rows. */
+body #notes {
+	position: absolute;
+	left: 50%;
+	top: 414dp;
+	width: 528dp;
+	height: 144dp;
+	margin-left: -264dp;
+}
+
+body #notes.move {
+	height: 105dp;
+}
+
+body .note {
+	position: absolute;
+	left: 30dp;
+	margin: 0;
+	font-size: 33dp;
+	line-height: 36dp;
+}
+
+#notice-0 { top: 18dp; }
+#notice-1 { top: 54dp; }
+#notice-2 { top: 90dp; }
+#notice-3 { top: 126dp; }

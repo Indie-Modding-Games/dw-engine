@@ -1,5 +1,6 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/gym/course_flow.hpp>
+#include <dwe/game/gym/growing_box.hpp>
 #include <dwe/game/gym/slot_machine.hpp>
 
 #include <algorithm>
@@ -48,6 +49,11 @@ std::int32_t SlotMachine::drawnScroll(std::size_t reel) const {
 }
 
 void SlotMachine::tick(GymPorts& ports, bool confirm) {
+  // ui.c: tickUIBox: the box's tick runs once it stands, after the frames it grows in.
+  if (growing_ > 0) {
+    --growing_;
+    return;
+  }
   switch (state_) {
   case 0:
     if (confirm || autoStart_) {
@@ -72,8 +78,18 @@ void SlotMachine::tick(GymPorts& ports, bool confirm) {
     }
     ++resultTimer_;
     break;
+  case 6:
+    // The box shrinks back into the sign and the "Slot Game" textbox closes (closeBox(0)); the
+    // session hands the rate over once the box is gone (TRN_tickSlotSession: UI_BOX_DATA[3]).
+    ports.closeTextbox();
+    shrinking_ = GrowingBox::Frames;
+    state_ = 7;
+    core::logDebug("[port:gym] TRN_tickSlotMachine (trn_slots.c): state 6, box and textbox closed");
+    break;
   default:
-    result_ = payout_;
+    if (--shrinking_ <= 0) {
+      result_ = payout_;
+    }
     break;
   }
 }

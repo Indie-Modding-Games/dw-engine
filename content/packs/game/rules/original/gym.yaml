@@ -62,6 +62,8 @@ courses:
   - id: hp
     # TRN_startSlotSessionIfEnabled(0): su símbolo en la ruleta es el 1.
     slot_symbol: 1
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: 1010, z: -975 }
     spot: { x: 1420, z: -1744 }
     camera_speed: 10
     cycle_frames: 1200
@@ -92,6 +94,8 @@ courses:
   - id: mp
     # TRN_startSlotSessionIfEnabled(1): su símbolo en la ruleta es el 2.
     slot_symbol: 2
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: 1432, z: 1276 }
     spot: { x: 684, z: 2152 }
     camera_speed: 10
     cycle_frames: 1200
@@ -116,6 +120,8 @@ courses:
   - id: offense
     # TRN_startSlotSessionIfEnabled(2): su símbolo en la ruleta es el 3.
     slot_symbol: 3
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: -506, z: -1937 }
     spot: { x: -982, z: -2580 }
     camera_speed: 10
     cycle_frames: 1200
@@ -178,6 +184,8 @@ courses:
   - id: defense
     # TRN_startSlotSessionIfEnabled(3): su símbolo en la ruleta es el 4.
     slot_symbol: 4
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: -789, z: -875 }
     spot: { x: -827, z: -1634 }
     camera_speed: 10
     cycle_frames: 1200
@@ -213,6 +221,8 @@ courses:
   - id: speed
     # TRN_startSlotSessionIfEnabled(4): su símbolo en la ruleta es el 5.
     slot_symbol: 5
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: 12, z: 445 }
     spot: { x: 45, z: -388 }
     camera_speed: 10
     cycle_frames: 1200
@@ -229,6 +239,8 @@ courses:
   - id: brain
     # TRN_startSlotSessionIfEnabled(5): su símbolo en la ruleta es el 6.
     slot_symbol: 6
+    # TRN_getTrainingSpotScreenPos (trn_hud.c, TRN_D_8008F1D4): el aparato, de donde sale la caja de la ruleta.
+    machine: { x: -1779, z: 2084 }
     spot: { x: -1249, z: 1011 }
     camera_speed: 10
     cycle_frames: 1200

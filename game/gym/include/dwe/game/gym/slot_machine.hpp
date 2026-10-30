@@ -32,6 +32,10 @@ public:
   [[nodiscard]] std::int32_t symbolAt(std::size_t reel, std::int32_t row) const;
   // TRN_renderSlotMachine: how far down, in pixels, a reel is drawn from its resting place.
   [[nodiscard]] std::int32_t drawnScroll(std::size_t reel) const;
+  // Whether the box stands (it grew in and the player has not seen the line through yet).
+  [[nodiscard]] bool standing() const { return growing_ == 0 && state_ < 7; }
+  // Whether the box shrinks away: the line was seen.
+  [[nodiscard]] bool closing() const { return state_ >= 7; }
   // The rate the line paid, once the reels stopped.
   [[nodiscard]] std::optional<std::int32_t> payout() const { return payout_; }
 
@@ -54,8 +58,11 @@ private:
   std::int32_t symbol_;
   Assist assist_;
   // 0 waits for the start, 1 to 4 spin with one more reel told to stop each press, 5 shows the
-  // line, 6 is over.
+  // line, 6 closes the box, 7 waits for it to shrink away.
   std::int32_t state_ = 0;
+  // The frames the box still grows in (the creating frame draws the first), and shrinks in.
+  std::int32_t growing_ = 4;
+  std::int32_t shrinking_ = 0;
   bool autoStart_ = false;
   std::array<std::int32_t, Reels> position_{};
   std::array<std::int32_t, Reels> scroll_{};

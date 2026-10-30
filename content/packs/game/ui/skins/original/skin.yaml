@@ -35,7 +35,7 @@ screens:
   sleep_menu:
     styles: [ui/skins/original/pause_menu/style]
   gym_stats:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/gym_stats/style]
   # La tienda, también.
   shop_menu:
     styles: [ui/skins/original/pause_menu/style]
@@ -57,7 +57,7 @@ screens:
   fishing_notice:
     styles: [ui/skins/original/pause_menu/style]
   gym_slots:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/gym_slots/style]
   # La caja de los huevos tras una muerte, también.
   egg_box:
     styles: [ui/skins/original/pause_menu/style]
@@ -129,6 +129,21 @@ sprite_sheets:
       menu-label-scold: [108, 26, 20, 7]
       menu-label-sleep: [108, 33, 20, 7]
       menu-label-fish: [80, 40, 16, 7]
+  # Los dibujos de la ruleta del gimnasio (trn_slots.c: TRN_SLOT_SPRITE1): 32 x 32 en u = (dibujo - 1) x 32, v 216 de la
+  # textura del mapa trai00 en (704, 0), con la CLUT (48, 486), la paleta 3.
+  - name: gym-slot-symbols
+    image: map/trai00/texture4/001
+    palette: 3
+    original_size: [256, 256]
+    dp_per_pixel: 3
+    sprites:
+      slot-symbol-1: [0, 216, 32, 32]
+      slot-symbol-2: [32, 216, 32, 32]
+      slot-symbol-3: [64, 216, 32, 32]
+      slot-symbol-4: [96, 216, 32, 32]
+      slot-symbol-5: [128, 216, 32, 32]
+      slot-symbol-6: [160, 216, 32, 32]
+      slot-symbol-7: [192, 216, 32, 32]
   # La esquina redondeada de las cajas (ui.c: renderUIBoxBorder, paleta 4).
   - name: ow-box
     image: texture/etcdat/system_w

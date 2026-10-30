@@ -38,7 +38,7 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
     break;
   case Swinging: {
     ++counter_;
-    if (input.cancel) {
+    if (input.cancel || input.cancelHeld) {
       counter_ = course_->cycleFrames;
     }
     const DefenseSwing& swing = defense.swings.at(swing_);
@@ -74,7 +74,7 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
     break;
   }
   case BackToLog:
-    if (input.cancel) {
+    if (input.cancel || input.cancelHeld) {
       counter_ = course_->cycleFrames;
     }
     if (!ports.walk(Actor::Partner, course_->spot)) {

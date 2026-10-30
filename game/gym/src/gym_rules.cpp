@@ -304,7 +304,7 @@ CourseRules readCourse(YamlReader& reader, const YamlNode& node) {
   CourseRules course;
   if (!reader.expectKeys(node, "a gym course",
                          {"id", "spot", "camera_speed", "cycle_frames", "rest_frames", "sounds",
-                          "animations", "slot_symbol"},
+                          "animations", "slot_symbol", "machine"},
                          {"hp", "mp", "offense", "defense", "speed", "brain"})) {
     return course;
   }
@@ -314,6 +314,7 @@ CourseRules readCourse(YamlReader& reader, const YamlNode& node) {
   course.cycleFrames = readPositive(reader, reader.field(node, "cycle_frames"));
   course.restFrames = integerOf(reader, node, "rest_frames");
   course.slotSymbol = integerOf(reader, node, "slot_symbol");
+  course.machine = readPoint(reader, reader.field(node, "machine"));
   const YamlNode& sounds = reader.field(node, "sounds");
   if (reader.expectKeys(sounds, "the course's sounds", {"start", "end"})) {
     course.startSound = integerOf(reader, sounds, "start");

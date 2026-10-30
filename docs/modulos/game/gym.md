@@ -16,7 +16,7 @@ hace `StoryGym` sobre la `GymScreen`.
 auto rules = dwe::game::gym::readGymRules(ruleset);       // la sección gym; sin ella, ningún curso
 const auto* course = rules->courseOfChoice(choice);        // la variable 254 elige el curso
 dwe::game::gym::CourseRun run{*rules, *course, withSlots};   // la variable 246 pone la ruleta
-run.tick(ports, seconds, frameSeconds, {.confirm = pressed, .cancel = cancel});
+run.tick(ports, seconds, frameSeconds, {.confirm = pressed, .cancel = pressed, .cancelHeld = held});
 if (run.finished()) { ... }                                // TRAINING_COMPLETE: el guion sigue
 ```
 
@@ -40,3 +40,22 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
 - **Inteligencia** (`brain_learning.hpp`): `brainMilestones` dice qué órdenes nuevas abre la ganancia y si toca
   intentar un movimiento (`TRN_tryLearnMove`); `trainingMove` elige el movimiento por los especiales de la especie y
   sus pesos.
+
+## Paridad con el original
+
+Estado: **Igual** (mismo comportamiento), **Suposición** (lo más cercano que sabemos, sin medir del todo) o **Hueco**
+(falta). Medido el 2026-10-30 con el original en DuckStation (capturas en `_work/routes-e2/training-qa/`) a 320 x 240;
+las cajas cuentan desde el centro de la pantalla (160, 120).
+
+| Regla | Decomp | Nuestro código | Test | Estado |
+|---|---|---|---|---|
+| Cancelar (triángulo en el original) **mantenido** acaba la sesión con lo ganado; no abre el menú | `trn_*.c`: `POLLED_INPUT & CANCEL_BUTTON` en cada curso | `GymInput::cancelHeld`; `PlaySession::holdsMenu` | `course_flow_tests`: "holding the original's cancel…" | Igual |
+| En la caja de estadísticas solo una pulsación nueva salta la cuenta | `trn_hud.c: TRN_renderPostTrainingStatsBox` | `CourseRun` (`input.confirm \|\| input.cancel`) | `course_flow_tests`: "holding the original's cancel…" | Igual |
+| La caja crece desde el partner (nodo 1 ± 5 px) hasta (-94, -78, 188, 96) en 5 cuadros, un cuarto del camino por cuadro, y se encoge igual al cerrar; sonido 0/0 al abrir y 0/1 al cerrar | `ui.c: createAnimatedUIBox`, `renderUIBoxAnimated`; `trn_hud.c: TRN_createPostTrainingStatsBox` | `GrowingBox`; `GymScreen::tickBoxes` | `course_flow_tests`: "the outline moves a quarter…" | Igual |
+| Espera de 100 cuadros con la caja en pie y luego un punto por cuadro (el cuadro 100 ya cuenta) | `trn_hud.c` (`MAIN_D_8013539E = 100`) | `StatCountup::tickFrame` | `course_flow_tests`: "it grows five frames, waits 100…" | Igual |
+| Filas cada 13 px desde y 9; nombre en x 10 (#FFFF52), valor de 4 cifras alineado a x 68 (#CECECE), barra de 50 px en x 66 con marco 64..117 (#020202 / #666666), fondo #282828 y relleno #787878 (#005A96 / #69C2FF si el stat ganó), separador en x 122 (#90D9FA) y 123 (#020202), flecha en x 130 y ganancia de 3 cifras en x 142 (#31D6D6) | `trn_hud.c: TRN_renderPostTrainingStatsBox` | `ui/gym_stats/structure.rcss`; `skins/original/gym_stats/style.rcss` | captura `sbs_stats_v1.png` | Igual |
+| La ruleta crece desde la máquina del curso (un cuadrado de 16 px, 8 a la izquierda y 6 arriba de su punto en pantalla) hasta (-82, -87, 164, 90) | `trn_slots.c: TRN_createSlotMachineBox`, `TRN_getTrainingSpotScreenPos` (`TRN_D_8008F1D4`) | `gym.yaml: machine`; `GymScreen::tickBoxes` | `course_flow_tests`: "slots: the box grows…" | Igual |
+| Rodillos centrados en x -41, 0 y 41, ventana de 32 x 64 px de y -74 a -10; dibujos de 32 x 32 (u = (dibujo - 1) x 32, v 216 de la textura del mapa en (704, 0), paleta 3); sin texto de ritmo | `trn_slots.c: TRN_renderSlotMachine` | `ui/gym_slots/`; sprite `gym-slot-symbols` | captura `sbs_slot_spin.png` | Igual |
+| El sombreado del rodillo (sprite u 224 v 216 restado) | `trn_slots.c: TRN_renderSlotMachine` | degradado negro hasta 48 % arriba y abajo | captura `sbs_slot_spin.png` | Suposición |
+| Al acabar (estado 6) la ruleta se encoge y cierra el cuadro "Slot Game" (`closeBox(0)`); el ritmo llega cuando la caja ya no está | `trn_slots.c: TRN_tickSlotMachine`, `TRN_tickSlotSession` (`UI_BOX_DATA[3]`) | `SlotMachine` estados 6 y 7; `GymPorts::closeTextbox` | `course_flow_tests`: "slots: the box grows…" | Igual |
+| La ruleta no tiene cancelar: `TRN_func_800888A0` (resultado -2) no se alcanza porque nada produce -2 | `trn_reward.c: TRN_func_800888A0` | sin puerto | — | Igual |

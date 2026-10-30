@@ -1,4 +1,5 @@
 #include <dwe/core/log.hpp>
+#include <dwe/game/gym/growing_box.hpp>
 #include <dwe/game/gym/stat_countup.hpp>
 
 #include <algorithm>
@@ -14,7 +15,9 @@ constexpr std::size_t HpMpStats = 2;
 } // namespace
 
 StatCountup::StatCountup(const CountRules& rules, const GymStats& before, const GymStats& gains)
-    : rules_(rules), shown_(before), left_(gains), delay_(rules.delayFrames) {
+    // The frame that creates the box draws its first outline; four more and it stands.
+    : rules_(rules), shown_(before), left_(gains), delay_(rules.delayFrames),
+      growing_(GrowingBox::Frames - 1) {
   for (std::size_t stat = 0; stat < GymStatCount; ++stat) {
     changed_.at(stat) = gains.at(stat) != 0;
   }
@@ -28,10 +31,17 @@ std::int32_t StatCountup::capOf(std::size_t stat) const {
 }
 
 bool StatCountup::tickFrame() {
-  // trn_hud.c: TRN_tickPostTrainingStatsBox counts the delay down; the render then moves one point
-  // of the first stat with a positive gain left. A loss waits for confirm.
+  // trn_hud.c: TRN_tickPostTrainingStatsBox counts the delay down; the render of the same frame
+  // then moves one point of the first stat with a positive gain left once it is 0. A loss waits
+  // for confirm.
+  if (growing_ > 0) {
+    --growing_;
+    return false;
+  }
   if (delay_ > 0) {
     --delay_;
+  }
+  if (delay_ > 0) {
     return false;
   }
   for (std::size_t stat = 0; stat < GymStatCount; ++stat) {
@@ -46,6 +56,9 @@ bool StatCountup::tickFrame() {
 }
 
 void StatCountup::finish() {
+  if (!standing()) {
+    return;
+  }
   // trn_hud.c: TRN_tickPostTrainingStatsBox on confirm or cancel; only a gain is capped.
   for (std::size_t stat = 0; stat < GymStatCount; ++stat) {
     if (left_.at(stat) == 0) {

@@ -643,8 +643,8 @@ tickPartnerToilet = { status = "portado", dwe = "apps/game/src/field_toilet.cpp"
 
 # --- Entrenamiento
 TRN_tickSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Ronda de la tragaperras del gimnasio." }
-TRN_getTrainingSpotScreenPos = { status = "no-aplica", note = "posición en pantalla para dibujar", what = "Da dónde dibujar el cuadro del gimnasio." }
-TRN_func_800888A0 = { status = "falta", what = "Función sin nombre del cálculo de recompensas del gimnasio.", note = "sin identificar" }
+TRN_getTrainingSpotScreenPos = { status = "portado", dwe = "apps/game/src/gym_screen.cpp", note = "la ruleta crece desde la máquina del curso (gym.yaml: machine)", what = "Da dónde dibujar el cuadro del gimnasio." }
+TRN_func_800888A0 = { status = "no-aplica", what = "Función sin nombre del cálculo de recompensas del gimnasio.", note = "solo con el resultado -2 de la ruleta, que nada produce: inalcanzable" }
 TRN_startSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Empieza la tragaperras." }
 TRN_getSlotMachineResult = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Da el resultado de la tragaperras." }
 TRN2_tickDefenseTrainingMap108 = { status = "portado", dwe = "game/gym/src/course_defense.cpp", what = "Curso de defensa del segundo gimnasio." }

@@ -144,6 +144,9 @@ public:
   void pressBattle(const input::InputState& input);
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
+  // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
+  // it, and a gym course takes it as the original's cancel.
+  [[nodiscard]] bool holdsMenu() const;
   void type(std::string_view text, bool enter);
 
   // Where the characters and the battle's fighters stand after this tick, and the buttons held in

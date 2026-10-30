@@ -18,6 +18,7 @@ CourseRun::CourseRun(const GymRules& gym, const CourseRules& course, bool withSl
 void CourseRun::tick(GymPorts& ports, double seconds, double frameSeconds, const GymInput& input) {
   pending_.confirm = pending_.confirm || input.confirm;
   pending_.cancel = pending_.cancel || input.cancel;
+  pending_.cancelHeld = pending_.cancelHeld || input.cancelHeld;
   if (finished_ || frameSeconds <= 0.0) {
     return;
   }
@@ -32,7 +33,7 @@ void CourseRun::tick(GymPorts& ports, double seconds, double frameSeconds, const
 void CourseRun::frame(GymPorts& ports, const GymInput& input) {
   // The box ticks on its own (trn_hud.c: TRN_tickPostTrainingStatsBox), whatever the course does.
   if (countup_.has_value() && !countup_->done()) {
-    if (input.confirm || input.cancel) {
+    if (countup_->standing() && (input.confirm || input.cancel)) {
       countup_->finish();
     } else if (countup_->tickFrame()) {
       ports.playSound(gym_->count.soundSlot, gym_->count.sound);
@@ -101,7 +102,7 @@ bool CourseRun::sessionOver(const GymInput& input) const {
   if (withSlots_) {
     return slots_.has_value() && slots_->result().has_value();
   }
-  return counter_ >= course_->cycleFrames || input.cancel;
+  return counter_ >= course_->cycleFrames || input.cancel || input.cancelHeld;
 }
 
 bool CourseRun::counted() const {
