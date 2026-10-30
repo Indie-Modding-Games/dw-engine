@@ -4,10 +4,12 @@
 
 #include <algorithm>
 #include <format>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <ranges>
 #include <set>
+#include <span>
 #include <tuple>
 #include <utility>
 
@@ -18,9 +20,11 @@ namespace {
 using formats::image::Color15;
 using formats::image::Tim;
 using formats::image::TimPixelMode;
+using formats::model::TexelKind;
 using formats::model::TmdPrimitive;
 
 constexpr std::uint16_t PageTexels = 256;
+constexpr std::uint8_t BlendedAlpha = 128;
 
 // The TSB colour depth that reads a TIM's pixels, if a texture page can read them.
 std::optional<std::uint8_t> depthOf(const Tim& tim) {
@@ -113,7 +117,24 @@ std::span<const Color15> colorsOf(const VramScene& scene, const PaletteUse& use,
   return std::span(palette.colors).subspan(use.second - palette.x, paletteSize(depth));
 }
 
-// Appends the colours of the texels inside a primitive's box.
+// The colour of texel `at` of a 16-bit image.
+Color15 directTexel(const Tim& tim, std::size_t at) {
+  return static_cast<Color15>(std::to_integer<unsigned>(tim.data[at * 2]) |
+                              (std::to_integer<unsigned>(tim.data[(at * 2) + 1]) << 8U));
+}
+
+// What a console colour is to a semi-transparent primitive (formats::model::TexelKind).
+TexelKind kindOf(Color15 color) {
+  constexpr Color15 StpBit = 0x8000;
+  if (color == 0) {
+    return TexelKind::Transparent;
+  }
+  return (color & StpBit) != 0 ? TexelKind::Stp : TexelKind::Plain;
+}
+
+// Appends the colours of the texels inside a primitive's box. A texel a semi-transparent primitive
+// blends (TexelKind::Stp) has BlendedAlpha, so scenes that differ only in which texels blend do
+// not draw the model the same.
 void sampleTexels(std::vector<formats::image::Rgba8>& texels, const VramScene& scene,
                   const Resolved& resolved, const std::vector<std::uint8_t>& indices,
                   const TmdPrimitive& primitive, const TexelBox& box) {
@@ -128,31 +149,55 @@ void sampleTexels(std::vector<formats::image::Rgba8>& texels, const VramScene& s
     for (int x = box.left - left; x <= std::min(box.right - left, width - 1); ++x) {
       const std::size_t at = (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)) +
                              static_cast<std::size_t>(x);
-      if (resolved.palette) {
-        texels.push_back(formats::image::toRgba8(colors[indices[at]]));
-      } else {
-        texels.push_back(formats::image::toRgba8(
-            static_cast<Color15>(std::to_integer<unsigned>(tim.data[at * 2]) |
-                                 (std::to_integer<unsigned>(tim.data[(at * 2) + 1]) << 8U))));
+      const Color15 color = resolved.palette ? colors[indices[at]] : directTexel(tim, at);
+      formats::image::Rgba8 texel = formats::image::toRgba8(color);
+      if (primitive.isSemiTransparent() && kindOf(color) == TexelKind::Stp) {
+        texel.a = BlendedAlpha;
       }
+      texels.push_back(texel);
     }
   }
 }
 
+// The raw colour of every texel of an image drawn with a palette (none for 16-bit images).
+std::vector<Color15> rawTexels(const VramScene& scene, const Tim& tim,
+                               const std::vector<std::uint8_t>& indices,
+                               const std::optional<PaletteUse>& palette, std::uint8_t depth) {
+  std::vector<Color15> raw;
+  if (palette) {
+    const auto colors = colorsOf(scene, *palette, depth);
+    raw.reserve(indices.size());
+    std::ranges::transform(indices, std::back_inserter(raw),
+                           [&](std::uint8_t index) { return colors[index]; });
+    return raw;
+  }
+  raw.resize(tim.data.size() / 2);
+  for (std::size_t at = 0; at < raw.size(); ++at) {
+    raw[at] = directTexel(tim, at);
+  }
+  return raw;
+}
+
+// An image drawn with a palette, keeping only the texels of one kind when `only` is given: the
+// others become transparent.
 core::Result<std::vector<std::byte>> drawImage(const VramScene& scene, const Tim& tim,
                                                const std::vector<std::uint8_t>& indices,
                                                const std::optional<PaletteUse>& palette,
-                                               std::uint8_t depth) {
+                                               std::uint8_t depth,
+                                               std::optional<TexelKind> only = std::nullopt) {
+  const auto draw = [&](Color15 color) {
+    return !only || kindOf(color) == *only ? formats::image::toRgba8(color)
+                                           : formats::image::Rgba8{};
+  };
   if (!palette) {
-    const auto image = formats::image::decodeTim(tim);
-    if (!image) {
-      return std::unexpected{image.error()};
-    }
-    return formats::image::encodePngRgba(*image);
+    formats::image::RgbaImage image{
+        .width = formats::image::timWidth(tim), .height = tim.imageRect.height, .pixels = {}};
+    std::ranges::transform(rawTexels(scene, tim, indices, palette, depth),
+                           std::back_inserter(image.pixels), draw);
+    return formats::image::encodePngRgba(image);
   }
   std::vector<formats::image::Rgba8> colors;
-  std::ranges::transform(colorsOf(scene, *palette, depth), std::back_inserter(colors),
-                         formats::image::toRgba8);
+  std::ranges::transform(colorsOf(scene, *palette, depth), std::back_inserter(colors), draw);
   return formats::image::encodePngIndexed(formats::image::timWidth(tim), tim.imageRect.height,
                                           indices, colors);
 }
@@ -238,15 +283,35 @@ core::Result<ModelTextures> textureModel(const formats::model::Tmd& tmd, const V
         .depth = depth,
         .palettes = {}};
     for (const auto& palette : palettes) {
-      auto png = drawImage(scene, tim, indicesOf[image], palette, depth);
+      const std::vector<std::uint8_t>& indices = indicesOf[image];
+      auto png = drawImage(scene, tim, indices, palette, depth);
       if (!png) {
         return std::unexpected{png.error()};
       }
       const auto& stored = result.pngs.emplace_back(std::move(*png));
+      auto& kinds = result.kinds.emplace_back();
+      std::ranges::transform(rawTexels(scene, tim, indices, palette, depth),
+                             std::back_inserter(kinds), kindOf);
+      // A semi-transparent primitive that reads both kinds draws each from its own image.
+      std::span<const std::byte> plain;
+      std::span<const std::byte> stp;
+      if (std::ranges::contains(kinds, TexelKind::Plain) &&
+          std::ranges::contains(kinds, TexelKind::Stp)) {
+        auto plainPng = drawImage(scene, tim, indices, palette, depth, TexelKind::Plain);
+        auto stpPng = drawImage(scene, tim, indices, palette, depth, TexelKind::Stp);
+        if (!plainPng || !stpPng) {
+          return std::unexpected{plainPng ? stpPng.error() : plainPng.error()};
+        }
+        plain = result.pngs.emplace_back(std::move(*plainPng));
+        stp = result.pngs.emplace_back(std::move(*stpPng));
+      }
       const VramScene::Palette* at = palette ? &scene.palettes()[palette->first] : nullptr;
       texture.palettes.push_back({.clutX = palette ? palette->second : std::uint16_t{0},
                                   .clutY = at != nullptr ? at->y : std::uint16_t{0},
-                                  .png = stored});
+                                  .png = stored,
+                                  .kinds = kinds,
+                                  .plainPng = plain,
+                                  .stpPng = stp});
     }
     result.textures.push_back(std::move(texture));
   }

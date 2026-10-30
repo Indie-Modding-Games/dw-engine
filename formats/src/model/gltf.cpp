@@ -18,6 +18,7 @@
 #include <set>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace dwe::formats::model {
@@ -119,11 +120,15 @@ BonePose identityPose() {
   return {.scale = {4096, 4096, 4096}, .rotation = {}, .location = {}};
 }
 
+// Which texels of its image a material draws (TexturePalette: plainPng, stpPng).
+enum class ImagePart : std::uint8_t { All, Plain, Stp };
+
 // What makes two primitives need different glTF materials.
 struct MaterialKey {
   bool textured = false;
   int texture = -1; // -1: no texture given
   int palette = -1; // -1: no image
+  ImagePart part = ImagePart::All;
   bool semiTransparent = false;
   std::uint8_t blending = 0; // the TSB's semi-transparency mode, for textured primitives
   bool doubleSided = false;
@@ -149,7 +154,30 @@ struct TextureMapping {
   int texture = -1;
   int palette = -1;
   std::array<std::array<float, 2>, 4> uvs{};
+  // The kinds of the texels the UVs reach, when the palette knows them (TexturePalette::kinds).
+  bool kindsKnown = false;
+  bool hasPlain = false;
+  bool hasStp = false;
 };
+
+// Finds which kinds of texel a box of the texture holds, in texels of the texture, both ends
+// included (the far end is clipped to the texture, as UVs of a polygon's far edge may be one past).
+void readKinds(TextureMapping& mapping, const ModelTexture& texture, const TexturePalette& palette,
+               std::array<int, 2> from, std::array<int, 2> to) {
+  const std::size_t width = texture.width;
+  if (palette.kinds.size() != width * texture.height) {
+    return;
+  }
+  mapping.kindsKnown = true;
+  for (int y = from[1]; y <= std::min(to[1], texture.height - 1); ++y) {
+    for (int x = from[0]; x <= std::min(to[0], texture.width - 1); ++x) {
+      const TexelKind kind =
+          palette.kinds[(static_cast<std::size_t>(y) * width) + static_cast<std::size_t>(x)];
+      mapping.hasPlain = mapping.hasPlain || kind == TexelKind::Plain;
+      mapping.hasStp = mapping.hasStp || kind == TexelKind::Stp;
+    }
+  }
+}
 
 // Finds the texture and palette a textured primitive reads, and its UVs on that texture.
 core::Result<TextureMapping> mapTexture(const TmdPrimitive& primitive,
@@ -188,11 +216,21 @@ core::Result<TextureMapping> mapTexture(const TmdPrimitive& primitive,
       }
       palette = static_cast<int>(found - texture.palettes.begin());
     }
-    TextureMapping mapping{.texture = static_cast<int>(i), .palette = palette, .uvs = {}};
+    TextureMapping mapping{.texture = static_cast<int>(i),
+                           .palette = palette,
+                           .uvs = {},
+                           .kindsKnown = false,
+                           .hasPlain = false,
+                           .hasStp = false};
     for (std::size_t c = 0; c < corners.size(); ++c) {
       mapping.uvs[c] = {
           static_cast<float>(pageX + corners[c].u - left) / static_cast<float>(texture.width),
           static_cast<float>(pageY + corners[c].v - top) / static_cast<float>(texture.height)};
+    }
+    if (palette >= 0) {
+      readKinds(mapping, texture, texture.palettes[static_cast<std::size_t>(palette)],
+                {pageX + minU - left, pageY + minV - top},
+                {pageX + maxU - left, pageY + maxV - top});
     }
     return mapping;
   }
@@ -222,6 +260,7 @@ core::Result<void> addPrimitive(const TmdObject& object, const TmdPrimitive& pri
   MaterialKey key{.textured = primitive.isTextured(),
                   .texture = -1,
                   .palette = -1,
+                  .part = ImagePart::All,
                   .semiTransparent = primitive.isSemiTransparent(),
                   .blending = 0,
                   .doubleSided = primitive.isDoubleSided(),
@@ -252,39 +291,60 @@ core::Result<void> addPrimitive(const TmdObject& object, const TmdPrimitive& pri
   // length 0.
   const Vec3 face = normalized(cross(edgeB, edgeA), {0.0, 1.0, 0.0});
 
-  Group& group = groups[key];
-  const std::uint32_t first = group.vertexCount;
-  for (std::size_t i = 0; i < primitive.vertexCount; ++i) {
-    for (const double value : corners[i]) {
-      group.positions.push_back(static_cast<float>(value));
-    }
-    if (key.lit) {
-      const std::size_t normal = primitive.normals[primitive.normalCount == 1 ? 0 : i];
-      const Vec3 local = normalized(toGltf(object.normals[normal]), {});
-      const Vec3 n = local == Vec3{} ? face : rotate(bind.rotation, local);
-      for (const double value : n) {
-        group.normals.push_back(static_cast<float>(value));
+  // Adds the corners to the group of a material.
+  const auto addTo = [&](const MaterialKey& material) {
+    Group& group = groups[material];
+    const std::uint32_t first = group.vertexCount;
+    for (std::size_t i = 0; i < primitive.vertexCount; ++i) {
+      for (const double value : corners[i]) {
+        group.positions.push_back(static_cast<float>(value));
       }
+      if (material.lit) {
+        const std::size_t normal = primitive.normals[primitive.normalCount == 1 ? 0 : i];
+        const Vec3 local = normalized(toGltf(object.normals[normal]), {});
+        const Vec3 n = local == Vec3{} ? face : rotate(bind.rotation, local);
+        for (const double value : n) {
+          group.normals.push_back(static_cast<float>(value));
+        }
+      }
+      if (material.texture >= 0) {
+        group.uvs.push_back(mapping.uvs[i][0]);
+        group.uvs.push_back(mapping.uvs[i][1]);
+      }
+      if (material.hasColors()) {
+        const TmdColor& color = primitive.colors[primitive.colorCount == 1 ? 0 : i];
+        const double scale = material.textured ? NeutralModulation : FullColor;
+        group.colors.push_back(static_cast<float>(color.r / scale));
+        group.colors.push_back(static_cast<float>(color.g / scale));
+        group.colors.push_back(static_cast<float>(color.b / scale));
+      }
+      group.joints.insert(group.joints.end(), {static_cast<std::uint8_t>(bone), 0, 0, 0});
+      group.weights.insert(group.weights.end(), {1.0F, 0.0F, 0.0F, 0.0F});
     }
-    if (key.texture >= 0) {
-      group.uvs.push_back(mapping.uvs[i][0]);
-      group.uvs.push_back(mapping.uvs[i][1]);
+    group.vertexCount += primitive.vertexCount;
+    group.indices.insert(group.indices.end(), {first, first + 2, first + 1});
+    if (primitive.vertexCount == 4) {
+      group.indices.insert(group.indices.end(), {first + 1, first + 2, first + 3});
     }
-    if (key.hasColors()) {
-      const TmdColor& color = primitive.colors[primitive.colorCount == 1 ? 0 : i];
-      const double scale = key.textured ? NeutralModulation : FullColor;
-      group.colors.push_back(static_cast<float>(color.r / scale));
-      group.colors.push_back(static_cast<float>(color.g / scale));
-      group.colors.push_back(static_cast<float>(color.b / scale));
+  };
+
+  // A semi-transparent texture blends only its texels with STP; the console draws the others
+  // opaque.
+  if (key.semiTransparent && mapping.kindsKnown) {
+    const TexturePalette& palette = textures[static_cast<std::size_t>(key.texture)]
+                                        .palettes[static_cast<std::size_t>(key.palette)];
+    MaterialKey opaque = key;
+    opaque.semiTransparent = false;
+    opaque.blending = 0;
+    if (!mapping.hasStp) {
+      key = opaque;
+    } else if (mapping.hasPlain && !palette.plainPng.empty() && !palette.stpPng.empty()) {
+      opaque.part = ImagePart::Plain;
+      addTo(opaque);
+      key.part = ImagePart::Stp;
     }
-    group.joints.insert(group.joints.end(), {static_cast<std::uint8_t>(bone), 0, 0, 0});
-    group.weights.insert(group.weights.end(), {1.0F, 0.0F, 0.0F, 0.0F});
   }
-  group.vertexCount += primitive.vertexCount;
-  group.indices.insert(group.indices.end(), {first, first + 2, first + 1});
-  if (primitive.vertexCount == 4) {
-    group.indices.insert(group.indices.end(), {first + 1, first + 2, first + 3});
-  }
+  addTo(key);
   return {};
 }
 
@@ -839,24 +899,28 @@ core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd,
     }
   }
 
-  // One image per texture and palette in use, in that order. Palettes are only set when a texture
-  // has them.
-  std::map<std::pair<int, int>, std::size_t> imageOf;
+  // One image per texture, palette and part in use, in that order. Palettes are only set when a
+  // texture has them.
+  std::map<std::tuple<int, int, ImagePart>, std::size_t> imageOf;
   for (const auto& [key, group] : groups) {
     if (key.palette >= 0) {
-      imageOf.emplace(std::pair{key.texture, key.palette}, 0);
+      imageOf.emplace(std::tuple{key.texture, key.palette, key.part}, 0);
     }
   }
   for (auto& [where, image] : imageOf) {
+    const auto& [texture, palette, part] = where;
     image = document.imageViews.size();
-    const ModelTexture& texture = textures[static_cast<std::size_t>(where.first)];
-    document.imageViews.push_back(
-        document.addView(texture.palettes[static_cast<std::size_t>(where.second)].png));
+    const TexturePalette& drawn =
+        textures[static_cast<std::size_t>(texture)].palettes[static_cast<std::size_t>(palette)];
+    const std::span<const std::byte> png = part == ImagePart::Plain ? drawn.plainPng
+                                           : part == ImagePart::Stp ? drawn.stpPng
+                                                                    : drawn.png;
+    document.imageViews.push_back(document.addView(png));
   }
   for (const auto& [key, group] : groups) {
     std::optional<std::size_t> image;
     if (key.palette >= 0) {
-      image = imageOf.find(std::pair{key.texture, key.palette})->second;
+      image = imageOf.find(std::tuple{key.texture, key.palette, key.part})->second;
     }
     document.materials.push_back(key);
     document.materialImages.push_back(image);

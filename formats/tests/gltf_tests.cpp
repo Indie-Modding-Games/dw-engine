@@ -10,6 +10,7 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "model_fixtures.hpp"
@@ -36,8 +37,18 @@ std::vector<ModelTexture> sampleTexture() {
            .width = 256,
            .height = 128,
            .depth = 0,
-           .palettes = {{.clutX = 0, .clutY = 488, .png = FirstRowImage},
-                        {.clutX = 0, .clutY = 489, .png = SecondRowImage}}}};
+           .palettes = {{.clutX = 0,
+                         .clutY = 488,
+                         .png = FirstRowImage,
+                         .kinds = {},
+                         .plainPng = {},
+                         .stpPng = {}},
+                        {.clutX = 0,
+                         .clutY = 489,
+                         .png = SecondRowImage,
+                         .kinds = {},
+                         .plainPng = {},
+                         .stpPng = {}}}}};
 }
 
 std::vector<Animation> sampleAnimations() {
@@ -233,19 +244,34 @@ TEST_CASE("a primitive takes the first texture that holds its texels and its pal
        .width = 128,
        .height = 128,
        .depth = 1,
-       .palettes = {{.clutX = 0, .clutY = 488, .png = SecondRowImage}}},
+       .palettes = {{.clutX = 0,
+                     .clutY = 488,
+                     .png = SecondRowImage,
+                     .kinds = {},
+                     .plainPng = {},
+                     .stpPng = {}}}},
       {.pixelX = 320,
        .pixelY = 0,
        .width = 256,
        .height = 128,
        .depth = 0,
-       .palettes = {{.clutX = 0, .clutY = 488, .png = FirstRowImage}}},
+       .palettes = {{.clutX = 0,
+                     .clutY = 488,
+                     .png = FirstRowImage,
+                     .kinds = {},
+                     .plainPng = {},
+                     .stpPng = {}}}},
       {.pixelX = 320,
        .pixelY = 0,
        .width = 256,
        .height = 128,
        .depth = 0,
-       .palettes = {{.clutX = 0, .clutY = 489, .png = SecondRowImage}}},
+       .palettes = {{.clutX = 0,
+                     .clutY = 489,
+                     .png = SecondRowImage,
+                     .kinds = {},
+                     .plainPng = {},
+                     .stpPng = {}}}},
       {.pixelX = 320, .pixelY = 0, .width = 256, .height = 256, .depth = 0, .palettes = {}}};
   const auto glb = writeModelGlb(*tmd, sampleSkeleton, {}, textures);
   REQUIRE(glb.has_value());
@@ -273,4 +299,102 @@ TEST_CASE("a primitive takes the first texture that holds its texels and its pal
              attribute(reread->meshes[0].primitives[i], cgltf_attribute_type_texcoord) != nullptr;
   }
   CHECK(hasUvs);
+}
+
+namespace {
+
+constexpr std::array<std::byte, 2> PlainImage{std::byte{8}, std::byte{9}};
+constexpr std::array<std::byte, 1> StpImage{std::byte{10}};
+
+// One semi-transparent (subtractive) textured triangle reading texels (0, 0) to (7, 7) of the 4-bit
+// page at (320, 0) with the palette at (0, 489), written with texel kinds `kinds` on that image.
+std::vector<std::byte> writeSemiTransparent(std::span<const TexelKind> kinds) {
+  const auto tmd = readTmd(buildTmd(
+      {{.vertices = {0, 0, 0, 100, 0, 0, 0, -100, 0},
+        .normals = {0, 0, -4096},
+        .primitives = {{primitiveHeader(0x36, 0, 6), uvWord(0, 0, 0x7A40), uvWord(7, 0, 0x0045),
+                        uvWord(0, 7, 0), pair(0, 0), pair(0, 1), pair(0, 2)}}}}));
+  REQUIRE(tmd.has_value());
+  const std::vector<SkeletonBone> skeleton{{.objIndex = 0, .parentIndex = -1}};
+  const std::vector<ModelTexture> textures{{.pixelX = 320,
+                                            .pixelY = 0,
+                                            .width = 256,
+                                            .height = 128,
+                                            .depth = 0,
+                                            .palettes = {{.clutX = 0,
+                                                          .clutY = 489,
+                                                          .png = FirstRowImage,
+                                                          .kinds = kinds,
+                                                          .plainPng = PlainImage,
+                                                          .stpPng = StpImage}}}};
+  auto glb = writeModelGlb(*tmd, skeleton, {}, textures);
+  REQUIRE(glb.has_value());
+  return std::move(*glb);
+}
+
+std::vector<TexelKind> kindsWith(TexelKind inBox, TexelKind corner) {
+  std::vector<TexelKind> kinds(256 * 128, TexelKind::Stp);
+  for (std::size_t y = 0; y < 8; ++y) {
+    for (std::size_t x = 0; x < 8; ++x) {
+      kinds[(y * 256) + x] = inBox;
+    }
+  }
+  kinds[(7 * 256) + 7] = corner;
+  return kinds;
+}
+
+std::span<const std::byte> imageOf(const cgltf_material& material) {
+  const cgltf_buffer_view* view =
+      material.pbr_metallic_roughness.base_color_texture.texture->image->buffer_view;
+  return {static_cast<const std::byte*>(view->buffer->data) + view->offset, view->size};
+}
+
+} // namespace
+
+TEST_CASE("a semi-transparent primitive blends only its texels with STP") {
+  // partner_impl.c: initializePoop: ETCNA/UNTI.TMD's pile is semi-transparent with a palette
+  // without STP, so the console draws it opaque; its shadow has STP everywhere and blends.
+  SUBCASE("no texel with STP: written opaque") {
+    const auto kinds = kindsWith(TexelKind::Plain, TexelKind::Transparent);
+    const auto glb = writeSemiTransparent(kinds);
+    const auto parsed = parse(glb);
+    REQUIRE(parsed->materials_count == 1);
+    CHECK(parsed->materials[0].alpha_mode == cgltf_alpha_mode_mask);
+    CHECK(std::string_view(parsed->materials[0].extras.data) ==
+          R"({"image":[320,0],"depth":0,"clut":[0,489],"blending":0})");
+    CHECK(std::ranges::equal(imageOf(parsed->materials[0]), FirstRowImage));
+  }
+  SUBCASE("only texels with STP: blended") {
+    const auto kinds = kindsWith(TexelKind::Stp, TexelKind::Transparent);
+    const auto glb = writeSemiTransparent(kinds);
+    const auto parsed = parse(glb);
+    REQUIRE(parsed->materials_count == 1);
+    CHECK(parsed->materials[0].alpha_mode == cgltf_alpha_mode_blend);
+    CHECK(std::string_view(parsed->materials[0].extras.data) ==
+          R"({"image":[320,0],"depth":0,"clut":[0,489],"blending":2})");
+  }
+  SUBCASE("both kinds: written twice, each kind from its own image") {
+    const auto kinds = kindsWith(TexelKind::Plain, TexelKind::Stp);
+    const auto glb = writeSemiTransparent(kinds);
+    const auto parsed = parse(glb);
+    REQUIRE(parsed->materials_count == 2);
+    CHECK(parsed->images_count == 2);
+    CHECK(parsed->meshes[0].primitives_count == 2);
+    for (std::size_t i = 0; i < parsed->materials_count; ++i) {
+      const cgltf_material& material = parsed->materials[i];
+      if (material.alpha_mode == cgltf_alpha_mode_blend) {
+        CHECK(std::ranges::equal(imageOf(material), StpImage));
+      } else {
+        CHECK(material.alpha_mode == cgltf_alpha_mode_mask);
+        CHECK(std::ranges::equal(imageOf(material), PlainImage));
+      }
+    }
+  }
+  SUBCASE("kinds unknown: every texel blends") {
+    const auto glb = writeSemiTransparent({});
+    const auto parsed = parse(glb);
+    REQUIRE(parsed->materials_count == 1);
+    CHECK(parsed->materials[0].alpha_mode == cgltf_alpha_mode_blend);
+    CHECK(std::ranges::equal(imageOf(parsed->materials[0]), FirstRowImage));
+  }
 }

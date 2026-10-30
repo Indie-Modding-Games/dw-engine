@@ -107,8 +107,12 @@ TEST_CASE("a model of the user's disc is read and every animation plays") {
   ModelTexture texture{
       .pixelX = 320, .pixelY = 0, .width = 256, .height = 128, .depth = 0, .palettes = {}};
   for (std::uint16_t row = 0; row < 16; ++row) {
-    texture.palettes.push_back(
-        {.clutX = 0, .clutY = static_cast<std::uint16_t>(488 + row), .png = placeholder});
+    texture.palettes.push_back({.clutX = 0,
+                                .clutY = static_cast<std::uint16_t>(488 + row),
+                                .png = placeholder,
+                                .kinds = {},
+                                .plainPng = {},
+                                .stpPng = {}});
   }
   const auto glb = writeModelGlb(mmd->tmd, skeleton, animations, std::span(&texture, 1));
   REQUIRE_MESSAGE(glb.has_value(), glb.error().message);

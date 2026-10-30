@@ -198,6 +198,16 @@ La misma entrada da siempre los mismos bytes.
 - **Materiales:** por textura y paleta, semitransparencia, dos caras y luz. Sin luz usa `KHR_materials_unlit`. Uno
   semitransparente usa `BLEND` y guarda el modo de la consola en `extras.blending` (`BLEND` solo se le parece). Si no,
   con textura usa `MASK`, para recortar los texels que la consola no dibuja (los que el PNG trae con alfa 0).
+- **Semitransparencia por texel:** la consola solo mezcla, en una primitiva semitransparente con textura, los texels
+  cuyo color tiene el bit STP (15); los demás los dibuja opacos. Por eso `TexturePalette` trae el tipo de cada texel
+  (`kinds`: transparente, `Plain` u `Stp`) y, si la imagen tiene de los dos, la imagen partida (`plainPng` con solo los
+  `Plain`, `stpPng` con solo los `Stp`). Una primitiva semitransparente cuyos texels (la caja de sus `u v`) no tienen
+  STP se escribe opaca (`MASK`, `blending` 0); una con los dos tipos se escribe dos veces, opaca con `plainPng` y
+  semitransparente con `stpPng`; una con solo `Stp` queda como antes. Sin `kinds` se mezclan todos sus texels.
+  Ejemplo: la caca del compañero (`ETCNA/UNTI.TMD`, `partner_impl.c: initializePoop`) es semitransparente en modo
+  resta, pero su paleta (96, 501) no tiene STP: en la consola es marrón y opaca (medido: texels 148,99,41 /
+  132,74,24 / 115,57,8 en `twna01`), y antes el motor la restaba del suelo y salía negra. Su sombra (paleta (96, 502),
+  colores 5-14 con STP) sí resta.
 - **Texturas:** ver [abajo](#texturas).
 - **Animaciones:** una por animación (`anim_NN`, con NN el id), con un fotograma por tick, interpolación lineal,
   rotación en cuaterniones y traslación del hueso 0 = movimiento raíz. Un canal se omite si el hueso no se mueve de la

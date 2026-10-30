@@ -70,6 +70,13 @@ dónde mira, o a una vecina al azar si ya hay uno. Cada fotograma pasa a `FieldS
 modelo de `poop_piles.look.model` en el centro de su casilla, a la altura del compañero y a la escala de su tamaño entre
 `model_size` (`renderPoop`). Sin la sección `poop_piles` los montones se guardan pero no se ven.
 
+Color (Igual, medido en `twna01` con un montón puesto por RAM en `WORLD_POOP`): el montón es marrón y opaco
+(texels 148,99,41 / 132,74,24 / 115,57,8 de la paleta (96, 501), sombreado gouraud cerca de 1.0) con una sombra que
+oscurece el suelo. `ETCNA/UNTI.TMD` marca sus primitivas semitransparentes en modo resta, pero la consola solo mezcla
+los texels con STP: el montón no tiene ninguno y la sombra sí. Lo resuelve el extractor (versión 9, ver
+[semitransparencia por texel](../../formats/modelos.md)); con un `unti.glb` de antes el montón sale negro. La caca
+gigante de `gomi02` (`ETCNA/TRY.TMD`) no es semitransparente y no cambia.
+
 `FieldStoryProps` (`field_story_props.cpp`) dibuja lo que la historia pone en el campo además del mapa y sus personajes
 (`session/story_props.hpp`): la vagoneta del Drill Tunnel delante del compañero, a su radio más 100 y girada como él
 (`map_object.c: renderDirtCartModel`), el montón de tierra de tunn05 a la escala de su tamaño y la roca de tunn06, todos

@@ -13,12 +13,23 @@
 
 namespace dwe::formats::model {
 
+// What a texel of a model texture is to a semi-transparent primitive: the console skips colour
+// 0x0000, blends the colours with the STP bit (15) and draws the others opaque.
+enum class TexelKind : std::uint8_t { Transparent, Plain, Stp };
+
 // A palette of a model texture: where it sits in VRAM, which is how a primitive's CBA picks it, and
 // the texture's image drawn with it, as a PNG.
 struct TexturePalette {
   std::uint16_t clutX = 0; // in halfwords
   std::uint16_t clutY = 0;
   std::span<const std::byte> png;
+  // The kind of every texel, row by row. Empty: unknown, and a semi-transparent primitive blends
+  // all its texels.
+  std::span<const TexelKind> kinds;
+  // The image split by kind, for a semi-transparent primitive that reads both kinds: only its Plain
+  // texels and only its Stp texels, the others transparent. Empty when the image lacks either kind.
+  std::span<const std::byte> plainPng;
+  std::span<const std::byte> stpPng;
 };
 
 // An image a model's primitives read, as the extractor converted it: where it sits in the console's
@@ -48,7 +59,9 @@ std::string animationName(std::size_t id);
 //
 // A textured primitive takes the first texture of its colour depth that holds every texel its UVs
 // reach and that has no palettes or the palette at its CBA; one that finds none fails the model.
-// Without textures the UVs are left out.
+// Without textures the UVs are left out. A semi-transparent textured primitive whose palette knows
+// its texel kinds blends only its Stp texels, as the console does: with none it is written opaque,
+// and with both kinds it is written twice, its Plain texels opaque and its Stp texels blended.
 core::Result<std::vector<std::byte>> writeModelGlb(const Tmd& tmd,
                                                    std::span<const SkeletonBone> skeleton,
                                                    std::span<const Animation> animations,

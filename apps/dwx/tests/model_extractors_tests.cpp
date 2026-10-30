@@ -278,3 +278,63 @@ TEST_CASE(
 
   CHECK_FALSE(buildStaticModel(std::vector<std::byte>(8), {}).has_value());
 }
+
+TEST_CASE("a semi-transparent model blends only the texels whose colour has STP") {
+  // ETCNA/UNTI.TMD: the pile is semi-transparent but its palette has no STP, so the console draws
+  // it opaque; the shadow under it has STP and blends.
+  const auto tmd = fixtures::buildTmd(
+      {{.vertices = {0, 0, 0, 100, 0, 0, 0, -100, 0},
+        .normals = {0, 0, -4096},
+        .primitives = {{fixtures::primitiveHeader(0x36, 0, 6), fixtures::uvWord(0, 0, 0x7A00),
+                        fixtures::uvWord(15, 0, 0x0045), fixtures::uvWord(0, 15, 0),
+                        fixtures::pair(0, 0), fixtures::pair(0, 1), fixtures::pair(0, 2)}}}});
+  const auto alphaModes = [&](const Tim& tim) {
+    std::vector<NamedScene> scenes(1);
+    scenes[0].name = "scene";
+    scenes[0].scene.addTim(tim);
+    const auto model = buildStaticModel(tmd, scenes);
+    REQUIRE(model.has_value());
+    const auto parsed = parse(model->glb);
+    std::vector<cgltf_alpha_mode> modes;
+    for (std::size_t i = 0; i < parsed->materials_count; ++i) {
+      modes.push_back(parsed->materials[i].alpha_mode);
+    }
+    return std::pair{modes, parsed->images_count};
+  };
+
+  const Tim plain = sampleTexture();
+  CHECK(alphaModes(plain) == std::pair{std::vector{cgltf_alpha_mode_mask}, std::size_t{1}});
+
+  Tim blended = sampleTexture();
+  for (Color15& color : blended.clut) {
+    if (color != 0) {
+      color = static_cast<Color15>(color | 0x8000U);
+    }
+  }
+  CHECK(alphaModes(blended) == std::pair{std::vector{cgltf_alpha_mode_blend}, std::size_t{1}});
+
+  // Half the colours with STP: the plain texels opaque and the others blended, each from its own
+  // image.
+  Tim mixed = sampleTexture();
+  for (std::size_t i = 0; i < mixed.clut.size(); i += 2) {
+    if (mixed.clut[i] != 0) {
+      mixed.clut[i] = static_cast<Color15>(mixed.clut[i] | 0x8000U);
+    }
+  }
+  const auto [modes, images] = alphaModes(mixed);
+  CHECK(std::ranges::is_permutation(modes,
+                                    std::vector{cgltf_alpha_mode_mask, cgltf_alpha_mode_blend}));
+  CHECK(images == 2);
+
+  const auto read = dwe::formats::model::readTmd(tmd);
+  REQUIRE(read.has_value());
+  VramScene scene;
+  scene.addTim(mixed);
+  const auto textures = textureModel(*read, scene);
+  REQUIRE(textures.has_value());
+  REQUIRE(textures->textures.size() == 1);
+  const auto& palette = textures->textures[0].palettes[0];
+  CHECK(palette.kinds.size() == std::size_t{256} * 128);
+  CHECK_FALSE(palette.plainPng.empty());
+  CHECK_FALSE(palette.stpPng.empty());
+}

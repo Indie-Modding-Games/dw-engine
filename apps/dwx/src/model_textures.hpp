@@ -46,10 +46,13 @@ private:
 struct ModelTextures {
   std::vector<formats::model::ModelTexture> textures;
   std::deque<std::vector<std::byte>> pngs;
+  // The texel kinds of each image and palette, which the textures point at too.
+  std::deque<std::vector<formats::model::TexelKind>> kinds;
   std::size_t texturedPrimitives = 0;
   std::size_t resolvedPrimitives = 0;
   // The colour of every texel inside the UV box of each resolved primitive, primitive after
-  // primitive, as the PNG keeps it: two scenes that give the same texels draw the model the same.
+  // primitive, as the PNG keeps it, but half transparent where a semi-transparent primitive blends
+  // it: two scenes that give the same texels draw the model the same.
   std::vector<formats::image::Rgba8> texels;
   // The primitives whose texels or palette are not in the scene, grouped by page and palette. They
   // keep their UVs on their texture page, without an image.
@@ -57,8 +60,9 @@ struct ModelTextures {
 };
 
 // Finds every textured primitive's image and palette in the scene and draws each image with each
-// palette in use as an indexed PNG (colour 0x0000 transparent). Fails only when a PNG cannot be
-// written.
+// palette in use as an indexed PNG (colour 0x0000 transparent), with the kind of each texel and,
+// when the image has texels with and without STP, the image split by kind. Fails only when a PNG
+// cannot be written.
 core::Result<ModelTextures> textureModel(const formats::model::Tmd& tmd, const VramScene& scene);
 
 } // namespace dwe::dwx
