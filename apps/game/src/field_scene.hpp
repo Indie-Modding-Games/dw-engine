@@ -223,6 +223,8 @@ public:
   // off); true when the field does not show it.
   [[nodiscard]] bool fighterPlayedThrough(std::optional<std::int32_t> npc,
                                           const FighterFigure& figure);
+  // The model a held fighter is drawn with; null when the field does not draw it.
+  [[nodiscard]] const assets::ModelData* fighterModel(std::optional<std::int32_t> npc) const;
   // The field takes the fighters back where they stand.
   void releaseFighters();
   // A node of a held fighter's model (the original's object index; the first for one it lacks) in

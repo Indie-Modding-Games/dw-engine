@@ -378,7 +378,7 @@ initializeHealingParticles = { status = "falta", what = "Prepara las partículas
 addHealingParticleEffect = { status = "falta", what = "Lanza las partículas de curación sobre el compañero." }
 
 # --- Campo
-findAABBHitEntity = { status = "no-aplica", note = "prueba de cajas del original; el motor choca con su rejilla", what = "Busca la entidad cuya caja toca otra." }
+findAABBHitEntity = { status = "portado", note = "solo en las comprobaciones de golpe de los efectos; el campo choca con su rejilla", dwe = "game/battle/src/effect_runner_subops.cpp:717", what = "Busca la entidad cuya caja toca otra." }
 hasAABBOverlap = { status = "no-aplica", note = "prueba de cajas del original", what = "Dice si dos cajas se tocan." }
 initializePartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Borra el rastro del compañero al cambiar de mapa." }
 popPartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Quita el primer punto del rastro del compañero." }

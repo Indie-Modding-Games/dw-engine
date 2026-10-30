@@ -2,11 +2,13 @@
 
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/items.hpp>
+#include <dwe/game/battle/motion.hpp>
 #include <dwe/game/battle/moves.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -62,6 +64,8 @@ struct ShownClip {
   bool frozen = false;
   // The pose it was picked for.
   Pose pose = Pose::Standing;
+  // The clip's frames played (anim.c: animFrame): its root motion and its end go by it.
+  std::size_t frame = 0;
 };
 
 // A unit vector scaled by FacingScale: where a fighter looks.
@@ -137,6 +141,15 @@ struct Fighter {
   Point position;
   Facing facing;
   Pose pose = Pose::Standing;
+  // The clips of its model (motion.hpp); none for a fighter the battle has no model for, which then
+  // walks at the ruleset's walk speed and keeps the ruleset's animation lengths.
+  std::shared_ptr<const FighterClips> clips;
+  // The root motion's fraction of a unit, in 1 / FacingScale (anim.c: anim.locX, locZ, which keep
+  // 15 bits below the location).
+  Point rootRemainder;
+  // This frame's root step is held (anim.c: animFlag bit 1): the step ahead runs into something
+  // (battle_main.c: BTL_tickFighterAction) or every way is blocked (map.c: collisionGrace).
+  bool rootHeld = false;
   std::int32_t poseFrames = 0;
 
   std::optional<FighterId> target;

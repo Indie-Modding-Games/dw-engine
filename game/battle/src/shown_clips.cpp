@@ -13,16 +13,6 @@ namespace dwe::game::battle {
 
 namespace {
 
-// The original's animation ids for the battle, the same for every species.
-constexpr std::int32_t DisobeyClip = 0x13;
-constexpr std::int32_t StanceClip = 0x21;
-constexpr std::int32_t WeakStanceClip = 0x22;
-constexpr std::int32_t WeakWalkClip = 0x23;
-constexpr std::int32_t WalkClip = 0x24;
-constexpr std::int32_t BlockClip = 0x25;
-constexpr std::int32_t HitClip = 0x28;
-constexpr std::int32_t HitFromBehindClip = 0x29;
-constexpr std::int32_t FaintClip = 0x2B;
 // Weak below a fifth of the HP (btl.c: startBattleIdleAnimation, battle_main.c:
 // BTL_startWalkingAnimation).
 constexpr std::int32_t WeakHpDivisor = 5;
@@ -36,25 +26,14 @@ bool happened(const BattleEvents& events, EventKind kind, FighterId id) {
       events, [&](const BattleEvent& event) { return event.kind == kind && event.fighter == id; });
 }
 
-// battle_main.c: BTL_setupQueuedMove: queuedAnim is the species' animation of the move, the first
-// move animation plus the move's place in the species' list. Nothing for a move outside the list
-// (the flattened fighter's shot), which keeps the clip it shows.
-std::optional<std::int32_t> moveClipOf(const BattleContext& context, const Fighter& fighter,
-                                       std::optional<MoveRef> move) {
-  if (!move) {
-    return std::nullopt;
-  }
-  const auto& list = fighter.combatant.speciesMoves;
-  const auto found = std::ranges::find(list, std::optional{context.moves->at(*move).id});
-  if (found == list.end()) {
-    return std::nullopt;
-  }
-  return FirstMoveAnimation + static_cast<std::int32_t>(std::distance(list.begin(), found));
-}
-
+// anim.c: startAnimation: the clip plays from its first frame, its root step free (animFlag = 1)
+// and the location's fraction dropped (locX = location << 15).
 void start(Fighter& fighter, FighterId id, std::int32_t clip, std::string_view origin) {
   fighter.shown.clip = clip;
   ++fighter.shown.starts;
+  fighter.shown.frame = 0;
+  fighter.rootHeld = false;
+  fighter.rootRemainder = {};
   core::logDebug("[port:battle] {}: fighter {} startAnimation({:#x}) for pose {}", origin, id, clip,
                  static_cast<int>(fighter.pose));
 }
@@ -146,6 +125,52 @@ void updateShownClip(const BattleContext& context, FighterId id) {
 }
 
 } // namespace
+
+// battle_main.c: BTL_setupQueuedMove: queuedAnim is the species' animation of the move, the first
+// move animation plus the move's place in the species' list. Nothing for a move outside the list
+// (the flattened fighter's shot), which keeps the clip it shows.
+std::optional<std::int32_t> moveClipOf(const BattleContext& context, const Fighter& fighter,
+                                       std::optional<MoveRef> move) {
+  if (!move) {
+    return std::nullopt;
+  }
+  const auto& list = fighter.combatant.speciesMoves;
+  const auto found = std::ranges::find(list, std::optional{context.moves->at(*move).id});
+  if (found == list.end()) {
+    return std::nullopt;
+  }
+  return FirstMoveAnimation + static_cast<std::int32_t>(std::distance(list.begin(), found));
+}
+
+std::optional<std::int32_t> clipLength(const Fighter& fighter, std::int32_t clip) {
+  if (!fighter.clips) {
+    return std::nullopt;
+  }
+  const auto found = fighter.clips->find(clip);
+  if (found == fighter.clips->end() || found->second.repeatFrom) {
+    return std::nullopt;
+  }
+  return static_cast<std::int32_t>(found->second.length());
+}
+
+std::optional<bool> clipEnded(const Fighter& fighter, std::int32_t clip) {
+  if (!clipLength(fighter, clip)) {
+    return std::nullopt;
+  }
+  return fighter.shown.clip == clip && fighter.clips->at(clip).ended(fighter.shown.frame);
+}
+
+std::optional<RootStep> nextRootStep(const Fighter& fighter) {
+  // A frozen clip is tested too: the frame's step test runs before the pose lets it go on.
+  if (!fighter.clips) {
+    return std::nullopt;
+  }
+  const auto found = fighter.clips->find(fighter.shown.clip);
+  if (found == fighter.clips->end()) {
+    return std::nullopt;
+  }
+  return found->second.stepAt(fighter.shown.frame);
+}
 
 std::int32_t stanceClipOf(const Fighter& fighter) {
   return weak(fighter) ? WeakStanceClip : StanceClip;

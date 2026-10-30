@@ -164,6 +164,9 @@ private:
   // What the effects read of the fighters; it outlives effects_.
   std::optional<BattleEffectBodies> bodies_;
   std::optional<session::BattleEffects> effects_;
+  // When the techniques' effects reach their targets (game::battle::ScriptedFlights), from the
+  // effect scripts and the bodies.
+  std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
   // The opening before the fight (battle_setup.c: BTL_handleBattleIntro), the enemies it marks and
   // where, and the time it has not run yet. Each battle seeds its own from their count.

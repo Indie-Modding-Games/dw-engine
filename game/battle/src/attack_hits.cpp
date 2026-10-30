@@ -1,6 +1,9 @@
+#include <dwe/core/log.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -257,6 +260,30 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
   }
 }
 
+// The frames from the release to the hit: until the move's effect touches the defender, where the
+// battle knows its flight (flights.hpp), else the ruleset's projectile speed.
+std::int32_t flightFrames(const BattleContext& context, FighterId id, FighterId defender) {
+  const Fighter& fighter = context.fighter(id);
+  const ActiveAttack& attack = *fighter.attack;
+  if (context.flights != nullptr) {
+    const std::string& move = context.moves->at(attack.move).id;
+    const std::optional<std::int32_t> landing = context.flights->landingFrame(
+        move, id, defender, moveClipOf(context, fighter, attack.move));
+    if (landing) {
+      core::logDebug(
+          "[port:battle] BTL_tickEFEEngine (battle_effect.c): {} of fighter {} touches "
+          "fighter {} {} away on attack frame {} (released on {})",
+          move, id, defender,
+          integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position)),
+          *landing, attack.frame);
+      return std::max(*landing - attack.frame, 0);
+    }
+  }
+  const std::int64_t distance =
+      integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position));
+  return static_cast<std::int32_t>(distance / std::max(context.rules->timing.projectileSpeed, 1));
+}
+
 } // namespace
 
 void releaseAttack(BattleContext& context, FighterId id) {
@@ -288,10 +315,7 @@ void releaseAttack(BattleContext& context, FighterId id) {
   for (const FighterId defender : reached) {
     std::int32_t frames = 0;
     if (travels) {
-      const std::int64_t distance =
-          integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position));
-      frames =
-          static_cast<std::int32_t>(distance / std::max(context.rules->timing.projectileSpeed, 1));
+      frames = flightFrames(context, id, defender);
     }
     context.state->inFlight.push_back({.attacker = id,
                                        .defender = defender,

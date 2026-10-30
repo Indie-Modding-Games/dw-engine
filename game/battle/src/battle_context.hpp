@@ -18,6 +18,7 @@ struct BattleContext {
   BattleEvents* events = nullptr;
   const PartnerCondition* condition = nullptr;
   const BattleGround* ground = nullptr;
+  const AttackFlights* flights = nullptr;
 
   [[nodiscard]] BattleView view() const {
     return {.rules = rules,
@@ -93,11 +94,34 @@ void revivePartner(BattleContext& context, std::int32_t hp);
 // damage drain.
 void tickHpBars(BattleContext& context);
 
+// The original's animation ids for the battle, the same for every species.
+inline constexpr std::int32_t DisobeyClip = 0x13;
+inline constexpr std::int32_t StanceClip = 0x21;
+inline constexpr std::int32_t WeakStanceClip = 0x22;
+inline constexpr std::int32_t WeakWalkClip = 0x23;
+inline constexpr std::int32_t WalkClip = 0x24;
+inline constexpr std::int32_t BlockClip = 0x25;
+inline constexpr std::int32_t HitClip = 0x28;
+inline constexpr std::int32_t HitFromBehindClip = 0x29;
+inline constexpr std::int32_t FaintClip = 0x2B;
+
 // shown_clips.cpp: the animation each fighter shows, started as the original starts it
 // (startAnimation): the stances when the battle starts, then each frame from the poses and the
 // frame's events.
 void startShownClips(BattleState& state);
 void updateShownClips(const BattleContext& context);
+// battle_main.c: BTL_setupQueuedMove: the species' clip of a move (FirstMoveAnimation plus the
+// move's place in the species' list); nothing for a move outside the list.
+std::optional<std::int32_t> moveClipOf(const BattleContext& context, const Fighter& fighter,
+                                       std::optional<MoveRef> move);
+// The length in frames of one of the fighter's clips; nothing when the battle has no motion for it.
+std::optional<std::int32_t> clipLength(const Fighter& fighter, std::int32_t clip);
+// Whether `clip`, which the fighter must be showing, has played to its end (anim.c: animFlag bit 0
+// off): false while it shows another clip, nothing when the battle has no motion for it.
+std::optional<bool> clipEnded(const Fighter& fighter, std::int32_t clip);
+// The root step of the fighter's clip on its next frame; nothing once the clip ended or without
+// its motion.
+std::optional<RootStep> nextRootStep(const Fighter& fighter);
 
 // movement.cpp: walking on the battle ground. Distances squared, as the original compares them.
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b);
@@ -121,6 +145,12 @@ void turnAtRandom(BattleContext& context, Fighter& fighter);
 // Walks the way it faces.
 void walkForward(BattleContext& context, FighterId id);
 bool isWalking(const Fighter& fighter);
+// battle_main.c: BTL_tickFighterAction: a fighter with clips holds this frame's root step when the
+// step ahead runs into something (entityCheckCollision with the combat area).
+void testRootStep(BattleContext& context, FighterId id);
+// anim.c: tickAnimation for every fighter with clips: its clip plays a frame (unless frozen) and
+// its root step moves it along its facing, unless held (applyRootMomentum).
+void tickRootMotion(BattleContext& context);
 // map.c: entityCheckCombatArea: whether the step of a mover of `radius` from `from` to `to` leaves
 // the rectangle of width x height pixels around the screen's centre, moving further out.
 bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,

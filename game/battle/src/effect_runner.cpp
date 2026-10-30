@@ -385,7 +385,8 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     }
   }
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
-      drawOp(slot, in.sub, args) || fighterOp(slot, in.sub, args)) {
+      drawOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
+      (touchBodies_ && touchOp(slot, in.sub, args))) {
     return;
   }
   if (in.sub == PlaySound && !args.empty()) {
@@ -409,6 +410,9 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     const std::optional<FighterId> target = context(slot).target;
     if (target && !std::ranges::contains(slot.hitTargets, *target)) {
       slot.hitTargets.push_back(*target);
+      if (touchBodies_) {
+        touched_.push_back(*target);
+      }
     }
   } else if (in.sub == CheckTargetCollision && args.size() > TargetCollisionHitArg) {
     writeHit(slot, args[TargetCollisionHitArg], false);

@@ -25,6 +25,7 @@ dwe_add_module(battle
         src/effect_math.cpp
         src/effect_runner.cpp
         src/effect_runner_subops.cpp
+        src/flights.cpp
         src/joining.cpp
         src/simulation.cpp
         src/text_keys.cpp

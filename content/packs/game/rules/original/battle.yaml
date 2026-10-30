@@ -474,8 +474,10 @@ effects:
     cegr: grey
     cemg: mtgr
 
-# Tiempos que en el original marcan las animaciones de cada modelo y la colisión del mapa, no una tabla. Hueco: son
-# valores del motor, medios y aproximados, hasta medirlos en las animaciones; la interfaz puede sustituirlos.
+# Tiempos que en el original marcan las animaciones de cada modelo y la colisión del mapa, no una tabla. En el juego,
+# con los modelos, la duración del ataque, del golpe, del bloqueo y del desmayo y el paso al andar salen de las
+# animaciones (su movimiento de raíz) y el vuelo de cada técnica de su script de efecto; estos valores, medios y
+# aproximados, quedan para la simulación y las pruebas, sin modelos. La interfaz puede sustituirlos.
 timing:
   attack_frames: 30
   hit_frame: 12

@@ -352,10 +352,21 @@ void tickAttackState(BattleContext& context, FighterId id) {
 
 // battle_main.c: BTL_tickHitState: the reaction holds still while the fighter cannot be hit, then
 // plays.
+// With the fighter's clips, the reaction lasts as long as its clip plays.
 void tickHitState(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   if (fighter.invulnerableFrames > 0) {
     --fighter.invulnerableFrames;
+    return;
+  }
+  const std::int32_t clip = fighter.blocking        ? BlockClip
+                            : fighter.hitFromBehind ? HitFromBehindClip
+                                                    : HitClip;
+  if (const std::optional<bool> ended = clipEnded(fighter, clip);
+      ended && fighter.shown.clip == clip) {
+    if (*ended) {
+      endAnimation(context, id);
+    }
     return;
   }
   if (fighter.poseFrames > 0) {
@@ -369,12 +380,16 @@ void tickHitState(BattleContext& context, FighterId id) {
 void tickFighter(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   if (fighter.fainted) {
-    if (fighter.pose == Pose::Fainting && --fighter.poseFrames <= 0) {
+    // With the fighter's clips, the faint lasts as long as its clip plays.
+    const std::optional<bool> ended = clipEnded(fighter, FaintClip);
+    if (fighter.pose == Pose::Fainting &&
+        (ended && fighter.shown.clip == FaintClip ? *ended : --fighter.poseFrames <= 0)) {
       fighter.poseFrames = 0;
       fighter.pose = Pose::Fainted;
     }
     return;
   }
+  testRootStep(context, id);
   if (fighter.attack) {
     tickAttackState(context, id);
     return;
@@ -550,12 +565,17 @@ void beginAttack(BattleContext& context, FighterId id) {
   }
   fighter.speedReserve =
       std::max(fighter.speedReserve - move.power, context.rules->moves.speedReserveFloor);
+  // With the fighter's clips, the attack lasts as long as the move's clip plays
+  // (BTL_tickFighterAction waits for animFlag bit 0 to go off).
   const TimingRules& timing = context.rules->timing;
+  const std::optional<std::int32_t> clip = moveClipOf(context, fighter, ref);
+  const std::int32_t length =
+      clip ? clipLength(fighter, *clip).value_or(timing.attackFrames) : timing.attackFrames;
   fighter.attack = ActiveAttack{.move = ref,
                                 .target = fighter.target,
                                 .frame = 0,
-                                .length = timing.attackFrames,
-                                .releaseFrame = timing.hitFrame,
+                                .length = length,
+                                .releaseFrame = std::min(timing.hitFrame, std::max(length - 1, 0)),
                                 .released = false};
   fighter.pose = Pose::Attacking;
   context.emit({.kind = EventKind::AttackStarted,

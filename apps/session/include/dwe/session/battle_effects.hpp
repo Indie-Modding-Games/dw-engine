@@ -13,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -26,6 +27,10 @@ namespace dwe::session {
 // attack that hits tells its effect, whose hit checks answer with it; a fighter that is hit loses
 // its own effect, as does one that starts another attack (BTL_removeMoveEffect). A move without an
 // effect plays nothing.
+// A move's effect/<move>/ read from the packs; nothing for a move without one (logged).
+std::optional<assets::EffectScript> readMoveEffect(const assets::VirtualFileSystem& files,
+                                                   std::string_view move);
+
 class BattleEffects {
 public:
   // Both must outlive this.

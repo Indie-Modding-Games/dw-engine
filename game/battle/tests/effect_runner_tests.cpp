@@ -1,6 +1,7 @@
 #include <dwe/assets/effect_script.hpp>
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/effect_runner.hpp>
+#include <dwe/game/battle/flights.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
@@ -787,4 +788,114 @@ TEST_CASE("every extracted effect runs and draws on two fighters") {
   }
   MESSAGE(drawing << " of " << effects << " effects draw");
   CHECK(drawing > effects / 2);
+}
+
+namespace {
+
+// The attacker and the defender standing on the console's x: the defender at `defenderX` with a
+// square `size` wide and tall, the attacker at 1000 with one 100 wide. The made-up breath's
+// instance stays at the origin.
+class StandingPair final : public dwe::game::battle::EffectBodies {
+public:
+  StandingPair(std::int32_t defenderX, std::int32_t size) : defenderX_(defenderX), size_(size) {}
+
+  [[nodiscard]] std::optional<dwe::game::battle::EffectBody>
+  body(dwe::game::battle::FighterId fighter) const override {
+    if (fighter > 1) {
+      return std::nullopt;
+    }
+    return dwe::game::battle::EffectBody{
+        .species = "hero",
+        .location = {.x = fighter == 0 ? 1000 : defenderX_, .y = 0, .z = 0},
+        .rotationY = 0,
+        .radius = fighter == 0 ? 100 : size_,
+        .height = fighter == 0 ? 100 : size_,
+        .standing = true};
+  }
+  [[nodiscard]] std::optional<dwe::game::battle::EffectMatrix>
+  node(dwe::game::battle::FighterId /*fighter*/, std::int32_t /*index*/) const override {
+    return std::nullopt;
+  }
+  [[nodiscard]] std::vector<dwe::game::battle::FighterId> fighters() const override {
+    return {0, 1};
+  }
+
+private:
+  std::int32_t defenderX_;
+  std::int32_t size_;
+};
+
+constexpr std::int32_t Wide = 4000;
+constexpr std::int32_t FarOff = 100000;
+
+// The made-up breath with its instance at the origin and a check box of no size (the instance's
+// place at instance+4 and the extent at base+0x20, which the breath leaves unset).
+EffectScript placedBreath() {
+  const std::string script = std::string{ScriptYaml} + R"(- at: "0x0014"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x001c"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0020"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0024"
+  kind: variable
+  width: 4
+  value: 0
+- at: "0x0028"
+  kind: variable
+  width: 4
+  value: 0
+)";
+  const auto effect = dwe::core::parseYaml(EffectYaml);
+  const auto parsed = dwe::core::parseYaml(script);
+  REQUIRE(effect.has_value());
+  REQUIRE(parsed.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *parsed);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  return std::move(*read);
+}
+
+} // namespace
+
+TEST_CASE("touching bodies, an effect's box check hits a fighter in reach and not one far off") {
+  for (const auto& [defenderX, hits] : {std::pair{0, true}, std::pair{FarOff, false}}) {
+    RecordingSounds sounds;
+    EffectRunner runner{sounds};
+    const StandingPair bodies{defenderX, Wide};
+    runner.setBodies(bodies);
+    runner.touchBodies(true);
+    const std::size_t slot = runner.load(placedBreath());
+    runner.start(slot, 0, 1);
+    sounds.log.clear();
+    runner.tick();
+    // aabb.c: findAABBHitEntity: the fighter's box around the instance, the attacker never itself.
+    CHECK(runner.touched() == (hits ? std::vector<dwe::game::battle::FighterId>{1}
+                                    : std::vector<dwe::game::battle::FighterId>{}));
+    CHECK((sounds.log ==
+           std::vector<Recorded>{{"play", 16}, {"stop", RecordingSounds::HeldVoice}}) == hits);
+  }
+}
+
+TEST_CASE("a scripted flight lands on the frame the move's effect touches the defender") {
+  const auto source = [](std::string_view move) -> std::optional<EffectScript> {
+    if (move != "made_up_breath") {
+      return std::nullopt;
+    }
+    return placedBreath();
+  };
+  const StandingPair near{0, Wide};
+  const StandingPair far{FarOff, Wide};
+  const dwe::game::battle::ScriptedFlights nearFlights{source, near};
+  const dwe::game::battle::ScriptedFlights farFlights{source, far};
+  CHECK(nearFlights.landingFrame("made_up_breath", 0, 1, std::nullopt) == std::optional{0});
+  // The breath gives up on its third frame without touching anyone.
+  CHECK_FALSE(farFlights.landingFrame("made_up_breath", 0, 1, std::nullopt).has_value());
+  CHECK_FALSE(nearFlights.landingFrame("no_effect", 0, 1, std::nullopt).has_value());
+  CHECK_FALSE(nearFlights.landingFrame("made_up_breath", 1, 1, std::nullopt).has_value());
 }

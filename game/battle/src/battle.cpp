@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -305,7 +306,8 @@ core::Result<void> Battle::command(Command command) {
                         .random = &random_,
                         .events = &events_,
                         .condition = &setup_.condition,
-                        .ground = ground_};
+                        .ground = ground_,
+                        .flights = flights_};
   commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
 }
@@ -319,6 +321,10 @@ void Battle::defeatEnemies() {
 
 void Battle::pressFinisherCharge() {
   chargePressed_ = true;
+}
+
+void Battle::setClips(FighterId fighter, FighterClips clips) {
+  state_.fighters.at(fighter).clips = std::make_shared<const FighterClips>(std::move(clips));
 }
 
 bool Battle::bagAvailable() const {
@@ -382,7 +388,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .random = &random_,
           .events = &events,
           .condition = &setup_.condition,
-          .ground = ground_};
+          .ground = ground_,
+          .flights = flights_};
 }
 
 BattleEvents& Battle::pending() {
@@ -407,7 +414,8 @@ const BattleEvents& Battle::step() {
                         .random = &random_,
                         .events = &events_,
                         .condition = &setup_.condition,
-                        .ground = ground_};
+                        .ground = ground_,
+                        .flights = flights_};
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
   if (state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
@@ -445,6 +453,7 @@ const BattleEvents& Battle::step() {
   drainPendingDamage(context);
   tickHpBars(context);
   updateShownClips(context);
+  tickRootMotion(context);
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

@@ -23,6 +23,7 @@ dwe_add_app(game
         src/field_scene_ground_items.cpp
         src/field_scene_effects.cpp
         src/battle_effect_bodies.cpp
+        src/battle_motion.cpp
         src/field_scene_script.cpp
         src/field_scene_fighters.cpp
         src/field_scene_objects.cpp
@@ -106,17 +107,17 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
 # settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save and place debug
-# commands, the state trace's lines, the control channel's requests and the title screen's and the game's save
-# flows.
+# commands, the state trace's lines, the control channel's requests, the title screen's and the game's save flows
+# and the battle's root steps of a model.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/bug_report.cpp src/control_json.cpp src/device_names.cpp
-                                  src/game_saves.cpp src/minimap_setting.cpp src/place_command.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
+                                  src/device_names.cpp src/game_saves.cpp src/minimap_setting.cpp src/place_command.cpp
                                   src/remote_control.cpp src/save_command.cpp src/save_flow.cpp src/state_trace.cpp
                                   src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
-                                                 dwe::inventory dwe::screens dwe_test_main)
+                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/apps/session/tests

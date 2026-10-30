@@ -4,6 +4,7 @@
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/events.hpp>
+#include <dwe/game/battle/flights.hpp>
 #include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
@@ -168,6 +169,13 @@ public:
   // The ground the fighters walk on, which must outlive the battle; none keeps them within the
   // ruleset's arena radius.
   void setGround(const BattleGround* ground) { ground_ = ground; }
+  // The clips of a fighter's model (motion.hpp): from then on its clips move it and time its
+  // attacks, hit reactions, blocks and faint. A fighter without them walks at the ruleset's walk
+  // speed and keeps the ruleset's animation lengths.
+  void setClips(FighterId fighter, FighterClips clips);
+  // When the techniques' attacks reach their targets (flights.hpp), which must outlive the battle;
+  // none flies them at the ruleset's projectile speed.
+  void setFlights(const AttackFlights* flights) { flights_ = flights; }
 
   // Runs one frame and returns what happened in it, with what the inputs since the last frame did
   // first.
@@ -206,6 +214,7 @@ private:
   std::optional<BattleResult> result_;
   core::FixedStep clock_;
   const BattleGround* ground_ = nullptr;
+  const AttackFlights* flights_ = nullptr;
   bool chargePressed_ = false;
   bool delivered_ = false;
 };

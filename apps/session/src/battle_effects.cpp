@@ -35,6 +35,23 @@ core::Result<core::YamlNode> readYaml(const assets::VirtualFileSystem& files,
 
 } // namespace
 
+std::optional<assets::EffectScript> readMoveEffect(const assets::VirtualFileSystem& files,
+                                                   std::string_view move) {
+  auto effect = readYaml(files, std::format("effect/{}/effect", move));
+  auto script = readYaml(files, std::format("effect/{}/script", move));
+  if (!effect || !script) {
+    core::logDebug("[port:battle] BTL_loadMoveEFE (battle_effect.c:2157): move={} has no effect",
+                   move);
+    return std::nullopt;
+  }
+  auto read = assets::readEffectScript(*effect, *script);
+  if (!read) {
+    core::logWarning("effect/{}: {}", move, read.error().message);
+    return std::nullopt;
+  }
+  return std::move(*read);
+}
+
 BattleEffects::BattleEffects(const assets::VirtualFileSystem& files, game::story::SoundPort& sound)
     : files_(&files), sound_(&sound) {}
 
@@ -87,17 +104,8 @@ std::optional<std::size_t> BattleEffects::slotOf(const std::string& move) {
   if (missing_.contains(move)) {
     return std::nullopt;
   }
-  auto effect = readYaml(*files_, std::format("effect/{}/effect", move));
-  auto script = readYaml(*files_, std::format("effect/{}/script", move));
-  if (!effect || !script) {
-    core::logDebug("[port:battle] BTL_loadMoveEFE (battle_effect.c:2157): move={} has no effect",
-                   move);
-    missing_.insert(move);
-    return std::nullopt;
-  }
-  auto read = assets::readEffectScript(*effect, *script);
+  std::optional<assets::EffectScript> read = readMoveEffect(*files_, move);
   if (!read) {
-    core::logWarning("effect/{}: {}", move, read.error().message);
     missing_.insert(move);
     return std::nullopt;
   }

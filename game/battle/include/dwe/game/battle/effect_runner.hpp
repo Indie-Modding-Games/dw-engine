@@ -181,6 +181,13 @@ public:
   // Whether a sub-effect of the slot still runs.
   [[nodiscard]] bool running(std::size_t slot) const;
 
+  // The hit checks test the effects' instances against the fighters' bodies, as the original's do
+  // (aabb.c: findAABBHitEntity; battle_effect.c: BTL_applyRadiusAttackHit, BTL_applyLineAttackHit,
+  // BTL_checkTargetCollision), instead of answering from the battle's hits; every fighter they or
+  // hit_target hit is kept in touched(), in order. For the battle's flight probe (flights.hpp).
+  void touchBodies(bool on) { touchBodies_ = on; }
+  [[nodiscard]] const std::vector<FighterId>& touched() const { return touched_; }
+
 private:
   // A sub-effect of a slot (battle_effect.c: EfeSubEffect): the script it runs each frame and the
   // instance it runs on, as offsets into the slot.
@@ -245,6 +252,8 @@ private:
   bool vectorOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   bool drawOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   bool fighterOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  // The hit checks under touchBodies (effect_runner_subops.cpp); false for one that is not theirs.
+  bool touchOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   void homeTowardPoint(Slot& slot, const std::vector<std::int32_t>& args);
   void selectTarget(Slot& slot, bool random, std::int32_t argument);
   void tickUvAnims(Slot& slot);
@@ -292,6 +301,8 @@ private:
   std::optional<FighterId> startSource_;
   std::optional<FighterId> startTarget_;
   std::size_t targetCursor_ = 0;
+  bool touchBodies_ = false;
+  std::vector<FighterId> touched_;
 };
 
 } // namespace dwe::game::battle

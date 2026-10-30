@@ -83,6 +83,11 @@ bool FieldScene::fighterPlayedThrough(std::optional<std::int32_t> npc,
          actor->player->playedThrough();
 }
 
+const assets::ModelData* FieldScene::fighterModel(std::optional<std::int32_t> npc) const {
+  const Actor* actor = fighterActor(npc);
+  return actor != nullptr ? actor->model.get() : nullptr;
+}
+
 void FieldScene::releaseFighters() {
   const auto release = [this](Actor& actor) {
     if (!actor.fighter) {

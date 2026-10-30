@@ -631,4 +631,121 @@ void EffectRunner::selectTarget(Slot& slot, bool random, std::int32_t argument) 
   self.target = fighters[targetCursor_];
 }
 
+namespace {
+
+// Whether the segment from (x0, z0) to (x1, z1) crosses the square of half-side `half` around
+// (cx, cz) (Liang-Barsky clipping).
+bool segmentCrossesSquare(std::int64_t x0, std::int64_t z0, std::int64_t x1, std::int64_t z1,
+                          std::int64_t cx, std::int64_t cz, std::int64_t half) {
+  double low = 0.0;
+  double high = 1.0;
+  const std::array<std::pair<double, double>, 4> edges{{
+      {static_cast<double>(-(x1 - x0)), static_cast<double>(x0 - (cx - half))},
+      {static_cast<double>(x1 - x0), static_cast<double>((cx + half) - x0)},
+      {static_cast<double>(-(z1 - z0)), static_cast<double>(z0 - (cz - half))},
+      {static_cast<double>(z1 - z0), static_cast<double>((cz + half) - z0)},
+  }};
+  for (const auto& [p, q] : edges) {
+    if (p == 0.0) {
+      if (q < 0.0) {
+        return false;
+      }
+      continue;
+    }
+    const double t = q / p;
+    if (p < 0.0) {
+      low = std::max(low, t);
+    } else {
+      high = std::min(high, t);
+    }
+    if (low > high) {
+      return false;
+    }
+  }
+  return true;
+}
+
+} // namespace
+
+bool EffectRunner::touchOp(Slot& slot, std::string_view name,
+                           const std::vector<std::int32_t>& args) {
+  const bool box = name == "check_collision" || name == "apply_box_hit";
+  const bool radius = name == "apply_radius_hit";
+  const bool line = name == "apply_line_hit";
+  const bool target = name == "check_target_collision";
+  if (!box && !radius && !line && !target) {
+    return false;
+  }
+  const EffectVector at = vectorAt(slot, instanceAddress(PositionOffset));
+  SubEffect& self = context(slot);
+  if (target) {
+    // BTL_checkTargetCollision: within `radius` of the target's root on the ground; it marks
+    // nothing.
+    if (args.size() < 4) {
+      return true;
+    }
+    const std::optional<EffectMatrix> root = nodeOf(self.target, 0);
+    bool near = false;
+    if (root) {
+      const std::int64_t dx = at.x - root->t.x;
+      const std::int64_t dz = at.z - root->t.z;
+      const std::int64_t r = args[3];
+      near = (dx * dx) + (dz * dz) <= r * r;
+    }
+    write(slot, args[2], EffectWidth::Int32, near ? 1 : 0);
+    return true;
+  }
+  if (args.size() < 2) {
+    return true;
+  }
+  const std::int32_t hitAddress = args[1];
+  const EffectVector extent = box ? vectorAt(slot, args[0]) : EffectVector{};
+  const std::optional<EffectBody> source = bodyOf(self.source);
+  bool any = false;
+  for (const FighterId fighter :
+       bodies_ != nullptr ? bodies_->fighters() : std::vector<FighterId>{}) {
+    if (fighter == self.source || std::ranges::contains(slot.hitTargets, fighter)) {
+      continue;
+    }
+    const std::optional<EffectBody> body = bodies_->body(fighter);
+    if (!body || !body->standing) {
+      continue;
+    }
+    const std::int64_t dx = static_cast<std::int64_t>(at.x) - body->location.x;
+    const std::int64_t dz = static_cast<std::int64_t>(at.z) - body->location.z;
+    bool hit = false;
+    if (box) {
+      // aabb.c: findAABBHitEntity: the fighter's box is radius / 2 wide and its height tall, from
+      // the ground up.
+      const std::int64_t dy =
+          static_cast<std::int64_t>(at.y) - (body->location.y - (body->height >> 1));
+      hit = std::abs(dx) <= extent.x + (body->radius >> 1) &&
+            std::abs(dy) <= extent.y + (body->height >> 1) &&
+            std::abs(dz) <= extent.z + (body->radius >> 1);
+    } else if (radius) {
+      // BTL_applyRadiusAttackHit: the squares of the radii added, not the radii.
+      const std::int64_t r = args[0];
+      hit = (dx * dx) + (dz * dz) <=
+            (r * r) + (static_cast<std::int64_t>(body->radius) * body->radius);
+    } else if (source) {
+      // BTL_applyLineAttackHit: the line from the instance to the source crosses the fighter's
+      // square.
+      hit = segmentCrossesSquare(at.x, at.z, source->location.x, source->location.z,
+                                 body->location.x, body->location.z, body->radius);
+    }
+    if (!hit) {
+      continue;
+    }
+    slot.hitTargets.push_back(fighter);
+    touched_.push_back(fighter);
+    any = true;
+    // BTL_applyBoxAttackHit stops at the first fighter it hits.
+    if (box) {
+      break;
+    }
+  }
+  write(slot, hitAddress, EffectWidth::Int32, any ? 1 : 0);
+  return true;
+}
+
 } // namespace dwe::game::battle

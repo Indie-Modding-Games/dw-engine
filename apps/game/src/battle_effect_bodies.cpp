@@ -1,5 +1,9 @@
 #include "battle_effect_bodies.hpp"
 
+#include <dwe/assets/map_document.hpp>
+
+#include <glm/ext/matrix_transform.hpp>
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -8,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "battle_motion.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -101,6 +106,45 @@ std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fig
     return std::nullopt;
   }
   return originalMatrix(*world);
+}
+
+std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fighter,
+                                                     std::int32_t clip, std::int32_t frame,
+                                                     const game::battle::EffectBody& place,
+                                                     std::int32_t index) const {
+  const std::optional<std::optional<std::int32_t>> npc = npcOf(fighter);
+  if (!npc || scene_ == nullptr || index < 0 || clip < 0) {
+    return std::nullopt;
+  }
+  const assets::ModelData* model = scene_->fighterModel(*npc);
+  if (model == nullptr) {
+    return std::nullopt;
+  }
+  const std::optional<glm::mat4> joint = clipJointAt(*model, static_cast<std::uint32_t>(clip),
+                                                     frame, static_cast<std::uint32_t>(index));
+  if (!joint) {
+    return std::nullopt;
+  }
+  // The place in the world's axes: the console's y and z the other way, and rotation.vy as a yaw.
+  const glm::vec3 at{static_cast<float>(place.location.x), static_cast<float>(-place.location.y),
+                     static_cast<float>(-place.location.z)};
+  const glm::mat4 world =
+      glm::rotate(glm::translate(glm::mat4{1.0F}, at), assets::yawFromOriginal(place.rotationY),
+                  glm::vec3{0.0F, 1.0F, 0.0F});
+  return originalMatrix(world * *joint);
+}
+
+std::optional<game::battle::FighterClips>
+BattleEffectBodies::clips(game::battle::FighterId fighter) const {
+  const std::optional<std::optional<std::int32_t>> npc = npcOf(fighter);
+  if (!npc || scene_ == nullptr) {
+    return std::nullopt;
+  }
+  const assets::ModelData* model = scene_->fighterModel(*npc);
+  if (model == nullptr) {
+    return std::nullopt;
+  }
+  return battleClipsOf(*model);
 }
 
 std::vector<game::battle::FighterId> BattleEffectBodies::fighters() const {

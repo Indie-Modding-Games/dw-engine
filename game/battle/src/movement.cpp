@@ -211,14 +211,14 @@ bool leavesCombatArea(const BattleContext& context, Point from, Point to, std::i
                           timing.combatAreaHeight);
 }
 
-// The leading edge of the mover's square, on each axis it moves along, against the other's square
-// (map.c: entityCheckEntityCollision in battle, isRectInRect; edges touching count).
-bool runsInto(Point from, Point to, std::int32_t radius, const Fighter& other) {
-  const std::int64_t reach = other.combatant.radius;
-  const std::int64_t west = other.position.x - reach;
-  const std::int64_t east = other.position.x + reach;
-  const std::int64_t north = other.position.z - reach;
-  const std::int64_t south = other.position.z + reach;
+// The leading edge of the mover's square, on each axis it moves along, against the square of
+// half-side `reach` around `at` (map.c: entityCheckEntityCollision in battle, isRectInRect; edges
+// touching count).
+bool runsInto(Point from, Point to, std::int32_t radius, Point at, std::int64_t reach) {
+  const std::int64_t west = at.x - reach;
+  const std::int64_t east = at.x + reach;
+  const std::int64_t north = at.z - reach;
+  const std::int64_t south = at.z + reach;
   const auto overlaps = [&](std::int64_t x0, std::int64_t x1, std::int64_t z0, std::int64_t z1) {
     return x0 <= east && x1 >= west && z0 <= south && z1 >= north;
   };
@@ -232,13 +232,29 @@ bool runsInto(Point from, Point to, std::int32_t radius, const Fighter& other) {
          (to.z > from.z && overlaps(left, right, far, far));
 }
 
+// The walk clips (map.c: entityCheckCollision lets them through the player in battle).
+bool walkClip(std::int32_t clip) {
+  return clip == WalkClip || clip == WeakWalkClip;
+}
+
+// How far the step entityCheckCollision tests goes along the facing (map.c: entityMoveForward: the
+// clip's next root step); the ruleset's walk speed for a fighter without clips.
+std::int32_t stepAhead(const BattleContext& context, const Fighter& fighter) {
+  if (!fighter.clips) {
+    return context.rules->timing.walkSpeed;
+  }
+  return nextRootStep(fighter).value_or(RootStep{}).forward;
+}
+
 // What stops a fighter's next step if it faces `facing` (map.c: entityCheckCollision): the combat
-// area, the map, then the other fighters still standing. The tamer is not a fighter here.
-Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing) {
+// area, the map, then the other fighters still standing and, `withPlayer`, the player (a step of a
+// clip other than a walk).
+Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
+                     bool withPlayer = false) {
   const Fighter& fighter = context.fighter(id);
   const std::int32_t radius = fighter.combatant.radius;
   const Point from = fighter.position;
-  const Point to = stepFrom(from, facing, context.rules->timing.walkSpeed);
+  const Point to = stepFrom(from, facing, stepAhead(context, fighter));
   if (leavesCombatArea(context, from, to, radius)) {
     return Blocker::CombatArea;
   }
@@ -247,9 +263,15 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing) 
   }
   const std::vector<Fighter>& fighters = context.state->fighters;
   for (FighterId other = 0; other < fighters.size(); ++other) {
-    if (other != id && fighters[other].hp > 0 && runsInto(from, to, radius, fighters[other])) {
+    const Fighter& them = fighters[other];
+    if (other != id && them.hp > 0 &&
+        runsInto(from, to, radius, them.position, them.combatant.radius)) {
       return Blocker::Fighter;
     }
+  }
+  if (withPlayer && !context.state->tamerless &&
+      runsInto(from, to, radius, context.state->tamer, context.rules->timing.retreatRadius)) {
+    return Blocker::Fighter;
   }
   return Blocker::None;
 }
@@ -288,6 +310,7 @@ void collisionGrace(BattleContext& context, FighterId id) {
     }
   }
   fighter.facing = facingOf(start + GraceNudge);
+  fighter.rootHeld = true;
 }
 
 // BTL_findUnblockedRotation: the sweeps of three eighths tried from the quarter a fighter faces.
@@ -376,10 +399,18 @@ void turnAway(BattleContext& context, FighterId id, std::int32_t original, std::
 }
 
 // Moves a fighter `step` units along its facing if nothing stops the step (battle_main.c:
-// BTL_tickFighterAction freezes the walk while entityCheckCollision finds something ahead).
+// BTL_tickFighterAction freezes the walk while entityCheckCollision finds something ahead). A
+// fighter with clips walks by its walk clip's root motion instead (tickRootMotion), which the
+// frame's step test holds; an ungated walk lets it go (BTL_tickMeleeAttack clears animFlag bit 1).
 void moveAlongFacing(BattleContext& context, FighterId id, std::int32_t step, bool gated) {
   Fighter& fighter = context.fighter(id);
   fighter.pose = Pose::Walking;
+  if (fighter.clips) {
+    if (!gated) {
+      fighter.rootHeld = false;
+    }
+    return;
+  }
   if (gated && blockerAhead(context, id, fighter.facing) != Blocker::None) {
     return;
   }
@@ -496,6 +527,44 @@ void walkForward(BattleContext& context, FighterId id) {
 
 bool isWalking(const Fighter& fighter) {
   return fighter.pose == Pose::Walking;
+}
+
+void testRootStep(BattleContext& context, FighterId id) {
+  Fighter& fighter = context.fighter(id);
+  if (!fighter.clips) {
+    return;
+  }
+  fighter.rootHeld =
+      blockerAhead(context, id, fighter.facing, !walkClip(fighter.shown.clip)) != Blocker::None;
+}
+
+void tickRootMotion(BattleContext& context) {
+  for (Fighter& fighter : context.state->fighters) {
+    if (!fighter.clips || fighter.shown.frozen) {
+      continue;
+    }
+    const auto clip = fighter.clips->find(fighter.shown.clip);
+    if (clip == fighter.clips->end() || clip->second.ended(fighter.shown.frame)) {
+      continue;
+    }
+    const std::optional<RootStep> step = clip->second.stepAt(fighter.shown.frame);
+    ++fighter.shown.frame;
+    if (!step || fighter.rootHeld) {
+      continue;
+    }
+    // ApplyMatrixLV by the root's matrix: the model's x and z axes turned to the facing.
+    const std::int64_t fx = fighter.facing.x;
+    const std::int64_t fz = fighter.facing.z;
+    const std::int64_t x = (step->side * fz) + (step->forward * fx) + fighter.rootRemainder.x;
+    const std::int64_t z = (-step->side * fx) + (step->forward * fz) + fighter.rootRemainder.z;
+    const auto whole = [](std::int64_t value) {
+      return value >= 0 ? value / FacingScale : -((-value + FacingScale - 1) / FacingScale);
+    };
+    fighter.position.x += static_cast<std::int32_t>(whole(x));
+    fighter.position.z += static_cast<std::int32_t>(whole(z));
+    fighter.rootRemainder = {.x = static_cast<std::int32_t>(x - (whole(x) * FacingScale)),
+                             .z = static_cast<std::int32_t>(z - (whole(z) * FacingScale))};
+  }
 }
 
 } // namespace dwe::game::battle

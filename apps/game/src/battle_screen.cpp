@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -73,6 +74,20 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   effects_.reset();
   enemyNpcs_ = std::move(enemyNpcs);
   bodies_.emplace(*battle_, desc_.scene, desc_.species, enemyNpcs_);
+  // The fighters move and time their animations by their models' clips, and the techniques fly as
+  // their effect scripts do.
+  for (game::battle::FighterId id = 0; id < battle_->state().fighters.size(); ++id) {
+    if (std::optional<game::battle::FighterClips> clips = bodies_->clips(id)) {
+      battle_->setClips(id, std::move(*clips));
+    }
+  }
+  flights_.reset();
+  if (desc_.files != nullptr) {
+    flights_.emplace([files = desc_.files](
+                         std::string_view move) { return session::readMoveEffect(*files, move); },
+                     *bodies_, &*bodies_);
+    battle_->setFlights(&*flights_);
+  }
   desc_.session->useBattleSounds(true);
   if (game::story::SoundPort* sound = desc_.session->sound();
       sound != nullptr && desc_.files != nullptr) {
@@ -476,6 +491,7 @@ void BattleScreen::finish() {
     effects_.reset();
     showEffects();
   }
+  flights_.reset();
   bodies_.reset();
   desc_.session->useBattleSounds(false);
   session::SessionMusic* music = desc_.session->music();
