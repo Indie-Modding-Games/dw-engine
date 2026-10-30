@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/assets/clip_motion.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/core/error.hpp>
@@ -12,8 +13,10 @@
 #include <dwe/scene/components.hpp>
 #include <dwe/scene/world.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -105,7 +108,24 @@ struct ScriptedActor {
   // How many times a script started a clip: anim.c: startAnimation restarts even the clip that
   // plays, as each push of the gym's log does.
   std::uint32_t starts = 0;
+  // The clip's root motion under way (applyScriptedRootMotion): the start it belongs to, the
+  // clip's frame and the time toward the next frame.
+  std::uint32_t rootStarts = 0;
+  std::size_t rootFrame = 0;
+  float rootSeconds = 0.0F;
 };
+
+// The root motion of every clip of an NPC's model (anim.c: tickMomentum), which the app gives the
+// NPC once its model is in.
+struct NpcClipMotions {
+  std::shared_ptr<const assets::ClipMotions> clips;
+};
+
+// One original frame of a scripted NPC clip's root motion (anim.c: tickAnimation,
+// applyRootMomentum): the step of the clip's next frame along the facing `yaw`, in world units.
+// Nothing once a clip that does not repeat has ended.
+std::optional<glm::vec3> scriptedRootStep(const assets::ClipMotion& clip, std::size_t frame,
+                                          float yaw);
 
 // A 3D object of the map, a door model (map_object.c: loadDoors, Map3DObject), in world space.
 struct MapObject3D {
@@ -487,6 +507,9 @@ private:
   void requestSeparation(std::string_view why);
   void watchOverlaps(float seconds);
   void tickScripted(float seconds);
+  // The NPCs that play a script's clip move by its root motion (anim.c: tickAnimation runs on
+  // every NPC each frame, overworld.c: NPCEntityTickOverworld), unless the script walks them.
+  void applyScriptedRootMotion(float seconds);
   void tickCare(float seconds);
   void tickCareWalk(float seconds);
   void tickCameraPan(float seconds);

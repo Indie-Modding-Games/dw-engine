@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <numbers>
 #include <optional>
 #include <set>
@@ -1426,6 +1427,55 @@ TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") 
   run(field, 5.0F);
   CHECK(*field.npcs().positionOf(6) == home);
   CHECK(field.separateActors("test") == 0);
+}
+
+TEST_CASE("an NPC playing a script's clip moves by the clip's root motion") {
+  // Kunemon's eating clips in mayo02 (30, then 8) carry it 200 and 208 units forward off its bed,
+  // through the bed's wall cells (anim.c: tickAnimation, applyRootMomentum; no collision test).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  fill(map, {.column = 59, .row = 59}, {.column = 61, .row = 61}, Blocked);
+  const std::size_t slot = addNpc(map, 1050.0F, 1050.0F, 6);
+  field.enterMapAt(map, at(-1000.0F, -1000.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  const dwe::scene::Entity npc = *field.npcs().entityOf(6);
+  // Five frames of 40 units forward and one of 10 to its side; a walk clip that the script drives.
+  constexpr std::int32_t Hop = 30;
+  constexpr std::int32_t Walk = 1;
+  dwe::assets::ClipMotions clips;
+  clips[Hop].steps = {{},
+                      {.forward = 40},
+                      {.forward = 40},
+                      {.forward = 40},
+                      {.forward = 40},
+                      {.forward = 40},
+                      {.side = 10}};
+  clips[Walk].steps = {{}, {.forward = 40}};
+  clips[Walk].repeatFrom = 0;
+  world.registry().emplace<dwe::game::field::NpcClipMotions>(
+      npc, std::make_shared<const dwe::assets::ClipMotions>(std::move(clips)));
+  const float yaw = world.registry().get<dwe::scene::Transform>(npc).yaw;
+  const glm::vec3 forward = dwe::assets::forwardOfYaw(yaw);
+  const glm::vec3 side{forward.z, 0.0F, -forward.x};
+  const glm::vec3 home = *field.npcs().positionOf(6);
+  field.holdForScript(true);
+  field.animateByScript(npc, Hop);
+  run(field, 1.0F);
+  const glm::vec3 moved = *field.npcs().positionOf(6) - home;
+  const glm::vec3 expected = (forward * 200.0F) + (side * 10.0F);
+  CHECK(groundDistance(moved, expected) < 0.01F);
+  // The clip ended: it stays.
+  run(field, 1.0F);
+  CHECK(groundDistance(*field.npcs().positionOf(6) - home, expected) < 0.01F);
+  // A walk the script drives glides by its velocity alone.
+  const glm::vec3 before = *field.npcs().positionOf(6);
+  field.driveByScript(npc, glm::vec3{0.0F});
+  field.animateByScript(npc, Walk);
+  field.driveByScript(npc, forward * 100.0F);
+  run(field, 1.0F);
+  CHECK(groundDistance(*field.npcs().positionOf(6), before + (forward * 100.0F)) < 0.5F);
+  field.holdForScript(false);
 }
 
 TEST_CASE("a partner placed by the player keeps off the NPCs, and a map entry checks them too") {

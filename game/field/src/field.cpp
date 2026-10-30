@@ -439,6 +439,7 @@ void Field::tickNpcs(float seconds, bool playerFree) {
               .partner = {.centre = ground(registry.get<Transform>(partner_).position),
                           .half = rules_.partner.mover.radius},
               .playerFree = playerFree});
+  applyScriptedRootMotion(seconds);
 }
 
 void Field::walkOut(float seconds) {

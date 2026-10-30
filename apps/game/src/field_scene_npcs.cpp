@@ -1,9 +1,12 @@
 #include <dwe/core/log.hpp>
+#include <dwe/game/field/field.hpp>
 #include <dwe/game/field/npcs.hpp>
 
 #include <algorithm>
+#include <memory>
 #include <ranges>
 
+#include "battle_motion.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -48,6 +51,9 @@ void FieldScene::followNpcs() {
       npcsNotShown_.push_back(entity);
       continue;
     }
+    // Its clips' root motion, which carries it while a script plays one (anim.c: tickAnimation).
+    world_.registry().emplace_or_replace<game::field::NpcClipMotions>(
+        entity, std::make_shared<const assets::ClipMotions>(battleClipsOf(*(*actor)->model)));
     npcActors_.push_back(std::move(*actor));
   }
   // overworld.c: NPCEntityTickOverworld ends with entity.isOnScreen = !entityIsOffScreen(entity,

@@ -15,6 +15,7 @@ using dwe::game::field::findPath;
 using dwe::game::field::fitsOnGrid;
 using dwe::game::field::isLineClear;
 using dwe::game::field::moveOnGrid;
+using dwe::game::field::stepCollides;
 using dwe::game::field::testing::fill;
 using dwe::game::field::testing::roomMap;
 
@@ -194,4 +195,21 @@ TEST_CASE("a path goes to the nearest of several goals") {
   // Starting on a goal's centre, the path is just that point.
   const glm::vec3 centre = dwe::assets::collisionCellCenter(goals[0]);
   CHECK(findPath(map.collision, centre, goals, Radius) == std::vector<glm::vec3>{centre});
+}
+
+TEST_CASE("a step test only looks at the line ahead of where the step ends") {
+  // map_collision.c: checkMapCollisionX/Z test the cells `radius` ahead of the moved position, not
+  // the ones the edge crosses on the way. A fighter whose edge already overlaps a blocked cell
+  // steps on once the line ahead of the step is free (the Kunemon fight measured on 2026-10-30: in
+  // dwe the battle used moveOnGrid, which held it in the wall by its bed).
+  auto map = roomMap("room");
+  fill(map, {.column = 48, .row = 63}, {.column = 48, .row = 63},
+       Blocked); // x -200..-100, z 1300..1400
+  constexpr float Kunemon = 120.0F;
+  const glm::vec3 inWall{-55.0F, 0.0F, 1339.0F}; // its left edge, x -175, is in that cell
+  const glm::vec2 west{-30.0F, 0.0F};            // the edge ends at x -205, in the next cell
+  CHECK_FALSE(stepCollides(map.collision, inWall, west, Kunemon));
+  CHECK(moveOnGrid(map.collision, inWall, west, Kunemon).blockedX);
+  // A step that ends with the edge on the blocked line is stopped.
+  CHECK(stepCollides(map.collision, {-30.0F, 0.0F, 1339.0F}, west, Kunemon));
 }

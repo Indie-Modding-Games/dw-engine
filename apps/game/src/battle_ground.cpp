@@ -28,11 +28,12 @@ FieldBattleGround::screenPointOf(game::battle::Point ground, std::int32_t height
 
 bool FieldBattleGround::blocksStep(game::battle::Point from, game::battle::Point to,
                                    std::int32_t radius) const {
-  const game::field::GridMove move = game::field::moveOnGrid(
+  // Only the line ahead of where the step ends counts, as in the original: a fighter whose edge
+  // already overlaps a blocked cell may still step on to a free one.
+  return game::field::stepCollides(
       scene_->field().collision(), {static_cast<float>(from.x), 0.0F, static_cast<float>(from.z)},
       {static_cast<float>(to.x - from.x), static_cast<float>(to.z - from.z)},
       static_cast<float>(radius));
-  return move.blockedX || move.blockedZ;
 }
 
 } // namespace dwe::app

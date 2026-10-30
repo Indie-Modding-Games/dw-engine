@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -23,6 +24,19 @@ constexpr float JumpDistance = 50.0F;
 constexpr float JumpTurn = std::numbers::pi_v<float> / 4.0F;
 
 } // namespace
+
+std::optional<glm::vec3> scriptedRootStep(const assets::ClipMotion& clip, std::size_t frame,
+                                          float yaw) {
+  const std::optional<assets::RootStep> step = clip.stepAt(frame);
+  if (!step) {
+    return std::nullopt;
+  }
+  // ApplyMatrixLV by the root's matrix: the model's z along the facing, its x to its side (the
+  // battle's tickRootMotion turns the step the same way).
+  const glm::vec3 forward = assets::forwardOfYaw(yaw);
+  const glm::vec3 side{forward.z, 0.0F, -forward.x};
+  return (forward * static_cast<float>(step->forward)) + (side * static_cast<float>(step->side));
+}
 
 void Field::holdForScript(bool held) {
   if (held == scriptHeld_) {
@@ -118,6 +132,40 @@ void Field::shiftCameraByScript(glm::vec3 by) {
   scriptCamera_ = scriptCamera_.value_or(world_->registry().get<Transform>(player_).position) + by;
 }
 
+void Field::applyScriptedRootMotion(float seconds) {
+  const float frame = rules_.transition.frameSeconds;
+  entt::registry& registry = world_->registry();
+  const auto view = registry.view<const NpcTag, const NpcClipMotions, ScriptedActor, Transform>();
+  for (const auto [entity, tag, motions, actor, transform] : view.each()) {
+    // A walk the script drives glides at the clip's ground speed instead (driveByScript).
+    if (!actor.clip || motions.clips == nullptr || actor.velocity != glm::vec3{0.0F}) {
+      continue;
+    }
+    // anim.c: startAnimation: the clip starts on its first frame with no momentum.
+    if (actor.rootStarts != actor.starts) {
+      actor.rootStarts = actor.starts;
+      actor.rootFrame = 0;
+      actor.rootSeconds = 0.0F;
+    }
+    const auto clip = motions.clips->find(static_cast<std::int32_t>(*actor.clip));
+    if (clip == motions.clips->end()) {
+      continue;
+    }
+    actor.rootSeconds += seconds;
+    while (actor.rootSeconds >= frame) {
+      actor.rootSeconds -= frame;
+      const std::optional<glm::vec3> step =
+          scriptedRootStep(clip->second, actor.rootFrame + 1, transform.yaw);
+      if (!step) {
+        actor.rootSeconds = 0.0F;
+        break;
+      }
+      ++actor.rootFrame;
+      transform.position += *step;
+    }
+  }
+}
+
 void Field::tickCameraPan(float seconds) {
   if (!cameraPan_) {
     return;
@@ -144,6 +192,7 @@ void Field::tickScripted(float seconds) {
       [seconds](const ScriptedActor& actor, Transform& transform) {
         transform.position += actor.velocity * seconds;
       });
+  applyScriptedRootMotion(seconds);
   tickCameraPan(seconds);
   // A scripted map change's fade in runs on while the script holds the player (map.c:
   // scriptTickChangeMap).
