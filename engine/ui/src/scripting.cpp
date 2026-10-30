@@ -633,9 +633,11 @@ void Scripting::registerApi() {
   api["gamepad_family"] = [this](sol::this_state lua) {
     return result(lua, [&] { return host_.gamepadFamily(); });
   };
-  api["show"] = [this](std::string_view name, sol::this_state lua) {
+  // ui.show(name, modal): a menu that hands the navigation back to another menu shows it modal,
+  // or that menu would be on screen without receiving any input.
+  api["show"] = [this](std::string_view name, sol::optional<bool> modal, sol::this_state lua) {
     checkName(lua, name);
-    host_.show(name);
+    host_.show(name, modal.value_or(false));
   };
   api["hide"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);

@@ -321,7 +321,7 @@ struct Ui::Impl {
           return device == input::DeviceKind::Gamepad ? "gamepad" : "keyboard_mouse";
         },
         .gamepadFamily = [this]() { return std::string{gamepadFamilyName(family)}; },
-        .show = [this](std::string_view name) { show(name, false); },
+        .show = [this](std::string_view name, bool modal) { show(name, modal); },
         .hide = [this](std::string_view name) { hide(name); },
         .isVisible = [this](std::string_view name) { return isVisible(name); },
     };

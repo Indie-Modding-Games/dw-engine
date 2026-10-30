@@ -520,6 +520,41 @@ TEST_CASE("a modal document takes the navigation and confirm clicks the focused 
   CHECK_FALSE(ui->capturesInput());
 }
 
+TEST_CASE("a menu a script shows modal again takes the navigation back") {
+  // game_menu.c tickTriangleMenu: cancelling out of the bag or the partner's page returns to a menu
+  // that still answers the pad. A plain ui.show would leave it on screen without any input.
+  Content content;
+  content.add("ui/menu/document.rml", R"rml(<rml><head><script>
+function to_page() ui.hide("menu") ui.show("page", true) end
+</script></head><body><button id="entry">Entry</button></body></rml>)rml");
+  content.add("ui/page/document.rml", R"rml(<rml><head><script>
+function on_action(document, action)
+  if action == "cancel" then ui.hide("page") ui.show("menu", true) return true end
+  return false
+end
+</script></head><body><button id="slot">Slot</button></body></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("menu", idOf("ui/menu/document")));
+  REQUIRE(ui->loadDocument("page", idOf("ui/page/document")));
+  input::InputState input{input::defaultActionMap()};
+
+  ui->setMenuDocument("menu");
+  press(*ui, input, input::keys::Tab);
+  REQUIRE(ui->isVisible("menu"));
+  REQUIRE(ui->callScript("menu", "to_page"));
+  CHECK(ui->isVisible("page"));
+  CHECK(ui->capturesInput());
+
+  press(*ui, input, input::keys::Escape);
+  CHECK_FALSE(ui->isVisible("page"));
+  CHECK(ui->isVisible("menu"));
+  CHECK(ui->capturesInput());
+  // The menu answers again: cancel closes it.
+  press(*ui, input, input::keys::Escape);
+  CHECK_FALSE(ui->isVisible("menu"));
+  CHECK_FALSE(ui->capturesInput());
+}
+
 TEST_CASE("the pause menu works with the keyboard alone") {
   Content content;
   auto ui = createUi(content.mount());

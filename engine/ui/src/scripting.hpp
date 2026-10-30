@@ -53,7 +53,9 @@ struct ScriptHost {
   std::function<std::string(std::string_view)> skinNameKey;
   std::function<std::string()> device;
   std::function<std::string()> gamepadFamily;
-  std::function<void(std::string_view)> show;
+  // Shows a document; a modal one takes the navigation, as the menu document does when the game
+  // opens it.
+  std::function<void(std::string_view, bool)> show;
   std::function<void(std::string_view)> hide;
   std::function<bool(std::string_view)> isVisible;
 };

@@ -637,7 +637,7 @@ end
 function close_menu()
   ui.hide(document_name)
   if ui.setting("ui_skin") == "original" then
-    ui.show("pause_menu")
+    ui.show("pause_menu", true)
   end
 end
 

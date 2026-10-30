@@ -143,3 +143,11 @@ tabla de paridad del [página de game/battle](../game/battle.md).
 se regaña al compañero en el campo, junto a él (`partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold`),
 no desde un menú. La pestaña del menú del compañero (`partner_praise`, `partner_scold`) se queda, sin cambiar nada,
 hasta que exista esa interacción en el campo; entonces se quita (TODO en `apps/game/src/partner_menu.hpp`).
+
+## Menú del juego (aspecto original)
+
+Paridad con la revisión de menús contra el original (QA-M, 2026-10-30). Estado: **Igual**, **Suposición** o **Hueco**.
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Volver de la bolsa o del compañero al menú de Triángulo | `game_menu.c: tickTriangleMenu` (1372-1379) e `inventory.c: tickInventoryUI` (385-392): al cancelar, el menú vuelve y responde al mando | `partner_menu/logic.lua: close_menu` muestra `pause_menu` modal (`ui.show(nombre, true)`); antes quedaba visible sin recibir la navegación (QA-M01) | `ui_tests`: "a menu a script shows modal again takes the navigation back" | Igual |
