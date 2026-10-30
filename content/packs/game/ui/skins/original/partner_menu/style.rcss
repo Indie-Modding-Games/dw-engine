@@ -585,9 +585,9 @@ button:focus .original-look, button.original-look:focus {
 #tech-change, #tech-change:focus, #tech-cancel { position: absolute; left: 57dp; width: 810dp; height: 36dp; margin: 0; padding: 0; border-width: 0; background-color: transparent; text-align: left; font-size: 36dp; }
 #tech-change { top: 339dp; }
 #tech-cancel { top: 381dp; }
-.tech-action-symbol { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
+.tech-action-symbol { color: #90a8f8; margin-right: 9dp; }
 #tech-cancel .tech-action-symbol { color: #3cff3c; }
-.tech-action-label { position: absolute; left: 36dp; top: 0; white-space: nowrap; }
+.tech-action-label { white-space: nowrap; }
 #scrim.digimon-screen #prompts { display: none; }
 .tech-row .tech-power, .tech-row .tech-mp { top: -3dp; text-align: right; }
 .tech-row .tech-effect { top: -3dp; }
@@ -614,6 +614,24 @@ button:focus .original-look, button.original-look:focus {
 .dot-row-2 { top: 168dp; }
 #tech-final-dot { left: 798dp; top: 276dp; }
 #scrim.tech-editing #tech-final-separator, #scrim.tech-editing #tech-final-dot, #scrim.tech-editing #tech-cancel { display: none; }
+/* The change view's "Techs" heading where Final was, and the Tech help box under it (game_menu.c:
+   renderDigimonMovesView, MOVES_VIEW_HELP_LINES): lines black, light and black from x -142 to -80 and y 26 to 93,
+   "Tech" at (-135, 32), "help" at (-129, 46), the arrow at (-116, 60) and, at (-116, 76), the key that opens the
+   help page (the extra action), the device's key where the original draws its pad button. */
+#techs-heading, #tech-help { display: none; }
+#scrim.tech-editing #techs-heading { display: block; top: 219dp; }
+#scrim.tech-editing #tech-help { display: block; }
+#tech-help { position: absolute; left: 21dp; top: 342dp; width: 189dp; height: 204dp; box-sizing: border-box;
+	border: 3dp #020202; font-size: 36dp; color: #d6d6d6;
+	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
+#tech-help .tech-help-line { position: absolute; left: 0; top: 0; right: 0; bottom: 0; border: 3dp #6987a0; }
+#tech-help .tech-help-line .tech-help-line { border-color: #020202; }
+#tech-help-first, #tech-help-second, #tech-help-arrow, #tech-help-key { position: absolute; display: block; white-space: nowrap; }
+#tech-help-first { left: 18dp; top: 15dp; }
+#tech-help-second { left: 36dp; top: 57dp; }
+#tech-help-arrow { left: 75dp; top: 99dp; width: 30dp; height: 30dp; decorator: image(tech-help-arrow scale-none left top); }
+#tech-help-key { left: 0; width: 183dp; top: 147dp; text-align: center; color: #f070d8; }
 #tech-picker { position: absolute; left: 12dp; top: 228dp; width: 870dp; height: 216dp; }
 .tech-choice { display: inline-block; width: 210dp; height: 48dp; padding: 3dp; margin: 0; overflow: hidden; white-space: nowrap; font-size: 18dp; }
 #tech-message { position: absolute; left: 12dp; top: 474dp; width: 870dp; font-size: 21dp; color: #fff371; }

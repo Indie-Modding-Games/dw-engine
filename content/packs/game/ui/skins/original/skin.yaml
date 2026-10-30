@@ -306,6 +306,7 @@ sprite_sheets:
       tech-grid-cursor: [192, 12, 18, 16]
       tech-info-heading: [17, 48, 37, 7]
       tech-info-colon: [138, 12, 10, 10]
+      tech-help-arrow: [128, 12, 10, 10]
       tech-info-tl: [120, 16, 4, 4]
       tech-info-tr: [124, 16, 4, 4]
       tech-info-bl: [120, 20, 4, 4]

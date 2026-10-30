@@ -243,15 +243,6 @@ local function tech_value_label(field, value)
 end
 
 local function draw_tech(document)
-  if ui.setting("ui_skin") == "original" then
-    -- Use the disc's control glyphs: their bitmap meanings need not match Unicode shapes.
-    document
-      :get("tech-change-icon")
-      :set_text(string.match(original_label("status_view_labels", 5), "^(%S+)") or "")
-    document
-      :get("tech-cancel-icon")
-      :set_text(string.match(original_label("status_view_labels", 7), "^(%S+)") or "")
-  end
   for index = 0, 3 do
     local base = "partner.technique." .. index .. "."
     local filled = not setting(base .. "empty", true)
@@ -463,6 +454,12 @@ end
 local function draw_prompts(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  -- The tech page's Change Techniques and Cancel name the key of the device in use (a PC game: the
+  -- keyboard's keys first, a pad's buttons when a pad plays), where the original draws its pad
+  -- glyphs (game_menu.c: drawMoveViewHelpStrings).
+  document:get("tech-change-icon"):set_text(ui.prompt("confirm"))
+  document:get("tech-cancel-icon"):set_text(ui.prompt("cancel"))
+  document:get("tech-help-key"):set_text(ui.prompt("extra"))
 end
 
 local function draw(document)

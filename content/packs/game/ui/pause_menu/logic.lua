@@ -164,11 +164,6 @@ local function refresh_chart(document)
       end
     end
   end
-  for id, index in pairs({ ["chart-cross"] = 5, ["chart-triangle"] = 7 }) do
-    local key = string.format("main.status_view_labels.%04d", index)
-    local label = t(key)
-    document:get(id):set_text(label ~= key and string.match(label, "^(%S+)") or "")
-  end
   chart_cursor(document)
 end
 
@@ -336,11 +331,6 @@ local function refresh_medals(document)
     cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
     cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
   end
-  for id, index in pairs({ ["medals-cross"] = 5, ["medals-triangle"] = 7 }) do
-    local key = string.format("main.status_view_labels.%04d", index)
-    local label = t(key)
-    document:get(id):set_text(label ~= key and string.match(label, "^(%S+)") or "")
-  end
   medals_cursor(document)
 end
 
@@ -366,11 +356,6 @@ local function refresh_cards(document)
     cell:set_property("left", ((19 + (i % card_columns) * 24) * 3) .. "dp")
     cell:set_property("top", ((25 + math.floor(i / card_columns) * 24) * 3) .. "dp")
     cell:set_class("owned", owned[i] == true)
-  end
-  for id, index in pairs({ ["cards-cross"] = 5, ["cards-triangle"] = 7 }) do
-    local key = string.format("main.status_view_labels.%04d", index)
-    local label = t(key)
-    document:get(id):set_text(label ~= key and string.match(label, "^(%S+)") or "")
   end
   cards_cursor(document)
 end
@@ -550,6 +535,12 @@ end
 local function refresh_prompts(document)
   document:get("prompt-confirm"):set_text(ui.prompt("confirm"))
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
+  -- The player page's prompts name the key of the device in use (a PC game: the keyboard's keys
+  -- first, a pad's buttons when a pad plays), not the disc's fixed pad glyphs.
+  for _, page in ipairs({ "chart", "medals", "cards" }) do
+    document:get(page .. "-confirm-key"):set_text(ui.prompt("confirm"))
+    document:get(page .. "-cancel-key"):set_text(ui.prompt("cancel"))
+  end
 end
 
 local function show_page(document, name, focus, tools)
