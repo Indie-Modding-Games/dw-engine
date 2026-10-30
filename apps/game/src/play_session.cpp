@@ -837,6 +837,10 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
 }
 
+const game::story::StoryState* PlaySession::storyState() const {
+  return game_.systems.story != nullptr ? &game_.systems.story->state() : nullptr;
+}
+
 bool PlaySession::paused() const {
   const ui::Ui& ui = *context_.ui;
   return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||

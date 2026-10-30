@@ -2,6 +2,7 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/story/story_state.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/platform/events.hpp>
 #include <dwe/platform/platform.hpp>
@@ -150,6 +151,9 @@ struct AutotestHost {
   // The partner's status as the status page shows it (partner.* settings), refreshed every frame,
   // menu open or not.
   const screens::ScreenSettings* partner = nullptr;
+  // The story's triggers and variables (story.trigger.<n> and story.var.<n> settings); nothing
+  // at the title screen.
+  const game::story::StoryState* story = nullptr;
 };
 
 class Autotest {

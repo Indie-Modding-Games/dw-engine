@@ -190,9 +190,40 @@ std::optional<std::pair<std::string, std::string>> readSetting(assets::YamlReade
 // each other (Field::overlapEpisodes).
 constexpr std::string_view FieldOverlapsSetting = "field.overlaps";
 
+// The story's state a route can read as settings: story.trigger.<n> is true or false and
+// story.var.<n> the variable's value, as the original's script state keeps them.
+constexpr std::string_view StoryTriggerSetting = "story.trigger.";
+constexpr std::string_view StoryVariableSetting = "story.var.";
+
+std::optional<std::string> storySettingText(const game::story::StoryState& story,
+                                            std::string_view name) {
+  const bool trigger = name.starts_with(StoryTriggerSetting);
+  if (!trigger && !name.starts_with(StoryVariableSetting)) {
+    return std::nullopt;
+  }
+  const std::string_view digits =
+      name.substr(trigger ? StoryTriggerSetting.size() : StoryVariableSetting.size());
+  std::int32_t number = 0;
+  const auto [end, error] = std::from_chars(digits.data(), digits.data() + digits.size(), number);
+  if (error != std::errc{} || end != digits.data() + digits.size()) {
+    return std::nullopt;
+  }
+  if (trigger) {
+    const core::Result<bool> set = story.trigger(number);
+    return set ? std::optional<std::string>{*set ? "true" : "false"} : std::nullopt;
+  }
+  const core::Result<std::uint8_t> value = story.variable(number);
+  return value ? std::optional<std::string>{std::to_string(*value)} : std::nullopt;
+}
+
 std::string settingText(const AutotestHost& host, std::string_view name) {
   if (name == FieldOverlapsSetting && host.scene != nullptr) {
     return std::to_string(host.scene->field().overlapEpisodes());
+  }
+  if (host.story != nullptr) {
+    if (std::optional<std::string> story = storySettingText(*host.story, name)) {
+      return *std::move(story);
+    }
   }
   if (host.partner != nullptr) {
     const auto found = std::ranges::find(*host.partner, name, &screens::ScreenSetting::name);

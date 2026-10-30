@@ -175,6 +175,8 @@ public:
 
   // The partner's status as the status page shows it (partner.* settings).
   [[nodiscard]] screens::ScreenSettings partnerStatus() const;
+  // The story's triggers and variables, when the game runs the story (autotest's story.* settings).
+  [[nodiscard]] const game::story::StoryState* storyState() const;
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }

@@ -930,6 +930,7 @@ int runGame(const Options& requested) {
       const PlaySession* play = flow.playing();
       partnerStatus = play != nullptr ? play->partnerStatus() : screens::ScreenSettings{};
       host.scene = play != nullptr ? &play->scene() : nullptr;
+      host.story = play != nullptr ? play->storyState() : nullptr;
       autotest->frame(host, ticksRun, platform->nowSeconds(), events);
       if (autotest->finished()) {
         if (!control) {
