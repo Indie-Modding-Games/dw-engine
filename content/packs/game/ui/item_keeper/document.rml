@@ -1,0 +1,42 @@
+<rml>
+<head>
+	<title>Item keeper</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="frame">
+		<div id="kept-window" class="window original-box">
+			<div class="title-bar"></div>
+			<div class="title" text-key="item_keeper.kept_title"></div>
+			<div class="table table-name"></div><div class="table table-count"></div>
+			<div class="label label-menu"></div><div class="label label-count"></div>
+			<div class="cursor" id="kept-cursor"></div>
+			<div class="row" id="kept-row-0"><span class="name" id="kept-name-0"></span><span class="count" id="kept-count-0"></span></div><div class="row" id="kept-row-1"><span class="name" id="kept-name-1"></span><span class="count" id="kept-count-1"></span></div><div class="row" id="kept-row-2"><span class="name" id="kept-name-2"></span><span class="count" id="kept-count-2"></span></div><div class="row" id="kept-row-3"><span class="name" id="kept-name-3"></span><span class="count" id="kept-count-3"></span></div><div class="row" id="kept-row-4"><span class="name" id="kept-name-4"></span><span class="count" id="kept-count-4"></span></div>
+			<div class="scrollbar"><div class="thumb" id="kept-thumb"></div></div>
+		</div>
+		<div id="bag-window" class="window original-box">
+			<div class="title-bar"></div>
+			<div class="title" text-key="item_keeper.bag_title"></div>
+			<div class="table table-name"></div><div class="table table-count"></div>
+			<div class="label label-menu"></div><div class="label label-count"></div>
+			<div class="cursor" id="bag-cursor"></div>
+			<div class="row" id="bag-row-0"><span class="name" id="bag-name-0"></span><span class="count" id="bag-count-0"></span></div><div class="row" id="bag-row-1"><span class="name" id="bag-name-1"></span><span class="count" id="bag-count-1"></span></div><div class="row" id="bag-row-2"><span class="name" id="bag-name-2"></span><span class="count" id="bag-count-2"></span></div><div class="row" id="bag-row-3"><span class="name" id="bag-name-3"></span><span class="count" id="bag-count-3"></span></div><div class="row" id="bag-row-4"><span class="name" id="bag-name-4"></span><span class="count" id="bag-count-4"></span></div>
+			<div class="scrollbar"><div class="thumb" id="bag-thumb"></div></div>
+		</div>
+		<div id="talk" class="original-box original-look">
+			<div class="talk-row speaker" id="speaker"></div>
+			<div class="talk-row" id="talk-0"><span class="run" id="talk-run-0"></span></div>
+			<div class="talk-row" id="talk-1"><span class="run" id="talk-run-1"></span></div>
+			<div class="talk-row" id="talk-2"><span class="run" id="talk-run-2"></span></div>
+			<div id="help">
+				<div class="talk-row"><span text-key="item_keeper.help.use"></span> <span class="help-key one" id="key-one"></span> <span text-key="item_keeper.help.one"></span></div>
+				<div class="talk-row"><span text-key="item_keeper.help.use"></span> <span class="help-key ten" id="key-ten"></span> <span text-key="item_keeper.help.ten"></span></div>
+				<div class="talk-row"><span text-key="item_keeper.help.and"></span> <span class="help-key all" id="key-all"></span> <span text-key="item_keeper.help.all"></span></div>
+			</div>
+		</div>
+		<div id="description" class="original-box original-look"><span id="description-text"></span></div>
+	</div>
+</body>
+</rml>

@@ -1,0 +1,9 @@
+# El guardián de objetos que abre la historia (shop/script_menu.c: tickItemKeeper). Sus frases son textos de la
+# historia (MAPHEAD); aquí van los títulos de las ventanas y la ayuda, con las teclas del dispositivo en uso.
+kept_title: "Guardado"
+bag_title: "En mano"
+help.use: "Usa"
+help.and: "y"
+help.one: "para mover objetos."
+help.ten: "para mover de diez en diez"
+help.all: "para moverlos todos."

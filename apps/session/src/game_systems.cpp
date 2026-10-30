@@ -9,6 +9,7 @@
 #include <dwe/session/game_systems.hpp>
 #include <dwe/session/gym_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/item_keeper.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/poop_adapter.hpp>
 #include <dwe/session/shop_counter.hpp>
@@ -117,13 +118,16 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   inventory->setLossListener([shop = shop.get()](const std::vector<game::inventory::Stack>& lost) {
     shop->recycleLost(lost);
   });
+  auto itemKeeper =
+      std::make_unique<ItemKeeper>(ItemKeeperDesc{.files = &files, .inventory = inventory.get()});
   GameSystems game{.systems = {},
                    .evolution = evolution.get(),
                    .inventory = inventory.get(),
                    .battle = battle.get(),
                    .story = story.get(),
                    .storyOrders = storyOrders.get(),
-                   .shop = shop.get()};
+                   .shop = shop.get(),
+                   .itemKeeper = itemKeeper.get()};
   // The story's scenes tick before the story, so what the app reported is seen the same tick.
   auto scenes = std::make_unique<StoryScenes>(StoryScenesDesc{.story = story.get(),
                                                               .evolution = evolution.get(),
@@ -138,6 +142,7 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(story));
   game.systems.push_back(std::make_unique<GymAdapter>());
   game.systems.push_back(std::move(shop));
+  game.systems.push_back(std::move(itemKeeper));
   // The calendar runs a new game's day on the story after the story started it.
   game.calendar = calendar.get();
   game.systems.push_back(std::move(calendar));

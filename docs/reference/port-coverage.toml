@@ -592,8 +592,8 @@ addWeight = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", w
 hasAnyCardToBuy = { status = "falta", what = "Dice si queda alguna carta por comprar.", note = "no hay pantallas de cartas" }
 createCardMenu = { status = "falta", what = "Abre el menú de compra o venta de cartas.", note = "la rutina 14 se cierra sin pantalla" }
 shopFillMeritItemList = { status = "falta", what = "Rellena la lista del intercambio por méritos.", note = "la rutina 1 se cierra sin pantalla" }
-itemKeeperFillItemList = { status = "falta", what = "Rellena la lista del guardarropía de objetos.", note = "la rutina 11 se cierra sin pantalla" }
-createItemKeepWindow = { status = "falta", what = "Abre el guardarropía de objetos." }
+itemKeeperFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:106", what = "Rellena las listas del guardián de objetos (lo guardado y la bolsa) y marca las filas que no pueden pasar." }
+createItemKeepWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Abre las ventanas del guardián de objetos." }
 jukeboxFillTitleList = { status = "falta", what = "Rellena la lista de la gramola.", note = "la rutina 9 se cierra sin pantalla" }
 createJukeboxMenu = { status = "falta", what = "Abre la gramola." }
 birdraFillTargetList = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Rellena los destinos del pájaro transportista." }
@@ -602,13 +602,13 @@ mojyaTradeFillItemList = { status = "falta", what = "Rellena la lista del truequ
 createMojyaTradeMenu = { status = "falta", what = "Abre el trueque de objetos." }
 setMojyaItemTradedTrigger = { status = "falta", what = "Marca el objeto ya cambiado en el trueque." }
 tickCardMenu = { status = "falta", what = "Compra o venta de cartas: cursor, precio y confirmación." }
-tickItemKeeperWindow = { status = "falta", what = "Guardarropía: pasa objetos entre la bolsa y el almacén." }
-updateKeeperTextbox = { status = "falta", what = "Texto del guardarropía." }
-keeperMoveOne = { status = "falta", what = "Guardarropía: pasa un objeto." }
-keeperMoveTen = { status = "falta", what = "Guardarropía: pasa diez objetos." }
-keeperMoveStack = { status = "falta", what = "Guardarropía: pasa la pila entera." }
-keeperScrollLeftToItem = { status = "falta", what = "Guardarropía: salta al objeto anterior." }
-keeperScrollRightToItem = { status = "falta", what = "Guardarropía: salta al objeto siguiente." }
+tickItemKeeperWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: mueve el cursor y pasa objetos entre la bolsa y lo guardado." }
+updateKeeperTextbox = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Ayuda del guardián de objetos, con las teclas del dispositivo en uso." }
+keeperMoveOne = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:112", what = "Guardián de objetos: pasa un objeto." }
+keeperMoveTen = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:112", what = "Guardián de objetos: pasa diez objetos." }
+keeperMoveStack = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:112", what = "Guardián de objetos: pasa la pila entera." }
+keeperScrollLeftToItem = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:33", what = "Guardián de objetos: la ventana de lo guardado enseña el objeto movido." }
+keeperScrollRightToItem = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:33", what = "Guardián de objetos: la ventana de la bolsa enseña el objeto movido." }
 tickJukeboxMenu = { status = "falta", what = "Gramola: elige y toca una canción." }
 tickBirdraTransportMenu = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Elige destino del pájaro transportista y viaja." }
 tickMojyaTradeMenu = { status = "falta", what = "Trueque: elige el objeto a cambiar." }
@@ -626,7 +626,7 @@ openDiscardItem = { status = "parcial", note = "la rutina 0 se registra pero la 
 openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla", what = "Abre el intercambio de objetos por puntos de mérito." }
 openMojyamonShop = { status = "parcial", note = "la rutina 2 se cierra sin pantalla", what = "Abre el trueque de objetos." }
 openJukebox = { status = "parcial", note = "la rutina 9 se cierra sin pantalla", what = "Abre la gramola." }
-tickItemKeeper = { status = "parcial", note = "la rutina 11 se cierra sin pantalla", what = "Guardarropía de objetos." }
+tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: pregunta, sí o no, las ventanas y la despedida." }
 rollCardPack = { status = "parcial", dwe = "game/inventory/include/dwe/game/inventory/cards.hpp", note = "la tirada existe; la rutina 14 se cierra sin pantalla", what = "Saca las cartas de un sobre." }
 openBuyCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la compra de cartas." }
 openSellCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la venta de cartas." }

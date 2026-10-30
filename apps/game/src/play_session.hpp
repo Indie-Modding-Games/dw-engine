@@ -41,6 +41,7 @@
 #include "frame_stats.hpp"
 #include "free_exploration.hpp"
 #include "gym_screen.hpp"
+#include "item_keeper_screen.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
 #include "options.hpp"
@@ -142,6 +143,9 @@ public:
   // Feeds the battle the buttons it reads outside its document: `extra`, the original's square,
   // calls the finisher.
   void pressBattle(const input::InputState& input);
+  // The item keeper's buttons the menus do not navigate with (move by tens, move all, the
+  // description).
+  void pressItemKeeper(const input::InputState& input);
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
@@ -221,6 +225,7 @@ private:
   EggBoxScreen eggBoxScreen_;
   GymScreen gymScreen_;
   ShopScreen shopScreen_;
+  ItemKeeperScreen itemKeeperScreen_;
   FieldItemsScreen fieldItemsScreen_;
   PraiseScoldCall praiseScold_;
   FishingScreen fishingScreen_;

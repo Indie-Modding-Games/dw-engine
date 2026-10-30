@@ -1,0 +1,204 @@
+/* The item keeper (shop/script_menu.c: tickItemKeeper, createItemKeepWindow, tickItemKeeperWindow). One pixel of the
+   original is 3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. Measured on the original
+   (room02, the keeper's counter): the keeper's window from x 8 to 155 and y 15 to 150, the bag's from x 160 to 307,
+   five rows 19.25 pixels apart from y 50, the scroll bar from x 144 to 151 and y 57 to 138. The speech box is the
+   story's (story_textbox). The skins give the look; this is the layout and a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+.window {
+	position: absolute;
+	top: 45dp;
+	width: 444dp;
+	height: 408dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	display: none;
+}
+
+#kept-window { left: 24dp; }
+#bag-window { left: 480dp; }
+
+#frame.phase-windows .window, #frame.phase-description .window {
+	display: block;
+}
+
+/* The window the player works in has the blue title bar. */
+.title-bar {
+	position: absolute;
+	left: 9dp;
+	top: 6dp;
+	width: 420dp;
+	height: 57dp;
+	background-color: #8080ff80;
+	display: none;
+}
+
+.window.active .title-bar {
+	display: block;
+}
+
+.title {
+	position: absolute;
+	left: 9dp;
+	top: 6dp;
+	width: 420dp;
+	height: 57dp;
+	line-height: 57dp;
+	text-align: center;
+	font-size: 33dp;
+}
+
+/* The heading of the table: the item's column and the count's. */
+.table {
+	position: absolute;
+	top: 63dp;
+	height: 33dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #6987a0 #020202 #020202 #6987a0;
+}
+
+.table-name { left: 9dp; width: 309dp; }
+.table-count { left: 318dp; width: 111dp; }
+
+.label {
+	position: absolute;
+	top: 66dp;
+	height: 21dp;
+}
+
+.label-menu { left: 21dp; width: 60dp; }
+.label-count { left: 327dp; width: 66dp; }
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+.cursor {
+	position: absolute;
+	left: 12dp;
+	top: 102dp;
+	width: 384dp;
+	height: 57dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.cursor.hidden { display: none; }
+
+.row {
+	position: absolute;
+	left: 21dp;
+	width: 345dp;
+	height: 57dp;
+	padding-top: 12dp;
+	box-sizing: border-box;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#kept-row-0, #bag-row-0 { top: 102dp; }
+#kept-row-1, #bag-row-1 { top: 159.75dp; }
+#kept-row-2, #bag-row-2 { top: 217.5dp; }
+#kept-row-3, #bag-row-3 { top: 275.25dp; }
+#kept-row-4, #bag-row-4 { top: 333dp; }
+
+.count {
+	position: absolute;
+	right: 0;
+	top: 12dp;
+}
+
+/* itemKeeperFillItemList: a row that cannot go to the other side is red (colour 3). */
+.row.stuck { color: #e03028; }
+
+.scrollbar {
+	position: absolute;
+	left: 405dp;
+	top: 123dp;
+	width: 24dp;
+	height: 246dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #020202 #6987a0 #6987a0 #020202;
+	background-color: #354b5c;
+}
+
+.thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 18dp;
+	height: 240dp;
+	background-color: #5b7080;
+}
+
+/* The speech box, the story's. */
+#talk {
+	position: absolute;
+	left: 87dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.talk-row.hidden, #help.hidden, #speaker.hidden { display: none; }
+
+#speaker { color: #f8f800; }
+
+/* A choice's row: renderDialogueSelectionCursor's grey bar with a light top line. */
+.talk-row .run { padding: 0 3dp; }
+.talk-row.selected .run {
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+}
+
+.help-key { padding: 0 11dp; }
+.help-key.one { color: #90a8f8; }
+.help-key.ten { color: #e08858; }
+.help-key.all { color: #f898d0; }
+
+/* tickItemMenuDescriptionBox: a box across the middle of the screen, from x 28 to 292 and y 109 to 131. */
+#description {
+	position: absolute;
+	left: 84dp;
+	top: 327dp;
+	width: 792dp;
+	height: 66dp;
+	padding: 12dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+	white-space: pre;
+	display: none;
+}
+
+#frame.phase-description #description { display: block; }

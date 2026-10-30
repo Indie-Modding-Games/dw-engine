@@ -88,8 +88,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 48 | 1 | 16 | 37 | 75 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 74 | 3 | 11 | 57 | 86 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 66 | 1 | 2 | 55 | 96 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 63 | 8 | 21 | 6 | 73 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 69 | 1 | 2 | 52 | 97 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 73 | 7 | 12 | 6 | 83 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 42 | 1 | 2 | 41 | 94 % |
-| **Total** | 2438 funciones | 836 | 41 | 412 | 1149 | 66 % |
+| **Total** | 2438 funciones | 849 | 40 | 403 | 1146 | 67 % |
 
 ## Batalla
 
@@ -320,7 +320,7 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 66, parcial 1, falta 2, no aplica 55.
+Portado 69, parcial 1, falta 2, no aplica 52.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -328,7 +328,7 @@ Portado 66, parcial 1, falta 2, no aplica 55.
 | `fadeFromWhite` | `main/fade.c:193` | falta | Vuelve del blanco. | rutina 46 del guion, sin registrar |
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (30); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); limpieza de objetos y memoria del original: el motor libera lo suyo (4); cuadros de interfaz del original (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (27); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); limpieza de objetos y memoria del original: el motor libera lo suyo (4); cuadros de interfaz del original (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
 ## Objetos y tiendas
 
@@ -336,7 +336,7 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 63, parcial 8, falta 21, no aplica 6.
+Portado 73, parcial 7, falta 12, no aplica 6.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -345,27 +345,17 @@ Portado 63, parcial 8, falta 21, no aplica 6.
 | `openBuyCardMenu` | `shop/script_menu.c:711` | parcial | Abre la compra de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:107` · la rutina 14 se cierra sin pantalla |
 | `openSellCardMenu` | `shop/script_menu.c:753` | parcial | Abre la venta de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:108` · la rutina 14 se cierra sin pantalla |
 | `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:99` · la rutina 1 se cierra sin pantalla |
-| `tickItemKeeper` | `shop/script_menu.c:892` | parcial | Guardarropía de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:105` · la rutina 11 se cierra sin pantalla |
 | `openJukebox` | `shop/script_menu.c:947` | parcial | Abre la gramola. | `apps/session/include/dwe/session/story_scenes.hpp:104` · la rutina 9 se cierra sin pantalla |
 | `openMojyamonShop` | `shop/script_menu.c:1051` | parcial | Abre el trueque de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 2 se cierra sin pantalla |
 | `hasAnyCardToBuy` | `shop/script_menu.c:1296` | falta | Dice si queda alguna carta por comprar. | no hay pantallas de cartas |
 | `createCardMenu` | `shop/script_menu.c:1452` | falta | Abre el menú de compra o venta de cartas. | la rutina 14 se cierra sin pantalla |
 | `shopFillMeritItemList` | `shop/script_menu.c:1479` | falta | Rellena la lista del intercambio por méritos. | la rutina 1 se cierra sin pantalla |
-| `itemKeeperFillItemList` | `shop/script_menu.c:1536` | falta | Rellena la lista del guardarropía de objetos. | la rutina 11 se cierra sin pantalla |
-| `createItemKeepWindow` | `shop/script_menu.c:1605` | falta | Abre el guardarropía de objetos. | — |
 | `jukeboxFillTitleList` | `shop/script_menu.c:1636` | falta (citada en docs) | Rellena la lista de la gramola. | la rutina 9 se cierra sin pantalla |
 | `createJukeboxMenu` | `shop/script_menu.c:1672` | falta | Abre la gramola. | — |
 | `mojyaTradeFillItemList` | `shop/script_menu.c:1758` | falta (citada en docs) | Rellena la lista del trueque de objetos. | la rutina 2 se cierra sin pantalla |
 | `createMojyaTradeMenu` | `shop/script_menu.c:1786` | falta | Abre el trueque de objetos. | — |
 | `setMojyaItemTradedTrigger` | `shop/script_menu.c:1801` | falta (citada en docs) | Marca el objeto ya cambiado en el trueque. | — |
 | `tickCardMenu` | `shop/script_menu.c:1816` | falta | Compra o venta de cartas: cursor, precio y confirmación. | — |
-| `tickItemKeeperWindow` | `shop/script_menu.c:1941` | falta | Guardarropía: pasa objetos entre la bolsa y el almacén. | — |
-| `updateKeeperTextbox` | `shop/script_menu.c:2035` | falta | Texto del guardarropía. | — |
-| `keeperMoveOne` | `shop/script_menu.c:2061` | falta | Guardarropía: pasa un objeto. | — |
-| `keeperMoveTen` | `shop/script_menu.c:2114` | falta | Guardarropía: pasa diez objetos. | — |
-| `keeperMoveStack` | `shop/script_menu.c:2180` | falta | Guardarropía: pasa la pila entera. | — |
-| `keeperScrollLeftToItem` | `shop/script_menu.c:2238` | falta | Guardarropía: salta al objeto anterior. | — |
-| `keeperScrollRightToItem` | `shop/script_menu.c:2296` | falta | Guardarropía: salta al objeto siguiente. | — |
 | `tickJukeboxMenu` | `shop/script_menu.c:2396` | falta (citada en docs) | Gramola: elige y toca una canción. | — |
 | `tickMojyaTradeMenu` | `shop/script_menu.c:2547` | falta | Trueque: elige el objeto a cambiar. | — |
 | `updateMojyaTradeStrings` | `shop/script_menu.c:2647` | falta | Textos del trueque. | — |

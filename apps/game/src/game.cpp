@@ -1157,6 +1157,7 @@ int runGame(const Options& requested) {
       if (play != nullptr) {
         // The battle's document holds the input, but not the finisher's button.
         play->pressBattle(input);
+        play->pressItemKeeper(input);
         play->tick(intent, fishing);
         if (trace) {
           trace->write(play->traceFrame(ticksRun, input));

@@ -11,6 +11,7 @@
 #include "egg_box_screen.hpp"
 #include "field_scene.hpp"
 #include "story_gym.hpp"
+#include "story_item_keeper.hpp"
 #include "story_naming.hpp"
 #include "story_shop.hpp"
 
@@ -25,6 +26,8 @@ public:
               const assets::DigimonTable* species, FieldScene& scene);
   // The shop the story's Shop screen opens.
   void attachShop(session::ShopCounter* shop) { shop_.attach(shop); }
+  // The item keeper the story's ItemKeeper screen opens.
+  void attachItemKeeper(session::ItemKeeper* keeper) { itemKeeper_.attach(keeper); }
   // The gym the story's GymLibrary and GymCourse screens run.
   void attachGym(GymScreen* gym) { gym_.attach(gym); }
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
@@ -43,6 +46,7 @@ private:
   // Whether the battle on the screen is the story's.
   bool storyBattle_ = false;
   StoryShop shop_;
+  StoryItemKeeper itemKeeper_;
   StoryGym gym_;
   DeathScene* death_ = nullptr;
   EggBoxScreen* eggBox_ = nullptr;

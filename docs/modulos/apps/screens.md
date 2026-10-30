@@ -164,3 +164,33 @@ Paridad con la revisión de menús contra el original (QA-M, 2026-10-30). Estado
 | Lista de cartas | `renderCardsView` (3750): «Card List», 11 × 6 casillas de 18 × 18 (`renderBorderBox`: #BEBEBE arriba e izquierda, #3C3C3C abajo y derecha, relleno #696969), cursor de 24 × 20 al confirmar (Enter), que se mueve sin dar la vuelta | `#player-cards-view` en `pause_menu` con esas medidas; el juego publica `player.cards.owned` (las cartas con copias). Falta el icono de una carta que se tiene (sprite de `sboy` con la paleta de `CARD_SPRITE_CLUT`, sin extraer) y abrir la carta al confirmar (`createAnimatedUIBox` con `renderCardImage`) | Ruta `qa-player` | Hueco |
 | Indicaciones de teclas en las páginas de técnicas y del jugador | `drawMoveViewHelpStrings` (game_menu.c:3318) y las páginas Chart, Med. y Card: botones del mando en azul y verde con «Change Techniques», «Select» y «Cancel» | Cada indicación nombra la tecla del dispositivo en uso con `ui.prompt`: Enter y Esc con teclado, el botón del mando solo cuando juega un mando, en los colores del original; las de Chart, Med. y Card terminan en el borde derecho del panel porque el nombre de una tecla es más ancho que un glifo (QA-M10) | Rutas `qa-tech` y `qa-player` | Mejora documentada |
 | Encabezado «Techs» y caja de ayuda al cambiar técnicas | `renderDigimonMovesView` (2577) y `MOVES_VIEW_HELP_LINES`: «Techs» donde estaba «Final»; caja de x -142 a -80 e y 26 a 93 con líneas negra, clara y negra, «Tech» y «help», la flecha (`system_w` 128, 12) y el botón que abre la página de ayuda (`MENU_STATE` 7) | `#techs-heading` y `#tech-help` en `partner_menu` con esas medidas; el botón es la tecla de la acción `extra` (Supr con teclado). Falta la página de ayuda que abre (`drawMoveViewHelpStrings` y `MENU_STATE` 8: leyenda de colores y «Select» / «Cancel») | Ruta `qa-tech` | Hueco |
+
+## Guardián de objetos
+
+El guardián de objetos de la ciudad (room02, script 171, sección 0x51 → `call_routine(11)` →
+`shop/script_menu.c: tickItemKeeper`). La sesión (`session::ItemKeeper`, sección `item_keeper` del ruleset) guarda lo
+que el jugador deja, hasta 99 de cada objeto, y lo escribe en la partida; la pantalla `item_keeper` del juego
+(`apps/game: ItemKeeperScreen`) pregunta, enseña las dos ventanas y despide. Medido con el original en el mostrador
+(capturas `orig/bank/keeper-open.png`, `keeper-row4.png`, `keeper-moved-one.png`).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `item_keeper.phase` | texto | `ask`, `choice`, `windows`, `description`, `farewell` o `closed` |
+| `item_keeper.{speaker,line_key,choices_key,description_key}` | claves | El nombre del guardián, lo que dice (MAPHEAD 1237, líneas 0 y 2), el «Sí/No» (línea 1) y la descripción del objeto |
+| `item_keeper.{choice,side}` | números | La respuesta marcada (0 sí, 1 no) y la ventana en la que trabaja el jugador (0 lo guardado, 1 la bolsa) |
+| `item_keeper.{kept,bag}.{total,top,cursor}` | números | Las filas de cada lista, la primera que se ve y la del cursor entre las cinco visibles |
+| `item_keeper.{kept,bag}.<i>.{name,count,movable}` | clave, número, booleano | Las cinco filas que se ven; una fila que no puede pasar al otro lado se pinta en rojo (color 3) |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Pregunta, sí o no y despedida | `tickItemKeeper` (script_menu.c:892): líneas 0, 1 y 2 de la sección 1237 de MAPHEAD | `ItemKeeperScreen`: `ask`, `choice`, `farewell` con las mismas líneas | Ruta `bank` (room02) | Igual |
+| Ventanas «Keeping» e «In hand» | `createItemKeepWindow`: cajas de x 8 a 155 y de 160 a 307, y 15 a 150; barra azul en la activa, rótulos MENU y COUNT de SYSTEM_W, cinco filas cada 19,25 px, barra de desplazamiento de x 144 a 151 | `item_keeper/structure.rcss` y la piel original con esas medidas; los títulos son textos del paquete (el original los lleva en el ejecutable) | Ruta `bank` | Igual |
+| Listas | `itemKeeperFillItemList`: lo guardado por número de objeto; la bolsa, una fila por hueco; una fila no se mueve sin hueco o pila libre en la bolsa, o con 99 guardados | `ItemKeeper::keptRows` y `bagRows` | `itemKeeperFillItemList: a row that has nowhere to go cannot move` | Igual |
+| Pasar uno (Enter o Espacio) | `keeperMoveOne` | `ItemKeeper::move(…, One)` | `keeperMoveOne moves one item each way…` | Igual |
+| Pasar diez (Inicio, el botón norte del mando) | `keeperMoveTen`: hacen falta 10 y que el otro lado tenga menos de 90 | `ItemKeeper::move(…, Ten)` | `keeperMoveTen needs ten to move…` | Igual |
+| Pasar la pila (Supr, el botón oeste del mando) | `keeperMoveStack`: lo que quepa hasta 99 | `ItemKeeper::move(…, Stack)` | `keeperMoveStack moves the whole stack…` | Igual |
+| Descripción del objeto (P o Pausa, Start en el mando) | Start abre `tickItemMenuDescriptionBox`; cualquier botón la cierra | Fase `description`; cualquier botón la cierra | Ruta `bank` | Igual |
+| Saltar al principio o al final (Mayús con arriba o abajo, R1 en el mando) | R1 mantenido con arriba o abajo | La acción `walk` mantenida | — | Igual |
+| Ayuda bajo las ventanas | `updateKeeperTextbox`: línea 3 de MAPHEAD con los glifos ✕, ○ y □ | Tres líneas del paquete con la tecla del dispositivo en uso (`ui.prompt`) en los colores del original | Ruta `bank` | Mejora documentada |
+| Repetición al mantener confirmar o alt | La máscara de repetición del original repite arriba, abajo, confirmar y alt | Arriba y abajo repiten (la navegación de la UI); confirmar y alt no | — | Hueco |
+| Lo guardado se guarda en la partida | `SCRIPT_STATE` (0x54 + objeto), dentro de la partida | Sección `item_keeper` de la partida: `kept: [{item, count}]`; sin ella, nada guardado | `what the keeper holds goes in the save…` | Igual |

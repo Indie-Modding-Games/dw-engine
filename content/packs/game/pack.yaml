@@ -52,6 +52,8 @@ schemas:
     - rules/*/item_use
   ruleset_partner_moves:
     - rules/*/partner_moves
+  ruleset_item_keeper:
+    - rules/*/item_keeper
   ruleset_shop:
     - rules/*/shop
   ruleset_evolution:

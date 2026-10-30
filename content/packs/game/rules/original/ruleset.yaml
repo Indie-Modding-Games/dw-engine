@@ -35,6 +35,7 @@ sections:
   - story_scenes
   - gym
   - shop
+  - item_keeper
   - calendar
   - field_items
   - cards

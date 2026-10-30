@@ -63,6 +63,7 @@ dwe_add_app(game
         src/session_start.cpp
         src/save_machine.cpp
         src/gym_screen.cpp
+        src/item_keeper_screen.cpp
         src/shop_screen.cpp
         src/sleep_screen.cpp
         src/state_trace.cpp
@@ -74,6 +75,7 @@ dwe_add_app(game
         src/egg_box_screen.cpp
         src/story_gym.cpp
         src/story_naming.cpp
+        src/story_item_keeper.cpp
         src/story_shop.cpp
         src/field_items_screen.cpp
         src/fishing_screen.cpp

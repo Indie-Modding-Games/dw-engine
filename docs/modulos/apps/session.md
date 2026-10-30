@@ -245,6 +245,17 @@ reciclaje (`script_menu.c: openRecycleShop`, con el trigger `recycle_trigger` o 
 quitaron las derrotas (`handleItemLoss`: los objetos de `recyclable`, hasta `recycle_max` de cada uno, que llegan por
 `InventoryAdapter::setLossListener`) y no compra; su surtido se guarda en la sección `shop` de la partida.
 
+### Guardián de objetos (`ItemKeeper`)
+
+El guardián de objetos que abre la historia (`script_interp.c: CALL_ROUTINE 11` → `shop/script_menu.c:
+tickItemKeeper`). La historia llama a `open(ItemKeeperVisit)` con el guardián (la variable 254 y su especie) y espera
+mientras `visit()` siga abierta; la pantalla `item_keeper` del juego (`apps/game: ItemKeeperScreen`) la cierra cuando
+el jugador se despide. `keptRows` y `bagRows` son las listas de `itemKeeperFillItemList` y `move` pasa uno, diez o la
+pila (`keeperMoveOne`, `keeperMoveTen`, `keeperMoveStack`) entre lo guardado y la bolsa. Lo guardado (`SCRIPT_STATE`
+0x54 + objeto en el original) va en la sección `item_keeper` de la partida, por id de objeto. La sección
+`item_keeper` del ruleset ([esquema](../../content/schemas/ruleset_item_keeper.schema.json)) da la sección de MAPHEAD
+con las frases, el máximo de cada objeto y el paso del botón alternativo; sin ella la visita se cierra al instante.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |

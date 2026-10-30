@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: item_keeper",
+  "description": "rules/<id>/item_keeper.yaml: the item keeper the story opens (apps/session: ItemKeeper; shop/script_menu.c: tickItemKeeper).",
+  "type": "object",
+  "required": ["lines_section", "lines", "max_count", "step"],
+  "additionalProperties": false,
+  "$defs": {
+    "line": { "description": "The line's place in the keeper's MAPHEAD section.", "type": "integer", "minimum": 0 }
+  },
+  "properties": {
+    "lines_section": { "description": "The MAPHEAD section of the keeper's lines.", "type": "integer", "minimum": 0 },
+    "lines": {
+      "type": "object",
+      "required": ["ask", "choices", "farewell"],
+      "additionalProperties": false,
+      "properties": {
+        "ask": { "$ref": "#/$defs/line" },
+        "choices": { "$ref": "#/$defs/line" },
+        "farewell": { "$ref": "#/$defs/line" }
+      }
+    },
+    "max_count": { "description": "How many of each item the keeper holds.", "type": "integer", "minimum": 1 },
+    "step": { "description": "How many the alternative button moves.", "type": "integer", "minimum": 1 }
+  }
+}

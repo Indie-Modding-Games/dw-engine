@@ -1,0 +1,14 @@
+# El guardarropía de objetos que abre la historia (script_interp.c: CALL_ROUTINE 11 -> shop/script_menu.c:
+# tickItemKeeper; apps/session: ItemKeeper). Lo que guarda va en la partida guardada.
+
+# showMapHeadTextbox(..., 0x4d5): las frases del guardián son esta sección de MAPHEAD.
+lines_section: 1237
+# El número de cada frase dentro de la sección (resolveMapHeadEntry): la pregunta, el sí o no y la despedida.
+lines:
+  ask: 0
+  choices: 1
+  farewell: 2
+# itemKeeperFillItemList: guarda hasta max_count de cada objeto (0x63).
+max_count: 99
+# keeperMoveTen: el botón alternativo mueve de diez en diez.
+step: 10
