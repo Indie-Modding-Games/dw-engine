@@ -1,0 +1,1079 @@
+# Config of scripts/port_coverage.py, which writes port-coverage.md.
+#
+# [[system]]: the systems of the page, in its order, each with the decomp files it owns (paths under src/).
+# [[system_by_name]]: a function whose name matches goes to that system instead of its file's one (first match).
+# [[not_needed]]: what the engine replaces and is never ported as such (graphics, sound and disc plumbing). A rule
+#   marks the functions that match its pattern and/or files, and only those the code does not name.
+# [twins]: the tournament and versus overlays carry copies of the battle code; a copy whose battle twin exists
+#   (STD_x or VS_x next to BTL_x) is not needed: the engine's battle covers both.
+# [functions.<name>]: the manual call for one function. status: portado, parcial, falta or no-aplica; note: why or
+#   what is missing; what: one line saying what it does (Spanish); dwe: where the engine does it; system: moves it.
+
+[[system]]
+id = "battle"
+name = "Batalla"
+about = "El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaje de técnicas."
+files = [
+  "btl/battle_main.c", "btl/battle_setup.c", "btl/battle_hud.c", "btl/command_menu.c", "btl/command_shout.c",
+  "main/btl.c", "main/battle_tick.c", "main/battle_ui.c", "main/entity_text.c",
+]
+
+[[system]]
+id = "effects"
+name = "Efectos de batalla"
+about = "La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cámara, partículas, destellos."
+files = [
+  "btl/battle_effect.c", "main/efe.c", "main/efe_table.c", "main/effect_common.c", "main/buff_model.c",
+  "main/particle.c",
+]
+
+[[system]]
+id = "field"
+name = "Campo: movimiento, colisión y cámara"
+about = "El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del compañero y la cámara."
+files = ["main/map.c", "main/map_collision.c", "main/aabb.c", "main/tamer.c", "main/vecmath.c"]
+
+[[system]]
+id = "world"
+name = "NPC y objetos del mapa"
+about = "Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados con lógica."
+files = [
+  "main/overworld.c", "main/map_object.c", "main/world_object.c", "main/butterfly.c", "main/bubble.c",
+  "main/drop_shadow.c", "main/model.c", "main/anim.c",
+]
+
+[[system]]
+id = "partner"
+name = "Compañero: IA y cuidado"
+about = "Hambre, sueño, baño, enfermedad, felicidad y disciplina, caca, muerte natural, paseo y órdenes."
+files = ["main/partner.c", "main/partner_impl.c"]
+
+[[system]]
+id = "script"
+name = "Guion e intérprete"
+about = "La máquina de scripts de eventos: órdenes, valores, cajas de texto y elecciones."
+files = ["main/script_interp.c", "main/script_value.c", "main/script_textbox.c", "main/script_common.c"]
+
+[[system]]
+id = "menus"
+name = "Menús e interfaz"
+about = "Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundidos y texto."
+files = [
+  "main/main_menu.c", "main/game_menu.c", "main/inventory.c", "main/ui.c", "main/font.c", "main/sjis.c",
+  "main/fade.c", "main/new_game.c",
+]
+
+[[system]]
+id = "items"
+name = "Objetos y tiendas"
+about = "Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion del overlay de tiendas."
+files = ["main/item.c", "shop/script_menu.c"]
+
+[[system]]
+id = "evolution"
+name = "Evolución"
+about = "Elección del destino y la escena de evolución."
+files = ["main/evolution.c", "main/evl.c", "evl/evl.c"]
+
+[[system]]
+id = "training"
+name = "Entrenamiento"
+about = "El gimnasio: tragaperras, cursos y recompensas."
+files = [
+  "trn/trn_reward.c", "trn/trn_hud.c", "trn/trn_slots.c", "trn/trn_speed.c", "trn/trn_off.c", "trn/trn_brain.c",
+  "trn2/trn2_hud.c", "trn2/trn2_slots.c", "trn2/trn2_reward.c", "trn2/trn2_hp_map107.c", "trn2/trn2_def_map108.c",
+]
+
+[[system]]
+id = "fishing"
+name = "Pesca"
+about = "El minijuego de pesca."
+files = ["main/fish.c", "fish/fish.c", "fish/fish_model.c"]
+
+[[system]]
+id = "death"
+name = "Muerte y renacer"
+about = "La escena de muerte, la de renacer y la caja de huevos."
+files = ["murd/murd.c", "dooa/dooa.c", "doo2/doo2.c"]
+
+[[system]]
+id = "save"
+name = "Guardado y carga"
+about = "La partida en la tarjeta de memoria, la máquina de guardar y el registro para el modo versus."
+
+[[system]]
+id = "tournament"
+name = "Torneos"
+about = "Inscripción, calendario y el overlay de copas, que trae su propio motor de combate."
+files = [
+  "main/tournament.c", "dget/dget.c", "std/std_main.c", "std/std_effect.c", "std/std_hud.c", "std/std_setup.c",
+]
+
+[[system]]
+id = "versus"
+name = "Versus y demo"
+about = "El modo versus de dos jugadores y la demo de combate del título."
+files = [
+  "vs/vs_main.c", "vs/vs_effect.c", "vs/vs_combat.c", "vs/vs_hud.c", "vs/vs_camera.c", "vs/vs_scene.c",
+  "vs/vs_select.c", "vs/vs_demo.c", "vs/vs_intro.c",
+]
+
+[[system]]
+id = "curling"
+name = "Minijuego de piedras"
+about = "El minijuego de piedras sobre hielo."
+files = ["main/kar.c", "kar/kar.c"]
+
+[[system]]
+id = "audio"
+name = "Audio"
+about = "Música, efectos de sonido y su carga."
+files = ["main/sound.c", "main/sound_async.c"]
+
+[[system]]
+id = "movies"
+name = "Vídeos y final"
+about = "El reproductor de vídeo, los créditos y la animación del final."
+files = ["mov/mov.c", "endi/endi.c", "eab/eab.c"]
+
+[[system]]
+id = "core"
+name = "Núcleo y plataforma"
+about = "Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráficos de bajo nivel."
+files = [
+  "main/_psstart.c", "main/main.c", "main/utils.c", "main/utils2.c", "main/graphics.c", "main/file.c",
+  "main/file_queue.c", "main/math.c", "main/rng.c", "main/line.c", "main/clock.c",
+]
+
+[[system_by_name]]
+pattern = "^(?![A-Z0-9]+_)(?=.*(?i:save|memcard|memorycard))|Card(UsedBlock|Change|ReadError)|^(render|draw)(SaveSlot|CheckingCard|ConfirmNoCard|ConfirmSlot|FormatMemoryCard|ConfirmOverwrite|RegisterDigimon|SelectRegisterSlot|ConfirmRegister|CantRegister|DoYouWantToSave|InsertGameCard|RegisteredDigimonSlots)|^(registerBattleData|awardMachinedramonData|countRegisteredDigimon|tickSelectSlotInput|createByteSum|isMemcardUnformatted|_strncpy)$"
+system = "save"
+
+[[not_needed]]
+files = ["main/_psstart.c", "main/file_queue.c", "main/line.c", "main/sjis.c", "main/sound_async.c"]
+why = "arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor"
+
+[[not_needed]]
+pattern = "(?i)VRAM|CLUT|Clut|TIM(File|ToVRAM)?$|loadTIM|TMDMap|OrderingTable|Framebuffer|Prim$|PolyF|PolyG|PolyFT|SetPoly|setUVData|setPosData|initStringFT4|DrawOffset|DrawingOffset|Viewport|RView|RotTransMatrix|setupModelMatrix|setupEntityMatrix|transposeRefMatrix|BlendingMode|swap(Byte|Short|Int)s?$|^swapShortBytes$|Heap|garbage|^empty_|^thunk|^_?strncpy$|concatStrings|^(allocate|free)Array$|lookupFileSize|loadTextureFile|uploadMapTileImages|downloadSomeImage|modifySomeImage|^(get|set)VRAMModeCoords|ScreenPolyFT3|worldPosToScreenPos|^pauseFrame$|^__start"
+why = "gráficos, memoria o ficheros del hardware original: los sustituye el motor"
+
+[[not_needed]]
+pattern = "^(?:[A-Z0-9]+_+)?(render|draw)[A-Z]"
+why = "dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica"
+
+[[not_needed]]
+pattern = "^(?:[A-Z0-9]+_+)?(remove|free|unload|deinitialize|destroy)(?!.*Item)[A-Z]"
+why = "limpieza de objetos y memoria del original: el motor libera lo suyo"
+
+[[not_needed]]
+pattern = "^(?:[A-Z0-9]+_+)?(initialize|init)(?!.*(Battle|Tournament|Opponent|Fishing|Training|Evo|Partner|Tamer|Inventory|Clock|Save|Map$))[A-Z]\\w*(Data|Table|Tables|Objects|Object|Sprites|Sprite|Model|Models|Prims|Buffers|Buffer|Heap|Memory|UI|Lighting|Camera|Text|Font)$"
+why = "preparación de tablas, objetos o recursos del original: el motor monta los suyos"
+
+[[twins]]
+dirs = ["std", "vs"]
+target = "BTL_"
+
+[[twins]]
+dirs = ["trn2"]
+target = "TRN_"
+
+[functions]
+# Battle, effects, field, world, partner, script, menus, items, training, save, audio and core: checked
+# by hand against the engine. Fishing, the death and rebirth scenes, evolution, curling, movies, tournaments
+# and versus: from their decomp bodies and the engine's screens, one section each below.
+# --- Batalla
+BTL_appendItemDroppedText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea del objeto que soltó el rival." }
+BTL_appendInjuredText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea de la lesión del compañero." }
+BTL_appendCommandLearnedText = { status = "falta", what = "Añade al cuadro final la orden de combate que el compañero aprendió.", note = "docs/modulos/game/battle.md: Hueco" }
+BTL_appendMPBonusText = { status = "falta", what = "Añade al cuadro final el bonus de MP ganado.", note = "docs/modulos/game/battle.md: Hueco" }
+BTL_scrollBattleEndText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Desplaza las líneas del cuadro final del combate." }
+BTL_tickBattleEndText = { status = "portado", note = "", what = "Avanza el texto del cuadro final; un botón lo adelanta." }
+BTL_isEndBoxTextFinished = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Dice si el cuadro final acabó de mostrar su texto." }
+BTL_shuffleBattleStartTextPieces = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:14", what = "Baraja el orden en que llegan las piezas del rótulo de inicio del combate." }
+BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Prepara el estallido del rótulo de inicio del combate." }
+BTL_isBattleStartTextFinished = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Dice si el rótulo de inicio terminó, para empezar a luchar." }
+BTL_initializePartnerStatusBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Monta las barras de vida y MP del compañero en el HUD." }
+BTL_tickPartnerStatusBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Actualiza las barras de vida y MP del compañero." }
+BTL_tickPartnerWaypointTrail = { status = "falta", what = "Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse.", note = "relacionado con la vuelta tras un combate de historia" }
+BTL_resetFlatten = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Devuelve al luchador aplastado a su forma." }
+BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:437", what = "El mayor alcance de las técnicas del rival, para que el compañero guarde distancia." }
+BTL_maintainDistanceRange = { status = "portado", dwe = "game/battle/src/movement.cpp:447", what = "Mantiene al luchador entre una distancia mínima y una máxima del objetivo." }
+BTL_hasAffordableMoves = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Dice si el luchador tiene MP para alguna técnica." }
+BTL_initializePartnerTile = { status = "no-aplica", note = "estado interno del rastro del compañero", what = "Guarda la casilla del compañero al empezar el combate." }
+BTL_addEnemyHPBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Añade las barras de vida de los rivales." }
+BTL_clearBlockedAttacks = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Vacía la lista de ataques ya recibidos de cada luchador." }
+BTL_getAttackTech = { status = "portado", dwe = "game/battle/src/combatant.cpp:65", what = "Da la técnica de un ataque a partir de su animación." }
+BTL_getFighterSlot = { status = "no-aplica", note = "índice interno", what = "Da la ranura de combate de una entidad." }
+BTL_addBlockedAttack = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Apunta que un ataque ya golpeó a un luchador para que no golpee dos veces." }
+BTL_startHitAnimation = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:110", what = "Pone la animación de recibir golpe, de frente o por la espalda." }
+BTL_getDistanceSquared = { status = "no-aplica", note = "cálculo auxiliar", what = "Distancia al cuadrado entre dos luchadores." }
+BTL_applyFlattenScale = { status = "falta", what = "Aplasta el modelo del luchador aplastado.", note = "el estado existe; falta comprobar la escala del modelo en pantalla" }
+BTL_addStatusEffectVisual = { status = "falta", what = "Pone sobre el luchador el efecto visual de su estado (veneno, confusión, aturdimiento).", note = "el HUD solo enseña el nombre del estado" }
+BTL_applyStretchScale = { status = "falta", what = "Estira el modelo al recuperarse del aplastado." }
+BTL_applySquashScale = { status = "falta", what = "Encoge el modelo en el aplastado." }
+BTL_clearPoison = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Cura el veneno." }
+BTL_healFlatten = { status = "portado", note = "", what = "Cura el aplastado y pasa a su recuperación." }
+BTL_addPoisonStatusVisual = { status = "falta", what = "Pone las burbujas de veneno sobre el luchador." }
+BTL_addConfusionStatusVisual = { status = "falta", what = "Pone el efecto de confusión sobre el luchador." }
+BTL_addStunStatusVisual = { status = "falta", what = "Pone las estrellas de aturdimiento sobre el luchador." }
+BTL_getRandomUsableMove = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Elige al azar una técnica que se puede usar." }
+BTL_getNpcEntityIndex = { status = "no-aplica", note = "índice interno", what = "Da la entidad de un rival." }
+BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:260", what = "Cuenta los rivales vivos." }
+BTL_initializeCommandMenu = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Abre el menú de órdenes del jugador en combate." }
+BTL_tickCommandMenu = { status = "portado", dwe = "game/battle/src/battle.cpp:118", what = "Mueve el cursor y elige una orden del menú de combate." }
+BTL_isCommandMenuClosed = { status = "portado", dwe = "game/battle/src/battle.cpp:118", what = "Dice si el menú de órdenes se cerró." }
+BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Prepara la cuenta atrás para revivir al compañero caído." }
+BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Enseña la cuenta atrás del compañero caído." }
+BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Baja la cuenta atrás del compañero caído." }
+handleFleeing = { status = "portado", dwe = "game/battle/src/ai_ticks.cpp:431", what = "Huida del combate: el compañero corre y el combate acaba si lo logra." }
+NPCEntityTickBattle = { status = "parcial", note = "los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco)", what = "Mueve a los personajes del mapa que no luchan durante el combate (huyen)." }
+resetStatsAfterCombat = { status = "portado", dwe = "game/battle/src/aftermath.cpp", what = "Quita al compañero los cambios temporales de stats al acabar el combate." }
+isScreenConcave = { status = "falta", what = "Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate.", note = "va con la huida de los que no luchan" }
+loadBattleDataTick = { status = "no-aplica", note = "carga asíncrona del original", what = "Espera a que el combate termine de cargar." }
+setCombatTextPosition = { status = "falta", what = "Coloca sobre el luchador las cifras de daño y curación que suben.", note = "el motor no enseña cifras sobre los luchadores" }
+initializeEntityText = { status = "falta", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el motor no enseña cifras sobre los luchadores" }
+
+# --- Efectos de batalla
+BTL_initializeParticleEmitters = { status = "falta", what = "Prepara los emisores de partículas de las técnicas.", note = "battle.md: las partículas no se dibujan" }
+BTL_clearEFESoundChannels = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:192", what = "Libera los sonidos sostenidos de los efectos." }
+BTL_getEFETextureSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca la textura dentro del fichero de un efecto." }
+BTL_getEFEModelSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca los modelos dentro del fichero de un efecto." }
+BTL_getEFEFileId = { status = "no-aplica", note = "tabla de ficheros del disco", what = "Da el fichero de efecto de una técnica." }
+BTL_handleEFEFileLoaded = { status = "no-aplica", note = "carga asíncrona del original", what = "Monta un efecto cuando su fichero termina de cargar." }
+BTL_tickParticleEmitters = { status = "falta", what = "Mueve las partículas que sueltan las técnicas.", note = "battle.md: Hueco" }
+BTL_initializeEFEEngine = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:122", what = "Arranca la máquina de efectos al empezar el combate." }
+BTL_runEFESlotScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:227", what = "Ejecuta el script de efecto de una ranura." }
+BTL_markEFEFinished = { status = "falta", what = "Marca el efecto como terminado para que la batalla siga.", note = "mark_finished se salta (battle.md: Hueco)" }
+BTL_disableMapLayer = { status = "falta", what = "Oculta una capa del mapa durante la técnica (fondos que cambian)." }
+BTL_tickRibbonPoints = { status = "falta", what = "Mueve los puntos de una cinta de luz de una técnica.", note = "battle.md: las cintas no se dibujan" }
+BTL_initializeRibbonPoints = { status = "falta", what = "Prepara una cinta de luz de una técnica.", note = "battle.md: Hueco" }
+BTL_renderScreenFade = { status = "falta", what = "Funde la pantalla a un color durante una técnica." }
+BTL_renderScreenOverlay = { status = "falta", what = "Pinta un velo de color sobre la pantalla durante una técnica." }
+BTL_renderRingTube = { status = "falta", what = "Dibuja un tubo de anillos (rayos, torbellinos) de una técnica." }
+BTL_renderRadialWaves = { status = "falta", what = "Dibuja ondas que se abren en círculo de una técnica." }
+BTL_addClutLoadPrim = { status = "falta", what = "Cambia la paleta de un efecto mientras corre (destellos de color).", note = "battle.md: las cargas de CLUT se saltan" }
+BTL_drawTMDScreenSpace = { status = "falta", what = "Dibuja un modelo del efecto pegado a la pantalla." }
+BTL_loadClutColors = { status = "falta", what = "Copia colores a la paleta de un efecto.", note = "battle.md: Hueco" }
+BTL_getCameraRotation = { status = "falta", what = "Lee el giro de la cámara para orientar un efecto.", note = "battle.md: las órdenes de cámara se saltan" }
+BTL_convertToViewSpace = { status = "falta", what = "Pasa una posición del efecto al espacio de la cámara.", note = "battle.md: Hueco" }
+BTL_render3DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en el mundo (llamas, rayos)." }
+BTL_renderWireframeBox = { status = "falta", what = "Dibuja una caja de líneas de un efecto." }
+BTL_discardEFEOperand = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta un operando del script de efecto." }
+BTL_renderWireframeGrid = { status = "falta", what = "Dibuja una rejilla de líneas de un efecto." }
+BTL_render2DTexturedQuad = { status = "falta", what = "Dibuja un cuadro con textura en pantalla de un efecto." }
+BTL_restoreCameraView = { status = "falta", what = "Devuelve la cámara del combate a su sitio tras una técnica.", note = "battle.md: Hueco" }
+BTL_setupFixedCamera = { status = "falta", what = "Fija la cámara en un punto para lucir una técnica.", note = "battle.md: Hueco" }
+BTL_renderEFELine = { status = "falta", what = "Dibuja una línea de un efecto." }
+BTL_findHitEntity = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp:587", what = "Busca a quién alcanza el golpe de un efecto." }
+BTL_printDebugValue = { status = "no-aplica", note = "depuración del original", what = "Escribe un valor de depuración." }
+BTL_renderParallaxSprites = { status = "falta", what = "Dibuja capas de sprites con paralaje de un efecto." }
+BTL_renderScrollingBackground = { status = "falta", what = "Dibuja un fondo que se desplaza durante una técnica." }
+BTL_addSourceEntityParticleFX = { status = "falta", what = "Lanza partículas desde el atacante.", note = "battle.md: Hueco" }
+BTL_renderParticleFlashSprite = { status = "falta", what = "Dibuja el destello de una partícula." }
+BTL_projectPositionToScreen = { status = "falta", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
+BTL_renderScreenSprite = { status = "falta", what = "Dibuja un sprite en pantalla de un efecto.", note = "battle.md: Hueco" }
+BTL_addCloudEffect = { status = "falta", what = "Añade una nube de humo o polvo de una técnica.", note = "battle.md: Hueco" }
+BTL_addParticleEmitter = { status = "falta", what = "Añade un emisor de partículas.", note = "battle.md: Hueco" }
+BTL_discardEFEOperandPair = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta dos operandos del script de efecto." }
+BTL_popEFEValueToVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: saca un valor de la pila a una variable." }
+BTL_dispatchEFESubOpcode = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Orden de efecto: ejecuta una suborden." }
+BTL_callEFESubroutine = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:321", what = "Orden de efecto: llama a una subrutina." }
+BTL_pushEFEVariableAddress = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete la dirección de una variable en la pila." }
+BTL_pushEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete una variable en la pila." }
+BTL_pushEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: mete un número en la pila." }
+BTL_jumpEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: salta." }
+BTL_stopEFEScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: para el script." }
+BTL_branchEFEOnComparison = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: salta si se cumple una comparación." }
+BTL_applyEFEVariableOperator = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Orden de efecto: opera una variable con el registro." }
+BTL_loadEFEIndexedVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: lee un elemento de una tabla." }
+BTL_loadEFERandomValue = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:96", what = "Orden de efecto: carga un número al azar." }
+BTL_loadEFEVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: carga una variable." }
+BTL_loadEFEImmediate = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: carga un número." }
+BTL_shiftRightInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (32 bits)." }
+BTL_shiftLeftInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (32 bits)." }
+BTL_moduloInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (32 bits)." }
+BTL_divideInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (32 bits)." }
+BTL_multiplyInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (32 bits)." }
+BTL_subtractInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (32 bits)." }
+BTL_addInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (32 bits)." }
+BTL_setInt32Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (32 bits)." }
+BTL_shiftRightInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (8 bits)." }
+BTL_shiftLeftInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (8 bits)." }
+BTL_moduloInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (8 bits)." }
+BTL_divideInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (8 bits)." }
+BTL_multiplyInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (8 bits)." }
+BTL_subtractInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (8 bits)." }
+BTL_addInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (8 bits)." }
+BTL_setInt8Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (8 bits)." }
+BTL_shiftRightInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la derecha (16 bits)." }
+BTL_shiftLeftInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: desplaza a la izquierda (16 bits)." }
+BTL_moduloInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resto (16 bits)." }
+BTL_divideInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: divide (16 bits)." }
+BTL_multiplyInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: multiplica (16 bits)." }
+BTL_subtractInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: resta (16 bits)." }
+BTL_addInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: suma (16 bits)." }
+BTL_setInt16Variable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:71", what = "Operador de efecto: asigna (16 bits)." }
+BTL_compareGreaterOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: mayor o igual." }
+BTL_compareGreater = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: mayor." }
+BTL_compareLessOrEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: menor o igual." }
+BTL_compareLess = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: menor." }
+BTL_compareNotEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: distinto." }
+BTL_compareEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: igual." }
+BTL_calculateAttackHitPosition = { status = "parcial", note = "el motor registra el golpe; sin comprobar que use este punto", what = "Calcula en qué punto del cuerpo del objetivo cae un golpe." }
+BTL_interpolateClamped = { status = "falta", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas).", note = "solo lo usan dibujos que faltan" }
+BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Monta la tabla de subórdenes de efecto." }
+BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Ejecuta una orden del script de efecto." }
+BTL_resetPoisonBubbles = { status = "falta", what = "Reinicia las burbujas del veneno sobre un luchador." }
+BTL_addPoisonBubble = { status = "falta", what = "Suelta una burbuja de veneno sobre el luchador envenenado." }
+BTL_tickPoisonBubble = { status = "falta", what = "Hace subir una burbuja de veneno." }
+BTL_tickPoisonEffect = { status = "falta", what = "Mantiene el efecto visual del veneno sobre el luchador." }
+BTL_initializePoisonBubble = { status = "falta", what = "Prepara una burbuja de veneno." }
+BTL_addPoisonEffect = { status = "falta", what = "Pone el efecto visual del veneno." }
+BTL_tickConfusionEffect = { status = "falta", what = "Anima el efecto visual de la confusión." }
+BTL_initializeConfusionEffect = { status = "falta", what = "Prepara el efecto visual de la confusión." }
+BTL_addConfusionEffect = { status = "falta", what = "Pone el efecto visual de la confusión." }
+BTL_resetStunSubEffects = { status = "falta", what = "Reinicia las estrellas del aturdimiento." }
+BTL_tickStunEffect = { status = "falta", what = "Anima el efecto visual del aturdimiento." }
+BTL_addStunSubEffect = { status = "falta", what = "Añade una estrella del aturdimiento." }
+BTL_tickStunSubEffect = { status = "falta", what = "Hace girar una estrella del aturdimiento." }
+BTL_setTMDObjectColor = { status = "falta", what = "Tiñe un objeto de un modelo (auras, brillos de estado)." }
+BTL_tickFinisherAura = { status = "falta", what = "Anima el aura del remate cargado alrededor del compañero." }
+BTL_addFinisherAura = { status = "falta", what = "Pone el aura del remate cargado." }
+BTL_tickAuraProjectile = { status = "falta", what = "Mueve un proyectil de aura." }
+BTL_initializeAuraProjectiles = { status = "falta", what = "Prepara los proyectiles de aura." }
+BTL_addAuraProjectile = { status = "falta", what = "Lanza un proyectil de aura." }
+BTL_initializeItemParticleVelocities = { status = "falta", what = "Da velocidades a las partículas de un objeto usado en combate." }
+BTL_tickItemParticles = { status = "falta", what = "Mueve las partículas de un objeto usado en combate." }
+BTL_initializeBattleItemParticles = { status = "falta", what = "Prepara las partículas de los objetos en combate." }
+BTL_addItemParticles = { status = "falta", what = "Lanza las partículas al usar un objeto en combate." }
+BTL_initializeBuffTrails = { status = "falta", what = "Prepara las estelas de una mejora de stats." }
+BTL_tickBuffDisk = { status = "falta", what = "Anima el disco de una mejora de stats." }
+BTL_addBuffTrails = { status = "falta", what = "Pone las estelas de una mejora de stats." }
+BTL_tickBuffTrails = { status = "falta", what = "Mueve las estelas de una mejora de stats." }
+BTL_initializeUnk3 = { status = "falta", what = "Prepara el disco de mejora de stats." }
+BTL_addBuffDiskEffect = { status = "falta", what = "Pone el disco de una mejora de stats." }
+BTL_tickBuffRings = { status = "falta", what = "Anima los anillos de una mejora de stats." }
+BTL_initializeUnk2 = { status = "falta", what = "Prepara los anillos de mejora de stats." }
+tickBuffModel = { status = "falta", what = "Anima el modelo que acompaña a una mejora de stats." }
+morphBuffModel = { status = "falta", what = "Alterna la paleta del modelo de mejora." }
+initializeParticleFX = { status = "falta", what = "Prepara las partículas de los efectos." }
+tickParticleFX = { status = "falta", what = "Mueve las partículas de los efectos." }
+addEntityParticleFX = { status = "falta", what = "Lanza partículas pegadas a un luchador." }
+initializeEntityParticleFX = { status = "falta", what = "Prepara las partículas pegadas a luchadores." }
+tickEntityParticleFX = { status = "falta", what = "Mueve las partículas pegadas a un luchador." }
+tickCloudFX = { status = "falta", what = "Mueve las nubes de humo y polvo de los efectos." }
+EFECreateFlash = { status = "falta", what = "Crea un destello de luz de una técnica.", note = "battle.md: los destellos se saltan" }
+tickEFEFlash = { status = "falta", what = "Anima un destello de luz." }
+setEFEFlashOffset = { status = "falta", what = "Mueve un destello de luz." }
+findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Busca el fichero de datos de efectos." }
+initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }
+getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }
+fillEFEXTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Rellena la tabla de órdenes de efecto." }
+translateConditionFXToEntity = { status = "falta", what = "Pega un efecto de estado a la posición de un personaje." }
+doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
+DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
+DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
+tickHealingParticles = { status = "falta", what = "Mueve las partículas de curación al usar un objeto." }
+initializeHealingParticles = { status = "falta", what = "Prepara las partículas de curación." }
+addHealingParticleEffect = { status = "falta", what = "Lanza las partículas de curación sobre el compañero." }
+
+# --- Campo
+findAABBHitEntity = { status = "no-aplica", note = "prueba de cajas del original; el motor choca con su rejilla", what = "Busca la entidad cuya caja toca otra." }
+hasAABBOverlap = { status = "no-aplica", note = "prueba de cajas del original", what = "Dice si dos cajas se tocan." }
+initializePartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Borra el rastro del compañero al cambiar de mapa." }
+popPartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Quita el primer punto del rastro del compañero." }
+addTamerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Añade un punto al rastro que deja el jugador." }
+initializeTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Prepara el rastro del jugador." }
+clearTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Borra el rastro del jugador." }
+isLinearPathBlocked = { status = "portado", dwe = "game/field/src/grid.cpp", what = "Dice si una línea recta entre dos casillas choca con algo." }
+setPartnerWaypoint = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Pone un punto en el rastro del compañero." }
+tickTamerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "Guarda por dónde pasa el jugador para que el compañero lo siga." }
+tickPartnerWaypoints = { status = "portado", dwe = "game/field/src/field.cpp:858", what = "El compañero sigue el rastro del jugador cuando no lo ve en línea recta." }
+isTileOffScreen = { status = "portado", dwe = "docs/reference/campo.md:157", what = "Dice si una casilla está fuera de la pantalla." }
+entityMoveForward = { status = "portado", dwe = "docs/reference/campo.md:49", what = "Da un paso adelante a un personaje." }
+entityIsInEntity = { status = "portado", dwe = "game/field/src/grid.cpp", what = "Dice si dos personajes se tocan." }
+isOffScreen = { status = "no-aplica", note = "cálculo de pantalla del original", what = "Dice si un punto está fuera de la pantalla." }
+getMapSoundId = { status = "portado", dwe = "docs/formats/audio.md:24", what = "Da el banco de sonidos del mapa." }
+readMapTFS = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee las imágenes del fondo del mapa." }
+isInDaytimeTransition = { status = "falta", what = "Dice si el mapa está cambiando entre día y noche.", note = "sin búsqueda de la luz del día en el motor; comprobar" }
+handleTileUpdate = { status = "no-aplica", note = "carga de trozos del fondo del original", what = "Carga las partes del fondo según se mueve la cámara." }
+reinitializeAfterTournament = { status = "falta", what = "Vuelve al mapa tras un torneo.", note = "no hay torneos" }
+createMeramonShake = { status = "falta", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
+tickMeramonShake = { status = "falta", what = "Hace temblar la pantalla en esa escena." }
+cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
+getFileCityTopMap = { status = "falta", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "comprobar si las ediciones de mapa del guion lo cubren" }
+loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }
+setupTamerOnWarp = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Coloca al jugador al llegar por un warp." }
+tamerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Mueve al jugador cada fotograma según su estado." }
+checkMedalConditions = { status = "falta", what = "Da la medalla de aprender todas las técnicas y la anuncia." }
+checkPendingAwards = { status = "falta", what = "Lanza el anuncio pendiente de un premio (medalla o nivel del jugador)." }
+getEntityFromScriptId = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Da el personaje de un id de guion." }
+tamerTickIdle = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "El jugador quieto." }
+tamerTickTraining = { status = "portado", dwe = "apps/game/src/gym_screen.cpp", what = "El jugador mira al compañero mientras entrena." }
+tamerTickMachinedramonSpawn = { status = "falta", what = "El jugador asiste a la aparición del jefe final.", note = "la escena acaba al momento (story_scene_glue.cpp:58)" }
+tamerTickAwardSomething = { status = "falta", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
+calculatePosition = { status = "no-aplica", note = "cálculo de matrices", what = "Calcula una posición con una matriz." }
+
+# --- Compañero
+partnerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp:400", what = "Mueve al compañero cada fotograma según su estado." }
+partnerGetState = { status = "no-aplica", note = "consulta interna", what = "Da el estado del compañero." }
+
+# --- NPC y objetos
+resetMomentumData = { status = "no-aplica", note = "animación del original; el motor anima sus clips", what = "Reinicia el impulso de la animación." }
+animateEntityTexture = { status = "falta", what = "Anima por código la textura de algunos personajes (ojos, brillos).", note = "docs/formats/modelos.md: no se extrae" }
+tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", what = "Mueve al personaje con el desplazamiento de su animación." }
+tickAnimation = { status = "portado", note = "", what = "Avanza la animación de un personaje." }
+animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }
+initializeConditionBubbles = { status = "portado", dwe = "apps/game/src/play_session.cpp:43", what = "Prepara las burbujas de necesidad del compañero." }
+initializeButterfly = { status = "falta", what = "Prepara la mariposa que distrae al compañero infeliz." }
+setButterfly = { status = "falta", what = "Hace salir la mariposa que persigue el compañero infeliz (condición de distraído).", note = "la condición sí está (partner_tick.cpp:313); la mariposa no se ve" }
+tickButterfly = { status = "falta", what = "Hace volar la mariposa." }
+unsetButterfly = { status = "falta", what = "Quita la mariposa." }
+clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Vacía los cofres del mapa al salir." }
+loadDirtCartModel = { status = "falta", what = "Carga la vagoneta de tierra de la mina." }
+initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los cofres de la partida." }
+loadWarpCrystals = { status = "falta", what = "Carga los cristales de teletransporte de un mapa." }
+spawnBoulder = { status = "falta", what = "Pone la roca que bloquea un paso." }
+initializeMedalModel = { status = "falta", what = "Carga el modelo de una medalla." }
+spawnToyTownBoxes = { status = "falta", what = "Pone las cajas de la ciudad de juguete." }
+spawnGearbox = { status = "falta", what = "Pone la caja de engranajes de la fábrica." }
+spawnAngemonPedestal = { status = "falta", what = "Pone el pedestal que se mueve en el santuario." }
+initializeTrainingPoop = { status = "falta", what = "Pone la caca gigante del gimnasio." }
+emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }
+isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
+tickOpenChestTray = { status = "falta", what = "Anima la tapa del cofre al abrirse." }
+tickCloseChestTray = { status = "falta", what = "Anima la tapa del cofre al cerrarse." }
+decreaseDirtPileSize = { status = "falta", what = "Encoge un montón de tierra al cavar." }
+moveAngemonPedestal = { status = "falta", what = "Mueve el pedestal del santuario." }
+activateMedalTexture = { status = "falta", what = "Pone la textura de la medalla ganada." }
+loadDirtPileModel = { status = "falta", what = "Carga el montón de tierra que se cava." }
+setEntityPosition = { status = "portado", dwe = "game/field/src/field_positions.cpp", what = "Pone a un personaje en una posición." }
+resetFlattenGlobal = { status = "no-aplica", note = "estado de dibujo", what = "Reinicia el aplastado de los modelos." }
+handleNullModel = { status = "no-aplica", note = "modelo vacío del original", what = "Sustituye un modelo que falta." }
+initializeModelComponents = { status = "no-aplica", note = "preparación de modelos", what = "Prepara las piezas de un modelo." }
+loadMMD = { status = "no-aplica", note = "lectura del disco; los modelos los extrae dwx", what = "Carga el modelo de una criatura." }
+getEntityModelComponent = { status = "no-aplica", note = "consulta interna", what = "Da una pieza del modelo." }
+getEntityType = { status = "no-aplica", note = "consulta interna", what = "Da la especie de un personaje." }
+uploadModelTexture = { status = "no-aplica", note = "subida de textura del original", what = "Sube la textura de un modelo." }
+clearMapObjects = { status = "no-aplica", note = "limpieza del original", what = "Quita los objetos del mapa." }
+moveMapObjects = { status = "portado", dwe = "game/field/src/map_objects.cpp", what = "Mueve los objetos del mapa con el guion." }
+spawnSpriteAtEntity = { status = "falta", what = "Pone un sprite (humo, signo) sobre un personaje." }
+tickRemoveMist = { status = "falta", what = "Disipa la niebla del mapa." }
+loadNPCModel = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Carga el modelo de un personaje del mapa." }
+NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Mueve a un personaje del mapa cada fotograma." }
+clearMapDigimon = { status = "portado", dwe = "game/field/src/npcs.cpp:102", what = "Quita los personajes del mapa." }
+scriptNPCStartAnimation = { status = "portado", dwe = "game/story/src/orders_npc.cpp", what = "Orden de guion: pone una animación a un personaje." }
+setPartnerIdling = { status = "portado", dwe = "game/field/src/field_script.cpp:40", what = "Deja al compañero quieto para una escena." }
+initializeWorldObjects = { status = "no-aplica", note = "tabla de objetos del original", what = "Prepara la tabla de objetos del mundo." }
+tickObjects = { status = "no-aplica", note = "bucle de objetos del original; el motor tiene su bucle", what = "Avanza todos los objetos del mundo." }
+
+# --- Guion
+tickItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Menú de objetos de los guiones (tiendas): cursor, cantidad y compra." }
+readSelectedItemMerit = { status = "parcial", note = "no hay pantalla del intercambio por méritos", what = "Lee los méritos del objeto elegido." }
+tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
+updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
+tickSingleCardShop = { status = "falta", what = "Tienda de una sola carta.", note = "las pantallas de cartas no existen" }
+tickShopBitsBox = { status = "falta", what = "Cuadro con el dinero del jugador que abre el guion.", note = "la rutina 15 se cierra sin enseñarlo" }
+inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
+processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
+isKeyDown = { status = "no-aplica", note = "entrada del original", what = "Dice si un botón está pulsado." }
+setFreshDialogue = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Empieza un diálogo nuevo." }
+getRecycleId = { status = "portado", dwe = "apps/session/src/shop_counter.cpp", what = "Da el objeto que vende la tienda de reciclaje." }
+calculateItemListStrings = { status = "no-aplica", note = "texto de interfaz; lo monta la pantalla", what = "Monta los textos de la lista de objetos." }
+allocateItemMenuBox = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Reserva un cuadro de menú." }
+createItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Abre un menú de objetos (tienda, guardarropía, gramola)." }
+getItemMenuFromType = { status = "no-aplica", note = "consulta interna", what = "Da el menú de un tipo." }
+updateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Rehace los textos del menú." }
+isItemMenuBoxBusy = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Dice si el cuadro del menú está ocupado." }
+createSingleCardShopMenu = { status = "falta", what = "Abre la tienda de una sola carta.", note = "no hay pantallas de cartas" }
+itemMenuCursorTop = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor arriba." }
+itemMenuCursorUp = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Sube el cursor." }
+itemMenuCursorBottom = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor abajo." }
+itemMenuCursorDown = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Baja el cursor." }
+createItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Abre el cuadro de descripción del objeto." }
+updateItemMenuSubTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del cuadro auxiliar." }
+playShopSoundOnlyInSavannah = { status = "falta", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "comprobar" }
+showMapHeadTextbox = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", what = "Enseña el texto de cabecera del mapa." }
+flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Pasa la página del cuadro de texto." }
+calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
+calculateCardMenuStrings = { status = "falta", what = "Monta la lista del menú de cartas.", note = "no hay pantallas de cartas" }
+calculateMusicMenuStrings = { status = "falta", what = "Monta la lista de canciones de la gramola.", note = "no hay pantalla de gramola" }
+calculateBirdramonMenuStrings = { status = "falta", what = "Monta la lista de destinos del pájaro transportista.", note = "comprobar la pantalla de destinos" }
+updateItemMenuLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del menú." }
+itemMenuCursorMoveToBottom = { status = "no-aplica", note = "cursor de interfaz", what = "Lleva el cursor al final." }
+itemMenuCursorMoveToTop = { status = "no-aplica", note = "cursor de interfaz", what = "Lleva el cursor al principio." }
+getTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Da una línea del cuadro de texto." }
+terminateString = { status = "no-aplica", note = "cadenas del original", what = "Cierra una cadena." }
+padWithSpaces = { status = "no-aplica", note = "cadenas del original", what = "Rellena con espacios." }
+showMapheadSelection = { status = "portado", dwe = "content/packs/game/ui/destination_choice/logic.lua", what = "Enseña una elección en la cabecera del mapa." }
+unlockMedal = { status = "falta", what = "Da una medalla al jugador.", note = "no hay medallas en el motor" }
+hasMedal = { status = "falta", what = "Dice si el jugador tiene una medalla.", note = "no hay medallas en el motor" }
+createMonochromonMoodBubble = { status = "falta", what = "Burbuja de humor del rival de la tienda de cambio.", note = "scripts.md: más tarde" }
+triggerSeadramonCutscene = { status = "falta", what = "Lanza la escena de la serpiente marina al pescarla." }
+initializeLoadedNPCModels = { status = "no-aplica", note = "tabla de modelos del original", what = "Vacía la tabla de modelos cargados." }
+popScriptStack = { status = "portado", dwe = "game/story/src/story_runner.cpp", what = "Vuelve de una subrutina del guion." }
+skipOneReadOneUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un operando del guion." }
+pollNextScriptUByte = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un byte del guion." }
+pollNextScriptUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos bytes del guion." }
+pollOneUByteOneUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos operandos del guion." }
+skipOneReadTwoShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos operandos del guion." }
+skipOnePollTwoScriptBytes = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos bytes del guion." }
+pollNextTwoScriptBytes = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos bytes del guion." }
+skipOneReadInteger = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un entero del guion." }
+pollNextScriptTwoUShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos operandos del guion." }
+pollNextInt = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un entero del guion." }
+pollNextScriptShort = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee un número del guion." }
+pollNextTwoScriptShorts = { status = "no-aplica", note = "lectura de operandos; los scripts se pasan a Lua", what = "Lee dos números del guion." }
+forceUpdateBGM = { status = "portado", dwe = "apps/session/src/session_music.cpp", what = "Fuerza a revisar la música del mapa (día o noche)." }
+scriptUnloadModel = { status = "portado", dwe = "game/story/src/orders_npc.cpp", what = "Orden de guion: quita un modelo." }
+initializeTextbox = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Prepara el cuadro de texto." }
+tickBackgroundDialogue = { status = "falta", what = "Diálogo que corre sin parar el juego (comentarios de fondo).", note = "comprobar" }
+tickScriptDialogueBox = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Avanza el cuadro de diálogo del guion." }
+showTextboxReady = { status = "portado", dwe = "apps/game/src/story_textbox.cpp", what = "Enseña la marca de seguir del cuadro de texto." }
+intToStringSJIS = { status = "no-aplica", note = "codificación de texto del original", what = "Pasa un número a texto." }
+scriptCompareDate = { status = "portado", dwe = "game/field/include/dwe/game/field/script_warps.hpp:43", what = "Condición de guion: compara la fecha." }
+scriptCompareMove = { status = "portado", dwe = "apps/session/src/partner_moves.cpp", what = "Condición de guion: si el compañero sabe una técnica." }
+
+# --- Menús
+initializeFadeData = { status = "no-aplica", note = "preparación del original", what = "Prepara los fundidos." }
+fadeToWhite = { status = "falta", what = "Funde la pantalla a blanco.", note = "rutina 45 del guion, sin registrar: sigue sin fundir" }
+fadeFromWhite = { status = "falta", what = "Vuelve del blanco.", note = "rutina 46 del guion, sin registrar" }
+clearTextArea = { status = "no-aplica", note = "texto en memoria de vídeo", what = "Borra una zona de texto." }
+clearTextSubArea = { status = "no-aplica", note = "texto en memoria de vídeo", what = "Borra parte de una zona de texto." }
+setTextColor = { status = "no-aplica", note = "texto del original; el motor usa sus estilos", what = "Cambia el color del texto." }
+addGameMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Abre el menú de juego (triángulo)." }
+closeTriangleMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Cierra el menú de juego." }
+tickGameMenu = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Mueve el menú de juego." }
+tickDigimonMenu = { status = "portado", dwe = "apps/game/src/partner_tab.cpp", what = "Ficha del compañero: estado, técnicas y orden de las técnicas." }
+isUIBoxAvailable = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Dice si queda un cuadro libre." }
+tickPlayerMenu = { status = "portado", dwe = "apps/game/src/player_chart.cpp", what = "Ficha del jugador: datos, medallas, cartas y tabla de evoluciones." }
+handleGameMenuSelection = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Ejecuta la opción elegida del menú de juego." }
+removeOneSelectedItem = { status = "portado", dwe = "apps/game/src/care_commands.cpp", what = "Gasta el objeto elegido al darlo." }
+renderFeedingItem = { status = "parcial", note = "el objeto que se da de comer no se dibuja", what = "Dibuja el objeto en la mano al dar de comer." }
+getEquippedSlot = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Da la ranura de una técnica equipada." }
+equipMove = { status = "portado", dwe = "apps/game/src/partner_menu.cpp", what = "Equipa una técnica en una ranura." }
+sortArray = { status = "no-aplica", note = "utilidad", what = "Ordena una lista." }
+createItemOption = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Abre las opciones de un objeto de la bolsa (usar, mover, tirar)." }
+initializeInventoryUI = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Prepara la pantalla de la bolsa." }
+closeInventoryBoxes = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Cierra los cuadros de la bolsa." }
+createInventoryView = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Abre la vista de la bolsa." }
+tickInventoryTop = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Mueve el cursor de la bolsa." }
+closeInventoryBoxes2 = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Cierra los cuadros de la bolsa." }
+tickItemOption = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Elige una opción de un objeto." }
+createSortOption = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Abre la opción de ordenar la bolsa." }
+tickSortOption = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Elige cómo ordenar la bolsa." }
+createDropItemConfirmBox = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Pregunta si tirar un objeto." }
+tickDropItemConfirmBox = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Confirma tirar un objeto." }
+updateItemDescription = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Enseña la descripción del objeto elegido." }
+moveItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Mueve un objeto de hueco en la bolsa." }
+selectSorting = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Ordena la bolsa." }
+selectDropItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Tira el objeto elegido." }
+selectRegularInventory = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Vuelve a la bolsa normal desde un submenú." }
+copyItemArray = { status = "no-aplica", note = "utilidad", what = "Copia la lista de objetos." }
+updateInventoryInputRepeatCounter = { status = "no-aplica", note = "repetición del mando; la hace el motor", what = "Repite el cursor al mantener el botón." }
+isInventoryButtonPressed = { status = "no-aplica", note = "entrada del original", what = "Dice si se pulsó un botón en la bolsa." }
+tickInventoryOptionSelector = { status = "portado", dwe = "apps/screens/src/bag_view.cpp", what = "Mueve el cursor de opciones de la bolsa." }
+formatInteger = { status = "no-aplica", note = "texto de interfaz", what = "Pasa un número a texto." }
+appendWideDigit = { status = "no-aplica", note = "texto de interfaz", what = "Añade una cifra ancha a un texto." }
+tickUIBox = { status = "no-aplica", note = "cuadros de interfaz del original; el motor usa su interfaz", what = "Anima la apertura de un cuadro." }
+
+# --- Objetos y tiendas
+initializeDroppedItems = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los objetos del suelo." }
+clearDroppedItems = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Quita los objetos del suelo al cambiar de mapa." }
+initializeInventory = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Prepara la bolsa de partida nueva." }
+removeTamerItem = { status = "portado", dwe = "game/inventory/src/inventory.cpp", what = "Quita un objeto de la bolsa." }
+addEnergy = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma energía (saciedad) al compañero." }
+reduceTiredness = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Quita cansancio al compañero." }
+addHappiness = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma felicidad al compañero." }
+addDiscipline = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma disciplina al compañero." }
+addWeight = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma peso al compañero." }
+hasAnyCardToBuy = { status = "falta", what = "Dice si queda alguna carta por comprar.", note = "no hay pantallas de cartas" }
+createCardMenu = { status = "falta", what = "Abre el menú de compra o venta de cartas.", note = "la rutina 14 se cierra sin pantalla" }
+shopFillMeritItemList = { status = "falta", what = "Rellena la lista del intercambio por méritos.", note = "la rutina 1 se cierra sin pantalla" }
+itemKeeperFillItemList = { status = "falta", what = "Rellena la lista del guardarropía de objetos.", note = "la rutina 11 se cierra sin pantalla" }
+createItemKeepWindow = { status = "falta", what = "Abre el guardarropía de objetos." }
+jukeboxFillTitleList = { status = "falta", what = "Rellena la lista de la gramola.", note = "la rutina 9 se cierra sin pantalla" }
+createJukeboxMenu = { status = "falta", what = "Abre la gramola." }
+birdraFillTargetList = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Rellena los destinos del pájaro transportista." }
+createBirdraTransportMenu = { status = "portado", dwe = "content/packs/game/ui/destination_choice/logic.lua", what = "Abre la elección de destino del pájaro transportista." }
+mojyaTradeFillItemList = { status = "falta", what = "Rellena la lista del trueque de objetos.", note = "la rutina 2 se cierra sin pantalla" }
+createMojyaTradeMenu = { status = "falta", what = "Abre el trueque de objetos." }
+setMojyaItemTradedTrigger = { status = "falta", what = "Marca el objeto ya cambiado en el trueque." }
+tickCardMenu = { status = "falta", what = "Compra o venta de cartas: cursor, precio y confirmación." }
+tickItemKeeperWindow = { status = "falta", what = "Guardarropía: pasa objetos entre la bolsa y el almacén." }
+updateKeeperTextbox = { status = "falta", what = "Texto del guardarropía." }
+keeperMoveOne = { status = "falta", what = "Guardarropía: pasa un objeto." }
+keeperMoveTen = { status = "falta", what = "Guardarropía: pasa diez objetos." }
+keeperMoveStack = { status = "falta", what = "Guardarropía: pasa la pila entera." }
+keeperScrollLeftToItem = { status = "falta", what = "Guardarropía: salta al objeto anterior." }
+keeperScrollRightToItem = { status = "falta", what = "Guardarropía: salta al objeto siguiente." }
+tickJukeboxMenu = { status = "falta", what = "Gramola: elige y toca una canción." }
+tickBirdraTransportMenu = { status = "portado", dwe = "game/field/src/script_warps.cpp", what = "Elige destino del pájaro transportista y viaja." }
+tickMojyaTradeMenu = { status = "falta", what = "Trueque: elige el objeto a cambiar." }
+updateMojyaTradeStrings = { status = "falta", what = "Textos del trueque." }
+showNewGameDialogue = { status = "portado", dwe = "apps/game/src/new_game_interview.cpp", what = "Diálogo de la partida nueva." }
+showNewGameSelection = { status = "portado", dwe = "apps/game/src/new_game_interview.cpp", what = "Elección de la partida nueva." }
+fillNamingMenuStrings = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Textos del cuadro de nombre." }
+updateNamingPreview = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Vista previa del nombre que se escribe." }
+namingSelectionLeft = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Mueve a la izquierda el cursor del cuadro de nombre." }
+namingSelectionRight = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Mueve a la derecha el cursor del cuadro de nombre." }
+namingSelectionDown = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Baja el cursor del cuadro de nombre." }
+
+# Routine screens the story asks for and the app closes at once (story_scene_glue.cpp:48)
+openDiscardItem = { status = "parcial", note = "la rutina 0 se registra pero la app no tiene pantalla: se cierra al momento", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
+openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla", what = "Abre el intercambio de objetos por puntos de mérito." }
+openMojyamonShop = { status = "parcial", note = "la rutina 2 se cierra sin pantalla", what = "Abre el trueque de objetos." }
+openJukebox = { status = "parcial", note = "la rutina 9 se cierra sin pantalla", what = "Abre la gramola." }
+tickItemKeeper = { status = "parcial", note = "la rutina 11 se cierra sin pantalla", what = "Guardarropía de objetos." }
+rollCardPack = { status = "parcial", dwe = "game/inventory/include/dwe/game/inventory/cards.hpp", note = "la tirada existe; la rutina 14 se cierra sin pantalla", what = "Saca las cartas de un sobre." }
+openBuyCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la compra de cartas." }
+openSellCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la venta de cartas." }
+createShopBitsBox = { status = "parcial", note = "la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
+createNinjamonEffect = { status = "parcial", note = "la rutina 38 se cierra sin el humo", what = "Nube de humo de un personaje que desaparece." }
+tickSaveMachine = { status = "parcial", dwe = "apps/game/src/save_machine.hpp", note = "la máquina de guardar existe, pero la rutina 48 del guion se cierra sin abrirla", what = "La máquina de guardar que abre el guion." }
+initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }
+scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
+scriptStartTournament = { status = "parcial", note = "la rutina 6 se cierra sin torneo", what = "Empieza un torneo." }
+tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
+tamerTickEnding = { status = "falta", note = "la escena 6 acaba al momento; solo se ve el vídeo final", what = "Escena final del jugador antes del vídeo." }
+KAR_start = { status = "falta", note = "la escena 1 acaba al momento: no hay minijuego de piedras", what = "Empieza el minijuego de piedras." }
+tickPartnerToilet = { status = "portado", dwe = "apps/game/src/field_toilet.cpp", what = "El compañero usa el retrete." }
+
+# --- Entrenamiento
+TRN_tickSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Ronda de la tragaperras del gimnasio." }
+TRN_getTrainingSpotScreenPos = { status = "no-aplica", note = "posición en pantalla para dibujar", what = "Da dónde dibujar el cuadro del gimnasio." }
+TRN_func_800888A0 = { status = "falta", what = "Función sin nombre del cálculo de recompensas del gimnasio.", note = "sin identificar" }
+TRN_startSlotSession = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Empieza la tragaperras." }
+TRN_getSlotMachineResult = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Da el resultado de la tragaperras." }
+TRN2_tickDefenseTrainingMap108 = { status = "portado", dwe = "game/gym/src/course_defense.cpp", what = "Curso de defensa del segundo gimnasio." }
+TRN2_applyBaseStats = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Aplica las ganancias a los stats base." }
+TRN2_createPostTrainingStatsBox = { status = "portado", dwe = "content/packs/game/ui/gym_stats/logic.lua", what = "Cuadro de stats tras entrenar." }
+TRN2_tickPostTrainingStatsBox = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Cuenta los stats ganados en el cuadro." }
+TRN2_func_8008AA84 = { status = "falta", what = "Función sin nombre del cálculo de recompensas del segundo gimnasio.", note = "sin identificar" }
+TRN2_statGainsAreZero = { status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Dice si el entrenamiento no ganó nada." }
+TRN2_awardMpTrainingGains = { status = "portado", dwe = "game/gym/src/course_mp.cpp", what = "Da las ganancias del curso de MP." }
+TRN2_awardOffenseTrainingGains = { status = "portado", dwe = "game/gym/src/course_offense.cpp", what = "Da las ganancias del curso de ataque." }
+TRN2_chooseReelStop = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Elige dónde para un rodillo." }
+TRN2_getSlotSessionResult = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Da el resultado de la ronda." }
+TRN2_createSlotMachineBox = { status = "portado", dwe = "content/packs/game/ui/gym_slots/logic.lua", what = "Abre la tragaperras." }
+TRN2_startSlotSpin = { status = "portado", dwe = "game/gym/src/slot_machine.cpp", what = "Hace girar los rodillos." }
+
+# --- Guardado
+updateMemoryCardState = { status = "no-aplica", note = "tarjeta de memoria; el motor guarda en ficheros", what = "Comprueba si hay tarjeta." }
+getMenuOnCardChange = { status = "no-aplica", note = "tarjeta de memoria", what = "Vuelve al título si se quita la tarjeta." }
+setMemoryCardReadError = { status = "no-aplica", note = "tarjeta de memoria", what = "Apunta un error de lectura de la tarjeta." }
+isMemcardUnformatted = { status = "no-aplica", note = "tarjeta de memoria", what = "Dice si la tarjeta no tiene formato." }
+getCardUsedBlockCount = { status = "no-aplica", note = "tarjeta de memoria", what = "Cuenta los bloques usados." }
+loadSaveSlotData = { status = "portado", dwe = "game/save/src/slots.cpp", what = "Lee los datos de cada ranura de partida." }
+tickSelectSlotInput = { status = "portado", dwe = "content/packs/game/ui/save_slots/logic.lua", what = "Elige una ranura de partida." }
+createByteSum = { status = "no-aplica", note = "suma de control de la tarjeta", what = "Suma los bytes de la partida." }
+createSavegameChecksum = { status = "no-aplica", note = "suma de control de la tarjeta; el motor valida su fichero", what = "Calcula la suma de control de la partida." }
+countRegisteredDigimon = { status = "falta", what = "Cuenta las criaturas registradas para el modo versus.", note = "llega con el modo versus" }
+registerBattleData = { status = "falta", what = "Registra al compañero para el modo versus.", note = "save_machine.hpp: llega con el modo versus" }
+awardMachinedramonData = { status = "falta", what = "Al acabar el juego, registra al jefe final para el modo versus." }
+TRN_saveBaseStats = { system = "training", status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
+TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Guarda la hora al empezar a entrenar." }
+
+# --- Audio
+readVHBFile = { status = "no-aplica", note = "lectura del disco; la hace la extracción", what = "Lee un banco de sonidos." }
+seqStop = { status = "portado", dwe = "apps/session/src/session_music.cpp", what = "Para la música." }
+seqClose = { status = "no-aplica", note = "secuenciador del original", what = "Cierra la música." }
+getNextFreeChannel = { status = "no-aplica", note = "voces del chip de sonido; el motor tiene su mezclador", what = "Busca un canal libre." }
+stopSoundMask = { status = "portado", dwe = "engine/audio", what = "Para efectos de sonido." }
+loadPartnerSounds = { status = "portado", dwe = "apps/session/src/session_sound.cpp", what = "Carga las voces del compañero." }
+loadDigimonSounds = { status = "portado", dwe = "apps/session/src/session_sound.cpp", what = "Carga los sonidos de las criaturas del mapa." }
+VSLoadSounds = { status = "falta", what = "Carga los sonidos del modo versus.", system = "versus" }
+
+# --- Núcleo
+addClock = { status = "portado", dwe = "engine/ruleset/include/dwe/ruleset/game_clock.hpp", what = "Pone el reloj del juego." }
+tickPlaytime = { status = "portado", dwe = "game/save/src/save_file.cpp:133", what = "Cuenta el tiempo de juego." }
+lookupFileTable = { status = "no-aplica", note = "tabla de ficheros del disco", what = "Busca un fichero en la tabla del disco." }
+addAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Registra un golpe de una técnica." }
+popAttackObject = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Saca el siguiente golpe a aplicar." }
+updateTMDTextureData = { status = "no-aplica", note = "texturas del original", what = "Ajusta las texturas de un modelo." }
+initializeLoadedMap = { status = "portado", dwe = "apps/game/src/session_start.cpp", what = "Monta el mapa al cargar una partida." }
+recalculatePPandArena = { status = "falta", what = "Recalcula los puntos de prosperidad de la ciudad según quién se ha unido.", note = "no se encontró en el motor" }
+tickTrialEnd = { status = "no-aplica", note = "solo la demo de prueba", what = "Fin de la versión de prueba." }
+pollInputGame = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en el juego." }
+pollInputMenu = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en los menús." }
+initializeInventoryModules = { status = "no-aplica", note = "preparación del original", what = "Prepara los módulos de la bolsa." }
+isInvisible = { status = "no-aplica", note = "consulta de dibujo", what = "Dice si una entidad está oculta." }
+startMovie = { status = "portado", dwe = "apps/game/src/movie_screen.cpp", what = "Empieza un vídeo." }
+handlePause = { status = "portado", dwe = "content/packs/game/ui/pause_menu/logic.lua", what = "Pausa del juego." }
+createPauseBox = { status = "portado", dwe = "content/packs/game/ui/pause_menu/logic.lua", what = "Cuadro de pausa." }
+unlearnMove = { status = "parcial", dwe = "apps/session/src/story_routines/routine_forget_moves.cpp", note = "la rutina de olvidar técnicas se cierra sin pantalla", what = "Hace olvidar una técnica al compañero." }
+isTamerOnScreen = { status = "no-aplica", note = "consulta de dibujo", what = "Dice si el jugador está en pantalla." }
+startTournament = { status = "falta", what = "Carga y juega un torneo; suma los ganados.", note = "no hay torneos" }
+
+# --- Fishing
+FISH_panCameraTo = { status = "falta", what = "Desplaza la cámara hacia un punto (el corcho) con un límite por fotograma.", note = "La app ignora el foco de cámara de la pesca; la cámara sigue siempre al jugador." }
+FISH_panCameraToTamer = { status = "parcial", dwe = "apps/game/src/fishing_screen.cpp:237", what = "Devuelve la cámara al jugador antes del menú de cebo o al recoger.", note = "La cámara ya está en el jugador; no hay paneo suave de vuelta." }
+FISH_panCameraWithDPad = { status = "falta", what = "Deja al jugador mover la vista con la cruceta mientras pesca.", note = "La vista libre no existe (fishing_screen.cpp:231)." }
+FISH_isWithinCastRange = { status = "portado", dwe = "game/fishing/src/rod.cpp:103", what = "Comprueba si el corcho o el pez está dentro del alcance desde el jugador." }
+FISH_isBaitMenuVisible = { status = "portado", dwe = "game/fishing/src/rod.cpp:432", what = "Dice si el menú de cebo sigue abierto para esperar la elección." }
+FISH_closeBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:177", what = "Cierra el menú de cebo." }
+FISH_tickBaitMenu = { status = "portado", dwe = "content/packs/game/ui/fishing_bait/logic.lua:54", what = "Mueve el cursor del menú de cebo y elige o cancela el cebo." }
+FISH_openBaitMenu = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:315", what = "Abre el menú con la comida de la bolsa para elegir el cebo." }
+FISH_initBaitMenu = { status = "no-aplica", what = "Pone a cero el estado del menú de cebo.", note = "Estado de caja de UI; lo sustituye el documento del menú de cebo." }
+FISH_closeBaitMenuIfOpen = { status = "portado", dwe = "game/fishing/src/rod.cpp:409", what = "Cierra el menú de cebo si quedó abierto al acabar la pesca." }
+FISH_scrollViewToTarget = { status = "falta", what = "Lleva la cámara al punto del aviso (el pez o el corcho) mientras se lee.", note = "Los avisos no mueven la cámara." }
+FISH_isTextBoxVisible = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:206", what = "Dice si hay un aviso abierto; la pesca se pausa mientras tanto." }
+FISH_closeTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:190", what = "Cierra el aviso de la pesca." }
+FISH_tickTextBox = { status = "parcial", dwe = "content/packs/game/ui/fishing_notice/logic.lua:47", what = "Cierra el aviso con Confirmar tras 10 fotogramas o con Cancelar.", note = "Solo cierra con Confirmar (Cancelar se ignora), sin espera de 10 fotogramas ni paneo." }
+FISH_initTextBox = { status = "no-aplica", what = "Pone a cero el estado del aviso.", note = "Estado de caja de UI; lo sustituye el documento del aviso." }
+FISH_shutdownTextBox = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:143", what = "Quita el aviso al salir de la pesca o del mapa." }
+FISH_tickMarker = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Mantiene unos fotogramas la marca sobre un pez que tira la picada.", note = "El motor emite la marca, pero la app no la dibuja ni la mantiene." }
+FISH_initMarkerPool = { status = "no-aplica", what = "Vacía la reserva de marcas.", note = "Reserva fija de memoria; el motor usa eventos." }
+FISH_allocMarker = { status = "no-aplica", what = "Busca un hueco libre para una marca.", note = "Reserva fija de memoria; el motor usa eventos." }
+FISH_spawnMarker = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Pone una marca sobre el pez que tira la picada (distinta si puede picar).", note = "Se emite el evento, pero la app no dibuja la marca." }
+FISH_tickMarkers = { status = "parcial", dwe = "game/fishing/src/pond.cpp:401", what = "Avanza la vida de todas las marcas.", note = "Las marcas no se dibujan en la app." }
+FISH_clearMarkers = { status = "parcial", what = "Borra las marcas al engancharse un pez.", note = "No hay marcas en pantalla que borrar; la app no las dibuja." }
+FISH_tickRipple = { status = "parcial", dwe = "game/fishing/src/pond.cpp:163", what = "Anima una onda o salpicadura del agua y la quita al acabar.", note = "El susto a los peces está; la animación de la onda no se dibuja." }
+FISH_initRipplePool = { status = "no-aplica", what = "Vacía la reserva de ondas.", note = "Reserva fija de memoria; el motor emite eventos de onda." }
+FISH_allocRipple = { status = "no-aplica", what = "Busca un hueco libre para una onda.", note = "Reserva fija de memoria; el motor emite eventos de onda." }
+FISH_loadSpritesAndSeadramon = { status = "no-aplica", what = "Carga las texturas de la pesca y el modelo de la serpiente marina.", note = "Carga de texturas y modelos; la hace el motor de render." }
+FISH_onRodModelLoaded = { status = "no-aplica", what = "Aviso vacío tras cargar el modelo de la caña.", note = "Función vacía de carga de modelo." }
+FISH_resetTension = { status = "portado", dwe = "game/fishing/src/rod.cpp:302", what = "Oculta y pone a cero la tensión del sedal." }
+FISH_hideBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:203", what = "Oculta el cebo o la captura." }
+FISH_clearBaitSprite = { status = "portado", dwe = "game/fishing/src/rod.cpp:113", what = "Quita el cebo de la pantalla al sacar o guardar la caña." }
+FISH_showBaitSprite = { status = "parcial", dwe = "game/fishing/src/rod.cpp:373", what = "Muestra el cebo o la captura con el icono del objeto.", note = "Se ve como un marcador amarillo, no con el icono del objeto." }
+FISH_resetBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Deja el corcho en reposo y su animación a cero." }
+FISH_initBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al empezar o acabar la pesca." }
+FISH_clearBobberAnim = { status = "portado", dwe = "game/fishing/src/rod.cpp:114", what = "Reinicia el corcho al sacar la caña." }
+FISH_pushSeadramonSegment = { status = "falta", what = "Guarda el giro de la cabeza para que el cuerpo de la serpiente marina la siga.", note = "La serpiente marina se ve como marcador; no hay cuerpo por segmentos." }
+FISH_isSeadramonSpawned = { status = "portado", dwe = "game/fishing/src/pond.cpp:205", what = "Dice si la serpiente marina ya está en el agua para no sacar otra." }
+FISH_initFishPool = { status = "portado", dwe = "game/fishing/src/rod.cpp:71", what = "Vacía el agua de peces y sus contadores al entrar en el mapa." }
+FISH_fishPoolStub = { status = "no-aplica", what = "Función vacía al cerrar la pesca.", note = "Vacía en el original." }
+FISH_clearHookedFish = { status = "portado", dwe = "game/fishing/src/rod.cpp:369", what = "Suelta el pez enganchado." }
+FISH_clipLineToRect = { status = "falta", what = "Recorta el sedal al borde de la pantalla para dibujarlo.", note = "El sedal no se dibuja (lineShown no lo usa la app)." }
+FISH_resetRodState = { status = "portado", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:315", what = "Deja la caña guardada, sin sedal ni corcho." }
+FISH_waterTestStub1 = { status = "no-aplica", what = "Prueba de agua vacía del primer mapa.", note = "Vacía en el original." }
+FISH_waterTestStub2 = { status = "no-aplica", what = "Prueba de agua vacía del segundo mapa.", note = "Vacía en el original." }
+FISH_getBoneTransform = { status = "portado", dwe = "apps/game/src/fishing_screen.cpp:224", what = "Da la posición del hueso de la mano del jugador para la caña y el cebo." }
+FISH_endFishing = { status = "portado", dwe = "game/fishing/src/rod.cpp:403", what = "Guarda la caña, devuelve la cámara y deja al jugador quieto." }
+FISH_init = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:153", what = "Prepara la pesca del mapa al entrar en uno con agua." }
+FISH_deinitialize = { status = "portado", dwe = "apps/session/src/fishing_adapter.cpp:140", what = "Cierra la pesca al dejar el mapa." }
+FISH_scrollCameraTo = { status = "falta", what = "Desplaza el fondo del mapa hasta un punto de la pantalla.", note = "La pesca no mueve la cámara; sigue al jugador." }
+FISH_enableCameraControl = { status = "falta", what = "Guarda la vista al sacar la caña para restaurarla al acabar.", note = "No hay control de cámara propio de la pesca." }
+FISH_loadTMDModel = { status = "no-aplica", what = "Carga un modelo 3D (la caña o la serpiente marina).", note = "Carga de modelos; la hace el motor de assets." }
+FISH_getModelObject = { status = "no-aplica", what = "Da una pieza de un modelo cargado.", note = "Acceso a modelos cargados; lo hace el motor de render." }
+setFishingEnabled = { status = "parcial", dwe = "game/fishing/include/dwe/game/fishing/fishing.hpp:197", what = "Vuelve a permitir la pesca tras la escena de muerte o renacer del compañero.", note = "Existe setDisabled, pero nada lo llama al acabar esas escenas." }
+
+# --- Curling, movies and the ending, death and rebirth, evolution
+KAR_setupMatch = { status = "falta", what = "Prepara la partida de curling: piedras de cada equipo, obstáculos y rival.", note = "el motor no tiene el minijuego; la escena termina al instante" }
+KAR_tickStones = { status = "falta", what = "Mueve las piedras sobre el hielo con su rozamiento y sus choques." }
+KAR_finishMatch = { status = "falta", what = "Cierra la partida: poses finales y guarda el resultado (gana, gana por mucho o pierde)." }
+KAR_tick = { status = "falta", what = "Bucle principal del minijuego de curling por cuadro." }
+KAR_handleAimScroll = { status = "falta", what = "Desplaza la cámara con la cruceta mientras el jugador apunta." }
+KAR_updateRingMarkers = { status = "falta", what = "Marca en qué anillo de la diana está cada piedra." }
+KAR_checkStonesStopped = { status = "falta", what = "Comprueba si todas las piedras se han detenido para pasar el turno." }
+KAR_updateCollisions = { status = "falta", what = "Detecta los choques entre piedras y contra las paredes de la pista." }
+KAR_bounceOffWall = { status = "falta", what = "Hace rebotar una piedra contra la pared de la pista." }
+KAR_distance = { status = "falta", what = "Calcula la distancia entre dos puntos de la pista." }
+KAR_resolveStoneCollision = { status = "falta", what = "Decide cómo se reparte un choque entre dos piedras." }
+KAR_collidePeggedStone = { status = "falta", what = "Choque de una piedra en marcha contra una piedra fija." }
+KAR_collideRestingStone = { status = "falta", what = "Choque de una piedra en marcha contra una piedra parada, que sale despedida." }
+KAR_collideMovingStones = { status = "falta", what = "Choque entre dos piedras que se mueven a la vez." }
+KAR_debugCollisionStone = { status = "no-aplica", what = "Ajuste de depuración del choque de una piedra.", note = "sale al empezar en el original: código muerto" }
+KAR_computeImpactShare = { status = "falta", what = "Calcula cuánta fuerza recibe cada piedra en un choque." }
+KAR_computeSeparation = { status = "falta", what = "Separa dos piedras que se solapan tras chocar." }
+KAR_debugCollisionPair = { status = "no-aplica", what = "Ajuste de depuración del choque entre dos piedras.", note = "sale al empezar en el original: código muerto" }
+KAR_getWallZone = { status = "falta", what = "Dice en qué zona de pared de la pista está un punto." }
+KAR_placeAtContact = { status = "falta", what = "Coloca la piedra justo en el punto de contacto del choque." }
+KAR_beginAiming = { status = "falta", what = "Empieza la fase de apuntar del turno del jugador." }
+KAR_selectPreviousStone = { status = "falta", what = "Elige la piedra anterior para lanzar." }
+KAR_selectNextStone = { status = "falta", what = "Elige la piedra siguiente para lanzar." }
+KAR_beginThrow = { status = "falta", what = "Lanza la piedra elegida hacia el punto apuntado." }
+KAR_tickYesNoPrompt = { status = "falta", what = "Pregunta sí/no del minijuego (confirmar tiro o jugar otra vez)." }
+KAR_tickHintBox = { status = "falta", what = "Anima el cuadro de ayuda con las instrucciones del curling." }
+KAR_classifyStoneRings = { status = "falta", what = "Clasifica las piedras por anillo para puntuar." }
+KAR_tickScoreTally = { status = "falta", what = "Cuenta y muestra los puntos de cada equipo al final de la ronda." }
+KAR_chooseOpponentShot = { status = "falta", what = "Decide el tiro del rival según las piedras en la pista." }
+KAR_findClearShotAngle = { status = "falta", what = "Busca un ángulo de tiro libre de obstáculos para el rival." }
+KAR_setOpponentShot = { status = "falta", what = "Fija el destino y la fuerza del tiro del rival." }
+KAR_aimAtRandomStone = { status = "falta", what = "El rival apunta a una piedra al azar." }
+KAR_registerThrownStone = { status = "falta", what = "Apunta la piedra recién lanzada en la lista de lanzadas." }
+KAR_rotatePoint = { status = "falta", what = "Gira un punto sobre la pista para posicionar piedras y marcas." }
+KAR_tickMatchState = { status = "falta", what = "Máquina de estados de la partida: turnos, tiros, rondas y final." }
+checkCurlingMap = { status = "falta", what = "Al entrar en el mapa de curling carga el minijuego.", note = "el motor no tiene el minijuego" }
+EAB_setModelColor = { status = "falta", what = "Tiñe el modelo del efecto de aparición del jefe final.", note = "la aparición del jefe termina al instante" }
+EAB_tickBuildup = { status = "falta", what = "Lanza anillos de energía periódicos antes de que aparezca el jefe final." }
+EAB_initializeRings = { status = "falta", what = "Vacía la lista de anillos de energía de la aparición." }
+EAB_addBuildupRing = { status = "falta", what = "Añade un anillo de energía de la carga previa." }
+EAB_tickBuildupRing = { status = "falta", what = "Mueve y desvanece un anillo de la carga previa." }
+EAB_addSpawnRing = { status = "falta", what = "Añade un anillo de la aparición del jefe final." }
+EAB_tickSpawnRing = { status = "falta", what = "Mueve y desvanece un anillo de la aparición." }
+EAB_tickSpawn = { status = "falta", what = "Escena de aparición del jefe final: destello, anillos, partículas, cámara y sonidos." }
+EAB_initializeParticles = { status = "falta", what = "Vacía la lista de partículas de la aparición." }
+EAB_setEntitiesVisible = { status = "falta", what = "Oculta a todos menos al jefe durante su aparición y luego los repone." }
+EAB_addParticle = { status = "falta", what = "Añade una partícula de luz a la aparición del jefe." }
+EAB_tickParticle = { status = "falta", what = "Mueve y apaga una partícula de la aparición." }
+EAB_startBuildup = { status = "falta", what = "Empieza la carga de energía previa a la aparición del jefe final.", note = "solo la herramienta de extracción usa su modelo; el juego no la reproduce" }
+ENDI_setModelSemiTrans = { status = "falta", what = "Vuelve translúcido el modelo del compañero en el final.", note = "el motor no tiene la escena del final, solo el vídeo" }
+ENDI_updateEnding = { status = "falta", what = "Escena final: el compañero se desvanece, encoge, crece y sube convertido en luz." }
+ENDI_startParticles = { status = "falta", what = "Arranca las partículas de luz de la escena final." }
+ENDI_spawnParticle = { status = "falta", what = "Suelta una partícula de luz desde un hueso del compañero." }
+ENDI_releaseParticles = { status = "falta", what = "Libera las partículas para que suban solas." }
+ENDI_getParticleBase = { status = "falta", what = "Lee el punto de origen de las partículas del final." }
+ENDI_setParticleBase = { status = "falta", what = "Mueve el punto de origen de las partículas del final." }
+ENDI_stopParticles = { status = "falta", what = "Detiene las partículas de la escena final." }
+ENDI_clearParticles = { status = "falta", what = "Vacía la lista de partículas del final." }
+ENDI_tickEndingParticles = { status = "falta", what = "Mueve y apaga las partículas de luz del final." }
+MOV_onSliceDecoded = { status = "no-aplica", what = "Copia a pantalla cada franja descodificada del vídeo.", note = "descodificación de vídeo; el motor usa su propio reproductor" }
+MOV_startStream = { status = "no-aplica", what = "Abre el flujo de vídeo desde el disco.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }
+MOV_startRead = { status = "no-aplica", what = "Empieza a leer los sectores del vídeo.", note = "lectura en flujo del disco; el motor lee el vídeo de archivo" }
+MOV_decodeFrame = { status = "no-aplica", what = "Descodifica un cuadro del vídeo.", note = "descodificación de vídeo; el motor usa su propio reproductor" }
+MOV_waitForFlip = { status = "no-aplica", what = "Espera al cambio de pantalla entre cuadros del vídeo.", note = "sincronía de hardware; el motor tiene su propio bucle" }
+DOO2_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de los trozos del huevo.", note = "gestión de memoria del original" }
+DOO2_tickShardSet = { status = "falta", what = "Avanza un grupo de trozos del huevo que se rompe y lo quita al acabar.", note = "los trozos del huevo no se dibujan" }
+DOO2_releaseShardSet = { status = "falta", what = "Quita un grupo de trozos del huevo.", note = "los trozos del huevo no se dibujan" }
+DOO2_tickEggBox = { status = "falta", what = "Reinicia cada cuadro el contador de destellos del huevo.", note = "los destellos del huevo no se dibujan" }
+DOO2_resetShardSets = { status = "falta", what = "Vacía los grupos de trozos del huevo antes del renacimiento.", note = "los trozos del huevo no se dibujan" }
+DOO2_buildShardSet = { status = "falta", what = "Parte el modelo del huevo en trozos que salen volando al eclosionar.", note = "los trozos del huevo no se dibujan" }
+DOO2_releaseAllShardSets = { status = "falta", what = "Quita todos los grupos de trozos del huevo.", note = "los trozos del huevo no se dibujan" }
+DOOA_hasIrisClosed = { status = "falta", what = "Dice si el iris que se cierra ya tapa al compañero, para ocultarlo.", note = "el iris de la muerte no se dibuja" }
+DOOA_initShardEffect = { status = "falta", what = "Prepara el efecto de trozos de alambre del compañero al morir." }
+DOOA_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta a todos menos al compañero en la muerte y luego los repone." }
+DOOA_hideAllButPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta todo salvo al compañero, jugador incluido." }
+DOOA_updateCutsceneCamera = { status = "falta", what = "Mueve la cámara de la muerte hacia el compañero y gira a su alrededor.", note = "las cámaras de la escena no se aplican" }
+DOOA_spawnShardWave = { status = "falta", what = "Suelta una oleada de trozos de alambre desde cada hueso del compañero." }
+DOOA_toggleShardFlicker = { status = "falta", what = "Hace parpadear los trozos de alambre de la muerte." }
+DOOA_setShardState = { status = "falta", what = "Cambia la fase del efecto de trozos (subir, huevo, renacer)." }
+DOOA_showPlayerAndPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:411", what = "Vuelve a mostrar al jugador y al compañero tras renacer." }
+DOOA_getOrbitPosition = { status = "falta", what = "Calcula el punto de cámara que orbita al compañero en la muerte.", note = "las cámaras de la escena no se aplican" }
+DOOA_updateShards = { status = "falta", what = "Mueve, encoge y apaga los trozos de alambre y la luz que sube." }
+DOOA_spawnBoneShards = { status = "falta", what = "Crea los trozos de alambre de un hueso del compañero." }
+MURD_storeDigimonTexture = { status = "no-aplica", what = "Guarda la paleta del compañero para fundirla a negro.", note = "copia de memoria de vídeo; el motor funde con su sombreado" }
+MURD_isDigimonLargerThanIris = { status = "falta", what = "Dice si el iris que se cierra ya tapa al compañero en una vida perdida.", note = "el iris no se dibuja ni oculta al compañero" }
+EVL_initShardSets = { status = "falta", what = "Prepara los grupos de trozos de la evolución.", note = "la escena no dibuja trozos" }
+EVL_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de la evolución.", note = "gestión de memoria del original" }
+EVL_resetParticles = { status = "falta", what = "Vacía las partículas de luz de la evolución.", note = "la escena no dibuja partículas" }
+EVL_resetSparks = { status = "falta", what = "Vacía las chispas de la evolución.", note = "la escena no dibuja chispas" }
+EVL_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:168", what = "Oculta a todos menos al compañero durante la evolución y luego los repone." }
+EVL_spawnParticle = { status = "falta", what = "Crea una partícula de luz de la evolución.", note = "la escena no dibuja partículas" }
+EVL_releaseAllParticles = { status = "falta", what = "Quita todas las partículas de la evolución.", note = "la escena no dibuja partículas" }
+EVL_tickShardSet = { status = "falta", what = "Mueve un grupo de trozos que se desprenden del compañero al evolucionar.", note = "la escena no dibuja trozos" }
+EVL_buildShardSet = { status = "falta", what = "Parte un hueso del compañero en trozos que salen despedidos.", note = "la escena no dibuja trozos" }
+EVL_tickParticle = { status = "falta", what = "Mueve una partícula de luz de la evolución.", note = "la escena no dibuja partículas" }
+EVL_tickSpark = { status = "falta", what = "Consume la vida de una chispa de la evolución y la quita.", note = "la escena no dibuja chispas" }
+EVL_initEvoSequence = { status = "parcial", dwe = "apps/game/src/evolution_scene.cpp:88", what = "Arranca la escena de evolución y sortea el orden en que se rompen los huesos.", note = "falta el orden aleatorio de huesos y los efectos que prepara" }
+evoSequenceAlwaysTrue = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:145", what = "Condición de espera de la carga de la evolución, siempre cierta." }
+
+# --- Tournaments and versus
+fillEnabledTournamentTable = { status = "falta", what = "Arma la tabla de copas de los próximos 5 días y marca las que el compañero puede inscribir." }
+buildScheduleLabels = { status = "falta", what = "Crea la cabecera con los días del calendario de copas en el tablón." }
+buildScheduleEntries = { status = "falta", what = "Crea la cuadrícula del calendario con cada copa y su rango por día." }
+initTournamentInfo = { status = "falta", what = "Abre el recuadro con la información de la copa seleccionada (requisitos y premio)." }
+tournamentCheckFair = { status = "falta", what = "Indica si la especie del compañero está entre las admitidas por la copa." }
+isTournamentEnabled = { status = "falta", what = "Indica si una copa está disponible según el avance de la historia." }
+tournamentCheckEligible = { status = "falta", what = "Comprueba si el compañero cumple los requisitos de inscripción de la copa." }
+tickTournamentSchedule = { status = "falta", what = "Mueve el cursor del calendario y confirma o cancela la elección de copa." }
+tickTournamentInfo = { status = "falta", what = "Cierra el recuadro de información de la copa al pulsar un botón." }
+updateTournamentRegistration = { status = "falta", what = "Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa." }
+minutesOfDay = { status = "no-aplica", note = "utilidad genérica de reloj", what = "Convierte la hora actual del juego en minutos del día." }
+getCupDataJumpTable = { status = "falta", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
+getCupDataJumpTableEntry = { status = "no-aplica", note = "lectura de punteros del guion del original", what = "Resuelve una entrada de la tabla de saltos de los datos de copa." }
+STD_addChampionScene = { status = "falta", what = "Inicia la escena de celebración del campeón de la copa." }
+STD_tickChampionScene = { status = "falta", what = "Anima la escena del campeón: letras, giro de cámara y podio." }
+STD_addPodiumRenderer = { status = "falta", what = "Muestra el podio en la escena de premiación." }
+STD_addLoseScene = { status = "falta", what = "Inicia la escena de derrota con barrido aleatorio de la pantalla." }
+STD_tickLoseScene = { status = "falta", what = "Anima la escena de derrota del combate de copa." }
+STD_addWinScene = { status = "falta", what = "Inicia la escena de victoria del combate de copa." }
+STD_tickWinScene = { status = "falta", what = "Anima el letrero de victoria del combate de copa." }
+STD_handleCommands = { status = "falta", what = "Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate." }
+STD_tickTamerTournament = { status = "falta", what = "Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes." }
+STD_offsetTMDObjectUVs = { status = "no-aplica", note = "ajuste de UV de modelos del original", what = "Desplaza las coordenadas de textura de una pieza de modelo." }
+STD_loadVersusSceneModel = { status = "no-aplica", note = "carga de modelos del original", what = "Carga y coloca el modelo del letrero de enfrentamiento." }
+STD_addVersusModelScene = { status = "falta", what = "Inicia la animación del letrero de enfrentamiento antes del combate." }
+STD_tickVersusModelScene = { status = "falta", what = "Anima el letrero de enfrentamiento entre ambos luchadores." }
+STD_isVersusModelSceneFinished = { status = "falta", what = "Indica si terminó la animación del letrero de enfrentamiento." }
+STD_loadWinLoseModel = { status = "falta", what = "Calcula las curvas de entrada de los letreros de victoria/derrota y carga sus modelos." }
+STD_loadChampionModels = { status = "falta", what = "Prepara la órbita de cámara y coloca las letras del letrero de campeón." }
+STD_initializeChampionScene = { status = "falta", what = "Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón." }
+STD_placePlayer1 = { status = "falta", what = "Coloca al compañero en su lado de la arena para el combate." }
+STD_getEntityIndex = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
+STD_placePlayer2 = { status = "falta", what = "Coloca al rival en su lado de la arena para el combate." }
+STD_setPostIntroPosition = { status = "falta", what = "Deja al luchador en su posición final al terminar la presentación." }
+STD_runIntro = { status = "falta", what = "Ejecuta la presentación del combate de copa con cámara y nombres." }
+STD_tickIntroName = { status = "falta", what = "Muestra el nombre del luchador durante la presentación." }
+STD_applyManualCamera = { status = "no-aplica", note = "cámara libre de depuración con el segundo mando", what = "Mueve la cámara a mano con el segundo mando." }
+STD_setCameraOrbit = { status = "falta", what = "Cámara que orbita según la distancia entre ambos luchadores." }
+STD_setCameraYXZ = { status = "falta", what = "Cámara que encuadra al compañero y al rival a la vez." }
+STD_setCameraToEntity = { status = "falta", what = "Cámara fija relativa al luchador enfocado según su orientación." }
+STD_tickVSPhase = { status = "falta", what = "Elige cada cuadro el modo de cámara activo del combate de copa." }
+STD_setViewpointRotationFromEntity = { status = "falta", what = "Cámara que gira junto con el luchador enfocado." }
+STD_setCameraLookAtEntity = { status = "falta", what = "Cámara que mira hacia el luchador enfocado." }
+STD_applyViewpoint = { status = "no-aplica", note = "aplicación de proyección y punto de vista del original", what = "Aplica el punto de vista actual de la cámara." }
+STD_applyRotatingCamera = { status = "falta", what = "Cámara que gira lento alrededor de la arena tras el combate." }
+STD_setCameraParams = { status = "no-aplica", note = "asignación directa de valores de cámara", what = "Fija rotación y traslación de la cámara." }
+STD_setVSPhase = { status = "falta", what = "Activa el control de cámara de la copa con el modo indicado." }
+STD_selectRandomCamera = { status = "falta", what = "Elige un ángulo de cámara al azar en técnicas y lanza victoria o derrota al final." }
+STD_setRandomViewpoint = { status = "falta", what = "Elige al azar un punto de vista preestablecido sobre un luchador." }
+STD_setChampionCamera = { status = "falta", what = "Encuadra al compañero según su tamaño para la escena de campeón." }
+STD_getFighterDistance = { status = "no-aplica", note = "cálculo auxiliar de distancias", what = "Calcula el porcentaje de distancia entre dos luchadores y un punto." }
+STD_setViewpointFromBone = { status = "falta", what = "Sitúa la cámara relativa a un hueso del luchador." }
+STD_updateCameraLerp = { status = "falta", what = "Interpola la cámara de presentación entre sus etapas." }
+STD_isPositionNearEntity = { status = "no-aplica", note = "comprobación geométrica auxiliar", what = "Indica si un punto está cerca de una entidad." }
+STD_interpolateClamped2 = { status = "no-aplica", note = "interpolación lineal genérica", what = "Interpola un valor con límites." }
+STD_tickCameraChase = { status = "falta", what = "Cámara que persigue al luchador que corre durante la presentación." }
+STD_tickCameraIntro = { status = "falta", what = "Avanza la secuencia de cámara de la presentación." }
+STD_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámara entre los dos luchadores." }
+STD_applyEntityViewpoint = { status = "falta", what = "Cámara anclada a la vista del luchador enfocado." }
+STD_addFighterCounter = { status = "falta", what = "Inicia el reloj de tiempo del combate de copa." }
+STD_tickFighterCounter = { status = "falta", what = "Descuenta el reloj del combate salvo cuando un luchador está caído." }
+STD_updateBracket = { status = "falta", what = "Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador." }
+STD_addBracketProjectile = { status = "falta", what = "Lanza la marca animada que sube por el cuadro hacia el ganador." }
+STD_addBracketHitFlash = { status = "falta", what = "Inicia el destello en una casilla del cuadro de eliminatorias." }
+STD_initializeBracket = { status = "falta", what = "Reinicia el estado del cuadro de eliminatorias." }
+STD_setupParticipants = { status = "falta", what = "Reparte los ocho participantes de la copa en el cuadro." }
+STD_addBracket = { status = "falta", what = "Muestra el cuadro de eliminatorias de la copa." }
+STD_tickBracket = { status = "falta", what = "Anima el cuadro de eliminatorias entre combates." }
+STD_isBracketFinished = { status = "falta", what = "Indica si terminó la animación del cuadro de eliminatorias." }
+STD_tickBracketHitFlash = { status = "falta", what = "Anima el destello de una casilla del cuadro." }
+STD_addBracketIntro = { status = "falta", what = "Inicia la presentación del cuadro al empezar la copa." }
+STD_tickBracketIntro = { status = "falta", what = "Anima la presentación del cuadro de eliminatorias." }
+STD_combatSetup = { status = "falta", what = "Prepara los datos de combate del compañero y del rival en la copa." }
+STD_checkEndCondition = { status = "falta", what = "Comprueba fin de combate por KO o tiempo y decide ganador." }
+STD_tickBattle = { status = "falta", what = "Avanza un cuadro del combate de copa." }
+STD_areAllEnemyDigimonDead = { status = "falta", what = "Indica si todos los rivales del combate han caído." }
+STD_tickBattleResultScreen = { status = "falta", what = "Gestiona la pantalla de resultado tras el combate de copa." }
+STD_addTimeoutWindow = { status = "falta", what = "Muestra el aviso de tiempo agotado del combate." }
+STD_getDigitCount = { status = "no-aplica", note = "cuenta genérica de dígitos", what = "Cuenta los dígitos de un número." }
+STD_tickDigimonSenile = { status = "falta", what = "Mantiene al luchador en estado senil hasta que se agote su contador." }
+STD_initializePlayerMarker = { status = "falta", what = "Añade la marca que distingue a cada luchador en pantalla." }
+STD_getEntityIndex2 = { status = "no-aplica", note = "búsqueda genérica en la tabla de entidades", what = "Devuelve el índice de una entidad en la tabla." }
+STD_combatMain = { status = "falta", what = "Bucle principal de un combate de copa hasta el resultado." }
+STD_startWalkingAnimation2 = { status = "falta", what = "Elige animación de caminar normal o cansada según la vida." }
+STD_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores del compañero a su ficha de luchador." }
+STD_tickFrames = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza varios cuadros de juego seguidos." }
+STD_selectMoveTarget = { status = "falta", what = "Elige el objetivo de la técnica del luchador." }
+STD_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de una técnica que impacta." }
+STD_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados del luchador." }
+STD_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes del jugador en la copa." }
+STD_initializeTournament = { status = "falta", what = "Prepara la arena de la copa: música, cámara, luces, escenario y efectos." }
+STD_initializeOpponent = { status = "falta", what = "Genera un rival de la copa con valores y técnicas según su nivel." }
+STD_runMatch = { status = "falta", what = "Juega un combate de copa: presentación, combate y cámara final." }
+STD_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena de copa." }
+STD_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena de copa." }
+STD_tournamentMain = { status = "falta", what = "Flujo completo de la copa: cuadro, combates, resultados y premio." }
+VS_applyCamera = { status = "no-aplica", note = "aplicación de matrices de cámara del original", what = "Aplica rotación y traslación a la cámara." }
+VS_setCameraOrbit = { status = "falta", what = "Cámara del versus que orbita según la distancia entre luchadores." }
+VS_setCameraYXZ = { status = "falta", what = "Cámara del versus que encuadra a ambos luchadores." }
+VS_setViewpointRotationFromEntity = { status = "falta", what = "Cámara del versus que gira con el luchador enfocado." }
+VS_setCameraLookAtEntity = { status = "falta", what = "Cámara del versus que mira al luchador enfocado." }
+VS_applyViewpoint = { status = "no-aplica", note = "aplicación de proyección y punto de vista del original", what = "Aplica el punto de vista actual de la cámara." }
+VS_setCameraSimple = { status = "falta", what = "Cámara del versus que gira lento alrededor de la arena." }
+VS_setCameraParams = { status = "no-aplica", note = "asignación directa de valores de cámara", what = "Fija rotación y traslación de la cámara." }
+VS_setVSPhase = { status = "falta", what = "Activa el control de cámara del versus con el modo indicado." }
+VS_tickVSPhase = { status = "falta", what = "Elige cada cuadro el modo de cámara activo del versus." }
+VS_setRandomViewpoint = { status = "falta", what = "Elige al azar un punto de vista preestablecido en el versus." }
+VS_setViewpointFromBone = { status = "falta", what = "Sitúa la cámara del versus relativa a un hueso del luchador." }
+VS_setCameraToEntity = { status = "falta", what = "Cámara del versus fija relativa al luchador enfocado." }
+VS_getFighterDistance = { status = "no-aplica", note = "cálculo auxiliar de distancias", what = "Calcula el porcentaje de distancia entre dos luchadores y un punto." }
+VS_updateCameraLerp = { status = "falta", what = "Interpola la cámara de presentación del versus." }
+VS_isPositionNearEntity = { status = "no-aplica", note = "comprobación geométrica auxiliar", what = "Indica si un punto está cerca de una entidad." }
+VS_interpolateClamped2 = { status = "no-aplica", note = "interpolación lineal genérica", what = "Interpola un valor con límites." }
+VS_tickCameraChase = { status = "falta", what = "Cámara que persigue al luchador en la presentación del versus." }
+VS_tickCameraIntro = { status = "falta", what = "Avanza la secuencia de cámara de la presentación del versus." }
+VS_startCameraIntro = { status = "falta", what = "Inicia el recorrido de cámara entre los luchadores del versus." }
+VS_applyEntityViewpoint = { status = "falta", what = "Cámara del versus anclada a la vista del luchador." }
+VS_addFighterCounter = { status = "falta", what = "Inicia el reloj de tiempo del combate versus." }
+VS_tickFighterCounter = { status = "falta", what = "Descuenta el reloj del combate versus." }
+"VS__combatInit" = { status = "falta", what = "Prepara el combate versus: daño, reloj, marcas y fichas de ambos luchadores." }
+VS_setupDemoCombat = { status = "falta", what = "Prepara el combate automático de la demostración." }
+VS_checkDemoEndCondition = { status = "falta", what = "Comprueba si la demostración termina por KO, tiempo o botón." }
+VS_cleanupDemoCombat = { status = "falta", what = "Cierra el combate de demostración y libera sus objetos." }
+"VS__combatSetup" = { status = "falta", what = "Prepara los datos de combate de los dos jugadores del versus." }
+"VS__checkEndCondition" = { status = "falta", what = "Comprueba fin del combate versus por KO o tiempo y decide ganador." }
+"VS__tickBattle" = { status = "falta", what = "Avanza un cuadro del combate versus." }
+"VS__handlePause" = { status = "falta", what = "Gestiona la pausa del versus por cualquiera de los jugadores." }
+"VS__isButtonsPressed" = { status = "no-aplica", note = "lectura de mandos del original", what = "Indica si alguno de los dos mandos pulsó los botones dados." }
+"VS__areAllEnemyDigimonDead" = { status = "falta", what = "Indica si todos los rivales del versus han caído." }
+"VS__addTimeoutWindow" = { status = "falta", what = "Muestra el aviso de tiempo agotado del versus." }
+"VS__getDigitCount" = { status = "no-aplica", note = "cuenta genérica de dígitos", what = "Cuenta los dígitos de un número." }
+"VS__tickDigimonStun" = { status = "falta", what = "Mantiene al luchador aturdido con su animación." }
+"VS__tickDigimonSenile" = { status = "falta", what = "Mantiene al luchador senil hasta que se agote su contador." }
+"VS__entityGetMoveWithHighestDistance" = { status = "falta", what = "Busca la técnica de mayor alcance del luchador." }
+"VS__tickDigimonAttackingLogic" = { status = "falta", what = "Lógica de ataque del luchador en el versus: colisión y uso de técnicas." }
+"VS__getBaseDistance" = { status = "falta", what = "Calcula la distancia base de combate según el tamaño de ambos luchadores." }
+"VS__hasAffordableMoves2" = { status = "falta", what = "Indica si el luchador tiene técnicas que pueda pagar con su MP." }
+"VS__initializePlayerMarker" = { status = "falta", what = "Añade la marca que distingue a los luchadores de la misma especie." }
+"VS__clearFighterDataTables" = { status = "falta", what = "Vacía las tablas internas de la ficha de un luchador." }
+VS_runDemoCombat = { status = "falta", what = "Ejecuta el combate de demostración con música y sin menús." }
+"VS__combatMain" = { status = "falta", what = "Bucle principal de un combate versus hasta el resultado." }
+"VS__tickVSInput" = { status = "falta", what = "Lee las órdenes de los jugadores durante el combate versus." }
+"VS___tickVSInput" = { status = "falta", what = "Procesa las órdenes de un jugador del versus con su propio mando." }
+"VS__tickDigimonP1" = { status = "falta", what = "Actualiza cada cuadro al luchador del jugador 1." }
+"VS__tickDigimonP2" = { status = "falta", what = "Actualiza cada cuadro al luchador del jugador 2." }
+VS_setupDemoBattle = { status = "falta", what = "Prepara la demostración: arena, dos luchadores al azar y sus sonidos." }
+VS_cleanupDemoBattle = { status = "falta", what = "Retira a los luchadores y la arena al acabar la demostración." }
+VS_loadDemoAssets = { status = "falta", what = "Elige arena y música al azar para la demostración y prepara efectos." }
+VS_loadDemoFighters = { status = "falta", what = "Elige al azar las dos criaturas de la demostración." }
+VS_randomizeDemoFighter = { status = "falta", what = "Genera valores y técnicas al azar para un luchador de demostración." }
+VS_setupTrialBattle = { status = "falta", what = "Prepara el versus de prueba con tres criaturas al azar por bando." }
+VS_randomizeTrialDigimonList = { status = "falta", what = "Rellena la lista de criaturas al azar de un bando del versus de prueba." }
+VS_randomizeTrialDigimon = { status = "falta", what = "Genera valores y técnicas al azar para una criatura del versus de prueba." }
+VS_playDemo = { status = "falta", what = "Reproduce la demostración automática de combate de la pantalla de título." }
+VS_initializeTrialBattle = { status = "falta", what = "Inicia el versus de prueba con las listas de ambos jugadores." }
+VS_addCommandMenu = { status = "falta", what = "Muestra el menú de órdenes de un jugador del versus." }
+VS_tickTargetCursor = { status = "falta", what = "Mueve el cursor de objetivo del jugador del versus." }
+VS_tickFighterStatusBars = { status = "no-aplica", note = "función vacía en el original", what = "No hace nada; el dibujo de barras está aparte." }
+VS_loadVersusSceneModel = { status = "no-aplica", note = "carga de modelos del original", what = "Carga y coloca el modelo del letrero de enfrentamiento." }
+VS_addVersusModelScene = { status = "falta", what = "Inicia la animación del letrero de enfrentamiento del versus." }
+VS_tickVersusModelScene = { status = "falta", what = "Anima el letrero de enfrentamiento del versus." }
+VS_isVersusModelSceneFinished = { status = "falta", what = "Indica si terminó el letrero de enfrentamiento del versus." }
+VS_loadStageModels = { status = "falta", what = "Calcula las curvas de los letreros de resultado y carga sus modelos." }
+VS_addResultModelScene = { status = "falta", what = "Muestra el letrero de victoria del jugador ganador del versus." }
+VS_setVersusModelSceneTimer = { status = "falta", what = "Fija el temporizador de la escena de letreros del versus." }
+"VS__setPostIntroPosition" = { status = "falta", what = "Deja al luchador en su posición final tras la presentación del versus." }
+"VS__tickIntroName" = { status = "falta", what = "Muestra el nombre del luchador durante la presentación del versus." }
+VS_applyPartnerStatsToFighter = { status = "falta", what = "Copia los valores de la criatura a su ficha de luchador del versus." }
+VS_rollAttackOutcome = { status = "falta", what = "Tira el resultado de un ataque: acierto, daño y efectos." }
+VS_startAttackAnimation = { status = "falta", what = "Inicia la animación y partículas de una técnica." }
+VS_resolveAttack = { status = "falta", what = "Resuelve los impactos de las técnicas en vuelo." }
+VS_startFighterMove = { status = "falta", what = "Hace que el luchador empiece a ejecutar una técnica." }
+VS_selectMoveTarget = { status = "falta", what = "Elige el objetivo de la técnica del luchador en el versus." }
+VS_playMoveEffect = { status = "falta", what = "Lanza el efecto visual y sonoro de una técnica." }
+VS_tickFrame = { status = "no-aplica", note = "bucle de cuadros del original", what = "Avanza un cuadro de juego: entrada, lógica y dibujo." }
+VS_updateFighterStatusVisuals = { status = "falta", what = "Actualiza los efectos visibles de estados alterados en el versus." }
+VS_applyMoveResult = { status = "falta", what = "Aplica el daño y efectos de una técnica que impacta en el versus." }
+VS_queueRandomMove = { status = "falta", what = "Elige al azar técnica y objetivo para la IA del luchador." }
+VS_initializeVS = { status = "falta", what = "Flujo del versus: presentación y serie de combates hasta acabar." }
+VS_resetMatchState = { status = "falta", what = "Reinicia victorias, derrotas y ronda del versus." }
+VS_loadVSAssets = { status = "falta", what = "Prepara la arena del versus: música por escenario, cámara, luces y efectos." }
+VS_addInputObjects = { status = "falta", what = "Registra la lectura de órdenes de ambos jugadores del versus." }
+VS_loadFighterEntities = { status = "falta", what = "Crea a los dos luchadores del combate actual del versus." }
+VS_initializeLighting = { status = "no-aplica", note = "configuración de luces del original", what = "Configura las luces de la arena del versus." }
+VS_getFirstSpecialMove = { status = "falta", what = "Busca la última técnica especial que conoce una especie." }
+VS_playVersusIntroSequence = { status = "falta", what = "Reproduce la presentación inicial del versus." }
+VS_tickPlaytime = { status = "no-aplica", note = "contador genérico de cuadros", what = "Suma un cuadro al tiempo de juego." }
+VS_tickVersusIntro = { status = "falta", what = "Avanza la presentación del versus por estados." }
+VS_loadArenaAssets = { status = "no-aplica", note = "carga de modelos, texturas y colisión del original", what = "Carga el escenario del versus elegido." }
+VS_addArenaRenderers = { status = "no-aplica", note = "registro de dibujo del original", what = "Registra el dibujo del escenario del versus." }
+VS_initializeCamera = { status = "falta", what = "Coloca la cámara inicial de la arena del versus." }
+"VS__loadTextures" = { status = "falta", what = "Prepara la pantalla de selección: listas de criaturas de cada jugador." }
+"VS__tickSelectDigimon" = { status = "falta", what = "Bucle de selección de criaturas de los dos jugadores." }
+"VS__isAlreadySelected" = { status = "falta", what = "Indica si una criatura ya fue elegida para el equipo." }
+"VS__handleDigimonSelected" = { status = "falta", what = "Añade la criatura elegida al equipo del jugador." }
+"VS__createPressStartToBeginBox" = { status = "falta", what = "Muestra el aviso de pulsar Start para empezar." }
+"VS__initialize" = { status = "falta", what = "Flujo de preparación del versus: modo, mapa y selección de criaturas." }
+"VS__isKeyPressedByAnyPlayer" = { status = "no-aplica", note = "lectura de mandos del original", what = "Indica si alguno de los dos jugadores pulsó un botón." }
+"VS__tickSelectMode" = { status = "falta", what = "Pantalla de elección del modo del versus (número de combates)." }
+"VS__tickSelectBox" = { status = "falta", what = "Mueve y confirma la opción del cuadro de selección del versus." }
+"VS__tickSelectMap" = { status = "falta", what = "Pantalla de elección del escenario del versus." }
+
+# --- Leftovers of the rules
+BTL_removeItemParticles = { status = "no-aplica", note = "limpieza de objetos y memoria del original: el motor libera lo suyo" }
+BTL_removeAllItemParticles = { status = "no-aplica", note = "limpieza de objetos y memoria del original: el motor libera lo suyo" }
+destroyItemMenuBox = { status = "no-aplica", note = "cuadros de interfaz del original" }
+FISH_applySavedCameraScroll = { system = "fishing", status = "falta", what = "Recupera el desplazamiento de cámara guardado al volver a la pesca.", note = "va con la cámara de la pesca, que falta" }
+checkTournamentMedalConditions = { status = "parcial", note = "la rutina 22 sigue al momento sin copas ganadas; no hay torneos", what = "Mira si toca dar la medalla de los torneos." }
+
+# --- Gaps the module docs list (Hueco rows) on functions the code names
+handleBattleEndBox = { status = "parcial", note = "faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }
+BTL_tickEnemyAI = { status = "parcial", note = "el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119)", what = "IA de los rivales: elige técnica, se acerca y ataca." }
+BTL_handleBattleIntro = { status = "parcial", note = "los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126)", what = "Entrada al combate: quién se une, quién huye y el rótulo de inicio." }
+tamerTickBattleLostLife = { status = "parcial", note = "la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida en combate." }
+tamerTickSicknessLostLife = { status = "parcial", note = "la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida por enfermedad." }
+handleChips = { status = "parcial", note = "la sección de guion de un chip no corre (docs/modulos/apps/session.md:276)", what = "Usa un chip: sube un stat y lanza su sección de guion." }
+TRN_advanceTrainingTime = { status = "parcial", note = "el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187)", what = "Avanza la hora y el día tras una sesión de entrenamiento." }
