@@ -274,7 +274,7 @@ BTL_addSourceEntityParticleFX = { status = "falta", what = "Lanza partículas de
 BTL_renderParticleFlashSprite = { status = "falta", what = "Dibuja el destello de una partícula." }
 BTL_projectPositionToScreen = { status = "falta", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
 BTL_renderScreenSprite = { status = "falta", what = "Dibuja un sprite en pantalla de un efecto.", note = "battle.md: Hueco" }
-BTL_addCloudEffect = { status = "falta", what = "Añade una nube de humo o polvo de una técnica.", note = "battle.md: Hueco" }
+BTL_addCloudEffect = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes", what = "Añade una nube de humo o polvo de una técnica." }
 BTL_addParticleEmitter = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Añade un emisor de partículas." }
 BTL_discardEFEOperandPair = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta dos operandos del script de efecto." }
 BTL_popEFEValueToVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: saca un valor de la pila a una variable." }
@@ -363,7 +363,7 @@ tickParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp
 addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas pegadas a un luchador." }
 initializeEntityParticleFX = { status = "falta", what = "Prepara las partículas pegadas a luchadores." }
 tickEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
-tickCloudFX = { status = "falta", what = "Mueve las nubes de humo y polvo de los efectos." }
+tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas)", what = "Mueve las nubes de humo y polvo de los efectos." }
 EFECreateFlash = { status = "falta", what = "Crea un destello de luz de una técnica.", note = "battle.md: los destellos se saltan" }
 tickEFEFlash = { status = "falta", what = "Anima un destello de luz." }
 setEFEFlashOffset = { status = "falta", what = "Mueve un destello de luz." }

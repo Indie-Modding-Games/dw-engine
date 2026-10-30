@@ -165,7 +165,19 @@ struct EffectStreak {
 inline constexpr std::int32_t StreakGlowDepth = 4000;
 inline constexpr std::int32_t StreakGlowSize = 25;
 
-using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak>;
+// A puff of a technique's cloud (efe.c: createCloudFX, tickCloudFX, renderCloudFX): a 32 x 32
+// frame of the common effect sheet (DEFEFF, its first row of frames and palette) at `u`, added,
+// grey `shade` (128 is 1) and `scale` times 32 units wide (4096 is 1), facing the screen.
+struct EffectCloud {
+  EffectVector position;
+  std::int32_t u = 0;
+  std::int32_t shade = 128;
+  std::int32_t scale = 4096;
+
+  bool operator==(const EffectCloud&) const = default;
+};
+
+using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud>;
 
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
@@ -316,6 +328,14 @@ private:
     std::array<Particle, 21> particles{};
   };
 
+  // efe.c: CloudFXEntry: its frame and ground point, and the slot that made it.
+  struct Cloud {
+    std::size_t slot = 0;
+    std::int32_t state = 0;
+    std::int32_t x = 0;
+    std::int32_t z = 0;
+  };
+
   struct CallFrame {
     std::size_t returnTo = 0; // an instruction index
     std::size_t subEffect = 0;
@@ -344,9 +364,9 @@ private:
   void homeTowardPoint(Slot& slot, const std::vector<std::int32_t>& args);
   void selectTarget(Slot& slot, bool random, std::int32_t argument);
   void tickUvAnims(Slot& slot);
-  // The particle emitters (effect_runner_fx.cpp): what their sub-ops add, one frame of them after
-  // the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters), and their draws after the render
-  // scripts.
+  // The particle emitters and clouds (effect_runner_fx.cpp): what their sub-ops add, one frame of
+  // them after the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters; the clouds as the world's
+  // objects that follow), and their draws after the render scripts.
   bool fxOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   void tickFx();
   void renderFx();
@@ -383,8 +403,9 @@ private:
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
   std::vector<EffectDraw> draws_;
-  // BTL_initializeParticleEmitters: 4 emitters.
+  // BTL_initializeParticleEmitters and initializeCloudFXData: 4 emitters and 60 clouds.
   std::array<std::optional<Emitter>, 4> emitters_;
+  std::array<std::optional<Cloud>, 60> clouds_;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;

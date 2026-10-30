@@ -1192,3 +1192,68 @@ TEST_CASE("a particle emitter of a line kind draws streaks, and its instance's e
   runner.render();
   CHECK(runner.draws().empty());
 }
+
+namespace {
+
+// A made-up technique whose start puts a cloud at a point.
+EffectScript cloudScript() {
+  constexpr std::string_view CloudEffectYaml = R"(move: "made_up_stomp"
+header:
+  sub_effect_count: 1
+)";
+  constexpr std::string_view CloudScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: push_address
+  address: "base+0x0040"
+- at: "0x0102"
+  op: sub
+  sub: add_cloud
+  args:
+    position: "&base+0x0040"
+- at: "0x0104"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0150"
+  op: stop
+data:
+- at: "0x0040"
+  kind: vector
+  values: [120, -300, 900]
+)";
+  const auto effect = dwe::core::parseYaml(CloudEffectYaml);
+  const auto script = dwe::core::parseYaml(CloudScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  return std::move(*read);
+}
+
+} // namespace
+
+TEST_CASE("a cloud rises from the ground under its point for 14 frames, growing and fading") {
+  using dwe::game::battle::EffectCloud;
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  runner.start(runner.load(cloudScript()), 0, 1);
+  std::vector<EffectCloud> clouds;
+  for (int frame = 0; frame < 16; ++frame) {
+    runner.tick();
+    runner.render();
+    for (const auto& draw : runner.draws()) {
+      if (const auto* cloud = std::get_if<EffectCloud>(&draw.shape)) {
+        clouds.push_back(*cloud);
+      }
+    }
+  }
+  // Added by the start, a frame older on each tick, gone on its 14th: frames 1 to 13 are drawn.
+  REQUIRE(clouds.size() == 13);
+  CHECK(clouds.front() ==
+        EffectCloud{
+            .position = {.x = 120, .y = -54, .z = 900}, .u = 0, .shade = 0x80, .scale = 0x2ee0});
+  CHECK(clouds.back() ==
+        EffectCloud{
+            .position = {.x = 120, .y = -99, .z = 900}, .u = 0x60, .shade = 0x40, .scale = 0x6400});
+}

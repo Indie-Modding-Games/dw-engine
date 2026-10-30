@@ -438,6 +438,8 @@ private:
   void addEffectBillboards(std::vector<render::MapBillboard>& billboards);
   void addEffectStreak(const game::battle::EffectStreak& streak,
                        std::vector<render::MapBillboard>& billboards);
+  void addEffectCloud(const game::battle::EffectCloud& cloud,
+                      std::vector<render::MapBillboard>& billboards);
   void submitEffectModels();
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).

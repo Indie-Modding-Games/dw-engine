@@ -11,8 +11,8 @@
 
 #include "effect_math.hpp"
 
-// The technique effects' own lights (battle_effect.c: the particle emitters), as EffectRunner
-// members: what their sub-ops add, a frame of them and their draws.
+// The technique effects' own lights and dust (battle_effect.c: the particle emitters; efe.c: the
+// clouds), as EffectRunner members: what their sub-ops add, a frame of them and their draws.
 namespace dwe::game::battle {
 
 namespace {
@@ -46,6 +46,19 @@ constexpr std::int32_t StreakFar = 2;
 constexpr std::int32_t StreakTail = 7;
 constexpr std::int32_t StreakTrail = 5;
 constexpr std::int32_t DirectionShift = 8;
+
+// efe.c: tickCloudFX ends a cloud on its 14th frame; renderCloudFX's tables by frame (CLOUD_FX_U,
+// CLOUD_FX_Y: the height in the world, CLOUD_FX_SCALE, CLOUD_FX_COLOR).
+constexpr std::int32_t CloudFrames = 14;
+constexpr std::array<std::int32_t, CloudFrames> CloudU = {0x00, 0x00, 0x20, 0x20, 0x20, 0x40, 0x40,
+                                                          0x40, 0x40, 0x40, 0x60, 0x60, 0x60, 0x60};
+constexpr std::array<std::int32_t, CloudFrames> CloudY = {-50, -54, -58, -62, -66, -70, -74,
+                                                          -78, -82, -86, -90, -93, -96, -99};
+constexpr std::array<std::int32_t, CloudFrames> CloudScale = {
+    0x2000, 0x2ee0, 0x3840, 0x4000, 0x4000, 0x5000, 0x5000,
+    0x5000, 0x5000, 0x5400, 0x5800, 0x5c00, 0x6000, 0x6400};
+constexpr std::array<std::int32_t, CloudFrames> CloudShade = {
+    0x80, 0x80, 0x80, 0x80, 0x79, 0x73, 0x6c, 0x66, 0x60, 0x59, 0x53, 0x4c, 0x46, 0x40};
 
 constexpr std::int32_t FixedShift = 12;
 
@@ -87,6 +100,21 @@ bool EffectRunner::fxOp(Slot& slot, std::string_view name, const std::vector<std
                    "strength {} colour ({}, {}, {}) for {} frames",
                    index, emitter.kind, strength, emitter.color.x, emitter.color.y, emitter.color.z,
                    emitter.frames);
+  } else if (name == "add_cloud") {
+    // battle_effect.c: BTL_addCloudEffect; efe.c: createCloudFX: in the first of 60 free clouds, at
+    // the point's ground x and z.
+    if (args.empty()) {
+      return true;
+    }
+    const auto free = std::ranges::find_if(
+        clouds_, [](const std::optional<Cloud>& cloud) { return !cloud.has_value(); });
+    if (free == clouds_.end()) {
+      return true;
+    }
+    const EffectVector at = fx::toShort(vectorAt(slot, args[0]));
+    *free = Cloud{.slot = index, .state = 0, .x = at.x, .z = at.z};
+    core::logDebug("[port:battle] createCloudFX (efe.c:714): slot {} at ({}, {})", index, at.x,
+                   at.z);
   } else {
     return false;
   }
@@ -136,9 +164,29 @@ void EffectRunner::tickFx() {
       emitter.reset();
     }
   }
+  // efe.c: tickCloudFX, as a world object after the effect engine's: a frame more, and the end on
+  // the last.
+  for (std::optional<Cloud>& cloud : clouds_) {
+    if (cloud && ++cloud->state >= CloudFrames) {
+      cloud.reset();
+    }
+  }
 }
 
 void EffectRunner::renderFx() {
+  // efe.c: renderCloudFX: the frame's height, sheet frame, shade and size.
+  for (const std::optional<Cloud>& cloud : clouds_) {
+    if (!cloud) {
+      continue;
+    }
+    const auto state = static_cast<std::size_t>(cloud->state);
+    draws_.push_back(
+        {.slot = cloud->slot,
+         .shape = EffectCloud{.position = {.x = cloud->x, .y = CloudY.at(state), .z = cloud->z},
+                              .u = CloudU.at(state),
+                              .shade = CloudShade.at(state),
+                              .scale = CloudScale.at(state)}});
+  }
   // battle_effect.c: BTL_renderParticleEmitters.
   for (const std::optional<Emitter>& emitter : emitters_) {
     if (!emitter || emitter->startOffset == 0) {

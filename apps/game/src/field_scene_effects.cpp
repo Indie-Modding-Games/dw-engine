@@ -26,6 +26,7 @@ namespace dwe::app {
 namespace {
 
 using game::battle::EffectBlend;
+using game::battle::EffectCloud;
 using game::battle::EffectMatrix;
 using game::battle::EffectModel;
 using game::battle::EffectSprite;
@@ -48,6 +49,11 @@ constexpr std::string_view CommonSheet = "texture/etcdat/defeff";
 constexpr std::int32_t GlowPalette = 1;
 constexpr glm::vec2 GlowTexel{0.0F, 32.0F};
 constexpr float GlowTexels = 15.0F;
+// efe.c: CLOUD_FX_SPRITE: 32 x 32 texels of the same page at v 128 (the sheet's top row), CLUT row
+// 488, centred; renderSprite scales it by scale * VIEWPORT_DISTANCE / depth, so it is 32 * scale /
+// 4096 world units wide whatever the depth.
+constexpr std::int32_t CloudPalette = 0;
+constexpr float CloudTexels = 32.0F;
 
 // The world's axes are the console's with y and z the other way (core::fromOriginalAxes).
 glm::vec3 worldOf(const EffectVector& v) {
@@ -209,6 +215,24 @@ void FieldScene::addEffectStreak(const EffectStreak& streak,
                         .turn = std::atan2(across.y, across.x)});
 }
 
+// efe.c: renderCloudFX: a puff of the common sheet, added, its grey shade the tint.
+void FieldScene::addEffectCloud(const EffectCloud& cloud,
+                                std::vector<render::MapBillboard>& billboards) {
+  const std::optional<std::size_t> texture = sheetTexture(std::string{CommonSheet}, CloudPalette);
+  if (!texture) {
+    return;
+  }
+  const float side = CloudTexels * static_cast<float>(cloud.scale) / MatrixOne;
+  billboards.push_back({.centre = worldOf(cloud.position),
+                        .size = glm::vec2{side},
+                        .flat = false,
+                        .texture = *texture,
+                        .texel = glm::vec2{static_cast<float>(cloud.u), 0.0F},
+                        .texels = glm::vec2{CloudTexels},
+                        .blend = assets::SpriteBlend::Add,
+                        .color = glm::vec3{static_cast<float>(cloud.shade)} / ColorOne});
+}
+
 const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& move) {
   if (const auto found = effectModels_.find(move); found != effectModels_.end()) {
     return found->second ? &*found->second : nullptr;
@@ -236,6 +260,10 @@ void FieldScene::addEffectBillboards(std::vector<render::MapBillboard>& billboar
   for (const SceneEffect& effect : effects_) {
     if (const auto* streak = std::get_if<EffectStreak>(&effect.shape)) {
       addEffectStreak(*streak, billboards);
+      continue;
+    }
+    if (const auto* cloud = std::get_if<EffectCloud>(&effect.shape)) {
+      addEffectCloud(*cloud, billboards);
       continue;
     }
     const auto* sprite = std::get_if<EffectSprite>(&effect.shape);
