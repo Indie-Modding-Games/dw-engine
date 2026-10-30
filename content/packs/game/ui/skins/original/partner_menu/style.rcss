@@ -523,10 +523,16 @@ button:focus .original-look, button.original-look:focus {
 #profile-heading, #condition-heading, #parameter-heading { color: transparent; }
 /* Valores por encima de las barras: los pools reservan dos columnas de cuatro cifras. */
 #status-parameters .bar-row { display: block; position: relative; }
+/* renderDigimonStatsView (game_menu.c:2402): HP, MP, Off and Def in the font at full size and colour 3 (#FFF773 measured),
+   13 pixels right of their icons; SPEED and BRAINS are small-caps pictures of SYSTEM_W (212, 70) and (212, 82), 36 x 12,
+   in the same place (STATS_VIEW_ELEMENTS 18 and 19). */
 #status-parameters .label {
     position: absolute; left: 0; top: 0; width: 153dp;
-    box-sizing: border-box; padding-left: 39dp; font-size: 27dp; color: #fff371;
+    box-sizing: border-box; padding-left: 39dp; font-size: 36dp; color: #fff371;
 }
+#status-parameters #stat-2-label, #status-parameters #stat-3-label { width: 147dp; color: transparent; }
+#status-parameters #stat-2-label { decorator: image(stat-speed scale-none left center), image(status-speed-name scale-none right center); }
+#status-parameters #stat-3-label { decorator: image(stat-brains scale-none left center), image(status-brains-name scale-none right center); }
 #status-parameters .bar {
     position: absolute; left: 156dp; top: 27dp; width: 162dp; margin: 0;
 }
@@ -544,8 +550,11 @@ button:focus .original-look, button.original-look:focus {
 #scrim.digimon-screen #close { display: none; }
 #tab-tech { width: 180dp; }
 #scrim.digimon-screen .tab.selected { background-color: #80e8f8; color: #243640; }
+/* The moves view sits in the same opaque box as the stats view (renderUIBoxBorder around it in the capture). */
 #page-tech {
     position: relative; height: 552dp; padding: 0; border: 3dp transparent; background-color: #2d3840;
+    decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+        image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 .tech-heading { position: absolute; left: 21dp; top: 3dp; color: #fff371; font-size: 36dp; }
 #final-heading { top: 219dp; width: 870dp; padding-top: 0; border-width: 0; }
@@ -604,7 +613,8 @@ button:focus .original-look, button.original-look:focus {
 #tech-final-separator { top: 312dp; }
 .tech-separator span { position: absolute; display: block; height: 3dp; background-color: #020202; }
 .tech-separator .separator-first { left: 3dp; right: 3dp; top: 0; }
-.tech-separator .separator-light { left: 0; right: 0; top: 3dp; background-color: #6987a0; }
+/* renderSeparatorLines colour 1 on the Tech page measured (148, 222, 255). */
+.tech-separator .separator-light { left: 0; right: 0; top: 3dp; background-color: #94deff; }
 .tech-separator .separator-last { left: 3dp; right: 3dp; top: 6dp; }
 #tech-final-separator .separator-last { right: 0; }
 #tech-dots { position: absolute; left: 0; top: 0; }
@@ -628,7 +638,7 @@ button:focus .original-look, button.original-look:focus {
 	border: 3dp #020202; font-size: 36dp; color: #d6d6d6;
 	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
-#tech-help .tech-help-line { position: absolute; left: 0; top: 0; right: 0; bottom: 0; border: 3dp #6987a0; }
+#tech-help .tech-help-line { position: absolute; left: 0; top: 0; right: 0; bottom: 0; border: 3dp #94deff; }
 #tech-help .tech-help-line .tech-help-line { border-color: #020202; }
 #tech-help-first, #tech-help-second, #tech-help-arrow, #tech-help-key { position: absolute; display: block; white-space: nowrap; }
 #tech-help-first { left: 18dp; top: 15dp; }
@@ -650,10 +660,18 @@ button:focus .original-look, button.original-look:focus {
     font-size: 0; color: transparent; decorator: none; overflow: visible;
 }
 .tech-choice:focus { decorator: image(tech-grid-cursor scale-none left top); }
+/* renderDigimonMovesView draws every cell as a subtractive 0x68 box, black on the page (measured (0, 0, 0)), the
+   ones the partner can learn as (0x4e, 0x60, 0x6e), and the equipped ones red (200, 0, 40) at 50 % over the glyph
+   (measured (173, 74, 90) where the glyph is grey). A known technique the partner cannot use keeps its glyph under
+   the subtractive box, close to 45 % of its colour. The shade element lays those tints over the glyph. */
 .tech-cell { position: absolute; display: block; left: 9dp; top: 6dp; width: 36dp; height: 36dp;
-    background-color: #686868; color: transparent; font-size: 0; pointer-events: none; }
+    background-color: #000000; color: transparent; font-size: 0; pointer-events: none; }
 .tech-choice.compatible .tech-cell { background-color: #4e606e; }
 .tech-choice.equipped .tech-cell { background-color: #c80028; }
+.tech-cell-shade { position: absolute; display: none; left: 9dp; top: 6dp; width: 36dp; height: 36dp; pointer-events: none; }
+.tech-choice.known .tech-cell-shade { display: block; background-color: #0000008c; }
+.tech-choice.known.compatible .tech-cell-shade { display: none; }
+.tech-choice.known.compatible.equipped .tech-cell-shade { display: block; background-color: #c8002880; }
 .tech-category, .tech-column { position: absolute; display: block; pointer-events: none; }
 .tech-category { width: 60dp; height: 30dp; }
 .tech-category.category-left { left: -66dp; }
@@ -746,6 +764,47 @@ button:focus .original-look, button.original-look:focus {
 .column-7 { left: 399dp; decorator: image(tech-column-7); }
 
 #scrim.tech-editing #tech-message { left: 12dp; top: 300dp; width: 225dp; font-size: 18dp; }
+
+/* Technique Select Help, the page the extra action opens from the change view (renderDigimonMovesView, MENU_STATE 8,
+   US branch): the heading at (-142, -82); bullets (SYSTEM_W 180, 12, palette 4) at (-129, -65) and (-129, -34)
+   before the two help lines; the separator at y -4; the legend cells at (-120, 2 + 16 n) with their labels at
+   (-102, 3 + 16 n) and the grid cursor at (-123, 80). Current and the red cell after "deselects tech" are glyph 2 in
+   palette 0 at 50 % over red (200, 0, 40); the first Unusable is glyph 3 darkened by a subtractive box. */
+#tech-help-page { display: none; position: absolute; left: 0; top: 0; width: 894dp; height: 552dp; }
+#scrim.tech-help #page-tech > * { display: none; }
+#scrim.tech-help #page-tech > #tech-help-page { display: block; }
+#tech-help-title { top: 18dp; }
+.tech-help-hint { position: absolute; left: 60dp; height: 36dp; font-size: 36dp; white-space: nowrap; color: #d6d6d6; }
+#tech-help-select { top: 69dp; }
+#tech-help-cancel { top: 162dp; }
+.tech-help-hint span { display: inline-block; vertical-align: top; height: 36dp; }
+.tech-help-bullet { width: 36dp; margin-right: 9dp; decorator: image(tech-help-bullet scale-none left top); }
+.tech-help-cell { position: relative; width: 36dp; height: 36dp; border: 3dp #000000; }
+.tech-help-hint .tech-help-cell { margin-top: -3dp; }
+#tech-help-select .tech-help-cell { margin: -3dp 12dp 0 6dp; }
+#tech-help-cancel .tech-help-cell { margin-left: 24dp; }
+#tech-help-cancel-key { margin: 0 21dp; }
+.tech-help-glyph { position: absolute; display: block; left: 0; top: 0; width: 36dp; height: 36dp; }
+.legend-cell-0 { background-color: #c80028; }
+.legend-cell-0 .tech-help-glyph { decorator: image(tech-help-current); opacity: 0.5; }
+.legend-cell-1 .tech-help-glyph { decorator: image(tech-glyph-0-0); }
+.legend-cell-2 { background-color: #4e606e; }
+.legend-cell-3 { background-color: #000000; }
+.legend-cell-3 .tech-help-glyph { decorator: image(tech-glyph-3-0); opacity: 0.45; }
+.legend-cell-4 { background-color: #000000; }
+.legend-cell-5 .tech-help-glyph { decorator: image(tech-glyph-6-0); }
+#tech-help-separator { top: 252dp; }
+.tech-help-legend { position: absolute; left: 0; width: 894dp; height: 48dp; font-size: 36dp; color: #d6d6d6; }
+.tech-help-legend .tech-help-cell { position: absolute; display: block; left: 84dp; top: 0; }
+.tech-help-legend-label { position: absolute; display: block; left: 141dp; top: 6dp; white-space: nowrap; }
+#tech-help-legend-0 { top: 267dp; }
+#tech-help-legend-1 { top: 315dp; }
+#tech-help-legend-2 { top: 363dp; }
+#tech-help-legend-3 { top: 411dp; }
+#tech-help-legend-4 { top: 459dp; }
+#tech-help-legend-5 { top: 507dp; }
+#tech-help-cursor { position: absolute; display: block; left: 78dp; top: 504dp; width: 54dp; height: 48dp;
+    decorator: image(tech-grid-cursor scale-none left top); }
 
 /* Pestañas trapezoidales de renderMenuTab; la imagen se aporta con el disco del usuario. */
 #scrim.digimon-screen #tabs { position: relative; }

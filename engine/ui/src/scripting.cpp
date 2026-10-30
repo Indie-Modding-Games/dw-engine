@@ -660,7 +660,7 @@ void Scripting::registerApi() {
   api["cue"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);
     if (!host_.cue(name)) {
-      raise(lua, "ui.cue takes box_open or box_close");
+      raise(lua, "ui.cue takes box_open, box_close or confirm");
     }
   };
   api["hide"] = [this](std::string_view name, sol::this_state lua) {

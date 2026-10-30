@@ -275,6 +275,8 @@ sprite_sheets:
     dp_per_pixel: 3
     sprites:
       status-happiness-name: [212, 58, 36, 12]
+      status-speed-name: [212, 70, 36, 12]
+      status-brains-name: [212, 82, 36, 12]
   - name: status-meter-icons
     image: texture/etcdat/system_w
     palette: 10
@@ -330,6 +332,7 @@ sprite_sheets:
       tech-info-heading: [17, 48, 37, 7]
       tech-info-colon: [138, 12, 10, 10]
       tech-help-arrow: [128, 12, 10, 10]
+      tech-help-bullet: [180, 12, 12, 12]
       tech-info-tl: [120, 16, 4, 4]
       tech-info-tr: [124, 16, 4, 4]
       tech-info-bl: [120, 20, 4, 4]
@@ -367,6 +370,7 @@ sprite_sheets:
       tech-glyph-1-1: [72, 0, 12, 12]
       tech-glyph-6-0: [180, 0, 12, 12]
       tech-glyph-6-1: [192, 0, 12, 12]
+      tech-help-current: [84, 0, 12, 12]
   - name: tech-grid-glyphs-1
     image: texture/etcdat/system_w
     palette: 1
@@ -409,7 +413,7 @@ sprite_sheets:
       stat-off: [169, 58, 11, 11]
       stat-def: [180, 58, 11, 11]
       stat-speed: [191, 58, 11, 11]
-      stat-brains: [202, 58, 11, 11]
+      stat-brains: [202, 58, 10, 11]
   # El reloj del campo (clock.c: renderGameClock): la esfera (paleta 0), las campanas y el punto de las horas
   # (paleta 1), el sol y la luna (paleta 2) y la aguja de los minutos (paleta 3).
   - name: ow-clock-dial

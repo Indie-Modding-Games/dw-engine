@@ -869,4 +869,77 @@ TEST_CASE("a mod's skin lays a screen out with the game's script, but none of it
   CHECK(names == std::vector<std::string>{"inline", "pressed"});
 }
 
+TEST_CASE(
+    "the original skin's Tech page: no Final range, the help page on the extra action, out on cancel") {
+  // game_menu.c: tickDigimonMenu and renderDigimonMovesView (MENU_STATE 6 to 9).
+  Content content;
+  addOriginalArt(content);
+  const assets::VirtualFileSystem& files = content.mount();
+  const localization::Catalog texts = catalogIn(files, "en");
+  auto ui = createUi(files, texts);
+  REQUIRE(ui->skin() == "original");
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  // The game's mirror of the skin for the scripts (apps/game/src/ui_skin_setting.cpp).
+  ui->setSetting("ui_skin", std::string{"original"});
+  for (const int slot : {0, 3}) {
+    const std::string base = std::format("partner.technique.{}.", slot);
+    ui->setSetting(base + "empty", false);
+    ui->setSetting(base + "name", std::string{"Spit Fire"});
+    ui->setSetting(base + "range", 3.0);
+  }
+  ui->setSetting("partner.technique.choice.0.available", true);
+  ui->setSetting("partner.technique.choice.0.known", true);
+  ui->setSetting("partner.technique.choice.0.equipped", true);
+  ui->setSetting("partner.technique.choice.0.slot", 0.0);
+  ui->setSetting("partner.technique.can_finish", true);
+  input::InputState input{input::defaultActionMap()};
+  ui->show("partner_menu", true);
+  const auto settle = [&] {
+    for (int tick = 0; tick < 60; ++tick) {
+      frame(*ui, input);
+    }
+  };
+  settle();
+
+  // The status page names SPEED and BRAINS with the small-caps pictures beside their icons.
+  CHECK(
+      ui->styleProperty("partner_menu", "stat-2-label", "decorator").contains("status-speed-name"));
+  CHECK(ui->styleProperty("partner_menu", "stat-3-label", "decorator")
+            .contains("status-brains-name"));
+
+  press(*ui, input, input::keys::Right);
+  settle();
+  // The Techset row names its range; the Final row never does.
+  CHECK_FALSE(ui->elementText("partner_menu", "tech-range-0").empty());
+  CHECK(ui->elementText("partner_menu", "tech-range-3").empty());
+
+  press(*ui, input, input::keys::Return);
+  settle();
+  REQUIRE(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
+  static_cast<void>(ui->takeCues());
+
+  // The game counts the extra action's presses in a setting; one opens the help page, with a sound.
+  ui->setSetting("partner_menu.extra_presses", 1.0);
+  ui->update();
+  CHECK(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
+  const std::vector<UiCue> cues = ui->takeCues();
+  CHECK(std::ranges::find(cues, UiCue::Confirm) != cues.end());
+  CHECK_FALSE(ui->elementText("partner_menu", "tech-help-cancel-key").empty());
+
+  // On the help page only cancel works, back to the change view.
+  press(*ui, input, input::keys::Down);
+  CHECK(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
+  press(*ui, input, input::keys::Escape);
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
+  CHECK(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
+
+  // Out of the change view the extra action does nothing.
+  press(*ui, input, input::keys::Escape);
+  settle();
+  REQUIRE_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-editing"));
+  ui->setSetting("partner_menu.extra_presses", 2.0);
+  ui->update();
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "scrim", "tech-help"));
+}
+
 } // namespace dwe::ui

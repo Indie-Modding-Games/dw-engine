@@ -332,6 +332,8 @@ struct Ui::Impl {
                 cue(UiCue::BoxOpen);
               } else if (name == "box_close") {
                 cue(UiCue::BoxClose);
+              } else if (name == "confirm") {
+                cue(UiCue::Confirm);
               } else {
                 return false;
               }

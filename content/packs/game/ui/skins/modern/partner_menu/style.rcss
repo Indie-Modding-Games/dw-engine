@@ -270,7 +270,8 @@ button:focus .original-look, button.original-look:focus {
 .profile-meta { display: none; }
 
 .status-native-life, .status-native-happiness { display: none; }
-#techs-heading, #tech-help { display: none; }
+#techs-heading, #tech-help, #tech-help-page { display: none; }
+.tech-cell-shade { display: none; }
 
 /* The battle opens only the bag (battle_tick.c: tamerTickBattle calls addInventoryUI): no tabs, and the fight stays in
    sight under a lighter scrim. */

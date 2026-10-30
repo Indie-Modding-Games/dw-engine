@@ -25,6 +25,8 @@ end
 
 local current = "status"
 local editing_tech = false
+-- The change view's help page is open (game_menu.c: renderDigimonMovesView, MENU_STATE 8).
+local tech_help_open = false
 local tech_icon_time = 0
 local tech_info_focus = nil
 local tech_info_revision = nil
@@ -226,6 +228,10 @@ local function draw_status(document)
 end
 
 -- Las abreviaturas se leen de las tablas del disco local, sin duplicar sus textos en el pack.
+local function original_skin()
+  return ui.setting("ui_skin") == "original"
+end
+
 local function tech_value_label(field, value)
   if value <= 0 then
     return ""
@@ -262,9 +268,15 @@ local function draw_tech(document)
     end
     for _, field in ipairs({ "range", "effect" }) do
       local value = number(base .. field)
+      -- renderDigimonMovesView names the final's range from a part of the text area that holds
+      -- nothing: the original's Final row shows no range, whatever the technique's (measured with
+      -- ranges 1, 2 and 3).
+      local shown = filled
+        and value > 0
+        and not (index == 3 and field == "range" and original_skin())
       document
         :get("tech-" .. field .. "-" .. index)
-        :set_text(filled and value > 0 and tech_value_label(field, value) or "")
+        :set_text(shown and tech_value_label(field, value) or "")
     end
     for effect = 1, 4 do
       document
@@ -317,6 +329,23 @@ local function draw_tech_choices(document)
     end
     button:set_class("unavailable", not setting(base .. "available", false))
   end
+end
+
+-- The change view's help page (game_menu.c: renderDigimonMovesView, MENU_STATE 8): the original's
+-- heading and legend (main.tech_view_labels 3 to 8, Unusable twice) and two hints whose button is
+-- the key of the device in use.
+local function draw_tech_help(document)
+  document:get("tech-help-title"):set_text(original_label("tech_view_labels", 3))
+  for row, label in ipairs({ 4, 5, 6, 7, 7, 8 }) do
+    document
+      :get("tech-help-legend-label-" .. (row - 1))
+      :set_text(original_label("tech_view_labels", label))
+  end
+end
+
+local function show_tech_help(document, open)
+  tech_help_open = open
+  document:get("scrim"):set_class("tech-help", open)
 end
 
 local function finish_tech_edit(document)
@@ -461,10 +490,11 @@ local function draw_prompts(document)
   document:get("prompt-cancel"):set_text(ui.prompt("cancel"))
   -- The tech page's Change Techniques and Cancel name the key of the device in use (a PC game: the
   -- keyboard's keys first, a pad's buttons when a pad plays), where the original draws its pad
-  -- glyphs (game_menu.c: drawMoveViewHelpStrings).
+  -- glyphs (game_menu.c: drawDigimonMovesText).
   document:get("tech-change-icon"):set_text(ui.prompt("confirm"))
   document:get("tech-cancel-icon"):set_text(ui.prompt("cancel"))
   document:get("tech-help-key"):set_text(ui.prompt("extra"))
+  document:get("tech-help-cancel-key"):set_text(ui.prompt("confirm"))
 end
 
 local function draw(document)
@@ -748,6 +778,7 @@ function on_show(document)
   status_condition_bob = nil
   tech_info_focus = nil
   editing_tech = false
+  show_tech_help(document, false)
   document:get("tech-info"):set_class("hidden", true)
   document:get("scrim"):set_class("tech-editing", false)
   document:get("tech-picker"):set_class("hidden", true)
@@ -760,6 +791,7 @@ function on_show(document)
     document:get(name):set_class("hidden", true)
   end
   draw_boxes(document)
+  draw_tech_help(document)
   draw_prompts(document)
   show_page(document, ui.setting("partner_menu.start_page") == "items" and "items" or "status")
   open_boxes(document)
@@ -770,6 +802,14 @@ function on_hide(document)
 end
 
 function on_setting(document, name)
+  -- tickDigimonMenu: the square opens the help page from the change view, with playSound(0, 3).
+  if name == "partner_menu.extra_presses" then
+    if editing_tech and not tech_help_open and original_skin() and not original_box.busy() then
+      show_tech_help(document, true)
+      ui.cue("confirm")
+    end
+    return
+  end
   if
     name == "partner.revision"
     or name == "bag.revision"
@@ -815,6 +855,7 @@ end
 function on_language(document)
   tech_info_focus = nil
   draw_boxes(document)
+  draw_tech_help(document)
   draw(document)
   draw_prompts(document)
 end
@@ -822,6 +863,13 @@ end
 function on_action(document, action)
   -- tickUIBox: a box takes no input until it is in place.
   if original_box.busy() then
+    return true
+  end
+  -- tickDigimonMenu: on the help page only cancel works, back to the change view (MENU_STATE 9).
+  if tech_help_open then
+    if action == "cancel" then
+      show_tech_help(document, false)
+    end
     return true
   end
   if action == "cancel" then

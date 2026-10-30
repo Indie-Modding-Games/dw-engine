@@ -107,7 +107,7 @@ API disponible:
 | `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Enter"`, `"A"`, `"Cross"`), en el idioma del juego; los textos están en `localization/<idioma>/prompt.yaml` |
 | `ui.device()`, `ui.gamepad_family()` | `"keyboard_mouse"` o `"gamepad"`; `"xbox"`, `"playstation"`, `"nintendo"`, `"steam"` o `"generic"` |
 | `ui.show(nombre[, modal])`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado; con `modal` verdadero el documento recibe la navegación (como el menú que abre el juego) |
-| `ui.cue(nombre)` | Suena `box_open` o `box_close` (las cajas del aspecto original, `ui_sounds.yaml`) |
+| `ui.cue(nombre)` | Suena `box_open` o `box_close` (las cajas del aspecto original) o `confirm` (una pulsación que no pasa por la navegación, como la tecla extra), de `ui_sounds.yaml` |
 | `document_name` | El nombre del propio documento |
 | `element:get(id)` | Un elemento descendiente, o `nil` |
 | `element:set_text(texto)`, `element:text()` | Cambia el texto (siempre como texto, nunca como RML) o lee el contenido |

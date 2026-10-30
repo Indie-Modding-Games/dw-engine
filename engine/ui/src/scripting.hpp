@@ -56,7 +56,8 @@ struct ScriptHost {
   // Shows a document; a modal one takes the navigation, as the menu document does when the game
   // opens it.
   std::function<void(std::string_view, bool)> show;
-  // A box's sound (ui.cue): "box_open" or "box_close"; false for any other name.
+  // A sound a script plays (ui.cue): a box's "box_open" or "box_close", or "confirm" for a press
+  // the navigation does not see; false for any other name.
   std::function<bool(std::string_view)> cue;
   std::function<void(std::string_view)> hide;
   std::function<bool(std::string_view)> isVisible;

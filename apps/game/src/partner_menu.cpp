@@ -204,6 +204,13 @@ bool PartnerMenu::handle(const ui::UiCommand& command) {
   return true;
 }
 
+void PartnerMenu::press(const input::InputState& input) {
+  if (input.wasPressed("extra") && desc_.ui->isVisible(PartnerMenuDocument)) {
+    extraPresses_ += 1.0;
+    desc_.ui->setSetting(ExtraPressesSetting, extraPresses_);
+  }
+}
+
 void PartnerMenu::open() {
   desc_.ui->hide(PauseMenuDocument);
   desc_.ui->setSetting(PartnerMenuContextSetting, std::string{});

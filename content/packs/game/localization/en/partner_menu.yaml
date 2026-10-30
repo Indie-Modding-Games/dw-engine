@@ -57,6 +57,12 @@ tech.final: "Final"
 tech.techs: "Techs"
 tech.help_first: "Tech"
 tech.help_second: "help"
+# The help page of the change view (game_menu.c: renderDigimonMovesView, MENU_STATE 8): the two hints, split where
+# the page draws a technique cell and the key of the confirm action.
+tech.help_select_before: "Select - choose"
+tech.help_select_after: "to select tech"
+tech.help_cancel_before: "Cancel -"
+tech.help_cancel_after: "deselects tech"
 tech.power: "POWER"
 tech.mp: "MP"
 tech.range: "RANG"

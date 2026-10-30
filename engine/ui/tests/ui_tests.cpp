@@ -556,13 +556,14 @@ end
 }
 
 TEST_CASE("a script sounds the original boxes and reads where an element is") {
-  // ui.c: createAnimatedUIBox plays playSound(0, 0), renderUIBoxAnim playSound(0, 1).
+  // ui.c: createAnimatedUIBox plays playSound(0, 0), renderUIBoxAnim playSound(0, 1); the tech
+  // page's help opens with playSound(0, 3), the confirm sound (game_menu.c: tickDigimonMenu).
   Content content;
   content.add("ui/box/document.rml", R"rml(<rml><head><style>
 body { width: 100%; height: 100%; }
 #box { position: absolute; left: 30dp; top: 60dp; width: 90dp; height: 45dp; }
 </style><script>
-function sound() ui.cue("box_open") ui.cue("box_close") end
+function sound() ui.cue("box_open") ui.cue("box_close") ui.cue("confirm") end
 function wrong() ui.cue("boom") end
 local root
 function on_show(document) root = document end
@@ -575,7 +576,7 @@ end
   REQUIRE(ui->loadDocument("box", idOf("ui/box/document")));
   ui->show("box");
   REQUIRE(ui->callScript("box", "sound"));
-  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::BoxOpen, UiCue::BoxClose});
+  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::BoxOpen, UiCue::BoxClose, UiCue::Confirm});
   CHECK_FALSE(ui->callScript("box", "wrong"));
   CHECK(ui->takeCues().empty());
   ui->update();

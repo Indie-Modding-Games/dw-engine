@@ -414,6 +414,10 @@ void PlaySession::pressItemKeeper(const input::InputState& input) {
   itemKeeperScreen_.press(input);
 }
 
+void PlaySession::pressPartnerMenu(const input::InputState& input) {
+  partnerMenu_.press(input);
+}
+
 void PlaySession::pressBattle(const input::InputState& input) {
   if (input.wasPressed("extra")) {
     battleScreen_.pressFinisher();

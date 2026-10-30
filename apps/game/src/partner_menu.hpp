@@ -3,6 +3,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/game/inventory/item_effect.hpp>
+#include <dwe/input/input_state.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
@@ -45,6 +46,10 @@ inline constexpr std::string_view GiveItemCommand = "give_item";
 inline constexpr std::string_view UseItemCommand = "use_item";
 // What the last praise or scold was, as a text key (partner_menu.care_result.*); empty before any.
 inline constexpr std::string_view CareResultSetting = "partner.care_result";
+// How many times the `extra` action (the original's square) was pressed while the menu was open;
+// the document reacts to each change (the tech page's change view opens its help page,
+// game_menu.c: tickDigimonMenu). The menus' navigation has no such step, so the game passes it on.
+inline constexpr std::string_view ExtraPressesSetting = "partner_menu.extra_presses";
 
 struct PartnerMenuDesc {
   session::GameSession* session = nullptr;
@@ -88,6 +93,9 @@ public:
   // command.
   bool handle(const ui::UiCommand& command);
 
+  // Passes the `extra` presses on to the open menu (ExtraPressesSetting); once per tick.
+  void press(const input::InputState& input);
+
 private:
   void open();
   void publish() const;
@@ -101,6 +109,7 @@ private:
 
   PartnerMenuDesc desc_;
   game::inventory::UseContext bagContext_ = game::inventory::UseContext::Field;
+  double extraPresses_ = 0.0;
 };
 
 } // namespace dwe::app

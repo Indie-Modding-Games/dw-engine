@@ -146,6 +146,8 @@ public:
   // The item keeper's buttons the menus do not navigate with (move by tens, move all, the
   // description).
   void pressItemKeeper(const input::InputState& input);
+  // The partner menu's buttons the menus do not navigate with: `extra` opens the tech help.
+  void pressPartnerMenu(const input::InputState& input);
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes

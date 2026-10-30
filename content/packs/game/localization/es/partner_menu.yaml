@@ -57,6 +57,12 @@ tech.final: "Final"
 tech.techs: "Técnicas"
 tech.help_first: "Ayuda"
 tech.help_second: "téc."
+# La página de ayuda del cambio de técnicas (game_menu.c: renderDigimonMovesView, MENU_STATE 8): las dos pistas,
+# partidas donde la página dibuja una casilla de técnica y la tecla de confirmar.
+tech.help_select_before: "Elegir: elige"
+tech.help_select_after: "para equiparla"
+tech.help_cancel_before: "Quitar:"
+tech.help_cancel_after: "quita la equipada"
 tech.power: "PODER"
 tech.mp: "PM"
 tech.range: "ALC."
