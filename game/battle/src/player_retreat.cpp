@@ -26,14 +26,7 @@ PlayerRetreat::PlayerRetreat(std::vector<assets::CollisionCell> way, assets::Col
 
 // map.c: entityLookAtTile and entityLookAtLocation turn at once.
 void PlayerRetreat::lookAt(Point point) {
-  const std::int64_t dx = static_cast<std::int64_t>(point.x) - position_.x;
-  const std::int64_t dz = static_cast<std::int64_t>(point.z) - position_.z;
-  const std::int64_t length = integerSqrt((dx * dx) + (dz * dz));
-  if (length == 0) {
-    return;
-  }
-  facing_ = {.x = static_cast<std::int32_t>(dx * FacingScale / length),
-             .z = static_cast<std::int32_t>(dz * FacingScale / length)};
+  facing_ = facingToward(position_, point);
 }
 
 // BTL_handleBattleIntro's loop: the player looks at the next cell of its way (and counts it reached
@@ -64,11 +57,12 @@ bool PlayerRetreat::step(const BattleGround* ground, Point partner) {
     width = timing.retreatEntryAreaWidth;
     height = timing.retreatEntryAreaHeight;
   }
-  const Point ahead = {
-      .x = position_.x + static_cast<std::int32_t>(static_cast<std::int64_t>(facing_.x) *
-                                                   timing.retreatStep / FacingScale),
-      .z = position_.z + static_cast<std::int32_t>(static_cast<std::int64_t>(facing_.z) *
-                                                   timing.retreatStep / FacingScale)};
+  // The run's root motion (anim.c: applyRootMomentum) keeps the fraction of a unit its steps leave;
+  // the step the area test tries is the same (map.c: entityMoveForward).
+  const std::int64_t x = (static_cast<std::int64_t>(facing_.x) * timing.retreatStep) + remainder_.x;
+  const std::int64_t z = (static_cast<std::int64_t>(facing_.z) * timing.retreatStep) + remainder_.z;
+  const Point whole = wholeUnits(x, z);
+  const Point ahead = {.x = position_.x + whole.x, .z = position_.z + whole.z};
   if (!stops && ground != nullptr) {
     stops =
         leavesScreenArea(*ground, timing, position_, ahead, timing.retreatRadius, width, height);
@@ -78,6 +72,9 @@ bool PlayerRetreat::step(const BattleGround* ground, Point partner) {
     return true;
   }
   position_ = ahead;
+  remainder_ = {
+      .x = static_cast<std::int32_t>(x - (static_cast<std::int64_t>(whole.x) * FacingScale)),
+      .z = static_cast<std::int32_t>(z - (static_cast<std::int64_t>(whole.z) * FacingScale))};
   return false;
 }
 

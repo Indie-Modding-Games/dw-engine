@@ -133,6 +133,13 @@ std::optional<RootStep> nextRootStep(const Fighter& fighter);
 
 // movement.cpp: walking on the battle ground. Distances squared, as the original compares them.
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b);
+// map.c: entityLookAtLocation: the facing from `from` toward `to`, at the angle math.c's _atan
+// gives (its table, the ratio rounded down) with RotMatrix's sine and cosine.
+Facing facingToward(Point from, Point to);
+// A root motion sum in FacingScale parts of a unit, in whole units as the original's location
+// takes it (anim.c: applyRootMomentum shifts its fixed-point sum right): rounded down along the
+// original's axes, so up along world z, which runs the other way.
+Point wholeUnits(std::int64_t x, std::int64_t z);
 void lookAt(Fighter& fighter, Point point);
 // battle_main.c: BTL_handleHitReaction: a fighter hit from the front (within a quarter turn of
 // where it looks) or while flattened turns to the attack; one hit from behind turns its back to it.

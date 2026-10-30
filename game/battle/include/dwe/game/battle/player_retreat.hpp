@@ -39,6 +39,8 @@ private:
   assets::CollisionCell entry_;
   Point position_;
   Facing facing_;
+  // The run's fraction of a unit (the fighters' rootRemainder): its animation starts with none.
+  Point remainder_;
   const TimingRules* timing_ = nullptr;
   std::size_t wayLeft_ = 0;
   bool running_ = true;

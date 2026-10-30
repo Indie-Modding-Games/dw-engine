@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "battle_context.hpp"
+#include "effect_math.hpp"
 
 namespace dwe::game::battle {
 
@@ -149,6 +150,16 @@ std::int32_t turnToward(std::int32_t from, std::int32_t to, std::int32_t limit) 
   return wrapAngle(from + std::clamp(turn, -limit, limit));
 }
 
+// The angle from `from` toward `to` (math.c: _atan, as entityLookAtLocation calls it). _atan takes
+// the original's z, which runs the other way, and its angles are half a turn from these.
+std::int32_t angleToward(Point from, Point to) {
+  return wrapAngle(effect_math::atan4096(from.z - to.z, to.x - from.x) - HalfTurn);
+}
+
+std::int64_t floorUnits(std::int64_t parts) {
+  return parts >= 0 ? parts / FacingScale : -((-parts + FacingScale - 1) / FacingScale);
+}
+
 Point stepFrom(Point point, Facing facing, std::int32_t step) {
   return {.x = point.x +
                static_cast<std::int32_t>(static_cast<std::int64_t>(facing.x) * step / FacingScale),
@@ -237,13 +248,18 @@ bool walkClip(std::int32_t clip) {
   return clip == WalkClip || clip == WeakWalkClip;
 }
 
-// How far the step entityCheckCollision tests goes along the facing (map.c: entityMoveForward: the
-// clip's next root step); the ruleset's walk speed for a fighter without clips.
-std::int32_t stepAhead(const BattleContext& context, const Fighter& fighter) {
+// Where the step entityCheckCollision tests ends (map.c: entityMoveForward): a fighter with clips
+// takes its clip's next forward step (the side one is not tested) from where its root motion
+// stands, the fraction it carries included, rounded down like applyRootMomentum; one without clips
+// walks the ruleset's speed.
+Point stepTarget(const BattleContext& context, const Fighter& fighter, Facing facing) {
   if (!fighter.clips) {
-    return context.rules->timing.walkSpeed;
+    return stepFrom(fighter.position, facing, context.rules->timing.walkSpeed);
   }
-  return nextRootStep(fighter).value_or(RootStep{}).forward;
+  const std::int64_t forward = nextRootStep(fighter).value_or(RootStep{}).forward;
+  const Point step = wholeUnits((forward * facing.x) + fighter.rootRemainder.x,
+                                (forward * facing.z) + fighter.rootRemainder.z);
+  return {.x = fighter.position.x + step.x, .z = fighter.position.z + step.z};
 }
 
 // What stops a fighter's next step if it faces `facing` (map.c: entityCheckCollision): the combat
@@ -254,7 +270,7 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
   const Fighter& fighter = context.fighter(id);
   const std::int32_t radius = fighter.combatant.radius;
   const Point from = fighter.position;
-  const Point to = stepFrom(from, facing, stepAhead(context, fighter));
+  const Point to = stepTarget(context, fighter, facing);
   if (leavesCombatArea(context, from, to, radius)) {
     return Blocker::CombatArea;
   }
@@ -427,6 +443,15 @@ void moveAlongFacing(BattleContext& context, FighterId id, std::int32_t step, bo
 
 } // namespace
 
+Facing facingToward(Point from, Point to) {
+  return facingOf(angleToward(from, to));
+}
+
+Point wholeUnits(std::int64_t x, std::int64_t z) {
+  return {.x = static_cast<std::int32_t>(floorUnits(x)),
+          .z = static_cast<std::int32_t>(-floorUnits(-z))};
+}
+
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b) {
   const std::int64_t reach = static_cast<std::int64_t>(context.fighter(a).combatant.radius) +
                              context.fighter(b).combatant.radius;
@@ -434,27 +459,18 @@ std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, Figh
 }
 
 void lookAt(Fighter& fighter, Point point) {
-  const std::int64_t dx = static_cast<std::int64_t>(point.x) - fighter.position.x;
-  const std::int64_t dz = static_cast<std::int64_t>(point.z) - fighter.position.z;
-  const std::int64_t length = integerSqrt((dx * dx) + (dz * dz));
-  if (length == 0) {
-    return;
-  }
-  fighter.facing = {.x = static_cast<std::int32_t>(dx * FacingScale / length),
-                    .z = static_cast<std::int32_t>(dz * FacingScale / length)};
+  fighter.facing = facingToward(fighter.position, point);
 }
 
 bool turnForHit(Fighter& fighter, Point attack) {
-  const Facing toAttack{.x = attack.x - fighter.position.x, .z = attack.z - fighter.position.z};
-  if (toAttack.x == 0 && toAttack.z == 0) {
-    return false;
-  }
   const std::int32_t facing = wrapAngle(angleOf(fighter.facing));
-  const std::int32_t toward = wrapAngle(angleOf(toAttack));
+  const std::int32_t toward = angleToward(fighter.position, attack);
   // The three cases of the original come to the attack within a quarter turn either way.
   const std::int32_t apart = wrapAngle(toward - facing + HalfTurn) - HalfTurn;
   const bool fromBehind = !fighter.status.flattened && std::abs(apart) > QuarterTurn;
-  fighter.facing = facingOf(fromBehind ? toward + HalfTurn : toward);
+  // From behind it looks along the attack, the attack point's own _atan (not `toward` plus half a
+  // turn: the two differ on the axes).
+  fighter.facing = fromBehind ? facingToward(attack, fighter.position) : facingOf(toward);
   return fromBehind;
 }
 
@@ -565,13 +581,12 @@ void tickRootMotion(BattleContext& context) {
     const std::int64_t fz = fighter.facing.z;
     const std::int64_t x = (step->side * fz) + (step->forward * fx) + fighter.rootRemainder.x;
     const std::int64_t z = (-step->side * fx) + (step->forward * fz) + fighter.rootRemainder.z;
-    const auto whole = [](std::int64_t value) {
-      return value >= 0 ? value / FacingScale : -((-value + FacingScale - 1) / FacingScale);
-    };
-    fighter.position.x += static_cast<std::int32_t>(whole(x));
-    fighter.position.z += static_cast<std::int32_t>(whole(z));
-    fighter.rootRemainder = {.x = static_cast<std::int32_t>(x - (whole(x) * FacingScale)),
-                             .z = static_cast<std::int32_t>(z - (whole(z) * FacingScale))};
+    const Point whole = wholeUnits(x, z);
+    fighter.position.x += whole.x;
+    fighter.position.z += whole.z;
+    fighter.rootRemainder = {
+        .x = static_cast<std::int32_t>(x - (static_cast<std::int64_t>(whole.x) * FacingScale)),
+        .z = static_cast<std::int32_t>(z - (static_cast<std::int64_t>(whole.z) * FacingScale))};
   }
 }
 

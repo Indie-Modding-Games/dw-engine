@@ -1,5 +1,6 @@
 #include "effect_math.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -23,6 +24,15 @@ constexpr std::int32_t FixedShift = 12;
 // is not checked entry by entry).
 std::int32_t fixedSin(double turns) {
   return static_cast<std::int32_t>(std::lround(std::sin(turns * 2.0 * std::numbers::pi) * One));
+}
+
+// math.c: ATAN_LOOKUP_TABLE: entry i is atan(i / 512) in angle units (4096 a turn), rounded
+// (checked against the disc's table: all 512 entries).
+constexpr std::int32_t AtanSteps = 512;
+
+std::int32_t atanTable(std::int32_t index) {
+  const double radians = std::atan(static_cast<double>(index) / AtanSteps);
+  return static_cast<std::int32_t>(std::lround(radians / (2.0 * std::numbers::pi) * Turn));
 }
 
 std::int32_t fixed(std::int64_t value) {
@@ -108,11 +118,23 @@ std::int32_t cos512(std::int32_t angle) {
 }
 
 std::int32_t atan4096(std::int32_t dy, std::int32_t dx) {
-  // The angle from +dy towards +dx, half a turn on (math.c: ATAN_LOOKUP_TABLE and the quadrants).
-  const double angle = std::atan2(static_cast<double>(dx), static_cast<double>(dy));
-  const auto turns =
-      static_cast<std::int32_t>(std::lround(angle / (2.0 * std::numbers::pi) * Turn));
-  return (turns + HalfTurn) & AngleMask;
+  // The angle from +dy towards +dx, half a turn on. The smaller side over the larger one, in 512ths
+  // and rounded down, picks an eighth of a turn's angle from the table; the quadrants mirror it.
+  const std::int64_t absDy = std::abs(static_cast<std::int64_t>(dy));
+  const std::int64_t absDx = std::abs(static_cast<std::int64_t>(dx));
+  const auto eighth = [](std::int64_t small, std::int64_t large) {
+    const std::int64_t index = large > 0 ? (small * AtanSteps) / large : 0;
+    return atanTable(static_cast<std::int32_t>(std::min<std::int64_t>(index, AtanSteps - 1)));
+  };
+  std::int32_t angle =
+      absDy >= absDx ? eighth(absDx, absDy) : QuarterTurn - 1 - eighth(absDy, absDx);
+  if (dy < 0) {
+    angle = HalfTurn - angle;
+  }
+  if (dx < 0) {
+    angle = -angle;
+  }
+  return (angle + HalfTurn) & AngleMask;
 }
 
 std::int32_t rsin(std::int32_t angle) {

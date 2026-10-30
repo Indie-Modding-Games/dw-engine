@@ -185,6 +185,39 @@ TEST_CASE("a fighter with clips walks by its walk clip and a hit pushes it back 
   CHECK(pushed > 0);
 }
 
+TEST_CASE("fighters face each other at the original's angles and walk its fixed-point steps") {
+  // The forest fight of the oracle: the enemy at (243, 2565) looks at the partner at (272, 3129) at
+  // 2081 (_atan's table), and its first walk steps of 30 and 20 end at z 2594 and 2614, as
+  // RotMatrix's cosine (4091, not the 4096 of the vector over its integer length) and the rounding
+  // down give them.
+  BattleSetup setup = clippedDuel();
+  setup.partner.position = {.x = 272, .z = -3129};
+  setup.enemies.front().position = {.x = 243, .z = -2565};
+  Battle battle = startBattle(std::move(setup), 1);
+  const Facing enemy = battle.state().fighters[1].facing;
+  CHECK(enemy.x == 207);
+  CHECK(enemy.z == -4091);
+  const Facing partner = battle.state().fighters[PartnerId].facing;
+  CHECK(partner.x == -207);
+  CHECK(partner.z == 4091);
+  FighterClips clips = madeUpClips();
+  clips.at(Walk) = {
+      .steps = {RootStep{.side = 0, .forward = 30}, RootStep{.side = 0, .forward = 20}},
+      .repeatFrom = 0};
+  battle.setClips(1, clips);
+  std::vector<std::int32_t> stops;
+  Point before = battle.state().fighters[1].position;
+  while (stops.size() < 2 && battle.state().frame < 200) {
+    battle.step();
+    const Point at = battle.state().fighters[1].position;
+    if (at.z != before.z) {
+      stops.push_back(-at.z);
+    }
+    before = at;
+  }
+  CHECK(stops == std::vector<std::int32_t>{2594, 2614});
+}
+
 TEST_CASE("a hit's step back stops short of the player, as entityCheckCollision tests it") {
   const TimingRules& timing = originalRules().timing;
   std::int32_t held = 0;

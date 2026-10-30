@@ -43,16 +43,15 @@ std::int32_t runUntilStopped(PlayerRetreat& retreat, const BattleGround* ground,
 TEST_CASE("the player runs back to the cell it entered the map on and turns to the partner") {
   const TimingRules& timing = originalRules().timing;
   // The forest fight of the oracle: from z 2785 of the original (world -2785) toward the entry
-  // cell around z 3585; the original stops at 3534 after 15 steps of 50, on entering that cell.
+  // cell around z 3585; the original stops at 3534 after 15 steps of 50, on entering that cell:
+  // its run keeps the fraction of a unit each step leaves along the facing _atan gives.
   const CollisionCell entry{.column = 52, .row = 14};
   const Point partner{.x = 272, .z = -3129};
   PlayerRetreat retreat({}, entry, {.x = 264, .z = -2785}, FacingAway, timing);
   CHECK(runUntilStopped(retreat, nullptr, partner) == 16);
   CHECK_FALSE(retreat.running());
-  CHECK(retreat.position().z <= -3532);
-  CHECK(retreat.position().z >= -3536);
-  CHECK(retreat.position().x >= 250);
-  CHECK(retreat.position().x <= 253);
+  CHECK(retreat.position().z == -3534);
+  CHECK(retreat.position().x == 251);
   // It faces the partner, back the way it came.
   CHECK(retreat.facing().z > 0);
   CHECK_FALSE(retreat.step(nullptr, partner));
