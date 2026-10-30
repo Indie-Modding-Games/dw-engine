@@ -70,6 +70,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
     return std::unexpected{battle.error()};
   }
   battle_.emplace(std::move(*battle));
+  partnerBeforeFrame_.reset();
   battle_->setGround(desc_.ground);
   effects_.reset();
   enemyNpcs_ = std::move(enemyNpcs);
@@ -138,8 +139,14 @@ void BattleScreen::tickBattle(double seconds) {
     tickIntro(seconds);
     return;
   }
+  if (!partnerBeforeFrame_) {
+    partnerBeforeFrame_ = battle_->state().partner().position;
+  }
   battle_->advance(seconds, [this](const game::battle::BattleEvents& frame) {
-    facePlayerToPartner();
+    // tamerTickBattle runs before the fighters move: the player looks where the partner stood as
+    // the frame began.
+    facePlayerToPartner(*partnerBeforeFrame_);
+    partnerBeforeFrame_ = battle_->state().partner().position;
     if (effects_) {
       effects_->frame(frame, battle_->moves());
     }

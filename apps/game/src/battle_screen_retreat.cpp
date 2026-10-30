@@ -93,13 +93,12 @@ void BattleScreen::placePlayer() const {
 
 // battle_tick.c: tamerTickBattle: through the fight the player looks at the partner every frame,
 // except while the partner is called back.
-void BattleScreen::facePlayerToPartner() const {
+void BattleScreen::facePlayerToPartner(game::battle::Point partner) const {
   if (desc_.scene == nullptr || battle_->state().commands.current == game::battle::Command::Flee) {
     return;
   }
   game::field::Field& field = desc_.scene->field();
   const glm::vec3 at = field.player().position;
-  const game::battle::Point partner = battle_->state().partner().position;
   const glm::vec3 toward{static_cast<float>(partner.x) - at.x, 0.0F,
                          static_cast<float>(partner.z) - at.z};
   if (toward.x == 0.0F && toward.z == 0.0F) {

@@ -132,7 +132,7 @@ private:
   void stepRetreat();
   void endRetreat();
   void placePlayer() const;
-  void facePlayerToPartner() const;
+  void facePlayerToPartner(game::battle::Point partner) const;
   void tickVictory(double seconds);
   void startPoses();
   void tickPoses(double seconds);
@@ -176,6 +176,9 @@ private:
   double introSeconds_ = 0.0;
   // The player running back while the banner shows (BTL_handleBattleIntro).
   std::optional<game::battle::PlayerRetreat> retreat_;
+  // Where the partner stood as the fight's last frame began: the player looks there
+  // (tamerTickBattle runs before BTL_battleMain moves the fighters).
+  std::optional<game::battle::Point> partnerBeforeFrame_;
   std::uint32_t battlesStarted_ = 0;
   std::optional<game::battle::Outcome> outcome_;
   // Whether the battle on the end box was won: the field's music comes back when it closes.
