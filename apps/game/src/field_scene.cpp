@@ -805,7 +805,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     std::ranges::move(drawEffects(), std::back_inserter(prims));
   }
   if (mapRenderer_->hasMap()) {
-    addEffectScreenPrims(prims);
+    addEffectPrims(prims);
   }
   primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);

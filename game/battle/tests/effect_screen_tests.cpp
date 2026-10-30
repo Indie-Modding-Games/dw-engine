@@ -5,8 +5,10 @@
 #include <doctest/doctest.h>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -182,7 +184,7 @@ TEST_CASE("a scrolling background lays its 11 by 9 tiles over the screen, wrappe
 TEST_CASE("a scrolling background repeats its tiles out to a wider screen's edges") {
   NoSounds sounds;
   EffectRunner runner{sounds};
-  runner.setScreenSize({.x = 427, .y = 240});
+  runner.setView({.screen = {.x = 427, .y = 240}, .camera = {}});
   const std::vector<EffectScreenQuad> quads =
       firstFrame(runner, renderingScript(ScrollingRender, TilesData));
   // Two more columns each side, the same rows.
@@ -235,4 +237,169 @@ TEST_CASE("parallax sprites move by their depth times the offset and wrap as the
   CHECK(quads[1].corners[0] == EffectScreenPoint{.x = 33, .y = -150});
   CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 47, .y = -136});
   CHECK(quads[1].u == 96);
+}
+
+namespace {
+
+// A made-up technique with a ribbon on its instance (stride 0x80, the points at instance+0x1c),
+// turned by the camera's rotation when `facing`; its tick moves the points and its render draws
+// the ribbon at scale 1.
+EffectScript ribbonScript(bool facing) {
+  constexpr std::string_view EffectYaml = R"(move: "made_up_aurora"
+header:
+  sub_effect_count: 1
+)";
+  const std::string turn = facing ? R"(- at: "0x010a"
+  op: push_address
+  address: "instance+0x0010"
+- at: "0x010c"
+  op: sub
+  sub: get_camera_rotation
+  args:
+    out: "&instance+0x0010"
+)"
+                                  : "";
+  const std::string scriptYaml = std::string{R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: spawn
+  count: 1
+  table: "base+0x0060"
+  stride: 128
+  ordinal: 0
+- at: "0x0102"
+  op: push_address
+  address: "base+0x0220"
+- at: "0x0104"
+  op: push_address
+  address: "base+0x0230"
+- at: "0x0106"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0220"
+    render_script: "l_0230"
+- at: "0x0108"
+  op: sub
+  sub: init_transform
+)"} + turn + R"(- at: "0x0110"
+  op: push_address
+  address: "instance+0x001c"
+- at: "0x0112"
+  op: sub
+  sub: init_ribbon_points
+  args:
+    points: "&instance+0x001c"
+- at: "0x0114"
+  op: return
+- label: "l_0220"
+  at: "0x0220"
+  op: push_address
+  address: "instance+0x001c"
+- at: "0x0222"
+  op: sub
+  sub: tick_ribbon_points
+  args:
+    points: "&instance+0x001c"
+- at: "0x0224"
+  op: return
+- label: "l_0230"
+  at: "0x0230"
+  op: push_address
+  address: "instance+0x001c"
+- at: "0x0232"
+  op: push_address
+  address: "base+0x0040"
+- at: "0x0234"
+  op: push_immediate
+  value: 0
+- at: "0x0236"
+  op: sub
+  sub: render_ribbon
+  args:
+    points: "&instance+0x001c"
+    scale: "&base+0x0040"
+    unknown0: 0
+- at: "0x0238"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0250"
+  op: stop
+data:
+- at: "0x0040"
+  kind: vector
+  values: [4096, 4096, 4096]
+- at: "0x0060"
+  kind: instances
+  count: 1
+  stride: 128
+  free: true
+)";
+  const auto effect = dwe::core::parseYaml(EffectYaml);
+  const auto script = dwe::core::parseYaml(scriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE_MESSAGE(script.has_value(), (script ? std::string{} : script.error().message));
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  return std::move(*read);
+}
+
+std::optional<dwe::game::battle::EffectRibbon> ribbonOf(const EffectRunner& runner) {
+  for (const auto& draw : runner.draws()) {
+    if (const auto* ribbon = std::get_if<dwe::game::battle::EffectRibbon>(&draw.shape)) {
+      return *ribbon;
+    }
+  }
+  return std::nullopt;
+}
+
+} // namespace
+
+TEST_CASE("a ribbon's points sway within their bounds and its colour fades in round its three") {
+  using dwe::game::battle::EffectRibbon;
+  using dwe::game::battle::EffectVector;
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  const std::size_t slot = runner.load(ribbonScript(false));
+  REQUIRE(runner.start(slot, 0, 1).has_value());
+  for (int frame = 1; frame <= 4; ++frame) {
+    runner.tick();
+  }
+  runner.render();
+  const std::optional<EffectRibbon> ribbon = ribbonOf(runner);
+  REQUIRE(ribbon.has_value());
+  for (std::size_t i = 0; i < EffectRibbon::Points; ++i) {
+    // x from -0x708, 0x190 apart; y and z within 0x96; the strip 0x1f4 above and 0xc8 below.
+    CHECK(ribbon->top.at(i).x == -0x708 + (static_cast<std::int32_t>(i) * 0x190));
+    CHECK(ribbon->bottom.at(i).y - ribbon->top.at(i).y == 0x1F4 + 0xC8);
+    CHECK(ribbon->top.at(i).y + 0x1F4 >= -0x96);
+    CHECK(ribbon->top.at(i).y + 0x1F4 <= 0x96);
+    CHECK(ribbon->top.at(i).z >= -0x96);
+    CHECK(ribbon->top.at(i).z <= 0x96);
+  }
+  // Frame 4: the first colour 4 tenths of the way to the second (0x7c to 0: 75, 0x7c, 0x7c), half
+  // faded in (2048).
+  CHECK(ribbon->color == EffectVector{.x = 37, .y = 62, .z = 62});
+}
+
+TEST_CASE("a ribbon turned by the camera's rotation faces the camera") {
+  using dwe::game::battle::EffectRibbon;
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  // A camera turned a quarter round y (RotMatrixY 1024).
+  dwe::game::battle::EffectView view;
+  view.camera.m = {{{0, 0, 4096}, {0, 4096, 0}, {-4096, 0, 0}}};
+  runner.setView(view);
+  const std::size_t slot = runner.load(ribbonScript(true));
+  REQUIRE(runner.start(slot, 0, 1).has_value());
+  runner.tick();
+  runner.render();
+  const std::optional<EffectRibbon> ribbon = ribbonOf(runner);
+  REQUIRE(ribbon.has_value());
+  // The view-to-world rotation turns the strip's x into z (within the angles' rounding:
+  // matrixToEuler2's arctangent).
+  CHECK(std::abs(ribbon->top.front().x) <= 8);
+  CHECK(std::abs(ribbon->top.front().z + 0x708) <= 8);
+  CHECK(std::abs(ribbon->top.back().z - 0x708) <= 8);
 }

@@ -518,9 +518,10 @@ private:
     StatusBody body;
   };
   [[nodiscard]] std::optional<StatusAnchor> statusAnchor(std::size_t fighter) const;
-  // field_scene_effect_screen.cpp: what the effects draw on the screen, as screen primitives with
-  // their own textures: a move's texture with a palette row, its texels with STP alone, those
-  // without alone, or all of them opaque (the console mixes only the texels with STP).
+  // field_scene_effect_prims.cpp: what the effects draw as the original's own primitives (screen
+  // layers, ribbons), as scene primitives with their own textures: a move's texture with a palette
+  // row, its texels with STP alone, those without alone, or all opaque (the console mixes only
+  // STP).
   enum class TexelPart : std::uint8_t { All, SemiTransparent, Solid };
   struct PrimTexture {
     rhi::TextureId id{};
@@ -528,7 +529,7 @@ private:
   };
   std::optional<PrimTexture> effectPrimTexture(const std::string& move, std::int32_t palette,
                                                TexelPart part);
-  void addEffectScreenPrims(std::vector<ScenePrim>& prims);
+  void addEffectPrims(std::vector<ScenePrim>& prims);
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   // The partner while the field's follow moves it: the clip it picked; false when something

@@ -110,6 +110,10 @@ std::int32_t randomInRange(std::minstd_rand& random, std::int32_t min, std::int3
 EffectRunner::EffectRunner(EffectSounds& sounds, std::uint32_t seed)
     : sounds_(&sounds), random_(seed), held_(HeldSoundCount) {}
 
+std::int32_t EffectRunner::customRandom(std::int32_t min, std::int32_t max) {
+  return randomInRange(random_, min, max);
+}
+
 std::uint32_t EffectRunner::randomDraw() {
   if (rolls_ != nullptr) {
     return rolls_->next() % RandRange;
@@ -397,7 +401,7 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
     }
   }
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
-      drawOp(slot, in.sub, args) || screenOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
+      drawOp(slot, in.sub, args) || primOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
       (touchBodies_ && touchOp(slot, in.sub, args)) ||
       (!touchBodies_ && fxOp(slot, in.sub, args))) {
     return;

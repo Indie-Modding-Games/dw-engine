@@ -113,7 +113,10 @@ ScenePrimDrawer::triangles(const std::vector<ScenePrim>& prims, float pixelScale
       glm::vec4 position = corner.clip;
       position.x += offset.x * toNdc.x * position.w;
       position.y += offset.y * toNdc.y * position.w;
-      return Vertex{.position = position, .uv = corner.uv, .color = prim.color, .texture = texture};
+      return Vertex{.position = position,
+                    .uv = corner.uv,
+                    .color = prim.color * corner.shade,
+                    .texture = texture};
     };
     std::array<Vertex, 4> corners{};
     if (prim.shape == ScenePrim::Shape::Line) {

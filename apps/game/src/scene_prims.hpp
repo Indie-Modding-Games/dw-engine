@@ -29,6 +29,9 @@ struct ScenePrimCorner {
   glm::vec2 offset{0.0F};
   // Normalised texture coordinates.
   glm::vec2 uv{0.0F};
+  // Multiplies the primitive's colour at this corner, blended across it (the original's
+  // Gouraud-shaded POLY_GT4).
+  glm::vec4 shade{1.0F};
 };
 
 // One of the original's GPU primitives in a field scene: a triangle, a quad (corners 0 1 2 and

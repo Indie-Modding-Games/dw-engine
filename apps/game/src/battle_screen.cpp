@@ -9,6 +9,8 @@
 #include <dwe/screens/bag_view.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -26,6 +28,28 @@
 
 namespace dwe::app {
 namespace {
+
+// What the battle's camera shows, for the effects: the window's size in original pixels (a screen
+// layer covers what it shows past the original's 320 x 240) and the camera's world-to-view
+// rotation in the console's axes, F V F with F = diag(1, -1, -1) (GsWSMATRIX).
+game::battle::EffectView effectViewOf(const render::MapCamera& camera) {
+  constexpr float MatrixOne = 4096.0F;
+  constexpr std::array<float, 3> Flip{1.0F, -1.0F, -1.0F};
+  game::battle::EffectView view;
+  const glm::vec2 shown = glm::ceil(camera.visibleSize());
+  view.screen = {.x = static_cast<std::int32_t>(shown.x), .y = static_cast<std::int32_t>(shown.y)};
+  const glm::mat4 rotation = camera.view();
+  for (std::size_t row = 0; row < 3; ++row) {
+    for (std::size_t column = 0; column < 3; ++column) {
+      // glm is column-major: rotation[column][row].
+      const float value =
+          Flip.at(row) * Flip.at(column) *
+          rotation[static_cast<glm::length_t>(column)][static_cast<glm::length_t>(row)];
+      view.camera.m.at(row).at(column) = static_cast<std::int32_t>(std::lround(value * MatrixOne));
+    }
+  }
+  return view;
+}
 
 // The original's battle runs at 20 frames a second.
 constexpr double IntroFrameSeconds = 1.0 / 20.0;
@@ -186,10 +210,7 @@ void BattleScreen::tickBattle(double seconds) {
     if (effects_) {
       if (const render::MapCamera* camera =
               desc_.scene != nullptr ? desc_.scene->camera() : nullptr) {
-        // A screen layer covers what the window shows past the original's 320 x 240.
-        const glm::vec2 shown = glm::ceil(camera->visibleSize());
-        effects_->setScreenSize(
-            {.x = static_cast<std::int32_t>(shown.x), .y = static_cast<std::int32_t>(shown.y)});
+        effects_->setView(effectViewOf(*camera));
       }
       effects_->frame(frame, battle_->moves());
     }

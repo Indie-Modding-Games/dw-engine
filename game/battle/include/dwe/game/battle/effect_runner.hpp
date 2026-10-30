@@ -227,8 +227,33 @@ struct EffectScreenQuad {
   bool operator==(const EffectScreenQuad&) const = default;
 };
 
+// A ribbon of light (battle_effect.c: BTL_renderRibbonStrip): nine quads between ten pairs of
+// world points, each quad the texture's 32 x 32 texels at (104, 0) with palette row 2, added, its
+// top edge in half the colour and its bottom edge in the colour (shaded, 128 is 1); the ends of
+// the ribbon are black.
+struct EffectRibbon {
+  static constexpr std::size_t Points = 10;
+  std::array<EffectVector, Points> top{};
+  std::array<EffectVector, Points> bottom{};
+  EffectVector color;
+
+  bool operator==(const EffectRibbon&) const = default;
+};
+
+// What the battle's camera shows, for the effects that draw on the screen or face the camera.
+struct EffectView {
+  // How much of the screen the battle shows, in the original's pixels (at least its 320 x 240):
+  // a tiled screen layer (render_scrolling_background) repeats its tiles out to these edges, which
+  // a wider window shows past the original's.
+  EffectScreenPoint screen = OriginalScreen;
+  // The camera's world-to-view rotation in the console's axes (GsWSMATRIX, 4096 is 1).
+  EffectMatrix camera;
+
+  bool operator==(const EffectView&) const = default;
+};
+
 using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud, EffectFlash,
-                                 EffectScreenQuad>;
+                                 EffectScreenQuad, EffectRibbon>;
 
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
@@ -276,10 +301,9 @@ public:
   // original's numbers in the original's order (the effects run after the fighters each frame,
   // BTL_battleTickFrame: tickObjects). Nothing goes back to the runner's own sequence.
   void useRolls(ruleset::Random* rolls) { rolls_ = rolls; }
-  // How much of the screen the battle shows, in the original's pixels (at least its 320 x 240): a
-  // tiled screen layer (render_scrolling_background) repeats its tiles out to these edges, which
-  // a wider window shows past the original's.
-  void setScreenSize(EffectScreenPoint size) { screenSize_ = size; }
+  // What the battle's camera shows this frame (by default the original's screen and a camera
+  // that looks along z).
+  void setView(const EffectView& view) { view_ = view; }
 
   // Loads a technique's effect for the battle and runs its init script (battle_effect.c:
   // BTL_loadMoveEFE, BTL_loadNextEFEFile), returning its slot.
@@ -437,9 +461,12 @@ private:
   // frame of them after the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters; the clouds and
   // flashes as the world's objects that follow), and their draws after the render scripts.
   bool fxOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
-  // The layers drawn on the screen (effect_runner_screen.cpp).
-  bool screenOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  // The screen layers and ribbons (effect_runner_prims.cpp).
+  bool primOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   void scrollingBackground(Slot& slot, const std::vector<std::int32_t>& args);
+  void ribbon(Slot& slot, const std::vector<std::int32_t>& args);
+  // rng.c: customRandom, from the runner's own sequence (it is not the battle's rand()).
+  std::int32_t customRandom(std::int32_t min, std::int32_t max);
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
   void tickFx();
   void renderFx();
@@ -481,7 +508,7 @@ private:
   std::array<std::optional<Emitter>, 4> emitters_;
   std::array<std::optional<Cloud>, 60> clouds_;
   std::array<std::optional<Flash>, 12> flashes_;
-  EffectScreenPoint screenSize_ = OriginalScreen;
+  EffectView view_;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;
