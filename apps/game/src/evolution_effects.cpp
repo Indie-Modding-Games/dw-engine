@@ -145,11 +145,6 @@ constexpr float MaxDepth = 0x1000 * 16.0F;
 constexpr float BehindAll = 1.0e9F;
 constexpr float InFrontOfAll = -1.0e9F;
 
-struct Sorted {
-  float depth = 0.0F;
-  ScenePrim prim;
-};
-
 glm::vec3 eyeOf(const glm::mat4& view) {
   return glm::vec3{glm::inverse(view)[3]};
 }
@@ -181,13 +176,13 @@ ScenePrim faceTriangles(const ScenePrimFrame& frame, const BodyFace& face, glm::
   return prim;
 }
 
-void addLine(std::vector<Sorted>& out, const ScenePrimFrame& frame, glm::vec4 from, glm::vec4 to,
-             float depth, glm::vec4 color, rhi::TextureId white) {
+void addLine(std::vector<SortedPrim>& out, const ScenePrimFrame& frame, glm::vec4 from,
+             glm::vec4 to, float depth, glm::vec4 color, rhi::TextureId white) {
   ScenePrim line{.shape = ScenePrim::Shape::Line, .color = color, .texture = white};
   line.corners[0].clip = from;
   line.corners[1].clip = to;
   static_cast<void>(frame);
-  out.push_back({.depth = depth, .prim = line});
+  out.push_back(SortedPrim{.depth = depth, .prim = line});
 }
 
 } // namespace
@@ -374,7 +369,7 @@ std::vector<ScenePrim> EvolutionEffects::draw(const EvolutionBody& body,
                                               const EvolutionView& view) {
   const ScenePrimFrame& frame = view.frame;
   const rhi::TextureId white = view.images.white;
-  std::vector<Sorted> out;
+  std::vector<SortedPrim> out;
 
   // EVL_renderParticle: four lines on the ground, behind everything.
   for (const EvolutionRing& ring : rings_) {
@@ -415,7 +410,7 @@ std::vector<ScenePrim> EvolutionEffects::draw(const EvolutionBody& body,
       for (glm::vec3& corner : moved.corners) {
         corner += offset;
       }
-      out.push_back({.depth = meanDepth(frame, moved), .prim = prim});
+      out.push_back(SortedPrim{.depth = meanDepth(frame, moved), .prim = prim});
     }
   }
 
@@ -453,102 +448,120 @@ std::vector<ScenePrim> EvolutionEffects::draw(const EvolutionBody& body,
                              .uv = SparkTexels.at(i) / SparkImageSize};
         depth += frame.depth(points.at(i)) / static_cast<float>(points.size());
       }
-      out.push_back({.depth = depth, .prim = ray});
+      out.push_back(SortedPrim{.depth = depth, .prim = ray});
     }
   }
 
   // renderEFEFlash: the glow, mirrored into four around its point.
   if (view.images.glow) {
     for (const EvolutionFlash& flash : flashes_) {
-      const float depth = frame.depth(flash.position);
-      if (depth <= 0.0F) {
-        continue;
-      }
-      const auto at = [&](std::int32_t from, std::int32_t to) {
-        return originalLerp(from, to, 0, flash.length, flash.progress);
-      };
-      const std::int32_t fade = sin512(at(FlashShadeFrom, FlashShadeTo));
-      const glm::vec3 color =
-          glm::vec3{
-              static_cast<float>((at(flash.colorFrom.r, flash.colorTo.r) * fade) >> FixedShift),
-              static_cast<float>((at(flash.colorFrom.g, flash.colorTo.g) * fade) >> FixedShift),
-              static_cast<float>((at(flash.colorFrom.b, flash.colorTo.b) * fade) >> FixedShift)} /
-          TexturedOne;
-      const auto scaled = static_cast<std::int64_t>(view.focalLength) *
-                          at(flash.scaleFrom, flash.scaleTo) * FlashScaleTimes;
-      std::int64_t scale = scaled / static_cast<std::int64_t>(depth);
-      const std::int32_t bump = originalLerp(0, FlashBumpAngle, 0, FlashBumpFrames, flash.progress);
-      scale += ((static_cast<std::int64_t>(sin512(bump)) * FlashBump) >> FixedShift) + 1;
-      if (scale >= FlashScaleLimit || scale <= 0) {
-        continue;
-      }
-      const std::int64_t reach = (scale * GlowTexels) >> SizeShift;
-      if (reach <= 0) {
-        continue;
-      }
-      const float half = static_cast<float>(reach + 1);
-      float sortDepth = depth;
-      glm::vec4 centre = frame.clip(flash.position);
-      if (flash.fixedDepth == ClimaxFront) {
-        centre = clipInFront(centre);
-        sortDepth = InFrontOfAll;
-      } else if (flash.fixedDepth > 0) {
-        centre = clipBehind(centre);
-        sortDepth = BehindAll;
-      } else if (depth <= MinDepth || depth >= MaxDepth) {
-        continue;
-      }
-      const SceneGlow glow{.centre = centre,
-                           .half = half,
-                           .color = color,
-                           .texture = *view.images.glow,
-                           .texel = {GlowHalfU.at(static_cast<std::size_t>(flash.mode & 1)), GlowV},
-                           .side = glm::vec2{GlowSide},
-                           .imageSize = GlowImageSize};
-      for (const ScenePrim& quarter : glowQuarters(glow)) {
-        out.push_back({.depth = sortDepth, .prim = quarter});
-      }
+      addFlashPrims(flash, frame, view.focalLength, *view.images.glow, out);
     }
   }
 
   // renderWireframed: the wired bones, or the whole body while it fills in.
-  const glm::vec3 eye = eyeOf(frame.view);
   for (std::uint32_t bone = 0; bone < boneCount_; ++bone) {
     if (!boneWired(bone)) {
       continue;
     }
     const std::int32_t share = bodyShare_ != FullShare ? bodyShare_ : 0;
-    const float grey =
-        static_cast<float>(WireGreyMin + (random() % (WireGreyMax - WireGreyMin))) / LineOne;
-    const glm::vec4 color{glm::vec3{grey}, 1.0F};
-    for (const BodyFace& face : body.boneFaces(bone)) {
-      if (!facesCamera(face, eye)) {
-        continue;
-      }
-      const float depth = meanDepth(frame, face);
-      if (WireTable.at(face.index & 0xF) < share) {
-        out.push_back(
-            {.depth = depth, .prim = faceTriangles(frame, face, glm::vec3{0.0F}, glm::vec4{1.0F})});
-        continue;
-      }
-      // LINE_F4: a triangle closed, a quad through 0 1 3 2.
-      const std::array<std::size_t, 4> path = face.count == 4
-                                                  ? std::array<std::size_t, 4>{0, 1, 3, 2}
-                                                  : std::array<std::size_t, 4>{0, 1, 2, 0};
-      for (std::size_t i = 0; i + 1 < path.size(); ++i) {
-        addLine(out, frame, frame.clip(face.corners.at(path.at(i))),
-                frame.clip(face.corners.at(path.at(i + 1))), depth, color, white);
-      }
-    }
+    const std::int32_t grey = WireGreyMin + (random() % (WireGreyMax - WireGreyMin));
+    addWiredFaces(body.boneFaces(bone), share, grey, frame, white, out);
   }
 
-  std::ranges::stable_sort(out, [](const Sorted& a, const Sorted& b) { return a.depth > b.depth; });
-  std::vector<ScenePrim> prims;
-  prims.reserve(out.size());
-  for (Sorted& sorted : out) {
-    prims.push_back(std::move(sorted.prim));
+  return sortedPrims(std::move(out));
+}
+
+std::vector<ScenePrim> sortedPrims(std::vector<SortedPrim> prims) {
+  std::ranges::stable_sort(
+      prims, [](const SortedPrim& a, const SortedPrim& b) { return a.depth > b.depth; });
+  std::vector<ScenePrim> out;
+  out.reserve(prims.size());
+  for (SortedPrim& sorted : prims) {
+    out.push_back(std::move(sorted.prim));
   }
-  return prims;
+  return out;
+}
+
+void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, float focalLength,
+                   rhi::TextureId image, std::vector<SortedPrim>& out) {
+  const float depth = frame.depth(flash.position);
+  if (depth <= 0.0F) {
+    return;
+  }
+  const auto at = [&](std::int32_t from, std::int32_t to) {
+    return originalLerp(from, to, 0, flash.length, flash.progress);
+  };
+  const std::int32_t fade = sin512(at(FlashShadeFrom, FlashShadeTo));
+  const glm::vec3 color =
+      glm::vec3{static_cast<float>((at(flash.colorFrom.r, flash.colorTo.r) * fade) >> FixedShift),
+                static_cast<float>((at(flash.colorFrom.g, flash.colorTo.g) * fade) >> FixedShift),
+                static_cast<float>((at(flash.colorFrom.b, flash.colorTo.b) * fade) >> FixedShift)} /
+      TexturedOne;
+  const auto scaled =
+      static_cast<std::int64_t>(focalLength) * at(flash.scaleFrom, flash.scaleTo) * FlashScaleTimes;
+  std::int64_t scale = scaled / static_cast<std::int64_t>(depth);
+  const std::int32_t bump = originalLerp(0, FlashBumpAngle, 0, FlashBumpFrames, flash.progress);
+  scale += ((static_cast<std::int64_t>(sin512(bump)) * FlashBump) >> FixedShift) + 1;
+  if (scale >= FlashScaleLimit || scale <= 0) {
+    return;
+  }
+  const std::int64_t reach = (scale * GlowTexels) >> SizeShift;
+  if (reach <= 0) {
+    return;
+  }
+  const float half = static_cast<float>(reach + 1);
+  float sortDepth = depth;
+  glm::vec4 centre = frame.clip(flash.position);
+  if (flash.fixedDepth == ClimaxFront) {
+    centre = clipInFront(centre);
+    sortDepth = InFrontOfAll;
+  } else if (flash.fixedDepth > 0) {
+    centre = clipBehind(centre);
+    sortDepth = BehindAll;
+  } else if (depth <= MinDepth || depth >= MaxDepth) {
+    return;
+  }
+  const SceneGlow glow{.centre = centre,
+                       .half = half,
+                       .color = color,
+                       .texture = image,
+                       .texel = {GlowHalfU.at(static_cast<std::size_t>(flash.mode & 1)), GlowV},
+                       .side = glm::vec2{GlowSide},
+                       .imageSize = GlowImageSize};
+  for (const ScenePrim& quarter : glowQuarters(glow)) {
+    out.push_back(SortedPrim{.depth = sortDepth, .prim = quarter});
+  }
+}
+
+void addWiredFaces(std::span<const BodyFace> faces, std::int32_t share, std::int32_t grey,
+                   const ScenePrimFrame& frame, rhi::TextureId white,
+                   std::vector<SortedPrim>& out) {
+  const glm::vec3 eye = eyeOf(frame.view);
+  const glm::vec4 color{glm::vec3{static_cast<float>(grey) / LineOne}, 1.0F};
+  for (const BodyFace& face : faces) {
+    if (!facesCamera(face, eye)) {
+      continue;
+    }
+    const float depth = meanDepth(frame, face);
+    if (WireTable.at(face.index & 0xF) < share) {
+      out.push_back(SortedPrim{
+          .depth = depth, .prim = faceTriangles(frame, face, glm::vec3{0.0F}, glm::vec4{1.0F})});
+      continue;
+    }
+    // LINE_F4: a triangle closed, a quad through 0 1 3 2.
+    const std::array<std::size_t, 4> path = face.count == 4
+                                                ? std::array<std::size_t, 4>{0, 1, 3, 2}
+                                                : std::array<std::size_t, 4>{0, 1, 2, 0};
+    for (std::size_t i = 0; i + 1 < path.size(); ++i) {
+      addLine(out, frame, frame.clip(face.corners.at(path.at(i))),
+              frame.clip(face.corners.at(path.at(i + 1))), depth, color, white);
+    }
+  }
+}
+
+std::int32_t wireTableEntry(std::uint32_t index) {
+  return WireTable.at(index & 0xF);
 }
 
 } // namespace dwe::app

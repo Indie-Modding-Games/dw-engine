@@ -93,7 +93,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
-| [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 13 | 0 | 16 | 27 | 45 % |
+| [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 8 | 8 | 72 | 361 | 14 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1020 | 39 | 292 | 1087 | 77 % |
+| **Total** | 2438 funciones | 1046 | 39 | 276 | 1077 | 78 % |
 
 ## Batalla
 
@@ -186,7 +186,7 @@ Portado 174, parcial 4, falta 49, no aplica 58.
 | `addEntityParticleFX` | `main/efe.c:611` | parcial | Lanza partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `initializeEntityParticleFX` | `main/efe.c:633` | falta | Prepara las partículas pegadas a luchadores. | — |
 | `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
-| `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | — |
+| `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | `apps/game/src/death_effects.hpp:150` |
 | `translateConditionFXToEntity` | `main/effect_common.c:307` | parcial | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_fx.cpp` · solo la mariposa del compañero en el campo (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx) |
 
 No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (13); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
@@ -207,9 +207,9 @@ Portado 73, parcial 4, falta 5, no aplica 14.
 | `getFileCityTopMap` | `main/map.c:5592` | parcial | Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido. | `game/story/src/prosperity.cpp` · CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa |
 | `tamerTickOpening` | `main/tamer.c:1668` | falta | Escena de apertura del jugador. | `game/story/include/dwe/game/story/partner_routines.hpp:21` · la escena del compañero 5 acaba al momento |
 | `tamerTickEnding` | `main/tamer.c:1682` | falta | Escena final del jugador antes del vídeo. | `game/story/include/dwe/game/story/partner_routines.hpp:22` · la escena 6 acaba al momento; solo se ve el vídeo final |
-| `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:70` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
+| `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:125` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
 | `tamerTickMachinedramonSpawn` | `main/tamer.c:1718` | falta | El jugador asiste a la aparición del jefe final. | la escena acaba al momento (story_scene_glue.cpp:58) |
-| `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:70` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
+| `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:125` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
 
 No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
 
@@ -358,28 +358,9 @@ La escena de muerte, la de renacer y la caja de huevos.
 
 Ficheros del decomp: `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c`.
 
-Portado 13, parcial 0, falta 16, no aplica 27.
+Portado 39, parcial 0, falta 0, no aplica 17.
 
-| Función | Decomp | Estado | Qué hace | Motor / nota |
-|---|---|---|---|---|
-| `DOO2_tickShardSet` | `doo2/doo2.c:208` | falta | Avanza un grupo de trozos del huevo que se rompe y lo quita al acabar. | los trozos del huevo no se dibujan |
-| `DOO2_releaseShardSet` | `doo2/doo2.c:219` | falta | Quita un grupo de trozos del huevo. | los trozos del huevo no se dibujan |
-| `DOO2_tickEggBox` | `doo2/doo2.c:327` | falta | Reinicia cada cuadro el contador de destellos del huevo. | los destellos del huevo no se dibujan |
-| `DOO2_resetShardSets` | `doo2/doo2.c:587` | falta | Vacía los grupos de trozos del huevo antes del renacimiento. | los trozos del huevo no se dibujan |
-| `DOO2_buildShardSet` | `doo2/doo2.c:597` | falta | Parte el modelo del huevo en trozos que salen volando al eclosionar. | los trozos del huevo no se dibujan |
-| `DOO2_releaseAllShardSets` | `doo2/doo2.c:712` | falta | Quita todos los grupos de trozos del huevo. | los trozos del huevo no se dibujan |
-| `DOOA_hasIrisClosed` | `dooa/dooa.c:602` | falta | Dice si el iris que se cierra ya tapa al compañero, para ocultarlo. | el iris de la muerte no se dibuja |
-| `DOOA_initShardEffect` | `dooa/dooa.c:637` | falta | Prepara el efecto de trozos de alambre del compañero al morir. | — |
-| `DOOA_updateCutsceneCamera` | `dooa/dooa.c:728` | falta | Mueve la cámara de la muerte hacia el compañero y gira a su alrededor. | las cámaras de la escena no se aplican |
-| `DOOA_spawnShardWave` | `dooa/dooa.c:791` | falta | Suelta una oleada de trozos de alambre desde cada hueso del compañero. | — |
-| `DOOA_toggleShardFlicker` | `dooa/dooa.c:805` | falta | Hace parpadear los trozos de alambre de la muerte. | — |
-| `DOOA_setShardState` | `dooa/dooa.c:1210` | falta | Cambia la fase del efecto de trozos (subir, huevo, renacer). | — |
-| `DOOA_getOrbitPosition` | `dooa/dooa.c:1305` | falta | Calcula el punto de cámara que orbita al compañero en la muerte. | las cámaras de la escena no se aplican |
-| `DOOA_updateShards` | `dooa/dooa.c:1323` | falta | Mueve, encoge y apaga los trozos de alambre y la luz que sube. | — |
-| `DOOA_spawnBoneShards` | `dooa/dooa.c:1559` | falta | Crea los trozos de alambre de un hueso del compañero. | — |
-| `MURD_isDigimonLargerThanIris` | `murd/murd.c:359` | falta | Dice si el iris que se cierra ya tapa al compañero en una vida perdida. | el iris no se dibuja ni oculta al compañero |
-
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (14); gráficos, memoria o ficheros del hardware original: los sustituye el motor (8); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); gestión de memoria del original (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); copias de otra función, que cuenta por las dos (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (8); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); gestión de memoria del original (1); límite de destellos por cuadro del original; dwe limita los vivos (1); copias de otra función, que cuenta por las dos (1).
 
 ## Guardado y carga
 

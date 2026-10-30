@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "death_effects.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -44,10 +45,12 @@ struct DeathSceneDesc {
 inline constexpr std::string_view LivesBoxDocument = "lives_box";
 
 // The scenes of a lost life (murd.c: MURD_tickScene), a death (dooa.c: DOOA_tickDissolve) and the
-// rebirth that follows it (DOOA_tickRebirth): the field and the game time wait while the partner
-// stands alone on black, the tamer wakes up on the wake map and, after a death, the new baby is
-// drawn on the original's frame. The session already took the life, or killed the partner and gave
-// it its new form; the scenes only show it.
+// rebirth that follows it (DOOA_tickRebirth): an iris closes on the partner, which stands alone on
+// black; at a death the camera comes round to it, its body breaks into wireframe and shards, a
+// light comes down and the shards flicker; the player wakes up on the wake map; at the rebirth the
+// shards close into an egg, which flashes and breaks around the new baby while the scenery comes
+// back. The session already took the life, or killed the partner and gave it its new form; the
+// scenes only show it.
 class DeathScene {
 public:
   // The desc's pointees must outlive the scene. The scenes are the session's life rules'
@@ -112,7 +115,21 @@ private:
   void enterWakeMap();
   void finish();
   void setPhase(Phase phase);
+  // The scene's sounds of slot 8, kept until stopSounds (sound.c: stopSound stops them all).
   void playSound(std::int32_t sound);
+  void stopSounds();
+  // Draws the scene's primitives (the iris, the effects) into the stage and shows it.
+  void showEffects();
+  // The iris on this frame of its close to `end` (MURD_renderIris, DOOA_renderIrisWindow).
+  void showIris(std::int32_t end);
+  // DOOA_updateCutsceneCamera: from the start view to round the partner standing at `feet` facing
+  // `yaw`, over the frames from `start` to `end`.
+  void moveCamera(glm::vec3 feet, float yaw, std::int32_t start, std::int32_t end,
+                  std::int32_t frame);
+  // The squash and stretch of the dissolve's phase 0x64 (DOOA_DISSOLVE_SCALE_CURVE) and the leap.
+  void squash();
+  [[nodiscard]] float partnerHeight() const;
+  [[nodiscard]] float partnerRadius() const;
   void showStage();
   void setShade(std::int32_t shade);
   // Whether a moment that runs once has come: the frame reached it and it has not run yet.
@@ -152,6 +169,31 @@ private:
   bool storyScene_ = false;
   bool sceneOver_ = false;
   screens::LivesBox livesBox_;
+  // The death's and the rebirth's effects, with their own rand() state for each scene.
+  DeathEffects effects_;
+  std::uint32_t effectSeed_ = 0;
+  std::vector<std::int64_t> heldSounds_;
+  // The iris's primitives this frame.
+  std::vector<ScenePrim> iris_;
+  // The camera the scene's camera moves from (DOOA_CAMERA_START_VIEW and its offsets and
+  // distance), and the one it shows: its eye and target, distance, how far the picture moved from
+  // the map's off-centre projection to a centred one and down by DRAWING_OFFSET_Y.
+  struct SceneView {
+    glm::vec3 eye{0.0F};
+    glm::vec3 target{0.0F, 0.0F, -1.0F};
+    glm::mat4 projection{1.0F};
+    float focalLength = 1000.0F;
+  };
+  SceneView startView_;
+  // The projection distance of the camera shown (VIEWPORT_DISTANCE), which sizes the flashes.
+  float cameraFocal_ = 1000.0F;
+  // Where the partner stood when the death started (DOOA_SAVED_LOCATION and its rotation).
+  glm::vec3 savedFeet_{0.0F};
+  float savedYaw_ = 0.0F;
+  // Where it stands from frame 0x56 on, facing the player.
+  float sceneYaw_ = 0.0F;
+  // The egg of TAMA.TMD the rebirth shows (the baby's place among the rebirth's babies).
+  std::int32_t eggSlot_ = 0;
 };
 
 } // namespace dwe::app

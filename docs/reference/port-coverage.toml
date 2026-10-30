@@ -831,26 +831,26 @@ MOV_startRead = { status = "no-aplica", what = "Empieza a leer los sectores del 
 MOV_decodeFrame = { status = "no-aplica", what = "Descodifica un cuadro del vídeo.", note = "descodificación de vídeo; el motor usa su propio reproductor" }
 MOV_waitForFlip = { status = "no-aplica", what = "Espera al cambio de pantalla entre cuadros del vídeo.", note = "sincronía de hardware; el motor tiene su propio bucle" }
 DOO2_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de los trozos del huevo.", note = "gestión de memoria del original" }
-DOO2_tickShardSet = { status = "falta", what = "Avanza un grupo de trozos del huevo que se rompe y lo quita al acabar.", note = "los trozos del huevo no se dibujan" }
-DOO2_releaseShardSet = { status = "falta", what = "Quita un grupo de trozos del huevo.", note = "los trozos del huevo no se dibujan" }
-DOO2_tickEggBox = { status = "falta", what = "Reinicia cada cuadro el contador de destellos del huevo.", note = "los destellos del huevo no se dibujan" }
-DOO2_resetShardSets = { status = "falta", what = "Vacía los grupos de trozos del huevo antes del renacimiento.", note = "los trozos del huevo no se dibujan" }
-DOO2_buildShardSet = { status = "falta", what = "Parte el modelo del huevo en trozos que salen volando al eclosionar.", note = "los trozos del huevo no se dibujan" }
-DOO2_releaseAllShardSets = { status = "falta", what = "Quita todos los grupos de trozos del huevo.", note = "los trozos del huevo no se dibujan" }
-DOOA_hasIrisClosed = { status = "falta", what = "Dice si el iris que se cierra ya tapa al compañero, para ocultarlo.", note = "el iris de la muerte no se dibuja" }
-DOOA_initShardEffect = { status = "falta", what = "Prepara el efecto de trozos de alambre del compañero al morir." }
+DOO2_tickShardSet = { status = "portado", what = "Avanza un grupo de trozos del huevo que se rompe y lo quita al acabar." }
+DOO2_releaseShardSet = { status = "portado", what = "Quita un grupo de trozos del huevo." }
+DOO2_tickEggBox = { status = "no-aplica", what = "Reinicia cada cuadro el contador de destellos del huevo.", note = "límite de destellos por cuadro del original; dwe limita los vivos" }
+DOO2_resetShardSets = { status = "portado", what = "Vacía los grupos de trozos del huevo antes del renacimiento." }
+DOO2_buildShardSet = { status = "portado", what = "Parte el modelo del huevo en trozos que salen volando al eclosionar." }
+DOO2_releaseAllShardSets = { status = "portado", what = "Quita todos los grupos de trozos del huevo." }
+DOOA_hasIrisClosed = { status = "portado", what = "Dice si el iris que se cierra ya tapa al compañero, para ocultarlo." }
+DOOA_initShardEffect = { status = "portado", what = "Prepara el efecto de trozos de alambre del compañero al morir." }
 DOOA_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta a todos menos al compañero en la muerte y luego los repone." }
 DOOA_hideAllButPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:355", what = "Oculta todo salvo al compañero, jugador incluido." }
-DOOA_updateCutsceneCamera = { status = "falta", what = "Mueve la cámara de la muerte hacia el compañero y gira a su alrededor.", note = "las cámaras de la escena no se aplican" }
-DOOA_spawnShardWave = { status = "falta", what = "Suelta una oleada de trozos de alambre desde cada hueso del compañero." }
-DOOA_toggleShardFlicker = { status = "falta", what = "Hace parpadear los trozos de alambre de la muerte." }
-DOOA_setShardState = { status = "falta", what = "Cambia la fase del efecto de trozos (subir, huevo, renacer)." }
+DOOA_updateCutsceneCamera = { status = "portado", what = "Mueve la cámara de la muerte hacia el compañero y gira a su alrededor." }
+DOOA_spawnShardWave = { status = "portado", what = "Suelta una oleada de trozos de alambre desde cada hueso del compañero." }
+DOOA_toggleShardFlicker = { status = "portado", what = "Hace parpadear los trozos de alambre de la muerte." }
+DOOA_setShardState = { status = "portado", what = "Cambia la fase del efecto de trozos (subir, huevo, renacer)." }
 DOOA_showPlayerAndPartner = { status = "portado", dwe = "apps/game/src/death_scene.cpp:411", what = "Vuelve a mostrar al jugador y al compañero tras renacer." }
-DOOA_getOrbitPosition = { status = "falta", what = "Calcula el punto de cámara que orbita al compañero en la muerte.", note = "las cámaras de la escena no se aplican" }
-DOOA_updateShards = { status = "falta", what = "Mueve, encoge y apaga los trozos de alambre y la luz que sube." }
-DOOA_spawnBoneShards = { status = "falta", what = "Crea los trozos de alambre de un hueso del compañero." }
+DOOA_getOrbitPosition = { status = "portado", what = "Calcula el punto de cámara que orbita al compañero en la muerte." }
+DOOA_updateShards = { status = "portado", what = "Mueve, encoge y apaga los trozos de alambre y la luz que sube." }
+DOOA_spawnBoneShards = { status = "portado", what = "Crea los trozos de alambre de un hueso del compañero." }
 MURD_storeDigimonTexture = { status = "no-aplica", what = "Guarda la paleta del compañero para fundirla a negro.", note = "copia de memoria de vídeo; el motor funde con su sombreado" }
-MURD_isDigimonLargerThanIris = { status = "falta", what = "Dice si el iris que se cierra ya tapa al compañero en una vida perdida.", note = "el iris no se dibuja ni oculta al compañero" }
+MURD_isDigimonLargerThanIris = { status = "portado", what = "Dice si el iris que se cierra ya tapa al compañero en una vida perdida." }
 EVL_initShardSets = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:216", what = "Prepara los grupos de trozos de la evolución." }
 EVL_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de la evolución.", note = "gestión de memoria del original" }
 EVL_resetParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Vacía las partículas de luz de la evolución." }

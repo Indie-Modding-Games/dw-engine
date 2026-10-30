@@ -209,6 +209,9 @@ public:
   // An image of the base pack ("texture/etcdat/spot256", "...?palette=1") as a texture for scene
   // primitives, every drawn texel opaque (alpha 255); loaded once. Nothing when it cannot load.
   [[nodiscard]] std::optional<rhi::TextureId> sceneImage(std::string_view source);
+  // The faces of each object of a model of the base pack ("model/etcdat/tama", the death's egg),
+  // in the model's own space, textured; loaded once. Nothing when it cannot load.
+  [[nodiscard]] const std::vector<std::vector<BodyFace>>* sceneModelFaces(std::string_view asset);
   // The renderer's 1 x 1 white texture.
   [[nodiscard]] rhi::TextureId whiteTexture() const { return renderer_->whiteTexture(); }
   // One palette of an indexed image of the base pack ("texture/etcdat/etctim/002") as a texture
@@ -577,6 +580,8 @@ private:
   std::optional<std::pair<std::uint32_t, glm::vec3>> partnerConditionPoint_;
   // The effects' frame as the last update drew it.
   [[nodiscard]] std::vector<ScenePrim> drawEffects();
+  std::map<std::string, std::optional<std::vector<std::vector<BodyFace>>>, std::less<>>
+      sceneModels_;
   CameraSync cameraSync_{*this};
   std::array<render::Drawer*, 6> drawers_{};
   // The drawers while a scene hides the scenery: the models and the scene's primitives only.

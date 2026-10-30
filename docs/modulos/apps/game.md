@@ -223,13 +223,47 @@ y retiene el campo. En la vida perdida, a la vez que el compañero se queda solo
 (`MURD_createLivesBox`, documento `ui/lives_box`, modelo `screens::LivesBox`): crece desde el compañero, enseña un
 corazón por vida con la que se empieza (`life.lives`), con la recién perdida llena, parpadeando y vacía, y se quita al
 acabar el fundido a blanco (`MURD_removeLivesBox`). Si era la última, la caja vuelve a encogerse hacia el compañero
-(`MURD_animateLivesBoxOut`) y la muerte sigue cuando ya no está. El iris que se cierra sobre el compañero aún no se
-dibuja. Con ella, la historia pide cada escena con `call_partner_routine` (9 y 7, vida perdida; 3, muerte;
+(`MURD_animateLivesBoxOut`) y la muerte sigue cuando ya no está. Con ella, la historia pide cada escena con `call_partner_routine` (9 y 7, vida perdida; 3, muerte;
 4, renacer) y `StorySceneGlue` se la pasa: el campo sigue y lo retiene el guion. La muerte acaba con el compañero
 ya ido, en negro. Entonces corre la sección del mapa de despertar: los textos, la caja de los huevos (`EggBoxScreen`,
 documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y juega el renacer. Izquierda y derecha cambian
 de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: los sprites de los huevos en VRAM
 (`EGG_ICONS`), la animación de la caja y la carga del overlay; el documento enumera los huevos.
+
+Los efectos de las dos escenas van en `DeathEffects` (`death_effects.cpp`, sin estado del motor, con pruebas) y se
+dibujan como primitivas sobre la escena (`ScenePrimDrawer`), con las piezas de la evolución (`addFlashPrims`,
+`addWiredFaces`, `SortedPrim`):
+
+- El iris (`MURD_renderIris`, `DOOA_renderIrisWindow`): el anillo de `SPOT256` y cuatro rectángulos de su texel
+  blanco, restados (`ScenePrimBlend::Subtractive`), cierran de 200 a 0 en 0x23 cuadros (0x21 en la muerte) sobre la
+  mitad del compañero. Cuando el anillo ya cabe en la caja del compañero (`MURD_isDigimonLargerThanIris`), el
+  compañero se dibuja encima.
+- La cámara de la muerte (`DOOA_updateCutsceneCamera`, `DOOA_getOrbitPosition`): de 0x23 a 0x55 gira hacia el
+  compañero desde la vista del mapa viejo; en 0x56 el compañero pasa al origen del mapa de despertar mirando al jugador y
+  la cámara queda a altura × 5 + 1200, 400 + 2 × altura por encima, a 0x638 de su giro, con distancia de proyección
+  1000; de 0x149 a 0x17B vuelve por el mismo camino a la vista del mapa.
+- De 0x69 a 0x8C el cuerpo pasa a alambre en olas (`DOOA_SHARD_WAVE_SCHEDULE`); cada ola suelta como trozos las caras
+  de los huesos desde el 2 que le tocan en `WIREFRAME_RNG_TABLE` y que `rand() & 3` deja (`DOOA_spawnShardWave`,
+  `DOOA_spawnBoneShards`); los trozos caen al suelo (`DOOA_updateShards`).
+- De 0xC0 a 0xD0 el compañero se aplasta y estira con `DOOA_DISSOLVE_SCALE_CURVE` y, pasado 300, salta altura + 100.
+- De 0xD2 a 0x135, un destello por cuadro baja desde encima de la cabeza hasta el suelo meciéndose 10 a cada lado
+  (modo 0, 8 cuadros, gris 60 + `rand() % 100`); en 0x135 los trozos empiezan a parpadear.
+- En el renacer los trozos suben en espiral en el cuadro 10 y se cierran sobre el huevo en el 100 (`DOOA_setShardState`
+  1 y 3). El huevo de `TAMA.TMD` (el del bebé, 6 piezas) sale en alambre desde el cuadro 1 y se rellena de 101 a 131;
+  en 132 se quitan los trozos y hasta 152 hay un destello por cuadro sobre el huevo y rayos (`DOO2_renderSparkStreak`).
+  En 152 sale el bebé, oculto, y el mapa vuelve de negro hasta 202 (`FieldStage::sceneryDarkness`). Desde 203 el huevo
+  se rompe en los cuadros 207, 217, 227, 237, 247 y 248 (`DOOA_SPARKLE_BONE_IDS`); cada pieza suena (ranura 8,
+  efecto 7) y sus caras vuelan 41 cuadros (`DOO2_buildShardSet`, `DOO2_tickShardSet`).
+- Los sonidos de la escena se paran donde el original llama a `stopSound` (0x8C, 0xBF, el final y el cuadro 10 del
+  renacer).
+
+Suposiciones:
+
+- Mientras el compañero se dibuja sobre el iris, el resto de la escena ya no se dibuja (el original solo vuelve a
+  dibujar al compañero encima): así nada más cercano que su espalda tapa el anillo.
+- Los desplazamientos de pantalla de la cámara de la muerte en el mapa 0xCD (0xBC en vez de 0xA0) no se aplican.
+- Si la historia juega la muerte, el bebé y su huevo se toman del compañero ya renacido al empezar el renacer.
+- Los números al azar de los efectos usan una semilla propia, no la del juego.
 
 ## La máquina de guardado
 

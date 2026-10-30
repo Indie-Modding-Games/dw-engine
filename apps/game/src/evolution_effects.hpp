@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "body_face.hpp"
@@ -16,6 +17,20 @@ namespace dwe::app {
 // effect_common.c: lerp, kept whole: past t1 the result wraps instead of stopping at `end`.
 [[nodiscard]] std::int32_t originalLerp(std::int32_t start, std::int32_t end, std::int32_t t0,
                                         std::int32_t t1, std::int32_t t);
+
+// A primitive with the depth the original sorts it by (its ordering-table key).
+struct SortedPrim {
+  float depth = 0.0F;
+  ScenePrim prim;
+};
+
+// The primitives back to front, the first of equal depths first.
+[[nodiscard]] std::vector<ScenePrim> sortedPrims(std::vector<SortedPrim> prims);
+
+// model.c: WIREFRAME_RNG_TABLE[index & 15]: renderWireframed draws a face textured when it is below
+// the share, and the death breaks the faces whose entry is a wave's (dooa.c:
+// DOOA_spawnBoneShards).
+[[nodiscard]] std::int32_t wireTableEntry(std::uint32_t index);
 
 // The partner as the evolution's effects see it: where its bones are and the faces of each, posed
 // in the world now.
@@ -50,6 +65,15 @@ struct EvolutionFlash {
   glm::ivec3 colorTo{0};
   std::int32_t progress = 0;
 };
+
+// efe.c: renderEFEFlash: a flash's glow (the glow image), mirrored into four around its point.
+void addFlashPrims(const EvolutionFlash& flash, const ScenePrimFrame& frame, float focalLength,
+                   rhi::TextureId image, std::vector<SortedPrim>& out);
+
+// model.c: renderWireframed for one object: of its faces turned to the camera, those whose
+// WIREFRAME_RNG_TABLE entry is below `share` textured, the others as lines of `grey` (0 to 255).
+void addWiredFaces(std::span<const BodyFace> faces, std::int32_t share, std::int32_t grey,
+                   const ScenePrimFrame& frame, rhi::TextureId white, std::vector<SortedPrim>& out);
 
 // An expanding square on the ground (EVL_spawnParticle).
 struct EvolutionRing {

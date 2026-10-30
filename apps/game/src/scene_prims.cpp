@@ -75,8 +75,12 @@ core::Result<std::unique_ptr<ScenePrimDrawer>> ScenePrimDrawer::create(render::R
   if (!additive) {
     return std::unexpected{additive.error()};
   }
+  auto subtractive = make(rhi::BlendMode::Subtractive);
+  if (!subtractive) {
+    return std::unexpected{subtractive.error()};
+  }
   return std::unique_ptr<ScenePrimDrawer>{
-      new ScenePrimDrawer{std::move(*alpha), std::move(*additive)}};
+      new ScenePrimDrawer{std::move(*alpha), std::move(*additive), std::move(*subtractive)}};
 }
 
 void ScenePrimDrawer::set(std::vector<ScenePrim> prims, float pixelScale) {
@@ -162,7 +166,17 @@ void ScenePrimDrawer::draw(render::DrawContext& context) {
   commands.bindVertexBuffer(*upload);
   std::uint32_t first = 0;
   for (const auto& [blend, count] : runs) {
-    commands.bindPipeline(blend == ScenePrimBlend::Additive ? additive_ : alpha_);
+    switch (blend) {
+    case ScenePrimBlend::Alpha:
+      commands.bindPipeline(alpha_);
+      break;
+    case ScenePrimBlend::Additive:
+      commands.bindPipeline(additive_);
+      break;
+    case ScenePrimBlend::Subtractive:
+      commands.bindPipeline(subtractive_);
+      break;
+    }
     commands.draw(count, first);
     first += count;
   }

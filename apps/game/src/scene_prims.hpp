@@ -18,8 +18,8 @@
 namespace dwe::app {
 
 // How a screen primitive mixes with what is behind it: the original's average (texels with STP,
-// alpha 128) and additive semi-transparency.
-enum class ScenePrimBlend : std::uint8_t { Alpha, Additive };
+// alpha 128), additive and subtractive semi-transparency.
+enum class ScenePrimBlend : std::uint8_t { Alpha, Additive, Subtractive };
 
 // A corner of a screen primitive: a point in clip space (the scene camera's projection times its
 // view), moved on screen by `offset` original pixels (x right, y down), as the original sizes its
@@ -157,11 +157,14 @@ public:
             std::vector<std::pair<ScenePrimBlend, std::uint32_t>>* runs);
 
 private:
-  ScenePrimDrawer(rhi::GraphicsPipeline alpha, rhi::GraphicsPipeline additive)
-      : alpha_(std::move(alpha)), additive_(std::move(additive)) {}
+  ScenePrimDrawer(rhi::GraphicsPipeline alpha, rhi::GraphicsPipeline additive,
+                  rhi::GraphicsPipeline subtractive)
+      : alpha_(std::move(alpha)), additive_(std::move(additive)),
+        subtractive_(std::move(subtractive)) {}
 
   rhi::GraphicsPipeline alpha_;
   rhi::GraphicsPipeline additive_;
+  rhi::GraphicsPipeline subtractive_;
   std::vector<ScenePrim> prims_;
   float pixelScale_ = 1.0F;
 };
