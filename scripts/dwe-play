@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Plays the latest main in one command: checks that the checkout is clean and on main, pulls it,
+# builds dwe-game in the development container, refreshes the game pack in build/studio-content
+# (the copy of the content the game reads) and starts the game with the original look in Spanish.
+#
+# Usage: scripts/dwe-play [--no-pull] [--no-build] [-- <dwe-game options>...]
+#
+# DWE_ROOT is the checkout to play (by default the one this script is in), PRESET the build preset
+# (linux-clang-debug), DWE_PLAY_BRANCH the branch it must be on (main) and DWE_PLAY_CONTENT the
+# content folder (build/studio-content).
+set -euo pipefail
+
+root="${DWE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+root="$(cd "$root" && pwd -P)"
+preset="${PRESET:-linux-clang-debug}"
+branch="${DWE_PLAY_BRANCH:-main}"
+content="${DWE_PLAY_CONTENT:-$root/build/studio-content}"
+game="$root/build/$preset/apps/game/dwe-game"
+log_dir="$root/.dwe-studio"
+log="$log_dir/user-game-run.log"
+
+usage() {
+  sed -n '6p' "${BASH_SOURCE[0]}" | sed 's/^# //'
+}
+
+pull=true
+build=true
+extra=()
+while (($# > 0)); do
+  case "$1" in
+    --no-pull) pull=false ;;
+    --no-build) build=false ;;
+    --)
+      shift
+      extra=("$@")
+      break
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "dwe-play: opción desconocida: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+fail() {
+  echo "dwe-play: $*" >&2
+  exit 1
+}
+
+# A dwe-game started from this checkout: its working folder is the checkout.
+running_game() {
+  local pid comm cwd
+  while read -r pid comm; do
+    [[ "$comm" == "dwe-game" ]] || continue
+    cwd="$(readlink "/proc/$pid/cwd" 2>/dev/null)" || continue
+    if [[ "$cwd" == "$root" ]]; then
+      echo "$pid"
+      return 0
+    fi
+  done < <(ps -eo pid=,comm=)
+  return 1
+}
+
+if pid="$(running_game)"; then
+  echo "dwe-play: el juego ya está abierto desde $root (proceso $pid); ciérralo antes."
+  exit 0
+fi
+
+cd "$root"
+current="$(git rev-parse --abbrev-ref HEAD)"
+[[ "$current" == "$branch" ]] \
+  || fail "$root está en la rama $current, no en $branch."
+[[ -z "$(git status --porcelain)" ]] \
+  || fail "$root tiene cambios sin confirmar; guárdalos o descártalos antes."
+
+if $pull; then
+  echo "dwe-play: actualizando $branch..."
+  git pull --ff-only
+fi
+
+if $build; then
+  echo "dwe-play: compilando dwe-game ($preset)..."
+  if [[ ! -f "$root/build/$preset/CMakeCache.txt" ]]; then
+    PRESET="$preset" scripts/dev.sh configure
+  fi
+  PRESET="$preset" scripts/dev.sh build --target game
+fi
+[[ -x "$game" ]] || fail "no está $game; compila sin --no-build."
+
+# The game reads the packs from a copy: a stale copy of the game pack stops it with "The game
+# could not start".
+[[ -f "$content/base/pack.yaml" ]] \
+  || fail "$content no tiene el paquete base; prepáralo una vez con scripts/studio-run.sh."
+mkdir -p "$content/packs/game"
+rsync -a --delete-after "$root/content/packs/game/" "$content/packs/game/"
+
+mkdir -p "$log_dir"
+echo "dwe-play: jugando $(git rev-parse --short HEAD); el log va a $log"
+exec "$game" --content "$content" --lang es --ui-skin original --text-font original \
+  "${extra[@]}" >"$log" 2>&1

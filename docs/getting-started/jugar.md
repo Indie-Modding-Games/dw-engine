@@ -78,6 +78,30 @@ scripts/dev.sh run --content build/local-content --lang en
 scripts/dev.sh run --content build/local-content --size 1280x720
 ```
 
+### Jugar la última versión de main con un comando
+
+Cuando ya tienes el contenido preparado en `build/studio-content` (DWE Studio lo deja ahí con
+`scripts/studio-run.sh`), `scripts/dwe-play` hace todo de una vez:
+
+```bash
+scripts/dwe-play
+```
+
+1. Comprueba que el checkout está en `main` y sin cambios; si no, se niega y lo dice.
+2. Si ya hay un `dwe-game` abierto desde ese checkout, lo dice y sale sin lanzar otro.
+3. `git pull --ff-only`.
+4. Compila `dwe-game` en Docker con `scripts/dev.sh build --target game` sobre el directorio de siempre
+   (`build/linux-clang-debug`, o el de `PRESET`).
+5. Copia el paquete `game` del repositorio a `build/studio-content/packs/game` (`rsync --delete-after`). El juego lee
+   los paquetes de esa copia; una copia vieja hacía que el juego no arrancara («The game could not start»).
+6. Arranca `dwe-game --content build/studio-content --lang es --ui-skin original --text-font original` con la salida
+   en `.dwe-studio/user-game-run.log`.
+
+Opciones: `--no-pull` (no actualiza), `--no-build` (usa el binario que ya hay) y `--` para pasar más opciones al
+juego, por ejemplo `scripts/dwe-play --no-pull -- --size 1920x1080`. Las variables `DWE_ROOT` (otro checkout),
+`PRESET`, `DWE_PLAY_BRANCH` y `DWE_PLAY_CONTENT` cambian el checkout, el preset, la rama exigida y la carpeta de
+contenido.
+
 En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas existentes se gestionan desde la interfaz; no es necesario borrar archivos ni reutilizar una ranura ocupada para arrancar.
 
 ## Controles básicos

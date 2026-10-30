@@ -64,6 +64,9 @@ After preparing your own extracted content, launch the native game with its cont
 scripts/dev.sh run --content /path/to/extracted-content
 ```
 
+Once the content is in `build/studio-content`, `scripts/dwe-play` pulls main, builds the game, refreshes its game pack
+and starts it in one command.
+
 Building the repository does not download the original game or populate its assets. Follow the [local extraction workflow](docs/architecture/assets-de-desarrollo.md) to prepare your content.
 
 ## Documentation
