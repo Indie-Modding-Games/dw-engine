@@ -217,6 +217,31 @@ TEST_CASE("the same seed replays the same battle, event by event") {
   CHECK(resultOf(first).partnerHp == resultOf(second).partnerHp);
 }
 
+TEST_CASE("with the original's rolls the first decisions are the original's: the partner waits") {
+  // The Native Forest fight in the original: the generator's state as the fight began was
+  // 0x5CF299CB; the partner's first roll (63 of 65) fell on an empty slot, so it waited 0x50 frames
+  // (battle_main.c: BTL_selectPartnerMove) and first attacked 4 s in, while the enemy chose its
+  // move on the first frame.
+  const BattleSetup setup = duel(evenStats(800, 70), evenStats(400, 30), {"shot"}, {"punch"});
+  Battle original = startBattle(setup, 1);
+  original.useOriginalRolls(0x5CF299CBU);
+  const BattleEvents& first = original.step();
+  const Fighter& partner = original.state().partner();
+  CHECK(partner.chargingUp);
+  CHECK(partner.cooldown == originalRules().pacing.noMoveFrames);
+  CHECK_FALSE(partner.queuedMove.has_value());
+  CHECK(std::ranges::any_of(first, [](const BattleEvent& event) {
+    return event.kind == EventKind::MoveQueued && event.fighter == 1;
+  }));
+  // The wait ends on frame 80, as in the original (it chose again on frame 81).
+  std::int64_t waited = 1;
+  while (original.state().partner().chargingUp && original.state().frame < 200) {
+    waited = original.state().frame;
+    original.step();
+  }
+  CHECK(waited == originalRules().pacing.noMoveFrames);
+}
+
 TEST_CASE("advance runs the frames real time holds at 20 a second") {
   Battle battle = startBattle(duel(evenStats(300, 100), evenStats(300, 100)), 4);
   battle.advance(0.2);

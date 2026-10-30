@@ -192,6 +192,16 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.seed = seed;
     return parsed.ec == std::errc{} && parsed.ptr == value.data() + value.size();
   }
+  if (argument == OriginalRollsOption) {
+    const bool hex = value.starts_with("0x") || value.starts_with("0X");
+    const std::string_view digits = hex ? value.substr(2) : value;
+    std::uint32_t state = 0;
+    const auto parsed =
+        std::from_chars(digits.data(), digits.data() + digits.size(), state, hex ? 16 : 10);
+    options.originalRolls = state;
+    return !digits.empty() && parsed.ec == std::errc{} &&
+           parsed.ptr == digits.data() + digits.size();
+  }
   if (argument == "--time") {
     const auto time = parseTime(value);
     options.time = time;

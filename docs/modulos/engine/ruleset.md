@@ -28,7 +28,7 @@ store->reload();                                                           // tr
 | `ruleset_values.hpp` | `listValues`, `diffValues` (los valores que difieren entre dos rulesets), `listRulesets` y `inlineYaml` |
 | `section_file.hpp` | `patchSectionText` y `saveSection`: escriben una sección ajustada en su fichero, valor a valor, sin perder los comentarios |
 | `messages.hpp` | Las plantillas de los mensajes de error del módulo |
-| `random.hpp` | `Random`: PCG32 con semilla, `below(n)` como `randomLimit` del original y `chance(p)` |
+| `random.hpp` | `Random`: PCG32 con semilla, `below(n)` como `randomLimit` del original y `chance(p)`; `Random::original(estado)` tira con el generador del original (`rand()`), solo para el oráculo |
 
 ## Tests
 

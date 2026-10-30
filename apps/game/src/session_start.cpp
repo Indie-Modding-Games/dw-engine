@@ -3,6 +3,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/game/save/slots.hpp>
+#include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 #include <dwe/session/story_scenes.hpp>
 
@@ -91,6 +92,9 @@ core::Result<GameStart> startGame(const assets::VirtualFileSystem& files, const 
   }
   if (options.clockSpeed) {
     start.session->clock().setSpeed(*options.clockSpeed);
+  }
+  if (start.systems.battle != nullptr) {
+    start.systems.battle->useOriginalRolls(options.originalRolls);
   }
   return start;
 }

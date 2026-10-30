@@ -113,4 +113,7 @@ Sale con 1 si algo diverge.
 - La partida del original y la del motor no tienen las mismas banderas de historia: un guion que corre en una y
   no en la otra cambia la ruta. Los escenarios evitan esas celdas.
 - Los números aleatorios no se comparan. El motor usa `--seed` y un combate repite su resultado con la misma
-  semilla, pero no el del original.
+  semilla, pero no el del original. Para un combate, `--original-rolls <estado>` hace que el motor tire con el
+  generador del original desde el estado que el original tenía al empezar la pelea (la traza del original lo guarda
+  en `rand`, de `0x80009010`): las primeras decisiones coinciden; después el original gasta tiradas en partículas
+  que el motor no hace y las secuencias se separan.

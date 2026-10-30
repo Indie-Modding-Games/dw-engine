@@ -166,6 +166,10 @@ public:
   void protectPartner();
   core::Result<void> revivePartner(std::int32_t hp);
 
+  // Rolls from here on with the original's generator from its state (ruleset::Random::original),
+  // for an oracle run: the original's state as its fight began gives the same first decisions.
+  void useOriginalRolls(std::uint32_t state) { random_ = ruleset::Random::original(state); }
+
   // The ground the fighters walk on, which must outlive the battle; none keeps them within the
   // ruleset's arena radius.
   void setGround(const BattleGround* ground) { ground_ = ground; }

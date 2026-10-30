@@ -373,8 +373,12 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
   ruleset::Random& random = session.random();
   const std::uint64_t high = random.next();
   const std::uint64_t seed = (high << SeedHalfBits) | random.next();
-  return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
-                                     seed);
+  auto battle = game::battle::Battle::start(std::move(setup), *rules_, *catalog_,
+                                            std::move(*strategies), seed);
+  if (battle && originalRolls_) {
+    battle->useOriginalRolls(*originalRolls_);
+  }
+  return battle;
 }
 
 void BattleAdapter::giveRewards(GameSession& session, const BattleResult& result,

@@ -172,4 +172,18 @@ TEST_CASE("the random numbers repeat with their seed and stay in range") {
   CHECK(first.next() == again.next());
 }
 
+TEST_CASE("the original's generator rolls what the original rolled from the same state") {
+  // Read in the original: rand() from the state 0x523D5E95 gave 0x3330.
+  Random step = Random::original(0x523D5E95U);
+  CHECK(step.next() == 0x3330U);
+  CHECK(step.state() == 0xB330DBAAU);
+  // The Native Forest fight's first frame: from 0x5CF299CB the partner's pick of 65, the enemy's
+  // charge mode of 2 and its pick of 120 (battle_main.c: BTL_selectPartnerMove, BTL_tickEnemyAI,
+  // BTL_selectEnemyMove).
+  Random fight = Random::original(0x5CF299CBU);
+  CHECK(fight.below(65) == 63);
+  CHECK(fight.below(2) == 0);
+  CHECK(fight.below(120) == 29);
+}
+
 } // namespace dwe::ruleset

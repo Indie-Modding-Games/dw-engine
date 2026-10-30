@@ -66,6 +66,9 @@ struct Options {
   // The seed of a new game's random numbers (--seed <n>), so that a route plays the same every run;
   // a new seed from the system clock when not given. A loaded game keeps the random state it saved.
   std::optional<std::uint64_t> seed;
+  // For an oracle run (--original-rolls <state>): the battles roll with the original's generator
+  // from its 32-bit state (decimal or 0x hex), the one the original had as its fight began.
+  std::optional<std::uint32_t> originalRolls;
   // The time of day to start at (the clock at 8:00, 16:00 or 20:00); the field rules' start hour
   // when not given.
   std::optional<render::TimeOfDay> time;
@@ -124,7 +127,7 @@ inline constexpr std::string_view Usage =
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
-    "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
+    "[--seed <n>] [--original-rolls <state>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
     "[--control <socket> [--control-paused]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
@@ -141,6 +144,7 @@ inline constexpr std::string_view TuningOption = "--tuning";
 inline constexpr std::string_view ExploreOption = "--explore";
 inline constexpr std::string_view LanguageOption = "--lang";
 inline constexpr std::string_view SeedOption = "--seed";
+inline constexpr std::string_view OriginalRollsOption = "--original-rolls";
 
 // Reads the command line; logs what is wrong and gives nothing for a bad one.
 std::optional<Options> parseOptions(std::span<char* const> arguments);

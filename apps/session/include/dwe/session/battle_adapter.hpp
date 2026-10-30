@@ -107,6 +107,9 @@ public:
   // Starts a battle with the partner, at the clock's minute, seeded from the session's random
   // numbers.
   core::Result<game::battle::Battle> start(GameSession& session, BattleRequest request);
+  // An oracle run (--original-rolls): the battles from here on roll with the original's generator
+  // from this state instead (game::battle::Battle::useOriginalRolls).
+  void useOriginalRolls(std::optional<std::uint32_t> state) { originalRolls_ = state; }
   // Gives a finished battle's result to the partner, the bag and the moves, and asks for the
   // autosaves of the battle's end, a recruit and a tournament.
   core::Result<BattleAftermath> finish(GameSession& session,
@@ -160,6 +163,7 @@ private:
   PartnerMoveRules moveRules_;
   PartnerMoves moves_;
   std::unique_ptr<Serializer> serializer_;
+  std::optional<std::uint32_t> originalRolls_;
 };
 
 } // namespace dwe::session
