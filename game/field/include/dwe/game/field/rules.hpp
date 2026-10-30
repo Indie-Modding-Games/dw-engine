@@ -83,6 +83,9 @@ struct TransitionRules {
   // draws that frame.
   std::int32_t fadeOutFrames = 20;
   std::int32_t fadeInFrames = 20;
+  // The fade in when play starts on its first map (main.c: main: fadeFromBlack(0x28)); the player
+  // is free from its first frame, so the first map's cells already run while it fades in.
+  std::int32_t startFadeInFrames = 40;
   // fade.c: renderFade subtracts a grey "shade" from the screen: it rises by shadeStep per frame up
   // to shadeMax (renderFadeOut) and falls back from shadeMax by shadeStep per frame (renderFadeIn).
   std::int32_t shadeStep = 7;
@@ -95,12 +98,17 @@ struct TransitionRules {
   std::int32_t nameFrame = 10;
 };
 
-// The shade of the fade out on frame `frame` (1 = the first): it starts from what the last fade in
-// left, because fade.c: fadeToBlack does not reset FADE_PROGRESS.
-[[nodiscard]] std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame);
+// The shade of the fade out on frame `frame` (1 = the first): it starts from `from`, the shade the
+// last fade drew, because fade.c: fadeToBlack does not reset FADE_PROGRESS. Without `from`, from
+// what a whole fade in of `rules.fadeInFrames` leaves.
+[[nodiscard]] std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame,
+                                        std::optional<std::int32_t> from = std::nullopt);
 
-// The shade of the fade in on frame `frame` (1 = the first, drawn on the frame the new map loads).
-[[nodiscard]] std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame);
+// The shade of the fade in on frame `frame` (1 = the first, drawn on the frame the new map loads),
+// for a fade in of `frames` frames (fade.c: fadeFromBlack steps by shadeMax / (frames + 1));
+// without `frames`, the shade step of the rules.
+[[nodiscard]] std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame,
+                                       std::optional<std::int32_t> frames = std::nullopt);
 
 // How much of the screen a shade takes away: 0 (nothing) to 1 (everything, black).
 [[nodiscard]] float shadeDarkness(const TransitionRules& rules, std::int32_t shade);

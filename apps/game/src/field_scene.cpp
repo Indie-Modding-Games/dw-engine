@@ -210,10 +210,13 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
       [raw = scene.get()](std::int32_t limit) { return raw->gestureRandom_.below(limit); });
   scene->field_->setPartnerMood(scene->partnerMood());
 
-  if (auto entered =
-          scene->enterMap(startMap, startExit, desc.startMap ? desc.startAt : std::nullopt);
-      !entered) {
+  const std::optional<assets::SpawnPoint> startAt = desc.startMap ? desc.startAt : std::nullopt;
+  if (auto entered = scene->enterMap(startMap, startExit, startAt); !entered) {
     return std::unexpected{entered.error()};
+  }
+  if (!startAt) {
+    // main.c: main: fadeFromBlack(0x28) once the first map is in, with the player free.
+    scene->field_->startPlay();
   }
   return scene;
 }

@@ -116,7 +116,8 @@ InputRules readInput(YamlReader& reader, const YamlNode& node) {
 TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "transition",
                          {"frame_seconds", "fade_out_frames", "fade_in_frames", "shade_step",
-                          "shade_max", "shade_full", "name_frame"})) {
+                          "shade_max", "shade_full", "name_frame"},
+                         {"start_fade_in_frames"})) {
     return {};
   }
   const auto count = [&](std::string_view key) {
@@ -135,6 +136,9 @@ TransitionRules readTransition(YamlReader& reader, const YamlNode& node) {
                              .shadeMax = count("shade_max"),
                              .shadeFull = count("shade_full"),
                              .nameFrame = count("name_frame")};
+  if (node.find("start_fade_in_frames") != nullptr) {
+    transition.startFadeInFrames = count("start_fade_in_frames");
+  }
   if (reader.ok() && (transition.shadeMax > MaxShade || transition.shadeFull > MaxShade)) {
     reader.fail(node, core::formatMessage(messages::TransitionShadeTooHigh, MaxShade));
   }
@@ -273,16 +277,20 @@ core::Result<T> loadDocument(const assets::VirtualFileSystem& vfs, std::string_v
 
 } // namespace
 
-std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame) {
-  // fade.c: renderFadeOut adds the step to FADE_PROGRESS, which still holds the last fade in's
-  // final shade.
-  const std::int32_t start = fadeInShade(rules, rules.fadeInFrames);
+std::int32_t fadeOutShade(const TransitionRules& rules, std::int32_t frame,
+                          std::optional<std::int32_t> from) {
+  // fade.c: renderFadeOut adds the step to FADE_PROGRESS, which still holds the shade the last
+  // fade drew.
+  const std::int32_t start = from.value_or(fadeInShade(rules, rules.fadeInFrames));
   return std::min(rules.shadeMax, start + (rules.shadeStep * std::max(frame, 0)));
 }
 
-std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame) {
-  // fade.c: renderFadeIn draws shadeMax - step * FADE_IN_CURRENT.
-  return std::clamp(rules.shadeMax - (rules.shadeStep * std::max(frame, 0)), 0, rules.shadeMax);
+std::int32_t fadeInShade(const TransitionRules& rules, std::int32_t frame,
+                         std::optional<std::int32_t> frames) {
+  // fade.c: renderFadeIn draws shadeMax - step * FADE_IN_CURRENT, with the step fadeFromBlack's
+  // length gives.
+  const std::int32_t step = frames ? rules.shadeMax / (*frames + 1) : rules.shadeStep;
+  return std::clamp(rules.shadeMax - (step * std::max(frame, 0)), 0, rules.shadeMax);
 }
 
 float shadeDarkness(const TransitionRules& rules, std::int32_t shade) {

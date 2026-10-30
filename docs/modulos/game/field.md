@@ -43,7 +43,10 @@ if (auto change = field.takeMapChange()) {
   fundido de la pantalla (0 nada, 1 negro), con la curva de `fade.c` (`fadeOutShade`, `fadeInShade` y
   `shadeDarkness` en `rules.hpp`): la app lo resta sobre la escena (`render::ScreenFade`), no lo mezcla con negro.
   `mapNameShown()` da el mapa cuyo nombre se ve, del fotograma 10 del fundido de salida hasta entrar en el mapa
-  nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido.
+  nuevo; la app lo busca en la tabla de mapas y el HUD lo pone delante del fundido. El fundido de salida sigue
+  desde el tono que dejó el último (`FADE_PROGRESS`), también si corta un fundido de entrada a medias.
+  `startPlay()` es el arranque de la partida en su primer mapa (`main.c: main: fadeFromBlack(0x28)`): 40
+  fotogramas (`start_fade_in_frames`) sin retener a nadie, así que las casillas corren desde el primero.
 - **Warps de script** (`ScriptWarpSetup`): los de `field/script_warps` con `GuardFacts` (los lectores de
   disparadores, bolsa, dinero, estadísticas y condiciones del partner) y un `TriggerWriter` que recibe los
   `sets_flags` del warp tomado; después el campo vuelve a decidir las casillas del mapa (`refreshScriptWarps`).
@@ -201,6 +204,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 | El jugador atraviesa al compañero | `tamer.c: checkMapInteraction` pasa al compañero como `source` a `entityCheckCollision`, que lo salta (`other != source`) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Igual |
 | Deslizamientos de guion contra paredes y NPC; `wouldTouchCharacter` sin NPC | — | sin cambiar; la regla de suelta arregla el resultado | — | Hueco |
 | Camino de vuelta del jugador: la celda por la que entró al mapa y, mientras la línea recta hasta ella está tapada, las celdas donde perdió de vista la anterior (hasta 30); lo usa la carrera del domador al empezar un combate | `map.c: initializeTamerWaypoints` (en `loadMap`), `tickTamerWaypoints` (al principio de `tamerTickWalkingState`), `isLinearPathBlocked`, `addTamerWaypoint`, `clearTamerWaypoints` | `TamerTrail` (`Field::tamerTrail`) | `field_tests`: "a line of cells is blocked ...", "the way back keeps the cell ..." | Igual; el original lee el anillo pasado de 30 celdas, aquí se para al final |
+| Arranque de la partida nueva: twna01 no se ve | `main.c: main`: `fadeFromBlack(0x28)` con el jugador libre; en el mismo fotograma (vblank 32224, `FADE_IN_CURRENT` 1, `FADE_PROGRESS` 137) la casilla 54 llama a la sección 0x36, `warp_to` hace `fadeToBlack(20)` desde ese tono y la pantalla sigue negra hasta el rótulo «File City» y topn01, donde el jugador ya está tumbado (anim 18) al verse | `Field::startPlay` (40 fotogramas, sin retener), `shadeNow`/`leavingFrom_`: la salida sigue desde el tono del fundido a medias; antes el fundido de 20 retenía al jugador, la casilla saltaba en el tick 59 con twna01 ya iluminado y se veía a todos de pie (topn01 en el tick 113; ahora en el 59) | `field_tests`: "play starts with a long fade in ...", "a fade out started during a fade in ..."; capturas en `_work/routes-e2/npc-and-opening/` | Igual (el tono de salida es 160 en vez de 144: los dos negros); al cargar partida sigue sin fundido (Hueco) |
 | Vuelta andando tras un combate de historia | `story_scenes.cpp:75-79` es un esbozo | sin cambiar | — | Hueco |
 
 ## Datos

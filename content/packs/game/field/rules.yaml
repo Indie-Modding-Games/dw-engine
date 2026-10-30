@@ -48,6 +48,11 @@ transition:
   frame_seconds: 0.05
   fade_out_frames: 20
   fade_in_frames: 20
+  # Al empezar la partida, el primer mapa se funde en 40 fotogramas (main.c: main: fadeFromBlack(0x28)) con el
+  # jugador libre desde el primero: las casillas del mapa ya corren mientras se funde. En la partida nueva la casilla
+  # de llegada salta a topn01 en el primer fotograma, y el fundido de salida sigue desde ese tono casi negro, así que
+  # twna01 no llega a verse.
+  start_fade_in_frames: 40
   # fade.c: renderFade pone delante un rectángulo que resta un gris (modo semitransparente 2, B - F). Su tono sube
   # 160 / (20 + 1) = 7 por fotograma hasta 160 (renderFadeOut) y baja de 160 de 7 en 7 al volver (renderFadeIn).
   # fadeToBlack no lo pone a 0: el de salida empieza en el 20 que deja el de vuelta anterior (160 - 20 × 7).

@@ -140,6 +140,11 @@ public:
   // Enters a map at a given place, without a fade in, for tests and debug tools.
   void enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn);
 
+  // Play starts on the map just entered (main.c: main: fadeFromBlack(0x28) after initializeMap):
+  // the fade in lasts `transition.startFadeInFrames` and holds no one, so the map's cells run from
+  // its first frame, and a map change they start fades out from the shade the fade in drew.
+  void startPlay();
+
   // Sets the intent for the next ticks.
   void setInput(const FieldInput& input);
 
@@ -424,6 +429,10 @@ private:
   bool touchNpcs();
   void tickNpcs(float seconds, bool playerFree);
   void leave(MapChange change);
+  // The shade the screen holds now (fade.c: FADE_PROGRESS), nothing when no fade has run.
+  [[nodiscard]] std::optional<std::int32_t> shadeNow() const;
+  // The fade in's last frame is drawn: FADE_PROGRESS keeps its shade.
+  void endFadeIn();
   // Whether the exit filter lets the player take this map change; a closed one is kept for
   // closedExit and logged.
   bool exitOpen(const MapChange& change);
@@ -565,6 +574,13 @@ private:
   std::string changeTarget_;
   // How long the fade in after entering a map has run; nothing once it ends.
   std::optional<float> fadeInSeconds_;
+  // How many frames that fade in lasts (fadeFromBlack's length).
+  std::int32_t fadeInFrames_ = 20;
+  // The shade the last fade in ended on (fade.c: FADE_PROGRESS), where a fade out starts when none
+  // runs; nothing before any, for what a whole warp's fade in leaves.
+  std::optional<std::int32_t> fadeProgress_;
+  // The shade the running fade out started from.
+  std::optional<std::int32_t> leavingFrom_;
 
   bool gameTimeRan_ = false;
   std::vector<TriggerStep> triggerSteps_;

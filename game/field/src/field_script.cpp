@@ -149,8 +149,8 @@ void Field::tickScripted(float seconds) {
   // scriptTickChangeMap).
   if (fadeInSeconds_) {
     *fadeInSeconds_ += seconds;
-    if (fadeFrame(*fadeInSeconds_) > rules_.transition.fadeInFrames) {
-      fadeInSeconds_.reset();
+    if (fadeFrame(*fadeInSeconds_) > fadeInFrames_) {
+      endFadeIn();
     }
   }
 }

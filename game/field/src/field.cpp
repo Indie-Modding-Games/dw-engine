@@ -223,6 +223,7 @@ core::Result<void> Field::enterMap(const assets::MapDocument& map, std::int32_t 
   auto queued = std::exchange(queuedChange_, std::nullopt);
   enterMapAt(map, assets::warpSpawn(*warp));
   fadeInSeconds_ = 0.0F;
+  fadeInFrames_ = rules_.transition.fadeInFrames;
   fadeInHolds_ = walked;
   leavingWalks_ = true;
 
@@ -302,6 +303,15 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   releaseHandoff("map entry");
 }
 
+void Field::startPlay() {
+  core::logDebug("[port:field] main (main.c:3494): play starts on {}: fadeFromBlack({}), the "
+                 "player free",
+                 mapId_, rules_.transition.startFadeInFrames);
+  fadeInSeconds_ = 0.0F;
+  fadeInFrames_ = rules_.transition.startFadeInFrames;
+  fadeInHolds_ = false;
+}
+
 void Field::setInput(const FieldInput& input) {
   input_ = input;
   if (input.cancelTarget) {
@@ -363,9 +373,9 @@ void Field::tick(float seconds) {
     // next.
     *fadeInSeconds_ += seconds;
     const std::int32_t frame = fadeFrame(*fadeInSeconds_);
-    if (frame > rules_.transition.fadeInFrames) {
-      fadeInSeconds_.reset();
-    } else if (frame < rules_.transition.fadeInFrames && fadeInHolds_) {
+    if (frame > fadeInFrames_) {
+      endFadeIn();
+    } else if (frame < fadeInFrames_ && fadeInHolds_) {
       registry.get<AnimationIntent>(player_) = {};
       tickNpcs(seconds, false);
       overlapWatch_.clear();
@@ -459,14 +469,16 @@ std::int32_t Field::fadeFrame(float seconds) const {
 float Field::fadeLevel() const {
   const TransitionRules& transition = rules_.transition;
   if (leaving_) {
-    return shadeDarkness(transition, fadeOutShade(transition, fadeFrame(leavingSeconds_)));
+    return shadeDarkness(transition,
+                         fadeOutShade(transition, fadeFrame(leavingSeconds_), leavingFrom_));
   }
   if (pendingChange_ || waitingForMap_) {
     // The frame that loads the new map already draws the fade in's first shade.
     return shadeDarkness(transition, fadeInShade(transition, 1));
   }
   if (fadeInSeconds_) {
-    return shadeDarkness(transition, fadeInShade(transition, fadeFrame(*fadeInSeconds_)));
+    return shadeDarkness(transition,
+                         fadeInShade(transition, fadeFrame(*fadeInSeconds_), fadeInFrames_));
   }
   return 0.0F;
 }
@@ -781,7 +793,22 @@ bool Field::exitOpen(const MapChange& change) {
   return false;
 }
 
+std::optional<std::int32_t> Field::shadeNow() const {
+  // fade.c: FADE_PROGRESS holds the running fade in's shade, or the one the last fade ended on.
+  if (fadeInSeconds_) {
+    return fadeInShade(rules_.transition, std::min(fadeFrame(*fadeInSeconds_), fadeInFrames_),
+                       fadeInFrames_);
+  }
+  return fadeProgress_;
+}
+
+void Field::endFadeIn() {
+  fadeProgress_ = fadeInShade(rules_.transition, fadeInFrames_, fadeInFrames_);
+  fadeInSeconds_.reset();
+}
+
 void Field::leave(MapChange change) {
+  leavingFrom_ = shadeNow();
   leaving_ = std::move(change);
   leavingSeconds_ = 0.0F;
   leavingWalks_ = true;

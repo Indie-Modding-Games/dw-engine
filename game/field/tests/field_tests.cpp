@@ -1092,6 +1092,54 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
   CHECK(field.player().position != glm::vec3{0.0F});
 }
 
+TEST_CASE("play starts with a long fade in that holds no one, and a map change then stays dark") {
+  // main.c: main: fadeFromBlack(0x28) after the first map: a new game's arrival cell runs on the
+  // first frame, and its scripted map change fades out from the fade in's dark first shade
+  // (fade.c: fadeToBlack keeps FADE_PROGRESS), so the first map never shows.
+  MapDocument town = roomMap("town");
+  const CollisionCell spawnCell = dwe::assets::collisionCellAt(glm::vec3{0.0F});
+  fill(town, spawnCell, spawnCell, 54);
+
+  dwe::scene::World world;
+  const auto rules = originalRules();
+  const dwe::game::field::TransitionRules& transition = rules.transition;
+  CHECK(transition.startFadeInFrames == 40);
+  Field field{world, rules};
+  REQUIRE(field.enterMap(town, 0).has_value());
+  field.startPlay();
+  // fade.c: renderFadeIn's first frame of 40: 160 - 160 / 41.
+  CHECK(field.fadeLevel() == doctest::Approx(dwe::game::field::shadeDarkness(transition, 157)));
+  field.tick(Tick);
+  CHECK(std::ranges::find(field.cellSections(), 54) != field.cellSections().end());
+  CHECK(field.gameTimeRan());
+
+  field.startScriptedMapChange({.map = "house", .exit = 0, .trigger = 54}, false);
+  std::optional<MapChange> change;
+  for (int i = 0; i < 120 && !change; ++i) {
+    CHECK(field.fadeLevel() == doctest::Approx(1.0F));
+    field.tick(Tick);
+    change = field.takeMapChange();
+  }
+  CHECK(change.has_value());
+
+  // The map change's fade in on the next map is the usual one of 20 frames (fadeFromBlack(20)).
+  REQUIRE(field.enterMap(roomMap("house"), 0).has_value());
+  CHECK(field.fadeLevel() == doctest::Approx(dwe::game::field::shadeDarkness(transition, 153)));
+  run(field, 1.1F);
+  CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+}
+
+TEST_CASE("a fade out started during a fade in goes on from the shade the fade in drew") {
+  // fade.c: fadeToBlack adds its step to FADE_PROGRESS; a whole warp fade in leaves 20 there.
+  const auto rules = originalRules();
+  const dwe::game::field::TransitionRules& transition = rules.transition;
+  CHECK(dwe::game::field::fadeInShade(transition, 1, 40) == 157);
+  CHECK(dwe::game::field::fadeInShade(transition, 40, 40) == 40);
+  CHECK(dwe::game::field::fadeOutShade(transition, 1, 157) == 160);
+  CHECK(dwe::game::field::fadeOutShade(transition, 1, 40) == 47);
+  CHECK(dwe::game::field::fadeOutShade(transition, 1) == 27);
+}
+
 TEST_CASE("the game clock counts minutes while the player plays and wraps at midnight") {
   dwe::scene::World world;
   Field field{world, originalRules()};
