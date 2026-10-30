@@ -20,6 +20,7 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
   const auto view = dwe::screens::bagViewOf(inventory, items, names);
   CHECK(view.money == 250);
   REQUIRE(view.slots.size() == static_cast<std::size_t>(inventory.slotCount()));
+  // inventory.c: selectOptionMenu: in the field an item with droppable 1 can be discarded.
   CHECK(view.slots[0] == dwe::screens::BagSlotView{.empty = false,
                                                    .item = std::string{Tonic},
                                                    .nameKey = "main.item_names.0000",
@@ -27,7 +28,7 @@ TEST_CASE("the bag view lists the usable slots with the items' names, counts and
                                                    .count = 3,
                                                    .dimmed = false,
                                                    .usable = true,
-                                                   .discardable = false,
+                                                   .discardable = true,
                                                    .itemColor = 2,
                                                    .icon = "/texture/etcdat/item?palette=3",
                                                    .iconRect = "0 0 16 16"});
