@@ -53,6 +53,8 @@ constexpr double PoseGuardSeconds = PoseGuardFrames * IntroFrameSeconds;
 // and bit, and another once the bits are all in; both in slot 0.
 constexpr std::int64_t EndCountSound = 0x16;
 constexpr std::int64_t EndCountedSound = 0x17;
+// btl.c: loadBattleData: the partner's species bank is in slot 4 and enemy i's in slot 4 + i.
+constexpr std::int64_t PartnerSoundSlot = 4;
 
 } // namespace
 
@@ -94,6 +96,12 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
     battle_->setFlights(&*flights_);
   }
   desc_.session->useBattleSounds(true);
+  // btl.c: loadBattleData loads each enemy's species bank into slot 4 + its place.
+  std::vector<std::string> enemySpecies;
+  for (const game::battle::Combatant& enemy : introEnemies) {
+    enemySpecies.push_back(enemy.species);
+  }
+  desc_.session->useEnemySounds(enemySpecies);
   if (game::story::SoundPort* sound = desc_.session->sound();
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
@@ -273,13 +281,15 @@ void BattleScreen::takeFigures() {
   const game::battle::BattleState& state = battle_->state();
   figures_.clear();
   for (const game::battle::Fighter& fighter : state.fighters) {
-    figures_.push_back({.x = static_cast<float>(fighter.position.x),
-                        .z = static_cast<float>(fighter.position.z),
-                        .yaw = assets::yawOfDirection({static_cast<float>(fighter.facing.x), 0.0F,
-                                                       static_cast<float>(fighter.facing.z)}),
-                        .clip = static_cast<std::uint32_t>(fighter.shown.clip),
-                        .starts = fighter.shown.starts,
-                        .frozen = fighter.shown.frozen});
+    figures_.push_back(
+        {.x = static_cast<float>(fighter.position.x),
+         .z = static_cast<float>(fighter.position.z),
+         .yaw = assets::yawOfDirection(
+             {static_cast<float>(fighter.facing.x), 0.0F, static_cast<float>(fighter.facing.z)}),
+         .clip = static_cast<std::uint32_t>(fighter.shown.clip),
+         .starts = fighter.shown.starts,
+         .frozen = fighter.shown.frozen,
+         .soundSlot = PartnerSoundSlot + static_cast<std::int64_t>(figures_.size())});
   }
   partnerStance_ = static_cast<std::uint32_t>(game::battle::stanceClipOf(state.partner()));
 }

@@ -424,7 +424,7 @@ partnerGetState = { status = "no-aplica", note = "consulta interna", what = "Da 
 resetMomentumData = { status = "no-aplica", note = "animación del original; el motor anima sus clips", what = "Reinicia el impulso de la animación." }
 animateEntityTexture = { status = "falta", what = "Anima por código la textura de algunos personajes (ojos, brillos).", note = "docs/formats/modelos.md: no se extrae" }
 tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", what = "Mueve al personaje con el desplazamiento de su animación." }
-tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo: FieldScene::playClipSounds; bancos 3 y 4 de la especie pendientes.", what = "Avanza la animación de un personaje." }
+tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo, el combate y las escenas de cuidado: FieldScene::playClipSounds; bancos de la especie en SessionSound.", what = "Avanza la animación de un personaje." }
 animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }
 initializeConditionBubbles = { status = "portado", dwe = "apps/game/src/play_session.cpp:43", what = "Prepara las burbujas de necesidad del compañero." }
 initializeButterfly = { status = "falta", what = "Prepara la mariposa que distrae al compañero infeliz." }

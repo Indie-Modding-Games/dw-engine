@@ -536,28 +536,31 @@ void FieldScene::animate(Actor& actor, double seconds) {
 
 void FieldScene::playClipSounds(const Actor& actor) {
   const std::vector<assets::ClipSound> sounds = actor.player->takeSounds();
-  // The battle's fighters keep their clips' sounds to the battle (not played yet).
-  if (sounds.empty() || sound_ == nullptr || actor.fighter) {
+  if (sounds.empty() || sound_ == nullptr) {
     return;
   }
   const bool player = &actor == playerActor_.get();
   const bool partner = &actor == partnerActor_.get();
-  if (!player && !onScreen(actor)) {
+  // anim.c: tickAnimation plays them while isOnScreen is 1. The partner's and the NPCs' field
+  // ticks work it out every frame (partner.c: partnerTickOverworld, overworld.c:
+  // NPCEntityTickOverworld); the battle's (battle_tick.c) do not, so a fighter keeps its own.
+  const bool shown = player || (actor.fighter ? actor.shownWhenHeld : onScreen(actor));
+  if (!shown) {
     return;
   }
   for (const assets::ClipSound& cue : sounds) {
-    // Bank 4 is the entity's own species bank (stats.current.vabId): the partner's is vab 4; the
-    // NPCs' (vab 5 to 7) are not loaded here.
-    if (cue.bank == SpeciesSoundBank && !partner) {
-      core::logDebug("[port:anim] tickAnimation (anim.c:339): NPC species sound {} not played",
-                     cue.sound);
-      continue;
+    // Bank 4 is the entity's own species bank (stats.current.vabId): slot 4 for the partner, the
+    // battle's slot for a fighter (btl.c: loadBattleData) and the one an NPC kept from its last
+    // battle.
+    std::int64_t slot = cue.bank;
+    if (cue.bank == SpeciesSoundBank) {
+      slot = partner ? SpeciesSoundBank : actor.soundSlot;
     }
     core::logDebug("[port:anim] tickAnimation (anim.c:339): entity {} clip {} tick {}: "
                    "playSound({}, {})",
                    static_cast<std::uint32_t>(actor.entity), actor.player->clip()->id.value_or(0),
-                   cue.tick, cue.bank, cue.sound);
-    sound_->playSound(cue.bank, cue.sound);
+                   cue.tick, slot, cue.sound);
+    sound_->playSound(slot, cue.sound);
   }
 }
 
@@ -704,9 +707,10 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
   playClipSounds(*playerActor_);
   if (partnerClip_) {
-    // A scene's clip runs while the field waits for the scene; its sounds are the scene's.
+    // A scene's clip runs while the field waits for the scene (the care scenes: eating, sleeping,
+    // praise and scold, the toilet), with its sounds as the field's.
     animatePartnerClip(frameSeconds);
-    static_cast<void>(partnerActor_->player->takeSounds());
+    playClipSounds(*partnerActor_);
   } else {
     animate(*partnerActor_, animationSeconds);
     playClipSounds(*partnerActor_);

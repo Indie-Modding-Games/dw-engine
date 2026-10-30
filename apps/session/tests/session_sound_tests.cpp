@@ -187,3 +187,65 @@ TEST_CASE("a sound or a bank that fails warns once, across maps too") {
   sound.playSound(0, 4);
   CHECK(warningCount() == before + 3);
 }
+
+namespace {
+
+// A species bank (sound/vlall or sound/vball) that the given species use, as dwx writes used_by.
+void addSpeciesBank(assets::MemoryFileSystem& memory, const std::string& folder, int value,
+                    std::string_view users, bool fallback = false) {
+  std::string meta = bankMeta(value) + "used_by:\n  types:\n" + std::string{users};
+  if (fallback) {
+    meta += "  fallback: \"every type outside 1-65\"\n";
+  }
+  memory.addFile("pack/sound/" + folder + "/bank_meta.yaml", meta);
+  memory.addFile("pack/sound/" + folder + "/sample_001.wav", shortWav());
+}
+
+assets::VirtualFileSystem speciesPack(assets::MemoryFileSystem& memory) {
+  addSpeciesBank(memory, "vlall/001", 49, "  - {type: 3, id: \"agum\"}\n");
+  addSpeciesBank(memory, "vlall/015", 7, "  - {type: 14, id: \"monz\"}\n", true);
+  addSpeciesBank(memory, "vball/002", 50,
+                 "  - {type: 3, id: \"agum\"}\n  - {type: 117, id: \"weag\"}\n");
+  addSpeciesBank(memory, "vball/005", 51, "  - {type: 17, id: \"gabu\"}\n");
+  return mountedPack(memory);
+}
+
+} // namespace
+
+TEST_CASE("slots 3 and 4 hold the partner's species banks, 5 to 7 the last battle's enemies'") {
+  assets::MemoryFileSystem memory;
+  const assets::VirtualFileSystem files = speciesPack(memory);
+  audio::Audio audio{std::make_unique<audio::NullOutput>()};
+  session::SessionSound sound{audio, files};
+  std::string partner = "agum";
+  sound.attachPartner([&partner] { return partner; });
+
+  // sound.c: loadPartnerSounds: Agumon's voices (vlall 1) in slot 3, its own bank (vball 2) in 4.
+  sound.playSound(3, 49);
+  CHECK(audio.activeVoiceCount() == 1);
+  sound.playSound(4, 50);
+  CHECK(audio.activeVoiceCount() == 2);
+  // A species no vlall entry names takes the fallback entry; it has no vball entry here.
+  partner = "weag";
+  sound.playSound(3, 7);
+  CHECK(audio.activeVoiceCount() == 3);
+  sound.playSound(4, 50);
+  CHECK(audio.activeVoiceCount() == 4);
+
+  // No battle yet: slots 5 to 7 are silent. A battle with two enemies fills 5 and 6.
+  sound.playSound(5, 51);
+  CHECK(audio.activeVoiceCount() == 4);
+  const std::vector<std::string> enemies{"gabu", "agum"};
+  sound.useEnemyBanks(enemies);
+  sound.playSound(5, 51);
+  sound.playSound(6, 50);
+  sound.playSound(7, 50);
+  CHECK(audio.activeVoiceCount() == 6);
+  // They stay after the battle and across maps, and a battle with one enemy changes only slot 5.
+  sound.enterMap("base:twna01");
+  const std::vector<std::string> one{"agum"};
+  sound.useEnemyBanks(one);
+  sound.playSound(5, 50);
+  sound.playSound(6, 50);
+  CHECK(audio.activeVoiceCount() == 8);
+}

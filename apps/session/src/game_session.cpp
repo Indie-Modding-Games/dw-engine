@@ -117,6 +117,8 @@ GameSession::GameSession(SessionDesc desc, ruleset::RulesetStore store)
     : desc_(std::move(desc)), store_(std::move(store)), seed_(desc_.seed) {
   if (desc_.sound != nullptr && desc_.files != nullptr) {
     sound_ = std::make_unique<SessionSound>(*desc_.sound, *desc_.files);
+    sound_->attachPartner(
+        [this] { return state_ ? state_->partner.state().species : std::string{}; });
     music_ = std::make_unique<SessionMusic>(
         *desc_.sound, *desc_.files, MusicFacts{.mode = musicModeOf(desc_.systems), .hour = [this] {
                                                  return state_ ? state_->clock.time().hour : 0;
@@ -143,6 +145,12 @@ void GameSession::useSceneSounds(std::optional<std::int32_t> soundId) {
 void GameSession::useBattleSounds(bool inBattle) {
   if (sound_) {
     sound_->useBattleBank(inBattle);
+  }
+}
+
+void GameSession::useEnemySounds(std::span<const std::string> species) {
+  if (sound_) {
+    sound_->useEnemyBanks(species);
   }
 }
 

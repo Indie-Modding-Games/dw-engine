@@ -28,6 +28,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -295,6 +296,9 @@ public:
   // The battle bank in slot 8 while a battle lasts (SessionSound::useBattleBank); nothing happens
   // in a silent session.
   void useBattleSounds(bool inBattle);
+  // The enemies' species banks in slots 5 to 7, in the battle's order
+  // (SessionSound::useEnemyBanks); nothing happens in a silent session.
+  void useEnemySounds(std::span<const std::string> species);
 
 private:
   GameSession(SessionDesc desc, ruleset::RulesetStore store);

@@ -46,6 +46,14 @@ bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigur
   transform.yaw = figure.yaw;
   const bool starts = !actor->fighter || actor->fighter->clip != figure.clip ||
                       actor->fighter->starts != figure.starts;
+  if (!actor->fighter) {
+    actor->shownWhenHeld = actor == playerActor_.get() || onScreen(*actor);
+    core::logDebug("[port:battle] loadBattleData (btl.c:412): entity {} vabId {}, isOnScreen {}",
+                   static_cast<std::uint32_t>(actor->entity), figure.soundSlot,
+                   actor->shownWhenHeld ? 1 : 0);
+  }
+  // btl.c: loadBattleData sets the enemies' stats.current.vabId, which they keep after it.
+  actor->soundSlot = figure.soundSlot;
   actor->fighter = figure;
   if (!starts) {
     return true;

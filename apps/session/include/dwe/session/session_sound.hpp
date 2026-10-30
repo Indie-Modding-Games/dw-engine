@@ -6,10 +6,13 @@
 #include <dwe/audio/effect_bank.hpp>
 #include <dwe/game/story/story_ports.hpp>
 
+#include <array>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -18,10 +21,12 @@
 namespace dwe::session {
 
 // The original's sound slots on the game's audio
-// (docs/architecture/audio.md#64-el-tramo-2-en-detalle): slot 0 plays sound/ss, slot 1 sound/sl and
-// slot 8 the bank of the map, sound/esall/<sound_id of data/maps>. Banks load the first time a slot
-// needs them. A bank that does not load leaves its slot silent, with one warning, and a sound that
-// does not play warns once.
+// (docs/architecture/audio.md#64-el-tramo-2-en-detalle): slot 0 plays sound/ss, slot 1 sound/sl,
+// slots 3 and 4 the partner's banks (sound/vlall and sound/vball of its species), slots 5 to 7 the
+// banks of the last battle's enemies (sound/vball of their species) and slot 8 the bank of the map,
+// sound/esall/<sound_id of data/maps>. Which vlall or vball entry a species uses comes from the
+// used_by of each bank_meta. Banks load the first time a slot needs them. A bank that does not load
+// leaves its slot silent, with one warning, and a sound that does not play warns once.
 class SessionSound final : public game::story::SoundPort {
 public:
   // Both must outlive the session.
@@ -35,6 +40,15 @@ public:
   // A battle's bank in slot 8 (btl.c: loadBattleData, sound_async.c: loadSB) while it lasts; after
   // it the map's or the scene's again, as the map's reload does (sound.c: loadMapSounds).
   void useBattleBank(bool inBattle);
+  // Slots 3 and 4 follow the partner's species (sound.c: loadPartnerSounds, which the partner's
+  // start, its evolution, evl.c, and its rebirth, dooa.c: loadVLALL, call with its new type): the
+  // vlall entry of its type (a species no entry names takes the fallback one) and its vball entry.
+  // The function gives the partner's species id, empty for none; it must outlive the sound.
+  void attachPartner(std::function<std::string()> species);
+  // The enemies of a battle, in their order: enemy i takes slot 4 + i with the vball entry of its
+  // species (btl.c: loadBattleData, readVBALLSection(i + 4, type)). The slots keep them after the
+  // battle, as the original does, until the next battle loads others.
+  void useEnemyBanks(std::span<const std::string> species);
   void playSound(std::int64_t slot, std::int64_t sound) override;
   std::optional<std::int64_t> playHeldSound(std::int64_t slot, std::int64_t sound) override;
   void stopHeldSound(std::int64_t held) override;
@@ -42,7 +56,10 @@ public:
 private:
   // Plays a sound and returns its voices, warning once when it cannot.
   std::optional<std::vector<audio::VoiceId>> playVoices(std::int64_t slot, std::int64_t sound);
-  [[nodiscard]] std::optional<std::string> folderOf(std::int64_t slot) const;
+  [[nodiscard]] std::optional<std::string> folderOf(std::int64_t slot);
+  // The vlall (or vball) folder of a species, read the first time from the banks' used_by.
+  std::optional<std::string> speciesFolder(std::string_view species, bool partnerBank);
+  void readSpeciesBanks();
   const audio::EffectBank* bank(const std::string& folder);
   // Lets go of the banks no slot uses.
   void dropUnusedBanks();
@@ -56,6 +73,14 @@ private:
   std::optional<std::string> mapBank_;
   std::optional<std::string> sceneBank_;
   bool inBattle_ = false;
+  std::function<std::string()> partnerSpecies_;
+  // The species of the enemies in slots 5 to 7, empty for a slot no battle loaded.
+  std::array<std::string, 3> enemySpecies_;
+  // Species id -> folder, from the used_by of sound/vball/* and sound/vlall/*.
+  bool speciesBanksRead_ = false;
+  std::map<std::string, std::string, std::less<>> vballOf_;
+  std::map<std::string, std::string, std::less<>> vlallOf_;
+  std::optional<std::string> vlallFallback_;
   std::map<std::string, audio::EffectBank, std::less<>> banks_;
   // Kept across maps, so a bank that failed to load is not tried (or reported) again.
   std::set<std::string, std::less<>> failedBanks_;

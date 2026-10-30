@@ -218,10 +218,10 @@ public:
     float height = 0.0F;
   };
   // Where the field's clips play their sounds (anim.c: tickAnimation, instruction 0x4000), such as
-  // the steps of the walk and run clips: the player's always (its isOnScreen stays 1), the
-  // partner's and the NPCs' while their species' box shows on screen (map.c:
-  // entityIsOffScreen(entity, 320, 240)). Without it the clips play silent. The sound port must
-  // outlive the scene.
+  // the steps of the walk and run clips, the care scenes' and the battle's: the player's always
+  // (its isOnScreen stays 1), the partner's and the NPCs' while their species' box shows on screen
+  // (map.c: entityIsOffScreen(entity, 320, 240)), the fighters' if they showed when the battle
+  // took them. Without it the clips play silent. The sound port must outlive the scene.
   void attachSound(game::story::SoundPort* sound,
                    std::function<std::optional<SpeciesBox>(std::string_view)> box) {
     sound_ = sound;
@@ -351,6 +351,11 @@ private:
     std::optional<std::uint32_t> heldClip;
     // The battle's hold on it (holdFighter).
     std::optional<FighterFigure> fighter;
+    // Whether it showed on screen when the battle took it: a battle does not run the field's
+    // ticks that work out isOnScreen, so its fighters keep that value (playClipSounds).
+    bool shownWhenHeld = false;
+    // The slot of its own species bank (stats.current.vabId), where its clips' bank 4 sounds play.
+    std::int64_t soundSlot = 0;
   };
 
   // A point in the space of one of an actor's model nodes (the original's object index), in
