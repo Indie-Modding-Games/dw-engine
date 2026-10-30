@@ -585,6 +585,72 @@ end
   CHECK(commands[0].value == UiValue{std::string{"30 60 90 45"}});
 }
 
+namespace {
+
+// The original skin's bag, two items in a bag of 10 slots, after its boxes have grown in.
+void openOriginalBag(Ui& ui, input::InputState& input) {
+  REQUIRE(ui.loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  ui.setSetting("ui_skin", std::string{"original"});
+  ui.setSetting("partner_menu.start_page", std::string{"items"});
+  ui.setSetting("bag.slot.count", 10.0);
+  for (int slot = 0; slot < 10; ++slot) {
+    ui.setSetting(std::format("bag.slot.{}.empty", slot), slot >= 2);
+  }
+  for (const std::string_view item : {"0", "1"}) {
+    ui.setSetting(std::format("bag.slot.{}.name", item), std::format("item.{}", item));
+    ui.setSetting(std::format("bag.slot.{}.description", item), std::format("about.{}", item));
+    ui.setSetting(std::format("bag.slot.{}.count", item), 1.0);
+  }
+  ui.show("partner_menu", true);
+  for (int tick = 0; tick < 60; ++tick) {
+    frame(ui, input);
+  }
+}
+
+// Lets an original box finish growing or shrinking (ui/common/original_box.lua: 5 frames at 20 a
+// second).
+void settle(Ui& ui, input::InputState& input) {
+  for (int tick = 0; tick < 30; ++tick) {
+    frame(ui, input);
+  }
+}
+
+} // namespace
+
+TEST_CASE("the original bag describes the slot under the cursor, also while an item moves") {
+  Content content;
+  auto ui = createUi(content.mount());
+  input::InputState input{input::defaultActionMap()};
+  openOriginalBag(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "slot-0");
+  CHECK(ui->elementText("partner_menu", "bag-description") == "about.0");
+
+  // The options keep the item's description and its slot keeps the cursor (inventory.c:
+  // renderInventoryTop draws it in every state).
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "opt-use");
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "picked"));
+  CHECK(ui->elementText("partner_menu", "bag-description") == "about.0");
+
+  // Move (inventory.c: renderInventoryBottom in state 4): the slot under the cursor's description,
+  // none for an empty slot, never a question.
+  press(*ui, input, input::keys::Down);
+  press(*ui, input, input::keys::Return);
+  settle(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "slot-0");
+  CHECK(ui->elementHasClass("partner_menu", "slot-0", "moving"));
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "slot-0", "picked"));
+  CHECK(ui->elementText("partner_menu", "bag-description") == "about.0");
+  press(*ui, input, input::keys::Right);
+  frame(*ui, input);
+  CHECK(ui->elementText("partner_menu", "bag-description") == "about.1");
+  press(*ui, input, input::keys::Down);
+  frame(*ui, input);
+  REQUIRE(ui->focusedElementId("partner_menu") == "slot-3");
+  CHECK(ui->elementText("partner_menu", "bag-description").empty());
+}
+
 TEST_CASE("the pause menu works with the keyboard alone") {
   Content content;
   auto ui = createUi(content.mount());

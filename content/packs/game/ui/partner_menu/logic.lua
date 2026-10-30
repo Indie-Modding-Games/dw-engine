@@ -350,6 +350,14 @@ function toggle_technique(document, slot)
   ui.send("partner_toggle_technique", number("partner.technique.choice." .. slot .. ".slot"))
 end
 
+-- The slot the boxes over the bag are open on keeps its cursor under them (inventory.c:
+-- renderInventoryTop draws it in every state).
+local function mark_picked(document)
+  for index = 0, max_slots - 1 do
+    document:get("slot-" .. index):set_class("picked", box ~= nil and picked == index)
+  end
+end
+
 local function draw_bag(document)
   local count = number("bag.slot.count")
   local original = ui.setting("ui_skin") == "original"
@@ -381,6 +389,7 @@ local function draw_bag(document)
       slot:set_class("moving", moving == index)
     end
   end
+  mark_picked(document)
   document:get("bag-money"):set_text(t(bits_label_key) .. " " .. number("bag.money"))
   local result = setting("bag.result", "")
   document:get("bag-result"):set_text(text(result, { name = text(setting("bag.result_item", "")) }))
@@ -400,20 +409,23 @@ local function focus_slot(document, index)
   document:get("slot-" .. index):focus()
 end
 
--- The description of the focused item, below the list.
+-- The description of the focused item, below the list; none for an empty slot (inventory.c:
+-- renderInventoryBottom). The original keeps showing the description of the slot under the cursor
+-- while an item moves (state 4 draws only the red outline round the item that moves); the modern
+-- look asks where to put the item instead.
 local function draw_description(document)
   local description = ""
-  if moving ~= nil then
+  if moving ~= nil and ui.setting("ui_skin") ~= "original" then
     description =
       t("partner_menu.bag.move_prompt", { name = text(setting(slot_setting(moving, "name"), "")) })
-  elseif box ~= nil and picked ~= nil and slot_filled(picked) then
+  elseif box ~= nil and picked ~= nil then
     -- A box over the bag keeps the description of the item it was opened on, as the original's
     -- options box does.
-    description = text(setting(slot_setting(picked, "description"), ""))
+    description = bag_slot.description(picked)
   else
     for index = 0, number("bag.slot.count") - 1 do
-      if document:get("slot-" .. index):has_focus() and slot_filled(index) then
-        description = text(setting(slot_setting(index, "description"), ""))
+      if document:get("slot-" .. index):has_focus() then
+        description = bag_slot.description(index)
       end
     end
   end
@@ -469,6 +481,7 @@ local function close_box(document, focus)
   for _, name in ipairs(option_names) do
     document:get("opt-" .. name):set_class("active-option", false)
   end
+  mark_picked(document)
   if focus ~= nil then
     document:get(focus):focus()
   end
@@ -520,6 +533,7 @@ local function open_box(document, name)
   document:get("scrim"):set_class("sub-box-open", parent ~= nil)
   box = name
   document:get(name):set_class("hidden", false)
+  mark_picked(document)
   document:get(box_entries[name][1]):focus()
   -- createItemOption: the options grow from the slot's row.
   if name == "options" and parent == nil and picked ~= nil then

@@ -305,7 +305,7 @@
 	margin: 0;
 }
 
-.slot:focus {
+.slot:focus, .slot.picked {
 	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
 	background-color: #80808080;
 }
@@ -371,7 +371,10 @@
    66 and 128 x 53, the question at (96, 82)). The boxes are beside the panel, not in it: they place themselves from
    the middle of the screen, where the panel's left edge is 450dp to the left. The bag's frame, at the original's
    y 10 (30dp), sits at 93dp here, under the page tabs the original does not have, so the boxes are 63dp lower than
-   the original's numbers: the options box stays 25 pixels under the frame's top, below the first row of slots. */
+   the original's numbers: the options box stays 25 pixels under the frame's top, below the first row of slots.
+   The cursor of every box (ui.c: renderSelectionCursor) is the bag's: outline #B0B0B0 / #121212 round a grey fill
+   at half opacity, so the entry's ink (#b5b5b5, TEXT_COLORS 9) reads over it as in the capture, where the fill over
+   the box is #525A63. The slot the options are open on keeps its cursor (.picked). */
 
 .box {
 	position: absolute;
@@ -397,7 +400,7 @@
 
 .box button:focus {
 	border-color: transparent;
-	background-color: #808080;
+	background-color: #80808080;
 }
 
 #sort-box {
@@ -443,7 +446,7 @@ button:focus .original-look, button.original-look:focus {
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
 #scrim.item-screen #options { top: 120dp; width: 174dp; height: 252dp; box-sizing: border-box; margin-left: -426dp; padding: 15dp 24dp; }
 #scrim.item-screen #options button { box-sizing: border-box; width: 120dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; }
-#scrim.item-screen #options button:focus, #scrim.item-screen #options button.active-option { border-color: #b0b0b0 #121212 #121212 #b0b0b0; background-color: #808080; }
+#scrim.item-screen #options button:focus, #scrim.item-screen #options button.active-option { border-color: #b0b0b0 #121212 #121212 #b0b0b0; background-color: #80808080; }
 #scrim.item-screen.item-column-right #options { margin-left: 6dp; }
 #scrim.item-screen.option-row-1 #options, #scrim.item-screen.option-row-1 #sort-box { top: 174dp; }
 #scrim.item-screen.option-row-2 #options, #scrim.item-screen.option-row-2 #sort-box { top: 228dp; }
