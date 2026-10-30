@@ -61,8 +61,8 @@ docs_container_port="5173"
 docs_port="${DWE_DOCS_PORT:-$docs_container_port}"
 # A site build takes about a minute; a hung one must not hold a gate's lock.
 docs_build_timeout="10m"
-# The formatters and linters of the C++, Lua and shell sources (scripts/style), and the hook that
-# runs them on a commit.
+# The formatters and linters of the C++, Lua and shell sources (scripts/style), and the hooks that
+# run them and check the publication policy on a commit.
 style_dir="$root/scripts/style"
 hooks_dir="scripts/hooks"
 style_runner_direct="direct"
@@ -83,8 +83,8 @@ Usage: scripts/dev.sh <command> [args]
                       staged ones and stages them again
   lint [--staged]     Lint the Lua (luacheck) and shell (shellcheck, the column limit) sources and
                       the NOLINT comments of C++, or only the staged ones
-  setup-hooks         Run the formatters and linters on every commit: git's hooks folder becomes
-                      $hooks_dir
+  setup-hooks         Check the publication policy (the commit and its message) and run the
+                      formatters and linters on every commit: git's hooks folder becomes $hooks_dir
   tidy [args]         Run clang-tidy on the sources in parallel, passing it args (needs a configure,
                       not a build)
   check-commit [args] The check of every commit: configure (with args), build and the tests but the
@@ -729,8 +729,8 @@ case "$command" in
     ;;
   setup-hooks)
     git -C "$root" config core.hooksPath "$hooks_dir"
-    echo "git runs $hooks_dir/pre-commit on every commit of this clone" \
-      "(git commit --no-verify skips it)"
+    echo "git runs $hooks_dir/pre-commit and commit-msg on every commit of this clone" \
+      "(DWE_SKIP_HOOK=1 or git commit --no-verify skips them)"
     ;;
   tidy)
     ensure_caches

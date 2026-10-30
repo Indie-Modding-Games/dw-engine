@@ -53,12 +53,14 @@ if(BUILD_TESTING)
             COMMAND ${DWE_BASH} ${gate_tests_dir}/test_build_dirs.sh)
         add_test(NAME "gate scripts: a follow-up route runs only after its route, in the same job"
             COMMAND ${DWE_BASH} ${gate_tests_dir}/test_follow_up.sh)
-        # The formatters and linters of scripts/style, and the pre-commit hook that runs them.
+        # The formatters and linters of scripts/style, and the hooks that run them and check the policy.
         set(style_tests_dir ${PROJECT_SOURCE_DIR}/scripts/style/tests)
         add_test(NAME "style scripts: comments past the column limit are wrapped"
             COMMAND ${DWE_PYTHON3} -B -m unittest -v test_wrap_comments WORKING_DIRECTORY ${style_tests_dir})
         add_test(NAME "style scripts: the pre-commit hook formats staged files, stops on lint errors, passes without Docker"
             COMMAND ${DWE_BASH} ${style_tests_dir}/test_pre_commit.sh)
+        add_test(NAME "style scripts: the hooks stop commits that break the publication policy"
+            COMMAND ${DWE_BASH} ${style_tests_dir}/test_policy_hooks.sh)
     endif()
 endif()
 

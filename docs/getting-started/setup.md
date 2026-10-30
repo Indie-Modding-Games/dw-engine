@@ -146,7 +146,7 @@ PRESET=windows-cross scripts/dev.sh build
 | `scripts/dev.sh shell` | Abre una terminal dentro del contenedor |
 | `scripts/dev.sh format` | Formatea el C++ (clang-format), el Lua (StyLua) y el shell (shfmt), y ajusta sus comentarios a 100 columnas (`--check` solo comprueba) |
 | `scripts/dev.sh lint` | Pasa luacheck al Lua y shellcheck al shell |
-| `scripts/dev.sh setup-hooks` | Instala el hook de pre-commit, que formatea y revisa lo que vas a commitear |
+| `scripts/dev.sh setup-hooks` | Instala los hooks de pre-commit y commit-msg: comprueban la política de publicación y formatean y revisan lo que vas a commitear |
 | `scripts/dev.sh tidy` | Pasa clang-tidy en paralelo (necesita un `configure` previo) |
 | `scripts/dev.sh docs` | Construye el sitio de documentación de `docs/` en `build/docs-site`; un enlace roto lo hace fallar |
 | `scripts/dev.sh docs-dev` | Sirve el sitio en `http://localhost:5173` (o en el puerto `DWE_DOCS_PORT`) y lo recarga al editar |
@@ -177,12 +177,39 @@ clangd necesita los comandos de compilación de un preset configurado (`scripts/
 pasa nada: el hook de pre-commit y el gate usan las versiones de la imagen y lo corrigen o lo señalan.
 
 **Hook de pre-commit.** `scripts/dev.sh setup-hooks` hace que git use `scripts/hooks/` en este clon (y en sus
-worktrees). Antes de cada commit, el hook formatea los ficheros de C++, Lua y shell que están en el commit, los
-vuelve a añadir y les pasa luacheck y shellcheck. Si queda un error, el commit se para y dice por qué. Un fichero
-con cambios sin añadir, o borrado en el árbol de trabajo, no se toca: el hook lo nombra y el gate lo comprueba. Sin
-Docker, o sin la imagen, avisa y deja pasar el commit, porque el gate comprueba lo mismo. clang-tidy no corre en el
-hook, solo en el gate. Para saltarte el hook en un commit, `DWE_SKIP_HOOK=1 git commit ...`: avisa en una línea y
-deja pasar el commit sin formatear.
+worktrees). Antes de cada commit, el hook comprueba la política de publicación (abajo) y después formatea los
+ficheros de C++, Lua y shell que están en el commit, los vuelve a añadir y les pasa luacheck y shellcheck. Si queda
+un error de lint, el commit se para y dice por qué. Un fichero con cambios sin añadir, o borrado en el árbol de
+trabajo, no se toca: el hook lo nombra y el gate lo comprueba. Sin Docker, sin la imagen o con una imagen sin los
+formateadores (el aviso nombra los que faltan y sugiere `DWE_IMAGE=dwe-dev-speed`), avisa en una línea y deja pasar
+el commit, porque el gate comprueba lo mismo. clang-tidy no corre en el hook, solo en el gate. Para saltarte los
+hooks en un commit, `DWE_SKIP_HOOK=1 git commit ...`: avisa en una línea y deja pasar el commit sin comprobar la
+política ni formatear.
+
+**Política de publicación.** Los hooks comprueban, sin Docker y antes de formatear, la
+[política legal](../legal/assets.md) y las [convenciones de commits](../conventions/commits.md). Las reglas y la
+lista de palabras están en `scripts/hooks/policy.sh`:
+
+- **Palabras prohibidas en los ficheros** (pre-commit, solo avisa): el hook nombra con un `WARNING` cada
+  `fichero:línea: palabra` de las líneas añadidas o cambiadas que nombran la franquicia, una consola o una empresa,
+  y deja pasar el commit, porque el código interno y la API de contenido conservan los nombres originales (decisión
+  del 2026-10-22). Cuenta la palabra suelta, sin distinguir mayúsculas; dentro de un identificador más largo
+  (letras, cifras o `_` alrededor) no cuenta. Las líneas que el commit no toca no se miran.
+- **Lista de excepciones** (`allow` en `policy.sh`): quita ruido de los avisos. Cada entrada permite un texto en
+  unos ficheros y dice por qué. Hoy: la propia lista y su test; la lista de palabras de la API de historia y sus
+  tests; el fichero del decomp que se cita por su nombre; una referencia de hardware y un fichero del disco; las
+  familias de mandos; y el fabricante de las herramientas de Windows. Una entrada nueva se justifica en la revisión.
+- **Rutas prohibidas** (pre-commit, para el commit): imágenes de disco y ficheros del juego (`*.iso`, `*.bin`,
+  `*.cue`, `*.img`, `*.chd`, texturas, modelos, sonido y vídeo del disco, el ejecutable), `content/base/` y
+  `content/cooked/` aunque se añadan con `-f`, partidas guardadas del emulador y tarjetas de memoria (`*.sav`,
+  `*.mcd`…), trazas (`*.jsonl`), carpetas `_work/` y todo lo de `.claude/`.
+- **Autor** (pre-commit, para el commit): `git var GIT_AUTHOR_IDENT` tiene que ser `Rivarux
+  <2211799+Rivarux@users.noreply.github.com>`.
+- **Mensaje** (commit-msg, para el commit; es texto público): lleva una línea `Signed-off-by` (`git commit -s`; un
+  merge no la necesita), no lleva `Co-Authored-By`, ni una línea «Generated with», ni menciona asistentes de IA, ni
+  usa las palabras prohibidas. Las líneas de comentario de la plantilla no cuentan.
+
+`scripts/style/tests/test_policy_hooks.sh` prueba cada regla en un repositorio temporal.
 
 Con `git commit <rutas>`, git confirma esas rutas desde un índice temporal: el commit sale formateado, pero tu índice
 se queda con la versión sin formatear. Mejor `git add <rutas>` y después `git commit` sin rutas; si ya lo hiciste,

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# git's commit-msg hook, which scripts/dev.sh setup-hooks installs: checks the message against the
+# publication policy (scripts/hooks/policy.sh). It needs a Signed-off-by line (a merge commit does
+# not), and names no co-author, no generator and no AI assistant, nor the franchise, a console or a
+# company. Comment lines and the diff under the scissors line are not part of the message.
+# DWE_SKIP_HOOK=1 skips it for one commit; pre-commit already says so.
+set -uo pipefail
+
+stop() {
+  echo "commit-msg: $1. The commit stops: fix the message and commit again." >&2
+  exit 1
+}
+
+# The message as git will keep it: no comment lines, nothing from the scissors line on.
+message_text() {
+  local comment
+  comment="$(git config core.commentChar)" || comment="#"
+  [[ "${#comment}" == 1 ]] || comment="#"
+  awk -v comment="$comment" '
+    $0 ~ /^.? -+ >8 -+$/ && substr($0, 1, 1) == comment { exit }
+    substr($0, 1, 1) != comment { print }
+  ' "$1"
+}
+
+main() {
+  local root message hits failed=0
+  [[ "${DWE_SKIP_HOOK:-}" != "1" ]] || exit 0
+  root="$(git rev-parse --show-toplevel)"
+  # shellcheck source=scripts/hooks/policy.sh
+  source "$root/scripts/hooks/policy.sh" || stop "scripts/hooks/policy.sh could not be read"
+  message="$(message_text "$1")"
+  if ! git rev-parse -q --verify MERGE_HEAD >/dev/null \
+    && ! grep -qE '^Signed-off-by: .+ <.+>$' <<<"$message"; then
+    echo "commit-msg: there is no Signed-off-by line (git commit -s)" >&2
+    failed=1
+  fi
+  hits="$(grep -niE "$policy_assistant_text" <<<"$message")"
+  if [[ -n "$hits" ]]; then
+    printf 'commit-msg: the message names a co-author, a generator or an AI assistant:\n%s\n' \
+      "$hits" >&2
+    failed=1
+  fi
+  hits="$(awk '{ print "message\t" NR "\t" $0 }' <<<"$message" | policy_scan_words)"
+  if [[ -n "$hits" ]]; then
+    printf 'commit-msg: the message names the franchise, a console or a company:\n%s\n' \
+      "$hits" >&2
+    failed=1
+  fi
+  ((failed == 0)) || stop "the publication policy is broken (see above)"
+}
+
+main "$@"

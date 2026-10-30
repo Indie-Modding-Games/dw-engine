@@ -9,8 +9,10 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 source_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 style_files=(.clang-format .editorconfig stylua.toml .luacheckrc .shellcheckrc scripts/dev.sh
-  scripts/hooks/pre-commit scripts/style/format_files.sh scripts/style/lint_files.sh
-  scripts/style/wrap_comments.py)
+  scripts/hooks/pre-commit scripts/hooks/commit-msg scripts/hooks/policy.sh
+  scripts/style/format_files.sh scripts/style/lint_files.sh scripts/style/wrap_comments.py)
+# The identity the hooks require (scripts/hooks/policy.sh); test_policy_hooks.sh tests the policy.
+identity=(-c user.name=Rivarux -c user.email=2211799+Rivarux@users.noreply.github.com)
 
 failures=0
 check() {
@@ -32,17 +34,17 @@ for file in "${style_files[@]}"; do
   mkdir -p "$repo/$(dirname "$file")"
   cp "$source_root/$file" "$repo/$file"
 done
-git_in() { git -C "$repo" -c user.name=test -c user.email=test@example.invalid "$@"; }
+git_in() { git -C "$repo" "${identity[@]}" "$@"; }
 git_in init -q
 git_in add -A
 git_in commit -q --no-verify -m "The style tools"
 "$repo/scripts/dev.sh" setup-hooks >/dev/null
 export DWE_HOOK_RUNNER=direct
 
-commit() { git_in commit -q -m "$1" >"$scratch/commit.log" 2>&1; }
+commit() { git_in commit -q -s -m "$1" >"$scratch/commit.log" 2>&1; }
 # commit_with <variable=value...>: a commit with the hook's environment changed.
-commit_with() { env "$@" git -C "$repo" -c user.name=test -c user.email=test@example.invalid \
-  commit -q -m "With $*" >"$scratch/commit.log" 2>&1; }
+commit_with() { env "$@" git -C "$repo" "${identity[@]}" \
+  commit -q -s -m "With $*" >"$scratch/commit.log" 2>&1; }
 committed() { git_in show "HEAD:$1"; }
 same_text() { [[ "$1" == "$2" ]]; }
 log_says() { grep -q "$1" "$scratch/commit.log"; }
@@ -175,6 +177,19 @@ check "without Docker the commit passes" without_docker commit "No Docker"
 check "  with a warning" log_says "Docker is not reachable"
 check "  unformatted" \
   same_text "$(committed engine/other.cpp)" $'int other() {\n        return 1;\n}'
+
+# An image without the formatters warns in one line, as without Docker, and lets the commit
+# through: the stub docker answers, has the image and lacks two tools.
+# shellcheck disable=SC2016 # the text of a stub that reads its own argument
+printf '#!/bin/sh\n[ "$1" = run ] && printf "stylua shfmt "\nexit 0\n' >"$stubs/docker"
+printf 'int lacking() {\n        return 1;\n}\n' >"$repo/engine/lacking.cpp"
+git_in add engine/lacking.cpp
+check "with an image without the formatters the commit passes" without_docker commit "No tools"
+check "  with one line" test "$(wc -l <"$scratch/commit.log")" -eq 1
+check "  that names the missing tools and the image that has them" \
+  log_says "has no stylua shfmt, so .*DWE_IMAGE=dwe-dev-speed"
+check "  unformatted" \
+  same_text "$(committed engine/lacking.cpp)" $'int lacking() {\n        return 1;\n}'
 
 # A docker that never answers counts as no Docker after the timeout, sg included.
 printf '#!/bin/sh\nexec sleep 30\n' >"$stubs/docker"

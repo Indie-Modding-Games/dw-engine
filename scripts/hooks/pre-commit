@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# git's pre-commit hook, which scripts/dev.sh setup-hooks installs: formats the staged C++, Lua and
-# shell files with the image's formatters and stages them again, then lints them. A lint error stops
-# the commit. A file with changes not staged, or deleted in the working tree, is left as it is.
-# Without Docker it only warns: the gate checks the same. DWE_SKIP_HOOK=1 skips it for one commit.
+# git's pre-commit hook, which scripts/dev.sh setup-hooks installs. First it checks the publication
+# policy (scripts/hooks/policy.sh) on the staged changes, without Docker: no forbidden path and the
+# project's author identity, which stop the commit, and the banned words in the added lines, which
+# only warn (internal code and the content API keep the original names). Then it formats the staged
+# C++, Lua and shell files with the image's formatters and stages them again, and lints them. A lint
+# error stops the commit. A file with changes not staged, or deleted in the working tree, is not
+# formatted. Without Docker, or with an image that lacks the formatters, the formatting only warns:
+# the gate checks the same. DWE_SKIP_HOOK=1 skips this hook and commit-msg for one commit.
 #
 # The formatters may rewrite this file while it runs, and bash reads a script as it goes: all of it
 # is in main, which the block at the end reads whole before it runs anything.
@@ -10,6 +14,10 @@ set -uo pipefail
 
 # Seconds a docker command may take before Docker counts as not reachable.
 docker_timeout="${DWE_HOOK_DOCKER_TIMEOUT:-5}"
+# Seconds the look for the formatters in the image may take (it starts a container).
+image_timeout="${DWE_HOOK_IMAGE_TIMEOUT:-30}"
+# The formatters and linters that scripts/dev.sh format and lint run in the image.
+style_tools=(stylua shfmt shellcheck luacheck)
 
 stop() {
   echo "pre-commit: $1. The commit stops: fix it, stage it and commit again." >&2
@@ -18,6 +26,15 @@ stop() {
 
 docker_reachable() {
   timeout "$docker_timeout" docker info </dev/null >/dev/null 2>&1
+}
+
+# Prints the formatters and linters the image lacks, on one line; nothing when it has them all or
+# the look fails.
+missing_style_tools() {
+  # shellcheck disable=SC2016 # code for the image's sh, which expands it
+  timeout "$image_timeout" docker run --rm "$1" sh -c \
+    'for tool in "$@"; do command -v "$tool" >/dev/null || printf "%s " "$tool"; done' \
+    sh "${style_tools[@]}" </dev/null 2>/dev/null | sed 's/ $//'
 }
 
 # The user is in the docker group, but this session started before they joined it: only sg reaches
@@ -29,15 +46,42 @@ docker_group_pending() {
     && ! id -nG | tr ' ' '\n' | grep -qxF docker
 }
 
+# The publication policy on the staged changes: every rule is checked, and any break stops the
+# commit after naming each one. The banned words only warn.
+check_policy() {
+  local root="$1" hits author failed=0
+  # shellcheck source=scripts/hooks/policy.sh
+  source "$root/scripts/hooks/policy.sh" || stop "scripts/hooks/policy.sh could not be read"
+  hits="$(policy_added_lines | policy_scan_words "$policy_allowed")"
+  if [[ -n "$hits" ]]; then
+    printf 'pre-commit: WARNING: added lines name the franchise, a console or a company' >&2
+    printf ' (the words are in scripts/hooks/policy.sh); the commit goes on:\n%s\n' "$hits" >&2
+  fi
+  hits="$(policy_forbidden_staged)"
+  if [[ -n "$hits" ]]; then
+    printf 'pre-commit: these staged paths may never be committed' >&2
+    printf ' (disc or game data, savestates, traces, run folders or .claude):\n%s\n' "$hits" >&2
+    failed=1
+  fi
+  author="$(policy_author)"
+  if [[ "$author" != "$policy_identity" ]]; then
+    echo "pre-commit: the author is $author; commits are authored by $policy_identity" >&2
+    failed=1
+  fi
+  ((failed == 0)) || stop "the publication policy is broken (see above)"
+}
+
 main() {
   local root dev image
   if [[ "${DWE_SKIP_HOOK:-}" == "1" ]]; then
-    echo "pre-commit: DWE_SKIP_HOOK=1, so the staged files are not formatted or linted;" \
-      "the gate checks them" >&2
+    echo "pre-commit: DWE_SKIP_HOOK=1, so the publication policy, the formatting and the lint are" \
+      "not checked; the gate checks the formatting and the lint" >&2
     exit 0
   fi
   root="$(git rev-parse --show-toplevel)"
   dev="$root/scripts/dev.sh"
+  # Under sg the hook runs again from the start: the policy was checked before.
+  [[ -n "${DWE_HOOK_IN_SG:-}" ]] || check_policy "$root"
   if [[ "${DWE_HOOK_RUNNER:-}" != "direct" ]]; then
     if ! docker_reachable; then
       if [[ -z "${DWE_HOOK_IN_SG:-}" ]] && command -v sg >/dev/null && docker_group_pending \
@@ -52,6 +96,13 @@ main() {
     if ! timeout "$docker_timeout" docker image inspect "$image" </dev/null >/dev/null 2>&1; then
       echo "pre-commit: there is no image $image (scripts/dev.sh image builds it)," \
         "so the staged files are not formatted or linted; the gate checks them" >&2
+      exit 0
+    fi
+    local missing
+    missing="$(missing_style_tools "$image")"
+    if [[ -n "$missing" ]]; then
+      echo "pre-commit: the image $image has no $missing, so the staged files are not" \
+        "formatted or linted (DWE_IMAGE=dwe-dev-speed has them); the gate checks them" >&2
       exit 0
     fi
   fi
