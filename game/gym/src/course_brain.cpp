@@ -22,8 +22,9 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
     break;
   case 1:
     if (ports.walk(Actor::Tamer, brain.tamerSpot)) {
+      // Only the tamer turns: the partner turns as it walks to its desk.
       ports.animate(Actor::Tamer, brain.tamerStand);
-      ports.faceEachOther();
+      ports.lookAt(Actor::Tamer, Actor::Partner);
       ports.animate(Actor::Partner, course_->walkAnimation);
       setState(2);
     }
