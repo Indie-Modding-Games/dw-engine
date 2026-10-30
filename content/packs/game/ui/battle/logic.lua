@@ -297,60 +297,145 @@ end
 -- The end boxes (battle_ui.c: handleBattleEndBox). The stats box counts each raise up a point a
 -- frame after battle.end.count_delay_frames (renderPostBattleStatsBox, tickPostBattleStatsBox);
 -- then the final balance box opens and the bits move from the bits box into it, one a frame
--- (tickBitBox). Meanwhile the lines are typed a character a frame into two rows that scroll, and
--- each waits battle.end.wait_frames (BTL_drawBattleEndText, BTL_tickBattleEndText). A press skips
--- what runs: the count, the bits, the wait or the typing. The boxes close by themselves once all is
--- done; there is no button to close them. Each point and bit counted asks for the count's sound,
--- and the bits all in for the sound that ends it (tickBitBox, renderPostBattleStatsBox).
+-- (tickBitBox). A press skips the count or the bits. The boxes close by themselves once all is
+-- done and the text is typed and waited; there is no button to close them. Each point and bit
+-- counted asks for the count's sound, and the bits all in for the sound that ends it (tickBitBox,
+-- renderPostBattleStatsBox).
+--
+-- The text box (battle_hud.c: BTL_initializeBattleEndText, BTL_drawBattleEndText,
+-- BTL_tickBattleEndText, BTL_scrollBattleEndText, BTL_isEndBoxTextFinished) types the lines' rows
+-- into two rows that scroll. As the boxes open it types two characters and waits for a press:
+-- each press (confirm or cancel) types a character a frame up to the end of the line, whose last
+-- row waits battle.end.wait_frames (a press cuts the wait short) and stops the typing until the
+-- next press. A row break takes a frame of its own; with both rows full, the next row scrolls in
+-- once no wait runs. The box opens with that wait already running, so a press then only ends it.
 local end_rows_shown = 2
-local end_segments = 5
+local end_runs = 5
 local ending = nil
 
--- A line's rows: its text with the line breaks as rows and each row cut at the placeholders, so the
--- names show in their own colour: plain, name, plain, name, plain.
-local function rows_of(template, values)
-  local rows = {}
-  for row in (template .. "\n"):gmatch("(.-)\n") do
-    local segments = {}
-    local rest = row
-    while #segments < end_segments - 1 do
-      local first, last, name = rest:find("{(%w+)}")
-      if first == nil then
-        break
-      end
-      table.insert(segments, rest:sub(1, first - 1))
-      table.insert(segments, values[name] or "")
-      rest = rest:sub(last + 1)
+-- The marks of the original's text (battle_hud.c: '#C' colour, '#R' row, '#W' row and wait) as
+-- t() fills them in: the colours the box uses, a row and a row that waits.
+local mark_colour = "\31"
+local mark_row = "\30"
+local mark_wait = "\29"
+local end_marks = {
+  ["color:1"] = mark_colour .. "1" .. mark_colour,
+  ["color:7"] = mark_colour .. "7" .. mark_colour,
+  br = mark_row,
+  wait = mark_wait,
+}
+local end_white = 1
+local end_yellow = 7
+
+-- A line's text: its parts (battle_view.hpp: EndLine) joined, the keys looked up with the line's
+-- values and the marks, a part that starts with a brace taken as marks itself.
+local function line_text(index)
+  local arguments = {
+    name = text(setting(entry("battle.end", index, "name"), "")),
+    subject = text(setting(entry("battle.end", index, "subject"), "")),
+    amount = tostring(number(entry("battle.end", index, "amount"))),
+  }
+  for mark, value in pairs(end_marks) do
+    arguments[mark] = value
+  end
+  local joined = {}
+  for part in string.gmatch(setting(entry("battle.end", index, "parts"), ""), "[^|]+") do
+    if string.sub(part, 1, 1) == "{" then
+      table.insert(joined, (string.gsub(part, "{([^}]*)}", function(mark)
+        return arguments[mark] or ""
+      end)))
+    else
+      table.insert(joined, text(part, arguments))
     end
-    table.insert(segments, rest)
-    table.insert(rows, segments)
   end
-  return rows
+  return table.concat(joined)
 end
 
-local function row_length(row)
-  local length = 0
-  for _, segment in ipairs(row) do
-    length = length + #segment
+-- A line's rows: runs of one colour each, the colour going on from row to row; a line whose text
+-- does not end in a wait waits after its last row.
+local function rows_of_line(line, rows)
+  local colour = end_white
+  local row = { runs = {}, glyphs = 0 }
+  local function add(piece)
+    if piece == "" then
+      return
+    end
+    local last = row.runs[#row.runs]
+    if last ~= nil and last.colour == colour then
+      last.text = last.text .. piece
+    elseif #row.runs < end_runs then
+      table.insert(row.runs, { text = piece, colour = colour })
+    else
+      last.text = last.text .. piece
+    end
+    row.glyphs = row.glyphs + (utf8.len(piece) or #piece)
   end
-  return length
+  local function close(waits)
+    row.waits = waits
+    table.insert(rows, row)
+    row = { runs = {}, glyphs = 0 }
+  end
+  local at = 1
+  local ended = false
+  while at <= #line do
+    local c = string.sub(line, at, at)
+    if c == mark_colour then
+      local stop = string.find(line, mark_colour, at + 1, true) or #line
+      colour = tonumber(string.sub(line, at + 1, stop - 1)) or end_white
+      at = stop + 1
+    elseif c == mark_row or c == mark_wait then
+      close(c == mark_wait)
+      ended = c == mark_wait
+      at = at + 1
+    else
+      local stop = at
+      while
+        stop <= #line
+        and not string.find(
+          mark_colour .. mark_row .. mark_wait,
+          string.sub(line, stop, stop),
+          1,
+          true
+        )
+      do
+        stop = stop + 1
+      end
+      add(string.sub(line, at, stop - 1))
+      ended = false
+      at = stop
+    end
+  end
+  if not ended then
+    close(true)
+  end
 end
 
--- Every row of the end box's lines; the last row of each line waits.
+-- Every row of the end box's lines.
 local function end_rows()
   local rows = {}
   for index = 0, math.min(number("battle.end.count"), max_end_lines) - 1 do
-    local values = {
-      name = text(setting(entry("battle.end", index, "name"), "")),
-      subject = text(setting(entry("battle.end", index, "subject"), "")),
-      amount = tostring(number(entry("battle.end", index, "amount"))),
-    }
-    local line = rows_of(text(setting(entry("battle.end", index, "key"), "")), values)
-    for row_index, row in ipairs(line) do
-      table.insert(rows, { segments = row, waits = row_index == #line })
-    end
+    rows_of_line(line_text(index), rows)
   end
   return rows
+end
+
+-- BTL_drawBattleEndText: one character of the row being typed, or its break: the next row starts
+-- and, at the end of a line, the wait.
+local function type_glyph()
+  local row = ending.rows[ending.row]
+  if row == nil then
+    return
+  end
+  if ending.typed < row.glyphs then
+    ending.typed = ending.typed + 1
+    return
+  end
+  if row.waits then
+    ending.wait = ending.wait_frames
+  end
+  ending.row = ending.row + 1
+  ending.typed = 0
+  ending.shown = ending.shown + 1
 end
 
 local function start_end()
@@ -373,22 +458,27 @@ local function start_end()
     balance = number("battle.end.money") - bits,
     balance_open = false,
     rows = end_rows(),
+    -- The row being typed, the first row on show, the rows begun since it (BATTLE_END_ROWS_SHOWN),
+    -- the characters typed of the row, whether a press set the typing on.
     row = 1,
+    top = 1,
+    shown = 0,
     typed = 0,
-    wait = 0,
+    typing = false,
+    wait = number("battle.end.wait_frames"),
     closed = false,
   }
   local raised = false
   for index = 0, stat_count - 1 do
     raised = raised or gains[index] > 0
   end
-  -- Without raises nothing counts; with nothing to count or type, the outcome stays for a wait.
+  -- Without raises nothing counts.
   if not raised then
     ending.delay = 0
-    if bits <= 0 and #ending.rows == 0 then
-      ending.wait = ending.wait_frames
-    end
   end
+  -- handleBattleEndBox: as the boxes open, the first two characters.
+  type_glyph()
+  type_glyph()
 end
 
 local function counting()
@@ -400,6 +490,7 @@ local function counting()
   return nil
 end
 
+-- BTL_isEndBoxTextFinished: every row typed and no wait left.
 local function text_done()
   return ending.row > #ending.rows and ending.wait <= 0
 end
@@ -426,22 +517,28 @@ local function step_end()
       ending.balance_open = true
     end
   end
+  -- BTL_tickBattleEndText.
   if ending.wait > 0 then
     ending.wait = ending.wait - 1
-  elseif ending.row <= #ending.rows then
-    local row = ending.rows[ending.row]
-    ending.typed = ending.typed + 1
-    if ending.typed >= row_length(row.segments) then
-      if row.waits then
-        ending.wait = ending.wait_frames
-      end
-      ending.row = ending.row + 1
-      ending.typed = 0
+  end
+  if #ending.rows == 0 then
+    return
+  end
+  if ending.shown == end_rows_shown then
+    if ending.wait == 0 then
+      ending.top = ending.top + 1
+      ending.shown = ending.shown - 1
+    end
+  elseif ending.typing then
+    type_glyph()
+    if ending.wait > 0 then
+      ending.typing = false
     end
   end
 end
 
--- A press skips what runs first: the count, the bits, the wait or the rest of the row.
+-- A press skips the count or the bits, and the text box takes it too: it ends the wait, or with no
+-- wait sets the typing on (BTL_tickBattleEndText).
 function press_end()
   if ending == nil then
     return
@@ -458,29 +555,41 @@ function press_end()
     ending.balance = ending.balance + ending.bits
     ending.bits = 0
     ui.send("battle_end_counted")
-  elseif ending.wait > 0 then
+  end
+  if ending.wait > 0 then
     ending.wait = 0
-  elseif ending.row <= #ending.rows then
-    ending.typed = row_length(ending.rows[ending.row].segments) - 1
+  else
+    ending.typing = true
   end
 end
 
--- The rows on show: the two last begun, the one being typed cut where the typing is.
+-- The two rows on show from the first: those typed whole, the one being typed cut where the typing
+-- is, each run in its colour.
 local function draw_end_rows(document)
-  local last = math.min(ending.row, #ending.rows)
-  local first = math.max(1, last - end_rows_shown + 1)
   for slot = 0, end_rows_shown - 1 do
-    local index = first + slot
+    local index = ending.top + slot
     local row = ending.rows[index]
     local left = 0
-    if row ~= nil then
-      left = index < ending.row and row_length(row.segments) or ending.typed
+    if row ~= nil and index <= ending.row then
+      left = index < ending.row and row.glyphs or ending.typed
     end
-    for segment = 1, end_segments do
-      local piece = row ~= nil and row.segments[segment] or ""
-      local shown = piece:sub(1, math.max(0, left))
-      left = left - #piece
-      lookup(document, "end-row-" .. slot .. "-" .. (segment - 1)):set_text(shown)
+    for run = 1, end_runs do
+      local id = "end-row-" .. slot .. "-" .. (run - 1)
+      local piece = row ~= nil and row.runs[run] or nil
+      local shown = ""
+      if piece ~= nil and left > 0 then
+        local length = utf8.len(piece.text) or #piece.text
+        if left >= length then
+          shown = piece.text
+        else
+          shown =
+            string.sub(piece.text, 1, (utf8.offset(piece.text, left + 1) or (#piece.text + 1)) - 1)
+        end
+        left = left - length
+      end
+      set_class(document, id, "end-name", piece ~= nil and piece.colour == end_yellow)
+      set_class(document, id, "end-plain", piece == nil or piece.colour ~= end_yellow)
+      lookup(document, id):set_text(shown)
     end
   end
 end
@@ -551,20 +660,24 @@ local function draw_anger(document)
   end
 end
 
--- The numbers over the fighters (apps/screens: damage_numbers.hpp) come as six values each: the
+-- The numbers over the fighters (apps/screens: damage_numbers.hpp) come as seven values each: the
 -- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
--- value and the colour. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText).
+-- value, the colour and the icon. Each digit is 8 pixels square, 7 apart (utils2.c:
+-- drawEntityText); the icon, when there is one, is 8 pixels square right before the first digit
+-- (entity_text.c: renderEntityText, utils2.c: drawEntityTextIcon).
+local number_values = 7
+local number_icons = { "hp", "mp", "offense", "defense", "speed" }
 local function draw_damage(document)
   local values = {}
   for value in string.gmatch(setting("battle.damage.numbers", ""), "%S+") do
     values[#values + 1] = tonumber(value)
   end
-  local count = math.min(max_numbers, math.floor(#values / 6))
+  local count = math.min(max_numbers, math.floor(#values / number_values))
   for index = 0, max_numbers - 1 do
     local id = "dn-" .. index
     set_class(document, id, "hidden", index >= count)
     if index < count then
-      local base = index * 6
+      local base = index * number_values
       set_property(document, id, "left", values[base + 1] .. "%")
       set_property(document, id, "top", values[base + 2] .. "%")
       set_property(
@@ -574,6 +687,17 @@ local function draw_damage(document)
         "translate(" .. (values[base + 3] * 3) .. "dp, " .. (values[base + 4] * 3) .. "dp)"
       )
       set_class(document, id, "poison", values[base + 6] == 12)
+      set_class(document, id, "gain", values[base + 6] == 11)
+      local icon = number_icons[math.floor(values[base + 7])]
+      local icon_id = "di-" .. index
+      set_class(document, icon_id, "hidden", icon == nil)
+      for _, name in ipairs(number_icons) do
+        set_class(document, icon_id, "i-" .. name, icon == name)
+      end
+      if icon ~= nil and applied[icon_id .. " text"] ~= icon then
+        applied[icon_id .. " text"] = icon
+        lookup(document, icon_id):set_text(text("battle.number_icon." .. icon))
+      end
       local digits = tostring(math.floor(values[base + 5]))
       for place = 0, number_digits - 1 do
         local digit_id = "dd-" .. index .. "-" .. place

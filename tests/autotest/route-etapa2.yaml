@@ -53,8 +53,8 @@ steps:
   - script: battle_win("")
   - wait: {setting: {battle.phase: end}, timeout: 60}
   - screenshot: tunn08-battle-end
-  # The end box closes with a press.
-  - repeat: {times: 4, steps: [{wait: {seconds: 2}}, {tap: {key: return}}]}
+  # Each line of the end box waits for a press to be typed.
+  - repeat: {times: 10, steps: [{wait: {seconds: 1.0}}, {tap: {key: return}}]}
   - wait: {hidden: battle, seconds: 1, timeout: 60}
   - screenshot: tunn08-after-battle
   # Eight pages after the fight; the scene ends with trigger 209.

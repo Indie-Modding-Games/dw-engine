@@ -11,6 +11,7 @@
 
 using dwe::screens::DamageNumbers;
 using dwe::screens::NumberColour;
+using dwe::screens::NumberIcon;
 using dwe::screens::ShownNumber;
 using dwe::screens::WindowFraction;
 
@@ -107,11 +108,35 @@ TEST_CASE("a number whose fighter was off the camera takes its place in the queu
   CHECK(numbers.empty());
 }
 
-TEST_CASE("the shown numbers pack as anchor percent, offset, value and colour") {
+TEST_CASE("the shown numbers pack as anchor percent, offset, value, colour and icon") {
   const std::vector<ShownNumber> shown{
-      {.anchor = Feet, .x = 4, .y = -12, .value = 123, .colour = NumberColour::Poison}};
+      {.anchor = Feet, .x = 4, .y = -12, .value = 123, .colour = NumberColour::Poison},
+      {.anchor = Feet,
+       .x = 0,
+       .y = -8,
+       .value = 500,
+       .colour = NumberColour::Gain,
+       .icon = NumberIcon::Mp}};
   const auto settings = dwe::screens::settingsOf(shown);
   REQUIRE(settings.size() == 1);
   CHECK(settings.front().name == "battle.damage.numbers");
-  CHECK(std::get<std::string>(settings.front().value) == "50.0 45.0 4 -12 123 12 ");
+  CHECK(std::get<std::string>(settings.front().value) ==
+        "50.0 45.0 4 -12 123 12 0 50.0 45.0 0 -8 500 11 2 ");
+}
+
+TEST_CASE("a healing or raise number keeps its icon and green tint while it bounces in its queue") {
+  DamageNumbers numbers;
+  numbers.add(0, 1500, NumberColour::Gain, Feet, NumberIcon::Hp);
+  numbers.add(0, 1500, NumberColour::Gain, Feet, NumberIcon::Mp);
+  numbers.step();
+  REQUIRE(numbers.shown().size() == 1);
+  CHECK(numbers.shown().front().icon == NumberIcon::Hp);
+  CHECK(numbers.shown().front().colour == NumberColour::Gain);
+  for (int frame = 0; frame < 11; ++frame) {
+    numbers.step();
+  }
+  REQUIRE(numbers.shown().size() == 2);
+  // handleDoubleFloppy: the MP comes second, 4 pixels further right and down.
+  CHECK(numbers.shown().back().icon == NumberIcon::Mp);
+  CHECK(numbers.shown().back().x == 4);
 }

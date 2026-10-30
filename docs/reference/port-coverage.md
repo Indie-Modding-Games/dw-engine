@@ -82,7 +82,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 133 | 5 | 11 | 22 | 91 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 136 | 4 | 9 | 22 | 93 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 139 | 3 | 74 | 69 | 65 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
@@ -100,8 +100,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 44 | 1 | 1 | 40 | 97 % |
-| **Total** | 2438 funciones | 892 | 41 | 384 | 1121 | 69 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 45 | 1 | 1 | 39 | 97 % |
+| **Total** | 2438 funciones | 896 | 40 | 382 | 1120 | 69 % |
 
 ## Batalla
 
@@ -109,12 +109,10 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 133, parcial 5, falta 11, no aplica 22.
+Portado 136, parcial 4, falta 9, no aplica 22.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `BTL_appendCommandLearnedText` | `btl/battle_hud.c:280` | falta | Añade al cuadro final la orden de combate que el compañero aprendió. | docs/modulos/game/battle.md: Hueco |
-| `BTL_appendMPBonusText` | `btl/battle_hud.c:324` | falta | Añade al cuadro final el bonus de MP ganado. | docs/modulos/game/battle.md: Hueco |
 | `BTL_tickEnemyAI` | `btl/battle_main.c:515` | parcial | IA de los rivales: elige técnica, se acerca y ataca. | `content/packs/game/rules/original/battle.yaml:10` · el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119) |
 | `BTL_tickPartnerWaypointTrail` | `btl/battle_main.c:702` | falta | Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse. | relacionado con la vuelta tras un combate de historia |
 | `BTL_applyFlattenScale` | `btl/battle_main.c:2673` | falta | Aplasta el modelo del luchador aplastado. | el estado existe; falta comprobar la escala del modelo en pantalla |
@@ -126,7 +124,6 @@ Portado 133, parcial 5, falta 11, no aplica 22.
 | `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
 | `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:30` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
-| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:395` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
@@ -757,13 +754,13 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 44, parcial 1, falta 1, no aplica 40.
+Portado 45, parcial 1, falta 1, no aplica 39.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
 | `startTournament` | `main/utils2.c:577` | falta (citada en docs) | Carga y juega un torneo; suma los ganados. | no hay torneos |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); entrada del original (2); consulta de dibujo (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); consulta de dibujo (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1).
 
 <!-- port-coverage:end -->

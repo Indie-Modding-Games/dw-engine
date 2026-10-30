@@ -503,6 +503,19 @@ sprite_sheets:
       damage-digit-7: [56, 55, 8, 8]
       damage-digit-8: [64, 55, 8, 8]
       damage-digit-9: [72, 55, 8, 8]
+  # Los iconos de las cifras de curación y mejora (entity_text.c: ENTITY_TEXT_ICON_U; utils2.c: drawEntityTextIcon):
+  # celdas de 8 x 8 en v = 0xb8 (fila 56 de BI_IN) con la CLUT (256, 486), la paleta 6.
+  - name: ow-battle-number-icons
+    image: texture/etcdat/bi_in
+    palette: 6
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      number-icon-hp: [176, 56, 8, 8]
+      number-icon-offense: [184, 56, 8, 8]
+      number-icon-defense: [192, 56, 8, 8]
+      number-icon-mp: [200, 56, 8, 8]
+      number-icon-speed: [208, 56, 8, 8]
   # Las piezas del rótulo "BATTLE" (battle_hud.c: BTL_renderBattleStartText): tres texturas de 8 x 8 y la estela, con
   # la paleta 8; cuando todas llegan, el rótulo parpadea con las paletas 8, 9 y 10.
   - name: ow-battle-banner-0

@@ -205,16 +205,48 @@ void BattleScreen::showEffects() const {
 
 // battle_main.c: BTL_tickAttackHits adds the damage of a hit, and of a blocked melee attack, over
 // the fighter it reached (addEntityText(entity, slot, 0, dmg, 0)), BTL_tickStatusEffects the
-// poison's in its own tint (colour 0xc); a miss and a blocked ranged attack show none. Each number
-// stays where the fighter's feet showed as it was added (setCombatTextPosition: the battle's
-// GAME_STATE is 1, not the versus mode's 4 that follows the fighter). renderEntityText draws it on
-// the same frame.
+// poison's in its own tint (colour 0xc); a miss and a blocked ranged attack show none. What a
+// thrown item heals (item.c: handleHPHealingItem, handleMPHealingItem, handleRestore,
+// handleDoubleFloppy) and what a support move raises (BTL_buffStats) show in green (colour 0xb)
+// with the stat's icon. Each number stays where the fighter's feet showed as it was added
+// (setCombatTextPosition: the battle's GAME_STATE is 1, not the versus mode's 4 that follows the
+// fighter). renderEntityText draws it on the same frame.
 void BattleScreen::stepNumbers(const game::battle::BattleEvents& frame) {
   using game::battle::EventKind;
+  using screens::NumberColour;
+  using screens::NumberIcon;
   for (const game::battle::BattleEvent& event : frame) {
-    const bool damage = event.kind == EventKind::AttackHit ||
-                        (event.kind == EventKind::AttackBlocked && event.amount > 0);
-    if (!damage && event.kind != EventKind::PoisonDamage) {
+    NumberColour colour = NumberColour::Gain;
+    NumberIcon icon = NumberIcon::None;
+    switch (event.kind) {
+    case EventKind::AttackHit:
+      colour = NumberColour::Plain;
+      break;
+    case EventKind::AttackBlocked:
+      if (event.amount <= 0) {
+        continue;
+      }
+      colour = NumberColour::Plain;
+      break;
+    case EventKind::PoisonDamage:
+      colour = NumberColour::Poison;
+      break;
+    case EventKind::HpRestored:
+      icon = NumberIcon::Hp;
+      break;
+    case EventKind::MpRestored:
+      icon = NumberIcon::Mp;
+      break;
+    case EventKind::OffenseRaised:
+      icon = NumberIcon::Offense;
+      break;
+    case EventKind::DefenseRaised:
+      icon = NumberIcon::Defense;
+      break;
+    case EventKind::SpeedRaised:
+      icon = NumberIcon::Speed;
+      break;
+    default:
       continue;
     }
     std::optional<screens::WindowFraction> feet;
@@ -226,10 +258,11 @@ void BattleScreen::stepNumbers(const game::battle::BattleEvents& frame) {
         feet = screens::WindowFraction{.x = shown->x, .y = shown->y};
       }
     }
-    numbers_.add(event.fighter, event.amount,
-                 damage ? screens::NumberColour::Plain : screens::NumberColour::Poison, feet);
-    core::logDebug("[port:battle] addEntityText (entity_text.c:96): fighter={} value={}{}",
-                   event.fighter, event.amount, feet ? "" : " off the camera");
+    numbers_.add(event.fighter, event.amount, colour, feet, icon);
+    core::logDebug("[port:battle] addEntityText (entity_text.c:96): fighter={} value={} colour={} "
+                   "icon={}{}",
+                   event.fighter, event.amount, static_cast<int>(colour), static_cast<int>(icon),
+                   feet ? "" : " off the camera");
   }
   numbers_.step();
   publishNumbers();

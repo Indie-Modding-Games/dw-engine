@@ -100,21 +100,45 @@ struct BattleView {
   bool itemInFlight = false;
 };
 
-// A line of the end box: a text key and the values its placeholders take.
+// A line of the end box as the original builds it in BTL_END_BOX_TEXTBUFFER (battle_hud.c:
+// BTL_appendItemDroppedText and the others): the pieces it joins, in order. A piece is a text key
+// (the original's message, a name, or an engine line), or, when it starts with a brace, a mark of
+// its own: {color:7} the names' yellow, {color:1} the white, {br} a new row and {wait} the row that
+// ends the line and waits. The texts carry the same marks; {name}, {subject} and {amount} take the
+// values below.
 struct EndLine {
-  std::string key;
+  std::vector<std::string> parts;
   // {name}: the key of a name (an item, a move) the line shows; {amount}: a number.
   std::string nameKey;
   std::int32_t amount = 0;
-  // {subject}: the key of who the line is about: the enemy that dropped the item.
+  // {subject}: the key of who the line is about.
   std::string subjectKey;
 
   friend bool operator==(const EndLine&, const EndLine&) = default;
 };
 
+// The original's messages of the end box (btl.battle_effect_messages, battle_hud.c), by slot.
+enum class EndMessage : std::uint8_t {
+  ListensTo = 0,
+  Dropped = 1,
+  WasInjured = 2,
+  SetTechnique = 3,
+  PutUpWithIt = 4,
+  MoveAwayChangeTarget = 5,
+  KeepItDown = 6,
+  GoAllTheWay = 7,
+  MpConsumptionBonus = 8,
+  ReducedBy = 9,
+  Learned = 10,
+};
+
+// The text key of one of those messages.
+[[nodiscard]] std::string endMessageKey(EndMessage message);
+
 // What the end box shows (battle_ui.c: handleBattleEndBox and the boxes after it): the outcome, the
-// lines of the drops, the injury and the moves learned, the stat gains, the bits, and after a
-// defeat the items lost.
+// lines of the drops, the injury, the commands and the MP bonus the brain opened and the move
+// learned, in the original's order, then the engine's own (lives and items a defeat took, who joins
+// the city); the stat gains, the bits.
 struct BattleEndView {
   std::string outcomeKey;
   std::vector<EndLine> lines;

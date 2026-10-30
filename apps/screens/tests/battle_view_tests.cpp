@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "game/battle/tests/fixture.hpp"
 
@@ -152,6 +153,8 @@ TEST_CASE("the battle view becomes the settings the battle document reads") {
 }
 
 TEST_CASE("the end box lists the drops, the moves learned and what a defeat took") {
+  using dwe::screens::EndMessage;
+  using dwe::screens::endMessageKey;
   const auto species = fixtureSpecies();
   const auto items = fixtureItems();
   const NameKeys names{&species, &items, &testCatalog()};
@@ -160,6 +163,7 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   result.bits = 120;
   result.drops = {{.item = "tonic", .species = "foe", .position = {}}};
   result.injured = true;
+  result.partnerSpecies = "foe";
   dwe::session::BattleAftermath aftermath;
   aftermath.learnedMoves = {"shot"};
   aftermath.statGains[dwe::game::partner::Stat::Offense] = 4;
@@ -169,15 +173,14 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   CHECK(view.outcomeKey == "battle.outcome.victory");
   CHECK(view.bits == 120);
   REQUIRE(view.lines.size() == 3);
-  CHECK(view.lines[0] == dwe::screens::EndLine{.key = "battle.result.item_dropped",
-                                               .nameKey = "main.item_names.0004",
-                                               .amount = 1,
-                                               .subjectKey = "main.digimon_names.0012"});
-  CHECK(view.lines[1].key == "battle.result.injured");
-  CHECK(view.lines[2] == dwe::screens::EndLine{.key = "battle.result.move_learned",
-                                               .nameKey = "main.move_names.0001",
-                                               .amount = 0,
-                                               .subjectKey = {}});
+  CHECK(view.lines[0].parts == std::vector<std::string>{"{color:7}", "main.digimon_names.0012",
+                                                        endMessageKey(EndMessage::Dropped),
+                                                        "main.item_names.0004", "{color:1}{wait}"});
+  CHECK(view.lines[1].parts == std::vector<std::string>{"{color:7}", "main.digimon_names.0012",
+                                                        endMessageKey(EndMessage::WasInjured)});
+  CHECK(view.lines[2].parts == std::vector<std::string>{"{color:7}", "main.move_names.0001",
+                                                        endMessageKey(EndMessage::Learned)});
+  CHECK(endMessageKey(EndMessage::Dropped) == "btl.battle_effect_messages.0001");
   CHECK(view.statGains.at(2) == 4);
   CHECK(view.stats.at(2) == 80);
 
@@ -194,11 +197,39 @@ TEST_CASE("the end box lists the drops, the moves learned and what a defeat took
   REQUIRE(defeat.lines.size() == 2);
   CHECK(defeat.lines[0] ==
         dwe::screens::EndLine{
-            .key = "battle.result.lives_lost", .nameKey = {}, .amount = 1, .subjectKey = {}});
-  CHECK(defeat.lines[1] == dwe::screens::EndLine{.key = "battle.result.item_lost",
+            .parts = {"battle.result.lives_lost"}, .nameKey = {}, .amount = 1, .subjectKey = {}});
+  CHECK(defeat.lines[1] == dwe::screens::EndLine{.parts = {"battle.result.item_lost"},
                                                  .nameKey = "main.item_names.0004",
                                                  .amount = 2,
                                                  .subjectKey = {}});
+}
+
+TEST_CASE("the end box says the commands the brain opened, then the MP bonus, in two rows") {
+  using dwe::screens::EndMessage;
+  using dwe::screens::endMessageKey;
+  const NameKeys names{nullptr, nullptr, &testCatalog()};
+  BattleResult result;
+  result.outcome = Outcome::Victory;
+  result.commandsLearned = {dwe::game::battle::MenuEntry::Change,
+                            dwe::game::battle::MenuEntry::Distance};
+  result.mpDiscountLearned = 5;
+  const auto view = dwe::screens::battleEndViewOf(result, {}, names);
+  REQUIRE(view.lines.size() == 2);
+  // Change and Distance share one message, said once.
+  CHECK(view.lines[0].parts ==
+        std::vector<std::string>{endMessageKey(EndMessage::MoveAwayChangeTarget),
+                                 endMessageKey(EndMessage::ListensTo)});
+  CHECK(view.lines[1].parts ==
+        std::vector<std::string>{endMessageKey(EndMessage::MpConsumptionBonus), "{br}",
+                                 endMessageKey(EndMessage::ReducedBy),
+                                 "battle.result.mp_bonus_percent"});
+  CHECK(view.lines[1].amount == 5);
+
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto* parts = settingNamed(settings, "battle.end.0.parts");
+  REQUIRE(parts != nullptr);
+  CHECK(std::get<std::string>(parts->value) ==
+        "btl.battle_effect_messages.0005|btl.battle_effect_messages.0000");
 }
 
 TEST_CASE("a name whose row is unknown has no key") {

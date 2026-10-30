@@ -33,7 +33,7 @@ double rounded(double value) {
 } // namespace
 
 void DamageNumbers::add(std::size_t fighter, std::int32_t value, NumberColour colour,
-                        std::optional<WindowFraction> feet) {
+                        std::optional<WindowFraction> feet, NumberIcon icon) {
   if (fighter >= Fighters) {
     return;
   }
@@ -47,6 +47,7 @@ void DamageNumbers::add(std::size_t fighter, std::int32_t value, NumberColour co
                            .y = stagger - Lift,
                            .value = value,
                            .colour = colour,
+                           .icon = icon,
                            .frame = 0});
   ++queue.added;
 }
@@ -68,7 +69,8 @@ void DamageNumbers::step() {
                           .x = entry.x,
                           .y = entry.y,
                           .value = entry.value,
-                          .colour = entry.colour});
+                          .colour = entry.colour,
+                          .icon = entry.icon});
       }
       ++entry.frame;
     }
@@ -93,9 +95,10 @@ bool DamageNumbers::empty() const {
 ScreenSettings settingsOf(const std::vector<ShownNumber>& shown) {
   std::string text;
   for (const ShownNumber& number : shown) {
-    std::format_to(std::back_inserter(text), "{:.1f} {:.1f} {} {} {} {} ",
+    std::format_to(std::back_inserter(text), "{:.1f} {:.1f} {} {} {} {} {} ",
                    rounded(number.anchor.x * Percent), rounded(number.anchor.y * Percent), number.x,
-                   number.y, number.value, static_cast<int>(number.colour));
+                   number.y, number.value, static_cast<int>(number.colour),
+                   static_cast<int>(number.icon));
   }
   return {{.name = std::string{DamageNumbersSetting}, .value = std::move(text)}};
 }

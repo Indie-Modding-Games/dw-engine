@@ -21,6 +21,7 @@ inline constexpr std::string_view ItemNamesBlock = "item_names";
 inline constexpr std::string_view ItemDescriptionsBlock = "item_descs";
 inline constexpr std::string_view MoveNamesBlock = "move_names";
 inline constexpr std::string_view CommandNamesBlock = "command_names";
+inline constexpr std::string_view BattleMessagesBlock = "battle_effect_messages";
 inline constexpr std::string_view StatLabelsBlock = "stat_labels";
 inline constexpr std::string_view ItemMenuLabelsBlock = "item_menu_labels";
 inline constexpr std::string_view SortLabelsBlock = "inventory_sort_labels";

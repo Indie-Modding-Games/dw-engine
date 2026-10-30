@@ -13,8 +13,10 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "../src/aftermath.hpp"
 #include "../src/usability.hpp"
 #include "bench.hpp"
 #include "fixture.hpp"
@@ -395,6 +397,30 @@ TEST_CASE("support moves raise the caster's stats by their percentages") {
   CHECK(battle.state().partner().stats.offense >= 260);
 }
 
+TEST_CASE("a support move shows each stat it raises, by the raise before the cap") {
+  CombatStats partner = evenStats(1000, 200);
+  partner.offense = 990;
+  partner.defense = 105;
+  partner.speed = 210;
+  Battle battle = startBattle(duel(partner, evenStats(1000, 100), {"war_cry"}), 3);
+  std::vector<std::pair<EventKind, std::int32_t>> shown;
+  for (int frame = 0; frame < 400 && shown.empty() && !battle.finished(); ++frame) {
+    for (const BattleEvent& event : battle.step()) {
+      if (event.fighter == PartnerId &&
+          (event.kind == EventKind::OffenseRaised || event.kind == EventKind::DefenseRaised ||
+           event.kind == EventKind::SpeedRaised)) {
+        shown.emplace_back(event.kind, event.amount);
+      }
+    }
+  }
+  // battle_main.c: BTL_applyBuffMove, case 0x2a: offense / 10, defense * 5 / 100, speed / 10, in
+  // that order; the offense stops at 999 but shows 99.
+  CHECK(shown == std::vector<std::pair<EventKind, std::int32_t>>{{EventKind::OffenseRaised, 99},
+                                                                 {EventKind::DefenseRaised, 5},
+                                                                 {EventKind::SpeedRaised, 21}});
+  CHECK(battle.state().partner().stats.offense == 999);
+}
+
 TEST_CASE("the finisher gauge fills, the command starts the aura and presses charge it") {
   BattleSetup setup =
       duel(evenStats(2000, 300), evenStats(2000, 100), {"punch", "", "", "big_finish"});
@@ -760,4 +786,33 @@ TEST_CASE("a fighter's step test lets its held root step go again, as entityChec
   bench.fighter(1).rootHeld = true;
   backAwayFrom(context, 1, PartnerId);
   CHECK_FALSE(bench.fighter(1).rootHeld);
+}
+
+TEST_CASE("a brain raise past a menu or an MP discount teaches its commands or its bonus") {
+  struct Case {
+    std::int32_t brain;
+    std::vector<MenuEntry> commands;
+    std::int32_t discount;
+  };
+  // One enemy as clever as the partner raises the brain by 1 (battle_ui.c:
+  // battleStatsGainsAndDrops).
+  const std::array<Case, 5> cases{{
+      {.brain = 99, .commands = {MenuEntry::Attack}, .discount = 0},
+      {.brain = 150, .commands = {}, .discount = 0},
+      {.brain = 299, .commands = {MenuEntry::Change, MenuEntry::Distance}, .discount = 0},
+      {.brain = 499, .commands = {MenuEntry::Techniques}, .discount = 0},
+      {.brain = 699, .commands = {}, .discount = 5},
+  }};
+  for (const Case& each : cases) {
+    CAPTURE(each.brain);
+    const BattleSetup setup = duel(evenStats(1000, each.brain), evenStats(1000, each.brain));
+    Bench bench{setup};
+    dwe::ruleset::Random random{7};
+    const BattleResult result =
+        settleBattle(Outcome::Victory, setup, bench.state, originalRules(), testCatalog(), random);
+    REQUIRE(result.statGains.at(static_cast<std::size_t>(StatIndex::Brain)) == 1);
+    CHECK(result.commandsLearned == each.commands);
+    CHECK(result.mpDiscountLearned == each.discount);
+    CHECK(result.partnerSpecies == "hero");
+  }
 }

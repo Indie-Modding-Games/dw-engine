@@ -67,7 +67,8 @@ std::vector<FighterId> reachedBy(const BattleContext& context, FighterId id, con
 }
 
 // battle_main.c: BTL_applyBuffMove, BTL_buffStats: a support move raises the caster's stats, up to
-// the cap.
+// the cap, and shows each raise over the caster (addEntityText(entity, slot, 0xb, value, icon)):
+// the raise as the percentage gives it, before the cap, for each stat the move raises at all.
 void applyBuff(BattleContext& context, FighterId id, MoveRef move) {
   Fighter& fighter = context.fighter(id);
   const std::optional<BuffPercents>& percents = context.moves->at(move).buff;
@@ -76,12 +77,24 @@ void applyBuff(BattleContext& context, FighterId id, MoveRef move) {
   }
   const BuffPercents& buff = *percents;
   const std::int32_t cap = context.rules->limits.statCap;
-  const auto raise = [cap](std::int32_t& stat, std::int32_t percent) {
-    stat = std::min(stat + (stat * percent / Hundred), cap);
+  const auto raise = [&context, id, cap](std::int32_t& stat, std::int32_t percent,
+                                         EventKind shown) {
+    if (percent == 0) {
+      return;
+    }
+    const std::int32_t gain = stat * percent / Hundred;
+    stat = std::min(stat + gain, cap);
+    context.emit({.kind = shown,
+                  .fighter = id,
+                  .other = std::nullopt,
+                  .move = std::nullopt,
+                  .amount = gain,
+                  .status = StatusEffect::None,
+                  .command = Command::None});
   };
-  raise(fighter.stats.offense, buff.offense);
-  raise(fighter.stats.defense, buff.defense);
-  raise(fighter.stats.speed, buff.speed);
+  raise(fighter.stats.offense, buff.offense, EventKind::OffenseRaised);
+  raise(fighter.stats.defense, buff.defense, EventKind::DefenseRaised);
+  raise(fighter.stats.speed, buff.speed, EventKind::SpeedRaised);
   fighter.struck = false;
   context.emit({.kind = EventKind::Buffed,
                 .fighter = id,

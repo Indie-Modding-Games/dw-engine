@@ -33,11 +33,11 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 | `battle.revive_seconds` | número, -1 sin cuenta | Los segundos que le quedan al compañero caído para levantarse, desde que el original enseña la cuenta (`command_menu.c: BTL_renderDeathCountdown`) |
 | `battle.bag.{available,open}`, `battle.item_in_flight` | booleanos | La bolsa del domador: si se puede abrir (no huyendo, no sin domador, sin otro objeto en el aire), si está abierta y si un objeto lanzado va de camino (`battle_tick.c: tamerTickBattle`, `main.c: tickThrownItem`) |
 | `battle.end.outcome` | clave | `battle.outcome.victory`, `fled` o `defeat` |
-| `battle.end.<i>.{key,name,amount,subject}` | claves, número | Las líneas de la caja final (`battle_ui.c: handleBattleEndBox`): objetos que sueltan los enemigos (`subject`: el enemigo), herida, técnicas aprendidas, vidas perdidas, objetos perdidos, quien se une a la ciudad. Un salto de línea en el texto empieza otra fila |
+| `battle.end.<i>.{parts,name,amount,subject}` | texto, claves, número | Las líneas de la caja final (`battle_ui.c: handleBattleEndBox`), en el orden del original: objetos que sueltan los enemigos, herida, órdenes aprendidas, bonus de MP, técnica aprendida; luego las de dwe: vidas perdidas, objetos perdidos, quien se une a la ciudad. `parts` son las piezas de la línea separadas por `|`: una clave de texto, o marcas sueltas si empieza por `{` (`{color:7}` amarillo, `{color:1}` blanco, `{br}` fila, `{wait}` fila y espera). `name`, `subject` y `amount` rellenan las claves |
 | `battle.end.gain.<i>.value` | número | Lo que ha ganado cada estadística (HP, MP, ataque, defensa, velocidad, cerebro) |
 | `battle.end.stat.<i>.{value,max}` | números | Cada estadística antes de subir y su tope: la caja cuenta desde ahí y dibuja su barra contra el tope (`renderPostBattleStatsBox`) |
 | `battle.end.bits`, `battle.end.money` | números | Los bits ganados y el dinero con ellos ya dentro: la caja del saldo cuenta hasta él (`tickBitBox`) |
-| `battle.frame_seconds`, `battle.end.{count_delay_frames,wait_frames}` | números | Lo que dura un fotograma de combate y el ritmo de las cajas, del ruleset (`battle.hud`): la espera antes de contar y la de cada línea. Las cajas se cierran solas al acabar; un botón salta lo que corre |
+| `battle.frame_seconds`, `battle.end.{count_delay_frames,wait_frames}` | números | Lo que dura un fotograma de combate y el ritmo de las cajas, del ruleset (`battle.hud`): la espera antes de contar y la de cada línea. Las cajas se cierran solas al acabar; un botón salta lo que corre y escribe la línea siguiente |
 
 Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
 de abajo): `usable` dice qué objetos se pueden lanzar en combate y `discardable` es siempre falso. La bolsa que se ve
@@ -73,7 +73,7 @@ con `battle.intro.revision`:
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
-| `battle.damage.numbers` | texto | Los números dibujados en el último fotograma, seis valores cada uno: x e y del ancla en % de la ventana, desplazamiento de la primera cifra desde ella en píxeles del original (x, y), valor y color (0 normal, 12 veneno) |
+| `battle.damage.numbers` | texto | Los números dibujados en el último fotograma, siete valores cada uno: x e y del ancla en % de la ventana, desplazamiento de la primera cifra desde ella en píxeles del original (x, y), valor, color (0 normal, 11 verde de curación o subida, 12 veneno) e icono (0 ninguno, 1 HP, 2 MP, 3 ataque, 4 defensa, 5 velocidad) |
 
 ### Barras de HP de los enemigos
 

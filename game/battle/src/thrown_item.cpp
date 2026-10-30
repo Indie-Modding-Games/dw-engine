@@ -8,6 +8,8 @@ namespace dwe::game::battle {
 namespace {
 
 constexpr std::int32_t WholePercent = 100;
+// item.c: handleRestore, case 0xc: the amount the whole revive adds, capped by the maximum.
+constexpr std::int32_t WholeRestoreHp = 9999;
 
 void emitPartnerEvent(BattleContext& context, EventKind kind, std::int32_t amount) {
   context.emit({.kind = kind,
@@ -38,7 +40,9 @@ void boost(Fighter& partner, const StatBoost& disk) {
   raise(partner.stats.speed, partner.startStats.speed, disk.speed);
 }
 
-// item.c: the item's handler, now that it reached the partner.
+// item.c: the item's handler, now that it reached the partner. The healing ones show what they
+// heal over the partner (addEntityText(partner, 0, 0xb, value, icon)): the item's own amount, not
+// what the maximum let in; handleDoubleFloppy shows the HP and then the MP.
 void land(BattleContext& context, const ThrownItem& item) {
   Fighter& partner = context.fighter(PartnerId);
   if (item.consciousOnly && partner.fainted) {
@@ -46,14 +50,24 @@ void land(BattleContext& context, const ThrownItem& item) {
   }
   if (item.reviveHpPercent) {
     // item.c: handleRestore: a fallen partner gets up; a standing one is healed by the same share.
-    const std::int32_t hp = partner.stats.maxHp * *item.reviveHpPercent / WholePercent;
+    // The whole revive adds 0x270f, and shows it, rather than a share of the maximum.
+    const std::int32_t hp = *item.reviveHpPercent >= WholePercent
+                                ? WholeRestoreHp
+                                : partner.stats.maxHp * *item.reviveHpPercent / WholePercent;
     if (partner.fainted) {
       revivePartner(context, hp);
     } else {
       restorePartner(partner, hp, 0);
     }
+    emitPartnerEvent(context, EventKind::HpRestored, hp);
   }
   restorePartner(partner, item.hp, item.mp);
+  if (item.hp > 0) {
+    emitPartnerEvent(context, EventKind::HpRestored, item.hp);
+  }
+  if (item.mp > 0) {
+    emitPartnerEvent(context, EventKind::MpRestored, item.mp);
+  }
   if (item.curesStatus) {
     cureStatus(context, PartnerId);
   }

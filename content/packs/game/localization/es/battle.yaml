@@ -18,20 +18,25 @@ status.poison: "Envenenado"
 status.confusion: "Confundido"
 status.stun: "Aturdido"
 status.flatten: "Aplastado"
-# {subject} es el enemigo que lo soltó, {name} el nombre del objeto y {amount} cuántos. Un salto de línea empieza
-# otra fila de la caja final.
-result.item_dropped: "{subject}\nsoltó {name}"
-result.injured: "Tu compañero ha resultado herido."
-# {name} es el nombre de la técnica.
-result.move_learned: "¡Ha aprendido {name}!"
+# La caja final escribe las líneas propias del original (btl.battle_effect_messages); estas acaban una o son del motor.
+# Las marcas son las del original: {color:7} amarillo, {color:1} blanco, {br} otra fila, {wait} la fila que acaba la
+# línea y espera. {amount} es el bonus de MP en porcentaje, tras el «reducido un» del original.
+result.mp_bonus_percent: " {amount} %{wait}"
 # {amount} son los bits ganados.
 result.bits: "Has ganado {amount} bits."
 # {amount} es cuántas vidas ha perdido el compañero.
-result.lives_lost: "Tu compañero ha perdido {amount} vida."
+result.lives_lost: "Tu compañero ha perdido{br}{color:7}{amount}{color:1} vida.{wait}"
 # {name} es el nombre del objeto y {amount} cuántos se han perdido.
-result.item_lost: "Has perdido {name} x{amount}."
+result.item_lost: "Has perdido {color:7}{name}{color:1}{br}x{amount}.{wait}"
 # {name} es el nombre de quien se une a la ciudad.
-result.recruit_joined: "¡{name} se mudará a la ciudad!"
+result.recruit_joined: "¡{color:7}{name}{color:1}{br}se mudará a la ciudad!{wait}"
+# La etiqueta corta delante de una cifra de curación o mejora sobre un luchador (aspecto moderno; el original dibuja
+# el icono).
+number_icon.hp: "PV"
+number_icon.mp: "PM"
+number_icon.offense: "ATQ"
+number_icon.defense: "DEF"
+number_icon.speed: "VEL"
 # {seconds} es el tiempo que queda para levantarse.
 revive_countdown: "¡Levántate! {seconds}"
 finisher: "Golpe final"

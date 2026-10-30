@@ -103,6 +103,14 @@ struct BattleResult {
   std::vector<std::string> learnedMoves;
   // battle_ui.c: handleBattleInjury: the partner got injured.
   bool injured = false;
+  // battle_hud.c: BTL_appendCommandLearnedText: the menu entries the brain's raise opened, when it
+  // reached a menu it was below (only the highest menu reached counts).
+  std::vector<MenuEntry> commandsLearned;
+  // battle_hud.c: BTL_appendMPBonusText: the MP discount, in percent, the brain's raise reached
+  // when it was below it (0 for none).
+  std::int32_t mpDiscountLearned = 0;
+  // The partner's species, which the end box names in the injury line.
+  std::string partnerSpecies;
   // tamer.c: startBattle and partner_impl.c: handlePostBattleTiredness: what the outcome does to
   // the care values.
   CareChange care;
@@ -177,9 +185,7 @@ public:
   }
   // The battle's rolls when they are the original's (useOriginalRolls), for the effect scripts
   // that run with the battle (EffectRunner::useRolls); nothing otherwise.
-  [[nodiscard]] ruleset::Random* originalRolls() {
-    return particleRolls_ ? &random_ : nullptr;
-  }
+  [[nodiscard]] ruleset::Random* originalRolls() { return particleRolls_ ? &random_ : nullptr; }
   // Where the battle's rolls are (ruleset::Random::state), for a state trace to compare.
   [[nodiscard]] std::uint64_t rollState() const { return random_.state(); }
 

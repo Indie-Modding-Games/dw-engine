@@ -95,6 +95,40 @@ bool injured(const BattleSetup& setup, const BattleState& state, const BattleRul
   return random.below(Hundred) < setup.condition.tiredness - hpPercent;
 }
 
+// battle_hud.c: BTL_appendCommandLearnedText: the brain at the start plus its raise reaches a
+// menu; when the brain was below that menu, the entries it adds to the one before are learned.
+// Only the highest menu reached counts, and the first (brain 0) teaches nothing.
+std::vector<MenuEntry> commandsLearned(const std::vector<MenuTier>& menus, std::int32_t before,
+                                       std::int32_t after) {
+  std::size_t reached = menus.size();
+  for (std::size_t index = 0; index < menus.size(); ++index) {
+    if (menus[index].brain > 0 && menus[index].brain <= after) {
+      reached = index;
+    }
+  }
+  if (reached == menus.size() || before >= menus[reached].brain) {
+    return {};
+  }
+  std::vector<MenuEntry> learned;
+  for (const MenuEntry entry : menus[reached].entries) {
+    if (reached == 0 || !std::ranges::contains(menus[reached - 1].entries, entry)) {
+      learned.push_back(entry);
+    }
+  }
+  return learned;
+}
+
+// battle_hud.c: BTL_appendMPBonusText: the same for the MP discounts by brain, highest first.
+std::int32_t mpDiscountLearned(const std::vector<MpDiscount>& discounts, std::int32_t before,
+                               std::int32_t after) {
+  const auto reached = std::ranges::find_if(
+      discounts, [after](const MpDiscount& discount) { return discount.brain <= after; });
+  if (reached == discounts.end() || before >= reached->brain) {
+    return 0;
+  }
+  return reached->percent;
+}
+
 // battle_ui.c: battleMoveLearning: one of the enemy techniques seen, of the partner's specials and
 // in its species' list, by the move's chance for that special.
 std::vector<std::string> learnedMoves(const BattleSetup& setup, const BattleState& state,
@@ -166,6 +200,7 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
   result.partnerMp = partner.mp;
   result.counters = state.counters;
   result.kind = setup.kind;
+  result.partnerSpecies = setup.partner.species;
   switch (outcome) {
   case Outcome::Victory:
     for (const Combatant& enemy : setup.enemies) {
@@ -174,6 +209,13 @@ BattleResult settleBattle(Outcome outcome, const BattleSetup& setup, const Battl
     result.statGains = statGains(state, rules, random);
     result.drops = drops(setup, state, rules.rewards, random);
     result.injured = injured(setup, state, rules, random);
+    {
+      const std::int32_t brain = partner.startStats.brain;
+      const std::int32_t raised =
+          brain + result.statGains.at(static_cast<std::size_t>(StatIndex::Brain));
+      result.commandsLearned = commandsLearned(rules.menus, brain, raised);
+      result.mpDiscountLearned = mpDiscountLearned(rules.condition.mpDiscounts, brain, raised);
+    }
     result.learnedMoves = learnedMoves(setup, state, moves, random);
     result.care = consequences.victory;
     result.recruitJoined = setup.recruitOnVictory;

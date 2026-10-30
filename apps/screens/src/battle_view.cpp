@@ -1,4 +1,5 @@
 #include <dwe/game/battle/text_keys.hpp>
+#include <dwe/localization/catalog.hpp>
 #include <dwe/screens/battle_view.hpp>
 
 #include <algorithm>
@@ -17,6 +18,13 @@ namespace battle = game::battle;
 constexpr std::string_view ItemLostTextKey = "battle.result.item_lost";
 constexpr std::string_view LivesLostTextKey = "battle.result.lives_lost";
 constexpr std::string_view RecruitJoinedTextKey = "battle.result.recruit_joined";
+// The original's marks the end box's lines join (main: BTL_STR_YELLOW, BTL_STR_WHITE_WAIT).
+constexpr std::string_view Yellow = "{color:7}";
+constexpr std::string_view WhiteWait = "{color:1}{wait}";
+constexpr std::string_view NewRow = "{br}";
+// battle_hud.c: BTL_appendMPBonusText ends with the percent and "%!#W" (main: BTL_STR_5..20,
+// BTL_STR_MP_BONUS_PERCENT).
+constexpr std::string_view MpBonusPercentTextKey = "battle.result.mp_bonus_percent";
 // The setting a document reads when a number has no value (no revive countdown).
 constexpr double NoValue = -1.0;
 // The fields of the lists' entries.
@@ -35,7 +43,9 @@ constexpr std::string_view CurrentField = "current";
 constexpr std::string_view IconField = "icon";
 // BTL_COMMAND_ICON_UVS and BTL_SPECIAL_ICON_UVS: seven icons in each row of BTLCOMND.
 constexpr std::int32_t IconsPerRow = 7;
-constexpr std::string_view KeyField = "key";
+constexpr std::string_view PartsField = "parts";
+// The pieces of a line go to the document joined by this mark, which no key or mark holds.
+constexpr char PartSeparator = '|';
 constexpr std::string_view AmountField = "amount";
 constexpr std::string_view SubjectField = "subject";
 constexpr std::string_view MaxField = "max";
@@ -178,45 +188,115 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names) {
   return view;
 }
 
+namespace {
+
+// battle_hud.c: BTL_appendCommandLearnedText: the message of the commands a brain's menu opened,
+// "Listens to !" after it.
+std::optional<EndMessage> commandMessageOf(battle::MenuEntry entry) {
+  switch (entry) {
+  case battle::MenuEntry::Attack:
+    return EndMessage::GoAllTheWay;
+  case battle::MenuEntry::Moderate:
+    return EndMessage::KeepItDown;
+  case battle::MenuEntry::Distance:
+  case battle::MenuEntry::Change:
+    return EndMessage::MoveAwayChangeTarget;
+  case battle::MenuEntry::Defend:
+    return EndMessage::PutUpWithIt;
+  case battle::MenuEntry::Techniques:
+    return EndMessage::SetTechnique;
+  case battle::MenuEntry::Finisher:
+  case battle::MenuEntry::Flee:
+  case battle::MenuEntry::YourCall:
+    break;
+  }
+  return std::nullopt;
+}
+
+EndLine originalLine(std::vector<std::string> parts) {
+  return {.parts = std::move(parts), .nameKey = {}, .amount = 0, .subjectKey = {}};
+}
+
+EndLine engineLine(std::string_view key, std::string nameKey, std::int32_t amount) {
+  return {.parts = {std::string{key}},
+          .nameKey = std::move(nameKey),
+          .amount = amount,
+          .subjectKey = {}};
+}
+
+} // namespace
+
+std::string endMessageKey(EndMessage message) {
+  return localization::gameTextKey(BattleText, BattleMessagesBlock,
+                                   static_cast<std::size_t>(message));
+}
+
+namespace {
+
+// battle_ui.c: handleBattleEndBox joins the lines in this order: the items each enemy dropped, the
+// injury, the commands the brain opened, the MP bonus and the move learned (battleMoveLearning
+// shows the one it rolled, not the moves learned with it).
+std::vector<EndLine> originalLines(const battle::BattleResult& result,
+                                   const session::BattleAftermath& aftermath,
+                                   const NameKeys& names) {
+  std::vector<EndLine> lines;
+  const std::string yellow{Yellow};
+  for (const battle::Drop& drop : result.drops) {
+    lines.push_back(
+        originalLine({yellow, names.species(drop.species), endMessageKey(EndMessage::Dropped),
+                      names.item(drop.item), std::string{WhiteWait}}));
+  }
+  if (result.injured) {
+    lines.push_back(originalLine(
+        {yellow, names.species(result.partnerSpecies), endMessageKey(EndMessage::WasInjured)}));
+  }
+  if (!result.commandsLearned.empty()) {
+    std::vector<std::string> parts;
+    for (const battle::MenuEntry entry : result.commandsLearned) {
+      const std::optional<EndMessage> message = commandMessageOf(entry);
+      if (message && (parts.empty() || parts.back() != endMessageKey(*message))) {
+        parts.push_back(endMessageKey(*message));
+      }
+    }
+    if (!parts.empty()) {
+      parts.push_back(endMessageKey(EndMessage::ListensTo));
+      lines.push_back(originalLine(std::move(parts)));
+    }
+  }
+  if (result.mpDiscountLearned > 0) {
+    // battle_hud.c: BTL_appendMPBonusText: the US text has no row break and four rows less than it
+    // counts, so the original cuts the row at the box's edge and then types what lies past the
+    // text until a press finds an end; here it takes two rows (a fix, see the module's doc).
+    EndLine line =
+        originalLine({endMessageKey(EndMessage::MpConsumptionBonus), std::string{NewRow},
+                      endMessageKey(EndMessage::ReducedBy), std::string{MpBonusPercentTextKey}});
+    line.amount = result.mpDiscountLearned;
+    lines.push_back(std::move(line));
+  }
+  if (!aftermath.learnedMoves.empty()) {
+    lines.push_back(originalLine(
+        {yellow, names.move(aftermath.learnedMoves.front()), endMessageKey(EndMessage::Learned)}));
+  }
+  return lines;
+}
+
+} // namespace
+
 BattleEndView battleEndViewOf(const battle::BattleResult& result,
                               const session::BattleAftermath& aftermath, const NameKeys& names) {
   BattleEndView view{.outcomeKey = std::string{battle::outcomeTextKey(result.outcome)},
-                     .lines = {},
+                     .lines = originalLines(result, aftermath, names),
                      .statGains = {},
                      .bits = result.bits};
-  for (const battle::Drop& drop : result.drops) {
-    view.lines.push_back({.key = std::string{battle::ItemDroppedTextKey},
-                          .nameKey = names.item(drop.item),
-                          .amount = 1,
-                          .subjectKey = names.species(drop.species)});
-  }
-  if (result.injured) {
-    view.lines.push_back(
-        {.key = std::string{battle::InjuredTextKey}, .nameKey = {}, .amount = 0, .subjectKey = {}});
-  }
-  for (const std::string& move : aftermath.learnedMoves) {
-    view.lines.push_back({.key = std::string{battle::MoveLearnedTextKey},
-                          .nameKey = names.move(move),
-                          .amount = 0,
-                          .subjectKey = {}});
-  }
   if (result.livesLost > 0) {
-    view.lines.push_back({.key = std::string{LivesLostTextKey},
-                          .nameKey = {},
-                          .amount = result.livesLost,
-                          .subjectKey = {}});
+    view.lines.push_back(engineLine(LivesLostTextKey, {}, result.livesLost));
   }
   for (const game::inventory::Stack& lost : aftermath.itemsLost) {
-    view.lines.push_back({.key = std::string{ItemLostTextKey},
-                          .nameKey = names.item(lost.item),
-                          .amount = lost.count,
-                          .subjectKey = {}});
+    view.lines.push_back(engineLine(ItemLostTextKey, names.item(lost.item), lost.count));
   }
   if (aftermath.recruitJoined) {
-    view.lines.push_back({.key = std::string{RecruitJoinedTextKey},
-                          .nameKey = names.species(*aftermath.recruitJoined),
-                          .amount = 0,
-                          .subjectKey = {}});
+    view.lines.push_back(
+        engineLine(RecruitJoinedTextKey, names.species(*aftermath.recruitJoined), 0));
   }
   for (const game::partner::Stat stat : game::partner::AllStats) {
     view.statGains.at(static_cast<std::size_t>(stat)) = aftermath.statGains[stat];
@@ -262,7 +342,15 @@ ScreenSettings settingsOf(const BattleEndView& view) {
       {.name = countName(BattleEndList), .value = static_cast<double>(view.lines.size())});
   for (std::size_t index = 0; index < view.lines.size(); ++index) {
     const EndLine& line = view.lines[index];
-    settings.push_back({.name = listEntryName(BattleEndList, index, KeyField), .value = line.key});
+    std::string parts;
+    for (const std::string& part : line.parts) {
+      if (!parts.empty()) {
+        parts += PartSeparator;
+      }
+      parts += part;
+    }
+    settings.push_back(
+        {.name = listEntryName(BattleEndList, index, PartsField), .value = std::move(parts)});
     settings.push_back(
         {.name = listEntryName(BattleEndList, index, NameField), .value = line.nameKey});
     settings.push_back({.name = listEntryName(BattleEndList, index, AmountField),

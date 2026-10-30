@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <vector>
 
 #include "fixture.hpp"
 
@@ -42,6 +43,17 @@ Battle fallenPartner(std::uint64_t seed) {
   }
   REQUIRE(battle.state().partner().fainted);
   return battle;
+}
+
+// The amounts of the events of `kind`, in order.
+std::vector<std::int32_t> amountsOf(const BattleEvents& events, EventKind kind) {
+  std::vector<std::int32_t> amounts;
+  for (const BattleEvent& event : events) {
+    if (event.kind == kind) {
+      amounts.push_back(event.amount);
+    }
+  }
+  return amounts;
 }
 
 // Steps until the thrown item lands and returns that frame's events.
@@ -149,6 +161,47 @@ TEST_CASE(
   CHECK_FALSE(partner.fainted);
   CHECK(partner.hp == partner.stats.maxHp / 2);
   CHECK(battle.state().deathFrames == 0);
+}
+
+TEST_CASE("a thrown item shows the amounts it heals as the item reads them, HP before MP") {
+  Battle battle = startBattle(duel(evenStats(1000, 100), evenStats(1000, 100)), 4);
+  // item.c: handleDoubleFloppy: 1500 HP and 1500 MP shown however full the partner is.
+  REQUIRE(battle.throwItem(healing(1500, 1500)));
+  const BattleEvents landed = stepUntilLanded(battle);
+  CHECK(amountsOf(landed, EventKind::HpRestored) == std::vector<std::int32_t>{1500});
+  CHECK(amountsOf(landed, EventKind::MpRestored) == std::vector<std::int32_t>{1500});
+  const auto hp = std::ranges::find(landed, EventKind::HpRestored, &BattleEvent::kind);
+  const auto mp = std::ranges::find(landed, EventKind::MpRestored, &BattleEvent::kind);
+  CHECK(hp < mp);
+  // A disk heals nothing and shows nothing.
+  REQUIRE(battle.throwItem(disk(20)));
+  const BattleEvents boosted = stepUntilLanded(battle);
+  CHECK_FALSE(hasEvent(boosted, EventKind::HpRestored));
+  CHECK_FALSE(hasEvent(boosted, EventKind::MpRestored));
+}
+
+TEST_CASE("a revive shows its share of the maximum HP, and the whole revive 9999") {
+  Battle battle = fallenPartner(9);
+  battle.step();
+  ThrownItem potion = healing(500);
+  potion.consciousOnly = true;
+  REQUIRE(battle.throwItem(potion));
+  CHECK_FALSE(hasEvent(stepUntilLanded(battle), EventKind::HpRestored));
+
+  ThrownItem restore;
+  restore.reviveHpPercent = 50;
+  REQUIRE(battle.throwItem(restore));
+  const std::int32_t maxHp = battle.state().partner().stats.maxHp;
+  CHECK(amountsOf(stepUntilLanded(battle), EventKind::HpRestored) ==
+        std::vector<std::int32_t>{maxHp / 2});
+
+  // item.c: handleRestore, case 0xc: adds 0x270f within the maximum and shows it.
+  ThrownItem whole;
+  whole.reviveHpPercent = 100;
+  REQUIRE(battle.throwItem(whole));
+  CHECK(amountsOf(stepUntilLanded(battle), EventKind::HpRestored) ==
+        std::vector<std::int32_t>{9999});
+  CHECK(battle.state().partner().hp + battle.state().partner().pendingDamage == maxHp);
 }
 
 TEST_CASE("the throw's frames come from the ruleset") {

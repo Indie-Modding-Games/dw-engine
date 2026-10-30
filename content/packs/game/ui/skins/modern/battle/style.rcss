@@ -380,7 +380,26 @@
 	color: #ff40ff;
 }
 
-.dn.hidden, .dd.hidden {
+.dn.gain .dd {
+	color: #40ff40;
+}
+
+/* The icon of a healing or a raise, right before the first digit (utils2.c: drawEntityTextIcon). */
+.di {
+	position: absolute;
+	right: 100%;
+	top: 0;
+	height: 24dp;
+	padding-right: 3dp;
+	font-size: 16dp;
+	font-weight: bold;
+	line-height: 24dp;
+	white-space: nowrap;
+	color: #ffffff;
+	font-effect: outline(2dp #101010);
+}
+
+.dn.hidden, .dd.hidden, .di.hidden {
 	display: none;
 }
 

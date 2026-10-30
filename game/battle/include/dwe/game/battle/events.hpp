@@ -25,6 +25,9 @@ enum class EventKind : std::uint8_t {
   AttackMissed,    // the attack of `other` reached nothing it could hurt
   Countered,       // `fighter` counters `other`
   Buffed,          // `move` raised the stats of `fighter`
+  OffenseRaised,   // a support move raised the offense of `fighter` by `amount`
+  DefenseRaised,   // a support move raised the defense of `fighter` by `amount`
+  SpeedRaised,     // a support move raised the speed of `fighter` by `amount`
   StatusApplied,   // `status` on `fighter`
   StatusCleared,   // `status` off `fighter`
   PoisonDamage,    // poison took `amount` from `fighter`
@@ -36,6 +39,8 @@ enum class EventKind : std::uint8_t {
   FleeStarted,     // the tamer calls the partner back
   ItemThrown,      // the tamer throws an item at the partner
   ItemLanded,      // the thrown item reached the partner and did its effect
+  HpRestored,      // a thrown item healed `amount` HP of `fighter` (as the item reads, not capped)
+  MpRestored,      // a thrown item healed `amount` MP of `fighter` (as the item reads, not capped)
   BattleEnded,     // the result is ready
 };
 

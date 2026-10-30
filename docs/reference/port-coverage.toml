@@ -184,10 +184,10 @@ target = "TRN_"
 # --- Batalla
 BTL_appendItemDroppedText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea del objeto que soltó el rival." }
 BTL_appendInjuredText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Añade al cuadro final la línea de la lesión del compañero." }
-BTL_appendCommandLearnedText = { status = "falta", what = "Añade al cuadro final la orden de combate que el compañero aprendió.", note = "docs/modulos/game/battle.md: Hueco" }
-BTL_appendMPBonusText = { status = "falta", what = "Añade al cuadro final el bonus de MP ganado.", note = "docs/modulos/game/battle.md: Hueco" }
+BTL_appendCommandLearnedText = { status = "portado", dwe = "game/battle/src/aftermath.cpp:101", what = "Añade al cuadro final la orden de combate que el compañero aprendió.", note = "el texto lo arma apps/screens/src/battle_view.cpp:239 (originalLines)" }
+BTL_appendMPBonusText = { status = "portado", dwe = "game/battle/src/aftermath.cpp:122", what = "Añade al cuadro final el bonus de MP ganado.", note = "en dos filas: arreglo del fallo del original (docs/modulos/game/battle.md)" }
 BTL_scrollBattleEndText = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Desplaza las líneas del cuadro final del combate." }
-BTL_tickBattleEndText = { status = "portado", note = "", what = "Avanza el texto del cuadro final; un botón lo adelanta." }
+BTL_tickBattleEndText = { status = "portado", dwe = "content/packs/game/ui/battle/logic.lua:546", what = "Avanza el texto del cuadro final; un botón lo adelanta." }
 BTL_isEndBoxTextFinished = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:116", what = "Dice si el cuadro final acabó de mostrar su texto." }
 BTL_shuffleBattleStartTextPieces = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:14", what = "Baraja el orden en que llegan las piezas del rótulo de inicio del combate." }
 BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Prepara el estallido del rótulo de inicio del combate." }
@@ -1073,7 +1073,7 @@ FISH_applySavedCameraScroll = { system = "fishing", status = "falta", what = "Re
 checkTournamentMedalConditions = { status = "parcial", note = "la rutina 22 sigue al momento sin copas ganadas; no hay torneos", what = "Mira si toca dar la medalla de los torneos." }
 
 # --- Gaps the module docs list (Hueco rows) on functions the code names
-handleBattleEndBox = { status = "parcial", note = "faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }
+handleBattleEndBox = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:239", note = "falta el sonido de la cuenta (docs/modulos/game/battle.md)", what = "Cuadro final del combate: objetos, lesión, técnicas, stats y dinero." }
 BTL_tickEnemyAI = { status = "parcial", note = "el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119)", what = "IA de los rivales: elige técnica, se acerca y ataca." }
 BTL_handleBattleIntro = { status = "parcial", note = "los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126)", what = "Entrada al combate: quién se une, quién huye y el rótulo de inicio." }
 tamerTickBattleLostLife = { status = "parcial", note = "la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107)", what = "Escena de perder una vida en combate." }

@@ -19,20 +19,24 @@ status.poison: "Poisoned"
 status.confusion: "Confused"
 status.stun: "Stunned"
 status.flatten: "Flattened"
-# {subject} is the enemy that dropped it, {name} the item's name and {amount} how many. A line break starts a
-# new row of the end box.
-result.item_dropped: "{subject}\ndropped {name}"
-result.injured: "Your partner was injured."
-# {name} is the move's name.
-result.move_learned: "Learned {name}!"
+# The end box types the original's own lines (btl.battle_effect_messages); these finish one or are the engine's. The
+# marks are the original's: {color:7} yellow, {color:1} white, {br} a new row, {wait} the row that ends the line and
+# waits. {amount} is the MP bonus in percent, after the original's "reduced by".
+result.mp_bonus_percent: " {amount}%!{wait}"
 # {amount} is the bits won.
 result.bits: "Won {amount} bits."
 # {amount} is how many lives the partner lost.
-result.lives_lost: "Your partner lost {amount} life."
+result.lives_lost: "Your partner lost{br}{color:7}{amount}{color:1} life.{wait}"
 # {name} is the item's name and {amount} how many were lost.
-result.item_lost: "Lost {name} x{amount}."
+result.item_lost: "Lost {color:7}{name}{color:1}{br}x{amount}.{wait}"
 # {name} is the name of who joined the city.
-result.recruit_joined: "{name} will move to the city!"
+result.recruit_joined: "{color:7}{name}{color:1}{br}will move to the city!{wait}"
+# The short label before a healing or raise number over a fighter (modern look; the original look draws the icon).
+number_icon.hp: "HP"
+number_icon.mp: "MP"
+number_icon.offense: "OFF"
+number_icon.defense: "DEF"
+number_icon.speed: "SPD"
 # {seconds} is the time left to get back up.
 revive_countdown: "Get up! {seconds}"
 finisher: "Finisher"
