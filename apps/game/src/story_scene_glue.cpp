@@ -89,9 +89,20 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     deathScene_ = false;
     scenes.partnerSceneFinished();
   }
+  if (curlingScene_ && curling_->takeOver()) {
+    curlingScene_ = false;
+    scenes.partnerSceneFinished();
+  }
   if (const auto partner = scenes.takePartnerScene()) {
     if (scenes.playsDeath() && death_ != nullptr && death_->play(partner->scene)) {
       deathScene_ = true;
+      return;
+    }
+    // partner.c: callDigimonRoutine 1 starts the stones game (KAR_start); the story waits for its
+    // end (KAR_finishMatch sets SOME_SCRIPT_SYNC_BIT).
+    if (partner->scene == game::story::PartnerScene::Curling && curling_ != nullptr &&
+        curling_->start(scene)) {
+      curlingScene_ = true;
       return;
     }
     core::logDebug("[port:partner] callDigimonRoutine {} (partner.c:1139): the app has no scene "

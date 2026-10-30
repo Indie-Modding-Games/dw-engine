@@ -7,6 +7,7 @@
 #include <dwe/session/card_shop.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/city_adapter.hpp>
+#include <dwe/session/curling_adapter.hpp>
 #include <dwe/session/discard_menu.hpp>
 #include <dwe/session/evolution_adapter.hpp>
 #include <dwe/session/field_items_adapter.hpp>
@@ -196,6 +197,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       TournamentAdapterDesc{.files = &files, .story = game.story, .battle = game.battle});
   game.tournament = tournament.get();
   game.systems.push_back(std::move(tournament));
+  auto curling = std::make_unique<CurlingAdapter>(CurlingAdapterDesc{.story = game.story});
+  game.curling = curling.get();
+  game.systems.push_back(std::move(curling));
   auto poop = std::make_unique<PoopAdapter>();
   game.poop = poop.get();
   game.systems.push_back(std::move(poop));

@@ -70,6 +70,8 @@ schemas:
     - rules/*/gym
   ruleset_tournament:
     - rules/*/tournament
+  ruleset_curling:
+    - rules/*/curling
   ruleset_movies:
     - rules/*/movies
   ruleset_story_lock:

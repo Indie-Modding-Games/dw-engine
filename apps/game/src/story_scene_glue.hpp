@@ -8,6 +8,7 @@
 
 #include "battle_screen.hpp"
 #include "card_shop_screen.hpp"
+#include "curling_screen.hpp"
 #include "death_scene.hpp"
 #include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
@@ -40,6 +41,8 @@ public:
   void attachTournament(session::TournamentAdapter* tournament, session::GameSession* session) {
     tournament_.attach(tournament, session);
   }
+  // The stones game the story's curling scene plays (call_partner_routine 1).
+  void attachCurling(CurlingScreen* curling) { curling_ = curling; }
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
   void attachDeath(DeathScene* death) { death_ = death; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
@@ -78,6 +81,9 @@ private:
   CardShopScreen* cardShop_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
+  CurlingScreen* curling_ = nullptr;
+  // Whether the story waits on the stones game.
+  bool curlingScene_ = false;
   StoryNaming naming_;
   SaveMachine* saveMachine_ = nullptr;
   // Whether the story waits on the save machine.

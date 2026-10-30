@@ -338,7 +338,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
       awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
       praiseScold_(*game_.session, *context.ui),
       fishingScreen_(*game_.systems.fishing, *game_.systems.inventory, *game_.session, *context.ui,
-                     game_.session->sound()) {
+                     game_.session->sound()),
+      curlingScreen_(*game_.systems.curling, *game_.session, *context.ui, game_.session->sound()) {
   session::GameSession& session = *game_.session;
   if (game_.systems.story != nullptr) {
     storyTextbox_.emplace(*context.ui, *game_.systems.story, session);
@@ -351,6 +352,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   itemKeeperScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachTournament(game_.systems.tournament, &session);
+  storyScenes_.attachCurling(&curlingScreen_);
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);
@@ -406,7 +408,7 @@ PlaySession::~PlaySession() {
         SleepMenuDocument, DialogDocument, ShopMenuDocument, ItemKeeperDocument,
         DiscardMenuDocument, JukeboxDocument, TradeMenuDocument, CardShopDocument, FieldItemNoticeDocument,
         AwardNoticeDocument, FishingBaitDocument, FishingNoticeDocument, FishingHudDocument,
-        EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
+        CurlingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -520,6 +522,11 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
     // The fishing runs instead of the field and the game time (clock.c: tickGameClock).
     if (fishingScreen_.active()) {
       fishingScreen_.tick(*scene_, fishing, TickSeconds);
+      return;
+    }
+    // kar.c: the stones game runs instead of the field while the story waits on it.
+    if (curlingScreen_.active()) {
+      curlingScreen_.tick(*scene_, TickSeconds);
       return;
     }
     // tamer.c: checkMapInteraction talks and confirms on a cell only while no script runs

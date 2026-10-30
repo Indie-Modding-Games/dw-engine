@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: curling",
+  "description": "rules/<id>/curling.yaml: the frozen lake's stones minigame (game/curling). The rink's geometry stays in the code.",
+  "type": "object",
+  "required": [
+    "story",
+    "stone_types",
+    "weights",
+    "friction",
+    "min_move",
+    "power",
+    "opponent_power_offsets",
+    "rings",
+    "perfect_score"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "story": {
+      "description": "The story values the match reads and writes.",
+      "type": "object",
+      "required": [
+        "opponent_variable",
+        "result_variable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "opponent_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "result_variable": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "stone_types": {
+      "description": "A stone's type by rand() % its length (setupMatch); type 3 is pegged.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3
+      }
+    },
+    "weights": {
+      "description": "The weight of each stone type.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "friction": {
+      "description": "The speed kept each frame: [kept, of].",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "min_move": {
+      "description": "A stone moving less than this a frame stops.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "power": {
+      "description": "The power meter.",
+      "type": "object",
+      "required": [
+        "step",
+        "limit",
+        "throw_bonus"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "throw_bonus": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "opponent_power_offsets": {
+      "description": "What each opponent takes off the power it works out: [first, second].",
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "rings": {
+      "description": "The target's rings in their order of precedence.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "x",
+          "z",
+          "radius",
+          "points"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "z": {
+            "type": "integer"
+          },
+          "radius": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "points": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "perfect_score": {
+      "description": "A winning score at least this high is a perfect win.",
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

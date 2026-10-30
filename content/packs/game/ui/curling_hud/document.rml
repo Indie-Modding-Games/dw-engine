@@ -1,0 +1,19 @@
+<rml>
+<head>
+	<title>Stones game</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="score"></div>
+	<div id="panel">
+		<div id="status"></div>
+		<div id="prompt">
+			<div id="play" text-key="curling.prompt.play"></div>
+			<div id="rules" text-key="curling.prompt.rules"></div>
+		</div>
+		<div id="gauge"><div id="track"><div id="fill"></div></div></div>
+	</div>
+</body>
+</rml>

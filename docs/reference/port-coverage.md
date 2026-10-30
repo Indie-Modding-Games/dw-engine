@@ -53,9 +53,9 @@ de inicio y los mapas cercanos, y reclutar.
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
 | 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas y el cuadro del dinero (el humo de un personaje que desaparece ya sale: rutina 38) | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14 y 15 |
-| 14 | Cerrado: la mariposa vuela alrededor del compañero que solo está distraído (`butterfly.c`; punto de `CONDITION_FX_OFFSETS`) | `butterfly.c` `setButterfly`, `tickButterfly` | `apps/game/src/field_effects.cpp`, `apps/game/src/play_session.cpp` |
-| 15 | Las partículas de curación ya salen al usar un objeto en el campo; faltan las partículas de objeto en combate | `battle_effect.c` `BTL_addItemParticles` | `apps/game/src/field_effects.cpp` (campo) |
+| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
+| 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
+| 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
 | 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
 | 17 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
 | 18 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
@@ -95,13 +95,13 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 13 | 0 | 16 | 27 | 45 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 0 | 4 | 81 | 364 | 2 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 8 | 8 | 72 | 361 | 14 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
-| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
+| [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
-| **Total** | 2438 funciones | 974 | 34 | 335 | 1095 | 74 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
+| **Total** | 2438 funciones | 1016 | 41 | 293 | 1088 | 77 % |
 
 ## Batalla
 
@@ -405,7 +405,7 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 0, parcial 4, falta 81, no aplica 364.
+Portado 8, parcial 8, falta 72, no aplica 361.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -420,19 +420,17 @@ Portado 0, parcial 4, falta 81, no aplica 364.
 | `tickTournamentInfo` | `dget/dget.c:631` | falta | Cierra el recuadro de información de la copa al pulsar un botón. | — |
 | `initTournamentSchedule` | `dget/dget.c:664` | parcial | Enseña el calendario de torneos. | `apps/session/include/dwe/session/story_scenes.hpp:109` · la rutina 18 se cierra sin pantalla |
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
-| `scriptStartTournament` | `main/tournament.c:128` | parcial | Empieza un torneo. | `apps/session/include/dwe/session/story_scenes.hpp:102` · la rutina 6 se cierra sin torneo |
-| `getCupDataJumpTable` | `main/tournament.c:146` | falta (citada en docs) | Busca en el guion del mapa los datos de una copa por sección e id. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
 | `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:110` · la rutina 22 se cierra sin pantalla |
-| `STD_addChampionScene` | `std/std_effect.c:1251` | falta | Inicia la escena de celebración del campeón de la copa. | — |
+| `STD_addChampionScene` | `std/std_effect.c:1251` | falta (citada en docs) | Inicia la escena de celebración del campeón de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
 | `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |
 | `STD_addLoseScene` | `std/std_effect.c:1401` | falta | Inicia la escena de derrota con barrido aleatorio de la pantalla. | — |
 | `STD_tickLoseScene` | `std/std_effect.c:1423` | falta | Anima la escena de derrota del combate de copa. | — |
 | `STD_addWinScene` | `std/std_effect.c:1516` | falta | Inicia la escena de victoria del combate de copa. | — |
 | `STD_tickWinScene` | `std/std_effect.c:1546` | falta | Anima el letrero de victoria del combate de copa. | — |
-| `STD_handleCommands` | `std/std_hud.c:504` | falta | Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate. | — |
-| `STD_tickTamerTournament` | `std/std_hud.c:540` | falta | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | — |
+| `STD_handleCommands` | `std/std_hud.c:504` | falta (citada en docs) | Navega y confirma las órdenes al compañero en el combate de copa, incluido el remate. | — |
+| `STD_tickTamerTournament` | `std/std_hud.c:540` | falta | Lee la entrada del jugador en la copa: alterna barras de vida y da órdenes. | `game/battle/include/dwe/game/battle/battle.hpp:168` |
 | `STD_addVersusModelScene` | `std/std_hud.c:1168` | falta | Inicia la animación del letrero de enfrentamiento antes del combate. | — |
 | `STD_tickVersusModelScene` | `std/std_hud.c:1173` | falta | Anima el letrero de enfrentamiento entre ambos luchadores. | — |
 | `STD_isVersusModelSceneFinished` | `std/std_hud.c:1213` | falta | Indica si terminó la animación del letrero de enfrentamiento. | — |
@@ -440,9 +438,9 @@ Portado 0, parcial 4, falta 81, no aplica 364.
 | `STD_loadChampionModels` | `std/std_hud.c:1273` | falta | Prepara la órbita de cámara y coloca las letras del letrero de campeón. | solo lo cita la extracción del disco |
 | `STD_initializeChampionScene` | `std/std_hud.c:1371` | falta | Coloca al compañero en el centro con la pose de victoria y fija la cámara del campeón. | — |
 | `STD_placePlayer1` | `std/std_main.c:1568` | falta | Coloca al compañero en su lado de la arena para el combate. | — |
-| `STD_placePlayer2` | `std/std_main.c:1593` | falta | Coloca al rival en su lado de la arena para el combate. | — |
+| `STD_placePlayer2` | `std/std_main.c:1593` | falta | Coloca al rival en su lado de la arena para el combate. | `apps/game/src/story_tournament.cpp:11` |
 | `STD_setPostIntroPosition` | `std/std_main.c:1682` | falta | Deja al luchador en su posición final al terminar la presentación. | — |
-| `STD_runIntro` | `std/std_main.c:1885` | falta | Ejecuta la presentación del combate de copa con cámara y nombres. | — |
+| `STD_runIntro` | `std/std_main.c:1885` | falta (citada en docs) | Ejecuta la presentación del combate de copa con cámara y nombres. | — |
 | `STD_tickIntroName` | `std/std_main.c:2063` | falta | Muestra el nombre del luchador durante la presentación. | — |
 | `STD_setCameraOrbit` | `std/std_main.c:2224` | falta | Cámara que orbita según la distancia entre ambos luchadores. | — |
 | `STD_setCameraYXZ` | `std/std_main.c:2266` | falta | Cámara que encuadra al compañero y al rival a la vez. | — |
@@ -461,41 +459,38 @@ Portado 0, parcial 4, falta 81, no aplica 364.
 | `STD_tickCameraIntro` | `std/std_main.c:2753` | falta | Avanza la secuencia de cámara de la presentación. | — |
 | `STD_startCameraIntro` | `std/std_main.c:2782` | falta | Inicia el recorrido de cámara entre los dos luchadores. | — |
 | `STD_applyEntityViewpoint` | `std/std_main.c:2854` | falta | Cámara anclada a la vista del luchador enfocado. | — |
-| `STD_addFighterCounter` | `std/std_main.c:2911` | falta | Inicia el reloj de tiempo del combate de copa. | — |
-| `STD_tickFighterCounter` | `std/std_main.c:2920` | falta | Descuenta el reloj del combate salvo cuando un luchador está caído. | — |
+| `STD_addFighterCounter` | `std/std_main.c:2911` | parcial | Inicia el reloj de tiempo del combate de copa. | `game/battle/src/battle.cpp:1` · el reloj cuenta; no se dibuja |
+| `STD_tickFighterCounter` | `std/std_main.c:2920` | parcial | Descuenta el reloj del combate salvo cuando un luchador está caído. | `game/battle/src/battle.cpp:1` · el reloj cuenta; no se dibuja |
 | `STD_updateBracket` | `std/std_main.c:2949` | falta | Avanza el cuadro de eliminatorias al siguiente cruce y destaca al jugador. | — |
 | `STD_addBracketProjectile` | `std/std_main.c:3314` | falta | Lanza la marca animada que sube por el cuadro hacia el ganador. | — |
 | `STD_addBracketHitFlash` | `std/std_main.c:3336` | falta | Inicia el destello en una casilla del cuadro de eliminatorias. | — |
 | `STD_initializeBracket` | `std/std_main.c:3444` | falta | Reinicia el estado del cuadro de eliminatorias. | — |
-| `STD_setupParticipants` | `std/std_main.c:3464` | falta | Reparte los ocho participantes de la copa en el cuadro. | solo lo cita la extracción del disco |
-| `STD_addBracket` | `std/std_main.c:3544` | falta | Muestra el cuadro de eliminatorias de la copa. | — |
+| `STD_addBracket` | `std/std_main.c:3544` | falta (citada en docs) | Muestra el cuadro de eliminatorias de la copa. | — |
 | `STD_tickBracket` | `std/std_main.c:3556` | falta | Anima el cuadro de eliminatorias entre combates. | — |
 | `STD_isBracketFinished` | `std/std_main.c:3577` | falta | Indica si terminó la animación del cuadro de eliminatorias. | — |
 | `STD_tickBracketHitFlash` | `std/std_main.c:3582` | falta | Anima el destello de una casilla del cuadro. | — |
 | `STD_addBracketIntro` | `std/std_main.c:3672` | falta | Inicia la presentación del cuadro al empezar la copa. | — |
 | `STD_tickBracketIntro` | `std/std_main.c:3686` | falta | Anima la presentación del cuadro de eliminatorias. | — |
 | `STD_combatSetup` | `std/std_main.c:3939` | falta | Prepara los datos de combate del compañero y del rival en la copa. | — |
-| `STD_checkEndCondition` | `std/std_main.c:4038` | falta | Comprueba fin de combate por KO o tiempo y decide ganador. | — |
 | `STD_tickBattle` | `std/std_main.c:4431` | falta | Avanza un cuadro del combate de copa. | — |
 | `STD_areAllEnemyDigimonDead` | `std/std_main.c:4626` | falta | Indica si todos los rivales del combate han caído. | — |
 | `STD_tickBattleResultScreen` | `std/std_main.c:4641` | falta | Gestiona la pantalla de resultado tras el combate de copa. | — |
-| `STD_addTimeoutWindow` | `std/std_main.c:4698` | falta | Muestra el aviso de tiempo agotado del combate. | — |
+| `STD_addTimeoutWindow` | `std/std_main.c:4698` | falta (citada en docs) | Muestra el aviso de tiempo agotado del combate. | — |
 | `STD_tickDigimonSenile` | `std/std_main.c:4860` | falta | Mantiene al luchador en estado senil hasta que se agote su contador. | — |
 | `STD_initializePlayerMarker` | `std/std_main.c:5476` | falta | Añade la marca que distingue a cada luchador en pantalla. | — |
-| `STD_combatMain` | `std/std_main.c:5582` | falta | Bucle principal de un combate de copa hasta el resultado. | — |
+| `STD_combatMain` | `std/std_main.c:5582` | parcial | Bucle principal de un combate de copa hasta el resultado. | `apps/game/src/story_tournament.cpp:1` · el combate de copa es una batalla con reloj en el mapa actual; el rival no se dibuja |
 | `STD_startWalkingAnimation2` | `std/std_main.c:5652` | falta | Elige animación de caminar normal o cansada según la vida. | — |
 | `STD_applyPartnerStatsToFighter` | `std/std_main.c:5913` | falta | Copia los valores del compañero a su ficha de luchador. | — |
 | `STD_selectMoveTarget` | `std/std_main.c:6660` | falta | Elige el objetivo de la técnica del luchador. | — |
 | `STD_applyMoveResult` | `std/std_main.c:6839` | falta | Aplica el daño y efectos de una técnica que impacta. | — |
 | `STD_updateFighterStatusVisuals` | `std/std_main.c:6954` | falta | Actualiza los efectos visibles de estados alterados del luchador. | — |
-| `STD_addCommandMenu` | `std/std_main.c:7502` | falta | Muestra el menú de órdenes del jugador en la copa. | — |
+| `STD_addCommandMenu` | `std/std_main.c:7502` | falta (citada en docs) | Muestra el menú de órdenes del jugador en la copa. | — |
 | `STD_initializeTournament` | `std/std_setup.c:243` | falta | Prepara la arena de la copa: música, cámara, luces, escenario y efectos. | solo lo cita la extracción del disco |
-| `STD_initializeOpponent` | `std/std_setup.c:279` | falta | Genera un rival de la copa con valores y técnicas según su nivel. | solo lo cita la extracción del disco |
-| `STD_runMatch` | `std/std_setup.c:401` | falta | Juega un combate de copa: presentación, combate y cámara final. | — |
+| `STD_runMatch` | `std/std_setup.c:401` | parcial | Juega un combate de copa: presentación, combate y cámara final. | `apps/game/src/story_tournament.cpp:1` · sin presentación ni cámara final |
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta | Coloca la cámara inicial de la arena de copa. | — |
-| `STD_tournamentMain` | `std/std_setup.c:521` | falta (citada en docs) | Flujo completo de la copa: cuadro, combates, resultados y premio. | — |
+| `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · sustitutos, cuadro, tres combates y recuperación; sin arena, cuadro animado ni escenas (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (303); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (28); limpieza de objetos y memoria del original: el motor libera lo suyo (16); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
+No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (28); limpieza de objetos y memoria del original: el motor libera lo suyo (16); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
 
 ## Versus y demo
 
@@ -607,47 +602,18 @@ El minijuego de piedras sobre hielo.
 
 Ficheros del decomp: `kar/kar.c`, `main/kar.c`.
 
-Portado 0, parcial 0, falta 35, no aplica 13.
+Portado 32, parcial 3, falta 3, no aplica 10.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `KAR_setupMatch` | `kar/kar.c:686` | falta | Prepara la partida de curling: piedras de cada equipo, obstáculos y rival. | el motor no tiene el minijuego; la escena termina al instante |
-| `KAR_start` | `kar/kar.c:778` | falta | Empieza el minijuego de piedras. | `game/story/include/dwe/game/story/partner_routines.hpp:17` · la escena 1 acaba al momento: no hay minijuego de piedras |
-| `KAR_tickStones` | `kar/kar.c:797` | falta | Mueve las piedras sobre el hielo con su rozamiento y sus choques. | — |
-| `KAR_finishMatch` | `kar/kar.c:945` | falta | Cierra la partida: poses finales y guarda el resultado (gana, gana por mucho o pierde). | — |
-| `KAR_tick` | `kar/kar.c:973` | falta | Bucle principal del minijuego de curling por cuadro. | — |
-| `KAR_handleAimScroll` | `kar/kar.c:1215` | falta | Desplaza la cámara con la cruceta mientras el jugador apunta. | — |
-| `KAR_updateRingMarkers` | `kar/kar.c:1248` | falta | Marca en qué anillo de la diana está cada piedra. | — |
-| `KAR_checkStonesStopped` | `kar/kar.c:1319` | falta | Comprueba si todas las piedras se han detenido para pasar el turno. | — |
-| `KAR_updateCollisions` | `kar/kar.c:1362` | falta | Detecta los choques entre piedras y contra las paredes de la pista. | — |
-| `KAR_bounceOffWall` | `kar/kar.c:1468` | falta | Hace rebotar una piedra contra la pared de la pista. | — |
-| `KAR_distance` | `kar/kar.c:1529` | falta | Calcula la distancia entre dos puntos de la pista. | — |
-| `KAR_resolveStoneCollision` | `kar/kar.c:1541` | falta | Decide cómo se reparte un choque entre dos piedras. | — |
-| `KAR_collidePeggedStone` | `kar/kar.c:1569` | falta | Choque de una piedra en marcha contra una piedra fija. | — |
-| `KAR_collideRestingStone` | `kar/kar.c:1607` | falta | Choque de una piedra en marcha contra una piedra parada, que sale despedida. | — |
-| `KAR_collideMovingStones` | `kar/kar.c:1665` | falta | Choque entre dos piedras que se mueven a la vez. | — |
-| `KAR_computeImpactShare` | `kar/kar.c:1762` | falta | Calcula cuánta fuerza recibe cada piedra en un choque. | — |
-| `KAR_computeSeparation` | `kar/kar.c:1784` | falta | Separa dos piedras que se solapan tras chocar. | — |
-| `KAR_getWallZone` | `kar/kar.c:1859` | falta | Dice en qué zona de pared de la pista está un punto. | — |
-| `KAR_placeAtContact` | `kar/kar.c:1934` | falta | Coloca la piedra justo en el punto de contacto del choque. | — |
-| `KAR_beginAiming` | `kar/kar.c:1944` | falta | Empieza la fase de apuntar del turno del jugador. | — |
-| `KAR_selectPreviousStone` | `kar/kar.c:1968` | falta | Elige la piedra anterior para lanzar. | — |
-| `KAR_selectNextStone` | `kar/kar.c:1982` | falta | Elige la piedra siguiente para lanzar. | — |
-| `KAR_beginThrow` | `kar/kar.c:2020` | falta | Lanza la piedra elegida hacia el punto apuntado. | — |
-| `KAR_tickYesNoPrompt` | `kar/kar.c:2032` | falta | Pregunta sí/no del minijuego (confirmar tiro o jugar otra vez). | — |
-| `KAR_tickHintBox` | `kar/kar.c:2085` | falta | Anima el cuadro de ayuda con las instrucciones del curling. | — |
-| `KAR_classifyStoneRings` | `kar/kar.c:2140` | falta | Clasifica las piedras por anillo para puntuar. | — |
-| `KAR_tickScoreTally` | `kar/kar.c:2181` | falta | Cuenta y muestra los puntos de cada equipo al final de la ronda. | — |
-| `KAR_chooseOpponentShot` | `kar/kar.c:2306` | falta | Decide el tiro del rival según las piedras en la pista. | — |
-| `KAR_findClearShotAngle` | `kar/kar.c:2525` | falta | Busca un ángulo de tiro libre de obstáculos para el rival. | — |
-| `KAR_setOpponentShot` | `kar/kar.c:2600` | falta | Fija el destino y la fuerza del tiro del rival. | — |
-| `KAR_aimAtRandomStone` | `kar/kar.c:2624` | falta | El rival apunta a una piedra al azar. | — |
-| `KAR_registerThrownStone` | `kar/kar.c:2732` | falta | Apunta la piedra recién lanzada en la lista de lanzadas. | — |
-| `KAR_rotatePoint` | `kar/kar.c:2740` | falta | Gira un punto sobre la pista para posicionar piedras y marcas. | — |
-| `KAR_tickMatchState` | `kar/kar.c:2765` | falta | Máquina de estados de la partida: turnos, tiros, rondas y final. | — |
+| `KAR_tick` | `kar/kar.c:973` | parcial | Bucle principal del minijuego de curling por cuadro. | `apps/game/src/curling_screen.cpp:1` · la partida corre a 20 cuadros por segundo; las piedras se dibujan como marcadores |
+| `KAR_handleAimScroll` | `kar/kar.c:1215` | falta (citada en docs) | Desplaza la cámara con la cruceta mientras el jugador apunta. | la cámara solo va a donde la manda la partida |
+| `KAR_updateRingMarkers` | `kar/kar.c:1248` | falta (citada en docs) | Marca en qué anillo de la diana está cada piedra. | sin marcas en la diana |
+| `KAR_tickYesNoPrompt` | `kar/kar.c:2032` | parcial | Pregunta sí/no del minijuego (confirmar tiro o jugar otra vez). | `game/curling/src/match.cpp:1` · la pregunta se muestra con texto propio |
+| `KAR_tickHintBox` | `kar/kar.c:2085` | parcial | Anima el cuadro de ayuda con las instrucciones del curling. | `game/curling/src/match.cpp:1` · las páginas de ayuda se pasan, pero su texto no se muestra |
 | `checkCurlingMap` | `main/kar.c:8` | falta | Al entrar en el mapa de curling carga el minijuego. | el motor no tiene el minijuego |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (10); sale al empezar en el original: código muerto (2); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); sale al empezar en el original: código muerto (2); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cálculo de dibujo de los modelos; aquí los marcadores no giran (1).
 
 ## Audio
 
@@ -701,13 +667,12 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 46, parcial 1, falta 1, no aplica 38.
+Portado 48, parcial 1, falta 0, no aplica 37.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
-| `startTournament` | `main/utils2.c:577` | falta (citada en docs) | Carga y juega un torneo; suma los ganados. | no hay torneos |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1); consulta de dibujo (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (19); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1); consulta de dibujo (1).
 
 <!-- port-coverage:end -->

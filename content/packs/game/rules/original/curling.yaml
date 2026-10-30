@@ -1,0 +1,35 @@
+# El minijuego de piedras (curling) del lago helado (game/curling: curling.hpp). kar/kar.c: KAR_start, KAR_setupMatch,
+# KAR_tickStones, KAR_tickMatchState, KAR_tickScoreTally y KAR_finishMatch. La pista (paredes, diagonales, líneas)
+# está en el código; aquí van las reglas del juego.
+
+# Valores del guion: el rival (pstat 0x7A: 0 el primero, 1 el segundo; su entidad es ese número + 2) y el resultado
+# (pstat 0x79: 2 victoria perfecta, 1 victoria, 0 derrota).
+story: {opponent_variable: 122, result_variable: 121}
+
+# KAR_setupMatch: el tipo de cada piedra sale de esta tabla con rand() % 10 (3 lleva clavos, 0 a 2 son de peso
+# distinto) y su peso, de la tabla por tipo.
+stone_types: [3, 2, 2, 1, 1, 1, 0, 0, 0, 0]
+weights: [30, 25, 35, 30]
+
+# KAR_tickStones: cada fotograma la piedra avanza su velocidad entre su peso y la velocidad baja a 98/100; con un
+# avance de menos de 2 se para.
+friction: [98, 100]
+min_move: 2
+
+# KAR_tickMatchState (estado 8): la fuerza sube 100 por fotograma; al llegar a 3000 vuelve a 0 y se apunta otra vez.
+# Estado 9: la piedra sale con la fuerza más 600.
+power: {step: 100, limit: 3000, throw_bonus: 600}
+
+# KAR_computeThrowPower: el rival resta esto a la fuerza calculada (el primero 600, el segundo 500).
+opponent_power_offsets: [600, 500]
+
+# KAR_classifyStoneRings y KAR_tickScoreTally: los anillos de la diana (centro x, z, radio) y sus puntos; una piedra
+# cuenta en el primero que la contiene. Solo cuentan las piedras pasada la línea (z < -1380).
+rings:
+  - {x: 0, z: -1718, radius: 145, points: 2}
+  - {x: 0, z: -1718, radius: 375, points: 1}
+  - {x: 400, z: -2318, radius: 205, points: -2}
+  - {x: -400, z: -2318, radius: 205, points: 2}
+
+# KAR_finishMatch: con más puntos que el rival se gana; con al menos 10, victoria perfecta.
+perfect_score: 10

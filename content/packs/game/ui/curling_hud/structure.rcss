@@ -1,0 +1,40 @@
+/* The stones game's information (kar.c: KAR_renderScores, KAR_renderPowerMeter, KAR_tickYesNoPrompt): the two
+   scores at the top, and at the bottom what the player does now, the play or rules prompt and the power gauge. */
+
+body { pointer-events: none; }
+#score {
+	position: absolute;
+	top: 24dp;
+	left: 50%;
+	margin-left: -160dp;
+	width: 320dp;
+	padding: 6dp 12dp;
+	text-align: center;
+	background-color: #10204ccc;
+	border-radius: 6dp;
+	color: #ffffff;
+}
+#panel {
+	position: absolute;
+	left: 50%;
+	bottom: 24dp;
+	margin-left: -260dp;
+	width: 520dp;
+	padding: 8dp 12dp;
+	background-color: #10204ccc;
+	border-radius: 6dp;
+	color: #ffffff;
+}
+#prompt div { padding: 2dp 8dp; }
+#prompt div.selected { background-color: #f0c04066; }
+#track {
+	height: 12dp;
+	margin-top: 6dp;
+	background-color: #ffffff33;
+}
+#fill {
+	height: 12dp;
+	width: 0%;
+	background-color: #f0c040;
+}
+.hidden { display: none; }

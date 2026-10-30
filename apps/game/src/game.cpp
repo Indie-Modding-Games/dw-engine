@@ -1144,6 +1144,7 @@ int runGame(const Options& requested) {
         play->pressBattle(input);
         play->pressItemKeeper(input);
         play->pressPartnerMenu(input);
+        play->pressCurling(input);
         play->tick(intent, fishing);
         if (trace) {
           trace->write(play->traceFrame(ticksRun, input));

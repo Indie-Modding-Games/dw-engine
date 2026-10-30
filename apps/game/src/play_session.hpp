@@ -28,6 +28,7 @@
 #include "battle_screen.hpp"
 #include "bug_report.hpp"
 #include "care_commands.hpp"
+#include "curling_screen.hpp"
 #include "death_scene.hpp"
 #include "egg_box_screen.hpp"
 #include "evolution_scene.hpp"
@@ -150,6 +151,8 @@ public:
   void pressItemKeeper(const input::InputState& input);
   // The partner menu's buttons the menus do not navigate with: `extra` opens the tech help.
   void pressPartnerMenu(const input::InputState& input);
+  // The stones game's arrows and confirm button, while it runs.
+  void pressCurling(const input::InputState& input) { curlingScreen_.press(input); }
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
   // Whether the menu button belongs to the game rather than opening the menu: a naming box takes
@@ -240,6 +243,7 @@ private:
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;
   FishingScreen fishingScreen_;
+  CurlingScreen curlingScreen_;
   std::uint32_t mapSerial_ = 0;
   // Whether a battle ran last frame: its end may change the bag, the money and the partner.
   bool battleRanLastFrame_ = false;
