@@ -27,8 +27,8 @@ using StoryMapChangeTarget =
     std::function<bool(std::int32_t map, std::int32_t exit, bool showName)>;
 
 // The runner's map changes, to the target the app sets. One the target cannot play (or with no
-// target) is logged and kept as unplayed: the adapter then tells the runner the player stayed on
-// the map, so the story goes on.
+// target) is kept as unplayed: the adapter then tells the runner the player stayed on the map, so
+// the story goes on. The target logs why it could not; with no target, it is an error here.
 class StoryMapChanges final : public game::story::MapChangePort {
 public:
   StoryMapChanges() = default;

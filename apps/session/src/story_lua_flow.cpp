@@ -51,12 +51,18 @@ core::Result<std::array<std::int64_t, Count>> integers(const ApiCall& call) {
 void StoryMapChanges::startMapChange(std::int32_t map, std::int32_t exit, bool showName) {
   core::logDebug("[port:story] scriptTickChangeMap (map.c:5277): map {} exit {} name {}", map, exit,
                  showName);
-  if (target_ && target_(map, exit, showName)) {
+  if (!target_) {
+    core::logError("[port:story] the map change to map {} exit {} is not played: the player stays",
+                   map, exit);
+    unplayed_ = true;
     return;
   }
-  core::logError("[port:story] the map change to map {} exit {} is not played: the player stays",
-                 map, exit);
-  unplayed_ = true;
+  if (!target_(map, exit, showName)) {
+    // The target says why: no such map is an error, a map the story lock keeps closed is not.
+    core::logDebug("[port:story] the map change to map {} exit {} is not played: the player stays",
+                   map, exit);
+    unplayed_ = true;
+  }
 }
 
 void StoryFieldControl::setTarget(StoryHoldTarget target) {
