@@ -706,6 +706,12 @@ son (b) y no están aquí: son `data/fishing`, que `dwx` extrae del overlay FISH
 | `timing.combat_area_width` | 280 | a | Número de la lógica del original (map.c: entityCheckCollision, 0x118), no datos del disco. |
 | `timing.combat_area_height` | 200 | a | Número de la lógica del original (map.c: entityCheckCollision, 0xc8), no datos del disco. |
 | `timing.combat_area_corner_height` | 200 | a | Número de la lógica del original (map.c: entityCheckCombatArea), no datos del disco. |
+| `timing.retreat_step` | 50 | a | Paso por fotograma de la carrera del domador al empezar el combate, medido en el original (battle_setup.c: BTL_handleBattleIntro, animación 3), no datos del disco. |
+| `timing.retreat_radius` | 100 | a | Radio del domador en la prueba del área (DIGIMON_DATA[0].radius), número de la lógica, no datos del disco. |
+| `timing.retreat_trail_area_width` | 310 | a | Número de la lógica del original (battle_setup.c: BTL_handleBattleIntro, 0x136), no datos del disco. |
+| `timing.retreat_trail_area_height` | 230 | a | Número de la lógica del original (battle_setup.c: BTL_handleBattleIntro, 0xe6), no datos del disco. |
+| `timing.retreat_entry_area_width` | 300 | a | Número de la lógica del original (battle_setup.c: BTL_handleBattleIntro, 0x12c), no datos del disco. |
+| `timing.retreat_entry_area_height` | 220 | a | Número de la lógica del original (battle_setup.c: BTL_handleBattleIntro, 0xdc), no datos del disco. |
 | `quirks.broken_mp_tiredness` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.command_delay_discarded` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |
 | `quirks.sickness_always_hits` | `true` | a | Bandera de rareza: dice si se reproduce un comportamiento. |

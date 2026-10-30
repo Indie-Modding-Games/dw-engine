@@ -5,6 +5,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/npcs.hpp>
+#include <dwe/game/field/player_trail.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/field/script_warps.hpp>
 #include <dwe/scene/components.hpp>
@@ -249,6 +250,9 @@ public:
 
   [[nodiscard]] CharacterState player() const;
   [[nodiscard]] CharacterState partner() const;
+  // The player's way back on this map (map.c: TAMER_WAYPOINT_*, TAMER_START_TILE).
+  [[nodiscard]] const PlayerTrail& playerTrail() const { return playerTrail_; }
+  [[nodiscard]] PlayerTrail& playerTrail() { return playerTrail_; }
   // The partner's clip ended a pass (it went round its repeat, or a clip that does not repeat
   // reached its end). Once the drawing side says so, a change of the partner's walk waits for the
   // end of the pass under way, as partner.c: partnerTickWalking lets the clip finish (loopCount =
@@ -514,6 +518,7 @@ private:
 
   assets::CollisionCell lastPlayerCell_;
   std::deque<assets::CollisionCell> trail_;
+  PlayerTrail playerTrail_;
   scene::Motion partnerMotion_ = scene::Motion::Idle;
   // The partner's motion as the last tick left it, before tick() clears its intent: the motion its
   // clip shows, which a change of walk waits on.

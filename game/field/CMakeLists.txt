@@ -12,6 +12,7 @@ dwe_add_module(field
         src/field_items.cpp
         src/field_partner_call.cpp
         src/field_positions.cpp
+        src/player_trail.cpp
     DEPS core assets scene
     TEST_LIBS dwe::ruleset)
 

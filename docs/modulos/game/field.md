@@ -148,6 +148,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 | Interpolación sin tick de campo y saltos de guion | sin interpolación | `settle`, `placeByScript`/`turnByScript` con salto | `field_tests`: "settling ...", "a script's jump ..." | Mejora documentada |
 | El jugador atraviesa al compañero | `tamer.c: checkMapInteraction` pasa al compañero como `source` a `entityCheckCollision`, que lo salta (`other != source`) | el jugador lo atraviesa; la vigilancia lo registra si se queda encima | ruta `control` | Igual |
 | Deslizamientos de guion contra paredes y NPC; `wouldTouchCharacter` sin NPC | — | sin cambiar; la regla de suelta arregla el resultado | — | Hueco |
+| Camino de vuelta del jugador: la celda por la que entró al mapa y, mientras la línea recta hasta ella está tapada, las celdas donde perdió de vista la anterior (hasta 30); lo usa la carrera del domador al empezar un combate | `map.c: initializeTamerWaypoints` (en `loadMap`), `tickTamerWaypoints` (al principio de `tamerTickWalkingState`), `isLinearPathBlocked`, `addTamerWaypoint`, `clearTamerWaypoints` | `TamerTrail` (`Field::tamerTrail`) | `field_tests`: "a line of cells is blocked ...", "the way back keeps the cell ..." | Igual; el original lee el anillo pasado de 30 celdas, aquí se para al final |
 | Vuelta andando tras un combate de historia | `story_scenes.cpp:75-79` es un esbozo | sin cambiar | — | Hueco |
 
 ## Datos
