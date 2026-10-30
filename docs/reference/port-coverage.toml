@@ -200,7 +200,9 @@ BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/fi
 BTL_maintainDistanceRange = { status = "portado", dwe = "game/battle/src/movement.cpp:447", what = "Mantiene al luchador entre una distancia mínima y una máxima del objetivo." }
 BTL_hasAffordableMoves = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Dice si el luchador tiene MP para alguna técnica." }
 BTL_initializePartnerTile = { status = "no-aplica", note = "estado interno del rastro del compañero", what = "Guarda la casilla del compañero al empezar el combate." }
-BTL_addEnemyHPBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Añade las barras de vida de los rivales." }
+BTL_addEnemyHPBars = { status = "portado", dwe = "apps/screens/src/enemy_hp_bars.cpp:55", what = "Añade las barras de vida de los rivales." }
+BTL_initializeEnemyHPBarSprites = { status = "portado", dwe = "apps/screens/src/enemy_hp_bars.cpp:55", what = "Prepara el relleno de las barras de vida de los rivales: 50 píxeles, teñido en verde." }
+BTL_removeEnemyHPBars = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:241", what = "Quita las barras de vida de los rivales al acabar el combate." }
 BTL_clearBlockedAttacks = { status = "portado", dwe = "game/battle/src/attack_hits.cpp", what = "Vacía la lista de ataques ya recibidos de cada luchador." }
 BTL_getAttackTech = { status = "portado", dwe = "game/battle/src/combatant.cpp:65", what = "Da la técnica de un ataque a partir de su animación." }
 BTL_getFighterSlot = { status = "no-aplica", note = "índice interno", what = "Da la ranura de combate de una entidad." }

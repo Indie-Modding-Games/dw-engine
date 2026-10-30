@@ -646,6 +646,140 @@ local function draw_damage(document)
   end
 end
 
+-- The enemies' HP bars beside them (apps/screens: enemy_hp_bars.hpp) come as nine values each: the
+-- enemy (1 to 3), the anchor in percent of the window, the bar's top-left corner from it in the
+-- original's pixels, the fill's width in pixels, its red and green tint (128 as it is, 255 twice as
+-- bright) and the HP (battle_main.c: BTL_renderEnemyHPBars).
+local max_enemies = 3
+local fill_pixels = 50
+-- The fill sprite is a grey ramp from its left end to its right (BTLCOMND, palette 3); the tint's
+-- blue never changes.
+local ramp_left = 0x63
+local ramp_right = 0xce
+local plain_tint = 128
+
+local function pixels(value)
+  return string.format("%.2fdp", value * 3)
+end
+
+-- A tinted channel: 128 keeps the grey, 255 doubles it, up to white.
+local function tinted(grey, tint)
+  return math.min(255, math.floor(grey * tint / plain_tint))
+end
+
+local function fill_colour(pixel, red, green)
+  local grey = ramp_left + (ramp_right - ramp_left) * pixel / fill_pixels
+  return string.format(
+    "#%02x%02x%02x",
+    tinted(grey, red),
+    tinted(grey, green),
+    tinted(grey, plain_tint)
+  )
+end
+
+-- Where along the fill a channel's tint reaches white, when it does inside it.
+local function saturation(tint)
+  if tint <= plain_tint then
+    return nil
+  end
+  local pixel = (255 * plain_tint / tint - ramp_left) * fill_pixels / (ramp_right - ramp_left)
+  if pixel > 0 and pixel < fill_pixels then
+    return pixel
+  end
+  return nil
+end
+
+-- The fill as gradients between where the channels saturate: the colour runs straight in each.
+local function draw_fill(document, enemy, red, green)
+  local cuts = { 0 }
+  for _, tint in ipairs({ red, green }) do
+    local pixel = saturation(tint)
+    if pixel ~= nil then
+      cuts[#cuts + 1] = pixel
+    end
+  end
+  table.sort(cuts)
+  cuts[#cuts + 1] = fill_pixels
+  for segment = 0, 2 do
+    local id = "hb-" .. enemy .. "-s" .. segment
+    local from, to = cuts[segment + 1], cuts[segment + 2]
+    set_class(document, id, "hidden", to == nil)
+    if to ~= nil then
+      set_property(document, id, "left", pixels(from))
+      set_property(document, id, "width", pixels(to - from))
+      set_property(
+        document,
+        id,
+        "decorator",
+        "horizontal-gradient("
+          .. fill_colour(from, red, green)
+          .. " "
+          .. fill_colour(to, red, green)
+          .. ")"
+      )
+    end
+  end
+end
+
+-- The HP right-aligned in four places (utils2.c: drawEntityText(0, 4, ...)).
+local function draw_hp_value(document, enemy, hp)
+  local digits = string.sub(tostring(math.floor(hp)), -number_digits)
+  local first = number_digits - #digits
+  for place = 0, number_digits - 1 do
+    local id = "hd-" .. enemy .. "-" .. place
+    local digit = place >= first and string.sub(digits, place - first + 1, place - first + 1) or ""
+    set_class(document, id, "hidden", digit == "")
+    for glyph = 0, 9 do
+      set_class(document, id, "d-" .. glyph, digit == tostring(glyph))
+    end
+    if digit ~= "" and applied[id .. " text"] ~= digit then
+      applied[id .. " text"] = digit
+      lookup(document, id):set_text(digit)
+    end
+  end
+end
+
+local function draw_hp_bars(document)
+  local values = {}
+  for value in string.gmatch(setting("battle.hp_bars", ""), "%S+") do
+    values[#values + 1] = tonumber(value)
+  end
+  local bars = {}
+  for base = 0, #values - 9, 9 do
+    bars[math.floor(values[base + 1])] = base
+  end
+  for enemy = 1, max_enemies do
+    local base = bars[enemy]
+    local id = "hb-" .. enemy
+    set_class(document, id, "hidden", base == nil)
+    if base ~= nil then
+      local x, y = values[base + 4], values[base + 5]
+      set_property(document, id, "left", values[base + 2] .. "%")
+      set_property(document, id, "top", values[base + 3] .. "%")
+      set_property(document, id .. "-frame", "left", pixels(x))
+      set_property(document, id .. "-frame", "top", pixels(y))
+      set_property(document, id .. "-fill", "left", pixels(x + 2))
+      set_property(document, id .. "-fill", "top", pixels(y + 2))
+      set_property(document, id .. "-fill", "width", pixels(values[base + 6]))
+      draw_fill(document, enemy, values[base + 7], values[base + 8])
+      set_property(document, id .. "-value", "left", pixels(x + 33))
+      set_property(document, id .. "-value", "top", pixels(y - 9))
+      draw_hp_value(document, enemy, values[base + 9])
+      -- The line from the outline's bottom-left corner to the node, both ends drawn.
+      local dx, dy = -x, -(y + 6)
+      set_property(document, id .. "-line", "left", pixels(x))
+      set_property(document, id .. "-line", "top", pixels(y + 6))
+      set_property(document, id .. "-line", "width", pixels(math.sqrt(dx * dx + dy * dy) + 1))
+      set_property(
+        document,
+        id .. "-line",
+        "transform",
+        string.format("rotate(%.2fdeg)", math.deg(math.atan(dy, dx)))
+      )
+    end
+  end
+end
+
 -- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
 -- width, height, texture, trail and 1 for a trail on the left.
 local function banner_numbers()
@@ -793,6 +927,7 @@ end
 function on_show(document)
   draw(document)
   draw_damage(document)
+  draw_hp_bars(document)
   draw_prompts(document)
 end
 
@@ -803,6 +938,8 @@ function on_setting(document, name)
     draw_intro(document)
   elseif name == "battle.damage.revision" then
     draw_damage(document)
+  elseif name == "battle.hp_bars.revision" then
+    draw_hp_bars(document)
   end
 end
 

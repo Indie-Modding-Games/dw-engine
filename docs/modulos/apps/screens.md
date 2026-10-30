@@ -72,6 +72,14 @@ con `battle.intro.revision`:
 |---|---|---|
 | `battle.damage.numbers` | texto | Los números dibujados en el último fotograma, seis valores cada uno: x e y del ancla en % de la ventana, desplazamiento de la primera cifra desde ella en píxeles del original (x, y), valor y color (0 normal, 12 veneno) |
 
+### Barras de HP de los enemigos
+
+`enemyHpBarOf` coloca y tiñe la barra de un enemigo (`battle_main.c: BTL_renderEnemyHPBars`): recibe dónde se ve el nodo 1 de su modelo (fracción de la ventana), la proporción de la ventana y su HP, y da la esquina de la barra desde ese punto en píxeles del original, el ancho del relleno y su tinte (ver la fila en [battle.md](../game/battle.md#paridad-con-el-original)). `BattleScreen` la calcula en cada tick para los enemigos cuya barra se ve (`Battle::hpBarShown`), así que sigue al enemigo, y la quita al acabar el combate. `settingsOf(barras)` da los ajustes que lee el documento, que redibuja con `battle.hp_bars.revision`; solo el aspecto original las enseña:
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `battle.hp_bars` | texto | Las barras dibujadas en el último fotograma, nueve valores cada una: enemigo (1 a 3), x e y del ancla en % de la ventana, esquina de la barra desde ella en píxeles del original (x, y), ancho del relleno (0 a 50), tinte rojo y verde (128 tal cual, 255 el doble) y HP |
+
 ## Caja de vidas
 
 `LivesBox` es la caja de vidas de una vida perdida (`murd.c: MURD_createLivesBox`, `MURD_tickLivesBox`,

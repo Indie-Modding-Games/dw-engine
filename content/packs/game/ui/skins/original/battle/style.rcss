@@ -401,80 +401,82 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The enemies' HP (capture battle_hud_enemy_hp_bar): a 54 x 6 outline in green (#0AB40A) round a light green fill 3
-   pixels tall, the value above its right end. The original hangs each bar beside its enemy; the battle does not yet
-   publish where an enemy is on the screen, so the bars stand in a column at the top middle (a documented gap). */
+   The enemies' HP bars (battle_main.c: BTL_renderEnemyHPBars; captures battle_hud_enemy_hp_bar*), each beside its
+   enemy and following it: logic.lua puts the bar's corner where apps/screens (enemy_hp_bars) says, from the point its
+   enemy's model node 1 shows at. The outline is two green (#0ab40a) line strips round 55 x 7 pixels; the fill starts
+   2 pixels in, 3 tall and 50 at most; a line runs from the outline's bottom-left corner to the node; the HP, in the
+   battle's 8 x 8 digits 7 apart, right-aligned in four places from the outline's x 33, 9 pixels over its top. The
+   first enemy's bar is drawn over the others' and all of them under the partner's bars. The panel at the top middle
+   is the other look's. */
 
 #enemies {
-	position: absolute;
-	right: auto;
-	left: 50%;
-	top: 120dp;
-	width: 240dp;
-	margin-left: -120dp;
-	padding: 0;
-	border-width: 0;
-	background-color: transparent;
-}
-
-.enemy {
-	width: 240dp;
-	margin: 0 0 18dp 0;
-}
-
-.enemy .fighter-head {
-	font-size: 22dp;
-	color: #d0d0d0;
-}
-
-/* The original names no enemy over its bar. */
-.enemy .fighter-name {
 	display: none;
 }
 
-.enemy .fighter-status {
-	margin-left: 0;
-	font-size: 22dp;
-	color: #fff371;
-}
-
-.enemy .bar-row {
+#hp-bars {
 	display: block;
-	position: relative;
-	height: 48dp;
-}
-
-.enemy .bar-label {
-	display: none;
-}
-
-.enemy .bar {
 	position: absolute;
 	left: 0;
-	bottom: 0;
-	width: 156dp;
-	height: 12dp;
-	margin: 0;
-	border-radius: 0;
-	border: 3dp #0ab40a;
-	background-color: transparent;
-}
-
-.enemy .fill {
-	height: 9dp;
-	border-radius: 0;
-	decorator: horizontal-gradient(#a0e8a0 #e8ffe8);
-}
-
-.enemy .bar-value {
-	position: absolute;
-	left: 96dp;
 	top: 0;
-	width: 66dp;
-	font-size: 33dp;
-	line-height: 30dp;
-	text-align: right;
+	width: 100%;
+	height: 100%;
 }
+
+.hb {
+	position: absolute;
+	width: 0;
+	height: 0;
+}
+
+.hb-frame {
+	position: absolute;
+	width: 165dp;
+	height: 21dp;
+	box-sizing: border-box;
+	border: 3dp #0ab40a;
+}
+
+.hb-line {
+	position: absolute;
+	height: 3dp;
+	background-color: #0ab40a;
+	transform-origin: 0 0;
+}
+
+.hb-fill {
+	position: absolute;
+	height: 9dp;
+	overflow: hidden;
+}
+
+/* The fill sprite (BTLCOMND, u 88 and v 236 of the page at 960, 256, palette 3) is a grey ramp, from 0x63 at its left
+   to 0xce at its right, tinted by the HP left; logic.lua draws it as up to three gradients, split where the tint
+   saturates a channel. */
+.hb-segment {
+	position: absolute;
+	top: 0;
+	height: 9dp;
+}
+
+.hb-value {
+	position: absolute;
+	width: 84dp;
+	height: 24dp;
+}
+
+.hb-value .dd {
+	position: absolute;
+	top: 0;
+	float: none;
+	margin: 0;
+	width: 24dp;
+	height: 24dp;
+}
+
+#hd-1-0, #hd-2-0, #hd-3-0 { left: 0; }
+#hd-1-1, #hd-2-1, #hd-3-1 { left: 21dp; }
+#hd-1-2, #hd-2-2, #hd-3-2 { left: 42dp; }
+#hd-1-3, #hd-2-3, #hd-3-3 { left: 63dp; }
 
 /* ------------------------------------------------------------------------------------------------------------------
    The finisher's charge and the revive countdown: one of the original's boxes and the ink colour. */

@@ -664,7 +664,11 @@ bool FieldScene::playerClipPlayedThrough() const {
 }
 
 std::optional<glm::vec3> FieldScene::playerNodePoint(std::uint32_t node, glm::vec3 offset) const {
-  const Actor& actor = *playerActor_;
+  return nodePoint(*playerActor_, node, offset);
+}
+
+std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t node,
+                                               glm::vec3 offset) const {
   if (!actor.model->skin) {
     return std::nullopt;
   }

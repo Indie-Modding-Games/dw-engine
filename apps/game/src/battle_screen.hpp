@@ -7,6 +7,7 @@
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
 #include <dwe/screens/damage_numbers.hpp>
+#include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_effects.hpp>
 #include <dwe/session/field_items_adapter.hpp>
@@ -148,6 +149,8 @@ private:
   void stepNumbers(const game::battle::BattleEvents& frame);
   void tickNumbers(double seconds);
   void publishNumbers() const;
+  // The enemies' HP bars beside them (battle_main.c: BTL_renderEnemyHPBars); none without a battle.
+  void publishHpBars() const;
   void showFighters(double seconds);
   void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();

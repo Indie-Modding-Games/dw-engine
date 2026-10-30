@@ -380,6 +380,12 @@
    then the "BATTLE" banner, its pieces placed on the original's 320 x 240 screen, which stands in the middle of the
    window at 3dp a pixel. The strip's frame, the cursor and the extra marks of the finisher's word are the original
    look's. While the banner shows, the HUD is there under it without the hovered command's name. */
+/* The enemies' HP bars beside them are the original look's (skins/original/battle/style.rcss); this look keeps the
+   enemies' HP in the panel at the top. */
+#hp-bars {
+	display: none;
+}
+
 /* The numbers over the fighters (utils2.c: drawEntityText): each anchored at its fighter's feet and moved from there
    by its transform, its digits 8 pixels square and 7 apart, left to right from the anchor. */
 #damage {

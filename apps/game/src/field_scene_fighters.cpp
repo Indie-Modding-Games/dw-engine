@@ -71,6 +71,19 @@ std::optional<glm::vec2> FieldScene::fighterFeetOnWindow(std::optional<std::int3
   return worldToWindowFraction(world_.registry().get<scene::Transform>(actor->entity).position);
 }
 
+std::optional<glm::vec2> FieldScene::fighterNodeOnWindow(std::optional<std::int32_t> npc,
+                                                         std::uint32_t node) const {
+  const Actor* actor = fighterActor(npc);
+  if (actor == nullptr) {
+    return std::nullopt;
+  }
+  const std::optional<glm::vec3> point = nodePoint(*actor, node, glm::vec3{0.0F});
+  if (!point) {
+    return std::nullopt;
+  }
+  return worldToWindowFraction(*point);
+}
+
 bool FieldScene::animateFighter(Actor& actor) const {
   if (!actor.fighter) {
     return false;

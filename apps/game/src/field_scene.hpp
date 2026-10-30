@@ -221,6 +221,12 @@ public:
   // getEntityScreenPos(entity, 0): the root of its model, which stands where it stands); nothing
   // when the field does not draw it or it is behind the camera.
   [[nodiscard]] std::optional<glm::vec2> fighterFeetOnWindow(std::optional<std::int32_t> npc) const;
+  // Where one node of a held fighter's model shows in the window, as fractions of its size
+  // (utils.c: getEntityScreenPos(entity, node): the origin of that object as the pose leaves it);
+  // nothing when the field does not draw the fighter, the node is no joint of its skin or it is
+  // behind the camera.
+  [[nodiscard]] std::optional<glm::vec2> fighterNodeOnWindow(std::optional<std::int32_t> npc,
+                                                             std::uint32_t node) const;
   // The battle's time for the held fighters' clips, which run while the field waits.
   void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
   // Whether the held fighter's clip, the figure's, has played through once (anim.c: animFlag 1
@@ -315,6 +321,11 @@ private:
     // The battle's hold on it (holdFighter).
     std::optional<FighterFigure> fighter;
   };
+
+  // A point in the space of one of an actor's model nodes (the original's object index), in
+  // original axes and units, in the world; nothing if the node is no joint of the skin.
+  [[nodiscard]] std::optional<glm::vec3> nodePoint(const Actor& actor, std::uint32_t node,
+                                                   glm::vec3 offset) const;
 
   // Gives the model renderer the map camera once the background drawer has sized it to the frame.
   class CameraSync final : public render::Drawer {

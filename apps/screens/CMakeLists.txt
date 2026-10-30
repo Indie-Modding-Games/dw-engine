@@ -8,6 +8,7 @@ dwe_add_module(screens
         src/battle_intro.cpp
         src/battle_view.cpp
         src/damage_numbers.cpp
+        src/enemy_hp_bars.cpp
         src/field_hud_view.cpp
         src/lives_box.cpp
         src/name_keys.cpp

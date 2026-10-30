@@ -44,6 +44,9 @@ constexpr std::uint32_t VictoryStanceClip = 0x21;
 // The port's safeguard, not the original's: a pose that never plays through holds the box no longer
 // than this many battle frames.
 constexpr int PoseGuardFrames = 200;
+// battle_main.c: BTL_renderEnemyHPBars points each bar at the enemy's model node 1
+// (getEntityScreenPos(entity, 1)).
+constexpr std::uint32_t HpBarNode = 1;
 constexpr double PoseGuardSeconds = PoseGuardFrames * IntroFrameSeconds;
 // battle_ui.c: tickBitBox and renderPostBattleStatsBox: the end box's count, a sound for each point
 // and bit, and another once the bits are all in; both in slot 0.
@@ -101,6 +104,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   numbers_.clear();
   numbersSeconds_ = 0.0;
   publishNumbers();
+  publishHpBars();
   fixedFight_ = fixedFight;
   onScreenAtStart_ = npcsOnScreen();
   takeFigures();
@@ -159,6 +163,7 @@ void BattleScreen::tickBattle(double seconds) {
   });
   publish();
   takeFigures();
+  publishHpBars();
   showEffects();
   if (battle_->finished()) {
     finish();
@@ -228,6 +233,36 @@ void BattleScreen::tickNumbers(double seconds) {
 void BattleScreen::publishNumbers() const {
   screens::publish(*desc_.ui, screens::settingsOf(numbers_.shown()),
                    screens::DamageRevisionSetting);
+}
+
+// battle_main.c: BTL_renderEnemyHPBars draws, every frame, the bar of each enemy whose bar shows
+// (Battle::hpBarShown) beside where its model's node 1 projects (getEntityScreenPos(entity, 1)), so
+// the bar follows the enemy. BTL_deinitializeCombat takes them all away (BTL_removeEnemyHPBars).
+void BattleScreen::publishHpBars() const {
+  std::vector<screens::EnemyHpBar> bars;
+  const render::MapCamera* camera = desc_.scene != nullptr ? desc_.scene->camera() : nullptr;
+  if (battle_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    const double aspect = static_cast<double>(camera->viewportSize().x) /
+                          static_cast<double>(camera->viewportSize().y);
+    const auto& fighters = battle_->state().fighters;
+    for (game::battle::FighterId id = 1; id < fighters.size() && id <= enemyNpcs_.size(); ++id) {
+      if (!battle_->hpBarShown(id)) {
+        continue;
+      }
+      const std::optional<glm::vec2> node =
+          desc_.scene->fighterNodeOnWindow(enemyNpcs_[id - 1], HpBarNode);
+      if (!node) {
+        continue;
+      }
+      const game::battle::Fighter& fighter = fighters[id];
+      bars.push_back(screens::enemyHpBarOf({.enemy = id,
+                                            .node = {.x = node->x, .y = node->y},
+                                            .aspect = aspect,
+                                            .hp = fighter.hp,
+                                            .maxHp = fighter.stats.maxHp}));
+    }
+  }
+  screens::publish(*desc_.ui, screens::settingsOf(bars), screens::HpBarsRevisionSetting);
 }
 
 // Each fighter's place, facing and clip are the battle's (battle_main.c: the fighters are the
@@ -551,6 +586,7 @@ void BattleScreen::finish() {
   const std::optional<game::battle::BattleResult> finished =
       battle_ ? battle_->result() : std::nullopt;
   battle_.reset();
+  publishHpBars();
   if (effects_) {
     effects_->end();
     effects_.reset();
@@ -636,6 +672,7 @@ void BattleScreen::close() {
   victoryPoseSeconds_.reset();
   numbers_.clear();
   publishNumbers();
+  publishHpBars();
   releasePoses();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
