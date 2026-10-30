@@ -125,6 +125,11 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   // btl.c: handleBattleStart marks each enemy with an anger bubble before the battle loads, and
   // battle_setup.c: BTL_handleBattleIntro shows the "BATTLE" banner before the fight starts.
   intro_.emplace(battlesStarted_++);
+  // The command strip opens with the banner (BTL_initializeCombat, just before it).
+  menu_ = {};
+  menuSeconds_ = 0.0;
+  closing_ = false;
+  screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
   introEnemies_ = std::move(introEnemies);
   angerAnchors_.assign(introEnemies_.size(), std::nullopt);
   introSeconds_ = 0.0;
@@ -150,6 +155,9 @@ void BattleScreen::tick(double seconds) {
   if (exit_) {
     tickExit(seconds);
   }
+  if (!battle_) {
+    tickMenu(seconds);
+  }
   showFighters(seconds);
 }
 
@@ -170,6 +178,7 @@ void BattleScreen::tickBattle(double seconds) {
       effects_->frame(frame, battle_->moves());
     }
     stepNumbers(frame);
+    stepMenu(true);
   });
   publish();
   takeFigures();
@@ -413,6 +422,7 @@ void BattleScreen::tickIntro(double seconds) {
   introSeconds_ += seconds;
   while (intro_ && introSeconds_ >= IntroFrameSeconds) {
     introSeconds_ -= IntroFrameSeconds;
+    stepMenu(false);
     const screens::IntroStep before = intro_->current();
     if (before == screens::IntroStep::Banner) {
       stepRetreat();
@@ -424,6 +434,10 @@ void BattleScreen::tickIntro(double seconds) {
     }
     game::story::SoundPort* sound = desc_.session->sound();
     if (after == screens::IntroStep::Banner) {
+      menu_.open();
+      screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+      core::logDebug("[port:battle] BTL_initializeCommandMenu (command_menu.c:153): the command "
+                     "strip drops in");
       startRetreat();
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:226): the banner "
                      "gathers; playSound(0, 0x10)");
@@ -439,7 +453,8 @@ void BattleScreen::tickIntro(double seconds) {
       }
     } else if (after == screens::IntroStep::Done) {
       core::logDebug("[port:battle] BTL_handleBattleIntro (battle_setup.c:328): GAME_STATE 1, "
-                     "the fight starts");
+                     "the fight starts; command strip timer {}",
+                     menu_.frames());
       intro_.reset();
       desc_.ui->setSetting(BattlePhaseSetting, std::string{FightPhase});
       publish();
@@ -716,7 +731,7 @@ void BattleScreen::close() {
   publishNumbers();
   publishHpBars();
   releasePoses();
-  desc_.ui->hide(BattleDocument);
+  desc_.ui->setSetting(BattlePhaseSetting, std::string{ClosingPhase});
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {
     if (desc_.fieldItems != nullptr &&
         !desc_.fieldItems->dropItem(
@@ -727,7 +742,7 @@ void BattleScreen::close() {
   }
   startExit();
   if (!exit_) {
-    endExit();
+    closeMenu();
   }
 }
 
@@ -743,6 +758,47 @@ session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleReques
     }
   }
   return facts;
+}
+
+void BattleScreen::stepMenu(bool fighting) {
+  if (!menu_.shown()) {
+    return;
+  }
+  menu_.step(fighting);
+  screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+}
+
+// After the fight the strip stays, still counting its frames, through the victory, the end box and
+// the enemies' exit; then it goes back up and the battle ends (battle_main.c:777:
+// while (BTL_isCommandMenuClosed() == 0) BTL_battleTickFrame()).
+void BattleScreen::tickMenu(double seconds) {
+  if (!menu_.shown() && !closing_) {
+    menuSeconds_ = 0.0;
+    return;
+  }
+  menuSeconds_ += seconds;
+  while (menuSeconds_ >= IntroFrameSeconds) {
+    menuSeconds_ -= IntroFrameSeconds;
+    if (closing_ && menu_.closed()) {
+      closing_ = false;
+      menuSeconds_ = 0.0;
+      screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+      core::logDebug("[port:battle] BTL_isCommandMenuClosed (command_menu.c:328): the strip is up; "
+                     "the battle ends");
+      desc_.ui->hide(BattleDocument);
+      endExit();
+      return;
+    }
+    stepMenu(false);
+  }
+}
+
+void BattleScreen::closeMenu() {
+  menu_.close();
+  closing_ = true;
+  menuSeconds_ = 0.0;
+  core::logDebug("[port:battle] BTL_deinitializeCombat (battle_main.c:777): the command strip goes "
+                 "back up");
 }
 
 } // namespace dwe::app

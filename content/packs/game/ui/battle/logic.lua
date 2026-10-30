@@ -12,9 +12,13 @@ local max_anger = 3
 local max_numbers = 32
 local number_digits = 4
 local banner_pieces = 155
--- The hovered command's icon swaps to its second frame every 8 of the original's battle frames
--- (command_menu.c: BTL_renderCommandMenu).
-local blink_seconds = 0.4
+-- The command strip's edges once it is in place, in the original's screen lines (0 at the middle;
+-- command_menu.c: BTL_COMMAND_MENU_SLIDE_X and _Y), and the icons' height there.
+local strip_top = -100
+local strip_bottom = -68
+local icon_height = 16
+-- Whether the strip's pieces carry a transform from its slide.
+local strip_moved = false
 local max_end_lines = 10
 local stat_count = 6
 
@@ -29,8 +33,6 @@ local bits_label_key = "main.battle_ui_bits_labels.0000"
 local phase = "fight"
 local bag_open = false
 local intro_step = "done"
-local blink_clock = 0
-local blink_on = false
 local icon_classes = {}
 local frame_classes = {}
 local shown_pieces = {}
@@ -198,10 +200,12 @@ local function draw_commands(document)
   swap_class(lookup(document, "open-bag"), frame_classes, "open-bag", "place-" .. count)
 end
 
--- The cursor round the hovered icon, and its blink; nothing while the battle opens.
+-- The cursor round the hovered icon, and its blink; nothing while the battle opens. The game says
+-- when the hovered icon shows its second frame (apps/screens: command_menu.hpp).
 local function draw_cursor(document)
   local cursor = lookup(document, "command-cursor")
   local count = number("battle.menu.count")
+  local blink_on = setting("battle.menu.blink", false)
   local hovered = nil
   for index = 0, count - 1 do
     local button = lookup(document, "command-" .. index)
@@ -784,6 +788,44 @@ local function draw_banner(document)
   end
 end
 
+-- The strip's slide in the original look (command_menu.c: BTL_renderCommandMenu): the frame's
+-- pieces span the strip's top to bottom edge and each icon 3 lines under the top edge to 13 over
+-- the bottom one (13 and 3 for the lower ones), stretched with them, so the strip drops in
+-- stretched and settles. The game moves the edges (apps/screens: command_menu.hpp); the cursor and
+-- the name stay where they are. Only the original look slides it.
+local function draw_motion(document)
+  if ui.setting("ui_skin") ~= "original" then
+    return
+  end
+  -- Before the banner and once it has gone back up the strip waits above the screen, at its first
+  -- step.
+  local top = number("battle.menu.top")
+  local bottom = number("battle.menu.bottom")
+  local settled = top == strip_top and bottom == strip_bottom
+  local frame_transform, icon_transform = "none", "none"
+  if not settled then
+    local shift = string.format("translate(0dp, %ddp)", (top - strip_top) * 3)
+    frame_transform =
+      string.format("%s scale(1, %.4f)", shift, (bottom - top) / (strip_bottom - strip_top))
+    icon_transform = string.format(
+      "%s scale(1, %.4f)",
+      shift,
+      math.max(0, bottom - top - icon_height) / icon_height
+    )
+  end
+  -- A strip that never moved keeps no transform at all.
+  if settled and not strip_moved then
+    return
+  end
+  strip_moved = not settled
+  for index = 0, max_commands - 1 do
+    set_property(document, "command-frame-" .. index, "transform", frame_transform)
+    -- The finisher has no icon on the strip: its entry is the gauge's "PUSH" box, which stays.
+    local has_icon = setting(entry("battle.menu", index, "icon"), "") ~= ""
+    set_property(document, "command-" .. index, "transform", has_icon and icon_transform or "none")
+  end
+end
+
 local function draw_intro(document)
   intro_step = phase == "intro" and setting("battle.intro.step", "done") or "done"
   lookup(document, "intro"):set_class("hidden", phase ~= "intro")
@@ -801,7 +843,15 @@ end
 
 local function draw(document)
   phase = setting("battle.phase", "fight")
-  lookup(document, "fight"):set_class("hidden", phase ~= "fight" and phase ~= "intro")
+  -- In the original look the strip stays through the victory and the end box, without its cursor
+  -- or name, and then goes back up (battle_main.c:777); the rest of the fight's screen goes.
+  local after = phase == "victory" or phase == "end" or phase == "closing"
+  local strip_after = after and ui.setting("ui_skin") == "original"
+  lookup(document, "fight"):set_class(
+    "hidden",
+    phase ~= "fight" and phase ~= "intro" and not strip_after
+  )
+  lookup(document, "fight"):set_class("after", strip_after)
   lookup(document, "end"):set_class("hidden", phase ~= "end")
   draw_intro(document)
   -- The victory poses before the end box: nothing of the battle's own is drawn.
@@ -856,6 +906,7 @@ end
 
 function on_show(document)
   draw(document)
+  draw_motion(document)
   draw_damage(document)
   draw_hp_bars(document)
   draw_prompts(document)
@@ -864,6 +915,11 @@ end
 function on_setting(document, name)
   if name == "battle.revision" or name == "battle.phase" or name == "bag.revision" then
     draw(document)
+  elseif name == "battle.menu.motion" then
+    draw_motion(document)
+    if phase == "fight" and not bag_open then
+      draw_cursor(document)
+    end
   elseif name == "battle.intro.revision" then
     draw_intro(document)
   elseif name == "battle.damage.revision" then
@@ -877,11 +933,6 @@ function on_tick(document, seconds)
   if phase == "end" and ending ~= nil then
     tick_end(document, seconds)
   elseif phase == "fight" then
-    blink_clock = blink_clock + (seconds or 0)
-    if blink_clock >= blink_seconds then
-      blink_clock = blink_clock - blink_seconds
-      blink_on = not blink_on
-    end
     if not bag_open then
       draw_command_name(document)
       draw_cursor(document)
@@ -902,8 +953,9 @@ end
 -- the finisher while its aura lasts.
 function on_action(_document, action)
   -- Nothing answers while the battle opens, nor during the victory poses before the end box
-  -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox).
-  if phase == "intro" or phase == "victory" then
+  -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox), nor while the command
+  -- strip goes back up after it.
+  if phase == "intro" or phase == "victory" or phase == "closing" then
     return true
   end
   if phase == "end" then

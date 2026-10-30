@@ -400,6 +400,30 @@
 	display: none;
 }
 
+/* The strip's slide (command_menu.c: BTL_tickCommandMenu): logic.lua moves and stretches the frame's pieces from their
+   top and the icons from theirs (9dp into their boxes) as the game moves the strip's edges. Before the banner and
+   once it has gone back up it waits above the screen. After the fight it stays alone, without the cursor or the
+   name, through the victory and the end box, until it goes back up. */
+.command-frame {
+	transform-origin: 50% 0dp 0;
+}
+
+.command, .command:focus, .command.current {
+	transform-origin: 50% 9dp 0;
+}
+
+#fight.after > * {
+	display: none;
+}
+
+#fight.after > #commands {
+	display: block;
+}
+
+#fight.after #command-cursor, #fight.after #command-name {
+	display: none;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The enemies' HP bars (battle_main.c: BTL_renderEnemyHPBars; captures battle_hud_enemy_hp_bar*), each beside its
    enemy and following it: logic.lua puts the bar's corner where apps/screens (enemy_hp_bars) says, from the point its

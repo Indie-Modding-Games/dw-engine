@@ -186,7 +186,7 @@ void BattleScreen::tickExit(double seconds) {
   core::logDebug("[port:battle] BTL_handleVictorySequence (battle_main.c:956): every leaver is off "
                  "screen");
   exit_.reset();
-  endExit();
+  closeMenu();
 }
 
 // battle_main.c:783-808: the field takes the fighters back; of the NPCs on screen when the battle

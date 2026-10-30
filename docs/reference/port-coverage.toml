@@ -221,9 +221,9 @@ BTL_addStunStatusVisual = { status = "falta", what = "Pone las estrellas de atur
 BTL_getRandomUsableMove = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Elige al azar una técnica que se puede usar." }
 BTL_getNpcEntityIndex = { status = "no-aplica", note = "índice interno", what = "Da la entidad de un rival." }
 BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:260", what = "Cuenta los rivales vivos." }
-BTL_initializeCommandMenu = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Abre el menú de órdenes del jugador en combate." }
-BTL_tickCommandMenu = { status = "portado", dwe = "game/battle/src/battle.cpp:118", what = "Mueve el cursor y elige una orden del menú de combate." }
-BTL_isCommandMenuClosed = { status = "portado", dwe = "game/battle/src/battle.cpp:118", what = "Dice si el menú de órdenes se cerró." }
+BTL_initializeCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:21", what = "Abre el menú de órdenes del jugador en combate: la tira baja desde arriba." }
+BTL_tickCommandMenu = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:36", what = "Mueve el cursor y elige una orden del menú de combate; desliza la tira y hace parpadear la orden señalada." }
+BTL_isCommandMenuClosed = { status = "portado", dwe = "apps/screens/src/command_menu.cpp:61", what = "Dice si el menú de órdenes se cerró: la tira subió y pasaron 3 fotogramas más." }
 BTL_initializeDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Prepara la cuenta atrás para revivir al compañero caído." }
 BTL_addDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Enseña la cuenta atrás del compañero caído." }
 BTL_tickDeathCountdown = { status = "portado", dwe = "apps/screens/include/dwe/screens/battle_view.hpp:93", what = "Baja la cuenta atrás del compañero caído." }

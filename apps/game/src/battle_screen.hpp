@@ -6,6 +6,7 @@
 #include <dwe/game/battle/player_retreat.hpp>
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/command_menu.hpp>
 #include <dwe/screens/damage_numbers.hpp>
 #include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/session/battle_adapter.hpp>
@@ -54,6 +55,8 @@ inline constexpr std::string_view FightPhase = "fight";
 // input.
 inline constexpr std::string_view VictoryPhase = "victory";
 inline constexpr std::string_view EndPhase = "end";
+// After the end box, while the command strip goes back up (battle_main.c:777).
+inline constexpr std::string_view ClosingPhase = "closing";
 
 class FieldScene;
 
@@ -99,9 +102,11 @@ public:
   core::Result<void> start(session::BattleRequest request, std::vector<std::int32_t> enemyNpcs,
                            bool fixedFight = false);
 
-  // Whether the battle, its end box or the beaten enemies' exit is on screen: the field and the
-  // game clock wait meanwhile.
-  [[nodiscard]] bool active() const { return battle_.has_value() || ending_ || exit_.has_value(); }
+  // Whether the battle, its end box, the beaten enemies' exit or the command strip going back up
+  // is on screen: the field and the game clock wait meanwhile.
+  [[nodiscard]] bool active() const {
+    return battle_.has_value() || ending_ || exit_.has_value() || closing_;
+  }
   // The outcome of the last battle, once, after its end box is closed: what a story battle reads.
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.
@@ -169,6 +174,11 @@ private:
   void startWalk(Leaver& leaver) const;
   void tickExit(double seconds);
   void endExit();
+  // command_menu.c: the command strip's motion, a frame at the battle's rate outside the fight and
+  // the opening, and its slide back up once the battle is over.
+  void stepMenu(bool fighting);
+  void tickMenu(double seconds);
+  void closeMenu();
   [[nodiscard]] session::BattleMusicFacts musicFactsOf(const session::BattleRequest& request) const;
 
   BattleScreenDesc desc_;
@@ -227,6 +237,11 @@ private:
     double seconds = 0.0;
   };
   std::optional<Exit> exit_;
+  // The player's command strip as it slides (BTL_tickCommandMenu), the time it has not run yet
+  // after the fight, and whether it is going back up before the battle ends.
+  screens::CommandMenuMotion menu_;
+  double menuSeconds_ = 0.0;
+  bool closing_ = false;
 };
 
 } // namespace dwe::app
