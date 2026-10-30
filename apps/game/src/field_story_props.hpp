@@ -15,11 +15,11 @@ namespace dwe::app {
 class FieldScene;
 
 // The app's side of the story's props (session/story_props.hpp): it draws the Drill Tunnel's dirt
-// cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile and the boulder
-// (renderDirtPile, renderBoulder) as models of the packs, shakes the screen for routine 34
-// (map.c: tickMeramonShake) and moves a map sprite to a character's node (overworld.c:
-// spawnSpriteAtEntity). Entering a map takes the cart, the pile and the boulder away
-// (map_object.c: unloadMapParts).
+// cart in front of the partner (map_object.c: renderDirtCartModel), the dirt pile, the boulder and
+// Trash Mountain's giant poop (renderDirtPile, renderBoulder, renderTrainingPoop) as models of the
+// packs, shakes the screen for routine 34 (map.c: tickMeramonShake) and moves a map sprite to a
+// character's node (overworld.c: spawnSpriteAtEntity). Entering a map takes the cart, the pile and
+// the boulder away (map_object.c: unloadMapParts).
 class FieldStoryProps {
 public:
   // The scene must outlive this object.

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <string_view>
 #include <variant>
 
 // What the story's routines and orders put on the field the app draws besides the map and its
@@ -57,5 +59,20 @@ struct SpriteAtCharacter {
 
 using StoryPropRequest =
     std::variant<DirtCartShown, DirtPileShown, BoulderShown, ScreenShakeStarted, SpriteAtCharacter>;
+
+// Trash Mountain's giant poop: map.c: loadMap calls initializeTrainingPoop on map 0xa5 (gomi02) and
+// on no other, whatever the story, which puts ETCNA\TRY at TRAINING_POOP_TRANSLATION, unturned and
+// at its size (map_object.c); renderTrainingPoop draws it while the map layer is. The place is in
+// the original's axes (y down).
+struct TrainingPoop {
+  std::int32_t x = 1922;
+  std::int32_t y = 0;
+  std::int32_t z = 503;
+};
+
+// The poop on the map `mapId`, if that map has it.
+[[nodiscard]] constexpr std::optional<TrainingPoop> trainingPoopOn(std::string_view mapId) {
+  return mapId == "gomi02" ? std::optional{TrainingPoop{}} : std::nullopt;
+}
 
 } // namespace dwe::session

@@ -150,3 +150,15 @@ TEST_CASE("the dirt pile shrinks a step each routine 20 and keeps its size for t
   REQUIRE(scenes.routines.call(27));
   CHECK(std::get<DirtPileShown>(takeAll(scenes).front()).size == 5);
 }
+
+TEST_CASE("Trash Mountain has the giant poop, at the original's place, and no other map has it") {
+  // map.c: loadMap calls initializeTrainingPoop when mapId is 0xa5.
+  const auto poop = dwe::session::trainingPoopOn("gomi02");
+  REQUIRE(poop.has_value());
+  CHECK(poop->x == 1922);
+  CHECK(poop->y == 0);
+  CHECK(poop->z == 503);
+  CHECK_FALSE(dwe::session::trainingPoopOn("gomi01").has_value());
+  CHECK_FALSE(dwe::session::trainingPoopOn("tunn05").has_value());
+  CHECK_FALSE(dwe::session::trainingPoopOn("").has_value());
+}

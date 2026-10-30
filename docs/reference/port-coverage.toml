@@ -440,7 +440,7 @@ initializeMedalModel = { status = "falta", what = "Carga el modelo de una medall
 spawnToyTownBoxes = { status = "falta", what = "Pone las cajas de la ciudad de juguete." }
 spawnGearbox = { status = "falta", what = "Pone la caja de engranajes de la fábrica." }
 spawnAngemonPedestal = { status = "falta", what = "Pone el pedestal que se mueve en el santuario." }
-initializeTrainingPoop = { status = "falta", what = "Pone la caca gigante del gimnasio." }
+initializeTrainingPoop = { status = "portado", dwe = "apps/session/include/dwe/session/story_props.hpp", what = "Pone la caca gigante de Trash Mountain." }
 emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Marca vacíos los cofres ya abiertos." }
 isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
 tickOpenChestTray = { status = "falta", what = "Anima la tapa del cofre al abrirse." }

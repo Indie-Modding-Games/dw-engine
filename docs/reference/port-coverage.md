@@ -85,7 +85,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 132 | 5 | 11 | 23 | 91 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 136 | 3 | 74 | 72 | 65 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 69 | 3 | 9 | 15 | 87 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 48 | 1 | 16 | 37 | 75 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 50 | 1 | 15 | 36 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 74 | 3 | 11 | 57 | 86 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 69 | 1 | 2 | 52 | 97 % |
@@ -100,8 +100,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 42 | 1 | 2 | 41 | 94 % |
-| **Total** | 2438 funciones | 849 | 40 | 403 | 1146 | 67 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 43 | 1 | 2 | 40 | 95 % |
+| **Total** | 2438 funciones | 852 | 40 | 402 | 1144 | 67 % |
 
 ## Batalla
 
@@ -253,7 +253,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 48, parcial 1, falta 16, no aplica 37.
+Portado 50, parcial 1, falta 15, no aplica 36.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -267,7 +267,6 @@ Portado 48, parcial 1, falta 16, no aplica 37.
 | `spawnToyTownBoxes` | `main/map_object.c:662` | falta | Pone las cajas de la ciudad de juguete. | solo lo cita la extracción del disco |
 | `spawnGearbox` | `main/map_object.c:749` | falta | Pone la caja de engranajes de la fábrica. | solo lo cita la extracción del disco |
 | `spawnAngemonPedestal` | `main/map_object.c:775` | falta | Pone el pedestal que se mueve en el santuario. | solo lo cita la extracción del disco |
-| `initializeTrainingPoop` | `main/map_object.c:809` | falta | Pone la caca gigante del gimnasio. | solo lo cita la extracción del disco |
 | `tickOpenChestTray` | `main/map_object.c:1083` | falta | Anima la tapa del cofre al abrirse. | — |
 | `tickCloseChestTray` | `main/map_object.c:1096` | falta | Anima la tapa del cofre al cerrarse. | — |
 | `moveAngemonPedestal` | `main/map_object.c:1167` | falta | Mueve el pedestal del santuario. | — |
@@ -275,7 +274,7 @@ Portado 48, parcial 1, falta 16, no aplica 37.
 | `createNinjamonEffect` | `main/overworld.c:777` | parcial | Nube de humo de un personaje que desaparece. | `apps/session/include/dwe/session/story_scenes.hpp:113` · la rutina 38 se cierra sin el humo |
 | `tickRemoveMist` | `main/overworld.c:1012` | falta | Disipa la niebla del mapa. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (16); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (15); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
 
 ## Compañero: IA y cuidado
 
@@ -777,7 +776,7 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 42, parcial 1, falta 2, no aplica 41.
+Portado 43, parcial 1, falta 2, no aplica 40.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -785,6 +784,6 @@ Portado 42, parcial 1, falta 2, no aplica 41.
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
 | `startTournament` | `main/utils2.c:577` | falta (citada en docs) | Carga y juega un torneo; suma los ganados. | no hay torneos |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); entrada del original (2); consulta de dibujo (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); entrada del original (2); consulta de dibujo (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1).
 
 <!-- port-coverage:end -->

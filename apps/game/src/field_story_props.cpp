@@ -34,6 +34,8 @@ constexpr std::string_view PileModel = "model/etcna/t_yama";
 constexpr std::string_view BoulderModel = "model/etcna/iwa";
 // map_object.c: DIRT_PILE_LOCATION.
 constexpr glm::ivec3 PileLocation{2037, 0, 849};
+// map_object.c: initializeTrainingPoop (session::trainingPoopOn).
+constexpr std::string_view TrainingPoopModel = "model/etcna/try";
 // renderDirtCartModel puts the cart the partner's radius plus 100 in front of it.
 constexpr float CartReach = 100.0F;
 
@@ -199,6 +201,14 @@ void FieldStoryProps::show() {
                                   radiansOf(boulder_->pitch), glm::vec3{1.0F, 0.0F, 0.0F}));
   }
   setProps(*scene_, BoulderModel, std::move(boulder));
+  // renderTrainingPoop: drawn on its map while the map layer is (FieldScene leaves props out when
+  // the scenery is hidden).
+  std::vector<glm::mat4> poop;
+  if (const auto place = session::trainingPoopOn(field.mapId())) {
+    poop.push_back(
+        glm::translate(glm::mat4{1.0F}, assets::toWorldPosition({place->x, place->y, place->z})));
+  }
+  setProps(*scene_, TrainingPoopModel, std::move(poop));
   scene_->setScreenShake({static_cast<float>(shakeOffset_), 0.0F});
 }
 
