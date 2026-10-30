@@ -67,6 +67,7 @@
 #include "partner_portrait.hpp"
 #include "play_session.hpp"
 #include "player_chart.hpp"
+#include "state_trace.hpp"
 #include "text_font_setting.hpp"
 #include "title_screen.hpp"
 #include "ui_skin_setting.hpp"
@@ -407,6 +408,15 @@ int runGame(const Options& requested) {
       options.load = game::save::SlotId{.kind = game::save::SlotKind::Manual, .index = 1};
       options.newGame = false;
     }
+  }
+  std::optional<StateTrace> trace;
+  if (options.trace) {
+    auto opened = StateTrace::open(*options.trace);
+    if (!opened) {
+      core::logError("trace: {}", opened.error().message);
+      return EXIT_FAILURE;
+    }
+    trace = std::move(*opened);
   }
   auto window =
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
@@ -859,6 +869,9 @@ int runGame(const Options& requested) {
     const int ticks = step.advance(frameSeconds);
     sound.update(ticks * TickSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
+      if (autotest) {
+        autotest->feedTick(ticksRun, input);
+      }
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();
       }
@@ -922,6 +935,9 @@ int runGame(const Options& requested) {
         // The battle's document holds the input, but not the finisher's button.
         play->pressBattle(input);
         play->tick(intent, fishing);
+        if (trace) {
+          trace->write(play->traceFrame(ticksRun, input));
+        }
       }
       input.endTick();
       ++ticksRun;

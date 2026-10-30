@@ -18,8 +18,10 @@
 #include <glm/vec3.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
@@ -29,6 +31,7 @@
 #include "messages.hpp"
 #include "partner_events.hpp"
 #include "partner_tab.hpp"
+#include "place_command.hpp"
 #include "story_map_edits.hpp"
 #include "title_screen.hpp"
 
@@ -112,6 +115,10 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     if (species == nullptr) {
       return core::fail(std::string{messages::NoSpeciesTable});
     }
+    const bool story = npcs.starts_with(StoryBattlePrefix);
+    if (story) {
+      npcs.remove_prefix(StoryBattlePrefix.size());
+    }
     auto chosen = npcsOf(npcs);
     if (!chosen) {
       return std::unexpected{chosen.error()};
@@ -120,6 +127,7 @@ void startBattle(BattleScreen& screen, const assets::DigimonTable* species, cons
     if (!request) {
       return std::unexpected{request.error()};
     }
+    request->request.scripted = story;
     return screen.start(std::move(request->request), std::move(request->enemyNpcs));
   }();
   if (!started) {
@@ -176,6 +184,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (std::exchange(battleWin, false)) {
     dropped(messages::BattleWinFailed);
   }
+  if (!std::exchange(placements, {}).empty()) {
+    dropped(messages::PlaceFailed);
+  }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
   }
@@ -205,6 +216,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
                       [this](std::string_view item) { groundDrop = std::string{item}; });
   scripts.bindCommand(BattleCommand, [this](std::string_view npcs) { battle = std::string{npcs}; });
   scripts.bindCommand(BattleWinCommand, [this](std::string_view) { battleWin = true; });
+  scripts.bindCommand(PlaceCommand,
+                      [this](std::string_view where) { placements.emplace_back(where); });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -563,6 +576,16 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
       core::logWarning("{}", core::formatMessage(messages::DropItemFailed, *item));
     }
   }
+  for (const std::string& where : std::exchange(commands.placements, {})) {
+    const auto placement = placementFromText(where);
+    if (!placement) {
+      core::logWarning("{}", core::formatMessage(messages::PlaceFailed, placement.error().message));
+    } else if (!scene_->place(*placement)) {
+      core::logWarning(
+          "{}", core::formatMessage(messages::PlaceFailed,
+                                    core::formatMessage(messages::NoNpcToPlace, placement->npc)));
+    }
+  }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {
     startBattle(battleScreen_, species, *scene_, *npcs);
   }
@@ -684,6 +707,101 @@ bool PlaySession::paused() const {
 
 float PlaySession::fadeLevel() const {
   return std::max({scene_->field().fadeLevel(), sleepScreen_.fadeLevel(), deathScene_.fadeLevel()});
+}
+
+namespace {
+
+std::string_view poseName(game::battle::Pose pose) {
+  using game::battle::Pose;
+  switch (pose) {
+  case Pose::Standing:
+    return "standing";
+  case Pose::Walking:
+    return "walking";
+  case Pose::Attacking:
+    return "attacking";
+  case Pose::Charging:
+    return "charging";
+  case Pose::HitReaction:
+    return "hit";
+  case Pose::Blocking:
+    return "blocking";
+  case Pose::Stunned:
+    return "stunned";
+  case Pose::Squashed:
+    return "squashed";
+  case Pose::Disobeying:
+    return "disobeying";
+  case Pose::Fainting:
+    return "fainting";
+  case Pose::Fainted:
+    return "fainted";
+  }
+  return "unknown";
+}
+
+} // namespace
+
+TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& input) const {
+  TraceFrame frame;
+  frame.tick = tick;
+  frame.seconds = static_cast<double>(tick) * TickSeconds;
+  constexpr std::array<std::pair<std::string_view, std::uint32_t>, 8> Buttons{{
+      {"move_up", trace_buttons::Up},
+      {"move_right", trace_buttons::Right},
+      {"move_down", trace_buttons::Down},
+      {"move_left", trace_buttons::Left},
+      {"confirm", trace_buttons::Cross},
+      {"cancel", trace_buttons::Circle},
+      {"menu", trace_buttons::Triangle},
+      {"walk", trace_buttons::Square},
+  }};
+  for (const auto& [action, bit] : Buttons) {
+    if (input.isDown(action)) {
+      frame.buttons |= bit;
+    }
+  }
+  const game::field::Field& field = scene_->field();
+  frame.map = field.mapId();
+  frame.player =
+      TraceCharacter{.position = field.player().position, .yaw = field.player().yaw, .id = {}};
+  frame.partner =
+      TraceCharacter{.position = field.partner().position, .yaw = field.partner().yaw, .id = {}};
+  const entt::registry& registry = scene_->world().registry();
+  for (const game::field::NpcBody& body : field.npcs().bodies()) {
+    const auto& transform = registry.get<scene::Transform>(body.entity);
+    frame.npcs.push_back(
+        {.position = transform.position, .yaw = transform.yaw, .id = body.scriptId});
+  }
+  if (const game::battle::Battle* battle = battleScreen_.battle()) {
+    TraceBattle traced;
+    traced.frame = battle->state().frame;
+    if (context_.ui != nullptr) {
+      const ui::UiValue phase = context_.ui->setting(BattlePhaseSetting);
+      if (const auto* text = std::get_if<std::string>(&phase)) {
+        traced.phase = *text;
+      }
+    }
+    for (const game::battle::Fighter& fighter : battle->state().fighters) {
+      traced.fighters.push_back({
+          .x = fighter.position.x,
+          .z = fighter.position.z,
+          .yaw = assets::yawOfDirection(
+              {static_cast<float>(fighter.facing.x), 0.0F, static_cast<float>(fighter.facing.z)}),
+          .hp = fighter.hp,
+          .mp = fighter.mp,
+          .maxHp = fighter.stats.maxHp,
+          .maxMp = fighter.stats.maxMp,
+          .offense = fighter.stats.offense,
+          .defense = fighter.stats.defense,
+          .speed = fighter.stats.speed,
+          .brain = fighter.stats.brain,
+          .pose = std::string{poseName(fighter.pose)},
+      });
+    }
+    frame.battle = std::move(traced);
+  }
+  return frame;
 }
 
 } // namespace dwe::app

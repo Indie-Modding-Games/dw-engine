@@ -102,7 +102,7 @@ public:
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.
   bool defeatEnemies();
-  // The battle on screen until its end box closes, for a bug report; nothing otherwise.
+  // The battle on screen until its end box closes, for a bug report and --trace; nothing otherwise.
   [[nodiscard]] const game::battle::Battle* battle() const { return battle_ ? &*battle_ : nullptr; }
   // The map NPCs the enemies are, in the battle's order.
   [[nodiscard]] std::span<const std::int32_t> enemyNpcs() const { return enemyNpcs_; }

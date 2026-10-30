@@ -62,4 +62,25 @@ void FieldScene::drawNpcs(double animationSeconds, float alpha) {
   }
 }
 
+bool FieldScene::place(const Placement& placement) {
+  std::optional<scene::Entity> entity;
+  switch (placement.who) {
+  case Placement::Who::Player:
+    entity = field_->playerEntity();
+    break;
+  case Placement::Who::Partner:
+    entity = field_->partnerEntity();
+    break;
+  case Placement::Who::Npc:
+    entity = field_->npcs().entityOf(placement.npc);
+    break;
+  }
+  if (!entity) {
+    return false;
+  }
+  const float height = world_.registry().get<scene::Transform>(*entity).position.y;
+  field_->placeAt(*entity, {placement.ground.x, height, placement.ground.y}, placement.yaw);
+  return true;
+}
+
 } // namespace dwe::app

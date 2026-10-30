@@ -120,11 +120,11 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 17> StepNames{
-    "wait",          "walk_to",  "menu",       "menu_select", "expect_setting",
-    "screenshot",    "resize",   "fullscreen", "press",       "release",
-    "tap",           "axis",     "click",      "script",      "remember",
-    "expect_change", "script_if"};
+constexpr std::array<std::string_view, 18> StepNames{
+    "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
+    "screenshot",    "resize",    "fullscreen", "press",       "release",
+    "tap",           "axis",      "click",      "script",      "remember",
+    "expect_change", "script_if", "hold"};
 
 // What an expect_change step asks of a setting against its remembered value.
 constexpr std::string_view ChangedUp = "up";
@@ -320,9 +320,12 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
   if (kind == "wait") {
     step.kind = Kind::Wait;
     reader.expectKeys(value, "wait", {},
-                      {"seconds", "map", "partner_within", "player_near", "radius", "menu_open",
-                       "map_name", "shown", "hidden", "partner_has", "setting", "partner_model",
-                       "timeout"});
+                      {"seconds", "ticks", "map", "partner_within", "player_near", "radius",
+                       "menu_open", "map_name", "shown", "hidden", "partner_has", "setting",
+                       "partner_model", "timeout"});
+    if (const core::YamlNode* ticks = value.find("ticks")) {
+      step.ticks = reader.integer<std::uint64_t>(*ticks);
+    }
     readCondition(reader, value, step);
     readCommon(reader, value, step);
   } else if (kind == "walk_to") {
@@ -405,6 +408,18 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
   } else if (kind == "fullscreen") {
     step.kind = Kind::Fullscreen;
     step.flag = reader.boolean(value);
+  } else if (kind == "hold") {
+    step.kind = Kind::Hold;
+    reader.expectKeys(value, "hold", {"ticks"}, {"keys"});
+    step.ticks = reader.integer<std::uint64_t>(reader.field(value, "ticks"));
+    if (const core::YamlNode* keys = value.find("keys")) {
+      for (const core::YamlNode& key : reader.sequence(*keys, "keys")) {
+        step.keys.push_back(reader.text(key));
+        if (!keyNamed(step.keys.back())) {
+          reader.fail(key, "unknown key");
+        }
+      }
+    }
   } else if (kind == "press" || kind == "release" || kind == "tap") {
     if (kind == "press") {
       step.kind = Kind::Press;
@@ -484,6 +499,7 @@ std::string where(const FieldScene* scene) {
 // The state of the step being run.
 struct Autotest::Progress {
   double start = 0.0;
+  std::uint64_t startTick = 0;
   bool begun = false;
   int phase = 0;
   int attempts = 0;
@@ -635,6 +651,7 @@ void Autotest::mapChanged(const MapChangeTiming& timing) {
 void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
                      std::vector<platform::Event>& events) {
   platform_ = host.platform;
+  ticks_ = ticks;
   if (finished()) {
     return;
   }
@@ -656,6 +673,7 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
     if (!progress_) {
       progress_ = std::make_unique<Progress>();
       progress_->start = now;
+      progress_->startTick = ticks;
       progress_->mapSerial = host.scene != nullptr ? host.scene->mapSerial() : 0;
     }
     // A step that is done counts even past its timeout: the press that starts a new game ends the
@@ -664,7 +682,8 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
       failStep(messages::NoGame);
     } else if (runStep(host, step, now)) {
       finishStep(now);
-    } else if (!finished() && now - progress_->start > step.timeout && step.kind != Kind::Wait) {
+    } else if (!finished() && now - progress_->start > step.timeout && step.kind != Kind::Wait &&
+               step.kind != Kind::Hold) {
       failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
     }
     runActions(ticks, events);
@@ -745,8 +764,58 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     return expectChangeStep(host, step);
   case Kind::ScriptIf:
     return scriptIfStep(host, step);
+  case Kind::Hold:
+    return holdStep();
   }
   return true;
+}
+
+bool Autotest::holdStep() {
+  if (!holdEnds_.contains(stepIndex_)) {
+    // A run of hold steps starts at the next tick and is laid out tick for tick, so the frames'
+    // length cannot stretch one hold into the next.
+    holds_.clear();
+    holdEnds_.clear();
+    std::uint64_t from = ticks_;
+    for (std::size_t index = stepIndex_;
+         index < route_.steps.size() && route_.steps[index].kind == Kind::Hold; ++index) {
+      const AutotestStep& held = route_.steps[index];
+      ScheduledHold hold{.from = from, .to = from + held.ticks, .keys = {}};
+      for (const std::string& name : held.keys) {
+        hold.keys.push_back(keyNamed(name).value_or(platform::KeyCode{0}));
+      }
+      from = hold.to;
+      holdEnds_.emplace(index, from);
+      holds_.push_back(std::move(hold));
+    }
+  }
+  return ticks_ >= holdEnds_.at(stepIndex_);
+}
+
+void Autotest::feedTick(std::uint64_t tick, input::InputState& input) {
+  if (holds_.empty() && tickKeys_.empty()) {
+    return;
+  }
+  std::vector<platform::KeyCode> wanted;
+  const auto hold = std::ranges::find_if(
+      holds_, [tick](const ScheduledHold& held) { return held.from <= tick && tick < held.to; });
+  if (hold != holds_.end()) {
+    wanted = hold->keys;
+  } else if (!holds_.empty() && tick >= holds_.back().to) {
+    holds_.clear();
+  }
+  for (const platform::KeyCode code : std::vector{tickKeys_}) {
+    if (std::ranges::find(wanted, code) == wanted.end()) {
+      input.handle(platform::KeyChanged{.key = code, .down = false, .repeat = false});
+      std::erase(tickKeys_, code);
+    }
+  }
+  for (const platform::KeyCode code : wanted) {
+    if (std::ranges::find(tickKeys_, code) == tickKeys_.end()) {
+      input.handle(platform::KeyChanged{.key = code, .down = true, .repeat = false});
+      tickKeys_.push_back(code);
+    }
+  }
 }
 
 bool Autotest::rememberStep(const AutotestHost& host, const AutotestStep& step) {
@@ -773,7 +842,7 @@ bool Autotest::scriptIfStep(const AutotestHost& host, const AutotestStep& step) 
 
 bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, double now) {
   const double waited = now - progress_->start;
-  if (waited < step.seconds) {
+  if (waited < step.seconds || ticks_ - progress_->startTick < step.ticks) {
     return false;
   }
   const std::string unmet = unmetCondition(host, step.until);

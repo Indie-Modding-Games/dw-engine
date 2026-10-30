@@ -82,11 +82,15 @@ struct AutotestStep {
                   // remembered value
     ScriptIf, // script_if: {script, and wait's conditions}: runs the script only if they all hold
               // now
+    Hold,     // hold: {keys: [<key>...], ticks}: exactly these keys held for that many logic
+              // ticks; back-to-back hold steps follow each other tick for tick (feedTick)
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
   std::string name; // a setting's name
   double seconds = 0.0;
+  // wait: logic ticks to wait, besides the seconds (game time, which a slow frame drops).
+  std::uint64_t ticks = 0;
   double timeout = 10.0;
   AutotestCondition until;
   std::optional<std::int32_t> trigger;
@@ -102,6 +106,8 @@ struct AutotestStep {
   int height = 0;
   float value = 0.0F;
   std::optional<AutotestDevice> device;
+  // hold: the keys held, by name (keyNamed).
+  std::vector<std::string> keys;
 };
 
 struct AutotestRoute {
@@ -166,6 +172,10 @@ public:
   // ticks run so far.
   void frame(const AutotestHost& host, std::uint64_t ticks, double now,
              std::vector<platform::Event>& events);
+
+  // Feeds the input the key changes the hold steps ask for at this logic tick, inside the tick
+  // loop, so a hold lasts its ticks exactly however long the frames take.
+  void feedTick(std::uint64_t tick, input::InputState& input);
 
   // Notes a map change for the report.
   void mapChanged(const MapChangeTiming& timing);
@@ -237,6 +247,8 @@ private:
                                              const AutotestCondition& until);
   bool rememberStep(const AutotestHost& host, const AutotestStep& step);
   bool expectChangeStep(const AutotestHost& host, const AutotestStep& step);
+  // Plays the current hold step; the first of a run of them schedules the whole run.
+  bool holdStep();
 
   // Device helpers that queue actions.
   void key(platform::KeyCode code, bool down, int afterTicks = 0);
@@ -265,6 +277,19 @@ private:
   double runStart_ = -1.0;
   std::deque<Action> actions_;
   std::uint64_t lastActionTick_ = 0;
+  // The logic ticks run so far, as frame() last heard.
+  std::uint64_t ticks_ = 0;
+  // The keys of a run of hold steps, by the logic tick they start at and end before, and the end
+  // tick of each of its steps by step index.
+  struct ScheduledHold {
+    std::uint64_t from = 0;
+    std::uint64_t to = 0;
+    std::vector<platform::KeyCode> keys;
+  };
+  std::vector<ScheduledHold> holds_;
+  std::map<std::size_t, std::uint64_t> holdEnds_;
+  // The keys feedTick holds now.
+  std::vector<platform::KeyCode> tickKeys_;
   platform::Platform* platform_ = nullptr;
   std::optional<platform::GamepadId> gamepad_;
   // Keys and buttons held by the driver, to release them.

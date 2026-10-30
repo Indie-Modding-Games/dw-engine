@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "fighter_figure.hpp"
+#include "place_command.hpp"
 #include "scene_effect.hpp"
 
 namespace dwe::app {
@@ -266,6 +267,9 @@ public:
   // Decides the map's script warp cells again after what their guards read changed
   // (Field::refreshScriptWarps).
   void refreshScriptWarps() { field_->refreshScriptWarps(); }
+  // Puts a character at a ground point and facing at once, at the height it stands
+  // (Field::placeAt); false when the map has no NPC with that script id.
+  bool place(const Placement& placement);
   // The story's edits of the map shown, until a map is entered again (story_map_edits.cpp): an
   // object's flag (overworld.c: setMapObjectsFlag) and a rectangle of cells that stop movement
   // (map_collision.c: setImpassableRect).
