@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using dwe::assets::MapImages;
@@ -92,6 +93,13 @@ std::vector<std::byte> palettePng(unsigned width, unsigned height, unsigned char
 constexpr std::string_view PageMeta =
     "image_rect:\n  x: 384\n  y: 0\nclut_rect:\n  x: 0\n  y: 480\npalettes: []\n";
 
+constexpr std::string_view ShortFourBitMeta =
+    "image_rect:\n  x: 704\n  y: 216\nclut_rect:\n  x: 0\n  y: 486\npalettes: []\n";
+
+std::uint8_t indexAt(const MapTexturePage& page, std::uint32_t x, std::uint32_t y) {
+  return page.image.indices.at((static_cast<std::size_t>(y) * page.image.width) + x);
+}
+
 // Loads the images of map "m" (2 x 1 tiles, one sprite with clut -1) from the given files.
 dwe::core::Result<MapImages> loadFixture(dwe::assets::MemoryFileSystem& memory) {
   memory.addFile("base/pack.yaml", "id: base\nversion: 1.0.0\nlayer: base\n");
@@ -133,12 +141,13 @@ TEST_CASE("15-bit colours expand their bits, 0x0000 is transparent and STP is ke
 TEST_CASE("a texture page reads its VRAM place and CLUT rows from its metadata") {
   const std::string meta =
       "source: \"MAP/X.MAP\"\nentry: 2\nmode: indexed4\nwidth: 256\nheight: 256\n"
-      "image_rect:\n  x: 640\n  y: 0\n  width: 64\n  height: 256\n"
+      "image_rect:\n  x: 640\n  y: 216\n  width: 64\n  height: 32\n"
       "clut_rect:\n  x: 0\n  y: 486\n  width: 16\n  height: 2\n"
       "png: indexed\npng_palette: 0\npalettes:\n- \"0000 7fff\"\n- \"001f 8000\"\n";
   const auto parsed = dwe::assets::parseMapTexturePage(4, {}, meta);
   REQUIRE_MESSAGE(parsed.has_value(), errorOf(parsed));
   CHECK(parsed->vramX == 640);
+  CHECK(parsed->vramY == 216);
   CHECK(parsed->clutRow == 486);
   REQUIRE(parsed->cluts.size() == 2);
   CHECK(parsed->cluts[0][0] == PaletteColor{});
@@ -274,11 +283,64 @@ TEST_CASE("map images load when the backgrounds have the document's size and fai
       CHECK(page.image.indices.size() == std::size_t{256} * 256);
     }
   }
-  SUBCASE("a texture page that is not 256 square") {
+  SUBCASE("an entry shorter than a page lands at its rows of the page") {
+    // gomi02's 4-bit entry: 256 x 32 texels at VRAM (704, 216).
+    dwe::assets::MemoryFileSystem memory;
+    memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
+    memory.addFile("base/map/m/texture4/000.png", palettePng(256, 32, 5, 16));
+    memory.addFile("base/map/m/texture4/000_meta.yaml", ShortFourBitMeta);
+    const auto images = loadFixture(memory);
+    REQUIRE_MESSAGE(images.has_value(), errorOf(images));
+    REQUIRE(images->pages.size() == 1);
+    const MapTexturePage& page = images->pages[0];
+    CHECK(page.bitsPerPixel == 4);
+    CHECK(page.vramX == 704);
+    REQUIRE(page.image.indices.size() == std::size_t{256} * 256);
+    CHECK(indexAt(page, 0, 215) == 0);
+    CHECK(indexAt(page, 0, 216) == 5);
+    CHECK(indexAt(page, 255, 247) == 5);
+    CHECK(indexAt(page, 255, 248) == 0);
+  }
+  SUBCASE("a later entry overwrites what it covers of an earlier one, whatever its depth") {
+    // The 8-bit page at 640 spans x 640-767: the 4-bit entry at 704 is its right half's rows
+    // 216-247, two 4-bit 5s to a byte.
+    dwe::assets::MemoryFileSystem memory;
+    memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
+    memory.addFile("base/map/m/texture8/000.png", palettePng(256, 256, 1, 4));
+    memory.addFile("base/map/m/texture8/000_meta.yaml",
+                   "image_rect:\n  x: 640\n  y: 0\nclut_rect:\n  x: 0\n  y: 484\npalettes: []\n");
+    memory.addFile("base/map/m/texture4/000.png", palettePng(256, 32, 5, 16));
+    memory.addFile("base/map/m/texture4/000_meta.yaml", ShortFourBitMeta);
+    const auto images = loadFixture(memory);
+    REQUIRE_MESSAGE(images.has_value(), errorOf(images));
+    REQUIRE(images->pages.size() == 2);
+    const MapTexturePage& eightBit = images->pages[0];
+    CHECK(eightBit.vramX == 640);
+    CHECK(indexAt(eightBit, 127, 216) == 1);
+    CHECK(indexAt(eightBit, 128, 216) == 0x55);
+    CHECK(indexAt(eightBit, 255, 247) == 0x55);
+    CHECK(indexAt(eightBit, 128, 248) == 1);
+    CHECK(indexAt(images->pages[1], 0, 216) == 5);
+  }
+  SUBCASE("an entry narrower than a page is the left part of the page its X is in") {
     dwe::assets::MemoryFileSystem memory;
     memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
     memory.addFile("base/map/m/texture8/000.png", palettePng(128, 256, 1, 4));
     memory.addFile("base/map/m/texture8/000_meta.yaml", PageMeta);
-    CHECK_FALSE(loadFixture(memory).has_value());
+    const auto images = loadFixture(memory);
+    REQUIRE_MESSAGE(images.has_value(), errorOf(images));
+    REQUIRE(images->pages.size() == 1);
+    CHECK(indexAt(images->pages[0], 127, 0) == 1);
+    CHECK(indexAt(images->pages[0], 128, 0) == 0);
+  }
+  SUBCASE("an entry that does not fit the map's VRAM") {
+    dwe::assets::MemoryFileSystem memory;
+    memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
+    memory.addFile("base/map/m/texture8/000.png", palettePng(256, 256, 1, 4));
+    memory.addFile("base/map/m/texture8/000_meta.yaml",
+                   "image_rect:\n  x: 960\n  y: 0\nclut_rect:\n  x: 0\n  y: 480\npalettes: []\n");
+    const auto images = loadFixture(memory);
+    REQUIRE_FALSE(images.has_value());
+    CHECK(images.error().message.find("do not fit") != std::string::npos);
   }
 }

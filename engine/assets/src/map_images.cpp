@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
-#include <iterator>
 #include <map>
 #include <utility>
 #include <vector>
@@ -101,13 +100,17 @@ core::Result<MapTexturePage> parseMapTexturePage(std::int32_t bitsPerPixel, Inde
     return core::fail("texture metadata: image_rect, clut_rect or palettes is missing");
   }
   auto vramX = readInt(*imageRect, "x");
+  auto vramY = readInt(*imageRect, "y");
   auto clutRow = readInt(*clutRect, "y");
-  if (!vramX || !clutRow) {
-    return std::unexpected{!vramX ? vramX.error() : clutRow.error()};
+  for (const auto* value : {&vramX, &vramY, &clutRow}) {
+    if (!*value) {
+      return std::unexpected{value->error()};
+    }
   }
   MapTexturePage page{
       .bitsPerPixel = bitsPerPixel,
       .vramX = *vramX,
+      .vramY = *vramY,
       .clutRow = *clutRow,
       .image = std::move(image),
       .cluts = {},
@@ -226,38 +229,102 @@ MapSpriteSheet buildMapSpriteSheet(std::span<const MapSprite> sprites,
 
 namespace {
 
-// The pages of an entry MapPageTexels high and a whole number of pages wide, left to right from
-// its VRAM X.
-std::vector<MapTexturePage> splitTexturePages(MapTexturePage entry) {
-  const std::uint32_t count = entry.image.width / MapPageTexels;
-  if (count <= 1) {
-    return {std::move(entry)};
+// The map's part of VRAM, in 16-bit units: MapVramLayout::FirstPageX to the right edge, rows 0 to
+// MapPageTexels. loadMap uploads the 8-bit entries, then the 4-bit ones, each with one LoadImage at
+// its image_rect (overworld.c: loadMapImage1, loadMapImage2), so an entry overwrites what an
+// earlier one put under it, whatever their depths, and a page reads whatever entries cover it.
+class MapVram {
+public:
+  // VRAM is 1024 16-bit units wide.
+  static constexpr std::int32_t VramWidth = 1024;
+  static constexpr std::int32_t Left = MapVramLayout::FirstPageX;
+  static constexpr std::int32_t Width = VramWidth - Left;
+  static constexpr std::int32_t Rows = MapPageTexels;
+
+  core::Result<void> upload(const MapTexturePage& entry) {
+    const std::int32_t perUnit = texelsPerUnit(entry.bitsPerPixel);
+    const auto texels = static_cast<std::int32_t>(entry.image.width);
+    const auto rows = static_cast<std::int32_t>(entry.image.height);
+    const std::int32_t left = entry.vramX - Left;
+    if (perUnit == 0 || texels % perUnit != 0 || left < 0 || left + (texels / perUnit) > Width ||
+        entry.vramY < 0 || entry.vramY + rows > Rows) {
+      return core::fail(std::format(
+          "{}x{} texels of {} bits at VRAM ({}, {}) do not fit the map's VRAM from x {}", texels,
+          rows, entry.bitsPerPixel, entry.vramX, entry.vramY, Left));
+    }
+    const auto mask = static_cast<std::uint32_t>((1U << entry.bitsPerPixel) - 1);
+    for (std::int32_t row = 0; row < rows; ++row) {
+      for (std::int32_t texel = 0; texel < texels; ++texel) {
+        std::uint16_t& unit = at(left + (texel / perUnit), entry.vramY + row);
+        const auto shift = static_cast<std::uint32_t>((texel % perUnit) * entry.bitsPerPixel);
+        const std::uint32_t index =
+            entry.image.indices[static_cast<std::size_t>((row * texels) + texel)] & mask;
+        const std::uint32_t kept = static_cast<std::uint32_t>(unit) & ~(mask << shift);
+        unit = static_cast<std::uint16_t>(kept | (index << shift));
+      }
+    }
+    return {};
   }
+
+  // The page of the given depth whose left edge is at vramX, MapPageTexels square.
+  [[nodiscard]] std::vector<std::uint8_t> page(std::int32_t bitsPerPixel,
+                                               std::int32_t vramX) const {
+    const std::int32_t perUnit = texelsPerUnit(bitsPerPixel);
+    const auto mask = static_cast<std::uint32_t>((1U << bitsPerPixel) - 1);
+    std::vector<std::uint8_t> indices(static_cast<std::size_t>(MapPageTexels) * MapPageTexels);
+    for (std::int32_t row = 0; row < Rows; ++row) {
+      for (std::int32_t texel = 0; texel < MapPageTexels; ++texel) {
+        const std::int32_t column = vramX - Left + (texel / perUnit);
+        if (column >= Width) {
+          break;
+        }
+        const auto shift = static_cast<std::uint32_t>((texel % perUnit) * bitsPerPixel);
+        const auto unit = static_cast<std::uint32_t>(units_[unitIndex(column, row)]);
+        indices[static_cast<std::size_t>((row * MapPageTexels) + texel)] =
+            static_cast<std::uint8_t>((unit >> shift) & mask);
+      }
+    }
+    return indices;
+  }
+
+private:
+  static constexpr std::int32_t texelsPerUnit(std::int32_t bitsPerPixel) {
+    return bitsPerPixel == 4 || bitsPerPixel == 8 ? 16 / bitsPerPixel : 0;
+  }
+  static std::size_t unitIndex(std::int32_t column, std::int32_t row) {
+    return static_cast<std::size_t>((row * Width) + column);
+  }
+  std::uint16_t& at(std::int32_t column, std::int32_t row) {
+    return units_[unitIndex(column, row)];
+  }
+
+  std::vector<std::uint16_t> units_ =
+      std::vector<std::uint16_t>(static_cast<std::size_t>(Width) * Rows);
+};
+
+// The pages sprites look up (MapVramLayout: from FirstPageX, a page width apart) that an entry
+// covers, read back from VRAM with the entry's CLUTs.
+void addPagesOf(const MapTexturePage& entry, const MapVram& vram,
+                std::vector<MapTexturePage>& pages) {
   const std::int32_t pageWidth =
       entry.bitsPerPixel == 4 ? MapVramLayout::FourBitPageWidth : MapVramLayout::EightBitPageWidth;
-  std::vector<MapTexturePage> pages;
-  pages.reserve(count);
-  for (std::uint32_t index = 0; index < count; ++index) {
-    MapTexturePage page{
+  const std::int32_t units = static_cast<std::int32_t>(entry.image.width) * entry.bitsPerPixel / 16;
+  const std::int32_t first = (entry.vramX - MapVram::Left) / pageWidth;
+  const std::int32_t last = (entry.vramX - MapVram::Left + units - 1) / pageWidth;
+  for (std::int32_t index = first; index <= last; ++index) {
+    const std::int32_t vramX = MapVram::Left + (index * pageWidth);
+    pages.push_back({
         .bitsPerPixel = entry.bitsPerPixel,
-        .vramX = entry.vramX + (static_cast<std::int32_t>(index) * pageWidth),
+        .vramX = vramX,
+        .vramY = 0,
         .clutRow = entry.clutRow,
         .image = {.width = MapPageTexels,
-                  .height = entry.image.height,
-                  .indices = {},
+                  .height = MapPageTexels,
+                  .indices = vram.page(entry.bitsPerPixel, vramX),
                   .palette = entry.image.palette},
         .cluts = entry.cluts,
-    };
-    page.image.indices.reserve(static_cast<std::size_t>(MapPageTexels) * entry.image.height);
-    for (std::uint32_t row = 0; row < entry.image.height; ++row) {
-      const auto first =
-          entry.image.indices.begin() +
-          static_cast<std::ptrdiff_t>((row * entry.image.width) + (index * MapPageTexels));
-      page.image.indices.insert(page.image.indices.end(), first, first + MapPageTexels);
-    }
-    pages.push_back(std::move(page));
+    });
   }
-  return pages;
 }
 
 } // namespace
@@ -295,6 +362,9 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
     }
     images.backgroundVariants.push_back(background.variant);
   }
+  // ids.textures lists the 8-bit entries first, as loadMap uploads them.
+  MapVram vram;
+  std::vector<MapTexturePage> entries;
   for (const MapTexture& texture : ids.textures) {
     if (!texture.meta) {
       return core::fail(std::format("{}: no metadata", texture.image.str()));
@@ -302,14 +372,6 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
     auto image = readIndexed(vfs, texture.image);
     if (!image) {
       return std::unexpected{image.error()};
-    }
-    // A map file's texture entry can cover pages side by side (tunn05 loads 3 8-bit pages from
-    // x 384 in one LoadImage): it is cut into its pages.
-    if (image->width == 0 || image->width % MapPageTexels != 0 ||
-        std::cmp_not_equal(image->height, MapPageTexels)) {
-      return core::fail(std::format("{}: {}x{} texels, but texture pages are {} square",
-                                    texture.image.str(), image->width, image->height,
-                                    MapPageTexels));
     }
     auto meta = vfs.read(*texture.meta);
     if (!meta) {
@@ -320,7 +382,13 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
     if (!page) {
       return core::fail(std::format("{}: {}", texture.meta->str(), page.error().message));
     }
-    std::ranges::move(splitTexturePages(std::move(*page)), std::back_inserter(images.pages));
+    if (auto uploaded = vram.upload(*page); !uploaded) {
+      return core::fail(std::format("{}: {}", texture.image.str(), uploaded.error().message));
+    }
+    entries.push_back(std::move(*page));
+  }
+  for (const MapTexturePage& entry : entries) {
+    addPagesOf(entry, vram, images.pages);
   }
   const std::span<const MapSprite> sprites =
       document.objects ? std::span{document.objects->sprites} : std::span<const MapSprite>{};

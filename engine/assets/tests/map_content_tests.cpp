@@ -1,5 +1,6 @@
 #include <dwe/assets/file_system.hpp>
 #include <dwe/assets/map_document.hpp>
+#include <dwe/assets/map_images.hpp>
 #include <dwe/assets/map_table.hpp>
 #include <dwe/assets/pak.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
@@ -12,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace {
 
@@ -76,4 +78,48 @@ TEST_CASE("the user's disc, extracted: every map of the table parses") {
   MESSAGE(parsed, " of ", withFile, " maps with a file parsed; ", warps, " warps with a target; ",
           triggers, " trigger cells");
   CHECK(parsed >= 240);
+}
+
+TEST_CASE("the user's disc, extracted: every map's images load") {
+  const std::optional<std::filesystem::path> mountedContent = dwe::test_support::userContent();
+  if (!mountedContent) {
+    MESSAGE("DWE_CONTENT is not set: skipping the test on extracted content");
+    return;
+  }
+  const dwe::assets::DiskFileSystem disk;
+  const auto packs = dwe::assets::findPacks(disk, *mountedContent);
+  REQUIRE_MESSAGE(packs.has_value(), errorOf(packs));
+  const auto opened = dwe::assets::openPacks(disk, packs->packs, dwe::assets::PackOrigin::Engine);
+  REQUIRE_MESSAGE(opened.has_value(), errorOf(opened));
+  const auto vfs = dwe::assets::VirtualFileSystem::mount(opened->locations);
+  REQUIRE_MESSAGE(vfs.has_value(), errorOf(vfs));
+  const auto table = dwe::assets::loadMapTable(*vfs);
+  REQUIRE_MESSAGE(table.has_value(), errorOf(table));
+
+  int loaded = 0;
+  std::vector<std::string> failures;
+  for (const dwe::assets::MapEntry& entry : table->maps) {
+    if (!entry.hasFile()) {
+      continue;
+    }
+    const auto id = dwe::assets::mapDataId(entry.id);
+    REQUIRE_MESSAGE(id.has_value(), errorOf(id));
+    if (vfs->resolve(*id) == nullptr) {
+      continue;
+    }
+    const auto map = dwe::assets::loadMapDocument(*vfs, entry.id);
+    REQUIRE_MESSAGE(map.has_value(), errorOf(map));
+    const auto images = dwe::assets::loadMapImages(*vfs, *map);
+    if (images) {
+      ++loaded;
+    } else {
+      failures.push_back(entry.id + ": " + images.error().message);
+    }
+  }
+  for (const std::string& failure : failures) {
+    MESSAGE(failure);
+  }
+  MESSAGE(loaded, " maps' images loaded");
+  CHECK(failures.empty());
+  CHECK(loaded >= 240);
 }

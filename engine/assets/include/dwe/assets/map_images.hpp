@@ -30,8 +30,8 @@ class VirtualFileSystem;
 // The side of a background tile, in pixels (MapTiles counts them).
 inline constexpr std::int32_t MapTileSize = 128;
 
-// The side of a texture page, in texels: the extracted texture PNGs of a map are this size, for 4
-// and 8 bits.
+// The side of a texture page, in texels, for 4 and 8 bits. A map's texture entries are uploaded
+// where their metadata says, whatever their size, and read back as pages of this size.
 inline constexpr std::int32_t MapPageTexels = 256;
 
 // Where the original puts a map's texture pages and palettes in VRAM, as the extracted metadata and
@@ -55,12 +55,14 @@ struct MapVramLayout {
   static constexpr std::int32_t ClutRowBase = 468;
 };
 
-// One texture page of a map: its indices and where its metadata says the original puts it
-// (overworld.c: loadMapImage1, loadMapImage2).
+// One texture entry or page of a map: its indices and where its metadata says the original puts
+// it (overworld.c: loadMapImage1, loadMapImage2).
 struct MapTexturePage {
   std::int32_t bitsPerPixel = 8;
-  // The page's left edge in VRAM, in 16-bit units (image_rect.x of its metadata).
+  // The left edge in VRAM, in 16-bit units (image_rect.x of an entry's metadata).
   std::int32_t vramX = 0;
+  // The top row in VRAM (image_rect.y); 0 for a page.
+  std::int32_t vramY = 0;
   // The VRAM row of its CLUT (clut_rect.y), the first row for several.
   std::int32_t clutRow = 0;
   IndexedImage image;
@@ -171,13 +173,16 @@ struct MapImages {
   std::vector<std::string> backgroundVariants;
   // One per variant, at least one.
   std::vector<std::vector<PaletteColor>> backgroundPalettes;
+  // The MapPageTexels square pages that sprites look up (MapVramLayout), read back from VRAM
+  // after every entry is uploaded.
   std::vector<MapTexturePage> pages;
   MapSpriteSheet sprites;
 };
 
 // Reads a map's backgrounds and texture pages (document.assets) and resolves its sprites. Fails
 // when a background is not the size of the document's tiles, the variants differ in size or pixels,
-// or a page is not MapPageTexels square.
+// or a texture entry does not fit in the map's part of VRAM (MapVramLayout::FirstPageX to the right
+// edge, rows 0 to MapPageTexels).
 core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDocument& document);
 
 } // namespace dwe::assets

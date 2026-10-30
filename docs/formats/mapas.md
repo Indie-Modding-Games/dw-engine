@@ -69,6 +69,13 @@ El original reserva 35 tiles; una rejilla mayor es un error.
 Los TIM son TIM estándar y se dejan como rango de bytes (`MapImageSection`: bits por píxel, offset y tamaño) para el
 lector de imágenes. Los de 8 bits se cargan con `overworld.c: loadMapImage1` y los de 4 bits con `loadMapImage2`.
 
+`loadMap` sube primero los de 8 bits y luego los de 4, en orden, cada uno con un solo `LoadImage` a su rectángulo de
+VRAM, sin más comprobación: un TIM puede ocupar varias páginas (tunn05), media página (gias02, 128 × 256 texels de 8
+bits) o unas pocas filas (gomi02 y betl04, 256 × 32 texels de 4 bits en (704, 216)), y uno posterior tapa lo que
+cubre de otro anterior aunque sea de otra profundidad (en gomi02 el de 4 bits cae dentro de la página de 8 bits de la
+x 640). En el US, 20 de los 241 mapas tienen alguno así. El motor hace lo mismo (`loadMapImages`): sube las entradas a
+una VRAM del mapa y lee de ella las páginas.
+
 ### Sprites
 
 `s16` con el número de sprites y los sprites, de 9 `s16` cada uno en este orden: `texX`, `texY`, `width`, `height`,
