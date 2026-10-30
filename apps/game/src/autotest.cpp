@@ -1056,7 +1056,8 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
   }
   // An encounter on the way, which comes when timing says (a wild one walks up, talks and starts a
   // fight): with `encounters`, the walk stops, confirms the dialogue's pages, lets the fight play
-  // out, and plans again from where the player is after it (its drop's notice is confirmed below).
+  // out (pressing through its end box), and plans again from where the player is after it (its
+  // drop's notice is confirmed below).
   // Its time stays out of the timeout.
   if (step.encounters && (field.heldByScript() || host.ui->isVisible(BattleDocument))) {
     releaseMovement();
@@ -1066,8 +1067,12 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
                     position.z);
     }
     progress.start = now - progress.walked;
-    if (!host.ui->isVisible(BattleDocument) && host.ui->isVisible(StoryTextboxDocument) &&
-        now - progress.lastAnswer > AnswerSeconds) {
+    // The fight's end box types each of its lines on a press (battle_ui.c: handleBattleEndBox).
+    const bool endBox =
+        host.ui->isVisible(BattleDocument) && settingText(host, "battle.phase") == "end";
+    const bool textbox =
+        !host.ui->isVisible(BattleDocument) && host.ui->isVisible(StoryTextboxDocument);
+    if ((endBox || textbox) && now - progress.lastAnswer > AnswerSeconds) {
       progress.lastAnswer = now;
       tapAction(device == AutotestDevice::Gamepad ? device : AutotestDevice::Keyboard, "confirm");
     }
