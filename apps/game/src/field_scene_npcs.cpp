@@ -50,6 +50,12 @@ void FieldScene::followNpcs() {
     }
     npcActors_.push_back(std::move(*actor));
   }
+  // overworld.c: NPCEntityTickOverworld ends with entity.isOnScreen = !entityIsOffScreen(entity,
+  // 0x140, 0xf0); the next tick's collisions leave out the NPCs off screen (utils2.c:
+  // isInvisible), like Etemon waiting up in his tree over the door of mayo04a.
+  for (const std::unique_ptr<Actor>& actor : npcActors_) {
+    field_->npcs().setOnScreen(actor->entity, onScreen(*actor));
+  }
 }
 
 void FieldScene::drawNpcs(double animationSeconds, float alpha) {

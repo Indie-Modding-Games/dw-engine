@@ -100,8 +100,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 45 | 1 | 1 | 39 | 97 % |
-| **Total** | 2438 funciones | 934 | 34 | 361 | 1109 | 72 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
+| **Total** | 2438 funciones | 935 | 34 | 361 | 1108 | 72 % |
 
 ## Batalla
 
@@ -727,13 +727,13 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 45, parcial 1, falta 1, no aplica 39.
+Portado 46, parcial 1, falta 1, no aplica 38.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
 | `startTournament` | `main/utils2.c:577` | falta (citada en docs) | Carga y juega un torneo; suma los ganados. | no hay torneos |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); consulta de dibujo (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (20); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (5); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3); entrada del original (2); tabla de ficheros del disco (1); texturas del original (1); solo la demo de prueba (1); preparación del original (1); consulta de dibujo (1).
 
 <!-- port-coverage:end -->

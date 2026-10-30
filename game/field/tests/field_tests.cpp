@@ -1356,6 +1356,38 @@ TEST_CASE("an NPC put on the player stays where it was put; the player walks off
   CHECK(*field.npcs().positionOf(7) == glm::vec3{30.0F, 0.0F, 0.0F});
 }
 
+TEST_CASE("an NPC off screen is out of the collision, as Etemon up in his tree") {
+  // mayo04a: Etemon waits 1000 units up over the tree's door until the story drops him; off screen
+  // (entity.isOnScreen 0) the original's collision skips him (utils2.c: isInvisible), so the
+  // player walks over his spot to the door.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 600.0F, 0.0F, 5);
+  field.enterMapAt(map, at(0.0F, 0.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  const auto walkRight = [&] {
+    field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+    run(field, 1.0F);
+    field.setInput({});
+    const float reached = field.player().position.x;
+    placeAt(world, field.playerEntity(), 0.0F, 0.0F);
+    return reached;
+  };
+  SUBCASE("on screen it stops the player") {
+    CHECK(walkRight() < 600.0F - 200.0F + 1.0F);
+  }
+  SUBCASE("off screen the player walks through its spot") {
+    field.npcs().setOnScreen(*field.npcs().entityOf(5), false);
+    CHECK(walkRight() > 800.0F);
+    // It is still on the field, for the state trace.
+    CHECK(field.npcs().bodies().size() == 1);
+    // Back on screen it is solid again.
+    field.npcs().setOnScreen(*field.npcs().entityOf(5), true);
+    CHECK(walkRight() < 600.0F - 200.0F + 1.0F);
+  }
+}
+
 TEST_CASE("an NPC path past its map's waypoints uses the zeroed slots, as the original") {
   // dgha02's script id 7 has more path parts than waypoints: the original reads the table's slots
   // that loadMap cleared, so it waits 0 frames and walks to the map's origin.

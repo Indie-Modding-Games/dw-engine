@@ -120,7 +120,14 @@ public:
   // script id.
   bool setScriptedAnimation(std::int32_t scriptId, std::int32_t animation);
 
-  // The solid NPCs (map.c: entityCheckCollision skips those with no HP left), by slot.
+  // Whether the NPC on this entity shows in the window (entity.isOnScreen, which overworld.c:
+  // NPCEntityTickOverworld works out at the end of each of its ticks with entityIsOffScreen). One
+  // that does not is out of every collision and touch until it shows again (utils2.c: isInvisible,
+  // as map.c: entityCheckCollision asks it). An NPC shows until the field's view says otherwise.
+  void setOnScreen(scene::Entity entity, bool onScreen);
+
+  // The NPCs with HP left (map.c: entityCheckCollision skips the others), by slot, on screen or
+  // not: the state trace lists them all.
   [[nodiscard]] std::vector<NpcBody> bodies() const;
   // The animation a script left on an NPC (setScriptedAnimation), or nothing without such an NPC.
   [[nodiscard]] std::optional<std::int32_t> scriptedAnimationOf(std::int32_t scriptId) const;
@@ -168,6 +175,8 @@ private:
     bool autotalk = false;
     // map.c: entityCheckCollision skips NPCs with no HP left.
     bool solid = true;
+    // entity.isOnScreen: off screen, utils2.c: isInvisible takes it out of the collision too.
+    bool onScreen = true;
     // The waypoint path (MapDigimonEntity.path, hasWaypointTarget, waypointWaitTimer).
     std::size_t activeSection = 0;
     bool hasTarget = false;
@@ -218,6 +227,9 @@ private:
   void turnFromBlock(Npc& npc, float seconds, const assets::MapCollision& collision,
                      const NpcSurroundings& surroundings);
   [[nodiscard]] GroundSquare squareOf(const Npc& npc) const;
+  // Whether the others collide with the NPC (map.c: entityCheckCollision): it has HP left and it
+  // is not invisible (utils2.c: isInvisible).
+  [[nodiscard]] static bool collides(const Npc& npc) { return npc.solid && npc.onScreen; }
   [[nodiscard]] float speedOf(scene::Motion motion) const;
 
   scene::World* world_;

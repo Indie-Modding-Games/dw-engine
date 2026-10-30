@@ -700,7 +700,7 @@ tickTrialEnd = { status = "no-aplica", note = "solo la demo de prueba", what = "
 pollInputGame = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en el juego." }
 pollInputMenu = { status = "no-aplica", note = "entrada del original", what = "Lee el mando en los menús." }
 initializeInventoryModules = { status = "no-aplica", note = "preparación del original", what = "Prepara los módulos de la bolsa." }
-isInvisible = { status = "no-aplica", note = "consulta de dibujo", what = "Dice si una entidad está oculta." }
+isInvisible = { status = "portado", dwe = "game/field/src/npcs.cpp", note = "los NPC fuera de pantalla quedan fuera del choque", what = "Dice si una entidad está oculta." }
 startMovie = { status = "portado", dwe = "apps/game/src/movie_screen.cpp", what = "Empieza un vídeo." }
 handlePause = { status = "portado", dwe = "apps/game/src/pause_box.cpp", what = "Pausa del juego con Start: congela campo, combate y menús." }
 createPauseBox = { status = "portado", dwe = "content/packs/game/ui/pause_box/document.rml", what = "Cuadro de pausa." }

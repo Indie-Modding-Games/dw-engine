@@ -182,6 +182,16 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   `map.c: loadMap`): un mapa puede dar menos puntos de paso que tramos tiene el camino de un NPC (dgha02, id de
   script 7). El original lee los huecos que `loadMap` dejó a cero: el tramo espera 0 fotogramas o anda al origen del
   mapa. Aquí igual (`waypointOf`); antes el NPC se quedaba quieto con un error en el log.
+- **NPC fuera de pantalla** (Igual, `overworld.c: NPCEntityTickOverworld`, `map.c: entityIsOffScreen`,
+  `utils2.c: isInvisible`, `map.c: entityCheckCollision`): el original calcula al final del tick de cada NPC si se ve
+  (`isOnScreen`, ninguna esquina de su caja de radio y altura en la ventana) y el choque salta a los que no se ven.
+  Aquí `FieldScene::followNpcs` lo calcula al final de cada tick con la cámara (`FieldScene::onScreen`) y
+  `FieldNpcs::setOnScreen` los saca de todos los choques y toques (`collides`) hasta que se vuelven a ver; la traza
+  los sigue listando. Caso medido: Etemon espera 1000 unidades arriba de la puerta de su árbol en mayo04a (296, -1000,
+  1865) hasta que la historia lo deja caer. En el original su `isOnScreen` vale 0 y el jugador sube con arriba desde
+  (288, 1548) hasta la puerta (306, 2198, rumbo 2128); antes el motor lo paraba en z = 1600 contra el cuadrado de
+  Etemon, ahora llega a (331, 2200, rumbo 2128). Suposición: la ventana del motor es más ancha que los 320 x 240 del
+  original, así que un NPC en el borde puede verse (y chocar) aquí y no allí.
 - **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
   jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de
@@ -204,6 +214,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 | El compañero y las paredes al seguir | `partnerTickCollision` no hace nada si `entityCheckCollision` da 10 (el mapa): solo el rastro lo aparta | igual: un compañero encerrado atraviesa la pared hacia el jugador | `field_tests`: "a partner in a closed pocket walks through its wall ..." | Igual |
 | Compañero fuera de pantalla | `isTileOffScreen`: lo pone en la casilla del rastro si no se ve | lo pone junto al jugador si está a más de `teleport_distance` o un segundo sin avanzar | `field_tests`: "a partner that cannot step for a second ..." | Hueco (depende de la cámara) |
 | Espera antes del gesto | `randomLimit(5) + 1` vueltas de la animación de quieto, con el generador del original | igual, con el generador del motor (`gestureRandom_`) | oráculo `field_walk_seen` (el original no hizo el gesto en los 46 fotogramas parado) | Suposición (otra secuencia aleatoria) |
+| NPC fuera de pantalla fuera del choque | `isInvisible` (`isOnScreen` 0) en `entityCheckCollision`; Etemon en mayo04a: 0, el jugador llega a la puerta (306, 2198) | `FieldNpcs::setOnScreen`, `collides`, `FieldScene::followNpcs` | `field_tests`: "an NPC off screen is out of the collision ..."; antes el jugador se paraba en z = 1600, ahora llega a (331, 2200) | Igual |
 | Choque del compañero con un NPC | `entityCheckEntityCollision` con los cuadrados de los NPC | `FieldNpcs::blocks` en `npcBlocks` | — | Suposición |
 | Choque con desvío de hasta 0x50 | `map.c: collisionGrace`, `COLLISION_GRACE_ROTATION` | `collisionGrace`, `walkForward`, `stepCollides` | `field_tests`: "against a wall straight ahead ..."; oráculo `field_walk` | Igual |
 | Compañero contra un NPC | `map.c: partnerTickCollision` | `PartnerFollow::collisionGrace` | oráculo `field_walk` | Igual |

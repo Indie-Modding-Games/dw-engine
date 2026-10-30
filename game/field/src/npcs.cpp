@@ -256,6 +256,13 @@ bool FieldNpcs::restartPath(std::int32_t scriptId) {
   return true;
 }
 
+void FieldNpcs::setOnScreen(scene::Entity entity, bool onScreen) {
+  const auto npc = std::ranges::find(npcs_, entity, &Npc::entity);
+  if (npc != npcs_.end()) {
+    npc->onScreen = onScreen;
+  }
+}
+
 std::vector<NpcBody> FieldNpcs::bodies() const {
   std::vector<NpcBody> bodies;
   for (const Npc& npc : npcs_) {
@@ -324,7 +331,7 @@ float FieldNpcs::speedOf(Motion motion) const {
 bool FieldNpcs::blocks(glm::vec3 from, glm::vec3 to, float half) const {
   const GroundSquare moved{.centre = ground(to), .half = half};
   return std::ranges::any_of(npcs_, [&](const Npc& npc) {
-    if (!npc.solid) {
+    if (!collides(npc)) {
       return false;
     }
     const GroundSquare other = squareOf(npc);
@@ -335,8 +342,9 @@ bool FieldNpcs::blocks(glm::vec3 from, glm::vec3 to, float half) const {
 
 bool FieldNpcs::overlaps(glm::vec3 at, float half) const {
   const GroundSquare square{.centre = ground(at), .half = half};
-  return std::ranges::any_of(
-      npcs_, [&](const Npc& npc) { return npc.solid && squaresOverlap(square, squareOf(npc)); });
+  return std::ranges::any_of(npcs_, [&](const Npc& npc) {
+    return collides(npc) && squaresOverlap(square, squareOf(npc));
+  });
 }
 
 void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool standing,
@@ -351,7 +359,7 @@ void FieldNpcs::touchFromPlayer(GroundSquare player, glm::vec2 facing, bool stan
     high.y += facing.y > AxisEpsilon ? rules_.talkReach : 0.0F;
   }
   for (const Npc& npc : npcs_) {
-    if (!npc.solid) {
+    if (!collides(npc)) {
       continue;
     }
     const GroundSquare other = squareOf(npc);
@@ -671,7 +679,7 @@ FieldNpcs::Blocker FieldNpcs::probe(const Npc& npc, glm::vec2 step,
     return Blocker::Partner;
   }
   const bool npcInTheWay = std::ranges::any_of(npcs_, [&](const Npc& other) {
-    return &other != &npc && other.solid && leadingEdgeInside(self, step, squareOf(other));
+    return &other != &npc && collides(other) && leadingEdgeInside(self, step, squareOf(other));
   });
   return npcInTheWay ? Blocker::Npc : Blocker::None;
 }
