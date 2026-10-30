@@ -236,13 +236,13 @@ setCombatTextPosition = { status = "portado", dwe = "apps/game/src/battle_screen
 initializeEntityText = { status = "parcial", dwe = "apps/screens/src/damage_numbers.cpp:1", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras" }
 
 # --- Efectos de batalla
-BTL_initializeParticleEmitters = { status = "falta", what = "Prepara los emisores de partículas de las técnicas.", note = "battle.md: las partículas no se dibujan" }
+BTL_initializeParticleEmitters = { status = "portado", dwe = "game/battle/include/dwe/game/battle/effect_runner.hpp", note = "battle.md: Emisores de partículas (los emisores vacíos del EffectRunner)", what = "Prepara los emisores de partículas de las técnicas." }
 BTL_clearEFESoundChannels = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:192", what = "Libera los sonidos sostenidos de los efectos." }
 BTL_getEFETextureSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca la textura dentro del fichero de un efecto." }
 BTL_getEFEModelSection = { status = "no-aplica", note = "lectura del fichero de efecto; la hace la extracción", what = "Busca los modelos dentro del fichero de un efecto." }
 BTL_getEFEFileId = { status = "no-aplica", note = "tabla de ficheros del disco", what = "Da el fichero de efecto de una técnica." }
 BTL_handleEFEFileLoaded = { status = "no-aplica", note = "carga asíncrona del original", what = "Monta un efecto cuando su fichero termina de cargar." }
-BTL_tickParticleEmitters = { status = "falta", what = "Mueve las partículas que sueltan las técnicas.", note = "battle.md: Hueco" }
+BTL_tickParticleEmitters = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Mueve las partículas que sueltan las técnicas." }
 BTL_initializeEFEEngine = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:122", what = "Arranca la máquina de efectos al empezar el combate." }
 BTL_runEFESlotScript = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:227", what = "Ejecuta el script de efecto de una ranura." }
 BTL_markEFEFinished = { status = "falta", what = "Marca el efecto como terminado para que la batalla siga.", note = "mark_finished se salta (battle.md: Hueco)" }
@@ -275,7 +275,7 @@ BTL_renderParticleFlashSprite = { status = "falta", what = "Dibuja el destello d
 BTL_projectPositionToScreen = { status = "falta", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
 BTL_renderScreenSprite = { status = "falta", what = "Dibuja un sprite en pantalla de un efecto.", note = "battle.md: Hueco" }
 BTL_addCloudEffect = { status = "falta", what = "Añade una nube de humo o polvo de una técnica.", note = "battle.md: Hueco" }
-BTL_addParticleEmitter = { status = "falta", what = "Añade un emisor de partículas.", note = "battle.md: Hueco" }
+BTL_addParticleEmitter = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Añade un emisor de partículas." }
 BTL_discardEFEOperandPair = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta dos operandos del script de efecto." }
 BTL_popEFEValueToVariable = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Orden de efecto: saca un valor de la pila a una variable." }
 BTL_dispatchEFESubOpcode = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Orden de efecto: ejecuta una suborden." }

@@ -43,7 +43,7 @@ de inicio y los mapas cercanos, y reclutar.
 |---:|---|---|---|
 | 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
 | 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
-| 3 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
+| 3 | Los efectos de las técnicas no dibujan nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas (los emisores de partículas ya salen) | `battle_effect.c` (`BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
 | 4 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
 | 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
 | 6 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
@@ -83,7 +83,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 136 | 4 | 9 | 22 | 93 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 139 | 3 | 74 | 69 | 65 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 144 | 3 | 71 | 67 | 67 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 45 | 1 | 1 | 39 | 97 % |
-| **Total** | 2438 funciones | 896 | 40 | 382 | 1120 | 69 % |
+| **Total** | 2438 funciones | 901 | 40 | 379 | 1118 | 70 % |
 
 ## Batalla
 
@@ -135,12 +135,10 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 139, parcial 3, falta 74, no aplica 69.
+Portado 144, parcial 3, falta 71, no aplica 67.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `BTL_initializeParticleEmitters` | `btl/battle_effect.c:1449` | falta | Prepara los emisores de partículas de las técnicas. | battle.md: las partículas no se dibujan |
-| `BTL_tickParticleEmitters` | `btl/battle_effect.c:1898` | falta | Mueve las partículas que sueltan las técnicas. | battle.md: Hueco |
 | `BTL_markEFEFinished` | `btl/battle_effect.c:2221` | falta | Marca el efecto como terminado para que la batalla siga. | mark_finished se salta (battle.md: Hueco) |
 | `BTL_disableMapLayer` | `btl/battle_effect.c:2234` | falta | Oculta una capa del mapa durante la técnica (fondos que cambian). | solo lo cita la extracción del disco |
 | `BTL_renderScreenFade` | `btl/battle_effect.c:2239` | falta | Funde la pantalla a un color durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
@@ -168,7 +166,6 @@ Portado 139, parcial 3, falta 74, no aplica 69.
 | `BTL_projectPositionToScreen` | `btl/battle_effect.c:4172` | falta | Proyecta una posición del efecto a la pantalla para sus sprites. | solo lo cita la extracción del disco |
 | `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
 | `BTL_addCloudEffect` | `btl/battle_effect.c:4239` | falta | Añade una nube de humo o polvo de una técnica. | battle.md: Hueco |
-| `BTL_addParticleEmitter` | `btl/battle_effect.c:4288` | falta | Añade un emisor de partículas. | battle.md: Hueco |
 | `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | solo lo usan dibujos que faltan |
 | `BTL_resetPoisonBubbles` | `btl/battle_effect.c:5359` | falta | Reinicia las burbujas del veneno sobre un luchador. | — |
 | `BTL_addPoisonBubble` | `btl/battle_effect.c:5364` | falta | Suelta una burbuja de veneno sobre el luchador envenenado. | — |
@@ -217,7 +214,7 @@ Portado 139, parcial 3, falta 74, no aplica 69.
 | `initializeHealingParticles` | `main/particle.c:201` | falta | Prepara las partículas de curación. | — |
 | `addHealingParticleEffect` | `main/particle.c:209` | falta | Lanza las partículas de curación sobre el compañero. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (22); limpieza de objetos y memoria del original: el motor libera lo suyo (21); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (5); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
+No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (20); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (5); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
 
 ## Campo: movimiento, colisión y cámara
 

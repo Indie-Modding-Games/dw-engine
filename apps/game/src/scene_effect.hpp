@@ -3,7 +3,6 @@
 #include <dwe/game/battle/effect_runner.hpp>
 
 #include <string>
-#include <variant>
 
 namespace dwe::app {
 
@@ -11,7 +10,7 @@ namespace dwe::app {
 // whose effect/<move>/ texture and model it uses (BattleScreen to FieldScene::setEffects).
 struct SceneEffect {
   std::string move;
-  std::variant<game::battle::EffectSprite, game::battle::EffectModel> shape;
+  game::battle::EffectShape shape;
 };
 
 } // namespace dwe::app

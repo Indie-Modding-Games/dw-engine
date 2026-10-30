@@ -429,8 +429,15 @@ private:
     std::size_t joints = 0;
   };
   std::optional<std::size_t> effectTexture(const std::string& move, std::int32_t palette);
+  // A paletted image of the content (its asset id without the extension, e.g.
+  // texture/etcdat/defeff) with a row of its CLUT, as a billboard texture.
+  std::optional<std::size_t> sheetTexture(const std::string& image, std::int32_t palette);
+  // One white texel, for the effects' flat-coloured lines.
+  std::optional<std::size_t> plainTexture();
   const EffectModelEntry* effectModel(const std::string& move);
   void addEffectBillboards(std::vector<render::MapBillboard>& billboards);
+  void addEffectStreak(const game::battle::EffectStreak& streak,
+                       std::vector<render::MapBillboard>& billboards);
   void submitEffectModels();
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
@@ -550,6 +557,7 @@ private:
   std::map<std::optional<std::uint8_t>, std::optional<std::size_t>> groundItemTextures_;
   std::vector<SceneEffect> effects_;
   std::map<std::pair<std::string, std::int32_t>, std::optional<std::size_t>> effectTextures_;
+  std::optional<std::optional<std::size_t>> plainTexture_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;

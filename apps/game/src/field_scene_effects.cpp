@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -28,6 +29,7 @@ using game::battle::EffectBlend;
 using game::battle::EffectMatrix;
 using game::battle::EffectModel;
 using game::battle::EffectSprite;
+using game::battle::EffectStreak;
 using game::battle::EffectVector;
 
 // 4096 is 1 in the console's matrices; 128 is 1 in its colours.
@@ -38,6 +40,14 @@ constexpr float ColorOne = 128.0F;
 constexpr float SpriteScaleUnit = 32.0F;
 // GsSPRITE rotate: 4096 per degree, which the scripts give in degrees.
 constexpr float DegreesPerHalfTurn = 180.0F;
+// A line's colour bytes are its colour (drawLine2P: no texture to tint).
+constexpr float ByteOne = 255.0F;
+// The common effect sheet (ETCDAT/DEFEFF.TIM at 768, 384 of the console's VRAM) and the glow of
+// effect_common.c: renderFXParticle on it: u 0, v 160 of the page at 768, 256, CLUT row 489.
+constexpr std::string_view CommonSheet = "texture/etcdat/defeff";
+constexpr std::int32_t GlowPalette = 1;
+constexpr glm::vec2 GlowTexel{0.0F, 32.0F};
+constexpr float GlowTexels = 15.0F;
 
 // The world's axes are the console's with y and z the other way (core::fromOriginalAxes).
 glm::vec3 worldOf(const EffectVector& v) {
@@ -74,13 +84,12 @@ assets::SpriteBlend spriteBlendOf(EffectBlend blend) {
   return assets::SpriteBlend::Opaque;
 }
 
-// The effect's texture with a row of its CLUT (texture_meta palettes), its colours with STP at
-// SemiTransparentAlpha so a semi-transparent sprite mixes them (colorFromOriginal).
-core::Result<assets::Image> effectImage(const assets::VirtualFileSystem& files,
-                                        const std::string& move, std::int32_t palette) {
-  auto png = assets::AssetId::parse(std::format("effect/{}/texture", move));
-  auto meta =
-      assets::AssetId::parse(std::format("effect/{}/texture{}", move, assets::ImageMetaSuffix));
+// A paletted image of the content with a row of its CLUT (its _meta palettes), its colours with
+// STP at SemiTransparentAlpha so a semi-transparent sprite mixes them (colorFromOriginal).
+core::Result<assets::Image> sheetImage(const assets::VirtualFileSystem& files,
+                                       const std::string& image, std::int32_t palette) {
+  auto png = assets::AssetId::parse(image);
+  auto meta = assets::AssetId::parse(std::format("{}{}", image, assets::ImageMetaSuffix));
   if (!png || !meta) {
     return std::unexpected{!png ? png.error() : meta.error()};
   }
@@ -112,12 +121,16 @@ core::Result<assets::Image> effectImage(const assets::VirtualFileSystem& files,
 
 std::optional<std::size_t> FieldScene::effectTexture(const std::string& move,
                                                      std::int32_t palette) {
-  const auto key = std::pair{move, palette};
+  return sheetTexture(std::format("effect/{}/texture", move), palette);
+}
+
+std::optional<std::size_t> FieldScene::sheetTexture(const std::string& name, std::int32_t palette) {
+  const auto key = std::pair{name, palette};
   if (const auto found = effectTextures_.find(key); found != effectTextures_.end()) {
     return found->second;
   }
   std::optional<std::size_t> texture;
-  auto image = effectImage(*files_, move, palette);
+  auto image = sheetImage(*files_, name, palette);
   if (image) {
     if (auto added = mapRenderer_->addBillboardTexture(*image)) {
       texture = *added;
@@ -126,11 +139,74 @@ std::optional<std::size_t> FieldScene::effectTexture(const std::string& move,
     }
   }
   if (!image) {
-    core::logWarning("battle: no texture for the effect of {} (palette {}): {}", move, palette,
+    core::logWarning("battle: no effect texture {} (palette {}): {}", name, palette,
                      image.error().message);
   }
   effectTextures_.emplace(key, texture);
   return texture;
+}
+
+std::optional<std::size_t> FieldScene::plainTexture() {
+  if (!plainTexture_) {
+    constexpr auto White = std::byte{0xFF};
+    const assets::Image white{.width = 1, .height = 1, .pixels = {White, White, White, White}};
+    auto added = mapRenderer_->addBillboardTexture(white);
+    if (!added) {
+      core::logWarning("battle: no texture for the effects' lines: {}", added.error().message);
+    }
+    plainTexture_ = added ? std::optional{*added} : std::nullopt;
+  }
+  return *plainTexture_;
+}
+
+// battle_effect.c: BTL_renderParticleEmitters: a glowing particle near the camera is the common
+// glow (effect_common.c: renderFXParticle: DEFEFF's 15 x 15 texels at 0, 32 with its second
+// palette row, added); any other is a one-pixel line (drawLine2P). A line is a billboard on its
+// middle, as long and as turned as the two ends fall on the background, one original pixel thick.
+void FieldScene::addEffectStreak(const EffectStreak& streak,
+                                 std::vector<render::MapBillboard>& billboards) {
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const glm::vec3 from = worldOf(streak.from);
+  const glm::vec3 to = worldOf(streak.to);
+  const std::optional<render::BackgroundPoint> start = camera.projectToBackground(from);
+  const std::optional<render::BackgroundPoint> end = camera.projectToBackground(to);
+  if (!start || !end) {
+    return;
+  }
+  const glm::vec3 color{static_cast<float>(streak.color.x), static_cast<float>(streak.color.y),
+                        static_cast<float>(streak.color.z)};
+  if (streak.glows && start->viewDepth < static_cast<float>(game::battle::StreakGlowDepth)) {
+    const std::optional<std::size_t> glow = sheetTexture(std::string{CommonSheet}, GlowPalette);
+    if (!glow) {
+      return;
+    }
+    billboards.push_back({.centre = from,
+                          .size = glm::vec2{static_cast<float>(game::battle::StreakGlowSize)},
+                          .flat = false,
+                          .texture = *glow,
+                          .texel = GlowTexel,
+                          .texels = glm::vec2{GlowTexels},
+                          .blend = assets::SpriteBlend::Add,
+                          .color = color / ColorOne});
+    return;
+  }
+  const std::optional<std::size_t> plain = plainTexture();
+  if (!plain) {
+    return;
+  }
+  const glm::vec2 across = end->pixel - start->pixel;
+  const float pixels = std::max(glm::length(across), 1.0F);
+  const glm::vec3 middle = (from + to) * 0.5F;
+  const float unitsPerPixel = camera.viewDepth(middle) / camera.desc().focalLength;
+  billboards.push_back({.centre = middle,
+                        .size = glm::vec2{pixels, 1.0F} * unitsPerPixel,
+                        .flat = false,
+                        .texture = *plain,
+                        .texel = glm::vec2{0.0F},
+                        .texels = glm::vec2{1.0F},
+                        .blend = assets::SpriteBlend::Opaque,
+                        .color = color / ByteOne,
+                        .turn = std::atan2(across.y, across.x)});
 }
 
 const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& move) {
@@ -158,6 +234,10 @@ const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& m
 
 void FieldScene::addEffectBillboards(std::vector<render::MapBillboard>& billboards) {
   for (const SceneEffect& effect : effects_) {
+    if (const auto* streak = std::get_if<EffectStreak>(&effect.shape)) {
+      addEffectStreak(*streak, billboards);
+      continue;
+    }
     const auto* sprite = std::get_if<EffectSprite>(&effect.shape);
     if (sprite == nullptr || sprite->width <= 0 || sprite->height <= 0) {
       continue;

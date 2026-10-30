@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -1031,4 +1032,163 @@ TEST_CASE("a bone's matrix adds up its chain in the console's fixed point, as th
   CHECK(facingLeft.t == dwe::game::battle::EffectVector{.x = 317, .y = -168, .z = 3392});
   CHECK(facingLeft.m[0] == std::array{-1720, -3595, -953});
   CHECK(facingLeft.m[2] == std::array{-411, -861, 3984});
+}
+
+namespace {
+
+// A made-up technique whose start puts a particle emitter of `kind` on its instance: strength 300
+// (start offset 4800, speed 592, slowing 16), a colour and 3 frames.
+EffectScript emitterScript(int kind) {
+  constexpr std::string_view EmitterEffectYaml = R"(move: "made_up_charge"
+header:
+  sub_effect_count: 1
+)";
+  const std::string scriptYaml = std::string{R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: spawn
+  count: 1
+  table: "base+0x0010"
+  stride: 28
+  ordinal: 0
+- at: "0x0102"
+  op: push_address
+  address: "base+0x0120"
+- at: "0x0104"
+  op: push_address
+  address: "base+0x0122"
+- at: "0x0106"
+  op: sub
+  sub: set_sub_effect_scripts
+  args:
+    tick_script: "l_0120"
+    render_script: "l_0122"
+- at: "0x0108"
+  op: sub
+  sub: init_transform
+- at: "0x010a"
+  op: push_immediate
+  value: )"} + std::to_string(kind) +
+                                 R"(
+- at: "0x010c"
+  op: push_immediate
+  value: 300
+- at: "0x010e"
+  op: push_address
+  address: "base+0x0040"
+- at: "0x0110"
+  op: push_immediate
+  value: 3
+- at: "0x0112"
+  op: sub
+  sub: add_particle_emitter
+  args:
+    type: 0
+    strength: 300
+    color: "&base+0x0040"
+    frames: 3
+- at: "0x0114"
+  op: return
+- label: "l_0120"
+  at: "0x0120"
+  op: return
+- label: "l_0122"
+  at: "0x0122"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0150"
+  op: stop
+data:
+- at: "0x0010"
+  kind: instances
+  count: 1
+  stride: 28
+  free: true
+- at: "0x0040"
+  kind: color
+  values: [300, 128, 64]
+)";
+  const auto effect = dwe::core::parseYaml(EmitterEffectYaml);
+  const auto script = dwe::core::parseYaml(scriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  return std::move(*read);
+}
+
+std::int64_t lengthOf(const dwe::game::battle::EffectVector& v) {
+  return std::llround(std::sqrt(static_cast<double>((static_cast<std::int64_t>(v.x) * v.x) +
+                                                    (static_cast<std::int64_t>(v.y) * v.y) +
+                                                    (static_cast<std::int64_t>(v.z) * v.z))));
+}
+
+} // namespace
+
+TEST_CASE("a particle emitter sends one particle a frame toward its instance, drawing the "
+          "battle's rand() three times for each") {
+  using dwe::game::battle::EffectStreak;
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::ruleset::Random rolls = dwe::ruleset::Random::original(0x5CF299CBU);
+  runner.useRolls(&rolls);
+  runner.start(runner.load(emitterScript(0)), 0, 1);
+  dwe::ruleset::Random expected = dwe::ruleset::Random::original(0x5CF299CBU);
+
+  std::vector<std::vector<EffectStreak>> frames;
+  for (int frame = 0; frame < 4; ++frame) {
+    runner.tick();
+    runner.render();
+    std::vector<EffectStreak> streaks;
+    for (const auto& draw : runner.draws()) {
+      if (const auto* streak = std::get_if<EffectStreak>(&draw.shape)) {
+        streaks.push_back(*streak);
+      }
+    }
+    frames.push_back(std::move(streaks));
+    if (frame < 3) {
+      for (int roll = 0; roll < 3; ++roll) {
+        static_cast<void>(expected.next());
+      }
+    }
+    CHECK(rolls.state() == expected.state());
+  }
+  // One particle more each frame; on its third frame the emitter ends and draws nothing.
+  REQUIRE(frames.size() == 4);
+  CHECK(frames[0].size() == 1);
+  CHECK(frames[1].size() == 2);
+  CHECK(frames[2].empty());
+  CHECK(frames[3].empty());
+  const EffectStreak& first = frames[0][0];
+  // Colour bytes: 300 keeps 44.
+  CHECK(first.color == dwe::game::battle::EffectVector{44, 128, 64});
+  CHECK(first.glows);
+  // After a frame it is 4208 of 4800 away: 14 sixteenths of the start offset's 300 units.
+  CHECK(lengthOf(first.from) >= 260);
+  CHECK(lengthOf(first.from) <= 264);
+  // The next frame it is 4208 - 576 = 3632 away: 12 sixteenths.
+  CHECK(lengthOf(frames[1][0].from) >= 223);
+  CHECK(lengthOf(frames[1][0].from) <= 227);
+}
+
+TEST_CASE("a particle emitter of a line kind draws streaks, and its instance's end stops it") {
+  using dwe::game::battle::EffectStreak;
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  const std::size_t slot = runner.load(emitterScript(1));
+  const std::optional<std::size_t> section = runner.start(slot, 0, 1);
+  REQUIRE(section.has_value());
+  runner.tick();
+  runner.render();
+  REQUIRE(runner.draws().size() == 1);
+  const auto* streak = std::get_if<EffectStreak>(&runner.draws()[0].shape);
+  REQUIRE(streak != nullptr);
+  CHECK_FALSE(streak->glows);
+  // Kind 1: from 16 / 16 to 4 / 16 of the particle's distance.
+  CHECK(lengthOf(streak->from) > lengthOf(streak->to) * 3);
+  runner.stop(slot, *section);
+  runner.tick();
+  runner.render();
+  CHECK(runner.draws().empty());
 }

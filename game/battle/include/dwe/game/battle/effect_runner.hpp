@@ -146,10 +146,31 @@ struct EffectModel {
   bool operator==(const EffectModel&) const = default;
 };
 
+// A particle of a technique's emitter (battle_effect.c: BTL_renderParticleEmitters): a line from
+// `from` to `to` in the emitter's colour (drawLine2P, opaque, 255 is full), or, for a glowing
+// kind (0 and 2) whose `from` is nearer the camera than StreakGlowDepth, the common glow there
+// (effect_common.c: renderFXParticle: StreakGlowSize units wide, added, tinted by the colour,
+// 128 is 1).
+struct EffectStreak {
+  EffectVector from;
+  EffectVector to;
+  EffectVector color;
+  bool glows = false;
+
+  bool operator==(const EffectStreak&) const = default;
+};
+
+// The view depth from which a glowing streak is a line instead (depth >> 2 < 1000), and the glow's
+// world size (renderFXParticle's 0x19).
+inline constexpr std::int32_t StreakGlowDepth = 4000;
+inline constexpr std::int32_t StreakGlowSize = 25;
+
+using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak>;
+
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
   std::size_t slot = 0;
-  std::variant<EffectSprite, EffectModel> shape;
+  EffectShape shape;
 
   bool operator==(const EffectDraw&) const = default;
 };
@@ -271,6 +292,30 @@ private:
     bool failed = false;
   };
 
+  // A particle of an emitter (battle_effect.c: EfeParticle): how far it still is from where it
+  // ends, its speed, its direction scaled to the emitter's start offset and where it set off, in
+  // the original's 16-bit fields.
+  struct Particle {
+    std::int16_t distance = 0;
+    std::int16_t velocity = 0;
+    EffectVector direction;
+    EffectVector position;
+  };
+
+  // battle_effect.c: EfeParticleEffect: the instance it follows, its frames left, its kind and
+  // colour bytes, and its particles (the last stays empty: the search for a free one stops there).
+  struct Emitter {
+    std::size_t slot = 0;
+    std::uint32_t instance = 0;
+    std::int16_t frames = 0;
+    std::int16_t startOffset = 0;
+    std::int16_t startVelocity = 0;
+    std::int16_t acceleration = 0;
+    EffectVector color;
+    std::int8_t kind = 0;
+    std::array<Particle, 21> particles{};
+  };
+
   struct CallFrame {
     std::size_t returnTo = 0; // an instruction index
     std::size_t subEffect = 0;
@@ -299,6 +344,12 @@ private:
   void homeTowardPoint(Slot& slot, const std::vector<std::int32_t>& args);
   void selectTarget(Slot& slot, bool random, std::int32_t argument);
   void tickUvAnims(Slot& slot);
+  // The particle emitters (effect_runner_fx.cpp): what their sub-ops add, one frame of them after
+  // the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters), and their draws after the render
+  // scripts.
+  bool fxOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
+  void tickFx();
+  void renderFx();
   void playSound(std::int32_t sound);
   // One draw of the original's rand(): 0 to 0x7FFF.
   std::uint32_t randomDraw();
@@ -332,6 +383,8 @@ private:
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
   std::vector<EffectDraw> draws_;
+  // BTL_initializeParticleEmitters: 4 emitters.
+  std::array<std::optional<Emitter>, 4> emitters_;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;

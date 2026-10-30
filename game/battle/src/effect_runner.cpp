@@ -181,6 +181,10 @@ void EffectRunner::tick() {
     }
     tickUvAnims(slots_[slot]);
   }
+  // The flight probe draws nothing: its emitters, clouds and flashes would only spend its numbers.
+  if (!touchBodies_) {
+    tickFx();
+  }
   for (std::optional<HeldSound>& held : held_) {
     if (held &&
         frameOf(slots_[held->slot], slots_[held->slot].subEffects[held->subEffect].instance) < 0) {
@@ -222,6 +226,7 @@ void EffectRunner::render() {
       run(slot, *subEffect.render);
     }
   }
+  renderFx();
 }
 
 bool EffectRunner::running(std::size_t slot) const {
@@ -393,7 +398,8 @@ void EffectRunner::subOp(Slot& slot, const EffectInstruction& in) {
   }
   if (transformOp(slot, in.sub, args) || vectorOp(slot, in.sub, args) ||
       drawOp(slot, in.sub, args) || fighterOp(slot, in.sub, args) ||
-      (touchBodies_ && touchOp(slot, in.sub, args))) {
+      (touchBodies_ && touchOp(slot, in.sub, args)) ||
+      (!touchBodies_ && fxOp(slot, in.sub, args))) {
     return;
   }
   if (in.sub == PlaySound && !args.empty()) {
