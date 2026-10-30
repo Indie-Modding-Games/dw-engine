@@ -39,7 +39,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
   nada **(medido)**. A 20 por segundo: **1000 y 400 por segundo**.
 - Contra una pared la animación sigue a su velocidad: la colisión anula el avance, no la animación **(comprobado)**.
 - El primer fotograma tras cambiar de animación no avanza (`anim.c: startAnimation` pone a cero el impulso)
-  **(comprobado)**; el motor no lo reproduce.
+  **(comprobado)**; el motor lo reproduce.
 
 ### Colisión
 
@@ -188,12 +188,12 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 
 | Original | Motor | Por qué |
 |---|---|---|
-| 20 fps, velocidad de la raíz de la animación | Tick fijo (60 Hz), velocidad por segundo en `field/rules.yaml` | Cualquier frecuencia; las animaciones se escalan con `AnimationIntent::speedScale` |
+| 20 fps, velocidad de la raíz de la animación | Tick fijo (60 Hz); jugador y compañero dan un paso entero por cada fotograma de 1/20 s (`Field::takeFrames`), con la velocidad media de `field/rules.yaml`, y se dibujan deslizándose por el fotograma (`Field::drawnPose`) | Mismas posiciones que el original en cada fotograma y dibujo suave; las animaciones se escalan con `AnimationIntent::speedScale`. La velocidad es la media: el impulso de la raíz del original cambia algo de un fotograma a otro |
 | Rumbo de la cámara redondeado a 45°, ocho direcciones | Igual (`Field::cameraForward`), pero redondea al más cercano también con rumbos negativos; con mando, dirección analógica sobre ese rumbo | La asimetría es un efecto de la división entera; mando analógico |
 | Giro instantáneo, animación a velocidad normal contra la pared | Igual (`turn_speed: 0`) | |
-| Prueba de colisión del paso entero y anulación con `collisionGrace` | Misma sonda (radio adelante, medio radio a los lados), pero mueve X y luego Z y corta el paso justo antes de la celda bloqueada | A 60 Hz los pasos son la tercera parte; así nada atraviesa paredes a ningún tick |
-| Desvío de hasta 0x50 hacia una dirección libre al chocar | No: se desliza por la componente libre | Con mando analógico basta el deslizamiento; el desvío depende de las ocho direcciones y del paso de 20 fps |
-| El primer fotograma de una animación nueva no avanza | No | Es un efecto del impulso de la raíz, no una regla |
+| Prueba de colisión del paso entero y anulación con `collisionGrace` | Igual: sonda del paso entero en la posición adelantada (`stepCollides`) y `collisionGrace`. El clic para ir sigue usando el paso X y luego Z de `moveOnGrid` | |
+| Desvío de hasta 0x50 hacia una dirección libre al chocar | Igual (`collisionGrace` en `field.cpp`), para el jugador (rejilla, NPC y compañero) y para el compañero contra un NPC | |
+| El primer fotograma de una animación nueva no avanza | Igual: arrancar, pararse o cambiar de paso gasta un fotograma sin avanzar | Pulsar estando parado empieza el fotograma en ese tick, sin esperar al reloj de 20 fps (menos latencia) |
 | Celdas truncando hacia cero | `floor` | Mismo resultado salvo en bordes exactos; sin depender del signo |
 | Disparador cada fotograma sobre la celda | Al entrar en una celda con disparador (no mientras se está encima) | Evita warps repetidos aunque un dato cambie |
 | Cambio de mapa: 20 + 20 fotogramas, el jugador anda sin colisión, el reloj y la cámara parados | Igual (`transition` en `field/rules.yaml`, `Field::fadeLevel`; la cámara guarda su foco mientras el jugador sale, en `FieldScene::update`) | |
@@ -204,7 +204,7 @@ corre si se queda atrás y, si pierde de vista al jugador, sigue su rastro de ce
 | Warps de script (`warp_to` de las secciones de casilla del script del mapa) | `field/script_warps` del paquete base, que extrae `dwx` con las condiciones de su camino: al pisar (51–79) o al confirmar (80–109) se toma el primero que se cumple con certeza; las condiciones (disparadores de la historia, objetos, dinero y partner) se deciden con el estado de la partida; lo que no se puede decidir (azar, elecciones, conversaciones, caminos no estructurados) no se toma y se registra una vez por mapa y casilla; al tomarlo se aplican sus `sets_flags`, que se guardan en la sección `story` | No hay intérprete de historia todavía: los warps al hablar con un NPC (`via: talk`), de las secciones de entrada y del menú del transporte se extraen pero no se toman ([warps de script](../architecture/warps-de-script.md), parte (b)) |
 | Partner nuevo mirando hacia fuera un fotograma | Mirando al jugador desde el principio, y solo si cabe en la rejilla | Mismo resultado visible; no aparece dentro de una pared |
 | Rastro: poda cada fotograma, de la más nueva a la más antigua | Igual | |
-| El partner anda o se para solo por la distancia | También anda mientras sigue el rastro | Si no, se para detrás de una pared a menos de 2,5 R del jugador |
+| El partner anda o se para solo por la distancia | Igual | A menos de 2,5 R se para aunque haya una pared en medio, como el original |
 | Aparece en el rastro si está fuera de pantalla | Si no avanza durante `stuck_seconds` o se aleja más de `teleport_distance`, aparece detrás del jugador | `game/field` no sabe qué hay en pantalla; nunca se queda atascado |
 | Paso según su estado (infeliz, andar despacio), termina el ciclo de andar, emociones parado | No | Fase 3 (cuidado): aún no hay estado del partner |
 | Objetos en el suelo (11) y cofres (8): se recogen a una celda o menos; el objeto se ofrece una vez hasta salir de su alcance (`HAS_PICKED_UP_ITEM`); con la bolsa llena se queda donde está; el cofre pide confirmar y su disparador lo marca vacío. Lo que suelta un enemigo vencido cae donde estaba al cerrarse la caja final del combate (`spawnDroppedItems`). El aviso muestra el nombre del objeto sobre las palabras del domador («Woah!», «I can't hold anymore.») en la caja de diálogo de la historia, en su sitio, y solo se responde confirmando, sin botón (`renderItemPickupTextbox`) | Igual (`game/field/field_items`, `session::FieldItemsAdapter`, sección `field_items` del ruleset; aviso `field_item_notice` en la app). Al cambiar de mapa se borran (`FieldItems::enterMap`) | Los objetos del suelo se dibujan como el original: su icono de `ETCDAT/ITEM.TIM` con su paleta, de 128 unidades, de cara a la cámara y centrado en su punto (`renderOverworldItem`), sobre una sombra de 200 × 200 en el suelo de `ETCDAT/SPOT256.TIM`, restada (`renderDroppedItemShadow`); como en el original, el icono tapa casi toda la sombra y solo se ve su borde, un poco más oscuro. El compañero no esquiva los objetos del suelo (el original solo los mira al recogerlos, `tamer.c: checkItemPickup`): si sigue al jugador hasta uno, se queda encima. Los cofres aún no se dibujan: falta extraer su modelo. `spawnChest` parece incompleto en el decomp; el motor usa el primer hueco libre (suposición). |

@@ -576,8 +576,7 @@ game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, s
 }
 
 void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
-  const scene::Pose pose =
-      scene::interpolate(world_.registry().get<scene::Transform>(actor.entity), alpha);
+  const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
   const glm::mat4 world = glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position),
                                                  pose.yaw, glm::vec3{0.0F, 1.0F, 0.0F}),
                                      scale);
@@ -605,8 +604,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha, stage_.partnerScale);
   }
-  const scene::Pose player =
-      scene::interpolate(world_.registry().get<scene::Transform>(playerActor_->entity), alpha);
+  const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while
   // the player walks out, and in a battle (holdCamera).

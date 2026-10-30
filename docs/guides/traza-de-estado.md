@@ -57,6 +57,9 @@ steps:
   - hold: {keys: [], ticks: 30}
 ```
 
+`place` deja al personaje exactamente donde se pide: no aparta a nadie ni pide la regla de suelta, para que la
+distancia entre el jugador y el compañero sea la del original desde el primer fotograma.
+
 `hold` mantiene las teclas exactamente esos ticks de lógica, aunque los frames vayan lentos. Así una entrada de
 «derecha 60 frames» dura lo mismo en los dos juegos. `battle("story:2")` empieza un combate de la historia contra
 el NPC 2 del mapa, como los de los guiones: no se puede huir y los enemigos no gastan MP.

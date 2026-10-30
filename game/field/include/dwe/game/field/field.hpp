@@ -147,8 +147,17 @@ public:
 
   // Advances the logic by `seconds` (the app's fixed tick). On a warp the player walks on for the
   // fade out, without collision and without input; then nothing moves until the app enters the new
-  // map and the fade in ends.
+  // map and the fade in ends. The player and the partner walk on frames of the original
+  // (`transition.frameSeconds`, 20 a second): a tick that starts a frame steps them a whole frame,
+  // the ticks between leave them where they are (drawnPose draws them gliding). A press from
+  // standing starts a frame on its own tick.
   void tick(float seconds);
+
+  // Where to draw a character between the last two ticks (alpha from core::FixedStep). While the
+  // last thing that moved the player or the partner was a frame's step, it glides over the frame's
+  // ticks from where it was drawn when the frame began to where the step left it, so the steps
+  // look smooth; anything else is drawn as scene::interpolate draws it.
+  [[nodiscard]] scene::Pose drawnPose(scene::Entity entity, float alpha) const;
 
   // The warp the player stepped on, once the fade out has ended: after taking it the app loads the
   // map and calls enterMap.
@@ -346,8 +355,9 @@ public:
   // (makeRoomForPlayer). An NPC put on the map or let go asks for the same check by itself.
   void releaseHandoff(std::string_view why);
   // Puts the player, the partner or an NPC at a place and facing at once, drawn there with no move
-  // in between, and lets go as above (the console's place command, which starts a run where a
-  // trace of the original starts).
+  // in between (the console's place command, which starts a run where a trace of the original
+  // starts). It lets go as above, but nothing moves them off it: no release check and no making
+  // room, as the original's characters stand where its trace starts.
   void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
   // The release rule now, the engine's (the original has none): a character in a wall cell, or
   // deep in another's collision square (overlaps), goes to the nearest spot where it fits on the
@@ -360,7 +370,7 @@ public:
   [[nodiscard]] static bool overlaps(const GroundSquare& a, const GroundSquare& b);
   // Starts a tick of every character's transform without moving it, for the ticks the field does
   // not run (a battle, the evolution, a sleep, the fishing, a menu, an item's notice): what they
-  // draw is where they stand, not a move from an older tick.
+  // draw is where they stand, not a move from an older tick nor the rest of a frame's glide.
   void settle();
   // The partner's collision size, its species' radius (the original's species table): it sizes
   // the grid collision, the NPCs' and the follow distances (partner.c:971), and asks for the
@@ -386,8 +396,19 @@ private:
   };
 
   Step playerStep();
+  [[nodiscard]] bool playerWantsToMove() const;
   void planPath(glm::vec3 target);
-  void movePlayer(float seconds);
+  // How many frames of the original start on this tick of `seconds` (frameClock_).
+  std::int32_t takeFrames(float seconds);
+  void movePlayer(std::int32_t frames);
+  // One frame of tamer.c: tamerTickWalkingState and the animation's step.
+  void stepPlayer(const Step& step);
+  // The player's step along its facing (tamer.c: checkMapInteraction's entityCheckCollision,
+  // map.c: collisionGrace, anim.c: applyRootMomentum).
+  void walkForward(float distance);
+  // Whether the player, a step ahead, would stand in an NPC or the partner (map.c:
+  // entityCheckCollision as collisionGrace calls it).
+  [[nodiscard]] bool playerTouchesSomeone(glm::vec3 from, glm::vec2 step) const;
   glm::vec2 followPath(glm::vec3& position, float distance);
   void checkTriggers();
   void checkConfirm();
@@ -414,6 +435,7 @@ private:
   // (FADE_OUT_CURRENT, FADE_IN_CURRENT).
   [[nodiscard]] std::int32_t fadeFrame(float seconds) const;
   void updateTrail();
+  void movePartnerFrames(std::int32_t frames);
   void movePartner(float seconds);
   // After a script lets the player go: a partner left against the player, in an NPC or hiding the
   // player from the camera steps off first; whether it took this tick.
@@ -471,6 +493,32 @@ private:
   scene::Entity player_;
   scene::Entity partner_;
   FieldNpcs npcs_;
+
+  // A character's move over the frame that last stepped it, for drawnPose: from where it was drawn
+  // when the frame began to where the step left it, `seconds` after the frame's tick.
+  struct FrameGlide {
+    scene::Pose from;
+    scene::Pose to;
+    float seconds = 0.0F;
+    bool on = false;
+  };
+  void beginTicks(float seconds);
+  void startGlide(FrameGlide& glide, scene::Entity entity) const;
+  void endGlide(FrameGlide& glide, scene::Entity entity) const;
+  [[nodiscard]] std::optional<scene::Pose> glidePose(const FrameGlide& glide, scene::Entity entity,
+                                                     float alpha) const;
+  FrameGlide playerGlide_;
+  FrameGlide partnerGlide_;
+  // Seconds since the current frame of the original began, not counting this tick.
+  float frameClock_ = 0.0F;
+  float tickSeconds_ = 0.0F;
+  // Whether the last tick ran the free field, and whether the player asked to move then.
+  bool freeTick_ = false;
+  bool playerPressed_ = false;
+  // The player's clip as the last frame started it (anim.c: startAnimation).
+  scene::Motion playerMotion_ = scene::Motion::Idle;
+  // The partner's clip and speed as its last frame left them, for the ticks between frames.
+  scene::AnimationIntent partnerIntent_;
 
   std::string mapId_;
   assets::MapCollision collision_;
