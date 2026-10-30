@@ -229,12 +229,16 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   orilla, donde Coelamon sube del río y se une (249).
   `route-etapa2-drimogemon.yaml` (`--start tunn09`) habla con Drimogemon en la mina (disparador 353), deja pasar un
   día cuidando al compañero con el reloj rápido (la variable 30 cuenta los días) y vuelve a hablarle: se une (238).
+  `route-etapa2-piximon.yaml` (`--start trop01 --seed 3`) se cruza con Piximon, que solo aparece en la jungla con una
+  tirada de 3 entre 100 al entrar (la semilla 3 la da), acepta su reto, gana la pelea y Piximon se une (255).
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-coelamon.yaml --shots <capturas>/etapa2
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn09 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-drimogemon.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop01 --lang en --seed 3 \
+    --autotest tests/autotest/route-etapa2-piximon.yaml --shots <capturas>/etapa2
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
@@ -379,7 +383,7 @@ steps:
 | `menu_select: <id>` | Enfoca y pulsa una entrada del menú abierto: el principal si se ve (`play`, `language`), si no el de pausa (`open-minimap`, `minimap-mode`...), si no el menú del compañero (también la bolsa que abre el combate: `slot-0`..., `opt-use`), la pantalla de combate (`command-0`..., `open-bag`), el selector de la exploración libre o, en la portada, el diálogo (`yes`, `no`, `ok`) y la lista de ranuras (`slot-1`..., `no-save`, `back`). Con teclado o mando mueve el foco abajo, arriba, a la derecha y a la izquierda hasta llegar; con el ratón hace clic en el centro de la entrada |
 | `script: <lua>` | Ejecuta una línea de los scripts del juego, como la consola; los comandos de depuración están más abajo |
 | `script_if: {script, <condiciones de wait>}` | Ejecuta el script solo si se cumplen ya todas las condiciones (las de `wait` salvo `map_name` y `seconds`); si no, sigue sin esperar y lo dice en el registro |
-| `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap: "off"`) o del estado del compañero; `field.overlaps` es cuántas veces dos personajes (o uno y una pared) se pisaron más de un segundo con el jugador libre (`expect_setting: {field.overlaps: 0}`); `story.trigger.<n>` (`"true"` o `"false"`) y `story.var.<n>` leen los disparadores y las variables de la historia, como el original los guarda en su estado de scripts (`wait: {setting: {story.trigger.249: "true"}}` espera a que Coelamon se una) |
+| `expect_setting: {<nombre>: <valor>, timeout}` | Comprueba un ajuste publicado a la UI (`minimap: "off"`) o del estado del compañero; `field.overlaps` es cuántas veces dos personajes (o uno y una pared) se pisaron más de un segundo con el jugador libre (`expect_setting: {field.overlaps: 0}`); `story.trigger.<n>` (`"true"` o `"false"`) y `story.var.<n>` leen los disparadores y las variables de la historia, como el original los guarda en su estado de scripts (`wait: {setting: {story.trigger.249: "true"}}` espera a que Coelamon se una). Si no se cumple, el fallo dice el valor que leyó |
 | `remember: <nombre>` | Guarda el valor de un ajuste para un `expect_change` posterior |
 | `expect_change: {<nombre>: up \| down \| changed, timeout}` | Comprueba que el ajuste ha subido, bajado o cambiado desde el valor guardado (2 s por defecto) |
 | `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |

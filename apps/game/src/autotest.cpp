@@ -718,7 +718,13 @@ void Autotest::frame(const AutotestHost& host, std::uint64_t ticks, double now,
       finishStep(now);
     } else if (!finished() && now - progress_->start > step.timeout && step.kind != Kind::Wait &&
                step.kind != Kind::Hold) {
-      failStep(std::format("timed out after {:.0f} s; {}", step.timeout, where(host.scene)));
+      // An expected setting says what it read, so a failed run tells the value it was left at.
+      const std::string read =
+          step.kind == Kind::ExpectSetting
+              ? std::format("; {} is \"{}\"", step.name, settingText(host, step.name))
+              : std::string{};
+      failStep(
+          std::format("timed out after {:.0f} s; {}{}", step.timeout, where(host.scene), read));
     }
     runActions(ticks, events);
   }

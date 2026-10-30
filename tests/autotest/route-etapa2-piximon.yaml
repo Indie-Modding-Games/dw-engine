@@ -1,0 +1,34 @@
+# Stage 2 of the story with the keyboard, Piximon: from trop01 on a seeded game (run with --start trop01 --seed 3 and
+# the stage-2 lock, docs/guides/prueba-vertical.md) the player talks to the Piximon of the jungle (section 5 of script
+# 13), accepts its challenge (the first answer), wins the fight with the debug command and Piximon flies off to the
+# city (trigger 255, the recruit).
+name: etapa2-piximon
+device: keyboard
+timeout: 600
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop01, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.255: "false"}
+  - screenshot: trop01
+  # Piximon shows up on entering the jungle only on a roll of 3 in 100 (section 0x0c of script 0); seed 3 gives it.
+  # It hovers about its home point (-768, -1235 in the original's axes) and talks on its own when the player comes
+  # close: the walk ends when its scene takes the player.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  - walk_to: {point: [-768, 1000], radius: 120, encounters: true, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: trop01-talk
+  # Four pages, then the question; confirm takes the first answer, the fight.
+  - repeat: {times: 5, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - screenshot: trop01-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 4, steps: [{wait: {seconds: 2}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  # Its line after the fight, its flight off and the notice.
+  - repeat: {times: 6, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.255: "true"}, timeout: 60}
+  - wait: {seconds: 2}
+  - screenshot: trop01-after
