@@ -13,7 +13,7 @@ ignore = { "212/_.*" }
 files["content/packs/*/ui/**/*.lua"] = {
   allow_defined_top = true,
   ignore = { "131" },
-  read_globals = { "ui", "t", "document_name", "skin_choice", "original_box" },
+  read_globals = { "ui", "t", "document_name", "skin_choice", "original_box", "bag_slot" },
 }
 
 -- The skin entry the main menu and the pause menu share, loaded into both documents.
@@ -24,6 +24,11 @@ files["content/packs/*/ui/common/ui_skin_choice.lua"] = {
 -- The original look's animated boxes, loaded into the menus that open and close them.
 files["content/packs/*/ui/common/original_box.lua"] = {
   globals = { "original_box" },
+}
+
+-- One bag slot (icon, name, count), loaded into the documents that list the bag.
+files["content/packs/*/ui/common/bag_slot.lua"] = {
+  globals = { "bag_slot" },
 }
 
 -- The game's sample script: the game calls tick(dt), and marker keeps its state across reloads.

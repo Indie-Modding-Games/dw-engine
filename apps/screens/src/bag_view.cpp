@@ -26,10 +26,12 @@ constexpr std::string_view IconField = "icon";
 constexpr std::string_view IconRectField = "icon_rect";
 
 // The items' icons (utils2.c: setItemTexture): ETCDAT/ITEM.TIM, a 16 x 16 cell per item in rows of
-// 16, by the item's original number, with the item's palette.
+// 16, by the item's original number, with the item's palette. A cell that starts at texel 0xF0 is
+// 15 texels wide or tall.
 constexpr std::string_view ItemIconImage = "/texture/etcdat/item";
 constexpr std::int32_t ItemIconSide = 16;
 constexpr std::int32_t ItemIconsPerRow = 16;
+constexpr std::int32_t LastIconTexel = 0xF0;
 constexpr std::string_view CountSuffix = ".count";
 
 bool usableIn(const assets::ItemEntry* entry, const game::inventory::UseRules& rules,
@@ -47,14 +49,7 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
     return {};
   }
   const assets::ItemEntry* entry = &items.at(slot->item);
-  std::string icon;
-  std::string iconRect;
-  if (entry->iconPalette && entry->originalIndex) {
-    icon = std::format("{}?palette={}", ItemIconImage, *entry->iconPalette);
-    iconRect =
-        std::format("{} {} {} {}", (entry->index % ItemIconsPerRow) * ItemIconSide,
-                    (entry->index / ItemIconsPerRow) * ItemIconSide, ItemIconSide, ItemIconSide);
-  }
+  ItemIconView icon = itemIconOf(*entry).value_or(ItemIconView{});
   return {.empty = false,
           .item = entry->id,
           .nameKey = names.item(slot->item),
@@ -65,11 +60,24 @@ BagSlotView slotViewOf(const std::optional<game::inventory::Stack>& slot,
           .discardable = context == game::inventory::UseContext::Field &&
                          entry->droppable == rules.discardDroppable,
           .itemColor = entry->itemColor,
-          .icon = std::move(icon),
-          .iconRect = std::move(iconRect)};
+          .icon = std::move(icon.image),
+          .iconRect = std::move(icon.rect)};
 }
 
 } // namespace
+
+std::optional<ItemIconView> itemIconOf(const assets::ItemEntry& entry) {
+  if (!entry.iconPalette || !entry.originalIndex) {
+    return std::nullopt;
+  }
+  const std::int32_t u = (entry.index % ItemIconsPerRow) * ItemIconSide;
+  const std::int32_t v = (entry.index / ItemIconsPerRow) * ItemIconSide;
+  const auto side = [](std::int32_t start) {
+    return start == LastIconTexel ? ItemIconSide - 1 : ItemIconSide;
+  };
+  return ItemIconView{.image = std::format("{}?palette={}", ItemIconImage, *entry.iconPalette),
+                      .rect = std::format("{} {} {} {}", u, v, side(u), side(v))};
+}
 
 BagView bagViewOf(const game::inventory::Inventory& inventory, const assets::ItemTable& items,
                   const NameKeys& names, game::inventory::UseContext context) {

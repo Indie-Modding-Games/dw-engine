@@ -372,27 +372,12 @@ local function draw_bag(document)
       index >= count or (original and (index < row_offset * 2 or index >= (row_offset + rows) * 2))
     )
     if index < count then
-      local filled = slot_filled(index)
-      document:get("slot-" .. index .. "-name"):set_text(
-        filled and text(setting(slot_setting(index, "name"), ""))
-          or (ui.setting("ui_skin") == "original" and "" or t("partner_menu.bag.empty"))
+      bag_slot.draw(
+        document,
+        "slot-" .. index,
+        index,
+        ui.setting("ui_skin") ~= "original" and t("partner_menu.bag.empty") or ""
       )
-      document
-        :get("slot-" .. index .. "-count")
-        :set_text(filled and tostring(number(slot_setting(index, "count"))) or "")
-      slot:set_class("dimmed", filled and setting(slot_setting(index, "dimmed"), false))
-      local color = setting(slot_setting(index, "item_color"), 255)
-      slot:set_class("item-field", filled and color == 0)
-      slot:set_class("item-battle", filled and color == 1)
-      slot:set_class("item-shared", filled and color == 2)
-      -- The item's icon in the gap before its name (utils2.c: setItemTexture).
-      local icon = document:get("slot-" .. index .. "-icon")
-      local source = filled and setting(slot_setting(index, "icon"), "") or ""
-      icon:set_class("hidden", source == "")
-      if source ~= "" then
-        icon:set_attribute("src", source)
-        icon:set_attribute("rect", setting(slot_setting(index, "icon_rect"), ""))
-      end
       slot:set_class("moving", moving == index)
     end
   end

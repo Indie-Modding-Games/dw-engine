@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <ostream>
 
 #include "game/inventory/tests/fixture.hpp"
@@ -62,4 +63,20 @@ TEST_CASE("the bag view says which items are used where the bag is open, by thei
   CHECK(battle.slots[0].usable);
   CHECK(battle.slots[1].usable);
   CHECK_FALSE(battle.slots[2].usable);
+}
+
+TEST_CASE("an item's icon is its cell of the items' image, the last column 15 texels wide") {
+  using dwe::screens::ItemIconView;
+  dwe::assets::ItemEntry entry{.id = "icon", .index = 15, .iconPalette = std::uint8_t{12}};
+  // utils2.c: setItemTexture: u 0xF0 draws 15 texels wide.
+  CHECK(dwe::screens::itemIconOf(entry) ==
+        ItemIconView{.image = "/texture/etcdat/item?palette=12", .rect = "240 0 15 16"});
+  entry.index = 33;
+  CHECK(dwe::screens::itemIconOf(entry)->rect == "16 32 16 16");
+  // No palette (a table extracted before the field existed) or no original number: no icon.
+  entry.iconPalette.reset();
+  CHECK_FALSE(dwe::screens::itemIconOf(entry).has_value());
+  entry.iconPalette = std::uint8_t{1};
+  entry.originalIndex = false;
+  CHECK_FALSE(dwe::screens::itemIconOf(entry).has_value());
 }

@@ -7,6 +7,7 @@
 #include <dwe/screens/screen_settings.hpp>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,6 +22,20 @@ inline constexpr std::string_view BagMoneySetting = "bag.money";
 // What the last command on the bag did, as a text key (partner_menu.bag_result.*); empty before
 // any.
 inline constexpr std::string_view BagResultSetting = "bag.result";
+
+// An item's icon as a document draws it (utils2.c: renderItemSprite, setItemTexture): the items'
+// image with the item's palette, as an `img` names it, and the icon's rectangle in it, "x y width
+// height". Every screen that lists items (the bag, the battle's bag, a shop) draws it with these.
+struct ItemIconView {
+  std::string image;
+  std::string rect;
+
+  friend bool operator==(const ItemIconView&, const ItemIconView&) = default;
+};
+
+// The icon of an item, or nothing for one without an icon (ItemEntry::iconPalette) or one a pack
+// adds (no original number, so no cell).
+[[nodiscard]] std::optional<ItemIconView> itemIconOf(const assets::ItemEntry& entry);
 
 // A slot of the bag as the item list shows it (inventory.c: renderInventoryTop,
 // renderInventoryBottom).
@@ -39,9 +54,7 @@ struct BagSlotView {
   bool discardable = false;
   // The original skin uses item_color to distinguish field, battle and shared items.
   std::int32_t itemColor = 255;
-  // The item's icon (utils2.c: setItemTexture): the image with the item's palette, as a document
-  // names it, and the icon's rectangle in it, "x y width height"; both empty for an item without an
-  // icon (ItemEntry::iconPalette).
+  // The item's icon (itemIconOf); both empty for an empty slot or an item without an icon.
   std::string icon;
   std::string iconRect;
 
