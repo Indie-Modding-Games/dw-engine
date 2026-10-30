@@ -256,6 +256,19 @@ pila (`keeperMoveOne`, `keeperMoveTen`, `keeperMoveStack`) entre lo guardado y l
 `item_keeper` del ruleset ([esquema](../../content/schemas/ruleset_item_keeper.schema.json)) da la sección de MAPHEAD
 con las frases, el máximo de cada objeto y el paso del botón alternativo; sin ella la visita se cierra al instante.
 
+### Tirar un objeto (`DiscardMenu`)
+
+El menú que abre la historia para elegir un objeto de la bolsa (`script_interp.c: CALL_ROUTINE 0` →
+`script_common.c: openDiscardItem`): sale cuando el jugador recibe algo con la bolsa llena, o cuando un personaje pide
+un objeto. `open()` lo abre si la bolsa tiene algo que se pueda tirar (`shopFillSellItemList`: un hueco por fila, y solo
+se elige lo que tiene `droppable`); si no hay nada, pone el disparador 3 y 255 en la variable 254 y no se abre, como el
+estado 0 del original. `choose()` escribe el número del objeto en la 254 y quita el disparador 3 (`tickSingleCardShop`
+con «Yes»); `cancel()` solo cierra si el disparador 3 está puesto (`tickItemMenu`) y escribe 255. El menú no saca nada
+de la bolsa: lo hace el guion después (rutinas 12 y 13). La sección `discard_menu` del ruleset
+([esquema](../../content/schemas/ruleset_discard_menu.schema.json)) da la sección de MAPHEAD con «Is it OK?» (1240,
+línea 0), el disparador, la variable y el valor de «ninguno»; sin ella la rutina se cierra al momento. La pantalla
+`discard_menu` del juego (`apps/game: DiscardScreen`) lo enseña.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |

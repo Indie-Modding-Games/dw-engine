@@ -36,6 +36,7 @@ class InventoryAdapter;
 class PoopAdapter;
 class ShopCounter;
 class ItemKeeper;
+class DiscardMenu;
 class StoryAdapter;
 class StoryGameOrders;
 class StoryScenes;
@@ -60,9 +61,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper,
-// calendar, field items, cards, fishing, poop, city, medals), and the adapters by type for the
-// commands of the game and its menus. The session owns the adapters once given them: the typed
-// pointers are valid while it lives.
+// discard menu, calendar, field items, cards, fishing, poop, city, medals), and the adapters by type
+// for the commands of the game and its menus. The session owns the adapters once given them: the
+// typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -75,6 +76,8 @@ struct GameSystems {
   ShopCounter* shop = nullptr;
   // The item keeper the story opens (CALL_ROUTINE 11).
   ItemKeeper* itemKeeper = nullptr;
+  // The menu that picks an item from the bag (CALL_ROUTINE 0).
+  DiscardMenu* discardMenu = nullptr;
   CalendarAdapter* calendar = nullptr;
   FieldItemsAdapter* fieldItems = nullptr;
   CardsAdapter* cards = nullptr;

@@ -54,6 +54,8 @@ schemas:
     - rules/*/partner_moves
   ruleset_item_keeper:
     - rules/*/item_keeper
+  ruleset_discard_menu:
+    - rules/*/discard_menu
   ruleset_shop:
     - rules/*/shop
   ruleset_evolution:

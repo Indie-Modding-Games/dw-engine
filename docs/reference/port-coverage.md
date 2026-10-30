@@ -51,7 +51,7 @@ de inicio y los mapas cercanos, y reclutar.
 | 8 | Tras un combate de historia el compañero no vuelve andando: la vuelta acaba al momento, y no se guarda su rastro durante el combate | `script_interp.c:1950`; `battle_main.c:702` `BTL_tickPartnerWaypointTrail` | `apps/session/src/story_scenes.cpp:75-79` (esbozo) |
 | 9 | Los personajes del mapa que no luchan no huyen al empezar el combate (se van andando tras ganar) | `battle_setup.c` `BTL_handleBattleIntro`, `battle_tick.c:308` `NPCEntityTickBattle`, `btl.c:128` `isScreenConcave` | docs/modulos/game/battle.md:126 |
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
-| 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
+| 11 | Hecho: con la bolsa llena, recibir un objeto pregunta cuál tirar (lista de la bolsa, «Is it OK?» y descripción) | `script_common.c:1815` `openDiscardItem` | `apps/session/src/discard_menu.cpp`, `apps/game/src/discard_screen.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
 | 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
 | 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
@@ -84,11 +84,11 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 133 | 5 | 11 | 22 | 91 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 136 | 3 | 74 | 72 | 65 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 69 | 3 | 9 | 15 | 87 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 50 | 1 | 15 | 36 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 74 | 3 | 11 | 57 | 86 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 73 | 1 | 2 | 48 | 97 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 78 | 4 | 8 | 55 | 89 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 2 | 47 | 97 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 73 | 7 | 12 | 6 | 83 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
@@ -98,10 +98,10 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 0 | 4 | 81 | 364 | 2 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
-| [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
+| [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
-| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 43 | 1 | 2 | 40 | 95 % |
-| **Total** | 2438 funciones | 857 | 40 | 402 | 1139 | 68 % |
+| [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 44 | 1 | 1 | 40 | 97 % |
+| **Total** | 2438 funciones | 869 | 42 | 394 | 1133 | 68 % |
 
 ## Batalla
 
@@ -126,7 +126,7 @@ Portado 133, parcial 5, falta 11, no aplica 22.
 | `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
 | `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:30` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
-| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:385` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
+| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:395` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
@@ -228,24 +228,21 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 69, parcial 3, falta 9, no aplica 15.
+Portado 73, parcial 4, falta 5, no aplica 14.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `isInDaytimeTransition` | `main/map.c:4607` | falta | Dice si el mapa está cambiando entre día y noche. | sin búsqueda de la luz del día en el motor; comprobar |
 | `reinitializeAfterTournament` | `main/map.c:5445` | falta | Vuelve al mapa tras un torneo. | no hay torneos |
 | `tickMeramonShake` | `main/map.c:5482` | parcial | Hace temblar la pantalla en esa escena. | `apps/game/src/field_story_props.cpp` · El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no. |
-| `getFileCityTopMap` | `main/map.c:5592` | falta | Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido. | comprobar si las ediciones de mapa del guion lo cubren |
-| `checkMedalConditions` | `main/tamer.c:721` | falta | Da la medalla de aprender todas las técnicas y la anuncia. | — |
-| `checkPendingAwards` | `main/tamer.c:793` | falta | Lanza el anuncio pendiente de un premio (medalla o nivel del jugador). | — |
+| `getFileCityTopMap` | `main/map.c:5592` | parcial | Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido. | `game/story/src/prosperity.cpp` · CityAdapter::clearedMap la elige; falta el guardado tras el final (rutina 0x36) que la usa |
 | `tamerTickOpening` | `main/tamer.c:1668` | falta | Escena de apertura del jugador. | `game/story/include/dwe/game/story/partner_routines.hpp:21` · la escena del compañero 5 acaba al momento |
 | `tamerTickEnding` | `main/tamer.c:1682` | falta | Escena final del jugador antes del vídeo. | `game/story/include/dwe/game/story/partner_routines.hpp:22` · la escena 6 acaba al momento; solo se ve el vídeo final |
 | `tamerTickSicknessLostLife` | `main/tamer.c:1699` | parcial | Escena de perder una vida por enfermedad. | `apps/game/src/death_scene.cpp:70` · la restauración tras la vida perdida por enfermedad es un hueco (docs/modulos/game/battle.md:107) |
 | `tamerTickMachinedramonSpawn` | `main/tamer.c:1718` | falta | El jugador asiste a la aparición del jefe final. | la escena acaba al momento (story_scene_glue.cpp:58) |
 | `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:70` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
-| `tamerTickAwardSomething` | `main/tamer.c:1751` | falta | Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera. | — |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
 
 ## NPC y objetos del mapa
 
@@ -292,26 +289,24 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 74, parcial 3, falta 11, no aplica 57.
+Portado 78, parcial 4, falta 8, no aplica 55.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `readSelectedItemMerit` | `main/script_common.c:877` | parcial | Lee los méritos del objeto elegido. | no hay pantalla del intercambio por méritos |
-| `tickSingleCardShop` | `main/script_common.c:1070` | falta | Tienda de una sola carta. | las pantallas de cartas no existen |
+| `tickSingleCardShop` | `main/script_common.c:1070` | parcial | La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira. | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen |
 | `tickShopBitsBox` | `main/script_common.c:1154` | falta | Cuadro con el dinero del jugador que abre el guion. | la rutina 15 se cierra sin enseñarlo |
 | `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 15 se cierra sin enseñar el cuadro |
-| `openDiscardItem` | `main/script_common.c:1815` | parcial | Pide tirar un objeto cuando la bolsa está llena al recibir otro. | `apps/session/include/dwe/session/story_scenes.hpp:98` · la rutina 0 se registra pero la app no tiene pantalla: se cierra al momento |
-| `createSingleCardShopMenu` | `main/script_common.c:2047` | falta | Abre la tienda de una sola carta. | no hay pantallas de cartas |
+| `createSingleCardShopMenu` | `main/script_common.c:2047` | parcial | Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira). | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto; no hay pantallas de cartas |
 | `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | falta | Toca el sonido de la tienda, solo en el mapa de la sabana. | comprobar |
 | `calculateCardMenuStrings` | `main/script_common.c:2666` | falta | Monta la lista del menú de cartas. | no hay pantallas de cartas |
 | `calculateMusicMenuStrings` | `main/script_common.c:2727` | falta | Monta la lista de canciones de la gramola. | no hay pantalla de gramola |
 | `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
-| `unlockMedal` | `main/script_common.c:3026` | falta (citada en docs) | Da una medalla al jugador. | no hay medallas en el motor |
 | `createMonochromonMoodBubble` | `main/script_common.c:3038` | falta (citada en docs) | Burbuja de humor del rival de la tienda de cambio. | scripts.md: más tarde |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (17); lectura de operandos; los scripts se pasan a Lua (12); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (15); lectura de operandos; los scripts se pasan a Lua (12); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
 
 ## Menús e interfaz
 
@@ -319,7 +314,7 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 73, parcial 1, falta 2, no aplica 48.
+Portado 74, parcial 1, falta 2, no aplica 47.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -327,7 +322,7 @@ Portado 73, parcial 1, falta 2, no aplica 48.
 | `fadeFromWhite` | `main/fade.c:193` | falta | Vuelve del blanco. | rutina 46 del guion, sin registrar |
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (24); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (23); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
 ## Objetos y tiendas
 
@@ -730,9 +725,9 @@ Música, efectos de sonido y su carga.
 
 Ficheros del decomp: `main/sound.c`, `main/sound_async.c`.
 
-Portado 19, parcial 0, falta 0, no aplica 15.
+Portado 21, parcial 0, falta 0, no aplica 13.
 
-No aplica: arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (9); gráficos, memoria o ficheros del hardware original: los sustituye el motor (3); lectura del disco; la hace la extracción (1); secuenciador del original (1); voces del chip de sonido; el motor tiene su mezclador (1).
+No aplica: arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (7); gráficos, memoria o ficheros del hardware original: los sustituye el motor (3); lectura del disco; la hace la extracción (1); secuenciador del original (1); voces del chip de sonido; el motor tiene su mezclador (1).
 
 ## Vídeos y final
 
@@ -776,11 +771,10 @@ Arranque, bucle principal, reloj, azar, matemáticas, ficheros, memoria y gráfi
 
 Ficheros del decomp: `main/_psstart.c`, `main/clock.c`, `main/file.c`, `main/file_queue.c`, `main/graphics.c`, `main/line.c`, `main/main.c`, `main/math.c`, `main/rng.c`, `main/utils.c`, `main/utils2.c`.
 
-Portado 43, parcial 1, falta 2, no aplica 40.
+Portado 44, parcial 1, falta 1, no aplica 40.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `recalculatePPandArena` | `main/main.c:3902` | falta | Recalcula los puntos de prosperidad de la ciudad según quién se ha unido. | no se encontró en el motor |
 | `unlearnMove` | `main/utils2.c:519` | parcial | Hace olvidar una técnica al compañero. | `apps/session/src/story_routines/routine_forget_moves.cpp` · la rutina de olvidar técnicas se cierra sin pantalla |
 | `startTournament` | `main/utils2.c:577` | falta (citada en docs) | Carga y juega un torneo; suma los ganados. | no hay torneos |
 

@@ -8,6 +8,7 @@
 
 #include "battle_screen.hpp"
 #include "death_scene.hpp"
+#include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
 #include "field_scene.hpp"
 #include "story_gym.hpp"
@@ -33,6 +34,8 @@ public:
   // The scenes the story's lost lives, deaths and rebirths play on, and the egg box between them.
   void attachDeath(DeathScene* death) { death_ = death; }
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
+  // The item menu the story's DiscardItem screen opens (call_routine 0).
+  void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
   // The naming box the story's renaming opens (call_routine 32).
   void attachNaming(NamingBox* box, session::GameSession* session) { naming_.attach(box, session); }
   // One engine tick of the player's buttons for the story's naming box; true when it took them.
@@ -50,6 +53,7 @@ private:
   StoryGym gym_;
   DeathScene* death_ = nullptr;
   EggBoxScreen* eggBox_ = nullptr;
+  DiscardScreen* discard_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   StoryNaming naming_;

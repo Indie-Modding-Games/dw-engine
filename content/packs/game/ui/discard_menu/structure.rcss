@@ -1,0 +1,193 @@
+/* The menu that picks an item from the bag (script_common.c: openDiscardItem, ITEM_MENU_TYPE 5). One pixel of the
+   original is 3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. From ITEM_MENU_POS and the
+   item menu's drawing: the window from x 124 to 290 and y 22 to 151; the MENU and COUNT labels at (8, 5) and (128, 5)
+   inside it; six rows 18 pixels apart, the icon at x 8 and the name at x 26 from y 18; the cursor 146 pixels wide at
+   x 5; the scroll bar from x 154 to 161 and y 24 to 116. The "is it OK?" box (createSingleCardShopMenu) is 112 x 42 at (104, 99).
+   Measured on the original: every box within a pixel of these, once the emulator's 224-line crop is undone.
+   The skins give the look; this is the layout and a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#window {
+	position: absolute;
+	left: 372dp;
+	top: 66dp;
+	width: 498dp;
+	height: 387dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+}
+
+.label {
+	position: absolute;
+	top: 12dp;
+	height: 21dp;
+}
+
+.label-menu { left: 21dp; width: 60dp; }
+.label-count { left: 381dp; width: 66dp; }
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 12dp;
+	top: 48dp;
+	width: 438dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+.row {
+	position: absolute;
+	left: 21dp;
+	width: 405dp;
+	height: 54dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#row-0 { top: 51dp; }
+#row-1 { top: 105dp; }
+#row-2 { top: 159dp; }
+#row-3 { top: 213dp; }
+#row-4 { top: 267dp; }
+#row-5 { top: 321dp; }
+
+.icon {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 48dp;
+	height: 48dp;
+}
+
+.icon.hidden { display: none; }
+
+.name {
+	position: absolute;
+	left: 54dp;
+	top: 3dp;
+}
+
+.count {
+	position: absolute;
+	right: 0;
+	top: 3dp;
+}
+
+/* calculateItemMenuStrings: an item that cannot be thrown away is red (colour 3). */
+.row.stuck { color: #e03028; }
+
+.scrollbar {
+	position: absolute;
+	left: 459dp;
+	top: 69dp;
+	width: 24dp;
+	height: 276dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #020202 #6987a0 #6987a0 #020202;
+	background-color: #354b5c;
+}
+
+.thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 18dp;
+	height: 270dp;
+	background-color: #5b7080;
+}
+
+#prompts {
+	position: absolute;
+	left: 372dp;
+	top: 459dp;
+	width: 498dp;
+	text-align: right;
+	font-size: 24dp;
+}
+
+.prompt { margin-left: 18dp; }
+.prompt.hidden { display: none; }
+.prompt .key { margin-right: 6dp; }
+
+#confirm {
+	position: absolute;
+	left: 312dp;
+	top: 297dp;
+	width: 336dp;
+	height: 126dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 42dp;
+	display: none;
+}
+
+#frame.phase-confirm #confirm { display: block; }
+
+/* renderSingleCardShop (CONFIRM_BOX_LAYOUT): the question at (8, 5) of the box, yes at (18, 21) and no at (72, 21);
+   the cursor 40 x 14 at (12, 21), 47 pixels further right on no. The box's border is inside these. */
+#question {
+	position: absolute;
+	left: 21dp;
+	top: 9dp;
+	white-space: pre;
+}
+
+.answer {
+	position: absolute;
+	top: 60dp;
+	width: 120dp;
+	height: 42dp;
+	box-sizing: border-box;
+	padding-left: 15dp;
+	white-space: pre;
+}
+
+#yes { left: 33dp; }
+#no { left: 174dp; padding-left: 36dp; }
+
+.answer.selected {
+	border-width: 3dp;
+	border-color: #b5b5b5 #101010 #101010 #b5b5b5;
+	background-color: #525a63;
+}
+
+/* tickItemMenuDescriptionBox: a box across the middle of the screen, from x 28 to 292 and y 109 to 131. */
+#description {
+	position: absolute;
+	left: 84dp;
+	top: 327dp;
+	width: 792dp;
+	height: 66dp;
+	padding: 9dp 9dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+	white-space: pre;
+	display: none;
+}
+
+#frame.phase-description #description { display: block; }

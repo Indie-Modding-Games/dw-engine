@@ -1,0 +1,11 @@
+# El menú para elegir un objeto de la bolsa que abre la historia (script_interp.c: CALL_ROUTINE 0 -> script_common.c:
+# openDiscardItem; apps/session: DiscardMenu): para tirar uno con la bolsa llena o para entregar uno.
+
+# createSingleCardShopMenu: la caja «¿Está bien?» es la frase 0 de la sección 0x4d8 de MAPHEAD.
+confirm_section: 1240
+confirm_line: 0
+# Con el trigger 3 puesto el jugador puede salir sin elegir; si la bolsa no tiene nada que elegir, queda puesto.
+cancel_trigger: 3
+# El objeto elegido va a la variable 254 (writePStat(0xfe)); 255 es ninguno.
+chosen_variable: 254
+no_item: 255

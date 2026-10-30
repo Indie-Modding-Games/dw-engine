@@ -317,6 +317,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                   .ui = context.ui}),
       shopScreen_({.session = game_.session.get(), .shop = game_.systems.shop, .ui = context.ui}),
       itemKeeperScreen_({.keeper = game_.systems.itemKeeper, .ui = context.ui}),
+      discardScreen_({.menu = game_.systems.discardMenu,
+                      .inventory = game_.systems.inventory,
+                      .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
                         game_.session->sound()),
       awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
@@ -336,6 +339,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachGym(&gymScreen_);
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
+  storyScenes_.attachDiscard(&discardScreen_);
   if (auto newGameScene = loadNewGameSceneRules(*context.files, session.rules().current().id())) {
     namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming),
                                              newGameScene->sounds);
@@ -377,8 +381,8 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, ItemKeeperDocument,
-        FieldItemNoticeDocument, AwardNoticeDocument, FishingBaitDocument, FishingNoticeDocument,
-        FishingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
+        DiscardMenuDocument, FieldItemNoticeDocument, AwardNoticeDocument, FishingBaitDocument,
+        FishingNoticeDocument, FishingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
     context_.ui->hide(document);
   }
 }
@@ -394,8 +398,9 @@ void PlaySession::type(std::string_view text, bool enter) {
 }
 
 bool PlaySession::holdsMenu() const {
-  // The item keeper reads pause (P) for an item's description.
-  return takesText() || gymScreen_.active() || itemKeeperScreen_.active();
+  // The item keeper and the discard menu read pause (P) for an item's description.
+  return takesText() || gymScreen_.active() || itemKeeperScreen_.active() ||
+         discardScreen_.active();
 }
 
 void PlaySession::pressStory(const input::InputState& input) {
@@ -413,6 +418,7 @@ void PlaySession::pressStory(const input::InputState& input) {
 
 void PlaySession::pressItemKeeper(const input::InputState& input) {
   itemKeeperScreen_.press(input);
+  discardScreen_.press(input);
 }
 
 void PlaySession::pressPartnerMenu(const input::InputState& input) {
@@ -436,7 +442,8 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   const auto& fieldRules = game_.systems.fieldItems->rules();
   sleepScreen_.walkUp(*scene_, static_cast<float>(TickSeconds),
                       fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
-  if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active()) {
+  if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
+      discardScreen_.active()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -546,10 +553,10 @@ void PlaySession::showLockNotice(const std::string& textKey) {
 
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
-      itemKeeperScreen_.handle(command) || sleepScreen_.handle(command) ||
-      saveMachine_.handle(command) || praiseScold_.handle(command) || feedScene_.handle(command) ||
-      fieldToilet_.handle(command) || fieldPoop_.handle(command) ||
-      fieldItemsScreen_.handle(command) || awardScreen_.handle(command) ||
+      itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
+      sleepScreen_.handle(command) || saveMachine_.handle(command) ||
+      praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
+      fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) || awardScreen_.handle(command) ||
       fishingScreen_.handle(command) || battleScreen_.handle(command) ||
       freeExploration_.handle(command)) {
     return true;
@@ -753,8 +760,8 @@ bool PlaySession::paused() const {
          ui.isVisible(PartnerMenuDocument) || battleScreen_.active() ||
          (sleepScreen_.active() && !sleepScreen_.walkingUp()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
-         shopScreen_.active() || itemKeeperScreen_.active() || fieldItemsScreen_.active() ||
-         awardScreen_.active();
+         shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
+         fieldItemsScreen_.active() || awardScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

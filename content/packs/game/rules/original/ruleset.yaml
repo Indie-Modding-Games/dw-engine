@@ -36,6 +36,7 @@ sections:
   - gym
   - shop
   - item_keeper
+  - discard_menu
   - calendar
   - field_items
   - cards

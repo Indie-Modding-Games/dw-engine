@@ -211,3 +211,30 @@ que el jugador deja, hasta 99 de cada objeto, y lo escribe en la partida; la pan
 | Ayuda bajo las ventanas | `updateKeeperTextbox`: línea 3 de MAPHEAD con los glifos ✕, ○ y □ | Tres líneas del paquete con la tecla del dispositivo en uso (`ui.prompt`) en los colores del original | Ruta `bank` | Mejora documentada |
 | Repetición al mantener confirmar o alt | La máscara de repetición del original repite arriba, abajo, confirmar y alt | Arriba y abajo repiten (la navegación de la UI); confirmar y alt no | — | Hueco |
 | Lo guardado se guarda en la partida | `SCRIPT_STATE` (0x54 + objeto), dentro de la partida | Sección `item_keeper` de la partida: `kept: [{item, count}]`; sin ella, nada guardado | `what the keeper holds goes in the save…` | Igual |
+
+## Tirar un objeto
+
+El menú de objetos que abre la rutina 0 (`script_common.c: openDiscardItem`, `ITEM_MENU_TYPE` 5): la bolsa hueco por
+hueco, la caja «Is it OK?» y la descripción. La sesión (`session::DiscardMenu`) decide qué se puede elegir y escribe el
+resultado; la pantalla `discard_menu` del juego (`apps/game: DiscardScreen`) lo enseña. Medido con el original (bolsa
+llena escrita en la RAM y la rutina 0 forzada en el mostrador de room02; capturas `orig/discard-*.png` de
+`_work/routes-e2/menus-qa/discard-bits/`); el emulador estira 224 líneas a 240, así que las medidas son de la pantalla
+del juego (y de pantalla = (y de captura) × 14 / 15 + 8).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `discard.phase` | texto | `list`, `confirm`, `description` o `closed` |
+| `discard.{total,top,cursor}` | números | Las filas de la bolsa, la primera que se ve y la del cursor entre las seis visibles |
+| `discard.row.<i>.{name,count,choosable,icon,icon_rect}` | clave, número, booleano, imagen | Las seis filas; lo que no se puede tirar va en rojo (color 3) |
+| `discard.{choice,confirm_key,cancellable,description_key}` | número, claves, booleano | Sí (0) o no (1), «Is it OK?» (MAPHEAD 1240, línea 0), si cancelar cierra el menú (disparador 3) y la descripción |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ventana de la lista | `ITEM_MENU_POS[5]`: x 124 a 290, y 22 a 151; MENU y COUNT de SYSTEM_W, seis filas cada 18 px con icono, nombre y cantidad, cursor de 146 × 18, barra de desplazamiento | `discard_menu/structure.rcss` con esas medidas; caja, filas y textos a un píxel o menos del original | Ruta `discard` (yaka13) | Igual |
+| Lo que no se puede tirar | `calculateItemMenuStrings`: en rojo; confirmar no abre la caja | `DiscardRow::choosable`; la fila en rojo y confirmar no hace nada | `shopFillSellItemList lists every slot; only droppable items can be picked` | Igual |
+| «Is it OK?» | `createSingleCardShopMenu`: caja de 112 × 42 en (104, 99) opaca (#293942); pregunta en (8, 5), «Yes» en (18, 21), «No» en (72, 21), cursor de 40 × 14 | `#confirm` con esas medidas | Ruta `discard`; `the yes of the confirm box writes the item's number to 254…` | Igual |
+| No o cancelar en la caja | `tickSingleCardShop`: la caja se cierra y la lista sigue | Vuelve a la fase `list` | Ruta `discard` | Igual |
+| Cancelar en la lista | `tickItemMenu`: solo con el disparador 3 (cuando el guion deja quedarse con todo); escribe 255 | `DiscardMenu::cancel`; la indicación «Atrás» solo se ve cuando se puede | `cancel closes the menu only while trigger 3 is set…` | Igual |
+| Descripción (P o Pausa, Start en el mando) | Start abre `createItemMenuDescriptionBox`: caja de x 28 a 292 e y 109 a 131 | Fase `description` | Ruta `discard` | Igual |
+| Moverse y saltar a los extremos (R1 o Mayús mantenidos) | `itemMenuCursorUp/Down/Top/Bottom` | `DiscardListView` | `discard list: the cursor walks the six rows…`, `discard list: R1 held jumps…` | Igual |
+| Indicaciones de teclas | No hay (el cuadro de texto del guion sigue debajo) | Aceptar y Atrás con la tecla del dispositivo en uso (`ui.prompt`), entre la ventana y el cuadro de texto | Ruta `discard` | Mejora documentada |

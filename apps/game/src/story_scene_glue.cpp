@@ -41,9 +41,13 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
     eggBox_->update(scenes);
   }
   naming_.update(scenes);
+  if (discard_ != nullptr) {
+    discard_->update(scenes);
+  }
   while (const auto screen = scenes.takeScreenRequest()) {
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
-        naming_.take(*screen) || (eggBox_ != nullptr && eggBox_->take(*screen, scenes))) {
+        naming_.take(*screen) || (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
+        (discard_ != nullptr && discard_->take(*screen))) {
       continue;
     }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",

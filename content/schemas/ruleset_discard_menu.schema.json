@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: discard_menu",
+  "description": "rules/<id>/discard_menu.yaml: the menu the story opens to pick an item from the bag (apps/session: DiscardMenu; script_common.c: openDiscardItem).",
+  "type": "object",
+  "required": ["confirm_section", "confirm_line", "cancel_trigger", "chosen_variable", "no_item"],
+  "additionalProperties": false,
+  "properties": {
+    "confirm_section": { "description": "The MAPHEAD section of the confirm box's line.", "type": "integer", "minimum": 0 },
+    "confirm_line": { "description": "The confirm box's line in that section.", "type": "integer", "minimum": 0 },
+    "cancel_trigger": { "description": "While set, the menu closes without an item; set when the bag has nothing to pick.", "type": "integer", "minimum": 0 },
+    "chosen_variable": { "description": "The story variable the picked item's number goes to.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "no_item": { "description": "The number that says no item was picked.", "type": "integer", "minimum": 0, "maximum": 255 }
+  }
+}

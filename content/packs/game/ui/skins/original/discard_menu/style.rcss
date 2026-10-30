@@ -1,0 +1,20 @@
+/* The item menu in the original look: the original's boxes (theme.rcss .original-box), the table's MENU and COUNT labels
+   from SYSTEM_W (palette 4, the item keeper's) and the original's ink. */
+
+body #window, body #confirm, body #description {
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+/* The "is it OK?" box and the description are opaque (#293942 on the original's screen). */
+body #confirm, body #description {
+	background-color: #293942;
+}
+
+.label-menu { decorator: image(keeper-menu-label scale-none left top); }
+.label-count { decorator: image(keeper-count-label scale-none left top); }
+
+.row, #confirm, #description, #prompts { font-family: original-look; color: #d0d0d0; }
+body .row.stuck { color: #e03028; }

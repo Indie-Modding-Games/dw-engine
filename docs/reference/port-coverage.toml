@@ -474,7 +474,7 @@ tickItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what
 readSelectedItemMerit = { status = "parcial", note = "no hay pantalla del intercambio por méritos", what = "Lee los méritos del objeto elegido." }
 tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
 updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
-tickSingleCardShop = { status = "falta", what = "Tienda de una sola carta.", note = "las pantallas de cartas no existen" }
+tickSingleCardShop = { status = "parcial", dwe = "apps/game/src/discard_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen" }
 tickShopBitsBox = { status = "falta", what = "Cuadro con el dinero del jugador que abre el guion.", note = "la rutina 15 se cierra sin enseñarlo" }
 inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
 processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
@@ -487,7 +487,7 @@ createItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", wh
 getItemMenuFromType = { status = "no-aplica", note = "consulta interna", what = "Da el menú de un tipo." }
 updateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Rehace los textos del menú." }
 isItemMenuBoxBusy = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Dice si el cuadro del menú está ocupado." }
-createSingleCardShopMenu = { status = "falta", what = "Abre la tienda de una sola carta.", note = "no hay pantallas de cartas" }
+createSingleCardShopMenu = { status = "parcial", dwe = "apps/game/src/discard_screen.cpp", what = "Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira).", note = "está la del menú de tirar un objeto; no hay pantallas de cartas" }
 itemMenuCursorTop = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor arriba." }
 itemMenuCursorUp = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Sube el cursor." }
 itemMenuCursorBottom = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor abajo." }
@@ -622,7 +622,7 @@ namingSelectionRight = { status = "portado", dwe = "apps/game/src/naming_box.cpp
 namingSelectionDown = { status = "portado", dwe = "apps/game/src/naming_box.cpp", what = "Baja el cursor del cuadro de nombre." }
 
 # Routine screens the story asks for and the app closes at once (story_scene_glue.cpp:48)
-openDiscardItem = { status = "parcial", note = "la rutina 0 se registra pero la app no tiene pantalla: se cierra al momento", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
+openDiscardItem = { status = "portado", dwe = "apps/session/src/discard_menu.cpp", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
 openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla", what = "Abre el intercambio de objetos por puntos de mérito." }
 openMojyamonShop = { status = "parcial", note = "la rutina 2 se cierra sin pantalla", what = "Abre el trueque de objetos." }
 openJukebox = { status = "parcial", note = "la rutina 9 se cierra sin pantalla", what = "Abre la gramola." }
