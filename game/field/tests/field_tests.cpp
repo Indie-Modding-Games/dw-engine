@@ -117,7 +117,8 @@ TEST_CASE("the same input gives the same move at any tick rate") {
   }
 }
 
-TEST_CASE("the player steps on the original's frames, turning on the press and stopping on release") {
+TEST_CASE(
+    "the player steps on the original's frames, turning on the press and stopping on release") {
   dwe::scene::World world;
   Field field{world, originalRules()};
   field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
@@ -495,8 +496,10 @@ TEST_CASE("the partner follows, keeps its distance and stops") {
   CHECK(partnerDistance(field) > (field.rules().partner.walkDistance * radius) - 50.0F);
   // While waiting it looks at the player.
   const glm::vec3 toPlayer = field.player().position - field.partner().position;
-  CHECK(field.partner().yaw ==
-        doctest::Approx(dwe::assets::yawOfDirection(toPlayer)).epsilon(1e-3));
+  // The original's _atan is good to about one of its 4096ths of a turn.
+  const float off =
+      std::remainder(field.partner().yaw - dwe::assets::yawOfDirection(toPlayer), 2.0F * Pi);
+  CHECK(std::abs(off) <= 2.0F * 2.0F * Pi / 4096.0F);
   CHECK(field.partnerTeleports() == 0);
 }
 
@@ -524,7 +527,9 @@ TEST_CASE("the partner follows the player's trail around a wall") {
   CHECK(field.partnerTeleports() == 0);
 }
 
-TEST_CASE("a stuck partner is placed behind the player") {
+TEST_CASE("a partner in a closed pocket walks through its wall to the player, as the original") {
+  // map.c: partnerTickCollision ignores what entityCheckCollision says about the map (10): the
+  // original's partner keeps out of walls only by its trail.
   auto map = roomMap("room");
   fill(map, {.column = 35, .row = 35}, {.column = 41, .row = 41}, Blocked);
   fill(map, {.column = 37, .row = 37}, {.column = 39, .row = 39}, 0); // a closed pocket
@@ -534,6 +539,21 @@ TEST_CASE("a stuck partner is placed behind the player") {
   dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
                     {-1150.0F, 0.0F, -1150.0F}, 0.0F);
   run(field, 3.0F);
+  CHECK(field.partnerTeleports() == 0);
+  CHECK(partnerDistance(field) <
+        (field.rules().partner.walkDistance * field.rules().partner.mover.radius) + 1.0F);
+}
+
+TEST_CASE("a partner that cannot step for a second is placed behind the player") {
+  // The engine's rescue: the original's goes by its camera (isTileOffScreen).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));
+  field.setPartnerClips(
+      {{2, {.steps = {{}, {}}, .repeatFrom = 1}}, {4, {.steps = {{}, {}}, .repeatFrom = 1}}});
+  dwe::scene::place(world.registry().get<dwe::scene::Transform>(field.partnerEntity()),
+                    {-1150.0F, 0.0F, -1150.0F}, 0.0F);
+  run(field, 1.5F);
   CHECK(field.partnerTeleports() >= 1);
   CHECK(partnerDistance(field) < 400.0F);
   // Behind the player, who faces +Z.
@@ -1297,9 +1317,8 @@ TEST_CASE("a partner placed by the player keeps off the NPCs, and a map entry ch
   // Too far: it is placed by the player, not on the NPC.
   run(field, 0.1F);
   CHECK(field.partnerTeleports() >= 1);
-  CHECK_FALSE(
-      Field::overlaps(squareAt(field.partner().position, 120.0F),
-                      squareAt(*field.npcs().positionOf(9), 100.0F)));
+  CHECK_FALSE(Field::overlaps(squareAt(field.partner().position, 120.0F),
+                              squareAt(*field.npcs().positionOf(9), 100.0F)));
 }
 
 TEST_CASE("a care scene or a script let go with the partner on the player sets them apart") {
@@ -1411,7 +1430,8 @@ TEST_CASE("settling, or a tick the field holds still, draws every character wher
   CHECK(npc.previousPosition == npc.position);
 }
 
-TEST_CASE("the partner's size follows its species: follow distances, and a release check if bigger") {
+TEST_CASE(
+    "the partner's size follows its species: follow distances, and a release check if bigger") {
   dwe::scene::World world;
   Field field{world, originalRules()};
   field.enterMapAt(roomMap("room"), at(0.0F, 0.0F, 0.0F));

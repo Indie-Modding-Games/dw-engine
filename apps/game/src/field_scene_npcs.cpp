@@ -80,6 +80,10 @@ bool FieldScene::place(const Placement& placement) {
   }
   const float height = world_.registry().get<scene::Transform>(*entity).position.y;
   field_->placeAt(*entity, {placement.ground.x, height, placement.ground.y}, placement.yaw);
+  if (placement.clip) {
+    field_->playPartnerFrom(placement.clip->id, static_cast<std::size_t>(placement.clip->frame),
+                            {.x = placement.clip->fractionX, .z = placement.clip->fractionZ});
+  }
   return true;
 }
 

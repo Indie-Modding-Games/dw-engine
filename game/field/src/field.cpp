@@ -157,19 +157,39 @@ Grace collisionGrace(float yaw, float distance, const std::function<bool(glm::ve
   return {.yaw = assets::yawFromOriginal(wrapRotation(from + StuckTurn)), .step = {}};
 }
 
-// partner.c: partnerTickWalking: a change of the partner's walk waits until the clip under way ends
-// its pass (it sets loopCount to 1 and changes when it reaches 0), but for two that start at once:
-// from standing to running (closeness 0 starts animation 4) and from running to walking
-// (setPartnerSlowWalking when the animation is 4).
-Motion heldPartnerMotion(Motion shown, Motion wanted, bool passEnded) {
-  if (wanted == shown || passEnded) {
-    return wanted;
+// The original's ground point of a world position, and back (core::fromOriginalAxes).
+OriginalPoint originalPointOf(glm::vec3 world) {
+  return {.x = static_cast<std::int32_t>(std::lround(world.x)),
+          .z = static_cast<std::int32_t>(std::lround(-world.z))};
+}
+
+glm::vec3 worldPointOf(OriginalPoint point, float height) {
+  return {static_cast<float>(point.x), height, -static_cast<float>(point.z)};
+}
+
+// The partner's clips without its model's: it stands a second at a time, and walks and runs
+// straight ahead at its rules' speeds, a step a frame.
+assets::ClipMotions defaultPartnerClips(const MoverRules& mover, float frameSeconds) {
+  const auto walking = [&](float speed) {
+    const auto step = static_cast<std::int32_t>(std::lround(speed * frameSeconds));
+    return assets::ClipMotion{.steps = {{}, {.side = 0, .forward = step}}, .repeatFrom = 1};
+  };
+  const auto standFrames = static_cast<std::size_t>(std::lround(1.0F / frameSeconds));
+  const assets::ClipMotion standing{.steps = std::vector<assets::RootStep>(standFrames),
+                                    .repeatFrom = 1};
+  return {{PartnerIdleClip, standing},
+          {PartnerIdleTiredClip, standing},
+          {PartnerWalkClip, walking(mover.walkSpeed)},
+          {PartnerWalkTiredClip, walking(mover.walkSpeed)},
+          {PartnerRunClip, walking(mover.runSpeed)}};
+}
+
+// The motion the field reports for a clip of the partner.
+Motion motionOfClip(std::int32_t clip) {
+  if (clip == PartnerRunClip) {
+    return Motion::Run;
   }
-  if ((shown == Motion::Idle && wanted == Motion::Run) ||
-      (shown == Motion::Run && wanted == Motion::Walk)) {
-    return wanted;
-  }
-  return shown;
+  return clip == PartnerWalkClip || clip == PartnerWalkTiredClip ? Motion::Walk : Motion::Idle;
 }
 
 } // namespace
@@ -179,7 +199,10 @@ Field::Field(scene::World& world, FieldRules rules, ScriptWarpSetup scriptWarps)
       facts_(std::move(scriptWarps.facts)), writeTrigger_(std::move(scriptWarps.writeTrigger)),
       unknownPolicy_(scriptWarps.unknownPolicy), explore_(scriptWarps.explore),
       hasMap_(std::move(scriptWarps.hasMap)), player_(world.create()), partner_(world.create()),
-      npcs_(world, rules_.npc, rules_.transition.frameSeconds) {
+      npcs_(world, rules_.npc, rules_.transition.frameSeconds),
+      follow_(static_cast<std::int32_t>(std::lround(rules_.partner.mover.radius)),
+              defaultPartnerClips(rules_.partner.mover, rules_.transition.frameSeconds)) {
+  follow_.setGestureWait(rules_.partner.gestureIdlePlays);
   entt::registry& registry = world_->registry();
   registry.emplace<Transform>(player_);
   registry.emplace<scene::ModelRef>(player_, rules_.player.model);
@@ -265,8 +288,7 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   // map.c: loadMap starts the way back on the cell the player enters on (initializeTamerWaypoints).
   playerTrail_.enter(lastPlayerCell_);
   lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
-  trail_.clear();
-  partnerMotion_ = Motion::Idle;
+  follow_.forgetTrail(originalPointOf(spawn.position));
   partnerStuckSeconds_ = 0.0F;
   partnerMakesRoom_ = false;
   freeTick_ = false;
@@ -302,7 +324,7 @@ void Field::tick(float seconds) {
   // a move that is not happening.
   beginTicks(seconds);
   const bool wasFree = std::exchange(freeTick_, false);
-  partnerShownMotion_ = registry.get<AnimationIntent>(partner_).motion;
+  const bool wasFollowing = std::exchange(partnerFollowing_, false);
   registry.get<AnimationIntent>(partner_) = {};
   // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
   if (leaving_ || pendingChange_ || waitingForMap_ || choice_ || mapId_.empty() || scriptHeld_ ||
@@ -370,7 +392,9 @@ void Field::tick(float seconds) {
   }
   checkTriggers();
   checkConfirm();
-  updateTrail();
+  if (frames == 0) {
+    partnerFollowing_ = wasFollowing;
+  }
   movePartnerFrames(frames);
   tickNpcs(seconds, true);
   watchOverlaps(seconds);
@@ -528,9 +552,26 @@ scene::Pose Field::drawnPose(scene::Entity entity, float alpha) const {
   return pose.value_or(scene::interpolate(transform, alpha));
 }
 
-void Field::notePartnerPassEnded() {
-  partnerPassesNoted_ = true;
-  partnerPassEnded_ = true;
+void Field::setPartnerClips(assets::ClipMotions clips) {
+  follow_.setClips(clips.empty()
+                       ? defaultPartnerClips(rules_.partner.mover, rules_.transition.frameSeconds)
+                       : std::move(clips));
+}
+
+std::optional<PartnerClip> Field::partnerFollowClip() const {
+  if (!partnerFollowing_) {
+    return std::nullopt;
+  }
+  return follow_.clip();
+}
+
+void Field::playPartnerFrom(std::int32_t clip, std::size_t frame, OriginalPoint fraction) {
+  syncPartnerFollow();
+  follow_.playFrom(clip, frame, fraction);
+  partnerFollowing_ = true;
+  world_->registry().get<AnimationIntent>(partner_) = {.motion = motionOfClip(clip),
+                                                       .speedScale = 1.0F};
+  partnerIntent_ = world_->registry().get<AnimationIntent>(partner_);
 }
 
 CharacterState Field::partner() const {
@@ -867,8 +908,8 @@ void Field::stepPlayer(const Step& step) {
   }
   const float distance = (wanted == Motion::Run ? mover.runSpeed : mover.walkSpeed) * frame;
   if (!step.followPath) {
-    transform.yaw = turnToward(transform.yaw, assets::yawOfDirection({step.direction.x, 0.0F,
-                                                                      step.direction.y}),
+    transform.yaw = turnToward(transform.yaw,
+                               assets::yawOfDirection({step.direction.x, 0.0F, step.direction.y}),
                                mover.turnSpeed * frame);
     if (!starts) {
       walkForward(distance);
@@ -916,9 +957,8 @@ bool Field::playerTouchesSomeone(glm::vec3 from, glm::vec2 step) const {
   // map.c: entityCheckEntityCollision: the player, in the field, touches the partner's square on
   // any side.
   const GroundSquare self{.centre = ground(to), .half = radius};
-  const GroundSquare partner{
-      .centre = ground(world_->registry().get<Transform>(partner_).position),
-      .half = rules_.partner.mover.radius};
+  const GroundSquare partner{.centre = ground(world_->registry().get<Transform>(partner_).position),
+                             .half = rules_.partner.mover.radius};
   return squaresOverlap(self, partner);
 }
 
@@ -1062,38 +1102,6 @@ void Field::checkConfirm() {
     }
   }
   cellSections_.push_back(value);
-}
-
-void Field::updateTrail() {
-  const glm::vec3 playerPosition = world_->registry().get<Transform>(player_).position;
-  const glm::vec3 partnerPosition = world_->registry().get<Transform>(partner_).position;
-  const CollisionCell cell = assets::collisionCellAt(playerPosition);
-  const float halfWidth = rules_.partner.sightHalfWidth;
-  const auto visible = [&](glm::vec3 point) {
-    return isLineClear(collision_, playerPosition, point, halfWidth);
-  };
-  // map.c: partnerTickCollision keeps a trail of the player's cells only while the partner cannot
-  // see the player: when the player changes cell, its last cell is added if the newest one is out
-  // of sight too.
-  if (cell != lastPlayerCell_) {
-    if (visible(partnerPosition)) {
-      trail_.clear();
-    } else if (trail_.empty() || !visible(assets::collisionCellCenter(trail_.back()))) {
-      trail_.push_back(lastPlayerCell_);
-      if (std::cmp_greater(trail_.size(), rules_.partner.trailLength)) {
-        trail_.pop_front();
-      }
-    }
-    lastPlayerCell_ = cell;
-  }
-  // map.c: partnerTickCollision, every frame: the first of the second, third and fourth newest
-  // cells that the player can see makes the newer ones unnecessary.
-  for (std::size_t back = 2; back <= 4 && back <= trail_.size(); ++back) {
-    if (visible(assets::collisionCellCenter(trail_[trail_.size() - back]))) {
-      trail_.resize(trail_.size() - back + 1);
-      break;
-    }
-  }
 }
 
 void Field::holdForCare(bool held) {
@@ -1256,9 +1264,6 @@ void Field::movePartnerFrames(std::int32_t frames) {
   }
   startGlide(partnerGlide_, partner_);
   for (std::int32_t frame = 0; frame < frames; ++frame) {
-    if (frame > 0) {
-      partnerShownMotion_ = animation.motion;
-    }
     movePartner(rules_.transition.frameSeconds);
   }
   endGlide(partnerGlide_, partner_);
@@ -1267,117 +1272,61 @@ void Field::movePartnerFrames(std::int32_t frames) {
 
 void Field::movePartner(float seconds) {
   entt::registry& registry = world_->registry();
-  auto& transform = registry.get<Transform>(partner_);
-  auto& animation = registry.get<AnimationIntent>(partner_);
   const glm::vec3 playerPosition = registry.get<Transform>(player_).position;
   const PartnerRules& rules = rules_.partner;
-
-  // A waypoint is reached on its cell or within a radius of its centre, which a wide partner may
-  // not get closer to.
-  while (!trail_.empty() &&
-         (assets::collisionCellAt(transform.position) == trail_.front() ||
-          groundDistance(transform.position, assets::collisionCellCenter(trail_.front())) <=
-              rules.mover.radius)) {
-    trail_.pop_front();
-  }
-  const float distance = groundDistance(transform.position, playerPosition);
-  if (distance > rules.teleportDistance) {
+  partnerFollowing_ = false;
+  // The engine's rescues: the original takes the partner next to the player when it goes off
+  // screen (map.c: partnerTickCollision, isTileOffScreen), which needs its camera.
+  if (groundDistance(registry.get<Transform>(partner_).position, playerPosition) >
+      rules.teleportDistance) {
     placePartnerNearPlayer();
     return;
   }
   if (partnerMakesRoom_ && makeRoomForPlayer(seconds)) {
     return;
   }
+  syncPartnerFollow();
+  const OriginalPoint before = follow_.position();
+  const float height = registry.get<Transform>(partner_).position.y;
   const float radius = rules.mover.radius;
-  // partner.c: getPartnerTamerCloseness runs beyond 3.5 radii, walks beyond 2.5 and stops closer,
-  // with a trail too (partnerTickWalking only looks at the distance).
-  Motion motion = Motion::Idle;
-  if (distance > rules.runDistance * radius) {
-    motion = Motion::Run;
-  } else if (distance >= rules.walkDistance * radius) {
-    motion = Motion::Walk;
-  }
-  const Motion wanted = motion;
-  const bool passEnded = !partnerPassesNoted_ || std::exchange(partnerPassEnded_, false);
-  motion = heldPartnerMotion(partnerShownMotion_, wanted, passEnded);
-  // anim.c: startAnimation zeroes the root's momentum: the frame its clip changes, the partner
-  // turns but does not move.
-  const bool starts = std::exchange(partnerMotion_, motion) != motion;
-
-  // map.c: partnerTickCollision heads for the oldest trail cell, or for the player without a trail.
-  const glm::vec3 target =
-      trail_.empty() ? playerPosition : assets::collisionCellCenter(trail_.front());
-  const glm::vec2 toTarget = ground(target) - ground(transform.position);
-  if (motion == Motion::Idle || glm::length(toTarget) == 0.0F) {
-    // map.c: partnerTickCollision: while it waits it keeps looking at where it would go: the
-    // player, or the oldest cell of its trail (entityLookAtTile).
-    const glm::vec3 look = glm::length(toTarget) > 0.0F ? target : playerPosition;
-    transform.yaw = turnToward(transform.yaw, assets::yawOfDirection(look - transform.position),
-                               rules.mover.turnSpeed * seconds);
-    animation = {.motion = Motion::Idle, .speedScale = 1.0F};
-    partnerStuckSeconds_ = 0.0F;
-    return;
-  }
-  const glm::vec2 direction = glm::normalize(toTarget);
-  if (starts) {
-    transform.yaw =
-        turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),
-                   rules.mover.turnSpeed * seconds);
-    animation = {.motion = motion, .speedScale = 1.0F};
-    return;
-  }
-  const float expected =
-      (motion == Motion::Run ? rules.mover.runSpeed : rules.mover.walkSpeed) * seconds;
-  const GridMove move = moveOnGrid(collision_, transform.position,
-                                   direction * std::min(expected, glm::length(toTarget)), radius);
-  // map.c: partnerTickCollision: with an NPC in the way (entityCheckCollision), the partner keeps
-  // the facing it had and turns aside from there (collisionGrace, past the player), a little more
-  // each frame it stays blocked.
-  glm::vec3 reached = move.position;
-  std::optional<float> graceYaw;
-  if (npcs_.blocks(transform.position, move.position, radius)) {
-    const glm::vec3 from = transform.position;
-    const Grace grace =
-        collisionGrace(transform.yaw, std::min(expected, glm::length(toTarget)), [&](glm::vec2 probe) {
-          return stepCollides(collision_, from, probe, radius) ||
-                 npcs_.blocks(from, from + glm::vec3{probe.x, 0.0F, probe.y}, radius);
-        });
-    graceYaw = grace.yaw;
-    reached = moveOnGrid(collision_, from, grace.step, radius).position;
-    if (npcs_.blocks(from, reached, radius)) {
-      reached = from;
-    }
-  }
-  const float moved = groundDistance(reached, transform.position);
-  // partner.c:906: a walk ending its pass by the player stops at once when it collides
-  // (entityCheckCollision): with the map, an NPC or the player. The trail is the engine's: one that
-  // brings the partner against the player is over, and it stands there too.
-  const bool againstPlayer =
-      groundDistance(reached, playerPosition) < radius + rules_.player.radius;
-  if (motion != Motion::Idle && ((wanted == Motion::Idle && (moved == 0.0F || againstPlayer)) ||
-                                 (!trail_.empty() && againstPlayer))) {
-    trail_.clear();
-    core::logDebug("[port:partner] partnerTickWalking (partner.c:906): the walk collides before "
-                   "its pass ends; it stands");
-    animation = {.motion = Motion::Idle, .speedScale = 1.0F};
-    partnerStuckSeconds_ = 0.0F;
-    return;
-  }
-  transform.position = reached;
-  transform.yaw = graceYaw.value_or(
-      turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),
-                 rules.mover.turnSpeed * seconds));
-  animation = {.motion = motion,
-               .speedScale = expected > 0.0F ? std::clamp(moved / expected, 0.0F, 1.0F) : 1.0F};
-
-  partnerStuckSeconds_ = moved < expected * StuckFraction ? partnerStuckSeconds_ + seconds : 0.0F;
-  if (!trail_.empty() && partnerStuckSeconds_ > PathStallSeconds) {
-    // Against a wall on the way to a waypoint: head for the next one before giving up.
-    trail_.pop_front();
-    partnerStuckSeconds_ = 0.0F;
-  } else if (partnerStuckSeconds_ > rules.stuckSeconds) {
+  follow_.tick({.map = &collision_,
+                .player = originalPointOf(playerPosition),
+                .playerRadius = static_cast<std::int32_t>(std::lround(rules_.player.radius)),
+                .npcBlocks =
+                    [&](OriginalPoint from, OriginalPoint to) {
+                      return npcs_.blocks(worldPointOf(from, height), worldPointOf(to, height),
+                                          radius);
+                    },
+                .mood = partnerMood_,
+                .randomBelow = partnerRandom_});
+  showPartnerFollow();
+  partnerFollowing_ = true;
+  const Motion motion = motionOfClip(follow_.clip().id);
+  registry.get<AnimationIntent>(partner_) = {.motion = motion, .speedScale = 1.0F};
+  // A walk that goes nowhere for a while (against a wall or turning aside on the spot) is taken
+  // next to the player.
+  const bool stuck = motion != Motion::Idle && follow_.position() == before;
+  partnerStuckSeconds_ = stuck ? partnerStuckSeconds_ + seconds : 0.0F;
+  if (partnerStuckSeconds_ > rules.stuckSeconds) {
     placePartnerNearPlayer();
   }
+}
+
+void Field::syncPartnerFollow() {
+  const auto& transform = world_->registry().get<Transform>(partner_);
+  if (followPose_ && followPose_->position == transform.position &&
+      followPose_->yaw == transform.yaw) {
+    return;
+  }
+  follow_.place(originalPointOf(transform.position), assets::yawToOriginal(transform.yaw));
+  followPose_ = scene::Pose{.position = transform.position, .yaw = transform.yaw};
+}
+
+void Field::showPartnerFollow() {
+  auto& transform = world_->registry().get<Transform>(partner_);
+  transform.position = worldPointOf(follow_.position(), transform.position.y);
+  transform.yaw = std::remainder(assets::yawFromOriginal(follow_.rotation()), Turn);
+  followPose_ = scene::Pose{.position = transform.position, .yaw = transform.yaw};
 }
 
 bool Field::makeRoomForPlayer(float seconds) {
@@ -1447,7 +1396,7 @@ void Field::placePartnerNearPlayer() {
   const float radius = rules_.partner.mover.radius;
   std::vector<glm::vec3> candidates{
       player.position - (assets::forwardOfYaw(player.yaw) * rules_.partner.spawnDistance)};
-  for (const CollisionCell cell : std::views::reverse(trail_)) {
+  for (const CollisionCell cell : std::views::reverse(follow_.trail())) {
     candidates.push_back(assets::collisionCellCenter(cell));
   }
   candidates.push_back(assets::collisionCellCenter(lastPlayerCell_));
@@ -1475,8 +1424,9 @@ void Field::placePartnerNearPlayer() {
   scene::place(registry.get<Transform>(partner_), chosen,
                assets::yawOfDirection(player.position - chosen));
   registry.get<AnimationIntent>(partner_) = {};
-  trail_.clear();
+  follow_.forgetTrail(originalPointOf(player.position));
   partnerStuckSeconds_ = 0.0F;
+  partnerFollowing_ = false;
   ++partnerTeleports_;
 }
 

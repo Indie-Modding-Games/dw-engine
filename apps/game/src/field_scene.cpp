@@ -17,6 +17,7 @@
 #include <tuple>
 #include <utility>
 
+#include "battle_motion.hpp"
 #include "messages.hpp"
 
 namespace dwe::app {
@@ -26,8 +27,8 @@ using Clock = std::chrono::steady_clock;
 using Milliseconds = std::chrono::duration<double, std::milli>;
 
 // anim.c: startAnimation switches clips at once, for the player, the partner and the NPCs alike;
-// the partner ends a clip's pass before its walk changes (Field::movePartner), which is what keeps
-// it from popping.
+// the partner ends a clip's pass before its walk changes (partner.c: partnerTickWalking, in
+// game::field::PartnerFollow), which is what keeps it from popping.
 constexpr float ClipFadeSeconds = 0.0F;
 
 constexpr std::string_view PlayerCharacter = "models/tamer";
@@ -202,6 +203,12 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
   }
   scene->partnerActor_ = std::move(*partner);
   scene->partnerMover_ = rules->partner.mover;
+  // The partner walks by its clips' root motion (anim.c: applyRootMomentum) and waits a random
+  // number of idle plays before its gesture (partner.c: randomLimit).
+  scene->field_->setPartnerClips(battleClipsOf(*scene->partnerActor_->model));
+  scene->field_->setPartnerRandom(
+      [raw = scene.get()](std::int32_t limit) { return raw->gestureRandom_.below(limit); });
+  scene->field_->setPartnerMood(scene->partnerMood());
 
   if (auto entered =
           scene->enterMap(startMap, startExit, desc.startMap ? desc.startAt : std::nullopt);
@@ -230,6 +237,8 @@ core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
   models_->remove(partnerActor_->handle);
   partnerActor_ = std::move(*partner);
   partnerClipStarted_ = false;
+  field_->setPartnerClips(battleClipsOf(*partnerActor_->model));
+  field_->setPartnerMood(partnerMood());
   return {};
 }
 
@@ -465,8 +474,11 @@ void FieldScene::animate(Actor& actor, double seconds) {
   if (animateScripted(actor, seconds)) {
     return;
   }
-  const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
   const bool partner = &actor == partnerActor_.get();
+  if (partner && animateFollowingPartner(actor, seconds)) {
+    return;
+  }
+  const auto& intent = world_.registry().get<scene::AnimationIntent>(actor.entity);
   const std::string_view animation =
       partner ? game::partner::nameOf(partnerAnimation(actor, intent.motion, seconds))
               : scene::motionName(intent.motion);
@@ -475,10 +487,6 @@ void FieldScene::animate(Actor& actor, double seconds) {
     clipId = actor.character.clipOf(scene::motionName(intent.motion));
   }
   if (!clipId) {
-    if (partner) {
-      // Nothing to wait for: the partner's walk changes at once.
-      field_->notePartnerPassEnded();
-    }
     return;
   }
   if (actor.motion != intent.motion || actor.motionClip != clipId) {
@@ -501,19 +509,58 @@ void FieldScene::animate(Actor& actor, double seconds) {
     }
   }
   actor.player->setSpeed(speed);
-  const std::uint64_t passes = actor.player->passes();
   // The field moves the entity with its own speeds; the clip's root motion is left out.
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
-  // A clip that does not repeat ends its pass on every frame once it holds its last pose.
-  if (partner && (actor.player->passes() != passes || actor.player->finished())) {
-    field_->notePartnerPassEnded();
+}
+
+bool FieldScene::animateFollowingPartner(Actor& actor, double seconds) {
+  // The field's follow picks the clip and moves the partner by its root motion, frame by frame
+  // (game::field::PartnerFollow); the drawing plays that clip from its start each time it starts.
+  const std::optional<game::field::PartnerClip> clip = field_->partnerFollowClip();
+  if (!clip) {
+    return false;
   }
+  const auto id = static_cast<std::uint32_t>(clip->id);
+  if (actor.motionClip != id || partnerFollowStarts_ != clip->starts) {
+    core::logDebug("[port:anim] startAnimation (anim.c:201): partner clip {} after {:.2f} s of "
+                   "the last clip",
+                   id, actor.player->time());
+    actor.motion = world_.registry().get<scene::AnimationIntent>(actor.entity).motion;
+    actor.motionClip = id;
+    partnerFollowStarts_ = clip->starts;
+    actor.player->play(id, ClipFadeSeconds);
+    // Back on a picked motion later (a care walk), the look starts over.
+    partnerLook_ = {};
+  }
+  actor.player->setSpeed(1.0F);
+  static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
+  return true;
+}
+
+game::field::PartnerMood FieldScene::partnerMood() const {
+  // partner.c: setPartnerIdle, setPartnerSlowWalking, partnerTickWalking (condition 0x10) and
+  // updateConditionAnimation, by the original's animation ids the partner's model gives.
+  const game::field::PartnerRules& rules = field_->rules().partner;
+  const game::partner::FieldAnimation gesture = game::partner::conditionAnimation(
+      partnerConditions_, partnerHappiness_,
+      {.happyFrom = rules.happyGestureFrom, .unhappyBelow = rules.unhappyGestureBelow});
+  std::optional<std::int32_t> gestureClip;
+  if (!game::partner::isIdle(gesture) && partnerActor_) {
+    if (const auto id = partnerActor_->character.clipOf(game::partner::nameOf(gesture))) {
+      gestureClip = static_cast<std::int32_t>(*id);
+    }
+  }
+  return {.tired = game::partner::idleAnimation(partnerConditions_) ==
+                   game::partner::FieldAnimation::IdleTired,
+          .unhappy = partnerConditions_.has(game::partner::Condition::Sulking),
+          .gesture = gestureClip};
 }
 
 void FieldScene::setPartnerMood(const game::partner::Conditions& conditions,
                                 std::int32_t happiness) {
   partnerConditions_ = conditions;
   partnerHappiness_ = happiness;
+  field_->setPartnerMood(partnerMood());
 }
 
 game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, scene::Motion motion,

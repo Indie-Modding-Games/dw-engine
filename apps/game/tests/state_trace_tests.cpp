@@ -86,4 +86,16 @@ TEST_CASE("place reads who, the original's ground point and its rotation") {
   CHECK(placementFromText("partner 1 2 3.5").has_value() == false);
 }
 
+TEST_CASE("place starts the partner's clip where a trace catches it") {
+  const auto partner = placementFromText("partner 256 -1093 0 5 9 136 5272");
+  REQUIRE(partner.has_value());
+  REQUIRE(partner->clip.has_value());
+  CHECK(partner->clip->id == 5);
+  CHECK(partner->clip->frame == 9);
+  CHECK(partner->clip->fractionX == 136);
+  CHECK(partner->clip->fractionZ == 5272);
+  CHECK(placementFromText("player 1 2 3 5 9 0 0").has_value() == false);
+  CHECK(placementFromText("partner 1 2 3 5 -1 0 0").has_value() == false);
+}
+
 } // namespace

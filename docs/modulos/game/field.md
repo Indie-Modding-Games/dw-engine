@@ -98,8 +98,9 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   después de que los que huyen salgan andando), la entrada en un mapa por un warp o al cargar (`enterMapAt`). Un NPC
   puesto en el mapa (`FieldNpcs::spawn`) o soltado por un guion (`hold(id, false)`, `holdAll(false)`) lo pide por su
   cuenta. La suelta:
-  - olvida el rastro del compañero, su tiempo atascado y la última casilla del jugador (`trail_`,
-    `partnerStuckSeconds_`, `lastPlayerCell_`): lo que el compañero seguía antes ya no vale;
+  - olvida el rastro del compañero, su tiempo atascado y la última casilla del jugador
+    (`PartnerFollow::forgetTrail`, `partnerStuckSeconds_`, `lastPlayerCell_`): lo que el compañero seguía antes ya
+    no vale;
   - en el siguiente tick sin retención, `separateActors` mira a todos: quien tiene el centro en una casilla bloqueada
     o pisa a fondo a otro (`Field::overlaps`) va al sitio libre más cercano (anillos cada 25 unidades hasta seis
     casillas, primero en la dirección contraria a lo que pisa) donde cabe en la rejilla (`fitsOnGrid`), no toca a
@@ -112,21 +113,36 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
     salida suave); el salto solo llega si después sigue pisando a alguien.
 - **Fotogramas del original** (Igual, `tamer.c: tamerTickWalkingState`, `partner.c: partnerTickWalking`,
   `anim.c: startAnimation`): la lógica del original corre a 20 fotogramas por segundo y los personajes avanzan con el
-  impulso de la raíz de su animación. El jugador y el compañero se mueven igual: `takeFrames` cuenta los fotogramas
-  de 1/20 s que caen en cada tick y `movePlayer`/`movePartnerFrames` dan un paso entero por fotograma (50 corriendo,
-  20 andando). Cambiar de animación (arrancar, pararse, pasar de andar a correr) gasta un fotograma sin avanzar, como
+  impulso de la raíz de su animación. `takeFrames` cuenta los fotogramas de 1/20 s que caen en cada tick y
+  `movePlayer`/`movePartnerFrames` dan un paso por fotograma: el jugador uno entero (50 corriendo, 20 andando), el
+  compañero el de su animación (ver «Seguimiento del compañero»). Cambiar de animación (arrancar, pararse, pasar de andar a correr) gasta un fotograma sin avanzar, como
   `startAnimation` al poner el impulso a cero; la dirección cambia en el acto (`setTamerDirection`). Al soltar el
   stick el jugador se para en el fotograma siguiente, sin el paso de más. Pulsar estando parado empieza un fotograma
   en ese mismo tick (Mejora documentada: el original espera al siguiente fotograma de su reloj, hasta 3 vblanks). El
   compañero decide andar, correr o pararse solo por la distancia (`getPartnerTamerCloseness`: corre a más de 3,5 R,
   anda a 2,5 R o más), también mientras sigue el rastro.
+- **Seguimiento del compañero** (Igual, `map.c: partnerTickCollision`, `collisionGrace`, `entityCheckCollision`,
+  `partner.c: partnerTickWalking`, `updateConditionAnimation`, `anim.c: tickAnimation`, `applyRootMomentum`):
+  `game::field::PartnerFollow` lo porta con los enteros del original. Cada fotograma, después del jugador: el rastro
+  (anillo de 30 casillas, `isFiveTileWidePathBlocked`; al empezar uno, `initializePartnerWaypoint` toma la casilla
+  actual del jugador como la última vista), mira al jugador o al centro de la casilla más vieja del rastro
+  (`_atan` con su tabla de 512, `core::original::atan4096`), prueba el paso hacia delante de su animación
+  (`entityCheckCollision`: primero el mapa, que devuelve 10 y **no** cuenta, luego el jugador y los NPC con los
+  bordes delanteros de su cuadrado); contra el jugador o un NPC recupera el rumbo que tenía y pasa por
+  `collisionGrace`. Luego elige la animación por la distancia (al pasar de andar a correr, o de quieto a andar, acaba
+  la vuelta en curso; de correr a andar cambia en el acto) y avanza con el impulso de la raíz de esa animación
+  girado por su rumbo (`rsin`/`rcos`), con la fracción de unidad en 1/32768 (`locX >> 15`). Las animaciones salen del
+  modelo del compañero (`battleClipsOf`, lo mismo que usa el combate); sin ellas (pruebas) anda y corre a las
+  velocidades de `field/rules`. Al pararse espera de 1 a 5 vueltas de su animación de quieto (`randomLimit(5) + 1`)
+  y hace su gesto. El `Transform` toma la posición y el rumbo enteros tras cada fotograma; si otro lo movió (guion,
+  cuidado, `place`, apartarse), el seguimiento empieza desde ahí.
 - **Choque con desvío** (Igual, `tamer.c: checkMapInteraction`, `map.c: entityCheckCollision`, `collisionGrace`):
   antes de avanzar se prueba el paso entero en la posición adelantada (`stepCollides`, la sonda de
   `checkMapCollision`). Si choca, `collisionGrace` recorre las cuatro direcciones de `COLLISION_GRACE_ROTATION`
   según el rumbo: la primera libre gira al personaje hasta 0x50 hacia ella y el paso pierde la componente que empuja
   contra las bloqueadas de antes; si ninguna está libre, gira 32 y no avanza. Para el jugador cuentan la rejilla, los
-  NPC y el compañero (en el campo el original lo cuenta aquí aunque lo atraviese en la prueba de antes); para el
-  compañero, al chocar con un NPC (`map.c: partnerTickCollision`), la rejilla y los NPC. Contra una pared de frente
+  NPC y el compañero (en el campo el original lo cuenta aquí aunque lo atraviese en la prueba de antes); el compañero
+  lo hace en `PartnerFollow` (arriba). Contra una pared de frente
   el jugador gira 0x50 y se desliza.
 - **Colocar** (`placeAt`, el comando de script `place`): pone al personaje exactamente donde se pide, sin pedir la
   regla de suelta.
@@ -169,11 +185,16 @@ decomp no lo deja claro) o **Hueco** (falta).
 | NPC tras un guion | `NPC_ACTIVE_ANIM` sigue hasta que un guion lo quita | `holdForScript(false)` quita la velocidad y el `ScriptedActor` sin animación | `field_tests`: "a script let go ..." | Igual |
 | Paso por fotograma (20 por segundo) y fotograma de arranque sin avance | `tamer.c: tamerTickWalkingState`, `anim.c: startAnimation`/`applyRootMomentum` | `takeFrames`, `movePlayer`, `stepPlayer`, `movePartnerFrames` | `field_tests`: "the player steps on the original's frames ..."; oráculo `field_walk_seen` | Igual |
 | Pulsar estando parado | espera al siguiente fotograma de su reloj (0 a 3 vblanks) | el fotograma empieza en ese tick | `field_tests`: "the player steps on the original's frames ..." | Mejora documentada (menos latencia) |
-| Velocidad por fotograma | el impulso de la raíz cambia de un fotograma a otro | la media de `field/rules` | oráculo `field_walk_seen` (posición del compañero) | Suposición |
+| Velocidad por fotograma del jugador | el impulso de la raíz cambia de un fotograma a otro | la media de `field/rules` | oráculo `field_walk_seen` | Suposición (en diagonal se desvía 1 unidad) |
+| Seguimiento del compañero: rastro, mirada, choque, animación y paso por el impulso de la raíz, en enteros | `map.c: partnerTickCollision`, `partner.c: partnerTickWalking`, `anim.c: tickAnimation` | `PartnerFollow`, `Field::movePartner` | `partner_follow_tests`: "the partner follows the player frame by frame ..." (60 fotogramas de un modelo entero que reproduce la traza del original); oráculo `field_walk_seen`: antes hasta 147 unidades de posición y 308 de rumbo, ahora 2 a 5 unidades (el desfase del gesto inicial, que el lado dwe coloca a ±1 fotograma) y el mismo fotograma en cada cambio de animación | Igual |
+| El compañero y las paredes al seguir | `partnerTickCollision` no hace nada si `entityCheckCollision` da 10 (el mapa): solo el rastro lo aparta | igual: un compañero encerrado atraviesa la pared hacia el jugador | `field_tests`: "a partner in a closed pocket walks through its wall ..." | Igual |
+| Compañero fuera de pantalla | `isTileOffScreen`: lo pone en la casilla del rastro si no se ve | lo pone junto al jugador si está a más de `teleport_distance` o un segundo sin avanzar | `field_tests`: "a partner that cannot step for a second ..." | Hueco (depende de la cámara) |
+| Espera antes del gesto | `randomLimit(5) + 1` vueltas de la animación de quieto, con el generador del original | igual, con el generador del motor (`gestureRandom_`) | oráculo `field_walk_seen` (el original no hizo el gesto en los 46 fotogramas parado) | Suposición (otra secuencia aleatoria) |
+| Choque del compañero con un NPC | `entityCheckEntityCollision` con los cuadrados de los NPC | `FieldNpcs::blocks` en `npcBlocks` | — | Suposición |
 | Choque con desvío de hasta 0x50 | `map.c: collisionGrace`, `COLLISION_GRACE_ROTATION` | `collisionGrace`, `walkForward`, `stepCollides` | `field_tests`: "against a wall straight ahead ..."; oráculo `field_walk` | Igual |
-| Compañero contra un NPC | `map.c: partnerTickCollision` | `collisionGrace` en `movePartner` | oráculo `field_walk` | Igual |
+| Compañero contra un NPC | `map.c: partnerTickCollision` | `PartnerFollow::collisionGrace` | oráculo `field_walk` | Igual |
 | Andar o pararse del compañero | `partner.c: getPartnerTamerCloseness`, solo la distancia | igual, también siguiendo el rastro | `field_tests`: seguimiento | Igual |
-| Rumbo del compañero parado encima del jugador | conserva el que tenía | mira al jugador o al rastro | oráculo `field_walk_seen` | Hueco |
+| Rumbo del compañero con el jugador delante | recupera el que tenía (`partnerTickCollision`) | igual | oráculo `field_walk_seen` | Igual |
 | `place` de script | pone el personaje en su sitio | igual, sin regla de suelta | `field_tests`: "a placed partner stays ..." | Igual |
 | Dibujo del paso de fotograma | sin interpolación | `drawnPose` desliza el paso por 1/20 s | `field_tests`: "... drawn gliding over a frame's ticks" | Mejora documentada |
 | Interpolación sin tick de campo y saltos de guion | sin interpolación | `settle`, `placeByScript`/`turnByScript` con salto | `field_tests`: "settling ...", "a script's jump ..." | Mejora documentada |

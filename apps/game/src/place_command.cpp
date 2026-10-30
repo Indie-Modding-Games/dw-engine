@@ -37,9 +37,11 @@ core::Result<Placement> placementFromText(std::string_view text) {
   }
   const auto usage = [&] {
     return core::fail(
-        std::format("'{}': expected '<player|partner|npc:<id>> <x> <z> <rotation>'", text));
+        std::format("'{}': expected '<player|partner|npc:<id>> <x> <z> <rotation>' (the partner "
+                    "may add '<clip> <frame> <fx> <fz>')",
+                    text));
   };
-  if (words.size() != 4) {
+  if (words.size() != 4 && !(words.size() == 8 && words[0] == "partner")) {
     return usage();
   }
   Placement placement;
@@ -68,6 +70,18 @@ core::Result<Placement> placementFromText(std::string_view text) {
   // The original's Z points into the screen, the world's out of it (core::fromOriginalAxes).
   placement.ground = {static_cast<float>(numbers[0]), -static_cast<float>(numbers[1])};
   placement.yaw = assets::yawFromOriginal(numbers[2]);
+  if (words.size() == 8) {
+    std::array<std::int32_t, 4> clip{};
+    for (std::size_t index = 0; index < clip.size(); ++index) {
+      const auto number = integerOf(words[index + 4]);
+      if (!number || (index < 2 && *number < 0)) {
+        return usage();
+      }
+      clip[index] = *number;
+    }
+    placement.clip = Placement::ClipUnderWay{
+        .id = clip[0], .frame = clip[1], .fractionX = clip[2], .fractionZ = clip[3]};
+  }
   return placement;
 }
 

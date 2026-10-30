@@ -62,6 +62,10 @@ steps:
 
 `place` deja al personaje exactamente donde se pide: no aparta a nadie ni pide la regla de suelta, para que la
 distancia entre el jugador y el compañero sea la del original desde el primer fotograma.
+Al compañero se le puede dar además la animación en la que la traza lo pilla: `place("partner 256 -1093 0 5 8 136
+5272")` es el id de animación del original, el fotograma cuyo paso viene a continuación y la fracción de unidad que
+lleva su posición en x y z (1/32768, `anim.c: locX`, `locZ`). En el oráculo, `place_clip`, `place_after_settle` y
+`place_lead_ticks` del escenario lo generan justo antes de las entradas.
 
 `hold` mantiene las teclas exactamente esos ticks de lógica, aunque los frames vayan lentos. Así una entrada de
 «derecha 60 frames» dura lo mismo en los dos juegos. `battle("story:2")` empieza un combate de la historia contra

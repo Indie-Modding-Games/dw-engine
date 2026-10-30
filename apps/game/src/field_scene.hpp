@@ -372,6 +372,11 @@ private:
   void submitEffectModels();
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
+  // The partner while the field's follow moves it: the clip it picked; false when something
+  // else moves it.
+  bool animateFollowingPartner(Actor& actor, double seconds);
+  // What the partner's conditions and happiness say to the field's follow.
+  [[nodiscard]] game::field::PartnerMood partnerMood() const;
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
                                                  double seconds);
   void submit(const Actor& actor, float alpha, glm::vec3 scale = glm::vec3{1.0F});
@@ -402,10 +407,10 @@ private:
   std::optional<std::uint32_t> partnerClip_;
   bool partnerClipStarted_ = false;
   bool partnerClipPlays_ = false;
-  // What the partner shows while it follows (partner.c: partnerTickWalking): the motion it last
-  // had, the clip it walks or stands with, the gesture under way, how long it has stood
-  // (STOP_DISTANCE_TIMER) and how many plays of its idle clip it stands before the gesture
-  // (EMOTION_ANIM_TIMEOUT).
+  // What the partner shows while something else than the field's follow moves it (a care walk,
+  // making room; partner.c: partnerTickWalking): the motion it last had, the clip it walks or
+  // stands with, the gesture under way, how long it has stood (STOP_DISTANCE_TIMER) and how many
+  // plays of its idle clip it stands before the gesture (EMOTION_ANIM_TIMEOUT).
   struct PartnerLook {
     std::optional<scene::Motion> motion;
     game::partner::FieldAnimation base = game::partner::FieldAnimation::Idle;
@@ -418,6 +423,8 @@ private:
   std::int32_t partnerHappiness_ = 0;
   // The original rolls the wait with randomLimit; any sequence will do.
   ruleset::Random gestureRandom_{0};
+  // The start count of the follow's clip the partner plays.
+  std::uint32_t partnerFollowStarts_ = 0;
   // Whether the player's held clip is a scene's (playPlayerSceneClip), which runs while paused.
   bool playerSceneClip_ = false;
 

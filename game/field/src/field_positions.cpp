@@ -92,15 +92,18 @@ void Field::setPartnerRadius(float radius) {
   core::logDebug("[positions] the partner's radius {:.0f} -> {:.0f} (its species')",
                  rules_.partner.mover.radius, radius);
   rules_.partner.mover.radius = radius;
+  follow_.setRadius(static_cast<std::int32_t>(std::lround(radius)));
   requestSeparation("partner size");
 }
 
 void Field::releaseHandoff(std::string_view why) {
   // Where the partner followed the player before the hold says nothing now: the trail, the stuck
   // time and the player's last cell start over, as on entering a map.
-  trail_.clear();
+  const glm::vec3 player = world_->registry().get<Transform>(player_).position;
+  follow_.forgetTrail({.x = static_cast<std::int32_t>(std::lround(player.x)),
+                       .z = static_cast<std::int32_t>(std::lround(-player.z))});
   partnerStuckSeconds_ = 0.0F;
-  lastPlayerCell_ = assets::collisionCellAt(world_->registry().get<Transform>(player_).position);
+  lastPlayerCell_ = assets::collisionCellAt(player);
   requestSeparation(why);
 }
 
@@ -195,7 +198,6 @@ std::int32_t Field::separateActors(std::string_view why) {
       moveTarget_.reset();
       path_.clear();
     } else if (body.who == 1) {
-      trail_.clear();
       partnerStuckSeconds_ = 0.0F;
       partnerMakesRoom_ = false;
       registry.get<scene::AnimationIntent>(partner_) = {};

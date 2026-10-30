@@ -5,6 +5,7 @@
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
 #include <dwe/game/field/npcs.hpp>
+#include <dwe/game/field/partner_follow.hpp>
 #include <dwe/game/field/player_trail.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/field/script_warps.hpp>
@@ -12,7 +13,6 @@
 #include <dwe/scene/world.hpp>
 
 #include <cstdint>
-#include <deque>
 #include <functional>
 #include <optional>
 #include <span>
@@ -262,11 +262,23 @@ public:
   // The player's way back on this map (map.c: TAMER_WAYPOINT_*, TAMER_START_TILE).
   [[nodiscard]] const PlayerTrail& playerTrail() const { return playerTrail_; }
   [[nodiscard]] PlayerTrail& playerTrail() { return playerTrail_; }
-  // The partner's clip ended a pass (it went round its repeat, or a clip that does not repeat
-  // reached its end). Once the drawing side says so, a change of the partner's walk waits for the
-  // end of the pass under way, as partner.c: partnerTickWalking lets the clip finish (loopCount =
-  // 1); without it the partner changes at once.
-  void notePartnerPassEnded();
+  // The partner's clips by the original's animation ids, with the root motion it walks by
+  // (anim.c: applyRootMomentum). Without them it walks and runs at its rules' speeds.
+  void setPartnerClips(assets::ClipMotions clips);
+  // What the partner's state says about how it stands, walks and gestures (partner.c).
+  void setPartnerMood(const PartnerMood& mood) { partnerMood_ = mood; }
+  // The original's randomLimit for the partner's wait before its gesture; without one it waits
+  // one play of its idle clip.
+  void setPartnerRandom(std::function<std::int32_t(std::int32_t)> randomBelow) {
+    partnerRandom_ = std::move(randomBelow);
+  }
+  // The clip the partner plays while it follows the player, by the original's id; nothing while
+  // something else moves it (a script, a care scene, making room).
+  [[nodiscard]] std::optional<PartnerClip> partnerFollowClip() const;
+  // Starts the partner's `clip` on its frame `frame` where it stands, with `fraction` of a unit
+  // carried (the original's axes, 1/32768ths): where a trace of the original catches it in the
+  // middle of a clip (the console's place command).
+  void playPartnerFrom(std::int32_t clip, std::size_t frame, OriginalPoint fraction);
 
   // Whether the partner stands beside the player, closer than its walking distance (partner.c:
   // getPartnerTamerCloseness returns 2), as it comes to the player to sleep or to be praised.
@@ -434,9 +446,12 @@ private:
   // The frame of the original a fade is on after `seconds`, counting the first as 1
   // (FADE_OUT_CURRENT, FADE_IN_CURRENT).
   [[nodiscard]] std::int32_t fadeFrame(float seconds) const;
-  void updateTrail();
   void movePartnerFrames(std::int32_t frames);
   void movePartner(float seconds);
+  // The follow takes the partner where its transform is when something else moved it, and the
+  // transform takes the follow's position and rotation after its frame.
+  void syncPartnerFollow();
+  void showPartnerFollow();
   // After a script lets the player go: a partner left against the player, in an NPC or hiding the
   // player from the camera steps off first; whether it took this tick.
   bool makeRoomForPlayer(float seconds);
@@ -565,14 +580,15 @@ private:
   std::vector<std::int32_t> cellSections_;
 
   assets::CollisionCell lastPlayerCell_;
-  std::deque<assets::CollisionCell> trail_;
   PlayerTrail playerTrail_;
-  scene::Motion partnerMotion_ = scene::Motion::Idle;
-  // The partner's motion as the last tick left it, before tick() clears its intent: the motion its
-  // clip shows, which a change of walk waits on.
-  scene::Motion partnerShownMotion_ = scene::Motion::Idle;
-  bool partnerPassesNoted_ = false;
-  bool partnerPassEnded_ = false;
+  // The partner following the player in the original's integers, and the pose it last gave the
+  // partner's transform.
+  PartnerFollow follow_;
+  std::optional<scene::Pose> followPose_;
+  // Whether the follow moved the partner on its last frame.
+  bool partnerFollowing_ = false;
+  PartnerMood partnerMood_;
+  std::function<std::int32_t(std::int32_t)> partnerRandom_;
   float partnerStuckSeconds_ = 0.0F;
   std::int32_t partnerTeleports_ = 0;
   // Set when a script lets the player go, until the partner has made room (makeRoomForPlayer).
