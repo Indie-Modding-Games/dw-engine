@@ -12,6 +12,7 @@
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <variant>
@@ -26,6 +27,17 @@ namespace {
 constexpr std::string_view PauseMenuDocument = "pause_menu";
 // The player page's card list: 11 by 6 slots (game_menu.c: renderCardsView).
 constexpr std::int32_t PlayerCardSlots = 66;
+
+// The values of 0 to count - 1, as "0,2,1" (the player page's lists).
+std::string numberList(std::int32_t count, const std::function<std::int32_t(std::int32_t)>& value) {
+  std::string list;
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (i > 0)
+      list += ',';
+    list += std::to_string(value(i));
+  }
+  return list;
+}
 
 // The keys of what a command on the bag did, with {name} the item's name.
 constexpr std::string_view UsedKey = "partner_menu.bag_result.used";
@@ -119,17 +131,25 @@ void PartnerMenu::update() {
     // game_menu.c: renderPlayerInfoView shows the player's raised count and the medals held.
     desc_.ui->setSetting("player.raised", static_cast<double>(desc_.session->tamer().raised));
     if (desc_.cards != nullptr) {
-      // renderCardsView: a card the player has copies of shows in the list.
-      std::string owned;
-      for (std::int32_t card = 0; card < PlayerCardSlots; ++card) {
-        if (desc_.cards->copies(card) > 0) {
-          owned += (owned.empty() ? "" : ",") + std::to_string(card);
-        }
-      }
-      desc_.ui->setSetting("player.cards.owned", std::move(owned));
+      // renderCardsView and renderCardCount: the copies of each card, a held one with its icon.
+      desc_.ui->setSetting("player.cards.copies",
+                           numberList(PlayerCardSlots, [&](std::int32_t card) {
+                             return desc_.cards->copies(card);
+                           }));
     }
     if (desc_.story != nullptr) {
-      desc_.ui->setSetting("player.medals", static_cast<double>(desc_.story->medalCount()));
+      const session::StoryAdapter& story = *desc_.story;
+      desc_.ui->setSetting("player.medals", static_cast<double>(story.medalCount()));
+      // renderMedalView: a held medal shows uncovered, with its name and lines.
+      desc_.ui->setSetting("player.medals.held",
+                           numberList(session::ChartedMedalCount, [&](std::int32_t medal) {
+                             return story.hasMedal(medal) ? 1 : 0;
+                           }));
+      // renderPlayerInfoView: the item boxes' icons.
+      desc_.ui->setSetting("player.items.held",
+                           numberList(session::PlayerItemCount, [&](std::int32_t slot) {
+                             return story.hasPlayerItem(slot) ? 1 : 0;
+                           }));
       std::string raised;
       for (const auto index : desc_.story->raisedSpecies()) {
         if (!raised.empty())

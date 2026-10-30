@@ -612,6 +612,7 @@ int runGame(const Options& requested) {
     return EXIT_FAILURE;
   }
   loadPlayerChart(**ui, files);
+  loadPlayerMedalsAndCards(**ui, files);
   LanguageChanger languageChanger{*texts, **ui, userSettings, settingsFile};
   MenuSounds menuSounds{sound, files};
   PauseBox pauseBox;

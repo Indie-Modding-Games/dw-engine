@@ -24,6 +24,9 @@ struct CardEntry {
   // The merit points the exchange gives for it (shop/script_menu.c:
   // createMeritCardTradeDialogue).
   std::int32_t meritValue = 0;
+  // The palette of the card list's icon in texture/etcdat/sboy (CARD_SPRITE_CLUT; game_menu.c:
+  // renderCardsView); content extracted before it has none.
+  std::optional<std::int32_t> iconPalette;
 };
 
 // The cards and their prices by rarity (CARD_PRICES).

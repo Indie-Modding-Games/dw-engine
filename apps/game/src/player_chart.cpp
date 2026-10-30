@@ -1,6 +1,8 @@
 #include "player_chart.hpp"
 
+#include <dwe/assets/card_table.hpp>
 #include <dwe/assets/evolution_table.hpp>
+#include <dwe/assets/medal_table.hpp>
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/log.hpp>
 
@@ -90,5 +92,25 @@ void loadPlayerChart(ui::Ui& ui, const assets::VirtualFileSystem& files) {
   auto species = assets::loadDigimonTable(files, *speciesId);
   publishPlayerChart(ui, *chart, species ? &*species : nullptr);
   loadPlayerChartDetails(ui, files, *chart);
+}
+
+void loadPlayerMedalsAndCards(ui::Ui& ui, const assets::VirtualFileSystem& files) {
+  if (auto medals = assets::loadMedalTable(files); !medals) {
+    core::logWarning("Medals: {}", medals.error().message);
+  } else if (*medals) {
+    for (const auto& medal : (*medals)->medals) {
+      const auto base = std::format("player.medal.{}.", medal.index);
+      ui.setSetting(base + "name", medal.name);
+      for (std::size_t line = 0; line < medal.description.size(); ++line)
+        ui.setSetting(std::format("{}line.{}", base, line), medal.description[line]);
+    }
+  }
+  if (auto cards = assets::loadCardTable(files); !cards) {
+    core::logWarning("Cards: {}", cards.error().message);
+  } else if (*cards) {
+    for (const auto& card : (*cards)->cards)
+      ui.setSetting(std::format("player.card.{}.palette", card.index),
+                    static_cast<double>(card.iconPalette.value_or(0)));
+  }
 }
 } // namespace dwe::app

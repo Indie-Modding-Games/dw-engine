@@ -44,7 +44,7 @@
                 <div id="player-bits-box" class="player-inset player-native"></div>
                 <div id="player-time-box" class="player-inset player-native"></div>
                 <div id="player-medals-box" class="player-inset player-native"></div>
-                <div id="player-item-box-0" class="player-inset player-item-box player-native"></div><div id="player-item-box-1" class="player-inset player-item-box player-native"></div><div id="player-item-box-2" class="player-inset player-item-box player-native"></div><div id="player-item-box-3" class="player-inset player-item-box player-native"></div>
+                <div id="player-item-box-0" class="player-inset player-item-box player-native"><div id="player-item-0" class="player-item-icon hidden"></div></div><div id="player-item-box-1" class="player-inset player-item-box player-native"><div id="player-item-1" class="player-item-icon hidden"></div></div><div id="player-item-box-2" class="player-inset player-item-box player-native"><div id="player-item-2" class="player-item-icon hidden"></div></div><div id="player-item-box-3" class="player-inset player-item-box player-native"><div id="player-item-3" class="player-item-icon hidden"></div></div>
                 <div id="player-header-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span></div><div id="player-vertical-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span><span class="rule-tail"></span></div><div id="player-items-line" class="player-separator player-native"><span class="rule-first"></span><span class="rule-light"></span><span class="rule-last"></span></div>
                 <div id="player-raised-line" class="player-line player-native"><span text-key="pause_menu.player_raised"></span><span class="player-value" id="player-raised"></span></div>
                 <div id="player-items-line-label" class="player-line player-native"><span text-key="pause_menu.player_items"></span></div>
@@ -266,77 +266,83 @@
                   <button id="medal-14" class="medal-cell" onclick="medal_pick(document, 14)"><img class="medal-ribbon" src="/texture/etcdat/sboy?palette=15" rect="240 176 15 24"/><img class="medal-shadow" src="/texture/etcdat/sboy?palette=15" rect="240 200 15 24"/></button>
                   <img id="medals-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 208 24 24"/>
                   <div id="medals-name-box" class="player-inset"></div>
+                  <div id="medal-name" class="medal-text"></div>
+                  <div id="medal-line-0" class="medal-text medal-line"></div>
+                  <div id="medal-line-1" class="medal-text medal-line"></div>
+                  <div id="medal-line-2" class="medal-text medal-line"></div>
                   <div id="medals-prompts" class="page-prompts"><div class="page-prompt"><span id="medals-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="medals-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
                 <div id="player-cards-view" class="player-native">
                   <div id="cards-title" text-key="pause_menu.card_list"></div>
-                  <div id="card-0" class="card-cell"></div>
-                  <div id="card-1" class="card-cell"></div>
-                  <div id="card-2" class="card-cell"></div>
-                  <div id="card-3" class="card-cell"></div>
-                  <div id="card-4" class="card-cell"></div>
-                  <div id="card-5" class="card-cell"></div>
-                  <div id="card-6" class="card-cell"></div>
-                  <div id="card-7" class="card-cell"></div>
-                  <div id="card-8" class="card-cell"></div>
-                  <div id="card-9" class="card-cell"></div>
-                  <div id="card-10" class="card-cell"></div>
-                  <div id="card-11" class="card-cell"></div>
-                  <div id="card-12" class="card-cell"></div>
-                  <div id="card-13" class="card-cell"></div>
-                  <div id="card-14" class="card-cell"></div>
-                  <div id="card-15" class="card-cell"></div>
-                  <div id="card-16" class="card-cell"></div>
-                  <div id="card-17" class="card-cell"></div>
-                  <div id="card-18" class="card-cell"></div>
-                  <div id="card-19" class="card-cell"></div>
-                  <div id="card-20" class="card-cell"></div>
-                  <div id="card-21" class="card-cell"></div>
-                  <div id="card-22" class="card-cell"></div>
-                  <div id="card-23" class="card-cell"></div>
-                  <div id="card-24" class="card-cell"></div>
-                  <div id="card-25" class="card-cell"></div>
-                  <div id="card-26" class="card-cell"></div>
-                  <div id="card-27" class="card-cell"></div>
-                  <div id="card-28" class="card-cell"></div>
-                  <div id="card-29" class="card-cell"></div>
-                  <div id="card-30" class="card-cell"></div>
-                  <div id="card-31" class="card-cell"></div>
-                  <div id="card-32" class="card-cell"></div>
-                  <div id="card-33" class="card-cell"></div>
-                  <div id="card-34" class="card-cell"></div>
-                  <div id="card-35" class="card-cell"></div>
-                  <div id="card-36" class="card-cell"></div>
-                  <div id="card-37" class="card-cell"></div>
-                  <div id="card-38" class="card-cell"></div>
-                  <div id="card-39" class="card-cell"></div>
-                  <div id="card-40" class="card-cell"></div>
-                  <div id="card-41" class="card-cell"></div>
-                  <div id="card-42" class="card-cell"></div>
-                  <div id="card-43" class="card-cell"></div>
-                  <div id="card-44" class="card-cell"></div>
-                  <div id="card-45" class="card-cell"></div>
-                  <div id="card-46" class="card-cell"></div>
-                  <div id="card-47" class="card-cell"></div>
-                  <div id="card-48" class="card-cell"></div>
-                  <div id="card-49" class="card-cell"></div>
-                  <div id="card-50" class="card-cell"></div>
-                  <div id="card-51" class="card-cell"></div>
-                  <div id="card-52" class="card-cell"></div>
-                  <div id="card-53" class="card-cell"></div>
-                  <div id="card-54" class="card-cell"></div>
-                  <div id="card-55" class="card-cell"></div>
-                  <div id="card-56" class="card-cell"></div>
-                  <div id="card-57" class="card-cell"></div>
-                  <div id="card-58" class="card-cell"></div>
-                  <div id="card-59" class="card-cell"></div>
-                  <div id="card-60" class="card-cell"></div>
-                  <div id="card-61" class="card-cell"></div>
-                  <div id="card-62" class="card-cell"></div>
-                  <div id="card-63" class="card-cell"></div>
-                  <div id="card-64" class="card-cell"></div>
-                  <div id="card-65" class="card-cell"></div>
+                  <div id="card-0" class="card-cell"><img id="card-icon-0" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 0 16 16"/></div>
+                  <div id="card-1" class="card-cell"><img id="card-icon-1" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 0 16 16"/></div>
+                  <div id="card-2" class="card-cell"><img id="card-icon-2" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 0 16 16"/></div>
+                  <div id="card-3" class="card-cell"><img id="card-icon-3" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 0 16 16"/></div>
+                  <div id="card-4" class="card-cell"><img id="card-icon-4" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 0 16 16"/></div>
+                  <div id="card-5" class="card-cell"><img id="card-icon-5" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 0 16 16"/></div>
+                  <div id="card-6" class="card-cell"><img id="card-icon-6" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 0 16 16"/></div>
+                  <div id="card-7" class="card-cell"><img id="card-icon-7" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 0 16 16"/></div>
+                  <div id="card-8" class="card-cell"><img id="card-icon-8" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 16 16 16"/></div>
+                  <div id="card-9" class="card-cell"><img id="card-icon-9" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 16 16 16"/></div>
+                  <div id="card-10" class="card-cell"><img id="card-icon-10" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 16 16 16"/></div>
+                  <div id="card-11" class="card-cell"><img id="card-icon-11" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 16 16 16"/></div>
+                  <div id="card-12" class="card-cell"><img id="card-icon-12" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 16 16 16"/></div>
+                  <div id="card-13" class="card-cell"><img id="card-icon-13" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 16 16 16"/></div>
+                  <div id="card-14" class="card-cell"><img id="card-icon-14" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 16 16 16"/></div>
+                  <div id="card-15" class="card-cell"><img id="card-icon-15" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 16 16 16"/></div>
+                  <div id="card-16" class="card-cell"><img id="card-icon-16" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 32 16 16"/></div>
+                  <div id="card-17" class="card-cell"><img id="card-icon-17" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 32 16 16"/></div>
+                  <div id="card-18" class="card-cell"><img id="card-icon-18" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 32 16 16"/></div>
+                  <div id="card-19" class="card-cell"><img id="card-icon-19" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 32 16 16"/></div>
+                  <div id="card-20" class="card-cell"><img id="card-icon-20" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 32 16 16"/></div>
+                  <div id="card-21" class="card-cell"><img id="card-icon-21" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 32 16 16"/></div>
+                  <div id="card-22" class="card-cell"><img id="card-icon-22" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 32 16 16"/></div>
+                  <div id="card-23" class="card-cell"><img id="card-icon-23" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 32 16 16"/></div>
+                  <div id="card-24" class="card-cell"><img id="card-icon-24" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 48 16 16"/></div>
+                  <div id="card-25" class="card-cell"><img id="card-icon-25" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 48 16 16"/></div>
+                  <div id="card-26" class="card-cell"><img id="card-icon-26" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 48 16 16"/></div>
+                  <div id="card-27" class="card-cell"><img id="card-icon-27" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 48 16 16"/></div>
+                  <div id="card-28" class="card-cell"><img id="card-icon-28" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 48 16 16"/></div>
+                  <div id="card-29" class="card-cell"><img id="card-icon-29" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 48 16 16"/></div>
+                  <div id="card-30" class="card-cell"><img id="card-icon-30" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 48 16 16"/></div>
+                  <div id="card-31" class="card-cell"><img id="card-icon-31" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 48 16 16"/></div>
+                  <div id="card-32" class="card-cell"><img id="card-icon-32" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 64 16 16"/></div>
+                  <div id="card-33" class="card-cell"><img id="card-icon-33" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 64 16 16"/></div>
+                  <div id="card-34" class="card-cell"><img id="card-icon-34" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 64 16 16"/></div>
+                  <div id="card-35" class="card-cell"><img id="card-icon-35" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 64 16 16"/></div>
+                  <div id="card-36" class="card-cell"><img id="card-icon-36" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 64 16 16"/></div>
+                  <div id="card-37" class="card-cell"><img id="card-icon-37" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 64 16 16"/></div>
+                  <div id="card-38" class="card-cell"><img id="card-icon-38" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 64 16 16"/></div>
+                  <div id="card-39" class="card-cell"><img id="card-icon-39" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 64 16 16"/></div>
+                  <div id="card-40" class="card-cell"><img id="card-icon-40" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 80 16 16"/></div>
+                  <div id="card-41" class="card-cell"><img id="card-icon-41" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 80 16 16"/></div>
+                  <div id="card-42" class="card-cell"><img id="card-icon-42" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 80 16 16"/></div>
+                  <div id="card-43" class="card-cell"><img id="card-icon-43" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 80 16 16"/></div>
+                  <div id="card-44" class="card-cell"><img id="card-icon-44" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 80 16 16"/></div>
+                  <div id="card-45" class="card-cell"><img id="card-icon-45" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 80 16 16"/></div>
+                  <div id="card-46" class="card-cell"><img id="card-icon-46" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 80 16 16"/></div>
+                  <div id="card-47" class="card-cell"><img id="card-icon-47" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 80 16 16"/></div>
+                  <div id="card-48" class="card-cell"><img id="card-icon-48" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 96 16 16"/></div>
+                  <div id="card-49" class="card-cell"><img id="card-icon-49" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 96 16 16"/></div>
+                  <div id="card-50" class="card-cell"><img id="card-icon-50" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 96 16 16"/></div>
+                  <div id="card-51" class="card-cell"><img id="card-icon-51" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 96 16 16"/></div>
+                  <div id="card-52" class="card-cell"><img id="card-icon-52" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 96 16 16"/></div>
+                  <div id="card-53" class="card-cell"><img id="card-icon-53" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 96 16 16"/></div>
+                  <div id="card-54" class="card-cell"><img id="card-icon-54" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 96 16 16"/></div>
+                  <div id="card-55" class="card-cell"><img id="card-icon-55" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 96 16 16"/></div>
+                  <div id="card-56" class="card-cell"><img id="card-icon-56" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 112 16 16"/></div>
+                  <div id="card-57" class="card-cell"><img id="card-icon-57" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 112 16 16"/></div>
+                  <div id="card-58" class="card-cell"><img id="card-icon-58" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="64 112 16 16"/></div>
+                  <div id="card-59" class="card-cell"><img id="card-icon-59" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="96 112 16 16"/></div>
+                  <div id="card-60" class="card-cell"><img id="card-icon-60" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="128 112 16 16"/></div>
+                  <div id="card-61" class="card-cell"><img id="card-icon-61" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="160 112 16 16"/></div>
+                  <div id="card-62" class="card-cell"><img id="card-icon-62" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="192 112 16 16"/></div>
+                  <div id="card-63" class="card-cell"><img id="card-icon-63" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="224 112 16 16"/></div>
+                  <div id="card-64" class="card-cell"><img id="card-icon-64" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="0 128 16 16"/></div>
+                  <div id="card-65" class="card-cell"><img id="card-icon-65" class="card-icon hidden" src="/texture/etcdat/sboy?palette=0" rect="32 128 16 16"/></div>
                   <img id="cards-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <div id="card-detail" class="original-box box-closed"><img id="card-detail-image"/></div>
+                  <div id="card-count-box" class="original-box box-closed"><span id="card-count"></span></div>
                   <div id="cards-prompts" class="page-prompts"><div class="page-prompt"><span id="cards-confirm-key" class="prompt-key confirm-key"></span><span class="prompt-text" text-key="pause_menu.chart_select"></span></div><div class="page-prompt"><span id="cards-cancel-key" class="prompt-key cancel-key"></span><span class="prompt-text" text-key="common.cancel"></span></div></div>
                 </div>
                 <div id="player-tools">

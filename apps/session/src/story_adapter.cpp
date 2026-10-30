@@ -367,14 +367,24 @@ std::set<std::int32_t> StoryAdapter::raisedSpecies() const {
   return species;
 }
 
+bool StoryAdapter::hasMedal(std::int32_t medal) const {
+  return medal >= 0 && medal < MedalCount &&
+         state_.trigger(FirstMedalTrigger + medal).value_or(false);
+}
+
 std::int32_t StoryAdapter::medalCount() const {
   std::int32_t count = 0;
   for (std::int32_t medal = 0; medal < MedalCount; ++medal) {
-    if (state_.trigger(FirstMedalTrigger + medal).value_or(false)) {
+    if (hasMedal(medal)) {
       ++count;
     }
   }
   return count;
+}
+
+bool StoryAdapter::hasPlayerItem(std::int32_t slot) const {
+  return slot >= 0 && slot < PlayerItemCount &&
+         state_.trigger(FirstPlayerItemTrigger + slot).value_or(false);
 }
 
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {

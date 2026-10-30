@@ -266,6 +266,7 @@ struct ExecutableTables {
   std::optional<EvolutionChartDetail> evolutionChartDetail;
   std::vector<CardData> cardData;
   std::vector<std::int32_t> cardPrices;
+  std::vector<std::uint8_t> cardIconPalettes;
   std::vector<std::string> tournamentNames;
   std::vector<std::string> tournamentGrades;
   std::vector<std::array<std::uint8_t, 6>>

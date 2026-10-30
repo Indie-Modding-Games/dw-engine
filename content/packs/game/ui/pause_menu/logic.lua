@@ -26,6 +26,8 @@ local medals_selecting = false
 local medal_index = 0
 local cards_selecting = false
 local card_index = 0
+local card_open = false
+local card_palettes = {}
 local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
@@ -38,6 +40,17 @@ local ui_scales = { 0.75, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0 }
 
 local function on_off(value)
   return t(value and "common.yes" or "common.no")
+end
+
+-- A list the game publishes as "0,2,1": the value of each position, from 0.
+local function number_list(name)
+  local values = {}
+  local position = 0
+  for value in string.gmatch(ui.setting(name) or "", "%d+") do
+    values[position] = tonumber(value)
+    position = position + 1
+  end
+  return values
 end
 
 local function index_of(list, value)
@@ -129,7 +142,6 @@ end
 
 local function refresh_chart(document)
   local count = math.min(61, tonumber(ui.setting("player.chart.count")) or 0)
-  document:get("player-tab-chart"):set_class("unavailable", count == 0)
   local raised_text = ui.setting("player.chart.raised") or ""
   local signature = tostring(count) .. ":" .. raised_text
   if signature == chart_signature then
@@ -318,20 +330,32 @@ local function medals_cursor(document)
   cursor:set_property("top", ((27 + math.floor(medal_index / 5) * 24) * 3) .. "dp")
 end
 
-function medal_pick(document, index)
-  medal_index = math.max(0, math.min(14, index))
-  medals_selecting = true
-  medals_cursor(document)
-  document:get("medal-" .. medal_index):focus()
-end
-
+-- renderMedalView: a medal the player holds shows without its dark cover, and the one under the
+-- selector (held) shows its name and its three lines below the medals.
 local function refresh_medals(document)
+  local held = number_list("player.medals.held")
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
     cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
     cell:set_property("top", ((27 + math.floor(i / 5) * 24) * 3) .. "dp")
+    cell:set_class("held", (held[i] or 0) ~= 0)
+  end
+  local shown = (held[medal_index] or 0) ~= 0
+  local base = string.format("player.medal.%d.", medal_index)
+  document:get("medal-name"):set_text(shown and (ui.setting(base .. "name") or "") or "")
+  for line = 0, 2 do
+    document
+      :get("medal-line-" .. line)
+      :set_text(shown and (ui.setting(base .. "line." .. line) or "") or "")
   end
   medals_cursor(document)
+end
+
+function medal_pick(document, index)
+  medal_index = math.max(0, math.min(14, index))
+  medals_selecting = true
+  refresh_medals(document)
+  document:get("medal-" .. medal_index):focus()
 end
 
 -- The card list (game_menu.c: renderCardsView, tickPlayerMenu): 11 by 6 slots of 18 x 18 at 24
@@ -346,18 +370,52 @@ local function cards_cursor(document)
   cursor:set_property("top", ((24 + math.floor(card_index / card_columns) * 24) * 3) .. "dp")
 end
 
+-- renderCardsView: a card the player holds shows its 16 x 16 icon of SBOY, in its own palette.
 local function refresh_cards(document)
-  local owned = {}
-  for card in string.gmatch(ui.setting("player.cards.owned") or "", "%d+") do
-    owned[tonumber(card)] = true
-  end
+  local copies = number_list("player.cards.copies")
   for i = 0, card_slots - 1 do
     local cell = document:get("card-" .. i)
     cell:set_property("left", ((19 + (i % card_columns) * 24) * 3) .. "dp")
     cell:set_property("top", ((25 + math.floor(i / card_columns) * 24) * 3) .. "dp")
-    cell:set_class("owned", owned[i] == true)
+    local icon = document:get("card-icon-" .. i)
+    local held = (copies[i] or 0) > 0
+    icon:set_class("hidden", not held)
+    local palette =
+      math.floor(tonumber(ui.setting(string.format("player.card.%d.palette", i))) or 0)
+    if held and card_palettes[i] ~= palette then
+      card_palettes[i] = palette
+      icon:set_attribute("src", "/texture/etcdat/sboy?palette=" .. palette)
+    end
   end
   cards_cursor(document)
+end
+
+-- The card's picture and copies (tickPlayerMenu: renderCardImage, renderCardCount) open from the
+-- middle of its slot: the picture 150 x 180 at (74, 5) of the page, the copies 54 x 24 at
+-- (223, 157). Only a card the player holds opens.
+local function card_from(document)
+  local rect = original_box.rect(document, "card-" .. card_index)
+  return { rect[1] + 27, rect[2] + 27, 3, 3 }
+end
+
+local function open_card(document)
+  local copies = number_list("player.cards.copies")[card_index] or 0
+  if copies == 0 then
+    return
+  end
+  card_open = true
+  document:get("card-detail-image"):set_attribute("src", string.format("/card/%03d", card_index))
+  document:get("card-count"):set_text(string.format("%d", copies))
+  local from = card_from(document)
+  original_box.open(document, "card-detail", from)
+  original_box.open(document, "card-count-box", from)
+end
+
+local function close_card(document)
+  card_open = false
+  local to = card_from(document)
+  original_box.close(document, "card-detail", to)
+  original_box.close(document, "card-count-box", to)
 end
 
 -- Picks a card of the list (tickPlayerMenu, PLAYER_MENU_STATE 3): left and right stop at the row's
@@ -379,9 +437,6 @@ local function card_move(document, action)
 end
 
 function show_player_tab(document, tab)
-  if tab == "chart" and (tonumber(ui.setting("player.chart.count")) or 0) == 0 then
-    return
-  end
   chart_detail = false
   chart_transition = nil
   document:get("chart-detail-transition"):set_class("hidden", true)
@@ -390,6 +445,9 @@ function show_player_tab(document, tab)
   medals_cursor(document)
   cards_selecting = false
   cards_cursor(document)
+  card_open = false
+  document:get("card-detail"):set_class("box-closed", true)
+  document:get("card-count-box"):set_class("box-closed", true)
   player_tab = tab
   chart_selecting = false
   document:get("panel"):set_class("player-chart", tab == "chart")
@@ -519,6 +577,11 @@ local function refresh(document)
     document
       :get("player-" .. field)
       :set_text(type(value) == "number" and string.format("%d", value) or "")
+  end
+  -- renderPlayerInfoView: the item boxes show the rods and the two other items the player has.
+  local items = number_list("player.items.held")
+  for slot = 0, 3 do
+    document:get("player-item-" .. slot):set_class("hidden", (items[slot] or 0) == 0)
   end
   local seconds = ui.setting("player.seconds")
   document:get("player-time"):set_text(
@@ -791,8 +854,17 @@ function on_action(document, action)
       return true
     end
 
-    if player_tab == "card" and cards_selecting then
+    if player_tab == "card" and card_open then
       if action == "cancel" then
+        close_card(document)
+      end
+      return true
+    end
+
+    if player_tab == "card" and cards_selecting then
+      if action == "confirm" then
+        open_card(document)
+      elseif action == "cancel" then
         cards_selecting = false
         cards_cursor(document)
         document:get("player-tab-card"):focus()
@@ -819,13 +891,8 @@ function on_action(document, action)
       end
     else
       if action == "right" or action == "left" then
-        local tabs = { "player" }
-        if (tonumber(ui.setting("player.chart.count")) or 0) > 0 then
-          table.insert(tabs, "chart")
-        end
-        -- tickPlayerMenu: the medals and the card list are always there.
-        table.insert(tabs, "medals")
-        table.insert(tabs, "card")
+        -- tickPlayerMenu: the four pages are always there, in this order.
+        local tabs = { "player", "chart", "medals", "card" }
         local current_index = index_of(tabs, player_tab)
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
@@ -838,7 +905,8 @@ function on_action(document, action)
         return true
       end
       if action == "confirm" and player_tab == "medals" then
-        medal_pick(document, medal_index)
+        -- tickPlayerMenu: Cross starts the selector on the first medal.
+        medal_pick(document, 0)
         return true
       end
       if action == "confirm" and player_tab == "chart" then

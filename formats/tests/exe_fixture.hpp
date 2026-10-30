@@ -200,6 +200,8 @@ inline ExecutableFixture makeExecutableFixture() {
   image.i16(layout.cardData.address + 2, 300);
   layout.cardPrices = {.address = image.place(20), .count = 5};
   image.u32(layout.cardPrices.address, 100);
+  layout.cardIconPalettes = {.address = image.place(2), .count = 2};
+  image.u8(layout.cardIconPalettes.address + 1, 7);
 
   layout.tournamentNames = {.address = image.stringTable({"Fire Cup", "Wind Cup"}), .count = 2};
   layout.tournamentGrades = {.address = image.stringTable({"C", "B"}), .count = 2};

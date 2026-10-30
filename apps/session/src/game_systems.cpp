@@ -1,4 +1,5 @@
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/calendar_adapter.hpp>
@@ -81,6 +82,15 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 }
 
 GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTables tables) {
+  // The game passes no tables (session_start.cpp): the cards then read theirs from the packs, as
+  // the inventory does, or the player would never hold a card.
+  if (!tables.cards) {
+    if (auto cards = assets::loadCardTable(files); cards) {
+      tables.cards = std::move(*cards);
+    } else {
+      core::logWarning("{}", cards.error().message);
+    }
+  }
   // The story owns the raised forms the evolution rules read; a save from before the story section
   // takes them from the evolution section, which is read first.
   auto story = std::make_unique<StoryAdapter>(StoryAdapterDesc{.files = &files});

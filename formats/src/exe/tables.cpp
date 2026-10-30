@@ -439,6 +439,8 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
       store(readCardData(image, layout), tables.cardData, error) &&
       store(readScalars<std::int32_t>(image, layout.cardPrices, "CARD_PRICES"), tables.cardPrices,
             error) &&
+      store(readScalars<std::uint8_t>(image, layout.cardIconPalettes, "CARD_SPRITE_CLUT"),
+            tables.cardIconPalettes, error) &&
       store(strings(layout.tournamentNames, "TOURNAMENT_NAMES"), tables.tournamentNames, error) &&
       store(strings(layout.tournamentGrades, "TOURNAMENT_GRADES"), tables.tournamentGrades,
             error) &&

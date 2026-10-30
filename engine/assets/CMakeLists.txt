@@ -37,6 +37,7 @@ dwe_add_module(assets
         src/raise_table.cpp
         src/item_table.cpp
         src/card_table.cpp
+        src/medal_table.cpp
         src/fishing_table.cpp
         src/item_effect_table.cpp
         src/new_game_stats.cpp

@@ -128,6 +128,7 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
   CHECK(tables->cardData[0].digimonId == 2);
   CHECK(tables->cardData[0].meritValue == 300);
   CHECK(tables->cardPrices[0] == 100);
+  CHECK(tables->cardIconPalettes == std::vector<std::uint8_t>{0, 7});
   CHECK(tables->tournamentSchedule[0][0] == 1);
   CHECK(tables->tournamentSchedule[0][2] == 0xFF);
   CHECK(tables->shopMaps == std::vector<std::int16_t>{1, -1});

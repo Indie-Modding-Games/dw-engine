@@ -93,6 +93,7 @@ struct ExecutableLayout {
   TableLocation evolutionChartDetail;  // Line, sprite, color and inset records for Chart detail
   TableLocation cardData;              // CardData[]
   TableLocation cardPrices;            // int32[]
+  TableLocation cardIconPalettes;      // u8[]: CARD_SPRITE_CLUT, the card icon's palette
   TableLocation tournamentNames;       // char*[]
   TableLocation tournamentGrades;      // char*[]
   TableLocation tournamentSchedule;    // u8[6] per day

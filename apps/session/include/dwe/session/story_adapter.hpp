@@ -48,6 +48,12 @@ inline constexpr std::int32_t RaisedSpeciesLimit = 0x3f;
 // (game_menu.c: renderPlayerInfoView).
 inline constexpr std::int32_t FirstMedalTrigger = 0x16c;
 inline constexpr std::int32_t MedalCount = 18;
+// The medals chart shows the first 15 (game_menu.c: renderMedalView).
+inline constexpr std::int32_t ChartedMedalCount = 15;
+// The player page's four item boxes show triggers 45 to 48: the old rod, the amazing rod and two
+// more (game_menu.c: renderPlayerInfoView; fish.c: getBestFishingRod).
+inline constexpr std::int32_t FirstPlayerItemTrigger = 45;
+inline constexpr std::int32_t PlayerItemCount = 4;
 
 // The ruleset section of the story (rules/<id>/story.yaml).
 inline constexpr std::string_view StorySection = "story";
@@ -153,8 +159,12 @@ public:
   [[nodiscard]] bool raised(std::int32_t species) const;
   void markRaised(std::int32_t species);
   [[nodiscard]] std::set<std::int32_t> raisedSpecies() const;
+  // Whether the player holds this medal (script_common.c: hasMedal).
+  [[nodiscard]] bool hasMedal(std::int32_t medal) const;
   // How many medals the player has, as the player page counts them.
   [[nodiscard]] std::int32_t medalCount() const;
+  // Whether the player page's item box `slot` (0 to PlayerItemCount - 1) shows its item.
+  [[nodiscard]] bool hasPlayerItem(std::int32_t slot) const;
   // Where a save from before the story section takes its raised species from (createGameSystems:
   // the evolution section's); without it such a save starts with none raised.
   void setSavedRaised(RaisedSource source) { savedRaised_ = std::move(source); }

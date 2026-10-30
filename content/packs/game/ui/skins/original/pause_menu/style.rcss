@@ -259,13 +259,15 @@
 #player-tab-chart { left: 225dp; width: 222dp; }
 #player-tab-medals { left: 450dp; width: 150dp; }
 #player-tab-card { left: 603dp; width: 150dp; }
-.player-tab-left, .player-tab-middle, .player-tab-right { position: absolute; display: block; top: 0; height: 100%; opacity: 0.25; }
+/* renderMenuTab: an idle tab is the same texture shaded to 0x32/0x80 of its colour (renderRectPolyFT4 flag 1), not
+   faded into what lies behind it. */
+.player-tab-left, .player-tab-middle, .player-tab-right { position: absolute; display: block; top: 0; height: 100%; image-color: #646464; }
 .player-tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
 .player-tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
 .player-tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
-.selected .player-tab-left { decorator: image(digimon-tab-left-active); opacity: 1; }
-.selected .player-tab-middle { decorator: image(digimon-tab-middle-active); opacity: 1; }
-.selected .player-tab-right { decorator: image(digimon-tab-right-active); opacity: 1; }
+.selected .player-tab-left { decorator: image(digimon-tab-left-active); image-color: #ffffff; }
+.selected .player-tab-middle { decorator: image(digimon-tab-middle-active); image-color: #ffffff; }
+.selected .player-tab-right { decorator: image(digimon-tab-right-active); image-color: #ffffff; }
 .player-tab-label { position: relative; left: 21dp; top: 9dp; white-space: nowrap; }
 #panel.on-player .player-line { position: absolute; margin: 0; padding: 0; height: 36dp; line-height: 36dp; font-size: 36dp; color: #fff371; }
 #panel.on-player .player-value { position: absolute; top: -3dp; float: none; color: #d6d6d6; }
@@ -395,3 +397,27 @@
 .card-cell { position: absolute; width: 57dp; height: 57dp; box-sizing: border-box; border: 3dp #3c3c3c; border-top-color: #bebebe; border-left-color: #bebebe; background-color: #696969; }
 #cards-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
 #cards-cursor.hidden { display: none; }
+
+/* The item boxes' icons (renderPlayerInfoView): 16 x 16 of SYSTEM_W, palette 7, one pixel inside each box. */
+.player-item-icon { position: absolute; top: 0; width: 48dp; height: 48dp; }
+/* game_menu.c: renderPlayerInfoView draws the icons 21 pixels apart, the boxes are 20 apart. */
+#player-item-0 { left: 0; decorator: image(player-item-0); } #player-item-1 { left: 3dp; decorator: image(player-item-1); }
+#player-item-2 { left: 6dp; decorator: image(player-item-2); } #player-item-3 { left: 9dp; decorator: image(player-item-3); }
+.player-item-icon.hidden { display: none; }
+
+/* renderMedalView: a held medal has no dark cover; the selected one's name in the box at (56, 111) of the page and its
+   three lines from (23, 127), 13 pixels apart. */
+.medal-cell.held .medal-shadow { display: none; }
+.medal-text { position: absolute; height: 36dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; white-space: nowrap; }
+#medal-name { left: 168dp; top: 333dp; }
+.medal-line { left: 69dp; }
+#medal-line-0 { top: 381dp; } #medal-line-1 { top: 420dp; } #medal-line-2 { top: 459dp; }
+
+/* The card list's icons (renderCardsView), one pixel inside the slot; a card's picture (renderCardImage, 150 x 180) and
+   copies (renderCardCount) in their boxes. */
+.card-icon { position: absolute; left: 0; top: 0; width: 48dp; height: 48dp; }
+.card-icon.hidden { display: none; }
+#card-detail { position: absolute; left: 222dp; top: 15dp; width: 450dp; height: 540dp; box-sizing: border-box; z-index: 5; }
+#card-detail-image { position: absolute; left: -3dp; top: -6dp; width: 450dp; height: 540dp; }
+#card-count-box { position: absolute; left: 669dp; top: 471dp; width: 162dp; height: 72dp; box-sizing: border-box; z-index: 6; }
+#card-count { position: absolute; left: 42dp; top: 15dp; font-size: 36dp; line-height: 36dp; color: #d6d6d6; }

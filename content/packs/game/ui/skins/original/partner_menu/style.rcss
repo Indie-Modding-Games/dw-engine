@@ -760,8 +760,9 @@ button:focus .original-look, button.original-look:focus {
 .tab-left { left: 0; width: 21dp; decorator: image(digimon-tab-left-idle); }
 .tab-middle { left: 21dp; right: 21dp; decorator: image(digimon-tab-middle-idle); }
 .tab-right { right: 0; width: 21dp; decorator: image(digimon-tab-right-idle); }
-.tab .tab-edge { opacity: 0.45; }
-.tab.selected .tab-edge { opacity: 1; }
+/* renderMenuTab: an idle tab is the same texture shaded to 0x32/0x80 (renderRectPolyFT4 flag 1). */
+.tab .tab-edge { image-color: #646464; }
+.tab.selected .tab-edge { image-color: #ffffff; }
 .tab.selected .tab-left { decorator: image(digimon-tab-left-active); }
 .tab.selected .tab-middle { decorator: image(digimon-tab-middle-active); }
 .tab.selected .tab-right { decorator: image(digimon-tab-right-active); }
@@ -769,7 +770,6 @@ button:focus .original-look, button.original-look:focus {
 #page-tech { height: 570dp; box-sizing: border-box; }
 
 #scrim.digimon-screen .tab.selected { background-color: transparent; }
-.tab .tab-edge { opacity: 0.25; }
 
 #tech-info.hidden { display: none; }
 #tech-info { position: absolute; left: 0; top: 0; width: 894dp; height: 570dp; pointer-events: none; }

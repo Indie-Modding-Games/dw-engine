@@ -23,16 +23,19 @@ constexpr std::string_view IndexKey = "index";
 constexpr std::string_view DigimonKey = "digimon";
 constexpr std::string_view RarityKey = "sprite_id";
 constexpr std::string_view MeritKey = "merit_value";
+constexpr std::string_view IconPaletteKey = "icon_palette";
 
 CardEntry readCard(YamlReader& reader, const YamlNode& node) {
-  if (!reader.expectKeys(node, "a card", {IndexKey, DigimonKey, RarityKey, MeritKey})) {
+  if (!reader.expectKeys(node, "a card", {IndexKey, DigimonKey, RarityKey, MeritKey},
+                         {IconPaletteKey})) {
     return {};
   }
   const YamlNode& digimon = reader.field(node, DigimonKey);
   return {.index = reader.integer<std::int32_t>(reader.field(node, IndexKey)),
           .digimon = YamlReader::isNull(digimon) ? std::string{} : reader.text(digimon),
           .rarity = reader.integer<std::int32_t>(reader.field(node, RarityKey)),
-          .meritValue = reader.integer<std::int32_t>(reader.field(node, MeritKey))};
+          .meritValue = reader.integer<std::int32_t>(reader.field(node, MeritKey)),
+          .iconPalette = reader.optionalInteger<std::int32_t>(node, IconPaletteKey)};
 }
 
 } // namespace

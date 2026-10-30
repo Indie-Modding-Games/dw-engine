@@ -10,4 +10,7 @@ void publishChartDetailLayout(ui::Ui& ui, const assets::ChartDetailLayout& detai
 void loadPlayerChartDetails(ui::Ui& ui, const assets::VirtualFileSystem& files,
                             const assets::EvolutionChart& chart);
 void loadPlayerChart(ui::Ui& ui, const assets::VirtualFileSystem& files);
+// The medals chart's names and lines (player.medal.<n>.name, player.medal.<n>.line.<0-2>) and the
+// card list's icon palettes (player.card.<n>.palette), from data/medals and data/cards.
+void loadPlayerMedalsAndCards(ui::Ui& ui, const assets::VirtualFileSystem& files);
 } // namespace dwe::app

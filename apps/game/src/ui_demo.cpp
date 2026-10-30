@@ -655,6 +655,7 @@ int runUiDemo(const UiDemoOptions& options) {
   (*ui)->setSetting("player.raised", 1.0);
   (*ui)->setSetting("player.medals", 0.0);
   loadPlayerChart(**ui, content->files);
+  loadPlayerMedalsAndCards(**ui, content->files);
   if (options.chart) {
     std::ifstream file{*options.chart, std::ios::binary | std::ios::ate};
     const auto chartBytes = file.tellg();

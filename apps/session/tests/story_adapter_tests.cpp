@@ -114,6 +114,24 @@ TEST_CASE("the player page counts the medals the story's triggers hold") {
   CHECK(story->medalCount() == 2);
 }
 
+TEST_CASE("the player page shows the medals and the item boxes the story's triggers hold") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable}};
+  const auto [session, story] = storySession(packs);
+  using dwe::session::FirstMedalTrigger;
+  using dwe::session::FirstPlayerItemTrigger;
+  // script_common.c: hasMedal is trigger 0x16c + medal.
+  REQUIRE(story->state().setTrigger(FirstMedalTrigger + 3, true).has_value());
+  CHECK(story->hasMedal(3));
+  CHECK_FALSE(story->hasMedal(2));
+  CHECK_FALSE(story->hasMedal(-1));
+  // renderPlayerInfoView: the item boxes are triggers 45 (the old rod) to 48.
+  CHECK(FirstPlayerItemTrigger == 45);
+  REQUIRE(story->state().setTrigger(FirstPlayerItemTrigger + 1, true).has_value());
+  CHECK(story->hasPlayerItem(1));
+  CHECK_FALSE(story->hasPlayerItem(0));
+  CHECK_FALSE(story->hasPlayerItem(4));
+}
+
 TEST_CASE("the story is saved in its section and loaded back") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};

@@ -410,6 +410,10 @@ private:
       node.set("digimon", digimonRef(card.digimonId, std::format("CARD_DATA[{}]", i)));
       node.set("sprite_id", number(card.spriteId));
       node.set("merit_value", number(card.meritValue));
+      // The card list's icon (game_menu.c: renderCardsView): its palette of ETCDAT/SBOY.TIM.
+      if (i < tables_->cardIconPalettes.size()) {
+        node.set("icon_palette", number(tables_->cardIconPalettes[i]));
+      }
       list.append(std::move(node));
     }
     YamlNode root = YamlNode::mapping();
