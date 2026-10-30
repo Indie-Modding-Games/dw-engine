@@ -654,7 +654,6 @@ int runUiDemo(const UiDemoOptions& options) {
   (*ui)->setSetting("player.seconds", 27720.0);
   (*ui)->setSetting("player.raised", 1.0);
   (*ui)->setSetting("player.medals", 0.0);
-  (*ui)->setSetting("player.medals.owned", std::string{});
   loadPlayerChart(**ui, content->files);
   if (options.chart) {
     std::ifstream file{*options.chart, std::ios::binary | std::ios::ate};

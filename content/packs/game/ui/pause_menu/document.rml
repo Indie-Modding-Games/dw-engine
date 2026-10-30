@@ -33,7 +33,7 @@
                   <button id="player-tab-player" class="player-tab selected" onclick="show_player_tab(document, 'player')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player"></span></button>
                   <button id="player-tab-chart" class="player-tab" onclick="show_player_tab(document, 'chart')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_chart"></span></button>
                   <button id="player-tab-medals" class="player-tab" onclick="show_player_tab(document, 'medals')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_medals"></span></button>
-                  <button id="player-tab-card" class="player-tab" disabled="disabled"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
+                  <button id="player-tab-card" class="player-tab" onclick="show_player_tab(document, 'card')"><span class="player-tab-left"></span><span class="player-tab-middle"></span><span class="player-tab-right"></span><span class="player-tab-label" text-key="pause_menu.player_tab_card"></span></button>
                 </div>
                 <div id="player-profile">
                 <div id="player-portrait-clip" class="player-native"><img id="player-portrait" src="/runtime/player-portrait"/></div>
@@ -269,6 +269,78 @@
                   <div id="medals-name-box" class="player-inset"></div>
                   <div id="medals-select-help"><span id="medals-cross"></span><span class="medals-help-text" text-key="pause_menu.chart_select"></span></div>
                   <div id="medals-cancel-help"><span id="medals-triangle"></span><span class="medals-help-text" text-key="common.cancel"></span></div>
+                </div>
+                <div id="player-cards-view" class="player-native">
+                  <div id="cards-title" text-key="pause_menu.card_list"></div>
+                  <div id="card-0" class="card-cell"></div>
+                  <div id="card-1" class="card-cell"></div>
+                  <div id="card-2" class="card-cell"></div>
+                  <div id="card-3" class="card-cell"></div>
+                  <div id="card-4" class="card-cell"></div>
+                  <div id="card-5" class="card-cell"></div>
+                  <div id="card-6" class="card-cell"></div>
+                  <div id="card-7" class="card-cell"></div>
+                  <div id="card-8" class="card-cell"></div>
+                  <div id="card-9" class="card-cell"></div>
+                  <div id="card-10" class="card-cell"></div>
+                  <div id="card-11" class="card-cell"></div>
+                  <div id="card-12" class="card-cell"></div>
+                  <div id="card-13" class="card-cell"></div>
+                  <div id="card-14" class="card-cell"></div>
+                  <div id="card-15" class="card-cell"></div>
+                  <div id="card-16" class="card-cell"></div>
+                  <div id="card-17" class="card-cell"></div>
+                  <div id="card-18" class="card-cell"></div>
+                  <div id="card-19" class="card-cell"></div>
+                  <div id="card-20" class="card-cell"></div>
+                  <div id="card-21" class="card-cell"></div>
+                  <div id="card-22" class="card-cell"></div>
+                  <div id="card-23" class="card-cell"></div>
+                  <div id="card-24" class="card-cell"></div>
+                  <div id="card-25" class="card-cell"></div>
+                  <div id="card-26" class="card-cell"></div>
+                  <div id="card-27" class="card-cell"></div>
+                  <div id="card-28" class="card-cell"></div>
+                  <div id="card-29" class="card-cell"></div>
+                  <div id="card-30" class="card-cell"></div>
+                  <div id="card-31" class="card-cell"></div>
+                  <div id="card-32" class="card-cell"></div>
+                  <div id="card-33" class="card-cell"></div>
+                  <div id="card-34" class="card-cell"></div>
+                  <div id="card-35" class="card-cell"></div>
+                  <div id="card-36" class="card-cell"></div>
+                  <div id="card-37" class="card-cell"></div>
+                  <div id="card-38" class="card-cell"></div>
+                  <div id="card-39" class="card-cell"></div>
+                  <div id="card-40" class="card-cell"></div>
+                  <div id="card-41" class="card-cell"></div>
+                  <div id="card-42" class="card-cell"></div>
+                  <div id="card-43" class="card-cell"></div>
+                  <div id="card-44" class="card-cell"></div>
+                  <div id="card-45" class="card-cell"></div>
+                  <div id="card-46" class="card-cell"></div>
+                  <div id="card-47" class="card-cell"></div>
+                  <div id="card-48" class="card-cell"></div>
+                  <div id="card-49" class="card-cell"></div>
+                  <div id="card-50" class="card-cell"></div>
+                  <div id="card-51" class="card-cell"></div>
+                  <div id="card-52" class="card-cell"></div>
+                  <div id="card-53" class="card-cell"></div>
+                  <div id="card-54" class="card-cell"></div>
+                  <div id="card-55" class="card-cell"></div>
+                  <div id="card-56" class="card-cell"></div>
+                  <div id="card-57" class="card-cell"></div>
+                  <div id="card-58" class="card-cell"></div>
+                  <div id="card-59" class="card-cell"></div>
+                  <div id="card-60" class="card-cell"></div>
+                  <div id="card-61" class="card-cell"></div>
+                  <div id="card-62" class="card-cell"></div>
+                  <div id="card-63" class="card-cell"></div>
+                  <div id="card-64" class="card-cell"></div>
+                  <div id="card-65" class="card-cell"></div>
+                  <img id="cards-cursor" class="hidden" src="/texture/etcdat/sboy?palette=15" rect="0 232 24 20"/>
+                  <div id="cards-select-help"><span id="cards-cross"></span><span class="medals-help-text" text-key="pause_menu.chart_select"></span></div>
+                  <div id="cards-cancel-help"><span id="cards-triangle"></span><span class="medals-help-text" text-key="common.cancel"></span></div>
                 </div>
                 <div id="player-tools">
 				<button id="player-minimap" onclick="open_page(document, 'minimap')" text-key="pause_menu.minimap"></button>

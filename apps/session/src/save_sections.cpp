@@ -24,6 +24,7 @@ using messages::formatMessage;
 constexpr std::string_view ElapsedFramesKey = "elapsed_frames";
 constexpr std::string_view PendingFramesKey = "pending_frames";
 constexpr std::string_view LevelKey = "level";
+constexpr std::string_view RaisedKey = "raised";
 constexpr std::string_view MeritKey = "merit";
 constexpr std::string_view StartedBattlesKey = "started_battles";
 constexpr std::string_view FledBattlesKey = "fled_battles";
@@ -144,6 +145,7 @@ core::Result<void> PartnerSave::read(const YamlNode& state) {
 core::Result<YamlNode> TamerSave::write() const {
   YamlNode node = YamlNode::mapping();
   node.set(std::string{LevelKey}, scalarOf(state_->tamer.level));
+  node.set(std::string{RaisedKey}, scalarOf(state_->tamer.raised));
   const TamerRecord& record = state_->tamer.record;
   node.set(std::string{MeritKey}, scalarOf(record.merit));
   node.set(std::string{StartedBattlesKey}, scalarOf(record.startedBattles));
@@ -156,9 +158,10 @@ core::Result<YamlNode> TamerSave::write() const {
 
 core::Result<void> TamerSave::read(const YamlNode& state) {
   YamlReader reader;
-  // The record came after the level: a save without it starts it at 0.
+  // The record and the raised count came after the level: a save without the record starts it at
+  // 0, one without the count at the first partner's 1.
   if (!reader.expectKeys(state, messages::TamerStateText, {LevelKey},
-                         {MeritKey, StartedBattlesKey, FledBattlesKey, TournamentsWonKey,
+                         {RaisedKey, MeritKey, StartedBattlesKey, FledBattlesKey, TournamentsWonKey,
                           TournamentWinsKey, TournamentsLostKey})) {
     return std::unexpected{reader.error(messages::TamerStateText)};
   }
@@ -166,6 +169,8 @@ core::Result<void> TamerSave::read(const YamlNode& state) {
     return reader.optionalInteger<std::int32_t>(state, key).value_or(0);
   };
   const TamerState tamer{.level = reader.integer<std::int32_t>(reader.field(state, LevelKey)),
+                         .raised =
+                             reader.optionalInteger<std::int32_t>(state, RaisedKey).value_or(1),
                          .record = {.merit = count(MeritKey),
                                     .startedBattles = count(StartedBattlesKey),
                                     .fledBattles = count(FledBattlesKey),

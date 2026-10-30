@@ -367,6 +367,16 @@ std::set<std::int32_t> StoryAdapter::raisedSpecies() const {
   return species;
 }
 
+std::int32_t StoryAdapter::medalCount() const {
+  std::int32_t count = 0;
+  for (std::int32_t medal = 0; medal < MedalCount; ++medal) {
+    if (state_.trigger(FirstMedalTrigger + medal).value_or(false)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 core::Result<void> StoryAdapter::addSaveSections(game::save::SaveSections& sections) {
   return sections.add(std::string{StorySaveName}, *serializer_, game::save::MigrationChain{});
 }

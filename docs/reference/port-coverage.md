@@ -87,8 +87,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 69 | 3 | 9 | 15 | 87 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 48 | 1 | 16 | 37 | 75 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 73 | 3 | 12 | 57 | 85 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 65 | 1 | 2 | 56 | 96 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 74 | 3 | 11 | 57 | 86 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 66 | 1 | 2 | 55 | 96 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 63 | 8 | 21 | 6 | 73 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 42 | 1 | 2 | 41 | 94 % |
-| **Total** | 2438 funciones | 834 | 41 | 413 | 1150 | 66 % |
+| **Total** | 2438 funciones | 836 | 41 | 412 | 1149 | 66 % |
 
 ## Batalla
 
@@ -293,7 +293,7 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 73, parcial 3, falta 12, no aplica 57.
+Portado 74, parcial 3, falta 11, no aplica 57.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -308,7 +308,6 @@ Portado 73, parcial 3, falta 12, no aplica 57.
 | `calculateMusicMenuStrings` | `main/script_common.c:2727` | falta | Monta la lista de canciones de la gramola. | no hay pantalla de gramola |
 | `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
 | `unlockMedal` | `main/script_common.c:3026` | falta (citada en docs) | Da una medalla al jugador. | no hay medallas en el motor |
-| `hasMedal` | `main/script_common.c:3033` | falta | Dice si el jugador tiene una medalla. | no hay medallas en el motor |
 | `createMonochromonMoodBubble` | `main/script_common.c:3038` | falta (citada en docs) | Burbuja de humor del rival de la tienda de cambio. | scripts.md: más tarde |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
@@ -321,7 +320,7 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 65, parcial 1, falta 2, no aplica 56.
+Portado 66, parcial 1, falta 2, no aplica 55.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -329,7 +328,7 @@ Portado 65, parcial 1, falta 2, no aplica 56.
 | `fadeFromWhite` | `main/fade.c:193` | falta | Vuelve del blanco. | rutina 46 del guion, sin registrar |
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (31); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); limpieza de objetos y memoria del original: el motor libera lo suyo (4); cuadros de interfaz del original (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (30); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); limpieza de objetos y memoria del original: el motor libera lo suyo (4); cuadros de interfaz del original (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
 ## Objetos y tiendas
 

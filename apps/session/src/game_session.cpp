@@ -554,6 +554,7 @@ void GameSession::rebirthPartner(std::optional<std::size_t> egg) {
     core::logError("{}", formatMessage(messages::RebirthFailed, reborn.error().message));
     return;
   }
+  state_->tamer.raised = std::min(state_->tamer.raised + 1, MaxRaisedCount);
   requestAutosave(AutosaveReason::PartnerReborn);
 }
 

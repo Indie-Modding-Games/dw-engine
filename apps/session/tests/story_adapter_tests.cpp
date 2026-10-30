@@ -101,6 +101,19 @@ TEST_CASE("without data/new_game_story a new game's story has only the first par
   CHECK(isSet(*story, FirstRaisedTrigger + FirstPartnerNumber));
 }
 
+TEST_CASE("the player page counts the medals the story's triggers hold") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable}};
+  const auto [session, story] = storySession(packs);
+  CHECK(story->medalCount() == 0);
+  using dwe::session::FirstMedalTrigger;
+  using dwe::session::MedalCount;
+  REQUIRE(story->state().setTrigger(FirstMedalTrigger, true).has_value());
+  REQUIRE(story->state().setTrigger(FirstMedalTrigger + MedalCount - 1, true).has_value());
+  // script_common.c: hasMedal; renderPlayerInfoView counts medals 0 to 17 only.
+  REQUIRE(story->state().setTrigger(FirstMedalTrigger + MedalCount, true).has_value());
+  CHECK(story->medalCount() == 2);
+}
+
 TEST_CASE("the story is saved in its section and loaded back") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};

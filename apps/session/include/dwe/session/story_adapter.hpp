@@ -44,6 +44,10 @@ inline constexpr std::string_view StorySaveName = "story";
 // raises it before the new game's section; script_common.c: setDigimonRaised).
 inline constexpr std::int32_t FirstRaisedTrigger = 0x200;
 inline constexpr std::int32_t RaisedSpeciesLimit = 0x3f;
+// The medals are triggers 0x16c + number (script_common.c: hasMedal); the player page counts 18
+// (game_menu.c: renderPlayerInfoView).
+inline constexpr std::int32_t FirstMedalTrigger = 0x16c;
+inline constexpr std::int32_t MedalCount = 18;
 
 // The ruleset section of the story (rules/<id>/story.yaml).
 inline constexpr std::string_view StorySection = "story";
@@ -149,6 +153,8 @@ public:
   [[nodiscard]] bool raised(std::int32_t species) const;
   void markRaised(std::int32_t species);
   [[nodiscard]] std::set<std::int32_t> raisedSpecies() const;
+  // How many medals the player has, as the player page counts them.
+  [[nodiscard]] std::int32_t medalCount() const;
   // Where a save from before the story section takes its raised species from (createGameSystems:
   // the evolution section's); without it such a save starts with none raised.
   void setSavedRaised(RaisedSource source) { savedRaised_ = std::move(source); }

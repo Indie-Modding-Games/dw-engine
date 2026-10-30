@@ -290,6 +290,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .ui = context.ui,
                     .battle = game_.systems.battle,
                     .story = game_.systems.story,
+                    .cards = game_.systems.cards,
                     .feed = &feedScene_}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),

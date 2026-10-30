@@ -54,9 +54,16 @@ struct TamerRecord {
   friend bool operator==(const TamerRecord&, const TamerRecord&) = default;
 };
 
+// The most partners the player counts as raised; the count stays there (partner_impl.c:804).
+inline constexpr std::int32_t MaxRaisedCount = 99;
+
 // The tamer as far as the session keeps it until a tamer system exists.
 struct TamerState {
   std::int32_t level = 0;
+  // The partners raised, the first one included (raisedCount): a new game starts it
+  // at 1 (main_menu.c: initializeDefaultSavegame) and each reborn partner adds one, up to
+  // MaxRaisedCount (partner_impl.c: initializeReincarnatedPartner).
+  std::int32_t raised = 1;
   TamerRecord record{};
 
   friend bool operator==(const TamerState&, const TamerState&) = default;

@@ -27,3 +27,4 @@
 #chart-detail-transition { display: none; }
 
 #player-medals-view { display: none; }
+#player-cards-view { display: none; }

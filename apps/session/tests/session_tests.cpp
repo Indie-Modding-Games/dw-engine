@@ -479,6 +479,32 @@ TEST_CASE("a partner whose death the story plays waits for the story's rebirth a
   CHECK(session->partner().state().species == "yura");
 }
 
+TEST_CASE("the player counts the first partner raised and one more for each partner reborn") {
+  const TestPacks packs;
+  const auto session = newGame(packs, nullptr);
+  // main_menu.c: initializeDefaultSavegame sets raisedCount to 1.
+  CHECK(session->tamer().raised == 1);
+  session->setRebirthByStory(true);
+  makePartnerDie(*session);
+  session->clock().setSpeed(SixtyGameHoursPerSecond);
+  for (std::int32_t step = 0; step < 120 && session->partner().alive(); ++step) {
+    session->tick(Tick);
+    (void)session->takePartnerEvents();
+  }
+  REQUIRE_FALSE(session->partner().alive());
+  session->rebirthPartner(0);
+  REQUIRE(session->partner().alive());
+  // partner_impl.c: initializeReincarnatedPartner adds one.
+  CHECK(session->tamer().raised == 2);
+
+  const auto saved = session->saveFile();
+  REQUIRE_MESSAGE(saved.has_value(), errorOf(saved));
+  const auto loaded = newGame(packs, nullptr, 99);
+  const auto read = loaded->loadFile(throughText(*saved));
+  REQUIRE_MESSAGE(read.has_value(), errorOf(read));
+  CHECK(loaded->tamer().raised == 2);
+}
+
 TEST_CASE("a partner reborn after dying autosaves") {
   const TestPacks packs;
   MemorySaveStorage storage;

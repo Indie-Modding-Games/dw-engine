@@ -24,6 +24,8 @@ namespace {
 
 // The pause menu, which the partner menu replaces when it opens from it.
 constexpr std::string_view PauseMenuDocument = "pause_menu";
+// The player page's card list: 11 by 6 slots (game_menu.c: renderCardsView).
+constexpr std::int32_t PlayerCardSlots = 66;
 
 // The keys of what a command on the bag did, with {name} the item's name.
 constexpr std::string_view UsedKey = "partner_menu.bag_result.used";
@@ -114,7 +116,20 @@ void PartnerMenu::update() {
     desc_.ui->setSetting("player.bits", static_cast<double>(desc_.inventory->inventory().money()));
     const auto minutes = static_cast<std::int64_t>(desc_.session->playSeconds()) / 60;
     desc_.ui->setSetting("player.seconds", static_cast<double>(minutes * 60));
+    // game_menu.c: renderPlayerInfoView shows the player's raised count and the medals held.
+    desc_.ui->setSetting("player.raised", static_cast<double>(desc_.session->tamer().raised));
+    if (desc_.cards != nullptr) {
+      // renderCardsView: a card the player has copies of shows in the list.
+      std::string owned;
+      for (std::int32_t card = 0; card < PlayerCardSlots; ++card) {
+        if (desc_.cards->copies(card) > 0) {
+          owned += (owned.empty() ? "" : ",") + std::to_string(card);
+        }
+      }
+      desc_.ui->setSetting("player.cards.owned", std::move(owned));
+    }
     if (desc_.story != nullptr) {
+      desc_.ui->setSetting("player.medals", static_cast<double>(desc_.story->medalCount()));
       std::string raised;
       for (const auto index : desc_.story->raisedSpecies()) {
         if (!raised.empty())

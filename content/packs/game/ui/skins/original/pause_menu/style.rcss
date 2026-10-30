@@ -272,7 +272,7 @@
 #player-name-line { left: 75dp; top: 21dp; }
 #panel.on-player #player-name { left: 120dp; top: 3dp; width: 216dp; white-space: nowrap; }
 #player-level-line { left: 336dp; top: 105dp; }
-#panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals-view { left: 270dp; width: 48dp; text-align: right; }
+#panel.on-player #player-level, #panel.on-player #player-raised, #panel.on-player #player-medals { left: 270dp; width: 48dp; text-align: right; }
 #panel.on-player #player-rank { position: absolute; display: block; clear: none; left: 231dp; top: 51dp; width: 288dp; margin: 0; text-align: left; white-space: nowrap; }
 #player-raised-line { left: 336dp; top: 216dp; }
 #player-bits-line { left: 336dp; top: 273dp; }
@@ -382,3 +382,19 @@
 #medals-cross, #medals-triangle { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
 #medals-triangle { color: #3cff3c; }
 .medals-help-text { position: absolute; left: 36dp; top: 0; }
+
+/* The card list (game_menu.c: renderCardsView): "Card List" in colour 3 at (-36, -80) from the screen's centre, which
+   is (113, 8) of the page; 66 slots that renderBorderBox draws 18 x 18 with a #BEBEBE line on the top and the left, a
+   #3C3C3C one on the bottom and the right and a #696969 fill; the cursor's 24 x 20 frame; the prompts at y 83. */
+#panel.on-player #player-cards-view { display: none; position: relative; height: 564dp; }
+#panel.on-player.player-cards #player-profile, #panel.on-player.player-cards #player-chart, #panel.on-player.player-cards #player-medals-view { display: none; }
+#panel.on-player.player-cards #player-cards-view { display: block; }
+#panel.on-player.player-tools-open #player-cards-view { display: none; }
+#cards-title { position: absolute; left: 339dp; top: 24dp; width: 216dp; font-size: 36dp; line-height: 36dp; text-align: center; color: #fff371; white-space: nowrap; }
+.card-cell { position: absolute; width: 57dp; height: 57dp; box-sizing: border-box; border: 3dp #3c3c3c; border-top-color: #bebebe; border-left-color: #bebebe; background-color: #696969; }
+#cards-cursor { position: absolute; width: 72dp; height: 60dp; pointer-events: none; }
+#cards-cursor.hidden { display: none; }
+#cards-select-help, #cards-cancel-help { position: absolute; top: 513dp; height: 36dp; font-size: 36dp; color: #d6d6d6; white-space: nowrap; }
+#cards-select-help { left: 342dp; } #cards-cancel-help { left: 576dp; }
+#cards-cross, #cards-triangle { position: absolute; left: 0; top: 0; width: 36dp; color: #90a8f8; }
+#cards-triangle { color: #3cff3c; }

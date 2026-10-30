@@ -24,6 +24,8 @@ local chart_detail = false
 local chart_transition = nil
 local medals_selecting = false
 local medal_index = 0
+local cards_selecting = false
+local card_index = 0
 local chart_index = 0
 local chart_cells = {}
 local chart_signature = ""
@@ -322,9 +324,6 @@ local function medals_cursor(document)
 end
 
 function medal_pick(document, index)
-  if ui.setting("player.medals.owned") ~= "" then
-    return
-  end
   medal_index = math.max(0, math.min(14, index))
   medals_selecting = true
   medals_cursor(document)
@@ -332,9 +331,6 @@ function medal_pick(document, index)
 end
 
 local function refresh_medals(document)
-  document
-    :get("player-tab-medals")
-    :set_class("unavailable", ui.setting("player.medals.owned") ~= "")
   for i = 0, 14 do
     local cell = document:get("medal-" .. i)
     cell:set_property("left", ((25 + (i % 5) * 38) * 3) .. "dp")
@@ -348,10 +344,56 @@ local function refresh_medals(document)
   medals_cursor(document)
 end
 
-function show_player_tab(document, tab)
-  if tab == "medals" and ui.setting("player.medals.owned") ~= "" then
+-- The card list (game_menu.c: renderCardsView, tickPlayerMenu): 11 by 6 slots of 18 x 18 at 24
+-- pixels from (19, 25) of the page; the cursor's 24 x 20 frame from (17, 24).
+local card_columns = 11
+local card_slots = 66
+
+local function cards_cursor(document)
+  local cursor = document:get("cards-cursor")
+  cursor:set_class("hidden", not cards_selecting)
+  cursor:set_property("left", ((17 + (card_index % card_columns) * 24) * 3) .. "dp")
+  cursor:set_property("top", ((24 + math.floor(card_index / card_columns) * 24) * 3) .. "dp")
+end
+
+local function refresh_cards(document)
+  local owned = {}
+  for card in string.gmatch(ui.setting("player.cards.owned") or "", "%d+") do
+    owned[tonumber(card)] = true
+  end
+  for i = 0, card_slots - 1 do
+    local cell = document:get("card-" .. i)
+    cell:set_property("left", ((19 + (i % card_columns) * 24) * 3) .. "dp")
+    cell:set_property("top", ((25 + math.floor(i / card_columns) * 24) * 3) .. "dp")
+    cell:set_class("owned", owned[i] == true)
+  end
+  for id, index in pairs({ ["cards-cross"] = 5, ["cards-triangle"] = 7 }) do
+    local key = string.format("main.status_view_labels.%04d", index)
+    local label = t(key)
+    document:get(id):set_text(label ~= key and string.match(label, "^(%S+)") or "")
+  end
+  cards_cursor(document)
+end
+
+-- Picks a card of the list (tickPlayerMenu, PLAYER_MENU_STATE 3): left and right stop at the row's
+-- ends, up and down at the first and last rows.
+local function card_move(document, action)
+  local column = card_index % card_columns
+  if action == "left" and column ~= 0 then
+    card_index = card_index - 1
+  elseif action == "right" and column ~= card_columns - 1 then
+    card_index = card_index + 1
+  elseif action == "up" and card_index >= card_columns then
+    card_index = card_index - card_columns
+  elseif action == "down" and card_index < card_slots - card_columns then
+    card_index = card_index + card_columns
+  else
     return
   end
+  cards_cursor(document)
+end
+
+function show_player_tab(document, tab)
   if tab == "chart" and (tonumber(ui.setting("player.chart.count")) or 0) == 0 then
     return
   end
@@ -361,6 +403,8 @@ function show_player_tab(document, tab)
   document:get("panel"):set_class("chart-detail-open", false)
   medals_selecting = false
   medals_cursor(document)
+  cards_selecting = false
+  cards_cursor(document)
   player_tab = tab
   chart_selecting = false
   document:get("panel"):set_class("player-chart", tab == "chart")
@@ -368,6 +412,8 @@ function show_player_tab(document, tab)
   document:get("player-tab-chart"):set_class("selected", tab == "chart")
   document:get("player-tab-medals"):set_class("selected", tab == "medals")
   document:get("panel"):set_class("player-medals", tab == "medals")
+  document:get("player-tab-card"):set_class("selected", tab == "card")
+  document:get("panel"):set_class("player-cards", tab == "card")
   chart_cursor(document)
   document:get("player-tab-" .. tab):focus()
 end
@@ -440,6 +486,7 @@ end
 
 local function refresh(document)
   refresh_medals(document)
+  refresh_cards(document)
   refresh_chart(document)
   draw_date_digits(document, "field-year-", 3, ui.setting("hud.clock.year"))
   draw_date_digits(document, "field-day-", 2, ui.setting("hud.clock.day"))
@@ -753,6 +800,17 @@ function on_action(document, action)
       return true
     end
 
+    if player_tab == "card" and cards_selecting then
+      if action == "cancel" then
+        cards_selecting = false
+        cards_cursor(document)
+        document:get("player-tab-card"):focus()
+      elseif action == "up" or action == "down" or action == "left" or action == "right" then
+        card_move(document, action)
+      end
+      return true
+    end
+
     if player_tab == "chart" and chart_selecting then
       if action == "cancel" then
         chart_selecting = false
@@ -774,12 +832,18 @@ function on_action(document, action)
         if (tonumber(ui.setting("player.chart.count")) or 0) > 0 then
           table.insert(tabs, "chart")
         end
-        if ui.setting("player.medals.owned") == "" then
-          table.insert(tabs, "medals")
-        end
+        -- tickPlayerMenu: the medals and the card list are always there.
+        table.insert(tabs, "medals")
+        table.insert(tabs, "card")
         local current_index = index_of(tabs, player_tab)
         local delta = action == "left" and -1 or 1
         show_player_tab(document, tabs[math.max(1, math.min(#tabs, current_index + delta))])
+        return true
+      end
+      if action == "confirm" and player_tab == "card" then
+        card_index = 0
+        cards_selecting = true
+        cards_cursor(document)
         return true
       end
       if action == "confirm" and player_tab == "medals" then
