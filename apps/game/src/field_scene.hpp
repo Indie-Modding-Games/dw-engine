@@ -231,10 +231,10 @@ public:
   [[nodiscard]] const assets::ModelData* fighterModel(std::optional<std::int32_t> npc) const;
   // The field takes the fighters back where they stand.
   void releaseFighters();
-  // A node of a held fighter's model (the original's object index; the first for one it lacks) in
-  // the world, in world axes; nothing when the field does not draw it.
-  [[nodiscard]] std::optional<glm::mat4> fighterNode(std::optional<std::int32_t> npc,
-                                                     std::uint32_t node) const;
+  // A held fighter's pose now, one local transform per node of fighterModel(npc); nothing when the
+  // field does not draw it.
+  [[nodiscard]] std::optional<std::span<const assets::NodeTransform>>
+  fighterPose(std::optional<std::int32_t> npc) const;
   // What the techniques' effects drew on the battle's last frame, drawn until replaced: sprites
   // with the move's effect texture, objects of its effect model. Each texture and model loads on
   // first use; one that fails is logged and not drawn.

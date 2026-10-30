@@ -84,7 +84,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 130 | 5 | 11 | 25 | 91 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 134 | 4 | 74 | 73 | 64 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 67 | 2 | 11 | 16 | 85 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 68 | 2 | 11 | 15 | 85 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 40 | 1 | 21 | 40 | 65 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 73 | 3 | 12 | 57 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 40 | 1 | 2 | 43 | 94 % |
-| **Total** | 2438 funciones | 815 | 41 | 422 | 1160 | 65 % |
+| **Total** | 2438 funciones | 816 | 41 | 422 | 1159 | 65 % |
 
 ## Batalla
 
@@ -229,7 +229,7 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 67, parcial 2, falta 11, no aplica 16.
+Portado 68, parcial 2, falta 11, no aplica 15.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -247,7 +247,7 @@ Portado 67, parcial 2, falta 11, no aplica 16.
 | `tamerTickBattleLostLife` | `main/tamer.c:1734` | parcial | Escena de perder una vida en combate. | `apps/game/src/death_scene.cpp:70` · la vida y el MP tras perder salen de una regla hasta los guiones (docs/modulos/game/battle.md:107) |
 | `tamerTickAwardSomething` | `main/tamer.c:1751` | falta | Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera. | — |
 
-No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1); cálculo de matrices (1).
+No aplica: gráficos, memoria o ficheros del hardware original: los sustituye el motor (6); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (2); prueba de cajas del original (1); cálculo de pantalla del original (1); lectura del disco; la hace la extracción (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); carga de trozos del fondo del original (1); limpieza del original (1); lectura del disco; la colisión la extrae dwx (1).
 
 ## NPC y objetos del mapa
 

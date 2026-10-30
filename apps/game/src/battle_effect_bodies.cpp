@@ -1,14 +1,14 @@
 #include "battle_effect_bodies.hpp"
 
-#include <dwe/assets/map_document.hpp>
+#include <dwe/assets/model_data.hpp>
 
-#include <glm/ext/matrix_transform.hpp>
+#include <glm/vec3.hpp>
 
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <numbers>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -24,7 +24,6 @@ using game::battle::EffectVector;
 
 constexpr double Turn = 4096.0;
 constexpr std::int32_t AngleMask = 0xFFF;
-constexpr float MatrixOne = 4096.0F;
 
 // The console's axes are the world's with y and z the other way (core::fromOriginalAxes).
 EffectVector originalOf(glm::vec3 world) {
@@ -42,22 +41,6 @@ std::int32_t rotationOf(const game::battle::Facing& facing) {
   const double angle = std::atan2(-static_cast<double>(facing.x), static_cast<double>(facing.z));
   return static_cast<std::int32_t>(std::lround(angle / (2.0 * std::numbers::pi) * Turn)) &
          AngleMask;
-}
-
-// A world matrix in the console's axes and units: F W F with F = diag(1, -1, -1), 4096 for 1.
-EffectMatrix originalMatrix(const glm::mat4& world) {
-  constexpr std::array<float, 3> Flip{1.0F, -1.0F, -1.0F};
-  EffectMatrix out;
-  for (std::size_t row = 0; row < 3; ++row) {
-    for (std::size_t column = 0; column < 3; ++column) {
-      const float value =
-          world[static_cast<glm::length_t>(column)][static_cast<glm::length_t>(row)];
-      out.m.at(row).at(column) = static_cast<std::int32_t>(
-          std::lround(Flip.at(row) * Flip.at(column) * value * MatrixOne));
-    }
-  }
-  out.t = originalOf(glm::vec3{world[3]});
-  return out;
 }
 
 } // namespace
@@ -102,15 +85,21 @@ game::battle::Point BattleEffectBodies::ground(const EffectVector& at) const {
 std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fighter,
                                                      std::int32_t index) const {
   const std::optional<std::optional<std::int32_t>> npc = npcOf(fighter);
-  if (!npc || scene_ == nullptr || index < 0) {
+  const std::optional<game::battle::EffectBody> place = body(fighter);
+  if (!npc || !place || scene_ == nullptr || index < 0) {
     return std::nullopt;
   }
-  const std::optional<glm::mat4> world =
-      scene_->fighterNode(*npc, static_cast<std::uint32_t>(index));
-  if (!world) {
+  const assets::ModelData* model = scene_->fighterModel(*npc);
+  const std::optional<std::span<const assets::NodeTransform>> pose = scene_->fighterPose(*npc);
+  if (model == nullptr || !pose) {
     return std::nullopt;
   }
-  return originalMatrix(*world);
+  const std::optional<std::vector<game::battle::BonePose>> chain =
+      boneChain(*model, *pose, static_cast<std::uint32_t>(index));
+  if (!chain) {
+    return std::nullopt;
+  }
+  return game::battle::boneMatrix(*place, *chain);
 }
 
 std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fighter,
@@ -125,18 +114,12 @@ std::optional<EffectMatrix> BattleEffectBodies::node(game::battle::FighterId fig
   if (model == nullptr) {
     return std::nullopt;
   }
-  const std::optional<glm::mat4> joint = clipJointAt(*model, static_cast<std::uint32_t>(clip),
-                                                     frame, static_cast<std::uint32_t>(index));
-  if (!joint) {
+  const std::optional<std::vector<game::battle::BonePose>> chain = clipBoneChain(
+      *model, static_cast<std::uint32_t>(clip), frame, static_cast<std::uint32_t>(index));
+  if (!chain) {
     return std::nullopt;
   }
-  // The place in the world's axes: the console's y and z the other way, and rotation.vy as a yaw.
-  const glm::vec3 at{static_cast<float>(place.location.x), static_cast<float>(-place.location.y),
-                     static_cast<float>(-place.location.z)};
-  const glm::mat4 world =
-      glm::rotate(glm::translate(glm::mat4{1.0F}, at), assets::yawFromOriginal(place.rotationY),
-                  glm::vec3{0.0F, 1.0F, 0.0F});
-  return originalMatrix(world * *joint);
+  return game::battle::boneMatrix(place, *chain);
 }
 
 std::optional<game::battle::FighterClips>

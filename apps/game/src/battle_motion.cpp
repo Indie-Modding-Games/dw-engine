@@ -2,11 +2,20 @@
 
 #include <dwe/animation/clip_sampling.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 #include <vector>
 
 namespace dwe::app {
+
+namespace {
+
+// The original's angles (4096 per turn) and fixed-point ones (4096 for 1).
+constexpr double Turn = 4096.0;
+
+} // namespace
 
 game::battle::FighterClips battleClipsOf(const assets::ModelData& model) {
   game::battle::FighterClips out;
@@ -33,19 +42,62 @@ game::battle::FighterClips battleClipsOf(const assets::ModelData& model) {
   return out;
 }
 
-std::optional<glm::mat4> clipJointAt(const assets::ModelData& model, std::uint32_t clip,
-                                     std::int32_t frame, std::uint32_t joint) {
+game::battle::BonePose originalPose(const assets::NodeTransform& node) {
+  const auto unit = [](double value) { return static_cast<std::int32_t>(std::lround(value)); };
+  // The model's rotation is the original's Rx·Ry·Rz turned like the axes (formats: gltf.cpp,
+  // toGltfRotation): the original's quaternion has y and z the other way.
+  const double w = node.rotation.w;
+  const double x = node.rotation.x;
+  const double y = -static_cast<double>(node.rotation.y);
+  const double z = -static_cast<double>(node.rotation.z);
+  // The terms of its matrix that RotMatrix's three angles come out of.
+  const double m00 = 1.0 - (2.0 * ((y * y) + (z * z)));
+  const double m01 = 2.0 * ((x * y) - (w * z));
+  const double m02 = 2.0 * ((x * z) + (w * y));
+  const double m12 = 2.0 * ((y * z) - (w * x));
+  const double m22 = 1.0 - (2.0 * ((x * x) + (y * y)));
+  const auto angle = [&](double radians) {
+    return unit(radians / (2.0 * std::numbers::pi) * Turn);
+  };
+  return {.rotation = {.x = angle(std::atan2(-m12, m22)),
+                       .y = angle(std::asin(std::clamp(m02, -1.0, 1.0))),
+                       .z = angle(std::atan2(-m01, m00))},
+          .location = {.x = unit(node.translation.x),
+                       .y = unit(-node.translation.y),
+                       .z = unit(-node.translation.z)},
+          .scale = {.x = unit(node.scale.x * Turn),
+                    .y = unit(node.scale.y * Turn),
+                    .z = unit(node.scale.z * Turn)}};
+}
+
+std::optional<std::vector<game::battle::BonePose>>
+boneChain(const assets::ModelData& model, std::span<const assets::NodeTransform> pose,
+          std::uint32_t joint) {
+  if (!model.skin || model.skin->joints.empty() || pose.size() != model.nodes.size()) {
+    return std::nullopt;
+  }
+  std::vector<game::battle::BonePose> chain;
+  std::optional<std::uint32_t> node =
+      model.skin->joints[joint < model.skin->joints.size() ? joint : 0];
+  while (node) {
+    chain.push_back(originalPose(pose[*node]));
+    node = model.nodes[*node].parent;
+  }
+  std::ranges::reverse(chain);
+  return chain;
+}
+
+std::optional<std::vector<game::battle::BonePose>> clipBoneChain(const assets::ModelData& model,
+                                                                 std::uint32_t clip,
+                                                                 std::int32_t frame,
+                                                                 std::uint32_t joint) {
   const assets::AnimationClip* found = model.findClip(clip);
-  if (found == nullptr || !model.skin || model.skin->joints.empty() || found->ticksPerSecond == 0) {
+  if (found == nullptr || found->ticksPerSecond == 0) {
     return std::nullopt;
   }
   std::vector<assets::NodeTransform> pose(model.nodes.size());
   animation::sampleClip(model, *found, static_cast<double>(frame) / found->ticksPerSecond, pose);
-  std::vector<glm::mat4> nodeWorld(model.nodes.size());
-  std::vector<glm::mat4> joints(animation::jointCount(model));
-  animation::computeJointMatrices(model, pose, nodeWorld, joints);
-  const std::size_t index = joint < model.skin->joints.size() ? joint : 0;
-  return nodeWorld.at(model.skin->joints[index]);
+  return boneChain(model, pose, joint);
 }
 
 } // namespace dwe::app

@@ -412,7 +412,7 @@ tamerTickIdle = { status = "portado", dwe = "apps/game/src/play_session.cpp", wh
 tamerTickTraining = { status = "portado", dwe = "apps/game/src/gym_screen.cpp", what = "El jugador mira al compañero mientras entrena." }
 tamerTickMachinedramonSpawn = { status = "falta", what = "El jugador asiste a la aparición del jefe final.", note = "la escena acaba al momento (story_scene_glue.cpp:58)" }
 tamerTickAwardSomething = { status = "falta", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
-calculatePosition = { status = "no-aplica", note = "cálculo de matrices", what = "Calcula una posición con una matriz." }
+calculatePosition = { status = "portado", dwe = "game/battle/src/bone_matrix.cpp", what = "Calcula una posición con una matriz.", note = "para el hueso de los efectos, en coma fija 4.12 como el original" }
 
 # --- Compañero
 partnerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp:400", what = "Mueve al compañero cada fotograma según su estado." }

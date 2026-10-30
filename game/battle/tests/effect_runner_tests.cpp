@@ -1005,3 +1005,30 @@ init_script:
   own.start(own.load(*read));
   CHECK(untouched.state() == dwe::ruleset::Random::original(0x5CF299CBU).state());
 }
+
+TEST_CASE("a bone's matrix adds up its chain in the console's fixed point, as the original does") {
+  using dwe::game::battle::BonePose;
+  // Agumon's bones 1 to 4 holding Spit Fire's breath (clip 46 from its frame 10), read from the
+  // original's PositionData; the matrices calculateBoneMatrix gave for bone 4 at two places.
+  const std::vector<BonePose> chain{
+      {.rotation = {.x = 0, .y = -1024, .z = 0}, .location = {.x = 0, .y = -110, .z = -50}},
+      {.rotation = {.x = 0, .y = 0, .z = -1702}, .location = {.x = 5, .y = 0, .z = 0}},
+      {.rotation = {.x = 0, .y = 0, .z = 255}, .location = {.x = 34, .y = 0, .z = 0}},
+      {.rotation = {.x = 0, .y = 0, .z = -1334}, .location = {.x = 50, .y = 0, .z = 0}}};
+  dwe::game::battle::EffectBody place;
+  place.location = {.x = 278, .y = 0, .z = 3113};
+  place.rotationY = 44;
+  const dwe::game::battle::EffectMatrix facingDown = dwe::game::battle::boneMatrix(place, chain);
+  // Exact maths puts it at (270.96, -167.05, 3008.70).
+  CHECK(facingDown.t == dwe::game::battle::EffectVector{.x = 269, .y = -168, .z = 3006});
+  CHECK(facingDown.m[0] == std::array{-118, -250, -4087});
+  CHECK(facingDown.m[1] == std::array{3695, -1769, 0});
+  CHECK(facingDown.m[2] == std::array{-1764, -3688, 276});
+
+  place.location = {.x = 421, .y = 0, .z = 3418};
+  place.rotationY = 871;
+  const dwe::game::battle::EffectMatrix facingLeft = dwe::game::battle::boneMatrix(place, chain);
+  CHECK(facingLeft.t == dwe::game::battle::EffectVector{.x = 317, .y = -168, .z = 3392});
+  CHECK(facingLeft.m[0] == std::array{-1720, -3595, -953});
+  CHECK(facingLeft.m[2] == std::array{-411, -861, 3984});
+}

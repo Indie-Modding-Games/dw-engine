@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <span>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -48,6 +49,23 @@ struct EffectBody {
   // Whether it can still be picked (currentHP > 0, on the map).
   bool standing = true;
 };
+
+// A node of a fighter's model as the original poses it (PositionData), relative to its parent, in
+// the console's axes: RotMatrix angles (4096 per turn), location, and scale (4096 for 1).
+struct BonePose {
+  EffectVector rotation;
+  EffectVector location;
+  EffectVector scale{.x = 4096, .y = 4096, .z = 4096};
+
+  bool operator==(const BonePose&) const = default;
+};
+
+// effect_common.c: calculateBoneMatrix: the matrix of the last node of `chain` (the nodes from the
+// model's root down to it, each relative to the one before) for a fighter standing at `place`. The
+// root takes the place's facing and location, then each node is multiplied in (vecmath.c:
+// calculatePosition, GsMulCoord3) in the console's 4.12 fixed point, which drops the fraction of
+// every product: a node a few joints down lands up to three units from where exact maths puts it.
+[[nodiscard]] EffectMatrix boneMatrix(const EffectBody& place, std::span<const BonePose> chain);
 
 // Where the effects read the fighters: the battle's places and the models' nodes, which the app
 // animates.

@@ -216,26 +216,13 @@ void FieldScene::submitEffectModels() {
   }
 }
 
-std::optional<glm::mat4> FieldScene::fighterNode(std::optional<std::int32_t> npc,
-                                                 std::uint32_t node) const {
+std::optional<std::span<const assets::NodeTransform>>
+FieldScene::fighterPose(std::optional<std::int32_t> npc) const {
   const Actor* actor = fighterActor(npc);
-  if (actor == nullptr || !actor->model->skin) {
+  if (actor == nullptr) {
     return std::nullopt;
   }
-  const auto joints = actor->player->jointMatrices();
-  const auto& skin = *actor->model->skin;
-  const std::size_t count = std::min(joints.size(), skin.inverseBindMatrices.size());
-  if (count == 0) {
-    return std::nullopt;
-  }
-  // A node the skin lacks stands for the model's first (the effects' bone lists name the
-  // original's nodes).
-  const std::size_t joint = node < count ? node : 0;
-  const glm::mat4 jointSpace = joints[joint] * glm::inverse(skin.inverseBindMatrices[joint]);
-  const auto& transform = world_.registry().get<scene::Transform>(actor->entity);
-  const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, transform.position),
-                                      transform.yaw, glm::vec3{0.0F, 1.0F, 0.0F});
-  return world * jointSpace;
+  return actor->player->pose();
 }
 
 } // namespace dwe::app
