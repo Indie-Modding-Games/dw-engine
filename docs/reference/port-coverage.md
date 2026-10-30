@@ -41,26 +41,25 @@ de inicio y los mapas cercanos, y reclutar.
 
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
-| 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
-| 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
-| 3 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
-| 4 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
-| 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
-| 6 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
-| 7 | Al dar de comer no se ve el objeto en la mano del jugador | `game_menu.c:2245` `renderFeedingItem` | `apps/game/src/feed_scene.cpp:81` |
-| 8 | Tras un combate de historia el compañero no vuelve andando: la vuelta acaba al momento, y no se guarda su rastro durante el combate | `script_interp.c:1950`; `battle_main.c:702` `BTL_tickPartnerWaypointTrail` | `apps/session/src/story_scenes.cpp:75-79` (esbozo) |
-| 9 | Los personajes del mapa que no luchan no huyen al empezar el combate (se van andando tras ganar) | `battle_setup.c` `BTL_handleBattleIntro`, `battle_tick.c:308` `NPCEntityTickBattle`, `btl.c:128` `isScreenConcave` | docs/modulos/game/battle.md:126 |
-| 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
-| 11 | Hecho: con la bolsa llena, recibir un objeto pregunta cuál tirar (lista de la bolsa, «Is it OK?» y descripción) | `script_common.c:1815` `openDiscardItem` | `apps/session/src/discard_menu.cpp`, `apps/game/src/discard_screen.cpp` |
-| 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
-| 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
-| 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
-| 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
-| 17 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
-| 18 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
-| 19 | Sin puntos de prosperidad: no se recalculan al cargar ni al empezar, y la ciudad no elige su mapa según lo que ha crecido | `main.c:3902` `recalculatePPandArena`, `map.c:5592` `getFileCityTopMap` | — |
-| 20 | Sin torneos (el guion pide la copa y sigue sin jugarla) ni el minijuego de piedras; más tarde, la aparición del jefe final, los créditos y el modo versus | `tournament.c:128` `scriptStartTournament`, `utils2.c:577` `startTournament`, `std/`; `kar/kar.c:778` `KAR_start`; `eab/`, `endi/`, `vs/` | `apps/session/src/story_routines/routine_tournament.cpp`; `apps/game/src/story_scene_glue.cpp:58` |
+| 1 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
+| 2 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
+| 3 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
+| 4 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
+| 5 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
+| 6 | Al dar de comer no se ve el objeto en la mano del jugador | `game_menu.c:2245` `renderFeedingItem` | `apps/game/src/feed_scene.cpp:81` |
+| 7 | Tras un combate de historia el compañero no vuelve andando: la vuelta acaba al momento, y no se guarda su rastro durante el combate | `script_interp.c:1950`; `battle_main.c:702` `BTL_tickPartnerWaypointTrail` | `apps/session/src/story_scenes.cpp:75-79` (esbozo) |
+| 8 | Los personajes del mapa que no luchan no huyen al empezar el combate (se van andando tras ganar) | `battle_setup.c` `BTL_handleBattleIntro`, `battle_tick.c:308` `NPCEntityTickBattle`, `btl.c:128` `isScreenConcave` | docs/modulos/game/battle.md:126 |
+| 9 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
+| 10 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
+| 11 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
+| 12 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
+| 13 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
+| 14 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
+| 15 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
+| 16 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
+| 17 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
+| 18 | Sin puntos de prosperidad: no se recalculan al cargar ni al empezar, y la ciudad no elige su mapa según lo que ha crecido | `main.c:3902` `recalculatePPandArena`, `map.c:5592` `getFileCityTopMap` | — |
+| 19 | Sin torneos (el guion pide la copa y sigue sin jugarla) ni el minijuego de piedras; más tarde, la aparición del jefe final, los créditos y el modo versus | `tournament.c:128` `scriptStartTournament`, `utils2.c:577` `startTournament`, `std/`; `kar/kar.c:778` `KAR_start`; `eab/`, `endi/`, `vs/` | `apps/session/src/story_routines/routine_tournament.cpp`; `apps/game/src/story_scene_glue.cpp:58` |
 
 ## Otros huecos que no son una función del índice
 
@@ -88,20 +87,20 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 50 | 1 | 15 | 36 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 79 | 5 | 7 | 54 | 90 % |
-| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 2 | 47 | 97 % |
+| [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 73 | 7 | 12 | 6 | 83 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 13 | 0 | 16 | 27 | 45 % |
-| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 7 | 1 | 3 | 24 | 68 % |
+| [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
 | [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 0 | 4 | 81 | 364 | 2 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 0 | 0 | 35 | 13 | 0 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 44 | 1 | 1 | 40 | 97 % |
-| **Total** | 2438 funciones | 870 | 43 | 393 | 1132 | 68 % |
+| **Total** | 2438 funciones | 872 | 42 | 393 | 1131 | 68 % |
 
 ## Batalla
 
@@ -314,15 +313,16 @@ Título, menú de juego, ficha del compañero, bolsa, cajas de interfaz, fundido
 
 Ficheros del decomp: `main/fade.c`, `main/font.c`, `main/game_menu.c`, `main/inventory.c`, `main/main_menu.c`, `main/new_game.c`, `main/sjis.c`, `main/ui.c`.
 
-Portado 74, parcial 1, falta 2, no aplica 47.
+Portado 74, parcial 1, falta 3, no aplica 46.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `fadeToWhite` | `main/fade.c:170` | falta | Funde la pantalla a blanco. | rutina 45 del guion, sin registrar: sigue sin fundir |
 | `fadeFromWhite` | `main/fade.c:193` | falta | Vuelve del blanco. | rutina 46 del guion, sin registrar |
 | `renderFeedingItem` | `main/game_menu.c:2245` | parcial | Dibuja el objeto en la mano al dar de comer. | `apps/game/src/feed_scene.cpp:81` · el objeto que se da de comer no se dibuja |
+| `scriptTickMainMenu` | `main/main_menu.c:5331` | falta | — | solo lo cita la extracción del disco |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (23); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (22); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); limpieza de objetos y memoria del original: el motor libera lo suyo (3); texto en memoria de vídeo (2); utilidad (2); texto de interfaz (2); arranque, cola de lectura del disco, codificación de texto o carga de sonido del original: lo hace el motor (2); preparación del original (1); texto del original; el motor usa sus estilos (1); repetición del mando; la hace el motor (1); entrada del original (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); cuadros de interfaz del original; el motor usa su interfaz (1).
 
 ## Objetos y tiendas
 
@@ -458,14 +458,12 @@ La partida en la tarjeta de memoria, la máquina de guardar y el registro para e
 
 Ficheros del decomp: `main/main_menu.c`.
 
-Portado 7, parcial 1, falta 3, no aplica 24.
+Portado 9, parcial 0, falta 2, no aplica 24.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `countRegisteredDigimon` | `main/main_menu.c:5136` | falta | Cuenta las criaturas registradas para el modo versus. | llega con el modo versus |
-| `registerBattleData` | `main/main_menu.c:5230` | falta (citada en docs) | Registra al compañero para el modo versus. | save_machine.hpp: llega con el modo versus |
-| `tickSaveMachine` | `main/main_menu.c:5288` | parcial | La máquina de guardar que abre el guion. | `apps/game/src/save_machine.hpp` · la máquina de guardar existe, pero la rutina 48 del guion se cierra sin abrirla |
-| `awardMachinedramonData` | `main/main_menu.c:5299` | falta (citada en docs) | Al acabar el juego, registra al jefe final para el modo versus. | — |
+| `awardMachinedramonData` | `main/main_menu.c:5299` | falta | Al acabar el juego, registra al jefe final para el modo versus. | `apps/session/include/dwe/session/battle_registry.hpp:48` |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (16); tarjeta de memoria (4); tarjeta de memoria; el motor guarda en ficheros (1); gráficos, memoria o ficheros del hardware original: los sustituye el motor (1); suma de control de la tarjeta (1); suma de control de la tarjeta; el motor valida su fichero (1).
 

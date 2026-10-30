@@ -106,6 +106,17 @@ documento `ui/egg_box`) y la rutina 4, que da al compañero su forma nueva y jue
 de huevo y confirmar elige uno; no se puede salir sin elegir. Lo que no está: los sprites de los huevos en VRAM
 (`EGG_ICONS`), la animación de la caja y la carga del overlay; el documento enumera los huevos.
 
+## La máquina de guardado
+
+`SaveMachine` (`save_machine.cpp`) abre la máquina de la casa del anciano cuando el guion llama a la rutina 48
+(`StorySceneGlue::takeSaveMachine`; el guion sigue al cerrarse) o con `save_machine("")`. `SaveMachineFlow`
+(`save_machine_flow.cpp`) lleva los menús de `main_menu.c: tickMainMenu` 0x3C a 0x46 sin interfaz: registrar al
+compañero en una de las 39 ranuras (`session::BattleRegistry`), «¿Quieres guardar?», el aviso sin ranura (se cierra
+solo a los 0x79 cuadros del original) y el de por debajo de Novato. Guarda con `GameSaves`, como al dormir, y deshace el
+registro si el guardado no se escribe. El documento `ui/save_machine` dibuja las cajas del original donde el original
+las dibuja; el cursor se para en los extremos y solo suena al moverse. Detalle en
+[guardar-y-cargar.md, 3.7](../../architecture/guardar-y-cargar.md#37-máquina-de-guardado-y-fin-del-juego).
+
 ## Apertura de la partida nueva
 
 Una partida nueva empieza como el original (`main.c: main`, estado 0): las preguntas de Jijimon, la película y el

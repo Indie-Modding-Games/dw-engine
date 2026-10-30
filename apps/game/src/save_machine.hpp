@@ -1,49 +1,64 @@
 #pragma once
 
+#include <dwe/assets/digimon_table.hpp>
+#include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/battle_registry.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/ui/ui.hpp>
 
-#include <cstdint>
 #include <string_view>
 
-#include "game_saves.hpp"
+#include "save_machine_flow.hpp"
 
 namespace dwe::app {
 
-// save_machine(""): opens the save machine as script routine 48 does, until the story scripts call
-// it.
+// save_machine(""): opens the save machine as script routine 48 does, from a route or the console.
 inline constexpr std::string_view SaveMachineCommand = "save_machine";
 
-// The save machine (docs/architecture/guardar-y-cargar.md, 3.7), as main_menu.c: openSaveMachine
-// and tickMainMenu's save menus: «Do you want to save?», then the save to the playthrough's slot.
-// The script that opened it waits until it closes. Registering the partner for versus battles comes
-// with the versus mode (phase 5).
+inline constexpr std::string_view SaveMachineDocument = "save_machine";
+
+// The save machine of the field (docs/architecture/guardar-y-cargar.md, 3.7), opened by script
+// routine 48 (script_interp.c, main_menu.c: openSaveMachine and tickSaveMachine): the partner's
+// registration for versus battles and the save, in the boxes of the save_machine document. Its
+// menus are SaveMachineFlow's; this object shows them and takes the document's answers. The field
+// and the game time wait while it is open.
 class SaveMachine {
 public:
-  // The session and the UI must outlive this object.
-  SaveMachine(session::GameSession& session, ui::Ui& ui);
+  struct Desc {
+    session::GameSession* session = nullptr;
+    ui::Ui* ui = nullptr;
+    // The partner's fighter (its stats and moves) and the registry it is registered in.
+    session::BattleAdapter* battle = nullptr;
+    session::BattleRegistry* registry = nullptr;
+    // The names of the species, for the boxes; may be null.
+    const assets::DigimonTable* species = nullptr;
+  };
 
-  // Whether the machine's dialogs are on screen: the field and the game time wait meanwhile.
-  [[nodiscard]] bool active() const { return state_ != State::Closed; }
+  // Everything in `desc` must outlive the machine.
+  explicit SaveMachine(const Desc& desc);
+
+  // Whether the machine's boxes are on screen.
+  [[nodiscard]] bool active() const { return flow_.active(); }
 
   void open();
 
-  // Takes the answers to the machine's dialogs; false for any other command.
+  // The document's answers (save_machine_choose with the row, save_machine_cancel); false for any
+  // other command.
   bool handle(const ui::UiCommand& command);
+  // Counts the original's frames, 20 a second, for the notice that closes by itself.
+  void tick(double seconds);
+  // Whether the machine closed since the last call: the script that opened it goes on.
+  [[nodiscard]] bool takeClosed();
 
 private:
-  // NoSlot: the notice of a playthrough with no slot. Asking: «Do you want to save?». Saving: a
-  // dialog of the save itself.
-  enum class State : std::uint8_t { Closed, NoSlot, Asking, Saving };
+  void publish();
+  void follow();
 
-  void show(const SaveDialog& dialog, State state);
-  void follow(const SaveStep& step);
-  void close();
-
-  session::GameSession* session_;
-  ui::Ui* ui_;
-  GameSaves saves_;
-  State state_ = State::Closed;
+  Desc desc_;
+  SaveMachineFlow flow_;
+  double frameSeconds_ = 0.0;
+  bool shown_ = false;
+  bool closed_ = false;
 };
 
 } // namespace dwe::app

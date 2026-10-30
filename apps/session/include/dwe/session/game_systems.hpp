@@ -25,6 +25,7 @@ class Ruleset;
 namespace dwe::session {
 
 class BattleAdapter;
+class BattleRegistry;
 class CalendarAdapter;
 class CityAdapter;
 class MedalsAdapter;
@@ -61,9 +62,9 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
 // inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper,
-// discard menu, calendar, field items, cards, fishing, poop, city, medals), and the adapters by type
-// for the commands of the game and its menus. The session owns the adapters once given them: the
-// typed pointers are valid while it lives.
+// discard menu, calendar, field items, cards, fishing, poop piles, city, medals, battle registry), and
+// the adapters by type for the commands of the game and its menus. The session owns the adapters once
+// given them: the typed pointers are valid while it lives.
 struct GameSystems {
   std::vector<std::unique_ptr<SessionSystem>> systems;
   EvolutionAdapter* evolution = nullptr;
@@ -87,6 +88,8 @@ struct GameSystems {
   // The city's prosperity and the medals the field gives.
   CityAdapter* city = nullptr;
   MedalsAdapter* medals = nullptr;
+  // The partners registered at the save machine.
+  BattleRegistry* registry = nullptr;
 };
 
 // The adapters of every game system on the packs, which must outlive them, wired to each other: the

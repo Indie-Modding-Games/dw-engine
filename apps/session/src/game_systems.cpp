@@ -2,6 +2,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/battle_registry.hpp>
 #include <dwe/session/calendar_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/city_adapter.hpp>
@@ -184,6 +185,9 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
                                                                   .cards = game.cards});
   game.medals = medals.get();
   game.systems.push_back(std::move(medals));
+  auto registry = std::make_unique<BattleRegistry>();
+  game.registry = registry.get();
+  game.systems.push_back(std::move(registry));
   return game;
 }
 

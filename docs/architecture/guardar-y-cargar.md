@@ -244,13 +244,32 @@ mensaje, como el original; el aviso de autoguardado, si salta, es aparte.
 
 ### 3.7 Máquina de guardado y fin del juego
 
-`SaveMachine` (`apps/game/src/save_machine.cpp`) porta `main_menu.c: openSaveMachine` y los menús 0x44 y 0x45 de
-`tickMainMenu`: sin ranura, el aviso `save.machine_no_slot` (el «sin tarjeta» del original); con ella, «¿Quieres
-guardar?» y el guardado a la ranura con la misma comprobación que al dormir ([4](#4-errores)). El campo y el reloj
-esperan mientras está abierta. **El intérprete de historia aún no corre la rutina 48**: hasta entonces la abre la
-ayuda de depuración `save_machine("")`. El registro para el modo versus (menús 0x3C a 0x3E y 0x46) es de la fase 5
-(pregunta 3). El guardado del fin del juego (rutina 54, `gameClearSave`: la ciudad como mapa de vuelta y la película
-al cargar) va en la 5b-2.
+`SaveMachine` (`apps/game/src/save_machine.cpp`) abre la máquina cuando el guion de la casa del anciano llama a la
+rutina 48 (`StorySceneGlue`; el guion sigue al cerrarse) o con la ayuda de depuración `save_machine("")`. Sus menús
+son los de `main_menu.c: openSaveMachine` y `tickMainMenu` 0x3C a 0x46, en `SaveMachineFlow`
+(`save_machine_flow.{hpp,cpp}`, sin interfaz):
+
+- **0x3C, registro**: la ficha del compañero (nombre, especie, PV, PM, ataque, defensa, técnicas 1 a 3) y «¿Quieres
+  registrarlo?». Sí lleva a la lista; no o cancelar, a «¿Quieres guardar?».
+- **0x3D, lista**: diez filas que se desplazan por las 39 ranuras del registro (la 40 es el regalo del fin del juego,
+  `awardMachinedramonData`); una vacía enseña un punto. Cancelar vuelve a 0x3C.
+- **0x3E, confirmar**: «¿Quieres registrar a <nombre>?» y la nota de que se guarda al registrar. Sí registra
+  (`registerBattleData`: `BattleRegistry::registerAt`) y guarda; no vuelve a la lista; cancelar, a 0x3C.
+- **0x45**: «¿Quieres guardar?»; sí guarda, no cierra; no admite cancelar.
+- **0x44**: sin ranura (la partida empezó sin guardar, el «sin tarjeta» del original), el aviso de que no se puede
+  registrar; se cierra con cualquier botón o solo tras 0x79 cuadros del original (6,05 s).
+- **0x46**: un compañero por debajo de Novato no se registra; el aviso y luego «¿Quieres guardar?».
+
+El guardado es el de dormir ([4](#4-errores)): a la ranura de la partida, con la misma comprobación (otra partida,
+dañada, de un juego más nuevo) y sus diálogos en la caja de la pregunta de sobrescribir del original (0x42). Las
+comprobaciones de la tarjeta (0x3F a 0x43, «Comprobando la tarjeta», «Guardando») no tienen equivalente: el
+guardado de PC no espera a nada y la máquina se cierra al acabar, como el original tras escribir (menú 9), sin aviso.
+Un registro cuyo guardado no se escribe se deshace: el original lo guarda dentro del propio fichero
+(`SAVE_FILE.saves[0]`). El registro es la sección de guardado `battle_registry` (`apps/session`,
+`battle_registry.{hpp,cpp}`); una partida sin ella empieza sin registrados. El campo y el reloj esperan mientras la
+máquina está abierta. Las cajas son las del original, donde el original las dibuja (`ui/save_machine`, en los dos
+aspectos). El modo versus que lucha contra los registrados es de la fase 5 (pregunta 3). El guardado del fin del
+juego (rutina 54, `gameClearSave`: la ciudad como mapa de vuelta y la película al cargar) va en la 5b-2.
 
 ### 3.8 Volver a la portada
 
@@ -335,7 +354,8 @@ fichero (`dialog.file`).
 | Fichero de la ranura borrado fuera del juego: se reescribe | Mejora menor | |
 | Al guardar durmiendo se mira antes la ranura de la partida (otra partida, dañada, de un juego más nuevo) | Mejora documentada | El original escribe encima sin mirar; un PC deja tocar la carpeta fuera del juego |
 | Dormir: el partner no camina a la cama ni hay animaciones ni sonido del sueño (`partner.c: 281-321`) | Pendiente: VAN-04 | El fundido, el momento del guardado y el del despertar ya son los del original |
-| Sin registro para el modo versus en la máquina | Pendiente (fase 5) | Pregunta 3 |
+| La máquina registra para el modo versus; el modo versus no está | Vanilla; el modo, pendiente (fase 5) | Pregunta 3 |
+| La máquina no enseña «Comprobando la tarjeta» ni «Guardando» | Sin equivalente | No hay tarjeta; el guardado de PC es inmediato |
 | Borrar partida en la portada; lo borrado queda como `.bak` | Vanilla + mejora documentada | Pregunta 4; la copia evita perder una partida por error |
 | Las preguntas de continuar y borrar empiezan en «Sí» y «No» | Mejora documentada | La respuesta esperada y la segura |
 | Recolocar al partner si choca con un NPC al cargar | Pendiente | Pregunta 7 |
@@ -429,7 +449,7 @@ cambio de contrato del formato de la partida. Las 3, 4 y 7 van a la fase 5 (la f
 |---|---|---|---|
 | 1 | ¿Cabecera v3 con `summary` (`slot`, `tamer`, `species`, `nickname`, `map`) o sacar el resumen de las secciones al listar? | CONTRACT (formato) | v3 en la cabecera: la lista solo lee la cabecera (como el original), `game/save` no conoce los sistemas y la migración rellena lo que pueda |
 | 2 | ¿El autoguardado guarda la ranura manual de su partida (`summary.slot`) y continuar desde él sigue en esa ranura? | CONTRACT (formato) | Sí: si no, continuar un autoguardado dejaría la partida sin sitio donde dormir y guardar |
-| 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | No: va a la fase 5 con el modo versus; la máquina pregunta solo «¿Quieres guardar?», documentado como pendiente |
+| 3 | ¿El registro para el modo versus de la máquina (y el regalo del fin del juego) entra en este paquete? | FIDELITY | El registro sí (2026-10-30: la máquina registra y lo guarda, sección `battle_registry`); el modo versus y el regalo del fin del juego, en la fase 5 |
 | 4 | ¿«Borrar partida» de la portada del original? | FIDELITY | Hecho (3.5b): borra a la copia `.bak` |
 | 5 | ¿«Volver a la portada» siempre, o detrás de un ajuste por ser una mejora? | FIDELITY | Siempre: es interfaz como «Salir del juego», no cambia reglas; queda en la tabla de desviaciones |
 | 6 | Una partida recién creada y nunca guardada en el juego: el original repite la escena de partida nueva al cargarla; ¿aquí? | minor | Cargar en el mapa de inicio con el estado de partida nueva; repetir la escena cuando la escena de inicio sea del intérprete de historia |

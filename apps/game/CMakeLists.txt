@@ -62,6 +62,7 @@ dwe_add_app(game
         src/screenshot.cpp
         src/session_start.cpp
         src/save_machine.cpp
+        src/save_machine_flow.cpp
         src/gym_screen.cpp
         src/discard_screen.cpp
         src/item_keeper_screen.cpp
@@ -120,7 +121,7 @@ if(BUILD_TESTING)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
-                                  src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
+                                  src/save_machine_flow.cpp src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe::animation dwe::battle dwe_test_main)

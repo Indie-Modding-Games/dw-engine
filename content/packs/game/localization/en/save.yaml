@@ -40,8 +40,11 @@ home_newer: "This slot holds a save from a newer version of the game. It cannot 
 sleep: "Go to sleep"
 sleep_and_save: "Save and go to sleep"
 # The save machine (docs/architecture/guardar-y-cargar.md, 3.7).
-machine_confirm: "Do you want to save?"
-machine_no_slot: "This adventure has no save slot, so it cannot be saved."
+# The first line of the notice for a partner below Rookie (main_menu.c: drawMainMenuStrings, view 19): its name, its
+# species and the start of the original's next line; the rest are the original's text.
+machine_in_training: "{name} {species} is in"
+# An empty slot of the battle registration's list (main_menu.c: the registry's rows).
+machine_empty_slot: "."
 # Back to the title screen from the pause menu (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Anything not saved will be lost. Return to the title screen?"
 # Erasing a save from the title screen (docs/architecture/guardar-y-cargar.md). The dialog shows the save's file

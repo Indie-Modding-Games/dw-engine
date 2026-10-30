@@ -632,7 +632,7 @@ openBuyCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin panta
 openSellCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la venta de cartas." }
 createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
 createNinjamonEffect = { status = "parcial", note = "la rutina 38 se cierra sin el humo", what = "Nube de humo de un personaje que desaparece." }
-tickSaveMachine = { status = "parcial", dwe = "apps/game/src/save_machine.hpp", note = "la máquina de guardar existe, pero la rutina 48 del guion se cierra sin abrirla", what = "La máquina de guardar que abre el guion." }
+tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
 initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "parcial", note = "la rutina 6 se cierra sin torneo", what = "Empieza un torneo." }
@@ -672,7 +672,7 @@ tickSelectSlotInput = { status = "portado", dwe = "content/packs/game/ui/save_sl
 createByteSum = { status = "no-aplica", note = "suma de control de la tarjeta", what = "Suma los bytes de la partida." }
 createSavegameChecksum = { status = "no-aplica", note = "suma de control de la tarjeta; el motor valida su fichero", what = "Calcula la suma de control de la partida." }
 countRegisteredDigimon = { status = "falta", what = "Cuenta las criaturas registradas para el modo versus.", note = "llega con el modo versus" }
-registerBattleData = { status = "falta", what = "Registra al compañero para el modo versus.", note = "save_machine.hpp: llega con el modo versus" }
+registerBattleData = { status = "portado", dwe = "apps/session/include/dwe/session/battle_registry.hpp", what = "Registra al compañero para el modo versus.", note = "el registro se guarda; el modo versus que lo usa llega en la fase 5" }
 awardMachinedramonData = { status = "falta", what = "Al acabar el juego, registra al jefe final para el modo versus." }
 TRN_saveBaseStats = { system = "training", status = "portado", dwe = "game/gym/src/stat_countup.cpp", what = "Guarda los stats antes de entrenar para contar lo ganado." }
 TRN_saveTrainingStartTime = { system = "training", status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "Guarda la hora al empezar a entrenar." }

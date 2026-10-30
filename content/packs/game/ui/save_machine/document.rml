@@ -1,0 +1,74 @@
+<rml>
+<head>
+	<title>Save machine</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="scrim">
+		<!-- The machine's boxes (main_menu.c: renderMainMenu, views 14 to 19); logic.lua shows the open view's. -->
+		<div id="heading" class="box"><p text-key="main.main_menu_memcard_messages.0009"></p></div>
+		<div id="stats" class="box">
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0007"></span><span class="stat-value" id="stat-name"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0008"></span><span class="stat-value" id="stat-species"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0009"></span><span class="stat-value" id="stat-hp"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0010"></span><span class="stat-value" id="stat-mp"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0011"></span><span class="stat-value" id="stat-offense"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_labels.0012"></span><span class="stat-value" id="stat-defense"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_messages.0013"></span><span class="stat-value" id="stat-technique-0"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_messages.0014"></span><span class="stat-value" id="stat-technique-1"></span></p>
+				<p class="stat"><span class="stat-label" text-key="main.main_menu_save_messages.0015"></span><span class="stat-value" id="stat-technique-2"></span></p>
+		</div>
+		<div id="register-question" class="box"><p text-key="main.main_menu_save_messages.0016"></p></div>
+		<div id="slots" class="box">
+				<button id="slot-1" class="slot" onclick="choose_row(document, 0)"><span class="slot-name" id="slot-1-name"></span><span class="slot-species" id="slot-1-species"></span></button>
+				<button id="slot-2" class="slot" onclick="choose_row(document, 1)"><span class="slot-name" id="slot-2-name"></span><span class="slot-species" id="slot-2-species"></span></button>
+				<button id="slot-3" class="slot" onclick="choose_row(document, 2)"><span class="slot-name" id="slot-3-name"></span><span class="slot-species" id="slot-3-species"></span></button>
+				<button id="slot-4" class="slot" onclick="choose_row(document, 3)"><span class="slot-name" id="slot-4-name"></span><span class="slot-species" id="slot-4-species"></span></button>
+				<button id="slot-5" class="slot" onclick="choose_row(document, 4)"><span class="slot-name" id="slot-5-name"></span><span class="slot-species" id="slot-5-species"></span></button>
+				<button id="slot-6" class="slot" onclick="choose_row(document, 5)"><span class="slot-name" id="slot-6-name"></span><span class="slot-species" id="slot-6-species"></span></button>
+				<button id="slot-7" class="slot" onclick="choose_row(document, 6)"><span class="slot-name" id="slot-7-name"></span><span class="slot-species" id="slot-7-species"></span></button>
+				<button id="slot-8" class="slot" onclick="choose_row(document, 7)"><span class="slot-name" id="slot-8-name"></span><span class="slot-species" id="slot-8-species"></span></button>
+				<button id="slot-9" class="slot" onclick="choose_row(document, 8)"><span class="slot-name" id="slot-9-name"></span><span class="slot-species" id="slot-9-species"></span></button>
+				<button id="slot-10" class="slot" onclick="choose_row(document, 9)"><span class="slot-name" id="slot-10-name"></span><span class="slot-species" id="slot-10-species"></span></button>
+		</div>
+		<div id="slots-prompt" class="box"><p text-key="main.main_menu_save_messages.0017"></p></div>
+		<div id="confirm-question" class="box">
+			<p text-key="main.main_menu_save_messages.0018"></p>
+			<p id="confirm-name"></p>
+		</div>
+		<div id="confirm-note" class="box">
+			<p text-key="main.main_menu_save_messages.0019"></p>
+			<p text-key="main.main_menu_save_messages.0020"></p>
+			<p text-key="main.main_menu_save_messages.0021"></p>
+		</div>
+		<div id="no-slot" class="box">
+			<p text-key="main.main_menu_save_messages.0022"></p>
+			<p text-key="main.main_menu_save_messages.0023"></p>
+			<p text-key="main.main_menu_save_messages.0024"></p>
+			<p text-key="main.main_menu_save_messages.0025"></p>
+		</div>
+		<div id="in-training" class="box">
+			<p id="in-training-line"></p>
+			<p text-key="main.main_menu_save_messages.0027"></p>
+			<p text-key="main.main_menu_save_messages.0028"></p>
+		</div>
+		<div id="save-question" class="box"><p text-key="main.main_menu_save_messages.0026"></p></div>
+		<div id="save-dialog" class="box">
+			<p id="dialog-text"></p>
+			<p id="dialog-file"></p>
+		</div>
+		<div id="answers" class="box">
+			<button id="yes" class="answer" onclick="choose_row(document, 0)" text-key="main.main_menu_save_labels.0013"></button>
+			<button id="no" class="answer" onclick="choose_row(document, 1)" text-key="main.main_menu_save_labels.0014"></button>
+			<button id="ok" class="answer" onclick="choose_row(document, 0)" text-key="common.accept"></button>
+		</div>
+
+		<div id="prompts">
+			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="common.accept"></span></span>
+			<span class="prompt" id="prompt-back"><span class="key" id="prompt-cancel"></span><span text-key="common.back"></span></span>
+		</div>
+	</div>
+</body>
+</rml>

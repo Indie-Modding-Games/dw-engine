@@ -1,0 +1,69 @@
+/* The save machine's boxes whatever the skin, where the original draws them (main_menu.c: renderMainMenu, the
+   renderMenuBox calls of views 14 to 19 and 12): each box at its (x, y) of the 320 x 240 screen, one original pixel
+   3dp, from the middle of the screen across and from the top down. A label wider than the original's widens its box
+   to the right. The rows are the original's 12 pixels apart (36dp); the text starts 10 pixels in. logic.lua shows
+   the open view's boxes and moves the cursor itself (the rows have no navigation, and it stops at the ends). */
+
+#scrim {
+	background-color: transparent;
+}
+
+.box {
+	position: absolute;
+	left: 50%;
+	box-sizing: border-box;
+	width: auto;
+	border: 3dp transparent;
+	padding: 12dp 27dp 0 27dp;
+	white-space: nowrap;
+	line-height: 36dp;
+}
+
+button {
+	nav: none;
+}
+
+/* View 14: the title (40, 28), the partner's record (40, 50; the values 100 pixels right of the names), the
+   question (60, 168) and the answers (60, 190). */
+#heading { margin-left: -360dp; top: 84dp; min-width: 738dp; height: 66dp; }
+#stats { margin-left: -360dp; top: 150dp; min-width: 672dp; height: 354dp; }
+.stat { position: relative; }
+.stat-value { position: absolute; left: 300dp; top: 0; }
+#register-question { margin-left: -300dp; top: 504dp; min-width: 600dp; height: 66dp; }
+
+/* The answers, yes over no (56 x 34 pixels): at (60, 190) for the registration, (60, 84) for its confirmation,
+   (60, 82) for the save's question and (54, 85) under the save's dialog (view 12). */
+#answers { margin-left: -300dp; top: 570dp; min-width: 168dp; height: 102dp; padding-left: 15dp; }
+#scrim.view-confirm_register #answers { top: 252dp; }
+#scrim.view-save_question #answers { top: 246dp; }
+#scrim.view-save_dialog #answers { margin-left: -318dp; top: 255dp; }
+#answers button { display: block; line-height: 30dp; }
+#answers button.hidden, .slot.hidden { display: none; }
+
+/* View 15: the registry's list (60, 50), ten rows with the cursor 204 pixels wide, the name 30 pixels and the
+   species 108 pixels right of the row's start; the prompt under it (60, 180). */
+#slots { margin-left: -300dp; top: 150dp; width: 672dp; height: 390dp; padding-left: 15dp; }
+.slot { display: block; position: relative; width: 612dp; height: 36dp; padding: 0; line-height: 30dp; }
+.slot-name { position: absolute; left: 87dp; top: 0; }
+.slot-species { position: absolute; left: 321dp; top: 0; }
+#slots-prompt { margin-left: -300dp; top: 540dp; min-width: 636dp; height: 66dp; }
+
+/* View 16: the question with the partner's name (60, 50) and the note (60, 120). */
+#confirm-question { margin-left: -300dp; top: 150dp; min-width: 636dp; height: 102dp; }
+#confirm-note { margin-left: -300dp; top: 360dp; min-width: 636dp; height: 138dp; }
+
+/* View 17: no slot (24, 64); view 19: below Rookie (36, 64); view 18: the save's question (60, 50, its line 10
+   pixels down); view 12: the save's dialog (54, 51). */
+#no-slot { margin-left: -408dp; top: 192dp; min-width: 816dp; height: 174dp; padding-top: 15dp; }
+#in-training { margin-left: -372dp; top: 192dp; min-width: 744dp; height: 138dp; }
+#save-question { margin-left: -300dp; top: 150dp; min-width: 564dp; height: 96dp; padding-top: 27dp; }
+#save-dialog { margin-left: -318dp; top: 153dp; min-width: 696dp; min-height: 102dp; }
+
+#prompts {
+	position: absolute;
+	left: 50%;
+	bottom: 24dp;
+	width: 600dp;
+	margin-left: -300dp;
+	text-align: center;
+}

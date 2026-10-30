@@ -44,10 +44,14 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (discard_ != nullptr) {
     discard_->update(scenes);
   }
+  if (saveMachine_ != nullptr && saveMachine_->takeClosed() && saveMachineWaits_) {
+    saveMachineWaits_ = false;
+    scenes.screenClosed();
+  }
   while (const auto screen = scenes.takeScreenRequest()) {
     if (shop_.take(*screen, scene) || itemKeeper_.take(*screen, scene) || gym_.take(*screen) ||
         naming_.take(*screen) || (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
-        (discard_ != nullptr && discard_->take(*screen))) {
+        (discard_ != nullptr && discard_->take(*screen)) || takeSaveMachine(*screen)) {
       continue;
     }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",
@@ -70,6 +74,17 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
                    static_cast<int>(partner->scene));
     scenes.partnerSceneFinished();
   }
+}
+
+// script_interp.c: call_routine 48 opens the save machine (main_menu.c: openSaveMachine); the
+// script goes on once it closes.
+bool StorySceneGlue::takeSaveMachine(const session::StoryScreenRequest& request) {
+  if (request.screen != session::StoryScreen::SaveMenu || saveMachine_ == nullptr) {
+    return false;
+  }
+  saveMachine_->open();
+  saveMachineWaits_ = request.waits;
+  return true;
 }
 
 // The enemies are the map's NPCs by script id (MapNpc::scriptId). A battle with none predefined is

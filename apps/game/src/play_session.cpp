@@ -294,7 +294,11 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .feed = &feedScene_}),
       fieldHud_(*context.ui, *game_.session),
       sleepScreen_(*game_.session, *context.ui, scene_->field().rules().transition),
-      saveMachine_(*game_.session, *context.ui),
+      saveMachine_({.session = game_.session.get(),
+                    .ui = context.ui,
+                    .battle = game_.systems.battle,
+                    .registry = game_.systems.registry,
+                    .species = species_ ? &*species_ : nullptr}),
       evolutionScene_({.session = game_.session.get(),
                        .scene = scene_.get(),
                        .species = species_ ? &*species_ : nullptr,
@@ -340,6 +344,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachDeath(&deathScene_);
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);
+  storyScenes_.attachSaveMachine(&saveMachine_);
   if (auto newGameScene = loadNewGameSceneRules(*context.files, session.rules().current().id())) {
     namingBox_ = std::make_unique<NamingBox>(*context.ui, std::move(newGameScene->naming),
                                              newGameScene->sounds);
@@ -439,6 +444,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
   scene_->settleActors();
   // The menus pause the field and the game time; a sleep or a battle runs instead of the field.
   sleepScreen_.tick(TickSeconds);
+  saveMachine_.tick(TickSeconds);
   const auto& fieldRules = game_.systems.fieldItems->rules();
   sleepScreen_.walkUp(*scene_, static_cast<float>(TickSeconds),
                       fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);

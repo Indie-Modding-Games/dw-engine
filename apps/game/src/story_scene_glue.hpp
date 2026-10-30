@@ -11,6 +11,7 @@
 #include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
 #include "field_scene.hpp"
+#include "save_machine.hpp"
 #include "story_gym.hpp"
 #include "story_item_keeper.hpp"
 #include "story_naming.hpp"
@@ -36,12 +37,15 @@ public:
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
   // The item menu the story's DiscardItem screen opens (call_routine 0).
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
+  // The save machine the story's SaveMenu screen opens (call_routine 48).
+  void attachSaveMachine(SaveMachine* machine) { saveMachine_ = machine; }
   // The naming box the story's renaming opens (call_routine 32).
   void attachNaming(NamingBox* box, session::GameSession* session) { naming_.attach(box, session); }
   // One engine tick of the player's buttons for the story's naming box; true when it took them.
   bool pressNaming(const input::InputState& input) { return naming_.press(input); }
 
 private:
+  bool takeSaveMachine(const session::StoryScreenRequest& request);
   void startBattle(session::StoryScenes& scenes, BattleScreen& battle,
                    const assets::DigimonTable* species, const FieldScene& scene,
                    const game::story::ScriptedBattle& request);
@@ -57,6 +61,9 @@ private:
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   StoryNaming naming_;
+  SaveMachine* saveMachine_ = nullptr;
+  // Whether the story waits on the save machine.
+  bool saveMachineWaits_ = false;
 };
 
 } // namespace dwe::app

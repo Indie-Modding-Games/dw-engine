@@ -40,8 +40,11 @@ home_newer: "Esta ranura tiene una partida de una versión más nueva del juego.
 sleep: "Dormir"
 sleep_and_save: "Guardar y dormir"
 # La máquina de guardado (docs/architecture/guardar-y-cargar.md, 3.7).
-machine_confirm: "¿Quieres guardar?"
-machine_no_slot: "Esta aventura no tiene ranura, así que no se puede guardar."
+# La primera línea del aviso de un compañero por debajo de Novato (main_menu.c: drawMainMenuStrings,
+# vista 19): su nombre, su especie y el principio de la línea siguiente del original; el resto es el texto del original.
+machine_in_training: "{name} {species} está en"
+# Una ranura vacía de la lista del registro de batalla (main_menu.c: las filas del registro).
+machine_empty_slot: "."
 # Volver a la portada desde el menú de pausa (docs/architecture/guardar-y-cargar.md, 3.8).
 to_title_confirm: "Se perderá lo que no hayas guardado. ¿Volver a la portada?"
 # Borrar una partida desde la portada (docs/architecture/guardar-y-cargar.md). El diálogo enseña debajo el nombre
