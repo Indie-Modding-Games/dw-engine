@@ -1335,7 +1335,7 @@ TEST_CASE("the release rule takes a character out of a wall, and the player only
   }
 }
 
-TEST_CASE("an NPC put on the player steps off it on the next tick; the player stays") {
+TEST_CASE("an NPC put on the player stays where it was put; the player walks off it") {
   dwe::scene::World world;
   Field field{world, originalRules()};
   MapDocument map = roomMap("room");
@@ -1344,13 +1344,41 @@ TEST_CASE("an NPC put on the player steps off it on the next tick; the player st
   run(field, 0.2F);
   REQUIRE(spawnNpc(field, slot));
   field.tick(Tick);
-  const glm::vec3 npc = *field.npcs().positionOf(7);
+  // The original moves nobody: the NPC and the player stand in each other.
+  CHECK(*field.npcs().positionOf(7) == glm::vec3{30.0F, 0.0F, 0.0F});
   CHECK(field.player().position == glm::vec3{0.0F});
-  CHECK_FALSE(dwe::game::field::squaresOverlap(squareAt(field.player().position, 100.0F),
-                                               squareAt(npc, 100.0F)));
-  CHECK_FALSE(Field::overlaps(squareAt(field.partner().position, 120.0F), squareAt(npc, 100.0F)));
-  run(field, 2.0F);
-  CHECK(field.overlapEpisodes() == 0);
+  CHECK_FALSE(Field::overlaps(squareAt(field.partner().position, 120.0F),
+                              squareAt(*field.npcs().positionOf(7), 100.0F)));
+  // Away from the NPC the player is free.
+  field.setInput({.stick = {-1.0F, 0.0F}, .run = true});
+  run(field, 1.0F);
+  CHECK(groundDistance(field.player().position, *field.npcs().positionOf(7)) > 300.0F);
+  CHECK(*field.npcs().positionOf(7) == glm::vec3{30.0F, 0.0F, 0.0F});
+}
+
+TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") {
+  // Kunemon's bed in mayo02 is a wall cell: the original keeps it at (143, -1000) through a talk
+  // and 300 frames after (DuckStation, e1-cp28).
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  // A pillar of 3 x 3 cells around world (1050, 1050), the NPC in its middle.
+  fill(map, {.column = 59, .row = 59}, {.column = 61, .row = 61}, Blocked);
+  const std::size_t slot = addNpc(map, 1050.0F, 1050.0F, 6);
+  field.enterMapAt(map, at(-1000.0F, -1000.0F, 0.0F));
+  REQUIRE(spawnNpc(field, slot));
+  const glm::vec3 home{1050.0F, 0.0F, 1050.0F};
+  run(field, 0.5F);
+  CHECK(*field.npcs().positionOf(6) == home);
+  // A talk holds it and lets it go (setMovementEnabled), with the release rule after the script.
+  field.holdForScript(true);
+  REQUIRE(field.npcs().hold(6, true));
+  run(field, 0.5F);
+  field.holdForScript(false);
+  REQUIRE(field.npcs().hold(6, false));
+  run(field, 5.0F);
+  CHECK(*field.npcs().positionOf(6) == home);
+  CHECK(field.separateActors("test") == 0);
 }
 
 TEST_CASE("a partner placed by the player keeps off the NPCs, and a map entry checks them too") {

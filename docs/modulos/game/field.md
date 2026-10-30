@@ -86,8 +86,8 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
 
 - **Vigilancia de solapes** (propia del motor, para depurar y para las rutas de prueba): en cada tick en que el
   jugador se mueve libre (sin guion, sin cuidado, sin cambio de mapa ni fundido que lo retenga), `Field` busca
-  parejas de personajes cuyos cuadrados de colisión se pisan a fondo y personajes con el centro en una casilla
-  bloqueada. Un solape que dura más de un segundo se registra una vez por episodio
+  parejas de personajes cuyos cuadrados de colisión se pisan a fondo y al jugador o al compañero con el centro en una
+  casilla bloqueada (un NPC en una pared está donde el original lo tiene: ver «Regla de suelta»). Un solape que dura más de un segundo se registra una vez por episodio
   (`[positions] overlap a=player b=partner ticks=61 on mayo03`) y cuenta en `overlapEpisodes()`; la ruta lo lee con
   `expect_setting: {field.overlaps: 0}`. «A fondo» es pisarse más de la mitad de la suma de los medios lados en los
   dos ejes (`Field::overlaps`): los cuadrados del original (`map.c: entityCheckEntityCollision`, medio lado = radio de
@@ -104,14 +104,21 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   - olvida el rastro del compañero, su tiempo atascado y la última casilla del jugador
     (`PartnerFollow::forgetTrail`, `partnerStuckSeconds_`, `lastPlayerCell_`): lo que el compañero seguía antes ya
     no vale;
-  - en el siguiente tick sin retención, `separateActors` mira a todos: quien tiene el centro en una casilla bloqueada
-    o pisa a fondo a otro (`Field::overlaps`) va al sitio libre más cercano (anillos cada 25 unidades hasta seis
-    casillas, primero en la dirección contraria a lo que pisa) donde cabe en la rejilla (`fitsOnGrid`), no toca a
-    nadie, no es un warp y se llega en línea recta sin pared (salvo si sale de una pared), y se coloca de golpe
-    (`scene::place`, sin interpolar el salto). Se mueve primero el compañero (cede ante todos), luego los NPC en orden
-    de ranura (ceden ante el jugador, el compañero y los NPC anteriores); el jugador solo sale de una pared. Un NPC
-    movido empieza su ruta otra vez (`restartPath`, como `clearMapAITable`); lo mismo los NPC que lucharon. Si no
-    hay sitio, se queda y se registra (`[positions] release ... no free spot`).
+  - en el siguiente tick sin retención, `separateActors` mira al compañero y al jugador: el compañero con el centro en
+    una casilla bloqueada o que pisa a fondo a otro (`Field::overlaps`), y el jugador solo si está en una pared, van
+    al sitio libre más cercano (anillos cada 25 unidades hasta seis casillas, primero en la dirección contraria a lo
+    que pisa) donde cabe en la rejilla (`fitsOnGrid`), no toca a nadie, no es un warp y se llega en línea recta sin
+    pared (salvo si sale de una pared), y se coloca de golpe (`scene::place`, sin interpolar el salto). Si no hay
+    sitio, se queda y se registra (`[positions] release ... no free spot`). Los NPC que lucharon empiezan su ruta
+    otra vez (`restartPath`, como `clearMapAITable`).
+  - **Los NPC no se mueven nunca** (Igual: el original no mueve a un NPC que no camina por su ruta, su reacción o un
+    guion). Se quedan donde los puso el mapa, su ruta o un guion aunque estén en una casilla bloqueada o pisen a
+    alguien; los demás los rodean. Medido en DuckStation: Kunemon en su cama de mayo02 (sección 6 de su guion, la
+    casilla es pared) sigue en (143, -1000) con la orientación 1024 al abrir la charla, durante ella (pose 29) y 300
+    fotogramas después de cerrarla (pose 28 que pone el guion). Antes la suelta lo sacaba a (-64, -819) al entrar al
+    mapa y a (22, -725) tras cada charla; 81 NPC de 989 nacen en una pared (camas, mostradores de tiendas como el
+    Agumon del banco en room02, que salía delante del mostrador). Un NPC sobre el jugador se queda ahí; el jugador se
+    aparta andando.
   - Tras un guion o una charla espera a que el compañero termine de apartarse andando (`makeRoomForPlayer`, la
     salida suave); el salto solo llega si después sigue pisando a alguien.
 - **Fotogramas del original** (Igual, `tamer.c: tamerTickWalkingState`, `partner.c: partnerTickWalking`,
@@ -181,7 +188,7 @@ decomp no lo deja claro) o **Hueco** (falta).
 
 | Qué | Original | Motor | Prueba | Estado |
 |---|---|---|---|---|
-| Separar a quien queda pisando a otro o en una pared al soltarlo | nada: cada uno queda donde lo dejó quien lo retenía | `releaseHandoff`, `separateActors` | `field_tests`: "the release rule ..."; rutas de `_work/routes-e2/positions` | Mejora documentada |
+| Separar al compañero que queda pisando a otro o en una pared, y al jugador en una pared, al soltarlos (los NPC no se mueven: Igual, medido con Kunemon en mayo02) | nada: cada uno queda donde lo dejó quien lo retenía | `releaseHandoff`, `separateActors` | `field_tests`: "the release rule ..."; rutas de `_work/routes-e2/positions` | Mejora documentada |
 | Vigilancia de solapes | — | `watchOverlaps`, `field.overlaps` | `field_tests`: "the overlap watch ..." | Mejora documentada (depuración) |
 | Al cargar, un NPC sobre el jugador | `main.c:3821`: lleva al jugador a la entrada del mapa si pisa a ciertos NPC | la regla de suelta aparta al NPC; el jugador no se mueve | `field_tests`: "an NPC put on the player ..." | Suposición (se prefiere no mover al jugador) |
 | Tamaño del compañero en el campo | radio de la especie | `setPartnerRadius` | `field_tests`: "the partner's size follows its species ..." | Igual |

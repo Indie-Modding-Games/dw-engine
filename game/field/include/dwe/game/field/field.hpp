@@ -363,19 +363,21 @@ public:
   // Something that held the characters let them go: a script, a care scene, a battle, a gym
   // course, a map entry or load (docs/modulos/game/field.md, "Posiciones", the engine's). The
   // partner's trail and stuck time and the player's last cell start over, and on the next tick the
-  // field runs unheld, separateActors puts whoever stands in another character or in a wall on
-  // the nearest free spot. After a script, it waits for the partner to make room on foot first
-  // (makeRoomForPlayer). An NPC put on the map or let go asks for the same check by itself.
+  // field runs unheld, separateActors puts a partner standing in someone or in a wall, or a player
+  // in a wall, on the nearest free spot; NPCs stay where they are. After a script, it waits for the
+  // partner to make room on foot first (makeRoomForPlayer). An NPC put on the map or let go asks
+  // for the same check by itself.
   void releaseHandoff(std::string_view why);
   // Puts the player, the partner or an NPC at a place and facing at once, drawn there with no move
   // in between (the console's place command, which starts a run where a trace of the original
   // starts). It lets go as above, but nothing moves them off it: no release check and no making
   // room, as the original's characters stand where its trace starts.
   void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
-  // The release rule now, the engine's (the original has none): a character in a wall cell, or
-  // deep in another's collision square (overlaps), goes to the nearest spot where it fits on the
-  // grid, touches nobody, reaches from where it stood and warps nothing. The partner moves first,
-  // then the NPCs in slot order; the player moves only out of a wall. How many it moved.
+  // The release rule now, the engine's (the original has none): the partner in a wall cell or deep
+  // in another's collision square (overlaps), or the player in a wall cell, goes to the nearest
+  // spot where it fits on the grid, touches nobody, reaches from where it stood and warps nothing.
+  // NPCs never move: the original keeps them where the map, their path or a script put them, even
+  // on a wall cell (a bed, behind a counter). How many it moved.
   std::int32_t separateActors(std::string_view why);
   // Whether two characters' squares overlap deep enough to stand in each other: by more than half
   // their summed half sides on both axes. The original's squares are wide, and a partner stopped

@@ -28,6 +28,10 @@ constexpr float OverlapGraceSeconds = 1.0F;
 constexpr float SpotStep = 25.0F;
 constexpr int SpotRings = 24;
 constexpr float Turn = 2.0F * std::numbers::pi_v<float>;
+// Body::who: the player, the partner, then the NPCs (script id + 2).
+constexpr std::int64_t PlayerWho = 0;
+constexpr std::int64_t PartnerWho = 1;
+constexpr std::int64_t FirstNpcWho = 2;
 
 glm::vec2 ground(glm::vec3 v) {
   return {v.x, v.z};
@@ -162,15 +166,20 @@ std::int32_t Field::separateActors(std::string_view why) {
   std::int32_t moved = 0;
   for (std::size_t index = 0; index < all.size(); ++index) {
     const Body& body = all[index];
+    // An NPC stays where the map, its path or a script put it, even on a wall cell or in someone:
+    // the original never moves an NPC it does not walk (measured: Kunemon on its bed in mayo02
+    // keeps (143, -1000) through a talk and 300 frames after; room02's Agumon stands behind the
+    // counter, on wall cells too). The others step around it.
+    if (body.who >= FirstNpcWho) {
+      continue;
+    }
     auto& transform = registry.get<Transform>(body.entity);
     const bool walled = inWall(transform.position);
-    // The player gives way to nobody; the partner to everybody; an NPC to the player, the partner
-    // and the NPCs before it.
+    // The player gives way to nobody; the partner to everybody.
     std::optional<std::size_t> under;
-    if (body.who != 0) {
+    if (body.who == PartnerWho) {
       for (std::size_t other = 0; other < all.size() && !under; ++other) {
-        if (other != index && (body.who == 1 || other < index) &&
-            overlaps(squareOf(body), squareOf(all[other]))) {
+        if (other != index && overlaps(squareOf(body), squareOf(all[other]))) {
           under = other;
         }
       }
@@ -192,17 +201,15 @@ std::int32_t Field::separateActors(std::string_view why) {
                    reason);
     scene::place(transform, {spot->x, transform.position.y, spot->z}, transform.yaw);
     ++moved;
-    if (body.who == 0) {
+    if (body.who == PlayerWho) {
       lastPlayerCell_ = assets::collisionCellAt(*spot);
       lastTrigger_ = collision_.trigger(lastPlayerCell_).value_or(0);
       moveTarget_.reset();
       path_.clear();
-    } else if (body.who == 1) {
+    } else {
       partnerStuckSeconds_ = 0.0F;
       partnerMakesRoom_ = false;
       registry.get<scene::AnimationIntent>(partner_) = {};
-    } else {
-      static_cast<void>(npcs_.restartPath(static_cast<std::int32_t>(body.who - 2)));
     }
   }
   return moved;
@@ -227,7 +234,9 @@ void Field::watchOverlaps(float seconds) {
   };
   for (std::size_t i = 0; i < all.size(); ++i) {
     const GroundSquare square = squareOf(all[i]);
-    if (inWall(world_->registry().get<Transform>(all[i].entity).position)) {
+    // An NPC on a wall cell stands where the original keeps it (separateActors).
+    if (all[i].who < FirstNpcWho &&
+        inWall(world_->registry().get<Transform>(all[i].entity).position)) {
       note(all[i].entity, entt::null, std::format("a={} b=wall", nameOf(all[i])));
     }
     for (std::size_t j = i + 1; j < all.size(); ++j) {
