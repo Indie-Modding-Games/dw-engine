@@ -555,6 +555,36 @@ end
   CHECK_FALSE(ui->capturesInput());
 }
 
+TEST_CASE("a script sounds the original boxes and reads where an element is") {
+  // ui.c: createAnimatedUIBox plays playSound(0, 0), renderUIBoxAnim playSound(0, 1).
+  Content content;
+  content.add("ui/box/document.rml", R"rml(<rml><head><style>
+body { width: 100%; height: 100%; }
+#box { position: absolute; left: 30dp; top: 60dp; width: 90dp; height: 45dp; }
+</style><script>
+function sound() ui.cue("box_open") ui.cue("box_close") end
+function wrong() ui.cue("boom") end
+local root
+function on_show(document) root = document end
+function measure()
+  local left, top, width, height = root:get("box"):rect()
+  ui.send("rect", string.format("%d %d %d %d", left, top, width, height))
+end
+</script></head><body><div id="box"/></body></rml>)rml");
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("box", idOf("ui/box/document")));
+  ui->show("box");
+  REQUIRE(ui->callScript("box", "sound"));
+  CHECK(ui->takeCues() == std::vector<UiCue>{UiCue::BoxOpen, UiCue::BoxClose});
+  CHECK_FALSE(ui->callScript("box", "wrong"));
+  CHECK(ui->takeCues().empty());
+  ui->update();
+  REQUIRE(ui->callScript("box", "measure"));
+  const auto commands = ui->takeCommands();
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].value == UiValue{std::string{"30 60 90 45"}});
+}
+
 TEST_CASE("the pause menu works with the keyboard alone") {
   Content content;
   auto ui = createUi(content.mount());
@@ -1576,8 +1606,10 @@ TEST_CASE("original look text draws with the font the player picks, at once") {
   REQUIRE(ui->loadDocument("look", idOf("ui/look/document")));
   ui->show("look");
   ui->update();
-  // The game pack's default is the modern font.
-  CHECK(ui->textFont() == TextFont::Modern);
+  // The game pack's default is the original's bitmap font.
+  CHECK(ui->textFont() == TextFont::Original);
+  ui->setTextFont(TextFont::Modern);
+  ui->update();
   const float modern = widthOf(*ui, "bitmap");
   CHECK(modern > 0.0F);
 

@@ -13,6 +13,7 @@ dwe_add_module(ui
         src/image_reference.cpp
         src/minimap.cpp
         src/navigation.cpp
+        src/original_box.cpp
         src/prompts.cpp
         src/render_bridge.cpp
         src/rml_interfaces.cpp

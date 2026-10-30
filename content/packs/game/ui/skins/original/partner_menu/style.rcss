@@ -66,10 +66,9 @@
 	height: 570dp;
 	box-sizing: border-box;
 	padding: 0;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	background-color: #2d3840;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
@@ -278,10 +277,9 @@
 #bag-grid {
 	min-height: 348dp;
 	padding: 18dp 15dp;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	background-color: #00000080;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
@@ -331,8 +329,7 @@
 	font-size: 33dp;
 	color: #b2b2b2;
 	border-radius: 0;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	background-color: #00000080;
 }
 
@@ -349,8 +346,7 @@
 #page-care {
 	height: 552dp;
 	padding: 18dp 30dp;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	background-color: #2d3840;
 }
 
@@ -386,10 +382,9 @@
 	padding: 12dp 6dp;
 	font-size: 33dp;
 	border-radius: 0;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	background-color: #2d3840;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
@@ -444,7 +439,7 @@ button:focus .original-look, button.original-look:focus {
 #scrim.item-screen .slot.hidden { display: none; }
 #scrim.item-screen.large-bag #bag-grid { height: 546dp; overflow-y: hidden; }
 #scrim.item-screen #bag-description { top: 543dp; height: 84dp; min-height: 0; box-sizing: border-box; padding: 21dp 75dp;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
 		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box; }
 #scrim.item-screen #options { top: 120dp; width: 174dp; height: 252dp; box-sizing: border-box; margin-left: -426dp; padding: 15dp 24dp; }
 #scrim.item-screen #options button { box-sizing: border-box; width: 120dp; height: 48dp; line-height: 42dp; margin: 0 0 6dp 0; padding: 0 6dp; border: 3dp transparent; }
@@ -547,8 +542,7 @@ button:focus .original-look, button.original-look:focus {
 #tab-tech { width: 180dp; }
 #scrim.digimon-screen .tab.selected { background-color: #80e8f8; color: #243640; }
 #page-tech {
-    position: relative; height: 552dp; padding: 0; border: 3dp #90d9fa;
-    border-right-color: #4a9fc5; background-color: #2d3840;
+    position: relative; height: 552dp; padding: 0; border: 3dp transparent; background-color: #2d3840;
 }
 .tech-heading { position: absolute; left: 21dp; top: 3dp; color: #fff371; font-size: 36dp; }
 #final-heading { top: 219dp; width: 870dp; padding-top: 0; border-width: 0; }
@@ -758,7 +752,7 @@ button:focus .original-look, button.original-look:focus {
 
 #tech-info.hidden { display: none; }
 #tech-info { position: absolute; left: 0; top: 0; width: 894dp; height: 570dp; pointer-events: none; }
-#tech-info-name, #tech-info-stats { position: absolute; background-color: #323280; border: 3dp #90d9fa; box-sizing: border-box; }
+#tech-info-name, #tech-info-stats { position: absolute; background-color: #323280; border: 3dp transparent; box-sizing: border-box; decorator: original-box(3dp) border-box; }
 #tech-info-name { left: 21dp; top: 276dp; width: 384dp; height: 57dp; padding: 9dp 12dp; font-size: 33dp; }
 #tech-info-stats { left: 21dp; top: 339dp; width: 261dp; height: 207dp; }
 #tech-info.info-right #tech-info-name { left: 492dp; }

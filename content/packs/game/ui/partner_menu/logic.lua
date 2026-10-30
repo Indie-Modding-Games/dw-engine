@@ -539,6 +539,10 @@ local function open_box(document, name)
   box = name
   document:get(name):set_class("hidden", false)
   document:get(box_entries[name][1]):focus()
+  -- createItemOption: the options grow from the slot's row.
+  if name == "options" and parent == nil and picked ~= nil then
+    original_box.open(document, "options", original_box.rect(document, "slot-" .. picked))
+  end
 end
 
 local function show_page(document, name, focus)
@@ -633,11 +637,57 @@ function confirm_drop(document, yes)
   end
 end
 
+-- The original's boxes (ui/common/original_box.lua): the bag and the partner's page grow from the
+-- player and shrink back into it (inventory.c: createInventoryView; game_menu.c: createMenuBox);
+-- the bag's description box grows from its first slot once the bag is in place (16 x 16 pixels at
+-- 8, 14 of the bag) and closes first, into the slot under the cursor (inventory.c:
+-- closeInventoryBoxes).
+local function main_box()
+  return current == "items" and "bag-grid" or "page-" .. current
+end
+
+local function slot_start(document, index)
+  local left, top = document:get("bag-grid"):rect()
+  if index ~= nil then
+    local slot = document:get("slot-" .. index)
+    if slot ~= nil and slot:valid() then
+      left, top = slot:rect()
+      return { left, top, 48, 48 }
+    end
+  end
+  return { left + 24, top + 42, 48, 48 }
+end
+
+local function open_boxes(document)
+  if current ~= "items" then
+    original_box.open(document, main_box(), original_box.player_rect(document))
+    return
+  end
+  document:get("bag-description"):set_class("box-closed", original_box.enabled())
+  original_box.open(document, "bag-grid", original_box.player_rect(document), function()
+    original_box.open(document, "bag-description", slot_start(document))
+  end)
+end
+
 -- Back: out of a box, out of a move, from a page to its tab, from the tabs out of the menu.
-function close_menu()
-  ui.hide(document_name)
-  if ui.setting("ui_skin") == "original" then
-    ui.show("pause_menu", true)
+function close_menu(document)
+  local function leave()
+    ui.hide(document_name)
+    if ui.setting("ui_skin") == "original" then
+      ui.show("pause_menu", true)
+    end
+  end
+  if document == nil or not original_box.enabled() then
+    leave()
+    return
+  end
+  local function close_main()
+    original_box.close(document, main_box(), original_box.player_rect(document), leave)
+  end
+  if current == "items" then
+    original_box.close(document, "bag-description", slot_start(document, picked or 0), close_main)
+  else
+    close_main()
   end
 end
 
@@ -651,11 +701,11 @@ local function back(document)
     moving = nil
     focus_slot(document, index)
   elseif ui.setting("ui_skin") == "original" then
-    close_menu()
+    close_menu(document)
   elseif not document:get("tab-" .. current):has_focus() then
     document:get("tab-" .. current):focus()
   else
-    close_menu()
+    close_menu(document)
   end
 end
 
@@ -692,6 +742,11 @@ function on_show(document)
   draw_boxes(document)
   draw_prompts(document)
   show_page(document, ui.setting("partner_menu.start_page") == "items" and "items" or "status")
+  open_boxes(document)
+end
+
+function on_hide(document)
+  original_box.cancel(document)
 end
 
 function on_setting(document, name)
@@ -710,6 +765,7 @@ function on_setting(document, name)
 end
 
 function on_tick(document, seconds)
+  original_box.tick(document, seconds)
   tech_icon_time = tech_icon_time + seconds
   if current == "status" and ui.setting("ui_skin") == "original" then
     document:get("scrim"):set_class("status-alternate", math.floor(tech_icon_time * 20) % 10 >= 5)
@@ -744,6 +800,10 @@ function on_language(document)
 end
 
 function on_action(document, action)
+  -- tickUIBox: a box takes no input until it is in place.
+  if original_box.busy() then
+    return true
+  end
   if action == "cancel" then
     back(document)
     return true

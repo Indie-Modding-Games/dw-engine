@@ -52,3 +52,17 @@ button:active {
 	font-size: 22dp;
 	color: #d0d0d0;
 }
+
+/* The original's window (ui.c: renderUIBoxStatic, renderUIBoxBorder), for any document's box: the fill #2D3840 at
+   half opacity (the semi-transparent mode), the three- and four-line border the original-box decorator draws (black,
+   light cyan #90D9FA and dark cyan #4A9FC5 lines, each one original pixel, 3dp) and the rounded corner sprites of
+   SYSTEM_W. The border's 3dp keep the fill off the outer black line. A box with an opaque fill sets its own
+   background-color; one that adds a decorator repeats this list with its own first. Opening and closing animate with
+   ui/common/original_box.lua. */
+.original-box {
+	border: 3dp transparent;
+	border-radius: 0;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}

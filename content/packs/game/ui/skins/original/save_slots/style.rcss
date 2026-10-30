@@ -17,9 +17,8 @@
 	margin-left: 0;
 	padding: 12dp 18dp 15dp 18dp;
 	background-color: transparent;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 #panel.slots-original button {
@@ -62,13 +61,11 @@
 	width: 690dp;
 	box-sizing: border-box;
 	padding: 9dp 27dp 9dp 27dp;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	line-height: 36dp;
 	white-space: nowrap;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 #detail-line-2 {

@@ -2,6 +2,7 @@
 
 #include <dwe/core/log.hpp>
 
+#include <RmlUi/Core/Box.h>
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Element.h>
@@ -20,6 +21,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -562,6 +564,21 @@ void Scripting::registerApi() {
           self.element->SetProperty(Rml::String{name}, Rml::String{value});
         }
       },
+      // The element's border box in dp from the window's top left corner: left, top, width,
+      // height (for a box that grows from another element, as the original's).
+      "rect",
+      [](const LuaElement& self) {
+        if (!self.element) {
+          return std::make_tuple(0.0, 0.0, 0.0, 0.0);
+        }
+        const Rml::Context* context = self.element->GetContext();
+        const float ratio = context != nullptr ? context->GetDensityIndependentPixelRatio() : 1.0F;
+        const Rml::Vector2f at = self.element->GetAbsoluteOffset(Rml::BoxArea::Border);
+        const Rml::Vector2f size = self.element->GetBox().GetSize(Rml::BoxArea::Border);
+        return std::make_tuple(static_cast<double>(at.x / ratio), static_cast<double>(at.y / ratio),
+                               static_cast<double>(size.x / ratio),
+                               static_cast<double>(size.y / ratio));
+      },
       "focus",
       [](const LuaElement& self) {
         if (self.element) {
@@ -638,6 +655,13 @@ void Scripting::registerApi() {
   api["show"] = [this](std::string_view name, sol::optional<bool> modal, sol::this_state lua) {
     checkName(lua, name);
     host_.show(name, modal.value_or(false));
+  };
+  // ui.cue(name): the original boxes' sounds, "box_open" and "box_close".
+  api["cue"] = [this](std::string_view name, sol::this_state lua) {
+    checkName(lua, name);
+    if (!host_.cue(name)) {
+      raise(lua, "ui.cue takes box_open or box_close");
+    }
   };
   api["hide"] = [this](std::string_view name, sol::this_state lua) {
     checkName(lua, name);

@@ -2,6 +2,7 @@
 <head>
 	<title>Partner menu</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
+	<script src="../common/original_box.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
@@ -212,5 +213,6 @@
 			<button id="confirm-no" class="original-look" onclick="confirm_drop(document, false)"></button>
 		</div>
 	</div>
+	<div id="box-outline" class="box-outline hidden"></div>
 </body>
 </rml>

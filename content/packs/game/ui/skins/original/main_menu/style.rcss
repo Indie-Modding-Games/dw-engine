@@ -69,13 +69,11 @@
 	width: auto;
 	min-width: 528dp;
 	padding: 12dp 18dp 15dp 18dp;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
+	border: 3dp transparent;
 	border-radius: 0;
 	background-color: transparent;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 #title {
@@ -140,11 +138,9 @@
 	display: flex;
 	flex-direction: column;
 	padding: 18dp 24dp 21dp 24dp;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	border: 3dp transparent;
+	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 /* The display above outweighs the structure's .hidden, so hidden is said again here. */
@@ -193,11 +189,9 @@
 
 #battle-heading, #battle-message, #battle-answers {
 	box-sizing: border-box;
-	border: 3dp #90d9fa;
-	border-right-color: #4a9fc5;
-	decorator: image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box,
-		vertical-gradient(#000060 #000020);
+	border: 3dp transparent;
+	decorator: vertical-gradient(#000060 #000020), original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
 }
 
 #battle-heading {

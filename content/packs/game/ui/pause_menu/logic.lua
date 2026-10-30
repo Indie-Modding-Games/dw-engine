@@ -548,6 +548,35 @@ function open_page(document, name)
   show_page(document, name)
 end
 
+-- The original's boxes (ui/common/original_box.lua): the menu box grows from the player and shrinks
+-- back into it (game_menu.c: createMenuBox, closeUIBoxIfOpen); going to a page closes it first and
+-- opens the page's box from the player then, ten frames in all (measured: the outline's frames
+-- 4..0, then 0..4).
+local function close_menu_box(document, done)
+  original_box.close(document, "panel", original_box.player_rect(document), done)
+end
+
+local function open_menu_box(document)
+  original_box.open(document, "panel", original_box.player_rect(document))
+end
+
+function open_player(document)
+  if current ~= "main" or not original_box.enabled() then
+    open_page(document, "player")
+    return
+  end
+  close_menu_box(document, function()
+    open_page(document, "player")
+    open_menu_box(document)
+  end)
+end
+
+local function close_menu(document)
+  close_menu_box(document, function()
+    ui.hide(document_name)
+  end)
+end
+
 function back(document)
   if current == "player" and player_tools_open then
     player_tools_open = false
@@ -557,7 +586,12 @@ function back(document)
     return
   end
   if current == "main" then
-    ui.hide(document_name)
+    close_menu(document)
+  elseif current == "player" and original_box.enabled() then
+    close_menu_box(document, function()
+      show_page(document, "main", opener.player)
+      open_menu_box(document)
+    end)
   else
     local parent = parents[current] or "main"
     local focus = parent == "player" and "player-" .. current or opener[current]
@@ -565,8 +599,13 @@ function back(document)
   end
 end
 
+-- The document shown last, for the buttons' event attributes that only name the page.
+local shown_document = nil
+
 function open_partner(page)
-  ui.send("open_partner_menu", page)
+  close_menu_box(shown_document, function()
+    ui.send("open_partner_menu", page)
+  end)
 end
 
 -- The game closes the menu and puts the partner to bed (docs/architecture/guardar-y-cargar.md,
@@ -593,6 +632,7 @@ function adjust(_document, id, step)
 end
 
 function on_show(document)
+  shown_document = document
   chart_detail = false
   chart_transition = nil
   document:get("chart-detail-transition"):set_class("hidden", true)
@@ -609,11 +649,17 @@ function on_show(document)
     end
   else
     show_page(document, "main", entry)
+    open_menu_box(document)
   end
   refresh_prompts(document)
 end
 
+function on_hide(document)
+  original_box.cancel(document)
+end
+
 function on_tick(document, seconds)
+  original_box.tick(document, seconds)
   if chart_transition then
     chart_transition.elapsed = chart_transition.elapsed + seconds
     local step = math.floor(chart_transition.elapsed * 20 + 0.000001)
@@ -679,7 +725,8 @@ end
 -- Navigation steps arrive here first. Returning true means the step was handled here and suppresses
 -- the default (moving the focus, confirming, closing); returning false lets the default run.
 function on_action(document, action)
-  if chart_transition then
+  -- tickUIBox: a box takes no input until it is in place.
+  if chart_transition or original_box.busy() then
     return true
   end
   if chart_detail then
@@ -759,7 +806,11 @@ function on_action(document, action)
     return true
   end
   if action == "menu" then
-    ui.hide(document_name)
+    if current == "main" then
+      close_menu(document)
+    else
+      ui.hide(document_name)
+    end
     return true
   end
   if

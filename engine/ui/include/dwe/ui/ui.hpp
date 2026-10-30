@@ -34,11 +34,15 @@ struct UiCommand {
 
 // What the player just did in a menu, for the app's feedback sounds: moved the focus (or a menu's
 // own cursor), confirmed or backed out. A move that moves nothing and opening the menu give none,
-// as in the original. The UI does not know what each sounds like.
+// as in the original. A document's script adds the original boxes' own sounds with ui.cue: one
+// opens (ui.c: createAnimatedUIBox) or starts closing (renderUIBoxAnim). The UI does not know what
+// each sounds like.
 enum class UiCue : std::uint8_t {
   Move,
   Confirm,
   Cancel,
+  BoxOpen,
+  BoxClose,
 };
 
 // The HUD contract: the ids of the elements the UI fills in every document that has them

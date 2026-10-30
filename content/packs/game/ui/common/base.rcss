@@ -37,3 +37,18 @@ button {
 	font-weight: normal;
 	color: #d6d6d6;
 }
+
+/* The original look's animated windows (ui/common/original_box.lua): the grey outline that grows from where a box
+   opens (ui.c: renderUIBoxAnim, a 1-pixel 0x808080 line), the box hidden while it runs, and a box closed by it. */
+.box-outline {
+	position: absolute;
+	box-sizing: border-box;
+	border: 3dp #808080;
+	pointer-events: none;
+	z-index: 50;
+}
+
+.box-animating,
+.box-closed {
+	opacity: 0;
+}

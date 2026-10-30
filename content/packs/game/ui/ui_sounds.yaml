@@ -1,7 +1,11 @@
 # Los sonidos de los avisos de los menús (docs/architecture/audio.md#64-el-tramo-2-en-detalle): para cada aviso, el
 # banco de efectos de sound/ y el número del sonido en él, los del original (main_menu.c: tickMenuInput toca
 # playSound(0, 2) al mover el cursor, 3 al confirmar y 4 al cancelar; la ranura 0 es el banco ss).
+# Las ventanas animadas del original suenan al abrirse (ui.c: createAnimatedUIBox, playSound(0, 0)) y al empezar a
+# cerrarse (renderUIBoxAnim, playSound(0, 1)).
 # Un aviso que falta o no vale queda en silencio, con un aviso en el log.
 cursor: {bank: ss, sound: 2}
 confirm: {bank: ss, sound: 3}
 cancel: {bank: ss, sound: 4}
+box_open: {bank: ss, sound: 0}
+box_close: {bank: ss, sound: 1}

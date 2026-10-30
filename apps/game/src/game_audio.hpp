@@ -21,8 +21,9 @@ namespace dwe::app {
 // way.
 [[nodiscard]] audio::Audio openGameAudio();
 
-// The UI's cues, which ui/ui_sounds.yaml names cursor, confirm and cancel.
-inline constexpr std::size_t MenuCueCount = 3;
+// The UI's cues, which ui/ui_sounds.yaml names cursor, confirm, cancel, box_open and box_close (in
+// ui::UiCue's order).
+inline constexpr std::size_t MenuCueCount = 5;
 inline constexpr std::string_view MenuSoundsId = "ui/ui_sounds";
 
 // A sound of a bank of effects: the bank's folder under sound/ and the sound's value in it.

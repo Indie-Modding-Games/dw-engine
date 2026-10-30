@@ -2,8 +2,10 @@
 # original-look, que usa la clase .original-look de ui/common/base.rcss. Dibuja con la fuente que elige el ajuste
 # text_font del jugador (docs/architecture/ui.md).
 family: original-look
-# Decisión del responsable de diseño, 2026-10-20: la moderna hasta que el jugador elija.
-default: modern
+# La de mapa de bits hasta que el jugador elija: el aspecto original escribe todas sus ventanas con la fuente del
+# juego (revisión de menús QA-M08, 2026-10-30; antes, la moderna por decisión del 2026-10-20). El aspecto moderno no
+# usa esta familia.
+default: original
 modern: Noto Sans
 original:
   # La fuente de mapa de bits del original, tal como la extrae dwx al paquete base (docs/formats/textos.md).

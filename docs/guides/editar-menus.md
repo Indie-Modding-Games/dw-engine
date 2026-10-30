@@ -107,6 +107,7 @@ API disponible:
 | `ui.prompt(acción)` | El nombre del control de esa acción en el dispositivo actual (`"Enter"`, `"A"`, `"Cross"`), en el idioma del juego; los textos están en `localization/<idioma>/prompt.yaml` |
 | `ui.device()`, `ui.gamepad_family()` | `"keyboard_mouse"` o `"gamepad"`; `"xbox"`, `"playstation"`, `"nintendo"`, `"steam"` o `"generic"` |
 | `ui.show(nombre[, modal])`, `ui.hide(nombre)`, `ui.is_visible(nombre)` | Muestra u oculta un documento cargado; con `modal` verdadero el documento recibe la navegación (como el menú que abre el juego) |
+| `ui.cue(nombre)` | Suena `box_open` o `box_close` (las cajas del aspecto original, `ui_sounds.yaml`) |
 | `document_name` | El nombre del propio documento |
 | `element:get(id)` | Un elemento descendiente, o `nil` |
 | `element:set_text(texto)`, `element:text()` | Cambia el texto (siempre como texto, nunca como RML) o lee el contenido |
@@ -114,8 +115,15 @@ API disponible:
 | `element:attribute(nombre)`, `element:set_attribute(nombre, valor)` | Atributos (`set_attribute` no acepta los de evento, `on...`) |
 | `element:set_property(nombre, valor)` | Una propiedad de estilo, como `display` |
 | `element:focus()`, `element:has_focus()`, `element:click()` | Foco y clic |
+| `element:rect()` | Izquierda, arriba, ancho y alto del elemento en dp desde la esquina de la ventana |
 | `element.id`, `element:valid()` | Su id; si sigue existiendo |
 | `event.type`, `event:stop()` | En un atributo de evento: su tipo; parar la propagación |
+
+Las cajas del aspecto original se abren y se cierran con el contorno gris del original con
+`ui/common/original_box.lua` (`original_box.open`, `close`, `tick`, `cancel`, `busy`): el documento enlaza el script,
+pone `<div id="box-outline" class="box-outline hidden"></div>` bajo el `body` y llama a `tick` desde `on_tick` y a
+`cancel` desde `on_hide`. Fuera del aspecto original todo termina al momento. El borde de tres líneas es el decorador
+`original-box(3dp)`, o la clase `.original-box` de `skins/original/theme.rcss`.
 
 Un menú no cambia ajustes por su cuenta: envía el comando y muestra lo que la app publica en `on_setting`. Así sus
 etiquetas siempre dicen la verdad (por ejemplo, si la pantalla completa no se pudo activar).

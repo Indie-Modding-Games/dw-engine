@@ -7,7 +7,9 @@
   "properties": {
     "cursor": { "$ref": "#/$defs/sound", "description": "The focus or a menu's cursor moved; a move that moves nothing is silent." },
     "confirm": { "$ref": "#/$defs/sound", "description": "The player confirmed." },
-    "cancel": { "$ref": "#/$defs/sound", "description": "The player backed out of a menu." }
+    "cancel": { "$ref": "#/$defs/sound", "description": "The player backed out of a menu." },
+    "box_open": { "$ref": "#/$defs/sound", "description": "One of the original's animated boxes opens (ui.cue)." },
+    "box_close": { "$ref": "#/$defs/sound", "description": "One of the original's animated boxes starts closing (ui.cue)." }
   },
   "$defs": {
     "sound": {

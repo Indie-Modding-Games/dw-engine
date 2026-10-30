@@ -33,6 +33,7 @@
 #include "code_trust.hpp"
 #include "font_engine.hpp"
 #include "messages.hpp"
+#include "original_box.hpp"
 #include "render_bridge.hpp"
 #include "rml_interfaces.hpp"
 #include "scripting.hpp"
@@ -214,6 +215,9 @@ struct Ui::Impl {
   std::unique_ptr<Scripting> scripting;
   // Installed over RmlUi's own after it starts; RmlUi shuts it down, so it outlives Rml::Shutdown.
   std::unique_ptr<FontEngine> fontEngine;
+  // The original look's box border (`decorator: original-box`), made and registered once RmlUi
+  // starts (its property parsers are RmlUi's); it outlives Rml::Shutdown as the font engine does.
+  std::unique_ptr<OriginalBoxInstancer> originalBox;
   Rml::Context* context = nullptr;
   SkinCatalog skins;
   SkinStyler styler{*desc.files, skins};
@@ -322,6 +326,17 @@ struct Ui::Impl {
         },
         .gamepadFamily = [this]() { return std::string{gamepadFamilyName(family)}; },
         .show = [this](std::string_view name, bool modal) { show(name, modal); },
+        .cue =
+            [this](std::string_view name) {
+              if (name == "box_open") {
+                cue(UiCue::BoxOpen);
+              } else if (name == "box_close") {
+                cue(UiCue::BoxClose);
+              } else {
+                return false;
+              }
+              return true;
+            },
         .hide = [this](std::string_view name) { hide(name); },
         .isVisible = [this](std::string_view name) { return isVisible(name); },
     };
@@ -1068,6 +1083,8 @@ core::Result<std::unique_ptr<Ui>> Ui::create(const UiDesc& desc) {
   if (!Rml::Initialise()) {
     return core::fail("could not start RmlUi");
   }
+  impl->originalBox = std::make_unique<OriginalBoxInstancer>();
+  Rml::Factory::RegisterDecoratorInstancer(OriginalBoxDecorator, impl->originalBox.get());
   if (auto fonts = impl->installFontEngine(); !fonts) {
     return std::unexpected{fonts.error()};
   }

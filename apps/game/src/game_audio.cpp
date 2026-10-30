@@ -23,7 +23,8 @@ namespace dwe::app {
 namespace {
 
 // In the order of ui::UiCue.
-constexpr std::array<std::string_view, MenuCueCount> CueKeys = {"cursor", "confirm", "cancel"};
+constexpr std::array<std::string_view, MenuCueCount> CueKeys = {"cursor", "confirm", "cancel",
+                                                                "box_open", "box_close"};
 
 std::optional<MenuSound> readCue(const core::YamlNode& node, std::string_view key,
                                  std::vector<std::string>& problems) {

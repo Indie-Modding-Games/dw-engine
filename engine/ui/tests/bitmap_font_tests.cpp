@@ -153,20 +153,20 @@ TEST_CASE("the text font setting's names") {
   CHECK_FALSE(textFontNamed("").has_value());
 }
 
-TEST_CASE("the game pack's original look reads the extracted font and defaults to the modern one") {
+TEST_CASE("the game pack's original look reads the extracted font and defaults to it") {
   const std::string yaml =
       readFile(std::filesystem::path{DWE_GAME_PACK} / "ui/fonts/original_look.yaml");
   auto look = parseOriginalLook(yaml);
   REQUIRE_MESSAGE(look.has_value(), look.error().message);
   CHECK(look->family == "original-look");
-  CHECK(look->defaultFont == TextFont::Modern);
+  CHECK(look->defaultFont == TextFont::Original);
   CHECK(look->modernFamily == "Noto Sans");
   CHECK(look->atlas == "font/main");
   CHECK(look->meta == "font/main_meta");
   CHECK(look->baseline == 10);
   CHECK(look->fallbackSize > 0.0F);
 
-  CHECK_FALSE(parseOriginalLook(replaced(yaml, "default: modern", "default: retro")));
+  CHECK_FALSE(parseOriginalLook(replaced(yaml, "default: original", "default: retro")));
   CHECK_FALSE(parseOriginalLook(replaced(yaml, "fallback_size: ", "fallback_size: -")));
   CHECK_FALSE(parseOriginalLook(replaced(yaml, "family:", "familia:")));
   // dwx cook keeps only the images under font/ as PNG, and the bitmap font reads their exact

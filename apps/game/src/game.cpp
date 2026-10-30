@@ -184,6 +184,22 @@ bool apply(const ui::UiCommand& command, ui::Ui& ui, platform::Window& window, S
   return true;
 }
 
+// Where the player stands on the window, in percent, for the original look's boxes that grow from
+// the player (game_menu.c: createMenuBox and inventory.c: createInventoryView start from
+// getEntityScreenPos(ENTITY_TABLE[0], 1), the player's second bone). Published as the game menu
+// opens; the player does not move while it is open.
+void publishPlayerPoint(ui::Ui& ui, const FieldScene& scene) {
+  // The bone is about the player's waist; a lift of 120 units over the feet (an estimate, not
+  // measured).
+  constexpr float WaistLift = 120.0F;
+  constexpr double Percent = 100.0;
+  glm::vec3 point = scene.field().player().position;
+  point.y += WaistLift;
+  const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(point);
+  ui.setSetting("field.player_x", fraction ? fraction->x * Percent : 50.0);
+  ui.setSetting("field.player_y", fraction ? fraction->y * Percent : 50.0);
+}
+
 core::Result<void> loadDocuments(ui::Ui& ui) {
   for (const auto& [name, id] : GameDocuments) {
     auto asset = assets::AssetId::parse(id);
@@ -1085,6 +1101,9 @@ int runGame(const Options& requested) {
           ++ticksRun;
           continue;
         }
+      }
+      if (flow.playing() != nullptr && input.wasPressed("menu")) {
+        publishPlayerPoint(**ui, flow.playing()->scene());
       }
       (*ui)->tick(input, TickSeconds);
       menuSounds.play((*ui)->takeCues());
