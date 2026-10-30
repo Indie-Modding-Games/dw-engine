@@ -106,3 +106,36 @@ TEST_CASE("the original's feeding takes the item at 360, or farther for the big 
   CHECK(toilet.cameraFrames == 20);
   CHECK(toilet.partnerClip == 10);
 }
+
+TEST_CASE("the original's praise reaches up to a tall partner, and a scold right after a refusal "
+          "gets its own answer") {
+  const dwe::assets::DiskFileSystem disk;
+  const auto bytes =
+      disk.readFile(std::filesystem::path{DWE_GAME_PACK} / "rules/original/field_items.yaml");
+  REQUIRE_MESSAGE(bytes.has_value(), errorOf(bytes));
+  auto document = dwe::core::parseYaml(textOf(*bytes));
+  REQUIRE_MESSAGE(document.has_value(), errorOf(document));
+  const dwe::ruleset::Section section{.name = "field_items",
+                                      .owner = "original",
+                                      .file = "field_items.yaml",
+                                      .node = std::move(*document)};
+  const auto rules = dwe::session::readFieldItemRules(section);
+  REQUIRE_MESSAGE(rules.has_value(), errorOf(rules));
+  REQUIRE(rules->praiseScold.has_value());
+  const dwe::session::PraiseScoldRules clips =
+      rules->praiseScold.value_or(dwe::session::PraiseScoldRules{});
+  // tamer.c: tamerTickPraiseScold: 0x26 below champion and for three short ultimates, else 0x27.
+  constexpr std::int32_t Rookie = 3;
+  constexpr std::int32_t Champion = 4;
+  constexpr std::int32_t Ultimate = 5;
+  CHECK(clips.praisePlayerClipFor(Rookie, "agu") == 38);
+  CHECK(clips.praisePlayerClipFor(Champion, "grey") == 39);
+  CHECK(clips.praisePlayerClipFor(Ultimate, "mtgr") == 39);
+  CHECK(clips.praisePlayerClipFor(Ultimate, "mame") == 38);
+  CHECK(clips.praisePlayerClipFor(Ultimate, "mtma") == 38);
+  CHECK(clips.praisePlayerClipFor(Ultimate, "digi") == 38);
+  CHECK(clips.praisePartnerClip == 11);
+  CHECK(clips.scoldPlayerClip == 7);
+  CHECK(clips.scoldPartnerClip == 12);
+  CHECK(clips.boostedScoldPartnerClip == 25);
+}

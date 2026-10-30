@@ -6,6 +6,7 @@
 #include <dwe/session/inventory_adapter.hpp>
 #include <dwe/session/story_adapter.hpp>
 
+#include <algorithm>
 #include <string>
 
 #include "field_items_messages.hpp"
@@ -43,6 +44,14 @@ constexpr std::string_view PartnerRefuseKey = "partner_refuse";
 constexpr std::string_view ToiletWalkKey = "toilet_walk";
 constexpr std::string_view CameraFramesKey = "camera_frames";
 constexpr std::string_view PartnerClipKey = "partner_clip";
+constexpr std::string_view PraiseScoldKey = "praise_scold";
+constexpr std::string_view PraiseKey = "praise";
+constexpr std::string_view ScoldKey = "scold";
+constexpr std::string_view PlayerClipKey = "player_clip";
+constexpr std::string_view TallPlayerClipKey = "tall_player_clip";
+constexpr std::string_view BoostedPartnerClipKey = "boosted_partner_clip";
+constexpr std::string_view TallFromLevelKey = "tall_from_level";
+constexpr std::string_view ShortSpeciesKey = "short_species";
 constexpr std::string_view SlotKey = "slot";
 constexpr std::string_view SoundKey = "sound";
 
@@ -125,7 +134,46 @@ std::optional<ToiletWalkRules> toiletWalkRules(YamlReader& reader, const YamlNod
                              reader.integer<std::uint32_t>(reader.field(*node, PartnerClipKey))};
 }
 
+std::optional<PraiseScoldRules> praiseScoldRules(YamlReader& reader, const YamlNode& root) {
+  const YamlNode* node = root.find(PraiseScoldKey);
+  if (node == nullptr ||
+      !reader.expectKeys(*node, PraiseScoldKey,
+                         {PraiseKey, ScoldKey, TallFromLevelKey, ShortSpeciesKey})) {
+    return std::nullopt;
+  }
+  const YamlNode& praise = reader.field(*node, PraiseKey);
+  const YamlNode& scold = reader.field(*node, ScoldKey);
+  if (!reader.expectKeys(praise, PraiseKey, {PlayerClipKey, TallPlayerClipKey, PartnerClipKey}) ||
+      !reader.expectKeys(scold, ScoldKey, {PlayerClipKey, PartnerClipKey, BoostedPartnerClipKey})) {
+    return std::nullopt;
+  }
+  const auto clip = [&](const YamlNode& parent, std::string_view key) {
+    return reader.integer<std::uint32_t>(reader.field(parent, key));
+  };
+  PraiseScoldRules rules{.praisePlayerClip = clip(praise, PlayerClipKey),
+                         .praiseTallPlayerClip = clip(praise, TallPlayerClipKey),
+                         .praisePartnerClip = clip(praise, PartnerClipKey),
+                         .scoldPlayerClip = clip(scold, PlayerClipKey),
+                         .scoldPartnerClip = clip(scold, PartnerClipKey),
+                         .boostedScoldPartnerClip = clip(scold, BoostedPartnerClipKey),
+                         .tallFromLevel = positive(reader, *node, TallFromLevelKey),
+                         .shortSpecies = {}};
+  for (const YamlNode& species :
+       reader.sequence(reader.field(*node, ShortSpeciesKey), ShortSpeciesKey)) {
+    rules.shortSpecies.push_back(reader.text(species));
+  }
+  return rules;
+}
+
 } // namespace
+
+std::uint32_t PraiseScoldRules::praisePlayerClipFor(std::int32_t level,
+                                                    std::string_view species) const {
+  // tamer.c: tamerTickPraiseScold: the player reaches up to a partner of champion level or higher,
+  // save the short ones.
+  const bool tall = level >= tallFromLevel && !std::ranges::contains(shortSpecies, species);
+  return tall ? praiseTallPlayerClip : praisePlayerClip;
+}
 
 float FeedRules::rangeOf(std::string_view species) const {
   const auto found = distances.find(species);
@@ -139,7 +187,7 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
   if (!reader.expectKeys(root, field_items_messages::SectionText,
                          {GroundSlotsKey, ChestSlotsKey, ReachCellsKey, PickupSoundKey,
                           ToiletSoundKey, SleepSoundKey, PraiseSoundKey, ScoldSoundKey},
-                         {FeedKey, ToiletWalkKey})) {
+                         {FeedKey, ToiletWalkKey, PraiseScoldKey})) {
     return std::unexpected{reader.error(section.file)};
   }
   const FieldItemsRules rules{.items = {.groundSlots = positive(reader, root, GroundSlotsKey),
@@ -151,7 +199,8 @@ core::Result<FieldItemsRules> readFieldItemRules(const ruleset::Section& section
                               .praiseSound = soundCue(reader, root, PraiseSoundKey),
                               .scoldSound = soundCue(reader, root, ScoldSoundKey),
                               .feed = feedRules(reader, root),
-                              .toiletWalk = toiletWalkRules(reader, root)};
+                              .toiletWalk = toiletWalkRules(reader, root),
+                              .praiseScold = praiseScoldRules(reader, root)};
   return reader.finish(rules, section.file);
 }
 

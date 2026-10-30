@@ -35,3 +35,13 @@ feed:
 # (createCameraMovement), y en el baño el compañero hace la animación 10. Corre a los dos puntos del baño del mapa
 # (TOILET_DATA, en el paquete base) y vuelve andando al primero.
 toilet_walk: {camera_frames: 20, partner_clip: 10}
+# Felicitar y regañar (partner.c: partnerTickPraiseScold; tamer.c: tamerTickPraiseScold). Con el compañero junto al
+# jugador, al felicitar el jugador hace la animación 38 (la 39 con un compañero de nivel 4, campeón, o más, salvo
+# Mamemon, MetalMamemon y Digitamamon) y el compañero la 11; al regañar el jugador hace la 7 y el compañero la 12 (la 25
+# si es un regaño justo después de un rechazo o de una caca en el suelo). Al acabar la del jugador cuenta el elogio o el
+# regaño (handlePraiseScold), y la escena termina al acabar la del compañero.
+praise_scold:
+  praise: {player_clip: 38, tall_player_clip: 39, partner_clip: 11}
+  scold: {player_clip: 7, partner_clip: 12, boosted_partner_clip: 25}
+  tall_from_level: 4
+  short_species: [mame, mtma, digi]

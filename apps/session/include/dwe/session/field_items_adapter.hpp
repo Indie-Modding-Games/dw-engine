@@ -15,6 +15,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::session {
 
@@ -66,6 +67,27 @@ struct ToiletWalkRules {
   std::uint32_t partnerClip = 0;
 };
 
+// Praising and scolding the partner in the field (partner.c: partnerTickPraiseScold; tamer.c:
+// tamerTickPraiseScold): the clips, by the original's animation ids, the player's gesture and the
+// partner's answer to it.
+struct PraiseScoldRules {
+  std::uint32_t praisePlayerClip = 0;
+  // The player's praise clip for a tall partner: one of level tallFromLevel (by the original's
+  // level numbers) or higher that is not one of shortSpecies.
+  std::uint32_t praiseTallPlayerClip = 0;
+  std::uint32_t praisePartnerClip = 0;
+  std::uint32_t scoldPlayerClip = 0;
+  std::uint32_t scoldPartnerClip = 0;
+  // The partner's clip for a scold right after a refusal or a pile on the ground.
+  std::uint32_t boostedScoldPartnerClip = 0;
+  std::int32_t tallFromLevel = 0;
+  std::vector<std::string> shortSpecies;
+
+  // The player's praise clip for a partner of this level (by the original's numbers) and species.
+  [[nodiscard]] std::uint32_t praisePlayerClipFor(std::int32_t level,
+                                                  std::string_view species) const;
+};
+
 // The field_items section: the ground items and the chests, and the field's sounds.
 struct FieldItemsRules {
   game::field::FieldItemRules items;
@@ -78,6 +100,8 @@ struct FieldItemsRules {
   std::optional<FeedRules> feed;
   // Without one, the partner goes at the toilet where it stands.
   std::optional<ToiletWalkRules> toiletWalk;
+  // Without one, praise and scold apply once the partner is beside the player, with no clips.
+  std::optional<PraiseScoldRules> praiseScold;
 };
 
 // Reads the field_items section; errors name the file and line.

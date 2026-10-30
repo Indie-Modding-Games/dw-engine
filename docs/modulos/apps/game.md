@@ -62,6 +62,37 @@ acabarla, el compañero hace sus necesidades (`handleToilet`), la cámara vuelve
 punto. Entonces suena el sonido del baño. Sin `field_items.toilet_walk`, o en un mapa sin puntos de baño, el compañero
 va donde está, como antes. Si se atasca de camino, se para donde está.
 
+## Felicitar y regañar
+
+«Felicitar» y «Regañar» del menú del campo (Tab) juegan la escena del original (`partner.c: partnerTickPraiseScold`,
+`tamer.c: tamerTickPraiseScold`, en `praise_scold_call.cpp`). El menú se cierra, el jugador queda quieto mientras
+corre el tiempo y el compañero se acerca hasta quedar a su lado; los dos se miran. Al felicitar suena `playSound(0,
+14)`, el jugador hace la animación 38 (la 39 si el compañero es campeón o más, salvo Mamemon, MetalMamemon y
+Digitamamon, que son bajos) y el compañero la 11. Al regañar suena `playSound(0, 13)`, el jugador hace la animación 7 y
+el compañero la 12, o la 25 si el regaño llega justo después de un rechazo o de una caca en el suelo
+(`ITEM_SCOLD_FLAG`). Al acabar la animación del jugador cuenta el elogio o el regaño (`handlePraiseScold`: disciplina y
+felicidad), el jugador vuelve a estar de pie y la escena termina cuando la animación del compañero acaba su primera
+vuelta. Los sonidos de esas animaciones suenan como los de cualquier clip del campo (`FieldScene::playClipSounds`). Las
+animaciones están en `field_items.praise_scold`; sin ese bloque, el elogio o el regaño cuenta en cuanto el compañero
+llega, sin animaciones, como antes.
+
+Medido en el original (2026-10-30, Agumon junto al jugador en twna01, el campo a 20 fotogramas por segundo):
+
+| Caso | Gesto del jugador | Respuesta del compañero | Cuenta en | Escena | Cambio |
+|---|---|---|---|---|---|
+| Felicitar | 38, 45 cuadros | 11, 51 cuadros | cuadro 46 del compañero | 50 cuadros | felicidad +7, disciplina -5 |
+| Regañar | 7, 17 cuadros | 12, 41 cuadros | cuadro 18 | 41 cuadros | felicidad -10, disciplina +2 |
+| Regañar tras un rechazo | 7, 17 cuadros | 25, 17 cuadros | cuadro 10 | 25 cuadros | disciplina +8, felicidad +3 |
+
+En dwe las mismas animaciones con sus sonidos (la 11 suena en sus cuadros 12, 23 y 39; la 12, en el 10) y el mismo
+orden: el gesto, el elogio o el regaño al acabarlo y el final con la respuesta.
+
+Diferencias con el original: las animaciones empiezan en el mismo tick en que el compañero llega; en el original, el
+del jugador empieza un fotograma después (el compañero pone al jugador en el estado 13 o 9 y el jugador lo atiende en
+su siguiente tick). Una evolución especial tras el elogio o el regaño (`handleSpecialEvolutions(3)`) espera a que acabe
+la escena, como en el original. El regaño tras un rechazo cambia la felicidad con un valor sin inicializar en el
+original (+3 en las dos medidas); dwe usa 0 (`care.yaml`, `boosted_scold_happiness`).
+
 ## Las cacas en el suelo
 
 `FieldPoop` (`field_poop.cpp`) coloca en el mapa los montones que el compañero deja (`partner_impl.c: createPoopPile`):

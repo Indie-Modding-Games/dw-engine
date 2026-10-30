@@ -29,6 +29,38 @@
         "partner_clip": { "description": "The partner's clip at the toilet, by the original's animation id.", "type": "integer", "minimum": 0 }
       }
     },
+    "praise_scold": {
+      "description": "Praising and scolding the partner in the field (partner.c: partnerTickPraiseScold; tamer.c: tamerTickPraiseScold); without it they apply with no clips.",
+      "type": "object",
+      "required": ["praise", "scold", "tall_from_level", "short_species"],
+      "additionalProperties": false,
+      "properties": {
+        "praise": {
+          "description": "The clips of a praise, by the original's animation ids.",
+          "type": "object",
+          "required": ["player_clip", "tall_player_clip", "partner_clip"],
+          "additionalProperties": false,
+          "properties": {
+            "player_clip": { "type": "integer", "minimum": 0 },
+            "tall_player_clip": { "description": "The player's clip for a tall partner.", "type": "integer", "minimum": 0 },
+            "partner_clip": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "scold": {
+          "description": "The clips of a scold, by the original's animation ids.",
+          "type": "object",
+          "required": ["player_clip", "partner_clip", "boosted_partner_clip"],
+          "additionalProperties": false,
+          "properties": {
+            "player_clip": { "type": "integer", "minimum": 0 },
+            "partner_clip": { "type": "integer", "minimum": 0 },
+            "boosted_partner_clip": { "description": "The partner's clip for a scold right after a refusal or a pile on the ground.", "type": "integer", "minimum": 0 }
+          }
+        },
+        "tall_from_level": { "description": "A partner of this level or higher (the original's numbers) is tall.", "type": "integer", "minimum": 1 },
+        "short_species": { "description": "The species ids that are never tall.", "type": "array", "items": { "type": "string" } }
+      }
+    },
     "feed": {
       "description": "Giving the partner an item from the bag in the field (partner.c: partnerTickFeedItem); without it the item goes to the partner at once.",
       "type": "object",

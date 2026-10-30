@@ -159,6 +159,8 @@ comportamiento, no guardan datos.
 | `feed.clips` | 5, 4, 0, 8, 13 | a | Ids de animación (referencias). |
 | `toilet_walk.camera_frames` | 20 | a | Duración (partner.c: tickPartnerToilet, createCameraMovement). |
 | `toilet_walk.partner_clip` | 10 | a | Id de animación (referencia). |
+| `praise_scold.praise`, `praise_scold.scold` | 38, 39, 11; 7, 12, 25 | a | Ids de animación (referencias; tamer.c: tamerTickPraiseScold). |
+| `praise_scold.tall_from_level`, `praise_scold.short_species` | 4; 3 especies | a | Umbral y excepciones de la regla (tamer.c: tamerTickPraiseScold, tipos 0xd, 0x1b y 0x38). |
 
 ### `poop_piles.yaml`
 
