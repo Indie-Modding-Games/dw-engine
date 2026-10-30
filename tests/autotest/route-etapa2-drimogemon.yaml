@@ -1,0 +1,56 @@
+# Stage 2 of the story with the keyboard, Drimogemon: from tunn09 on a seeded game (run with --start tunn09 and the
+# stage-2 lock, docs/guides/prueba-vertical.md) the player walks up to the digging
+# Drimogemon (section 0x34 of script 32): the first time it asks to be left alone for a while (trigger 353, its day
+# counter, variable 30, back to 0) and sends the player back. Each new day adds one to the counter
+# (dailyPStatTrigger); after three days the same cells start its thanks, it walks off to the city and joins
+# (trigger 238, the recruit). The days pass in fast stretches of the clock, with the care a player would give
+# between them (route-loop-keyboard.yaml's loop: medicine, food, toilet and bed).
+name: etapa2-drimogemon
+device: keyboard
+timeout: 900
+steps:
+  - resize: [1280, 720]
+  - wait: {map: tunn09, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.353: "false"}
+  - expect_setting: {story.trigger.238: "false"}
+  - screenshot: tunn09
+  # The cells of section 0x34 cross the tunnel in front of the diggers (z 950..1450); the walk ends when the scene
+  # takes the player.
+  - walk_to: {point: [-800, 1150], radius: 80, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: tunn09-first-talk
+  - repeat: {times: 3, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {setting: {story.trigger.353: "true"}, timeout: 30}
+  - expect_setting: {story.var.30: "0"}
+  # Three new days or more: stretches of about six hours each, and the nights slept.
+  - script: give_item("medicine 20")
+  - script: give_item("meat 40")
+  - repeat:
+      times: 10
+      steps:
+        - script: clock_speed("600")
+        - wait: {seconds: 0.6}
+        - script: clock_speed("1")
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+  - wait: {seconds: 8}
+  - wait: {seconds: 2}
+  - screenshot: tunn09-three-days
+  - walk_to: {point: [-800, 1150], radius: 80, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: tunn09-thanks
+  # Six pages, its walk off and the notice.
+  - repeat: {times: 12, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.238: "true"}, timeout: 120}
+  - wait: {seconds: 2}
+  - screenshot: tunn09-after

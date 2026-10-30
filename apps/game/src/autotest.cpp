@@ -362,9 +362,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
   } else if (kind == "walk_to") {
     step.kind = Kind::WalkTo;
     step.timeout = 90.0;
-    reader.expectKeys(
-        value, "walk_to", {},
-        {"trigger", "point", "radius", "walk", "stop_on_warp", "encounters", "device", "timeout"});
+    reader.expectKeys(value, "walk_to", {},
+                      {"trigger", "point", "radius", "walk", "stop_on_warp", "stop_on_scene",
+                       "encounters", "device", "timeout"});
     if (const core::YamlNode* trigger = value.find("trigger")) {
       step.trigger = reader.integer<std::int32_t>(*trigger);
     }
@@ -382,6 +382,9 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node) {
     }
     if (const core::YamlNode* stop = value.find("stop_on_warp")) {
       step.stopOnWarp = reader.boolean(*stop);
+    }
+    if (const core::YamlNode* stop = value.find("stop_on_scene")) {
+      step.stopOnScene = reader.boolean(*stop);
     }
     if (const core::YamlNode* encounters = value.find("encounters")) {
       step.encounters = reader.boolean(*encounters);
@@ -996,6 +999,10 @@ bool Autotest::walkStep(const AutotestHost& host, const AutotestStep& step, doub
   if (field.mapChangePending()) {
     releaseMovement();
     return step.stopOnWarp;
+  }
+  if (step.stopOnScene && field.heldByScript()) {
+    releaseMovement();
+    return true;
   }
   // Free exploration asks where to go: the route answers in the chooser (wait for it shown, then
   // menu_select). The chooser of another cell on the way (the path steps back onto the cell the
