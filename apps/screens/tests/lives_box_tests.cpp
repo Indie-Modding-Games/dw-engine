@@ -48,9 +48,10 @@ TEST_CASE("lives box: the outline grows from the partner for 5 frames, then the 
 TEST_CASE("lives box: the life just lost shows full, blinks, then shows empty") {
   LivesBox box;
   box.open({}, 2, 3);
+  // The frame the box first shows in place is MURD_tickLivesBox's frame 1 (measured: timer - 39).
   steps(box, 5);
   CHECK(value<bool>(box, dwe::screens::LivesBoxLostFullSetting));
-  steps(box, 9);
+  steps(box, 8);
   CHECK(value<bool>(box, dwe::screens::LivesBoxLostFullSetting));
   // MURD_renderLivesBox: from frame 0xa it blinks in pairs of frames, empty on 0xa and 0xb, full on
   // 0xc and 0xd...

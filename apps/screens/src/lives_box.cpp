@@ -46,10 +46,13 @@ void LivesBox::step() {
   switch (state_) {
   case State::Opening:
     boxFrame_ += 1;
-    if (boxFrame_ > OutlineLastFrame) {
-      state_ = State::Open;
+    if (boxFrame_ <= OutlineLastFrame) {
+      break;
     }
-    break;
+    // renderUIBoxAnimated puts the box in place after drawing its last outline, so tickUIBox runs
+    // MURD_tickLivesBox from the very next frame: the one the box first shows in place counts 1.
+    state_ = State::Open;
+    [[fallthrough]];
   case State::Open:
     livesFrame_ += 1;
     break;

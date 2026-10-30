@@ -1,6 +1,8 @@
 -- The lost life's lives box (murd.c: MURD_createLivesBox, MURD_tickLivesBox, MURD_renderLivesBox,
 -- MURD_animateLivesBoxOut). The game publishes lives_box.* (apps/screens: lives_box.hpp) and counts
--- up lives_box.revision; the box takes no input.
+-- up lives_box.revision; the box takes no input. MURD_tickScene's fade (layer 0, over the box)
+-- darkens it too: the game reports the fade it subtracts from the scene (screen_fade, 0 to 1) and
+-- the box fades out with it.
 
 local max_slots = 5
 -- The box in place (structure.rcss): its left in percent of the window and dp from there, its top
@@ -55,6 +57,15 @@ local function fill(document)
   end
 end
 
+local function refresh_fade(document)
+  local level = ui.setting("screen_fade")
+  if type(level) ~= "number" then
+    level = 0
+  end
+  local opacity = string.format("%.3f", 1 - math.min(math.max(level, 0), 1))
+  document:get("box"):set_property("opacity", opacity)
+end
+
 local function refresh(document)
   local box = document:get("box")
   local outline = ui.setting("lives_box.outline") == true
@@ -66,10 +77,13 @@ end
 
 function on_show(document)
   refresh(document)
+  refresh_fade(document)
 end
 
 function on_setting(document, name)
   if name == "lives_box.revision" then
     refresh(document)
+  elseif name == "screen_fade" then
+    refresh_fade(document)
   end
 end

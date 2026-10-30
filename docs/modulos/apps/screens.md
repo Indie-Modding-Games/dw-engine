@@ -92,8 +92,13 @@ con `battle.intro.revision`:
 createAnimatedUIBox`, `renderUIBoxAnimated`), fotograma a fotograma al ritmo de la escena: su contorno gris crece
 desde el compañero durante 5 fotogramas, la caja enseña un hueco por vida, con la recién perdida llena hasta el
 fotograma 0xa, parpadeando de dos en dos hasta 0x1e y vacía después; al cerrarse encoge otros 5 fotogramas hacia el
-compañero. Al abrirse suena el 0 y al empezar a cerrarse el 1, en el canal 0. El documento `ui/lives_box` redibuja
-con `lives_box.revision`:
+compañero. Al abrirse suena el 0 y al empezar a cerrarse el 1, en el canal 0. Medido en el original (vida perdida
+tras un combate): la caja se crea en el fotograma 0x23 de `MURD_tickScene`, el contorno se dibuja del 35 al 39, la caja
+está en su sitio desde el 40 y `MURD_tickLivesBox` cuenta su fotograma desde ese mismo 40 (fotograma = escena − 39),
+porque `renderUIBoxAnimated` la pone en su sitio tras dibujar el último contorno y `tickUIBox` la mueve desde el
+siguiente; el corazón perdido parpadea así del 49 al 68 de la escena. El fundido de la escena (capa 0, 0 a 0xa0 del
+0x5f al 0x87) oscurece también la caja: el documento baja su opacidad con `screen_fade`, como el HUD (Suposición:
+opacidad 1 − fundido en vez de la resta del original). El documento `ui/lives_box` redibuja con `lives_box.revision`:
 
 | Ajuste | Valor | Qué es |
 |---|---|---|
@@ -102,6 +107,7 @@ con `lives_box.revision`:
 | `lives_box.anchor_x`, `lives_box.anchor_y` | números | El punto medio del compañero en pantalla, en porcentaje de la ventana |
 | `lives_box.lives`, `lives_box.slots` | números | Las vidas que quedan tras perder una y los huecos (las vidas con las que se empieza) |
 | `lives_box.lost_full` | booleano | Si la vida recién perdida se ve llena este fotograma |
+
 ## HUD del campo
 
 `fieldHudViewOf(hora, compañero, shown)` es el estado del campo: la hora y el día, felicidad y disciplina, hambre,
