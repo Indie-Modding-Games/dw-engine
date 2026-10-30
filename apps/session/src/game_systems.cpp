@@ -19,6 +19,7 @@
 #include <dwe/session/item_trader.hpp>
 #include <dwe/session/jukebox.hpp>
 #include <dwe/session/medals_adapter.hpp>
+#include <dwe/session/merit_shop.hpp>
 #include <dwe/session/messages.hpp>
 #include <dwe/session/poop_adapter.hpp>
 #include <dwe/session/shop_counter.hpp>
@@ -145,6 +146,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
       CardShopDesc{.files = &files, .cards = cards.get(), .inventory = inventory.get()});
   calendar->setNewDayListener(
       [shop = cardShop.get()](std::int32_t days) { shop->startNewDays(days); });
+  auto meritShop = std::make_unique<MeritShop>(MeritShopDesc{
+      .files = &files, .cards = cards.get(), .inventory = inventory.get(), .story = story.get()});
   auto discardMenu = std::make_unique<DiscardMenu>(
       DiscardMenuDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   auto jukebox = std::make_unique<Jukebox>(JukeboxDesc{.files = &files, .story = story.get()});
@@ -189,6 +192,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(cards));
   game.cardShop = cardShop.get();
   game.systems.push_back(std::move(cardShop));
+  game.meritShop = meritShop.get();
+  game.systems.push_back(std::move(meritShop));
   auto fishing =
       std::make_unique<FishingAdapter>(*game.inventory, *game.story, std::move(tables.fishing));
   game.fishing = fishing.get();

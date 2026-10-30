@@ -116,7 +116,8 @@ Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decid
 | Precio, descuento de bebé 90 % | `script_common.c: tickItemMenuAmountBox`, `isPartnerBaby` | `buyPrice`, `buy`; `shop.baby_discount_percent` | `shop_tests`: "buying pays…" | Igual |
 | Máximo de compra | `script_common.c: createItemMenuAmountBox` | `maxPurchase`; `shop.max_amount` | `shop_tests`: "buying pays…", "the stack's room…" | Igual |
 | Venta a mitad de precio, solo lo que se tira | `script_common.c: shopFillSellItemList`, `createItemMenuAmountBox` | `saleOffers`, `sell`; `shop.sell_divisor` | `shop_tests`: "selling pays…" | Igual |
-| Intercambio por méritos | `script_common.c` (menú 7) | — | — | Hueco (fase 4, lo abre el guion) |
+| Lista del intercambio por méritos: los objetos 0 a 127 con mérito, por número; se puede tomar si llegan los méritos y cabe en la bolsa (hueco libre o un montón por debajo del tope) | `shop/script_menu.c: shopFillMeritItemList` | `meritOffers` | `merit_shop_tests`: "the merit list is every item…", "with a full bag…" | Igual |
+| Una carta vale su `meritValue`; los méritos no pasan de 9999 | `shop/script_menu.c: createMeritCardTradeDialogue`, `openMeritShop` (estado 8) | `cardMerit`, `addMerit` | `merit_shop_tests`: "a card is worth…" | Igual |
 | Objetos del suelo (11 a la vez) | `item.c: DROPPED_ITEMS`, `pickupItem` | `hasRoomFor`, `add` | `bag_tests`: "a full bag refuses…" | Hueco (el suelo es del campo y la batalla) |
 
 ## Tests

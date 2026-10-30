@@ -62,6 +62,8 @@ schemas:
     - rules/*/item_trader
   ruleset_card_shop:
     - rules/*/card_shop
+  ruleset_merit_shop:
+    - rules/*/merit_shop
   ruleset_shop:
     - rules/*/shop
   ruleset_evolution:

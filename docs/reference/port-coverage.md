@@ -87,9 +87,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 59 | 0 | 11 | 32 | 84 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 86 | 4 | 4 | 51 | 94 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 88 | 3 | 4 | 50 | 94 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 92 | 2 | 1 | 3 | 98 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 94 | 1 | 0 | 3 | 99 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1016 | 41 | 293 | 1088 | 77 % |
+| **Total** | 2438 funciones | 1020 | 39 | 292 | 1087 | 77 % |
 
 ## Batalla
 
@@ -253,20 +253,19 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 86, parcial 4, falta 4, no aplica 51.
+Portado 88, parcial 3, falta 4, no aplica 50.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `readSelectedItemMerit` | `main/script_common.c:877` | parcial | Lee los méritos del objeto elegido. | no hay pantalla del intercambio por méritos |
-| `tickShopBitsBox` | `main/script_common.c:1154` | parcial (citada en docs) | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
+| `tickShopBitsBox` | `main/script_common.c:1154` | parcial | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
 | `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/game/src/shop_screen.cpp` · la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro |
-| `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | parcial | Toca el sonido de la tienda, solo en el mapa de la sabana. | `apps/session/src/card_shop.cpp` · la tienda de cartas lo toca (trade_sound de card_shop: (0, 0x17) solo en gias06b); el trueque de objetos todavía no |
+| `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | parcial | Toca el sonido de la tienda, solo en el mapa de la sabana. | `apps/session/src/card_shop.cpp` · la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos todavía no |
 | `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
 | `createMonochromonMoodBubble` | `main/script_common.c:3038` | falta (citada en docs) | Burbuja de humor del rival de la tienda de cambio. | scripts.md: más tarde |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
-No aplica: lectura de operandos; los scripts se pasan a Lua (12); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (11); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
+No aplica: lectura de operandos; los scripts se pasan a Lua (12); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (10); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
 
 ## Menús e interfaz
 
@@ -291,13 +290,11 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 92, parcial 2, falta 1, no aplica 3.
+Portado 94, parcial 1, falta 0, no aplica 3.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
-| `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 1 se cierra sin pantalla |
-| `shopFillMeritItemList` | `shop/script_menu.c:1479` | falta | Rellena la lista del intercambio por méritos. | la rutina 1 se cierra sin pantalla |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3).
 

@@ -333,6 +333,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                     .sound = game_.session->sound(),
                     .ui = context.ui}),
       cardShopScreen_({.shop = game_.systems.cardShop, .ui = context.ui}),
+      meritShopScreen_(
+          {.shop = game_.systems.meritShop, .session = game_.session.get(), .ui = context.ui}),
       fieldItemsScreen_(*game_.systems.fieldItems, *game_.systems.inventory, *context.ui,
                         game_.session->sound()),
       awardScreen_(game_.systems.medals, *game_.session, *context.ui, game_.session->sound()),
@@ -361,6 +363,8 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   tradeScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachCardShop(&cardShopScreen_);
   cardShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
+  storyScenes_.attachMeritShop(&meritShopScreen_);
+  meritShopScreen_.setSpecies(species_ ? &*species_ : nullptr);
   if (game_.systems.cards != nullptr) {
     game_.systems.cards->setDigimon(species_ ? &*species_ : nullptr);
   }
@@ -406,7 +410,7 @@ PlaySession::~PlaySession() {
   for (const std::string_view document :
        {std::string_view{"hud"}, BattleDocument, PartnerMenuDocument, DestinationChoiceDocument,
         SleepMenuDocument, DialogDocument, ShopMenuDocument, ItemKeeperDocument,
-        DiscardMenuDocument, JukeboxDocument, TradeMenuDocument, CardShopDocument, FieldItemNoticeDocument,
+        DiscardMenuDocument, JukeboxDocument, TradeMenuDocument, CardShopDocument, MeritShopDocument, FieldItemNoticeDocument,
         AwardNoticeDocument, FishingBaitDocument, FishingNoticeDocument, FishingHudDocument,
         CurlingHudDocument, EggBoxDocument, NamingBoxDocument, LivesBoxDocument}) {
     context_.ui->hide(document);
@@ -448,6 +452,7 @@ void PlaySession::pressItemKeeper(const input::InputState& input) {
   jukeboxScreen_.press(input);
   tradeScreen_.press(input);
   cardShopScreen_.press(input);
+  meritShopScreen_.press(input);
 }
 
 void PlaySession::pressPartnerMenu(const input::InputState& input) {
@@ -474,7 +479,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-      cardShopScreen_.active()) {
+      cardShopScreen_.active() || meritShopScreen_.active()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -591,7 +596,7 @@ bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
       jukeboxScreen_.handle(command) || tradeScreen_.handle(command) ||
-      cardShopScreen_.handle(command) ||
+      cardShopScreen_.handle(command) || meritShopScreen_.handle(command) ||
       sleepScreen_.handle(command) || saveMachine_.handle(command) ||
       praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
       fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) ||
@@ -787,7 +792,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   });
   if (storyTextbox_) {
     storyTextbox_->cover(jukeboxScreen_.active() || tradeScreen_.active() ||
-                         cardShopScreen_.active());
+                         cardShopScreen_.active() || meritShopScreen_.active());
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
@@ -839,8 +844,8 @@ bool PlaySession::paused() const {
          (sleepScreen_.active() && !sleepScreen_.fieldRuns()) || saveMachine_.active() ||
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
-         jukeboxScreen_.active() || tradeScreen_.active() || cardShopScreen_.active() || fieldItemsScreen_.active() ||
-         awardScreen_.active();
+         jukeboxScreen_.active() || tradeScreen_.active() || cardShopScreen_.active() ||
+         meritShopScreen_.active() || fieldItemsScreen_.active() || awardScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

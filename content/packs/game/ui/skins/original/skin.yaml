@@ -51,6 +51,9 @@ screens:
   # La tienda de cartas: las cajas y los rótulos del guardián, y la carta de cada rareza.
   card_shop:
     styles: [ui/skins/original/card_shop/style]
+  # El intercambio por méritos: las cajas, los rótulos de las listas y la carta de cada rareza.
+  merit_shop:
+    styles: [ui/skins/original/merit_shop/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_machine/style]
@@ -198,6 +201,8 @@ sprite_sheets:
       keeper-count-label: [100, 48, 22, 7]
       # El rótulo PRICE de la tienda de cartas (shop/script_menu.c: renderCardMenu).
       keeper-price-label: [20, 34, 20, 7]
+      # El rótulo POINT de la lista del intercambio por méritos (script_common.c: renderItemMenu, ITEM_MENU_HEADER_UVS 2).
+      keeper-point-label: [80, 48, 20, 7]
   # La carta de cada rareza en las listas de la tienda de cartas (script_common.c: renderCardSprite, paleta 5).
   - name: card-rarity
     image: texture/etcdat/system_w

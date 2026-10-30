@@ -315,6 +315,18 @@ el sorteo, el divisor de venta, las frases de MAPHEAD (1235 y «Is it OK?» de 1
 trato (0, 23) solo en gias06b (`playShopSoundOnlyInSavannah`); el estado (las seis cartas) va en la sección `card_shop`
 de la partida. La pantalla `card_shop` del juego (`apps/game: CardShopScreen`) enseña las listas.
 
+### Intercambio por méritos (`MeritShop`)
+
+El intercambio del Shogun de gkyo02 (`script_interp.c: CALL_ROUTINE 1` → `shop/script_menu.c: openMeritShop`). El
+jugador da cartas por puntos de mérito (el `merit` del registro del jugador) y toma los objetos que tienen precio en
+méritos (`shopFillMeritItemList`). `giveCard` quita una copia y suma su `meritValue` hasta 9999; `takeItem` cobra el
+precio y mete uno en la bolsa, solo si se puede tomar. La sección `merit_shop` del ruleset
+([esquema](../../content/schemas/ruleset_merit_shop.schema.json)) da las frases (MAPHEAD 1236: saludo 0, opciones 1,
+sí o no de la carta 2 y del objeto 3, sobre la lista de cartas 5 y de objetos 6, lo que vale la carta desde la 7 más
+la rareza), la línea de la caja de puntos (7 de la sección 1220), el tope (9999), el disparador que impide cancelar
+las opciones (49), el sonido de fallo (0, 11) y el del trato (0, 23) solo en gias06b; sin ella la rutina se cierra al
+momento. La pantalla `merit_shop` del juego (`apps/game: MeritShopScreen`) lo enseña.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |
@@ -370,6 +382,8 @@ de la partida. La pantalla `card_shop` del juego (`apps/game: CardShopScreen`) e
 | Sobre de cartas: rareza `randomLimit(100)` (0 → 0, <5 → 1, <20 → 2, <50 → 3, si no 4) y luego `randomLimit` entre las de esa rareza; medido: con el estado 0xCF0A481B sale la carta 0x3D y con 0x0589E791 la 0x40 | `shop/script_menu.c: rollCard`, `rollCardPack` | `CardCollection::drawPackCard` | `a pack draws the cards the original drew from the same generator state` | Igual |
 | La frase del sobre nombra la especie de la carta (variable 249), sin espacio antes de «that» como el original | `shop/script_menu.c: showCardTextbox` | `CardsAdapter::drawPackCard` | `a pack's card puts its species in variable 249 ...` | Igual |
 | Sonidos: fallo (0, 0xB) al elegir una fila vacía o que no se puede comprar; trato (0, 0x17) solo en gias06b | `script_common.c: createSingleCardShopMenu`, `playShopSoundOnlyInSavannah` | `CardShopRules::failSound`, `tradeSound` | `the card shop's rules carry the fail sound ...` | Igual |
+| Intercambio por méritos: dar una carta suma su `meritValue` (tope 9999) y quita una copia; tomar un objeto resta su precio y mete uno en la bolsa; medido en dwe con 150 méritos: carta 2 (100) → 250, copias 1 → 0; Sup.recovery (20) → 230 | `shop/script_menu.c: openMeritShop` (estados 8 y 0xc), `createMeritCardTradeDialogue` | `MeritShop::giveCard`, `takeItem` | `the merit exchange takes a card for its merit…`, `…gives an item…`, ruta `merit-shop` | Igual |
+| Cancelar en las opciones contesta la última salvo con el disparador 49 (entonces suena (0, 0xB)) | `shop/script_menu.c: openMeritShop` (estado 3), `tickSelectionDialogue` | `MeritShop::choiceCancellable` | `the merit exchange's rules carry…` | Igual |
 | Rutina 15 (la caja del dinero) y rutina 22 de la tienda | `shop/script_menu.c` | — | — | **Hueco** |
 
 ## Tests

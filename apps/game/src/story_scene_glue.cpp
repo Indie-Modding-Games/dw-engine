@@ -56,6 +56,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (cardShop_ != nullptr) {
     cardShop_->update(scenes);
   }
+  if (meritShop_ != nullptr) {
+    meritShop_->update(scenes);
+  }
   if (saveMachine_ != nullptr && saveMachine_->takeClosed() && saveMachineWaits_) {
     saveMachineWaits_ = false;
     scenes.screenClosed();
@@ -67,7 +70,8 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
         (discard_ != nullptr && discard_->take(*screen)) ||
         (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||
         (trade_ != nullptr && trade_->take(*screen, scene)) ||
-        (cardShop_ != nullptr && cardShop_->take(*screen, scene)) || takeSaveMachine(*screen)) {
+        (cardShop_ != nullptr && cardShop_->take(*screen, scene)) ||
+        (meritShop_ != nullptr && meritShop_->take(*screen, scene)) || takeSaveMachine(*screen)) {
       continue;
     }
     // Routine 38 (overworld.c: createNinjamonEffect): the smoke runs on its own while the section

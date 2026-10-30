@@ -473,7 +473,7 @@ tickObjects = { status = "no-aplica", note = "bucle de objetos del original; el 
 
 # --- Guion
 tickItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Menú de objetos de los guiones (tiendas): cursor, cantidad y compra." }
-readSelectedItemMerit = { status = "parcial", note = "no hay pantalla del intercambio por méritos", what = "Lee los méritos del objeto elegido." }
+readSelectedItemMerit = { status = "portado", dwe = "apps/game/src/merit_shop_screen.cpp", what = "Lee los méritos del objeto elegido.", note = "un objeto que no se puede tomar toca (0, 0xb)" }
 tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
 updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
 tickSingleCardShop = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "la compra de cartas (CardShopScreen) y el menú de tirar un objeto (DiscardScreen)" }
@@ -496,7 +496,7 @@ itemMenuCursorBottom = { status = "no-aplica", note = "cursor de interfaz; lo ha
 itemMenuCursorDown = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Baja el cursor." }
 createItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Abre el cuadro de descripción del objeto." }
 updateItemMenuSubTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del cuadro auxiliar." }
-playShopSoundOnlyInSavannah = { status = "parcial", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas lo toca (trade_sound de card_shop: (0, 0x17) solo en gias06b); el trueque de objetos todavía no" }
+playShopSoundOnlyInSavannah = { status = "parcial", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas y el intercambio por méritos lo tocan (trade_sound: (0, 0x17) solo en gias06b); el trueque de objetos todavía no" }
 showMapHeadTextbox = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", what = "Enseña el texto de cabecera del mapa." }
 flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Pasa la página del cuadro de texto." }
 calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
@@ -593,7 +593,7 @@ addDiscipline = { status = "portado", dwe = "game/inventory/src/item_effects.cpp
 addWeight = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma peso al compañero." }
 hasAnyCardToBuy = { status = "portado", dwe = "game/inventory/src/card_shop.cpp", what = "Dice si queda alguna carta por comprar." }
 createCardMenu = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Abre el menú de compra o venta de cartas.", note = "las cajas aparecen sin la animación de abrir" }
-shopFillMeritItemList = { status = "falta", what = "Rellena la lista del intercambio por méritos.", note = "la rutina 1 se cierra sin pantalla" }
+shopFillMeritItemList = { status = "portado", dwe = "game/inventory/include/dwe/game/inventory/merit_shop.hpp:27", what = "Rellena la lista del intercambio por méritos." }
 itemKeeperFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:106", what = "Rellena las listas del guardián de objetos (lo guardado y la bolsa) y marca las filas que no pueden pasar." }
 createItemKeepWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Abre las ventanas del guardián de objetos." }
 jukeboxFillTitleList = { status = "portado", dwe = "apps/session/include/dwe/session/jukebox.hpp:120", what = "Rellena la lista de la gramola." }
@@ -625,7 +625,7 @@ namingSelectionDown = { status = "portado", dwe = "apps/game/src/naming_box.cpp"
 
 # Routine screens the story asks for and the app closes at once (story_scene_glue.cpp:48)
 openDiscardItem = { status = "portado", dwe = "apps/session/src/discard_menu.cpp", what = "Pide tirar un objeto cuando la bolsa está llena al recibir otro." }
-openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla", what = "Abre el intercambio de objetos por puntos de mérito." }
+openMeritShop = { status = "portado", dwe = "apps/game/src/merit_shop_screen.hpp:37", what = "Abre el intercambio de objetos por puntos de mérito.", note = "las cajas aparecen sin la animación de abrir" }
 openMojyamonShop = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:128", what = "Trueque de objetos: saludo, lista, pregunta, sí o no, cambio y despedida." }
 openJukebox = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:44", what = "Abre la gramola." }
 tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: pregunta, sí o no, las ventanas y la despedida." }

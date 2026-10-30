@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: merit_shop",
+  "description": "rules/<id>/merit_shop.yaml: the merit exchange the story opens (apps/session: MeritShop; shop/script_menu.c: openMeritShop).",
+  "type": "object",
+  "required": [
+    "lines_section",
+    "lines",
+    "points_section",
+    "points_line",
+    "most_merit",
+    "choice_lock_trigger",
+    "fail_sound",
+    "trade_sound"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "line": {
+      "description": "The line's place in the MAPHEAD section.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "sound": {
+      "type": "object",
+      "required": [
+        "slot",
+        "sound"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sound": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "properties": {
+    "lines_section": {
+      "description": "The MAPHEAD section of the exchange's lines.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "lines": {
+      "type": "object",
+      "required": [
+        "greeting",
+        "choices",
+        "give_card",
+        "take_item",
+        "card_prompt",
+        "item_prompt",
+        "card_worth"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "greeting": {
+          "$ref": "#/$defs/line"
+        },
+        "choices": {
+          "$ref": "#/$defs/line"
+        },
+        "give_card": {
+          "$ref": "#/$defs/line"
+        },
+        "take_item": {
+          "$ref": "#/$defs/line"
+        },
+        "card_prompt": {
+          "$ref": "#/$defs/line"
+        },
+        "item_prompt": {
+          "$ref": "#/$defs/line"
+        },
+        "card_worth": {
+          "description": "The line of a card of rarity 0; a card's rarity is added to it.",
+          "$ref": "#/$defs/line"
+        }
+      }
+    },
+    "points_section": {
+      "description": "The MAPHEAD section of the points box's line.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "points_line": {
+      "$ref": "#/$defs/line"
+    },
+    "most_merit": {
+      "description": "The merit stops here.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "choice_lock_trigger": {
+      "description": "While this trigger is set cancel does not answer a choice.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "fail_sound": {
+      "description": "The sound of an empty row or an item that cannot be taken.",
+      "$ref": "#/$defs/sound"
+    },
+    "trade_sound": {
+      "description": "The sound a trade plays, only on this map.",
+      "type": "object",
+      "required": [
+        "map",
+        "slot",
+        "sound"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "map": {
+          "type": "string"
+        },
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sound": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

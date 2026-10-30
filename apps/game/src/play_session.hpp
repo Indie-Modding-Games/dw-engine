@@ -239,6 +239,7 @@ private:
   JukeboxScreen jukeboxScreen_;
   TradeScreen tradeScreen_;
   CardShopScreen cardShopScreen_;
+  MeritShopScreen meritShopScreen_;
   FieldItemsScreen fieldItemsScreen_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;

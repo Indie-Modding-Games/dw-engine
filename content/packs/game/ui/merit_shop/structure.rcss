@@ -1,0 +1,210 @@
+/* The merit exchange (shop/script_menu.c: openMeritShop). One pixel of the original is 3dp; the 320 x 240 screen is a
+   960 x 720dp frame centred on a wide screen. From ITEM_MENU_POS and the menus' drawing (renderCardMenu,
+   renderItemMenu, calculateCardMenuStrings, calculateItemMenuStrings): the card list (ITEM_MENU_TYPE 6) from x 124 to
+   290 with the MENU and COUNT labels at (8, 5) and (128, 5) and a cursor 146 pixels wide; the item list (type 7) from
+   x 105 to 295 with the MENU and POINT labels and a cursor 170 pixels wide; both from y 22 to 151, six rows 18
+   pixels apart, the card or the icon at x 8 and the name at x 26 from y 18. The points box (createShopBitsBox(0)) is
+   the shop's money box, from x 8 to 89 and y 22 to 54. The skins give the look; this is the layout and a plain look
+   for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#points-box {
+	position: absolute;
+	left: 24dp;
+	top: 66dp;
+	width: 246dp;
+	height: 99dp;
+	padding: 6dp 0 0 63dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+#points-box.hidden { display: none; }
+
+.points-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+#points-value {
+	width: 111dp;
+	text-align: right;
+}
+
+#window {
+	position: absolute;
+	left: 372dp;
+	top: 66dp;
+	width: 498dp;
+	height: 387dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	display: none;
+}
+
+#frame.list-cards #window, #frame.list-items #window { display: block; }
+
+#frame.list-items #window {
+	left: 315dp;
+	width: 570dp;
+}
+
+.label {
+	position: absolute;
+	top: 12dp;
+	height: 21dp;
+}
+
+.label-menu { left: 21dp; width: 60dp; }
+.label-count { left: 381dp; width: 66dp; }
+.label-point { left: 381dp; width: 60dp; display: none; }
+#frame.list-items .label-count { display: none; }
+#frame.list-items .label-point { display: block; }
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 12dp;
+	top: 48dp;
+	width: 438dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+#frame.list-items #cursor { width: 510dp; }
+
+.row {
+	position: absolute;
+	left: 21dp;
+	width: 405dp;
+	height: 54dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#frame.list-items .row { width: 450dp; }
+
+#row-0 { top: 51dp; }
+#row-1 { top: 105dp; }
+#row-2 { top: 159dp; }
+#row-3 { top: 213dp; }
+#row-4 { top: 267dp; }
+#row-5 { top: 321dp; }
+
+.rarity {
+	position: absolute;
+	left: 6dp;
+	top: 6dp;
+	width: 36dp;
+	height: 36dp;
+}
+
+.icon {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 48dp;
+	height: 48dp;
+}
+
+.rarity.hidden, .icon.hidden { display: none; }
+
+/* The name runs until the number's column cuts it (the original writes the number over the name's tail): the item
+   list's price is the card shop's four-digit column, the card list's count two digits. */
+.name {
+	position: absolute;
+	left: 54dp;
+	top: 3dp;
+	width: 312dp;
+	overflow: hidden;
+}
+
+#frame.list-cards .name { width: 285dp; }
+
+.value {
+	position: absolute;
+	right: 0;
+	top: 3dp;
+	text-align: right;
+}
+
+/* calculateItemMenuStrings: an item the player cannot take is red (colour 3). */
+.row.stuck { color: #e03028; }
+
+.scrollbar {
+	position: absolute;
+	left: 459dp;
+	top: 69dp;
+	width: 24dp;
+	height: 276dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #020202 #6987a0 #6987a0 #020202;
+	background-color: #354b5c;
+}
+
+#frame.list-items .scrollbar { left: 531dp; }
+
+.thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 18dp;
+	height: 270dp;
+	background-color: #5b7080;
+}
+
+/* The keeper's lines and the player's choices: the story's text box, where showMapHeadTextbox puts it. */
+#talk {
+	position: absolute;
+	left: 90dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.talk-row.hidden, #speaker.hidden { display: none; }
+
+#speaker { color: #f8f800; }
+#speaker.player { color: #d0d0d0; }
+
+/* A choice's row: renderDialogueSelectionCursor's grey bar with a light top line. */
+.talk-row .run { display: inline-block; padding: 0 3dp; }
+.talk-row.selected .run {
+	background-color: #525a63;
+	border-top: 3dp #b5b5b5;
+}

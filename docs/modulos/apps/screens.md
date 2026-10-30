@@ -332,6 +332,39 @@ la 3).
 | El cuadro del guion bajo la tienda | `showMapHeadTextbox`: el tendero habla en la caja de abajo mientras la lista está abierta | La caja del guion se esconde y la tienda pinta la suya en el mismo sitio | `dwe_buy_list.png` | Igual |
 | Animación al abrir y cerrar las cajas | Las cajas crecen al abrirse | Aparecen de golpe | — | Hueco |
 
+## Intercambio por méritos
+
+El intercambio del Shogun de gkyo02 que abre la rutina 1 (`shop/script_menu.c: openMeritShop`; `ITEM_MENU_TYPE` 6 para
+dar cartas y 7 para tomar objetos). La sesión (`session::MeritShop`, sección `merit_shop` del ruleset) suma y resta los
+méritos; la pantalla `merit_shop` del juego (`apps/game: MeritShopScreen`) enseña el saludo, las tres opciones, las
+listas, lo que vale la carta y los sí o no, con la caja de puntos arriba a la izquierda y la caja del guion debajo
+tapada (`cover()`), como la tienda de cartas. Controles: flechas para mover, Intro para aceptar, Esc para cancelar,
+Mayús con arriba o abajo salta al principio o al final (R1 en el mando). Prueba en dwe: ruta
+`_work/routes-e2/menus-qa/merit-shop/merit.yaml` (partida en gkyo02 con 150 méritos y las cartas 1, 2 y 3; capturas
+`eng/merit-*.png`). El original no se ha medido todavía (el emulador de referencia estaba ocupado): las medidas
+salen del decomp y de las ventanas iguales ya medidas (la de tirar un objeto y la de comprar cartas).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `merit_shop.phase` | texto | `greeting`, `choice`, `card_list`, `card_worth`, `card_choice`, `item_list`, `item_choice` o `closed` |
+| `merit_shop.{list,speaker,player,line_key,shopvar,choice}` | texto, claves, número | `cards`, `items` o nada; quién habla (el tendero por su especie, o el jugador en las opciones); la frase (MAPHEAD 1236); lo que vale la carta para `{shopvar}`; la opción marcada |
+| `merit_shop.{points_shown,points_key,points}` | sí/no, clave, número | La caja de puntos («Points {merit}», línea 7 de 1220) |
+| `merit_shop.{total,top,cursor}` | números | Las filas de la lista, la primera que se ve y la del cursor |
+| `merit_shop.row.<i>.{name,value,rarity,stuck,icon,icon_rect}` | clave, números | Cartas: nombre, copias y rareza (-1 en una fila vacía); objetos: nombre, precio, icono y `stuck` (rojo) si no se puede tomar |
+
+| Comportamiento | Original (decomp) | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Saludo y opciones | Estado 0: «You want 'Merit' too?…» (línea 0); estado 3: abre la caja de puntos y el jugador elige «Show a … card / Use Merit points / See ya» (línea 1); el cursor vuelve a 0 | Fases `greeting` y `choice` | `eng/merit-02-greeting.png`, `merit-03-choice.png` | Igual |
+| Caja de puntos | `createShopBitsBox(0)`: la caja del dinero de la tienda (x 8 a 90, y 22 a 55) con «Points» y la cifra | `#points-box` con esas medidas | `eng/merit-04-card-list.png` | Suposición (sin medir en el original) |
+| Lista de cartas | Tipo 6: x 124 a 290, y 22 a 151, cursor de 146; MENU en (8, 5) y COUNT en (128, 5); las 64 cartas (vacías las que no tiene), nombre y copias, siempre blancas; «What did you bring?» (línea 5) | `#frame.list-cards`; el nombre se corta en la columna de las copias | `eng/merit-04-card-list.png` | Suposición (sin medir en el original) |
+| Lo que vale la carta | `createMeritCardTradeDialogue`: sonido (0, 3), la línea 7 más la rareza con `{shopvar}`; luego «Give it / Cancel» (línea 2) | Fases `card_worth` y `card_choice` | `eng/merit-05-card-worth.png`, `merit-06-card-choice.png` | Igual |
+| Lista de objetos | Tipo 7: x 105 a 295, cursor de 170; POINT (sprite 2) en (128, 5); los objetos con mérito y su precio (4 cifras), en rojo (3) los que no se pueden tomar; «What do you want?» (línea 6) | `#frame.list-items`; el precio en la columna de la tienda de cartas | `eng/merit-08-item-list.png` | Suposición (sin medir en el original) |
+| Tomar un objeto | `readSelectedItemMerit`: sonido (0, 3) y «OK / Cancel» (línea 3); sí resta y da el objeto | Fase `item_choice` | `eng/merit-09-item-choice.png`; 250 → 230 | Igual |
+| Fila vacía o que no se puede tomar | `playSound(0, 0xB)` | `MeritShop::playFailSound` | — | Igual |
+| Cancelar (Esc) | En una lista vuelve a las opciones (estado 0xa); en las opciones contesta «See ya» salvo con el disparador 49 | Fase `choice`; `choiceCancellable` | Ruta `merit-shop` | Igual |
+| Salir | Estado 6: cierra la caja de puntos y el guion sigue, sin despedida | Fase `closed` | `eng/merit-11-after.png` | Igual |
+| Animación al abrir y cerrar las cajas | Las cajas crecen al abrirse | Aparecen de golpe | — | Hueco |
+
 ## Caja del dinero de la tienda
 
 La caja con el dinero que la tienda abre junto a la compra y la venta (`script_common.c: createShopBitsBox`,
