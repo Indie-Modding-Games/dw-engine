@@ -434,11 +434,15 @@ private:
   std::optional<std::size_t> sheetTexture(const std::string& image, std::int32_t palette);
   // One white texel, for the effects' flat-coloured lines.
   std::optional<std::size_t> plainTexture();
+  // The flashes' glow: SPOT256's quarter at `u`, mirrored into the whole glow.
+  std::optional<std::size_t> flashTexture(std::int32_t u);
   const EffectModelEntry* effectModel(const std::string& move);
   void addEffectBillboards(std::vector<render::MapBillboard>& billboards);
   void addEffectStreak(const game::battle::EffectStreak& streak,
                        std::vector<render::MapBillboard>& billboards);
   void addEffectCloud(const game::battle::EffectCloud& cloud,
+                      std::vector<render::MapBillboard>& billboards);
+  void addEffectFlash(const game::battle::EffectFlash& flash,
                       std::vector<render::MapBillboard>& billboards);
   void submitEffectModels();
   void animatePartnerClip(double seconds);
@@ -560,6 +564,7 @@ private:
   std::vector<SceneEffect> effects_;
   std::map<std::pair<std::string, std::int32_t>, std::optional<std::size_t>> effectTextures_;
   std::optional<std::optional<std::size_t>> plainTexture_;
+  std::map<std::int32_t, std::optional<std::size_t>> flashTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;

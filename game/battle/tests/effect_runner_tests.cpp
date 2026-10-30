@@ -1257,3 +1257,126 @@ TEST_CASE("a cloud rises from the ground under its point for 14 frames, growing 
         EffectCloud{
             .position = {.x = 120, .y = -99, .z = 900}, .u = 0x60, .shade = 0x40, .scale = 0x6400});
 }
+
+namespace {
+
+// A made-up technique whose start puts a 4-frame flash of mode `mode` at a point: size 0 to 4096,
+// colour (200, 100, 0) to (200, 100, 0).
+EffectScript flashScript(int mode) {
+  constexpr std::string_view FlashEffectYaml = R"(move: "made_up_glare"
+header:
+  sub_effect_count: 1
+)";
+  const std::string scriptYaml = std::string{R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: push_immediate
+  value: )"} + std::to_string(mode) +
+                                 R"(
+- at: "0x0102"
+  op: push_address
+  address: "base+0x0040"
+- at: "0x0104"
+  op: push_immediate
+  value: 33
+- at: "0x0106"
+  op: push_immediate
+  value: 4
+- at: "0x0108"
+  op: push_immediate
+  value: 0
+- at: "0x010a"
+  op: push_immediate
+  value: 4096
+- at: "0x010c"
+  op: push_address
+  address: "base+0x0050"
+- at: "0x010e"
+  op: push_address
+  address: "base+0x0050"
+- at: "0x0110"
+  op: sub
+  sub: create_flash
+  args:
+    mode: )" + std::to_string(mode) +
+                                 R"(
+    position: "&base+0x0040"
+    fixed_depth: 33
+    duration: 4
+    scale_start: 0
+    scale_end: 4096
+    color_start: "&base+0x0050"
+    color_end: "&base+0x0050"
+- at: "0x0112"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0150"
+  op: stop
+data:
+- at: "0x0040"
+  kind: vector
+  values: [120, -300, 900]
+- at: "0x0050"
+  kind: color
+  values: [200, 100, 0]
+)";
+  const auto effect = dwe::core::parseYaml(FlashEffectYaml);
+  const auto script = dwe::core::parseYaml(scriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+  return std::move(*read);
+}
+
+std::vector<dwe::game::battle::EffectFlash> flashFrames(int mode, int frames) {
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  runner.start(runner.load(flashScript(mode)), 0, 1);
+  std::vector<dwe::game::battle::EffectFlash> flashes;
+  for (int frame = 0; frame < frames; ++frame) {
+    runner.tick();
+    runner.render();
+    for (const auto& draw : runner.draws()) {
+      if (const auto* flash = std::get_if<dwe::game::battle::EffectFlash>(&draw.shape)) {
+        flashes.push_back(*flash);
+      }
+    }
+  }
+  return flashes;
+}
+
+} // namespace
+
+TEST_CASE("a flash grows and fades over its frames on the light sheet's quarter of its mode") {
+  using dwe::game::battle::EffectBlend;
+  const std::vector<dwe::game::battle::EffectFlash> flashes = flashFrames(0, 6);
+  // Made by the start and a frame older on each tick, it ends on its 4th: frames 1 to 3 draw.
+  REQUIRE(flashes.size() == 3);
+  CHECK(flashes[0].position == dwe::game::battle::EffectVector{120, -300, 900});
+  CHECK(flashes[0].size == 1024);
+  CHECK(flashes[2].size == 3072);
+  CHECK(flashes[0].u == 0x40);
+  CHECK(flashes[0].blend == EffectBlend::Add);
+  CHECK(flashes[0].fixedDepth == 33);
+  // The fade: _sin(lerp(0x80, 0x14)) = _sin(101) is about 0.95 on frame 1, about 0.62 on frame 3.
+  CHECK(flashes[0].color.x >= 187);
+  CHECK(flashes[0].color.x <= 190);
+  CHECK(flashes[0].color.z == 0);
+  CHECK(flashes[2].color.x < flashes[1].color.x);
+  CHECK(flashes[1].color.x < flashes[0].color.x);
+  // The swell: grows over the first 0x17 frames.
+  CHECK(flashes[0].bump > 1);
+  CHECK(flashes[1].bump > flashes[0].bump);
+}
+
+TEST_CASE("a flash of mode 1 takes the sheet's other quarter, and one of mode 0x20 subtracts") {
+  CHECK(flashFrames(1, 2).at(0).u == 0);
+  const std::vector<dwe::game::battle::EffectFlash> dark = flashFrames(0x20, 2);
+  REQUIRE(dark.size() == 2);
+  CHECK(dark[0].u == 0x40);
+  CHECK(dark[0].blend == dwe::game::battle::EffectBlend::Subtract);
+  // An unknown mode makes nothing.
+  CHECK(flashFrames(2, 2).empty());
+}

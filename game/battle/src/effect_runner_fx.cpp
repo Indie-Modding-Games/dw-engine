@@ -12,7 +12,8 @@
 #include "effect_math.hpp"
 
 // The technique effects' own lights and dust (battle_effect.c: the particle emitters; efe.c: the
-// clouds), as EffectRunner members: what their sub-ops add, a frame of them and their draws.
+// clouds and flashes), as EffectRunner members: what their sub-ops add, a frame of them and their
+// draws.
 namespace dwe::game::battle {
 
 namespace {
@@ -59,6 +60,22 @@ constexpr std::array<std::int32_t, CloudFrames> CloudScale = {
     0x5000, 0x5000, 0x5400, 0x5800, 0x5c00, 0x6000, 0x6400};
 constexpr std::array<std::int32_t, CloudFrames> CloudShade = {
     0x80, 0x80, 0x80, 0x80, 0x79, 0x73, 0x6c, 0x66, 0x60, 0x59, 0x53, 0x4c, 0x46, 0x40};
+
+// efe.c: EFECreateFlash takes these modes (a negative one places the flash on the screen; the
+// scripts use none).
+constexpr std::int32_t FlashAdd = 0;
+constexpr std::int32_t FlashAddOther = 1;
+constexpr std::int32_t FlashSubtract = 0x20;
+// renderEFEFlash: the light sheet's quarter by mode (MAIN_D_8013421C[mode & 3]).
+constexpr std::array<std::int32_t, 4> FlashU = {0x40, 0x00, 0x00, 0x00};
+constexpr std::int32_t FlashModeMask = 3;
+// The fade: _sin of 0x80 (a quarter of _sin's turn, full) down to 0x14 over the flash.
+constexpr std::int32_t FlashFadeStart = 0x80;
+constexpr std::int32_t FlashFadeEnd = 0x14;
+// The swell over the first 0x17 frames: _sin up to 0x1eb, times 300 / 4096, plus 1.
+constexpr std::int32_t FlashSwellAngle = 0x1EB;
+constexpr std::int32_t FlashSwellFrames = 0x17;
+constexpr std::int32_t FlashSwellSize = 300;
 
 constexpr std::int32_t FixedShift = 12;
 
@@ -115,6 +132,36 @@ bool EffectRunner::fxOp(Slot& slot, std::string_view name, const std::vector<std
     *free = Cloud{.slot = index, .state = 0, .x = at.x, .z = at.z};
     core::logDebug("[port:battle] createCloudFX (efe.c:714): slot {} at ({}, {})", index, at.x,
                    at.z);
+  } else if (name == "create_flash") {
+    // efe.c: EFECreateFlash: mode, point, fixed depth, frames, size from and to, colour from and
+    // to; in the first of 12 free flashes, only for the modes it knows.
+    if (args.size() < 8) {
+      return true;
+    }
+    const std::int32_t mode = args[0] < 0 ? -args[0] : args[0];
+    const auto free = std::ranges::find_if(
+        flashes_, [](const std::optional<Flash>& flash) { return !flash.has_value(); });
+    if (free == flashes_.end() ||
+        (mode != FlashAdd && mode != FlashAddOther && mode != FlashSubtract)) {
+      return true;
+    }
+    const auto color = [&](std::int32_t address) {
+      const EffectVector c = vectorAt(slot, address);
+      return EffectVector{.x = short16(c.x), .y = short16(c.y), .z = short16(c.z)};
+    };
+    *free = Flash{.slot = index,
+                  .position = fx::toShort(vectorAt(slot, args[1])),
+                  .progress = 0,
+                  .frames = short16(args[3]),
+                  .mode = short16(args[0]),
+                  .fixedDepth = short16(args[2]),
+                  .colorStart = color(args[6]),
+                  .colorEnd = color(args[7]),
+                  .sizeStart = args[4],
+                  .sizeEnd = args[5]};
+    core::logDebug("[port:battle] EFECreateFlash (efe.c:808): slot {} mode {} for {} frames, size "
+                   "{} to {}",
+                   index, free->value().mode, free->value().frames, args[4], args[5]);
   } else {
     return false;
   }
@@ -164,11 +211,16 @@ void EffectRunner::tickFx() {
       emitter.reset();
     }
   }
-  // efe.c: tickCloudFX, as a world object after the effect engine's: a frame more, and the end on
-  // the last.
+  // efe.c: tickCloudFX and tickEFEFlash, as world objects after the effect engine's: a frame
+  // more, and the end on the last.
   for (std::optional<Cloud>& cloud : clouds_) {
     if (cloud && ++cloud->state >= CloudFrames) {
       cloud.reset();
+    }
+  }
+  for (std::optional<Flash>& flash : flashes_) {
+    if (flash && ++flash->progress >= flash->frames) {
+      flash.reset();
     }
   }
 }
@@ -186,6 +238,35 @@ void EffectRunner::renderFx() {
                               .u = CloudU.at(state),
                               .shade = CloudShade.at(state),
                               .scale = CloudScale.at(state)}});
+  }
+  // efe.c: renderEFEFlash: the colour fades with _sin, the size goes from one to the other and
+  // swells over its first frames.
+  for (const std::optional<Flash>& flash : flashes_) {
+    if (!flash) {
+      continue;
+    }
+    const std::int32_t t = flash->progress;
+    const std::int32_t fade =
+        fx::sin512(fx::lerp(FlashFadeStart, FlashFadeEnd, 0, flash->frames, t));
+    const auto channel = [&](std::int32_t from, std::int32_t to) {
+      return ((fx::lerp(from, to, 0, flash->frames, t) * fade) >> FixedShift) & ByteMask;
+    };
+    const std::int32_t mode = flash->mode < 0 ? -flash->mode : flash->mode;
+    draws_.push_back(
+        {.slot = flash->slot,
+         .shape = EffectFlash{
+             .position = flash->position,
+             .color = {.x = channel(flash->colorStart.x, flash->colorEnd.x),
+                       .y = channel(flash->colorStart.y, flash->colorEnd.y),
+                       .z = channel(flash->colorStart.z, flash->colorEnd.z)},
+             .size = fx::lerp(flash->sizeStart, flash->sizeEnd, 0, flash->frames, t),
+             .bump = ((fx::sin512(fx::lerp(0, FlashSwellAngle, 0, FlashSwellFrames, t)) *
+                       FlashSwellSize) >>
+                      FixedShift) +
+                     1,
+             .u = FlashU.at(static_cast<std::size_t>(mode & FlashModeMask)),
+             .blend = mode == FlashSubtract ? EffectBlend::Subtract : EffectBlend::Add,
+             .fixedDepth = flash->fixedDepth}});
   }
   // battle_effect.c: BTL_renderParticleEmitters.
   for (const std::optional<Emitter>& emitter : emitters_) {

@@ -27,6 +27,7 @@ namespace {
 
 using game::battle::EffectBlend;
 using game::battle::EffectCloud;
+using game::battle::EffectFlash;
 using game::battle::EffectMatrix;
 using game::battle::EffectModel;
 using game::battle::EffectSprite;
@@ -54,6 +55,20 @@ constexpr float GlowTexels = 15.0F;
 // 4096 world units wide whatever the depth.
 constexpr std::int32_t CloudPalette = 0;
 constexpr float CloudTexels = 32.0F;
+// efe.c: renderEFEFlash: SPOT256 (8-bit, at 832, 384, CLUT row 487) in the page at 832, 256; its
+// 64 x 64 quarter at u and v 0xC0 of the page (row 64 of the sheet), corner at the centre.
+constexpr std::string_view LightSheet = "texture/etcdat/spot256";
+constexpr std::int32_t FlashQuarter = 64;
+constexpr std::int32_t FlashRow = 64;
+constexpr std::size_t PixelBytes = 4;
+// renderParticleFlash: half side (scale * 63 >> 10) + 1 pixels, with scale = focal * size * 10 /
+// depth + swell; nothing from 0x8000 on, nor sorted at 0x20 or less or from 0x1000 on.
+constexpr std::int32_t FlashSizeScale = 10;
+constexpr std::int32_t FlashScaleShift = 10;
+constexpr std::int32_t FlashScaleLimit = 0x8000;
+constexpr std::int32_t FlashNearestOrder = 0x20;
+constexpr std::int32_t FlashFarOrder = 0x1000;
+constexpr std::int32_t OrderShift = 4;
 
 // The world's axes are the console's with y and z the other way (core::fromOriginalAxes).
 glm::vec3 worldOf(const EffectVector& v) {
@@ -233,6 +248,92 @@ void FieldScene::addEffectCloud(const EffectCloud& cloud,
                         .color = glm::vec3{static_cast<float>(cloud.shade)} / ColorOne});
 }
 
+std::optional<std::size_t> FieldScene::flashTexture(std::int32_t u) {
+  if (const auto found = flashTextures_.find(u); found != flashTextures_.end()) {
+    return found->second;
+  }
+  std::optional<std::size_t> texture;
+  auto sheet = sheetImage(*files_, std::string{LightSheet}, 0);
+  if (sheet && (std::cmp_less(sheet->width, u + FlashQuarter) ||
+                std::cmp_less(sheet->height, FlashRow + FlashQuarter))) {
+    sheet = core::fail(std::format("{} x {} texels, too small", sheet->width, sheet->height));
+  }
+  if (sheet) {
+    // renderParticleFlash draws the quarter four times, mirrored so its corner meets the centre.
+    constexpr std::int32_t Side = 2 * FlashQuarter;
+    assets::Image glow{.width = Side, .height = Side, .pixels = {}};
+    glow.pixels.resize(static_cast<std::size_t>(Side) * Side * PixelBytes);
+    for (std::int32_t y = 0; y < Side; ++y) {
+      for (std::int32_t x = 0; x < Side; ++x) {
+        const std::int32_t qx = x < FlashQuarter ? x : Side - 1 - x;
+        const std::int32_t qy = y < FlashQuarter ? y : Side - 1 - y;
+        const auto from = ((static_cast<std::size_t>(FlashRow + qy) * sheet->width) +
+                           static_cast<std::size_t>(u + qx)) *
+                          PixelBytes;
+        const auto to =
+            ((static_cast<std::size_t>(y) * Side) + static_cast<std::size_t>(x)) * PixelBytes;
+        std::copy_n(sheet->pixels.begin() + static_cast<std::ptrdiff_t>(from), PixelBytes,
+                    glow.pixels.begin() + static_cast<std::ptrdiff_t>(to));
+      }
+    }
+    if (auto added = mapRenderer_->addBillboardTexture(glow)) {
+      texture = *added;
+    } else {
+      sheet = std::unexpected{added.error()};
+    }
+  }
+  if (!sheet) {
+    core::logWarning("battle: no texture for the effects' flashes: {}", sheet.error().message);
+  }
+  flashTextures_.emplace(u, texture);
+  return texture;
+}
+
+// efe.c: renderEFEFlash, renderParticleFlash: the glow's size on the screen comes from the true
+// depth; a fixed depth only sorts it (in front of nearly everything), so the billboard moves along
+// its view ray to that depth, scaled to keep its size on the screen.
+void FieldScene::addEffectFlash(const EffectFlash& flash,
+                                std::vector<render::MapBillboard>& billboards) {
+  const render::MapCamera& camera = mapRenderer_->camera();
+  const glm::vec3 at = worldOf(flash.position);
+  const float depth = camera.viewDepth(at);
+  if (depth < 1.0F) {
+    return;
+  }
+  const auto originalDepth = static_cast<std::int64_t>(depth);
+  const std::int64_t scale = (static_cast<std::int64_t>(camera.desc().focalLength) * flash.size *
+                              FlashSizeScale / originalDepth) +
+                             flash.bump;
+  const std::int64_t order =
+      flash.fixedDepth > 0 ? flash.fixedDepth : (originalDepth >> OrderShift);
+  if (scale >= FlashScaleLimit || order <= FlashNearestOrder || order >= FlashFarOrder) {
+    return;
+  }
+  const std::int64_t half = ((scale * (FlashQuarter - 1)) >> FlashScaleShift) + 1;
+  if (half <= 1) {
+    return;
+  }
+  const std::optional<std::size_t> texture = flashTexture(flash.u);
+  if (!texture) {
+    return;
+  }
+  const float placed = flash.fixedDepth > 0 ? static_cast<float>(order << OrderShift) : depth;
+  const glm::vec3 eye{glm::inverse(camera.view())[3]};
+  const glm::vec3 centre = eye + ((at - eye) * (placed / depth));
+  const float side = 2.0F * static_cast<float>(half) * placed / camera.desc().focalLength;
+  billboards.push_back(
+      {.centre = centre,
+       .size = glm::vec2{side},
+       .flat = false,
+       .texture = *texture,
+       .texel = glm::vec2{0.0F},
+       .texels = glm::vec2{static_cast<float>(2 * FlashQuarter)},
+       .blend = spriteBlendOf(flash.blend),
+       .color = glm::vec3{static_cast<float>(flash.color.x), static_cast<float>(flash.color.y),
+                          static_cast<float>(flash.color.z)} /
+                ColorOne});
+}
+
 const FieldScene::EffectModelEntry* FieldScene::effectModel(const std::string& move) {
   if (const auto found = effectModels_.find(move); found != effectModels_.end()) {
     return found->second ? &*found->second : nullptr;
@@ -264,6 +365,10 @@ void FieldScene::addEffectBillboards(std::vector<render::MapBillboard>& billboar
     }
     if (const auto* cloud = std::get_if<EffectCloud>(&effect.shape)) {
       addEffectCloud(*cloud, billboards);
+      continue;
+    }
+    if (const auto* flash = std::get_if<EffectFlash>(&effect.shape)) {
+      addEffectFlash(*flash, billboards);
       continue;
     }
     const auto* sprite = std::get_if<EffectSprite>(&effect.shape);

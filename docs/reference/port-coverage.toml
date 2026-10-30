@@ -364,8 +364,8 @@ addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_roll
 initializeEntityParticleFX = { status = "falta", what = "Prepara las partículas pegadas a luchadores." }
 tickEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
 tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas)", what = "Mueve las nubes de humo y polvo de los efectos." }
-EFECreateFlash = { status = "falta", what = "Crea un destello de luz de una técnica.", note = "battle.md: los destellos se saltan" }
-tickEFEFlash = { status = "falta", what = "Anima un destello de luz." }
+EFECreateFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Crea un destello de luz de una técnica." }
+tickEFEFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Anima un destello de luz." }
 setEFEFlashOffset = { status = "falta", what = "Mueve un destello de luz." }
 findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Busca el fichero de datos de efectos." }
 initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }

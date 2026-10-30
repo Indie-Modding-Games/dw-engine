@@ -177,7 +177,25 @@ struct EffectCloud {
   bool operator==(const EffectCloud&) const = default;
 };
 
-using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud>;
+// A flash of a technique (efe.c: EFECreateFlash, tickEFEFlash, renderEFEFlash): the glow of the
+// light sheet (SPOT256's 64 x 64 quarter at `u`, v 64, drawn four times mirrored around its
+// corner) centred on `position`, tinted by `color` (128 is 1) and mixed by `blend`. Its half side
+// in the original's pixels is (scale * 63 >> 10) + 1, with scale = focal * size * 10 / depth + bump
+// (nothing drawn from 0x8000 on), and it sorts at `fixedDepth` * 16 of view depth when that is
+// positive, at its own depth otherwise.
+struct EffectFlash {
+  EffectVector position;
+  EffectVector color;
+  std::int32_t size = 0;
+  std::int32_t bump = 0;
+  std::int32_t u = 0;
+  EffectBlend blend = EffectBlend::Add;
+  std::int32_t fixedDepth = 0;
+
+  bool operator==(const EffectFlash&) const = default;
+};
+
+using EffectShape = std::variant<EffectSprite, EffectModel, EffectStreak, EffectCloud, EffectFlash>;
 
 // One thing a slot's render scripts drew this frame.
 struct EffectDraw {
@@ -336,6 +354,20 @@ private:
     std::int32_t z = 0;
   };
 
+  // efe.c: EfeFlashData, and the slot that made it.
+  struct Flash {
+    std::size_t slot = 0;
+    EffectVector position;
+    std::int32_t progress = 0;
+    std::int32_t frames = 0;
+    std::int32_t mode = 0;
+    std::int32_t fixedDepth = 0;
+    EffectVector colorStart;
+    EffectVector colorEnd;
+    std::int32_t sizeStart = 0;
+    std::int32_t sizeEnd = 0;
+  };
+
   struct CallFrame {
     std::size_t returnTo = 0; // an instruction index
     std::size_t subEffect = 0;
@@ -364,9 +396,9 @@ private:
   void homeTowardPoint(Slot& slot, const std::vector<std::int32_t>& args);
   void selectTarget(Slot& slot, bool random, std::int32_t argument);
   void tickUvAnims(Slot& slot);
-  // The particle emitters and clouds (effect_runner_fx.cpp): what their sub-ops add, one frame of
-  // them after the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters; the clouds as the world's
-  // objects that follow), and their draws after the render scripts.
+  // The particle emitters, clouds and flashes (effect_runner_fx.cpp): what their sub-ops add, one
+  // frame of them after the scripts (BTL_tickEFEEngine: BTL_tickParticleEmitters; the clouds and
+  // flashes as the world's objects that follow), and their draws after the render scripts.
   bool fxOp(Slot& slot, std::string_view name, const std::vector<std::int32_t>& args);
   void tickFx();
   void renderFx();
@@ -403,9 +435,11 @@ private:
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
   std::vector<EffectDraw> draws_;
-  // BTL_initializeParticleEmitters and initializeCloudFXData: 4 emitters and 60 clouds.
+  // BTL_initializeParticleEmitters, initializeCloudFXData and initializeFlashData: 4 emitters, 60
+  // clouds and 12 flashes.
   std::array<std::optional<Emitter>, 4> emitters_;
   std::array<std::optional<Cloud>, 60> clouds_;
+  std::array<std::optional<Flash>, 12> flashes_;
 
   // The interpreter's registers (battle_effect.c: EFE_SCRIPT_*), valid while a script runs.
   std::size_t slot_ = 0;
