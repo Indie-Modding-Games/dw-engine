@@ -6,9 +6,13 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <format>
+#include <iterator>
 #include <map>
 #include <utility>
+#include <vector>
 
 #include "messages.hpp"
 
@@ -220,6 +224,44 @@ MapSpriteSheet buildMapSpriteSheet(std::span<const MapSprite> sprites,
   return sheet;
 }
 
+namespace {
+
+// The pages of an entry MapPageTexels high and a whole number of pages wide, left to right from
+// its VRAM X.
+std::vector<MapTexturePage> splitTexturePages(MapTexturePage entry) {
+  const std::uint32_t count = entry.image.width / MapPageTexels;
+  if (count <= 1) {
+    return {std::move(entry)};
+  }
+  const std::int32_t pageWidth =
+      entry.bitsPerPixel == 4 ? MapVramLayout::FourBitPageWidth : MapVramLayout::EightBitPageWidth;
+  std::vector<MapTexturePage> pages;
+  pages.reserve(count);
+  for (std::uint32_t index = 0; index < count; ++index) {
+    MapTexturePage page{
+        .bitsPerPixel = entry.bitsPerPixel,
+        .vramX = entry.vramX + (static_cast<std::int32_t>(index) * pageWidth),
+        .clutRow = entry.clutRow,
+        .image = {.width = MapPageTexels,
+                  .height = entry.image.height,
+                  .indices = {},
+                  .palette = entry.image.palette},
+        .cluts = entry.cluts,
+    };
+    page.image.indices.reserve(static_cast<std::size_t>(MapPageTexels) * entry.image.height);
+    for (std::uint32_t row = 0; row < entry.image.height; ++row) {
+      const auto first =
+          entry.image.indices.begin() +
+          static_cast<std::ptrdiff_t>((row * entry.image.width) + (index * MapPageTexels));
+      page.image.indices.insert(page.image.indices.end(), first, first + MapPageTexels);
+    }
+    pages.push_back(std::move(page));
+  }
+  return pages;
+}
+
+} // namespace
+
 core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDocument& document) {
   const MapAssetIds& ids = document.assets;
   if (ids.backgrounds.empty()) {
@@ -261,9 +303,11 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
     if (!image) {
       return std::unexpected{image.error()};
     }
-    if (std::cmp_not_equal(image->width, MapPageTexels) ||
+    // A map file's texture entry can cover pages side by side (tunn05 loads 3 8-bit pages from
+    // x 384 in one LoadImage): it is cut into its pages.
+    if (image->width == 0 || image->width % MapPageTexels != 0 ||
         std::cmp_not_equal(image->height, MapPageTexels)) {
-      return core::fail(std::format("{}: {}x{} texels, but a texture page is {} square",
+      return core::fail(std::format("{}: {}x{} texels, but texture pages are {} square",
                                     texture.image.str(), image->width, image->height,
                                     MapPageTexels));
     }
@@ -276,7 +320,7 @@ core::Result<MapImages> loadMapImages(const VirtualFileSystem& vfs, const MapDoc
     if (!page) {
       return core::fail(std::format("{}: {}", texture.meta->str(), page.error().message));
     }
-    images.pages.push_back(std::move(*page));
+    std::ranges::move(splitTexturePages(std::move(*page)), std::back_inserter(images.pages));
   }
   const std::span<const MapSprite> sprites =
       document.objects ? std::span{document.objects->sprites} : std::span<const MapSprite>{};

@@ -259,6 +259,21 @@ TEST_CASE("map images load when the backgrounds have the document's size and fai
     memory.addFile("base/map/m/background_night.png", palettePng(256, 128, 4, 8));
     CHECK_FALSE(loadFixture(memory).has_value());
   }
+  SUBCASE("an entry three pages wide is cut into its pages") {
+    dwe::assets::MemoryFileSystem memory;
+    memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
+    memory.addFile("base/map/m/texture8/000.png", palettePng(768, 256, 1, 4));
+    memory.addFile("base/map/m/texture8/000_meta.yaml", PageMeta);
+    const auto images = loadFixture(memory);
+    REQUIRE_MESSAGE(images.has_value(), errorOf(images));
+    REQUIRE(images->pages.size() == 3);
+    for (std::size_t index = 0; index < images->pages.size(); ++index) {
+      const MapTexturePage& page = images->pages[index];
+      CHECK(page.vramX == 384 + (static_cast<std::int32_t>(index) * 128));
+      CHECK(page.image.width == 256);
+      CHECK(page.image.indices.size() == std::size_t{256} * 256);
+    }
+  }
   SUBCASE("a texture page that is not 256 square") {
     dwe::assets::MemoryFileSystem memory;
     memory.addFile("base/map/m/background_day.png", palettePng(256, 128, 3, 8));
