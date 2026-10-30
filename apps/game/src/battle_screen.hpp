@@ -6,6 +6,7 @@
 #include <dwe/game/battle/player_retreat.hpp>
 #include <dwe/screens/battle_intro.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/damage_numbers.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_effects.hpp>
 #include <dwe/session/field_items_adapter.hpp>
@@ -143,6 +144,10 @@ private:
   void tickBattle(double seconds);
   void takeFigures();
   void showEffects() const;
+  // The numbers the frame's hits, blocks and poison pop out of the fighters, and one frame of them.
+  void stepNumbers(const game::battle::BattleEvents& frame);
+  void tickNumbers(double seconds);
+  void publishNumbers() const;
   void showFighters(double seconds);
   void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
@@ -168,6 +173,10 @@ private:
   // effect scripts and the bodies.
   std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
+  // The numbers over the fighters (entity_text.c), and the time they have not run yet once the
+  // battle is over: they go on through the victory until the last one goes.
+  screens::DamageNumbers numbers_;
+  double numbersSeconds_ = 0.0;
   // The opening before the fight (battle_setup.c: BTL_handleBattleIntro), the enemies it marks and
   // where, and the time it has not run yet. Each battle seeds its own from their count.
   std::optional<screens::BattleIntro> intro_;

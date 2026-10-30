@@ -380,6 +380,45 @@
    then the "BATTLE" banner, its pieces placed on the original's 320 x 240 screen, which stands in the middle of the
    window at 3dp a pixel. The strip's frame, the cursor and the extra marks of the finisher's word are the original
    look's. While the banner shows, the HUD is there under it without the hovered command's name. */
+/* The numbers over the fighters (utils2.c: drawEntityText): each anchored at its fighter's feet and moved from there
+   by its transform, its digits 8 pixels square and 7 apart, left to right from the anchor. */
+#damage {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.dn {
+	position: absolute;
+	width: 96dp;
+	height: 24dp;
+	white-space: nowrap;
+}
+
+.dd {
+	display: block;
+	float: left;
+	width: 24dp;
+	height: 24dp;
+	margin-right: -3dp;
+	font-size: 22dp;
+	font-weight: bold;
+	line-height: 24dp;
+	text-align: center;
+	color: #ffffff;
+	font-effect: outline(2dp #101010);
+}
+
+.dn.poison .dd {
+	color: #ff40ff;
+}
+
+.dn.hidden, .dd.hidden {
+	display: none;
+}
+
 #intro {
 	position: absolute;
 	left: 0;

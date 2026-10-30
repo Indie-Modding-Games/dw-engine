@@ -98,6 +98,9 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   }
   map_ = map;
   drops_.clear();
+  numbers_.clear();
+  numbersSeconds_ = 0.0;
+  publishNumbers();
   fixedFight_ = fixedFight;
   onScreenAtStart_ = npcsOnScreen();
   takeFigures();
@@ -127,6 +130,8 @@ void BattleScreen::tick(double seconds) {
   tickVictory(seconds);
   if (battle_) {
     tickBattle(seconds);
+  } else {
+    tickNumbers(seconds);
   }
   if (exit_) {
     tickExit(seconds);
@@ -150,6 +155,7 @@ void BattleScreen::tickBattle(double seconds) {
     if (effects_) {
       effects_->frame(frame, battle_->moves());
     }
+    stepNumbers(frame);
   });
   publish();
   takeFigures();
@@ -171,6 +177,57 @@ void BattleScreen::showEffects() const {
     }
   }
   desc_.scene->setEffects(std::move(shown));
+}
+
+// battle_main.c: BTL_tickAttackHits adds the damage of a hit, and of a blocked melee attack, over
+// the fighter it reached (addEntityText(entity, slot, 0, dmg, 0)), BTL_tickStatusEffects the
+// poison's in its own tint (colour 0xc); a miss and a blocked ranged attack show none. Each number
+// stays where the fighter's feet showed as it was added (setCombatTextPosition: the battle's
+// GAME_STATE is 1, not the versus mode's 4 that follows the fighter). renderEntityText draws it on
+// the same frame.
+void BattleScreen::stepNumbers(const game::battle::BattleEvents& frame) {
+  using game::battle::EventKind;
+  for (const game::battle::BattleEvent& event : frame) {
+    const bool damage = event.kind == EventKind::AttackHit ||
+                        (event.kind == EventKind::AttackBlocked && event.amount > 0);
+    if (!damage && event.kind != EventKind::PoisonDamage) {
+      continue;
+    }
+    std::optional<screens::WindowFraction> feet;
+    if (desc_.scene != nullptr && (event.fighter == 0 || event.fighter <= enemyNpcs_.size())) {
+      const std::optional<std::int32_t> npc =
+          event.fighter == 0 ? std::nullopt
+                             : std::optional<std::int32_t>{enemyNpcs_[event.fighter - 1]};
+      if (const std::optional<glm::vec2> shown = desc_.scene->fighterFeetOnWindow(npc)) {
+        feet = screens::WindowFraction{.x = shown->x, .y = shown->y};
+      }
+    }
+    numbers_.add(event.fighter, event.amount,
+                 damage ? screens::NumberColour::Plain : screens::NumberColour::Poison, feet);
+    core::logDebug("[port:battle] addEntityText (entity_text.c:96): fighter={} value={}{}",
+                   event.fighter, event.amount, feet ? "" : " off the camera");
+  }
+  numbers_.step();
+  publishNumbers();
+}
+
+// After the battle the numbers left go on at the battle's rate until the last one goes.
+void BattleScreen::tickNumbers(double seconds) {
+  if (numbers_.empty() && numbers_.shown().empty()) {
+    numbersSeconds_ = 0.0;
+    return;
+  }
+  numbersSeconds_ += seconds;
+  while (numbersSeconds_ >= IntroFrameSeconds) {
+    numbersSeconds_ -= IntroFrameSeconds;
+    numbers_.step();
+  }
+  publishNumbers();
+}
+
+void BattleScreen::publishNumbers() const {
+  screens::publish(*desc_.ui, screens::settingsOf(numbers_.shown()),
+                   screens::DamageRevisionSetting);
 }
 
 // Each fighter's place, facing and clip are the battle's (battle_main.c: the fighters are the
@@ -515,6 +572,12 @@ void BattleScreen::finish() {
   const game::battle::BattleResult& result = *finished;
   outcome_ = result.outcome;
   won_ = result.outcome == game::battle::Outcome::Victory;
+  // battle_main.c: BTL_deinitializeCombat: without a victory the numbers go at once
+  // (removeEntityText).
+  if (!won_) {
+    numbers_.clear();
+    publishNumbers();
+  }
   if (won_) {
     standPartner(VictoryStanceClip, "BTL_handleVictorySequence (battle_main.c:886)");
     core::logDebug("[port:audio] BTL_handleVictorySequence (battle_main.c:889): the fanfare; "
@@ -571,6 +634,8 @@ void BattleScreen::close() {
   }
   ending_ = false;
   victoryPoseSeconds_.reset();
+  numbers_.clear();
+  publishNumbers();
   releasePoses();
   desc_.ui->hide(BattleDocument);
   for (const game::battle::Drop& drop : std::exchange(drops_, {})) {

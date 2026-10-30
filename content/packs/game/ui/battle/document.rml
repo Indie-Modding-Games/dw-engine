@@ -5,6 +5,41 @@
 	<script src="logic.lua"></script>
 </head>
 <body>
+	<div id="damage">
+		<div id="dn-0" class="dn hidden"><div id="dd-0-0" class="dd hidden"></div><div id="dd-0-1" class="dd hidden"></div><div id="dd-0-2" class="dd hidden"></div><div id="dd-0-3" class="dd hidden"></div></div>
+		<div id="dn-1" class="dn hidden"><div id="dd-1-0" class="dd hidden"></div><div id="dd-1-1" class="dd hidden"></div><div id="dd-1-2" class="dd hidden"></div><div id="dd-1-3" class="dd hidden"></div></div>
+		<div id="dn-2" class="dn hidden"><div id="dd-2-0" class="dd hidden"></div><div id="dd-2-1" class="dd hidden"></div><div id="dd-2-2" class="dd hidden"></div><div id="dd-2-3" class="dd hidden"></div></div>
+		<div id="dn-3" class="dn hidden"><div id="dd-3-0" class="dd hidden"></div><div id="dd-3-1" class="dd hidden"></div><div id="dd-3-2" class="dd hidden"></div><div id="dd-3-3" class="dd hidden"></div></div>
+		<div id="dn-4" class="dn hidden"><div id="dd-4-0" class="dd hidden"></div><div id="dd-4-1" class="dd hidden"></div><div id="dd-4-2" class="dd hidden"></div><div id="dd-4-3" class="dd hidden"></div></div>
+		<div id="dn-5" class="dn hidden"><div id="dd-5-0" class="dd hidden"></div><div id="dd-5-1" class="dd hidden"></div><div id="dd-5-2" class="dd hidden"></div><div id="dd-5-3" class="dd hidden"></div></div>
+		<div id="dn-6" class="dn hidden"><div id="dd-6-0" class="dd hidden"></div><div id="dd-6-1" class="dd hidden"></div><div id="dd-6-2" class="dd hidden"></div><div id="dd-6-3" class="dd hidden"></div></div>
+		<div id="dn-7" class="dn hidden"><div id="dd-7-0" class="dd hidden"></div><div id="dd-7-1" class="dd hidden"></div><div id="dd-7-2" class="dd hidden"></div><div id="dd-7-3" class="dd hidden"></div></div>
+		<div id="dn-8" class="dn hidden"><div id="dd-8-0" class="dd hidden"></div><div id="dd-8-1" class="dd hidden"></div><div id="dd-8-2" class="dd hidden"></div><div id="dd-8-3" class="dd hidden"></div></div>
+		<div id="dn-9" class="dn hidden"><div id="dd-9-0" class="dd hidden"></div><div id="dd-9-1" class="dd hidden"></div><div id="dd-9-2" class="dd hidden"></div><div id="dd-9-3" class="dd hidden"></div></div>
+		<div id="dn-10" class="dn hidden"><div id="dd-10-0" class="dd hidden"></div><div id="dd-10-1" class="dd hidden"></div><div id="dd-10-2" class="dd hidden"></div><div id="dd-10-3" class="dd hidden"></div></div>
+		<div id="dn-11" class="dn hidden"><div id="dd-11-0" class="dd hidden"></div><div id="dd-11-1" class="dd hidden"></div><div id="dd-11-2" class="dd hidden"></div><div id="dd-11-3" class="dd hidden"></div></div>
+		<div id="dn-12" class="dn hidden"><div id="dd-12-0" class="dd hidden"></div><div id="dd-12-1" class="dd hidden"></div><div id="dd-12-2" class="dd hidden"></div><div id="dd-12-3" class="dd hidden"></div></div>
+		<div id="dn-13" class="dn hidden"><div id="dd-13-0" class="dd hidden"></div><div id="dd-13-1" class="dd hidden"></div><div id="dd-13-2" class="dd hidden"></div><div id="dd-13-3" class="dd hidden"></div></div>
+		<div id="dn-14" class="dn hidden"><div id="dd-14-0" class="dd hidden"></div><div id="dd-14-1" class="dd hidden"></div><div id="dd-14-2" class="dd hidden"></div><div id="dd-14-3" class="dd hidden"></div></div>
+		<div id="dn-15" class="dn hidden"><div id="dd-15-0" class="dd hidden"></div><div id="dd-15-1" class="dd hidden"></div><div id="dd-15-2" class="dd hidden"></div><div id="dd-15-3" class="dd hidden"></div></div>
+		<div id="dn-16" class="dn hidden"><div id="dd-16-0" class="dd hidden"></div><div id="dd-16-1" class="dd hidden"></div><div id="dd-16-2" class="dd hidden"></div><div id="dd-16-3" class="dd hidden"></div></div>
+		<div id="dn-17" class="dn hidden"><div id="dd-17-0" class="dd hidden"></div><div id="dd-17-1" class="dd hidden"></div><div id="dd-17-2" class="dd hidden"></div><div id="dd-17-3" class="dd hidden"></div></div>
+		<div id="dn-18" class="dn hidden"><div id="dd-18-0" class="dd hidden"></div><div id="dd-18-1" class="dd hidden"></div><div id="dd-18-2" class="dd hidden"></div><div id="dd-18-3" class="dd hidden"></div></div>
+		<div id="dn-19" class="dn hidden"><div id="dd-19-0" class="dd hidden"></div><div id="dd-19-1" class="dd hidden"></div><div id="dd-19-2" class="dd hidden"></div><div id="dd-19-3" class="dd hidden"></div></div>
+		<div id="dn-20" class="dn hidden"><div id="dd-20-0" class="dd hidden"></div><div id="dd-20-1" class="dd hidden"></div><div id="dd-20-2" class="dd hidden"></div><div id="dd-20-3" class="dd hidden"></div></div>
+		<div id="dn-21" class="dn hidden"><div id="dd-21-0" class="dd hidden"></div><div id="dd-21-1" class="dd hidden"></div><div id="dd-21-2" class="dd hidden"></div><div id="dd-21-3" class="dd hidden"></div></div>
+		<div id="dn-22" class="dn hidden"><div id="dd-22-0" class="dd hidden"></div><div id="dd-22-1" class="dd hidden"></div><div id="dd-22-2" class="dd hidden"></div><div id="dd-22-3" class="dd hidden"></div></div>
+		<div id="dn-23" class="dn hidden"><div id="dd-23-0" class="dd hidden"></div><div id="dd-23-1" class="dd hidden"></div><div id="dd-23-2" class="dd hidden"></div><div id="dd-23-3" class="dd hidden"></div></div>
+		<div id="dn-24" class="dn hidden"><div id="dd-24-0" class="dd hidden"></div><div id="dd-24-1" class="dd hidden"></div><div id="dd-24-2" class="dd hidden"></div><div id="dd-24-3" class="dd hidden"></div></div>
+		<div id="dn-25" class="dn hidden"><div id="dd-25-0" class="dd hidden"></div><div id="dd-25-1" class="dd hidden"></div><div id="dd-25-2" class="dd hidden"></div><div id="dd-25-3" class="dd hidden"></div></div>
+		<div id="dn-26" class="dn hidden"><div id="dd-26-0" class="dd hidden"></div><div id="dd-26-1" class="dd hidden"></div><div id="dd-26-2" class="dd hidden"></div><div id="dd-26-3" class="dd hidden"></div></div>
+		<div id="dn-27" class="dn hidden"><div id="dd-27-0" class="dd hidden"></div><div id="dd-27-1" class="dd hidden"></div><div id="dd-27-2" class="dd hidden"></div><div id="dd-27-3" class="dd hidden"></div></div>
+		<div id="dn-28" class="dn hidden"><div id="dd-28-0" class="dd hidden"></div><div id="dd-28-1" class="dd hidden"></div><div id="dd-28-2" class="dd hidden"></div><div id="dd-28-3" class="dd hidden"></div></div>
+		<div id="dn-29" class="dn hidden"><div id="dd-29-0" class="dd hidden"></div><div id="dd-29-1" class="dd hidden"></div><div id="dd-29-2" class="dd hidden"></div><div id="dd-29-3" class="dd hidden"></div></div>
+		<div id="dn-30" class="dn hidden"><div id="dd-30-0" class="dd hidden"></div><div id="dd-30-1" class="dd hidden"></div><div id="dd-30-2" class="dd hidden"></div><div id="dd-30-3" class="dd hidden"></div></div>
+		<div id="dn-31" class="dn hidden"><div id="dd-31-0" class="dd hidden"></div><div id="dd-31-1" class="dd hidden"></div><div id="dd-31-2" class="dd hidden"></div><div id="dd-31-3" class="dd hidden"></div></div>
+	</div>
+
 	<div id="fight">
 		<div id="commands">
 			<div id="command-frame-0" class="command-frame hidden"></div>

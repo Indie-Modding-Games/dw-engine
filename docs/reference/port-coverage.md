@@ -42,7 +42,7 @@ de inicio y los mapas cercanos, y reclutar.
 | # | Hueco | Decomp | Motor |
 |---:|---|---|---|
 | 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
-| 2 | Sin cifras de daño ni de curación sobre los luchadores | `entity_text.c:71` `initializeEntityText`, `:147` `setCombatTextPosition` | — |
+| 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
 | 3 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
 | 4 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
 | 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
@@ -82,7 +82,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 128 | 4 | 13 | 26 | 90 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 130 | 5 | 11 | 25 | 91 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 134 | 4 | 74 | 73 | 64 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 67 | 2 | 11 | 16 | 85 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 40 | 1 | 21 | 40 | 65 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 40 | 1 | 2 | 43 | 94 % |
-| **Total** | 2438 funciones | 813 | 40 | 424 | 1161 | 65 % |
+| **Total** | 2438 funciones | 815 | 41 | 422 | 1160 | 65 % |
 
 ## Batalla
 
@@ -109,7 +109,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 128, parcial 4, falta 13, no aplica 26.
+Portado 130, parcial 5, falta 11, no aplica 25.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -126,12 +126,11 @@ Portado 128, parcial 4, falta 13, no aplica 26.
 | `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
 | `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:29` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
-| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:275` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
+| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:339` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
-| `initializeEntityText` | `main/entity_text.c:71` | falta | Prepara las cifras flotantes (daño, curación) de cada luchador. | el motor no enseña cifras sobre los luchadores |
-| `setCombatTextPosition` | `main/entity_text.c:147` | falta | Coloca sobre el luchador las cifras de daño y curación que suben. | el motor no enseña cifras sobre los luchadores |
+| `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (11); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (8); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); carga asíncrona del original (1).
+No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (10); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (8); preparación de tablas, objetos o recursos del original: el motor monta los suyos (2); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); carga asíncrona del original (1).
 
 ## Efectos de batalla
 
@@ -173,7 +172,7 @@ Portado 134, parcial 4, falta 74, no aplica 73.
 | `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
 | `BTL_addCloudEffect` | `btl/battle_effect.c:4239` | falta | Añade una nube de humo o polvo de una técnica. | battle.md: Hueco |
 | `BTL_addParticleEmitter` | `btl/battle_effect.c:4288` | falta | Añade un emisor de partículas. | battle.md: Hueco |
-| `BTL_calculateAttackHitPosition` | `btl/battle_effect.c:5145` | parcial | Calcula en qué punto del cuerpo del objetivo cae un golpe. | el motor registra el golpe; sin comprobar que use este punto |
+| `BTL_calculateAttackHitPosition` | `btl/battle_effect.c:5145` | parcial | Calcula en qué punto del cuerpo del objetivo cae un golpe. | `game/battle/include/dwe/game/battle/flights.hpp:19` · el motor registra el golpe; sin comprobar que use este punto |
 | `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | solo lo usan dibujos que faltan |
 | `BTL_resetPoisonBubbles` | `btl/battle_effect.c:5359` | falta | Reinicia las burbujas del veneno sobre un luchador. | — |
 | `BTL_addPoisonBubble` | `btl/battle_effect.c:5364` | falta | Suelta una burbuja de veneno sobre el luchador envenenado. | — |

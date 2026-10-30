@@ -7,6 +7,7 @@ dwe_add_module(screens
         src/bag_view.cpp
         src/battle_intro.cpp
         src/battle_view.cpp
+        src/damage_numbers.cpp
         src/field_hud_view.cpp
         src/lives_box.cpp
         src/name_keys.cpp

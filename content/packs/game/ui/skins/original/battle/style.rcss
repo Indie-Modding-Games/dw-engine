@@ -522,6 +522,29 @@
 	display: none;
 }
 
+/* The numbers over the fighters (utils2.c: drawEntityText): the digits of BI_IN with palette 4, untinted (TEXT_COLORS
+   0, 0x80 each) for a hit's or a block's damage and with no green (TEXT_COLORS 0xc) for the poison's. */
+.dd {
+	color: transparent;
+	font-effect: none;
+	background-color: transparent;
+}
+
+.dd.d-0 { decorator: image(damage-digit-0); }
+.dd.d-1 { decorator: image(damage-digit-1); }
+.dd.d-2 { decorator: image(damage-digit-2); }
+.dd.d-3 { decorator: image(damage-digit-3); }
+.dd.d-4 { decorator: image(damage-digit-4); }
+.dd.d-5 { decorator: image(damage-digit-5); }
+.dd.d-6 { decorator: image(damage-digit-6); }
+.dd.d-7 { decorator: image(damage-digit-7); }
+.dd.d-8 { decorator: image(damage-digit-8); }
+.dd.d-9 { decorator: image(damage-digit-9); }
+
+.dn.poison .dd {
+	image-color: #ff00ff;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The battle's opening. The anger mark (btl.c: renderFleeBubble; BI_IN, palette 7): the red bubble, 24 pixels round
    its centre over the enemy, with the angry face inside at two thirds of its size; it grows for 5 frames and then

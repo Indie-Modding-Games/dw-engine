@@ -433,6 +433,24 @@ sprite_sheets:
     sprites:
       anger-bubble: [184, 0, 24, 24]
       anger-mark: [200, 24, 16, 16]
+  # Las cifras del daño sobre los luchadores (utils2.c: drawEntityText): celdas de 8 x 8 en u = cifra x 8, v = 0xb7 de
+  # la página (896, 256), que es la fila 55 de BI_IN, con la CLUT (256, 484), la paleta 4.
+  - name: ow-battle-damage-digits
+    image: texture/etcdat/bi_in
+    palette: 4
+    original_size: [256, 64]
+    dp_per_pixel: 3
+    sprites:
+      damage-digit-0: [0, 55, 8, 8]
+      damage-digit-1: [8, 55, 8, 8]
+      damage-digit-2: [16, 55, 8, 8]
+      damage-digit-3: [24, 55, 8, 8]
+      damage-digit-4: [32, 55, 8, 8]
+      damage-digit-5: [40, 55, 8, 8]
+      damage-digit-6: [48, 55, 8, 8]
+      damage-digit-7: [56, 55, 8, 8]
+      damage-digit-8: [64, 55, 8, 8]
+      damage-digit-9: [72, 55, 8, 8]
   # Las piezas del rótulo "BATTLE" (battle_hud.c: BTL_renderBattleStartText): tres texturas de 8 x 8 y la estela, con
   # la paleta 8; cuando todas llegan, el rótulo parpadea con las paletas 8, 9 y 10.
   - name: ow-battle-banner-0

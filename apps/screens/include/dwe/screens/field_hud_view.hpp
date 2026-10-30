@@ -103,6 +103,8 @@ inline constexpr std::string_view FieldPartnerVisibleSetting = "hud.partner.visi
 struct WindowFraction {
   double x = 0.0;
   double y = 0.0;
+
+  friend bool operator==(const WindowFraction&, const WindowFraction&) = default;
 };
 
 // The point over the partner where the original's need bubble settles, on the screen: x and y in

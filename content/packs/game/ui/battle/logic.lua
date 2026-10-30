@@ -8,6 +8,9 @@ local max_commands = 11
 local finisher_segments = 6
 local finisher_marks = 8
 local max_anger = 3
+-- Four fighters with up to 8 numbers each, of up to 4 digits (entity_text.c: ENTITY_TEXT_DATA).
+local max_numbers = 32
+local number_digits = 4
 local banner_pieces = 155
 -- The hovered command's icon swaps to its second frame every 8 of the original's battle frames
 -- (command_menu.c: BTL_renderCommandMenu).
@@ -603,6 +606,46 @@ local function draw_anger(document)
   end
 end
 
+-- The numbers over the fighters (apps/screens: damage_numbers.hpp) come as six values each: the
+-- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
+-- value and the colour. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText).
+local function draw_damage(document)
+  local values = {}
+  for value in string.gmatch(setting("battle.damage.numbers", ""), "%S+") do
+    values[#values + 1] = tonumber(value)
+  end
+  local count = math.min(max_numbers, math.floor(#values / 6))
+  for index = 0, max_numbers - 1 do
+    local id = "dn-" .. index
+    set_class(document, id, "hidden", index >= count)
+    if index < count then
+      local base = index * 6
+      set_property(document, id, "left", values[base + 1] .. "%")
+      set_property(document, id, "top", values[base + 2] .. "%")
+      set_property(
+        document,
+        id,
+        "transform",
+        "translate(" .. (values[base + 3] * 3) .. "dp, " .. (values[base + 4] * 3) .. "dp)"
+      )
+      set_class(document, id, "poison", values[base + 6] == 12)
+      local digits = tostring(math.floor(values[base + 5]))
+      for place = 0, number_digits - 1 do
+        local digit_id = "dd-" .. index .. "-" .. place
+        local digit = string.sub(digits, place + 1, place + 1)
+        set_class(document, digit_id, "hidden", digit == "")
+        for glyph = 0, 9 do
+          set_class(document, digit_id, "d-" .. glyph, digit == tostring(glyph))
+        end
+        if digit ~= "" and applied[digit_id .. " text"] ~= digit then
+          applied[digit_id .. " text"] = digit
+          lookup(document, digit_id):set_text(digit)
+        end
+      end
+    end
+  end
+end
+
 -- The banner's pieces come as seven numbers each, in the original's pixels (3dp each): x, y,
 -- width, height, texture, trail and 1 for a trail on the left.
 local function banner_numbers()
@@ -749,6 +792,7 @@ end
 
 function on_show(document)
   draw(document)
+  draw_damage(document)
   draw_prompts(document)
 end
 
@@ -757,6 +801,8 @@ function on_setting(document, name)
     draw(document)
   elseif name == "battle.intro.revision" then
     draw_intro(document)
+  elseif name == "battle.damage.revision" then
+    draw_damage(document)
   end
 end
 

@@ -230,8 +230,8 @@ NPCEntityTickBattle = { status = "parcial", note = "los personajes que no luchan
 resetStatsAfterCombat = { status = "portado", dwe = "game/battle/src/aftermath.cpp", what = "Quita al compañero los cambios temporales de stats al acabar el combate." }
 isScreenConcave = { status = "falta", what = "Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate.", note = "va con la huida de los que no luchan" }
 loadBattleDataTick = { status = "no-aplica", note = "carga asíncrona del original", what = "Espera a que el combate termine de cargar." }
-setCombatTextPosition = { status = "falta", what = "Coloca sobre el luchador las cifras de daño y curación que suben.", note = "el motor no enseña cifras sobre los luchadores" }
-initializeEntityText = { status = "falta", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el motor no enseña cifras sobre los luchadores" }
+setCombatTextPosition = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:188", what = "Coloca sobre el luchador las cifras de daño y curación que suben." }
+initializeEntityText = { status = "parcial", dwe = "apps/screens/src/damage_numbers.cpp:1", what = "Prepara las cifras flotantes (daño, curación) de cada luchador.", note = "el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras" }
 
 # --- Efectos de batalla
 BTL_initializeParticleEmitters = { status = "falta", what = "Prepara los emisores de partículas de las técnicas.", note = "battle.md: las partículas no se dibujan" }

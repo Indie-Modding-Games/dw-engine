@@ -64,6 +64,14 @@ con `battle.intro.revision`:
 | `battle.intro.flash` | 0 a 2 | La paleta con la que parpadea el rótulo cuando todas sus piezas han llegado |
 | `battle.intro.pieces` | texto | Las piezas que se ven, siete números cada una en píxeles de la pantalla de 320 × 240 del original: x, y, ancho, alto, textura (0 a 2), estela y 1 si la estela va a la izquierda |
 
+### Números de daño
+
+`DamageNumbers` son los números que saltan de los luchadores (`entity_text.c`): una cola por luchador de hasta 8, cada número fijo donde estaban sus pies al añadirse y movido fotograma a fotograma al ritmo del combate (ver la fila en [battle.md](../game/battle.md#paridad-con-el-original)). `BattleScreen` añade los de cada fotograma y da un paso; tras la victoria siguen solos. `settingsOf(números)` da los ajustes que lee el documento, que redibuja con `battle.damage.revision`:
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `battle.damage.numbers` | texto | Los números dibujados en el último fotograma, seis valores cada uno: x e y del ancla en % de la ventana, desplazamiento de la primera cifra desde ella en píxeles del original (x, y), valor y color (0 normal, 12 veneno) |
+
 ## Caja de vidas
 
 `LivesBox` es la caja de vidas de una vida perdida (`murd.c: MURD_createLivesBox`, `MURD_tickLivesBox`,

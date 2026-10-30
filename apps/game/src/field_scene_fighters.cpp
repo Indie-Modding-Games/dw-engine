@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "field_scene.hpp"
 #include "messages.hpp"
@@ -60,6 +61,14 @@ bool FieldScene::holdFighter(std::optional<std::int32_t> npc, const FighterFigur
                                                actor->character.model.str()));
   }
   return true;
+}
+
+std::optional<glm::vec2> FieldScene::fighterFeetOnWindow(std::optional<std::int32_t> npc) const {
+  const Actor* actor = fighterActor(npc);
+  if (actor == nullptr) {
+    return std::nullopt;
+  }
+  return worldToWindowFraction(world_.registry().get<scene::Transform>(actor->entity).position);
 }
 
 bool FieldScene::animateFighter(Actor& actor) const {
