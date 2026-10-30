@@ -3,8 +3,8 @@
 #include <dwe/game/field/field.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 #include <utility>
 #include <vector>
@@ -100,14 +100,9 @@ void Field::animateByScript(scene::Entity entity, std::uint32_t clip) {
   ++scripted.starts;
 }
 
-void Field::freezeByScript(scene::Entity entity, bool frozen) {
-  world_->registry().get_or_emplace<ScriptedActor>(entity).frozen = frozen;
-}
-
 void Field::releaseClipByScript(scene::Entity entity) {
   if (auto* actor = world_->registry().try_get<ScriptedActor>(entity); actor != nullptr) {
     actor->clip.reset();
-    actor->frozen = false;
   }
 }
 

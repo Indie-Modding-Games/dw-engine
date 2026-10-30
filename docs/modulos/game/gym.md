@@ -38,8 +38,8 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
 - **Puertos** (`GymPorts`): todo lo que el curso pide al juego (caminar, animar, mover objetos del mapa, nubes,
   partículas, sonidos, cámara y la recompensa). Los implementa `apps/game` (`GymScreen`).
   Como la historia retiene el campo mientras espera al gimnasio, `GymScreen` mueve a los actores
-  igual que un guion: caminan a la casilla del puesto a la velocidad de su clip, giran, animan (o
-  congelan el cuadro) y la cámara se desplaza al puesto en los cuadros del curso. Las nubes y
+  igual que un guion: caminan a la casilla del puesto a la velocidad de su clip, giran, animan y la
+  cámara se desplaza al puesto en los cuadros del curso. Las nubes y
   partículas siguen sin dibujarse (fase 5).
 - **Inteligencia** (`brain_learning.hpp`): `brainMilestones` dice qué órdenes nuevas abre la ganancia y si toca
   intentar un movimiento (`TRN_tryLearnMove`); `trainingMove` elige el movimiento por los especiales de la especie y
@@ -63,6 +63,8 @@ las cajas cuentan desde el centro de la pantalla (160, 120).
 | El sombreado del rodillo (sprite u 224 v 216 restado) | `trn_slots.c: TRN_renderSlotMachine` | degradado negro hasta 48 % arriba y abajo | captura `sbs_slot_spin.png` | Suposición |
 | Al acabar (estado 6) la ruleta se encoge y cierra el cuadro "Slot Game" (`closeBox(0)`); el ritmo llega cuando la caja ya no está | `trn_slots.c: TRN_tickSlotMachine`, `TRN_tickSlotSession` (`UI_BOX_DATA[3]`) | `SlotMachine` estados 6 y 7; `GymPorts::closeTextbox` | `course_flow_tests`: "slots: the box grows…" | Igual |
 | La ruleta no tiene cancelar: `TRN_func_800888A0` (resultado -2) no se alcanza porque nada produce -2 | `trn_reward.c: TRN_func_800888A0` | sin puerto | — | Igual |
+| El clip del partner (y el del domador en inteligencia) sigue mientras entrena: la marca 2 de la animación solo quita su movimiento de raíz, que un clip de guion nunca tiene aquí; antes se congelaba entre golpes | `anim.c: applyRootMomentum` (único lector de `animFlag & 2`); `trn_hp.c`, `trn_off.c`, `trn_brain.c` | `FieldScene` (clip de guion sin movimiento de raíz); sin `holdAnimation` | `course_flow_tests` | Igual |
+| El jugador mira el entrenamiento: pone su clip 10 al empezar y gira hacia el partner cada cuadro hasta acabar; en inteligencia no, porque ese curso lo guía | `tamer.c: tamerTickTraining` (`tamerSetState(8)`); `trn_brain.c` (`tamerSetState(-1)`) | `gym.yaml: watch_animation`; `CourseRun::frame` | `course_flow_tests`: "gym.md watching…" | Igual |
 | Cada mapa abre sus cursos: 0x70 los seis; 0x4e ataque (254 = 1) y velocidad (2); 0x77 inteligencia (5); 0x63 HP (0) y defensa (3); 0x6b HP (0) y ataque (1); 0x6c velocidad (2) y defensa (3); 0xa5 MP (4) | rutina 7; `TRN_setup*Training`, `TRN2_setup*Training`; guiones 075, 095, 103, 104, 108, 115, 159 | `gym.yaml: sites`; `GymRules::courseOfChoice(map, choice)` | `course_flow_tests`: "gym.md sites: routine 7 picks…" | Igual |
 | Los cursos del segundo módulo (0x63, 0x6b, 0x6c, 0xa5) ganan con la tabla `trn2`; los de 0x4e y 0x77, con `trn` | `trn2_reward.c`, `trn_reward.c` | `gym.yaml: sites[].place`, `gains` | `course_flow_tests`: "gym.md sites…" | Igual |
 | El contador de práctica solo sube en el gimnasio del pueblo (0x70) | `trn_reward.c` (`upgrade*Counter` con `mapId == 0x70`) | `counts_practice`; `TrainingRequest::countsPractice` | `partner_tests` | Igual |

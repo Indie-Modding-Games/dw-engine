@@ -14,6 +14,8 @@ manual_item: trn_manual
 sound_slot: 8
 # TRN_createCloudFXLine: cada nube se desvía randomLimit(100) de su línea.
 cloud_scatter: 100
+# tamer.c: tamerTickTraining: el jugador (estado 8) pone su clip 10 y mira al compañero en cada fotograma.
+watch_animation: 10
 # trn_hud.c: la caja de estadísticas espera 100 fotogramas, luego cuenta un punto por fotograma con playSound(0, 0x16),
 # con tope 9999 para HP y MP y 999 para el resto.
 count:

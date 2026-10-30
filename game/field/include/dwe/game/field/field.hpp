@@ -105,8 +105,6 @@ struct ScriptedActor {
   // How many times a script started a clip: anim.c: startAnimation restarts even the clip that
   // plays, as each push of the gym's log does.
   std::uint32_t starts = 0;
-  // anim.c: animFlag 2 holds the clip on its frame.
-  bool frozen = false;
 };
 
 // A 3D object of the map, a door model (map_object.c: loadDoors, Map3DObject), in world space.
@@ -322,8 +320,6 @@ public:
   void placeByScript(scene::Entity entity, glm::vec3 position);
   void turnByScript(scene::Entity entity, float yaw);
   void animateByScript(scene::Entity entity, std::uint32_t clip);
-  // Holds the held character's clip on its frame, or lets it run on (anim.c: animFlag 2).
-  void freezeByScript(scene::Entity entity, bool frozen);
   // The held character's motion picks its clip again, as before any animateByScript.
   void releaseClipByScript(scene::Entity entity);
   // Where the camera looks while a script holds it; nothing: at the player.

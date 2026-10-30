@@ -66,6 +66,10 @@ void CourseRun::frame(GymPorts& ports, const GymInput& input) {
         }
       },
       course_->detail);
+  // tamer.c: tamerTickTraining, state 1: the player turns to the partner every frame.
+  if (watching_) {
+    ports.lookAt(Actor::Tamer, Actor::Partner);
+  }
 }
 
 void CourseRun::setState(std::int32_t state) {
@@ -75,6 +79,12 @@ void CourseRun::setState(std::int32_t state) {
 
 void CourseRun::begin(GymPorts& ports) {
   ports.setTraining(true);
+  // tamerSetState(8) (tamerTickTraining, state 0): the player stands and watches, except at the
+  // brains course, which leads the player itself (tamerSetState(-1)).
+  watching_ = !std::holds_alternative<BrainCourse>(course_->detail);
+  if (watching_) {
+    ports.animate(Actor::Tamer, gym_->watchAnimation);
+  }
   ports.animate(Actor::Partner, course_->walkAnimation);
   ports.moveCamera(course_->spot, course_->cameraSpeed);
   if (course_->startSound) {
@@ -137,6 +147,7 @@ bool CourseRun::rested() {
 void CourseRun::finish(GymPorts& ports) {
   // TRN_applyBaseStats and TRN_closeUIBox: the session already gave the gains.
   ports.setTraining(false);
+  watching_ = false;
   if (loop_) {
     ports.stopSound(*loop_);
     loop_.reset();
@@ -193,9 +204,9 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     }
     break;
   case 2: {
-    ports.holdAnimation(Actor::Partner, true);
+    // The original sets animFlag 2 here and clears it on the beats: it only stops the clip's root
+    // motion (anim.c: applyRootMomentum), which a scripted clip here never has; the clip plays on.
     if (counter_ % hp.beatFrames == 0 && counter_ <= course_->cycleFrames) {
-      ports.holdAnimation(Actor::Partner, false);
       ports.moveObjects(hp.objects, hp.beatMove);
     }
     const std::int32_t jitter = counter_ % 2 == 0 ? hp.jitter : -hp.jitter;
@@ -240,7 +251,6 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     }
     const bool back = ports.walk(Actor::Partner, std::nullopt);
     if (back && counter_ <= 0) {
-      ports.holdAnimation(Actor::Partner, false);
       ports.restoreObjects(hp.objects);
       finish(ports);
     }

@@ -411,7 +411,7 @@ checkMedalConditions = { status = "falta", what = "Da la medalla de aprender tod
 checkPendingAwards = { status = "falta", what = "Lanza el anuncio pendiente de un premio (medalla o nivel del jugador)." }
 getEntityFromScriptId = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Da el personaje de un id de guion." }
 tamerTickIdle = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "El jugador quieto." }
-tamerTickTraining = { status = "portado", dwe = "apps/game/src/gym_screen.cpp", what = "El jugador mira al compañero mientras entrena." }
+tamerTickTraining = { status = "portado", dwe = "game/gym/src/course_flow.cpp", what = "El jugador pone su clip 10 y mira al compañero cada cuadro mientras entrena (gym.yaml: watch_animation)." }
 tamerTickMachinedramonSpawn = { status = "falta", what = "El jugador asiste a la aparición del jefe final.", note = "la escena acaba al momento (story_scene_glue.cpp:58)" }
 tamerTickAwardSomething = { status = "falta", what = "Escena de premio: para el tiempo, enseña la medalla o el nivel ganado y espera." }
 calculatePosition = { status = "portado", dwe = "game/battle/src/bone_matrix.cpp", what = "Calcula una posición con una matriz.", note = "para el hueso de los efectos, en coma fija 4.12 como el original" }

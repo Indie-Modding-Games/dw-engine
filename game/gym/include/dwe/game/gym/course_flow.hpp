@@ -38,8 +38,6 @@ public:
   virtual void animate(Actor actor, std::int32_t animation) = 0;
   // Whether the actor's animation reached its last frame (anim.animFrame >= frameCount).
   [[nodiscard]] virtual bool animationEnded(Actor actor) = 0;
-  // The animation stands still on its frame (animFlag 2) until released.
-  virtual void holdAnimation(Actor actor, bool hold) = 0;
   // 4096 per turn.
   virtual void face(Actor actor, std::int32_t angle) = 0;
   // entityLookAtLocation, both ways.
@@ -162,6 +160,8 @@ private:
   const CourseRules* course_;
   std::int32_t state_ = 0;
   bool finished_ = false;
+  // tamer.c: tamerSetState(8): the player watches the partner train.
+  bool watching_ = false;
   double pendingSeconds_ = 0.0;
   // MAIN_D_8013537A: frames into the session; the HP course then keeps the beats to undo.
   std::int32_t counter_ = 0;

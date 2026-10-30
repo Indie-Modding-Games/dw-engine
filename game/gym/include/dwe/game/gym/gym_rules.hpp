@@ -337,6 +337,8 @@ struct GymRules {
   // The sound slot of the courses' sounds.
   std::int32_t soundSlot = 0;
   std::int32_t cloudScatter = 1;
+  // tamer.c: tamerTickTraining: the player's clip while it watches a course (state 8).
+  std::int32_t watchAnimation = 0;
   CountRules count;
   SlotRules slots;
   // TRN_TRAINING_ANIM_IDS (TRN2_TRAINING_ANIM_IDS is the same): each species' punch at the

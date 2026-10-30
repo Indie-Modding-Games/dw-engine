@@ -627,8 +627,8 @@ core::Result<GymRules> readGymRules(const ruleset::Section& section) {
   const YamlNode& node = section.node;
   if (!reader.expectKeys(node, SectionWhat,
                          {"course_variable", "slot_variable", "manual_item", "sound_slot",
-                          "cloud_scatter", "count", "slots", "punches", "brain_learning",
-                          "sites"})) {
+                          "cloud_scatter", "watch_animation", "count", "slots", "punches",
+                          "brain_learning", "sites"})) {
     return std::unexpected{reader.error(section.file)};
   }
   rules.courseVariable = reader.integer<std::int32_t>(reader.field(node, "course_variable"));
@@ -636,6 +636,7 @@ core::Result<GymRules> readGymRules(const ruleset::Section& section) {
   rules.manualItem = reader.text(reader.field(node, "manual_item"));
   rules.soundSlot = reader.integer<std::int32_t>(reader.field(node, "sound_slot"));
   rules.cloudScatter = readPositive(reader, reader.field(node, "cloud_scatter"));
+  rules.watchAnimation = reader.integer<std::int32_t>(reader.field(node, "watch_animation"));
   rules.count = readCount(reader, reader.field(node, "count"));
   rules.slots = readSlots(reader, reader.field(node, "slots"));
   rules.slots.soundSlot = rules.soundSlot;

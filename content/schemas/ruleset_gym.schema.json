@@ -9,6 +9,7 @@
     "manual_item",
     "sound_slot",
     "cloud_scatter",
+    "watch_animation",
     "count",
     "slots",
     "punches",
@@ -139,6 +140,11 @@
     "cloud_scatter": {
       "description": "Each cloud strays below this from its line.",
       "$ref": "#/$defs/frames"
+    },
+    "watch_animation": {
+      "description": "The player's clip while it watches a course (every course but brains), facing the partner every frame.",
+      "type": "integer",
+      "minimum": 0
     },
     "count": {
       "description": "The stats box after a session.",

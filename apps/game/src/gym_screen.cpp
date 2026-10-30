@@ -147,11 +147,6 @@ public:
     const std::optional<scene::Entity> entity = anyEntityOf(actor);
     return !entity || desc_->scene->clipPlayedThrough(*entity);
   }
-  void holdAnimation(Actor actor, bool hold) override {
-    if (actor != Actor::Teacher) {
-      desc_->scene->field().freezeByScript(entityOf(actor), hold);
-    }
-  }
   void face(Actor actor, std::int32_t angle) override {
     if (actor != Actor::Teacher) {
       desc_->scene->field().turnByScript(entityOf(actor), assets::yawFromOriginal(angle));

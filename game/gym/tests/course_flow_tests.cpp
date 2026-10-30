@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -15,6 +16,7 @@ namespace {
 using dwe::game::gym::Actor;
 using dwe::game::gym::Award;
 using dwe::game::gym::Axis;
+using dwe::game::gym::BrainCourse;
 using dwe::game::gym::CourseRules;
 using dwe::game::gym::CourseRun;
 using dwe::game::gym::GymInput;
@@ -31,12 +33,19 @@ using dwe::game::gym::SpeedCourse;
 class FakePorts final : public GymPorts {
 public:
   void setTraining(bool /*training*/) override {}
-  void animate(Actor /*actor*/, std::int32_t /*animation*/) override {}
-  void holdAnimation(Actor /*actor*/, bool /*hold*/) override {}
+  void animate(Actor actor, std::int32_t animation) override {
+    if (actor == Actor::Tamer) {
+      tamerClips.push_back(animation);
+    }
+  }
   void face(Actor /*actor*/, std::int32_t /*angle*/) override {}
   bool animationEnded(Actor /*actor*/) override { return false; }
   void faceEachOther() override {}
-  void lookAt(Actor /*actor*/, Actor /*target*/) override {}
+  void lookAt(Actor actor, Actor target) override {
+    if (actor == Actor::Tamer && target == Actor::Partner) {
+      ++tamerLooks;
+    }
+  }
   bool walk(Actor /*actor*/, std::optional<Point> spot) override {
     walkedTo.push_back(spot);
     return true;
@@ -78,6 +87,8 @@ public:
   int loops = 0;
   int stops = 0;
   int runs = 0;
+  int tamerLooks = 0;
+  std::vector<std::int32_t> tamerClips;
   bool onScreen = true;
   std::int32_t row = 0;
   std::vector<std::int32_t> sounds;
@@ -316,4 +327,26 @@ TEST_CASE("gym.md sites: an offense hit swaps the objects and undoes it 46 frame
   CHECK(ports.shows.size() == 4);
   CHECK(ports.shows.at(2) == std::pair<std::int32_t, bool>{39, true});
   CHECK(ports.shows.at(3) == std::pair<std::int32_t, bool>{43, false});
+}
+
+TEST_CASE("gym.md watching: the player plays its watch clip and turns to the partner every frame") {
+  GymRules gym = gymRules();
+  gym.watchAnimation = 10;
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 5);
+  // tamer.c: tamerTickTraining: clip 10 once, then entityLookAtLocation every frame.
+  CHECK(ports.tamerClips == std::vector<std::int32_t>{10});
+  CHECK(ports.tamerLooks == 5);
+}
+
+TEST_CASE("gym.md watching: the brains course leads the player itself (tamerSetState(-1))") {
+  GymRules gym = gymRules();
+  gym.watchAnimation = 10;
+  gym.courses.front().detail = BrainCourse{};
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 1);
+  CHECK(ports.tamerLooks == 0);
+  CHECK(std::ranges::find(ports.tamerClips, 10) == ports.tamerClips.end());
 }
