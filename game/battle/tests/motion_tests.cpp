@@ -356,3 +356,23 @@ TEST_CASE("an effect's attack follows its defender: asked again each frame, it t
   REQUIRE(times->touched.has_value());
   CHECK(*times->touched - times->started == 14);
 }
+
+TEST_CASE("a melee move lands from its effect: it leaves as it starts and lands the frame after "
+          "the effect touches") {
+  // battle_main.c: BTL_tickMeleeAttack only starts the move in contact; the hit is the effect's
+  // (Sonic Jab's apply_line_hit touches on its frame 8, wherever the defender walked to).
+  for (const std::int32_t landing : {3, 8}) {
+    FixedFlights flights{landing};
+    Battle battle = clippedBattle(clippedDuel(), 3);
+    battle.setFlights(&flights);
+    const std::optional<AttackTimes> times = firstAttackTimes(battle);
+    REQUIRE(times.has_value());
+    CHECK(times->released == std::optional{times->started});
+    REQUIRE(times->touched.has_value());
+    CHECK(*times->touched - times->started == landing);
+    REQUIRE(times->landed.has_value());
+    CHECK(*times->landed - *times->touched == 1);
+    REQUIRE_FALSE(flights.asked.empty());
+    CHECK(flights.asked.front().move == "punch");
+  }
+}

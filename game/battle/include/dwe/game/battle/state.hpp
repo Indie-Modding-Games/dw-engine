@@ -126,6 +126,9 @@ struct ActiveAttack {
   std::int32_t length = 0;
   std::int32_t releaseFrame = 0;
   bool released = false;
+  // The battle follows the move's effect: the attack leaves as it starts and lands when the
+  // effect's hit checks touch the defender, whatever the move's reach.
+  bool followed = false;
 };
 
 struct Fighter {

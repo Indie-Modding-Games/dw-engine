@@ -21,10 +21,10 @@ constexpr std::int32_t HitSparkFrames = 0x10;
 constexpr std::int32_t BlockSparkFrames = 0x11;
 constexpr std::int32_t SparkColours = 7;
 
-// Whom an attack released by `id` reaches. The original's attack objects collide with the bodies on
-// the ground; the engine sends them to their targets: a melee swing to its target if it is still
-// within reach, a shot to its target, an area move to every opponent of the caster (suposición) and
-// a support move to the caster itself.
+// Whom an attack released by `id` reaches when the battle cannot follow its effect. The original's
+// attack objects collide with the bodies on the ground; the engine sends them to their targets: a
+// melee swing to its target if it is still within reach, a shot to its target, an area move to
+// every opponent of the caster (suposición) and a support move to the caster itself.
 std::vector<FighterId> reachedBy(const BattleContext& context, FighterId id, const BattleMove& move,
                                  std::optional<FighterId> target) {
   const BattleState& state = *context.state;
@@ -338,7 +338,10 @@ void releaseAttack(BattleContext& context, FighterId id) {
                 .amount = 0,
                 .status = StatusEffect::None,
                 .command = Command::None});
-  const std::vector<FighterId> reached = reachedBy(context, id, move, attack.target);
+  // A followed melee move reaches its target as a shot does: its effect decides the touch.
+  const std::vector<FighterId> reached =
+      attack.followed && attack.target ? std::vector{*attack.target}
+                                       : reachedBy(context, id, move, attack.target);
   if (reached.empty()) {
     context.emit({.kind = EventKind::AttackMissed,
                   .fighter = id,
@@ -349,7 +352,8 @@ void releaseAttack(BattleContext& context, FighterId id) {
                   .command = Command::None});
     return;
   }
-  const bool travels = move.range == MoveRange::Ranged || move.range == MoveRange::Area;
+  const bool travels =
+      attack.followed || move.range == MoveRange::Ranged || move.range == MoveRange::Area;
   for (const FighterId defender : reached) {
     context.state->inFlight.push_back(flightOf(context, id, defender, travels));
   }
