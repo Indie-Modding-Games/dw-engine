@@ -17,7 +17,6 @@ local banner_pieces = 155
 local blink_seconds = 0.4
 local max_end_lines = 10
 local stat_count = 6
-local max_bag_slots = 30
 
 -- The original's labels (main.stat_labels: HP, MP, offense, defense, speed, brain;
 -- main.battle_ui_bits_labels).
@@ -280,73 +279,15 @@ local function draw_revive(document)
   end
 end
 
-local function slot_setting(index, field)
-  return entry("bag.slot", index, field)
-end
-
-local function slot_filled(index)
-  return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
-end
-
--- Only the items of a battle colour can be thrown (inventory.c: selectOptionMenu); the others show
--- greyed out.
-local function slot_usable(index)
-  return slot_filled(index) and setting(slot_setting(index, "usable"), false)
-end
-
--- The tamer's bag: open with its own button while the battle goes on (battle_tick.c:
--- tamerTickBattle); the command row waits meanwhile (handleCommands returns while it is open).
+-- The player's bag opens with its own button while the battle goes on (battle_tick.c:
+-- tamerTickBattle): the game shows the field's bag (ui/partner_menu, its items page) over the
+-- fight, and the command row waits under it (handleCommands returns while it is open).
 local function draw_bag(document)
-  lookup(document, "commands"):set_class("hidden", bag_open)
-  lookup(document, "bag"):set_class("hidden", not bag_open)
   lookup(document, "open-bag"):set_class("unavailable", not setting("battle.bag.available", false))
   lookup(document, "item-in-flight"):set_class(
     "hidden",
     not setting("battle.item_in_flight", false)
   )
-  if not bag_open then
-    return
-  end
-  local count = number("bag.slot.count")
-  for index = 0, max_bag_slots - 1 do
-    local slot = lookup(document, "bag-slot-" .. index)
-    slot:set_class("hidden", index >= count)
-    if index < count then
-      local filled = slot_filled(index)
-      document
-        :get("bag-slot-" .. index .. "-name")
-        :set_text(
-          filled and text(setting(slot_setting(index, "name"), "")) or t("battle.bag.empty")
-        )
-      document
-        :get("bag-slot-" .. index .. "-count")
-        :set_text(filled and tostring(number(slot_setting(index, "count"))) or "")
-      slot:set_class("unusable", not slot_usable(index))
-    end
-  end
-end
-
--- The description of the focused item under the bag.
-local function draw_bag_description(document)
-  local description = ""
-  for index = 0, number("bag.slot.count") - 1 do
-    if lookup(document, "bag-slot-" .. index):has_focus() and slot_filled(index) then
-      description = text(setting(slot_setting(index, "description"), ""))
-    end
-  end
-  lookup(document, "bag-description"):set_text(description)
-end
-
-local function focus_bag(document)
-  local count = math.min(number("bag.slot.count"), max_bag_slots)
-  for index = 0, count - 1 do
-    if lookup(document, "bag-slot-" .. index):has_focus() then
-      return
-    end
-  end
-  if count > 0 then
-    lookup(document, "bag-slot-0"):focus()
-  end
 end
 
 -- The end boxes (battle_ui.c: handleBattleEndBox). The stats box counts each raise up a point a
@@ -881,11 +822,10 @@ local function draw(document)
   end
   bag_open = setting("battle.bag.open", false)
   draw_bag(document)
-  if bag_open then
-    focus_bag(document)
-    draw_bag_description(document)
-  else
-    draw_commands(document)
+  draw_commands(document)
+  -- Under the open bag the row keeps its cursor and the hovered command's name: the bag's
+  -- document holds the focus meanwhile.
+  if not bag_open then
     focus_command(document)
     draw_command_name(document)
     draw_cursor(document)
@@ -903,16 +843,6 @@ end
 function open_bag()
   if setting("battle.bag.available", false) then
     ui.send("battle_bag_open")
-  end
-end
-
-function close_bag()
-  ui.send("battle_bag_close")
-end
-
-function throw_slot(index)
-  if slot_usable(index) then
-    ui.send("battle_throw", index)
   end
 end
 
@@ -952,9 +882,7 @@ function on_tick(document, seconds)
       blink_clock = blink_clock - blink_seconds
       blink_on = not blink_on
     end
-    if bag_open then
-      draw_bag_description(document)
-    else
+    if not bag_open then
       draw_command_name(document)
       draw_cursor(document)
     end
@@ -970,8 +898,8 @@ function on_language(document)
 end
 
 -- The battle cannot be left with cancel or the pause button: cancel opens the tamer's bag (the
--- original's own button) and closes it again; up and down move through the open bag; confirm
--- charges the finisher while its aura lasts.
+-- original's own button), whose document then takes the buttons until it closes; confirm charges
+-- the finisher while its aura lasts.
 function on_action(_document, action)
   -- Nothing answers while the battle opens, nor during the victory poses before the end box
   -- (BTL_handleVictorySequence reads no buttons until handleBattleEndBox).
@@ -988,16 +916,13 @@ function on_action(_document, action)
     charge()
     return true
   end
-  if action == "cancel" then
-    if bag_open then
-      close_bag()
-    else
-      open_bag()
-    end
+  -- The bag's own document takes the buttons while it is open.
+  if bag_open then
     return true
   end
-  if bag_open then
-    return action == "menu"
+  if action == "cancel" then
+    open_bag()
+    return true
   end
   return action == "menu" or action == "up" or action == "down"
 end

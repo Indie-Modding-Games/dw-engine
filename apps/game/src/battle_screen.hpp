@@ -38,7 +38,8 @@ inline constexpr std::string_view BattleCloseCommand = "battle_close";
 inline constexpr std::string_view BattleEndCountCommand = "battle_end_count";
 inline constexpr std::string_view BattleEndCountedCommand = "battle_end_counted";
 // The tamer's bag (battle_tick.c: tamerTickBattle opens it with its own button): open, close, and
-// throw the item of a slot (the command's number) to the partner.
+// throw the item of a slot (the command's number) to the partner. The bag is the field's own
+// (inventory.c: addInventoryUI, the partner menu's items page); its Use throws the item.
 inline constexpr std::string_view BattleBagOpenCommand = "battle_bag_open";
 inline constexpr std::string_view BattleBagCloseCommand = "battle_bag_close";
 inline constexpr std::string_view BattleThrowCommand = "battle_throw";
@@ -154,6 +155,9 @@ private:
   void showFighters(double seconds);
   void standPartner(std::uint32_t clip, std::string_view origin);
   void openBag();
+  // Keeps the bag's document and the battle's bag together: the bag closes when its document goes,
+  // and the document goes when the battle closed the bag or ended.
+  void syncBag();
   void throwItem(double slot);
   void finish();
   void close();
@@ -176,6 +180,8 @@ private:
   // effect scripts and the bodies.
   std::optional<game::battle::ScriptedFlights> flights_;
   bool ending_ = false;
+  // The field's bag document is open over the battle.
+  bool bagShown_ = false;
   // The numbers over the fighters (entity_text.c), and the time they have not run yet once the
   // battle is over: they go on through the victory until the last one goes.
   screens::DamageNumbers numbers_;

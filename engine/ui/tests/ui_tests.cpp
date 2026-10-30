@@ -824,6 +824,116 @@ TEST_CASE("the pause menu works with the mouse alone") {
       platform::MouseButtonChanged{.button = platform::MouseButton::Left, .down = false}));
 }
 
+namespace {
+
+// Lets the original boxes that follow each other (the bag, then its description; the options, then
+// the description and the bag) finish growing or shrinking: up to three of 15 ticks.
+void settleBoxes(Ui& ui, input::InputState& input) {
+  for (int tick = 0; tick < 60; ++tick) {
+    frame(ui, input);
+  }
+}
+
+// The partner menu's items page with two items: the first one usable where the bag is open, the
+// second one not.
+void openBag(Ui& ui, input::InputState& input, std::string_view context) {
+  ui.setSetting("ui_skin", std::string{"original"});
+  ui.setSetting("bag.slot.count", 2.0);
+  for (const int slot : {0, 1}) {
+    const std::string prefix = std::format("bag.slot.{}.", slot);
+    ui.setSetting(prefix + "empty", false);
+    ui.setSetting(prefix + "name", std::string{slot == 0 ? "items.sm_recovery" : "items.meat"});
+    ui.setSetting(prefix + "count", 1.0);
+    ui.setSetting(prefix + "usable", slot == 0);
+  }
+  ui.setSetting("partner_menu.start_page", std::string{"items"});
+  ui.setSetting("partner_menu.context", std::string{context});
+  ui.show("partner_menu", true);
+  settleBoxes(ui, input);
+}
+
+} // namespace
+
+TEST_CASE("the battle opens the field's bag: its Use throws once the bag has closed") {
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
+  input::InputState input{input::defaultActionMap()};
+  openBag(*ui, input, "battle");
+  REQUIRE(ui->isVisible("partner_menu"));
+  CHECK(ui->elementHasClass("partner_menu", "scrim", "item-screen"));
+  CHECK(ui->elementHasClass("partner_menu", "scrim", "battle-bag"));
+  CHECK(ui->focusedElementId("partner_menu") == "slot-0");
+
+  // inventory.c: selectOptionMenu: an item the battle cannot use opens the options, and Use does
+  // nothing.
+  press(*ui, input, input::keys::Right);
+  press(*ui, input, input::keys::Return);
+  settleBoxes(*ui, input);
+  CHECK(ui->focusedElementId("partner_menu") == "opt-use");
+  CHECK(ui->elementHasClass("partner_menu", "opt-use", "unavailable"));
+  press(*ui, input, input::keys::Return);
+  CHECK(ui->takeCommands().empty());
+  press(*ui, input, input::keys::Escape);
+  CHECK(ui->focusedElementId("partner_menu") == "slot-1");
+
+  // A usable one: Use closes the boxes and only then asks for the throw (tickInventoryUI's case 5:
+  // startThrowingItem once UI_BOX_DATA[0] is closed).
+  press(*ui, input, input::keys::Left);
+  press(*ui, input, input::keys::Return);
+  settleBoxes(*ui, input);
+  press(*ui, input, input::keys::Return);
+  std::vector<UiCommand> commands = ui->takeCommands();
+  CHECK(commands.empty());
+  CHECK(ui->isVisible("partner_menu"));
+  // The press's own two frames, then one a tick until the throw is asked for. Measured in the
+  // original (11_battle_agumon): Use taken between vblanks 28400 and 28404, startThrowingItem at
+  // 28445; three boxes of five frames at 20 a second.
+  int ticks = 2;
+  while (commands.empty() && ticks < 120) {
+    frame(*ui, input);
+    ++ticks;
+    commands = ui->takeCommands();
+  }
+  MESSAGE("ticks from Use to the throw: ", ticks);
+  CHECK(ticks >= 41);
+  CHECK(ticks <= 46);
+  REQUIRE(commands.size() == 1);
+  CHECK(commands[0].name == "bag_use");
+  CHECK(commands[0].value == UiValue{0.0});
+  CHECK_FALSE(ui->isVisible("partner_menu"));
+  // Back to the fight, not to the field's pause menu.
+  CHECK_FALSE(ui->isVisible("pause_menu"));
+
+  // Cancel closes it into the fight too.
+  openBag(*ui, input, "battle");
+  press(*ui, input, input::keys::Escape);
+  settleBoxes(*ui, input);
+  CHECK_FALSE(ui->isVisible("partner_menu"));
+  CHECK_FALSE(ui->isVisible("pause_menu"));
+  CHECK(ui->takeCommands().empty());
+}
+
+TEST_CASE("the field's bag uses an item at once and goes back to the pause menu") {
+  Content content;
+  auto ui = createUi(content.mount());
+  REQUIRE(ui->loadDocument("partner_menu", idOf("ui/partner_menu/document")));
+  REQUIRE(ui->loadDocument("pause_menu", idOf("ui/pause_menu/document")));
+  input::InputState input{input::defaultActionMap()};
+  openBag(*ui, input, "");
+  CHECK_FALSE(ui->elementHasClass("partner_menu", "scrim", "battle-bag"));
+  press(*ui, input, input::keys::Return);
+  settleBoxes(*ui, input);
+  press(*ui, input, input::keys::Return);
+  CHECK(commandNames(*ui) == std::vector<std::string>{"bag_use"});
+  CHECK(ui->isVisible("partner_menu"));
+  press(*ui, input, input::keys::Escape);
+  settleBoxes(*ui, input);
+  CHECK_FALSE(ui->isVisible("partner_menu"));
+  CHECK(ui->isVisible("pause_menu"));
+}
+
 TEST_CASE("the HUD's menu button asks the game to open the menu and names the key that does it") {
   Content content;
   auto ui = createUi(content.mount());

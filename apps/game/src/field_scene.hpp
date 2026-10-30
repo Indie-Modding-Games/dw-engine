@@ -40,6 +40,10 @@
 #include "place_command.hpp"
 #include "scene_effect.hpp"
 
+namespace dwe::ui {
+class Ui;
+} // namespace dwe::ui
+
 namespace dwe::app {
 
 // An item lying on the field's ground (item.c: spawnItem, spawnDroppedItems): its world point and
@@ -513,5 +517,12 @@ private:
   };
   std::map<std::string, PropSet> props_;
 };
+
+// Where the player stands on the window, in percent (the settings field.player_x and
+// field.player_y), for the original look's boxes that grow from the player (game_menu.c:
+// createMenuBox and inventory.c: createInventoryView start from getEntityScreenPos(ENTITY_TABLE[0],
+// 1), the player's second bone). Published as the game menu or the bag opens; the player does not
+// move while either is open.
+void publishPlayerPoint(ui::Ui& ui, const FieldScene& scene);
 
 } // namespace dwe::app

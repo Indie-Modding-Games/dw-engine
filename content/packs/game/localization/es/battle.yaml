@@ -39,8 +39,6 @@ charge: "¡Carga el golpe final!"
 charge_hint: "Pulsa una y otra vez"
 prompt.command: "Dar la orden"
 prompt.bag: "Objetos"
-# La bolsa del domador en combate: el botón que la abre, su título, un hueco vacío y la línea mientras vuela un objeto.
+# La bolsa del domador en combate: el botón que la abre y la línea mientras vuela un objeto.
 bag.open: "Objetos"
-bag.title: "Lanza un objeto"
-bag.empty: "-"
 item_in_flight: "¡Ahí va!"

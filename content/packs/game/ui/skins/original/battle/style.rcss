@@ -587,56 +587,10 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The bag in battle: the field bag's box (inventory.c; capture field_item_bag_1item) at the top, with the
-   description under it in grey. */
-
-#bag {
-	left: 27dp;
-	top: 27dp;
-	width: 906dp;
-	padding: 18dp 15dp;
-	border-radius: 0;
-	border: 3dp transparent;
-	background-color: #00000080;
-	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
-		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
-}
-
-#bag h2 {
-	font-size: 33dp;
-	color: #fff371;
-}
-
-.bag-slot {
-	width: 414dp;
-	height: 54dp;
-	margin: 0 18dp 0 0;
-	padding: 0 9dp 0 66dp;
-	font-size: 33dp;
-	line-height: 48dp;
-	border: 3dp transparent;
-}
-
-.bag-slot:focus {
-	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
-	background-color: #80808080;
-}
-
-.bag-slot.unusable {
-	color: #828282;
-}
-
-#bag-description {
-	font-size: 33dp;
-	color: #b2b2b2;
-}
+   The bag in battle is the field's (ui/partner_menu); the line while a thrown item flies. */
 
 #item-in-flight {
 	font-size: 33dp;
-	color: #d0d0d0;
-}
-
-.bag-slot:focus .original-look {
 	color: #d0d0d0;
 }
 

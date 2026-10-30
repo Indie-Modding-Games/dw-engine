@@ -271,3 +271,8 @@ button:focus .original-look, button.original-look:focus {
 
 .status-native-life, .status-native-happiness { display: none; }
 #techs-heading, #tech-help { display: none; }
+
+/* The battle opens only the bag (battle_tick.c: tamerTickBattle calls addInventoryUI): no tabs, and the fight stays in
+   sight under a lighter scrim. */
+#scrim.battle-bag { background-color: #05080c40; }
+#scrim.battle-bag #tabs { display: none; }

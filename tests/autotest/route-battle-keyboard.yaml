@@ -29,9 +29,11 @@ steps:
   - wait: {seconds: 4}
   - expect_setting: {battle.phase: fight}
   - screenshot: battle-fight
-  # The tamer's bag: cancel opens it (the original look draws no entry for it) while the battle goes on, a slot throws its item to the partner.
+  # Cancel opens the field's bag (the original look draws no entry for it) while the battle goes on;
+  # a slot's Use throws its item to the partner once the bag has closed.
   - tap: {key: escape}
   - expect_setting: {battle.bag.open: true}
+  - wait: {shown: partner_menu, seconds: 0.5}
   - screenshot: battle-bag
   # The bag clears the enemies' panels and the prompts on a 4:3 screen and on a wide one too.
   - resize: [800, 600]
@@ -39,7 +41,10 @@ steps:
   - resize: [1920, 1080]
   - screenshot: battle-bag
   - resize: [1280, 720]
-  - menu_select: bag-slot-0
+  - menu_select: slot-0
+  - screenshot: battle-bag-options
+  - menu_select: opt-use
+  - wait: {hidden: partner_menu, timeout: 5}
   - expect_setting: {battle.item_in_flight: true}
   - screenshot: battle-item-thrown
   - wait: {seconds: 3}

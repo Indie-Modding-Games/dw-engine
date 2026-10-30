@@ -113,43 +113,6 @@
 
 		<p id="revive" class="original-look hidden"></p>
 
-		<div id="bag" class="hidden">
-			<h2 class="original-look" text-key="battle.bag.title"></h2>
-			<div id="bag-grid">
-				<button id="bag-slot-0" class="bag-slot hidden" onclick="throw_slot(0)"><span class="original-look slot-name" id="bag-slot-0-name"></span><span class="original-look slot-count" id="bag-slot-0-count"></span></button>
-				<button id="bag-slot-1" class="bag-slot hidden" onclick="throw_slot(1)"><span class="original-look slot-name" id="bag-slot-1-name"></span><span class="original-look slot-count" id="bag-slot-1-count"></span></button>
-				<button id="bag-slot-2" class="bag-slot hidden" onclick="throw_slot(2)"><span class="original-look slot-name" id="bag-slot-2-name"></span><span class="original-look slot-count" id="bag-slot-2-count"></span></button>
-				<button id="bag-slot-3" class="bag-slot hidden" onclick="throw_slot(3)"><span class="original-look slot-name" id="bag-slot-3-name"></span><span class="original-look slot-count" id="bag-slot-3-count"></span></button>
-				<button id="bag-slot-4" class="bag-slot hidden" onclick="throw_slot(4)"><span class="original-look slot-name" id="bag-slot-4-name"></span><span class="original-look slot-count" id="bag-slot-4-count"></span></button>
-				<button id="bag-slot-5" class="bag-slot hidden" onclick="throw_slot(5)"><span class="original-look slot-name" id="bag-slot-5-name"></span><span class="original-look slot-count" id="bag-slot-5-count"></span></button>
-				<button id="bag-slot-6" class="bag-slot hidden" onclick="throw_slot(6)"><span class="original-look slot-name" id="bag-slot-6-name"></span><span class="original-look slot-count" id="bag-slot-6-count"></span></button>
-				<button id="bag-slot-7" class="bag-slot hidden" onclick="throw_slot(7)"><span class="original-look slot-name" id="bag-slot-7-name"></span><span class="original-look slot-count" id="bag-slot-7-count"></span></button>
-				<button id="bag-slot-8" class="bag-slot hidden" onclick="throw_slot(8)"><span class="original-look slot-name" id="bag-slot-8-name"></span><span class="original-look slot-count" id="bag-slot-8-count"></span></button>
-				<button id="bag-slot-9" class="bag-slot hidden" onclick="throw_slot(9)"><span class="original-look slot-name" id="bag-slot-9-name"></span><span class="original-look slot-count" id="bag-slot-9-count"></span></button>
-				<button id="bag-slot-10" class="bag-slot hidden" onclick="throw_slot(10)"><span class="original-look slot-name" id="bag-slot-10-name"></span><span class="original-look slot-count" id="bag-slot-10-count"></span></button>
-				<button id="bag-slot-11" class="bag-slot hidden" onclick="throw_slot(11)"><span class="original-look slot-name" id="bag-slot-11-name"></span><span class="original-look slot-count" id="bag-slot-11-count"></span></button>
-				<button id="bag-slot-12" class="bag-slot hidden" onclick="throw_slot(12)"><span class="original-look slot-name" id="bag-slot-12-name"></span><span class="original-look slot-count" id="bag-slot-12-count"></span></button>
-				<button id="bag-slot-13" class="bag-slot hidden" onclick="throw_slot(13)"><span class="original-look slot-name" id="bag-slot-13-name"></span><span class="original-look slot-count" id="bag-slot-13-count"></span></button>
-				<button id="bag-slot-14" class="bag-slot hidden" onclick="throw_slot(14)"><span class="original-look slot-name" id="bag-slot-14-name"></span><span class="original-look slot-count" id="bag-slot-14-count"></span></button>
-				<button id="bag-slot-15" class="bag-slot hidden" onclick="throw_slot(15)"><span class="original-look slot-name" id="bag-slot-15-name"></span><span class="original-look slot-count" id="bag-slot-15-count"></span></button>
-				<button id="bag-slot-16" class="bag-slot hidden" onclick="throw_slot(16)"><span class="original-look slot-name" id="bag-slot-16-name"></span><span class="original-look slot-count" id="bag-slot-16-count"></span></button>
-				<button id="bag-slot-17" class="bag-slot hidden" onclick="throw_slot(17)"><span class="original-look slot-name" id="bag-slot-17-name"></span><span class="original-look slot-count" id="bag-slot-17-count"></span></button>
-				<button id="bag-slot-18" class="bag-slot hidden" onclick="throw_slot(18)"><span class="original-look slot-name" id="bag-slot-18-name"></span><span class="original-look slot-count" id="bag-slot-18-count"></span></button>
-				<button id="bag-slot-19" class="bag-slot hidden" onclick="throw_slot(19)"><span class="original-look slot-name" id="bag-slot-19-name"></span><span class="original-look slot-count" id="bag-slot-19-count"></span></button>
-				<button id="bag-slot-20" class="bag-slot hidden" onclick="throw_slot(20)"><span class="original-look slot-name" id="bag-slot-20-name"></span><span class="original-look slot-count" id="bag-slot-20-count"></span></button>
-				<button id="bag-slot-21" class="bag-slot hidden" onclick="throw_slot(21)"><span class="original-look slot-name" id="bag-slot-21-name"></span><span class="original-look slot-count" id="bag-slot-21-count"></span></button>
-				<button id="bag-slot-22" class="bag-slot hidden" onclick="throw_slot(22)"><span class="original-look slot-name" id="bag-slot-22-name"></span><span class="original-look slot-count" id="bag-slot-22-count"></span></button>
-				<button id="bag-slot-23" class="bag-slot hidden" onclick="throw_slot(23)"><span class="original-look slot-name" id="bag-slot-23-name"></span><span class="original-look slot-count" id="bag-slot-23-count"></span></button>
-				<button id="bag-slot-24" class="bag-slot hidden" onclick="throw_slot(24)"><span class="original-look slot-name" id="bag-slot-24-name"></span><span class="original-look slot-count" id="bag-slot-24-count"></span></button>
-				<button id="bag-slot-25" class="bag-slot hidden" onclick="throw_slot(25)"><span class="original-look slot-name" id="bag-slot-25-name"></span><span class="original-look slot-count" id="bag-slot-25-count"></span></button>
-				<button id="bag-slot-26" class="bag-slot hidden" onclick="throw_slot(26)"><span class="original-look slot-name" id="bag-slot-26-name"></span><span class="original-look slot-count" id="bag-slot-26-count"></span></button>
-				<button id="bag-slot-27" class="bag-slot hidden" onclick="throw_slot(27)"><span class="original-look slot-name" id="bag-slot-27-name"></span><span class="original-look slot-count" id="bag-slot-27-count"></span></button>
-				<button id="bag-slot-28" class="bag-slot hidden" onclick="throw_slot(28)"><span class="original-look slot-name" id="bag-slot-28-name"></span><span class="original-look slot-count" id="bag-slot-28-count"></span></button>
-				<button id="bag-slot-29" class="bag-slot hidden" onclick="throw_slot(29)"><span class="original-look slot-name" id="bag-slot-29-name"></span><span class="original-look slot-count" id="bag-slot-29-count"></span></button>
-			</div>
-			<p id="bag-description" class="original-look"></p>
-		</div>
-
 		<p id="item-in-flight" class="original-look hidden" text-key="battle.item_in_flight"></p>
 
 		<div id="prompts">

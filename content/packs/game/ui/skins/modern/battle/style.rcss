@@ -205,51 +205,10 @@
 	margin-left: 14dp;
 }
 
-/* The tamer's bag (inventory.c: addInventoryUI) while the battle goes on; items that cannot be thrown in battle are
-   greyed out. It takes the command row's place on the left, below the HUD's menu hint: on the narrowest screen the UI
-   lays out (960dp wide, 4:3) it ends left of the enemies' panels, and a full bag of 30 slots in three columns ends
-   above the partner's panel. */
+/* The entry that opens the player's bag (inventory.c: addInventoryUI) after the strip; the bag itself is the field's
+   (ui/partner_menu). */
 .bag-button {
 	margin-left: 12dp;
-}
-
-#bag {
-	position: absolute;
-	left: 24dp;
-	top: 64dp;
-	width: 520dp;
-	padding: 10dp 14dp;
-	background-color: #10161ef0;
-	border: 1dp #3a4a5e;
-	border-radius: 8dp;
-}
-
-#bag h2 {
-	font-size: 24dp;
-	margin-bottom: 6dp;
-}
-
-.bag-slot {
-	display: inline-block;
-	box-sizing: border-box;
-	width: 31.33%;
-	margin: 1dp 1%;
-	padding: 2dp 8dp;
-	font-size: 18dp;
-}
-
-.bag-slot.unusable {
-	color: #6b7480;
-}
-
-.slot-count {
-	float: right;
-}
-
-#bag-description {
-	min-height: 48dp;
-	margin-top: 8dp;
-	font-size: 20dp;
 }
 
 #item-in-flight {
@@ -488,12 +447,8 @@
 
 /* Hidden wins over the display of the elements above. */
 #fight.hidden, #end.hidden, #charge.hidden, #revive.hidden, .command.hidden, .fighter.hidden, #balance.hidden,
-#commands.hidden, #bag.hidden, .bag-slot.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden,
+#commands.hidden, #item-in-flight.hidden, .bar-row.hidden, .gain-arrow.hidden,
 #intro.hidden, .anger.hidden, .bp.hidden, .bs.hidden, .bt.hidden, .command-frame.hidden, #command-cursor.hidden {
 	display: none;
 }
 
-/* The focused bag slot's text keeps the focus colours over the original look's ink. */
-.bag-slot:focus .original-look {
-	color: #1a1f27;
-}

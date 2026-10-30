@@ -663,6 +663,8 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const game::field::Field& field = scene_->field();
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()));
 
+  partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
+                                                    : game::inventory::UseContext::Field);
   partnerMenu_.update();
   shopScreen_.update();
   itemKeeperScreen_.update();

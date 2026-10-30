@@ -306,8 +306,9 @@ La pantalla de combate (`ui/battle`) envía `battle_command` (el número del com
 `battle_charge` (cada pulsación que carga el golpe final), `battle_close` (cierra la caja del final),
 `battle_end_count` y `battle_end_counted` (la cuenta de esa caja: cada punto o bit contado, y los bits ya sumados; el juego
 toca sus sonidos),
-`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que también abre y cierra la acción `cancel`) y
-`battle_throw` (el número de la ranura cuyo objeto se lanza al compañero). El menú de
+`battle_bag_open` y `battle_bag_close` (la bolsa del domador, que abre la acción `cancel`; el juego muestra entonces
+`ui/partner_menu` en su página de objetos con `partner_menu.context = battle`, y su `bag_use` lanza el objeto) y
+`battle_throw` (el número de la ranura cuyo objeto se lanza al compañero, para la consola y las pruebas). El menú de
 pausa abre el del compañero con `open_partner_menu`, y este (`ui/partner_menu`) envía `bag_use`, `bag_drop` (el
 número de la ranura), `bag_move` (`"<desde> <hasta>"`), `bag_sort` (el orden, 0 a 2), `partner_praise` y
 `partner_scold`. Lo que dibujan lo publica el juego como ajustes con prefijo `battle.` (y `battle.phase`: `intro`,

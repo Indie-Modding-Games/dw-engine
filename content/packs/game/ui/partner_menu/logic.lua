@@ -72,6 +72,14 @@ local function slot_setting(index, field)
   return "bag.slot." .. index .. "." .. field
 end
 
+-- The battle opens this same bag over the fight (battle_tick.c: tamerTickBattle calls
+-- addInventoryUI): only its items page, which closes back into the battle, and its Use throws the
+-- item to the partner once the boxes have closed (inventory.c: tickInventoryUI,
+-- startThrowingItem). What a battle can use is the game's (the slots' usable and discardable).
+local function in_battle()
+  return ui.setting("partner_menu.context") == "battle"
+end
+
 local function slot_filled(index)
   return index < number("bag.slot.count") and not setting(slot_setting(index, "empty"), true)
 end
@@ -557,13 +565,14 @@ local function show_page(document, name, focus)
   document
     :get("scrim")
     :set_class("item-screen", name == "items" and ui.setting("ui_skin") == "original")
+  document:get("scrim"):set_class("battle-bag", in_battle())
   document:get("scrim"):set_class("large-bag", number("bag.slot.count") > 10)
   draw(document)
   document:get(focus or first_entry[name]):focus()
 end
 
 function open_page(document, name)
-  if editing_tech then
+  if editing_tech or (in_battle() and name ~= "items") then
     return
   end
   show_page(document, name)
@@ -601,7 +610,17 @@ function choose_option(document, name)
     return
   end
   local slot = "slot-" .. picked
-  if name == "use" then
+  if name == "use" and in_battle() then
+    -- tickInventoryUI's case 5: the options shrink back into the slot (removeUIBox2), the bag's
+    -- boxes close (closeInventoryBoxes2) and only then the item flies (startThrowingItem).
+    local thrown = picked
+    original_box.close(document, "options", original_box.rect(document, slot), function()
+      close_box(document, slot)
+      close_menu(document, function()
+        ui.send("bag_use", thrown)
+      end)
+    end)
+  elseif name == "use" then
     close_box(document, slot)
     ui.send("bag_use", picked)
   elseif name == "move" then
@@ -665,12 +684,17 @@ local function open_boxes(document)
   end)
 end
 
--- Back: out of a box, out of a move, from a page to its tab, from the tabs out of the menu.
-function close_menu(document)
+-- Back: out of a box, out of a move, from a page to its tab, from the tabs out of the menu. The
+-- field's menu goes back to the pause menu in the original look, the battle's bag to the fight;
+-- `after` runs once the menu has gone.
+function close_menu(document, after)
   local function leave()
     ui.hide(document_name)
-    if ui.setting("ui_skin") == "original" then
+    if ui.setting("ui_skin") == "original" and not in_battle() then
       ui.show("pause_menu", true)
+    end
+    if after ~= nil then
+      after()
     end
   end
   if document == nil or not original_box.enabled() then
@@ -696,7 +720,7 @@ local function back(document)
     local index = moving
     moving = nil
     focus_slot(document, index)
-  elseif ui.setting("ui_skin") == "original" then
+  elseif ui.setting("ui_skin") == "original" or in_battle() then
     close_menu(document)
   elseif not document:get("tab-" .. current):has_focus() then
     document:get("tab-" .. current):focus()

@@ -20,6 +20,7 @@
 #include "bag_slots.hpp"
 #include "field_scene.hpp"
 #include "messages.hpp"
+#include "partner_menu.hpp"
 
 namespace dwe::app {
 namespace {
@@ -131,6 +132,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
 }
 
 void BattleScreen::tick(double seconds) {
+  syncBag();
   tickVictory(seconds);
   if (battle_) {
     tickBattle(seconds);
@@ -488,7 +490,9 @@ bool BattleScreen::handle(const ui::UiCommand& command) {
     }
     return true;
   }
-  if (command.name == BattleThrowCommand) {
+  // inventory.c: tickInventoryUI: in battle the bag's Use throws the item (startThrowingItem) once
+  // the bag's boxes have closed, where the field's feeds it.
+  if (command.name == BattleThrowCommand || (command.name == BagUseCommand && battle_)) {
     if (const auto* number = std::get_if<double>(&command.value); number != nullptr) {
       throwItem(*number);
     }
@@ -555,6 +559,34 @@ void BattleScreen::openBag() {
                                              names(), game::inventory::UseContext::Battle)),
       screens::BagRevisionSetting);
   publish();
+  // addInventoryUI opens the field's bag (createInventoryView), growing from the player as there.
+  if (desc_.scene != nullptr) {
+    publishPlayerPoint(*desc_.ui, *desc_.scene);
+  }
+  desc_.ui->setSetting(screens::BagResultSetting, std::string{});
+  desc_.ui->setSetting(PartnerMenuStartPageSetting, std::string{PartnerMenuItemsPage});
+  desc_.ui->setSetting(PartnerMenuContextSetting, std::string{PartnerMenuBattleContext});
+  desc_.ui->show(PartnerMenuDocument, true);
+  bagShown_ = true;
+}
+
+void BattleScreen::syncBag() {
+  if (!bagShown_) {
+    return;
+  }
+  const bool open = battle_ && battle_->bagOpen();
+  if (!desc_.ui->isVisible(PartnerMenuDocument)) {
+    bagShown_ = false;
+    desc_.ui->setSetting(PartnerMenuContextSetting, std::string{});
+    if (open) {
+      battle_->closeBag();
+      publish();
+    }
+  } else if (!open) {
+    bagShown_ = false;
+    desc_.ui->setSetting(PartnerMenuContextSetting, std::string{});
+    desc_.ui->hide(PartnerMenuDocument);
+  }
 }
 
 void BattleScreen::throwItem(double slot) {

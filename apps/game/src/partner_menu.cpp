@@ -169,7 +169,7 @@ bool PartnerMenu::handle(const ui::UiCommand& command) {
   if (command.name == OpenPartnerMenuCommand) {
     const auto* page = std::get_if<std::string>(&command.value);
     const bool items = page != nullptr && *page == "items";
-    desc_.ui->setSetting("partner_menu.start_page", std::string{items ? "items" : "status"});
+    desc_.ui->setSetting(PartnerMenuStartPageSetting, std::string{items ? "items" : "status"});
     desc_.ui->setSetting("pause_menu.start_entry",
                          std::string{items ? "open-items" : "open-partner"});
     open();
@@ -206,6 +206,7 @@ bool PartnerMenu::handle(const ui::UiCommand& command) {
 
 void PartnerMenu::open() {
   desc_.ui->hide(PauseMenuDocument);
+  desc_.ui->setSetting(PartnerMenuContextSetting, std::string{});
   desc_.ui->setSetting(screens::BagResultSetting, std::string{});
   desc_.ui->setSetting(BagResultItemSetting, std::string{});
   desc_.ui->setSetting(CareResultSetting, std::string{});
@@ -245,8 +246,8 @@ void PartnerMenu::publish() const {
   const screens::NameKeys names{desc_.species, &desc_.inventory->items(), nullptr};
   screens::publish(*desc_.ui, statusSettings(), screens::PartnerRevisionSetting);
   screens::publish(*desc_.ui,
-                   screens::settingsOf(screens::bagViewOf(desc_.inventory->inventory(),
-                                                          desc_.inventory->items(), names)),
+                   screens::settingsOf(screens::bagViewOf(
+                       desc_.inventory->inventory(), desc_.inventory->items(), names, bagContext_)),
                    screens::BagRevisionSetting);
 }
 

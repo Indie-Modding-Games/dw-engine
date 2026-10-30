@@ -39,7 +39,9 @@ Las listas van como `<lista>.count` y `<lista>.<i>.<campo>` (`battle.fighter.0.h
 | `battle.frame_seconds`, `battle.end.{count_delay_frames,wait_frames}` | números | Lo que dura un fotograma de combate y el ritmo de las cajas, del ruleset (`battle.hud`): la espera antes de contar y la de cada línea. Las cajas se cierran solas al acabar; un botón salta lo que corre |
 
 Con la bolsa abierta, el juego publica `bagViewOf(inventory, items, names, UseContext::Battle)` (los ajustes `bag.*`
-de abajo): `usable` dice qué objetos se pueden lanzar en combate.
+de abajo): `usable` dice qué objetos se pueden lanzar en combate y `discardable` es siempre falso. La bolsa que se ve
+es la del campo (`ui/partner_menu`, página de objetos, con `partner_menu.context = battle`): su Usar envía `bag_use`
+cuando se han cerrado sus cajas y el combate lanza el objeto (QA-M19).
 
 El juego añade `battle.phase` (`intro`, `fight`, `victory` o `end`; `victory` es la victoria antes de la caja final, sin caja ni entrada: la espera de 0x29 fotogramas de `BTL_handleVictorySequence`, el sonido 0x18 y las poses del jugador (clip 0xb) y del compañero (clip 0x2a), hasta que ambas terminan; el port corta las poses a los 200 fotogramas de batalla si alguna no termina), y el documento envía `battle_command` (el número del comando),
 `battle_charge`, `battle_close`, `battle_end_count` y `battle_end_counted` (la cuenta de la caja del final, para sus
@@ -136,8 +138,8 @@ en proporción a su máximo del ruleset. Es una diferencia solo de aspecto y se 
 
 **Combate (decisiones del responsable de diseño, 2026-10-21).** El panel de HP de un enemigo lleva su nombre hasta que
 exista la escena 3D del combate; el título de la caja final («Has escapado.» al huir) se queda como desviación de
-accesibilidad; y la bolsa lanza el objeto al confirmar su ranura, sin la caja de opciones del original. Están en la
-tabla de paridad del [página de game/battle](../game/battle.md).
+accesibilidad. La bolsa que lanzaba al confirmar la ranura se retiró el 2026-10-30 (QA-M19): el combate abre la
+bolsa del campo con su caja de opciones. Están en la tabla de paridad del [página de game/battle](../game/battle.md).
 
 **Alabar y regañar solo en el campo (decisión del responsable de diseño, 2026-10-20/21).** En el original se alaba y
 se regaña al compañero en el campo, junto a él (`partner.c: partnerTickPraiseScold`, `tamer.c: tamerTickPraiseScold`),
@@ -150,6 +152,7 @@ Paridad con la revisión de menús contra el original (QA-M, 2026-10-30). Estado
 
 | Comportamiento | Original | dwe | Prueba | Estado |
 |---|---|---|---|---|
+| Bolsa en combate | `battle_tick.c: tamerTickBattle` → `inventory.c: addInventoryUI`: la misma bolsa del campo, con la descripción abajo y la caja de opciones (Tirar en gris); Usar cierra las cajas y lanza (`startThrowingItem`), 41 a 45 vblanks después; cancelar la cierra y vuelve al combate, que no se para | `ui/partner_menu` con `partner_menu.context = battle` (sin pestañas, vuelve al combate, no al menú del juego); la caja propia de `ui/battle` («Throw an item», guiones en los huecos) desaparece (QA-M19) | `ui_tests`: "the battle opens the field's bag…", "the field's bag uses an item at once…"; `route-battle-*` | Igual |
 | Volver de la bolsa o del compañero al menú del juego | `game_menu.c: tickTriangleMenu` (1372-1379) e `inventory.c: tickInventoryUI` (385-392): al cancelar, el menú vuelve y responde al mando | `partner_menu/logic.lua: close_menu` muestra `pause_menu` modal (`ui.show(nombre, true)`); antes quedaba visible sin recibir la navegación (QA-M01) | `ui_tests`: "a menu a script shows modal again takes the navigation back" | Igual |
 | La acción menú (Tab) abre el menú del juego en el campo | `game_menu.c: addGameMenu` (1306): el botón del menú del mando | La acción `menu` es Tab en el teclado y el botón norte del mando (antes la tecla de pausa); el norte sigue siendo `alt` en la caja de nombres, que lo lee primero (QA-M03) | `navigation_tests`, `ui_tests`: "the pause menu works with a gamepad alone…" | Igual |
 | La acción pausa (P o Pausa) pausa el juego | `utils2.c: handlePause` (402) y `createPauseBox` (443): el botón de pausa del mando alterna `PAUSE_STATE`; caja de -26, -14, 56 × 24 desde el centro (versión US), «Pause» (`main.utils2_pause.0000`), `playSound(0, 3)` al abrir, sin sonido al cerrar; el campo, el combate y los menús se congelan | `PauseBox` (`apps/game/src/pause_box.cpp`) con la acción `pause` (P y Pausa en el teclado, el botón de pausa del mando); el documento `pause_box` encima de todo; el tick del juego y de la UI no corre mientras dura. En la portada, una película o la caja de nombres el botón de pausa del mando hace lo de antes (`menu`) (QA-M02) | `game_tests`: "pause box: …" | Igual |

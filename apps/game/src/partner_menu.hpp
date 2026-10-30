@@ -2,6 +2,7 @@
 
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/inventory/item_effect.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/cards_adapter.hpp>
@@ -25,6 +26,12 @@ inline constexpr std::string_view BagUseCommand = "bag_use";
 inline constexpr std::string_view BagMoveCommand = "bag_move";
 inline constexpr std::string_view BagDropCommand = "bag_drop";
 inline constexpr std::string_view BagSortCommand = "bag_sort";
+// The page the menu opens on ("items" or "status") and where it is open: "battle" for the player's
+// bag in battle (battle_tick.c: tamerTickBattle), empty in the field.
+inline constexpr std::string_view PartnerMenuStartPageSetting = "partner_menu.start_page";
+inline constexpr std::string_view PartnerMenuItemsPage = "items";
+inline constexpr std::string_view PartnerMenuContextSetting = "partner_menu.context";
+inline constexpr std::string_view PartnerMenuBattleContext = "battle";
 // TODO(phase 4): praise and scold are field-only in the original (partner.c:
 // partnerTickPraiseScold); remove this tab once the field interaction with the partner exists
 // (design owner, 2026-10-21).
@@ -63,6 +70,9 @@ public:
 
   // Publishes the views while the menu is open; once per frame.
   void update();
+  // Where the bag is open: the field's menu, or the battle, which opens the same bag
+  // (battle_tick.c: tamerTickBattle calls addInventoryUI) and decides what a battle can use.
+  void setBagContext(game::inventory::UseContext context) { bagContext_ = context; }
 
   // The give_item command: `argument` is an item id and a count.
   core::Result<void> giveItem(std::string_view argument);
@@ -90,6 +100,7 @@ private:
   void bagResult(std::string_view key, std::optional<assets::ItemHandle> item) const;
 
   PartnerMenuDesc desc_;
+  game::inventory::UseContext bagContext_ = game::inventory::UseContext::Field;
 };
 
 } // namespace dwe::app

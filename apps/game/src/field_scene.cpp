@@ -10,6 +10,7 @@
 #include <dwe/game/field/script_warps.hpp>
 #include <dwe/localization/catalog.hpp>
 #include <dwe/scene/components.hpp>
+#include <dwe/ui/ui.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -852,6 +853,18 @@ std::optional<glm::vec2> FieldScene::worldToWindowFraction(glm::vec3 world) cons
     return std::nullopt;
   }
   return *pixel / mapRenderer_->camera().viewportSize();
+}
+
+void publishPlayerPoint(ui::Ui& ui, const FieldScene& scene) {
+  // The bone is about the player's waist; a lift of 120 units over the feet (an estimate, not
+  // measured).
+  constexpr float WaistLift = 120.0F;
+  constexpr double Percent = 100.0;
+  glm::vec3 point = scene.field().player().position;
+  point.y += WaistLift;
+  const std::optional<glm::vec2> fraction = scene.worldToWindowFraction(point);
+  ui.setSetting("field.player_x", fraction ? fraction->x * Percent : 50.0);
+  ui.setSetting("field.player_y", fraction ? fraction->y * Percent : 50.0);
 }
 
 } // namespace dwe::app
