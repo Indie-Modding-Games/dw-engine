@@ -1,4 +1,5 @@
 #include <dwe/game/battle/joining.hpp>
+#include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/simulation.hpp>
 #include <dwe/game/battle/text_keys.hpp>
 
@@ -8,6 +9,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -617,4 +619,128 @@ TEST_CASE("a fighter hit or blocking loses its own shots still on their way") {
     }
   }
   CHECK(checked > 0);
+}
+
+namespace {
+
+// How many draws `from` takes to reach `to` (both the original's generator).
+int drawsBetween(dwe::ruleset::Random from, const dwe::ruleset::Random& to) {
+  constexpr int Most = 1000;
+  for (int draws = 0; draws < Most; ++draws) {
+    if (from.state() == to.state()) {
+      return draws;
+    }
+    static_cast<void>(from.next());
+  }
+  return -1;
+}
+
+using dwe::game::battle::ParticleRolls;
+
+} // namespace
+
+TEST_CASE("the original's sparks draw on the original's frames: a hit, then 43 frames") {
+  // Recorded in the original (the Native Forest fight, a breakpoint on every rand() call): on frame
+  // 87 the enemy's Spit Fire (1 invulnerable frame) hits the partner from the state 0x3E8E8486:
+  // the hit roll 16, the turn roll 25, the damage roll 10 of 21, then the spark's 12 draws
+  // (createParticleFX). After it the spark and the particles it leaves on the partner draw on
+  // these frames (tickParticleFX, addEntityParticleFX, tickEntityParticleFX), nothing else draws,
+  // and the partner's next pick on frame 130 rolls 47 of 65.
+  const std::map<int, int> recorded{{87, 15},  {96, 3},  {98, 6},   {99, 2},   {101, 4},
+                                    {102, 6},  {104, 10}, {105, 12}, {106, 12}, {107, 4},
+                                    {109, 4},  {110, 6},  {113, 2},  {114, 6},  {117, 2}};
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(0x3E8E8486U);
+  dwe::ruleset::Random before = random;
+  CHECK(random.below(100) == 16);
+  CHECK(random.below(100) == 25);
+  CHECK(random.below(21) == 10);
+  ParticleRolls sparks;
+  sparks.spawn(random, ParticleRolls::Spark::Hit, 1 + 0x10);
+  for (int frame = 87; frame < 130; ++frame) {
+    sparks.tick(random);
+    const auto expected = recorded.find(frame);
+    CAPTURE(frame);
+    CHECK(drawsBetween(before, random) == (expected == recorded.end() ? 0 : expected->second));
+    before = random;
+  }
+  CHECK(sparks.sparks() == 0);
+  CHECK(sparks.fighterParticles() == 0);
+  CHECK(random.below(65) == 47);
+}
+
+TEST_CASE("the original's block spark draws 8 as it starts and nothing after") {
+  // Recorded: on frame 22 the enemy's Spit Fire misses the partner from the state 0xA42DBE4C (the
+  // roll 64 over a chance of 42), the block's spark draws 8, and the next draws are the enemy's on
+  // frame 69: charge mode 0 of 2 and its move, 29 of 120.
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(0xA42DBE4CU);
+  CHECK(random.below(100) == 64);
+  ParticleRolls sparks;
+  dwe::ruleset::Random before = random;
+  sparks.spawn(random, ParticleRolls::Spark::Block, 0x11);
+  CHECK(drawsBetween(before, random) == 8);
+  before = random;
+  for (int frame = 22; frame < 69; ++frame) {
+    sparks.tick(random);
+  }
+  CHECK(drawsBetween(before, random) == 0);
+  CHECK(sparks.sparks() == 0);
+  CHECK(random.below(2) == 0);
+  CHECK(random.below(120) == 29);
+}
+
+TEST_CASE("only 4 sparks roll at once; a spark the original never shows rolls and keeps no slot") {
+  dwe::ruleset::Random random = dwe::ruleset::Random::original(1);
+  ParticleRolls sparks;
+  for (std::size_t spark = 0; spark < ParticleRolls::SparkSlots; ++spark) {
+    sparks.spawn(random, ParticleRolls::Spark::Block, 0x11);
+  }
+  dwe::ruleset::Random before = random;
+  sparks.spawn(random, ParticleRolls::Spark::Hit, 0x11);
+  CHECK(drawsBetween(before, random) == 0);
+  CHECK(sparks.sparks() == ParticleRolls::SparkSlots);
+  ParticleRolls unseen;
+  before = random;
+  unseen.spawn(random, ParticleRolls::Spark::Hit, 0x11, false);
+  CHECK(drawsBetween(before, random) == 12);
+  CHECK(unseen.sparks() == 0);
+}
+
+TEST_CASE("with the original's rolls a hit draws its spark after the damage roll, a block before") {
+  // battle_main.c: BTL_tickAttackHits: a hit rolls its damage, then BTL_handleHitReaction starts
+  // the spark (12 draws); a block starts its spark (8 draws) before the blocked melee damage roll.
+  const auto attackOnEnemy = [](bool blocking, bool sparks) {
+    Bench bench{duel(evenStats(500, 200), evenStats(500, 200))};
+    bench.random = dwe::ruleset::Random::original(0x3E8E8486U);
+    bench.fighter(1).combatant.level = blocking ? 4 : 1;
+    bench.fighter(1).blocking = blocking;
+    bench.fighter(1).incoming.push_back({.attacker = PartnerId,
+                                         .defender = 1,
+                                         .move = Bench::move("punch"),
+                                         .origin = bench.fighter(PartnerId).position,
+                                         .framesLeft = 0});
+    ParticleRolls particles;
+    BattleContext context = bench.context();
+    context.particles = sparks ? &particles : nullptr;
+    tickAttackHits(context);
+    return std::pair{bench.random, bench.fighter(1).pendingDamage};
+  };
+  const dwe::ruleset::Random start = dwe::ruleset::Random::original(0x3E8E8486U);
+  const auto [hitWith, hitDamageWith] = attackOnEnemy(false, true);
+  const auto [hitWithout, hitDamageWithout] = attackOnEnemy(false, false);
+  CHECK(hitDamageWith > 0);
+  CHECK(hitDamageWith == hitDamageWithout);
+  CHECK(drawsBetween(start, hitWith) == drawsBetween(start, hitWithout) + 12);
+  const auto [blockWith, blockDamageWith] = attackOnEnemy(true, true);
+  const auto [blockWithout, blockDamageWithout] = attackOnEnemy(true, false);
+  CHECK(blockDamageWith > 0);
+  CHECK(drawsBetween(start, blockWith) == drawsBetween(start, blockWithout) + 8);
+}
+
+TEST_CASE("without the original's rolls a battle draws nothing for sparks") {
+  const BattleSetup setup = duel(evenStats(300, 150), evenStats(300, 150), {"punch"}, {"punch"});
+  Battle plain = startBattle(setup, 99);
+  CHECK(plain.originalRolls() == nullptr);
+  Battle original = startBattle(setup, 99);
+  original.useOriginalRolls(0x5CF299CBU);
+  CHECK(original.originalRolls() != nullptr);
 }

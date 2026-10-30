@@ -93,6 +93,7 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
       sound != nullptr && desc_.files != nullptr) {
     effects_.emplace(*desc_.files, *sound);
     effects_->setBodies(*bodies_);
+    effects_->useRolls(battle_->originalRolls());
   }
   map_ = map;
   drops_.clear();

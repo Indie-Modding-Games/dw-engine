@@ -2,6 +2,7 @@
 
 #include <dwe/assets/effect_script.hpp>
 #include <dwe/game/battle/state.hpp>
+#include <dwe/ruleset/random.hpp>
 
 #include <array>
 #include <cstddef>
@@ -153,6 +154,12 @@ public:
 
   // The fighters the effects read; without them the effects start at the world's origin.
   void setBodies(const EffectBodies& bodies) { bodies_ = &bodies; }
+  // The scripts' rand() draws (load_random, get_scattered_spawn_position, select_random_target)
+  // come from `rolls` from now on, which must outlive this, instead of the runner's own sequence:
+  // with the battle's rolls from the original's generator (Battle::originalRolls) they take the
+  // original's numbers in the original's order (the effects run after the fighters each frame,
+  // BTL_battleTickFrame: tickObjects). Nothing goes back to the runner's own sequence.
+  void useRolls(ruleset::Random* rolls) { rolls_ = rolls; }
 
   // Loads a technique's effect for the battle and runs its init script (battle_effect.c:
   // BTL_loadMoveEFE, BTL_loadNextEFEFile), returning its slot.
@@ -258,6 +265,8 @@ private:
   void selectTarget(Slot& slot, bool random, std::int32_t argument);
   void tickUvAnims(Slot& slot);
   void playSound(std::int32_t sound);
+  // One draw of the original's rand(): 0 to 0x7FFF.
+  std::uint32_t randomDraw();
   // Ends the running script: the sub-op found nothing to run on (EFE_SCRIPT_PTR = NULL).
   void abort() { aborted_ = true; }
   [[nodiscard]] SubEffect& context(Slot& slot) { return slot.subEffects[subEffect_]; }
@@ -282,6 +291,7 @@ private:
   EffectSounds* sounds_;
   const EffectBodies* bodies_ = nullptr;
   std::minstd_rand random_;
+  ruleset::Random* rolls_ = nullptr;
   std::vector<Slot> slots_;
   std::vector<std::optional<HeldSound>> held_;
   std::vector<EffectDraw> draws_;

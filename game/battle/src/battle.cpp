@@ -307,7 +307,8 @@ core::Result<void> Battle::command(Command command) {
                         .events = &events_,
                         .condition = &setup_.condition,
                         .ground = ground_,
-                        .flights = flights_};
+                        .flights = flights_,
+                        .particles = particleRolls_ ? &*particleRolls_ : nullptr};
   commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
 }
@@ -389,7 +390,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .events = &events,
           .condition = &setup_.condition,
           .ground = ground_,
-          .flights = flights_};
+          .flights = flights_,
+          .particles = particleRolls_ ? &*particleRolls_ : nullptr};
 }
 
 BattleEvents& Battle::pending() {
@@ -415,7 +417,8 @@ const BattleEvents& Battle::step() {
                         .events = &events_,
                         .condition = &setup_.condition,
                         .ground = ground_,
-                        .flights = flights_};
+                        .flights = flights_,
+                        .particles = particleRolls_ ? &*particleRolls_ : nullptr};
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
   if (state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
@@ -454,6 +457,10 @@ const BattleEvents& Battle::step() {
   tickHpBars(context);
   updateShownClips(context);
   tickRootMotion(context);
+  // BTL_battleTickFrame: tickObjects, after the fighters: the sparks' draws of the frame.
+  if (particleRolls_) {
+    particleRolls_->tick(random_);
+  }
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }

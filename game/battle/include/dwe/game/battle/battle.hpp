@@ -8,6 +8,7 @@
 #include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/items.hpp>
 #include <dwe/game/battle/moves.hpp>
+#include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/rules.hpp>
 #include <dwe/game/battle/state.hpp>
 #include <dwe/game/battle/strategies.hpp>
@@ -168,7 +169,19 @@ public:
 
   // Rolls from here on with the original's generator from its state (ruleset::Random::original),
   // for an oracle run: the original's state as its fight began gives the same first decisions.
-  void useOriginalRolls(std::uint32_t state) { random_ = ruleset::Random::original(state); }
+  // The original's hit sparks also roll (ParticleRolls): their draws are spent here too, and the
+  // effect scripts take theirs from originalRolls().
+  void useOriginalRolls(std::uint32_t state) {
+    random_ = ruleset::Random::original(state);
+    particleRolls_.emplace();
+  }
+  // The battle's rolls when they are the original's (useOriginalRolls), for the effect scripts
+  // that run with the battle (EffectRunner::useRolls); nothing otherwise.
+  [[nodiscard]] ruleset::Random* originalRolls() {
+    return particleRolls_ ? &random_ : nullptr;
+  }
+  // Where the battle's rolls are (ruleset::Random::state), for a state trace to compare.
+  [[nodiscard]] std::uint64_t rollState() const { return random_.state(); }
 
   // The ground the fighters walk on, which must outlive the battle; none keeps them within the
   // ruleset's arena radius.
@@ -212,6 +225,8 @@ private:
   const MoveCatalog* moves_;
   BattleStrategies strategies_;
   ruleset::Random random_;
+  // With the original's rolls only: the draws of its hit sparks.
+  std::optional<ParticleRolls> particleRolls_;
   BattleSetup setup_;
   BattleState state_;
   BattleEvents events_;

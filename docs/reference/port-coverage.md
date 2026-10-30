@@ -83,7 +83,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 128 | 4 | 13 | 26 | 90 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 134 | 1 | 77 | 73 | 63 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 134 | 4 | 74 | 73 | 64 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 67 | 2 | 11 | 16 | 85 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 40 | 1 | 21 | 40 | 65 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 40 | 1 | 2 | 43 | 94 % |
-| **Total** | 2438 funciones | 813 | 37 | 427 | 1161 | 65 % |
+| **Total** | 2438 funciones | 813 | 40 | 424 | 1161 | 65 % |
 
 ## Batalla
 
@@ -126,7 +126,7 @@ Portado 128, parcial 4, falta 13, no aplica 26.
 | `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
 | `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:29` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
-| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:274` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
+| `handleBattleEndBox` | `main/battle_ui.c:297` | parcial | Cuadro final del combate: objetos, lesión, técnicas, stats y dinero. | `apps/game/src/battle_screen.cpp:275` · faltan la orden aprendida y el bonus de MP (docs/modulos/game/battle.md:109) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | falta | Prepara las cifras flotantes (daño, curación) de cada luchador. | el motor no enseña cifras sobre los luchadores |
 | `setCombatTextPosition` | `main/entity_text.c:147` | falta | Coloca sobre el luchador las cifras de daño y curación que suben. | el motor no enseña cifras sobre los luchadores |
@@ -139,7 +139,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 134, parcial 1, falta 77, no aplica 73.
+Portado 134, parcial 4, falta 74, no aplica 73.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -167,7 +167,7 @@ Portado 134, parcial 1, falta 77, no aplica 73.
 | `BTL_renderEFELine` | `btl/battle_effect.c:3269` | falta | Dibuja una línea de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_renderParallaxSprites` | `btl/battle_effect.c:3869` | falta | Dibuja capas de sprites con paralaje de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_renderScrollingBackground` | `btl/battle_effect.c:3917` | falta | Dibuja un fondo que se desplaza durante una técnica. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | falta | Lanza partículas desde el atacante. | battle.md: Hueco |
+| `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | falta (citada en docs) | Lanza partículas desde el atacante. | battle.md: Hueco |
 | `BTL_renderParticleFlashSprite` | `btl/battle_effect.c:4142` | falta | Dibuja el destello de una partícula. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_projectPositionToScreen` | `btl/battle_effect.c:4172` | falta | Proyecta una posición del efecto a la pantalla para sus sprites. | solo lo cita la extracción del disco |
 | `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
@@ -209,10 +209,10 @@ Portado 134, parcial 1, falta 77, no aplica 73.
 | `tickBuffModel` | `main/buff_model.c:38` | falta | Anima el modelo que acompaña a una mejora de stats. | — |
 | `morphBuffModel` | `main/buff_model.c:48` | falta (citada en docs) | Alterna la paleta del modelo de mejora. | — |
 | `initializeParticleFX` | `main/efe.c:350` | falta | Prepara las partículas de los efectos. | — |
-| `tickParticleFX` | `main/efe.c:463` | falta | Mueve las partículas de los efectos. | — |
-| `addEntityParticleFX` | `main/efe.c:611` | falta | Lanza partículas pegadas a un luchador. | — |
+| `tickParticleFX` | `main/efe.c:463` | parcial | Mueve las partículas de los efectos. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
+| `addEntityParticleFX` | `main/efe.c:611` | parcial | Lanza partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `initializeEntityParticleFX` | `main/efe.c:633` | falta | Prepara las partículas pegadas a luchadores. | — |
-| `tickEntityParticleFX` | `main/efe.c:638` | falta | Mueve las partículas pegadas a un luchador. | — |
+| `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `tickCloudFX` | `main/efe.c:733` | falta | Mueve las nubes de humo y polvo de los efectos. | — |
 | `EFECreateFlash` | `main/efe.c:808` | falta (citada en docs) | Crea un destello de luz de una técnica. | battle.md: los destellos se saltan |
 | `tickEFEFlash` | `main/efe.c:886` | falta | Anima un destello de luz. | — |

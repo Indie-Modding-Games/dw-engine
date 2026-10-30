@@ -32,7 +32,7 @@ La primera línea es la cabecera: `{"src":"dwe","meta":true,"hz":60}`. Cada lín
 | `map`, `mode` | El mapa y si se está en el campo (`field`) o en un combate (`battle`) |
 | `player`, `partner` | `{x, y, z, yaw}` del jugador y del compañero |
 | `npcs` | Los NPC del mapa: `{x, y, z, yaw, id}`, con `id` el id de script del NPC |
-| `battle` | Solo durante un combate: `phase` (`intro`, `fight`, `end`...), `frame` y `fighters` |
+| `battle` | Solo durante un combate: `phase` (`intro`, `fight`, `end`...), `frame`, `rand` (dónde van las tiradas: con `--original-rolls`, el estado del `rand()` del original) y `fighters` |
 
 Cada combatiente de `fighters` es `{x, z, yaw, hp, mp, max_hp, max_mp, off, def, spd, brain, pose}`. El compañero
 va primero y luego los enemigos, en su orden.
@@ -115,5 +115,7 @@ Sale con 1 si algo diverge.
 - Los números aleatorios no se comparan. El motor usa `--seed` y un combate repite su resultado con la misma
   semilla, pero no el del original. Para un combate, `--original-rolls <estado>` hace que el motor tire con el
   generador del original desde el estado que el original tenía al empezar la pelea (la traza del original lo guarda
-  en `rand`, de `0x80009010`): las primeras decisiones coinciden; después el original gasta tiradas en partículas
-  que el motor no hace y las secuencias se separan.
+  en `rand`, de `0x80009010`). Con esa opción el motor también gasta las tiradas de las chispas y partículas del
+  original y sus efectos tiran del mismo generador, así que las decisiones siguen en el mismo orden hasta que la
+  pelea se separa por otra causa (tiempos de vuelo, movimiento; `docs/modulos/game/battle.md`). `battle.rand` da el
+  estado del generador del motor tras cada fotograma.

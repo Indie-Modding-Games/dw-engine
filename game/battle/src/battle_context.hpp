@@ -19,6 +19,8 @@ struct BattleContext {
   const PartnerCondition* condition = nullptr;
   const BattleGround* ground = nullptr;
   const AttackFlights* flights = nullptr;
+  // With the original's rolls only: the draws of its hit sparks (Battle::useOriginalRolls).
+  ParticleRolls* particles = nullptr;
 
   [[nodiscard]] BattleView view() const {
     return {.rules = rules,

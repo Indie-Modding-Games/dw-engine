@@ -777,6 +777,7 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
   if (const game::battle::Battle* battle = battleScreen_.battle()) {
     TraceBattle traced;
     traced.frame = battle->state().frame;
+    traced.rolls = battle->rollState();
     if (context_.ui != nullptr) {
       const ui::UiValue phase = context_.ui->setting(BattlePhaseSetting);
       if (const auto* text = std::get_if<std::string>(&phase)) {

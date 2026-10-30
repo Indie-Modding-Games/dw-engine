@@ -2,6 +2,7 @@
 #include <dwe/core/yaml.hpp>
 #include <dwe/game/battle/effect_runner.hpp>
 #include <dwe/game/battle/flights.hpp>
+#include <dwe/ruleset/random.hpp>
 #include <dwe/test_support/user_assets.hpp>
 
 #include <doctest/doctest.h>
@@ -898,4 +899,44 @@ TEST_CASE("a scripted flight lands on the frame the move's effect touches the de
   CHECK_FALSE(farFlights.landingFrame("made_up_breath", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landingFrame("no_effect", 0, 1, std::nullopt).has_value());
   CHECK_FALSE(nearFlights.landingFrame("made_up_breath", 1, 1, std::nullopt).has_value());
+}
+
+TEST_CASE("with the battle's rolls an effect's random load takes one of the battle's draws") {
+  // The original's effect scripts draw from the game's one rand() (efe.c: load_random), so with
+  // the original's rolls the effects take their numbers from the battle's generator.
+  constexpr std::string_view RandomEffectYaml = R"(move: "made_up_dice"
+header:
+  sub_effect_count: 1
+)";
+  constexpr std::string_view RandomScriptYaml = R"(start_script:
+- label: "start"
+  at: "0x0100"
+  op: load_random
+- at: "0x0110"
+  op: return
+init_script:
+- label: "init"
+  at: "0x0120"
+  op: stop
+)";
+  const auto effect = dwe::core::parseYaml(RandomEffectYaml);
+  const auto script = dwe::core::parseYaml(RandomScriptYaml);
+  REQUIRE(effect.has_value());
+  REQUIRE(script.has_value());
+  auto read = dwe::assets::readEffectScript(*effect, *script);
+  REQUIRE_MESSAGE(read.has_value(), (read ? std::string{} : read.error().message));
+
+  RecordingSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::ruleset::Random rolls = dwe::ruleset::Random::original(0x5CF299CBU);
+  runner.useRolls(&rolls);
+  runner.start(runner.load(*read));
+  dwe::ruleset::Random expected = dwe::ruleset::Random::original(0x5CF299CBU);
+  static_cast<void>(expected.next());
+  CHECK(rolls.state() == expected.state());
+
+  EffectRunner own{sounds};
+  dwe::ruleset::Random untouched = dwe::ruleset::Random::original(0x5CF299CBU);
+  own.start(own.load(*read));
+  CHECK(untouched.state() == dwe::ruleset::Random::original(0x5CF299CBU).state());
 }

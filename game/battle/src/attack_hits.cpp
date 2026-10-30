@@ -14,6 +14,12 @@ namespace dwe::game::battle {
 namespace {
 
 constexpr std::int32_t Hundred = 100;
+// The original's sparks (ParticleRolls): a hit's lives the technique's invulnerable frames + 0x10
+// (BTL_startHitAnimation), a block's 0x11 (BTL_tickAttackHits); a technique's `special` 0..6 is
+// the hit spark's colour, any other shows none.
+constexpr std::int32_t HitSparkFrames = 0x10;
+constexpr std::int32_t BlockSparkFrames = 0x11;
+constexpr std::int32_t SparkColours = 7;
 
 // Whom an attack released by `id` reaches. The original's attack objects collide with the bodies on
 // the ground; the engine sends them to their targets: a melee swing to its target if it is still
@@ -159,6 +165,12 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
   retargetAfterHit(context, id, attack.attacker);
   const std::int32_t damage =
       context.strategies->damage->damage(context.view(), attack.attacker, id, attack.move);
+  // BTL_handleHitReaction: the spark of the hit, unless the fighter is flattened.
+  if (context.particles != nullptr && !fighter.status.flattened) {
+    context.particles->spawn(*context.random, ParticleRolls::Spark::Hit,
+                             move.iframes + HitSparkFrames,
+                             move.special >= 0 && move.special < SparkColours);
+  }
   context.state->counters.anyoneHit = true;
   context.state->counters.partnerHit = context.state->counters.partnerHit || id == PartnerId;
   if (id == PartnerId && fighter.stats.maxHp > 0 &&
@@ -186,6 +198,10 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
   const HitRules& rules = context.rules->hit;
+  // The block's spark (createParticleFX(0, 2, ...)), before the guard that is still up.
+  if (context.particles != nullptr) {
+    context.particles->spawn(*context.random, ParticleRolls::Spark::Block, BlockSparkFrames);
+  }
   if (fighter.blocking && fighter.invulnerableFrames > 0) {
     fighter.invulnerableFrames = rules.blockFrames;
     fighter.struck = false;

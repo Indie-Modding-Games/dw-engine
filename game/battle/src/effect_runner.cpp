@@ -110,6 +110,13 @@ std::int32_t randomInRange(std::minstd_rand& random, std::int32_t min, std::int3
 EffectRunner::EffectRunner(EffectSounds& sounds, std::uint32_t seed)
     : sounds_(&sounds), random_(seed), held_(HeldSoundCount) {}
 
+std::uint32_t EffectRunner::randomDraw() {
+  if (rolls_ != nullptr) {
+    return rolls_->next() % RandRange;
+  }
+  return random_() % RandRange;
+}
+
 std::size_t EffectRunner::load(assets::EffectScript script) {
   Slot slot;
   slot.data = script.data;
@@ -267,7 +274,7 @@ std::optional<std::size_t> EffectRunner::step(Slot& slot, std::size_t at) {
     register_ = read(slot, address(in.variable), in.width);
     return next;
   case EffectOpcode::LoadRandom:
-    register_ = static_cast<std::int32_t>(random_() % RandRange);
+    register_ = static_cast<std::int32_t>(randomDraw());
     return next;
   case EffectOpcode::LoadIndexed: {
     const std::int32_t index = read(slot, address(in.variable), in.indexWidth);

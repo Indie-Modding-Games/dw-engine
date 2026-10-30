@@ -46,8 +46,6 @@ constexpr std::int32_t CenteredAttribute = 5;
 constexpr std::int32_t RateMask = 3;
 constexpr std::int32_t SemiTransparentBit = 4;
 constexpr std::int32_t HiddenBit = 8;
-// rand() of the original's C library.
-constexpr std::uint32_t RandRange = 0x8000;
 // The scripts' -1 for "no keyframes" (BTL_initializeUVAnim).
 constexpr std::int32_t NoKeyframes = -1;
 // The frame of a free instance.
@@ -236,7 +234,7 @@ bool EffectRunner::transformOp(Slot& slot, std::string_view name,
     }
     if (const std::int32_t range = args[1]; range > 0) {
       const auto scatter = [&] {
-        return static_cast<std::int32_t>((random_() % RandRange) %
+        return static_cast<std::int32_t>(randomDraw() %
                                          static_cast<std::uint32_t>(range)) -
                (range >> 1);
       };
@@ -622,7 +620,7 @@ void EffectRunner::selectTarget(Slot& slot, bool random, std::int32_t argument) 
   if (std::ranges::none_of(fighters, [&](FighterId f) { return eligible(f, allowSelf); })) {
     return;
   }
-  for (std::uint32_t n = (random_() % RandRange) % Skips + 1; n > 0;) {
+  for (std::uint32_t n = randomDraw() % Skips + 1; n > 0;) {
     targetCursor_ = (targetCursor_ + 1) % fighters.size();
     if (eligible(fighters[targetCursor_], allowSelf)) {
       --n;

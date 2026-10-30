@@ -42,6 +42,9 @@ public:
   void end();
   // The fighters the effects start from and aim at; it must outlive this.
   void setBodies(const game::battle::EffectBodies& bodies) { runner_.setBodies(bodies); }
+  // The scripts roll with the battle's rolls when those are the original's
+  // (game::battle::Battle::originalRolls, EffectRunner::useRolls); `rolls` must outlive this.
+  void useRolls(ruleset::Random* rolls) { runner_.useRolls(rolls); }
   // What the effects drew on the last frame, and the move whose effect/<move>/ a slot is.
   [[nodiscard]] const std::vector<game::battle::EffectDraw>& draws() const {
     return runner_.draws();

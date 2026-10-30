@@ -59,6 +59,9 @@ struct TraceFighter {
 struct TraceBattle {
   std::string phase;
   std::int64_t frame = 0;
+  // Where the battle's rolls are (Battle::rollState): with the original's rolls, the original's
+  // rand() state, so the oracle can count the draws of each frame on both sides.
+  std::uint64_t rolls = 0;
   // The partner first, then the enemies in their order.
   std::vector<TraceFighter> fighters;
 };
