@@ -341,6 +341,10 @@ public:
   // the nearest free spot. After a script, it waits for the partner to make room on foot first
   // (makeRoomForPlayer). An NPC put on the map or let go asks for the same check by itself.
   void releaseHandoff(std::string_view why);
+  // Puts the player, the partner or an NPC at a place and facing at once, drawn there with no move
+  // in between, and lets go as above (the console's place command, which starts a run where a
+  // trace of the original starts).
+  void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
   // The release rule now, the engine's (the original has none): a character in a wall cell, or
   // deep in another's collision square (overlaps), goes to the nearest spot where it fits on the
   // grid, touches nobody, reaches from where it stood and warps nothing. The partner moves first,

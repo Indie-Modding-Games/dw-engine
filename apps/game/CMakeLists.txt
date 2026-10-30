@@ -44,6 +44,7 @@ dwe_add_app(game
         src/player_chart.cpp
         src/partner_portrait.cpp
         src/partner_tab.cpp
+        src/place_command.cpp
         src/play_session.cpp
         src/play_session_report.cpp
         src/bug_report.cpp
@@ -58,6 +59,7 @@ dwe_add_app(game
         src/gym_screen.cpp
         src/shop_screen.cpp
         src/sleep_screen.cpp
+        src/state_trace.cpp
         src/story_field_link.cpp
         src/story_text_rows.cpp
         src/story_textbox.cpp
@@ -99,12 +101,13 @@ target_compile_definitions(game PRIVATE DWE_TEAM_PACKS="${PROJECT_SOURCE_DIR}/co
 target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/content/packs/game")
 
 # The game is an executable, so its tests build the sources they check into a test program of their own: the player's
-# settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save debug command and
-# the title screen's and the game's save flows.
+# settings (settings.yaml), how the UI skin is chosen at start and changed, the minimap mode, the save and place debug
+# commands, the state trace's lines and the title screen's and the game's save flows.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/bug_report.cpp src/game_saves.cpp src/minimap_setting.cpp
-                                  src/save_command.cpp src/save_flow.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
+                                  src/place_command.cpp src/save_command.cpp src/save_flow.cpp src/state_trace.cpp
+                                  src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
                                                  dwe::inventory dwe::screens dwe_test_main)

@@ -111,6 +111,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.autotest = value;
     return true;
   }
+  if (argument == "--trace") {
+    options.trace = value;
+    return true;
+  }
   if (argument == "--shots") {
     options.shots = value;
     return true;

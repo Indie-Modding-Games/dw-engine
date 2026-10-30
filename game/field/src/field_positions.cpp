@@ -95,6 +95,11 @@ void Field::releaseHandoff(std::string_view why) {
   requestSeparation(why);
 }
 
+void Field::placeAt(scene::Entity entity, glm::vec3 position, float yaw) {
+  scene::place(world_->registry().get<Transform>(entity), position, yaw);
+  releaseHandoff("place");
+}
+
 void Field::requestSeparation(std::string_view why) {
   if (!separationDue_) {
     separationDue_ = std::string{why};
@@ -123,10 +128,9 @@ std::optional<glm::vec3> Field::freeSpotNear(const Body& self, glm::vec3 from, g
     // The spots straight away from what it stands in first, then alternately to either side.
     for (int index = 0; index < count; ++index) {
       const int side = (index + 1) / 2;
-      const float angle =
-          base + (static_cast<float>(index % 2 == 0 ? side : -side) * Turn / static_cast<float>(count));
-      const glm::vec3 spot =
-          from + (glm::vec3{std::cos(angle), 0.0F, std::sin(angle)} * distance);
+      const float angle = base + (static_cast<float>(index % 2 == 0 ? side : -side) * Turn /
+                                  static_cast<float>(count));
+      const glm::vec3 spot = from + (glm::vec3{std::cos(angle), 0.0F, std::sin(angle)} * distance);
       // Out of a wall it may cross the wall's cells; otherwise it does not go through a wall.
       if (freeFor(self, spot, others) && (walled || isLineClear(collision_, from, spot, 0.0F))) {
         return spot;
@@ -161,16 +165,15 @@ std::int32_t Field::separateActors(std::string_view why) {
     const std::string reason = walled ? std::string{"in a wall"} : nameOf(all[*under]);
     const glm::vec2 away =
         under ? ground(transform.position) - squareOf(all[*under]).centre : glm::vec2{0.0F};
-    const std::optional<glm::vec3> spot =
-        freeSpotNear(body, transform.position, away, walled, all);
+    const std::optional<glm::vec3> spot = freeSpotNear(body, transform.position, away, walled, all);
     if (!spot) {
       core::logWarning("[positions] release ({}): no free spot near {} ({}); it stays", why,
                        nameOf(body), reason);
       continue;
     }
     core::logDebug("[positions] release ({}): {} from ({:.0f}, {:.0f}) to ({:.0f}, {:.0f}): {}",
-                   why, nameOf(body), transform.position.x, transform.position.z, spot->x,
-                   spot->z, reason);
+                   why, nameOf(body), transform.position.x, transform.position.z, spot->x, spot->z,
+                   reason);
     scene::place(transform, {spot->x, transform.position.y, spot->z}, transform.yaw);
     ++moved;
     if (body.who == 0) {
@@ -196,9 +199,8 @@ void Field::watchOverlaps(float seconds) {
   const auto note = [&](scene::Entity a, scene::Entity b, std::string names) {
     const auto old = std::ranges::find_if(
         overlapWatch_, [&](const OverlapWatch& watch) { return watch.a == a && watch.b == b; });
-    OverlapWatch watch = old != overlapWatch_.end()
-                             ? *old
-                             : OverlapWatch{.a = a, .b = b, .names = std::move(names)};
+    OverlapWatch watch =
+        old != overlapWatch_.end() ? *old : OverlapWatch{.a = a, .b = b, .names = std::move(names)};
     ++watch.ticks;
     watch.seconds += seconds;
     if (!watch.reported && watch.seconds > OverlapGraceSeconds) {

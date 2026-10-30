@@ -15,8 +15,10 @@
 
 namespace dwe::app {
 
-// The name of the console's and the scripts' battle command: battle("") or battle("2,3").
+// The name of the console's and the scripts' battle command: battle("") or battle("2,3"); with
+// this prefix, battle("story:2"), a battle of the story (no fleeing, enemies spend no MP).
 inline constexpr std::string_view BattleCommand = "battle";
+inline constexpr std::string_view StoryBattlePrefix = "story:";
 // The debug command that ends the running fight with the enemies beaten: battle_win("").
 inline constexpr std::string_view BattleWinCommand = "battle_win";
 

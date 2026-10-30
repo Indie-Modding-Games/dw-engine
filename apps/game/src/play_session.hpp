@@ -19,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
@@ -49,6 +50,7 @@
 #include "session_start.hpp"
 #include "shop_screen.hpp"
 #include "sleep_screen.hpp"
+#include "state_trace.hpp"
 #include "story_field_link.hpp"
 #include "story_scene_glue.hpp"
 #include "story_textbox.hpp"
@@ -87,6 +89,8 @@ struct SessionCommands {
   SaveCommand save;
   bool saveMachine = false;
   std::optional<std::string> gym;
+  // place("<who> <x> <z> <rotation>") commands, in order (place_command.hpp).
+  std::vector<std::string> placements;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
@@ -140,6 +144,10 @@ public:
   // What the keyboard typed, for the story's naming box while it is open (takesText).
   [[nodiscard]] bool takesText() const;
   void type(std::string_view text, bool enter);
+
+  // Where the characters and the battle's fighters stand after this tick, and the buttons held in
+  // it, for --trace (state_trace.hpp).
+  [[nodiscard]] TraceFrame traceFrame(std::uint64_t tick, const input::InputState& input) const;
 
   // Saves the game to a slot (AppFlow, for a new game's slot).
   [[nodiscard]] core::Result<void> saveTo(game::save::SlotId slot) const {
