@@ -7,8 +7,8 @@
 --     middle of its 320 x 240 screen;
 --   gym.stat.<n>.label (a text key), .value, .gain (left to count), .changed (1 when the session
 --     changed it), .max (the bar's full value);
---   gym.notice.count, gym.notice.<n>.text and .name (text keys), gym.notice.<n>.order (1: an
---     order's line) and gym.notice.move (1: the shorter box of a move learned).
+--   gym.notice.count, gym.notice.<n>.text (a text key), .row (pixels down the box), .order (1: an
+--     order's words) and gym.notice.move (1: the shorter box of a move learned).
 -- Confirm and cancel reach the game as field buttons.
 
 local stats = 6
@@ -79,7 +79,8 @@ local function fill_notes(document, shown)
     local line = document:get("notice-" .. index)
     if index < count then
       local base = "gym.notice." .. index .. "."
-      line:set_text(text(ui.setting(base .. "text"), { name = text(ui.setting(base .. "name")) }))
+      line:set_text(text(ui.setting(base .. "text")))
+      line:set_property("top", string.format("%ddp", math.floor(number(base .. "row", 0)) * dp))
       line:set_class("order", number(base .. "order", 0) == 1)
     else
       line:set_text("")

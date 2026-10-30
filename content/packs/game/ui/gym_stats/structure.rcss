@@ -143,7 +143,7 @@ body .gain {
 }
 
 /* trn_reward.c: the brains course's box under the stats (createMenuBox(2, -88, 18, 176, 48), 35 tall for a move),
-   its text from (-78, 24): 10 pixels in, 6 down, 12-pixel rows. */
+   its text 10 pixels in; the script puts each line at its row (6, 18 or 34 pixels down). */
 body #notes {
 	position: absolute;
 	left: 50%;
@@ -160,12 +160,8 @@ body #notes.move {
 body .note {
 	position: absolute;
 	left: 30dp;
+	top: 18dp;
 	margin: 0;
 	font-size: 33dp;
 	line-height: 36dp;
 }
-
-#notice-0 { top: 18dp; }
-#notice-1 { top: 54dp; }
-#notice-2 { top: 90dp; }
-#notice-3 { top: 126dp; }

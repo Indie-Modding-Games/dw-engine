@@ -17,6 +17,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -37,8 +38,23 @@ constexpr std::string_view GymCourseUnknown = "game: gym: no course {}";
 constexpr std::string_view GymChoiceUnknown = "game: gym: no course for choice {}";
 constexpr std::string_view GymTrainFailed = "game: gym: training failed: {}";
 constexpr std::string_view GymOffMap = "game: gym: the courses run on {} only";
-constexpr std::string_view NewOrderText = "gym.new_order";
-constexpr std::string_view MoveLearnedText = "gym.move_learned";
+// trn_reward.c: the brains course's words (reward_messages, reward_mastered): each order
+// threshold's lines, in the order of the rules' order_thresholds, then "New orders!" and "was
+// mastered!".
+constexpr std::array<std::array<std::string_view, 2>, 5> OrderTexts{{
+    {"trn.reward_messages.0000", ""},
+    {"trn.reward_messages.0001", ""},
+    {"trn.reward_messages.0002", "trn.reward_messages.0003"},
+    {"trn.reward_messages.0004", ""},
+    {"trn.reward_messages.0005", ""},
+}};
+constexpr std::string_view NewOrdersText = "trn.reward_messages.0006";
+constexpr std::string_view MasteredText = "trn.reward_mastered.0000";
+// TRN_renderNewOrdersBox draws the text area's rows v 120, 132 and 148 from y 24 in a box at y 18:
+// its rows are 6, 18 and 34 pixels down the box.
+constexpr std::int32_t NoteFirstRow = 6;
+constexpr std::int32_t NoteSecondRow = 18;
+constexpr std::int32_t NoteThirdRow = 34;
 constexpr std::int32_t Hundred = 100;
 // trn_hud.c: TRN_createPostTrainingStatsBox: the box, and the 10-pixel square round the partner's
 // node 1 it grows from (getEntityScreenPos(ENTITY_TABLE[1], 1)).
@@ -325,65 +341,32 @@ private:
     return speed > 0.0F ? speed : fallback;
   }
 
-  // trn_reward.c: TRN_awardBrainsTrainingGains: new orders, or else maybe a move.
+  // trn_reward.c: TRN_awardBrainsTrainingGains: new orders, or else maybe a move. Each order
+  // threshold crossed draws its words on the box's first row, over the last one's, and 300 adds a
+  // second row; "New orders!" follows in the plain color.
   void teach(const game::gym::BrainLearning& learning, const Award& award) {
     const auto brains = static_cast<std::size_t>(game::partner::Stat::Brain);
     const game::gym::BrainMilestones milestones =
         game::gym::brainMilestones(learning, award.before.at(brains), award.gains.at(brains));
-    for (const std::int32_t threshold : milestones.orders) {
-      for (const std::string& label : newOrderLabels(threshold)) {
-        notices_->push_back({.text = std::string{NewOrderText}, .name = label});
+    const auto rows = game::gym::orderRows(learning, milestones, [](std::size_t rank) {
+      return rank < OrderTexts.size() && !OrderTexts.at(rank).back().empty();
+    });
+    if (rows && rows->first < OrderTexts.size()) {
+      notices_->push_back({.text = std::string{OrderTexts.at(rows->first).front()},
+                           .row = NoteFirstRow,
+                           .order = true});
+      if (rows->second) {
+        notices_->push_back({.text = std::string{OrderTexts.at(*rows->second).back()},
+                             .row = NoteSecondRow,
+                             .order = true});
       }
+      notices_->push_back(
+          {.text = std::string{NewOrdersText}, .row = rows->second ? NoteThirdRow : NoteSecondRow});
+      return;
     }
     if (milestones.mayLearnMove) {
       learnMove(learning);
     }
-  }
-
-  // The orders the battle's menu gains at this brains (battle.yaml: commands.menus).
-  [[nodiscard]] std::vector<std::string> newOrderLabels(std::int32_t threshold) const {
-    const auto& menus = desc_->battle->rules().menus;
-    const auto tier = std::ranges::find(menus, threshold, &game::battle::MenuTier::brain);
-    if (tier == menus.end()) {
-      return {};
-    }
-    std::vector<std::string> labels;
-    for (const game::battle::MenuEntry entry : tier->entries) {
-      const bool before =
-          tier != menus.begin() && std::ranges::contains(std::prev(tier)->entries, entry);
-      if (before) {
-        continue;
-      }
-      if (const auto command = commandOf(entry)) {
-        labels.push_back(screens::commandLabelKey(*command));
-      }
-    }
-    return labels;
-  }
-
-  static std::optional<game::battle::Command> commandOf(game::battle::MenuEntry entry) {
-    using game::battle::Command;
-    using game::battle::MenuEntry;
-    switch (entry) {
-    case MenuEntry::Flee:
-      return Command::Flee;
-    case MenuEntry::YourCall:
-      return Command::YourCall;
-    case MenuEntry::Attack:
-      return Command::Attack;
-    case MenuEntry::Moderate:
-      return Command::Moderate;
-    case MenuEntry::Distance:
-      return Command::Distance;
-    case MenuEntry::Defend:
-      return Command::Defend;
-    case MenuEntry::Change:
-      return Command::Change;
-    case MenuEntry::Finisher:
-    case MenuEntry::Techniques:
-      return std::nullopt;
-    }
-    return std::nullopt;
   }
 
   // trn_reward.c: TRN_tryLearnMove.
@@ -419,8 +402,11 @@ private:
       return;
     }
     const screens::NameKeys names{desc_->species, nullptr, &catalog};
+    // The move's name on the first row and "was mastered!" on the second
+    // (TRN_renderMoveLearnedBox).
     for (const std::string& learned : desc_->battle->learnMove(*id)) {
-      notices_->push_back({.text = std::string{MoveLearnedText}, .name = names.move(learned)});
+      notices_->push_back({.text = names.move(learned), .row = NoteFirstRow, .move = true});
+      notices_->push_back({.text = std::string{MasteredText}, .row = NoteSecondRow, .move = true});
     }
   }
 
@@ -721,11 +707,15 @@ void GymScreen::publishCountup(screens::ScreenSettings& settings,
   // The brains course's box under the stats (trn_reward.c: TRN_renderNewOrdersBox,
   // TRN_renderMoveLearnedBox).
   settings.push_back({.name = "gym.notice.count", .value = static_cast<double>(notices_.size())});
+  settings.push_back(
+      {.name = "gym.notice.move", .value = !notices_.empty() && notices_.front().move ? 1.0 : 0.0});
   for (std::size_t index = 0; index < notices_.size(); ++index) {
     settings.push_back({.name = screens::listEntryName("gym.notice", index, "text"),
                         .value = notices_.at(index).text});
-    settings.push_back({.name = screens::listEntryName("gym.notice", index, "name"),
-                        .value = notices_.at(index).name});
+    settings.push_back({.name = screens::listEntryName("gym.notice", index, "row"),
+                        .value = static_cast<double>(notices_.at(index).row)});
+    settings.push_back({.name = screens::listEntryName("gym.notice", index, "order"),
+                        .value = notices_.at(index).order ? 1.0 : 0.0});
   }
   // trn_hud.c: TRN_renderPostTrainingStatsBox: each stat's value and bar (blue when the session
   // changed it), and the gain left to count.

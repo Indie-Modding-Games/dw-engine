@@ -41,10 +41,13 @@ struct GymScreenDesc {
   ui::Ui* ui = nullptr;
 };
 
-// A note under the stats box: a text key, and the key of the name it shows.
+// A line of the brains course's box under the stats: its text key, its row in pixels down the box,
+// and whether it is an order's words (yellow) or a line of the shorter box of a move learned.
 struct GymNotice {
   std::string text;
-  std::string name;
+  std::int32_t row = 0;
+  bool order = false;
+  bool move = false;
 };
 
 // The town gym on the field (src/trn): a course runs while the field goes on without the player's

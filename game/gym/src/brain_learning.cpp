@@ -1,6 +1,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/gym/brain_learning.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -35,6 +36,21 @@ BrainMilestones brainMilestones(const BrainLearning& rules, std::int32_t before,
                  "{} new orders, move {}",
                  before, gain, milestones.orders.size(), milestones.mayLearnMove);
   return milestones;
+}
+
+std::optional<OrderRows> orderRows(const BrainLearning& rules, const BrainMilestones& milestones,
+                                   const std::function<bool(std::size_t)>& hasSecondLine) {
+  std::optional<OrderRows> rows;
+  for (const std::int32_t threshold : milestones.orders) {
+    const auto found = std::ranges::find(rules.orderThresholds, threshold);
+    if (found == rules.orderThresholds.end()) {
+      continue;
+    }
+    const auto rank = static_cast<std::size_t>(found - rules.orderThresholds.begin());
+    const std::optional<std::size_t> second = rows ? rows->second : std::nullopt;
+    rows = OrderRows{.first = rank, .second = hasSecondLine(rank) ? rank : second};
+  }
+  return rows;
 }
 
 std::optional<std::int32_t> trainingMove(const BrainLearning& rules,

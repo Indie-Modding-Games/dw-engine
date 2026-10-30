@@ -3,6 +3,7 @@
 #include <dwe/game/gym/gym_rules.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -20,6 +21,18 @@ struct BrainMilestones {
 
 [[nodiscard]] BrainMilestones brainMilestones(const BrainLearning& rules, std::int32_t before,
                                               std::int32_t gain);
+
+// The orders' words in the brains box (TRN_awardBrainsTrainingGains): each crossed order draws its
+// first line on the box's first row, over the one before, and an order with a second line draws it
+// on the second row. Which order (by its rank in orderThresholds) each row ends up showing.
+struct OrderRows {
+  std::size_t first = 0;
+  std::optional<std::size_t> second;
+};
+
+[[nodiscard]] std::optional<OrderRows>
+orderRows(const BrainLearning& rules, const BrainMilestones& milestones,
+          const std::function<bool(std::size_t)>& hasSecondLine);
 
 // trn_reward.c: TRN_tryLearnMove: for each of the species' specials, the first move of its list
 // that the partner may learn (`learnable`: in its species' list and not known yet) and that rank's
