@@ -9,6 +9,9 @@ dónde se separan por primera vez.
   original mientras corre. Escribe el mismo formato, a 59,94 frames por segundo.
 - `scripts/oracle_compare.py` compara las dos trazas.
 
+Para leer el mismo estado mientras el juego corre, sin escribir la traza entera, está el
+[control remoto](control-remoto.md).
+
 ## La traza del motor
 
 Con `--trace <fichero>`, el juego escribe una línea JSON por tick de lógica (60 por segundo). La escribe después

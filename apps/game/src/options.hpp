@@ -88,6 +88,10 @@ struct Options {
   // A line per logic tick of where the characters and the fighters stand (--trace <file>,
   // state_trace.hpp), to compare a run with the original's.
   std::optional<std::filesystem::path> trace;
+  // The debug control channel's socket (--control <path>, remote_control.hpp), and whether the
+  // logic waits paused for it before its first tick (--control-paused).
+  std::optional<std::filesystem::path> control;
+  bool controlPaused = false;
 
   // Development views instead of the field.
   // The render foundation's test scene (--test-scene), with a texture made and destroyed every
@@ -120,7 +124,8 @@ inline constexpr std::string_view Usage =
     "<language>] "
     "[--text-font modern|original] [--ui-skin <id>] [--new-game | --load <slot>] "
     "[--new-game-chain original|seeded] [--clock-speed <x>] "
-    "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] | "
+    "[--seed <n>] [--autotest <route.yaml> [--shots <folder>] [--skip-steps <kind>[,<kind>...]]] [--trace <file>] "
+    "[--control <socket> [--control-paused]] | "
     "--list-saves | --check-content <folder> | --test-scene [--texture-churn] | --map <id>[,<id>...] "
     "[--focus <x>,<z>] | --ui-demo [--ui-demo-fishing] [--ui-demo-player] [--ui-demo-chart <layout.yaml>] [--ui-demo-chart-detail <layout.yaml>] [--ui-demo-chart-all-raised] [--ui-demo-bag-size <10|20|30>] "
     "[--virtual-gamepad <file>] | --model-viewer [character id...]";

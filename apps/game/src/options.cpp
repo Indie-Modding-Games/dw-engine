@@ -115,6 +115,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.trace = value;
     return true;
   }
+  if (argument == "--control") {
+    options.control = value;
+    return !value.empty();
+  }
   if (argument == "--shots") {
     options.shots = value;
     return true;
@@ -234,6 +238,8 @@ bool readFlag(Options& options, std::string_view argument) {
     options.fullscreen = true;
   } else if (argument == "--no-vsync") {
     options.vsync = false;
+  } else if (argument == "--control-paused") {
+    options.controlPaused = true;
   } else if (argument == "--new-game") {
     options.newGame = true;
   } else if (argument == "--list-saves") {

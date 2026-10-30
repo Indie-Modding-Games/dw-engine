@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -53,6 +54,7 @@
 #include "bug_reporter.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
+#include "control_socket.hpp"
 #include "dev_assets_banner.hpp"
 #include "field_scene.hpp"
 #include "frame_stats.hpp"
@@ -67,6 +69,8 @@
 #include "partner_portrait.hpp"
 #include "play_session.hpp"
 #include "player_chart.hpp"
+#include "remote_control.hpp"
+#include "screenshot.hpp"
 #include "state_trace.hpp"
 #include "text_font_setting.hpp"
 #include "title_screen.hpp"
@@ -418,6 +422,31 @@ int runGame(const Options& requested) {
     }
     trace = std::move(*opened);
   }
+  // The debug control channel (remote_control.hpp); nothing of it exists without --control.
+  std::unique_ptr<ControlSocket> controlSocket;
+  if (options.control) {
+    auto opened = ControlSocket::open(*options.control);
+    if (!opened) {
+      core::logError("{}", opened.error().message);
+      return EXIT_FAILURE;
+    }
+    controlSocket = std::move(*opened);
+  }
+  // The saves folder the control channel's last load made, removed when the game ends.
+  struct StagedSaves {
+    std::optional<std::filesystem::path> folder;
+    StagedSaves() = default;
+    StagedSaves(const StagedSaves&) = delete;
+    StagedSaves& operator=(const StagedSaves&) = delete;
+    StagedSaves(StagedSaves&&) = delete;
+    StagedSaves& operator=(StagedSaves&&) = delete;
+    ~StagedSaves() {
+      if (folder) {
+        std::error_code ignored;
+        std::filesystem::remove_all(*folder, ignored);
+      }
+    }
+  } controlSaves;
   auto window =
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
   if (!window) {
@@ -460,9 +489,10 @@ int runGame(const Options& requested) {
     (*debugUi)->openTuning();
   }
   // An autotest neither reads nor writes the player's settings: its language is --lang or the
-  // system's.
+  // system's. Nor does a game driven by the control channel, which a tool starts next to the
+  // player's own.
   const std::optional<std::filesystem::path> settingsFile =
-      autotest ? std::nullopt : userSettingsFile();
+      autotest || options.control ? std::nullopt : userSettingsFile();
   UserSettings userSettings = settingsFile ? loadUserSettings(*settingsFile) : UserSettings{};
   const std::vector<std::string> languages = localization::availableLanguages(files);
   auto language =
@@ -763,15 +793,155 @@ int runGame(const Options& requested) {
   };
   std::array<render::Drawer*, 1> movieDrawers{movies ? &movies->drawer() : nullptr};
 
+  // The control channel's view of the game and what it may do to it.
+  std::unique_ptr<RemoteControl> control;
+  std::vector<platform::KeyChanged> controlKeys;
+  if (controlSocket) {
+    const auto status = [&] {
+      ControlStatus now;
+      if (movies && movies->playing()) {
+        now.mode = "movie";
+      } else if (interview) {
+        now.mode = "interview";
+      } else if (flow.playing() == nullptr) {
+        now.mode = "title";
+      }
+      if (const PlaySession* play = flow.playing()) {
+        const TraceFrame frame = play->traceFrame(ticksRun, input);
+        now.map = frame.map;
+        if (now.mode.empty()) {
+          now.mode = frame.battle ? "battle" : "field";
+        }
+      }
+      return now;
+    };
+    // A game from a save or on a map, built as the title's start builds one. The host's functions
+    // outlive this block, so they take status and playFrom by value.
+    const auto playFrom = [&](const PlayStart& start) -> core::Result<void> {
+      sessionCommands.drop(autotest.get());
+      title.hide();
+      if (auto started = flow.play(start); !started) {
+        return core::fail(std::format("load: {}", started.error().message));
+      }
+      step.reset();
+      previous = platform->nowSeconds();
+      return {};
+    };
+    control = std::make_unique<RemoteControl>(
+        ControlHost{
+            .status = status,
+            .state = [&]() -> std::optional<std::string> {
+              const PlaySession* play = flow.playing();
+              if (play == nullptr) {
+                return std::nullopt;
+              }
+              return traceLine(play->traceFrame(ticksRun, input));
+            },
+            .runScript = [&](std::string_view code) -> core::Result<void> {
+              return (*scripts)->runString(code, "control");
+            },
+            .load = [&, playFrom](const ControlRequest& request) -> core::Result<void> {
+              if (request.path) {
+                auto staged = stageRouteSave(*request.path);
+                if (!staged) {
+                  return std::unexpected{staged.error()};
+                }
+                if (controlSaves.folder) {
+                  std::error_code ignored;
+                  std::filesystem::remove_all(*controlSaves.folder, ignored);
+                }
+                controlSaves.folder = *staged;
+                options.saves = *staged;
+                options.startMap.reset();
+                options.newGame = false;
+                const game::save::SlotId slot{.kind = game::save::SlotKind::Manual, .index = 1};
+                options.load = slot;
+                core::logInfo("control: loading {}", request.path->string());
+                return playFrom({.load = slot,
+                                 .backup = false,
+                                 .saveTo = std::nullopt,
+                                 .choice = std::nullopt});
+              }
+              // A map, or a map and the exit to enter by: "twna01" or "twna01,2".
+              const std::size_t comma = request.text.find(',');
+              int exit = 0;
+              if (comma != std::string::npos) {
+                const std::string_view digits = std::string_view{request.text}.substr(comma + 1);
+                const auto parsed =
+                    std::from_chars(digits.data(), digits.data() + digits.size(), exit);
+                if (parsed.ec != std::errc{} || parsed.ptr != digits.data() + digits.size()) {
+                  return core::fail(
+                      std::format("load: '{}': expected <map>[,<exit>]", request.text));
+                }
+              }
+              options.startMap = request.text.substr(0, comma);
+              options.startExit = exit;
+              options.load.reset();
+              core::logInfo("control: a new game on {}", request.text);
+              return playFrom({.load = std::nullopt,
+                               .backup = false,
+                               .saveTo = std::nullopt,
+                               .choice = std::nullopt});
+            },
+            .screenshot =
+                [&](const std::filesystem::path& path, ControlShotDone done) {
+                  std::error_code ignored;
+                  if (path.has_parent_path()) {
+                    std::filesystem::create_directories(path.parent_path(), ignored);
+                  }
+                  (*renderer)->captureNextFrame(
+                      [path, done = std::move(done)](core::Result<rhi::CapturedImage> captured) {
+                        if (!captured) {
+                          done(std::unexpected{captured.error()});
+                          return;
+                        }
+                        if (auto written = writeScreenshot(std::move(*captured), path); !written) {
+                          done(std::unexpected{written.error()});
+                          return;
+                        }
+                        done(path.string());
+                      });
+                },
+            .trace = [&](const std::optional<std::filesystem::path>& path) -> core::Result<void> {
+              if (!path) {
+                trace.reset();
+                return {};
+              }
+              auto opened = StateTrace::open(*path);
+              if (!opened) {
+                return std::unexpected{opened.error()};
+              }
+              trace = std::move(*opened);
+              return {};
+            },
+            .quit = [&] { running = false; },
+        },
+        options.controlPaused);
+  }
+  // A route run with the control channel ends without closing the game: the channel goes on.
+  bool routeOver = false;
+
   while (running) {
     events.clear();
-    if (autotest) {
+    if (autotest && !routeOver) {
       const PlaySession* play = flow.playing();
       partnerStatus = play != nullptr ? play->partnerStatus() : screens::ScreenSettings{};
       host.scene = play != nullptr ? &play->scene() : nullptr;
       autotest->frame(host, ticksRun, platform->nowSeconds(), events);
       if (autotest->finished()) {
-        break;
+        if (!control) {
+          break;
+        }
+        routeOver = true;
+        core::logInfo("control: the route is over; the game stays up for the control channel");
+      }
+    }
+    if (control) {
+      for (const std::string& line : controlSocket->receive()) {
+        control->receive(line);
+      }
+      for (const std::string& reply : control->takeReplies()) {
+        controlSocket->send(reply);
       }
     }
     // During an autotest the route is the only player: the desktop's own mouse and keyboard
@@ -866,11 +1036,27 @@ int runGame(const Options& requested) {
                     steady ? "" : " (expected: load, resize or capture)");
     }
 
-    const int ticks = step.advance(frameSeconds);
+    int ticks = step.advance(frameSeconds);
+    // The control channel's pause: only the ticks it advances run, and the frame lasts as long as
+    // they do, so what moves with the frame's time moves with them.
+    double gameSeconds = frameSeconds;
+    if (control) {
+      ticks = control->ticksThisFrame(ticks);
+      if (control->paused()) {
+        gameSeconds = ticks * TickSeconds;
+      }
+    }
     sound.update(ticks * TickSeconds);
     for (int tick = 0; tick < ticks; ++tick) {
-      if (autotest) {
+      if (autotest && !routeOver) {
         autotest->feedTick(ticksRun, input);
+      }
+      if (control) {
+        controlKeys.clear();
+        control->beforeTick(ticksRun, controlKeys);
+        for (const platform::KeyChanged& change : controlKeys) {
+          input.handle(change);
+        }
       }
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();
@@ -942,6 +1128,12 @@ int runGame(const Options& requested) {
       input.endTick();
       ++ticksRun;
     }
+    if (control) {
+      control->afterFrame(ticksRun);
+      for (const std::string& reply : control->takeReplies()) {
+        controlSocket->send(reply);
+      }
+    }
 
     for (const ui::UiCommand& command : (*ui)->takeCommands()) {
       if (flow.playing() != nullptr && flow.playing()->handle(command)) {
@@ -970,7 +1162,7 @@ int runGame(const Options& requested) {
       title.showBoot();
     }
     if (interview) {
-      interview->update(frameSeconds, (*renderer)->targetExtent());
+      interview->update(gameSeconds, (*renderer)->targetExtent());
       screenFade->setDarkness(interview->fadeLevel());
       if (interview->finished()) {
         PlayStart start = *std::exchange(startAfterInterview, std::nullopt);
@@ -982,7 +1174,7 @@ int runGame(const Options& requested) {
       }
     }
     if (PlaySession* play = flow.playing()) {
-      play->update(sessionCommands, autotest.get(), frameStats, frameSeconds,
+      play->update(sessionCommands, autotest.get(), frameStats, gameSeconds,
                    static_cast<float>(step.alpha()));
       screenFade->setDarkness(play->fadeLevel());
       mapChangeView.show(play->scene(), play->fadeLevel());
@@ -1006,7 +1198,7 @@ int runGame(const Options& requested) {
       textFontChanger.change(*std::exchange(consoleTextFont, std::nullopt));
     }
     if (movies) {
-      movies->update(frameSeconds);
+      movies->update(gameSeconds);
       if (moviePlayed && !movies->playing()) {
         moviePlayed = false;
         afterMovie();
@@ -1074,7 +1266,7 @@ int runGame(const Options& requested) {
         .overlay = std::ref(drawOverlay),
         .textureScenes = portraitScenes,
     });
-    if (!drawn) {
+    if (!drawn || (control && control->idle())) {
       platform->waitForEvents(IdleWait);
     }
   }
