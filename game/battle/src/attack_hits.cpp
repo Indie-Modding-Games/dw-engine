@@ -276,31 +276,53 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
   }
 }
 
-// The frames from the release to the hit: until the move's effect touches the defender, where the
-// battle knows its flight (flights.hpp), else the ruleset's projectile speed.
-std::int32_t flightFrames(const BattleContext& context, FighterId id, FighterId defender) {
+// An attack leaving `id` for `defender`: it lands when the move's effect touches the defender,
+// where the battle knows its flight, else after the ruleset's projectile speed.
+AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId defender,
+                        bool travels) {
   const Fighter& fighter = context.fighter(id);
   const ActiveAttack& attack = *fighter.attack;
-  if (context.flights != nullptr) {
-    const std::string& move = context.moves->at(attack.move).id;
-    const std::optional<std::int32_t> landing = context.flights->landingFrame(
-        move, id, defender, moveClipOf(context, fighter, attack.move));
-    if (landing) {
-      core::logDebug(
-          "[port:battle] BTL_tickEFEEngine (battle_effect.c): {} of fighter {} touches "
-          "fighter {} {} away on attack frame {} (released on {})",
-          move, id, defender,
-          integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position)),
-          *landing, attack.frame);
-      return std::max(*landing - attack.frame, 0);
-    }
+  AttackInFlight flight{.attacker = id,
+                        .defender = defender,
+                        .move = attack.move,
+                        .origin = fighter.position,
+                        .framesLeft = 0,
+                        .age = std::nullopt,
+                        .clip = std::nullopt};
+  if (!travels) {
+    return flight;
+  }
+  const std::optional<std::int32_t> clip = moveClipOf(context, fighter, attack.move);
+  if (const std::optional<std::int32_t> landing =
+          effectLandingFrame(context, id, defender, attack.move, clip)) {
+    core::logDebug(
+        "[port:battle] BTL_tickEFEEngine (battle_effect.c): {} of fighter {} touches "
+        "fighter {} {} away on attack frame {} (released on {})",
+        context.moves->at(attack.move).id, id, defender,
+        integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position)),
+        *landing, attack.frame);
+    flight.framesLeft = std::max(*landing - attack.frame, 0);
+    flight.age = attack.frame;
+    flight.clip = clip;
+    return flight;
   }
   const std::int64_t distance =
       integerSqrt(distanceSquared(fighter.position, context.fighter(defender).position));
-  return static_cast<std::int32_t>(distance / std::max(context.rules->timing.projectileSpeed, 1));
+  flight.framesLeft =
+      static_cast<std::int32_t>(distance / std::max(context.rules->timing.projectileSpeed, 1));
+  return flight;
 }
 
 } // namespace
+
+std::optional<std::int32_t> effectLandingFrame(const BattleContext& context, FighterId attacker,
+                                               FighterId defender, MoveRef move,
+                                               std::optional<std::int32_t> clip) {
+  if (context.flights == nullptr) {
+    return std::nullopt;
+  }
+  return context.flights->landingFrame(context.moves->at(move).id, attacker, defender, clip);
+}
 
 void releaseAttack(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
@@ -329,15 +351,7 @@ void releaseAttack(BattleContext& context, FighterId id) {
   }
   const bool travels = move.range == MoveRange::Ranged || move.range == MoveRange::Area;
   for (const FighterId defender : reached) {
-    std::int32_t frames = 0;
-    if (travels) {
-      frames = flightFrames(context, id, defender);
-    }
-    context.state->inFlight.push_back({.attacker = id,
-                                       .defender = defender,
-                                       .move = attack.move,
-                                       .origin = fighter.position,
-                                       .framesLeft = frames});
+    context.state->inFlight.push_back(flightOf(context, id, defender, travels));
   }
 }
 
@@ -345,6 +359,16 @@ void tickAttacksInFlight(BattleContext& context) {
   std::vector<AttackInFlight>& inFlight = context.state->inFlight;
   std::vector<AttackInFlight> stillFlying;
   for (AttackInFlight& attack : inFlight) {
+    if (attack.age) {
+      // battle_effect.c: BTL_tickEFEEngine checks the effect's hit boxes against where the fighters
+      // stand on each frame: a defender walking into the effect is touched sooner, one walking
+      // away later. Where the effect would never touch it now, the last answer holds.
+      if (const std::optional<std::int32_t> landing = effectLandingFrame(
+              context, attack.attacker, attack.defender, attack.move, attack.clip)) {
+        attack.framesLeft = std::max(*landing - *attack.age, 0);
+      }
+      ++*attack.age;
+    }
     if (attack.framesLeft > 0) {
       --attack.framesLeft;
       stillFlying.push_back(attack);
@@ -364,6 +388,13 @@ void tickAttacksInFlight(BattleContext& context) {
       continue;
     }
     defender.incoming.push_back(attack);
+    context.emit({.kind = EventKind::AttackLanded,
+                  .fighter = attack.defender,
+                  .other = attack.attacker,
+                  .move = attack.move,
+                  .amount = 0,
+                  .status = StatusEffect::None,
+                  .command = Command::None});
   }
   inFlight = std::move(stillFlying);
 }

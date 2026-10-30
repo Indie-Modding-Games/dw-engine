@@ -646,9 +646,9 @@ TEST_CASE("the original's sparks draw on the original's frames: a hit, then 43 f
   // (createParticleFX). After it the spark and the particles it leaves on the partner draw on
   // these frames (tickParticleFX, addEntityParticleFX, tickEntityParticleFX), nothing else draws,
   // and the partner's next pick on frame 130 rolls 47 of 65.
-  const std::map<int, int> recorded{{87, 15},  {96, 3},  {98, 6},   {99, 2},   {101, 4},
-                                    {102, 6},  {104, 10}, {105, 12}, {106, 12}, {107, 4},
-                                    {109, 4},  {110, 6},  {113, 2},  {114, 6},  {117, 2}};
+  const std::map<int, int> recorded{{87, 15}, {96, 3},   {98, 6},   {99, 2},   {101, 4},
+                                    {102, 6}, {104, 10}, {105, 12}, {106, 12}, {107, 4},
+                                    {109, 4}, {110, 6},  {113, 2},  {114, 6},  {117, 2}};
   dwe::ruleset::Random random = dwe::ruleset::Random::original(0x3E8E8486U);
   dwe::ruleset::Random before = random;
   CHECK(random.below(100) == 16);
@@ -717,7 +717,9 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .defender = 1,
                                          .move = Bench::move("punch"),
                                          .origin = bench.fighter(PartnerId).position,
-                                         .framesLeft = 0});
+                                         .framesLeft = 0,
+                                         .age = std::nullopt,
+                                         .clip = std::nullopt});
     ParticleRolls particles;
     BattleContext context = bench.context();
     context.particles = sparks ? &particles : nullptr;
@@ -743,4 +745,17 @@ TEST_CASE("without the original's rolls a battle draws nothing for sparks") {
   Battle original = startBattle(setup, 99);
   original.useOriginalRolls(0x5CF299CBU);
   CHECK(original.originalRolls() != nullptr);
+}
+
+TEST_CASE("a fighter's step test lets its held root step go again, as entityCheckCollision does") {
+  Bench bench{duel(evenStats(500, 200), evenStats(500, 200))};
+  BattleContext context = bench.context();
+  // map.c: entityCheckCollision clears animFlag bit 1 before it looks: a fighter whose last step
+  // was held walks on the frame it finds its way free again.
+  bench.fighter(PartnerId).rootHeld = true;
+  walkToward(context, PartnerId, bench.fighter(1).position);
+  CHECK_FALSE(bench.fighter(PartnerId).rootHeld);
+  bench.fighter(1).rootHeld = true;
+  backAwayFrom(context, 1, PartnerId);
+  CHECK_FALSE(bench.fighter(1).rootHeld);
 }

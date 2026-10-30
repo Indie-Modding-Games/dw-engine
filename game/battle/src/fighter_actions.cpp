@@ -481,8 +481,11 @@ void tickFighterStates(BattleContext& context) {
     addFinisherProgress(context, id, context.rules->finisher.perFrame);
     tickFighter(context, id);
   }
-  tickAttacksInFlight(context);
+  // BTL_tickAttackHits takes the hits the effects registered on the frame before: the effects
+  // touch their targets later in the frame (BTL_battleTickFrame: tickObjects, addAttackObject), so
+  // a touch on frame t lands on frame t + 1.
   tickAttackHits(context);
+  tickAttacksInFlight(context);
   tickStatusEffects(context);
 }
 
@@ -571,12 +574,19 @@ void beginAttack(BattleContext& context, FighterId id) {
   const std::optional<std::int32_t> clip = moveClipOf(context, fighter, ref);
   const std::int32_t length =
       clip ? clipLength(fighter, *clip).value_or(timing.attackFrames) : timing.attackFrames;
-  fighter.attack = ActiveAttack{.move = ref,
-                                .target = fighter.target,
-                                .frame = 0,
-                                .length = length,
-                                .releaseFrame = std::min(timing.hitFrame, std::max(length - 1, 0)),
-                                .released = false};
+  // A technique whose effect the battle can follow leaves with the attack: the effect starts with
+  // it (BTL_startQueuedMove, BTL_startEFE) and its touch, not the clip's hit frame, decides when
+  // it lands.
+  const bool travels = move.range == MoveRange::Ranged || move.range == MoveRange::Area;
+  const bool followed = travels && fighter.target && *fighter.target != id &&
+                        effectLandingFrame(context, id, *fighter.target, ref, clip).has_value();
+  fighter.attack = ActiveAttack{
+      .move = ref,
+      .target = fighter.target,
+      .frame = 0,
+      .length = length,
+      .releaseFrame = followed ? 0 : std::min(timing.hitFrame, std::max(length - 1, 0)),
+      .released = false};
   fighter.pose = Pose::Attacking;
   context.emit({.kind = EventKind::AttackStarted,
                 .fighter = id,
@@ -585,6 +595,10 @@ void beginAttack(BattleContext& context, FighterId id) {
                 .amount = 0,
                 .status = StatusEffect::None,
                 .command = Command::None});
+  if (followed) {
+    fighter.attack->released = true;
+    releaseAttack(context, id);
+  }
 }
 
 void endAnimation(BattleContext& context, FighterId id) {

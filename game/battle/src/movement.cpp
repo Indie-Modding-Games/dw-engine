@@ -276,8 +276,16 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
   return Blocker::None;
 }
 
-bool freeAt(const BattleContext& context, FighterId id, std::int32_t angle) {
-  return blockerAhead(context, id, facingOf(angle)) == Blocker::None;
+// map.c: entityCheckCollision on the fighter itself: what stops its next step facing `facing`.
+// The test lets the fighter's root step go again (it clears animFlag bit 1): a fighter that turns
+// away from what blocked it walks on the same frame.
+Blocker checkStep(BattleContext& context, FighterId id, Facing facing) {
+  context.fighter(id).rootHeld = false;
+  return blockerAhead(context, id, facing);
+}
+
+bool freeAt(BattleContext& context, FighterId id, std::int32_t angle) {
+  return checkStep(context, id, facingOf(angle)) == Blocker::None;
 }
 
 // map.c: COLLISION_GRACE_ROTATION: where a blocked fighter tries to turn, by the eighth of a turn
@@ -298,7 +306,7 @@ constexpr std::int32_t GraceNudge = 32;
 // eighth of a turn, or nudges its facing when every way is blocked.
 void collisionGrace(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
-  if (blockerAhead(context, id, fighter.facing) == Blocker::None) {
+  if (checkStep(context, id, fighter.facing) == Blocker::None) {
     return;
   }
   const std::int32_t start = angleOf(fighter.facing);
@@ -370,7 +378,7 @@ void turnAway(BattleContext& context, FighterId id, std::int32_t original, std::
   Fighter& fighter = context.fighter(id);
   if (!fighter.collidedWhileBacking) {
     fighter.facing = facingOf(away);
-    const Blocker hit = blockerAhead(context, id, fighter.facing);
+    const Blocker hit = checkStep(context, id, fighter.facing);
     if (hit != Blocker::None) {
       fighter.collidedWhileBacking = true;
       findUnblockedTurn(context, id, hit, original);
@@ -392,7 +400,7 @@ void turnAway(BattleContext& context, FighterId id, std::int32_t original, std::
     }
   }
   fighter.facing = facingOf(original);
-  const Blocker hit = blockerAhead(context, id, fighter.facing);
+  const Blocker hit = checkStep(context, id, fighter.facing);
   if (hit != Blocker::None) {
     findUnblockedTurn(context, id, hit, original);
   }
@@ -455,7 +463,7 @@ void walkToward(BattleContext& context, FighterId id, Point point) {
   fighter.collidedWhileBacking = false;
   const Facing original = fighter.facing;
   lookAt(fighter, point);
-  if (blockerAhead(context, id, fighter.facing) != Blocker::None) {
+  if (checkStep(context, id, fighter.facing) != Blocker::None) {
     fighter.facing = original;
     collisionGrace(context, id);
   }

@@ -258,3 +258,101 @@ TEST_CASE("a shot flies until the move's effect touches its target") {
     CHECK(flights.asked.front().clip == std::optional{FirstMove});
   }
 }
+
+namespace {
+
+// The frames of the first attack any fighter starts: as it starts, as it leaves, as its effect
+// touches the defender and as the hit or the block lands (each the battle's frame after the step).
+struct AttackTimes {
+  FighterId attacker = 0;
+  std::int64_t started = 0;
+  std::optional<std::int64_t> released;
+  std::optional<std::int64_t> touched;
+  std::optional<std::int64_t> landed;
+};
+
+std::optional<AttackTimes> firstAttackTimes(Battle& battle) {
+  std::optional<AttackTimes> times;
+  while (!battle.finished() && battle.state().frame < 3000) {
+    const BattleEvents events = battle.step();
+    const std::int64_t frame = battle.state().frame;
+    for (const BattleEvent& event : events) {
+      if (!times) {
+        if (event.kind == EventKind::AttackStarted) {
+          times = AttackTimes{.attacker = event.fighter,
+                              .started = frame,
+                              .released = std::nullopt,
+                              .touched = std::nullopt,
+                              .landed = std::nullopt};
+        }
+        continue;
+      }
+      const bool fromIt = event.other == times->attacker;
+      if (event.kind == EventKind::AttackReleased && event.fighter == times->attacker &&
+          !times->released) {
+        times->released = frame;
+      } else if (event.kind == EventKind::AttackLanded && fromIt && !times->touched) {
+        times->touched = frame;
+      } else if ((event.kind == EventKind::AttackHit || event.kind == EventKind::AttackBlocked) &&
+                 fromIt && times->touched) {
+        times->landed = frame;
+        return times;
+      }
+    }
+  }
+  return times;
+}
+
+// A made-up flight whose defender moves: the first answer, then another from the next question on.
+class ShiftingFlights final : public AttackFlights {
+public:
+  ShiftingFlights(std::int32_t first, std::int32_t later) : first_(first), later_(later) {}
+
+  [[nodiscard]] std::optional<std::int32_t>
+  landingFrame(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
+               std::optional<std::int32_t> /*clip*/) const override {
+    return asked_++ == 0 ? first_ : later_;
+  }
+
+private:
+  std::int32_t first_;
+  std::int32_t later_;
+  mutable std::int32_t asked_ = 0;
+};
+
+BattleSetup farShots() {
+  BattleSetup setup = clippedDuel({"shot"}, {"shot"});
+  setup.enemies.front().position = {.x = 0, .z = 650};
+  return setup;
+}
+
+} // namespace
+
+TEST_CASE("an effect's attack leaves as it starts and lands the frame after the effect touches") {
+  for (const std::int32_t landing : {10, 17}) {
+    FixedFlights flights{landing};
+    Battle battle = clippedBattle(farShots(), 3);
+    battle.setFlights(&flights);
+    const std::optional<AttackTimes> times = firstAttackTimes(battle);
+    REQUIRE(times.has_value());
+    // BTL_startQueuedMove starts the effect with the attack, whatever the ruleset's hit frame.
+    CHECK(times->released == std::optional{times->started});
+    // The effect's hit check touches on attack frame `landing` (addAttackObject) and
+    // BTL_tickAttackHits takes the hit on the next frame.
+    REQUIRE(times->touched.has_value());
+    CHECK(*times->touched - times->started == landing);
+    REQUIRE(times->landed.has_value());
+    CHECK(*times->landed - *times->touched == 1);
+  }
+}
+
+TEST_CASE("an effect's attack follows its defender: asked again each frame, it touches when it "
+          "reaches where the defender is now") {
+  ShiftingFlights flights{25, 14};
+  Battle battle = clippedBattle(farShots(), 3);
+  battle.setFlights(&flights);
+  const std::optional<AttackTimes> times = firstAttackTimes(battle);
+  REQUIRE(times.has_value());
+  REQUIRE(times->touched.has_value());
+  CHECK(*times->touched - times->started == 14);
+}

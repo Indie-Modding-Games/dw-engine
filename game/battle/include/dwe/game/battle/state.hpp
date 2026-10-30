@@ -112,6 +112,10 @@ struct AttackInFlight {
   MoveRef move = 0;
   Point origin;
   std::int32_t framesLeft = 0;
+  // An attack whose flight the move's effect script decides (AttackFlights): the attack frame it is
+  // on (0 the frame it started) and the attacker's clip, to ask again each frame where both stand.
+  std::optional<std::int32_t> age;
+  std::optional<std::int32_t> clip;
 };
 
 // The attack a fighter is performing.

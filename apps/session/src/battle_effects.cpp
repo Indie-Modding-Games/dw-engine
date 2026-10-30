@@ -65,15 +65,19 @@ void BattleEffects::frame(const game::battle::BattleEvents& events,
         startAttack(event.fighter, event.other, moves.at(*event.move).id);
       }
       break;
-    case EventKind::AttackHit:
-    case EventKind::AttackBlocked:
-      // battle_main.c: BTL_tickAttackHits: the attack's effect registered the hit, and the
-      // fighter it hit loses its own effect.
+    case EventKind::AttackLanded:
+      // battle_effect.c: BTL_applyBoxAttackHit and the other hit checks: the attack's effect
+      // touched the fighter and learns it on this frame (its check returns 1).
       if (event.other) {
         if (const auto found = running_.find(*event.other); found != running_.end()) {
           runner_.noteHit(found->second.slot);
         }
       }
+      break;
+    case EventKind::AttackHit:
+    case EventKind::AttackBlocked:
+      // battle_main.c: BTL_tickAttackHits, a frame after the touch: the fighter it hit loses its
+      // own effect.
       removeEffect(event.fighter);
       break;
     case EventKind::BattleEnded:

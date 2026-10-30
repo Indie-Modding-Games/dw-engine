@@ -73,6 +73,12 @@ void tickAttackHits(BattleContext& context);
 void drainPendingDamage(BattleContext& context);
 // The attack of a fighter leaves it (its animation's release frame).
 void releaseAttack(BattleContext& context, FighterId id);
+// The attack frame (0 the frame it starts) on which the effect of `move` that `attacker` plays with
+// its clip `clip` touches `defender`, both where they stand now (AttackFlights); nothing when the
+// battle knows no flight for it.
+std::optional<std::int32_t> effectLandingFrame(const BattleContext& context, FighterId attacker,
+                                               FighterId defender, MoveRef move,
+                                               std::optional<std::int32_t> clip);
 
 // status_effects.cpp (battle_main.c: BTL_applyMoveStatus, BTL_tickStatusEffects,
 // BTL_healStatusEffect).

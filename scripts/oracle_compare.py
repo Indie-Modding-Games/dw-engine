@@ -11,7 +11,8 @@ clock from an alignment point found in each one:
   move    the first frame in which the player moved
   battle  the first frame of a battle
   fight   the first frame in which the battle's fighters act (after its opening)
-Then for every dwe frame the nearest reference frame in time is compared, field by field, and the
+Then for every dwe frame the nearest reference frame in time is compared (in a fight, when the
+reference records its battle frame, the reference's same battle frame), field by field, and the
 first frame where a field differs beyond its tolerance is reported, with the largest difference and
 how much of the run differs. Events are compared too: when the player and the partner start and stop
 moving, their speeds, and in a battle when each fighter's HP and MP change.
@@ -203,6 +204,28 @@ def stat_events(frames, t0):
     return out
 
 
+def battle_frames(ref_frames):
+    """The reference's fight by battle frame (BATTLE_FRAME_COUNT): the last sample of each frame,
+    taken once the frame's logic has run."""
+    out = {}
+    for rec in ref_frames:
+        frame = (rec.get("battle") or {}).get("frame")
+        if rec.get("mode") == "battle" and rec.get("game_state") == 1 and frame is not None and frame >= 1:
+            out[frame] = rec
+    return out
+
+
+def played_frame(rec):
+    """The battle frame a dwe record shows the result of, in the fight: dwe counts the frames it has
+    played (Battle::step adds one at its end), the original the one it is playing, so dwe's frame n
+    is the original's n - 1. In a fight the traces pair by frame, not by time: the original's frame
+    takes 3 vblanks or more, so time drifts from frame to frame."""
+    battle = rec.get("battle") or {}
+    if battle.get("phase") != "fight" or battle.get("frame") is None:
+        return None
+    return battle["frame"] - 1
+
+
 def compare(ref_frames, dwe_frames, align, tol, max_seconds):
     t_ref = align_point(ref_frames, align)
     t_dwe = align_point(dwe_frames, align)
@@ -215,6 +238,7 @@ def compare(ref_frames, dwe_frames, align, tol, max_seconds):
             fields[name] = Field(name, tol[kind])
         return fields[name]
 
+    ref_by_frame = battle_frames(ref_frames) if align == "fight" else {}
     j = 0
     for rec in dwe_frames:
         t = rec["_t"] - t_dwe
@@ -224,7 +248,10 @@ def compare(ref_frames, dwe_frames, align, tol, max_seconds):
         while j + 1 < len(ref_frames) and abs(ref_frames[j + 1]["_t"] - target) <= abs(ref_frames[j]["_t"] - target):
             j += 1
         ref = ref_frames[j]
-        if abs(ref["_t"] - target) > 0.1:
+        paired = ref_by_frame.get(played_frame(rec))
+        if paired is not None:
+            ref = paired
+        elif abs(ref["_t"] - target) > 0.1:
             continue
         if ref.get("mode") != rec.get("mode"):
             field("mode", "player.pos").add(t, 1e9, ref.get("mode"), rec.get("mode"))

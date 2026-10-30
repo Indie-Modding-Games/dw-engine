@@ -19,6 +19,7 @@ enum class EventKind : std::uint8_t {
   MoveQueued,      // `fighter` plans `move`
   AttackStarted,   // `fighter` starts `move` against `other` (none: at the air or itself)
   AttackReleased,  // the attack of `fighter` leaves it (the projectile, the swing that lands)
+  AttackLanded,    // `move` of `other` touched `fighter`; it hits or is blocked on the next frame
   AttackHit,       // `move` of `other` hit `fighter` for `amount`
   AttackBlocked,   // `fighter` blocked `move` of `other`, taking `amount`
   AttackMissed,    // the attack of `other` reached nothing it could hurt

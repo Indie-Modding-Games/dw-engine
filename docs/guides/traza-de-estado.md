@@ -80,7 +80,11 @@ scripts/oracle_compare.py original.jsonl motor.jsonl --align input --json inform
 - `battle`: la entrada en combate;
 - `fight`: el principio de la lucha, tras la presentación.
 
-Desde ahí se emparejan los registros por tiempo. Para cada campo dice:
+Desde ahí se emparejan los registros por tiempo. Con `fight`, si la traza del original guarda el frame
+del combate (`battle.frame`, el `BATTLE_FRAME_COUNT` del original), se emparejan por frame: el motor cuenta
+los frames ya jugados y el original el que juega, así que el `n` del motor es el `n - 1` del original (se
+toma la última muestra de cada frame del original). Un frame del original dura 3 vblanks o más, y por
+tiempo los dos se van separando. Para cada campo dice:
 
 - la primera vez que la diferencia pasa de su tolerancia, con los dos valores;
 - la diferencia máxima;
