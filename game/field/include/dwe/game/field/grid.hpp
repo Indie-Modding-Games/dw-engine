@@ -26,6 +26,14 @@ struct GridMove {
 GridMove moveOnGrid(const assets::MapCollision& collision, glm::vec3 position,
                     glm::vec2 displacement, float radius);
 
+// Whether a step collides (map.c: checkMapCollision, as entityCheckCollision tests it): the
+// character is put the whole step ahead and, along each axis the step moves on, the line of cells
+// `radius` ahead of it there must be free across `radius / 2` to each side. Components shorter than
+// half a unit do not move the original's integer position, so they test nothing. The step is not
+// walked: a step longer than a cell could pass a wall, which the original's steps never are.
+bool stepCollides(const assets::MapCollision& collision, glm::vec3 position, glm::vec2 step,
+                  float radius);
+
 // Whether a character of this radius may stand here: no blocked cell under its probes on any side.
 bool fitsOnGrid(const assets::MapCollision& collision, glm::vec3 position, float radius);
 

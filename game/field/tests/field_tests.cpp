@@ -63,22 +63,25 @@ TEST_CASE("the stick moves the player relative to the map's camera") {
   // The camera looks toward world -Z, like File City's: up on the stick goes there.
   CHECK(glm::distance(field.cameraForward(), glm::vec3{0.0F, 0.0F, -1.0F}) < 1e-5F);
 
+  // 20 frames of the original in a second: the first starts the run and does not move
+  // (anim.c: startAnimation), the other 19 step 50 each.
   field.setInput({.stick = {0.0F, 1.0F}, .run = true});
   run(field, 1.0F);
-  CHECK(field.player().position.z == doctest::Approx(-1000.0F).epsilon(1e-3));
+  CHECK(field.player().position.z == doctest::Approx(-950.0F).epsilon(1e-3));
   CHECK(field.player().position.x == doctest::Approx(0.0F));
   CHECK(field.player().motion == Motion::Run);
   CHECK(std::abs(field.player().yaw) == doctest::Approx(Pi));
 
+  // Walking is another clip: its first frame stands too, then 19 steps of 20.
   field.setInput({.stick = {1.0F, 0.0F}, .run = false});
   run(field, 1.0F);
-  CHECK(field.player().position.x == doctest::Approx(400.0F).epsilon(1e-3));
+  CHECK(field.player().position.x == doctest::Approx(380.0F).epsilon(1e-3));
   CHECK(field.player().motion == Motion::Walk);
   CHECK(field.player().yaw == doctest::Approx(Pi / 2.0F));
 
   field.setInput({.stick = {0.1F, 0.1F}}); // inside the dead zone
   run(field, 0.5F);
-  CHECK(field.player().position.x == doctest::Approx(400.0F).epsilon(1e-3));
+  CHECK(field.player().position.x == doctest::Approx(380.0F).epsilon(1e-3));
   CHECK(field.player().motion == Motion::Idle);
 
   // The scene components follow.
@@ -103,13 +106,103 @@ TEST_CASE("the same input gives the same move at any tick rate") {
         {.stick = {0.8F, 0.6F}, .run = true}); // toward the wall at x 1000, sliding along it
     run(field, 1.2F, tick);
     const glm::vec3 end = field.player().position;
-    CHECK(end.x == doctest::Approx(900.0F).epsilon(1e-4));
+    // Steps of 40 along x: the one to 920 would put the probe past the wall at 1000, so the
+    // player stops at 880 (map.c: entityCheckCollision tests the whole step) and slides.
+    CHECK(end.x == doctest::Approx(880.0F).epsilon(1e-4));
     if (first) {
       reference = end;
       first = false;
     }
     CHECK(glm::distance(end, reference) < 0.5F);
   }
+}
+
+TEST_CASE("the player steps on the original's frames, turning on the press and stopping on release") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  field.tick(Tick);
+  // tamer.c: tamerTickWalkingState turns the player on the frame the pad is read; a press from
+  // standing starts a frame on its own tick. The run starts there and does not move yet.
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  field.tick(Tick);
+  CHECK(field.player().yaw == doctest::Approx(Pi / 2.0F));
+  CHECK(field.player().position.x == doctest::Approx(0.0F));
+  CHECK(field.player().motion == Motion::Run);
+  // A frame is three ticks: 50 on each frame's tick, nothing on the two between.
+  std::vector<float> xs;
+  for (int i = 0; i < 6; ++i) {
+    field.tick(Tick);
+    xs.push_back(field.player().position.x);
+  }
+  CHECK(xs == std::vector<float>{0.0F, 0.0F, 50.0F, 50.0F, 50.0F, 100.0F});
+  // Let go: the next frame stands at once, without another step.
+  field.setInput({});
+  run(field, 3.0F * Tick);
+  CHECK(field.player().position.x == doctest::Approx(100.0F));
+  CHECK(field.player().motion == Motion::Idle);
+  run(field, 0.5F);
+  CHECK(field.player().position.x == doctest::Approx(100.0F));
+}
+
+TEST_CASE("the player and the partner are drawn gliding over a frame's ticks") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  field.setInput({.stick = {1.0F, 0.0F}, .run = true});
+  run(field, 4.0F * Tick); // the press's frame and the first step's
+  const dwe::scene::Entity player = field.playerEntity();
+  REQUIRE(field.player().position.x == doctest::Approx(50.0F));
+  // The step's tick draws from where the last frame left it to a third of the way.
+  CHECK(field.drawnPose(player, 0.0F).position.x == doctest::Approx(0.0F));
+  CHECK(field.drawnPose(player, 1.0F).position.x == doctest::Approx(50.0F / 3.0F));
+  field.tick(Tick);
+  CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(25.0F));
+  field.tick(Tick);
+  CHECK(field.drawnPose(player, 1.0F).position.x == doctest::Approx(50.0F));
+  // Settling (a tick the field does not run) draws it where it stands.
+  field.settle();
+  CHECK(field.drawnPose(player, 0.0F).position.x == doctest::Approx(50.0F));
+  // Anything else that moves it is drawn as the scene draws a tick.
+  field.tick(Tick);
+  field.placeAt(player, {300.0F, 0.0F, 0.0F}, 0.0F);
+  CHECK(field.drawnPose(player, 0.5F).position.x == doctest::Approx(300.0F));
+}
+
+TEST_CASE("against a wall straight ahead the player turns 0x50 aside and slides") {
+  auto map = roomMap("room");
+  // A wall across the way up (world -Z), from z -500 to -600.
+  fill(map, {.column = 30, .row = 44}, {.column = 70, .row = 44}, Blocked);
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(map, at(0.0F, 0.0F, Pi)); // the partner behind, out of the way
+  field.setInput({.stick = {0.0F, 1.0F}, .run = true});
+  run(field, 0.6F);
+  // map.c: entityCheckCollision tests the whole step: the step to -450 would put the probe in the
+  // wall, so the player stops at -400, short of touching it.
+  CHECK(field.player().position.z == doctest::Approx(-400.0F));
+  // map.c: collisionGrace: up (0x800) is blocked, 0xC00 (right) is free: the player turns 0x50
+  // toward it and moves the step's part along the wall, 50 * sin(0x50) a frame.
+  CHECK(dwe::assets::yawToOriginal(field.player().yaw) == 0x850);
+  const float x = field.player().position.x;
+  CHECK(x > 0.0F);
+  run(field, 0.3F);
+  CHECK(field.player().position.x - x == doctest::Approx(6.0F * 50.0F * 0.1224F).epsilon(0.02));
+  CHECK(field.player().position.z == doctest::Approx(-400.0F));
+}
+
+TEST_CASE("a placed partner stays where it was put, close to the player") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  // A script let go: the partner would make room.
+  field.holdForScript(true);
+  field.tick(Tick);
+  field.holdForScript(false);
+  field.placeAt(field.partnerEntity(), {0.0F, 0.0F, 192.0F}, Pi);
+  run(field, 1.0F);
+  CHECK(field.partner().position.z == doctest::Approx(192.0F));
+  CHECK(field.partner().position.x == doctest::Approx(0.0F));
 }
 
 TEST_CASE("stepping on a warp trigger asks for a map change once") {
@@ -525,8 +618,9 @@ TEST_CASE("a care scene holds the player and walks the partner to a range, towar
   CHECK(field.partner().yaw ==
         doctest::Approx(dwe::assets::yawOfDirection(toPlayer)).epsilon(1e-3));
 
+  // Let go, the player's run starts on the next frame and moves on the one after.
   field.holdForCare(false);
-  field.tick(Tick);
+  run(field, 0.1F);
   CHECK(field.player().position.x > 0.0F);
 }
 
@@ -967,13 +1061,15 @@ TEST_CASE("a warp fades out while the player walks on, and fades in on the new m
   CHECK(field.fadeLevel() == doctest::Approx(darkness(27)));
   CHECK(field.player().position == glm::vec3{0.0F});
   CHECK_FALSE(field.gameTimeRan());
-  // Frame 20: the player moves again, under the fade's last shade, which goes on the next frame.
+  // Frame 20: the player starts walking again, under the fade's last shade, which goes on the next
+  // frame; the walk's first frame does not move (anim.c: startAnimation), the next one does.
   run(field, 0.05F);
   CHECK(field.fadeLevel() == doctest::Approx(darkness(20)));
-  CHECK(field.player().position != glm::vec3{0.0F});
+  CHECK(field.player().motion == Motion::Walk);
   CHECK(field.gameTimeRan());
   run(field, 0.05F);
   CHECK(field.fadeLevel() == doctest::Approx(0.0F));
+  CHECK(field.player().position != glm::vec3{0.0F});
 }
 
 TEST_CASE("the game clock counts minutes while the player plays and wraps at midnight") {

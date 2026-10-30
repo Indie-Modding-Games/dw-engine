@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <limits>
 #include <numbers>
 #include <optional>
@@ -90,6 +91,70 @@ glm::ivec3 partnerSpawnOffset(std::int32_t rotation, std::int32_t distance) {
     return {0, 0, -distance};
   }
   return {-distance, 0, 0};
+}
+
+// map.c: COLLISION_GRACE_ROTATION: the cardinal rotations collisionGrace tries, by the eighth of a
+// turn the character faces (rotation / 512), in the original's units.
+constexpr std::array<std::array<std::int32_t, 4>, 8> GraceRotations{{{0x000, 0x400, 0xC00, 0x800},
+                                                                     {0x400, 0x000, 0x800, 0xC00},
+                                                                     {0x400, 0x800, 0x000, 0xC00},
+                                                                     {0x800, 0x400, 0xC00, 0x000},
+                                                                     {0x800, 0xC00, 0x400, 0x000},
+                                                                     {0xC00, 0x800, 0x000, 0x400},
+                                                                     {0xC00, 0x000, 0x800, 0x400},
+                                                                     {0x000, 0xC00, 0x400, 0x800}}};
+// map.c: collisionGrace turns at most 0x50 a frame toward the free side, and 32 with none free.
+constexpr std::int32_t GraceTurn = 0x50;
+constexpr std::int32_t StuckTurn = 32;
+
+std::int32_t wrapRotation(std::int32_t rotation) {
+  return ((rotation % core::OriginalAnglePerTurn) + core::OriginalAnglePerTurn) %
+         core::OriginalAnglePerTurn;
+}
+
+// A step's components too short to move the original's integer position are none (map.c:
+// entityCheckCollision zeroes the cross component of a cardinal step the same way).
+glm::vec2 still(glm::vec2 step) {
+  constexpr float Still = 0.5F;
+  return {std::abs(step.x) < Still ? 0.0F : step.x, std::abs(step.y) < Still ? 0.0F : step.y};
+}
+
+// map.c: collisionGrace: the four cardinal rotations in COLLISION_GRACE_ROTATION's order for the
+// eighth of a turn the character faces; the first one whose step ahead is free (`blocked` says
+// whether a step collides) turns it toward that one, 0x50 a frame at most, and the blocked ones
+// before it cancel the step's part toward them (animFlag 8 << rotation / 1024, anim.c:
+// applyRootMomentum). With none free it turns 32 and stands. The step is `distance` along the new
+// facing, less the cancelled parts.
+struct Grace {
+  float yaw = 0.0F;
+  glm::vec2 step{};
+};
+
+Grace collisionGrace(float yaw, float distance, const std::function<bool(glm::vec2)>& blocked) {
+  const std::int32_t from = assets::yawToOriginal(yaw);
+  std::vector<glm::vec2> sides;
+  for (const std::int32_t rotation : GraceRotations.at(static_cast<std::size_t>(from / 512))) {
+    const glm::vec2 cardinal =
+        glm::round(ground(assets::forwardOfYaw(assets::yawFromOriginal(rotation))));
+    if (blocked(cardinal * distance)) {
+      sides.push_back(cardinal);
+      continue;
+    }
+    const std::int32_t clockwise = wrapRotation(from - rotation);
+    const std::int32_t counter = wrapRotation(rotation - from);
+    const std::int32_t turned = clockwise < counter ? from - std::min(clockwise, GraceTurn)
+                                                    : from + std::min(counter, GraceTurn);
+    const float turnedYaw = assets::yawFromOriginal(wrapRotation(turned));
+    glm::vec2 step = still(ground(assets::forwardOfYaw(turnedYaw)) * distance);
+    for (const glm::vec2 side : sides) {
+      const float toward = glm::dot(step, side);
+      if (toward > 0.0F) {
+        step -= side * toward;
+      }
+    }
+    return {.yaw = turnedYaw, .step = step};
+  }
+  return {.yaw = assets::yawFromOriginal(wrapRotation(from + StuckTurn)), .step = {}};
 }
 
 // partner.c: partnerTickWalking: a change of the partner's walk waits until the clip under way ends
@@ -204,6 +269,9 @@ void Field::enterMapAt(const assets::MapDocument& map, assets::SpawnPoint spawn)
   partnerMotion_ = Motion::Idle;
   partnerStuckSeconds_ = 0.0F;
   partnerMakesRoom_ = false;
+  freeTick_ = false;
+  playerGlide_.on = false;
+  partnerGlide_.on = false;
   placePartnerNearPlayer();
   partnerTeleports_ = 0;
   if (scriptHeld_) {
@@ -232,7 +300,8 @@ void Field::tick(float seconds) {
   // Every character starts its tick here, the NPCs too: while a map change fades out or waits for
   // its map their own tick does not run, and a transform left as an older tick left it would draw
   // a move that is not happening.
-  settle();
+  beginTicks(seconds);
+  const bool wasFree = std::exchange(freeTick_, false);
   partnerShownMotion_ = registry.get<AnimationIntent>(partner_).motion;
   registry.get<AnimationIntent>(partner_) = {};
   // The overlap watch looks at the ticks the player moves freely only; a hold starts it over.
@@ -283,9 +352,17 @@ void Field::tick(float seconds) {
   }
   // clock.c: tickGameClock runs while the player plays.
   gameTimeRan_ = true;
+  freeTick_ = true;
+  if (!wasFree) {
+    // Held, the characters played what the hold gave them: the next press starts a clip again.
+    playerMotion_ = Motion::Idle;
+    partnerIntent_ = {};
+    frameClock_ = rules_.transition.frameSeconds;
+  }
+  const std::int32_t frames = takeFrames(seconds);
   // tamer.c: tamerTickWalkingState keeps the way back before it moves the player.
   playerTrail_.tick(assets::collisionCellAt(registry.get<Transform>(player_).position), collision_);
-  movePlayer(seconds);
+  movePlayer(frames);
   // tamer.c: checkMapInteraction: an NPC's section starts the script, so a confirm cell's section
   // that frame finds a script running and is dropped.
   if (touchNpcs()) {
@@ -294,7 +371,7 @@ void Field::tick(float seconds) {
   checkTriggers();
   checkConfirm();
   updateTrail();
-  movePartner(seconds);
+  movePartnerFrames(frames);
   tickNpcs(seconds, true);
   watchOverlaps(seconds);
 }
@@ -410,6 +487,45 @@ CharacterState Field::player() const {
   return {.position = transform.position,
           .yaw = transform.yaw,
           .motion = world_->registry().get<AnimationIntent>(player_).motion};
+}
+
+void Field::startGlide(FrameGlide& glide, scene::Entity entity) const {
+  const auto& transform = world_->registry().get<Transform>(entity);
+  // From where it is drawn now, at the start of this tick: on a frame that starts early (a press
+  // from standing) the last glide had not ended.
+  glide.from = glidePose(glide, entity, 0.0F)
+                   .value_or(scene::Pose{.position = transform.position, .yaw = transform.yaw});
+  glide.seconds = 0.0F;
+  glide.on = true;
+}
+
+void Field::endGlide(FrameGlide& glide, scene::Entity entity) const {
+  const auto& transform = world_->registry().get<Transform>(entity);
+  glide.to = {.position = transform.position, .yaw = transform.yaw};
+}
+
+std::optional<scene::Pose> Field::glidePose(const FrameGlide& glide, scene::Entity entity,
+                                            float alpha) const {
+  const auto& transform = world_->registry().get<Transform>(entity);
+  if (!glide.on || transform.position != glide.to.position || transform.yaw != glide.to.yaw) {
+    return std::nullopt;
+  }
+  const float frame = rules_.transition.frameSeconds;
+  const float done = std::clamp((glide.seconds + (alpha * tickSeconds_)) / frame, 0.0F, 1.0F);
+  const float turn = std::remainder(glide.to.yaw - glide.from.yaw, Turn);
+  return scene::Pose{.position = glm::mix(glide.from.position, glide.to.position, done),
+                     .yaw = glide.from.yaw + (turn * done)};
+}
+
+scene::Pose Field::drawnPose(scene::Entity entity, float alpha) const {
+  const auto& transform = world_->registry().get<Transform>(entity);
+  std::optional<scene::Pose> pose;
+  if (entity == player_) {
+    pose = glidePose(playerGlide_, entity, alpha);
+  } else if (entity == partner_) {
+    pose = glidePose(partnerGlide_, entity, alpha);
+  }
+  return pose.value_or(scene::interpolate(transform, alpha));
 }
 
 void Field::notePartnerPassEnded() {
@@ -689,54 +805,144 @@ Field::Step Field::playerStep() {
   return {.direction = glm::vec2{0.0F}, .run = input_.run, .followPath = true};
 }
 
-void Field::movePlayer(float seconds) {
-  entt::registry& registry = world_->registry();
-  auto& transform = registry.get<Transform>(player_);
-  auto& animation = registry.get<AnimationIntent>(player_);
-  const Step step = playerStep();
-  if (step.direction == glm::vec2{0.0F} && !step.followPath) {
-    animation = {.motion = Motion::Idle, .speedScale = 1.0F};
+bool Field::playerWantsToMove() const {
+  return glm::length(input_.stick) > rules_.input.deadZone || moveTarget_.has_value();
+}
+
+std::int32_t Field::takeFrames(float seconds) {
+  // A little slack, so that ticks adding up to a frame's length start it despite rounding.
+  constexpr float Slack = 1e-4F;
+  // A long tick (a debugger stop) runs this many frames at most and drops the rest.
+  constexpr std::int32_t MaxFrames = 8;
+  const float frame = rules_.transition.frameSeconds;
+  // The engine's: the original reads the pad on its next frame, up to two of the console's
+  // retraces later; a press from standing starts a frame at once.
+  const bool wants = playerWantsToMove();
+  if (wants && !playerPressed_ && playerMotion_ == Motion::Idle) {
+    frameClock_ = std::max(frameClock_, frame);
+  }
+  playerPressed_ = wants;
+  std::int32_t frames = 0;
+  while (frameClock_ + Slack >= frame && frames < MaxFrames) {
+    frameClock_ = std::max(0.0F, frameClock_ - frame);
+    ++frames;
+  }
+  if (frames == MaxFrames) {
+    frameClock_ = 0.0F;
+  }
+  frameClock_ += seconds;
+  return frames;
+}
+
+void Field::movePlayer(std::int32_t frames) {
+  if (frames > 0) {
+    startGlide(playerGlide_, player_);
+    for (std::int32_t frame = 0; frame < frames; ++frame) {
+      stepPlayer(playerStep());
+    }
+    endGlide(playerGlide_, player_);
+  }
+  // The original faces the way the pad points even against a wall (tamer.c: setTamerDirection),
+  // and keeps its walk or run animation playing at full speed there: it is the animation that moves
+  // it (anim.c: applyRootMomentum), and the collision only cancels the movement.
+  world_->registry().get<AnimationIntent>(player_) = {.motion = playerMotion_, .speedScale = 1.0F};
+}
+
+void Field::stepPlayer(const Step& step) {
+  auto& transform = world_->registry().get<Transform>(player_);
+  const MoverRules& mover = rules_.player;
+  const float frame = rules_.transition.frameSeconds;
+  // tamer.c: tamerTickWalkingState: with the pad pressed, run (animation 3), or walk (2) with walk
+  // held; without it, stand (0).
+  Motion wanted = Motion::Idle;
+  if (step.direction != glm::vec2{0.0F} || step.followPath) {
+    wanted = step.run ? Motion::Run : Motion::Walk;
+  }
+  // anim.c: startAnimation zeroes the root's momentum: the frame a clip starts, the player turns
+  // but does not move.
+  const bool starts = wanted != playerMotion_;
+  playerMotion_ = wanted;
+  if (wanted == Motion::Idle) {
     return;
   }
-  const MoverRules& mover = rules_.player;
-  const float expected = (step.run ? mover.runSpeed : mover.walkSpeed) * seconds;
-  const glm::vec3 start = transform.position;
-  glm::vec2 facing = step.direction;
-  if (step.followPath) {
-    facing = followPath(transform.position, expected);
-    if (facing == glm::vec2{0.0F}) {
-      animation = {.motion = Motion::Idle, .speedScale = 1.0F};
-      return;
+  const float distance = (wanted == Motion::Run ? mover.runSpeed : mover.walkSpeed) * frame;
+  if (!step.followPath) {
+    transform.yaw = turnToward(transform.yaw, assets::yawOfDirection({step.direction.x, 0.0F,
+                                                                      step.direction.y}),
+                               mover.turnSpeed * frame);
+    if (!starts) {
+      walkForward(distance);
     }
-  } else {
-    transform.position =
-        moveOnGrid(collision_, transform.position, step.direction * expected, mover.radius)
-            .position;
+    return;
+  }
+  if (starts) {
+    return;
+  }
+  // Click-to-move, the engine's: the path's own steps, sliding along walls.
+  const glm::vec3 start = transform.position;
+  const glm::vec2 facing = followPath(transform.position, distance);
+  if (facing == glm::vec2{0.0F}) {
+    playerMotion_ = Motion::Idle;
+    return;
   }
   // tamer.c: checkMapInteraction stops the player at an NPC (animFlag 2).
   if (npcs_.blocks(start, transform.position, mover.radius)) {
     transform.position = start;
   }
-  const float moved = groundDistance(transform.position, start);
-  // The original faces the way the stick points even against a wall (tamer.c: setTamerDirection),
-  // and keeps its walk or run animation playing at full speed there: it is the animation that moves
-  // it (anim.c: applyRootMomentum), and the collision only cancels the movement.
   transform.yaw = turnToward(transform.yaw, assets::yawOfDirection({facing.x, 0.0F, facing.y}),
-                             mover.turnSpeed * seconds);
-  animation = {.motion = step.run ? Motion::Run : Motion::Walk, .speedScale = 1.0F};
-
-  if (moveTarget_) {
-    pathStallSeconds_ = moved < expected * StuckFraction ? pathStallSeconds_ + seconds : 0.0F;
-    if (pathStallSeconds_ > PathStallSeconds) {
-      pathStallSeconds_ = 0.0F;
-      if (!path_.empty()) {
-        path_.erase(path_.begin());
-      }
-      if (path_.empty()) {
-        moveTarget_.reset();
-      }
+                             mover.turnSpeed * frame);
+  if (!moveTarget_) {
+    return;
+  }
+  const float moved = groundDistance(transform.position, start);
+  pathStallSeconds_ = moved < distance * StuckFraction ? pathStallSeconds_ + frame : 0.0F;
+  if (pathStallSeconds_ > PathStallSeconds) {
+    pathStallSeconds_ = 0.0F;
+    if (!path_.empty()) {
+      path_.erase(path_.begin());
+    }
+    if (path_.empty()) {
+      moveTarget_.reset();
     }
   }
+}
+
+bool Field::playerTouchesSomeone(glm::vec3 from, glm::vec2 step) const {
+  const float radius = rules_.player.radius;
+  const glm::vec3 to = from + glm::vec3{step.x, 0.0F, step.y};
+  if (npcs_.blocks(from, to, radius)) {
+    return true;
+  }
+  // map.c: entityCheckEntityCollision: the player, in the field, touches the partner's square on
+  // any side.
+  const GroundSquare self{.centre = ground(to), .half = radius};
+  const GroundSquare partner{
+      .centre = ground(world_->registry().get<Transform>(partner_).position),
+      .half = rules_.partner.mover.radius};
+  return squaresOverlap(self, partner);
+}
+
+void Field::walkForward(float distance) {
+  auto& transform = world_->registry().get<Transform>(player_);
+  const float radius = rules_.player.radius;
+  const glm::vec3 start = transform.position;
+  const glm::vec2 step = still(ground(assets::forwardOfYaw(transform.yaw)) * distance);
+  // tamer.c: checkMapInteraction tests the whole step ahead (entityCheckCollision): the map first,
+  // then the NPCs, past the partner (it is the test's source). An NPC stops the player (animFlag
+  // 2); the map turns it aside (collisionGrace).
+  if (!stepCollides(collision_, start, step, radius)) {
+    if (!npcs_.blocks(start, start + glm::vec3{step.x, 0.0F, step.y}, radius)) {
+      transform.position = moveOnGrid(collision_, start, step, radius).position;
+    }
+    return;
+  }
+  // The grace counts the partner among what blocks a side. tamerTickWalkingState sets the pad's
+  // rotation again next frame, so the turn does not add up.
+  const Grace grace = collisionGrace(transform.yaw, distance, [&](glm::vec2 probe) {
+    return stepCollides(collision_, start, probe, radius) || playerTouchesSomeone(start, probe);
+  });
+  transform.yaw = grace.yaw;
+  transform.position = moveOnGrid(collision_, start, grace.step, radius).position;
 }
 
 glm::vec2 Field::followPath(glm::vec3& position, float distance) {
@@ -1042,6 +1248,23 @@ void Field::stepCareWalk(glm::vec2 heading, float distance, Motion motion, float
   }
 }
 
+void Field::movePartnerFrames(std::int32_t frames) {
+  auto& animation = world_->registry().get<AnimationIntent>(partner_);
+  if (frames == 0) {
+    animation = partnerIntent_;
+    return;
+  }
+  startGlide(partnerGlide_, partner_);
+  for (std::int32_t frame = 0; frame < frames; ++frame) {
+    if (frame > 0) {
+      partnerShownMotion_ = animation.motion;
+    }
+    movePartner(rules_.transition.frameSeconds);
+  }
+  endGlide(partnerGlide_, partner_);
+  partnerIntent_ = animation;
+}
+
 void Field::movePartner(float seconds) {
   entt::registry& registry = world_->registry();
   auto& transform = registry.get<Transform>(partner_);
@@ -1066,41 +1289,65 @@ void Field::movePartner(float seconds) {
     return;
   }
   const float radius = rules.mover.radius;
-  // partner.c: getPartnerTamerCloseness runs beyond 3.5 radii, walks beyond 2.5 and stops closer.
-  // Walking while it follows the trail is the engine's: the original's partner keeps its distance
-  // rule there too.
+  // partner.c: getPartnerTamerCloseness runs beyond 3.5 radii, walks beyond 2.5 and stops closer,
+  // with a trail too (partnerTickWalking only looks at the distance).
   Motion motion = Motion::Idle;
   if (distance > rules.runDistance * radius) {
     motion = Motion::Run;
-  } else if (distance >= rules.walkDistance * radius || !trail_.empty()) {
+  } else if (distance >= rules.walkDistance * radius) {
     motion = Motion::Walk;
   }
   const Motion wanted = motion;
   const bool passEnded = !partnerPassesNoted_ || std::exchange(partnerPassEnded_, false);
   motion = heldPartnerMotion(partnerShownMotion_, wanted, passEnded);
-  partnerMotion_ = motion;
+  // anim.c: startAnimation zeroes the root's momentum: the frame its clip changes, the partner
+  // turns but does not move.
+  const bool starts = std::exchange(partnerMotion_, motion) != motion;
 
   // map.c: partnerTickCollision heads for the oldest trail cell, or for the player without a trail.
   const glm::vec3 target =
       trail_.empty() ? playerPosition : assets::collisionCellCenter(trail_.front());
   const glm::vec2 toTarget = ground(target) - ground(transform.position);
   if (motion == Motion::Idle || glm::length(toTarget) == 0.0F) {
-    // partner.c: the partner keeps looking at the player while it waits.
-    transform.yaw =
-        turnToward(transform.yaw, assets::yawOfDirection(playerPosition - transform.position),
-                   rules.mover.turnSpeed * seconds);
+    // map.c: partnerTickCollision: while it waits it keeps looking at where it would go: the
+    // player, or the oldest cell of its trail (entityLookAtTile).
+    const glm::vec3 look = glm::length(toTarget) > 0.0F ? target : playerPosition;
+    transform.yaw = turnToward(transform.yaw, assets::yawOfDirection(look - transform.position),
+                               rules.mover.turnSpeed * seconds);
     animation = {.motion = Motion::Idle, .speedScale = 1.0F};
     partnerStuckSeconds_ = 0.0F;
     return;
   }
   const glm::vec2 direction = glm::normalize(toTarget);
+  if (starts) {
+    transform.yaw =
+        turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),
+                   rules.mover.turnSpeed * seconds);
+    animation = {.motion = motion, .speedScale = 1.0F};
+    return;
+  }
   const float expected =
       (motion == Motion::Run ? rules.mover.runSpeed : rules.mover.walkSpeed) * seconds;
   const GridMove move = moveOnGrid(collision_, transform.position,
                                    direction * std::min(expected, glm::length(toTarget)), radius);
-  // map.c: partnerTickCollision stops at an NPC too (entityCheckCollision).
-  const glm::vec3 reached =
-      npcs_.blocks(transform.position, move.position, radius) ? transform.position : move.position;
+  // map.c: partnerTickCollision: with an NPC in the way (entityCheckCollision), the partner keeps
+  // the facing it had and turns aside from there (collisionGrace, past the player), a little more
+  // each frame it stays blocked.
+  glm::vec3 reached = move.position;
+  std::optional<float> graceYaw;
+  if (npcs_.blocks(transform.position, move.position, radius)) {
+    const glm::vec3 from = transform.position;
+    const Grace grace =
+        collisionGrace(transform.yaw, std::min(expected, glm::length(toTarget)), [&](glm::vec2 probe) {
+          return stepCollides(collision_, from, probe, radius) ||
+                 npcs_.blocks(from, from + glm::vec3{probe.x, 0.0F, probe.y}, radius);
+        });
+    graceYaw = grace.yaw;
+    reached = moveOnGrid(collision_, from, grace.step, radius).position;
+    if (npcs_.blocks(from, reached, radius)) {
+      reached = from;
+    }
+  }
   const float moved = groundDistance(reached, transform.position);
   // partner.c:906: a walk ending its pass by the player stops at once when it collides
   // (entityCheckCollision): with the map, an NPC or the player. The trail is the engine's: one that
@@ -1117,9 +1364,9 @@ void Field::movePartner(float seconds) {
     return;
   }
   transform.position = reached;
-  transform.yaw =
+  transform.yaw = graceYaw.value_or(
       turnToward(transform.yaw, assets::yawOfDirection({direction.x, 0.0F, direction.y}),
-                 rules.mover.turnSpeed * seconds);
+                 rules.mover.turnSpeed * seconds));
   animation = {.motion = motion,
                .speedScale = expected > 0.0F ? std::clamp(moved / expected, 0.0F, 1.0F) : 1.0F};
 

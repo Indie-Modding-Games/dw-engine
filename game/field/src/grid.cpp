@@ -116,6 +116,26 @@ GridMove moveOnGrid(const MapCollision& collision, glm::vec3 position, glm::vec2
   return move;
 }
 
+bool stepCollides(const MapCollision& collision, glm::vec3 position, glm::vec2 step,
+                  float radius) {
+  constexpr float Still = 0.5F;
+  const float x = position.x + step.x;
+  const float z = position.z + step.y;
+  if (std::abs(step.x) >= Still) {
+    const float front = x + std::copysign(radius, step.x);
+    if (lineBlocked(collision, Axis::X, cellIndex(front), cellIndex(z - (radius / 2.0F)),
+                    cellIndex(z + (radius / 2.0F)))) {
+      return true;
+    }
+  }
+  if (std::abs(step.y) >= Still) {
+    const float front = z + std::copysign(radius, step.y);
+    return lineBlocked(collision, Axis::Z, cellIndex(front), cellIndex(x - (radius / 2.0F)),
+                       cellIndex(x + (radius / 2.0F)));
+  }
+  return false;
+}
+
 bool fitsOnGrid(const MapCollision& collision, glm::vec3 position, float radius) {
   const std::int32_t xFrom = cellIndex(position.x - (radius / 2.0F));
   const std::int32_t xTo = cellIndex(position.x + (radius / 2.0F));

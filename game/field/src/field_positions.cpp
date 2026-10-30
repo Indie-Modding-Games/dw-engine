@@ -70,10 +70,19 @@ bool Field::inWall(glm::vec3 position) const {
 }
 
 void Field::settle() {
+  beginTicks(tickSeconds_);
+  playerGlide_.on = false;
+  partnerGlide_.on = false;
+}
+
+void Field::beginTicks(float seconds) {
   entt::registry& registry = world_->registry();
   scene::beginTick(registry.get<Transform>(player_));
   scene::beginTick(registry.get<Transform>(partner_));
   npcs_.beginTick();
+  playerGlide_.seconds += tickSeconds_;
+  partnerGlide_.seconds += tickSeconds_;
+  tickSeconds_ = seconds;
 }
 
 void Field::setPartnerRadius(float radius) {
@@ -98,6 +107,10 @@ void Field::releaseHandoff(std::string_view why) {
 void Field::placeAt(scene::Entity entity, glm::vec3 position, float yaw) {
   scene::place(world_->registry().get<Transform>(entity), position, yaw);
   releaseHandoff("place");
+  // The place is exact: a comparison with the original starts from it, and the original moves
+  // nobody off where its trace starts.
+  separationDue_.reset();
+  partnerMakesRoom_ = false;
 }
 
 void Field::requestSeparation(std::string_view why) {
