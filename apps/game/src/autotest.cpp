@@ -120,11 +120,11 @@ std::string_view deviceName(AutotestDevice device) {
 }
 
 // The steps' names in routes, in the order of AutotestStep::Kind.
-constexpr std::array<std::string_view, 18> StepNames{
+constexpr std::array<std::string_view, 19> StepNames{
     "wait",          "walk_to",   "menu",       "menu_select", "expect_setting",
     "screenshot",    "resize",    "fullscreen", "press",       "release",
     "tap",           "axis",      "click",      "script",      "remember",
-    "expect_change", "script_if", "hold"};
+    "expect_change", "script_if", "hold",       "when"};
 
 // What an expect_change step asks of a setting against its remembered value.
 constexpr std::string_view ChangedUp = "up";
@@ -132,6 +132,8 @@ constexpr std::string_view ChangedDown = "down";
 constexpr std::string_view ChangedAtAll = "changed";
 // The key of a block of steps repeated in place (repeat: {times, steps}).
 constexpr std::string_view RepeatKey = "repeat";
+// The key of a block of steps run only if its conditions hold (when: {conditions, steps}).
+constexpr std::string_view WhenKey = "when";
 // The key of a step's mapping that is its timeout, beside the setting it names.
 constexpr std::string_view TimeoutKey = "timeout";
 
@@ -320,6 +322,20 @@ AutotestStep readStep(assets::YamlReader& reader, const core::YamlNode& node);
 void readSteps(assets::YamlReader& reader, const core::YamlNode& node,
                std::vector<AutotestStep>& steps) {
   for (const core::YamlNode& step : reader.sequence(node, "steps")) {
+    if (const core::YamlNode* when = step.isMapping() ? step.find(WhenKey) : nullptr) {
+      AutotestStep guard;
+      guard.kind = Kind::When;
+      reader.expectKeys(*when, WhenKey, {"steps"},
+                        {"map", "partner_within", "player_near", "radius", "menu_open", "shown",
+                         "hidden", "partner_has", "setting"});
+      readCondition(reader, *when, guard);
+      std::vector<AutotestStep> block;
+      readSteps(reader, reader.field(*when, "steps"), block);
+      guard.block = block.size();
+      steps.push_back(std::move(guard));
+      steps.insert(steps.end(), block.begin(), block.end());
+      continue;
+    }
     const core::YamlNode* repeat = step.isMapping() ? step.find(RepeatKey) : nullptr;
     if (repeat == nullptr) {
       steps.push_back(readStep(reader, step));
@@ -533,6 +549,8 @@ std::string where(const FieldScene* scene) {
 // The state of the step being run.
 struct Autotest::Progress {
   double start = 0.0;
+  // when: its conditions did not hold, so its block is skipped.
+  bool skipBlock = false;
   std::uint64_t startTick = 0;
   bool begun = false;
   int phase = 0;
@@ -755,8 +773,9 @@ void Autotest::finishStep(double now) {
                   kindName(step.kind), step.text.empty() ? "" : " ", step.text, seconds);
   core::logInfo("autotest: {}", line);
   stepLog_.push_back(std::move(line));
+  const std::size_t skipped = progress_->skipBlock ? step.block : 0;
   progress_.reset();
-  ++stepIndex_;
+  stepIndex_ += 1 + skipped;
 }
 
 void Autotest::failStep(std::string_view problem) {
@@ -804,6 +823,8 @@ bool Autotest::runStep(const AutotestHost& host, const AutotestStep& step, doubl
     return expectChangeStep(host, step);
   case Kind::ScriptIf:
     return scriptIfStep(host, step);
+  case Kind::When:
+    return whenStep(host, step);
   case Kind::Hold:
     return holdStep();
   }
@@ -878,6 +899,15 @@ bool Autotest::scriptIfStep(const AutotestHost& host, const AutotestStep& step) 
     return true;
   }
   return scriptStep(host, step);
+}
+
+bool Autotest::whenStep(const AutotestHost& host, const AutotestStep& step) {
+  if (const std::string unmet = unmetCondition(host, step.until); !unmet.empty()) {
+    core::logInfo("{}",
+                  core::formatMessage(messages::WhenNotRun, stepIndex_ + 1, step.block, unmet));
+    progress_->skipBlock = true;
+  }
+  return true;
 }
 
 bool Autotest::waitStep(const AutotestHost& host, const AutotestStep& step, double now) {

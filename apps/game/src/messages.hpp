@@ -128,6 +128,7 @@ inline constexpr std::string_view UnknownItem = "no item '{}'";
 inline constexpr std::string_view GiveItemFailed = "game: give_item: {}";
 inline constexpr std::string_view GaveItem = "game: gave {} x{} ({} added)";
 inline constexpr std::string_view ScriptIfNotRun = "autotest: step {} not run: {}";
+inline constexpr std::string_view WhenNotRun = "autotest: step {} skips its {} steps: {}";
 inline constexpr std::string_view CareScolded = "game: the partner was scolded";
 inline constexpr std::string_view UsedItem = "game: used {}: {}";
 inline constexpr std::string_view UseItemFailed = "game: use_item: {}";

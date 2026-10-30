@@ -235,6 +235,10 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   (disparador 140), acepta el trabajo del minero de tunn05, carga la vagoneta en el montón (una casilla de 80 a 109:
   corre al confirmar), la vacía en tunn01 y cobra (variable 18 a 1). Cinco días después los mineros acaban solos
   (variable 18 a 10) y el paso a tunn06 queda abierto.
+  `route-etapa2-centarumon.yaml` (`--start trop06`) cruza el bosque de la lotería de escaleras: la casilla de entrada
+  echa a suertes cuál de los tres finales es el bueno (variable 116), la ruta sale por el carril que lleva a él (un
+  bloque `when` por final), toma cada cruce que encuentra y Centarumon se une al final (236). Su viaje a koda00 queda
+  cerrado por el candado de la etapa 2 y el jugador sigue en trop06.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
@@ -245,6 +249,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop01 --la
     --autotest tests/autotest/route-etapa2-piximon.yaml --shots <capturas>/etapa2
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn04 --lang en --seed 1 \
     --autotest tests/autotest/route-etapa2-dirt.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop06 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-centarumon.yaml --shots <capturas>/etapa2
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
@@ -393,6 +399,7 @@ steps:
 | `remember: <nombre>` | Guarda el valor de un ajuste para un `expect_change` posterior |
 | `expect_change: {<nombre>: up \| down \| changed, timeout}` | Comprueba que el ajuste ha subido, bajado o cambiado desde el valor guardado (2 s por defecto) |
 | `repeat: {times, steps}` | Repite esos pasos en su sitio tantas veces |
+| `when: {<condiciones de wait>, steps}` | Hace esos pasos solo si se cumplen ya todas las condiciones (como `script_if`); si no, se los salta y lo dice en el log. Sirve para lo que el juego echa a suertes al jugarlo (`when: {setting: {story.var.116: "1"}, steps: [...]}`) |
 | `screenshot: <nombre>` | Guarda `<ruta>-<NN>-<nombre>-<ancho>x<alto>.png` en `--shots` |
 | `resize: [ancho, alto]` | Cambia la ventana y espera a que el render tenga ese tamaño |
 | `fullscreen: true \| false` | Pantalla completa |

@@ -85,6 +85,8 @@ struct AutotestStep {
               // now
     Hold,     // hold: {keys: [<key>...], ticks}: exactly these keys held for that many logic
               // ticks; back-to-back hold steps follow each other tick for tick (feedTick)
+    When,     // when: {wait's conditions, steps}: its steps (the ones after it) run only if the
+              // conditions all hold now
   };
   Kind kind = Kind::Wait;
   std::string text; // what the step is about: a control, an element, a name, a setting's value
@@ -106,6 +108,8 @@ struct AutotestStep {
   // walk_to: an encounter on the way (a script holds the player, or a fight) is waited out.
   bool encounters = false;
   bool flag = false; // menu open, fullscreen on
+  // when: how many of the steps after it are its own, skipped when its conditions do not hold.
+  std::size_t block = 0;
   int width = 0;
   int height = 0;
   float value = 0.0F;
@@ -246,6 +250,7 @@ private:
   bool clickStep(const AutotestHost& host, const AutotestStep& step);
   bool scriptStep(const AutotestHost& host, const AutotestStep& step);
   bool scriptIfStep(const AutotestHost& host, const AutotestStep& step);
+  bool whenStep(const AutotestHost& host, const AutotestStep& step);
   // What of the condition does not hold now, or empty if all of it does.
   [[nodiscard]] static std::string unmetCondition(const AutotestHost& host,
                                                   const AutotestCondition& until);

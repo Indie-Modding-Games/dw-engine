@@ -1,0 +1,76 @@
+# Stage 2 of the story with the keyboard, Centarumon: from trop06, the forest of the ladder lottery, on a seeded game
+# (run with --start trop06 and the stage-2 lock, docs/guides/prueba-vertical.md). The entry cell (section 0x33 of
+# script 18) picks the right one of the three ends at random (variable 116) each time it runs, which is every frame the
+# player stands on it, and shows it on the signs. The three lanes go north and the walk takes every crossing it meets,
+# as the lottery asks: each lane's stretch marks a trigger (158..173) and a stretch reached without the crossing before
+# it shoots arrows and sends the player back. The west lane's start leads to the west end, the middle one's to the
+# east end and the east one's to the middle end; the walk starts from the lane that leads to the right end (a when
+# block on variable 116), and at it Centarumon comes out and joins (trigger 236).
+name: etapa2-centarumon
+device: keyboard
+timeout: 900
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop06, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.236: "false"}
+  # The entry cell's scene, the first time: three boxes. Then off the cell, which fixes the right end.
+  - repeat: {times: 4, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - walk_to: {point: [0, 3600], radius: 100, timeout: 60}
+  - wait: {seconds: 1}
+  - screenshot: trop06
+  # The forest's wild ones fight whoever walks into them: a Champion partner wins those fights by itself.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The west end: from the west lane's start, over to the middle (z 1350..2050), to the east (z 450..950), back
+  # to the middle (z -2550..-1850) and to the west (z -3350..-2650).
+  - when:
+      setting: {story.var.116: "0"}
+      steps:
+        - walk_to: {point: [-1550, 3600], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1550, 3250], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, 1700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, 1700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, 400], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, 700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, -2200], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -2150], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -3000], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -2900], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -3550], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  # The middle end: from the east lane's start, over to the middle (z 450..950), to the west (z -1050..-450) and
+  # back to the middle (z -3350..-2650).
+  - when:
+      setting: {story.var.116: "1"}
+      steps:
+        - walk_to: {point: [1550, 3600], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, 3250], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, 900], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, 700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, 700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -750], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -2750], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -3000], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -3700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  # The east end: from the middle lane's start, over to the west (z 1350..2050), back to the middle (z
+  # -1050..-450) and to the east (z -2550..-1850).
+  - when:
+      setting: {story.var.116: "2"}
+      steps:
+        - walk_to: {point: [0, 3250], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, 1700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, 1700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [-1600, -750], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -700], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [0, -2150], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, -2200], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, -3600], radius: 100, encounters: true, timeout: 180}
+        - walk_to: {point: [1550, -4000], radius: 60, stop_on_scene: true, timeout: 120}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: trop06-centarumon
+  - repeat: {times: 14, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.236: "true"}, timeout: 120}
+  - wait: {seconds: 2}
+  - screenshot: trop06-after
