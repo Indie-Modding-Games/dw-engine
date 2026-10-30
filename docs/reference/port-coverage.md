@@ -91,7 +91,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 65 | 1 | 2 | 56 | 96 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 63 | 8 | 21 | 6 | 73 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
-| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 36 | 1 | 1 | 12 | 96 % |
+| [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 13 | 0 | 16 | 27 | 45 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 7 | 1 | 3 | 24 | 68 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 42 | 1 | 2 | 41 | 94 % |
-| **Total** | 2438 funciones | 833 | 41 | 414 | 1150 | 66 % |
+| **Total** | 2438 funciones | 834 | 41 | 413 | 1150 | 66 % |
 
 ## Batalla
 
@@ -402,14 +402,13 @@ El gimnasio: tragaperras, cursos y recompensas.
 
 Ficheros del decomp: `trn/trn_brain.c`, `trn/trn_hud.c`, `trn/trn_off.c`, `trn/trn_reward.c`, `trn/trn_slots.c`, `trn/trn_speed.c`, `trn2/trn2_def_map108.c`, `trn2/trn2_hp_map107.c`, `trn2/trn2_hud.c`, `trn2/trn2_reward.c`, `trn2/trn2_slots.c`.
 
-Portado 36, parcial 1, falta 1, no aplica 12.
+Portado 37, parcial 1, falta 0, no aplica 12.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `TRN_advanceTrainingTime` | `trn/trn_reward.c:721` | parcial | Avanza la hora y el día tras una sesión de entrenamiento. | `content/packs/game/rules/original/care.yaml:225` · el original usa un año de 31 días al entrenar; el motor, el del reloj (30). Decidido así (partner.md:187) |
-| `TRN2_func_8008AA84` | `trn2/trn2_reward.c:158` | falta | Función sin nombre del cálculo de recompensas del segundo gimnasio. | sin identificar |
 
-No aplica: copias de otra función, que cuenta por las dos (10); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1).
+No aplica: copias de otra función, que cuenta por las dos (9); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (1); solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1); igual que TRN_func_800888A0: solo con el resultado -2 de la ruleta, que nada produce: inalcanzable (1).
 
 ## Pesca
 

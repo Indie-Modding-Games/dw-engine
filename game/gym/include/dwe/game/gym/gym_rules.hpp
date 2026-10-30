@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -21,13 +22,17 @@ inline constexpr std::string_view GymSectionName = "gym";
 struct Point {
   std::int32_t x = 0;
   std::int32_t z = 0;
+
+  bool operator==(const Point&) const = default;
 };
 
-// A point of the field with its height, where an effect starts.
+// A point of the field with its height, where an effect starts. Some courses put it at the
+// partner's height (minus the species' height) instead of a fixed one.
 struct Point3 {
   std::int32_t x = 0;
   std::int32_t y = 0;
   std::int32_t z = 0;
+  bool atPartnerHeight = false;
 };
 
 // A move of map objects, in background pixels.
@@ -63,6 +68,10 @@ struct HpCourse {
   std::int32_t beatSound = 0;
   ObjectMove returnMove;
   std::vector<CloudLine> clouds;
+  // Whether the first beat sound plays on arrival (trn2_hp_map99.c plays none).
+  bool arrivalSound = true;
+  // Objects shown on arrival and hidden again with the gains (trn2_hp_map99.c); none here.
+  ObjectGroup shown;
 };
 
 // trn_mp.c: the partner sits under the machine, whose lit part sits over its head.
@@ -77,13 +86,30 @@ struct MpCourse {
   // Background pixels between its head and the objects.
   std::int32_t headLift = 0;
   std::int32_t workAnimation = 0;
-  std::int32_t loopSound = 0;
+  // playSound2 while it works; trn2_mp.c plays none.
+  std::optional<std::int32_t> loopSound;
+  // trn2_mp.c: the work animation starts again every frame, so the pose stays on its first frame.
+  bool restartWork = false;
   std::int32_t leaveAnimation = 0;
 };
 
 // A species' punch at the offense course: its animation and the frames to the hit.
 struct SpeciesAnimation {
   std::int32_t animation = 0;
+  std::int32_t frames = 1;
+};
+
+// The other offense courses (trn_off.c states 7 and 8 on the second training spot, trn2_off.c): no
+// bag swings; the hit swaps sets of map objects, whose sprites play from their first frame, and
+// `frames` later the swap is undone and the partner punches again. The session ends during that
+// wait, undoing the swap.
+struct OffenseSwap {
+  ObjectGroup hitShown;
+  ObjectGroup hitHidden;
+  // resetMapObjectAnimation: the original passes the first index as the count too.
+  ObjectGroup hitRestarted;
+  ObjectGroup undoShown;
+  ObjectGroup undoHidden;
   std::int32_t frames = 1;
 };
 
@@ -102,11 +128,8 @@ struct OffenseCourse {
   std::int32_t swingBase = 0;
   ObjectMove swingDivisor{.x = 1, .y = 1};
   std::int32_t leaveAnimation = 0;
-  SpeciesAnimation defaultAnimation;
-  std::vector<std::pair<std::string, SpeciesAnimation>> speciesAnimations;
-
-  // TRN_TRAINING_ANIM_IDS: the species' punch.
-  [[nodiscard]] const SpeciesAnimation& animationOf(std::string_view species) const;
+  // Instead of the bag's swing.
+  std::optional<OffenseSwap> swap;
 };
 
 // One swing of the defense course's log: the objects move by `dx` a frame until they reach
@@ -130,13 +153,59 @@ struct DefenseCourse {
   std::vector<DefenseSwing> swings;
 };
 
+// trn2_def_map108.c: the partner stands guard while the scenery's sprites play; every
+// `hitAfterFrames` it takes a hit (the guard animation, dust and a sound) and `recoverFrames`
+// later the sprites start again.
+struct DefensePulseCourse {
+  std::int32_t facing = 0;
+  // Hidden on arrival and shown again with the gains, and the reverse.
+  ObjectGroup hidden;
+  ObjectGroup shown;
+  std::vector<Point3> particles;
+  std::int32_t hitSound = 0;
+  std::int32_t workAnimation = 0;
+  std::int32_t hitAfterFrames = 1;
+  std::int32_t recoverFrames = 1;
+};
+
+// trn2_def_map99.c: an object drops onto the partner, who faces the tamer on guard; on the hit
+// it swaps for another sprite, and `recoverFrames` later it is back up. Only the falling frames
+// count towards the session.
+struct DefenseDropCourse {
+  std::int32_t workAnimation = 0;
+  ObjectGroup falling;
+  // Background pixels a frame, until its row reaches `untilRow`.
+  std::int32_t drop = 0;
+  std::int32_t untilRow = 0;
+  ObjectGroup hit;
+  std::vector<Point3> particles;
+  std::int32_t hitSound = 0;
+  std::int32_t recoverFrames = 1;
+};
+
+// Which way a speed lap starts again.
+enum class Axis : std::uint8_t { X, Z };
+
 // trn_speed.c: the partner runs laps across the screen.
 struct SpeedCourse {
   std::int32_t facing = 0;
   std::int32_t runAnimation = 0;
-  // Every lapFrames, if it ran off screen, it starts again at restartX.
+  // Every lapFrames, if it ran off screen, it starts again at `restart` on `restartAxis`.
   std::int32_t lapFrames = 1;
-  std::int32_t restartX = 0;
+  Axis restartAxis = Axis::X;
+  std::int32_t restart = 0;
+};
+
+// trn2_reward.c: TRN2_tickSpeedTraining: the partner runs in place on a treadmill.
+struct TreadmillCourse {
+  // Where it walks first: the treadmill starts there (its loop sound and sprites).
+  Point waypoint;
+  std::int32_t facing = 0;
+  std::int32_t runAnimation = 0;
+  std::int32_t loopSound = 0;
+  ObjectGroup shown;
+  // Where it walks off to at the end, instead of back to the tamer.
+  Point leaveSpot;
 };
 
 // trn_reward.c: TRN_awardBrainsTrainingGains and TRN_tryLearnMove: what a brains session may
@@ -154,11 +223,21 @@ struct BrainLearning {
 };
 
 // trn_brain.c: the tamer teaches the partner at the blackboard.
+// trn_brain.c, instance 9: the map's first character teaches instead of the tamer: it plays its
+// animation over and over, with a sound every `soundEveryFrames`.
+struct BrainTeacher {
+  std::int32_t animation = 0;
+  std::int32_t sound = 0;
+  std::int32_t soundEveryFrames = 1;
+  std::int32_t doneAnimation = 0;
+};
+
 struct BrainCourse {
   Point tamerSpot;
   std::int32_t tamerWalk = 0;
   std::int32_t tamerStand = 0;
   std::int32_t tamerTeach = 0;
+  std::optional<BrainTeacher> teacher;
   std::int32_t partnerStand = 0;
   std::int32_t partnerLearn = 0;
   std::int32_t teachEveryFrames = 1;
@@ -168,12 +247,21 @@ struct BrainCourse {
 };
 
 using CourseDetail =
-    std::variant<HpCourse, MpCourse, OffenseCourse, DefenseCourse, SpeedCourse, BrainCourse>;
+    std::variant<HpCourse, MpCourse, OffenseCourse, DefenseCourse, SpeedCourse, BrainCourse,
+                 DefensePulseCourse, DefenseDropCourse, TreadmillCourse>;
 
 // A course of the gym: what every course has, and its own choreography.
 struct CourseRules {
-  // The training course (training.yaml) whose gains it gives.
+  // Unique on its map.
   std::string id;
+  // The map it runs on and the course variable's value that picks it there (routine 7).
+  std::string map;
+  std::int32_t choice = 0;
+  // The training place and course (training.yaml) whose gains it gives.
+  std::string place;
+  std::string gains;
+  // Whether a session counts towards the practice bonus (upgrade*Counter: only the town gym).
+  bool countsPractice = true;
   // The machine the partner trains at.
   Point spot;
   std::int32_t cameraSpeed = 0;
@@ -181,15 +269,16 @@ struct CourseRules {
   std::int32_t cycleFrames = 1;
   // Frames between the count and leaving.
   std::int32_t restFrames = 0;
-  std::int32_t startSound = 0;
+  // None: some courses start in silence.
+  std::optional<std::int32_t> startSound;
   std::int32_t endSound = 0;
   std::int32_t walkAnimation = 0;
   std::int32_t doneAnimation = 0;
   // The roulette symbol that is the course's own, which pays more.
   std::int32_t slotSymbol = 0;
   // The course's machine on screen (TRN_getTrainingSpotScreenPos): the roulette's box grows out
-  // of it and shrinks back into it.
-  Point machine;
+  // of it and shrinks back into it; with none (a map without its entry), out of the middle.
+  std::optional<Point> machine;
   CourseDetail detail;
 };
 
@@ -240,13 +329,8 @@ struct SlotRules {
 };
 
 struct GymRules {
-  // The map the gym works on.
-  std::string map;
-  // The training place whose gains the courses give.
-  std::string place;
-  // The story variable that picks the course, and the course of each of its values.
+  // The story variable that picks the course on its map.
   std::int32_t courseVariable = 0;
-  std::vector<std::string> courseByChoice;
   // The story variable that enables the roulette.
   std::int32_t slotVariable = 0;
   std::string manualItem;
@@ -255,10 +339,17 @@ struct GymRules {
   std::int32_t cloudScatter = 1;
   CountRules count;
   SlotRules slots;
+  // TRN_TRAINING_ANIM_IDS (TRN2_TRAINING_ANIM_IDS is the same): each species' punch at the
+  // offense courses; the others use the default.
+  SpeciesAnimation defaultPunch;
+  std::vector<std::pair<std::string, SpeciesAnimation>> punches;
+  // Every training spot's courses (gym.yaml: sites), each with its map.
   std::vector<CourseRules> courses;
 
-  [[nodiscard]] const CourseRules* findCourse(std::string_view id) const;
-  [[nodiscard]] const CourseRules* courseOfChoice(std::int64_t choice) const;
+  [[nodiscard]] const CourseRules* findCourse(std::string_view map, std::string_view id) const;
+  [[nodiscard]] const CourseRules* courseOfChoice(std::string_view map, std::int64_t choice) const;
+  [[nodiscard]] bool hasMap(std::string_view map) const;
+  [[nodiscard]] const SpeciesAnimation& punchOf(std::string_view species) const;
 };
 
 // Reads the gym section; errors name the file, line and column.

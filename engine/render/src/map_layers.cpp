@@ -150,4 +150,11 @@ glm::vec2 MapDepthLayers::offset(std::size_t instance) const {
   return instance < instances_.size() ? instances_[instance].offset : glm::vec2{0.0F};
 }
 
+void MapDepthLayers::restartAnimation(std::size_t instance) {
+  if (instance < instances_.size()) {
+    instances_[instance].frame = 0;
+    instances_[instance].timer = 0;
+  }
+}
+
 } // namespace dwe::render

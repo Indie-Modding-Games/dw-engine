@@ -89,6 +89,12 @@ TEST_CASE(
   Raising elsewhere(original.rules(), "bota");
   trained(elsewhere, {.place = "trn2", .course = "hp_a"});
   CHECK(elsewhere.state().training.youngSessions[Stat::Hp] == 0);
+  // Nor do the first place's courses away from the town gym (only map 0x70 counts).
+  Raising away(original.rules(), "bota");
+  TrainingRequest awayCourse = hpCourse();
+  awayCourse.countsPractice = false;
+  trained(away, awayCourse);
+  CHECK(away.state().training.youngSessions[Stat::Hp] == 0);
 }
 
 TEST_CASE("care.md training: the bonus roulette multiplies the gains") {

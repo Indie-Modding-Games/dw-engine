@@ -14,15 +14,19 @@ hace `StoryGym` sobre la `GymScreen`.
 
 ```cpp
 auto rules = dwe::game::gym::readGymRules(ruleset);       // la sección gym; sin ella, ningún curso
-const auto* course = rules->courseOfChoice(choice);        // la variable 254 elige el curso
+const auto* course = rules->courseOfChoice(map, choice);   // el mapa y la variable 254 eligen el curso
 dwe::game::gym::CourseRun run{*rules, *course, withSlots};   // la variable 246 pone la ruleta
 run.tick(ports, seconds, frameSeconds, {.confirm = pressed, .cancel = pressed, .cancelHeld = held});
 if (run.finished()) { ... }                                // TRAINING_COMPLETE: el guion sigue
 ```
 
+- **Sitios** (`sites` en `gym.yaml`): cada mapa con cursos dice su sitio de ganancias (`trn` o `trn2`) y si cuenta
+  la práctica. El gimnasio del pueblo (0x70) tiene los seis; el resto de mapas, uno o dos: 0x4e (ataque y velocidad) y
+  0x77 (inteligencia con maestro) del primer módulo, y 0x63, 0x6b, 0x6c y 0xa5 del segundo (`src/trn2`).
 - **Cursos** (`CourseRules`): lo común (puesto, cámara, duración de la sesión, descanso, sonidos y animaciones) y la
-  coreografía propia de cada uno (`CourseDetail`): HP (el tronco que golpea), MP (la cascada), ataque (el saco), defensa
-  (el tronco que oscila), velocidad (la carrera) e inteligencia (la pizarra con el domador).
+  coreografía propia de cada uno (`CourseDetail`): HP (el tronco que golpea), MP (la cascada), ataque (el saco, o el
+  golpe que cambia objetos del mapa), defensa (el tronco que oscila, la guardia con golpes o el objeto que cae),
+  velocidad (la carrera, o la cinta) e inteligencia (la pizarra con el domador o con un maestro).
 - **Ejecución** (`CourseRun`): avanza fotogramas enteros del original con los estados numerados como el
   `TRAINING_STATE` de cada curso. La sesión acaba al cumplir su duración o al cancelar; luego la caja de estadísticas
   (`StatCountup`) cuenta las ganancias, un punto por fotograma, y confirmar o cancelar la termina de golpe.
@@ -59,5 +63,15 @@ las cajas cuentan desde el centro de la pantalla (160, 120).
 | El sombreado del rodillo (sprite u 224 v 216 restado) | `trn_slots.c: TRN_renderSlotMachine` | degradado negro hasta 48 % arriba y abajo | captura `sbs_slot_spin.png` | Suposición |
 | Al acabar (estado 6) la ruleta se encoge y cierra el cuadro "Slot Game" (`closeBox(0)`); el ritmo llega cuando la caja ya no está | `trn_slots.c: TRN_tickSlotMachine`, `TRN_tickSlotSession` (`UI_BOX_DATA[3]`) | `SlotMachine` estados 6 y 7; `GymPorts::closeTextbox` | `course_flow_tests`: "slots: the box grows…" | Igual |
 | La ruleta no tiene cancelar: `TRN_func_800888A0` (resultado -2) no se alcanza porque nada produce -2 | `trn_reward.c: TRN_func_800888A0` | sin puerto | — | Igual |
+| Cada mapa abre sus cursos: 0x70 los seis; 0x4e ataque (254 = 1) y velocidad (2); 0x77 inteligencia (5); 0x63 HP (0) y defensa (3); 0x6b HP (0) y ataque (1); 0x6c velocidad (2) y defensa (3); 0xa5 MP (4) | rutina 7; `TRN_setup*Training`, `TRN2_setup*Training`; guiones 075, 095, 103, 104, 108, 115, 159 | `gym.yaml: sites`; `GymRules::courseOfChoice(map, choice)` | `course_flow_tests`: "gym.md sites: routine 7 picks…" | Igual |
+| Los cursos del segundo módulo (0x63, 0x6b, 0x6c, 0xa5) ganan con la tabla `trn2`; los de 0x4e y 0x77, con `trn` | `trn2_reward.c`, `trn_reward.c` | `gym.yaml: sites[].place`, `gains` | `course_flow_tests`: "gym.md sites…" | Igual |
+| El contador de práctica solo sube en el gimnasio del pueblo (0x70) | `trn_reward.c` (`upgrade*Counter` con `mapId == 0x70`) | `counts_practice`; `TrainingRequest::countsPractice` | `partner_tests` | Igual |
+| Velocidad en 0x4e: al reiniciar la carrera el partner vuelve a z 2000 (no a una x) | `TRN_tickSpeedTraining` (mapa 0x4e) | `SpeedCourse::restartAxis` | `course_flow_tests`: "…restart along z" | Igual |
+| Ataque en 0x4e y 0x6b: cada golpe esconde y muestra objetos del mapa, reinicia su animación y los deshace 46 cuadros después | `TRN_tickOffenseTraining`, `TRN2_tickOffenseTraining` | `OffenseSwap`; `CourseRun::offenseSwapFrame` | `course_flow_tests`: "offense swap…" | Igual |
+| Inteligencia en 0x77: enseña el maestro del mapa (primer NPC), que repite su clip y su sonido cada 18 cuadros; todos se miran al llegar | `TRN_tickBrainsTraining` (mapa 0x77) | `BrainTeacher`; `GymScreen::Ports::animateTeacher` | `course_flow_tests` | Igual |
+| Defensa en 0x6c: guardia; cada pocos cuadros un golpe con partículas y sonido; solo el estado del golpe mira cancelar | `trn2_def_map108.c: TRN2_tickDefenseTrainingMap108` | `DefensePulseCourse`; `CourseRun::defensePulseFrame` | `course_flow_tests` | Igual |
+| Defensa en 0x63: el objeto cae hasta su fila límite, golpea, se recupera y vuelve a caer; solo los cuadros de caída cuentan | `trn2_def_map99.c: TRN2_tickDefenseTrainingMap99` (`moveMapObjectsWithLimit`) | `DefenseDropCourse`; `CourseRun::defenseDropFrame` | `course_flow_tests`: "only falling frames count…" | Igual |
+| Velocidad en 0x6c: la cinta; el partner corre sin avanzar (animFlag 2), con un sonido en bucle que se para al acabar, y sale a (247, 965) | `trn2_reward.c: TRN2_tickSpeedTraining` | `TreadmillCourse`; `CourseRun::treadmillFrame` | `course_flow_tests`: "treadmill…" | Igual |
+| `TRN2_func_8008AA84` (resultado -2 de la ruleta) no se alcanza, como en el primer módulo | `trn2_reward.c: TRN2_func_8008AA84` | sin puerto | — | Igual |
 | Inteligencia: cada orden cruzada escribe sus palabras del disco en la primera fila de la caja (-88, 18, 176, 48), encima de la anterior, en amarillo (color 7); la de 300 añade "Change target!" en la segunda; "New orders!" va debajo (fila 18, o 34 con dos líneas) en el color normal | `trn_reward.c: TRN_awardBrainsTrainingGains`, `TRN_renderNewOrdersBox` (`reward_messages`) | `orderRows`; `GymScreen::teach` | `brain_learning_tests`: "an order's words take the first row…" | Igual |
 | Técnica aprendida: el nombre en la primera fila y "was mastered!" en la segunda, en la caja de 35 de alto | `trn_reward.c: TRN_tryLearnMove`, `TRN_renderMoveLearnedBox` (`reward_mastered`) | `GymScreen::learnMove` | captura pendiente | Suposición: el original parte el texto en 12 + 48 px y pinta el nombre con la CLUT 3, sin medir |

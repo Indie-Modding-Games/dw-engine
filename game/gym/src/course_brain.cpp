@@ -4,15 +4,17 @@
 
 namespace dwe::game::gym {
 
-// trn_brain.c: TRN_tickBrainsTraining, at the gym (instance 0): the tamer walks to the
-// blackboard, the partner to its desk, and the tamer teaches.
+// trn_brain.c: TRN_tickBrainsTraining: the tamer walks to its spot, the partner to its desk, and
+// the tamer teaches (the gym, instance 0) or the map's first character does (instance 9).
 void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymInput& input) {
   switch (state_) {
   case 0:
     ports.setTraining(true);
     ports.animate(Actor::Tamer, brain.tamerWalk);
     ports.animate(Actor::Partner, brain.partnerStand);
-    ports.playSound(gym_->soundSlot, course_->startSound);
+    if (course_->startSound) {
+      ports.playSound(gym_->soundSlot, *course_->startSound);
+    }
     ports.moveCamera(brain.tamerSpot, course_->cameraSpeed);
     counter_ = 0;
     startSlots(ports);
@@ -29,19 +31,38 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
   case 2:
     if (ports.walk(Actor::Partner, course_->spot)) {
       startSpin();
-      ports.faceEachOther();
-      ports.animate(Actor::Tamer, brain.tamerTeach);
-      ports.animate(Actor::Partner, brain.partnerLearn);
+      if (brain.teacher) {
+        // Instance 9: the tamer watches; the partner and the teacher face each other.
+        ports.lookAt(Actor::Tamer, Actor::Partner);
+        ports.lookAt(Actor::Partner, Actor::Teacher);
+        ports.lookAt(Actor::Teacher, Actor::Partner);
+        ports.animate(Actor::Partner, brain.partnerLearn);
+        ports.animate(Actor::Teacher, brain.teacher->animation);
+      } else {
+        ports.faceEachOther();
+        ports.animate(Actor::Tamer, brain.tamerTeach);
+        ports.animate(Actor::Partner, brain.partnerLearn);
+      }
       setState(3);
     }
     break;
   case 3:
     ++counter_;
-    if (counter_ % brain.teachEveryFrames == 0) {
-      ports.playSound(gym_->soundSlot, brain.teachSound);
-      ports.animate(Actor::Tamer, brain.tamerTeach);
+    if (brain.teacher) {
+      // The teacher's animation starts over once it ends (animFrame >= frameCount).
+      if (ports.animationEnded(Actor::Teacher)) {
+        ports.animate(Actor::Teacher, brain.teacher->animation);
+      }
+      if (counter_ % brain.teacher->soundEveryFrames == 0) {
+        ports.playSound(gym_->soundSlot, brain.teacher->sound);
+      }
+    } else {
+      if (counter_ % brain.teachEveryFrames == 0) {
+        ports.playSound(gym_->soundSlot, brain.teachSound);
+        ports.animate(Actor::Tamer, brain.tamerTeach);
+      }
+      ports.holdAnimation(Actor::Tamer, true);
     }
-    ports.holdAnimation(Actor::Tamer, true);
     if (counter_ % brain.learnEveryFrames == 0) {
       ports.animate(Actor::Partner, brain.partnerLearn);
     }
@@ -51,6 +72,9 @@ void CourseRun::brainFrame(GymPorts& ports, const BrainCourse& brain, const GymI
     award(ports);
     ports.animate(Actor::Partner, course_->doneAnimation);
     ports.moveCamera(std::nullopt, course_->cameraSpeed);
+    if (brain.teacher) {
+      ports.animate(Actor::Teacher, brain.teacher->doneAnimation);
+    }
     ports.playSound(gym_->soundSlot, course_->endSound);
     setState(4);
     break;

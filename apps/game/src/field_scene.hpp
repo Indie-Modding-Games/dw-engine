@@ -283,6 +283,9 @@ public:
   // How fast the clip with the original's animation id carries the player or the partner over the
   // ground, world units a second: its root's speed (anim.c: applyRootMomentum); 0 without it.
   [[nodiscard]] float clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const;
+  // Whether the clip a script last started on the player, the partner or a map NPC has played
+  // through once (anim.c: animFrame reaching frameCount); true without such an actor.
+  [[nodiscard]] bool clipPlayedThrough(scene::Entity entity) const;
   // Free exploration (game::field::Field::setExplore) and the answer to its choice
   // (Field::chooseDestination).
   void setExplore(bool explore) { field_->setExplore(explore); }
@@ -369,6 +372,8 @@ private:
   // (field_scene_fighters.cpp).
   bool animateFighter(Actor& actor) const;
   [[nodiscard]] Actor* fighterActor(std::optional<std::int32_t> npc) const;
+  // The player's, the partner's or a map NPC's actor, or none.
+  [[nodiscard]] const Actor* actorOfEntity(scene::Entity entity) const;
   // field_scene_effects.cpp: the effects' textures (by move and palette) and models.
   struct EffectModelEntry {
     render::ModelHandle handle;

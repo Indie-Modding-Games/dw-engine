@@ -5,6 +5,7 @@ dwe_add_module(gym
         src/course_brain.cpp
         src/course_defense.cpp
         src/course_flow.cpp
+        src/course_guard.cpp
         src/course_mp.cpp
         src/course_offense.cpp
         src/course_speed.cpp

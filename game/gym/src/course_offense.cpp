@@ -5,9 +5,17 @@
 
 namespace dwe::game::gym {
 
-// trn_off.c: TRN_tickOffenseTraining, at the gym (instance 0).
+namespace {
+
+// The states of the swapping offense courses, numbered as trn_off.c's instance 6.
+constexpr std::int32_t SwapPunchState = 7;
+constexpr std::int32_t SwapWaitState = 8;
+
+} // namespace
+
+// trn_off.c: TRN_tickOffenseTraining, at the gym (instance 0); the other spots swap objects.
 void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, const GymInput& input) {
-  const SpeciesAnimation& punch = offense.animationOf(ports.partnerSpecies());
+  const SpeciesAnimation& punch = gym_->punchOf(ports.partnerSpecies());
   switch (state_) {
   case 0:
     ports.storeObjects(offense.objects);
@@ -18,10 +26,10 @@ void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, cons
     if (ports.walk(Actor::Partner, course_->spot)) {
       startSpin();
       ports.animate(Actor::Partner, punch.animation);
-      ports.holdAnimation(Actor::Partner, true);
+      ports.holdAnimation(Actor::Partner, offense.swap == std::nullopt);
       step_ = 0;
       ports.face(Actor::Partner, offense.facing);
-      setState(2);
+      setState(offense.swap ? SwapPunchState : 2);
     }
     break;
   case 2:
@@ -88,7 +96,55 @@ void CourseRun::offenseFrame(GymPorts& ports, const OffenseCourse& offense, cons
     }
     break;
   default:
+    if (offense.swap) {
+      offenseSwapFrame(ports, offense, *offense.swap, input);
+    }
     break;
+  }
+}
+
+// trn_off.c states 7 and 8 (instance 6) and trn2_off.c states 2 and 3: the punch, then the
+// swapped objects for `frames`, then the punch again.
+void CourseRun::offenseSwapFrame(GymPorts& ports, const OffenseCourse& offense,
+                                 const OffenseSwap& swap, const GymInput& input) {
+  const SpeciesAnimation& punch = gym_->punchOf(ports.partnerSpecies());
+  const auto undo = [&] {
+    ports.showObjects(swap.undoShown, true);
+    ports.showObjects(swap.undoHidden, false);
+  };
+  if (state_ == SwapPunchState) {
+    ++step_;
+    ++counter_;
+    if (step_ == punch.frames) {
+      particles(ports, offense.particles);
+      ports.playSound(gym_->soundSlot, offense.hitSound);
+      ports.showObjects(swap.hitHidden, false);
+      ports.showObjects(swap.hitShown, true);
+      ports.restartObjects(swap.hitRestarted);
+      step_ = 0;
+      setState(SwapWaitState);
+    }
+    return;
+  }
+  if (state_ != SwapWaitState) {
+    return;
+  }
+  ++counter_;
+  ++step_;
+  if (step_ == swap.frames) {
+    undo();
+    ports.animate(Actor::Partner, punch.animation);
+    step_ = 0;
+    setState(SwapPunchState);
+  }
+  // The session can only end while the objects are swapped, as in the original.
+  if (sessionOver(input)) {
+    undo();
+    award(ports);
+    ports.animate(Actor::Partner, course_->doneAnimation);
+    ports.moveCamera(std::nullopt, course_->cameraSpeed);
+    ports.playSound(gym_->soundSlot, course_->endSound);
+    setState(4);
   }
 }
 

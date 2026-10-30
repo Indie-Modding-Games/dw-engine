@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace dwe::game::gym {
 
@@ -16,8 +17,9 @@ struct Award {
   GymStats gains{};
 };
 
-// Who a course moves: the partner, or the tamer (the brains course).
-enum class Actor : std::uint8_t { Partner, Tamer };
+// Who a course moves: the partner, the tamer (the brains course) or the map's first character
+// (NPC_ENTITIES[0], the teacher of the second brains course).
+enum class Actor : std::uint8_t { Partner, Tamer, Teacher };
 
 // What a course asks of the field, the actors, the sound and the screen. The game implements it;
 // a course knows none of them.
@@ -34,12 +36,16 @@ public:
   // after.
   virtual void setTraining(bool training) = 0;
   virtual void animate(Actor actor, std::int32_t animation) = 0;
+  // Whether the actor's animation reached its last frame (anim.animFrame >= frameCount).
+  [[nodiscard]] virtual bool animationEnded(Actor actor) = 0;
   // The animation stands still on its frame (animFlag 2) until released.
   virtual void holdAnimation(Actor actor, bool hold) = 0;
   // 4096 per turn.
   virtual void face(Actor actor, std::int32_t angle) = 0;
   // entityLookAtLocation, both ways.
   virtual void faceEachOther() = 0;
+  // entityLookAtLocation: `actor` turns to `target`.
+  virtual void lookAt(Actor actor, Actor target) = 0;
   // tickEntityWalkTo: one frame of a walk to a spot; with no spot, the partner walks back to the
   // tamer. True once there.
   virtual bool walk(Actor actor, std::optional<Point> spot) = 0;
@@ -55,6 +61,10 @@ public:
   virtual void moveObjects(const ObjectGroup& group, ObjectMove move) = 0;
   // setMapObjectsFlag: hidden or shown.
   virtual void showObjects(const ObjectGroup& group, bool shown) = 0;
+  // resetMapObjectAnimation: their sprites play again from the first frame.
+  virtual void restartObjects(const ObjectGroup& group) = 0;
+  // MAP_TILE_DATA.objects[object].y: where an object is now, in background pixels.
+  [[nodiscard]] virtual std::optional<std::int32_t> objectRow(std::int32_t object) = 0;
   // getDrawPosition of the top of the partner's head: its background pixel row, if known.
   [[nodiscard]] virtual std::optional<std::int32_t> partnerHeadRow() = 0;
   [[nodiscard]] virtual std::optional<Point> partnerPosition() = 0;
@@ -64,8 +74,8 @@ public:
   virtual void runOn(Actor actor) = 0;
   // Whether the partner is drawn on screen (entity.isOnScreen).
   [[nodiscard]] virtual bool partnerOnScreen() = 0;
-  // Puts the partner at another x, where it runs on from.
-  virtual void placePartnerX(std::int32_t x) = 0;
+  // Puts the partner at another x or z, where it runs on from.
+  virtual void placePartner(Axis axis, std::int32_t value) = 0;
   [[nodiscard]] virtual std::string partnerSpecies() = 0;
   // createCloudFX, createParticleFX and removeAllCloudFX.
   virtual void addCloud(Point at) = 0;
@@ -118,6 +128,14 @@ private:
   void defenseFrame(GymPorts& ports, const DefenseCourse& defense, const GymInput& input);
   void speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymInput& input);
   void brainFrame(GymPorts& ports, const BrainCourse& brain, const GymInput& input);
+  void defensePulseFrame(GymPorts& ports, const DefensePulseCourse& defense, const GymInput& input);
+  void defenseDropFrame(GymPorts& ports, const DefenseDropCourse& defense, const GymInput& input);
+  void treadmillFrame(GymPorts& ports, const TreadmillCourse& treadmill, const GymInput& input);
+  // trn_off.c states 7 and 8, trn2_off.c states 2 and 3: the hit swaps objects instead.
+  void offenseSwapFrame(GymPorts& ports, const OffenseCourse& offense, const OffenseSwap& swap,
+                        const GymInput& input);
+  // createParticleFX at each point.
+  void particles(GymPorts& ports, const std::vector<Point3>& points) const;
 
   // The steps every course shares.
   void begin(GymPorts& ports);
@@ -128,6 +146,8 @@ private:
   void award(GymPorts& ports);
   // The session ran its frames, or the player cancelled.
   [[nodiscard]] bool sessionOver(const GymInput& input) const;
+  // The same, with the counter past its frames (trn2_def_*.c set it to 1200 on cancel).
+  [[nodiscard]] bool sessionOverCounted() const;
   [[nodiscard]] bool counted() const;
   [[nodiscard]] bool rested();
   void finish(GymPorts& ports);

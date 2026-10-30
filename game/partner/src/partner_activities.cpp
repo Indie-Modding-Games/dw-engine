@@ -140,7 +140,7 @@ core::Result<TrainingResult> Partner::train(const TrainingRequest& request,
   }
   useClock(clock);
   // trn.c: the sessions as a baby or in-training count towards the practice bonus.
-  if (place->countsPractice &&
+  if (place->countsPractice && request.countsPractice &&
       static_cast<std::int32_t>(species_->level) < rules.practiceLevelBelow) {
     ++state_.training.youngSessions[course->aptitude];
   }

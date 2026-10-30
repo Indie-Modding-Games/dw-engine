@@ -109,6 +109,9 @@ struct TrainingRequest {
   // A place and one of its courses (training.yaml: places).
   std::string place;
   std::string course;
+  // Whether the session may count towards the practice bonus, as the place says: the other
+  // training spots of a place do not (trn_off.c, trn_speed.c, trn_brain.c count at the gym only).
+  bool countsPractice = true;
   // The bonus roulette's result in tenths; the training section's slot_default_tenths without it.
   std::int32_t slotTenths = 0;
   // The story flag of the course's stat is set (training.yaml: upgrade_flags; isTriggerSet).

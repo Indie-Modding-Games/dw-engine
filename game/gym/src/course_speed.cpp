@@ -4,7 +4,8 @@
 
 namespace dwe::game::gym {
 
-// trn_speed.c: TRN_tickSpeedTraining, at the gym (instance 0).
+// trn_speed.c: TRN_tickSpeedTraining, at the gym (instance 0) and on the savanna (instance 6,
+// whose laps start again along z).
 void CourseRun::speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymInput& input) {
   switch (state_) {
   case 0:
@@ -24,7 +25,7 @@ void CourseRun::speedFrame(GymPorts& ports, const SpeedCourse& speed, const GymI
     ++counter_;
     // A lap: once it ran off screen, it starts across again.
     if (!ports.partnerOnScreen() && counter_ % speed.lapFrames == 0) {
-      ports.placePartnerX(speed.restartX);
+      ports.placePartner(speed.restartAxis, speed.restart);
       ports.animate(Actor::Partner, speed.runAnimation);
     }
     if (!sessionOver(input)) {

@@ -7,11 +7,14 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
 using dwe::game::gym::Actor;
 using dwe::game::gym::Award;
+using dwe::game::gym::Axis;
 using dwe::game::gym::CourseRules;
 using dwe::game::gym::CourseRun;
 using dwe::game::gym::GymInput;
@@ -31,22 +34,34 @@ public:
   void animate(Actor /*actor*/, std::int32_t /*animation*/) override {}
   void holdAnimation(Actor /*actor*/, bool /*hold*/) override {}
   void face(Actor /*actor*/, std::int32_t /*angle*/) override {}
+  bool animationEnded(Actor /*actor*/) override { return false; }
   void faceEachOther() override {}
-  bool walk(Actor /*actor*/, std::optional<Point> /*spot*/) override { return true; }
+  void lookAt(Actor /*actor*/, Actor /*target*/) override {}
+  bool walk(Actor /*actor*/, std::optional<Point> spot) override {
+    walkedTo.push_back(spot);
+    return true;
+  }
   void moveCamera(std::optional<Point> /*spot*/, std::int32_t /*speed*/) override {}
-  void playSound(std::int32_t /*slot*/, std::int32_t /*sound*/) override {}
-  std::int32_t loopSound(std::int32_t /*slot*/, std::int32_t /*sound*/) override { return 1; }
-  void stopSound(std::int32_t /*handle*/) override {}
+  void playSound(std::int32_t /*slot*/, std::int32_t sound) override { sounds.push_back(sound); }
+  std::int32_t loopSound(std::int32_t /*slot*/, std::int32_t /*sound*/) override {
+    ++loops;
+    return loops;
+  }
+  void stopSound(std::int32_t /*handle*/) override { ++stops; }
   void storeObjects(const ObjectGroup& /*group*/) override {}
-  void restoreObjects(const ObjectGroup& /*group*/) override {}
-  void moveObjects(const ObjectGroup& /*group*/, ObjectMove /*move*/) override {}
-  void showObjects(const ObjectGroup& /*group*/, bool /*shown*/) override {}
+  void restoreObjects(const ObjectGroup& /*group*/) override { row = 0; }
+  void moveObjects(const ObjectGroup& /*group*/, ObjectMove move) override { row += move.y; }
+  void showObjects(const ObjectGroup& group, bool shown) override {
+    shows.emplace_back(group.first, shown);
+  }
+  void restartObjects(const ObjectGroup& group) override { restarts.push_back(group.first); }
+  std::optional<std::int32_t> objectRow(std::int32_t /*object*/) override { return row; }
   std::optional<std::int32_t> partnerHeadRow() override { return std::nullopt; }
   std::optional<Point> partnerPosition() override { return Point{}; }
   void movePartner(Point /*delta*/) override {}
-  void runOn(Actor /*actor*/) override {}
-  bool partnerOnScreen() override { return true; }
-  void placePartnerX(std::int32_t /*x*/) override {}
+  void runOn(Actor /*actor*/) override { ++runs; }
+  bool partnerOnScreen() override { return onScreen; }
+  void placePartner(Axis axis, std::int32_t value) override { placed.emplace_back(axis, value); }
   std::string partnerSpecies() override { return "agumon"; }
   void addCloud(Point /*at*/) override {}
   void addParticle(Point3 /*at*/) override {}
@@ -60,6 +75,16 @@ public:
 
   int awards = 0;
   int textboxesClosed = 0;
+  int loops = 0;
+  int stops = 0;
+  int runs = 0;
+  bool onScreen = true;
+  std::int32_t row = 0;
+  std::vector<std::int32_t> sounds;
+  std::vector<std::optional<Point>> walkedTo;
+  std::vector<std::pair<std::int32_t, bool>> shows;
+  std::vector<std::int32_t> restarts;
+  std::vector<std::pair<Axis, std::int32_t>> placed;
 };
 
 GymRules gymRules() {
@@ -67,6 +92,7 @@ GymRules gymRules() {
   gym.count = {.delayFrames = 100, .soundSlot = 0, .sound = 22, .hpMpMax = 9999, .statMax = 999};
   CourseRules speed;
   speed.id = "speed";
+  speed.map = "trai00";
   speed.cycleFrames = 1200;
   speed.detail = SpeedCourse{};
   gym.courses.push_back(speed);
@@ -194,4 +220,100 @@ TEST_CASE("gym.md slots: the box grows before the reels start and the rate waits
   slots.tick(ports, false);
   CHECK(slots.result().has_value());
   CHECK(ports.textboxesClosed == 1);
+}
+
+TEST_CASE("gym.md sites: routine 7 picks the course of the map the player is on") {
+  GymRules gym = gymRules();
+  CourseRules savanna = gym.courses.front();
+  savanna.map = "gias09";
+  savanna.choice = 2;
+  savanna.gains = "speed_alt";
+  gym.courses.front().choice = 2;
+  gym.courses.push_back(savanna);
+  // script_interp.c:1682: the same choice is another course on another training map.
+  REQUIRE(gym.courseOfChoice("gias09", 2) != nullptr);
+  CHECK(gym.courseOfChoice("gias09", 2)->gains == "speed_alt");
+  CHECK(gym.courseOfChoice("trai00", 2)->map == "trai00");
+  CHECK(gym.courseOfChoice("gias09", 0) == nullptr);
+  CHECK(gym.findCourse("twna01", "speed") == nullptr);
+  CHECK(gym.hasMap("gias09"));
+}
+
+TEST_CASE("gym.md sites: the savanna's laps start again along z (trn_speed.c, instance 6)") {
+  GymRules gym = gymRules();
+  gym.courses.front().detail = SpeedCourse{
+      .facing = 0, .runAnimation = 4, .lapFrames = 60, .restartAxis = Axis::Z, .restart = 2000};
+  FakePorts ports;
+  ports.onScreen = false;
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 62);
+  REQUIRE_FALSE(ports.placed.empty());
+  CHECK(ports.placed.front() == std::pair{Axis::Z, 2000});
+}
+
+TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves to its spot") {
+  using dwe::game::gym::TreadmillCourse;
+  GymRules gym = gymRules();
+  gym.courses.front().detail = TreadmillCourse{.waypoint = {.x = 247, .z = 550},
+                                               .facing = 2640,
+                                               .runAnimation = 4,
+                                               .loopSound = 14,
+                                               .shown = {.first = 56, .count = 3},
+                                               .leaveSpot = {.x = 247, .z = 965}};
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 1300);
+  CHECK(ports.runs == 0);
+  CHECK(ports.loops == 1);
+  CHECK(ports.stops == 1);
+  // The count and the rest, then the walk off to (0xf7, 0x3c5), not to the tamer.
+  frames(run, ports, 400, GymInput{.confirm = true});
+  CHECK(run.finished());
+  REQUIRE_FALSE(ports.walkedTo.empty());
+  CHECK(ports.walkedTo.back() == std::optional{Point{.x = 247, .z = 965}});
+}
+
+TEST_CASE("gym.md sites: only the falling frames count towards the ice's defense session") {
+  using dwe::game::gym::DefenseDropCourse;
+  GymRules gym = gymRules();
+  gym.courses.front().detail = DefenseDropCourse{.workAnimation = 37,
+                                                 .falling = {.first = 14, .count = 1},
+                                                 .drop = 40,
+                                                 .untilRow = 200,
+                                                 .hit = {.first = 33, .count = 1},
+                                                 .particles = {},
+                                                 .hitSound = 16,
+                                                 .recoverFrames = 30};
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  // A drop of 5 frames (0 to 200 by 40) and 30 to recover: 1200 falling frames take 240 drops.
+  frames(run, ports, 2 + 1200);
+  CHECK(ports.awards == 0);
+  CHECK(ports.restarts.size() >= 30);
+}
+
+TEST_CASE("gym.md sites: an offense hit swaps the objects and undoes it 46 frames later") {
+  using dwe::game::gym::OffenseCourse;
+  using dwe::game::gym::OffenseSwap;
+  GymRules gym = gymRules();
+  gym.defaultPunch = {.animation = 46, .frames = 10};
+  OffenseCourse offense;
+  offense.hitSound = 16;
+  offense.swap = OffenseSwap{.hitShown = {.first = 43, .count = 30},
+                             .hitHidden = {.first = 39, .count = 4},
+                             .hitRestarted = {.first = 43, .count = 43},
+                             .undoShown = {.first = 39, .count = 4},
+                             .undoHidden = {.first = 43, .count = 30},
+                             .frames = 46};
+  gym.courses.front().detail = offense;
+  FakePorts ports;
+  CourseRun run{gym, gym.courses.front(), false};
+  // Two frames to arrive, ten to the hit.
+  frames(run, ports, 12);
+  CHECK(ports.shows == std::vector<std::pair<std::int32_t, bool>>{{39, false}, {43, true}});
+  CHECK(ports.restarts == std::vector<std::int32_t>{43});
+  frames(run, ports, 46);
+  CHECK(ports.shows.size() == 4);
+  CHECK(ports.shows.at(2) == std::pair<std::int32_t, bool>{39, true});
+  CHECK(ports.shows.at(3) == std::pair<std::int32_t, bool>{43, false});
 }

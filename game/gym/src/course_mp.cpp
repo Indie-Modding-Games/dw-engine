@@ -4,7 +4,7 @@
 
 namespace dwe::game::gym {
 
-// trn_mp.c: TRN_tickMpTraining.
+// trn_mp.c: TRN_tickMpTraining, and trn2_mp.c: TRN2_tickMpTraining (no lit part, no loop).
 void CourseRun::mpFrame(GymPorts& ports, const MpCourse& mp, const GymInput& input) {
   switch (state_) {
   case 0:
@@ -28,12 +28,18 @@ void CourseRun::mpFrame(GymPorts& ports, const MpCourse& mp, const GymInput& inp
       }
       ports.face(Actor::Partner, mp.facing);
       ports.animate(Actor::Partner, mp.workAnimation);
-      loop_ = ports.loopSound(gym_->soundSlot, mp.loopSound);
+      if (mp.loopSound) {
+        loop_ = ports.loopSound(gym_->soundSlot, *mp.loopSound);
+      }
       setState(3);
     }
     break;
   case 3:
     ++counter_;
+    // trn2_mp.c: animFrame <= frameCount always holds, so the pose starts over every frame.
+    if (mp.restartWork) {
+      ports.animate(Actor::Partner, mp.workAnimation);
+    }
     if (!sessionOver(input)) {
       break;
     }

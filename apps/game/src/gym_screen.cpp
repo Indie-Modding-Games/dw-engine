@@ -34,10 +34,9 @@ using game::gym::ObjectMove;
 using game::gym::Point;
 using game::gym::Point3;
 
-constexpr std::string_view GymCourseUnknown = "game: gym: no course {}";
-constexpr std::string_view GymChoiceUnknown = "game: gym: no course for choice {}";
+constexpr std::string_view GymCourseUnknown = "game: gym: no course {} on {}";
+constexpr std::string_view GymChoiceUnknown = "game: gym: no course for choice {} on {}";
 constexpr std::string_view GymTrainFailed = "game: gym: training failed: {}";
-constexpr std::string_view GymOffMap = "game: gym: the courses run on {} only";
 // trn_reward.c: the brains course's words (reward_messages, reward_mastered): each order
 // threshold's lines, in the order of the rules' order_thresholds, then "New orders!" and "was
 // mastered!".
@@ -137,14 +136,40 @@ public:
     if (animation < 0) {
       return;
     }
+    if (actor == Actor::Teacher) {
+      animateTeacher(animation);
+      return;
+    }
     clips_.at(indexOf(actor)) = static_cast<std::uint32_t>(animation);
     desc_->scene->field().animateByScript(entityOf(actor), static_cast<std::uint32_t>(animation));
   }
+  bool animationEnded(Actor actor) override {
+    const std::optional<scene::Entity> entity = anyEntityOf(actor);
+    return !entity || desc_->scene->clipPlayedThrough(*entity);
+  }
   void holdAnimation(Actor actor, bool hold) override {
-    desc_->scene->field().freezeByScript(entityOf(actor), hold);
+    if (actor != Actor::Teacher) {
+      desc_->scene->field().freezeByScript(entityOf(actor), hold);
+    }
   }
   void face(Actor actor, std::int32_t angle) override {
-    desc_->scene->field().turnByScript(entityOf(actor), assets::yawFromOriginal(angle));
+    if (actor != Actor::Teacher) {
+      desc_->scene->field().turnByScript(entityOf(actor), assets::yawFromOriginal(angle));
+    }
+  }
+  void lookAt(Actor actor, Actor target) override {
+    // map.c: entityLookAtLocation.
+    const std::optional<scene::Entity> entity = anyEntityOf(actor);
+    const std::optional<glm::vec3> from = anyPositionOf(actor);
+    const std::optional<glm::vec3> to = anyPositionOf(target);
+    if (!entity || !from || !to) {
+      return;
+    }
+    glm::vec3 toward = *to - *from;
+    toward.y = 0.0F;
+    if (toward.x != 0.0F || toward.z != 0.0F) {
+      desc_->scene->field().turnByScript(*entity, assets::yawOfDirection(toward));
+    }
   }
   void faceEachOther() override {
     // map.c: entityLookAtLocation, both ways.
@@ -234,6 +259,21 @@ public:
       layers.setHidden(objectOf(group, index), !shown);
     }
   }
+  void restartObjects(const ObjectGroup& group) override {
+    render::MapDepthLayers& layers = desc_->scene->mapLayers();
+    for (std::int32_t index = 0; index < group.count; ++index) {
+      layers.restartAnimation(objectOf(group, index));
+    }
+  }
+  std::optional<std::int32_t> objectRow(std::int32_t object) override {
+    const render::MapDepthLayers& layers = desc_->scene->mapLayers();
+    const auto instance = static_cast<std::size_t>(object);
+    const std::optional<glm::vec2> at = layers.position(instance);
+    if (!at) {
+      return std::nullopt;
+    }
+    return static_cast<std::int32_t>(std::lround(at->y + layers.offset(instance).y));
+  }
   std::optional<std::int32_t> partnerHeadRow() override {
     core::logDebug("[port:gym] getDrawPosition(partner head): not ported yet");
     return std::nullopt;
@@ -263,10 +303,15 @@ public:
     apart.y = 0.0F;
     return glm::length(apart) <= OffScreenDistance;
   }
-  void placePartnerX(std::int32_t x) override {
+  void placePartner(game::gym::Axis axis, std::int32_t value) override {
+    // In the original's axes: its z is the world's -z.
     game::field::Field& field = desc_->scene->field();
     glm::vec3 position = field.partner().position;
-    position.x = static_cast<float>(x);
+    if (axis == game::gym::Axis::X) {
+      position.x = static_cast<float>(value);
+    } else {
+      position.z = -static_cast<float>(value);
+    }
     field.placeByScript(field.partnerEntity(), position);
   }
   std::string partnerSpecies() override { return desc_->session->partner().state().species; }
@@ -286,8 +331,8 @@ public:
     Award award{.before = statsOf(session.partner().state().stats.base), .gains = {}};
     const game::partner::TrainingRules& training = session.partnerRules().training;
     bool upgraded = false;
-    if (const auto* place = training.findPlace(rules_->place); place != nullptr) {
-      if (const auto* trained = place->findCourse(course.id); trained != nullptr) {
+    if (const auto* place = training.findPlace(course.place); place != nullptr) {
+      if (const auto* trained = place->findCourse(course.gains); trained != nullptr) {
         const auto flag = training.upgradeFlags[training.multiplierStat(*trained)];
         const auto set = desc_->story->state().trigger(flag);
         upgraded = set && *set;
@@ -297,8 +342,9 @@ public:
     if (const auto item = desc_->inventory->items().handleOf(rules_->manualItem)) {
       manual = desc_->inventory->inventory().countOf(*item) > 0;
     }
-    auto trained = session.train({.place = rules_->place,
-                                  .course = course.id,
+    auto trained = session.train({.place = course.place,
+                                  .course = course.gains,
+                                  .countsPractice = course.countsPractice,
                                   .slotTenths = slotTenths,
                                   .gymUpgraded = upgraded,
                                   .hasTrainingManual = manual});
@@ -329,6 +375,39 @@ private:
   [[nodiscard]] glm::vec3 positionOf(Actor actor) const {
     const game::field::Field& field = desc_->scene->field();
     return actor == Actor::Tamer ? field.player().position : field.partner().position;
+  }
+  // NPC_ENTITIES[0]: the script id of the map's first character record.
+  [[nodiscard]] std::optional<std::int32_t> teacherId() const {
+    const assets::MapNpc* record = desc_->scene->field().npcs().record(0);
+    return record != nullptr ? std::optional{record->scriptId} : std::nullopt;
+  }
+  [[nodiscard]] std::optional<scene::Entity> anyEntityOf(Actor actor) const {
+    if (actor != Actor::Teacher) {
+      return entityOf(actor);
+    }
+    const auto id = teacherId();
+    return id ? desc_->scene->field().npcs().entityOf(*id) : std::nullopt;
+  }
+  [[nodiscard]] std::optional<glm::vec3> anyPositionOf(Actor actor) const {
+    if (actor != Actor::Teacher) {
+      return positionOf(actor);
+    }
+    const auto id = teacherId();
+    return id ? desc_->scene->field().npcs().positionOf(*id) : std::nullopt;
+  }
+  // overworld.c: setActiveAnim, as the story animates an NPC: 0 hands it back to its own motion.
+  void animateTeacher(std::int32_t animation) {
+    game::field::Field& field = desc_->scene->field();
+    const auto id = teacherId();
+    const auto entity = anyEntityOf(Actor::Teacher);
+    if (!id || !entity || !field.npcs().setScriptedAnimation(*id, animation)) {
+      return;
+    }
+    if (animation == 0) {
+      field.releaseClipByScript(*entity);
+    } else {
+      field.animateByScript(*entity, static_cast<std::uint32_t>(animation));
+    }
   }
   // The last clip's ground speed (anim.c: applyRootMomentum); a clip without one walks at the
   // field's walk speed.
@@ -451,9 +530,10 @@ core::Result<void> GymScreen::startChosen() {
   if (!choice) {
     return std::unexpected{choice.error()};
   }
-  const CourseRules* course = rules->courseOfChoice(*choice);
+  const std::string& map = desc_.scene->field().mapId();
+  const CourseRules* course = rules->courseOfChoice(map, *choice);
   if (course == nullptr) {
-    return core::fail(std::vformat(GymChoiceUnknown, std::make_format_args(*choice)));
+    return core::fail(std::vformat(GymChoiceUnknown, std::make_format_args(*choice, map)));
   }
   core::logDebug("[port:gym] call_routine 7 (script_interp.c:1682): choice {}, course {}", *choice,
                  course->id);
@@ -469,17 +549,15 @@ core::Result<void> GymScreen::start(std::string_view course) {
     return std::unexpected{rules.error()};
   }
   rules_ = std::move(*rules);
-  const CourseRules* found = rules_.findCourse(course);
+  // TRN_setup*Training and TRN2_setup*Training: each training map has its own courses; off them
+  // no course starts. Rather than leave the story waiting forever, the course fails and the story
+  // goes on.
+  const std::string& map = desc_.scene->field().mapId();
+  const CourseRules* found = rules_.findCourse(map, course);
   if (found == nullptr) {
-    return core::fail(std::vformat(GymCourseUnknown, std::make_format_args(course)));
+    return core::fail(std::vformat(GymCourseUnknown, std::make_format_args(course, map)));
   }
   complete_ = false;
-  // TRN_setup*Training: off the gym's map no course starts. The original also runs courses on
-  // the two other training maps (0x4e, 0x77), not ported yet: rather than leave the story waiting
-  // forever there, the course fails and the story goes on.
-  if (desc_.scene->field().mapId() != rules_.map) {
-    return core::fail(std::vformat(GymOffMap, std::make_format_args(rules_.map)));
-  }
   // TRN_setup*Training: readPStat(0xf6) == 1 puts the roulette over the course.
   auto slots = desc_.story->state().variable(rules_.slotVariable);
   if (!slots) {
@@ -561,11 +639,11 @@ game::gym::BoxRect GymScreen::machineOnScreen() const {
   // up of it; the screen's middle when it is not in view.
   game::gym::BoxRect square{
       .x = -MachineLeft, .y = -MachineUp, .w = MachineSquare, .h = MachineSquare};
-  if (run_ == nullptr) {
+  if (run_ == nullptr || !run_->course().machine) {
     return square;
   }
   const std::optional<glm::vec2> point =
-      desc_.scene->worldToWindowFraction(worldOf(run_->course().machine, 0.0F));
+      desc_.scene->worldToWindowFraction(worldOf(*run_->course().machine, 0.0F));
   if (const auto at = pixelsFromMiddle(point)) {
     square.x += at->x;
     square.y += at->z;

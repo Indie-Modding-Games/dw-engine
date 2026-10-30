@@ -1,20 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ruleset: gym",
-  "description": "rules/<id>/gym.yaml: the town gym's courses (game/gym, docs/reference/vanilla). Frames are frames of the original's game loop; points are in the original's axes (world z = -z); object moves are background pixels.",
+  "description": "rules/<id>/gym.yaml: the training courses of every gym map (game/gym, docs/reference/vanilla). Frames are frames of the original's game loop; points are in the original's axes (world z = -z); object moves are background pixels.",
   "type": "object",
   "required": [
-    "map",
-    "place",
     "course_variable",
-    "course_by_choice",
     "slot_variable",
     "manual_item",
     "sound_slot",
     "cloud_scatter",
     "count",
     "slots",
-    "courses"
+    "punches",
+    "brain_learning",
+    "sites"
   ],
   "additionalProperties": false,
   "$defs": {
@@ -58,7 +57,6 @@
       "type": "object",
       "required": [
         "x",
-        "y",
         "z"
       ],
       "additionalProperties": false,
@@ -72,7 +70,8 @@
         "z": {
           "type": "integer"
         }
-      }
+      },
+      "description": "Without y, the point is at the partner's height (minus the species' height)."
     },
     "group": {
       "type": "object",
@@ -117,28 +116,10 @@
     }
   },
   "properties": {
-    "map": {
-      "description": "The map the gym works on.",
-      "type": "string",
-      "minLength": 1
-    },
-    "place": {
-      "description": "The training place (training.yaml) whose gains the courses give.",
-      "type": "string",
-      "minLength": 1
-    },
     "course_variable": {
       "description": "Story variable that picks the course.",
       "type": "integer",
       "minimum": 0
-    },
-    "course_by_choice": {
-      "description": "Course id for each value of the course variable.",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
     },
     "slot_variable": {
       "description": "Story variable that enables the roulette.",
@@ -312,536 +293,831 @@
         }
       }
     },
-    "courses": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "spot",
-          "camera_speed",
-          "cycle_frames",
-          "rest_frames",
-          "sounds",
-          "animations",
-          "slot_symbol",
-          "machine"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "enum": [
-              "hp",
-              "mp",
-              "offense",
-              "defense",
-              "speed",
-              "brain"
-            ]
-          },
-          "spot": {
-            "$ref": "#/$defs/point"
-          },
-          "camera_speed": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "cycle_frames": {
-            "$ref": "#/$defs/frames"
-          },
-          "rest_frames": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "sounds": {
-            "type": "object",
-            "required": [
-              "start",
-              "end"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "start": {
-                "type": "integer"
-              },
-              "end": {
-                "type": "integer"
-              }
-            }
-          },
-          "animations": {
-            "type": "object",
-            "required": [
-              "walk",
-              "done"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "walk": {
-                "type": "integer"
-              },
-              "done": {
-                "type": "integer"
-              }
-            }
-          },
-          "slot_symbol": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "machine": {
-            "$ref": "#/$defs/point"
-          },
-          "hp": {
-            "type": "object",
-            "required": [
-              "facing",
-              "objects",
-              "work_animation",
-              "beat_frames",
-              "beat_move",
-              "jitter",
-              "beat_sound_every",
-              "beat_sound",
-              "return_move",
-              "clouds"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "facing": {
-                "type": "integer"
-              },
-              "objects": {
-                "$ref": "#/$defs/group"
-              },
-              "work_animation": {
-                "type": "integer"
-              },
-              "beat_frames": {
-                "$ref": "#/$defs/frames"
-              },
-              "beat_move": {
-                "$ref": "#/$defs/move"
-              },
-              "jitter": {
-                "type": "integer"
-              },
-              "beat_sound_every": {
-                "$ref": "#/$defs/frames"
-              },
-              "beat_sound": {
-                "type": "integer"
-              },
-              "return_move": {
-                "$ref": "#/$defs/move"
-              },
-              "clouds": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "every",
-                    "x",
-                    "z",
-                    "dx",
-                    "dz",
-                    "count"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "every": {
-                      "$ref": "#/$defs/frames"
-                    },
-                    "x": {
-                      "type": "integer"
-                    },
-                    "z": {
-                      "type": "integer"
-                    },
-                    "dx": {
-                      "type": "integer"
-                    },
-                    "dz": {
-                      "type": "integer"
-                    },
-                    "count": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "mp": {
-            "type": "object",
-            "required": [
-              "waypoint",
-              "facing",
-              "objects",
-              "hidden",
-              "shown",
-              "head_lift",
-              "work_animation",
-              "loop_sound",
-              "leave_animation"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "waypoint": {
-                "$ref": "#/$defs/point"
-              },
-              "facing": {
-                "type": "integer"
-              },
-              "objects": {
-                "$ref": "#/$defs/group"
-              },
-              "hidden": {
-                "$ref": "#/$defs/group"
-              },
-              "shown": {
-                "$ref": "#/$defs/group"
-              },
-              "head_lift": {
-                "type": "integer"
-              },
-              "work_animation": {
-                "type": "integer"
-              },
-              "loop_sound": {
-                "type": "integer"
-              },
-              "leave_animation": {
-                "type": "integer"
-              }
-            }
-          },
-          "offense": {
-            "type": "object",
-            "required": [
-              "facing",
-              "objects",
-              "particles",
-              "hit_sound",
-              "recoil_frames",
-              "recoil_move",
-              "rebound_frames",
-              "swing_frames",
-              "swing_base",
-              "swing_divisor",
-              "leave_animation",
-              "punch",
-              "punch_by_species"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "facing": {
-                "type": "integer"
-              },
-              "objects": {
-                "$ref": "#/$defs/group"
-              },
-              "particles": {
-                "$ref": "#/$defs/points3"
-              },
-              "hit_sound": {
-                "type": "integer"
-              },
-              "recoil_frames": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "recoil_move": {
-                "$ref": "#/$defs/move"
-              },
-              "rebound_frames": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "swing_frames": {
-                "$ref": "#/$defs/frames"
-              },
-              "swing_base": {
-                "type": "integer"
-              },
-              "swing_divisor": {
-                "type": "object",
-                "required": [
-                  "x",
-                  "y"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "x": {
-                    "$ref": "#/$defs/frames"
-                  },
-                  "y": {
-                    "$ref": "#/$defs/frames"
-                  }
-                }
-              },
-              "leave_animation": {
-                "type": "integer"
-              },
-              "punch": {
-                "$ref": "#/$defs/punch"
-              },
-              "punch_by_species": {
-                "description": "The punch of a species, by its id.",
-                "type": "object",
-                "additionalProperties": {
-                  "$ref": "#/$defs/punch"
-                }
-              }
-            }
-          },
-          "defense": {
-            "type": "object",
-            "required": [
-              "facing",
-              "objects",
-              "particles",
-              "loop_sound",
-              "work_animation",
-              "push",
-              "dust_behind",
-              "swings"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "facing": {
-                "type": "integer"
-              },
-              "objects": {
-                "$ref": "#/$defs/group"
-              },
-              "particles": {
-                "$ref": "#/$defs/points3"
-              },
-              "loop_sound": {
-                "type": "integer"
-              },
-              "work_animation": {
-                "type": "integer"
-              },
-              "push": {
-                "type": "integer"
-              },
-              "dust_behind": {
-                "type": "integer"
-              },
-              "swings": {
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                  "type": "object",
-                  "required": [
-                    "dx",
-                    "limit",
-                    "push"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "dx": {
-                      "type": "integer",
-                      "not": {
-                        "const": 0
-                      }
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "push": {
-                      "type": "boolean"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "speed": {
-            "type": "object",
-            "required": [
-              "facing",
-              "run_animation",
-              "lap_frames",
-              "restart_x"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "facing": {
-                "type": "integer"
-              },
-              "run_animation": {
-                "type": "integer"
-              },
-              "lap_frames": {
-                "$ref": "#/$defs/frames"
-              },
-              "restart_x": {
-                "type": "integer"
-              }
-            }
-          },
-          "brain": {
-            "type": "object",
-            "required": [
-              "tamer_spot",
-              "tamer_walk",
-              "tamer_stand",
-              "tamer_teach",
-              "partner_stand",
-              "partner_learn",
-              "teach_every_frames",
-              "teach_sound",
-              "learn_every_frames",
-              "learning"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "tamer_spot": {
-                "$ref": "#/$defs/point"
-              },
-              "tamer_walk": {
-                "type": "integer"
-              },
-              "tamer_stand": {
-                "type": "integer"
-              },
-              "tamer_teach": {
-                "type": "integer"
-              },
-              "partner_stand": {
-                "type": "integer"
-              },
-              "partner_learn": {
-                "type": "integer"
-              },
-              "teach_every_frames": {
-                "$ref": "#/$defs/frames"
-              },
-              "teach_sound": {
-                "type": "integer"
-              },
-              "learn_every_frames": {
-                "$ref": "#/$defs/frames"
-              },
-              "learning": {
-                "type": "object",
-                "required": [
-                  "order_thresholds",
-                  "move_thresholds",
-                  "move_cap",
-                  "moves_by_special",
-                  "weights"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "order_thresholds": {
-                    "type": "array",
-                    "items": {
-                      "type": "integer"
-                    }
-                  },
-                  "move_thresholds": {
-                    "type": "array",
-                    "items": {
-                      "type": "integer"
-                    }
-                  },
-                  "move_cap": {
-                    "type": "integer"
-                  },
-                  "moves_by_special": {
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "integer",
-                        "minimum": 0
-                      }
-                    }
-                  },
-                  "weights": {
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "minItems": 3,
-                      "maxItems": 3,
-                      "items": {
-                        "type": "integer"
-                      }
-                    }
-                  }
-                }
-              }
+    "punches": {
+      "type": "object",
+      "description": "TRN_TRAINING_ANIM_IDS: each species' punch at the offense courses.",
+      "required": [
+        "default",
+        "by_species"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/punch"
+        },
+        "by_species": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/punch"
+          }
+        }
+      }
+    },
+    "brain_learning": {
+      "type": "object",
+      "required": [
+        "order_thresholds",
+        "move_thresholds",
+        "move_cap",
+        "moves_by_special",
+        "weights"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "order_thresholds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "move_thresholds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "move_cap": {
+          "type": "integer"
+        },
+        "moves_by_special": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
             }
           }
         },
-        "description": "A course: what every course has, and the choreography of its id under the key of that id.",
-        "oneOf": [
-          {
-            "properties": {
-              "id": {
-                "const": "hp"
-              }
-            },
-            "required": [
-              "hp"
-            ]
-          },
-          {
-            "properties": {
-              "id": {
-                "const": "mp"
-              }
-            },
-            "required": [
-              "mp"
-            ]
-          },
-          {
-            "properties": {
-              "id": {
-                "const": "offense"
-              }
-            },
-            "required": [
-              "offense"
-            ]
-          },
-          {
-            "properties": {
-              "id": {
-                "const": "defense"
-              }
-            },
-            "required": [
-              "defense"
-            ]
-          },
-          {
-            "properties": {
-              "id": {
-                "const": "speed"
-              }
-            },
-            "required": [
-              "speed"
-            ]
-          },
-          {
-            "properties": {
-              "id": {
-                "const": "brain"
-              }
-            },
-            "required": [
-              "brain"
-            ]
+        "weights": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "integer"
+            }
           }
-        ]
+        }
+      },
+      "description": "TRN_awardBrainsTrainingGains and TRN_tryLearnMove: what every brains course may teach."
+    },
+    "sites": {
+      "type": "array",
+      "description": "Each training map (TRN_setup*Training, TRN2_setup*Training) with its place and courses.",
+      "items": {
+        "type": "object",
+        "required": [
+          "map",
+          "place",
+          "courses"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "map": {
+            "type": "string"
+          },
+          "place": {
+            "type": "string",
+            "description": "The training.yaml place whose gains its courses give."
+          },
+          "counts_practice": {
+            "type": "boolean",
+            "description": "Whether its sessions count towards the practice bonus (upgrade*Counter); true when left out."
+          },
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "choice",
+                "spot",
+                "camera_speed",
+                "cycle_frames",
+                "rest_frames",
+                "sounds",
+                "animations",
+                "slot_symbol"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique on its site's map."
+                },
+                "spot": {
+                  "$ref": "#/$defs/point"
+                },
+                "camera_speed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "cycle_frames": {
+                  "$ref": "#/$defs/frames"
+                },
+                "rest_frames": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "sounds": {
+                  "type": "object",
+                  "required": [
+                    "end"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "start": {
+                      "type": "integer"
+                    },
+                    "end": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "animations": {
+                  "type": "object",
+                  "required": [
+                    "walk",
+                    "done"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "walk": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "slot_symbol": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "machine": {
+                  "$ref": "#/$defs/point",
+                  "description": "Left out when the map has no entry for the course: the roulette grows from the screen's middle."
+                },
+                "hp": {
+                  "type": "object",
+                  "required": [
+                    "facing",
+                    "objects",
+                    "work_animation",
+                    "beat_frames",
+                    "beat_move",
+                    "jitter",
+                    "beat_sound_every",
+                    "beat_sound",
+                    "return_move",
+                    "clouds"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "objects": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "work_animation": {
+                      "type": "integer"
+                    },
+                    "beat_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "beat_move": {
+                      "$ref": "#/$defs/move"
+                    },
+                    "jitter": {
+                      "type": "integer"
+                    },
+                    "beat_sound_every": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "beat_sound": {
+                      "type": "integer"
+                    },
+                    "return_move": {
+                      "$ref": "#/$defs/move"
+                    },
+                    "clouds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "every",
+                          "x",
+                          "z",
+                          "dx",
+                          "dz",
+                          "count"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "every": {
+                            "$ref": "#/$defs/frames"
+                          },
+                          "x": {
+                            "type": "integer"
+                          },
+                          "z": {
+                            "type": "integer"
+                          },
+                          "dx": {
+                            "type": "integer"
+                          },
+                          "dz": {
+                            "type": "integer"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    },
+                    "arrival_sound": {
+                      "type": "boolean"
+                    },
+                    "shown": {
+                      "$ref": "#/$defs/group"
+                    }
+                  }
+                },
+                "mp": {
+                  "type": "object",
+                  "required": [
+                    "waypoint",
+                    "facing",
+                    "objects",
+                    "hidden",
+                    "shown",
+                    "head_lift",
+                    "work_animation",
+                    "leave_animation"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "waypoint": {
+                      "$ref": "#/$defs/point"
+                    },
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "objects": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "hidden": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "shown": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "head_lift": {
+                      "type": "integer"
+                    },
+                    "work_animation": {
+                      "type": "integer"
+                    },
+                    "loop_sound": {
+                      "type": "integer"
+                    },
+                    "leave_animation": {
+                      "type": "integer"
+                    },
+                    "restart_work": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "offense": {
+                  "type": "object",
+                  "required": [
+                    "facing",
+                    "objects",
+                    "particles",
+                    "hit_sound",
+                    "leave_animation"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "objects": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "particles": {
+                      "$ref": "#/$defs/points3"
+                    },
+                    "hit_sound": {
+                      "type": "integer"
+                    },
+                    "recoil_frames": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "recoil_move": {
+                      "$ref": "#/$defs/move"
+                    },
+                    "rebound_frames": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "swing_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "swing_base": {
+                      "type": "integer"
+                    },
+                    "swing_divisor": {
+                      "type": "object",
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": {
+                          "$ref": "#/$defs/frames"
+                        },
+                        "y": {
+                          "$ref": "#/$defs/frames"
+                        }
+                      }
+                    },
+                    "leave_animation": {
+                      "type": "integer"
+                    },
+                    "swap": {
+                      "type": "object",
+                      "required": [
+                        "frames",
+                        "hit_shown",
+                        "hit_hidden",
+                        "hit_restarted",
+                        "undo_shown",
+                        "undo_hidden"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "frames": {
+                          "$ref": "#/$defs/frames"
+                        },
+                        "hit_shown": {
+                          "$ref": "#/$defs/group"
+                        },
+                        "hit_hidden": {
+                          "$ref": "#/$defs/group"
+                        },
+                        "hit_restarted": {
+                          "$ref": "#/$defs/group"
+                        },
+                        "undo_shown": {
+                          "$ref": "#/$defs/group"
+                        },
+                        "undo_hidden": {
+                          "$ref": "#/$defs/group"
+                        }
+                      }
+                    }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "swap"
+                      ],
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "recoil_frames"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "recoil_move"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "rebound_frames"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "swing_frames"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "swing_base"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "swing_divisor"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "recoil_frames",
+                        "recoil_move",
+                        "rebound_frames",
+                        "swing_frames",
+                        "swing_base",
+                        "swing_divisor"
+                      ],
+                      "not": {
+                        "required": [
+                          "swap"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "defense": {
+                  "type": "object",
+                  "required": [
+                    "facing",
+                    "objects",
+                    "particles",
+                    "loop_sound",
+                    "work_animation",
+                    "push",
+                    "dust_behind",
+                    "swings"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "objects": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "particles": {
+                      "$ref": "#/$defs/points3"
+                    },
+                    "loop_sound": {
+                      "type": "integer"
+                    },
+                    "work_animation": {
+                      "type": "integer"
+                    },
+                    "push": {
+                      "type": "integer"
+                    },
+                    "dust_behind": {
+                      "type": "integer"
+                    },
+                    "swings": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "dx",
+                          "limit",
+                          "push"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "dx": {
+                            "type": "integer",
+                            "not": {
+                              "const": 0
+                            }
+                          },
+                          "limit": {
+                            "type": "integer"
+                          },
+                          "push": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "speed": {
+                  "type": "object",
+                  "required": [
+                    "facing",
+                    "run_animation",
+                    "lap_frames",
+                    "restart"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "run_animation": {
+                      "type": "integer"
+                    },
+                    "lap_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "restart": {
+                      "type": "object",
+                      "minProperties": 1,
+                      "maxProperties": 1,
+                      "additionalProperties": false,
+                      "properties": {
+                        "x": {
+                          "type": "integer"
+                        },
+                        "z": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "brain": {
+                  "type": "object",
+                  "required": [
+                    "tamer_spot",
+                    "tamer_walk",
+                    "tamer_stand",
+                    "partner_stand",
+                    "partner_learn",
+                    "learn_every_frames"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "tamer_spot": {
+                      "$ref": "#/$defs/point"
+                    },
+                    "tamer_walk": {
+                      "type": "integer"
+                    },
+                    "tamer_stand": {
+                      "type": "integer"
+                    },
+                    "tamer_teach": {
+                      "type": "integer"
+                    },
+                    "partner_stand": {
+                      "type": "integer"
+                    },
+                    "partner_learn": {
+                      "type": "integer"
+                    },
+                    "teach_every_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "teach_sound": {
+                      "type": "integer"
+                    },
+                    "learn_every_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "teacher": {
+                      "type": "object",
+                      "required": [
+                        "animation",
+                        "sound",
+                        "sound_every_frames",
+                        "done_animation"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "animation": {
+                          "type": "integer"
+                        },
+                        "sound": {
+                          "type": "integer"
+                        },
+                        "sound_every_frames": {
+                          "$ref": "#/$defs/frames"
+                        },
+                        "done_animation": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "teacher"
+                      ],
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "tamer_teach"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "teach_every_frames"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "teach_sound"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "tamer_teach",
+                        "teach_every_frames",
+                        "teach_sound"
+                      ],
+                      "not": {
+                        "required": [
+                          "teacher"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "choice": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The course variable's value that picks it on its map (routine 7)."
+                },
+                "gains": {
+                  "type": "string",
+                  "description": "The training.yaml course of the site's place whose gains it gives; the id when left out."
+                },
+                "defense_pulse": {
+                  "type": "object",
+                  "required": [
+                    "facing",
+                    "hidden",
+                    "shown",
+                    "particles",
+                    "hit_sound",
+                    "work_animation",
+                    "hit_after_frames",
+                    "recover_frames"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "hidden": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "shown": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "particles": {
+                      "$ref": "#/$defs/points3"
+                    },
+                    "hit_sound": {
+                      "type": "integer"
+                    },
+                    "work_animation": {
+                      "type": "integer"
+                    },
+                    "hit_after_frames": {
+                      "$ref": "#/$defs/frames"
+                    },
+                    "recover_frames": {
+                      "$ref": "#/$defs/frames"
+                    }
+                  }
+                },
+                "defense_drop": {
+                  "type": "object",
+                  "required": [
+                    "work_animation",
+                    "falling",
+                    "drop",
+                    "until_row",
+                    "hit",
+                    "particles",
+                    "hit_sound",
+                    "recover_frames"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "work_animation": {
+                      "type": "integer"
+                    },
+                    "falling": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "drop": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "until_row": {
+                      "type": "integer"
+                    },
+                    "hit": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "particles": {
+                      "$ref": "#/$defs/points3"
+                    },
+                    "hit_sound": {
+                      "type": "integer"
+                    },
+                    "recover_frames": {
+                      "$ref": "#/$defs/frames"
+                    }
+                  }
+                },
+                "treadmill": {
+                  "type": "object",
+                  "required": [
+                    "waypoint",
+                    "facing",
+                    "run_animation",
+                    "loop_sound",
+                    "shown",
+                    "leave_spot"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "waypoint": {
+                      "$ref": "#/$defs/point"
+                    },
+                    "facing": {
+                      "type": "integer"
+                    },
+                    "run_animation": {
+                      "type": "integer"
+                    },
+                    "loop_sound": {
+                      "type": "integer"
+                    },
+                    "shown": {
+                      "$ref": "#/$defs/group"
+                    },
+                    "leave_spot": {
+                      "$ref": "#/$defs/point"
+                    }
+                  }
+                }
+              },
+              "description": "A course: what every course has, and the choreography of its id under the key of that id.",
+              "oneOf": [
+                {
+                  "required": [
+                    "hp"
+                  ]
+                },
+                {
+                  "required": [
+                    "mp"
+                  ]
+                },
+                {
+                  "required": [
+                    "offense"
+                  ]
+                },
+                {
+                  "required": [
+                    "defense"
+                  ]
+                },
+                {
+                  "required": [
+                    "speed"
+                  ]
+                },
+                {
+                  "required": [
+                    "brain"
+                  ]
+                },
+                {
+                  "required": [
+                    "defense_pulse"
+                  ]
+                },
+                {
+                  "required": [
+                    "defense_drop"
+                  ]
+                },
+                {
+                  "required": [
+                    "treadmill"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }

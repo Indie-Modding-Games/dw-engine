@@ -75,6 +75,9 @@ public:
   // back (loadMapObjectPosition).
   void setOffset(std::size_t instance, glm::vec2 offset);
   [[nodiscard]] glm::vec2 offset(std::size_t instance) const;
+  // Starts an instance's sprite animation over from its first frame
+  // (overworld.c: resetMapObjectAnimation).
+  void restartAnimation(std::size_t instance);
 
 private:
   struct Instance {

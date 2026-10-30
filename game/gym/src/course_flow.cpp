@@ -55,8 +55,14 @@ void CourseRun::frame(GymPorts& ports, const GymInput& input) {
           defenseFrame(ports, detail, input);
         } else if constexpr (std::is_same_v<Detail, SpeedCourse>) {
           speedFrame(ports, detail, input);
-        } else {
+        } else if constexpr (std::is_same_v<Detail, BrainCourse>) {
           brainFrame(ports, detail, input);
+        } else if constexpr (std::is_same_v<Detail, DefensePulseCourse>) {
+          defensePulseFrame(ports, detail, input);
+        } else if constexpr (std::is_same_v<Detail, DefenseDropCourse>) {
+          defenseDropFrame(ports, detail, input);
+        } else {
+          treadmillFrame(ports, detail, input);
         }
       },
       course_->detail);
@@ -71,7 +77,9 @@ void CourseRun::begin(GymPorts& ports) {
   ports.setTraining(true);
   ports.animate(Actor::Partner, course_->walkAnimation);
   ports.moveCamera(course_->spot, course_->cameraSpeed);
-  ports.playSound(gym_->soundSlot, course_->startSound);
+  if (course_->startSound) {
+    ports.playSound(gym_->soundSlot, *course_->startSound);
+  }
   counter_ = 0;
   startSlots(ports);
 }
@@ -103,6 +111,19 @@ bool CourseRun::sessionOver(const GymInput& input) const {
     return slots_.has_value() && slots_->result().has_value();
   }
   return counter_ >= course_->cycleFrames || input.cancel || input.cancelHeld;
+}
+
+bool CourseRun::sessionOverCounted() const {
+  if (withSlots_) {
+    return slots_.has_value() && slots_->result().has_value();
+  }
+  return counter_ >= course_->cycleFrames;
+}
+
+void CourseRun::particles(GymPorts& ports, const std::vector<Point3>& points) const {
+  for (const Point3& point : points) {
+    ports.addParticle(point);
+  }
 }
 
 bool CourseRun::counted() const {
@@ -164,7 +185,10 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
       startSpin();
       ports.animate(Actor::Partner, hp.workAnimation);
       ports.face(Actor::Partner, hp.facing);
-      ports.playSound(gym_->soundSlot, hp.beatSound);
+      ports.showObjects(hp.shown, true);
+      if (hp.arrivalSound) {
+        ports.playSound(gym_->soundSlot, hp.beatSound);
+      }
       setState(2);
     }
     break;
@@ -191,6 +215,7 @@ void CourseRun::hpFrame(GymPorts& ports, const HpCourse& hp, const GymInput& inp
     counter_ /= hp.beatFrames;
     ports.animate(Actor::Partner, course_->doneAnimation);
     award(ports);
+    ports.showObjects(hp.shown, false);
     ports.moveCamera(std::nullopt, course_->cameraSpeed);
     setState(3);
     break;

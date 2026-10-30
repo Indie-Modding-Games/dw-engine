@@ -38,23 +38,34 @@ bool FieldScene::animateScripted(Actor& actor, double seconds) {
   return true;
 }
 
-float FieldScene::clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const {
-  const Actor* actor = nullptr;
+const FieldScene::Actor* FieldScene::actorOfEntity(scene::Entity entity) const {
   if (entity == playerActor_->entity) {
-    actor = playerActor_.get();
-  } else if (entity == partnerActor_->entity) {
-    actor = partnerActor_.get();
-  } else if (const auto npc = std::ranges::find(npcActors_, entity, &Actor::entity);
-             npc != npcActors_.end()) {
-    // A map's NPC walks for the script too (script_interp.c: scriptSetEntityWalking), as the wild
-    // one of the forest's first fight leaves; without its speed the script would wait forever.
-    actor = npc->get();
+    return playerActor_.get();
   }
+  if (entity == partnerActor_->entity) {
+    return partnerActor_.get();
+  }
+  if (const auto npc = std::ranges::find(npcActors_, entity, &Actor::entity);
+      npc != npcActors_.end()) {
+    return npc->get();
+  }
+  return nullptr;
+}
+
+float FieldScene::clipGroundSpeed(scene::Entity entity, std::uint32_t clip) const {
+  // A map's NPC walks for the script too (script_interp.c: scriptSetEntityWalking), as the wild
+  // one of the forest's first fight leaves; without its speed the script would wait forever.
+  const Actor* actor = actorOfEntity(entity);
   if (actor == nullptr) {
     return 0.0F;
   }
   const assets::AnimationClip* found = actor->model->findClip(clip);
   return found == nullptr ? 0.0F : animation::repeatGroundSpeed(*actor->model, *found);
+}
+
+bool FieldScene::clipPlayedThrough(scene::Entity entity) const {
+  const Actor* actor = actorOfEntity(entity);
+  return actor == nullptr || actor->player == nullptr || actor->player->playedThrough();
 }
 
 } // namespace dwe::app
