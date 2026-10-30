@@ -45,7 +45,6 @@ bool spansOverlap(float aMin, float aMax, float bMin, float bMax) {
   return aMax >= bMin && aMin <= bMax;
 }
 
-
 // map.c: entityCheckEntityCollision for any character but the player: after the step, an edge of
 // its square on a side it moves toward lies inside the other's square.
 bool leadingEdgeInside(const GroundSquare& mover, glm::vec2 step, const GroundSquare& other) {
@@ -263,6 +262,11 @@ std::vector<NpcBody> FieldNpcs::bodies() const {
 std::optional<std::int32_t> FieldNpcs::scriptedAnimationOf(std::int32_t scriptId) const {
   const Npc* npc = find(scriptId);
   return npc != nullptr ? std::optional{npc->scriptedAnimation} : std::nullopt;
+}
+
+std::optional<bool> FieldNpcs::heldOf(std::int32_t scriptId) const {
+  const Npc* npc = find(scriptId);
+  return npc != nullptr ? std::optional{npc->held} : std::nullopt;
 }
 
 bool FieldNpcs::setScriptedAnimation(std::int32_t scriptId, std::int32_t animation) {

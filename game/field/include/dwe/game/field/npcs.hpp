@@ -124,6 +124,8 @@ public:
   [[nodiscard]] std::vector<NpcBody> bodies() const;
   // The animation a script left on an NPC (setScriptedAnimation), or nothing without such an NPC.
   [[nodiscard]] std::optional<std::int32_t> scriptedAnimationOf(std::int32_t scriptId) const;
+  // Whether a script holds an NPC still (hold), or nothing without such an NPC.
+  [[nodiscard]] std::optional<bool> heldOf(std::int32_t scriptId) const;
   // Starts an NPC's path and reaction to the player over, as a hold does (clearMapAITable), after
   // something else moved it. False when no NPC has that script id.
   bool restartPath(std::int32_t scriptId);

@@ -45,10 +45,14 @@ dwe_add_app(game
         src/partner_portrait.cpp
         src/partner_tab.cpp
         src/play_session.cpp
+        src/play_session_report.cpp
+        src/bug_report.cpp
+        src/bug_reporter.cpp
         src/story_scene_glue.cpp
         src/save_command.cpp
         src/save_flow.cpp
         src/saves.cpp
+        src/screenshot.cpp
         src/session_start.cpp
         src/save_machine.cpp
         src/gym_screen.cpp
@@ -83,6 +87,8 @@ dwe_add_shaders(game FILES shaders/test_scene.slang)
 
 # The version a save file names as the game that wrote it.
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
+# A bug report names the commit of the source the game was built from (git describe in this folder).
+target_compile_definitions(game PRIVATE DWE_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 # Until the asset pipeline exists, the scripts are read from the source tree, so editing them reloads them live.
 target_compile_definitions(game PRIVATE DWE_GAME_SCRIPTS="${CMAKE_CURRENT_SOURCE_DIR}/scripts")
@@ -97,7 +103,7 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 # the title screen's and the game's save flows.
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-    add_executable(dwe_game_tests ${game_test_sources} src/game_saves.cpp src/minimap_setting.cpp
+    add_executable(dwe_game_tests ${game_test_sources} src/bug_report.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/save_command.cpp src/save_flow.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution

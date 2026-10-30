@@ -39,6 +39,7 @@ El juego empieza donde dice `field/warps` del paquete `game` (`start`: `twna01`,
 | `--clock-speed <x>` | Velocidad del reloj del juego: 1 la del original (un minuto de juego por segundo real), 60 una hora de juego por segundo real |
 | `--seed <n>` | La semilla de los números aleatorios de una partida nueva (el partner y los sistemas: combates, objetos, evolución), para que una ruta juegue igual cada vez. Sin ella, el juego toma una del reloj y la escribe en el log (`game: new game, seed <n>`), así una partida se puede repetir. Con `--load` no cambia nada: la partida cargada sigue con los números que guardó |
 | `--saves <carpeta>` | Dónde lee y guarda las partidas (por defecto la carpeta de datos del usuario). Un autotest solo guarda con ella |
+| `--reports <carpeta>` | Dónde guarda los [reportes de bug](#reportar-un-bug-f12) (por defecto `reports` en la carpeta de datos del usuario) |
 | `--text-font modern\|original` | La fuente del texto con aspecto original (el nombre del mapa), en vez de la elegida en el menú principal o la de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspecto-original)) |
 | `--ui-skin <id>` | El aspecto de la interfaz (`original`, el de por defecto, `modern`, o uno de un mod), en vez del elegido en los menús o el de los paquetes; para autotests y capturas, no se guarda (ver [UI](../architecture/ui.md#aspectos)) |
 | `--autotest <ruta.yaml>` | Recorre una ruta y sale con 0 si pasa (ver abajo) |
@@ -61,6 +62,7 @@ Las vistas de desarrollo siguen disponibles: `--test-scene`, `--map <id>`, `--mo
 | Menú | Tab o el botón «Menú» del HUD | Start |
 | Aceptar / volver en el menú | Enter, Espacio o clic / Esc, Retroceso o clic derecho | Sur / Este |
 | Consola de depuración | F1 o `º` | |
+| Guardar un reporte de bug | F12 (acción `report_bug`) | |
 
 Correr es lo normal, como en el original (allí R1 hacía andar). Los avisos de botones del HUD y del menú cambian al
 último dispositivo usado. El menú para el campo mientras está abierto.
@@ -70,6 +72,30 @@ en el original, el reloj del juego avanza un minuto por segundo y el fondo cambi
 20:00, y al cruzar una puerta la pantalla se oscurece restando un gris durante un segundo mientras el jugador sigue
 andando, con el nombre del mapa nuevo en el centro en la segunda mitad, y vuelve en otro segundo
 ([ficha del campo](../reference/campo.md)).
+
+## Reportar un bug (F12)
+
+Durante una partida, **F12** (la acción `report_bug`, que se puede reasignar como las demás) guarda un reporte en
+`<datos del usuario>/reports/<AAAAMMDD-HHMMSS>-<mapa>/` (en Linux `~/.local/share/indie-modding-games/dwe/reports/`,
+o la carpeta de `--reports`), escribe la ruta de la carpeta en el log y enseña «Reporte guardado» unos segundos. El
+HUD normal no enseña nada de esto. En la carpeta:
+
+| Fichero | Qué es |
+|---|---|
+| `save.yaml` | La partida en ese momento, con el sistema de guardado de siempre. En mitad de un combate, un script, un cambio de mapa o una escena (cuidados, evolución, sueño, gimnasio, tienda...) no se puede guardar: entonces es la última foto del campo libre, que el juego toma cada 5 s mientras se puede, y `state.yaml` lo dice (`save.kind: field_snapshot`, `seconds_ago` y `reason`) |
+| `screenshot.png` | La captura del frame siguiente, sin el aviso |
+| `state.yaml` | El commit del que se compiló (`git describe --dirty`), el mapa, la hora y el día del juego, qué hay en pantalla (campo, combate y su fase, script en marcha y sus secciones, cuadro de diálogo, menú, cambio de mapa), la posición y el giro del jugador, del compañero y de cada NPC (id de script, especie, modelo, si un script lo sujeta o lo mueve), los luchadores del combate con HP, MP y posición, la especie y el estado del compañero, y el contador `field.overlaps` |
+| `log.txt` | Las últimas 2000 líneas del log |
+| `route.yaml` | Una ruta de autotest que carga `save.yaml` (`load_save`) y espera en ese mapa |
+
+Para reproducirlo, desde la raíz del repositorio:
+
+```bash
+build/linux-clang-debug/apps/game/dwe-game --content build/studio-content \
+  --autotest ~/.local/share/indie-modding-games/dwe/reports/<carpeta>/route.yaml --shots /tmp/repro
+```
+
+La ruta acaba con una captura; añade detrás de la espera los pasos que enseñan el bug y queda como prueba.
 
 ## Autotests
 
@@ -305,6 +331,7 @@ main_menu: false          # true: empieza en el menú principal en vez de en el 
 boot_screen: false        # true (con main_menu): la portada empieza en «Press Start»
 language_first: false     # true (con boot_screen): antes, la caja de idiomas, como al arrancar el juego
 new_game: seeded          # original: la partida nueva corre la apertura (por defecto seeded, el campo libre)
+load_save: save.yaml      # empieza cargando esa partida (relativa a la ruta), sin main_menu ni new_game
 steps:
   - wait: {map: twna01, seconds: 1}
   - walk_to: {trigger: 112}

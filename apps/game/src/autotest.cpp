@@ -1,6 +1,5 @@
 #include "autotest.hpp"
 
-#include <dwe/assets/image.hpp>
 #include <dwe/assets/map_document.hpp>
 #include <dwe/assets/yaml_reader.hpp>
 #include <dwe/core/log.hpp>
@@ -35,6 +34,7 @@
 #include "field_items_screen.hpp"
 #include "messages.hpp"
 #include "options.hpp"
+#include "screenshot.hpp"
 #include "story_text_rows.hpp"
 
 namespace dwe::app {
@@ -518,9 +518,9 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
   }
   assets::YamlReader reader;
   AutotestRoute route;
-  reader.expectKeys(
-      *document, "route", {"name", "device", "steps"},
-      {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game"});
+  reader.expectKeys(*document, "route", {"name", "device", "steps"},
+                    {"gamepad", "timeout", "main_menu", "boot_screen", "language_first", "new_game",
+                     "load_save"});
   route.name = reader.text(reader.field(*document, "name"));
   const core::YamlNode& device = reader.field(*document, "device");
   if (const auto known = deviceNamed(reader.text(device))) {
@@ -556,6 +556,12 @@ core::Result<AutotestRoute> parseAutotestRoute(std::string_view yaml) {
       reader.fail(*newGame, "new_game must be original or seeded");
     }
   }
+  if (const core::YamlNode* save = document->find("load_save")) {
+    route.loadSave = std::filesystem::path{reader.text(*save)};
+    if (route.mainMenu || route.newGameChain) {
+      reader.fail(*save, "load_save starts a saved game: no main_menu or new_game with it");
+    }
+  }
   if (const core::YamlNode* timeout = document->find("timeout")) {
     route.timeout = reader.number(*timeout);
   }
@@ -574,6 +580,9 @@ core::Result<std::unique_ptr<Autotest>> Autotest::load(const std::filesystem::pa
   auto parsed = parseAutotestRoute(text);
   if (!parsed) {
     return core::fail(std::format("{}: {}", route.string(), parsed.error().message));
+  }
+  if (parsed->loadSave && parsed->loadSave->is_relative()) {
+    parsed->loadSave = route.parent_path() / *parsed->loadSave;
   }
   if (shots) {
     std::error_code error;
@@ -1239,17 +1248,11 @@ bool Autotest::screenshotStep(const AutotestHost& host, const AutotestStep& step
         *message = captured.error().message;
         return;
       }
-      const assets::Image image{.width = captured->width,
-                                .height = captured->height,
-                                .pixels = std::move(captured->pixels)};
-      const auto png = assets::encodePng(image);
       const std::filesystem::path path =
-          folder / std::format("{}-{}x{}.png", stem, image.width, image.height);
-      std::ofstream file{path, std::ios::binary};
-      if (!png || !file.write(reinterpret_cast<const char*>(png->data()),
-                              static_cast<std::streamsize>(png->size()))) {
+          folder / std::format("{}-{}x{}.png", stem, captured->width, captured->height);
+      if (auto written = writeScreenshot(std::move(*captured), path); !written) {
         *state = 2;
-        *message = png ? std::format("cannot write {}", path.string()) : png.error().message;
+        *message = written.error().message;
         return;
       }
       *state = 1;

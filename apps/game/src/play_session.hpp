@@ -4,6 +4,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/save/save_file.hpp>
 #include <dwe/render/renderer.hpp>
 #include <dwe/rhi/device.hpp>
 #include <dwe/screens/screen_settings.hpp>
@@ -23,6 +24,7 @@
 #include "autotest.hpp"
 #include "battle_ground.hpp"
 #include "battle_screen.hpp"
+#include "bug_report.hpp"
 #include "care_commands.hpp"
 #include "death_scene.hpp"
 #include "egg_box_screen.hpp"
@@ -154,6 +156,14 @@ public:
     return game_.session->partner().state().species;
   }
 
+  // What a bug report says of the game now (bug_report.hpp; the app fills in the build and the
+  // date).
+  [[nodiscard]] BugReportState reportState() const;
+  // The save a bug report holds, as a save file's text: the game as it is when it could be saved
+  // now, else the last snapshot of a free field (`save` says which, and why); nothing when there is
+  // neither.
+  [[nodiscard]] std::optional<std::string> reportSave(ReportSave& save) const;
+
   // The movie the game asks the app for (main.c: main): ED2 once a game saved after the ending is
   // loaded (MAIN_STATE 2), EDR once the ending ends the game (MAIN_STATE 3). The ending's routines
   // 53 and 54 (HIST-S7) ask for them. Taking the request clears it.
@@ -164,6 +174,12 @@ public:
 
 private:
   [[nodiscard]] bool paused() const;
+  // What keeps the game from being saved as it is now (a battle, a script, a scene), or empty when
+  // the field is free.
+  [[nodiscard]] std::string_view busyWith() const;
+  // Keeps a snapshot of the game while the field is free, every few seconds, for a bug report
+  // made while it is not.
+  void keepFieldSnapshot(double frameSeconds);
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   void showLockNotice(const std::string& textKey);
 
@@ -206,6 +222,9 @@ private:
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;
   std::optional<MovieMoment> movieRequest_;
+  // The last save of a free field (keepFieldSnapshot) and the real seconds since it was taken.
+  std::optional<game::save::SaveFile> fieldSnapshot_;
+  double snapshotSeconds_ = 0.0;
 };
 
 } // namespace dwe::app

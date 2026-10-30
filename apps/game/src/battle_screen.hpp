@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -101,6 +102,10 @@ public:
   [[nodiscard]] std::optional<game::battle::Outcome> takeOutcome();
   // The battle_win debug command: the enemies fall at once; false when no fight is running.
   bool defeatEnemies();
+  // The battle on screen until its end box closes, for a bug report; nothing otherwise.
+  [[nodiscard]] const game::battle::Battle* battle() const { return battle_ ? &*battle_ : nullptr; }
+  // The map NPCs the enemies are, in the battle's order.
+  [[nodiscard]] std::span<const std::int32_t> enemyNpcs() const { return enemyNpcs_; }
 
   // One logic tick of the battle and the view of it. The battle runs once its opening is over.
   void tick(double seconds);

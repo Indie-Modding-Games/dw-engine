@@ -87,6 +87,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
     options.saves = std::filesystem::path{value};
     return true;
   }
+  if (argument == "--reports") {
+    options.reports = std::filesystem::path{value};
+    return true;
+  }
   if (argument == "--mods") {
     options.mods.emplace_back(value);
     return true;

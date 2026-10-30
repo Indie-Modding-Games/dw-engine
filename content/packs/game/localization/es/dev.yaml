@@ -2,6 +2,8 @@
 test_map: "Mapa de prueba"
 # El aviso que se ve mientras --dev-assets está activo.
 assets_active: "Assets de desarrollo en uso (--dev-assets)"
+# El aviso de que se guardó un reporte de bug (F12).
+report_saved: "Reporte guardado"
 
 technique: "Técnica demo"
 finisher: "Final demo"

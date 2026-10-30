@@ -1,0 +1,19 @@
+/* The notice that a bug report was saved (F12): a short developer's toast over every other document, never in the way
+   of the pointer. It is not part of the game's look, so it is the same with every skin. */
+
+body {
+	pointer-events: none;
+	z-index: 1000;
+}
+
+#bug-report-toast {
+	position: absolute;
+	right: 16dp;
+	top: 16dp;
+	padding: 6dp 12dp;
+	border-radius: 8dp;
+	background-color: #1c3f8ad9;
+	border: 1dp #6a8ee2;
+	color: #ffffff;
+	font-size: 16dp;
+}

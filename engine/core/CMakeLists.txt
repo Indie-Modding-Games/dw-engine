@@ -5,6 +5,7 @@ dwe_add_module(core
     LAYER core
     SOURCES
         src/log.cpp
+        src/log_ring.cpp
         src/sha1.cpp
         src/json_schema.cpp
         src/schema_pattern.cpp

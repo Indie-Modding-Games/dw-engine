@@ -35,6 +35,8 @@ struct Options {
   std::string storyStage;
   // The folder of the save files (--saves); the user's data folder when not given.
   std::optional<std::filesystem::path> saves;
+  // Where the bug reports (F12) go (--reports); `reports` in the user's data folder when not given.
+  std::optional<std::filesystem::path> reports;
   // Set by --list-saves: log the save slots and quit, without a window.
   bool listSaves = false;
   // Set by --check-content: open every asset of the folder's packs and quit, without a window.
@@ -109,7 +111,7 @@ struct Options {
 
 inline constexpr std::string_view Usage =
     "dwe-game [--content <folder>] [--mods <folder>]... [--dev-assets] [--ruleset <id>] [--story-stage <id>|all] "
-    "[--saves <folder>] [--size "
+    "[--saves <folder>] [--reports <folder>] [--size "
     "<width>x<height>] "
     "[--fullscreen] [--no-vsync] [--tuning] [--explore] [--start <map>[,<exit>]] [--time day|dusk|night] [--lang "
     "<language>] "

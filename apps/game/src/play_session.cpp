@@ -666,6 +666,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, paused());
+  keepFieldSnapshot(frameSeconds);
 }
 
 screens::ScreenSettings PlaySession::partnerStatus() const {

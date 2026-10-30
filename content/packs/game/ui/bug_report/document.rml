@@ -1,0 +1,10 @@
+<rml>
+<head>
+	<title>Bug report</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+</head>
+<body>
+	<div id="bug-report-toast"><span text-key="dev.report_saved"></span></div>
+</body>
+</rml>

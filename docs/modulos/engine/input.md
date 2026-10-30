@@ -6,4 +6,4 @@ En el campo se corre por defecto, como en el original; `walk` (Mayúsculas, o en
 
 `alt` y `extra` son los otros dos botones frontales del mando original (`ALT_BUTTON`, el círculo en la versión americana, y el cuadrado). En el mando, `alt` va en el botón norte, porque el este es `cancel`, y `extra` en el oeste (compartido con `walk`); en el teclado, Inicio y Supr, que no escriben texto y por eso funcionan también en la caja de nombres, donde `alt` lleva el cursor a Atrás y `extra` borra todo el nombre.
 
-`defaultActionMap` trae también acciones de las vistas de desarrollo (`dwe-game --map`): `debug_time_day`, `debug_time_dusk` y `debug_time_night` (teclas 1, 2 y 3) cambian la hora del día del mapa y `debug_next_map` (N) pasa al siguiente mapa de la lista.
+`defaultActionMap` trae también acciones de las vistas de desarrollo (`dwe-game --map`): `debug_time_day`, `debug_time_dusk` y `debug_time_night` (teclas 1, 2 y 3) cambian la hora del día del mapa y `debug_next_map` (N) pasa al siguiente mapa de la lista. `report_bug` (F12) guarda un [reporte de bug](../../guides/prueba-vertical.md#reportar-un-bug-f12) de la partida.

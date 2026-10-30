@@ -120,6 +120,9 @@ struct AutotestRoute {
   // How a new game starts (new_game); without it, on the seeded chain (a free field), so only
   // routes through the opening say original.
   std::optional<session::NewGameChain> newGameChain;
+  // A save file to start from (load_save: <path>, relative to the route), as a bug report's route
+  // does: the game loads it instead of starting a new game, and the field opens where it was saved.
+  std::optional<std::filesystem::path> loadSave;
   std::vector<AutotestStep> steps;
 };
 
@@ -179,6 +182,12 @@ public:
   // How the route's new game starts (AutotestRoute::newGameChain), if it says.
   [[nodiscard]] std::optional<session::NewGameChain> newGameChain() const {
     return route_.newGameChain;
+  }
+
+  // The save the route starts from (AutotestRoute::loadSave), relative paths already made relative
+  // to the route's folder.
+  [[nodiscard]] const std::optional<std::filesystem::path>& loadSave() const {
+    return route_.loadSave;
   }
 
   // Logs what the run measured (steps, map changes, frame times), while the game is still up.

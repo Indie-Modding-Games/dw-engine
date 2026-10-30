@@ -85,6 +85,9 @@ ActionMap defaultActionMap() {
   map.bind("debug_console", KeyBinding{keys::Grave});
   map.bind("debug_console", KeyBinding{keys::F1});
 
+  // Writes a bug report of the game being played (docs/guides/prueba-vertical.md).
+  map.bind("report_bug", KeyBinding{keys::F12});
+
   // Development views (dwe-game --map): fade to a time of day, show the next map.
   map.bind("debug_time_day", KeyBinding{keys::Digit1});
   map.bind("debug_time_dusk", KeyBinding{keys::Digit2});

@@ -5,8 +5,10 @@
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
+#include <dwe/core/log_ring.hpp>
 #include <dwe/core/message.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/save/slots.hpp>
 #include <dwe/input/action_map.hpp>
 #include <dwe/input/input_state.hpp>
 #include <dwe/input/keys.hpp>
@@ -27,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -39,12 +42,15 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include "app_flow.hpp"
 #include "autotest.hpp"
+#include "bug_report.hpp"
+#include "bug_reporter.hpp"
 #include "common.hpp"
 #include "content_mount.hpp"
 #include "dev_assets_banner.hpp"
@@ -312,6 +318,25 @@ bool isPointerOrKey(const platform::Event& event) {
          std::holds_alternative<platform::MouseWheelMoved>(event);
 }
 
+// A route's load_save: the save copied as slot_01 into a folder of its own, which the run uses as
+// its saves folder, so the run loads it as any slot and never writes next to the original.
+core::Result<std::filesystem::path> stageRouteSave(const std::filesystem::path& save) {
+  const std::filesystem::path folder =
+      std::filesystem::temp_directory_path() /
+      std::format("dwe-route-save-{}", std::chrono::steady_clock::now().time_since_epoch().count());
+  std::error_code error;
+  std::filesystem::create_directories(folder, error);
+  if (!error) {
+    std::filesystem::copy_file(
+        save, folder / game::save::slotFileName({.kind = game::save::SlotKind::Manual, .index = 1}),
+        std::filesystem::copy_options::overwrite_existing, error);
+  }
+  if (error) {
+    return core::fail(std::format("load_save {}: {}", save.string(), error.message()));
+  }
+  return folder;
+}
+
 // Ends the process once the game is torn down when the sound device's open is still stuck (a sound
 // server that never answered): SDL_Quit would wait for that thread forever, and so would the
 // process's exit, so the platform is never shut down and the process ends at once with its code.
@@ -339,6 +364,8 @@ private:
 } // namespace
 
 int runGame(const Options& requested) {
+  // The log's last lines, for the bug reports.
+  const std::shared_ptr<core::LogRing> logTail = core::keepLogTail(ReportLogLines);
   Options options = requested;
   auto platform = platform::Platform::create();
   if (!platform) {
@@ -351,6 +378,8 @@ int runGame(const Options& requested) {
   // forever.
   const StuckAudioExit stuckAudioExit{exitCode};
   audio::Audio sound = openGameAudio();
+  // The saves folder a route's load_save made, removed when the run ends.
+  std::optional<std::filesystem::path> routeSaves;
   // After the platform, so its virtual gamepad is unplugged before the platform goes.
   std::unique_ptr<Autotest> autotest;
   if (options.autotest) {
@@ -365,6 +394,18 @@ int runGame(const Options& requested) {
     // (--new-game-chain still wins).
     if (!options.newGameChain) {
       options.newGameChain = autotest->newGameChain().value_or(session::NewGameChain::Seeded);
+    }
+    if (const auto& save = autotest->loadSave()) {
+      auto staged = stageRouteSave(*save);
+      if (!staged) {
+        core::logError("autotest: {}", staged.error().message);
+        return EXIT_FAILURE;
+      }
+      core::logInfo("autotest: loading {}", save->string());
+      routeSaves = *staged;
+      options.saves = *staged;
+      options.load = game::save::SlotId{.kind = game::save::SlotKind::Manual, .index = 1};
+      options.newGame = false;
     }
   }
   auto window =
@@ -628,6 +669,10 @@ int runGame(const Options& requested) {
     title.showBoot();
   }
 
+  BugReporter bugReporter{bugReportsFolder(options), logTail};
+  // Whether the player asked for a bug report this frame (report_bug).
+  bool reportAsked = false;
+
   FrameStats frameStats;
   AutotestHost host{
       .platform = &*platform,
@@ -817,6 +862,7 @@ int runGame(const Options& requested) {
       if (input.wasPressed("debug_console")) {
         (*debugUi)->toggle();
       }
+      reportAsked = input.wasPressed("report_bug") || reportAsked;
       // The original has no pause menu on the title, over a movie, the opening's questions or a
       // naming box: there `menu` skips the movie (Start, mov.c: MOV_playMovie) or puts the cursor
       // on OK, and must not open it too.
@@ -950,6 +996,14 @@ int runGame(const Options& requested) {
         afterMovie();
       }
     }
+    if (std::exchange(reportAsked, false)) {
+      if (const PlaySession* play = flow.playing()) {
+        bugReporter.report(*play, **renderer);
+      } else {
+        core::logInfo("bug report: only during a game");
+      }
+    }
+    bugReporter.update(**ui, frameSeconds);
     if (options.tuning) {
       (*ui)->reloadChanged();
     }
@@ -1034,6 +1088,10 @@ int runGame(const Options& requested) {
   debugUi->reset();
   device->reset();
   exitCode = autotest->verdict(validationActive);
+  if (routeSaves) {
+    std::error_code ignored;
+    std::filesystem::remove_all(*routeSaves, ignored);
+  }
   return exitCode;
 }
 

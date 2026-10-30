@@ -89,7 +89,16 @@ En el menú, empieza una **Nueva partida** en una ranura vacía. Las partidas ex
 | Cancelar o volver | Esc o Retroceso | Botón este |
 | Abrir o cerrar el menú | Tab | Start |
 
+| Guardar un reporte de bug | F12 | |
+
 Los nombres de los botones dependen del mando y los controles pueden tener contexto. La ayuda en pantalla muestra los del dispositivo utilizado. Estas son las asignaciones del motor, no las teclas configuradas en DuckStation.
+
+## Reportar un bug
+
+Si ves algo raro mientras juegas, pulsa **F12**: el juego guarda un reporte con la partida, una captura y lo que
+estaba pasando, y enseña «Reporte guardado». Los reportes van a la carpeta `reports` de tus datos de usuario
+(`~/.local/share/indie-modding-games/dwe/reports/` en Linux). Qué hay en cada uno y cómo se reproduce está en
+[reportar un bug](../guides/prueba-vertical.md#reportar-un-bug-f12).
 
 ## Revisar una pieza sin iniciar una partida
 
