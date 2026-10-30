@@ -29,7 +29,7 @@ if (run.finished()) { ... }                                // TRAINING_COMPLETE:
   velocidad (la carrera, o la cinta) e inteligencia (la pizarra con el domador o con un maestro).
 - **Ejecución** (`CourseRun`): avanza fotogramas enteros del original con los estados numerados como el
   `TRAINING_STATE` de cada curso. La sesión acaba al cumplir su duración o al cancelar; luego la caja de estadísticas
-  (`StatCountup`) cuenta las ganancias, un punto por fotograma, y confirmar o cancelar la termina de golpe.
+  (`StatCountup`) cuenta las ganancias, un punto por fotograma, y confirmar (Intro o Espacio) o cancelar (Esc o Retroceso) la termina de golpe.
 - **Ruleta** (`SlotMachine`, `trn_slots.c`): con la variable 246 a 1, la ruleta decide cuándo acaba la sesión y el
   ritmo de las ganancias en décimas: el jugador para tres rodillos y la línea paga más con tres sietes o con tres del
   símbolo del curso (`slot_symbol`). Una ayuda oculta, sorteada por sesión, acerca la parada a una pareja o al siete
@@ -53,7 +53,7 @@ las cajas cuentan desde el centro de la pantalla (160, 120).
 
 | Regla | Decomp | Nuestro código | Test | Estado |
 |---|---|---|---|---|
-| Cancelar (triángulo en el original) **mantenido** acaba la sesión con lo ganado; no abre el menú | `trn_*.c`: `POLLED_INPUT & CANCEL_BUTTON` en cada curso | `GymInput::cancelHeld`; `PlaySession::holdsMenu` | `course_flow_tests`: "holding the original's cancel…" | Igual |
+| Cancelar (Esc o Retroceso; en mando, el botón de cancelar del original) **mantenido** acaba la sesión con lo ganado; no abre el menú | `trn_*.c`: `POLLED_INPUT & CANCEL_BUTTON` en cada curso | `GymInput::cancelHeld`; `PlaySession::holdsMenu` | `course_flow_tests`: "holding the original's cancel…" | Igual |
 | En la caja de estadísticas solo una pulsación nueva salta la cuenta | `trn_hud.c: TRN_renderPostTrainingStatsBox` | `CourseRun` (`input.confirm \|\| input.cancel`) | `course_flow_tests`: "holding the original's cancel…" | Igual |
 | La caja crece desde el partner (nodo 1 ± 5 px) hasta (-94, -78, 188, 96) en 5 cuadros, un cuarto del camino por cuadro, y se encoge igual al cerrar; sonido 0/0 al abrir y 0/1 al cerrar | `ui.c: createAnimatedUIBox`, `renderUIBoxAnimated`; `trn_hud.c: TRN_createPostTrainingStatsBox` | `GrowingBox`; `GymScreen::tickBoxes` | `course_flow_tests`: "the outline moves a quarter…" | Igual |
 | Espera de 100 cuadros con la caja en pie y luego un punto por cuadro (el cuadro 100 ya cuenta) | `trn_hud.c` (`MAIN_D_8013539E = 100`) | `StatCountup::tickFrame` | `course_flow_tests`: "it grows five frames, waits 100…" | Igual |
