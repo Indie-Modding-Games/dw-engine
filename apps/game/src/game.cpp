@@ -1,6 +1,7 @@
 #include "game.hpp"
 
 #include <dwe/assets/asset_id.hpp>
+#include <dwe/audio/output.hpp>
 #include <dwe/content/game_content.hpp>
 #include <dwe/core/fixed_step.hpp>
 #include <dwe/core/log.hpp>
@@ -29,6 +30,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
@@ -310,6 +312,30 @@ bool isPointerOrKey(const platform::Event& event) {
          std::holds_alternative<platform::MouseWheelMoved>(event);
 }
 
+// Ends the process once the game is torn down when the sound device's open is still stuck (a sound
+// server that never answered): SDL_Quit would wait for that thread forever, and so would the
+// process's exit, so the platform is never shut down and the process ends at once with its code.
+class StuckAudioExit {
+public:
+  explicit StuckAudioExit(const int& exitCode) : exitCode_{&exitCode} {}
+  StuckAudioExit(const StuckAudioExit&) = delete;
+  StuckAudioExit& operator=(const StuckAudioExit&) = delete;
+  StuckAudioExit(StuckAudioExit&&) = delete;
+  StuckAudioExit& operator=(StuckAudioExit&&) = delete;
+  ~StuckAudioExit() {
+    if (!audio::deviceOpenStuck()) {
+      return;
+    }
+    core::logWarning("{}", messages::AudioStuckAtExit);
+    std::fflush(stdout);
+    std::fflush(stderr);
+    std::_Exit(*exitCode_);
+  }
+
+private:
+  const int* exitCode_;
+};
+
 } // namespace
 
 int runGame(const Options& requested) {
@@ -319,6 +345,11 @@ int runGame(const Options& requested) {
     core::logError("{}", platform.error().message);
     return EXIT_FAILURE;
   }
+  // The process's exit code, for StuckAudioExit; the error returns leave it a failure.
+  int exitCode = EXIT_FAILURE;
+  // Before the platform shuts SDL down: a sound device open that never returned would make it wait
+  // forever.
+  const StuckAudioExit stuckAudioExit{exitCode};
   audio::Audio sound = openGameAudio();
   // After the platform, so its virtual gamepad is unplugged before the platform goes.
   std::unique_ptr<Autotest> autotest;
@@ -981,7 +1012,8 @@ int runGame(const Options& requested) {
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.
-    return EXIT_SUCCESS;
+    exitCode = EXIT_SUCCESS;
+    return exitCode;
   }
   autotest->summarize(host);
   // Shut down before judging the run, so that what teardown reports (leaks, objects destroyed in
@@ -1001,7 +1033,8 @@ int runGame(const Options& requested) {
   renderer->reset();
   debugUi->reset();
   device->reset();
-  return autotest->verdict(validationActive);
+  exitCode = autotest->verdict(validationActive);
+  return exitCode;
 }
 
 } // namespace dwe::app

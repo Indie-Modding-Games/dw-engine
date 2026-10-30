@@ -111,6 +111,15 @@ cuando las necesita, cada pocos milisegundos).
 - **Sin dispositivo no es un error.** Si SDL no puede abrir el audio (un contenedor sin servidor de sonido, el Xvfb de
   las rutas, un equipo sin tarjeta), `apps/game` registra un **aviso** con el motivo y sigue con la salida nula. Las
   rutas de autotest siguen con 0 `[error]`.
+- **Un servidor de sonido colgado no cuelga el juego** (mejora del PC). En algunos escritorios PipeWire acepta la
+  conexión y no contesta nunca: SDL se queda esperando dentro de `SDL_InitSubSystem(SDL_INIT_AUDIO)` y el juego no
+  pasaba del arranque (ni siquiera atendía `SIGTERM`, porque el bucle que lo lee no había empezado). Ahora
+  `openDeviceOutput` abre el dispositivo en un hilo propio y espera como mucho `DeviceOpenTimeout` (3 s). Si no
+  vuelve, registra un aviso, deja ese hilo atrás y el juego sigue con la salida nula, en silencio. Al cerrar, si ese
+  hilo sigue atascado (`deviceOpenStuck`), `dwe-game` termina el proceso con su código sin llamar a `SDL_Quit`, que
+  esperaría al hilo para siempre. Si el dispositivo se abre tarde, se avisa y el juego sigue en silencio hasta el
+  siguiente arranque. Para comprobarlo sin un PipeWire roto basta un socket que acepte y no conteste:
+  `PIPEWIRE_REMOTE=<socket> dwe-game ...` llega igual al campo.
 - **Backends de Linux.** El SDL3 estático de vcpkg trae de serie sin ningún backend de audio de Linux, y el juego no
   encontraba dispositivo en el escritorio. El port superpuesto `vcpkg-ports/sdl3` añade la característica
   `system-audio`, que `vcpkg.json` activa en Linux: compila los backends de ALSA, PulseAudio y PipeWire contra las

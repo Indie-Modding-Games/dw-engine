@@ -25,6 +25,9 @@ audio.
   `update`, en el orden en que se dieron.
 - `apps/game` crea el `Audio` con `openDeviceOutput` o, si no hay dispositivo, con `NullOutput` y un aviso. `dwe-sim`
   y los tests usan siempre la salida nula.
+- `openDeviceOutput` abre el dispositivo en un hilo propio con un plazo (`DeviceOpenTimeout`, 3 s): un servidor de
+  sonido que no contesta deja el juego en silencio en vez de colgarlo, y `deviceOpenStuck` dice si ese hilo quedó
+  atascado para que el juego termine sin esperarlo ([detalles](../../architecture/audio.md#4-salidas)).
 - `game/*` no ve `audio`: `game/story` declara el puerto `SoundPort` y `apps/session` lo implementa sobre `Audio`
   (`session::SessionSound`). Qué banco o qué pista suena en cada momento lo decide el juego, no este módulo.
 

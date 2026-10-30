@@ -46,5 +46,10 @@ inline constexpr std::string_view BankSampleRate =
 
 // The device (sdl_output.cpp).
 inline constexpr std::string_view DeviceUnavailable = "could not open the sound device: {}";
+inline constexpr std::string_view DeviceTimedOut =
+    "the sound device did not open within {} ms (a sound server that does not answer); its thread "
+    "is left behind";
+inline constexpr std::string_view DeviceOpenedLate =
+    "the sound device opened {} ms late; the game stays silent until it starts again";
 
 } // namespace dwe::audio::messages

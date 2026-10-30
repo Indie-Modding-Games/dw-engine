@@ -14,6 +14,8 @@ inline constexpr std::string_view ListSeparator = ", ";
 
 // The sound device (game_audio.cpp).
 inline constexpr std::string_view AudioSilent = "game: no sound: {}; the game goes on silent";
+inline constexpr std::string_view AudioStuckAtExit =
+    "game: the sound device's open never returned; the game ends without waiting for it";
 // The menus' sounds (ui/ui_sounds.yaml): a cue that cannot play stays silent.
 inline constexpr std::string_view MenuSoundsSilent = "game: the menus are silent: {}";
 inline constexpr std::string_view MenuSoundProblem = "game: a menu sound stays silent: {}";

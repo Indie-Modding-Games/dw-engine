@@ -4,6 +4,7 @@
 #include <dwe/core/error.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -57,8 +58,18 @@ private:
   std::uint64_t renderedFrames_ = 0;
 };
 
+// How long openDeviceOutput waits for the sound device by default.
+inline constexpr std::chrono::milliseconds DeviceOpenTimeout{3000};
+
 // Opens the system's default playback device, paused until start. Fails, with SDL's reason, when
-// there is no device or no sound server.
-core::Result<std::unique_ptr<Output>> openDeviceOutput();
+// there is no device or no sound server. The device opens on a thread of its own: a sound server
+// that never answers (a hung PipeWire) fails it after `timeout` instead of blocking the game, and
+// that thread is left behind (deviceOpenStuck).
+core::Result<std::unique_ptr<Output>>
+openDeviceOutput(std::chrono::milliseconds timeout = DeviceOpenTimeout);
+
+// Whether a device open timed out and its thread is still stuck in SDL's audio start. SDL_Quit
+// would then wait for it, so the app ends the process without shutting SDL down.
+[[nodiscard]] bool deviceOpenStuck();
 
 } // namespace dwe::audio

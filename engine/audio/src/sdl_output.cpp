@@ -1,14 +1,22 @@
 #include <dwe/audio/mixing.hpp>
 #include <dwe/audio/output.hpp>
+#include <dwe/core/log.hpp>
 #include <dwe/core/message.hpp>
 
 #include <SDL3/SDL.h>
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <memory>
+#include <mutex>
 #include <span>
+#include <string>
+#include <thread>
+#include <utility>
 
 #include "messages.hpp"
 
@@ -64,23 +72,84 @@ private:
   std::array<float, MaxRenderFrames * OutputChannels> buffer_{};
 };
 
+// What the thread that opens the device hands back. The thread owns it with the caller, which may
+// stop waiting for it.
+struct DeviceOpening {
+  std::mutex mutex;
+  std::condition_variable done;
+  bool finished = false;
+  // The caller stopped waiting: whatever the thread opens now stays unused, and SDL_Quit frees it.
+  bool abandoned = false;
+  SDL_AudioStream* stream = nullptr;
+  std::string error;
+};
+
+// Set while a device open the caller gave up on has not returned.
+std::atomic<bool> openStuck{false};
+
+void openOn(DeviceOpening& opening) {
+  SDL_AudioStream* stream = nullptr;
+  std::string error;
+  if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+    error = SDL_GetError();
+  } else {
+    const SDL_AudioSpec spec{.format = SDL_AUDIO_F32,
+                             .channels = static_cast<int>(OutputChannels),
+                             .freq = static_cast<int>(MixSampleRate)};
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
+    if (stream == nullptr) {
+      error = SDL_GetError();
+      SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
+  }
+  // SDL keeps per-thread data (its error text) for threads it did not make until told.
+  SDL_CleanupTLS();
+  const std::scoped_lock lock{opening.mutex};
+  opening.stream = stream;
+  opening.error = std::move(error);
+  opening.finished = true;
+  if (opening.abandoned) {
+    // Too late: the game went on silent. The paused stream is left to SDL_Quit, which can now
+    // shut the audio down normally.
+    openStuck = false;
+  }
+  opening.done.notify_all();
+}
+
 } // namespace
 
-core::Result<std::unique_ptr<Output>> openDeviceOutput() {
-  if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-    return core::fail(core::formatMessage(messages::DeviceUnavailable, SDL_GetError()));
+core::Result<std::unique_ptr<Output>> openDeviceOutput(std::chrono::milliseconds timeout) {
+  auto opening = std::make_shared<DeviceOpening>();
+  const auto started = std::chrono::steady_clock::now();
+  std::thread thread{[opening, started] {
+    openOn(*opening);
+    const std::scoped_lock lock{opening->mutex};
+    if (opening->abandoned) {
+      const auto late = std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::steady_clock::now() - started);
+      core::logWarning("audio: {}", core::formatMessage(messages::DeviceOpenedLate, late.count()));
+    }
+  }};
+  std::unique_lock lock{opening->mutex};
+  if (!opening->done.wait_for(lock, timeout, [&opening] { return opening->finished; })) {
+    // A sound server that never answers keeps SDL's audio start waiting forever, and nothing can
+    // cancel it: the thread is left behind and the game plays silent.
+    opening->abandoned = true;
+    openStuck = true;
+    lock.unlock();
+    thread.detach();
+    return core::fail(core::formatMessage(messages::DeviceTimedOut, timeout.count()));
   }
-  const SDL_AudioSpec spec{.format = SDL_AUDIO_F32,
-                           .channels = static_cast<int>(OutputChannels),
-                           .freq = static_cast<int>(MixSampleRate)};
-  SDL_AudioStream* stream =
-      SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-  if (stream == nullptr) {
-    auto failure = core::fail(core::formatMessage(messages::DeviceUnavailable, SDL_GetError()));
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
-    return failure;
+  lock.unlock();
+  thread.join();
+  if (opening->stream == nullptr) {
+    return core::fail(core::formatMessage(messages::DeviceUnavailable, opening->error));
   }
-  return std::make_unique<SdlOutput>(stream);
+  return std::make_unique<SdlOutput>(opening->stream);
+}
+
+bool deviceOpenStuck() {
+  return openStuck;
 }
 
 } // namespace dwe::audio
