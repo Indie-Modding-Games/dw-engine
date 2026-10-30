@@ -1,0 +1,18 @@
+# La gramola que abre la historia (script_interp.c: CALL_ROUTINE 9 -> shop/script_menu.c: openJukebox,
+# jukeboxFillTitleList, createJukeboxMenu, tickJukeboxMenu; apps/session: Jukebox).
+
+# showMapHeadTextbox(..., 0x4d6): lo que dice el dueño son frases de la sección 0x4d6 de MAPHEAD. Antes de la lista,
+# la 3 («Why don't you request a number that will make me hot?»); sobre la lista, la 0 («Which one do you want?»);
+# al elegir, la 2 («{bgm:pstat=249}, right?»); al salir, la 1 («Help me on my next request.»).
+lines_section: 1238
+lines:
+  greeting: 3
+  ask: 0
+  chosen: 2
+  farewell: 1
+# jukeboxFillTitleList: la canción 62 (Last Battle Theme) no sale en la lista hasta que el trigger 50 está puesto.
+unlock_trigger: 50
+locked_tracks: [62]
+# La canción que suena va a la variable 249 (writePStat(0xf9)); 255 es ninguna.
+chosen_variable: 249
+no_track: 255

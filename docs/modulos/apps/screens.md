@@ -239,6 +239,33 @@ del juego (y de pantalla = (y de captura) × 14 / 15 + 8).
 | Moverse y saltar a los extremos (R1 o Mayús mantenidos) | `itemMenuCursorUp/Down/Top/Bottom` | `DiscardListView` | `discard list: the cursor walks the six rows…`, `discard list: R1 held jumps…` | Igual |
 | Indicaciones de teclas | No hay (el cuadro de texto del guion sigue debajo) | Aceptar y Atrás con la tecla del dispositivo en uso (`ui.prompt`), entre la ventana y el cuadro de texto | Ruta `discard` | Mejora documentada |
 
+## Gramola
+
+La gramola que abre la rutina 9 (`shop/script_menu.c: openJukebox`, `createJukeboxMenu`, `tickJukeboxMenu`,
+`calculateMusicMenuStrings`); en la partida, Giromon en el restaurante (room05b). La sesión (`session::Jukebox`) decide
+la lista, la marca y la música; la pantalla `jukebox` del juego (`apps/game: JukeboxScreen`) lo enseña. Medido con el
+original (la rutina forzada por RAM con la variable 254, sonando el tema de la ciudad; captura `original_list.png` de
+`_work/routes-e2/menus-qa/jukebox/`, y la ruta `jukebox.yaml` con sus capturas en `dwe/`).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `jukebox.phase` | texto | `greeting`, `list`, `farewell` o `closed` |
+| `jukebox.{speaker,line_key,chosen_key}` | claves | El nombre del dueño (el personaje del mapa con el script de la variable 254), lo que dice (MAPHEAD 0x4d6) y el nombre de la canción elegida, que sustituye a `{bgm:pstat=249}` |
+| `jukebox.{total,top,cursor}` | números | Las filas de la lista, la primera que se ve y la del cursor entre las seis visibles |
+| `jukebox.row.<i>.{number,name,playing}` | número, clave, booleano | Las seis filas: el número desde 1, el nombre y si es la marcada (color 6) |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Saludo, pregunta, respuesta y despedida | `openJukebox` estados 0, 3 y 4 y `tickJukeboxMenu`: líneas 3, 0, 2 y 1 de la sección 0x4d6 de MAPHEAD, en el cuadro de texto del guion | Fases `greeting`, `list` y `farewell` con las mismas líneas; mientras está abierta tapa el cuadro de texto del guion, que se queda oculto hasta que el guion lo cambia | Ruta `jukebox` (room05b) | Igual |
+| Qué canciones salen | `jukeboxFillTitleList`: las 62 primeras; la 63 solo con el disparador 50 | `Jukebox::open` | `jukeboxFillTitleList lists 62 songs, and 63 once trigger 50 is set` | Igual |
+| La que suena, marcada | La fila de la música del mapa en la variable 249 (47, «48 File City Theme», con el tema de la ciudad); si no está, 255 y para la música | `Jukebox::open`; en room05b, la 47 como en el original | `the map's song is marked in variable 249…`, `a map song the list lacks stops the music…`; ruta `jukebox` | Igual |
+| Ventana de la lista | `allocateItemMenuBox` y `createJukeboxMenu`: x 89 a 311, y 22 a 151; rótulos «No.» y «TITLE» de SYSTEM_W; seis filas cada 18 px, el número en x 8 y el nombre en x 28; cursor de 202 × 18; barra de desplazamiento en x 210 | `jukebox/structure.rcss` y la piel original con esas medidas; un nombre largo se corta en el borde de la ventana | Ruta `jukebox`; `list-orig-vs-dwe.png` | Igual |
+| Dónde empieza el cursor | `createJukeboxMenu`: la fila marcada en la primera ventana, o abajo del todo con la lista desplazada (cima 42, cursor 5 con la 47) | `Jukebox::startView` | `the map's song is marked…`; ruta `jukebox` (cima 42, cursor 5) | Igual |
+| Moverse y saltar a los extremos (flechas; Mayús mantenida, R1 en el mando) | `itemMenuCursorUp/Down/Top/Bottom`: se para en los extremos | `JukeboxListView` y la acción `walk` mantenida | `the list's cursor stops at the ends and R1 jumps to them` | Igual |
+| Elegir (Enter o Espacio) | `tickJukeboxMenu`: la fila a la 249, «<canción>, right?», sonido 3; la canción suena unos 20 fotogramas después, cuando el cuadro de texto está abierto | `Jukebox::choose` y `playChosen` al momento; la fila elegida pasa a azul | `a pick plays its song once over the map's…`; ruta `jukebox` (`playMusic(30, 2)` con la 55) | Igual; la canción empieza unos 20 fotogramas antes |
+| Salir (Esc) | Cancelar: sonido 4, la lista se cierra y la despedida; al confirmarla vuelve la música del mapa desde el principio | Fase `farewell`; `Jukebox::close` → `playBGM` de la fuente activa | `…leaving plays the map's again`; ruta `jukebox` | Igual |
+| Sonido al chocar con un extremo | `itemMenuCursorUp/Down`: sonido 0xb | La UI no tiene ese sonido | — | Hueco |
+
 ## Caja del dinero de la tienda
 
 La caja con el dinero que la tienda abre junto a la compra y la venta (`script_common.c: createShopBitsBox`,

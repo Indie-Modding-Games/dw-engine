@@ -486,6 +486,11 @@ private:
       node.set("id", quoted(ids_.bgmTracks[i]));
       node.set("index", number(i));
       node.set("name", text(tables_->bgmTrackNames[i], std::format("BGM_TRACK_NAMES[{}]", i)));
+      // MAIN_D_801303B8: the font and song the music menu plays for the entry.
+      if (i < tables_->jukeboxTracks.size()) {
+        node.set("font", number(tables_->jukeboxTracks[i].font));
+        node.set("track", number(tables_->jukeboxTracks[i].track));
+      }
       list.append(std::move(node));
     }
     YamlNode root = YamlNode::mapping();

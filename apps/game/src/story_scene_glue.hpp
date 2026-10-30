@@ -11,6 +11,7 @@
 #include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
 #include "field_scene.hpp"
+#include "jukebox_screen.hpp"
 #include "save_machine.hpp"
 #include "story_gym.hpp"
 #include "story_item_keeper.hpp"
@@ -37,6 +38,8 @@ public:
   void attachEggBox(EggBoxScreen* eggBox) { eggBox_ = eggBox; }
   // The item menu the story's DiscardItem screen opens (call_routine 0).
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
+  // The jukebox the story's Jukebox screen opens (call_routine 9).
+  void attachJukebox(JukeboxScreen* jukebox) { jukebox_ = jukebox; }
   // The save machine the story's SaveMenu screen opens (call_routine 48).
   void attachSaveMachine(SaveMachine* machine) { saveMachine_ = machine; }
   // The naming box the story's renaming opens (call_routine 32).
@@ -58,6 +61,7 @@ private:
   DeathScene* death_ = nullptr;
   EggBoxScreen* eggBox_ = nullptr;
   DiscardScreen* discard_ = nullptr;
+  JukeboxScreen* jukebox_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   StoryNaming naming_;

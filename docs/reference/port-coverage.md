@@ -53,7 +53,7 @@ de inicio y los mapas cercanos, y reclutar.
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
 | 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
+| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 11, 14, 15 y 38 |
 | 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
 | 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
 | 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
@@ -87,9 +87,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 79 | 5 | 7 | 54 | 90 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 80 | 5 | 6 | 54 | 91 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 73 | 7 | 12 | 6 | 83 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 78 | 6 | 9 | 5 | 87 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 45 | 1 | 1 | 39 | 97 % |
-| **Total** | 2438 funciones | 908 | 40 | 375 | 1115 | 70 % |
+| **Total** | 2438 funciones | 914 | 39 | 371 | 1114 | 71 % |
 
 ## Batalla
 
@@ -279,7 +279,7 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 79, parcial 5, falta 7, no aplica 54.
+Portado 80, parcial 5, falta 6, no aplica 54.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -290,7 +290,6 @@ Portado 79, parcial 5, falta 7, no aplica 54.
 | `createSingleCardShopMenu` | `main/script_common.c:2047` | parcial | Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira). | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto; no hay pantallas de cartas |
 | `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | falta | Toca el sonido de la tienda, solo en el mapa de la sabana. | comprobar |
 | `calculateCardMenuStrings` | `main/script_common.c:2666` | falta | Monta la lista del menú de cartas. | no hay pantallas de cartas |
-| `calculateMusicMenuStrings` | `main/script_common.c:2727` | falta | Monta la lista de canciones de la gramola. | no hay pantalla de gramola |
 | `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
 | `createMonochromonMoodBubble` | `main/script_common.c:3038` | falta (citada en docs) | Burbuja de humor del rival de la tienda de cambio. | scripts.md: más tarde |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
@@ -321,7 +320,7 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 73, parcial 7, falta 12, no aplica 6.
+Portado 78, parcial 6, falta 9, no aplica 5.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -330,22 +329,18 @@ Portado 73, parcial 7, falta 12, no aplica 6.
 | `openBuyCardMenu` | `shop/script_menu.c:711` | parcial | Abre la compra de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:107` · la rutina 14 se cierra sin pantalla |
 | `openSellCardMenu` | `shop/script_menu.c:753` | parcial | Abre la venta de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:108` · la rutina 14 se cierra sin pantalla |
 | `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:99` · la rutina 1 se cierra sin pantalla |
-| `openJukebox` | `shop/script_menu.c:947` | parcial | Abre la gramola. | `apps/session/include/dwe/session/story_scenes.hpp:104` · la rutina 9 se cierra sin pantalla |
 | `openMojyamonShop` | `shop/script_menu.c:1051` | parcial | Abre el trueque de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 2 se cierra sin pantalla |
 | `hasAnyCardToBuy` | `shop/script_menu.c:1296` | falta | Dice si queda alguna carta por comprar. | no hay pantallas de cartas |
 | `createCardMenu` | `shop/script_menu.c:1452` | falta | Abre el menú de compra o venta de cartas. | la rutina 14 se cierra sin pantalla |
 | `shopFillMeritItemList` | `shop/script_menu.c:1479` | falta | Rellena la lista del intercambio por méritos. | la rutina 1 se cierra sin pantalla |
-| `jukeboxFillTitleList` | `shop/script_menu.c:1636` | falta (citada en docs) | Rellena la lista de la gramola. | la rutina 9 se cierra sin pantalla |
-| `createJukeboxMenu` | `shop/script_menu.c:1672` | falta | Abre la gramola. | — |
 | `mojyaTradeFillItemList` | `shop/script_menu.c:1758` | falta (citada en docs) | Rellena la lista del trueque de objetos. | la rutina 2 se cierra sin pantalla |
 | `createMojyaTradeMenu` | `shop/script_menu.c:1786` | falta | Abre el trueque de objetos. | — |
 | `setMojyaItemTradedTrigger` | `shop/script_menu.c:1801` | falta (citada en docs) | Marca el objeto ya cambiado en el trueque. | — |
 | `tickCardMenu` | `shop/script_menu.c:1816` | falta | Compra o venta de cartas: cursor, precio y confirmación. | — |
-| `tickJukeboxMenu` | `shop/script_menu.c:2396` | falta (citada en docs) | Gramola: elige y toca una canción. | — |
 | `tickMojyaTradeMenu` | `shop/script_menu.c:2547` | falta | Trueque: elige el objeto a cambiar. | — |
 | `updateMojyaTradeStrings` | `shop/script_menu.c:2647` | falta | Textos del trueque. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (5).
 
 ## Evolución
 

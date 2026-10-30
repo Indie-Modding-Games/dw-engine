@@ -42,6 +42,9 @@ screens:
   # El menú para elegir un objeto de la bolsa (tirar uno con la bolsa llena): las cajas y los rótulos del guardián.
   discard_menu:
     styles: [ui/skins/original/discard_menu/style]
+  # La gramola: las cajas del original y los rótulos de número y título de la lista.
+  jukebox:
+    styles: [ui/skins/original/jukebox/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_machine/style]
@@ -187,6 +190,16 @@ sprite_sheets:
     sprites:
       keeper-menu-label: [0, 34, 20, 7]
       keeper-count-label: [100, 48, 22, 7]
+  # Los rótulos del número y del título de la lista de la gramola (script_menu.c: renderJukeboxMenu,
+  # ITEM_MENU_HEADER_UVS 4 y 5, paleta 4).
+  - name: jukebox-labels
+    image: texture/etcdat/system_w
+    palette: 4
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      jukebox-number-label: [40, 34, 12, 7]
+      jukebox-title-label: [52, 34, 20, 7]
   # El marco de las barras de felicidad y disciplina del campo (partner_impl.c: renderStatusBars, paleta 12).
   - name: ow-field-bar
     image: texture/etcdat/system_w

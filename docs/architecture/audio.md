@@ -177,7 +177,7 @@ los carga (la sesión, con el VFS) usa lo que ya produce `dwx` ([Audio](../forma
 | Muestras de efectos: `sound/<banco>/sample_<n>` (`ss`, `sl`, `sb`) y `sound/<banco>/<entrada>/sample_<n>` (`esall`, `vball`, `vlall`) | WAV PCM 16 bits mono, a la frecuencia de su tecla, con `smpl` si tiene bucle | Ogg Opus a 48 kHz con `LOOPSTART`, `LOOPLENGTH` y `DWE_UNITY_NOTE`; **mismo id** |
 | Bancos: `bank.sf2` y `bank_meta.yaml` | SF2 sin pérdida + YAML (programas, tonos, envolventes, `sounds`: valor → programa, nota y tonos) | Copiados tal cual |
 | Música: `music/<fuente>/font.sf2`, `track_<nn>.mid`, `font_meta.yaml` | SF2 + SMF de formato 0 con marcadores `loopStart`/`loopEnd` (meta 06) + YAML (`plays: forever` u `once`, la cuenta de vueltas) | Copiados tal cual |
-| `data/music.yaml` | `bgm_tracks` (la lista de la tienda de música), `enemy_music_mapping` y, desde el tramo 3b, `field_overrides` (los pares fijos de los modos de la variable 245) y `battle` (la fuente del combate y sus pistas) | Igual |
+| `data/music.yaml` | `bgm_tracks` (la lista de la gramola, con la `font` y la `track` de cada canción de `MAIN_D_801303B8`), `enemy_music_mapping` y, desde el tramo 3b, `field_overrides` (los pares fijos de los modos de la variable 245) y `battle` (la fuente del combate y sus pistas) | Igual |
 | `data/maps` | `sound_id` de cada mapa (el trozo de `ESALL` del mapa) | Igual |
 
 Los ids de asset no llevan extensión, así que la misma referencia (`sound/ss/sample_002`) da el WAV en el camino de
@@ -383,7 +383,7 @@ ticks por segundo. Lo que es regla del juego queda igual en el ruleset `original
 | No se pausa ni se reanuda nunca una secuencia | (no hay `SsSeqPause`) | Igual: la música del campo no se reanuda tras un combate |
 | Bucles: los marcadores NRPN de la secuencia (en el MIDI, `loopStart`/`loopEnd`); las pistas de torneo de la fuente 0x1D (salvo la 1) y de las 0x1E–0x20 (salvo la 2) suenan una vez; el resto, sin fin | `sound.c: seqPlay`; la librería de sonido para los marcadores | Igual: `plays` de `font_meta.yaml` y los marcadores |
 | Volumen de la secuencia fijo en 0x50/0x7F (≈ 63 %); el maestro, al máximo | `sound.c: seqPlay`, `initializeMusic` | Igual, como ganancia del bus de música **antes** del volumen del jugador: con los deslizadores al máximo suena como el original |
-| La tienda de música toca (fuente, pista) al confirmar, sin cambiar la música activa, y al salir vuelve la del mapa desde el principio | `script_menu.c: tickJukeboxMenu` | La API lo permite (tocar sin cambiar la activa); la tienda es de su paquete |
+| La gramola toca (fuente, pista) al confirmar, sin cambiar la música activa, y al salir vuelve la del mapa desde el principio | `script_menu.c: tickJukeboxMenu`, `openJukebox` | Igual: `session::Jukebox` con `SessionMusic::playSong` y `replayActive`; la fuente y la pista de cada canción, en `bgm_tracks` de `data/music.yaml` |
 
 ### 7.2 Efectos
 

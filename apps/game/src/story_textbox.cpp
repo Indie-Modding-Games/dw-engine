@@ -115,14 +115,32 @@ void StoryTextbox::update(const FieldScene& scene, const assets::DigimonTable* s
       .top = false,
   };
   screens::publish(*ui_, textboxSettings(look, rows), TextboxRevisionSetting);
-  if (view.open != shown_) {
-    shown_ = view.open;
+  if (staleRevision_ && *staleRevision_ != view.revision) {
+    staleRevision_.reset();
+  }
+  const bool shown = view.open && !covered_ && !staleRevision_;
+  if (shown != shown_) {
+    shown_ = shown;
     if (shown_) {
       ui_->show(StoryTextboxDocument);
     } else {
       ui_->hide(StoryTextboxDocument);
     }
   }
+}
+
+void StoryTextbox::cover(bool covered) {
+  if (covered == covered_) {
+    return;
+  }
+  covered_ = covered;
+  if (covered) {
+    staleRevision_.reset();
+  } else {
+    staleRevision_ = story_->dialogue().view().revision;
+  }
+  // The next update shows or hides the box again.
+  published_.reset();
 }
 
 std::vector<TextRow> StoryTextbox::rowsOf(const DialogueView& view, const FieldScene& scene,

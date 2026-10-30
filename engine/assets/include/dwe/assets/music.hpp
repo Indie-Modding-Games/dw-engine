@@ -58,6 +58,9 @@ struct MusicTrack {
   std::string file;
   // `plays: once` stops at the end; `forever` loops (sound.c: seqPlay).
   bool loops = true;
+  // used_by.jukebox: the ids of the music menu's entries (data/music.yaml bgm_tracks) that play
+  // this song.
+  std::vector<std::string> jukebox;
 };
 
 struct MusicFont {
@@ -91,9 +94,20 @@ struct BattleMusic {
   std::int64_t endEnemyType = 0;
 };
 
+// An entry of the music menu (BGM_TRACK_NAMES, shop/script_menu.c: jukeboxFillTitleList): its id,
+// and the font and song it plays (MAIN_D_801303B8), which a pack extracted before they were written
+// lacks.
+struct BgmTrack {
+  std::string id;
+  std::optional<std::int64_t> font;
+  std::optional<std::int64_t> track;
+};
+
 // What the game reads of data/music.yaml (content/schemas/music.schema.json). A pack extracted
 // before the music modes and the battle music were written has none of them.
 struct MusicTable {
+  // In the order of their index.
+  std::vector<BgmTrack> bgmTracks;
   std::vector<std::int64_t> enemyMusicMapping;
   std::vector<FieldMusicOverride> fieldOverrides;
   std::optional<BattleMusic> battle;
@@ -101,7 +115,7 @@ struct MusicTable {
   [[nodiscard]] const FieldMusicOverride* overrideOf(std::int64_t mode) const;
 };
 
-// Reads data/music.yaml. bgm_tracks, the music shop's list, is left alone.
+// Reads data/music.yaml.
 core::Result<MusicTable> readMusicTable(std::string_view yaml);
 
 } // namespace dwe::assets

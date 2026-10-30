@@ -38,6 +38,10 @@ public:
   void press(const input::InputState& input);
   // Once per frame: publishes the view when it changed.
   void update(const FieldScene& scene, const assets::DigimonTable* species);
+  // A screen that says the owner's lines in its own box (the jukebox, whose showMapHeadTextbox
+  // writes over the story's box) covers the story's box while it is up, and after it until the
+  // story changes the box (the original's box closed with the screen's last line).
+  void cover(bool covered);
 
 private:
   [[nodiscard]] std::vector<TextRow> rowsOf(const game::story::DialogueView& view,
@@ -59,6 +63,9 @@ private:
   const session::GameSession* session_;
   std::optional<std::uint32_t> published_;
   bool shown_ = false;
+  bool covered_ = false;
+  // The view's revision when the cover went: the box stays hidden while the view keeps it.
+  std::optional<std::uint32_t> staleRevision_;
 };
 
 } // namespace dwe::app

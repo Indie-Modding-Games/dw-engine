@@ -15,7 +15,9 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
           "index": { "type": "integer", "minimum": 0 },
-          "name": { "type": "string" }
+          "name": { "type": "string" },
+          "font": { "description": "The music font the music menu plays for the entry (MAIN_D_801303B8); absent in a pack extracted before it was written.", "type": "integer", "minimum": 0, "maximum": 255 },
+          "track": { "description": "The song of that font.", "type": "integer", "minimum": 0, "maximum": 255 }
         }
       }
     },

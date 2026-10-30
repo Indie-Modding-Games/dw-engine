@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: jukebox",
+  "description": "rules/<id>/jukebox.yaml: the jukebox the story opens (apps/session: Jukebox; shop/script_menu.c: openJukebox, tickJukeboxMenu).",
+  "type": "object",
+  "required": ["lines_section", "lines", "unlock_trigger", "locked_tracks", "chosen_variable", "no_track"],
+  "additionalProperties": false,
+  "properties": {
+    "lines_section": { "description": "The MAPHEAD section of the owner's lines.", "type": "integer", "minimum": 0 },
+    "lines": {
+      "description": "The owner's lines in that section: before the list, over it, after a pick and when leaving.",
+      "type": "object",
+      "required": ["greeting", "ask", "chosen", "farewell"],
+      "additionalProperties": false,
+      "properties": {
+        "greeting": { "type": "integer", "minimum": 0 },
+        "ask": { "type": "integer", "minimum": 0 },
+        "chosen": { "type": "integer", "minimum": 0 },
+        "farewell": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "unlock_trigger": { "description": "While unset, the list leaves out the locked songs.", "type": "integer", "minimum": 0 },
+    "locked_tracks": { "description": "The music menu's songs (by number) the list leaves out until the unlock trigger is set.", "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 254 } },
+    "chosen_variable": { "description": "The story variable that holds the song that plays.", "type": "integer", "minimum": 0, "maximum": 255 },
+    "no_track": { "description": "The number that says no song plays.", "type": "integer", "minimum": 0, "maximum": 255 }
+  }
+}

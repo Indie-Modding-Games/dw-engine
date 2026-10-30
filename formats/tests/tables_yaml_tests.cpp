@@ -140,6 +140,11 @@ TEST_CASE("the tables become documents with ids and resolved references") {
   const YamlNode& medals = documentNamed(yaml, "medals");
   CHECK(at(medals, {"medals", std::size_t{0}, "description"}).items().size() == 3);
 
+  // jukeboxFillTitleList: the music menu's entry plays MAIN_D_801303B8's font and song.
+  const YamlNode& music = documentNamed(yaml, "music");
+  CHECK(at(music, {"bgm_tracks", std::size_t{0}, "font"}).text() == "29");
+  CHECK(at(music, {"bgm_tracks", std::size_t{0}, "track"}).text() == "0");
+
   const auto noted = [&](std::string_view text) {
     return std::ranges::any_of(yaml.notes,
                                [&](const std::string& note) { return note.contains(text); });

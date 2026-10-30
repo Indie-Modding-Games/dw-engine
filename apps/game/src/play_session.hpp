@@ -43,6 +43,7 @@
 #include "free_exploration.hpp"
 #include "gym_screen.hpp"
 #include "item_keeper_screen.hpp"
+#include "jukebox_screen.hpp"
 #include "movie_rules.hpp"
 #include "naming_box.hpp"
 #include "options.hpp"
@@ -230,6 +231,7 @@ private:
   ShopScreen shopScreen_;
   ItemKeeperScreen itemKeeperScreen_;
   DiscardScreen discardScreen_;
+  JukeboxScreen jukeboxScreen_;
   FieldItemsScreen fieldItemsScreen_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;

@@ -30,6 +30,7 @@ dwe_add_module(session
         src/battle_effects.cpp
         src/discard_menu.cpp
         src/item_keeper.cpp
+        src/jukebox.cpp
         src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp

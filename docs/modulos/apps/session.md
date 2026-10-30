@@ -271,6 +271,23 @@ de la bolsa: lo hace el guion después (rutinas 12 y 13). La sección `discard_m
 línea 0), el disparador, la variable y el valor de «ninguno»; sin ella la rutina se cierra al momento. La pantalla
 `discard_menu` del juego (`apps/game: DiscardScreen`) lo enseña.
 
+### Gramola (`Jukebox`)
+
+La gramola del restaurante que abre la historia (`script_interp.c: CALL_ROUTINE 9` → `shop/script_menu.c:
+openJukebox`; en room05b la abre Giromon, script 175, sección 0x6). `open()` rellena la lista como
+`jukeboxFillTitleList`: las entradas 0 a 62 de `BGM_TRACK_NAMES`, la 62 solo con el disparador 50; busca la canción
+que suena (fuente y pista) entre las de la lista y escribe su fila en la variable 249, o 255 y para la música si no
+está. `startView` coloca la lista como `createJukeboxMenu` (la fila marcada arriba si cabe en la primera ventana, si no
+abajo del todo), `choose` escribe la elegida en la 249 y `playChosen` la toca si no es la que ya sonaba
+(`tickJukeboxMenu`: `stopBGM` y `playMusic(fuente, pista)`); `close` vuelve a tocar la música del mapa desde el
+principio (`playBGM(ACTIVE_BGM_FONT)`, estado 2). La fuente y la pista de cada entrada (`MAIN_D_801303B8`) vienen de
+`font` y `track` en `bgm_tracks` de `data/music.yaml`; un paquete extraído antes las busca en `used_by.jukebox` de
+cada `music/NNN/font_meta.yaml`. La música la da `SessionMusic` por la interfaz `JukeboxMusic`. La sección `jukebox`
+del ruleset ([esquema](../../content/schemas/ruleset_jukebox.schema.json)) da la sección de MAPHEAD con las frases
+(0x4d6: saludo 3, pregunta 0, respuesta 2, despedida 1), el disparador, las entradas bloqueadas, la variable y el valor
+de «ninguna»; sin ella la rutina se cierra al momento. La pantalla `jukebox` del juego (`apps/game: JukeboxScreen`) lo
+enseña.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |

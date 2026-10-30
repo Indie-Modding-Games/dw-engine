@@ -56,6 +56,8 @@ schemas:
     - rules/*/item_keeper
   ruleset_discard_menu:
     - rules/*/discard_menu
+  ruleset_jukebox:
+    - rules/*/jukebox
   ruleset_shop:
     - rules/*/shop
   ruleset_evolution:

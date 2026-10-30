@@ -1,0 +1,16 @@
+/* The jukebox in the original look: the original's boxes (theme.rcss .original-box), the list's number and title
+   labels from SYSTEM_W (ITEM_MENU_HEADER_UVS 4 and 5, palette 4) and the original's ink. */
+
+body #window, body #talk {
+	border: 3dp transparent;
+	background-color: #2d384080;
+	decorator: original-box(3dp) border-box, image(box-tl scale-none left top) border-box, image(box-tr scale-none right top) border-box,
+		image(box-bl scale-none left bottom) border-box, image(box-br scale-none right bottom) border-box;
+}
+
+.label-number { decorator: image(jukebox-number-label scale-none left top); }
+.label-title { decorator: image(jukebox-title-label scale-none left top); }
+
+.row, #talk { font-family: original-look; color: #d0d0d0; }
+body .row.playing { color: #94adff; }
+body #speaker { color: #f8f800; }

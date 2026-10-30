@@ -219,12 +219,20 @@ core::Result<MusicFont> readMusicFont(std::string_view yaml) {
   for (const YamlNode& node : reader.sequence(reader.field(*tree, "tracks"), "tracks")) {
     MusicTrack track{.track = reader.integer<std::uint32_t>(reader.field(node, "track")),
                      .file = reader.text(reader.field(node, "file")),
-                     .loops = true};
+                     .loops = true,
+                     .jukebox = {}};
     const std::string plays = reader.text(reader.field(node, "plays"));
     if (reader.ok() && plays != "forever" && plays != "once") {
       reader.fail(node, "plays is forever or once");
     }
     track.loops = plays != "once";
+    if (const YamlNode* usedBy = node.find("used_by"); usedBy != nullptr) {
+      if (const YamlNode* jukebox = usedBy->find("jukebox"); jukebox != nullptr) {
+        for (const YamlNode& id : reader.sequence(*jukebox, "used_by.jukebox")) {
+          track.jukebox.push_back(reader.text(id));
+        }
+      }
+    }
     if (reader.ok() && font.track(track.track) != nullptr) {
       reader.fail(node, std::format("track {} is there twice", track.track));
     }
@@ -246,6 +254,20 @@ core::Result<MusicTable> readMusicTable(std::string_view yaml) {
   }
   YamlReader reader;
   MusicTable table;
+  if (const YamlNode* tracks = tree->find("bgm_tracks"); tracks != nullptr) {
+    for (const YamlNode& node : reader.sequence(*tracks, "bgm_tracks")) {
+      BgmTrack entry{.id = reader.text(reader.field(node, "id")), .font = {}, .track = {}};
+      const auto index = reader.integer<std::int64_t>(reader.field(node, "index"));
+      if (reader.ok() && index != static_cast<std::int64_t>(table.bgmTracks.size())) {
+        reader.fail(node, "bgm_tracks are in the order of their index");
+      }
+      if (const YamlNode* font = node.find("font"); font != nullptr) {
+        entry.font = reader.integer<std::int64_t>(*font);
+        entry.track = reader.integer<std::int64_t>(reader.field(node, "track"));
+      }
+      table.bgmTracks.push_back(std::move(entry));
+    }
+  }
   for (const YamlNode& value :
        reader.sequence(reader.field(*tree, "enemy_music_mapping"), "enemy_music_mapping")) {
     table.enemyMusicMapping.push_back(reader.integer<std::int64_t>(value));

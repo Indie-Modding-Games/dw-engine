@@ -163,6 +163,27 @@ void SessionMusic::leaveBattle(bool won) {
     return;
   }
   core::logDebug("[port:audio] startBattle (tamer.c:862): playBGM(ACTIVE_BGM_FONT)");
+  replayActive();
+}
+
+std::optional<MusicSong> SessionMusic::activeSong() const {
+  if (!activeFont_) {
+    return std::nullopt;
+  }
+  return MusicSong{.font = *activeFont_, .track = activeTrack_};
+}
+
+void SessionMusic::playSong(MusicSong song) {
+  stopBgm();
+  playMusic(song.font, song.track);
+}
+
+void SessionMusic::stopSong() {
+  stopBgm();
+}
+
+// script_interp.c: playBGM(ACTIVE_BGM_FONT): the map's song again from the start, or none.
+void SessionMusic::replayActive() {
   if (activeFont_) {
     playBgm(*activeFont_);
   } else {

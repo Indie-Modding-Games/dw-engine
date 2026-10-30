@@ -1,0 +1,138 @@
+/* The jukebox (shop/script_menu.c: openJukebox, createJukeboxMenu, renderJukeboxMenu). One pixel of the original is
+   3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. From createJukeboxMenu and the item
+   menu's drawing: the window at (-0x47, -0x62) from the screen's centre, 222 x 129 (x 89 to 311, y 22 to 151); the
+   number's and the title's labels at (8, 5) and (38, 5) inside it; six rows 18 pixels apart from y 19, the number at
+   x 8 and the name at x 28; the cursor 202 x 18 at x 5 from y 17; the scroll bar from x 210 and y 24, 90 high. The
+   speech box is the story's. Measured on the original (the routine forced by RAM): the window, the rows and the
+   scroll bar within a pixel of these, once the emulator's 224-line crop is undone. The skins give the look; this is the layout and a plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#window {
+	position: absolute;
+	left: 267dp;
+	top: 66dp;
+	width: 666dp;
+	height: 387dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	display: none;
+}
+
+/* openJukebox: the list is up from the question (state 3) until the farewell closes it (state 4). */
+#frame.phase-list #window { display: block; }
+
+.label {
+	position: absolute;
+	top: 15dp;
+	height: 21dp;
+}
+
+.label-number { left: 24dp; width: 36dp; }
+.label-title { left: 114dp; width: 60dp; }
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 15dp;
+	top: 51dp;
+	width: 606dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+/* A long name runs over the scroll bar and is cut at the window's edge, as on the original. */
+.row {
+	position: absolute;
+	left: 24dp;
+	width: 639dp;
+	height: 54dp;
+	overflow: hidden;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#row-0 { top: 57dp; }
+#row-1 { top: 111dp; }
+#row-2 { top: 165dp; }
+#row-3 { top: 219dp; }
+#row-4 { top: 273dp; }
+#row-5 { top: 327dp; }
+
+.number {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.name {
+	position: absolute;
+	left: 60dp;
+	top: 0;
+}
+
+/* calculateMusicMenuStrings: the song that plays is in colour 6, blue in the list's font. */
+.row.playing { color: #94adff; }
+
+.scrollbar {
+	position: absolute;
+	left: 630dp;
+	top: 72dp;
+	width: 24dp;
+	height: 276dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #020202 #6987a0 #6987a0 #020202;
+	background-color: #354b5c;
+}
+
+.thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 18dp;
+	height: 270dp;
+	background-color: #5b7080;
+}
+
+/* The speech box, the story's. */
+#talk {
+	position: absolute;
+	left: 87dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+.talk-row.hidden, #speaker.hidden { display: none; }
+
+#speaker { color: #f8f800; }

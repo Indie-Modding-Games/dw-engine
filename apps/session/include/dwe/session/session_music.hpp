@@ -5,6 +5,7 @@
 #include <dwe/audio/audio.hpp>
 #include <dwe/audio/sound_font.hpp>
 #include <dwe/game/story/story_ports.hpp>
+#include <dwe/session/jukebox.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -37,7 +38,7 @@ struct BattleMusicFacts {
 // and music/<font>/ holds the SoundFont, the songs and font_meta.yaml. data/music.yaml gives the
 // fixed songs of the music modes and the battle's songs. A font is loaded when its song first plays
 // and kept until another one plays. A font or a data/music.yaml that does not load warns once.
-class SessionMusic final : public game::story::MusicPort {
+class SessionMusic final : public game::story::MusicPort, public JukeboxMusic {
 public:
   // The audio and the file system must outlive the session.
   SessionMusic(audio::Audio& audio, const assets::VirtualFileSystem& files, MusicFacts facts);
@@ -56,6 +57,12 @@ public:
   // tamer.c: startBattle, back on the field: a victory plays the field's song again from the start;
   // after a defeat or an escape the music stays stopped.
   void leaveBattle(bool won);
+
+  // The jukebox's (shop/script_menu.c: jukeboxFillTitleList, tickJukeboxMenu, openJukebox).
+  [[nodiscard]] std::optional<MusicSong> activeSong() const override;
+  void playSong(MusicSong song) override;
+  void stopSong() override;
+  void replayActive() override;
 
 private:
   struct LoadedFont {

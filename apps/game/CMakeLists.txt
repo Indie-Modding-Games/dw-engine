@@ -69,6 +69,7 @@ dwe_add_app(game
         src/gym_screen.cpp
         src/discard_screen.cpp
         src/item_keeper_screen.cpp
+        src/jukebox_screen.cpp
         src/shop_screen.cpp
         src/sleep_screen.cpp
         src/state_trace.cpp
