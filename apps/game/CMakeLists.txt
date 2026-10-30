@@ -16,6 +16,7 @@ dwe_add_app(game
         src/dev_assets_banner.cpp
         src/dev_views.cpp
         src/device_names.cpp
+        src/evolution_effects.cpp
         src/evolution_scene.cpp
         src/field_hud.cpp
         src/field_scene.cpp
@@ -27,6 +28,8 @@ dwe_add_app(game
         src/field_scene_script.cpp
         src/field_scene_fighters.cpp
         src/field_scene_objects.cpp
+        src/field_scene_partner_body.cpp
+        src/scene_prims.cpp
         src/frame_stats.cpp
         src/game.cpp
         src/game_audio.cpp
@@ -97,7 +100,7 @@ dwe_add_app(game
     DEPS core platform audio video rhi assets localization animation render input script ui debug scene ruleset field partner save content session battle inventory screens story evolution gym fishing
     OUTPUT_NAME dwe-game)
 
-dwe_add_shaders(game FILES shaders/test_scene.slang)
+dwe_add_shaders(game FILES shaders/test_scene.slang shaders/scene_prims.slang)
 
 # The version a save file names as the game that wrote it.
 target_compile_definitions(game PRIVATE DWE_GAME_VERSION="${PROJECT_VERSION}")
@@ -119,12 +122,14 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
+                                  src/evolution_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_machine_flow.cpp src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)
     target_link_libraries(dwe_game_tests PRIVATE dwe::core dwe::assets dwe::platform dwe::localization dwe::ui dwe::content
                                                  dwe::script dwe::save dwe::partner dwe::session dwe::evolution
-                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe_test_main)
+                                                 dwe::inventory dwe::screens dwe::animation dwe::battle dwe::render
+                                                 dwe::ruleset dwe_test_main)
     # The session's test packs and made-up species (session_fixture.hpp), for the save debug command.
     target_include_directories(dwe_game_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
                                                       ${PROJECT_SOURCE_DIR}/apps/session/tests

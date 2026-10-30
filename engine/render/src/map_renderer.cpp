@@ -379,7 +379,7 @@ void MapRenderer::drawBackground(DrawContext& context) {
   vertices_.clear();
   appendQuad(vertices_, backgroundCorners(camera_, {0.0F, 0.0F}, backgroundSize_, MapFarClip),
              {0.0F, 0.0F}, {1.0F, 1.0F}, {backgroundIndices_.index, palettes_.index},
-             glm::vec4{1.0F});
+             glm::vec4{glm::vec3{shade_}, 1.0F});
   const auto upload = context.upload().upload(std::span<const Vertex>{vertices_});
   if (!upload) {
     warnUploadFailure(vertices_.size() * sizeof(Vertex));
@@ -483,7 +483,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
     const glm::uvec2 textures{texture.id.index,
                               texture.timeOfDayPalette ? palettes_.index : NoPalette};
     const auto plainStart = static_cast<std::uint32_t>(vertices_.size());
-    appendQuad(vertices_, corners, uvMin, uvMax, textures, glm::vec4{1.0F});
+    appendQuad(vertices_, corners, uvMin, uvMax, textures, glm::vec4{glm::vec3{shade_}, 1.0F});
     if (quad.blend == SpriteBlend::Opaque) {
       addToRun(SpriteBlend::Opaque, TexelFilter::All, plainStart);
       continue;
@@ -492,7 +492,7 @@ void MapRenderer::drawLayers(DrawContext& context) {
     addToRun(SpriteBlend::Opaque, TexelFilter::Plain, plainStart);
     const auto semiStart = static_cast<std::uint32_t>(vertices_.size());
     appendQuad(vertices_, corners, uvMin, uvMax, textures,
-               {1.0F, 1.0F, 1.0F, blendAlpha(quad.blend)});
+               {shade_, shade_, shade_, blendAlpha(quad.blend)});
     addToRun(quad.blend, TexelFilter::SemiTransparent, semiStart);
   }
   // Bars where the background does not reach, drawn last over everything (ADR 0020).

@@ -29,6 +29,8 @@ struct Push {
     float alphaCutoff;
     // The alpha the blend equation uses (0.5 average, 1 add or subtract, 0.25 add a quarter); 1 when opaque.
     float blendAlpha;
+    // How far each texel that is not black moves to white, per channel (render::ModelInstance::lift).
+    float4 lift;
 };
 
 [[vk::push_constant]]
@@ -68,6 +70,9 @@ float4 fragmentMain(VertexOut input) : SV_Target {
     float4 texel = sampleTexture(push.texture, SamplerNearestClamp, input.uv);
     if ((push.flags & FlagMask) != 0 && texel.a < push.alphaCutoff) {
         discard;
+    }
+    if (any(texel.rgb > 0.0)) {
+        texel.rgb += push.lift.rgb * (1.0 - texel.rgb);
     }
     float3 color = texel.rgb * input.color.rgb * push.baseColor.rgb;
     if ((push.flags & FlagUnlit) == 0) {

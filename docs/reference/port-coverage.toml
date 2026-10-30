@@ -848,18 +848,18 @@ DOOA_updateShards = { status = "falta", what = "Mueve, encoge y apaga los trozos
 DOOA_spawnBoneShards = { status = "falta", what = "Crea los trozos de alambre de un hueso del compañero." }
 MURD_storeDigimonTexture = { status = "no-aplica", what = "Guarda la paleta del compañero para fundirla a negro.", note = "copia de memoria de vídeo; el motor funde con su sombreado" }
 MURD_isDigimonLargerThanIris = { status = "falta", what = "Dice si el iris que se cierra ya tapa al compañero en una vida perdida.", note = "el iris no se dibuja ni oculta al compañero" }
-EVL_initShardSets = { status = "falta", what = "Prepara los grupos de trozos de la evolución.", note = "la escena no dibuja trozos" }
+EVL_initShardSets = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:216", what = "Prepara los grupos de trozos de la evolución." }
 EVL_setScratchTop = { status = "no-aplica", what = "Fija el tope de la memoria de trabajo de la evolución.", note = "gestión de memoria del original" }
-EVL_resetParticles = { status = "falta", what = "Vacía las partículas de luz de la evolución.", note = "la escena no dibuja partículas" }
-EVL_resetSparks = { status = "falta", what = "Vacía las chispas de la evolución.", note = "la escena no dibuja chispas" }
+EVL_resetParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Vacía las partículas de luz de la evolución." }
+EVL_resetSparks = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Vacía las chispas de la evolución." }
 EVL_setOtherEntitiesVisible = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:168", what = "Oculta a todos menos al compañero durante la evolución y luego los repone." }
-EVL_spawnParticle = { status = "falta", what = "Crea una partícula de luz de la evolución.", note = "la escena no dibuja partículas" }
-EVL_releaseAllParticles = { status = "falta", what = "Quita todas las partículas de la evolución.", note = "la escena no dibuja partículas" }
-EVL_tickShardSet = { status = "falta", what = "Mueve un grupo de trozos que se desprenden del compañero al evolucionar.", note = "la escena no dibuja trozos" }
-EVL_buildShardSet = { status = "falta", what = "Parte un hueso del compañero en trozos que salen despedidos.", note = "la escena no dibuja trozos" }
-EVL_tickParticle = { status = "falta", what = "Mueve una partícula de luz de la evolución.", note = "la escena no dibuja partículas" }
-EVL_tickSpark = { status = "falta", what = "Consume la vida de una chispa de la evolución y la quita.", note = "la escena no dibuja chispas" }
-EVL_initEvoSequence = { status = "parcial", dwe = "apps/game/src/evolution_scene.cpp:88", what = "Arranca la escena de evolución y sortea el orden en que se rompen los huesos.", note = "falta el orden aleatorio de huesos y los efectos que prepara" }
+EVL_spawnParticle = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:290", what = "Crea una partícula de luz de la evolución." }
+EVL_releaseAllParticles = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:236", what = "Quita todas las partículas de la evolución." }
+EVL_tickShardSet = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:350", what = "Mueve un grupo de trozos que se desprenden del compañero al evolucionar." }
+EVL_buildShardSet = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:257", what = "Parte un hueso del compañero en trozos que salen despedidos." }
+EVL_tickParticle = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:350", what = "Mueve una partícula de luz de la evolución." }
+EVL_tickSpark = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:350", what = "Consume la vida de una chispa de la evolución y la quita." }
+EVL_initEvoSequence = { status = "portado", dwe = "apps/game/src/evolution_effects.cpp:216", what = "Arranca la escena de evolución y sortea el orden en que se rompen los huesos." }
 evoSequenceAlwaysTrue = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:145", what = "Condición de espera de la carga de la evolución, siempre cierta." }
 
 # --- Tournaments and versus

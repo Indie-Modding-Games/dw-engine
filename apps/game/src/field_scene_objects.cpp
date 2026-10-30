@@ -60,7 +60,7 @@ void FieldScene::submitMapObjects() {
     }
     const glm::mat4 world = glm::rotate(glm::translate(glm::mat4{1.0F}, object->position),
                                         object->yaw, glm::vec3{0.0F, 1.0F, 0.0F});
-    models_->submit({.model = found->second, .world = world, .joints = {}});
+    models_->submit({.model = found->second, .world = world, .joints = {}, .tint = sceneryTint()});
   }
 }
 
@@ -96,7 +96,7 @@ void FieldScene::submitProps() {
       continue;
     }
     for (const glm::mat4& place : set.places) {
-      models_->submit({.model = *set.model, .world = place, .joints = {}});
+      models_->submit({.model = *set.model, .world = place, .joints = {}, .tint = sceneryTint()});
     }
   }
 }

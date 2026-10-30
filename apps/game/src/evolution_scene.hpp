@@ -13,6 +13,7 @@
 #include <string_view>
 #include <vector>
 
+#include "evolution_effects.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -90,6 +91,10 @@ private:
   // EVL_calculateCameraVectors: the camera circling the partner at the current angle.
   [[nodiscard]] Orbit orbitAt(Size size) const;
   void showCamera();
+  // The effects' frame: their objects tick, then the stage takes their primitives, the bones they
+  // draw themselves and the palette's lift.
+  void showEffects();
+  void playEffectSounds();
 
   session::GameSession* session_;
   FieldScene* scene_;
@@ -123,6 +128,10 @@ private:
   // The burst clip ends in the ready one (EVL_tickEvoSequence's first check).
   bool burstClipPlaying_ = false;
   std::int32_t waitFrames_ = 0;
+  // The breaking body, the rays, flashes and squares (evl.c's objects).
+  EvolutionEffects effects_;
+  // Each scene rolls its effects from its own seed.
+  std::uint32_t effectSeed_ = 0;
 };
 
 } // namespace dwe::app

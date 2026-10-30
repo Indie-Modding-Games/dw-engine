@@ -150,11 +150,20 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
     return std::unexpected{models.error()};
   }
   scene->models_ = std::move(*models);
-  scene->drawers_ = {&scene->mapRenderer_->backgroundDrawer(), &scene->cameraSync_,
-                     &scene->models_->opaque(), &scene->mapRenderer_->layerDrawer(),
-                     &scene->models_->translucent()};
+  auto prims = ScenePrimDrawer::create(renderer);
+  if (!prims) {
+    return std::unexpected{prims.error()};
+  }
+  scene->primDrawer_ = std::move(*prims);
+  scene->renderer_ = &renderer;
+  scene->drawers_ = {&scene->mapRenderer_->backgroundDrawer(),
+                     &scene->cameraSync_,
+                     &scene->models_->opaque(),
+                     &scene->mapRenderer_->layerDrawer(),
+                     &scene->models_->translucent(),
+                     scene->primDrawer_.get()};
   scene->stageDrawers_ = {&scene->cameraSync_, &scene->models_->opaque(),
-                          &scene->models_->translucent()};
+                          &scene->models_->translucent(), scene->primDrawer_.get()};
 
   auto rules = game::field::loadFieldRules(files);
   if (!rules) {
@@ -693,12 +702,33 @@ game::partner::FieldAnimation FieldScene::partnerAnimation(const Actor& actor, s
   return look.gesture.value_or(look.base);
 }
 
-void FieldScene::submit(const Actor& actor, float alpha, glm::vec3 scale) {
+void FieldScene::submit(const Actor& actor, float alpha, const Look& look) {
   const scene::Pose pose = field_->drawnPose(actor.entity, alpha);
   const glm::mat4 world = glm::scale(glm::rotate(glm::translate(glm::mat4{1.0F}, pose.position),
                                                  pose.yaw, glm::vec3{0.0F, 1.0F, 0.0F}),
-                                     scale);
-  models_->submit({.model = actor.handle, .world = world, .joints = actor.player->jointMatrices()});
+                                     look.scale);
+  std::span<const glm::mat4> joints = actor.player->jointMatrices();
+  std::vector<glm::mat4> kept;
+  if (look.hiddenBones != 0) {
+    // A left-out bone folds to nothing (its faces collapse onto a point).
+    kept.assign(joints.begin(), joints.end());
+    constexpr std::size_t Bits = 64;
+    for (std::size_t bone = 0; bone < kept.size() && bone < Bits; ++bone) {
+      if (((look.hiddenBones >> bone) & 1U) != 0) {
+        kept[bone] = glm::mat4{0.0F};
+      }
+    }
+    joints = kept;
+  }
+  models_->submit({.model = actor.handle,
+                   .world = world,
+                   .joints = joints,
+                   .tint = look.tint,
+                   .lift = look.lift});
+}
+
+glm::vec4 FieldScene::sceneryTint() const {
+  return {glm::vec3{1.0F - stage_.sceneryDarkness}, 1.0F};
 }
 
 void FieldScene::update(double frameSeconds, float alpha, bool paused) {
@@ -717,15 +747,20 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   }
   models_->clear();
   if (!stage_.sceneryHidden) {
-    submit(*playerActor_, alpha);
+    submit(*playerActor_, alpha, {.tint = sceneryTint()});
     drawNpcs(animationSeconds, alpha);
     submitMapObjects();
     submitProps();
   }
   submitEffectModels();
   if (!stage_.partnerHidden) {
-    submit(*partnerActor_, alpha, stage_.partnerScale);
+    submit(*partnerActor_, alpha,
+           {.scale = stage_.partnerScale,
+            .lift = stage_.partnerLift,
+            .hiddenBones = stage_.partnerHiddenBones});
   }
+  mapRenderer_->setShade(1.0F - stage_.sceneryDarkness);
+  primDrawer_->set(stage_.prims, mapRenderer_->camera().scale());
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while

@@ -85,6 +85,9 @@ public:
   // Switches to another palette variant, fading over fadeSeconds (0 switches at once). A switch
   // during a fade continues from the colours shown at that moment.
   void setVariant(std::size_t variant, double fadeSeconds = TimeOfDayFadeSeconds);
+  // Multiplies the background's and the depth layers' colours, from 1 (as they are) to 0 (black):
+  // a scene fading the map's palettes to black.
+  void setShade(float shade) { shade_ = shade; }
 
   // Advances the sprite animations by animationSeconds and the palette fade by fadeSeconds (a game
   // may pause one and not the other), and sets the world point the camera centres on. The camera
@@ -214,6 +217,7 @@ private:
   std::uint32_t fromRow_ = 0;
   std::uint32_t toRow_ = 0;
   double fade_ = 1.0;
+  float shade_ = 1.0F;
   double fadeSeconds_ = 0.0;
   // Per-frame buffers, kept to draw without allocating.
   std::vector<Vertex> vertices_;

@@ -66,8 +66,10 @@ struct ModelPush {
   std::uint32_t flags = 0;
   float alphaCutoff = 0.5F;
   float blendAlpha = 1.0F;
+  glm::vec4 lift{0.0F};
 };
-static_assert(offsetof(ModelPush, baseColor) == 16 && sizeof(ModelPush) == 48,
+static_assert(offsetof(ModelPush, baseColor) == 16 && offsetof(ModelPush, lift) == 48 &&
+                  sizeof(ModelPush) == 64,
               "must match skinned_model.slang");
 
 constexpr std::array TranslucentModes{rhi::BlendMode::Alpha, rhi::BlendMode::Additive,
@@ -292,7 +294,8 @@ bool ModelRenderer::submit(const ModelInstance& instance) {
                         .world = instance.world,
                         .firstJoint = first,
                         .jointCount = count,
-                        .tint = instance.tint});
+                        .tint = instance.tint,
+                        .lift = instance.lift});
   return true;
 }
 
@@ -335,7 +338,8 @@ void ModelRenderer::prepare(PrepareContext& context) {
       prepared_.push_back({.model = instance.model,
                            .viewDepth = (camera_.view * instance.world[3]).z,
                            .joints = joints->address,
-                           .tint = instance.tint});
+                           .tint = instance.tint,
+                           .lift = instance.lift});
     }
   }
   const std::size_t dropped = submitted - prepared_.size();
@@ -369,7 +373,8 @@ void ModelRenderer::record(rhi::CommandList& commands, const GpuModel& model,
                                    .texture = material.texture.index,
                                    .flags = material.flags,
                                    .alphaCutoff = material.alphaCutoff,
-                                   .blendAlpha = material.blend.alpha});
+                                   .blendAlpha = material.blend.alpha,
+                                   .lift = glm::vec4{instance.lift, 0.0F}});
   commands.drawIndexed(primitive.indexCount, primitive.firstIndex, primitive.vertexOffset);
 }
 

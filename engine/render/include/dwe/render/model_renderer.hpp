@@ -47,6 +47,10 @@ struct ModelInstance {
   std::span<const glm::mat4> joints;
   // Multiplies every material's base colour (the battle effects' object colours).
   glm::vec4 tint{1.0F};
+  // Moves each texel that is not black this fraction of the way to white, per channel, before the
+  // tint and the light: the original brightening a model's palette (evl.c:
+  // EVL_brightenDigimonClut).
+  glm::vec3 lift{0.0F};
 };
 
 // How a material is blended, from its alpha mode and the original's semi-transparency equation.
@@ -135,6 +139,7 @@ private:
     std::size_t firstJoint = 0;
     std::size_t jointCount = 0;
     glm::vec4 tint{1.0F};
+    glm::vec3 lift{0.0F};
   };
   // An instance taken for the frame, with its joints in the upload ring.
   struct Prepared {
@@ -142,6 +147,7 @@ private:
     float viewDepth = 0.0F;
     std::uint64_t joints = 0;
     glm::vec4 tint{1.0F};
+    glm::vec3 lift{0.0F};
   };
   struct Translucent {
     float viewDepth = 0.0F;

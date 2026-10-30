@@ -89,6 +89,37 @@ campo libre un montón del mapa con el jugador a menos de `small_reach` de su ce
 el tamaño `large_from`; `tickPoopDetection`), va andando a él, hace `eat_clip` y se lo come (`handleEatingPoop`). Las
 dos escenas dejan correr el tiempo y cierran el menú de pausa.
 
+## La escena de evolución
+
+`EvolutionScene` (`evolution_scene.cpp`) juega `evl.c: EVL_tickEvoSequence` cuadro a cuadro: el mapa, el jugador y los
+demás se funden a negro en 0x20 cuadros (`EVL_fadeClutBank0/1`, `FieldStage::sceneryDarkness`, que oscurece el fondo,
+las capas y los modelos), la cámara gira alrededor del compañero y en el cuadro 0x6A empieza el estallido. Los efectos
+van en `EvolutionEffects` (`evolution_effects.cpp`, sin estado del motor, con pruebas) y se dibujan como primitivas del
+original sobre la escena (`ScenePrimDrawer`, `scene_prims.cpp`):
+
+- Cuadrados verdes en el suelo a los pies del compañero, nueve de cada 18 cuadros (`EVL_D_80063F28`, `EVL_spawnParticle`,
+  `EVL_tickParticle`): crecen de 8 a 0x9C4, se apagan en 0x56 cuadros y van detrás de todo.
+- Los huesos se rompen en el orden que se sortea al empezar (`EVL_initEvoSequence`, `rand() & 0xFFF` por hueso): los
+  de la tabla `EVL_D_80063EFC` y luego uno por cuadro de 0x9B a 0x11B; los huesos sin objeto se saltan. Cada rotura
+  suena (ranura 8, efecto 2 a 4), pasa el hueso a alambre, lanza sus caras como trozos 0x1F cuadros
+  (`EVL_buildShardSet`, `EVL_tickShardSet`), un rayo desde el hueso 1 que dura hasta el cambio (`EVL_tickSpark`,
+  `DEFEFF` paleta 1, aditivo) y un destello (`EFECreateFlash`, modo 1).
+- El cuerpo se aclara de 0x70 a 0xCD con un factor al azar por canal (`ModelInstance::lift`).
+- En los cuadros pares de 0xD7 a 0x11B, destellos grandes sobre el hueso 1, delante o detrás según el cuadro
+  (`SPOT256`, `renderEFEFlash`; su seno es el de `math.c`, 512 por vuelta).
+- En 0x11C cambia el modelo; la forma nueva sale en alambre y se rellena de 0x126 a 0x14E (`renderWireframed`,
+  `WIREFRAME_RNG_TABLE`); en 0x162 se repone el campo.
+
+Medido en el original (forzado con la hora en `twna01`) y comparado por fotogramas con dwe en las mismas fases.
+
+Suposiciones:
+
+- Los objetos avanzan el mismo cuadro en que nacen.
+- Las caras con textura del alambre no llevan luz; el aclarado no se aplica a los trozos.
+- El orden de las caras dentro de un hueso es el de los grupos del modelo exportado.
+- Los números al azar de los efectos usan una semilla propia, no la del juego.
+- Los cuadros de los efectos son constantes del código, no del ruleset.
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

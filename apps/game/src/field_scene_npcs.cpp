@@ -59,7 +59,7 @@ void FieldScene::drawNpcs(double animationSeconds, float alpha) {
     }
     animate(*actor, animationSeconds);
     playClipSounds(*actor);
-    submit(*actor, alpha);
+    submit(*actor, alpha, {.tint = sceneryTint()});
   }
 }
 

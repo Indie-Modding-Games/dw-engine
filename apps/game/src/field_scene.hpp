@@ -36,9 +36,11 @@
 #include <utility>
 #include <vector>
 
+#include "evolution_effects.hpp"
 #include "fighter_figure.hpp"
 #include "place_command.hpp"
 #include "scene_effect.hpp"
+#include "scene_prims.hpp"
 
 namespace dwe::ui {
 class Ui;
@@ -108,6 +110,15 @@ struct FieldStage {
   glm::vec3 partnerScale{1.0F};
   // The camera the models are drawn with instead of the map's (the scene's GS_VIEWPOINT).
   std::optional<render::Camera> camera;
+  // How dark the map and every character but the partner are, from 0 to 1 (evl.c: fadeoutCLUT1,
+  // fadeoutCLUT2 and EVL_fadeClutBank0/1 fade their palettes to black).
+  float sceneryDarkness = 0.0F;
+  // The partner's palette moved toward white (render::ModelInstance::lift).
+  glm::vec3 partnerLift{0.0F};
+  // The partner's bones not drawn by its model, one bit a bone (a scene draws them itself).
+  std::uint64_t partnerHiddenBones = 0;
+  // The scene's own primitives, back to front, drawn over the models with their depth.
+  std::vector<ScenePrim> prims;
 };
 
 class FieldScene {
@@ -187,6 +198,14 @@ public:
   // The partner's conditions and happiness, which pick the clips it stands, walks and gestures
   // with (partner.c: setPartnerIdle, setPartnerSlowWalking, updateConditionAnimation).
   void setPartnerMood(const game::partner::Conditions& conditions, std::int32_t happiness);
+
+  // The partner's bones and faces posed as it is drawn now, for a scene's effects.
+  [[nodiscard]] const EvolutionBody& partnerBody() const { return partnerBody_; }
+  // An image of the base pack ("texture/etcdat/spot256", "...?palette=1") as a texture for scene
+  // primitives, every drawn texel opaque (alpha 255); loaded once. Nothing when it cannot load.
+  [[nodiscard]] std::optional<rhi::TextureId> sceneImage(std::string_view source);
+  // The renderer's 1 x 1 white texture.
+  [[nodiscard]] rhi::TextureId whiteTexture() const { return renderer_->whiteTexture(); }
 
   // The scene drawers for FrameDesc::scene, in order.
   [[nodiscard]] std::span<render::Drawer* const> drawers() {
@@ -422,7 +441,15 @@ private:
   [[nodiscard]] game::field::PartnerMood partnerMood() const;
   game::partner::FieldAnimation partnerAnimation(const Actor& actor, scene::Motion motion,
                                                  double seconds);
-  void submit(const Actor& actor, float alpha, glm::vec3 scale = glm::vec3{1.0F});
+  // How an actor is drawn besides its pose: its size, its tint, its palette lifted toward white and
+  // the bones left out (a bit each).
+  struct Look {
+    glm::vec3 scale{1.0F};
+    glm::vec4 tint{1.0F};
+    glm::vec3 lift{0.0F};
+    std::uint64_t hiddenBones = 0;
+  };
+  void submit(const Actor& actor, float alpha, const Look& look);
   // Places the map's 3D objects in the field and loads their models (map.c: loadMap, loadDoors).
   void placeMapObjects(const assets::MapEntry* entry);
   // Draws them (map_object.c: renderDoors).
@@ -438,13 +465,38 @@ private:
   void drawGroundItems();
   std::optional<std::size_t> groundItemTexture(std::optional<std::uint8_t> palette);
 
+  // The partner as a scene's effects see it (field_scene_partner_body.cpp).
+  class PartnerBody final : public EvolutionBody {
+  public:
+    explicit PartnerBody(FieldScene& owner) : owner_(&owner) {}
+    [[nodiscard]] std::optional<glm::vec3> bonePoint(std::uint32_t bone) const override;
+    [[nodiscard]] std::vector<BodyFace> boneFaces(std::uint32_t bone) const override;
+    [[nodiscard]] std::uint32_t boneCount() const override;
+
+  private:
+    // The partner's model to world (its place, facing and the stage's scale).
+    [[nodiscard]] glm::mat4 world() const;
+    FieldScene* owner_;
+  };
+  // The partner model's images as textures, made when a scene first asks.
+  rhi::TextureId partnerImage(std::uint32_t image);
+  // The tint of everything but the partner (FieldStage::sceneryDarkness).
+  [[nodiscard]] glm::vec4 sceneryTint() const;
+
   const assets::VirtualFileSystem* files_;
+  render::Renderer* renderer_ = nullptr;
   std::unique_ptr<render::MapRenderer> mapRenderer_;
   std::unique_ptr<render::ModelRenderer> models_;
+  std::unique_ptr<ScenePrimDrawer> primDrawer_;
+  PartnerBody partnerBody_{*this};
+  // The partner model whose images partnerTextures_ holds, and the textures by image.
+  const assets::ModelData* partnerTexturesOf_ = nullptr;
+  std::vector<std::optional<rhi::TextureId>> partnerTextures_;
+  std::map<std::string, std::optional<rhi::TextureId>, std::less<>> sceneImages_;
   CameraSync cameraSync_{*this};
-  std::array<render::Drawer*, 5> drawers_{};
-  // The drawers while a scene hides the scenery: the models only.
-  std::array<render::Drawer*, 3> stageDrawers_{};
+  std::array<render::Drawer*, 6> drawers_{};
+  // The drawers while a scene hides the scenery: the models and the scene's primitives only.
+  std::array<render::Drawer*, 4> stageDrawers_{};
   FieldStage stage_;
   // The partner's scene clip, and whether its actor plays it already (a new model's does not).
   std::optional<std::uint32_t> partnerClip_;

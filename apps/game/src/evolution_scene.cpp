@@ -28,28 +28,15 @@ constexpr float FixedOneF = 4096.0F;
 constexpr std::int32_t ClipWaitGuardFrames = 200;
 // Slot 8 plays the scene's bank (playSound2(8, n)).
 constexpr std::int64_t SceneSoundSlot = 8;
-
-// effect_common.c: lerp, kept whole: past t1 the result wraps instead of stopping at `end`.
-std::int32_t originalLerp(std::int32_t start, std::int32_t end, std::int32_t t0, std::int32_t t1,
-                          std::int32_t t) {
-  if (t1 == t0) {
-    return 0;
-  }
-  const std::int32_t range = end - start;
-  std::int32_t result = (range * (t - t0)) / (t1 - t0);
-  if (range >= 0) {
-    result %= range + 1;
-    if (result < 0) {
-      result += range;
-    }
-  } else {
-    result %= range - 1;
-    if (result > 0) {
-      result += range;
-    }
-  }
-  return result + start;
-}
+// State 0 (evl.c:384): the map's and the other characters' palettes go to black, 0 to 255 over
+// the dimming's frames.
+constexpr std::int32_t PaletteLevelMax = 0xFF;
+// The scene's images: the glow of the flashes and the rays' streak (DEFEFF's palette 1).
+constexpr std::string_view GlowImage = "texture/etcdat/spot256";
+constexpr std::string_view SparkImage = "texture/etcdat/defeff?palette=1";
+// The first seed of the effects' rolls (libc rand's increment); each scene takes the next.
+constexpr std::uint32_t FirstEffectSeed = 0x3039;
+constexpr std::uint32_t BitsPerMask = 64;
 
 float progress(std::int32_t from, std::int32_t to, std::int32_t frame) {
   return std::clamp(static_cast<float>(frame - from) / static_cast<float>(to - from), 0.0F, 1.0F);
@@ -100,6 +87,10 @@ void EvolutionScene::start(const std::string& target) {
   stage_ = {};
   pendingSeconds_ = 0.0;
   burstClipPlaying_ = false;
+  // EVL_initEvoSequence: the order the bones break in, the squares on the partner's feet.
+  effectSeed_ = effectSeed_ == 0 ? FirstEffectSeed : effectSeed_ + 1;
+  const FieldScene& field = *scene_;
+  effects_.start(field.partnerBody().boneCount(), field.field().partner().position, effectSeed_);
   // getEvoSequenceState: the idle clip, the scene's sound bank in slot 8.
   scene_->playPartnerClip(rules_.clips.idle);
   session_->useSceneSounds(rules_.soundBank);
@@ -153,9 +144,16 @@ void EvolutionScene::step() {
     }
     break;
   case Phase::Dimming:
-    // State 0: the map's palettes fade to black over these frames; here the scenery goes at their
-    // end.
+    // State 0: the map's and the other characters' palettes fade to black over these frames, and
+    // the scenery goes at their end.
+    stage_.sceneryDarkness =
+        frame_ < rules_.dimFrames
+            ? static_cast<float>(originalLerp(0, PaletteLevelMax, 0, rules_.dimFrames, frame_)) /
+                  static_cast<float>(PaletteLevelMax)
+            : 1.0F;
+    scene_->setStage(stage_);
     if (frame_ >= rules_.dimFrames) {
+      stage_.sceneryDarkness = 0.0F;
       const render::MapCamera& map = scene_->mapCamera();
       mapEye_ = map.desc().eye;
       mapTarget_ = map.desc().target;
@@ -172,9 +170,16 @@ void EvolutionScene::step() {
     break;
   case Phase::Closing:
     stepClosing();
+    showEffects();
     break;
   case Phase::Bursting:
+    // evl.c:420: the effects of state 2 run before the camera and the growth.
+    effects_.step(frame_, scene_->partnerBody());
+    playEffectSounds();
     stepBursting();
+    if (phase_ == Phase::Bursting) {
+      showEffects();
+    }
     break;
   case Phase::Restoring:
     restore();
@@ -223,6 +228,9 @@ void EvolutionScene::stepClosing() {
     }
     scene_->playPartnerClip(rules_.clips.burst);
     burstClipPlaying_ = true;
+    // evl.c:419: the first bone breaks on the frame state 2 starts.
+    effects_.burst(frame_, scene_->partnerBody());
+    playEffectSounds();
     setPhase(Phase::Bursting);
   }
 }
@@ -288,6 +296,7 @@ void EvolutionScene::restore() {
   // partner plays its last clip.
   stage_ = {};
   scene_->setStage(stage_);
+  effects_.clear();
   session_->useSceneSounds(std::nullopt);
   scene_->playPartnerClip(rules_.clips.finish);
   waitFrames_ = 0;
@@ -303,6 +312,36 @@ void EvolutionScene::finish() {
   scene_->playPartnerClip(std::nullopt);
   scene_->setStage({});
   setPhase(Phase::Idle);
+}
+
+void EvolutionScene::playEffectSounds() {
+  for (const std::int32_t sound : effects_.takeSounds()) {
+    playSound(sound);
+  }
+}
+
+void EvolutionScene::showEffects() {
+  effects_.tickObjects();
+  const EvolutionBody& body = scene_->partnerBody();
+  EvolutionView view{.frame = {},
+                     .focalLength = focalLength_,
+                     .images = {.white = scene_->whiteTexture(),
+                                .glow = scene_->sceneImage(GlowImage),
+                                .spark = scene_->sceneImage(SparkImage)}};
+  if (stage_.camera) {
+    view.frame = {.view = stage_.camera->view,
+                  .projection = stage_.camera->projection,
+                  .pixelScale = scene_->mapCamera().scale()};
+  }
+  stage_.prims = stage_.camera ? effects_.draw(body, view) : std::vector<ScenePrim>{};
+  stage_.partnerLift = effects_.lift();
+  stage_.partnerHiddenBones = 0;
+  for (std::uint32_t bone = 0; bone < body.boneCount() && bone < BitsPerMask; ++bone) {
+    if (effects_.boneWired(bone)) {
+      stage_.partnerHiddenBones |= std::uint64_t{1} << bone;
+    }
+  }
+  scene_->setStage(stage_);
 }
 
 EvolutionScene::Size EvolutionScene::sizeOf(std::string_view species) const {
