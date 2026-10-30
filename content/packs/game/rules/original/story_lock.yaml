@@ -57,3 +57,21 @@ stages:
       - mayo08a
       - mayo08b
       - mayo10
+  # Etapa 2: la jungla (Tropical Jungle, trop00-06) con Coelamon, Betamon, Centarumon y Vegiemon,
+  # y el Drill Tunnel (mayo11 y tunn01-10 con sus variantes) con Drimogemon, Meramon y Ogremon.
+  # Abre el lomo de Coelamon (mayo05 a trop01), mayo08a a trop00, las entradas del túnel desde
+  # mayo01_2 y mayo02_2 y room14 (la casa que abre Drimogemon, disparador 238). Quedan cerradas
+  # solas, por no estar en la lista, las salidas a la etapa 3 y siguientes: trop02 a dgha01,
+  # trop03 a gcan01, trop06 a koda00, tunn03 y tunn03_2 a leom02 y mayo02_2 a miha00.
+  - id: stage_2
+    maps:
+      - mayo11
+      - trop00
+      - trop01
+      - trop02
+      - trop03
+      - trop04
+      - trop05
+      - trop06
+      - tunn*
+      - room14

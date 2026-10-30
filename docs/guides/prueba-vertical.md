@@ -207,6 +207,20 @@ for lang in en es; do
         --autotest tests/autotest/route-mod-map.yaml --shots <capturas>/$lang
 done
 ```
+- `route-etapa2.yaml` y `route-etapa2-jungla.yaml`: la Etapa 2 de la historia, con el candado abierto solo para la
+  prueba (`--story-stage stage_2`, sin tocar `active_stage`) y una partida sembrada que empieza en el mapa de cada
+  mitad. La del Drill Tunnel (`--start tunn06`) evoluciona al compañero a Champion, habla con el minero, ve rodar la
+  roca (disparador 120), sigue a tunn07 y tunn08, donde tiembla la pantalla y empieza el combate con el monstruo de
+  fuego, lo gana con `battle_win` y acaba con el disparador 209. La de la jungla (`--start trop04`) choca con el
+  Betamon, que vuelve a la ciudad (204), pasa por trop01 y trop05 (en trop05 coloca al jugador junto a la salida, para
+  no pelear con los salvajes del camino) y entra en el bosque de Amida (alerta, 137) y sube por su camino central:
+
+```sh
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn06 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-jungla.yaml --shots <capturas>/etapa2
+```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
 los ajustes del usuario. Como no tiene las preguntas de la apertura ni las películas, su partida nueva empieza en la

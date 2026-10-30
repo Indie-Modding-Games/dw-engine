@@ -1,0 +1,35 @@
+# Stage 2 of the story with the keyboard, the jungle's half: from trop04 on a seeded game (run with --start trop04
+# and the stage-2 lock, docs/guides/prueba-vertical.md) the player walks into the Betamon of the mangroves, which
+# talks by itself and goes back to the city (trigger 204), then on through trop01 and trop05 to the Amida forest
+# (trop06), whose entrance cell sounds the alert (trigger 137), and up its middle path, where the traps throw the
+# player back (spawn_sprite_at_entity puts the hit's sprites on the player). The Drill Tunnel's half is
+# route-etapa2.yaml.
+name: etapa2-jungla
+device: keyboard
+timeout: 900
+steps:
+  - resize: [1280, 720]
+  - wait: {map: trop04, partner_within: 400, seconds: 2, timeout: 60}
+  - screenshot: trop04
+  # The Betamon talks when the player walks into it; the walk waits its scene out, pressing confirm.
+  - walk_to: {point: [366, -1700], radius: 60, encounters: true, timeout: 120}
+  - screenshot: trop04-after-recruit
+  - walk_to: {trigger: 110}
+  - wait: {map: trop01, partner_within: 400, seconds: 1, timeout: 30}
+  - screenshot: trop01
+  - walk_to: {trigger: 112, encounters: true, timeout: 240}
+  - wait: {map: trop05, partner_within: 400, seconds: 1, timeout: 30}
+  - screenshot: trop05
+  # The wild monsters of trop05's path fight whoever walks by, and they are not this route's beat: the player and
+  # the partner are put by the exit to trop06 (place, original axes).
+  - script: place("player -500 1650 0")
+  - script: place("partner -300 1750 0")
+  - walk_to: {trigger: 110}
+  # The entrance cell is section 0x33's: the alert's three beeps and its line.
+  - wait: {map: trop06, seconds: 3, timeout: 30}
+  - screenshot: trop06-alert
+  - repeat: {times: 5, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {seconds: 2}
+  - screenshot: trop06
+  - walk_to: {point: [-300, 1250], radius: 80, encounters: true, timeout: 180}
+  - screenshot: trop06-path

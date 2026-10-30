@@ -1,0 +1,63 @@
+# Stage 2 of the story with the keyboard, the Drill Tunnel's half: from tunn06 on a seeded game (run with
+# --start tunn06 and the stage-2 lock, docs/guides/prueba-vertical.md) the partner, evolved to a Champion, pushes the
+# boulder for the miner (spawn_boulder, move_boulder, despawn_boulder; trigger 120), the story takes the player on
+# to tunn07 and tunn08, where the lava cave's shake (routine 34) and the fight start, the fight is won with the debug
+# command and the scene ends with trigger 209. The jungle's half is route-etapa2-jungla.yaml.
+name: etapa2
+device: keyboard
+timeout: 900
+steps:
+  - resize: [1280, 720]
+  - wait: {map: tunn06, partner_within: 400, seconds: 2, timeout: 60}
+  - screenshot: tunn06-boulder
+  # Only a partner that is not one of the script's small forms pushes it (script 30: store_partner_species).
+  - script: evolve("grey")
+  # The field's evolution scene takes about 20 seconds.
+  - wait: {seconds: 30}
+  # The miner walks his waypoints just south of the boulder's blocked cells: he is put back on his home point and a
+  # click on him walks up and talks.
+  - walk_to: {point: [-897, 150], radius: 40}
+  - script: place("npc:5 -897 305 0")
+  # Up runs into him (the camera looks up the tunnel) and confirm talks to the NPC the player pushes against.
+  - press: {key: up}
+  - wait: {seconds: 1.0}
+  - tap: {key: return}
+  - release: {key: up}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: tunn06-talk
+  # Six pages of talk, then the push: thirteen moves of the boulder.
+  - repeat: {times: 6, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {seconds: 2.5}
+  - screenshot: tunn06-push
+  - wait: {seconds: 4}
+  - screenshot: tunn06-pushed
+  # Six more pages, and the miner's walks between them; spare presses on the next map do nothing.
+  - repeat: {times: 16, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  # The scene ends by taking the player to tunn07 (warp_to 30).
+  - wait: {map: tunn07, seconds: 2, timeout: 60}
+  - screenshot: tunn07
+  - walk_to: {trigger: 111}
+  - wait: {map: tunn08, seconds: 2, timeout: 30}
+  - screenshot: tunn08
+  # The cells of section 0x33 across the cave start the scene (the first one on the way is this one): the camera goes
+  # to the fire monster, which shakes the screen.
+  - walk_to: {point: [-150, 1850], radius: 80}
+  - wait: {seconds: 2.2}
+  - screenshot: tunn08-shake
+  # Eight pages and the walks between them, then the fight; a spare press in the fight's menu is undone by the
+  # debug win below.
+  - repeat: {times: 16, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - screenshot: tunn08-battle
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - screenshot: tunn08-battle-end
+  # The end box closes with a press.
+  - repeat: {times: 4, steps: [{wait: {seconds: 2}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - screenshot: tunn08-after-battle
+  # Eight pages after the fight; the scene ends with trigger 209.
+  - repeat: {times: 14, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {seconds: 3}
+  - screenshot: tunn08-end
