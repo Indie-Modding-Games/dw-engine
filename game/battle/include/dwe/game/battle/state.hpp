@@ -120,6 +120,8 @@ struct AttackInFlight {
   // is hit or blocks. Without one it turns to the attacker: where it stands as the hit lands for a
   // followed effect, its place at the release otherwise.
   std::optional<Point> hitPoint;
+  // The attack frames on which its effect turns the attacker to the defender (EffectLanding).
+  std::vector<std::int32_t> facingTarget;
 };
 
 // The attack a fighter is performing.

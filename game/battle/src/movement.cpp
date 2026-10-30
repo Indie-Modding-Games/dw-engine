@@ -263,10 +263,10 @@ Point stepTarget(const BattleContext& context, const Fighter& fighter, Facing fa
 }
 
 // What stops a fighter's next step if it faces `facing` (map.c: entityCheckCollision): the combat
-// area, the map, then the other fighters still standing and, `withPlayer`, the player (a step of a
-// clip other than a walk).
+// area, the map, then the other fighters still standing but `ignored` (its source argument) and,
+// `withPlayer`, the player (a step of a clip other than a walk).
 Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
-                     bool withPlayer = false) {
+                     bool withPlayer = false, std::optional<FighterId> ignored = std::nullopt) {
   const Fighter& fighter = context.fighter(id);
   const std::int32_t radius = fighter.combatant.radius;
   const Point from = fighter.position;
@@ -280,7 +280,7 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
   const std::vector<Fighter>& fighters = context.state->fighters;
   for (FighterId other = 0; other < fighters.size(); ++other) {
     const Fighter& them = fighters[other];
-    if (other != id && them.hp > 0 &&
+    if (other != id && other != ignored && them.hp > 0 &&
         runsInto(from, to, radius, them.position, them.combatant.radius)) {
       return Blocker::Fighter;
     }
@@ -295,13 +295,15 @@ Blocker blockerAhead(const BattleContext& context, FighterId id, Facing facing,
 // map.c: entityCheckCollision on the fighter itself: what stops its next step facing `facing`.
 // The test lets the fighter's root step go again (it clears animFlag bit 1): a fighter that turns
 // away from what blocked it walks on the same frame.
-Blocker checkStep(BattleContext& context, FighterId id, Facing facing) {
+Blocker checkStep(BattleContext& context, FighterId id, Facing facing,
+                  std::optional<FighterId> ignored = std::nullopt) {
   context.fighter(id).rootHeld = false;
-  return blockerAhead(context, id, facing);
+  return blockerAhead(context, id, facing, false, ignored);
 }
 
-bool freeAt(BattleContext& context, FighterId id, std::int32_t angle) {
-  return checkStep(context, id, facingOf(angle)) == Blocker::None;
+bool freeAt(BattleContext& context, FighterId id, std::int32_t angle,
+            std::optional<FighterId> ignored = std::nullopt) {
+  return checkStep(context, id, facingOf(angle), ignored) == Blocker::None;
 }
 
 // map.c: COLLISION_GRACE_ROTATION: where a blocked fighter tries to turn, by the eighth of a turn
@@ -319,16 +321,17 @@ constexpr std::int32_t GraceTurnStep = 0x50;
 constexpr std::int32_t GraceNudge = 32;
 
 // map.c: collisionGrace: a blocked fighter turns a little toward the first free way of its
-// eighth of a turn, or nudges its facing when every way is blocked.
-void collisionGrace(BattleContext& context, FighterId id) {
+// eighth of a turn, or nudges its facing when every way is blocked; `ignored` does not block it.
+void collisionGrace(BattleContext& context, FighterId id,
+                    std::optional<FighterId> ignored = std::nullopt) {
   Fighter& fighter = context.fighter(id);
-  if (checkStep(context, id, fighter.facing) == Blocker::None) {
+  if (checkStep(context, id, fighter.facing, ignored) == Blocker::None) {
     return;
   }
   const std::int32_t start = angleOf(fighter.facing);
   for (const std::int32_t way :
        GraceTurns.at(static_cast<std::size_t>(start / (QuarterTurn / 2)))) {
-    if (freeAt(context, id, way)) {
+    if (freeAt(context, id, way, ignored)) {
       fighter.facing = facingOf(turnToward(start, way, GraceTurnStep));
       return;
     }
@@ -452,6 +455,16 @@ Point wholeUnits(std::int64_t x, std::int64_t z) {
           .z = static_cast<std::int32_t>(-floorUnits(-z))};
 }
 
+Point bodyPointToward(Point at, Point toward, std::int32_t radius) {
+  // The original's angle away from `toward` (_atan plus half a turn) turns (0, 0, radius) back
+  // toward it; ApplyMatrixSV rounds down along the original's axes (world z runs the other way).
+  const std::int32_t angle = effect_math::atan4096(at.z - toward.z, toward.x - at.x) + HalfTurn;
+  const std::int64_t x = static_cast<std::int64_t>(effect_math::rsin(angle)) * radius;
+  const std::int64_t z = static_cast<std::int64_t>(effect_math::rcos(angle)) * radius;
+  return {.x = at.x + static_cast<std::int32_t>(floorUnits(x)),
+          .z = at.z - static_cast<std::int32_t>(floorUnits(z))};
+}
+
 std::int64_t contactRangeSquared(const BattleContext& context, FighterId a, FighterId b) {
   const std::int64_t reach = static_cast<std::int64_t>(context.fighter(a).combatant.radius) +
                              context.fighter(b).combatant.radius;
@@ -490,15 +503,24 @@ void walkToward(BattleContext& context, FighterId id, Point point) {
       true);
 }
 
-void approach(BattleContext& context, FighterId id, Point point) {
+void approach(BattleContext& context, FighterId id, FighterId target) {
   Fighter& fighter = context.fighter(id);
   fighter.collidedWhileBacking = false;
+  const Point point = context.fighter(target).position;
+  const Facing original = fighter.facing;
   lookAt(fighter, point);
   const auto distance = integerSqrt(distanceSquared(fighter.position, point));
   moveAlongFacing(
       context, id,
       static_cast<std::int32_t>(std::min<std::int64_t>(context.rules->timing.walkSpeed, distance)),
       false);
+  // The step still goes (the test does not hold it), but a blocked fighter keeps the facing it had;
+  // the grace turn that follows (BTL_tickQueuedMove) leaves the target out, so only something else
+  // in the way turns it.
+  if (checkStep(context, id, fighter.facing) != Blocker::None) {
+    fighter.facing = original;
+    collisionGrace(context, id, target);
+  }
 }
 
 void backAwayFrom(BattleContext& context, FighterId id, FighterId target) {

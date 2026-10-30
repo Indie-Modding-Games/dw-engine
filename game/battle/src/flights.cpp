@@ -87,14 +87,20 @@ std::optional<EffectLanding> ScriptedFlights::landing(std::string_view move, Fig
   runner.touchBodies(true);
   const std::size_t slot = runner.load(*found->second);
   static_cast<void>(runner.start(slot, attacker, defender));
+  std::vector<std::int32_t> facingTarget;
   for (std::int32_t frame = 0; frame < MaxFrames; ++frame) {
     bodies.setFrame(frame);
+    const std::size_t facings = runner.targetFacings();
     runner.tick();
+    if (runner.targetFacings() != facings) {
+      facingTarget.push_back(frame);
+    }
     const auto touch = std::ranges::find(runner.touched(), defender, &EffectTouch::fighter);
     if (touch != runner.touched().end()) {
       return EffectLanding{.frame = frame,
                            .at = touch->onBody ? std::nullopt
-                                               : std::optional{bodies.ground(touch->at)}};
+                                               : std::optional{bodies.ground(touch->at)},
+                           .facingTarget = std::move(facingTarget)};
     }
     if (!runner.running(slot)) {
       break;

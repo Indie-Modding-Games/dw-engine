@@ -69,6 +69,9 @@ void standIdle(Fighter& fighter);
 // attack_hits.cpp: attacks reaching fighters and their results (battle_main.c: BTL_tickAttackHits),
 // and the gradual damage (utils.c: damageTick).
 void tickAttacksInFlight(BattleContext& context);
+// battle_effect.c: BTL_faceTargetEntity: the effects in flight that turn their attacker to its
+// target on this frame do it, after the fighters moved (BTL_battleTickFrame: tickObjects).
+void faceEffectTargets(BattleContext& context);
 void tickAttackHits(BattleContext& context);
 void drainPendingDamage(BattleContext& context);
 // The attack of a fighter leaves it (its animation's release frame).
@@ -140,6 +143,9 @@ Facing facingToward(Point from, Point to);
 // takes it (anim.c: applyRootMomentum shifts its fixed-point sum right): rounded down along the
 // original's axes, so up along world z, which runs the other way.
 Point wholeUnits(std::int64_t x, std::int64_t z);
+// battle_effect.c: BTL_calculateAttackHitPosition: the point of a body at `at` of `radius` toward
+// `toward`, where a radius or line check hits it.
+Point bodyPointToward(Point at, Point toward, std::int32_t radius);
 void lookAt(Fighter& fighter, Point point);
 // battle_main.c: BTL_handleHitReaction: a fighter hit from the front (within a quarter turn of
 // where it looks) or while flattened turns to the attack; one hit from behind turns its back to it.
@@ -149,8 +155,10 @@ bool turnForHit(Fighter& fighter, Point attack);
 // area, the map and the other fighters. battle_main.c: BTL_moveTowardLocation: blocked, the fighter
 // keeps its facing and turns a little toward a free way (collisionGrace).
 void walkToward(BattleContext& context, FighterId id, Point point);
-// battle_main.c: BTL_tickMeleeAttack walks up to the target without the collision test.
-void approach(BattleContext& context, FighterId id, Point point);
+// battle_main.c: BTL_tickMeleeAttack walks up to the target: its step is not held, but if the
+// collision test blocks it the fighter keeps its old facing (and collisionGrace, without the
+// target, may turn it).
+void approach(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_backAwayFromTarget: turns its back on the target and walks away.
 void backAwayFrom(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_maintainTargetDistance.

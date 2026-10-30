@@ -321,7 +321,7 @@ BTL_compareLessOrEqual = { status = "portado", dwe = "game/battle/src/effect_run
 BTL_compareLess = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: menor." }
 BTL_compareNotEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: distinto." }
 BTL_compareEqual = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Comparación de efecto: igual." }
-BTL_calculateAttackHitPosition = { status = "parcial", note = "el motor registra el golpe; sin comprobar que use este punto", what = "Calcula en qué punto del cuerpo del objetivo cae un golpe." }
+BTL_calculateAttackHitPosition = { status = "portado", dwe = "game/battle/src/movement.cpp:458", what = "Calcula en qué punto del cuerpo del objetivo cae un golpe." }
 BTL_interpolateClamped = { status = "falta", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas).", note = "solo lo usan dibujos que faltan" }
 BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Monta la tabla de subórdenes de efecto." }
 BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Ejecuta una orden del script de efecto." }

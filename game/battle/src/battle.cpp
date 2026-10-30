@@ -457,6 +457,7 @@ const BattleEvents& Battle::step() {
   tickHpBars(context);
   updateShownClips(context);
   tickRootMotion(context);
+  faceEffectTargets(context);
   // BTL_battleTickFrame: tickObjects, after the fighters: the sparks' draws of the frame.
   if (particleRolls_) {
     particleRolls_->tick(random_);

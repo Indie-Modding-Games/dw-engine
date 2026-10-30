@@ -10,6 +10,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dwe::game::battle {
 
@@ -21,6 +22,10 @@ namespace dwe::game::battle {
 struct EffectLanding {
   std::int32_t frame = 0;
   std::optional<Point> at;
+  // The attack frames, up to the touch, on which the effect turns the attacker to its target
+  // (battle_effect.c: BTL_faceTargetEntity, the scripts' face_target): Spit Fire does it every
+  // frame until its fire leaves.
+  std::vector<std::int32_t> facingTarget;
 
   bool operator==(const EffectLanding&) const = default;
 };

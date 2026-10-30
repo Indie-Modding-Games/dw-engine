@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -112,7 +114,9 @@ public:
     asked.push_back({std::string{move}, attacker, defender, clip});
     const Point attackerAt =
         battle_ != nullptr ? battle_->state().fighters.at(attacker).position : Point{};
-    return EffectLanding{.frame = frame_, .at = at_.has_value() ? at_ : std::optional{attackerAt}};
+    return EffectLanding{.frame = frame_,
+                         .at = at_.has_value() ? at_ : std::optional{attackerAt},
+                         .facingTarget = {}};
   }
 
   struct Question {
@@ -352,13 +356,36 @@ public:
   [[nodiscard]] std::optional<EffectLanding>
   landing(std::string_view /*move*/, FighterId /*attacker*/, FighterId /*defender*/,
           std::optional<std::int32_t> /*clip*/) const override {
-    return EffectLanding{.frame = asked_++ == 0 ? first_ : later_, .at = std::nullopt};
+    return EffectLanding{
+        .frame = asked_++ == 0 ? first_ : later_, .at = std::nullopt, .facingTarget = {}};
   }
 
 private:
   std::int32_t first_;
   std::int32_t later_;
   mutable std::int32_t asked_ = 0;
+};
+
+// A made-up flight: the partner's shot flies `frames` long and turns it to its target on the first
+// `facing` probe frames (face_target); the enemy's moves touch at once.
+class FacingFlights final : public AttackFlights {
+public:
+  FacingFlights(std::int32_t frames, std::int32_t facing) : frames_(frames), facing_(facing) {}
+
+  [[nodiscard]] std::optional<EffectLanding>
+  landing(std::string_view /*move*/, FighterId attacker, FighterId /*defender*/,
+          std::optional<std::int32_t> /*clip*/) const override {
+    if (attacker != PartnerId) {
+      return EffectLanding{.frame = 3, .at = std::nullopt, .facingTarget = {}};
+    }
+    std::vector<std::int32_t> facing(static_cast<std::size_t>(facing_));
+    std::ranges::iota(facing, 0);
+    return EffectLanding{.frame = frames_, .at = std::nullopt, .facingTarget = facing};
+  }
+
+private:
+  std::int32_t frames_;
+  std::int32_t facing_;
 };
 
 BattleSetup farShots() {
@@ -465,4 +492,109 @@ TEST_CASE("a fighter a line or radius check hit turns to its attacker where it s
   CHECK(turnsToward(battle, [](const Battle& fight, const BattleEvent& event) {
           return fight.state().fighters.at(*event.other).position;
         }) == std::optional{true});
+}
+
+TEST_CASE("an effect that faces its target turns its attacker to it on those frames") {
+  // BTL_faceTargetEntity: Spit Fire's tick script turns its attacker to the defender every tick
+  // until its counter reaches 11, whatever moved meanwhile. Here the partner's move steps it
+  // sideways.
+  const auto facingEnemy = [](std::int32_t facingFrames) {
+    FacingFlights flights{40, facingFrames};
+    Battle battle = clippedBattle(farShots(), 3);
+    FighterClips clips = madeUpClips();
+    clips.at(FirstMove) = {.steps = std::vector<RootStep>(40, {.side = 25, .forward = 0}),
+                           .repeatFrom = std::nullopt};
+    battle.setClips(PartnerId, clips);
+    battle.setFlights(&flights);
+    std::vector<bool> facing;
+    while (!battle.finished() && battle.state().frame < 600) {
+      battle.step();
+      const auto& fighters = battle.state().fighters;
+      const bool turning =
+          std::ranges::any_of(battle.state().inFlight, [](const AttackInFlight& a) {
+            return a.attacker == PartnerId && a.age && *a.age >= 2 && *a.age <= 30;
+          });
+      if (!turning || fighters[PartnerId].shown.clip != FirstMove) {
+        continue;
+      }
+      const Point from = fighters[PartnerId].position;
+      const Point to = fighters[1].position;
+      const auto dx = static_cast<double>(to.x - from.x);
+      const auto dz = static_cast<double>(to.z - from.z);
+      const Facing turned = fighters[PartnerId].facing;
+      const double cross = (turned.x * dz) - (turned.z * dx);
+      const double dot = (turned.x * dx) + (turned.z * dz);
+      // Its facing comes from the original's tables: within a few thousandths of the line.
+      facing.push_back(dot > 0 && std::abs(cross / (std::hypot(dx, dz) * FacingScale)) < 0.005);
+    }
+    return facing;
+  };
+  const std::vector<bool> facing = facingEnemy(30);
+  REQUIRE(facing.size() > 10);
+  CHECK(std::ranges::all_of(facing, std::identity{}));
+  // Turned on its first probe frame only, it walks off the line.
+  CHECK(std::ranges::none_of(facingEnemy(1), std::identity{}));
+}
+
+TEST_CASE("a melee approach its target blocks keeps the facing it had") {
+  // BTL_tickMeleeAttack looks at its target, steps and tests the next step; blocked by its target,
+  // it puts its facing back: in the forest fight the enemy's last step, frame 140, keeps 2091 and
+  // only its move, the frame after, looks at the partner (2092). Here the partner slides sideways.
+  FacingFlights flights{40, 0};
+  Battle battle = clippedBattle(clippedDuel({"shot"}, {"punch"}), 3);
+  FighterClips clips = madeUpClips();
+  clips.at(FirstMove) = {.steps = std::vector<RootStep>(40, {.side = 25, .forward = 0}),
+                         .repeatFrom = std::nullopt};
+  battle.setClips(PartnerId, clips);
+  battle.setFlights(&flights);
+  struct Frame {
+    std::int32_t clip = 0;
+    Facing facing;
+    Point partner;
+  };
+  std::vector<Frame> frames;
+  while (!battle.finished() && battle.state().frame < 1000) {
+    battle.step();
+    const Fighter& enemy = battle.state().fighters[1];
+    frames.push_back({.clip = enemy.shown.clip,
+                      .facing = enemy.facing,
+                      .partner = battle.state().fighters[PartnerId].position});
+  }
+  std::int32_t lastSteps = 0;
+  std::int32_t kept = 0;
+  for (std::size_t i = 1; i + 1 < frames.size(); ++i) {
+    if (frames[i].clip == Walk && frames[i + 1].clip == FirstMove &&
+        frames[i].partner != frames[i - 1].partner) {
+      ++lastSteps;
+      kept += frames[i].facing.x == frames[i - 1].facing.x &&
+                      frames[i].facing.z == frames[i - 1].facing.z
+                  ? 1
+                  : 0;
+    }
+  }
+  REQUIRE(lastSteps > 0);
+  CHECK(kept == lastSteps);
+}
+
+TEST_CASE("a line or radius check hits the body toward its source, at the original's angle") {
+  // The forest fight's Sonic Jab, frame 221: the partner at (738, 3494) looked at the enemy at
+  // (295, 3381) at 861, and the hit on its body (radius 120) toward the enemy, at (621, 3464),
+  // turns it to 860 (BTL_calculateAttackHitPosition, then BTL_handleHitReaction's _atan).
+  BattleSetup setup = clippedDuel({"shot"}, {"shot"});
+  setup.partner.position = {.x = 738, .z = -3494};
+  setup.enemies.front().position = {.x = 295, .z = -3381};
+  ShiftingFlights flights{10, 10};
+  Battle battle = clippedBattle(std::move(setup), 3);
+  battle.setFlights(&flights);
+  std::optional<Facing> turned;
+  while (!turned && !battle.finished() && battle.state().frame < 3000) {
+    for (const BattleEvent& event : battle.step()) {
+      if (event.kind == EventKind::AttackHit && event.fighter == PartnerId) {
+        turned = battle.state().fighters[PartnerId].facing;
+      }
+    }
+  }
+  REQUIRE(turned.has_value());
+  CHECK(turned->x == -3967);
+  CHECK(turned->z == 1020);
 }

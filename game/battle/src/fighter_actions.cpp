@@ -120,7 +120,7 @@ void tickMeleeAttack(BattleContext& context, FighterId id) {
   const bool inContact = distanceSquared(fighter.position, target.position) <=
                          contactRangeSquared(context, id, *fighter.target);
   if (!inContact && !context.state->frozenByFinisher()) {
-    approach(context, id, target.position);
+    approach(context, id, *fighter.target);
     return;
   }
   if (inContact) {

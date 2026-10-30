@@ -226,6 +226,9 @@ public:
   // hit_target hit is kept in touched(), in order. For the battle's flight probe (flights.hpp).
   void touchBodies(bool on) { touchBodies_ = on; }
   [[nodiscard]] const std::vector<EffectTouch>& touched() const { return touched_; }
+  // How many times the scripts turned their source to its target (battle_effect.c:
+  // BTL_faceTargetEntity); the battle turns the fighter itself, on the frames the probe saw it.
+  [[nodiscard]] std::size_t targetFacings() const { return targetFacings_; }
 
 private:
   // A sub-effect of a slot (battle_effect.c: EfeSubEffect): the script it runs each frame and the
@@ -347,6 +350,7 @@ private:
   std::size_t targetCursor_ = 0;
   bool touchBodies_ = false;
   std::vector<EffectTouch> touched_;
+  std::size_t targetFacings_ = 0;
 };
 
 } // namespace dwe::game::battle

@@ -158,6 +158,19 @@ bool tryCounter(BattleContext& context, FighterId id, FighterId attacker) {
   return false;
 }
 
+// Where the attack's effect hit the defender (addAttackObject's position): its own point, or for a
+// check that hit the body (no point) the defender's body at its radius toward the source
+// (BTL_calculateAttackHitPosition): the attacker where it stands now for a followed effect, its
+// place at the release otherwise.
+Point hitPointOf(const BattleContext& context, const AttackInFlight& attack) {
+  if (attack.hitPoint) {
+    return *attack.hitPoint;
+  }
+  const Point source = attack.age ? context.fighter(attack.attacker).position : attack.origin;
+  const Fighter& defender = context.fighter(attack.defender);
+  return bodyPointToward(defender.position, source, defender.combatant.radius);
+}
+
 void hit(BattleContext& context, const AttackInFlight& attack) {
   const FighterId id = attack.defender;
   Fighter& fighter = context.fighter(id);
@@ -179,11 +192,7 @@ void hit(BattleContext& context, const AttackInFlight& attack) {
   }
   addPendingDamage(context, fighter, damage);
   fighter.knockedBack = true;
-  // A followed effect without a point of its own hit the body toward its source, where the
-  // attacker stands now (BTL_calculateAttackHitPosition).
-  const Point hitPoint = attack.hitPoint ? *attack.hitPoint
-                         : attack.age    ? context.fighter(attack.attacker).position
-                                         : attack.origin;
+  const Point hitPoint = hitPointOf(context, attack);
   fighter.hitFromBehind = turnForHit(fighter, hitPoint);
   core::logDebug("[port:battle] BTL_handleHitReaction (battle_main.c:3093): fighter {} at ({}, {}) "
                  "turns to ({}, {}){}",
@@ -233,9 +242,7 @@ void block(BattleContext& context, const AttackInFlight& attack) {
   if (id == PartnerId) {
     ++context.state->counters.blocks;
   }
-  lookAt(fighter, attack.hitPoint ? *attack.hitPoint
-                  : attack.age    ? context.fighter(attack.attacker).position
-                                  : attack.origin);
+  lookAt(fighter, hitPointOf(context, attack));
   fighter.blocking = true;
   fighter.pose = Pose::Blocking;
   fighter.poseFrames = context.rules->timing.blockAnimationFrames;
@@ -300,7 +307,8 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .framesLeft = 0,
                         .age = std::nullopt,
                         .clip = std::nullopt,
-                        .hitPoint = std::nullopt};
+                        .hitPoint = std::nullopt,
+                        .facingTarget = {}};
   if (!travels) {
     return flight;
   }
@@ -318,6 +326,7 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
     flight.age = attack.frame;
     flight.clip = clip;
     flight.hitPoint = landing->at;
+    flight.facingTarget = landing->facingTarget;
     return flight;
   }
   const std::int64_t distance =
@@ -373,6 +382,18 @@ void releaseAttack(BattleContext& context, FighterId id) {
   }
 }
 
+void faceEffectTargets(BattleContext& context) {
+  for (const AttackInFlight& attack : context.state->inFlight) {
+    Fighter& attacker = context.fighter(attack.attacker);
+    // The age already counts this frame (tickAttacksInFlight).
+    if (!attack.age || attacker.fainted || attack.attacker == attack.defender ||
+        !std::ranges::contains(attack.facingTarget, *attack.age - 1)) {
+      continue;
+    }
+    lookAt(attacker, context.fighter(attack.defender).position);
+  }
+}
+
 void tickAttacksInFlight(BattleContext& context) {
   std::vector<AttackInFlight>& inFlight = context.state->inFlight;
   std::vector<AttackInFlight> stillFlying;
@@ -385,6 +406,7 @@ void tickAttacksInFlight(BattleContext& context) {
               effectLanding(context, attack.attacker, attack.defender, attack.move, attack.clip)) {
         attack.framesLeft = std::max(landing->frame - *attack.age, 0);
         attack.hitPoint = landing->at;
+        attack.facingTarget = landing->facingTarget;
       }
       ++*attack.age;
     }

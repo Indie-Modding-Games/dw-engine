@@ -720,7 +720,8 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .framesLeft = 0,
                                          .age = std::nullopt,
                                          .clip = std::nullopt,
-                                         .hitPoint = std::nullopt});
+                                         .hitPoint = std::nullopt,
+                                         .facingTarget = {}});
     ParticleRolls particles;
     BattleContext context = bench.context();
     context.particles = sparks ? &particles : nullptr;

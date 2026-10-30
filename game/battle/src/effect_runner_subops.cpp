@@ -586,8 +586,12 @@ bool EffectRunner::fighterOp(Slot& slot, std::string_view name,
     boneTransform(self.target);
   } else if (name == "select_next_target" || name == "select_random_target") {
     selectTarget(slot, name == "select_random_target", args[0]);
-  } else if (name == "face_target" || name == "target_hit_entity") {
-    // BTL_faceTargetEntity turns the attacker to its target, which the battle already does;
+  } else if (name == "face_target") {
+    // BTL_faceTargetEntity turns the attacker to its target: the battle does it (targetFacings).
+    if (self.target) {
+      ++targetFacings_;
+    }
+  } else if (name == "target_hit_entity") {
     // BTL_setTargetToHitEntity makes the hit fighter the target, which is the battle's target.
   } else {
     return false;
