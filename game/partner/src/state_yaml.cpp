@@ -31,6 +31,7 @@ constexpr std::string_view SpeciesKey = "species";
 constexpr std::string_view StatsKey = "stats";
 constexpr std::string_view CurrentHpKey = "current_hp";
 constexpr std::string_view CurrentMpKey = "current_mp";
+constexpr std::string_view ChargeModeKey = "charge_mode";
 constexpr std::string_view ConditionsKey = "conditions";
 constexpr std::string_view SleepKey = "sleep";
 constexpr std::string_view HungerKey = "hunger";
@@ -288,7 +289,8 @@ PartnerStats readPartnerStats(YamlReader& reader, const YamlNode& root) {
       !reader.expectKeys(node, StatsKey,
                          {statName(Stat::Hp), statName(Stat::Mp), statName(Stat::Offense),
                           statName(Stat::Defense), statName(Stat::Speed), statName(Stat::Brain),
-                          CurrentHpKey, CurrentMpKey})) {
+                          CurrentHpKey, CurrentMpKey},
+                         {ChargeModeKey})) {
     return stats;
   }
   for (const Stat stat : AllStats) {
@@ -296,6 +298,9 @@ PartnerStats readPartnerStats(YamlReader& reader, const YamlNode& root) {
   }
   stats.currentHp = integer(reader, node, CurrentHpKey);
   stats.currentMp = integer(reader, node, CurrentMpKey);
+  if (node.find(ChargeModeKey) != nullptr) {
+    stats.chargeMode = integer(reader, node, ChargeModeKey);
+  }
   return stats;
 }
 
@@ -460,6 +465,10 @@ YamlNode toYaml(const PartnerState& state) {
   YamlNode stats = statsNode(state.stats.base);
   put(stats, CurrentHpKey, state.stats.currentHp);
   put(stats, CurrentMpKey, state.stats.currentMp);
+  // Written only when it is not the 0 every partner has, so saves stay as they were.
+  if (state.stats.chargeMode != 0) {
+    put(stats, ChargeModeKey, state.stats.chargeMode);
+  }
   root.set(std::string{StatsKey}, std::move(stats));
   YamlNode conditions = YamlNode::sequence();
   for (std::size_t index = 0; index < ConditionCount; ++index) {

@@ -256,6 +256,21 @@ TEST_CASE("the partner fights with its stats, HP, MP and the moves at its equipp
   CHECK(fighter->moves.at(dwe::game::battle::FinisherSlot) == "big_finish");
 }
 
+TEST_CASE("the partner fights with its own charge mode, 0 unless something changed it") {
+  // battle_setup.c: BTL_initializeCombat keeps PARTNER_ENTITY's chargeMode, 0 in every measured
+  // state of the original (new game, the forest fight, later saves).
+  const TestPacks packs;
+  Adapters adapters;
+  auto session = sessionWithBattle(packs, adapters);
+  const auto usual = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(usual.has_value(), errorOf(usual));
+  CHECK(usual->chargeMode == dwe::game::battle::ChargeMode::Aggressive);
+  changePartner(*session, [](PartnerState& state) { state.stats.chargeMode = 2; });
+  const auto cautious = adapters.battle->partnerCombatant(*session);
+  REQUIRE_MESSAGE(cautious.has_value(), errorOf(cautious));
+  CHECK(cautious->chargeMode == dwe::game::battle::ChargeMode::Cautious);
+}
+
 TEST_CASE("only learned techniques are equipped, at positions the species has a move at") {
   const TestPacks packs;
   Adapters adapters;

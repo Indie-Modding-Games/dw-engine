@@ -36,6 +36,20 @@ TEST_CASE("the partner state goes to YAML and back unchanged, with its version")
   CHECK(*restored == raising.state());
 }
 
+TEST_CASE("the partner's charge mode is saved only when it is not the 0 it starts with") {
+  testing::OriginalRuleset original;
+  testing::Raising raising(original.rules());
+  CHECK(raising.state().stats.chargeMode == 0);
+  const core::YamlNode usual = toYaml(raising.state());
+  const core::YamlNode* stats = usual.find("stats");
+  REQUIRE(stats != nullptr);
+  CHECK(stats->find("charge_mode") == nullptr);
+  raising.edit([](PartnerState& state) { state.stats.chargeMode = 2; });
+  const auto restored = fromYaml(toYaml(raising.state()));
+  REQUIRE_MESSAGE(restored.has_value(), testing::errorOf(restored));
+  CHECK(restored->stats.chargeMode == 2);
+}
+
 TEST_CASE("a partner state of an unknown version or with a bad value is refused") {
   testing::OriginalRuleset original;
   testing::Raising raising(original.rules());

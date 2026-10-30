@@ -331,6 +331,9 @@ BattleAdapter::partnerCombatant(const GameSession& session) const {
                    .brain = base[Stat::Brain]};
   fighter.hp = partner.stats.currentHp;
   fighter.mp = partner.stats.currentMp;
+  // battle_setup.c: BTL_initializeCombat fights with the partner's own charge mode (0 unless a
+  // mod changed it); the battle hands it back untouched, as BTL_deinitializeCombat restores it.
+  fighter.chargeMode = game::battle::chargeModeOf(partner.stats.chargeMode);
   // btl.c: a position the species has no move at is left empty.
   for (std::size_t place = 0; place < moves_.equipped.size(); ++place) {
     if (const std::optional<MoveSlot> slot = moves_.equipped.at(place)) {

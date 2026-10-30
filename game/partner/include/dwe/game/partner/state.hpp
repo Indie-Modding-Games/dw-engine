@@ -60,6 +60,11 @@ struct PartnerStats {
   StatBlock base;
   std::int32_t currentHp = 0;
   std::int32_t currentMp = 0;
+  // How it fights while charging up or cooling down in battle (stats.current.chargeMode): 0 keeps
+  // its distance, 1 waits, 2 backs away. Nothing outside battle sets it in the original, so a
+  // partner keeps the 0 it starts with; a battle reads it when it starts and puts it back when it
+  // ends (BTL_initializeCombat, BTL_deinitializeCombat), whatever the commands did meanwhile.
+  std::int32_t chargeMode = 0;
 
   friend bool operator==(const PartnerStats&, const PartnerStats&) = default;
 };

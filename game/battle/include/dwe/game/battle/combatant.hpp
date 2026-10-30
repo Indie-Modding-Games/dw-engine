@@ -83,6 +83,9 @@ struct Combatant {
   Point position;
 };
 
+// A charge mode stored as a number (an NPC record, the partner's state), clamped to a known mode.
+ChargeMode chargeModeOf(std::int32_t stored);
+
 // A combatant with the species' fields of a Digimon table entry filled in, and no stats.
 Combatant combatantOf(const assets::DigimonRow& species);
 

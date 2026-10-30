@@ -17,6 +17,10 @@ constexpr std::int32_t HighestType = static_cast<std::int32_t>(DigimonType::Viru
 
 } // namespace
 
+ChargeMode chargeModeOf(std::int32_t stored) {
+  return static_cast<ChargeMode>(std::clamp(stored, 0, HighestChargeMode));
+}
+
 Combatant combatantOf(const assets::DigimonRow& species) {
   Combatant combatant;
   combatant.species = species.id;
@@ -47,7 +51,7 @@ core::Result<Combatant> enemyFromMap(const assets::DigimonRow& species, const as
                  .brain = npc.brain};
   enemy.hp = npc.currentHp > 0 ? std::min(npc.currentHp, npc.hp) : npc.hp;
   enemy.mp = npc.currentMp > 0 ? std::min(npc.currentMp, npc.mp) : npc.mp;
-  enemy.chargeMode = static_cast<ChargeMode>(std::clamp(npc.chargeMode, 0, HighestChargeMode));
+  enemy.chargeMode = chargeModeOf(npc.chargeMode);
   enemy.focusesPartner = npc.unknown2A == 1;
   enemy.bits = npc.bits;
   enemy.position = position;
