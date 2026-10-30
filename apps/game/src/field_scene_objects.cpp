@@ -65,15 +65,16 @@ void FieldScene::submitMapObjects() {
 }
 
 void FieldScene::setProps(const assets::AssetId& model, std::vector<glm::mat4> places) {
-  props_ = std::move(places);
-  if (propModelId_ == model) {
+  const auto found = props_.find(model.str());
+  if (found != props_.end()) {
+    found->second.places = std::move(places);
     return;
   }
-  if (propModel_) {
-    models_->remove(*propModel_);
-    propModel_.reset();
+  if (places.empty()) {
+    return;
   }
-  propModelId_ = model;
+  PropSet& set = props_[model.str()];
+  set.places = std::move(places);
   auto data = assets::loadModel(*files_, model);
   if (!data) {
     core::logWarning(
@@ -86,15 +87,17 @@ void FieldScene::setProps(const assets::AssetId& model, std::vector<glm::mat4> p
         "{}", core::formatMessage(messages::PropModelMissing, model.str(), handle.error().message));
     return;
   }
-  propModel_ = *handle;
+  set.model = *handle;
 }
 
 void FieldScene::submitProps() {
-  if (!propModel_) {
-    return;
-  }
-  for (const glm::mat4& place : props_) {
-    models_->submit({.model = *propModel_, .world = place, .joints = {}});
+  for (const auto& [id, set] : props_) {
+    if (!set.model) {
+      continue;
+    }
+    for (const glm::mat4& place : set.places) {
+      models_->submit({.model = *set.model, .world = place, .joints = {}});
+    }
   }
 }
 

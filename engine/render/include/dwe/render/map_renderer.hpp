@@ -94,6 +94,8 @@ public:
 
   // Markers drawn by layerDrawer() before the depth layers, so the layers cover them as they cover
   // models.
+  // The camera's shake (MapCamera::setShake), in background pixels.
+  void setShake(glm::vec2 offset) { camera_.setShake(offset); }
   void setMarkers(std::span<const MapMarker> markers) {
     markers_.assign(markers.begin(), markers.end());
   }

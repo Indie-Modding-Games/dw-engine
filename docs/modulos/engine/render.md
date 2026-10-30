@@ -32,7 +32,8 @@ política para cualquier resolución, en el [ADR 0020](../../adr/0020-camara-de-
   fondo y a la ventana (`projectToBackground`, `worldToWindow`), de la ventana al suelo (`pickGround`, para el clic
   para moverse) y de un píxel del fondo con una profundidad a clip (`backgroundToClip`, para el fondo y las capas de
   profundidad). `mapCameraDesc` convierte la cámara cruda del mapa (doblando punto de vista y referencia, como
-  `loadMapSetup`).
+  `loadMapSetup`). `setShake` corre la ventana del fondo unos píxeles en x después de sujetarla, para el temblor de
+  pantalla de la historia (`map.c: tickMeramonShake`, que mueve `DRAWING_OFFSET_X`).
 - Los tests comparan las proyecciones con el cálculo en coma fija del original (rotación 4.12, RTPS, división por
   `SZ` y `cameraX` sujeto a los bordes) en mapas reales: coinciden a un píxel y cuarto en el fondo.
 - `loadMapSceneData` (`<dwe/render/map_scene.hpp>`) lee un mapa por su id a través del VFS: el `MapDocument`, su

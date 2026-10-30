@@ -400,8 +400,8 @@ readMapTFS = { status = "no-aplica", note = "lectura del disco; la hace la extra
 isInDaytimeTransition = { status = "falta", what = "Dice si el mapa está cambiando entre día y noche.", note = "sin búsqueda de la luz del día en el motor; comprobar" }
 handleTileUpdate = { status = "no-aplica", note = "carga de trozos del fondo del original", what = "Carga las partes del fondo según se mueve la cámara." }
 reinitializeAfterTournament = { status = "falta", what = "Vuelve al mapa tras un torneo.", note = "no hay torneos" }
-createMeramonShake = { status = "falta", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
-tickMeramonShake = { status = "falta", what = "Hace temblar la pantalla en esa escena." }
+createMeramonShake = { status = "portado", dwe = "apps/session/src/story_routines/routine_screen_shake.cpp", what = "Empieza el temblor de pantalla de la escena del fuego de la montaña." }
+tickMeramonShake = { status = "parcial", dwe = "apps/game/src/field_story_props.cpp", note = "El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no.", what = "Hace temblar la pantalla en esa escena." }
 cleanupGame = { status = "no-aplica", note = "limpieza del original", what = "Libera la partida al volver al título." }
 getFileCityTopMap = { status = "falta", what = "Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido.", note = "comprobar si las ediciones de mapa del guion lo cubren" }
 loadMapCollisionData = { status = "no-aplica", note = "lectura del disco; la colisión la extrae dwx", what = "Lee la rejilla de colisión del mapa." }
@@ -432,10 +432,10 @@ setButterfly = { status = "falta", what = "Hace salir la mariposa que persigue e
 tickButterfly = { status = "falta", what = "Hace volar la mariposa." }
 unsetButterfly = { status = "falta", what = "Quita la mariposa." }
 clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Vacía los cofres del mapa al salir." }
-loadDirtCartModel = { status = "falta", what = "Carga la vagoneta de tierra de la mina." }
+loadDirtCartModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga la vagoneta de tierra de la mina." }
 initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los cofres de la partida." }
 loadWarpCrystals = { status = "falta", what = "Carga los cristales de teletransporte de un mapa." }
-spawnBoulder = { status = "falta", what = "Pone la roca que bloquea un paso." }
+spawnBoulder = { status = "portado", dwe = "apps/session/src/story_props.cpp", what = "Pone la roca que bloquea un paso." }
 initializeMedalModel = { status = "falta", what = "Carga el modelo de una medalla." }
 spawnToyTownBoxes = { status = "falta", what = "Pone las cajas de la ciudad de juguete." }
 spawnGearbox = { status = "falta", what = "Pone la caja de engranajes de la fábrica." }
@@ -445,10 +445,10 @@ emptyChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what
 isBoxOffScreen = { status = "no-aplica", note = "recorte de dibujo", what = "Dice si un objeto está fuera de la pantalla." }
 tickOpenChestTray = { status = "falta", what = "Anima la tapa del cofre al abrirse." }
 tickCloseChestTray = { status = "falta", what = "Anima la tapa del cofre al cerrarse." }
-decreaseDirtPileSize = { status = "falta", what = "Encoge un montón de tierra al cavar." }
+decreaseDirtPileSize = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Encoge un montón de tierra al cavar." }
 moveAngemonPedestal = { status = "falta", what = "Mueve el pedestal del santuario." }
 activateMedalTexture = { status = "falta", what = "Pone la textura de la medalla ganada." }
-loadDirtPileModel = { status = "falta", what = "Carga el montón de tierra que se cava." }
+loadDirtPileModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga el montón de tierra que se cava." }
 setEntityPosition = { status = "portado", dwe = "game/field/src/field_positions.cpp", what = "Pone a un personaje en una posición." }
 resetFlattenGlobal = { status = "no-aplica", note = "estado de dibujo", what = "Reinicia el aplastado de los modelos." }
 handleNullModel = { status = "no-aplica", note = "modelo vacío del original", what = "Sustituye un modelo que falta." }
@@ -459,7 +459,7 @@ getEntityType = { status = "no-aplica", note = "consulta interna", what = "Da la
 uploadModelTexture = { status = "no-aplica", note = "subida de textura del original", what = "Sube la textura de un modelo." }
 clearMapObjects = { status = "no-aplica", note = "limpieza del original", what = "Quita los objetos del mapa." }
 moveMapObjects = { status = "portado", dwe = "game/field/src/map_objects.cpp", what = "Mueve los objetos del mapa con el guion." }
-spawnSpriteAtEntity = { status = "falta", what = "Pone un sprite (humo, signo) sobre un personaje." }
+spawnSpriteAtEntity = { status = "portado", dwe = "apps/game/src/field_story_props.cpp", note = "Con tests de la sesión; las trampas de trop06 no se han visto saltar en una ruta.", what = "Pone un sprite (humo, signo) sobre un personaje." }
 tickRemoveMist = { status = "falta", what = "Disipa la niebla del mapa." }
 loadNPCModel = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Carga el modelo de un personaje del mapa." }
 NPCEntityTick = { status = "portado", dwe = "game/field/src/npcs.cpp", what = "Mueve a un personaje del mapa cada fotograma." }

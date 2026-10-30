@@ -147,8 +147,15 @@ public:
   // original axes and units, in the world; nothing if the node is no joint of the skin.
   [[nodiscard]] std::optional<glm::vec3> playerNodePoint(std::uint32_t node,
                                                          glm::vec3 offset) const;
+  // The same point for any character drawn on the field: the player, the partner or an NPC, by
+  // its entity, with no offset (the node's origin); nothing for an entity not drawn or a node that
+  // is no joint of its skin.
+  [[nodiscard]] std::optional<glm::vec3> entityNodePoint(scene::Entity entity,
+                                                         std::uint32_t node) const;
   // Turns the player in place.
   void setPlayerYaw(float yaw);
+  // Moves everything the map draws by `offset` background pixels (render::MapCamera::setShake).
+  void setScreenShake(glm::vec2 offset) { mapRenderer_->setShake(offset); }
   // More markers to draw with the click-to-move target's, until replaced (the fishing's bobber).
   void setExtraMarkers(std::vector<render::MapMarker> markers) {
     extraMarkers_ = std::move(markers);
@@ -156,9 +163,10 @@ public:
   // The items on the ground, drawn as their icons over their shadows (item.c: renderDroppedItem)
   // until replaced. The images load on first use; one that fails is logged and not drawn.
   void setGroundItems(std::vector<GroundItemSprite> items) { groundItems_ = std::move(items); }
-  // Copies of a model of the packs drawn on the map at these world transforms until replaced (the
-  // partner's poop piles: partner_impl.c: renderPoop). The model loads on first use; one that
-  // fails is logged and not drawn.
+  // Copies of a model of the packs drawn on the map at these world transforms until replaced for
+  // that model (the partner's poop piles: partner_impl.c: renderPoop; the story's props:
+  // field_story_props.hpp); no places draws none of it. A model loads the first time it has
+  // places; one that fails is logged once and not drawn.
   void setProps(const assets::AssetId& model, std::vector<glm::mat4> places);
   // While held the camera stays where it points: map.c: tickCameraFollowPlayer follows the player
   // only in its state 0, never in a battle, where the player runs back on screen.
@@ -470,10 +478,12 @@ private:
   double fighterSeconds_ = 0.0;
   // The models of the map's 3D objects, by door model id.
   std::map<std::int32_t, render::ModelHandle> mapObjectModels_;
-  // setProps: the model asked for, its handle once loaded, and the copies.
-  std::optional<assets::AssetId> propModelId_;
-  std::optional<render::ModelHandle> propModel_;
-  std::vector<glm::mat4> props_;
+  // setProps: each model asked for, its handle once loaded (none when it failed), and the copies.
+  struct PropSet {
+    std::optional<render::ModelHandle> model;
+    std::vector<glm::mat4> places;
+  };
+  std::map<std::string, PropSet> props_;
 };
 
 } // namespace dwe::app

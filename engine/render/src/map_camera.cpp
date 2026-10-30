@@ -67,6 +67,8 @@ void MapCamera::followBackgroundPixel(glm::vec2 pixel) {
       scrollAxis(pixel.x, visible.x, desc_.backgroundSize.x, scale_),
       scrollAxis(pixel.y, visible.y, desc_.backgroundSize.y, scale_),
   };
+  // A drawing offset moves what is drawn the other way from the window's scroll.
+  scroll_ -= shake_;
   updateProjection();
 }
 

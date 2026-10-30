@@ -83,9 +83,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 132 | 5 | 11 | 23 | 91 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 134 | 4 | 74 | 73 | 64 % |
-| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 68 | 2 | 11 | 15 | 85 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 40 | 1 | 21 | 40 | 65 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 135 | 3 | 74 | 73 | 64 % |
+| [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 69 | 3 | 9 | 15 | 87 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 45 | 1 | 16 | 40 | 73 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 73 | 3 | 12 | 57 | 85 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 65 | 1 | 2 | 56 | 96 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 19 | 0 | 0 | 15 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 40 | 1 | 2 | 43 | 94 % |
-| **Total** | 2438 funciones | 818 | 41 | 422 | 1157 | 65 % |
+| **Total** | 2438 funciones | 825 | 41 | 415 | 1157 | 66 % |
 
 ## Batalla
 
@@ -138,7 +138,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 134, parcial 4, falta 74, no aplica 73.
+Portado 135, parcial 3, falta 74, no aplica 73.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -172,7 +172,6 @@ Portado 134, parcial 4, falta 74, no aplica 73.
 | `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
 | `BTL_addCloudEffect` | `btl/battle_effect.c:4239` | falta | Añade una nube de humo o polvo de una técnica. | battle.md: Hueco |
 | `BTL_addParticleEmitter` | `btl/battle_effect.c:4288` | falta | Añade un emisor de partículas. | battle.md: Hueco |
-| `BTL_calculateAttackHitPosition` | `btl/battle_effect.c:5145` | parcial | Calcula en qué punto del cuerpo del objetivo cae un golpe. | `game/battle/include/dwe/game/battle/flights.hpp:19` · el motor registra el golpe; sin comprobar que use este punto |
 | `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | solo lo usan dibujos que faltan |
 | `BTL_resetPoisonBubbles` | `btl/battle_effect.c:5359` | falta | Reinicia las burbujas del veneno sobre un luchador. | — |
 | `BTL_addPoisonBubble` | `btl/battle_effect.c:5364` | falta | Suelta una burbuja de veneno sobre el luchador envenenado. | — |
@@ -229,14 +228,13 @@ El jugador en el mapa, la rejilla de colisión, los warps, el seguimiento del co
 
 Ficheros del decomp: `main/aabb.c`, `main/map.c`, `main/map_collision.c`, `main/tamer.c`, `main/vecmath.c`.
 
-Portado 68, parcial 2, falta 11, no aplica 15.
+Portado 69, parcial 3, falta 9, no aplica 15.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `isInDaytimeTransition` | `main/map.c:4607` | falta | Dice si el mapa está cambiando entre día y noche. | sin búsqueda de la luz del día en el motor; comprobar |
 | `reinitializeAfterTournament` | `main/map.c:5445` | falta | Vuelve al mapa tras un torneo. | no hay torneos |
-| `createMeramonShake` | `main/map.c:5472` | falta | Empieza el temblor de pantalla de la escena del fuego de la montaña. | — |
-| `tickMeramonShake` | `main/map.c:5482` | falta | Hace temblar la pantalla en esa escena. | — |
+| `tickMeramonShake` | `main/map.c:5482` | parcial | Hace temblar la pantalla en esa escena. | `apps/game/src/field_story_props.cpp` · El desplazamiento del dibujo, sí; el cuadrado aditivo que crece (tpage 832,256) y el HUD que tiembla con él, no. |
 | `getFileCityTopMap` | `main/map.c:5592` | falta | Elige qué versión del mapa de la ciudad cargar según cuánto ha crecido. | comprobar si las ediciones de mapa del guion lo cubren |
 | `checkMedalConditions` | `main/tamer.c:721` | falta | Da la medalla de aprender todas las técnicas y la anuncia. | — |
 | `checkPendingAwards` | `main/tamer.c:793` | falta | Lanza el anuncio pendiente de un premio (medalla o nivel del jugador). | — |
@@ -255,7 +253,7 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 40, parcial 1, falta 21, no aplica 40.
+Portado 45, parcial 1, falta 16, no aplica 40.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -264,9 +262,7 @@ Portado 40, parcial 1, falta 21, no aplica 40.
 | `setButterfly` | `main/butterfly.c:71` | falta | Hace salir la mariposa que persigue el compañero infeliz (condición de distraído). | la condición sí está (partner_tick.cpp:313); la mariposa no se ve |
 | `tickButterfly` | `main/butterfly.c:94` | falta | Hace volar la mariposa. | — |
 | `unsetButterfly` | `main/butterfly.c:134` | falta | Quita la mariposa. | — |
-| `loadDirtCartModel` | `main/map_object.c:423` | falta | Carga la vagoneta de tierra de la mina. | solo lo cita la extracción del disco |
 | `loadWarpCrystals` | `main/map_object.c:500` | falta | Carga los cristales de teletransporte de un mapa. | solo lo cita la extracción del disco |
-| `spawnBoulder` | `main/map_object.c:616` | falta | Pone la roca que bloquea un paso. | solo lo cita la extracción del disco |
 | `initializeMedalModel` | `main/map_object.c:656` | falta | Carga el modelo de una medalla. | preparación de tablas, objetos o recursos del original: el motor monta los suyos |
 | `spawnToyTownBoxes` | `main/map_object.c:662` | falta | Pone las cajas de la ciudad de juguete. | solo lo cita la extracción del disco |
 | `spawnGearbox` | `main/map_object.c:749` | falta | Pone la caja de engranajes de la fábrica. | solo lo cita la extracción del disco |
@@ -274,12 +270,9 @@ Portado 40, parcial 1, falta 21, no aplica 40.
 | `initializeTrainingPoop` | `main/map_object.c:809` | falta | Pone la caca gigante del gimnasio. | solo lo cita la extracción del disco |
 | `tickOpenChestTray` | `main/map_object.c:1083` | falta | Anima la tapa del cofre al abrirse. | — |
 | `tickCloseChestTray` | `main/map_object.c:1096` | falta | Anima la tapa del cofre al cerrarse. | — |
-| `decreaseDirtPileSize` | `main/map_object.c:1109` | falta | Encoge un montón de tierra al cavar. | — |
 | `moveAngemonPedestal` | `main/map_object.c:1167` | falta | Mueve el pedestal del santuario. | — |
 | `activateMedalTexture` | `main/map_object.c:1193` | falta (citada en docs) | Pone la textura de la medalla ganada. | — |
-| `loadDirtPileModel` | `main/map_object.c:1205` | falta | Carga el montón de tierra que se cava. | solo lo cita la extracción del disco |
-| `createNinjamonEffect` | `main/overworld.c:777` | parcial | Nube de humo de un personaje que desaparece. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 38 se cierra sin el humo |
-| `spawnSpriteAtEntity` | `main/overworld.c:992` | falta | Pone un sprite (humo, signo) sobre un personaje. | — |
+| `createNinjamonEffect` | `main/overworld.c:777` | parcial | Nube de humo de un personaje que desaparece. | `apps/session/include/dwe/session/story_scenes.hpp:113` · la rutina 38 se cierra sin el humo |
 | `tickRemoveMist` | `main/overworld.c:1012` | falta | Disipa la niebla del mapa. | — |
 
 No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (19); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
@@ -307,8 +300,8 @@ Portado 73, parcial 3, falta 12, no aplica 57.
 | `readSelectedItemMerit` | `main/script_common.c:877` | parcial | Lee los méritos del objeto elegido. | no hay pantalla del intercambio por méritos |
 | `tickSingleCardShop` | `main/script_common.c:1070` | falta | Tienda de una sola carta. | las pantallas de cartas no existen |
 | `tickShopBitsBox` | `main/script_common.c:1154` | falta | Cuadro con el dinero del jugador que abre el guion. | la rutina 15 se cierra sin enseñarlo |
-| `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/session/include/dwe/session/story_scenes.hpp:111` · la rutina 15 se cierra sin enseñar el cuadro |
-| `openDiscardItem` | `main/script_common.c:1815` | parcial | Pide tirar un objeto cuando la bolsa está llena al recibir otro. | `apps/session/include/dwe/session/story_scenes.hpp:97` · la rutina 0 se registra pero la app no tiene pantalla: se cierra al momento |
+| `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 15 se cierra sin enseñar el cuadro |
+| `openDiscardItem` | `main/script_common.c:1815` | parcial | Pide tirar un objeto cuando la bolsa está llena al recibir otro. | `apps/session/include/dwe/session/story_scenes.hpp:98` · la rutina 0 se registra pero la app no tiene pantalla: se cierra al momento |
 | `createSingleCardShopMenu` | `main/script_common.c:2047` | falta | Abre la tienda de una sola carta. | no hay pantallas de cartas |
 | `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | falta | Toca el sonido de la tienda, solo en el mapa de la sabana. | comprobar |
 | `calculateCardMenuStrings` | `main/script_common.c:2666` | falta | Monta la lista del menú de cartas. | no hay pantallas de cartas |
@@ -350,12 +343,12 @@ Portado 63, parcial 8, falta 21, no aplica 6.
 |---|---|---|---|---|
 | `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
 | `rollCardPack` | `shop/script_menu.c:679` | parcial | Saca las cartas de un sobre. | `game/inventory/include/dwe/game/inventory/cards.hpp` · la tirada existe; la rutina 14 se cierra sin pantalla |
-| `openBuyCardMenu` | `shop/script_menu.c:711` | parcial | Abre la compra de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:106` · la rutina 14 se cierra sin pantalla |
-| `openSellCardMenu` | `shop/script_menu.c:753` | parcial | Abre la venta de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:107` · la rutina 14 se cierra sin pantalla |
-| `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:98` · la rutina 1 se cierra sin pantalla |
-| `tickItemKeeper` | `shop/script_menu.c:892` | parcial | Guardarropía de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:104` · la rutina 11 se cierra sin pantalla |
-| `openJukebox` | `shop/script_menu.c:947` | parcial | Abre la gramola. | `apps/session/include/dwe/session/story_scenes.hpp:103` · la rutina 9 se cierra sin pantalla |
-| `openMojyamonShop` | `shop/script_menu.c:1051` | parcial | Abre el trueque de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:99` · la rutina 2 se cierra sin pantalla |
+| `openBuyCardMenu` | `shop/script_menu.c:711` | parcial | Abre la compra de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:107` · la rutina 14 se cierra sin pantalla |
+| `openSellCardMenu` | `shop/script_menu.c:753` | parcial | Abre la venta de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:108` · la rutina 14 se cierra sin pantalla |
+| `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:99` · la rutina 1 se cierra sin pantalla |
+| `tickItemKeeper` | `shop/script_menu.c:892` | parcial | Guardarropía de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:105` · la rutina 11 se cierra sin pantalla |
+| `openJukebox` | `shop/script_menu.c:947` | parcial | Abre la gramola. | `apps/session/include/dwe/session/story_scenes.hpp:104` · la rutina 9 se cierra sin pantalla |
+| `openMojyamonShop` | `shop/script_menu.c:1051` | parcial | Abre el trueque de objetos. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 2 se cierra sin pantalla |
 | `hasAnyCardToBuy` | `shop/script_menu.c:1296` | falta | Dice si queda alguna carta por comprar. | no hay pantallas de cartas |
 | `createCardMenu` | `shop/script_menu.c:1452` | falta | Abre el menú de compra o venta de cartas. | la rutina 14 se cierra sin pantalla |
 | `shopFillMeritItemList` | `shop/script_menu.c:1479` | falta | Rellena la lista del intercambio por méritos. | la rutina 1 se cierra sin pantalla |
@@ -514,12 +507,12 @@ Portado 0, parcial 4, falta 81, no aplica 364.
 | `tournamentCheckEligible` | `dget/dget.c:429` | falta (citada en docs) | Comprueba si el compañero cumple los requisitos de inscripción de la copa. | — |
 | `tickTournamentSchedule` | `dget/dget.c:468` | falta | Mueve el cursor del calendario y confirma o cancela la elección de copa. | — |
 | `tickTournamentInfo` | `dget/dget.c:631` | falta | Cierra el recuadro de información de la copa al pulsar un botón. | — |
-| `initTournamentSchedule` | `dget/dget.c:664` | parcial | Enseña el calendario de torneos. | `apps/session/include/dwe/session/story_scenes.hpp:108` · la rutina 18 se cierra sin pantalla |
+| `initTournamentSchedule` | `dget/dget.c:664` | parcial | Enseña el calendario de torneos. | `apps/session/include/dwe/session/story_scenes.hpp:109` · la rutina 18 se cierra sin pantalla |
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
-| `scriptStartTournament` | `main/tournament.c:128` | parcial | Empieza un torneo. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 6 se cierra sin torneo |
+| `scriptStartTournament` | `main/tournament.c:128` | parcial | Empieza un torneo. | `apps/session/include/dwe/session/story_scenes.hpp:101` · la rutina 6 se cierra sin torneo |
 | `getCupDataJumpTable` | `main/tournament.c:146` | falta (citada en docs) | Busca en el guion del mapa los datos de una copa por sección e id. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
-| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:109` · la rutina 22 se cierra sin pantalla |
+| `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:110` · la rutina 22 se cierra sin pantalla |
 | `STD_addChampionScene` | `std/std_effect.c:1251` | falta | Inicia la escena de celebración del campeón de la copa. | — |
 | `STD_tickChampionScene` | `std/std_effect.c:1259` | falta | Anima la escena del campeón: letras, giro de cámara y podio. | — |
 | `STD_addPodiumRenderer` | `std/std_effect.c:1380` | falta | Muestra el podio en la escena de premiación. | — |

@@ -66,6 +66,10 @@ public:
   // (overworld.c: tickMoveObjectTo).
   [[nodiscard]] std::optional<glm::vec2> position(std::size_t instance) const;
   void setPosition(std::size_t instance, glm::vec2 position);
+  // The size in background pixels of an instance's first frame that is not blank, as the
+  // original centres a sprite on a point (overworld.c: spawnSpriteAtLocation); nothing past the
+  // last instance or when every frame is blank.
+  [[nodiscard]] std::optional<glm::vec2> spriteSize(std::size_t instance) const;
   // Moves an instance away from where the map places it, in background pixels, as the training
   // courses move the gym's weights (overworld.c: moveMapObjectsWithLimit); a zero offset puts it
   // back (loadMapObjectPosition).

@@ -65,6 +65,11 @@ public:
   // Centres the visible window on a background pixel, clamped the same way.
   void followBackgroundPixel(glm::vec2 pixel);
 
+  // Moves everything drawn by `offset` background pixels after the clamp, as a change of the
+  // original's drawing offset does (map.c: tickMeramonShake moves DRAWING_OFFSET_X); zero puts it
+  // back. It takes effect at the next follow.
+  void setShake(glm::vec2 offset) { shake_ = offset; }
+
   [[nodiscard]] const MapCameraDesc& desc() const { return desc_; }
   [[nodiscard]] glm::vec2 viewportSize() const { return viewport_; }
 
@@ -129,6 +134,7 @@ private:
   float scale_ = 1.0F;
   glm::vec2 focus_{0.0F};
   glm::vec2 scroll_{0.0F};
+  glm::vec2 shake_{0.0F};
 };
 
 // The raw camera of a map document as the disc stores it: the original's axes, and viewpoint and

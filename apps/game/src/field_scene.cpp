@@ -737,6 +737,21 @@ std::optional<glm::vec3> FieldScene::nodePoint(const Actor& actor, std::uint32_t
   return glm::vec3{world * jointSpace * glm::vec4{offset.x, -offset.y, -offset.z, 1.0F}};
 }
 
+std::optional<glm::vec3> FieldScene::entityNodePoint(scene::Entity entity,
+                                                     std::uint32_t node) const {
+  if (playerActor_->entity == entity) {
+    return nodePoint(*playerActor_, node, glm::vec3{0.0F});
+  }
+  if (partnerActor_->entity == entity) {
+    return nodePoint(*partnerActor_, node, glm::vec3{0.0F});
+  }
+  const auto found = std::ranges::find(npcActors_, entity, &Actor::entity);
+  if (found == npcActors_.end()) {
+    return std::nullopt;
+  }
+  return nodePoint(**found, node, glm::vec3{0.0F});
+}
+
 void FieldScene::setPlayerYaw(float yaw) {
   auto& transform = world_.registry().get<scene::Transform>(playerActor_->entity);
   transform.yaw = yaw;

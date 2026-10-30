@@ -283,7 +283,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                                              .ui = context.ui}),
       feedScene_(*game_.session, *game_.systems.inventory, *game_.systems.fieldItems, *scene_),
       fieldToilet_(*game_.session, *game_.systems.fieldItems, *scene_),
-      fieldPoop_(*game_.session, *game_.systems.poop, *scene_),
+      fieldPoop_(*game_.session, *game_.systems.poop, *scene_), storyProps_(*scene_),
       partnerMenu_({.session = game_.session.get(),
                     .inventory = game_.systems.inventory,
                     .species = species_ ? &*species_ : nullptr,
@@ -595,6 +595,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   }
   if (game_.systems.scenes != nullptr) {
     storyScenes_.update(*game_.systems.scenes, battleScreen_, species, *scene_);
+    storyProps_.update(*game_.systems.scenes);
   }
   guardFactsChanged = commands.care.apply(session) || guardFactsChanged;
   if (std::exchange(commands.saveMachine, false)) {
@@ -686,6 +687,10 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
+  if (!paused()) {
+    storyProps_.advance(frameSeconds);
+  }
+  storyProps_.show();
   fieldItemsScreen_.show(*scene_);
   const game::partner::PartnerState& partner = session.partner().state();
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);

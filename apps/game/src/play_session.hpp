@@ -35,6 +35,7 @@
 #include "field_items_screen.hpp"
 #include "field_poop.hpp"
 #include "field_scene.hpp"
+#include "field_story_props.hpp"
 #include "field_toilet.hpp"
 #include "fishing_screen.hpp"
 #include "frame_stats.hpp"
@@ -204,6 +205,7 @@ private:
   FeedScene feedScene_;
   FieldToilet fieldToilet_;
   FieldPoop fieldPoop_;
+  FieldStoryProps storyProps_;
   PartnerMenu partnerMenu_;
   FieldHud fieldHud_;
   SleepScreen sleepScreen_;

@@ -120,6 +120,20 @@ std::optional<glm::vec2> MapDepthLayers::position(std::size_t instance) const {
   return std::nullopt;
 }
 
+std::optional<glm::vec2> MapDepthLayers::spriteSize(std::size_t instance) const {
+  if (instance >= instances_.size()) {
+    return std::nullopt;
+  }
+  for (const assets::MapSpriteFrame& frame : instances_[instance].frames) {
+    if (frame.sprite != assets::MapSpriteFrame::BlankSprite && frame.sprite >= 0 &&
+        static_cast<std::size_t>(frame.sprite) < sprites_.size()) {
+      const assets::MapSprite& sprite = sprites_[static_cast<std::size_t>(frame.sprite)];
+      return glm::vec2{static_cast<float>(sprite.width), static_cast<float>(sprite.height)};
+    }
+  }
+  return std::nullopt;
+}
+
 void MapDepthLayers::setPosition(std::size_t instance, glm::vec2 position) {
   if (instance < instances_.size()) {
     instances_[instance].position = position;
