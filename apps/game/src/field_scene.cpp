@@ -44,6 +44,23 @@ std::string speciesModelOf(std::string_view species) {
   return id;
 }
 
+// The species a model draws (speciesModelOf the other way round), nothing for another model.
+std::optional<std::string> speciesOfModel(std::string_view model) {
+  if (!model.starts_with(SpeciesModelFolder) || !model.ends_with(SpeciesModelName)) {
+    return std::nullopt;
+  }
+  model.remove_prefix(SpeciesModelFolder.size());
+  model.remove_suffix(SpeciesModelName.size());
+  std::string species{model};
+  if (const std::size_t slash = species.find('/'); slash != std::string::npos) {
+    species[slash] = ':';
+  }
+  return species;
+}
+
+// anim.c: tickAnimation: a clip's sound in bank 4 is the entity's own (stats.current.vabId).
+constexpr std::uint8_t SpeciesSoundBank = 4;
+
 // The click-to-move target, drawn as a small marker on the ground while the player walks to it.
 constexpr render::MapMarker TargetMarker{.feet = glm::vec3{0.0F},
                                          .width = 24.0F,
@@ -516,6 +533,53 @@ void FieldScene::animate(Actor& actor, double seconds) {
   static_cast<void>(actor.player->advance(static_cast<float>(seconds)));
 }
 
+void FieldScene::playClipSounds(const Actor& actor) {
+  const std::vector<assets::ClipSound> sounds = actor.player->takeSounds();
+  // The battle's fighters keep their clips' sounds to the battle (not played yet).
+  if (sounds.empty() || sound_ == nullptr || actor.fighter) {
+    return;
+  }
+  const bool player = &actor == playerActor_.get();
+  const bool partner = &actor == partnerActor_.get();
+  if (!player && !onScreen(actor)) {
+    return;
+  }
+  for (const assets::ClipSound& cue : sounds) {
+    // Bank 4 is the entity's own species bank (stats.current.vabId): the partner's is vab 4; the
+    // NPCs' (vab 5 to 7) are not loaded here.
+    if (cue.bank == SpeciesSoundBank && !partner) {
+      core::logDebug("[port:anim] tickAnimation (anim.c:339): NPC species sound {} not played",
+                     cue.sound);
+      continue;
+    }
+    core::logDebug("[port:anim] tickAnimation (anim.c:339): entity {} clip {} tick {}: "
+                   "playSound({}, {})",
+                   static_cast<std::uint32_t>(actor.entity), actor.player->clip()->id.value_or(0),
+                   cue.tick, cue.bank, cue.sound);
+    sound_->playSound(cue.bank, cue.sound);
+  }
+}
+
+bool FieldScene::onScreen(const Actor& actor) const {
+  const std::optional<std::string> species = speciesOfModel(actor.character.model.str());
+  const SpeciesBox size =
+      species && speciesBox_ ? speciesBox_(*species).value_or(SpeciesBox{}) : SpeciesBox{};
+  const glm::vec3 at = world_.registry().get<scene::Transform>(actor.entity).position;
+  constexpr std::array<std::pair<float, float>, 4> Quadrants{
+      {{1.0F, 1.0F}, {1.0F, -1.0F}, {-1.0F, 1.0F}, {-1.0F, -1.0F}}};
+  for (const float up : {0.0F, size.height}) {
+    for (const auto& [sideX, sideZ] : Quadrants) {
+      const std::optional<glm::vec2> fraction = worldToWindowFraction(
+          {at.x + (size.radius * sideX), at.y + up, at.z + (size.radius * sideZ)});
+      if (fraction && fraction->x >= 0.0F && fraction->x <= 1.0F && fraction->y >= 0.0F &&
+          fraction->y <= 1.0F) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool FieldScene::animateFollowingPartner(Actor& actor, double seconds) {
   // The field's follow picks the clip and moves the partner by its root motion, frame by frame
   // (game::field::PartnerFollow); the drawing plays that clip from its start each time it starts.
@@ -637,11 +701,14 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
   const double animationSeconds = paused ? 0.0 : frameSeconds;
   fighterSeconds_ = std::exchange(fighterSecondsDue_, 0.0);
   animate(*playerActor_, playerSceneClip_ ? frameSeconds : animationSeconds);
+  playClipSounds(*playerActor_);
   if (partnerClip_) {
-    // A scene's clip runs while the field waits for the scene.
+    // A scene's clip runs while the field waits for the scene; its sounds are the scene's.
     animatePartnerClip(frameSeconds);
+    static_cast<void>(partnerActor_->player->takeSounds());
   } else {
     animate(*partnerActor_, animationSeconds);
+    playClipSounds(*partnerActor_);
   }
   models_->clear();
   if (!stage_.sceneryHidden) {

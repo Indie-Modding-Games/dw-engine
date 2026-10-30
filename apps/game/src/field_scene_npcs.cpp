@@ -58,6 +58,7 @@ void FieldScene::drawNpcs(double animationSeconds, float alpha) {
       continue;
     }
     animate(*actor, animationSeconds);
+    playClipSounds(*actor);
     submit(*actor, alpha);
   }
 }

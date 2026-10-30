@@ -342,6 +342,13 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
   });
+  scene_->attachSound(session.sound(), [this](std::string_view species) {
+    const auto* row = species_ ? species_->find(species) : nullptr;
+    return row != nullptr
+               ? std::optional{FieldScene::SpeciesBox{.radius = static_cast<float>(row->radius),
+                                                      .height = static_cast<float>(row->height)}}
+               : std::nullopt;
+  });
   if (auto shown = scene_->showPartnerSpecies(session.partnerView().species); !shown) {
     core::logWarning("{}",
                      core::formatMessage(messages::PartnerModelNotShown,

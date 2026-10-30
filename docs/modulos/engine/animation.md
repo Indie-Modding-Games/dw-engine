@@ -5,6 +5,8 @@ instante (con los bucles y el movimiento raíz que trae el extractor en `extras`
 de los huesos para el skinning; `AnimationPlayer` lleva el tiempo, el clip y el fundido de una instancia y devuelve
 el movimiento raíz de cada paso. `finished()` dice si un clip sin bucle se quedó en su última pose; `playedThrough()`
 dice si cualquier clip, también uno con bucle, llegó al final de su primera vuelta (`anim.c`: `animFrame` llega a
-`frameCount`), que es lo que esperan las escenas de cuidado del campo. No usa la GPU: `render` solo recibe las matrices. Depende de `core` y `assets`.
+`frameCount`), que es lo que esperan las escenas de cuidado del campo. `clipSounds` da los sonidos del clip
+(`extras.sounds`, la instrucción 0x4000 de `anim.c: tickAnimation`) de los ticks que un paso deja atrás, en cada vuelta
+del bucle, y `AnimationPlayer::takeSounds()` los del último `advance` para que el dueño los toque o no. No usa la GPU: `render` solo recibe las matrices. Depende de `core` y `assets`.
 Detalle en [modelos y animación en el motor](../../architecture/models.md) y en el
 [ADR 0021](../../adr/0021-animacion-en-cpu-y-skinning-en-gpu.md).

@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <vector>
 
 namespace dwe::animation {
 
@@ -24,6 +25,13 @@ struct ClipPosition {
 // Places a time since the clip started (seconds, from 0) in the clip. A clip that does not repeat
 // holds its last pose.
 ClipPosition locate(const assets::AnimationClip& clip, double seconds);
+
+// The clip's sounds whose ticks its time runs through from `from` up to, not including, `to`
+// (seconds since it started), appended to `out` in order: anim.c: tickAnimation plays a frame's
+// sounds on the tick that leaves it. Past the end of a clip that repeats forever, its repeat's
+// sounds play on every round; a clip without ticksPerSecond has none.
+void clipSounds(const assets::AnimationClip& clip, double from, double to,
+                std::vector<assets::ClipSound>& out);
 
 // The pose of every node of the model at a time of the clip: the rest pose, with the clip's
 // channels applied. The root motion node keeps its rest translation; its movement is rootMotion's.

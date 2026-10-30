@@ -247,6 +247,14 @@ TEST_CASE("a glb that breaks the model's rules is refused with the reason") {
     CHECK(clip->loops[0].firstTick == 0);
     CHECK(clip->loops[0].count == 3U);
   }
+  SUBCASE("a sound past the clip's ticks") {
+    Fixture fixture;
+    fixture.clipExtras = R"({"id":2,"ticksPerSecond":20,"tickCount":4,)"
+                         R"("sounds":[{"tick":4,"bank":1,"sound":27}]})";
+    const auto model = parseModel(fixture.glb());
+    REQUIRE_FALSE(model.has_value());
+    CHECK(model.error().message.find("sound") != std::string::npos);
+  }
   SUBCASE("an unknown semi-transparency mode") {
     Fixture fixture;
     fixture.materials = R"([{"extras":{"blending":4}}])";
@@ -254,6 +262,20 @@ TEST_CASE("a glb that breaks the model's rules is refused with the reason") {
     REQUIRE_FALSE(model.has_value());
     CHECK(model.error().message.find("blending") != std::string::npos);
   }
+}
+
+TEST_CASE("a clip keeps the sounds its stream plays, in tick order") {
+  Fixture fixture;
+  fixture.clipExtras =
+      R"({"id":2,"ticksPerSecond":20,"tickCount":4,"endsInLoop":true,)"
+      R"("loops":[{"firstTick":1,"lastTick":3,"count":255}],)"
+      R"("sounds":[{"tick":3,"bank":4,"sound":53},{"tick":2,"bank":1,"sound":27}]})";
+  const auto model = parseModel(fixture.glb());
+  REQUIRE_MESSAGE(model.has_value(), (model ? "" : model.error().message));
+  const auto* clip = model->findClip(2U);
+  REQUIRE(clip != nullptr);
+  CHECK(clip->sounds == std::vector<dwe::assets::ClipSound>{{.tick = 2, .bank = 1, .sound = 27},
+                                                            {.tick = 3, .bank = 4, .sound = 53}});
 }
 
 TEST_CASE("a hostile glb cannot make the reader allocate without bound") {

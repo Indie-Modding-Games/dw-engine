@@ -720,6 +720,44 @@ private:
                               .count = *loopCount == ExtrasLoopForever ? std::nullopt : loopCount});
       }
     }
+    return readClipSounds(node, clip, owner);
+  }
+
+  static core::Result<void> readClipSounds(const YamlNode& node, AnimationClip& clip,
+                                           const std::string& owner) {
+    const YamlNode* sounds = node.find("sounds");
+    if (sounds == nullptr) {
+      return {};
+    }
+    if (!sounds->isSequence()) {
+      return core::fail(std::format("{}: extras.sounds must be a list", owner));
+    }
+    constexpr std::uint32_t MaxByte = 0xFF;
+    for (const YamlNode& sound : sounds->items()) {
+      if (!sound.isMapping()) {
+        return core::fail(std::format("{}: every extras.sounds entry must be an object", owner));
+      }
+      const auto tick =
+          extrasNumber(sound, "tick", std::numeric_limits<std::uint32_t>::max(), owner);
+      const auto bank = extrasNumber(sound, "bank", MaxByte, owner);
+      const auto value = extrasNumber(sound, "sound", MaxByte, owner);
+      for (const auto* result : {&tick, &bank, &value}) {
+        if (!*result) {
+          return std::unexpected{result->error()};
+        }
+      }
+      if (!*tick || !*bank || !*value) {
+        return core::fail(std::format("{}: a sound needs tick, bank and sound", owner));
+      }
+      if (clip.tickCount != 0 && **tick >= clip.tickCount) {
+        return core::fail(std::format("{}: the sound at tick {} is outside its {} ticks", owner,
+                                      **tick, clip.tickCount));
+      }
+      clip.sounds.push_back({.tick = **tick,
+                             .bank = static_cast<std::uint8_t>(**bank),
+                             .sound = static_cast<std::uint8_t>(**value)});
+    }
+    std::ranges::stable_sort(clip.sounds, {}, &ClipSound::tick);
     return {};
   }
 

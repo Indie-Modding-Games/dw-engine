@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace dwe::animation {
@@ -41,6 +42,9 @@ public:
   // Any clip, one that repeats too, has played through once its first pass reaches its end
   // (anim.c: animFrame reaching frameCount, which the care scenes wait for).
   [[nodiscard]] bool playedThrough() const;
+  // The clip's sounds the last advance ran through (clipSounds), for the owner to play or not;
+  // taking them leaves none until the next advance.
+  [[nodiscard]] std::vector<assets::ClipSound> takeSounds() { return std::exchange(sounds_, {}); }
   [[nodiscard]] std::span<const assets::NodeTransform> pose() const { return pose_; }
   // One per joint of the skin (see computeJointMatrices).
   [[nodiscard]] std::span<const glm::mat4> jointMatrices() const { return joints_; }
@@ -59,6 +63,7 @@ private:
   std::vector<assets::NodeTransform> pose_;
   std::vector<glm::mat4> nodeWorld_;
   std::vector<glm::mat4> joints_;
+  std::vector<assets::ClipSound> sounds_;
 };
 
 } // namespace dwe::animation

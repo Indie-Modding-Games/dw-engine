@@ -124,6 +124,16 @@ struct ClipRepeat {
   float gap = 0.0F;
 };
 
+// A sound the clip plays (extras.sounds; anim.c: tickAnimation, instruction 0x4000) on the tick its
+// stream reaches it: `bank` is the original's sound slot, 4 being the entity's own species bank.
+struct ClipSound {
+  std::uint32_t tick = 0;
+  std::uint8_t bank = 0;
+  std::uint8_t sound = 0;
+
+  bool operator==(const ClipSound&) const = default;
+};
+
 struct AnimationClip {
   std::string name;
   // The original's animation id (extras.id), the one scripts and the models' YAML use.
@@ -141,6 +151,8 @@ struct AnimationClip {
   // pose.
   std::optional<std::uint32_t> rootMotionNode;
   std::vector<AnimationChannel> channels;
+  // In tick order; a clip that repeats plays the ones of its repeat on every round.
+  std::vector<ClipSound> sounds;
 };
 
 // A model loaded for the runtime: what render draws and animation samples. Every index in it has

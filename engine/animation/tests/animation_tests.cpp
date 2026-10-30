@@ -71,7 +71,8 @@ ModelData testModel() {
                                                        .end = 4 / TicksPerSecond,
                                                        .gap = 1 / TicksPerSecond},
                      .rootMotionNode = 0,
-                     .channels = {}};
+                     .channels = {},
+                     .sounds = {}};
   walk.channels.push_back(
       {.node = 0, .path = ChannelPath::Translation, .times = times, .values = root});
   walk.channels.push_back(
@@ -225,6 +226,69 @@ TEST_CASE("the player reports the root motion of each step") {
   // One second at twice the speed: 40 ticks of 10 units.
   CHECK(total.z == doctest::Approx(400.0F).epsilon(1e-4));
   CHECK(player.time() == doctest::Approx(2.0));
+}
+
+TEST_CASE("a clip plays its sounds on the ticks it leaves, on every round of its repeat") {
+  // The player's run as the original has it (boys anim 3): 13 ticks repeating from 1 to 12, a step
+  // at ticks 2 and 8 (bank 1, sound 27). The original plays one every 6 frames (18 vblanks).
+  AnimationClip run{
+      .name = "anim_03",
+      .id = 3,
+      .duration = 12 / TicksPerSecond,
+      .ticksPerSecond = 20,
+      .tickCount = 13,
+      .frameCount = 13,
+      .loops = {{.firstTick = 1, .lastTick = 12, .count = std::nullopt}},
+      .endsInLoop = true,
+      .repeat = dwe::assets::ClipRepeat{.start = 1 / TicksPerSecond,
+                                        .end = 12 / TicksPerSecond,
+                                        .gap = 1 / TicksPerSecond},
+      .rootMotionNode = std::nullopt,
+      .channels = {},
+      .sounds = {{.tick = 2, .bank = 1, .sound = 27}, {.tick = 8, .bank = 1, .sound = 27}}};
+  std::vector<int> stepFrames;
+  double time = 0.0;
+  for (int frame = 0; frame < 30; ++frame) {
+    std::vector<dwe::assets::ClipSound> played;
+    dwe::animation::clipSounds(run, time, time + ticks(1), played);
+    time += ticks(1);
+    for (const dwe::assets::ClipSound& sound : played) {
+      CHECK(sound.bank == 1);
+      CHECK(sound.sound == 27);
+      stepFrames.push_back(frame);
+    }
+  }
+  CHECK(stepFrames == std::vector<int>{2, 8, 14, 20, 26});
+
+  // A long step reaches each tick of a round once; a clip that does not repeat plays its sounds
+  // once.
+  std::vector<dwe::assets::ClipSound> long_;
+  dwe::animation::clipSounds(run, ticks(13), ticks(1000), long_);
+  CHECK(long_.size() == 2);
+  AnimationClip once = run;
+  once.repeat.reset();
+  once.endsInLoop = false;
+  std::vector<dwe::assets::ClipSound> after;
+  dwe::animation::clipSounds(once, ticks(9), ticks(1000), after);
+  CHECK(after.empty());
+}
+
+TEST_CASE("the player hands over the sounds of its last step once") {
+  ModelData model = testModel();
+  model.clips[0].sounds = {{.tick = 2, .bank = 1, .sound = 12}};
+  AnimationPlayer player{model};
+  REQUIRE(player.play(2U));
+  static_cast<void>(player.advance(static_cast<float>(ticks(2))));
+  CHECK(player.takeSounds().empty());
+  static_cast<void>(player.advance(static_cast<float>(ticks(1))));
+  CHECK(player.takeSounds() ==
+        std::vector<dwe::assets::ClipSound>{{.tick = 2, .bank = 1, .sound = 12}});
+  CHECK(player.takeSounds().empty());
+  // Round 2 of the repeat (ticks 1 to 4, then back): tick 2 again 4 ticks later.
+  static_cast<void>(player.advance(static_cast<float>(ticks(3))));
+  CHECK(player.takeSounds().empty());
+  static_cast<void>(player.advance(static_cast<float>(ticks(1))));
+  CHECK(player.takeSounds().size() == 1);
 }
 
 TEST_CASE("a fade blends from the previous pose") {

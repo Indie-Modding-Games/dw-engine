@@ -12,6 +12,7 @@
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/partner/field_animation.hpp>
 #include <dwe/game/partner/state.hpp>
+#include <dwe/game/story/story_ports.hpp>
 #include <dwe/render/camera.hpp>
 #include <dwe/render/drawer.hpp>
 #include <dwe/render/map_renderer.hpp>
@@ -207,6 +208,21 @@ public:
   void attachSpeciesRadius(std::function<float(std::string_view)> radius) {
     speciesRadius_ = std::move(radius);
   }
+  // The box of a species in the species table, which says whether its entity shows on screen.
+  struct SpeciesBox {
+    float radius = 0.0F;
+    float height = 0.0F;
+  };
+  // Where the field's clips play their sounds (anim.c: tickAnimation, instruction 0x4000), such as
+  // the steps of the walk and run clips: the player's always (its isOnScreen stays 1), the
+  // partner's and the NPCs' while their species' box shows on screen (map.c:
+  // entityIsOffScreen(entity, 320, 240)). Without it the clips play silent. The sound port must
+  // outlive the scene.
+  void attachSound(game::story::SoundPort* sound,
+                   std::function<std::optional<SpeciesBox>(std::string_view)> box) {
+    sound_ = sound;
+    speciesBox_ = std::move(box);
+  }
   // Enters the original's map with this index at this exit, keeping the partner (a scene's map
   // change: map.c: changeToDeathMap).
   core::Result<void> enterOriginalMap(std::int32_t index, std::int32_t exit);
@@ -366,6 +382,11 @@ private:
   core::Result<void> enterMap(const std::string& mapId, std::int32_t exit,
                               std::optional<assets::SpawnPoint> at = std::nullopt);
   void animate(Actor& actor, double seconds);
+  // Plays the sounds the actor's clip just ran through (attachSound).
+  void playClipSounds(const Actor& actor);
+  // map.c: entityIsOffScreen(entity, 320, 240) == 0: a corner of the box the actor's species makes
+  // around it shows in the window.
+  [[nodiscard]] bool onScreen(const Actor& actor) const;
   // Plays the clip a script picked for the actor; false when it has none.
   bool animateScripted(Actor& actor, double seconds);
   // Plays the clip the battle holds the actor in; false when it holds none
@@ -475,6 +496,8 @@ private:
   // The field rules' partner mover, for a partner loaded again with another species' model.
   game::field::MoverRules partnerMover_;
   std::function<float(std::string_view)> speciesRadius_;
+  game::story::SoundPort* sound_ = nullptr;
+  std::function<std::optional<SpeciesBox>(std::string_view)> speciesBox_;
   std::vector<std::unique_ptr<Actor>> npcActors_;
   // The NPCs whose model could not be loaded, logged once each.
   std::vector<scene::Entity> npcsNotShown_;

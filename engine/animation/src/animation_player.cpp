@@ -23,6 +23,7 @@ bool AnimationPlayer::play(const assets::AnimationClip& clip, float fadeSeconds,
   }
   clip_ = &clip;
   time_ = 0.0;
+  sounds_.clear();
   speed_ = speed;
   fadeSeconds_ = std::max(fadeSeconds, 0.0F);
   fadeTime_ = 0.0F;
@@ -47,6 +48,8 @@ glm::vec3 AnimationPlayer::advance(float seconds) {
   }
   const double step = static_cast<double>(std::max(seconds, 0.0F)) * static_cast<double>(speed_);
   const glm::vec3 before = rootMotion(*model_, *clip_, time_);
+  sounds_.clear();
+  clipSounds(*clip_, time_, time_ + step, sounds_);
   time_ += step;
   fadeTime_ += std::max(seconds, 0.0F);
   update();

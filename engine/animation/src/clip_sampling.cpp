@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iterator>
+#include <optional>
 
 namespace dwe::animation {
 
@@ -109,6 +110,55 @@ ClipPosition locate(const AnimationClip& clip, double seconds) {
           .towards = start,
           .blend = static_cast<float>((local - end) / gap),
           .repeats = repeats};
+}
+
+void clipSounds(const AnimationClip& clip, double from, double to,
+                std::vector<assets::ClipSound>& out) {
+  if (clip.sounds.empty() || clip.ticksPerSecond == 0 || to <= from) {
+    return;
+  }
+  const auto tps = static_cast<double>(clip.ticksPerSecond);
+  // The first whole tick at or after a time. Times summed from float steps land a hair off a
+  // whole tick; within this they count as on it. Both ends of every step go through it, so steps
+  // that follow each other reach every tick once.
+  const auto tickFrom = [tps](double seconds) {
+    constexpr double Snap = 1e-4;
+    const double tick = std::max(seconds, 0.0) * tps;
+    const double whole = std::round(tick);
+    return static_cast<std::int64_t>(std::abs(tick - whole) < Snap ? whole : std::ceil(tick));
+  };
+  const std::int64_t firstTick = tickFrom(from);
+  const std::int64_t endTick = tickFrom(to);
+  std::optional<std::int64_t> repeatFirst;
+  std::int64_t repeatLast = 0;
+  std::int64_t period = 0;
+  if (clip.repeat) {
+    repeatFirst = std::llround(static_cast<double>(clip.repeat->start) * tps);
+    repeatLast = std::llround(static_cast<double>(clip.repeat->end) * tps);
+    period = std::llround(
+        static_cast<double>(clip.repeat->end - clip.repeat->start + clip.repeat->gap) * tps);
+  }
+  // A long step reaches each tick of the clip, or of a round of its repeat, at most once.
+  std::int64_t begin = firstTick;
+  std::int64_t end = endTick;
+  if (!repeatFirst || period <= 0) {
+    end = std::min(end, static_cast<std::int64_t>(clip.sounds.back().tick) + 1);
+  } else if (begin > repeatLast) {
+    begin = std::max(begin, end - period);
+  } else {
+    end = std::min(end, repeatLast + 1 + period);
+  }
+  for (std::int64_t tick = begin; tick < end; ++tick) {
+    std::int64_t local = tick;
+    if (repeatFirst && period > 0 && tick > repeatLast) {
+      local = *repeatFirst + ((tick - *repeatFirst) % period);
+    }
+    for (const assets::ClipSound& sound : clip.sounds) {
+      if (static_cast<std::int64_t>(sound.tick) == local) {
+        out.push_back(sound);
+      }
+    }
+  }
 }
 
 void restPose(const ModelData& model, std::span<NodeTransform> pose) {
