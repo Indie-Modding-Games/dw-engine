@@ -1,0 +1,120 @@
+# Stage 2 of the story with the keyboard, the dirt of the drill tunnel: from tunn04 on a seeded game (run with
+# --start tunn04 and the stage-2 lock, docs/guides/prueba-vertical.md) the player beats the digger of tunn04 (section 5
+# of script 28, trigger 140), then takes the miner's job in tunn05 (the cells of section 0x33 of script 29: variable
+# 17 from 0 to 2), loads the cart at the pile (section 0x51, variable 17 to 3), carries it to the dump of tunn01
+# (section 0x33 of script 25, variable 17 to 4) and is paid back in tunn05 (variable 18, the loads, to 1). Five days
+# later the miners have cleared the rest on their own (the entry section of script 29 with variable 30 at 5 or more:
+# variable 18 to 10) and the way on to tunn06 is open. The days pass in fast stretches of the clock, with the care a
+# player would give between them (route-loop-keyboard.yaml's loop).
+name: etapa2-dirt
+device: keyboard
+timeout: 1200
+steps:
+  - resize: [1280, 720]
+  - wait: {map: tunn04, partner_within: 400, seconds: 2, timeout: 60}
+  - expect_setting: {story.trigger.140: "false"}
+  - expect_setting: {story.var.17: "0"}
+  - screenshot: tunn04
+  # The tunnels' wild ones fight whoever walks into them: a Champion partner wins those fights by itself.
+  - script: evolve("grey")
+  - wait: {seconds: 30}
+  # The digger stands at (1061, -797) in the original's axes: the player is put just south of it, facing it, and
+  # confirm talks.
+  - walk_to: {point: [1061, 600], radius: 150, encounters: true, timeout: 120}
+  - script: place("player 1061 -672 0")
+  - wait: {seconds: 0.5}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 20}
+  - screenshot: tunn04-talk
+  - repeat: {times: 3, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {shown: battle, seconds: 1, timeout: 60}
+  - wait: {setting: {battle.phase: fight}, seconds: 0.5, timeout: 30}
+  - script: battle_win("")
+  - wait: {setting: {battle.phase: end}, timeout: 60}
+  - repeat: {times: 4, steps: [{wait: {seconds: 2}}, {tap: {key: return}}]}
+  - wait: {hidden: battle, seconds: 1, timeout: 60}
+  - repeat: {times: 8, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.trigger.140: "true"}, timeout: 60}
+  - wait: {seconds: 1}
+  - screenshot: tunn04-after
+  # On to the mine.
+  - walk_to: {trigger: 110, encounters: true, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: true, timeout: 240}
+  - wait: {map: tunn05, seconds: 2, timeout: 30}
+  - screenshot: tunn05
+  # The cells of section 0x33 cross the tunnel in front of the miner (x 2550..3350, z -1650): it offers the job,
+  # confirm takes it (the first answer).
+  - walk_to: {point: [2850, -1650], radius: 30, stop_on_scene: true, timeout: 180}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - screenshot: tunn05-job
+  # Nine boxes, the question and the miner's last word.
+  - repeat: {times: 14, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.17: "2"}, timeout: 60}
+  # The cells of section 0x51 ring the pile (x 1750..2350, z -950..-350); as any cell of 80 to 109, it runs on
+  # confirm: the cart is loaded.
+  - walk_to: {point: [2050, -450], radius: 80, timeout: 120}
+  - tap: {key: return}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - repeat: {times: 2, steps: [{tap: {key: return}}, {wait: {seconds: 1.2}}]}
+  - wait: {setting: {story.var.17: "3"}, timeout: 30}
+  - screenshot: tunn05-loaded
+  # To the dump of tunn01: the cells of section 0x33 there (x -150, z -2450..-1650). With the cart the goblins of
+  # tunn02 no longer pick a fight and stand in the way: the walk keeps to the south wall, clear of the one at
+  # (784, 105).
+  - walk_to: {trigger: 110, encounters: true, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {point: [600, 650], radius: 150, encounters: true, timeout: 120}
+  - walk_to: {trigger: 110, encounters: true, timeout: 240}
+  - wait: {map: tunn01, seconds: 2, timeout: 30}
+  - walk_to: {point: [-150, -2000], radius: 80, stop_on_scene: true, timeout: 180}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 60}
+  - repeat: {times: 3, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.17: "4"}, timeout: 60}
+  - wait: {seconds: 1}
+  - screenshot: tunn01-dumped
+  # Back to the miner for the pay, clear of the goblin again.
+  - walk_to: {trigger: 111, encounters: true, timeout: 240}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {point: [600, 650], radius: 150, encounters: true, timeout: 120}
+  - walk_to: {trigger: 112, encounters: true, timeout: 240}
+  - wait: {map: tunn05, seconds: 2, timeout: 30}
+  - walk_to: {point: [2850, -1650], radius: 30, stop_on_scene: true, timeout: 180}
+  - wait: {shown: story_textbox, seconds: 1, timeout: 30}
+  - repeat: {times: 5, steps: [{tap: {key: return}}, {wait: {seconds: 1.5}}]}
+  - wait: {setting: {story.var.18: "1"}, timeout: 60}
+  - expect_setting: {story.var.17: "1"}
+  - wait: {seconds: 3}
+  - screenshot: tunn05-paid
+  # Five new days or more: stretches of about six hours each, and the nights slept.
+  - script: give_item("medicine 20")
+  - script: give_item("meat 40")
+  - repeat:
+      times: 20
+      steps:
+        - script: clock_speed("600")
+        - wait: {seconds: 0.6}
+        - script: clock_speed("1")
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - wait: {seconds: 0.1}
+        - script_if:
+            partner_has: partner_menu.condition.sick
+            setting: {bag.result: partner_menu.bag_result.refused}
+            script: 'scold("")'
+        - wait: {seconds: 0.1}
+        - script_if: {partner_has: partner_menu.condition.sick, script: 'use_item("medicine")'}
+        - script_if: {partner_has: partner_menu.condition.hungry, script: 'use_item("meat")'}
+        - script_if: {partner_has: partner_menu.condition.needs_toilet, script: 'toilet("")'}
+        - script_if: {partner_has: partner_menu.condition.sleepy, script: 'sleep("")'}
+        - wait: {seconds: 0.1}
+  - wait: {seconds: 8}
+  # Out and back in: the mine's entry section sees the days and clears the pile.
+  - walk_to: {trigger: 110, encounters: true, timeout: 180}
+  - wait: {map: tunn02, seconds: 2, timeout: 30}
+  - walk_to: {trigger: 112, encounters: true, timeout: 240}
+  - wait: {map: tunn05, seconds: 2, timeout: 30}
+  - wait: {setting: {story.var.18: "10"}, timeout: 10}
+  - screenshot: tunn05-cleared
+  - walk_to: {trigger: 111, encounters: true, timeout: 240}
+  - wait: {map: tunn06, seconds: 2, timeout: 30}
+  - screenshot: tunn06

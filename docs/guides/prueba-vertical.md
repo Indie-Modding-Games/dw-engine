@@ -231,6 +231,10 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop04 --la
   día cuidando al compañero con el reloj rápido (la variable 30 cuenta los días) y vuelve a hablarle: se une (238).
   `route-etapa2-piximon.yaml` (`--start trop01 --seed 3`) se cruza con Piximon, que solo aparece en la jungla con una
   tirada de 3 entre 100 al entrar (la semilla 3 la da), acepta su reto, gana la pelea y Piximon se une (255).
+  `route-etapa2-dirt.yaml` (`--start tunn04`) hace el trabajo de la tierra del túnel: vence al excavador de tunn04
+  (disparador 140), acepta el trabajo del minero de tunn05, carga la vagoneta en el montón (una casilla de 80 a 109:
+  corre al confirmar), la vacía en tunn01 y cobra (variable 18 a 1). Cinco días después los mineros acaban solos
+  (variable 18 a 10) y el paso a tunn06 queda abierto.
 
 ```sh
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop00 --lang en --seed 1 \
@@ -239,6 +243,8 @@ scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn09 --la
     --autotest tests/autotest/route-etapa2-drimogemon.yaml --shots <capturas>/etapa2
 scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start trop01 --lang en --seed 3 \
     --autotest tests/autotest/route-etapa2-piximon.yaml --shots <capturas>/etapa2
+scripts/dev.sh run --content <carpeta> --story-stage stage_2 --start tunn04 --lang en --seed 1 \
+    --autotest tests/autotest/route-etapa2-dirt.yaml --shots <capturas>/etapa2
 ```
 
 Un autotest empieza en el campo, sin el menú principal, salvo que la ruta diga `main_menu: true`. No lee ni guarda
