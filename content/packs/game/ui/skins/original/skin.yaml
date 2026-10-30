@@ -44,9 +44,9 @@ screens:
     styles: [ui/skins/original/discard_menu/style]
   gym_stats:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/gym_stats/style]
-  # La tienda, también.
+  # La tienda, también, con la caja del dinero del original.
   shop_menu:
-    styles: [ui/skins/original/pause_menu/style]
+    styles: [ui/skins/original/pause_menu/style, ui/skins/original/shop_menu/style]
   # El aviso de un objeto del suelo o de un cofre: la caja de diálogo de la historia, como el original.
   field_item_notice:
     styles: [ui/skins/original/story_textbox/style]

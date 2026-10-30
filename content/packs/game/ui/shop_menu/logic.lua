@@ -1,7 +1,8 @@
 -- The shop the story opens (script_common.c: openShop). The game drives it and publishes it as
 -- settings: shop.phase (talk, choice, list, amount), shop.mode (buy, sell), shop.line_key (the
--- keeper's line, a text key), shop.bits_key and shop.money (the money box), shop.saved (what the
--- baby discount saved), shop.choice_count (3, or 2 in the recycle shop: buy or leave), shop.rows
+-- keeper's line, a text key), shop.bits_key, shop.money and shop.bits_shown (the money box),
+-- shop.saved (what the baby discount saved), shop.choice_count (3, or 2 in the recycle shop: buy
+-- or leave), shop.rows
 -- and shop.row.<n>.name/price/count/enabled (from 0), and in the amount box
 -- shop.amount.name/price/value/max/total/step. It sends shop_next, shop_choice (0 buy, 1 sell, 2
 -- leave), shop_pick (the row, from 0), shop_amount (a change), shop_amount_max, shop_confirm and
@@ -112,13 +113,21 @@ local function focus_phase(document, current)
   end
 end
 
+-- The money box (renderShopBitsBox): the line's first part on the first row, the money on the
+-- second. It shows from the first choice until the farewell (shop.bits_shown).
+local function draw_bits(document)
+  local bits_key = ui.setting("shop.bits_key") or ""
+  local money = number("shop.money")
+  local bits = bits_key ~= "" and t(bits_key, { bits = money }) or t("shop.bits", { bits = money })
+  local label, value = string.match(bits, "^(.-)%s*(%S+)$")
+  document:get("bits-label"):set_text(label or bits)
+  document:get("bits-value"):set_text(value or "")
+  document:get("bits-box"):set_class("hidden", not ui.setting("shop.bits_shown"))
+end
+
 local function refresh(document)
   local current = phase()
-  local bits_key = ui.setting("shop.bits_key") or ""
-  local bits = bits_key ~= "" and t(bits_key, { bits = number("shop.money") })
-    or t("shop.bits", { bits = number("shop.money") })
-  document:get("bits"):set_text(bits)
-  document:get("bits"):set_class("hidden", current == "talk")
+  draw_bits(document)
   document:get("line"):set_text(line_text())
   document:get("line"):set_class("hidden", current == "choice")
   document:get("next"):set_class("hidden", current ~= "talk")

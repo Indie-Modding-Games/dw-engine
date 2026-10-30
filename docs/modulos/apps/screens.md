@@ -238,3 +238,19 @@ del juego (y de pantalla = (y de captura) × 14 / 15 + 8).
 | Descripción (P o Pausa, Start en el mando) | Start abre `createItemMenuDescriptionBox`: caja de x 28 a 292 e y 109 a 131 | Fase `description` | Ruta `discard` | Igual |
 | Moverse y saltar a los extremos (R1 o Mayús mantenidos) | `itemMenuCursorUp/Down/Top/Bottom` | `DiscardListView` | `discard list: the cursor walks the six rows…`, `discard list: R1 held jumps…` | Igual |
 | Indicaciones de teclas | No hay (el cuadro de texto del guion sigue debajo) | Aceptar y Atrás con la tecla del dispositivo en uso (`ui.prompt`), entre la ventana y el cuadro de texto | Ruta `discard` | Mejora documentada |
+
+## Caja del dinero de la tienda
+
+La caja con el dinero que la tienda abre junto a la compra y la venta (`script_common.c: createShopBitsBox`,
+`tickShopBitsBox`, `renderShopBitsBox`), en el documento `shop_menu`. El juego publica `shop.bits_shown` (`ShopScreen`)
+y la lógica parte la línea 6 de las frases de la tienda («Bits {bits}», MAPHEAD 0x4c4) en el rótulo y la cifra. Medido
+con el original (la rutina 8 forzada en room02 con 0 y 1234 bits; capturas `orig/shop-bits-*.png` de
+`_work/routes-e2/menus-qa/discard-bits/`).
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Posición y tamaño | `createShopBitsBox`: rect (-0x98, -0x62, 0x52, 0x21) desde el centro, de x 8 a 90 e y 22 a 55 | `#bits-box` en `shop_menu/structure.rcss` y la caja del original en la piel; a un píxel o menos | Ruta `shop` (room06) | Igual |
+| Rótulo y cifra | `renderShopBitsBox`: dos tiras de la línea, en (22, 4) y (22, 17); la cifra acaba en x 67 tenga las cifras que tenga | «Bits» en la primera fila y la cifra alineada a la derecha hasta x 67 en la segunda | Ruta `shop` | Igual |
+| Cuándo sale | `openShop` estado 3 (y `openRecycleShop`): con la primera elección; se queda en la lista, la cantidad y «¿Algo más?»; `triggerBoxCloseFlag(2)` la cierra en la despedida (estado 6) | `ShopScreen`: `bits_shown` desde la fase `choice` hasta `leave` | Ruta `shop` | Igual |
+| Se actualiza al comprar o vender | `UPDATE_SHOP_BIT_BOX` tras cada compra o venta | La cifra sale de `shop.money`, que el juego vuelve a publicar | Ruta `shop` (1234 → 1134) | Igual |
+| La rutina 15 (la caja durante un diálogo) | `CALL_ROUTINE 15` → `createShopBitsBox(1)`, la 16 la cierra | Se cierra sin enseñarla | — | Hueco |

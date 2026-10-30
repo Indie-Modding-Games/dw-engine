@@ -475,7 +475,7 @@ readSelectedItemMerit = { status = "parcial", note = "no hay pantalla del interc
 tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
 updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
 tickSingleCardShop = { status = "parcial", dwe = "apps/game/src/discard_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen" }
-tickShopBitsBox = { status = "falta", what = "Cuadro con el dinero del jugador que abre el guion.", note = "la rutina 15 se cierra sin enseñarlo" }
+tickShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", what = "Cuadro con el dinero del jugador que abre el guion.", note = "en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo" }
 inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
 processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
 isKeyDown = { status = "no-aplica", note = "entrada del original", what = "Dice si un botón está pulsado." }
@@ -630,7 +630,7 @@ tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.h
 rollCardPack = { status = "parcial", dwe = "game/inventory/include/dwe/game/inventory/cards.hpp", note = "la tirada existe; la rutina 14 se cierra sin pantalla", what = "Saca las cartas de un sobre." }
 openBuyCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la compra de cartas." }
 openSellCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la venta de cartas." }
-createShopBitsBox = { status = "parcial", note = "la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
+createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
 createNinjamonEffect = { status = "parcial", note = "la rutina 38 se cierra sin el humo", what = "Nube de humo de un personaje que desaparece." }
 tickSaveMachine = { status = "parcial", dwe = "apps/game/src/save_machine.hpp", note = "la máquina de guardar existe, pero la rutina 48 del guion se cierra sin abrirla", what = "La máquina de guardar que abre el guion." }
 initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }

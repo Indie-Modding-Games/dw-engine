@@ -7,8 +7,13 @@
 </head>
 <body>
 	<div id="scrim">
+		<div id="frame">
+			<div id="bits-box" class="original-box original-look hidden">
+				<div class="bits-row" id="bits-label"></div>
+				<div class="bits-row" id="bits-value"></div>
+			</div>
+		</div>
 		<div id="panel">
-			<p id="bits"></p>
 			<p id="line"></p>
 			<button id="next" onclick="ui.send('shop_next', true)" text-key="shop.next"></button>
 

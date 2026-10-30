@@ -87,7 +87,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 50 | 1 | 15 | 36 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 78 | 4 | 8 | 55 | 89 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 79 | 5 | 7 | 54 | 90 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 2 | 47 | 97 % |
 | [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 73 | 7 | 12 | 6 | 83 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 14 | 1 | 9 | 14 | 60 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 44 | 1 | 1 | 40 | 97 % |
-| **Total** | 2438 funciones | 869 | 42 | 394 | 1133 | 68 % |
+| **Total** | 2438 funciones | 870 | 43 | 393 | 1132 | 68 % |
 
 ## Batalla
 
@@ -289,14 +289,14 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 78, parcial 4, falta 8, no aplica 55.
+Portado 79, parcial 5, falta 7, no aplica 54.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `readSelectedItemMerit` | `main/script_common.c:877` | parcial | Lee los méritos del objeto elegido. | no hay pantalla del intercambio por méritos |
 | `tickSingleCardShop` | `main/script_common.c:1070` | parcial | La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira. | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen |
-| `tickShopBitsBox` | `main/script_common.c:1154` | falta | Cuadro con el dinero del jugador que abre el guion. | la rutina 15 se cierra sin enseñarlo |
-| `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/session/include/dwe/session/story_scenes.hpp:112` · la rutina 15 se cierra sin enseñar el cuadro |
+| `tickShopBitsBox` | `main/script_common.c:1154` | parcial (citada en docs) | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
+| `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/game/src/shop_screen.cpp` · la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro |
 | `createSingleCardShopMenu` | `main/script_common.c:2047` | parcial | Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira). | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto; no hay pantallas de cartas |
 | `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | falta | Toca el sonido de la tienda, solo en el mapa de la sabana. | comprobar |
 | `calculateCardMenuStrings` | `main/script_common.c:2666` | falta | Monta la lista del menú de cartas. | no hay pantallas de cartas |
@@ -306,7 +306,7 @@ Portado 78, parcial 4, falta 8, no aplica 55.
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (15); lectura de operandos; los scripts se pasan a Lua (12); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (14); lectura de operandos; los scripts se pasan a Lua (12); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
 
 ## Menús e interfaz
 

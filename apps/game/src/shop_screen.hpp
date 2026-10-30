@@ -75,6 +75,9 @@ private:
   bool traded_ = false;
   // SHOP_VARIABLE: what the last baby discount saved, for its line.
   std::int32_t saved_ = 0;
+  // Whether the money box is up (createShopBitsBox at the first choice, triggerBoxCloseFlag(2) at
+  // the farewell).
+  bool bitsShown_ = false;
   std::optional<assets::ItemHandle> picked_;
   std::int32_t amount_ = 0;
 };

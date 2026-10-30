@@ -97,6 +97,7 @@ bool ShopScreen::handle(const ui::UiCommand& command) {
 void ShopScreen::start() {
   traded_ = false;
   saved_ = 0;
+  bitsShown_ = false;
   picked_.reset();
   desc_.ui->show(ShopMenuDocument, true);
   // openShop state 0: a keeper with nothing in stock says so and the visit ends.
@@ -222,12 +223,15 @@ void ShopScreen::back() {
 }
 
 void ShopScreen::leave() {
-  // openShop state 6: the farewell says whether the player traded.
+  // openShop state 6: the money box closes (triggerBoxCloseFlag(2)) and the farewell says whether
+  // the player traded.
+  bitsShown_ = false;
   const session::ShopLines& lines = desc_.shop->rules().lines;
   talk(traded_ ? lines.farewellAfterTrade : lines.farewell, After::Close);
 }
 
 void ShopScreen::finish() {
+  bitsShown_ = false;
   desc_.ui->hide(ShopMenuDocument);
   desc_.shop->close();
   setPhase(Phase::Closed);
@@ -237,6 +241,11 @@ void ShopScreen::setPhase(Phase phase) {
   core::logDebug("[port:shop] openShop (script_common.c:1618): {} -> {}",
                  phaseName(static_cast<std::uint8_t>(phase_)),
                  phaseName(static_cast<std::uint8_t>(phase)));
+  // openShop state 3 (openRecycleShop's too): the money box opens with the choice and stays up
+  // through the lists, the amount box and the keeper's lines until the farewell.
+  if (phase == Phase::Choice) {
+    bitsShown_ = true;
+  }
   phase_ = phase;
 }
 
@@ -293,6 +302,7 @@ screens::ScreenSettings ShopScreen::settings() const {
        .value = static_cast<double>(shop.recycling() ? RecycleChoiceCount : ChoiceCount)},
       {.name = "shop.bits_key", .value = shop.lineKey(lines.bits)},
       {.name = "shop.money", .value = static_cast<double>(shop.money())},
+      {.name = "shop.bits_shown", .value = bitsShown_},
       {.name = "shop.saved", .value = static_cast<double>(saved_)},
   };
   const std::vector<Row> shown = rows();

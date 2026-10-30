@@ -1,6 +1,45 @@
 /* How the shop behaves whatever the skin: the choices and the list wrap around. The look is the pause menu's (the
    skins' pause_menu style). */
 
+/* The money box (createShopBitsBox, renderShopBitsBox): one pixel of the original is 3dp on the 960 x 720dp frame
+   centred on a wide screen. Measured on the original: the box from x 8 to 89 and y 22 to 54, the word on the first
+   row from x 30 and the money on the second, right-aligned to end at x 67 whatever its digits. */
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#bits-box {
+	position: absolute;
+	left: 24dp;
+	top: 66dp;
+	width: 246dp;
+	height: 99dp;
+	padding: 6dp 0 0 63dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+#bits-box.hidden { display: none; }
+
+.bits-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+#bits-value {
+	width: 111dp;
+	text-align: right;
+}
+
 #choice-1 { nav-up: #choice-3; }
 #choice-3 { nav-down: #choice-1; }
 #row-1 { nav-up: #list-back; }
