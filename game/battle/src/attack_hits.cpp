@@ -232,6 +232,10 @@ void handleAttack(BattleContext& context, const AttackInFlight& attack) {
     applyBuff(context, id, attack.move);
     return;
   }
+  // BTL_removeMoveEffect: the fighter's own technique stops, so what of it is still on its way
+  // (a projectile its effect has not yet brought to a fighter) reaches no one.
+  std::erase_if(context.state->inFlight,
+                [id](const AttackInFlight& flying) { return flying.attacker == id; });
   const HitChance chance =
       context.strategies->damage->hitChance(context.view(), attack.attacker, id, attack.move);
   if (chance.breaksBlock) {

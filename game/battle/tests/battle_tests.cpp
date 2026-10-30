@@ -570,3 +570,26 @@ TEST_CASE("no fighter walks out of the combat area, a rectangle of the screen") 
     }
   }
 }
+
+TEST_CASE("a fighter hit or blocking loses its own shots still on their way") {
+  std::int32_t checked = 0;
+  for (const std::uint64_t seed : {1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U}) {
+    BattleSetup setup = duel(evenStats(400, 120), evenStats(400, 120), {"shot"}, {"shot"});
+    setup.enemies.front().position = {.x = 0, .z = 650};
+    Battle battle = startBattle(std::move(setup), seed);
+    while (!battle.finished() && battle.state().frame < 3000) {
+      const BattleEvents& frame = battle.step();
+      for (const BattleEvent& event : frame) {
+        if (event.kind != EventKind::AttackHit && event.kind != EventKind::AttackBlocked) {
+          continue;
+        }
+        ++checked;
+        // battle_main.c: BTL_tickAttackHits calls BTL_removeMoveEffect on the fighter it handles.
+        CHECK(std::ranges::none_of(battle.state().inFlight, [&](const AttackInFlight& flying) {
+          return flying.attacker == event.fighter;
+        }));
+      }
+    }
+  }
+  CHECK(checked > 0);
+}
