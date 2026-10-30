@@ -295,6 +295,41 @@ con la ruta `trade` en frzl14 (capturas `eng/`).
 | Sonido de la sabana | `playShopSoundOnlyInSavannah`: (0, 0x17) solo en la pantalla 0x83 | No está | — | Hueco: el trueque no está en ese mapa |
 | Títulos de las columnas | `MAIN_D_801307CC` («You have Will trade»), una sola cadena | `script_menu_trade_label`, partida en dos por los espacios | Ruta `trade` | Suposición |
 
+## Tienda de cartas
+
+Los menús de la tienda de cartas de gias06b que abre la rutina 14 (`shop/script_menu.c: openBuyCardMenu`,
+`openSellCardMenu`, `createCardMenu`, `tickCardMenu`; `ITEM_MENU_TYPE` 3 para comprar y 4 para vender). La sesión
+(`session::CardShop`, sección `card_shop` del ruleset) lleva las seis cartas del día, cobra y paga; la pantalla
+`card_shop` del juego (`apps/game: CardShopScreen`) enseña la lista, la caja «Is it OK?» y la caja de cantidad, con el
+tendero hablando debajo. Medido con el original (la rutina 14 forzada en el mostrador de room02 escribiendo el
+disparador de compra o venta, el dinero y las copias en la RAM; capturas `original_*.png` y las de dwe `dwe_*.png` en
+`_work/routes-e2/menus-qa/card-shop/`, con una partida de 3000 bits, las cartas 58 a 63 a la venta y copias de la 1 a
+la 3).
+
+| Ajuste | Valor | Qué es |
+|---|---|---|
+| `card_shop.phase` | texto | `talk` (sin cartas: «sold out»), `list`, `confirm`, `amount` o `closed` |
+| `card_shop.{mode,speaker,line_key}` | texto, claves | `buy` o `sell`, el nombre del tendero (por su especie) y lo que dice (MAPHEAD 1235) |
+| `card_shop.{total,top,cursor}` | números | Las filas de la lista, la primera que se ve y la del cursor entre las seis visibles |
+| `card_shop.row.<i>.{name,price,count,rarity,ink}` | clave, números, texto | Las seis filas; `rarity` -1 en una fila vacía; `ink` `new` (amarillo), `stuck` (rojo) o nada (blanco) |
+| `card_shop.{choice,confirm_key}` | número, clave | Sí (0) o no (1) y «Is it OK?» (MAPHEAD 1240, línea 0) |
+| `card_shop.amount.{name,rarity,price,value,total}` | clave, números | La caja de cantidad de la venta; el total se topa en el dinero máximo |
+
+| Comportamiento | Original | dwe | Prueba | Estado |
+|---|---|---|---|---|
+| Ventana de compra | `ITEM_MENU_POS`: x 105 a 295, y 22 a 151; MENU y PRICE de SYSTEM_W, seis filas cada 18 px con la carta de la rareza (12 × 12 de SYSTEM_W), el nombre y el precio que acaba en x 165 | `card_shop/structure.rcss` con esas medidas y la piel original; misma lista, precios y colores que el original | `dwe_buy_list.png` frente a `original_buy_list.png` | Igual |
+| Colores de la compra | `calculateCardMenuStrings`: amarillo (7) la que el jugador no tiene, blanco la que tiene, rojo (3) la que no puede pagar | `ink` `new`/`stuck` (#f8f800, #e73129) | idem | Igual |
+| Ventana de venta | x 89 a 311; COUNT en (182, 5); 64 filas, una por carta de la 1 a la 64, vacías las que no tiene; paga la mitad | `#frame.mode-sell`; `CardShop::saleRows` | `dwe_sell_list.png`; `the card shop buys copies back for half their price` | Igual |
+| Nombre cortado por el precio | `calculateCardMenuStrings`: el precio (4 cifras) se escribe sobre el final del nombre («H-Kabuterimo2500») | El nombre se corta en x 129 de la ventana | idem | Igual |
+| «Is it OK?» de la compra | `createSingleCardShopMenu`: caja de 112 × 42 en (104, 99); izquierda sí, derecha no; sí compra y cierra todo, no o cancelar vuelve a la lista (sonido 4) | `#confirm` con esas medidas; fase `confirm` | `dwe_buy_confirm.png`; 3000 → 2900, copias 0 → 1 | Igual |
+| Caja de cantidad de la venta | `createItemMenuAmountBox` (`AMOUNT_BOX_LAYOUT` US): 130 × 83 en (95, 78), nombre en (26, 7), precio en y 27, cantidad en un hueco de 26 × 14 en (85, 42), total en y 65; reglas en y 23 y 60; se abre con el sonido 3 | `#amount` con esas medidas | `dwe_sell_amount.png` frente a `original_sell_amount.png`; 2 a 2500 → +5000, copias 3 → 1 | Igual |
+| Cantidad: uno, diez y todas (flechas; Inicio, el botón norte del mando; Supr, el botón oeste) | `tickItemMenuAmountBox`: ±1; alt mantenido ±10 si no se pasa; cuadrado pone el máximo (sonido 3) | `CardShopScreen::press` | — (el canal de control no manda Inicio ni Supr) | Igual |
+| Saltar al principio o al final (Mayús con arriba o abajo, R1 en el mando) | `tickCardMenu`: R1 mantenido | La acción `walk` mantenida | — | Igual |
+| Cancelar en la lista (Esc) | `tickCardMenu`: cierra (sonido 4) y el guion sigue | Fase `closed` y la historia sigue | Partida de prueba | Igual |
+| Fallo y trato | `playSound(0, 0xB)` en una fila vacía o que no se puede pagar; `playShopSoundOnlyInSavannah`: (0, 0x17) solo en gias06b | `CardShop::playFailSound`, `playTradeSound` | `the card shop's rules carry the fail sound ...` | Igual |
+| El cuadro del guion bajo la tienda | `showMapHeadTextbox`: el tendero habla en la caja de abajo mientras la lista está abierta | La caja del guion se esconde y la tienda pinta la suya en el mismo sitio | `dwe_buy_list.png` | Igual |
+| Animación al abrir y cerrar las cajas | Las cajas crecen al abrirse | Aparecen de golpe | — | Hueco |
+
 ## Caja del dinero de la tienda
 
 La caja con el dinero que la tienda abre junto a la compra y la venta (`script_common.c: createShopBitsBox`,

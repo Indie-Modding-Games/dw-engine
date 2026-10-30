@@ -41,6 +41,10 @@ public:
   core::Result<void> addSaveSections(game::save::SaveSections& sections) override;
   core::Result<void> startNewGame(GameSession& session) override;
 
+  // The table that gives the number of each card's Digimon (the game loads it after the systems);
+  // without it a pack's line names no Digimon.
+  void setDigimon(const assets::DigimonTable* digimon);
+
   // How many cards a pack gives (rollCardPack); 0 without cards.
   [[nodiscard]] std::int32_t packDraws() const;
 
@@ -55,6 +59,13 @@ public:
 
   [[nodiscard]] std::int32_t copies(std::int32_t card) const;
   [[nodiscard]] std::vector<game::inventory::HeldCard> heldCards() const;
+  // The collection, or nullptr without cards (the card shop trades on it).
+  [[nodiscard]] game::inventory::CardCollection* collection() {
+    return collection_ ? &*collection_ : nullptr;
+  }
+  [[nodiscard]] const game::inventory::CardCollection* collection() const {
+    return collection_ ? &*collection_ : nullptr;
+  }
 
 private:
   class Serializer;

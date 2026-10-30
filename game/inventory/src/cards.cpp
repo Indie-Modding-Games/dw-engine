@@ -177,4 +177,17 @@ bool CardCollection::takeCopy(std::int32_t card) {
   return true;
 }
 
+bool CardCollection::sellCopies(std::int32_t card, std::int32_t count) {
+  const std::int32_t before = copies(card);
+  if (table_.find(card) == nullptr || count <= 0 || count > before) {
+    return false;
+  }
+  setCopies(card, before - count);
+  core::logDebug(
+      "[port:cards] tickItemMenuAmountBox (script_common.c:1545): card {} sold, {} -> {} "
+      "copies",
+      card, before, copies(card));
+  return true;
+}
+
 } // namespace dwe::game::inventory

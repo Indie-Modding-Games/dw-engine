@@ -75,6 +75,11 @@ private:
 CardsAdapter::CardsAdapter(StoryAdapter& story, std::optional<assets::CardTable> table,
                            const assets::DigimonTable* digimon)
     : story_{&story}, table_{std::move(table)}, serializer_{std::make_unique<Serializer>(*this)} {
+  setDigimon(digimon);
+}
+
+void CardsAdapter::setDigimon(const assets::DigimonTable* digimon) {
+  digimonNumbers_.clear();
   if (!table_) {
     return;
   }

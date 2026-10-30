@@ -1,0 +1,261 @@
+/* The card shop's menus (shop/script_menu.c: createCardMenu, ITEM_MENU_TYPE 3 to buy and 4 to sell). One pixel of the
+   original is 3dp; the 320 x 240 screen is a 960 x 720dp frame centred on a wide screen. From ITEM_MENU_POS and the
+   card menu's drawing (renderCardMenu, calculateCardMenuStrings): the buy window from x 105 to 295, the sell window
+   from x 89 to 311, both from y 22 to 151; the MENU label at (8, 5), PRICE at (128, 5) and the sell list's COUNT at
+   (182, 5); six rows 18 pixels apart, the rarity's card at x 10 and the name at x 26 from y 18; the price ends at
+   x 165 and the count at x 188; the cursor 170 (202) pixels wide at x 5; the scroll bar 12 pixels from the right
+   edge. The "is it OK?" box (createSingleCardShopMenu) is 112 x 42 at (104, 99); the amount box
+   (createItemMenuAmountBox, renderItemMenuAmountBox, AMOUNT_BOX_LAYOUT) is 130 x 83 at (95, 78). Measured on the
+   original on 2026-10-30 (_work/routes-e2/menus-qa/card-shop). The skins give the look; this is the layout and a
+   plain look for any skin. */
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#frame {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 960dp;
+	height: 720dp;
+	margin-left: -480dp;
+}
+
+#window {
+	position: absolute;
+	left: 315dp;
+	top: 66dp;
+	width: 570dp;
+	height: 387dp;
+	box-sizing: border-box;
+	border: 3dp #d0d0d0;
+	background-color: #000000c0;
+}
+
+#frame.mode-sell #window {
+	left: 267dp;
+	width: 666dp;
+}
+
+#frame.phase-talk #window { display: none; }
+
+.label {
+	position: absolute;
+	top: 12dp;
+	height: 21dp;
+}
+
+.label-menu { left: 21dp; width: 60dp; }
+.label-price { left: 381dp; width: 60dp; }
+.label-count { left: 543dp; width: 66dp; display: none; }
+#frame.mode-sell .label-count { display: block; }
+
+/* renderSelectionCursor: a grey bar with a light top and left edge and a dark bottom and right one. */
+#cursor {
+	position: absolute;
+	left: 12dp;
+	top: 48dp;
+	width: 510dp;
+	height: 54dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #b0b0b0 #121212 #121212 #b0b0b0;
+	background-color: #80808080;
+}
+
+#frame.mode-sell #cursor { width: 606dp; }
+
+.row {
+	position: absolute;
+	left: 21dp;
+	width: 570dp;
+	height: 54dp;
+	font-size: 33dp;
+	line-height: 33dp;
+	white-space: pre;
+}
+
+#row-0 { top: 51dp; }
+#row-1 { top: 105dp; }
+#row-2 { top: 159dp; }
+#row-3 { top: 213dp; }
+#row-4 { top: 267dp; }
+#row-5 { top: 321dp; }
+
+.rarity {
+	position: absolute;
+	left: 6dp;
+	top: 6dp;
+	width: 36dp;
+	height: 36dp;
+}
+
+.rarity.hidden { display: none; }
+
+/* The name runs until the price's four-digit column cuts it (x 26 to 129 of the window; the original writes the
+   price over the name's tail). */
+.name {
+	position: absolute;
+	left: 54dp;
+	top: 3dp;
+	width: 312dp;
+	overflow: hidden;
+}
+
+.price {
+	position: absolute;
+	left: 378dp;
+	top: 3dp;
+	width: 93dp;
+	text-align: right;
+}
+
+.count {
+	position: absolute;
+	left: 480dp;
+	top: 3dp;
+	width: 60dp;
+	text-align: right;
+}
+
+/* calculateCardMenuStrings: a card the player cannot buy is red (colour 3), one the player holds none of yellow (7). */
+.row.stuck { color: #e03028; }
+.row.new { color: #f8f800; }
+
+.scrollbar {
+	position: absolute;
+	left: 531dp;
+	top: 69dp;
+	width: 24dp;
+	height: 276dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #020202 #6987a0 #6987a0 #020202;
+	background-color: #354b5c;
+}
+
+#frame.mode-sell .scrollbar { left: 627dp; }
+
+.thumb {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 18dp;
+	height: 270dp;
+	background-color: #5b7080;
+}
+
+/* The keeper's line over the list: the story's text box, where showMapHeadTextbox puts it. */
+#talk {
+	position: absolute;
+	left: 87dp;
+	top: 486dp;
+	width: 786dp;
+	height: 177dp;
+	padding: 6dp 15dp;
+	box-sizing: border-box;
+	background-color: #000000c0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 39dp;
+}
+
+.talk-row {
+	display: block;
+	height: 39dp;
+	white-space: pre;
+}
+
+#speaker.hidden { display: none; }
+#speaker { color: #f8f800; }
+
+#confirm {
+	position: absolute;
+	left: 312dp;
+	top: 297dp;
+	width: 336dp;
+	height: 126dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 42dp;
+	display: none;
+}
+
+#frame.phase-confirm #confirm { display: block; }
+
+/* renderSingleCardShop (CONFIRM_BOX_LAYOUT): the question at (8, 5) of the box, yes at (18, 21) and no at (72, 21);
+   the cursor 40 x 14 at (12, 21), 47 pixels further right on no. The box's border is inside these. */
+#question {
+	position: absolute;
+	left: 21dp;
+	top: 9dp;
+	white-space: pre;
+}
+
+.answer {
+	position: absolute;
+	top: 60dp;
+	width: 120dp;
+	height: 42dp;
+	box-sizing: border-box;
+	padding-left: 15dp;
+	white-space: pre;
+}
+
+#yes { left: 33dp; }
+#no { left: 174dp; padding-left: 36dp; }
+
+.answer.selected {
+	border-width: 3dp;
+	border-color: #b5b5b5 #101010 #101010 #b5b5b5;
+	background-color: #525a63;
+}
+
+/* renderItemMenuAmountBox (US AMOUNT_BOX_LAYOUT): the card at (10, 7), the name at (26, 7), the price at y 27 ending at
+   x 112, the amount at y 43 ending at x 105 in an inset 26 x 14 at (85, 42), the total at y 65 ending at x 112; a rule
+   at y 23 from x 4 (122 wide) and one at y 60 from x 12 (106 wide). */
+#amount {
+	position: absolute;
+	left: 285dp;
+	top: 234dp;
+	width: 390dp;
+	height: 249dp;
+	box-sizing: border-box;
+	background-color: #000000e0;
+	border: 3dp #d0d0d0;
+	font-size: 33dp;
+	line-height: 33dp;
+	display: none;
+}
+
+#frame.phase-amount #amount { display: block; }
+
+#amount .rarity { left: 27dp; top: 18dp; }
+#amount-name { position: absolute; left: 75dp; top: 18dp; white-space: pre; }
+#amount-price { position: absolute; left: 183dp; top: 78dp; width: 150dp; text-align: right; }
+#amount-value { position: absolute; left: 252dp; top: 126dp; width: 60dp; text-align: right; }
+#amount-total { position: absolute; left: 183dp; top: 192dp; width: 150dp; text-align: right; }
+
+.rule {
+	position: absolute;
+	height: 3dp;
+	background-color: #63849c;
+}
+
+#amount-rule-top { left: 9dp; top: 66dp; width: 366dp; }
+#amount-rule-bottom { left: 33dp; top: 177dp; width: 318dp; }
+
+#amount-inset {
+	position: absolute;
+	left: 252dp;
+	top: 123dp;
+	width: 78dp;
+	height: 42dp;
+	box-sizing: border-box;
+	border-width: 3dp;
+	border-color: #000000 #6b849c #6b849c #000000;
+}

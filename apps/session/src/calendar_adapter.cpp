@@ -126,6 +126,9 @@ void CalendarAdapter::startNewDays(std::int32_t days) {
       return;
     }
   }
+  if (newDayListener_) {
+    newDayListener_(days);
+  }
 }
 
 } // namespace dwe::session

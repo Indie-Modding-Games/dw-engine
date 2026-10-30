@@ -42,6 +42,7 @@ sections:
   - calendar
   - field_items
   - cards
+  - card_shop
   - fishing
   - story_lock
   - poop_piles

@@ -16,6 +16,7 @@
 namespace dwe::session {
 
 class BattleAdapter;
+class CardShop;
 class EvolutionAdapter;
 class InventoryAdapter;
 class StoryAdapter;
@@ -103,7 +104,6 @@ enum class StoryScreen : std::uint8_t {
   RecycleShop,        // routine 8 while the selling trigger is set, openRecycleShop
   Jukebox,            // routine 9, openJukebox
   ItemKeeper,         // routine 11, tickItemKeeper
-  CardPack,           // routine 14, rollCardPack
   CardBuy,            // routine 14 while the card-buying trigger is set, openBuyCardMenu
   CardSell,           // routine 14 while the selling trigger is set, openSellCardMenu
   TournamentSchedule, // routine 18, initTournamentSchedule
@@ -141,6 +141,8 @@ struct StoryScenesDesc {
   EvolutionAdapter* evolution = nullptr;
   InventoryAdapter* inventory = nullptr;
   BattleAdapter* battle = nullptr;
+  // The card shop whose pack routine 14 draws (rollCardPack); without it the pack is over at once.
+  CardShop* cardShop = nullptr;
 };
 
 struct StoryScenesContext;

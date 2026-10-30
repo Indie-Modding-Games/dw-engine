@@ -5,8 +5,10 @@
 #include <dwe/session/session_system.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 namespace dwe::session {
 
@@ -40,9 +42,16 @@ public:
   // Runs `days` new days on the story, as a script that changes the date does.
   void startNewDays(std::int32_t days);
 
+  // Who else a new day changes (dailyPStatTrigger also rolls the card shop's stock): called with
+  // the days once the story ran them. A new game's day is each system's own startNewGame.
+  void setNewDayListener(std::function<void(std::int32_t days)> listener) {
+    newDayListener_ = std::move(listener);
+  }
+
 private:
   StoryAdapter* story_;
   std::optional<game::story::NewDayRules> rules_;
+  std::function<void(std::int32_t days)> newDayListener_;
 };
 
 } // namespace dwe::session

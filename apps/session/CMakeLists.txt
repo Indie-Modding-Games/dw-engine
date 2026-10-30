@@ -32,6 +32,7 @@ dwe_add_module(session
         src/item_trader.cpp
         src/item_keeper.cpp
         src/jukebox.cpp
+        src/card_shop.cpp
         src/shop_counter.cpp
         src/slot_names.cpp
         src/story_adapter.cpp

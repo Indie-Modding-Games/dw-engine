@@ -48,6 +48,9 @@ screens:
   # El trueque de objetos: las cajas del original.
   trade_menu:
     styles: [ui/skins/original/trade_menu/style]
+  # La tienda de cartas: las cajas y los rótulos del guardián, y la carta de cada rareza.
+  card_shop:
+    styles: [ui/skins/original/card_shop/style]
   # La máquina de guardado: las cajas del original donde el original las dibuja (main_menu.c: renderMenuBox).
   save_machine:
     styles: [ui/skins/original/pause_menu/style, ui/skins/original/save_machine/style]
@@ -193,6 +196,20 @@ sprite_sheets:
     sprites:
       keeper-menu-label: [0, 34, 20, 7]
       keeper-count-label: [100, 48, 22, 7]
+      # El rótulo PRICE de la tienda de cartas (shop/script_menu.c: renderCardMenu).
+      keeper-price-label: [20, 34, 20, 7]
+  # La carta de cada rareza en las listas de la tienda de cartas (script_common.c: renderCardSprite, paleta 5).
+  - name: card-rarity
+    image: texture/etcdat/system_w
+    palette: 5
+    original_size: [256, 128]
+    dp_per_pixel: 3
+    sprites:
+      card-rarity-0: [0, 64, 12, 12]
+      card-rarity-1: [12, 64, 12, 12]
+      card-rarity-2: [24, 64, 12, 12]
+      card-rarity-3: [36, 64, 12, 12]
+      card-rarity-4: [48, 64, 12, 12]
   # Los rótulos del número y del título de la lista de la gramola (script_menu.c: renderJukeboxMenu,
   # ITEM_MENU_HEADER_UVS 4 y 5, paleta 4).
   - name: jukebox-labels

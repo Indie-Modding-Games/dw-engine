@@ -302,6 +302,19 @@ objeto ofrecido en la 249 (lo pide la frase «{item:pstat=249}») o falla si la 
 `MOJYAMON_ITEMS_GET`); sin ella la rutina se cierra al momento. La pantalla `trade_menu` del juego
 (`apps/game: TradeScreen`) lo enseña.
 
+### Tienda de cartas (`CardShop`)
+
+La tienda de cartas de gias06b (`script_interp.c: CALL_ROUTINE 14` → `shop/script_menu.c: openBuyCardMenu`,
+`openSellCardMenu`, `rollCardPack`). Con el disparador de vender la rutina abre la pantalla `CardSell`; si no, con el de
+comprar cartas, `CardBuy`; si no, un sobre: tres cartas, una por estado, cada una con su frase y el jugador como
+hablante (`rollCard`, `showCardTextbox`; la variable 249 lleva la especie de la carta, que la frase nombra). Las seis
+cartas del día (`hasAnyCardToBuy`, la ranura vendida a 0xFF) se sortean en la partida nueva y en cada día nuevo, de la
+1 a la 64 sin la 4 (pueden repetirse). `buy` cobra el precio por rareza (`CARD_PRICES`) y suma una copia; `sell` paga la
+mitad por copia. La sección `card_shop` del ruleset ([esquema](../../content/schemas/ruleset_card_shop.schema.json)) da
+el sorteo, el divisor de venta, las frases de MAPHEAD (1235 y «Is it OK?» de 1240), el sonido de fallo (0, 11) y el del
+trato (0, 23) solo en gias06b (`playShopSoundOnlyInSavannah`); el estado (las seis cartas) va en la sección `card_shop`
+de la partida. La pantalla `card_shop` del juego (`apps/game: CardShopScreen`) enseña las listas.
+
 ## Paridad con el original
 
 | Regla | Decomp | Nuestro | Test | Estado |
@@ -351,6 +364,13 @@ objeto ofrecido en la 249 (lo pide la frase «{item:pstat=249}») o falla si la 
 | Medallas del campo: cada fotograma que el jugador anda libre se dan las que faltan y cumplen (todas las técnicas 0-56 → 5, estadísticas 9999/999 → 7, dinero 999999 → 13, año 10 → 14, criadas las especies 1-61 → 6 y +1 nivel de domador sin aviso, 100 peces → 9, las 66 cartas → 12) como disparador 0x16c + medalla, y dejan el aviso pendiente. Medido en el original: con 999999 bits en twna01 se pone el disparador 377 (0x16c + 13) y `MEDAL_AWARD_PENDING` = 1 | `tamer.c: checkMedalConditions`, `script_common.c: unlockMedal`, `hasMedal` | `MedalsAdapter` (`medals.yaml`), `game/story: checkMedalConditions` | `the field's medal check gives a medal once ...`, `each condition met gives its medal once ...` | Igual |
 | Aviso de nivel de domador: `addTamerLevel` lo deja pendiente (sube o baja) solo si el nivel nuevo, antes de recortarlo, sigue entre 0 y 10 | `tamer.c: addTamerLevel` (`TAMER_LEVEL_AWARD_PENDING`, `TAMER_LEVELS_AWARDED`) | `GameSession::tamerLevelAward` | `a tamer level change is announced only when it stays within the limits` | Igual; no se guarda, como en el original |
 | La máquina de guardado registra al compañero para el modo versus: 40 registros, la máquina llega a 39; guarda nombre, especie, PV y PM máximos, ataque, defensa, velocidad, cerebro, disciplina y las tres primeras técnicas equipadas | `main_menu.c: registerBattleData`, `tickMainMenu` 0x3D (`MENU_HIGHLIGHTS[15]`), `awardMachinedramonData` | `BattleRegistry` (`battle_registry.hpp`), `registeredPartnerOf`; sección `battle_registry` | `a partner registered at the save machine goes in the save and comes back`, `the registry has the original's 40 slots, the machine reaching the first 39` | Igual; el modo versus, fase 5 |
+| Tienda de cartas: seis cartas del día sorteadas en la partida nueva y cada día nuevo (1 a 64 sin la 4; pueden repetirse); la vendida queda en 0xFF y sin ninguna la tienda dice «sold out» | `script_common.c: dailyPStatTrigger`, `shop/script_menu.c: hasAnyCardToBuy` | `game/inventory: rollCardStock`, `CardShop` | `a new game rolls the card shop's stock, and so does each new day` | Igual |
+| Comprar una carta: precio por rareza; medido con 3000 bits: 3000 → 2900, la ranura a 0xFF, copias 2 → 3 y el menú se cierra | `script_common.c: tickSingleCardShop` | `CardShop::buy` | `the card shop sells one card of the stock for its price` | Igual |
+| Vender cartas: la mitad del precio por copia; medido: 2 copias a 2500 → +5000, copias 3 → 1 | `script_common.c: tickItemMenuAmountBox` | `CardShop::sell` | `the card shop buys copies back for half their price` | Igual |
+| Sobre de cartas: rareza `randomLimit(100)` (0 → 0, <5 → 1, <20 → 2, <50 → 3, si no 4) y luego `randomLimit` entre las de esa rareza; medido: con el estado 0xCF0A481B sale la carta 0x3D y con 0x0589E791 la 0x40 | `shop/script_menu.c: rollCard`, `rollCardPack` | `CardCollection::drawPackCard` | `a pack draws the cards the original drew from the same generator state` | Igual |
+| La frase del sobre nombra la especie de la carta (variable 249), sin espacio antes de «that» como el original | `shop/script_menu.c: showCardTextbox` | `CardsAdapter::drawPackCard` | `a pack's card puts its species in variable 249 ...` | Igual |
+| Sonidos: fallo (0, 0xB) al elegir una fila vacía o que no se puede comprar; trato (0, 0x17) solo en gias06b | `script_common.c: createSingleCardShopMenu`, `playShopSoundOnlyInSavannah` | `CardShopRules::failSound`, `tradeSound` | `the card shop's rules carry the fail sound ...` | Igual |
+| Rutina 15 (la caja del dinero) y rutina 22 de la tienda | `shop/script_menu.c` | — | — | **Hueco** |
 
 ## Tests
 

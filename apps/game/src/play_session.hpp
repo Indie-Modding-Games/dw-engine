@@ -233,6 +233,7 @@ private:
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;
   TradeScreen tradeScreen_;
+  CardShopScreen cardShopScreen_;
   FieldItemsScreen fieldItemsScreen_;
   AwardScreen awardScreen_;
   PraiseScoldCall praiseScold_;

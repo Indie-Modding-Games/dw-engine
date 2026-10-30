@@ -99,6 +99,9 @@ public:
   // A copy a script takes (script_interp.c:1151: take_card): one fewer, down to none. False for a
   // card the table does not have.
   bool takeCopy(std::int32_t card);
+  // Copies the card shop buys (tickItemMenuAmountBox): `count` fewer. False, changing nothing, for
+  // a card the table does not have or a count the player does not hold.
+  bool sellCopies(std::int32_t card, std::int32_t count);
 
 private:
   [[nodiscard]] std::int32_t rollRarity(ruleset::Random& random) const;

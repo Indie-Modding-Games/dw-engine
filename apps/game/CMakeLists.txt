@@ -67,6 +67,7 @@ dwe_add_app(game
         src/save_machine.cpp
         src/save_machine_flow.cpp
         src/gym_screen.cpp
+        src/card_shop_screen.cpp
         src/discard_screen.cpp
         src/trade_screen.cpp
         src/item_keeper_screen.cpp

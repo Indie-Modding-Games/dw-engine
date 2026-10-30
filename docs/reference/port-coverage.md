@@ -43,8 +43,8 @@ de inicio y los mapas cercanos, y reclutar.
 |---:|---|---|---|
 | 1 | La máquina de guardar del mapa no se abre: la rutina 48 se cierra al momento; solo se guarda al dormir y con los autoguardados | `script_interp.c` rutina 48, `main_menu.c:5288` `tickSaveMachine` | `apps/game/src/story_scene_glue.cpp:48`; la máquina existe en `save_machine.cpp` |
 | 2 | Sin cifras de curación ni de mejoras (con icono) sobre los luchadores; las de daño ya salen | `entity_text.c:71` `initializeEntityText`, `utils2.c` `drawEntityTextIcon`, `item.c` `handleHPHealingItem` | `apps/screens/src/damage_numbers.cpp` |
-| 3 | Los efectos de las técnicas no dibujan cintas, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas (los emisores de partículas, las nubes y los destellos ya salen) | `battle_effect.c` (`BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
-| 4 | Cerrado: cada técnica llega cuando su script toca al defensor (`ScriptedFlights`, fila «Viaje del proyectil» de battle.md); `battle.timing.projectile_speed` solo vale sin scripts (simulación, pruebas) o si el script nunca toca | scripts de efecto de cada técnica | `game/battle/src/attack_hits.cpp` (`effectLanding`) |
+| 3 | Los efectos de las técnicas no dibujan partículas, nubes, cintas, destellos, sprites de pantalla, fundidos ni cambios de paleta, y la cámara no se mueve para lucirlas | `battle_effect.c` (`BTL_tickParticleEmitters`, `BTL_addCloudEffect`, `BTL_tickRibbonPoints`, `BTL_setupFixedCamera`, `BTL_renderScreenSprite`, `BTL_addClutLoadPrim`), `efe.c` (`EFECreateFlash`) | `game/battle/src/effect_runner_subops.cpp` salta esas subórdenes |
+| 4 | Velocidad de proyectil única para todas las técnicas: los lentos se cortan antes de llegar y los rápidos pasan de largo | scripts de efecto de cada técnica | `battle.timing.projectile_speed` (docs/modulos/game/battle.md:217) |
 | 5 | Los estados no se ven sobre el luchador: ni burbujas de veneno, ni confusión, ni estrellas de aturdimiento (solo el texto del HUD) | `battle_main.c:2698` `BTL_addStatusEffectVisual`, `battle_effect.c` `BTL_addPoisonBubble`, `BTL_tickConfusionEffect`, `BTL_tickStunEffect` | `apps/screens/src/battle_view.cpp:45` |
 | 6 | La escena de evolución no dibuja partículas, huesos que se rompen ni destellos | `evl/evl.c` `EVL_tickParticle`, `EVL_tickShardSet`, `EVL_tickSpark`, `EVL_initEvoSequence` | `apps/game/src/evolution_scene.cpp:231` |
 | 7 | Al dar de comer no se ve el objeto en la mano del jugador | `game_menu.c:2245` `renderFeedingItem` | `apps/game/src/feed_scene.cpp:81` |
@@ -53,7 +53,7 @@ de inicio y los mapas cercanos, y reclutar.
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
 | 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, intercambio por méritos, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openMeritShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 11, 14, 15 y 38 |
+| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
 | 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
 | 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
 | 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
@@ -87,9 +87,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
-| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 81 | 5 | 6 | 53 | 91 % |
+| [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 86 | 4 | 4 | 51 | 94 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
-| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 85 | 5 | 4 | 4 | 93 % |
+| [Objetos y tiendas](#objetos-y-tiendas) | `main/item.c`, `shop/script_menu.c` | 92 | 2 | 1 | 3 | 98 % |
 | [Evolución](#evolucion) | `evl/evl.c`, `main/evl.c`, `main/evolution.c` | 29 | 0 | 0 | 9 | 100 % |
 | [Entrenamiento](#entrenamiento) | `trn/`, `trn2/` (11 ficheros) | 37 | 1 | 0 | 12 | 99 % |
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 45 | 1 | 1 | 39 | 97 % |
-| **Total** | 2438 funciones | 922 | 38 | 366 | 1112 | 71 % |
+| **Total** | 2438 funciones | 934 | 34 | 361 | 1109 | 72 % |
 
 ## Batalla
 
@@ -279,23 +279,20 @@ La máquina de scripts de eventos: órdenes, valores, cajas de texto y eleccione
 
 Ficheros del decomp: `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c`.
 
-Portado 81, parcial 5, falta 6, no aplica 53.
+Portado 86, parcial 4, falta 4, no aplica 51.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `readSelectedItemMerit` | `main/script_common.c:877` | parcial | Lee los méritos del objeto elegido. | no hay pantalla del intercambio por méritos |
-| `tickSingleCardShop` | `main/script_common.c:1070` | parcial | La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira. | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen |
 | `tickShopBitsBox` | `main/script_common.c:1154` | parcial (citada en docs) | Cuadro con el dinero del jugador que abre el guion. | `apps/game/src/shop_screen.cpp` · en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo |
 | `createShopBitsBox` | `main/script_common.c:1757` | parcial | Enseña el dinero del jugador durante un diálogo. | `apps/game/src/shop_screen.cpp` · la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro |
-| `createSingleCardShopMenu` | `main/script_common.c:2047` | parcial | Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira). | `apps/game/src/discard_screen.cpp` · está la del menú de tirar un objeto; no hay pantallas de cartas |
-| `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | falta (citada en docs) | Toca el sonido de la tienda, solo en el mapa de la sabana. | comprobar |
-| `calculateCardMenuStrings` | `main/script_common.c:2666` | falta | Monta la lista del menú de cartas. | no hay pantallas de cartas |
+| `playShopSoundOnlyInSavannah` | `main/script_common.c:2371` | parcial | Toca el sonido de la tienda, solo en el mapa de la sabana. | `apps/session/src/card_shop.cpp` · la tienda de cartas lo toca (trade_sound de card_shop: (0, 0x17) solo en gias06b); el trueque de objetos todavía no |
 | `calculateBirdramonMenuStrings` | `main/script_common.c:2759` | falta | Monta la lista de destinos del pájaro transportista. | comprobar la pantalla de destinos |
 | `createMonochromonMoodBubble` | `main/script_common.c:3038` | falta (citada en docs) | Burbuja de humor del rival de la tienda de cambio. | scripts.md: más tarde |
 | `triggerSeadramonCutscene` | `main/script_common.c:3057` | falta (citada en docs) | Lanza la escena de la serpiente marina al pescarla. | — |
 | `tickBackgroundDialogue` | `main/script_textbox.c:861` | falta | Diálogo que corre sin parar el juego (comentarios de fondo). | comprobar |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (13); lectura de operandos; los scripts se pasan a Lua (12); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
+No aplica: lectura de operandos; los scripts se pasan a Lua (12); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (11); texto de interfaz (5); cursor de interfaz; lo hace la pantalla (4); gráficos, memoria o ficheros del hardware original: los sustituye el motor (4); cuadros de interfaz del original (3); entrada del original (2); cursor de interfaz (2); cadenas del original (2); entrada del original; el motor tiene la suya (1); texto de interfaz; lo monta la pantalla (1); consulta interna (1); limpieza de objetos y memoria del original: el motor libera lo suyo (1); tabla de modelos del original (1); codificación de texto del original (1).
 
 ## Menús e interfaz
 
@@ -320,21 +317,15 @@ Uso de objetos, comida y chips, tiendas, cartas, guardarropía y menús de guion
 
 Ficheros del decomp: `main/item.c`, `shop/script_menu.c`.
 
-Portado 85, parcial 5, falta 4, no aplica 4.
+Portado 92, parcial 2, falta 1, no aplica 3.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `handleChips` | `main/item.c:2248` | parcial | Usa un chip: sube un stat y lanza su sección de guion. | `content/packs/game/rules/original/inventory.yaml:59` · la sección de guion de un chip no corre (docs/modulos/apps/session.md:276) |
-| `rollCardPack` | `shop/script_menu.c:679` | parcial | Saca las cartas de un sobre. | `game/inventory/include/dwe/game/inventory/cards.hpp` · la tirada existe; la rutina 14 se cierra sin pantalla |
-| `openBuyCardMenu` | `shop/script_menu.c:711` | parcial | Abre la compra de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:107` · la rutina 14 se cierra sin pantalla |
-| `openSellCardMenu` | `shop/script_menu.c:753` | parcial | Abre la venta de cartas. | `apps/session/include/dwe/session/story_scenes.hpp:108` · la rutina 14 se cierra sin pantalla |
-| `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:99` · la rutina 1 se cierra sin pantalla |
-| `hasAnyCardToBuy` | `shop/script_menu.c:1296` | falta | Dice si queda alguna carta por comprar. | no hay pantallas de cartas |
-| `createCardMenu` | `shop/script_menu.c:1452` | falta | Abre el menú de compra o venta de cartas. | la rutina 14 se cierra sin pantalla |
+| `openMeritShop` | `shop/script_menu.c:788` | parcial | Abre el intercambio de objetos por puntos de mérito. | `apps/session/include/dwe/session/story_scenes.hpp:100` · la rutina 1 se cierra sin pantalla |
 | `shopFillMeritItemList` | `shop/script_menu.c:1479` | falta | Rellena la lista del intercambio por méritos. | la rutina 1 se cierra sin pantalla |
-| `tickCardMenu` | `shop/script_menu.c:1816` | falta | Compra o venta de cartas: cursor, precio y confirmación. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (4).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (3).
 
 ## Evolución
 
@@ -455,7 +446,7 @@ Portado 0, parcial 4, falta 81, no aplica 364.
 | `tickTournamentInfo` | `dget/dget.c:631` | falta | Cierra el recuadro de información de la copa al pulsar un botón. | — |
 | `initTournamentSchedule` | `dget/dget.c:664` | parcial | Enseña el calendario de torneos. | `apps/session/include/dwe/session/story_scenes.hpp:109` · la rutina 18 se cierra sin pantalla |
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
-| `scriptStartTournament` | `main/tournament.c:128` | parcial | Empieza un torneo. | `apps/session/include/dwe/session/story_scenes.hpp:101` · la rutina 6 se cierra sin torneo |
+| `scriptStartTournament` | `main/tournament.c:128` | parcial | Empieza un torneo. | `apps/session/include/dwe/session/story_scenes.hpp:102` · la rutina 6 se cierra sin torneo |
 | `getCupDataJumpTable` | `main/tournament.c:146` | falta (citada en docs) | Busca en el guion del mapa los datos de una copa por sección e id. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
 | `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:110` · la rutina 22 se cierra sin pantalla |

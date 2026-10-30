@@ -474,7 +474,7 @@ tickItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what
 readSelectedItemMerit = { status = "parcial", note = "no hay pantalla del intercambio por méritos", what = "Lee los méritos del objeto elegido." }
 tickItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Enseña la descripción del objeto elegido en la tienda." }
 updateItemMenuAmountBoxString = { status = "portado", dwe = "apps/game/src/shop_screen.cpp:26", what = "Pone el número de la cantidad a comprar." }
-tickSingleCardShop = { status = "parcial", dwe = "apps/game/src/discard_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "está la del menú de tirar un objeto (ITEM_MENU_TYPE 5); las pantallas de cartas no existen" }
+tickSingleCardShop = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "La caja «Is it OK?» con sí y no: la compra de una carta o el objeto que se tira.", note = "la compra de cartas (CardShopScreen) y el menú de tirar un objeto (DiscardScreen)" }
 tickShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", what = "Cuadro con el dinero del jugador que abre el guion.", note = "en la tienda sale y se actualiza al comprar o vender; la rutina 15 se cierra sin enseñarlo" }
 inputInit = { status = "no-aplica", note = "entrada del original", what = "Prepara la lectura del mando." }
 processInput = { status = "no-aplica", note = "entrada del original; el motor tiene la suya", what = "Lee el mando cada fotograma." }
@@ -487,18 +487,18 @@ createItemMenu = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", wh
 getItemMenuFromType = { status = "no-aplica", note = "consulta interna", what = "Da el menú de un tipo." }
 updateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Rehace los textos del menú." }
 isItemMenuBoxBusy = { status = "no-aplica", note = "cuadros de interfaz del original", what = "Dice si el cuadro del menú está ocupado." }
-createSingleCardShopMenu = { status = "parcial", dwe = "apps/game/src/discard_screen.cpp", what = "Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira).", note = "está la del menú de tirar un objeto; no hay pantallas de cartas" }
+createSingleCardShopMenu = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Abre la caja «Is it OK?» sobre la fila elegida (carta o objeto que se tira).", note = "la compra de cartas y el menú de tirar un objeto; el fallo (0, 0xB) en una fila que no se puede elegir" }
 itemMenuCursorTop = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor arriba." }
 itemMenuCursorUp = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Sube el cursor." }
 itemMenuCursorBottom = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Lleva el cursor abajo." }
 itemMenuCursorDown = { status = "no-aplica", note = "cursor de interfaz; lo hace la pantalla", what = "Baja el cursor." }
 createItemMenuDescriptionBox = { status = "portado", dwe = "apps/game/src/shop_screen.cpp", what = "Abre el cuadro de descripción del objeto." }
 updateItemMenuSubTextboxLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del cuadro auxiliar." }
-playShopSoundOnlyInSavannah = { status = "falta", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "comprobar" }
+playShopSoundOnlyInSavannah = { status = "parcial", dwe = "apps/session/src/card_shop.cpp", what = "Toca el sonido de la tienda, solo en el mapa de la sabana.", note = "la tienda de cartas lo toca (trade_sound de card_shop: (0, 0x17) solo en gias06b); el trueque de objetos todavía no" }
 showMapHeadTextbox = { status = "portado", dwe = "apps/session/src/map_head_lines.cpp", what = "Enseña el texto de cabecera del mapa." }
 flipTextboxPage = { status = "portado", dwe = "game/story/src/dialogue.cpp", what = "Pasa la página del cuadro de texto." }
 calculateItemMenuStrings = { status = "no-aplica", note = "texto de interfaz", what = "Monta los textos del menú de objetos." }
-calculateCardMenuStrings = { status = "falta", what = "Monta la lista del menú de cartas.", note = "no hay pantallas de cartas" }
+calculateCardMenuStrings = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Monta la lista del menú de cartas." }
 calculateMusicMenuStrings = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:58", what = "Monta la lista de canciones de la gramola." }
 calculateBirdramonMenuStrings = { status = "falta", what = "Monta la lista de destinos del pájaro transportista.", note = "comprobar la pantalla de destinos" }
 updateItemMenuLine = { status = "no-aplica", note = "texto de interfaz", what = "Rehace una línea del menú." }
@@ -589,8 +589,8 @@ reduceTiredness = { status = "portado", dwe = "game/inventory/src/item_effects.c
 addHappiness = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma felicidad al compañero." }
 addDiscipline = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma disciplina al compañero." }
 addWeight = { status = "portado", dwe = "game/inventory/src/item_effects.cpp", what = "Suma peso al compañero." }
-hasAnyCardToBuy = { status = "falta", what = "Dice si queda alguna carta por comprar.", note = "no hay pantallas de cartas" }
-createCardMenu = { status = "falta", what = "Abre el menú de compra o venta de cartas.", note = "la rutina 14 se cierra sin pantalla" }
+hasAnyCardToBuy = { status = "portado", dwe = "game/inventory/src/card_shop.cpp", what = "Dice si queda alguna carta por comprar." }
+createCardMenu = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Abre el menú de compra o venta de cartas.", note = "las cajas aparecen sin la animación de abrir" }
 shopFillMeritItemList = { status = "falta", what = "Rellena la lista del intercambio por méritos.", note = "la rutina 1 se cierra sin pantalla" }
 itemKeeperFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:106", what = "Rellena las listas del guardián de objetos (lo guardado y la bolsa) y marca las filas que no pueden pasar." }
 createItemKeepWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Abre las ventanas del guardián de objetos." }
@@ -601,7 +601,7 @@ createBirdraTransportMenu = { status = "portado", dwe = "content/packs/game/ui/d
 mojyaTradeFillItemList = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:100", what = "Rellena la lista del trueque de objetos: lo que tiene la bolsa y lo ya cambiado." }
 createMojyaTradeMenu = { status = "portado", dwe = "apps/game/src/trade_screen.hpp:44", what = "Abre el trueque de objetos." }
 setMojyaItemTradedTrigger = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:107", what = "Marca el objeto ya cambiado en el trueque." }
-tickCardMenu = { status = "falta", what = "Compra o venta de cartas: cursor, precio y confirmación." }
+tickCardMenu = { status = "portado", dwe = "apps/game/src/card_shop_screen.cpp", what = "Compra o venta de cartas: cursor, precio y confirmación." }
 tickItemKeeperWindow = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: mueve el cursor y pasa objetos entre la bolsa y lo guardado." }
 updateKeeperTextbox = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Ayuda del guardián de objetos, con las teclas del dispositivo en uso." }
 keeperMoveOne = { status = "portado", dwe = "apps/session/include/dwe/session/item_keeper.hpp:112", what = "Guardián de objetos: pasa un objeto." }
@@ -627,9 +627,9 @@ openMeritShop = { status = "parcial", note = "la rutina 1 se cierra sin pantalla
 openMojyamonShop = { status = "portado", dwe = "apps/session/include/dwe/session/item_trader.hpp:128", what = "Trueque de objetos: saludo, lista, pregunta, sí o no, cambio y despedida." }
 openJukebox = { status = "portado", dwe = "apps/game/src/jukebox_screen.hpp:44", what = "Abre la gramola." }
 tickItemKeeper = { status = "portado", dwe = "apps/game/src/item_keeper_screen.hpp:48", what = "Guardián de objetos: pregunta, sí o no, las ventanas y la despedida." }
-rollCardPack = { status = "parcial", dwe = "game/inventory/include/dwe/game/inventory/cards.hpp", note = "la tirada existe; la rutina 14 se cierra sin pantalla", what = "Saca las cartas de un sobre." }
-openBuyCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la compra de cartas." }
-openSellCardMenu = { status = "parcial", note = "la rutina 14 se cierra sin pantalla", what = "Abre la venta de cartas." }
+rollCardPack = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Saca las cartas de un sobre." }
+openBuyCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la compra de cartas." }
+openSellCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la venta de cartas." }
 createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
 createNinjamonEffect = { status = "parcial", note = "la rutina 38 se cierra sin el humo", what = "Nube de humo de un personaje que desaparece." }
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }

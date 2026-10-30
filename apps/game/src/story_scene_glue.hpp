@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "battle_screen.hpp"
+#include "card_shop_screen.hpp"
 #include "death_scene.hpp"
 #include "discard_screen.hpp"
 #include "egg_box_screen.hpp"
@@ -43,6 +44,8 @@ public:
   void attachJukebox(JukeboxScreen* jukebox) { jukebox_ = jukebox; }
   // The item trader the story's TradeShop screen opens (call_routine 2).
   void attachTrade(TradeScreen* trade) { trade_ = trade; }
+  // The card shop's menus the story's CardBuy and CardSell screens open (call_routine 14).
+  void attachCardShop(CardShopScreen* cardShop) { cardShop_ = cardShop; }
   // The save machine the story's SaveMenu screen opens (call_routine 48).
   void attachSaveMachine(SaveMachine* machine) { saveMachine_ = machine; }
   // The naming box the story's renaming opens (call_routine 32).
@@ -66,6 +69,7 @@ private:
   DiscardScreen* discard_ = nullptr;
   JukeboxScreen* jukebox_ = nullptr;
   TradeScreen* trade_ = nullptr;
+  CardShopScreen* cardShop_ = nullptr;
   // Whether the story waits on a scene of the death scene.
   bool deathScene_ = false;
   StoryNaming naming_;

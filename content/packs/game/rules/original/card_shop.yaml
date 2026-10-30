@@ -1,0 +1,27 @@
+# La tienda de cartas que abre la historia (script_interp.c: CALL_ROUTINE 14 -> shop/script_menu.c: rollCardPack,
+# openBuyCardMenu, openSellCardMenu; apps/session: CardShop). Los precios son los de data/cards (CARD_PRICES por rareza).
+
+# dailyPStatTrigger (script_common.c:1398): cada día nuevo llena 6 huecos con randomLimit(0x40) + 1, otra vez si sale
+# la carta 4. Su comprobación de repetidas compara el hueco consigo mismo y nunca repite: una carta puede salir dos veces.
+stock:
+  size: 6
+  first: 1
+  last: 64
+  skipped: [4]
+# createItemMenuAmountBox: la tienda paga CARD_PRICES >> 1 por copia.
+sell_divisor: 2
+# showMapHeadTextbox(..., 0x4d3): las frases del tendero y del sobre son esta sección de MAPHEAD.
+lines_section: 1235
+# openBuyCardMenu: la frase sobre la lista (0) y la de que no queda ninguna (1); openSellCardMenu: la pregunta (8).
+lines:
+  today: 0
+  sold_out: 1
+  sell_prompt: 8
+# createSingleCardShopMenu: la caja «¿Está bien?» es la frase 0 de la sección 0x4d8.
+confirm_section: 1240
+confirm_line: 0
+# createSingleCardShopMenu: un hueco vacío o una carta que no se puede comprar suena playSound(0, 0xB).
+fail_sound: {slot: 0, sound: 11}
+# playShopSoundOnlyInSavannah: una compra o una venta toca playSound(0, 0x17) solo en la pantalla 131 (MAIN_D_801345C0),
+# la propia tienda de cartas; medido en el original el 2026-10-30.
+trade_sound: {map: gias06b, slot: 0, sound: 23}

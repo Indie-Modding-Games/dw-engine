@@ -4,6 +4,7 @@
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_registry.hpp>
 #include <dwe/session/calendar_adapter.hpp>
+#include <dwe/session/card_shop.hpp>
 #include <dwe/session/cards_adapter.hpp>
 #include <dwe/session/city_adapter.hpp>
 #include <dwe/session/discard_menu.hpp>
@@ -136,6 +137,12 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   });
   auto itemKeeper =
       std::make_unique<ItemKeeper>(ItemKeeperDesc{.files = &files, .inventory = inventory.get()});
+  // dailyPStatTrigger: each new day also rolls the card shop's stock; the shop trades after the
+  // cards started.
+  auto cardShop = std::make_unique<CardShop>(
+      CardShopDesc{.files = &files, .cards = cards.get(), .inventory = inventory.get()});
+  calendar->setNewDayListener(
+      [shop = cardShop.get()](std::int32_t days) { shop->startNewDays(days); });
   auto discardMenu = std::make_unique<DiscardMenu>(
       DiscardMenuDesc{.files = &files, .inventory = inventory.get(), .story = story.get()});
   auto jukebox = std::make_unique<Jukebox>(JukeboxDesc{.files = &files, .story = story.get()});
@@ -156,7 +163,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   auto scenes = std::make_unique<StoryScenes>(StoryScenesDesc{.story = story.get(),
                                                               .evolution = evolution.get(),
                                                               .inventory = inventory.get(),
-                                                              .battle = battle.get()});
+                                                              .battle = battle.get(),
+                                                              .cardShop = cardShop.get()});
   game.scenes = scenes.get();
   game.systems.push_back(std::move(evolution));
   game.systems.push_back(std::move(inventory));
@@ -177,6 +185,8 @@ GameSystems createGameSystems(const assets::VirtualFileSystem& files, SystemTabl
   game.systems.push_back(std::move(fieldItems));
   game.cards = cards.get();
   game.systems.push_back(std::move(cards));
+  game.cardShop = cardShop.get();
+  game.systems.push_back(std::move(cardShop));
   auto fishing =
       std::make_unique<FishingAdapter>(*game.inventory, *game.story, std::move(tables.fishing));
   game.fishing = fishing.get();

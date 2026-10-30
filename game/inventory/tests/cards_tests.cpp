@@ -17,9 +17,11 @@ using dwe::game::inventory::CardRules;
 constexpr std::int32_t MaxCopies = 3;
 
 CardCollection collection() {
-  CardTable table{.prices = {},
-                  .cards = {CardEntry{.index = 1, .digimon = {}, .rarity = 0, .meritValue = 0},
-                            CardEntry{.index = 2, .digimon = {}, .rarity = 0, .meritValue = 0}}};
+  CardTable table{
+      .prices = {},
+      .cards = {
+          CardEntry{.index = 1, .digimon = {}, .rarity = 0, .meritValue = 0, .iconPalette = {}},
+          CardEntry{.index = 2, .digimon = {}, .rarity = 0, .meritValue = 0, .iconPalette = {}}}};
   return CardCollection{
       CardRules{.maxCopies = MaxCopies, .firstListed = 1, .lastListed = 2, .pack = {}, .lines = {}},
       std::move(table)};

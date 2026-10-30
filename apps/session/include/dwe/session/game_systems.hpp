@@ -30,6 +30,7 @@ class CalendarAdapter;
 class CityAdapter;
 class MedalsAdapter;
 class FieldItemsAdapter;
+class CardShop;
 class CardsAdapter;
 class EvolutionAdapter;
 class FishingAdapter;
@@ -63,8 +64,8 @@ core::Result<SystemTables> loadSystemTables(const assets::VirtualFileSystem& fil
                                             const ruleset::Ruleset& rules);
 
 // The game's systems as adapters for SessionDesc::systems, in the order they tick (evolution,
-// inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper,
-// discard menu, jukebox, item trader, calendar, field items, cards, fishing, poop piles, city,
+// inventory, battle, the story's game orders, story scenes, story, gym, shop, item keeper, discard
+// menu, jukebox, item trader, calendar, field items, cards, card shop, fishing, poop piles, city,
 // medals, battle registry), and the adapters by type for the commands of the game and its menus.
 // The session owns the adapters once given them: the typed pointers are valid while it lives.
 struct GameSystems {
@@ -88,6 +89,8 @@ struct GameSystems {
   CalendarAdapter* calendar = nullptr;
   FieldItemsAdapter* fieldItems = nullptr;
   CardsAdapter* cards = nullptr;
+  // The card shop the story opens (CALL_ROUTINE 14).
+  CardShop* cardShop = nullptr;
   FishingAdapter* fishing = nullptr;
   // The partner's poop piles on the ground.
   PoopAdapter* poop = nullptr;

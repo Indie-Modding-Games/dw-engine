@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ruleset: card_shop",
+  "description": "rules/<id>/card_shop.yaml: the card shop the story opens (apps/session: CardShop; shop/script_menu.c: openBuyCardMenu, openSellCardMenu, rollCardPack).",
+  "type": "object",
+  "required": [
+    "stock",
+    "sell_divisor",
+    "lines_section",
+    "lines",
+    "confirm_section",
+    "confirm_line",
+    "fail_sound",
+    "trade_sound"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "line": {
+      "description": "The line's place in its MAPHEAD section.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "sound": {
+      "type": "object",
+      "required": [
+        "slot",
+        "sound"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sound": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "properties": {
+    "stock": {
+      "description": "How a new day fills the stock: size slots, each a card from first to last that is not skipped.",
+      "type": "object",
+      "required": [
+        "size",
+        "first",
+        "last",
+        "skipped"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "sell_divisor": {
+      "description": "The shop pays a card's price divided by this.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "lines_section": {
+      "description": "The MAPHEAD section of the keeper's and the pack's lines.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "lines": {
+      "type": "object",
+      "required": [
+        "today",
+        "sold_out",
+        "sell_prompt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "today": {
+          "$ref": "#/$defs/line"
+        },
+        "sold_out": {
+          "$ref": "#/$defs/line"
+        },
+        "sell_prompt": {
+          "$ref": "#/$defs/line"
+        }
+      }
+    },
+    "confirm_section": {
+      "description": "The MAPHEAD section of the \"is it OK?\" box.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "confirm_line": {
+      "$ref": "#/$defs/line"
+    },
+    "fail_sound": {
+      "description": "The sound of a slot that cannot be bought.",
+      "$ref": "#/$defs/sound"
+    },
+    "trade_sound": {
+      "description": "The sound a trade plays, only on this map.",
+      "type": "object",
+      "required": [
+        "map",
+        "slot",
+        "sound"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "map": {
+          "type": "string"
+        },
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sound": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
