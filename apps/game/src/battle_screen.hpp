@@ -9,6 +9,7 @@
 #include <dwe/screens/command_menu.hpp>
 #include <dwe/screens/damage_numbers.hpp>
 #include <dwe/screens/enemy_hp_bars.hpp>
+#include <dwe/screens/partner_bars.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_effects.hpp>
 #include <dwe/session/field_items_adapter.hpp>
@@ -177,6 +178,8 @@ private:
   // command_menu.c: the command strip's motion, a frame at the battle's rate outside the fight and
   // the opening, and its slide back up once the battle is over.
   void stepMenu(bool fighting);
+  // The strip's and the partner's bars' settings, under the strip's revision.
+  void publishMenu() const;
   void tickMenu(double seconds);
   void closeMenu();
   [[nodiscard]] session::BattleMusicFacts musicFactsOf(const session::BattleRequest& request) const;
@@ -240,6 +243,7 @@ private:
   // The player's command strip as it slides (BTL_tickCommandMenu), the time it has not run yet
   // after the fight, and whether it is going back up before the battle ends.
   screens::CommandMenuMotion menu_;
+  screens::PartnerBarsMotion bars_;
   double menuSeconds_ = 0.0;
   bool closing_ = false;
 };

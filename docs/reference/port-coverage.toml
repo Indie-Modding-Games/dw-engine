@@ -192,8 +192,8 @@ BTL_isEndBoxTextFinished = { status = "portado", dwe = "apps/screens/include/dwe
 BTL_shuffleBattleStartTextPieces = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:14", what = "Baraja el orden en que llegan las piezas del rótulo de inicio del combate." }
 BTL_initializeBattleStartTextBurst = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Prepara el estallido del rótulo de inicio del combate." }
 BTL_isBattleStartTextFinished = { status = "portado", dwe = "apps/screens/src/battle_intro.cpp:44", what = "Dice si el rótulo de inicio terminó, para empezar a luchar." }
-BTL_initializePartnerStatusBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Monta las barras de vida y MP del compañero en el HUD." }
-BTL_tickPartnerStatusBars = { status = "portado", dwe = "apps/screens/src/battle_view.cpp:132", what = "Actualiza las barras de vida y MP del compañero." }
+BTL_initializePartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:24", what = "Monta las barras de vida y MP del compañero en el HUD." }
+BTL_tickPartnerStatusBars = { status = "portado", dwe = "apps/screens/src/partner_bars.cpp:30", what = "Actualiza las barras de vida y MP del compañero." }
 BTL_tickPartnerWaypointTrail = { status = "falta", what = "Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse.", note = "relacionado con la vuelta tras un combate de historia" }
 BTL_resetFlatten = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Devuelve al luchador aplastado a su forma." }
 BTL_getMoveWithHighestDistance = { status = "portado", dwe = "game/battle/src/fighter_actions.cpp:437", what = "El mayor alcance de las técnicas del rival, para que el compañero guarde distancia." }

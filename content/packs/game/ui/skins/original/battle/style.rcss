@@ -402,7 +402,7 @@
 
 /* The strip's slide (command_menu.c: BTL_tickCommandMenu): logic.lua moves and stretches the frame's pieces from their
    top and the icons from theirs (9dp into their boxes) as the game moves the strip's edges. Before the banner and
-   once it has gone back up it waits above the screen. After the fight it stays alone, without the cursor or the
+   once it has gone back up it waits above the screen. After the fight it stays with the partner's bars, without the cursor or the
    name, through the victory and the end box, until it goes back up. */
 .command-frame {
 	transform-origin: 50% 0dp 0;
@@ -417,6 +417,12 @@
 }
 
 #fight.after > #commands {
+	display: block;
+}
+
+/* The partner's bars and the finisher gauge stay too (battle_hud.c: BTL_renderPartnerStatusBars draws them until
+   BTL_removePartnerStatusBars, once the strip is back up); the bars slide out with the strip (logic.lua: draw_bars). */
+#fight.after > #partner-panel {
 	display: block;
 }
 

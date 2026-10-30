@@ -95,8 +95,8 @@
 		<div id="partner-panel">
 			<div id="fighter-0" class="fighter partner hidden">
 				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-0-name"></span><span class="fighter-status" id="fighter-0-status"></span></div>
-				<div class="bar-row"><span class="bar-label original-look" id="fighter-0-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-0-hp-fill"></div></div><span class="bar-value original-look" id="fighter-0-hp"></span></div>
-				<div class="bar-row"><span class="bar-label original-look" id="fighter-0-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-0-mp-fill"></div></div><span class="bar-value original-look" id="fighter-0-mp"></span></div>
+				<div class="bar-row" id="fighter-0-hp-row"><span class="bar-label original-look" id="fighter-0-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-0-hp-fill"></div></div><span class="bar-value original-look" id="fighter-0-hp"></span></div>
+				<div class="bar-row" id="fighter-0-mp-row"><span class="bar-label original-look" id="fighter-0-mp-label"></span><div class="bar mp"><div class="fill" id="fighter-0-mp-fill"></div></div><span class="bar-value original-look" id="fighter-0-mp"></span></div>
 			</div>
 			<div id="finisher">
 				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>

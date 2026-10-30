@@ -82,7 +82,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 136 | 4 | 9 | 22 | 93 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 137 | 4 | 9 | 21 | 93 % |
 | [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 151 | 3 | 67 | 64 | 69 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
-| **Total** | 2438 funciones | 935 | 34 | 361 | 1108 | 72 % |
+| **Total** | 2438 funciones | 936 | 34 | 361 | 1107 | 72 % |
 
 ## Batalla
 
@@ -109,7 +109,7 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 136, parcial 4, falta 9, no aplica 22.
+Portado 137, parcial 4, falta 9, no aplica 21.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -122,12 +122,12 @@ Portado 136, parcial 4, falta 9, no aplica 22.
 | `BTL_addPoisonStatusVisual` | `btl/battle_main.c:2898` | falta | Pone las burbujas de veneno sobre el luchador. | — |
 | `BTL_addConfusionStatusVisual` | `btl/battle_main.c:2905` | falta | Pone el efecto de confusión sobre el luchador. | — |
 | `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
-| `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:30` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
+| `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:32` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (8); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (8); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (8); limpieza de objetos y memoria del original: el motor libera lo suyo (7); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
 
 ## Efectos de batalla
 

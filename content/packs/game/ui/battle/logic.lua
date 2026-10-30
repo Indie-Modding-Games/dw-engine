@@ -19,6 +19,10 @@ local strip_bottom = -68
 local icon_height = 16
 -- Whether the strip's pieces carry a transform from its slide.
 local strip_moved = false
+-- The partner's bars' left edge once in place, in the original's screen pixels from the middle
+-- (battle_effect.c: BTL_STATUS_BAR_X[7]), and whether they carry a transform from their slide.
+local bars_x = 46
+local bars_moved = false
 local max_end_lines = 10
 local stat_count = 6
 
@@ -950,6 +954,30 @@ local function draw_motion(document)
   end
 end
 
+-- The partner's bars' slide in the original look (battle_hud.c: BTL_renderPartnerStatusBars draws
+-- each bar from its own BTL_STATUS_BAR_X): they come in from the right edge with the strip and
+-- leave as it goes back up. The game moves them (apps/screens: partner_bars.hpp).
+local function draw_bars(document)
+  if ui.setting("ui_skin") ~= "original" then
+    return
+  end
+  local hp = math.floor(setting("battle.bars.hp_x", bars_x))
+  local mp = math.floor(setting("battle.bars.mp_x", bars_x))
+  local settled = hp == bars_x and mp == bars_x
+  if settled and not bars_moved then
+    return
+  end
+  bars_moved = not settled
+  local function shift(x)
+    if x == bars_x then
+      return "none"
+    end
+    return string.format("translate(%ddp, 0dp)", (x - bars_x) * 3)
+  end
+  set_property(document, "fighter-0-hp-row", "transform", shift(hp))
+  set_property(document, "fighter-0-mp-row", "transform", shift(mp))
+end
+
 local function draw_intro(document)
   intro_step = phase == "intro" and setting("battle.intro.step", "done") or "done"
   lookup(document, "intro"):set_class("hidden", phase ~= "intro")
@@ -967,8 +995,9 @@ end
 
 local function draw(document)
   phase = setting("battle.phase", "fight")
-  -- In the original look the strip stays through the victory and the end box, without its cursor
-  -- or name, and then goes back up (battle_main.c:777); the rest of the fight's screen goes.
+  -- In the original look the strip and the partner's bars stay through the victory and the end box,
+  -- the strip without its cursor or name, and then go (battle_main.c:777); the rest of the fight's
+  -- screen goes.
   local after = phase == "victory" or phase == "end" or phase == "closing"
   local strip_after = after and ui.setting("ui_skin") == "original"
   lookup(document, "fight"):set_class(
@@ -1031,6 +1060,7 @@ end
 function on_show(document)
   draw(document)
   draw_motion(document)
+  draw_bars(document)
   draw_damage(document)
   draw_hp_bars(document)
   draw_prompts(document)
@@ -1041,6 +1071,7 @@ function on_setting(document, name)
     draw(document)
   elseif name == "battle.menu.motion" then
     draw_motion(document)
+    draw_bars(document)
     if phase == "fight" and not bag_open then
       draw_cursor(document)
     end

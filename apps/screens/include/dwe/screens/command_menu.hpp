@@ -37,6 +37,8 @@ public:
   [[nodiscard]] bool closed();
 
   [[nodiscard]] bool shown() const { return state_ != State::Gone; }
+  // BTL_COMMAND_MENU_ACTIVE == 1: the strip is down and has not been told to go back up.
+  [[nodiscard]] bool active() const { return state_ == State::Open; }
   // The strip's edges in the original's screen lines, 0 at the middle (BTL_COMMAND_MENU_X is the
   // top, BTL_COMMAND_MENU_Y the bottom, as BTL_renderCommandMenu draws them).
   [[nodiscard]] std::int32_t top() const;

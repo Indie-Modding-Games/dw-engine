@@ -13,6 +13,7 @@ dwe_add_module(screens
         src/field_hud_view.cpp
         src/lives_box.cpp
         src/name_keys.cpp
+        src/partner_bars.cpp
         src/partner_status_view.cpp
         src/screen_settings.cpp
     DEPS core assets localization ruleset ui battle inventory partner session)

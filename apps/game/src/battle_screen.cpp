@@ -8,8 +8,10 @@
 #include <dwe/game/story/story_ports.hpp>
 #include <dwe/screens/bag_view.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -127,9 +129,11 @@ core::Result<void> BattleScreen::start(session::BattleRequest request,
   intro_.emplace(battlesStarted_++);
   // The command strip opens with the banner (BTL_initializeCombat, just before it).
   menu_ = {};
+  // BTL_initializePartnerStatusBars: the partner's bars wait off the right edge.
+  bars_.reset();
   menuSeconds_ = 0.0;
   closing_ = false;
-  screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+  publishMenu();
   introEnemies_ = std::move(introEnemies);
   angerAnchors_.assign(introEnemies_.size(), std::nullopt);
   introSeconds_ = 0.0;
@@ -468,7 +472,7 @@ void BattleScreen::tickIntro(double seconds) {
     game::story::SoundPort* sound = desc_.session->sound();
     if (after == screens::IntroStep::Banner) {
       menu_.open();
-      screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+      publishMenu();
       core::logDebug("[port:battle] BTL_initializeCommandMenu (command_menu.c:153): the command "
                      "strip drops in");
       startRetreat();
@@ -793,12 +797,21 @@ session::BattleMusicFacts BattleScreen::musicFactsOf(const session::BattleReques
   return facts;
 }
 
+// The partner's bars tick with the strip (battle_hud.c: BTL_tickPartnerStatusBars reads
+// BTL_COMMAND_MENU_ACTIVE) and go with it (BTL_removePartnerStatusBars follows its closing).
 void BattleScreen::stepMenu(bool fighting) {
   if (!menu_.shown()) {
     return;
   }
   menu_.step(fighting);
-  screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+  bars_.step(menu_.active());
+  publishMenu();
+}
+
+void BattleScreen::publishMenu() const {
+  screens::ScreenSettings settings = menu_.settings();
+  std::ranges::move(bars_.settings(), std::back_inserter(settings));
+  screens::publish(*desc_.ui, settings, screens::CommandMenuRevisionSetting);
 }
 
 // After the fight the strip stays, still counting its frames, through the victory, the end box and
@@ -815,7 +828,7 @@ void BattleScreen::tickMenu(double seconds) {
     if (closing_ && menu_.closed()) {
       closing_ = false;
       menuSeconds_ = 0.0;
-      screens::publish(*desc_.ui, menu_.settings(), screens::CommandMenuRevisionSetting);
+      publishMenu();
       core::logDebug("[port:battle] BTL_isCommandMenuClosed (command_menu.c:328): the strip is up; "
                      "the battle ends");
       desc_.ui->hide(BattleDocument);
