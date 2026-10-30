@@ -10,9 +10,10 @@ FieldHud::FieldHud(ui::Ui& ui, const session::GameSession& session) : ui_(&ui), 
   }
 }
 
-void FieldHud::update(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble) {
+void FieldHud::update(bool fieldRunning, bool bubbleRuns,
+                      std::optional<screens::WindowFraction> partnerBubble) {
   publishStatus(fieldRunning);
-  publishPartner(fieldRunning && session_->playing(), partnerBubble);
+  publishPartner(bubbleRuns && session_->playing(), partnerBubble);
 }
 
 void FieldHud::publishPartner(bool fieldRunning,

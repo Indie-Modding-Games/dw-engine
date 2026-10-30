@@ -16,9 +16,11 @@ public:
   FieldHud(ui::Ui& ui, const session::GameSession& session);
 
   // Publishes the views when they changed; once per frame. `fieldRunning` is false while a menu or
-  // a battle stops the field; `partnerBubble` is where the partner's need bubble settles in the
-  // window, if it projects.
-  void update(bool fieldRunning, std::optional<screens::WindowFraction> partnerBubble);
+  // a battle stops the field; `bubbleRuns` whether the partner's need bubble shows (the field
+  // runs, or a training course does); `partnerBubble` is where the bubble settles in the window, if
+  // it projects.
+  void update(bool fieldRunning, bool bubbleRuns,
+              std::optional<screens::WindowFraction> partnerBubble);
 
 private:
   void publishStatus(bool fieldRunning);
