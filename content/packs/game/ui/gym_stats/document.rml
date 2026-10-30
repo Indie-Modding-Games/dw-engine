@@ -8,7 +8,7 @@
 <body>
 	<div id="outline" class="hidden"></div>
 	<div id="box" class="hidden">
-		<div id="panel"></div>
+		<div id="panel" class="original-box"></div>
 		<div id="divider"></div>
 		<div class="row" id="row-0"><span class="label" id="stat-0-label"></span><span class="value" id="stat-0"></span><div class="bar" id="stat-0-bar"><div class="track"><div class="fill" id="stat-0-fill"></div></div></div><span class="arrow hidden" id="gain-0-arrow">+</span><span class="gain" id="gain-0"></span></div>
 		<div class="row" id="row-1"><span class="label" id="stat-1-label"></span><span class="value" id="stat-1"></span><div class="bar" id="stat-1-bar"><div class="track"><div class="fill" id="stat-1-fill"></div></div></div><span class="arrow hidden" id="gain-1-arrow">+</span><span class="gain" id="gain-1"></span></div>
@@ -18,7 +18,7 @@
 		<div class="row" id="row-5"><span class="label" id="stat-5-label"></span><span class="value" id="stat-5"></span><div class="bar" id="stat-5-bar"><div class="track"><div class="fill" id="stat-5-fill"></div></div></div><span class="arrow hidden" id="gain-5-arrow">+</span><span class="gain" id="gain-5"></span></div>
 	</div>
 	<div id="notes" class="hidden">
-		<div id="notes-panel"></div>
+		<div id="notes-panel" class="original-box"></div>
 		<p class="note" id="notice-0"></p>
 		<p class="note" id="notice-1"></p>
 		<p class="note" id="notice-2"></p>
