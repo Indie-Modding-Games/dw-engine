@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -207,7 +208,8 @@ struct EffectScreenPoint {
 inline constexpr EffectScreenPoint OriginalScreen{.x = 320, .y = 240};
 
 // A quad a technique draws on the screen instead of in the world (battle_effect.c:
-// BTL_renderScrollingBackground, BTL_renderParallaxSprites: a POLY_FT4 at screen coordinates).
+// BTL_renderScrollingBackground, BTL_renderParallaxSprites: a POLY_FT4 at screen coordinates;
+// BTL_renderScreenSprite: a GsSPRITE).
 // Corners 0, 1, 2 and 3 are the top left, top right, bottom left and bottom right; their texels
 // run from (u, v) over texelWidth x texelHeight of the slot's texture with palette row clutRow,
 // times color / 128, mixed by blend (a texel without STP is drawn opaque, as the console does). It
@@ -246,8 +248,17 @@ struct EffectView {
   // a tiled screen layer (render_scrolling_background) repeats its tiles out to these edges, which
   // a wider window shows past the original's.
   EffectScreenPoint screen = OriginalScreen;
-  // The camera's world-to-view rotation in the console's axes (GsWSMATRIX, 4096 is 1).
+  // The camera's world-to-view transform in the console's axes (GsWSMATRIX: 4096 is 1, t in world
+  // units).
   EffectMatrix camera;
+  // The projection distance H (GsSetProjection): pixels per unit of x and y over the view depth.
+  std::int32_t projection = DefaultProjection;
+  // Where the projection's centre falls (the original's drawing offset), in pixels from the
+  // screen's centre: what the effects place by their projection moves with it.
+  EffectScreenPoint centre;
+
+  // BTL_setupFixedCamera's projection distance.
+  static constexpr std::int32_t DefaultProjection = 0x200;
 
   bool operator==(const EffectView&) const = default;
 };
@@ -468,6 +479,9 @@ private:
   // rng.c: customRandom, from the runner's own sequence (it is not the battle's rand()).
   std::int32_t customRandom(std::int32_t min, std::int32_t max);
   void parallaxSprites(Slot& slot, const std::vector<std::int32_t>& args);
+  void screenSprite(Slot& slot, const std::vector<std::int32_t>& args);
+  // worldPosToScreenPos: a world point's pixel from the projection's centre and its view depth.
+  [[nodiscard]] std::pair<EffectScreenPoint, std::int32_t> project(const EffectVector& world) const;
   void tickFx();
   void renderFx();
   void playSound(std::int32_t sound);

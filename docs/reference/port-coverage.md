@@ -83,7 +83,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 180 | 4 | 44 | 57 | 80 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 182 | 4 | 42 | 57 | 81 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 59 | 0 | 11 | 32 | 84 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1052 | 39 | 271 | 1076 | 79 % |
+| **Total** | 2438 funciones | 1054 | 39 | 269 | 1076 | 79 % |
 
 ## Batalla
 
@@ -118,7 +118,7 @@ Portado 145, parcial 4, falta 5, no aplica 17.
 | `BTL_applyFlattenScale` | `btl/battle_main.c:2673` | falta | Aplasta el modelo del luchador aplastado. | el estado existe; falta comprobar la escala del modelo en pantalla |
 | `BTL_applyStretchScale` | `btl/battle_main.c:2715` | falta | Estira el modelo al recuperarse del aplastado. | — |
 | `BTL_applySquashScale` | `btl/battle_main.c:2721` | falta | Encoge el modelo en el aplastado. | — |
-| `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:56` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
+| `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:68` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
@@ -131,7 +131,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 180, parcial 4, falta 44, no aplica 57.
+Portado 182, parcial 4, falta 42, no aplica 57.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -150,13 +150,11 @@ Portado 180, parcial 4, falta 44, no aplica 57.
 | `BTL_renderWireframeGrid` | `btl/battle_effect.c:3063` | falta | Dibuja una rejilla de líneas de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_render2DTexturedQuad` | `btl/battle_effect.c:3130` | falta | Dibuja un cuadro con textura en pantalla de un efecto. | solo lo cita la extracción del disco |
 | `BTL_restoreCameraView` | `btl/battle_effect.c:3183` | falta | Devuelve la cámara del combate a su sitio tras una técnica. | battle.md: Hueco |
-| `BTL_setupFixedCamera` | `btl/battle_effect.c:3199` | falta | Fija la cámara en un punto para lucir una técnica. | battle.md: Hueco |
+| `BTL_setupFixedCamera` | `btl/battle_effect.c:3199` | falta | Fija la cámara en un punto para lucir una técnica. | `game/battle/include/dwe/game/battle/effect_runner.hpp:260` · battle.md: Hueco |
 | `BTL_renderEFELine` | `btl/battle_effect.c:3269` | falta | Dibuja una línea de un efecto. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
 | `BTL_addSourceEntityParticleFX` | `btl/battle_effect.c:4034` | falta (citada en docs) | Lanza partículas desde el atacante. | battle.md: Hueco |
 | `BTL_renderParticleFlashSprite` | `btl/battle_effect.c:4142` | falta | Dibuja el destello de una partícula. | dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica |
-| `BTL_projectPositionToScreen` | `btl/battle_effect.c:4172` | falta | Proyecta una posición del efecto a la pantalla para sus sprites. | solo lo cita la extracción del disco |
-| `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta (citada en docs) | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
-| `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | `game/battle/src/effect_runner_prims.cpp:90` · solo lo usan dibujos que faltan |
+| `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | `game/battle/src/effect_runner_prims.cpp:108` · solo lo usan dibujos que faltan |
 | `BTL_setTMDObjectColor` | `btl/battle_effect.c:5829` | falta | Tiñe un objeto de un modelo (auras, brillos de estado). | — |
 | `BTL_tickFinisherAura` | `btl/battle_effect.c:5855` | falta | Anima el aura del remate cargado alrededor del compañero. | — |
 | `BTL_addFinisherAura` | `btl/battle_effect.c:6012` | falta | Pone el aura del remate cargado. | — |

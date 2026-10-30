@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -69,7 +70,7 @@ header:
 )"} + std::string{render} + R"(
 init_script:
 - label: "init"
-  at: "0x0150"
+  at: "0x01f0"
   op: stop
 data:
 - at: "0x0010"
@@ -184,7 +185,9 @@ TEST_CASE("a scrolling background lays its 11 by 9 tiles over the screen, wrappe
 TEST_CASE("a scrolling background repeats its tiles out to a wider screen's edges") {
   NoSounds sounds;
   EffectRunner runner{sounds};
-  runner.setView({.screen = {.x = 427, .y = 240}, .camera = {}});
+  dwe::game::battle::EffectView view;
+  view.screen = {.x = 427, .y = 240};
+  runner.setView(view);
   const std::vector<EffectScreenQuad> quads =
       firstFrame(runner, renderingScript(ScrollingRender, TilesData));
   // Two more columns each side, the same rows.
@@ -194,6 +197,19 @@ TEST_CASE("a scrolling background repeats its tiles out to a wider screen's edge
   CHECK(quads[0].u == 128);
   CHECK(quads[1].u == 160);
   CHECK(quads[2].corners[0] == EffectScreenPoint{.x = -187, .y = -125});
+}
+
+TEST_CASE("a scrolling background is placed from the projection's centre") {
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 40, .y = -10};
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads =
+      firstFrame(runner, renderingScript(ScrollingRender, TilesData));
+  // The original's 11 x 9 tiles, 40 right and 10 up of where they are round the screen's centre.
+  REQUIRE(quads.size() == 11 * 9);
+  CHECK(quads.front().corners[0] == EffectScreenPoint{.x = -147, .y = -135});
 }
 
 TEST_CASE("parallax sprites move by their depth times the offset and wrap as the original's do") {
@@ -402,4 +418,111 @@ TEST_CASE("a ribbon turned by the camera's rotation faces the camera") {
   CHECK(std::abs(ribbon->top.front().x) <= 8);
   CHECK(std::abs(ribbon->top.front().z + 0x708) <= 8);
   CHECK(std::abs(ribbon->top.back().z - 0x708) <= 8);
+}
+
+namespace {
+
+// One instruction of a made-up script at `address`, then the next free address.
+std::string instruction(std::int32_t& address, std::string_view body) {
+  std::string out = std::format("- at: \"0x{:04x}\"\n{}\n", address, body);
+  address += 2;
+  return out;
+}
+
+// render_screen_sprite (its args only count them) of a 16 x 32 sprite at u 96 pivoting on (8, 31),
+// with the given place, turn, entry, scale x and palette row; a value given as a string is a
+// variable of the data.
+using SpriteArgument = std::variant<std::int32_t, std::string_view>;
+std::string screenSprite(std::int32_t& address, SpriteArgument x, SpriteArgument y,
+                         std::int32_t turn, SpriteArgument entry, std::int32_t scaleX,
+                         std::int32_t row) {
+  std::string out;
+  for (const SpriteArgument& value :
+       std::array<SpriteArgument, 13>{x, y, 96, 0, 16, 32, 8, 31, turn, entry, scaleX, 4096, row}) {
+    if (const auto* variable = std::get_if<std::string_view>(&value)) {
+      out += instruction(
+          address, std::format("  op: push_variable\n  variable: \"{}\"\n  width: 4", *variable));
+    } else {
+      out += instruction(
+          address, std::format("  op: push_immediate\n  value: {}", std::get<std::int32_t>(value)));
+    }
+  }
+  return out + instruction(address, "  op: sub\n  sub: render_screen_sprite\n  args:\n"
+                                    "    x: 0\n    y: 0\n    u_offset: 0\n    v_offset: 0\n"
+                                    "    width: 0\n    height: 0\n    pivot_x: 0\n    pivot_y: 0\n"
+                                    "    rotate: 0\n    depth: 0\n    scale_x: 0\n    scale_y: 0\n"
+                                    "    clut_row: 0");
+}
+
+// A render script (from 0x0122) of `body`'s instructions and a return.
+std::string renderOf(const auto& body) {
+  std::int32_t address = 0x0122;
+  std::string out = body(address);
+  out += instruction(address, "  op: return");
+  // renderingScript gives the first line's dash.
+  return "  " + out.substr(2);
+}
+
+} // namespace
+
+TEST_CASE("a screen sprite is scaled and turned round its pivot, from the projection's centre or "
+          "the screen's") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    return screenSprite(at, 20, 30, 0, 100, 8192, 0) +
+           screenSprite(at, 20, 30, 90, 3000, 4096, -5) +
+           screenSprite(at, 20, 30, 0, 4096, 4096, 0);
+  });
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.centre = {.x = 10, .y = -4};
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, ""));
+  // The third sorts past the ordering table's last entry: it is not drawn.
+  REQUIRE(quads.size() == 2);
+  // Twice as wide round the pivot, from the projection's centre (10, -4).
+  CHECK(quads[0].corners[0] == EffectScreenPoint{.x = 14, .y = -5});
+  CHECK(quads[0].corners[3] == EffectScreenPoint{.x = 46, .y = 27});
+  CHECK(quads[0].u == 96);
+  CHECK(quads[0].texelWidth == 16);
+  CHECK(quads[0].texelHeight == 32);
+  CHECK(quads[0].clutRow == 0);
+  CHECK(quads[0].blend == EffectBlend::Add);
+  CHECK(quads[0].order == 100);
+  // A quarter turn clockwise: the top left corner (-8, -31) from the pivot goes to (31, -8); a
+  // negative row is the screen's centre and palette row 5.
+  CHECK(quads[1].corners[0] == EffectScreenPoint{.x = 51, .y = 22});
+  CHECK(quads[1].corners[3] == EffectScreenPoint{.x = 19, .y = 38});
+  CHECK(quads[1].clutRow == 5);
+  CHECK(quads[1].order == 3000);
+}
+
+TEST_CASE("a point projects to the screen as the original's perspective does") {
+  const std::string render = renderOf([](std::int32_t& at) {
+    std::string out;
+    for (const std::string_view address :
+         {"base+0x00a0", "base+0x00b0", "base+0x00b4", "base+0x00b8"}) {
+      out += instruction(at, std::format("  op: push_address\n  address: \"{}\"", address));
+    }
+    out += instruction(at, "  op: sub\n  sub: project_to_screen\n  args:\n    position: 0\n"
+                           "    x: 0\n    y: 0\n    depth: 0");
+    return out + screenSprite(at, "base+0x00b0", "base+0x00b4", 0, "base+0x00b8", 4096, -1);
+  });
+  constexpr std::string_view Data = R"(- at: "0x00a0"
+  kind: vector
+  size: 12
+  values: [100, -50, 0]
+)";
+  NoSounds sounds;
+  EffectRunner runner{sounds};
+  dwe::game::battle::EffectView view;
+  view.camera.t = {.x = 0, .y = 0, .z = 1000};
+  view.projection = 512;
+  runner.setView(view);
+  const std::vector<EffectScreenQuad> quads = firstFrame(runner, renderingScript(render, Data));
+  REQUIRE(quads.size() == 1);
+  // H / SZ = 512 / 1000 in 16.16 (33554): x 100 -> 51 and y -50 -> -26, the pivot (8, 31) from
+  // there; the entry is SZ >> 4.
+  CHECK(quads[0].corners[0] == EffectScreenPoint{.x = 43, .y = -57});
+  CHECK(quads[0].order == 62);
 }

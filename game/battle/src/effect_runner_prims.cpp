@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -11,9 +12,9 @@
 #include "effect_math.hpp"
 
 // What the technique effects draw as the original's own GPU primitives rather than sprites or
-// models: the layers on the screen (battle_effect.c: BTL_renderScrollingBackground,
-// BTL_renderParallaxSprites) and the ribbons of light (BTL_renderRibbonStrip), as EffectRunner
-// members.
+// models: the layers and sprites on the screen (battle_effect.c: BTL_renderScrollingBackground,
+// BTL_renderParallaxSprites, BTL_renderScreenSprite) and the ribbons of light
+// (BTL_renderRibbonStrip), as EffectRunner members.
 namespace dwe::game::battle {
 
 namespace {
@@ -83,6 +84,23 @@ constexpr std::int32_t RibbonFadeOutEnd = 0x1E;
 constexpr std::int32_t RibbonFadeSwitch = 0xF;
 constexpr std::int32_t FixedOne = 4096;
 constexpr std::int32_t FixedShift = 12;
+// BTL_renderScreenSprite: GsSortSprite at an entry of the ordering table (0 to 0xfff), added
+// (attribute 0x50000000) in grey 0x80; the turn is in degrees (GsSPRITE rotate / 4096).
+constexpr std::int32_t OrderingTableEntries = 0x1000;
+constexpr std::int32_t UnsignedShortMask = 0xFFFF;
+constexpr std::int32_t DegreesPerTurn = 360;
+constexpr std::int32_t AngleUnits = 4096;
+// The GTE's perspective (RTPS): IR saturates at 0x7fff, SZ at 0xffff, H / SZ at 0x1ffff (also when
+// SZ is at most H / 2), the screen x and y at -0x400 and 0x3ff; the ordering-table entry is SZ / 16
+// (BTL_projectPositionToScreen: otz << 2 >> 4).
+constexpr std::int64_t GteVectorLimit = 0x7FFF;
+constexpr std::int64_t GteDepthLimit = 0xFFFF;
+constexpr std::int64_t GteDivideLimit = 0x1FFFF;
+constexpr std::int64_t GteDivideOne = 0x20000;
+constexpr std::int64_t GteScreenMin = -0x400;
+constexpr std::int64_t GteScreenMax = 0x3FF;
+constexpr std::int32_t GteFractionShift = 16;
+constexpr std::int32_t OrderShift = 4;
 // EfeInstance: the frame, the transform's position, its rotation.
 constexpr std::int32_t PositionOffset = 4;
 constexpr std::int32_t RotationOffset = 0x10;
@@ -112,6 +130,11 @@ std::array<EffectScreenPoint, 4> rectangle(std::int32_t x, std::int32_t y, std::
 // original's edge at `originalHalf`.
 std::int32_t extraTiles(std::int32_t half, std::int32_t originalHalf) {
   return std::max(0, half - originalHalf + TileSize - 1) / TileSize;
+}
+
+// A GsSPRITE's 16-bit fields.
+std::int32_t int16(std::int32_t value) {
+  return static_cast<std::int16_t>(value);
 }
 
 // A modulo that stays in [0, divisor).
@@ -160,6 +183,16 @@ bool EffectRunner::primOp(Slot& slot, std::string_view name,
     if (args.size() >= 3) {
       ribbon(slot, args);
     }
+  } else if (name == "render_screen_sprite") {
+    if (args.size() >= 13) {
+      screenSprite(slot, args);
+    }
+  } else if (name == "project_to_screen" && args.size() >= 4) {
+    // battle_effect.c: BTL_projectPositionToScreen: position, x, y and depth out.
+    const auto [pixel, depth] = project(vectorAt(slot, args[0]));
+    write(slot, args[1], EffectWidth::Int32, pixel.x);
+    write(slot, args[2], EffectWidth::Int32, pixel.y);
+    write(slot, args[3], EffectWidth::Int32, depth);
   } else if (name == "get_camera_rotation" && !args.empty()) {
     // battle_effect.c: BTL_getCameraRotation: the angles (matrixToEuler2) of the camera's
     // view-to-world rotation.
@@ -189,15 +222,17 @@ void EffectRunner::scrollingBackground(Slot& slot, const std::vector<std::int32_
     ty += TileRows - 1;
   }
   const std::int32_t grey = args[4] & ByteMask;
-  // A wider screen than the original's shows more of the same tiles (none extra at 320 x 240).
+  // The tiles are placed from the projection's centre (the drawing offset), as the original's
+  // are, even when that leaves part of the screen bare. A wider screen than the original's shows
+  // more of the same tiles (none extra at 320 x 240).
   const std::int32_t extraColumns = extraTiles(view_.screen.x / 2, OriginalScreen.x / 2);
   const std::int32_t extraRows = extraTiles(view_.screen.y / 2, OriginalScreen.y / 2);
   const std::size_t index = static_cast<std::size_t>(&slot - slots_.data());
   for (std::int32_t row = -extraRows; row < TileRows + extraRows; ++row) {
-    const std::int32_t y = (sy & TileMask) - TilesUp + (row * TileSize);
+    const std::int32_t y = (sy & TileMask) - TilesUp + (row * TileSize) + view_.centre.y;
     const std::int32_t tileRow = wrapped(ty + row, TileRows) * TileColumns;
     for (std::int32_t column = -extraColumns; column < TileColumns + extraColumns; ++column) {
-      const std::int32_t x = (sx & TileMask) - TilesLeft + (column * TileSize);
+      const std::int32_t x = (sx & TileMask) - TilesLeft + (column * TileSize) + view_.centre.x;
       const std::int32_t tile =
           read(slot, tiles + tileRow + wrapped(tx + column, TileColumns), EffectWidth::Int8);
       EffectScreenQuad quad;
@@ -254,6 +289,68 @@ void EffectRunner::ribbon(Slot& slot, const std::vector<std::int32_t>& args) {
   draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = ribbon});
 }
 
+// battle_effect.c: BTL_renderScreenSprite: x, y, u, v, width, height, pivot x and y, turn, entry,
+// scale x and y (4096 is 1), palette row. The sprite's pivot texel lands on (x, y) from the
+// projection's centre, the sprite scaled and turned clockwise round it; a negative palette row
+// (its negation is the row) places it from the screen's centre instead, whatever the drawing
+// offset.
+void EffectRunner::screenSprite(Slot& slot, const std::vector<std::int32_t>& args) {
+  const std::int32_t order = args[9];
+  if (order < 0 || order >= OrderingTableEntries) {
+    return;
+  }
+  const std::int32_t row = args[12];
+  EffectScreenPoint at{.x = int16(args[0]), .y = int16(args[1])};
+  if (row >= 0) {
+    at.x += view_.centre.x;
+    at.y += view_.centre.y;
+  }
+  const std::int32_t width = args[4] & UnsignedShortMask;
+  const std::int32_t height = args[5] & UnsignedShortMask;
+  const std::int32_t pivotX = int16(args[6]);
+  const std::int32_t pivotY = int16(args[7]);
+  const std::int32_t angle = args[8] * AngleUnits / DegreesPerTurn;
+  const std::int32_t cosine = fx::rcos(angle);
+  const std::int32_t sine = fx::rsin(angle);
+  const std::int32_t scaleX = int16(args[10]);
+  const std::int32_t scaleY = int16(args[11]);
+  EffectScreenQuad quad;
+  for (std::size_t i = 0; i < quad.corners.size(); ++i) {
+    const std::int32_t x = ((((i & 1U) != 0 ? width : 0) - pivotX) * scaleX) >> FixedShift;
+    const std::int32_t y = ((((i & 2U) != 0 ? height : 0) - pivotY) * scaleY) >> FixedShift;
+    quad.corners.at(i) = {.x = at.x + (((x * cosine) - (y * sine)) >> FixedShift),
+                          .y = at.y + (((x * sine) + (y * cosine)) >> FixedShift)};
+  }
+  quad.u = args[2];
+  quad.v = args[3];
+  quad.texelWidth = width;
+  quad.texelHeight = height;
+  quad.clutRow = std::abs(row);
+  quad.blend = EffectBlend::Add;
+  quad.order = order;
+  draws_.push_back({.slot = static_cast<std::size_t>(&slot - slots_.data()), .shape = quad});
+}
+
+std::pair<EffectScreenPoint, std::int32_t> EffectRunner::project(const EffectVector& world) const {
+  const EffectVector turned = fx::apply(view_.camera, fx::toShort(world));
+  const auto limited = [](std::int64_t value) {
+    return std::clamp(value, -GteVectorLimit, GteVectorLimit);
+  };
+  const std::int64_t x = limited(std::int64_t{turned.x} + view_.camera.t.x);
+  const std::int64_t y = limited(std::int64_t{turned.y} + view_.camera.t.y);
+  const std::int64_t z =
+      std::clamp(std::int64_t{turned.z} + view_.camera.t.z, std::int64_t{0}, GteDepthLimit);
+  const std::int64_t h = view_.projection;
+  const std::int64_t q =
+      h < z * 2 ? std::min((((h * GteDivideOne) / z) + 1) / 2, GteDivideLimit) : GteDivideLimit;
+  const auto screen = [&](std::int64_t value) {
+    return static_cast<std::int32_t>(
+        std::clamp((value * q) >> GteFractionShift, GteScreenMin, GteScreenMax));
+  };
+  return {EffectScreenPoint{.x = screen(x), .y = screen(y)},
+          static_cast<std::int32_t>(z >> OrderShift)};
+}
+
 // battle_effect.c: BTL_renderParallaxSprites: sprites, offset x and y. Each sprite of the list
 // (up to a negative size) moves by the offset times its depth, so the deep ones move faster and
 // show larger; opaque, with the texture's second palette row.
@@ -281,7 +378,8 @@ void EffectRunner::parallaxSprites(Slot& slot, const std::vector<std::int32_t>& 
     }
     const auto side = static_cast<std::int16_t>((size * depth) >> ParallaxSizeShift);
     EffectScreenQuad quad;
-    quad.corners = rectangle(x - ParallaxLeft, y - ParallaxUp, side, side);
+    quad.corners =
+        rectangle(x - ParallaxLeft + view_.centre.x, y - ParallaxUp + view_.centre.y, side, side);
     quad.u = u;
     quad.texelWidth = TileTexels;
     quad.texelHeight = TileTexels;

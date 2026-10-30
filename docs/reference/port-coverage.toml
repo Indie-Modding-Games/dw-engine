@@ -274,8 +274,8 @@ BTL_renderParallaxSprites = { status = "portado", dwe = "game/battle/src/effect_
 BTL_renderScrollingBackground = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Capas en pantalla", what = "Dibuja un fondo que se desplaza durante una técnica." }
 BTL_addSourceEntityParticleFX = { status = "falta", what = "Lanza partículas desde el atacante.", note = "battle.md: Hueco" }
 BTL_renderParticleFlashSprite = { status = "falta", what = "Dibuja el destello de una partícula." }
-BTL_projectPositionToScreen = { status = "falta", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
-BTL_renderScreenSprite = { status = "falta", what = "Dibuja un sprite en pantalla de un efecto.", note = "battle.md: Hueco" }
+BTL_projectPositionToScreen = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Proyecta una posición del efecto a la pantalla para sus sprites." }
+BTL_renderScreenSprite = { status = "portado", dwe = "game/battle/src/effect_runner_prims.cpp", note = "battle.md: Sprites en pantalla", what = "Dibuja un sprite en pantalla de un efecto." }
 BTL_addCloudEffect = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes", what = "Añade una nube de humo o polvo de una técnica." }
 BTL_addParticleEmitter = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Emisores de partículas", what = "Añade un emisor de partículas." }
 BTL_discardEFEOperandPair = { status = "portado", dwe = "game/battle/src/effect_runner_subops.cpp", what = "Descarta dos operandos del script de efecto." }

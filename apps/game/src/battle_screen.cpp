@@ -30,24 +30,36 @@ namespace dwe::app {
 namespace {
 
 // What the battle's camera shows, for the effects: the window's size in original pixels (a screen
-// layer covers what it shows past the original's 320 x 240) and the camera's world-to-view
-// rotation in the console's axes, F V F with F = diag(1, -1, -1) (GsWSMATRIX).
+// layer covers what it shows past the original's 320 x 240), the camera's world-to-view transform
+// in the console's axes, F V F and F t with F = diag(1, -1, -1) (GsWSMATRIX), its projection
+// distance and where its projection's centre is on screen.
 game::battle::EffectView effectViewOf(const render::MapCamera& camera) {
   constexpr float MatrixOne = 4096.0F;
   constexpr std::array<float, 3> Flip{1.0F, -1.0F, -1.0F};
   game::battle::EffectView view;
   const glm::vec2 shown = glm::ceil(camera.visibleSize());
   view.screen = {.x = static_cast<std::int32_t>(shown.x), .y = static_cast<std::int32_t>(shown.y)};
-  const glm::mat4 rotation = camera.view();
+  const glm::mat4& worldToView = camera.view();
   for (std::size_t row = 0; row < 3; ++row) {
     for (std::size_t column = 0; column < 3; ++column) {
-      // glm is column-major: rotation[column][row].
+      // glm is column-major: worldToView[column][row].
       const float value =
           Flip.at(row) * Flip.at(column) *
-          rotation[static_cast<glm::length_t>(column)][static_cast<glm::length_t>(row)];
+          worldToView[static_cast<glm::length_t>(column)][static_cast<glm::length_t>(row)];
       view.camera.m.at(row).at(column) = static_cast<std::int32_t>(std::lround(value * MatrixOne));
     }
   }
+  // glm::mat4's last column is the translation.
+  const glm::vec4 translation = worldToView[3];
+  view.camera.t = {.x = static_cast<std::int32_t>(std::lround(Flip[0] * translation.x)),
+                   .y = static_cast<std::int32_t>(std::lround(Flip[1] * translation.y)),
+                   .z = static_cast<std::int32_t>(std::lround(Flip[2] * translation.z))};
+  view.projection = static_cast<std::int32_t>(std::lround(camera.desc().focalLength));
+  // The projection's centre is the background's: where it is from the middle of what is shown.
+  const glm::vec2 centre =
+      (camera.desc().backgroundSize * 0.5F) - (camera.scroll() + (camera.visibleSize() * 0.5F));
+  view.centre = {.x = static_cast<std::int32_t>(std::lround(centre.x)),
+                 .y = static_cast<std::int32_t>(std::lround(centre.y))};
   return view;
 }
 
