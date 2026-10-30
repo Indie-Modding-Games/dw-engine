@@ -21,6 +21,8 @@ struct BattleContext {
   const AttackFlights* flights = nullptr;
   // With the original's rolls only: the draws of its hit sparks (Battle::useOriginalRolls).
   ParticleRolls* particles = nullptr;
+  // What the fighters' statuses show over them (status_visuals.hpp).
+  StatusVisuals* visuals = nullptr;
 
   [[nodiscard]] BattleView view() const {
     return {.rules = rules,
@@ -29,6 +31,10 @@ struct BattleContext {
             .random = random,
             .partnerSick = condition->sick,
             .partnerInjured = condition->injured};
+  }
+  // The rolls of the status visuals: the battle's when they are the original's, else their own.
+  [[nodiscard]] ruleset::Random& visualRolls() const {
+    return particles != nullptr ? *random : visuals->ownRolls();
   }
   [[nodiscard]] Fighter& fighter(FighterId id) const { return state->fighters.at(id); }
   void emit(BattleEvent event) const { events->push_back(event); }
@@ -88,6 +94,9 @@ std::optional<EffectLanding> effectLanding(const BattleContext& context, Fighter
 void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move);
 void tickStatusEffects(BattleContext& context);
 void cureStatus(BattleContext& context, FighterId id);
+// battle_main.c: BTL_removeStatusEffects: ends the visual of the fighter's statuses, before they
+// are cleared (faint, defeat, the flattening).
+void removeStatusVisuals(BattleContext& context, FighterId id);
 
 // The finisher gauge (battle_main.c: BTL_addFinisherProgress).
 void addFinisherProgress(BattleContext& context, FighterId id, std::int32_t amount);

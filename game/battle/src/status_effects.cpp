@@ -9,6 +9,27 @@ namespace {
 
 constexpr std::int32_t Hundred = 100;
 
+using Visual = StatusVisuals::Kind;
+
+// battle_main.c: BTL_addStatusEffectVisual, BTL_removeStatusEffectVisual.
+void showVisual(BattleContext& context, FighterId id, Visual kind) {
+  if (context.visuals != nullptr) {
+    context.visuals->show(context.visualRolls(), id, kind, context.fighter(id).status.stunFrames);
+  }
+}
+
+void hideVisual(BattleContext& context, FighterId id, Visual kind) {
+  if (context.visuals != nullptr) {
+    context.visuals->hide(id, kind);
+  }
+}
+
+// Not flattened, nor about to be or getting up (FIGHTER_FLAG_FLATTENED and flatTimer 0): the
+// fighter shows its other statuses.
+bool upright(const StatusState& status) {
+  return !status.flattened && status.flatFrames == 0;
+}
+
 std::int32_t rollBetween(ruleset::Random& random, std::int32_t min, std::int32_t max) {
   return random.below(max - min + 1) + min;
 }
@@ -20,8 +41,12 @@ void clearConfusion(BattleContext& context, FighterId id) {
   selectTarget(context, id, fighter.target, false);
   fighter.status.confused = false;
   fighter.status.confusionFrames = 0;
-  if (!fighter.status.stunned && !fighter.status.flattened && fighter.status.flatFrames == 0) {
+  if (!fighter.status.stunned && upright(fighter.status)) {
     fighter.planned = false;
+    hideVisual(context, id, Visual::Confusion);
+    if (fighter.status.poisoned) {
+      showVisual(context, id, Visual::Poison);
+    }
   }
   context.emit({.kind = EventKind::StatusCleared,
                 .fighter = id,
@@ -38,9 +63,16 @@ void clearStun(BattleContext& context, FighterId id) {
   resetAction(fighter);
   fighter.status.stunned = false;
   fighter.status.stunFrames = 0;
-  if (!fighter.status.flattened && fighter.status.flatFrames == 0) {
+  if (upright(fighter.status)) {
     fighter.planned = false;
     standIdle(fighter);
+    hideVisual(context, id, Visual::Stun);
+    if (fighter.status.confused) {
+      showVisual(context, id, Visual::Confusion);
+    }
+    if (fighter.status.poisoned) {
+      showVisual(context, id, Visual::Poison);
+    }
   }
   context.emit({.kind = EventKind::StatusCleared,
                 .fighter = id,
@@ -55,6 +87,9 @@ void clearPoison(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   fighter.status.poisoned = false;
   fighter.status.poisonFrames = 0;
+  if (!fighter.status.confused && !fighter.status.stunned && upright(fighter.status)) {
+    hideVisual(context, id, Visual::Poison);
+  }
   context.emit({.kind = EventKind::StatusCleared,
                 .fighter = id,
                 .other = std::nullopt,
@@ -121,6 +156,15 @@ void tickFlatten(BattleContext& context, FighterId id) {
       fighter.planned = false;
       fighter.struck = false;
       fighter.moveRange = 0;
+      if (status.stunned) {
+        showVisual(context, id, Visual::Stun);
+      }
+      if (status.confused) {
+        showVisual(context, id, Visual::Confusion);
+      }
+      if (status.poisoned) {
+        showVisual(context, id, Visual::Poison);
+      }
       resetAction(fighter);
       standIdle(fighter);
       context.emit({.kind = EventKind::StatusCleared,
@@ -164,6 +208,10 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
     if (!status.poisoned) {
       status.poisoned = true;
       status.poisonFrames = rules.poisonEveryFrames;
+      // BTL_addPoisonStatusVisual: under no other status.
+      if (!status.confused && !status.stunned && upright(status)) {
+        showVisual(context, id, Visual::Poison);
+      }
       applied = true;
     }
     break;
@@ -172,6 +220,13 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
       status.confused = true;
       status.confusionFrames =
           rollBetween(*context.random, rules.confusionMinFrames, rules.confusionMaxFrames);
+      // BTL_addConfusionStatusVisual: over the poison's, under the stun's.
+      if (!status.stunned && upright(status)) {
+        if (status.poisoned) {
+          hideVisual(context, id, Visual::Poison);
+        }
+        showVisual(context, id, Visual::Confusion);
+      }
       resetAction(fighter);
       applied = true;
     }
@@ -180,6 +235,16 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
     if (!status.stunned) {
       status.stunned = true;
       status.stunFrames = rollBetween(*context.random, rules.stunMinFrames, rules.stunMaxFrames);
+      // BTL_addStunStatusVisual: over the others.
+      if (upright(status)) {
+        if (status.confused) {
+          hideVisual(context, id, Visual::Confusion);
+        }
+        if (status.poisoned) {
+          hideVisual(context, id, Visual::Poison);
+        }
+        showVisual(context, id, Visual::Stun);
+      }
       resetAction(fighter);
       applied = true;
     }
@@ -187,6 +252,7 @@ void applyMoveStatus(BattleContext& context, FighterId id, MoveRef move) {
   case StatusEffect::Flatten:
     if (!status.flattened) {
       status.flatFrames = -1;
+      removeStatusVisuals(context, id);
       resetAction(fighter);
       applied = true;
     }
@@ -237,6 +303,19 @@ void tickStatusEffects(BattleContext& context) {
       }
     }
     tickFlatten(context, id);
+  }
+}
+
+void removeStatusVisuals(BattleContext& context, FighterId id) {
+  const StatusState& status = context.fighter(id).status;
+  if (status.stunned) {
+    hideVisual(context, id, Visual::Stun);
+  }
+  if (status.confused) {
+    hideVisual(context, id, Visual::Confusion);
+  }
+  if (status.poisoned) {
+    hideVisual(context, id, Visual::Poison);
   }
 }
 

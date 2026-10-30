@@ -308,7 +308,8 @@ core::Result<void> Battle::command(Command command) {
                         .condition = &setup_.condition,
                         .ground = ground_,
                         .flights = flights_,
-                        .particles = particleRolls_ ? &*particleRolls_ : nullptr};
+                        .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+                        .visuals = &statusVisuals_};
   commands.delay = strategies_.obedience->commandDelay(context.view(), setup_.condition.discipline);
   return {};
 }
@@ -391,7 +392,8 @@ BattleContext Battle::contextOf(BattleEvents& events) {
           .condition = &setup_.condition,
           .ground = ground_,
           .flights = flights_,
-          .particles = particleRolls_ ? &*particleRolls_ : nullptr};
+          .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+          .visuals = &statusVisuals_};
 }
 
 BattleEvents& Battle::pending() {
@@ -418,7 +420,8 @@ const BattleEvents& Battle::step() {
                         .condition = &setup_.condition,
                         .ground = ground_,
                         .flights = flights_,
-                        .particles = particleRolls_ ? &*particleRolls_ : nullptr};
+                        .particles = particleRolls_ ? &*particleRolls_ : nullptr,
+                        .visuals = &statusVisuals_};
   // battle_setup.c: BTL_isBattleFinished, before anything else of the frame.
   const Fighter& partner = state_.partner();
   if (state_.fleeFrames && *state_.fleeFrames >= rules_->ending.fleeFrames && !partner.defeated()) {
@@ -462,6 +465,8 @@ const BattleEvents& Battle::step() {
   if (particleRolls_) {
     particleRolls_->tick(random_);
   }
+  // The status visuals' world objects, with the bubbles' rolls.
+  statusVisuals_.tick(particleRolls_ ? random_ : statusVisuals_.ownRolls());
   if (state_.fleeFrames) {
     ++*state_.fleeFrames;
   }
@@ -486,6 +491,8 @@ BattleEvents Battle::advance(double seconds,
 }
 
 void Battle::finish(Outcome outcome) {
+  // BTL_deinitializeCombat: BTL_removeStatusEffects for every fighter.
+  statusVisuals_.clear();
   result_ = settleBattle(outcome, setup_, state_, *rules_, *moves_, random_);
   events_.push_back({.kind = EventKind::BattleEnded,
                      .fighter = PartnerId,

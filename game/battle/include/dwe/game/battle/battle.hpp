@@ -11,6 +11,7 @@
 #include <dwe/game/battle/particle_rolls.hpp>
 #include <dwe/game/battle/rules.hpp>
 #include <dwe/game/battle/state.hpp>
+#include <dwe/game/battle/status_visuals.hpp>
 #include <dwe/game/battle/strategies.hpp>
 #include <dwe/ruleset/random.hpp>
 
@@ -216,6 +217,8 @@ public:
   [[nodiscard]] const std::vector<Command>& menu() const { return state_.commands.menu; }
   [[nodiscard]] const BattleRules& rules() const { return *rules_; }
   [[nodiscard]] const MoveCatalog& moves() const { return *moves_; }
+  // What the fighters' statuses show over them now.
+  [[nodiscard]] const StatusVisuals& statusVisuals() const { return statusVisuals_; }
 
 private:
   Battle(const BattleRules& rules, const MoveCatalog& moves, BattleStrategies strategies,
@@ -233,6 +236,7 @@ private:
   ruleset::Random random_;
   // With the original's rolls only: the draws of its hit sparks.
   std::optional<ParticleRolls> particleRolls_;
+  StatusVisuals statusVisuals_;
   BattleSetup setup_;
   BattleState state_;
   BattleEvents events_;

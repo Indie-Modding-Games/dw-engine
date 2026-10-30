@@ -8,6 +8,7 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/core/math.hpp>
+#include <dwe/game/battle/status_visuals.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/field/rules.hpp>
 #include <dwe/game/partner/field_animation.hpp>
@@ -296,6 +297,20 @@ public:
   // with the move's effect texture, objects of its effect model. Each texture and model loads on
   // first use; one that fails is logged and not drawn.
   void setEffects(std::vector<SceneEffect> effects) { effects_ = std::move(effects); }
+  // A fighter as its status visuals see it: its actor (none for the partner) and its species'
+  // height and radius (the species table).
+  struct StatusBody {
+    std::optional<std::int32_t> npc;
+    std::int32_t height = 0;
+    std::int32_t radius = 0;
+  };
+  // What the fighters' statuses show over them (game::battle::StatusVisuals), with the fighters by
+  // their battle ids; nothing outside a battle (field_scene_status.cpp).
+  void setStatusVisuals(std::optional<game::battle::StatusVisuals> visuals,
+                        std::vector<StatusBody> bodies) {
+    statusVisuals_ = std::move(visuals);
+    statusBodies_ = std::move(bodies);
+  }
   // The map's camera, which a scene's camera starts from.
   [[nodiscard]] const render::MapCamera& mapCamera() const { return mapRenderer_->camera(); }
   // The model the partner is drawn with.
@@ -449,6 +464,23 @@ private:
   void addEffectFlash(const game::battle::EffectFlash& flash,
                       std::vector<render::MapBillboard>& billboards);
   void submitEffectModels();
+  // field_scene_status.cpp: the status visuals' images (by palette) and models. A skin's pack
+  // may hold an image larger than the original's: `texelScale` of its texels make one of the
+  // original's.
+  struct StatusTexture {
+    std::size_t texture = 0;
+    float texelScale = 1.0F;
+  };
+  std::optional<StatusTexture> statusTexture(std::string_view image, std::int32_t palette);
+  const EffectModelEntry* statusModel(std::string_view model);
+  void addStatusBillboards(std::vector<render::MapBillboard>& billboards);
+  void submitStatusModels();
+  // Where a fighter's status visuals hang: its actor's position (world axes) and its body.
+  struct StatusAnchor {
+    glm::vec3 feet{0.0F};
+    StatusBody body;
+  };
+  [[nodiscard]] std::optional<StatusAnchor> statusAnchor(std::size_t fighter) const;
   void animatePartnerClip(double seconds);
   // The partner's animation for its motion (partner.c: partnerTickWalking).
   // The partner while the field's follow moves it: the clip it picked; false when something
@@ -570,6 +602,11 @@ private:
   std::optional<std::optional<std::size_t>> plainTexture_;
   std::map<std::int32_t, std::optional<std::size_t>> flashTextures_;
   std::map<std::string, std::optional<EffectModelEntry>, std::less<>> effectModels_;
+  std::optional<game::battle::StatusVisuals> statusVisuals_;
+  std::vector<StatusBody> statusBodies_;
+  std::map<std::pair<std::string, std::int32_t>, std::optional<StatusTexture>, std::less<>>
+      statusTextures_;
+  std::map<std::string, std::optional<EffectModelEntry>, std::less<>> statusModels_;
   std::optional<MapChangeTiming> lastChange_;
   std::unique_ptr<Actor> playerActor_;
   std::unique_ptr<Actor> partnerActor_;

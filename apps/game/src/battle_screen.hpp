@@ -153,6 +153,7 @@ private:
   void tickBattle(double seconds);
   void takeFigures();
   void showEffects() const;
+  void showStatusVisuals() const;
   // The numbers the frame's hits, blocks and poison pop out of the fighters, and one frame of them.
   void stepNumbers(const game::battle::BattleEvents& frame);
   void tickNumbers(double seconds);

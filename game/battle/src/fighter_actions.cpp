@@ -652,6 +652,7 @@ void faint(BattleContext& context, FighterId id) {
   Fighter& fighter = context.fighter(id);
   fighter.struck = true;
   fighter.fainted = true;
+  removeStatusVisuals(context, id);
   fighter.status.flattened = false;
   fighter.status.flatFrames = 0;
   fighter.status.poisoned = false;

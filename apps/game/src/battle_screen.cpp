@@ -194,6 +194,7 @@ void BattleScreen::tickBattle(double seconds) {
   takeFigures();
   publishHpBars();
   showEffects();
+  showStatusVisuals();
   if (battle_->finished()) {
     finish();
   }
@@ -211,6 +212,38 @@ void BattleScreen::showEffects() const {
     }
   }
   desc_.scene->setEffects(std::move(shown));
+}
+
+// battle_effect.c: the status visuals over the fighters (game::battle::StatusVisuals), with each
+// fighter's actor and its species' height and radius; none once the battle is over.
+void BattleScreen::showStatusVisuals() const {
+  if (desc_.scene == nullptr) {
+    return;
+  }
+  if (!battle_) {
+    desc_.scene->setStatusVisuals(std::nullopt, {});
+    return;
+  }
+  const game::battle::BattleState& state = battle_->state();
+  std::vector<FieldScene::StatusBody> bodies;
+  for (std::size_t id = 0; id < state.fighters.size(); ++id) {
+    FieldScene::StatusBody body;
+    if (id > 0) {
+      if (id > enemyNpcs_.size()) {
+        break;
+      }
+      body.npc = enemyNpcs_[id - 1];
+    }
+    const assets::DigimonRow* row = desc_.species != nullptr
+                                        ? desc_.species->find(state.fighters[id].combatant.species)
+                                        : nullptr;
+    if (row != nullptr) {
+      body.height = row->height;
+      body.radius = row->radius;
+    }
+    bodies.push_back(body);
+  }
+  desc_.scene->setStatusVisuals(battle_->statusVisuals(), std::move(bodies));
 }
 
 // battle_main.c: BTL_tickAttackHits adds the damage of a hit, and of a blocked melee attack, over
@@ -691,6 +724,7 @@ void BattleScreen::finish() {
       battle_ ? battle_->result() : std::nullopt;
   battle_.reset();
   publishHpBars();
+  showStatusVisuals();
   if (effects_) {
     effects_->end();
     effects_.reset();

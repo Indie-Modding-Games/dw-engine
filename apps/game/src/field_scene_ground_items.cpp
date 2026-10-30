@@ -117,6 +117,7 @@ void FieldScene::drawGroundItems() {
                           .color = glm::vec3{1.0F}});
   }
   addEffectBillboards(billboards);
+  addStatusBillboards(billboards);
   mapRenderer_->setBillboards(billboards);
 }
 

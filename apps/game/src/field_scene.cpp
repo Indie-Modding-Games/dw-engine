@@ -753,6 +753,7 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
     submitProps();
   }
   submitEffectModels();
+  submitStatusModels();
   if (!stage_.partnerHidden) {
     submit(*partnerActor_, alpha,
            {.scale = stage_.partnerScale,

@@ -82,8 +82,8 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
-| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 139 | 4 | 9 | 19 | 93 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 151 | 3 | 67 | 64 | 69 % |
+| [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 168 | 3 | 54 | 60 | 75 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
 | [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
-| **Total** | 2438 funciones | 938 | 34 | 361 | 1105 | 72 % |
+| **Total** | 2438 funciones | 961 | 34 | 344 | 1099 | 73 % |
 
 ## Batalla
 
@@ -109,25 +109,21 @@ El combate normal: órdenes, IA, daño, estados, HUD, inicio y final, aprendizaj
 
 Ficheros del decomp: `btl/battle_hud.c`, `btl/battle_main.c`, `btl/battle_setup.c`, `btl/command_menu.c`, `btl/command_shout.c`, `main/battle_tick.c`, `main/battle_ui.c`, `main/btl.c`, `main/entity_text.c`.
 
-Portado 139, parcial 4, falta 9, no aplica 19.
+Portado 145, parcial 4, falta 5, no aplica 17.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `BTL_tickEnemyAI` | `btl/battle_main.c:515` | parcial | IA de los rivales: elige técnica, se acerca y ataca. | `content/packs/game/rules/original/battle.yaml:10` · el rival fuera de pantalla no es prudente (docs/modulos/game/battle.md:119) |
 | `BTL_tickPartnerWaypointTrail` | `btl/battle_main.c:702` | falta | Durante el combate, guarda el rastro de casillas del compañero para que luego vuelva junto al jugador sin atascarse. | relacionado con la vuelta tras un combate de historia |
 | `BTL_applyFlattenScale` | `btl/battle_main.c:2673` | falta | Aplasta el modelo del luchador aplastado. | el estado existe; falta comprobar la escala del modelo en pantalla |
-| `BTL_addStatusEffectVisual` | `btl/battle_main.c:2698` | falta | Pone sobre el luchador el efecto visual de su estado (veneno, confusión, aturdimiento). | el HUD solo enseña el nombre del estado |
 | `BTL_applyStretchScale` | `btl/battle_main.c:2715` | falta | Estira el modelo al recuperarse del aplastado. | — |
 | `BTL_applySquashScale` | `btl/battle_main.c:2721` | falta | Encoge el modelo en el aplastado. | — |
-| `BTL_addPoisonStatusVisual` | `btl/battle_main.c:2898` | falta | Pone las burbujas de veneno sobre el luchador. | — |
-| `BTL_addConfusionStatusVisual` | `btl/battle_main.c:2905` | falta | Pone el efecto de confusión sobre el luchador. | — |
-| `BTL_addStunStatusVisual` | `btl/battle_main.c:2915` | falta | Pone las estrellas de aturdimiento sobre el luchador. | — |
 | `BTL_handleBattleIntro` | `btl/battle_setup.c:207` | parcial | Entrada al combate: quién se une, quién huye y el rótulo de inicio. | `apps/game/src/battle_screen.cpp:32` · los personajes que no luchan no huyen al empezar (docs/modulos/game/battle.md:126) |
 | `NPCEntityTickBattle` | `main/battle_tick.c:308` | parcial | Mueve a los personajes del mapa que no luchan durante el combate (huyen). | los personajes que no luchan no huyen al empezar; se van andando tras ganar (battle.md: Hueco) |
 | `isScreenConcave` | `main/btl.c:128` | falta | Dice si el mapa es de los cóncavos, donde los personajes que no luchan no se unen al combate. | va con la huida de los que no luchan |
 | `initializeEntityText` | `main/entity_text.c:71` | parcial | Prepara las cifras flotantes (daño, curación) de cada luchador. | `apps/screens/src/damage_numbers.cpp:1` · el daño de golpes, bloqueos y veneno sí (battle.md: Números de daño); faltan las cifras con icono de objetos y mejoras |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (7); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (6); limpieza de objetos y memoria del original: el motor libera lo suyo (5); índice interno (2); estado interno del rastro del compañero (1); cálculo auxiliar (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); carga asíncrona del original (1).
 
 ## Efectos de batalla
 
@@ -135,7 +131,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 151, parcial 3, falta 67, no aplica 64.
+Portado 168, parcial 3, falta 54, no aplica 60.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -166,19 +162,6 @@ Portado 151, parcial 3, falta 67, no aplica 64.
 | `BTL_projectPositionToScreen` | `btl/battle_effect.c:4172` | falta | Proyecta una posición del efecto a la pantalla para sus sprites. | solo lo cita la extracción del disco |
 | `BTL_renderScreenSprite` | `btl/battle_effect.c:4192` | falta | Dibuja un sprite en pantalla de un efecto. | battle.md: Hueco |
 | `BTL_interpolateClamped` | `btl/battle_effect.c:5207` | falta | Interpola un valor entre dos límites (color de cintas, radio de ondas). | solo lo usan dibujos que faltan |
-| `BTL_resetPoisonBubbles` | `btl/battle_effect.c:5359` | falta | Reinicia las burbujas del veneno sobre un luchador. | — |
-| `BTL_addPoisonBubble` | `btl/battle_effect.c:5364` | falta | Suelta una burbuja de veneno sobre el luchador envenenado. | — |
-| `BTL_tickPoisonBubble` | `btl/battle_effect.c:5389` | falta | Hace subir una burbuja de veneno. | — |
-| `BTL_tickPoisonEffect` | `btl/battle_effect.c:5427` | falta | Mantiene el efecto visual del veneno sobre el luchador. | — |
-| `BTL_initializePoisonBubble` | `btl/battle_effect.c:5443` | falta | Prepara una burbuja de veneno. | — |
-| `BTL_addPoisonEffect` | `btl/battle_effect.c:5454` | falta | Pone el efecto visual del veneno. | — |
-| `BTL_tickConfusionEffect` | `btl/battle_effect.c:5501` | falta | Anima el efecto visual de la confusión. | — |
-| `BTL_initializeConfusionEffect` | `btl/battle_effect.c:5534` | falta | Prepara el efecto visual de la confusión. | — |
-| `BTL_addConfusionEffect` | `btl/battle_effect.c:5541` | falta | Pone el efecto visual de la confusión. | — |
-| `BTL_resetStunSubEffects` | `btl/battle_effect.c:5597` | falta | Reinicia las estrellas del aturdimiento. | — |
-| `BTL_tickStunEffect` | `btl/battle_effect.c:5606` | falta | Anima el efecto visual del aturdimiento. | — |
-| `BTL_addStunSubEffect` | `btl/battle_effect.c:5717` | falta | Añade una estrella del aturdimiento. | — |
-| `BTL_tickStunSubEffect` | `btl/battle_effect.c:5740` | falta | Hace girar una estrella del aturdimiento. | — |
 | `BTL_setTMDObjectColor` | `btl/battle_effect.c:5829` | falta | Tiñe un objeto de un modelo (auras, brillos de estado). | — |
 | `BTL_tickFinisherAura` | `btl/battle_effect.c:5855` | falta | Anima el aura del remate cargado alrededor del compañero. | — |
 | `BTL_addFinisherAura` | `btl/battle_effect.c:6012` | falta | Pone el aura del remate cargado. | — |
@@ -205,12 +188,12 @@ Portado 151, parcial 3, falta 67, no aplica 64.
 | `initializeEntityParticleFX` | `main/efe.c:633` | falta | Prepara las partículas pegadas a luchadores. | — |
 | `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | — |
-| `translateConditionFXToEntity` | `main/effect_common.c:307` | falta | Pega un efecto de estado a la posición de un personaje. | — |
+| `translateConditionFXToEntity` | `main/effect_common.c:307` | falta | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_status.cpp:274` |
 | `tickHealingParticles` | `main/particle.c:82` | falta | Mueve las partículas de curación al usar un objeto. | — |
 | `initializeHealingParticles` | `main/particle.c:201` | falta | Prepara las partículas de curación. | — |
 | `addHealingParticleEffect` | `main/particle.c:209` | falta | Lanza las partículas de curación sobre el compañero. | — |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (19); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
+No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (15); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
 
 ## Campo: movimiento, colisión y cámara
 

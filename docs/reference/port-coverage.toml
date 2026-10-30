@@ -210,14 +210,14 @@ BTL_addBlockedAttack = { status = "portado", dwe = "game/battle/src/attack_hits.
 BTL_startHitAnimation = { status = "portado", dwe = "game/battle/src/shown_clips.cpp:110", what = "Pone la animación de recibir golpe, de frente o por la espalda." }
 BTL_getDistanceSquared = { status = "no-aplica", note = "cálculo auxiliar", what = "Distancia al cuadrado entre dos luchadores." }
 BTL_applyFlattenScale = { status = "falta", what = "Aplasta el modelo del luchador aplastado.", note = "el estado existe; falta comprobar la escala del modelo en pantalla" }
-BTL_addStatusEffectVisual = { status = "falta", what = "Pone sobre el luchador el efecto visual de su estado (veneno, confusión, aturdimiento).", note = "el HUD solo enseña el nombre del estado" }
+BTL_addStatusEffectVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone sobre el luchador el efecto visual de su estado (veneno, confusión, aturdimiento)." }
 BTL_applyStretchScale = { status = "falta", what = "Estira el modelo al recuperarse del aplastado." }
 BTL_applySquashScale = { status = "falta", what = "Encoge el modelo en el aplastado." }
 BTL_clearPoison = { status = "portado", dwe = "game/battle/src/status_effects.cpp:54", what = "Cura el veneno." }
 BTL_healFlatten = { status = "portado", note = "", what = "Cura el aplastado y pasa a su recuperación." }
-BTL_addPoisonStatusVisual = { status = "falta", what = "Pone las burbujas de veneno sobre el luchador." }
-BTL_addConfusionStatusVisual = { status = "falta", what = "Pone el efecto de confusión sobre el luchador." }
-BTL_addStunStatusVisual = { status = "falta", what = "Pone las estrellas de aturdimiento sobre el luchador." }
+BTL_addPoisonStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone las burbujas de veneno sobre el luchador." }
+BTL_addConfusionStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto de confusión sobre el luchador." }
+BTL_addStunStatusVisual = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone las estrellas de aturdimiento sobre el luchador." }
 BTL_getRandomUsableMove = { status = "portado", dwe = "game/battle/src/usability.hpp:23", what = "Elige al azar una técnica que se puede usar." }
 BTL_getNpcEntityIndex = { status = "no-aplica", note = "índice interno", what = "Da la entidad de un rival." }
 BTL_countLivingEnemies = { status = "portado", dwe = "game/battle/include/dwe/game/battle/state.hpp:260", what = "Cuenta los rivales vivos." }
@@ -327,19 +327,19 @@ BTL_calculateAttackHitPosition = { status = "portado", dwe = "game/battle/src/mo
 BTL_interpolateClamped = { status = "falta", what = "Interpola un valor entre dos límites (color de cintas, radio de ondas).", note = "solo lo usan dibujos que faltan" }
 BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Monta la tabla de subórdenes de efecto." }
 BTL_dispatchEFEOpcode = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:246", what = "Ejecuta una orden del script de efecto." }
-BTL_resetPoisonBubbles = { status = "falta", what = "Reinicia las burbujas del veneno sobre un luchador." }
-BTL_addPoisonBubble = { status = "falta", what = "Suelta una burbuja de veneno sobre el luchador envenenado." }
-BTL_tickPoisonBubble = { status = "falta", what = "Hace subir una burbuja de veneno." }
-BTL_tickPoisonEffect = { status = "falta", what = "Mantiene el efecto visual del veneno sobre el luchador." }
-BTL_initializePoisonBubble = { status = "falta", what = "Prepara una burbuja de veneno." }
-BTL_addPoisonEffect = { status = "falta", what = "Pone el efecto visual del veneno." }
-BTL_tickConfusionEffect = { status = "falta", what = "Anima el efecto visual de la confusión." }
-BTL_initializeConfusionEffect = { status = "falta", what = "Prepara el efecto visual de la confusión." }
-BTL_addConfusionEffect = { status = "falta", what = "Pone el efecto visual de la confusión." }
-BTL_resetStunSubEffects = { status = "falta", what = "Reinicia las estrellas del aturdimiento." }
-BTL_tickStunEffect = { status = "falta", what = "Anima el efecto visual del aturdimiento." }
-BTL_addStunSubEffect = { status = "falta", what = "Añade una estrella del aturdimiento." }
-BTL_tickStunSubEffect = { status = "falta", what = "Hace girar una estrella del aturdimiento." }
+BTL_resetPoisonBubbles = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:127", what = "Reinicia las burbujas del veneno sobre un luchador." }
+BTL_addPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:147", what = "Suelta una burbuja de veneno sobre el luchador envenenado." }
+BTL_tickPoisonBubble = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Hace subir una burbuja de veneno." }
+BTL_tickPoisonEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Mantiene el efecto visual del veneno sobre el luchador." }
+BTL_initializePoisonBubble = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:256", what = "Prepara una burbuja de veneno." }
+BTL_addPoisonEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto visual del veneno." }
+BTL_tickConfusionEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Anima el efecto visual de la confusión." }
+BTL_initializeConfusionEffect = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:365", what = "Prepara el efecto visual de la confusión." }
+BTL_addConfusionEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:28", what = "Pone el efecto visual de la confusión." }
+BTL_resetStunSubEffects = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:127", what = "Reinicia las estrellas del aturdimiento." }
+BTL_tickStunEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:159", what = "Anima el efecto visual del aturdimiento." }
+BTL_addStunSubEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Añade una estrella del aturdimiento." }
+BTL_tickStunSubEffect = { status = "portado", dwe = "game/battle/src/status_visuals.cpp:91", what = "Hace girar una estrella del aturdimiento." }
 BTL_setTMDObjectColor = { status = "falta", what = "Tiñe un objeto de un modelo (auras, brillos de estado)." }
 BTL_tickFinisherAura = { status = "falta", what = "Anima el aura del remate cargado alrededor del compañero." }
 BTL_addFinisherAura = { status = "falta", what = "Pone el aura del remate cargado." }

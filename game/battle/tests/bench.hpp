@@ -26,7 +26,15 @@ struct Bench {
             .strategies = &strategies,
             .random = &random,
             .events = &events,
-            .condition = &condition};
+            .condition = &condition,
+            .visuals = &visuals};
+  }
+  // The same with the original's rolls on (Battle::useOriginalRolls): the visuals roll the
+  // battle's.
+  BattleContext originalContext() {
+    BattleContext context = this->context();
+    context.particles = &particles;
+    return context;
   }
   Fighter& fighter(FighterId id) { return state.fighters.at(id); }
   [[nodiscard]] static MoveRef move(std::string_view id) { return refOf(testCatalog(), id); }
@@ -37,6 +45,8 @@ struct Bench {
   PartnerCondition condition;
   dwe::ruleset::Random random;
   BattleEvents events;
+  StatusVisuals visuals;
+  ParticleRolls particles;
 };
 
 } // namespace battle_test

@@ -201,6 +201,7 @@ void tickEnemy(BattleContext& context, FighterId id, bool& stop) {
     standIdle(enemy);
     enemy.moveRange = -1;
     resetFlatten(enemy);
+    removeStatusVisuals(context, id);
     clearStatusFlags(enemy);
     return;
   }
@@ -410,6 +411,7 @@ void tickPartnerAi(BattleContext& context) {
     standIdle(partner);
     partner.moveRange = -1;
     resetFlatten(partner);
+    removeStatusVisuals(context, PartnerId);
     clearStatusFlags(partner);
     resetAction(partner);
     partner.chasingAttacker = false;
