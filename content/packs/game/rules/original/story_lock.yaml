@@ -75,3 +75,87 @@ stages:
       - trop06
       - tunn*
       - room14
+  # Etapas 3 a 9: los mapas de cada tramo, verificados en los scripts extraídos y en las salidas de
+  # los mapas. Todavía no se liberan: `active_stage` no las alcanza y sirven para probarlas con
+  # `--story-stage`. Las salidas entre tramos no siguen la historia en línea (gias08 a stic01,
+  # gcan01 a dgha01 o frzl08 a mist07 dan a la etapa 7, gias02 a fact05 a la 6): un mapa
+  # de una etapa posterior queda cerrado hasta que su etapa se juega.
+  # Etapa 3: Mt. Panorama (miha), Gear Savanna (gias, con la tienda secreta de cartas gias06b), la
+  # cueva de Leomon (leom) y Trash Mountain (gomi). Entra por mayo02_2 a miha00 y por tunn03 y
+  # tunn03_2 a leom02.
+  - id: stage_3
+    maps:
+      - miha*
+      - gias*
+      - leom*
+      - gomi*
+  # Etapa 4: Great Canyon (gcan) con el puente invisible y el ascensor, Ogre Fortress (ogre00-04) y
+  # la casa de Birdramon (room12, que abre los viajes en el aire). Entra por trop03 a gcan01.
+  - id: stage_4
+    maps:
+      - gcan*
+      - ogre00
+      - ogre01
+      - ogre02
+      - ogre03
+      - ogre04
+      - room12
+  # Etapa 5: Freezeland (frzl, con el curling de frzl17), Ice Sanctuary (icsa), la cueva de Whamon
+  # (ogre10 y ogre11) y la casa de Penguinmon (room20). Entra por gcan03, gcan04 y gcan04_2 a frzl01.
+  - id: stage_5
+    maps:
+      - frzl*
+      - icsa*
+      - ogre10
+      - ogre11
+      - room20
+  # Etapa 6: Factorial Town (fact) y sus secuencias (map_239-246 y map_250-252). Entra con Whamon
+  # (casilla 55 de twna02-13 a fact01).
+  - id: stage_6
+    maps:
+      - fact*
+      - map_*
+  # Etapa 7: los módulos opcionales en orden libre: Grey Lord's Mansion (dgha), Ancient Dino Region
+  # (yaka, chka01), Overdell (saib), Misty Trees y Geko Swamp (mist, stic, gkyo), Toy Town (omoc),
+  # Beetle Land (betl) y el bosque de koda.
+  - id: stage_7
+    maps:
+      - dgha*
+      - yaka*
+      - chka01
+      - saib*
+      - koda*
+      - betl*
+      - mist*
+      - stic*
+      - gkyo*
+      - omoc*
+  # Etapa 8: Mt. Infinity (mgen01-10, mgen98, mgen99), la segunda casa de Jijimon (room10, room11),
+  # room19 y el final (tend01, tend02). Entra por la casilla 56 de twna02-13 a mgen01.
+  - id: stage_8
+    maps:
+      - mgen01
+      - mgen02
+      - mgen03
+      - mgen04
+      - mgen05
+      - mgen06
+      - mgen07
+      - mgen08
+      - mgen09
+      - mgen10
+      - mgen98
+      - mgen99
+      - room10
+      - room11
+      - room19
+      - tend*
+  # Etapa 9: el post-juego, la Back Dimension (mgen11-16). Con ella están abiertos todos los mapas.
+  - id: stage_9
+    maps:
+      - mgen11
+      - mgen12
+      - mgen13
+      - mgen14
+      - mgen15
+      - mgen16

@@ -130,7 +130,8 @@ historia los `sets_flags` del warp tomado.
   cerrado no ocurre y el diálogo muestra `closed_message`. Solo se cierran los cambios de mapa **nuevos**: una
   partida guardada más allá de la etapa no se rompe, el jugador se queda donde está y sale por cualquier salida hacia
   un mapa abierto. Un ruleset sin la sección no cierra nada. Abrir una etapa más es solo editar datos. La Etapa 1
-  sale de la verificación E1-01 en el decomp.
+  sale de la verificación E1-01 en el decomp; las etapas 3 a 9 ya tienen sus mapas (de los scripts extraídos y las
+  salidas de los mapas) para probarlas con `--story-stage`, aunque `active_stage` no las alcance.
 
 La historia es la única dueña de las formas criadas, como en el original (`setDigimonRaised` pone el disparador
 0x200 + número): `EvolutionAdapter` (con `EvolutionAdapterDesc::story`) las escribe ahí al evolucionar, al renacer y
