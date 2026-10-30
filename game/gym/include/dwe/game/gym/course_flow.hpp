@@ -50,9 +50,11 @@ public:
   // createCameraMovement: to a spot, or back to the tamer with no spot.
   virtual void moveCamera(std::optional<Point> spot, std::int32_t speed) = 0;
   virtual void playSound(std::int32_t slot, std::int32_t sound) = 0;
-  // playSound2 and thunkStopSoundMask: a sound that plays until stopped.
-  virtual std::int32_t loopSound(std::int32_t slot, std::int32_t sound) = 0;
-  virtual void stopSound(std::int32_t handle) = 0;
+  // sound.c: playSound2 and thunkStopSoundMask: a sound whose voices play until stopped (the
+  // waterfall, the log's hits, the treadmill). A handle to stop it, or nothing when it did not
+  // play.
+  virtual std::optional<std::int64_t> loopSound(std::int32_t slot, std::int32_t sound) = 0;
+  virtual void stopSound(std::int64_t handle) = 0;
   // storeMapObjectPosition and loadMapObjectPosition: the objects go back where they were stored.
   virtual void storeObjects(const ObjectGroup& group) = 0;
   virtual void restoreObjects(const ObjectGroup& group) = 0;
@@ -149,6 +151,8 @@ private:
   [[nodiscard]] bool counted() const;
   [[nodiscard]] bool rested();
   void finish(GymPorts& ports);
+  // thunkStopSoundMask of the course's looping sound, if one plays.
+  void stopLoop(GymPorts& ports);
   void setState(std::int32_t state);
   void cloudLine(GymPorts& ports, const CloudLine& line) const;
   // moveMapObjectsWithLimit: moves the objects, true once the first reaches `limit` from where
@@ -171,7 +175,7 @@ private:
   std::int32_t rest_ = 0;
   // How far the objects moved in x since they were stored.
   std::int32_t shift_ = 0;
-  std::optional<std::int32_t> loop_;
+  std::optional<std::int64_t> loop_;
   std::size_t swing_ = 0;
   std::optional<StatCountup> countup_;
   bool withSlots_ = false;

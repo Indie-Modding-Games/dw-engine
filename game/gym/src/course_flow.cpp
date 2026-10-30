@@ -148,15 +148,19 @@ void CourseRun::finish(GymPorts& ports) {
   // TRN_applyBaseStats and TRN_closeUIBox: the session already gave the gains.
   ports.setTraining(false);
   watching_ = false;
-  if (loop_) {
-    ports.stopSound(*loop_);
-    loop_.reset();
-  }
+  stopLoop(ports);
   ports.removeClouds();
   countup_.reset();
   counter_ = 0;
   finished_ = true;
   core::logDebug("[port:gym] TRAINING_COMPLETE: course {}", course_->id);
+}
+
+void CourseRun::stopLoop(GymPorts& ports) {
+  if (loop_) {
+    ports.stopSound(*loop_);
+    loop_.reset();
+  }
 }
 
 bool CourseRun::moveObjectsTo(GymPorts& ports, const ObjectGroup& group, std::int32_t dx,

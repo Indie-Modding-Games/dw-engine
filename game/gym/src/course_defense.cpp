@@ -59,9 +59,7 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
         ports.addParticle(particle);
       }
       // The original starts it again each round; one voice of it plays at a time.
-      if (loop_) {
-        ports.stopSound(*loop_);
-      }
+      stopLoop(ports);
       loop_ = ports.loopSound(gym_->soundSlot, defense.loopSound);
     }
     if (++swing_ < defense.swings.size()) {
@@ -85,10 +83,7 @@ void CourseRun::defenseFrame(GymPorts& ports, const DefenseCourse& defense, cons
       award(ports);
       ports.animate(Actor::Partner, course_->doneAnimation);
       ports.playSound(gym_->soundSlot, course_->endSound);
-      if (loop_) {
-        ports.stopSound(*loop_);
-        loop_.reset();
-      }
+      stopLoop(ports);
       ports.moveCamera(std::nullopt, course_->cameraSpeed);
       setState(Counting);
     } else {

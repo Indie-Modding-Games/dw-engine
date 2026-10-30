@@ -50,10 +50,7 @@ void CourseRun::mpFrame(GymPorts& ports, const MpCourse& mp, const GymInput& inp
     ports.moveCamera(std::nullopt, course_->cameraSpeed);
     ports.animate(Actor::Partner, mp.leaveAnimation);
     ports.playSound(gym_->soundSlot, course_->endSound);
-    if (loop_) {
-      ports.stopSound(*loop_);
-      loop_.reset();
-    }
+    stopLoop(ports);
     setState(4);
     break;
   case 4:

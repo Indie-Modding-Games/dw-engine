@@ -196,10 +196,7 @@ void CourseRun::treadmillFrame(GymPorts& ports, const TreadmillCourse& treadmill
     award(ports);
     ports.animate(Actor::Partner, course_->doneAnimation);
     ports.playSound(gym_->soundSlot, course_->endSound);
-    if (loop_) {
-      ports.stopSound(*loop_);
-      loop_.reset();
-    }
+    stopLoop(ports);
     ports.moveCamera(std::nullopt, course_->cameraSpeed);
     setState(4);
     break;

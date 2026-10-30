@@ -5,6 +5,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -17,16 +18,21 @@ using dwe::game::gym::Actor;
 using dwe::game::gym::Award;
 using dwe::game::gym::Axis;
 using dwe::game::gym::BrainCourse;
+using dwe::game::gym::CourseDetail;
 using dwe::game::gym::CourseRules;
 using dwe::game::gym::CourseRun;
+using dwe::game::gym::DefenseCourse;
+using dwe::game::gym::DefenseSwing;
 using dwe::game::gym::GymInput;
 using dwe::game::gym::GymPorts;
 using dwe::game::gym::GymRules;
+using dwe::game::gym::MpCourse;
 using dwe::game::gym::ObjectGroup;
 using dwe::game::gym::ObjectMove;
 using dwe::game::gym::Point;
 using dwe::game::gym::Point3;
 using dwe::game::gym::SpeedCourse;
+using dwe::game::gym::TreadmillCourse;
 
 // The field as the course sees it: every walk arrives at once, the partner stays on screen, and an
 // award gives one point of speed.
@@ -52,11 +58,15 @@ public:
   }
   void moveCamera(std::optional<Point> /*spot*/, std::int32_t /*speed*/) override {}
   void playSound(std::int32_t /*slot*/, std::int32_t sound) override { sounds.push_back(sound); }
-  std::int32_t loopSound(std::int32_t /*slot*/, std::int32_t /*sound*/) override {
+  std::optional<std::int64_t> loopSound(std::int32_t /*slot*/, std::int32_t /*sound*/) override {
     ++loops;
+    playing.push_back(loops);
     return loops;
   }
-  void stopSound(std::int32_t /*handle*/) override { ++stops; }
+  void stopSound(std::int64_t handle) override {
+    ++stops;
+    std::erase(playing, handle);
+  }
   void storeObjects(const ObjectGroup& /*group*/) override {}
   void restoreObjects(const ObjectGroup& /*group*/) override { row = 0; }
   void moveObjects(const ObjectGroup& /*group*/, ObjectMove move) override { row += move.y; }
@@ -84,7 +94,9 @@ public:
 
   int awards = 0;
   int textboxesClosed = 0;
-  int loops = 0;
+  std::int64_t loops = 0;
+  // The looping voices still sounding.
+  std::vector<std::int64_t> playing;
   int stops = 0;
   int runs = 0;
   int tamerLooks = 0;
@@ -349,4 +361,31 @@ TEST_CASE("gym.md watching: the brains course leads the player itself (tamerSetS
   frames(run, ports, 1);
   CHECK(ports.tamerLooks == 0);
   CHECK(std::ranges::find(ports.tamerClips, 10) == ports.tamerClips.end());
+}
+
+TEST_CASE("gym.md sounds: no looping voice is left once a session ends, however it ends") {
+  // trn_mp.c, trn_def.c and trn2_reward.c: playSound2 at the start, thunkStopSoundMask at the end.
+  MpCourse waterfall;
+  waterfall.loopSound = 2;
+  DefenseCourse log;
+  log.loopSound = 4;
+  log.swings = {DefenseSwing{.dx = 50, .limit = 50, .push = false}};
+  TreadmillCourse treadmill;
+  treadmill.loopSound = 14;
+  const auto courses =
+      std::array{CourseDetail{waterfall}, CourseDetail{log}, CourseDetail{treadmill}};
+  for (const CourseDetail& detail : courses) {
+    for (const bool cancelled : {false, true}) {
+      GymRules gym = gymRules();
+      gym.courses.front().detail = detail;
+      gym.courses.front().cycleFrames = 60;
+      FakePorts ports;
+      CourseRun run{gym, gym.courses.front(), false};
+      frames(run, ports, 5);
+      CHECK(ports.loops >= 1);
+      frames(run, ports, 400, GymInput{.cancelHeld = cancelled});
+      CHECK(run.finished());
+      CHECK(ports.playing.empty());
+    }
+  }
 }

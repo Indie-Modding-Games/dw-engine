@@ -218,13 +218,29 @@ public:
       port->playSound(slot, sound);
     }
   }
-  std::int32_t loopSound(std::int32_t slot, std::int32_t sound) override {
-    // The sound port plays a sound once; the loop and its stop come with the audio's voices.
-    playSound(slot, sound);
-    return ++loops_;
+  std::optional<std::int64_t> loopSound(std::int32_t slot, std::int32_t sound) override {
+    // sound.c: playSound2: the voices are kept until thunkStopSoundMask stops them.
+    game::story::SoundPort* port = desc_->session->sound();
+    if (port == nullptr) {
+      return std::nullopt;
+    }
+    const std::optional<std::int64_t> held = port->playHeldSound(slot, sound);
+    if (held) {
+      held_.push_back(*held);
+    }
+    return held;
   }
-  void stopSound(std::int32_t handle) override {
-    core::logDebug("[port:gym] thunkStopSoundMask({}): no looping voices yet", handle);
+  void stopSound(std::int64_t handle) override {
+    if (game::story::SoundPort* port = desc_->session->sound(); port != nullptr) {
+      port->stopHeldSound(handle);
+    }
+    std::erase(held_, handle);
+  }
+  // A course that never reached its end (the screen goes with the map) leaves no voice behind.
+  void stopHeldSounds() {
+    for (const std::int64_t handle : std::vector<std::int64_t>{held_}) {
+      stopSound(handle);
+    }
   }
   void storeObjects(const ObjectGroup& group) override {
     stored_.clear();
@@ -489,7 +505,7 @@ private:
   std::vector<GymNotice>* notices_;
   std::vector<glm::vec2> stored_;
   std::int32_t effects_ = 0;
-  std::int32_t loops_ = 0;
+  std::vector<std::int64_t> held_;
   // Whether the course holds the field itself; each actor's walk and last clip (player, partner).
   bool ownHold_ = false;
   std::array<bool, 2> walks_{};
@@ -503,6 +519,7 @@ GymScreen::GymScreen(const GymScreenDesc& desc)
     : desc_(desc), ports_(std::make_unique<Ports>(desc_, rules_, notices_)) {}
 
 GymScreen::~GymScreen() {
+  ports_->stopHeldSounds();
   if (boxShown_) {
     desc_.ui->hide(GymStatsDocument);
   }
