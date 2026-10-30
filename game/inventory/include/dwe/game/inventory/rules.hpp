@@ -112,6 +112,15 @@ struct FixedEvolutionRule {
   std::string evolvesTo;
 };
 
+// The items that show the healing particles over the partner (item.c: addHealingParticleEffect):
+// plainly, with the ring (hasParticle2), or plainly only when they cured its sickness
+// (handleMedicineHealing returns 1).
+struct HealingParticleRules {
+  std::vector<std::string> plain;
+  std::vector<std::string> ring;
+  std::vector<std::string> sicknessCured;
+};
+
 // The logic constants of the item functions; the per-item numbers are in data/item_effects.
 struct EffectRules {
   std::int32_t statLimit = 0;
@@ -134,6 +143,7 @@ struct EffectRules {
   std::int32_t poopLevelChange = 0;
   bool evolutionRequiresPreviousLevel = false;
   std::vector<FixedEvolutionRule> fixedEvolutions;
+  HealingParticleRules healingParticles;
 };
 
 struct InventoryQuirks {

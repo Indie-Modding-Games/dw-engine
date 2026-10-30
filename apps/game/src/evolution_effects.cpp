@@ -498,21 +498,14 @@ std::vector<ScenePrim> EvolutionEffects::draw(const EvolutionBody& body,
       } else if (depth <= MinDepth || depth >= MaxDepth) {
         continue;
       }
-      const float u0 = GlowHalfU.at(static_cast<std::size_t>(flash.mode & 1)) / GlowImageSize.x;
-      const float u1 = u0 + (GlowSide / GlowImageSize.x);
-      const float v0 = GlowV / GlowImageSize.y;
-      const float v1 = v0 + (GlowSide / GlowImageSize.y);
-      // Each quarter: its outer corner takes the image's top left, the point its bottom right.
-      for (const glm::vec2 sign : {glm::vec2{-1.0F, -1.0F}, glm::vec2{1.0F, -1.0F},
-                                   glm::vec2{-1.0F, 1.0F}, glm::vec2{1.0F, 1.0F}}) {
-        ScenePrim quarter{.shape = ScenePrim::Shape::Quad,
-                          .color = glm::vec4{color, 1.0F},
-                          .texture = *view.images.glow,
-                          .blend = ScenePrimBlend::Additive};
-        quarter.corners[0] = {.clip = centre, .offset = sign * half, .uv = {u0, v0}};
-        quarter.corners[1] = {.clip = centre, .offset = {0.0F, sign.y * half}, .uv = {u1, v0}};
-        quarter.corners[2] = {.clip = centre, .offset = {sign.x * half, 0.0F}, .uv = {u0, v1}};
-        quarter.corners[3] = {.clip = centre, .offset = {0.0F, 0.0F}, .uv = {u1, v1}};
+      const SceneGlow glow{.centre = centre,
+                           .half = half,
+                           .color = color,
+                           .texture = *view.images.glow,
+                           .texel = {GlowHalfU.at(static_cast<std::size_t>(flash.mode & 1)), GlowV},
+                           .side = glm::vec2{GlowSide},
+                           .imageSize = GlowImageSize};
+      for (const ScenePrim& quarter : glowQuarters(glow)) {
         out.push_back({.depth = sortDepth, .prim = quarter});
       }
     }

@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "evolution_effects.hpp"
+#include "field_effects.hpp"
 #include "fighter_figure.hpp"
 #include "place_command.hpp"
 #include "scene_effect.hpp"
@@ -121,6 +122,9 @@ struct FieldStage {
   // The scene's own primitives, back to front, drawn over the models with their depth.
   std::vector<ScenePrim> prims;
 };
+
+// The first state of the field effects' rolls (libc rand's increment).
+inline constexpr std::uint64_t FieldEffectsSeed = 0x3039;
 
 class FieldScene {
 public:
@@ -207,6 +211,24 @@ public:
   [[nodiscard]] std::optional<rhi::TextureId> sceneImage(std::string_view source);
   // The renderer's 1 x 1 white texture.
   [[nodiscard]] rhi::TextureId whiteTexture() const { return renderer_->whiteTexture(); }
+  // One palette of an indexed image of the base pack ("texture/etcdat/etctim/002") as a texture
+  // for scene primitives that keeps the original's STP bit of each colour (alpha 128, else 255;
+  // 0x0000 transparent), for ScenePrim::stpMask; loaded once. Nothing when it cannot load.
+  [[nodiscard]] std::optional<rhi::TextureId> stpSceneImage(std::string_view asset,
+                                                            std::size_t palette);
+
+  // The field's own clouds, sparks, healing particles and butterfly (field_effects.hpp): they
+  // tick with the field's logic ticks, a frame of the original at a time, and go with the map.
+  [[nodiscard]] FieldEffects& fieldEffects() { return fieldEffects_; }
+  // overworld.c: createNinjamonEffect (story routine 38): the map's first 41 sprite objects drift
+  // away as smoke for 60 frames, then hide.
+  void startObjectSmoke();
+  // Where the partner's condition effects hang (effect_common.c: translateConditionFXToEntity
+  // with CONDITION_FX_OFFSETS of its species): a node of its model and an offset in the node's
+  // space, in the original's axes and units; set by the owner; nothing draws no butterfly.
+  void setPartnerConditionPoint(std::optional<std::pair<std::uint32_t, glm::vec3>> point) {
+    partnerConditionPoint_ = point;
+  }
 
   // The scene drawers for FrameDesc::scene, in order.
   [[nodiscard]] std::span<render::Drawer* const> drawers() {
@@ -548,6 +570,13 @@ private:
   const assets::ModelData* partnerTexturesOf_ = nullptr;
   std::vector<std::optional<rhi::TextureId>> partnerTextures_;
   std::map<std::string, std::optional<rhi::TextureId>, std::less<>> sceneImages_;
+  FieldEffects fieldEffects_{FieldEffectsSeed};
+  ObjectSmoke objectSmoke_{FieldEffectsSeed};
+  double objectSmokeSeconds_ = 0.0;
+  void advanceObjectSmoke(double seconds);
+  std::optional<std::pair<std::uint32_t, glm::vec3>> partnerConditionPoint_;
+  // The effects' frame as the last update drew it.
+  [[nodiscard]] std::vector<ScenePrim> drawEffects();
   CameraSync cameraSync_{*this};
   std::array<render::Drawer*, 6> drawers_{};
   // The drawers while a scene hides the scenery: the models and the scene's primitives only.

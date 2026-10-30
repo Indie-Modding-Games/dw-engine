@@ -154,6 +154,11 @@ TEST_CASE("in one ordering-table entry the instance added last is drawn first") 
   // Out-of-range instances are ignored.
   layers.setHidden(99, true);
   CHECK(order() == std::vector<std::size_t>{3, 2, 1});
+  // An effect that puts an instance in a near entry draws it last (overworld.c:
+  // renderNinjamonEffect: orderValue = 10).
+  layers.setOrderValue(3, 10);
+  CHECK(layers.orderValue(3) == 10);
+  CHECK(order() == std::vector<std::size_t>{2, 1, 3});
 }
 
 TEST_CASE("instances start hidden with their hidden flag until shown") {

@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <limits>
 #include <tuple>
 #include <utility>
@@ -455,6 +456,9 @@ core::Result<void> FieldScene::enterMap(const std::string& mapId, std::int32_t e
   map_ = std::move(*scene);
   mapNameKey_ = std::move(nameKey);
   ++mapSerial_;
+  // The map's objects go with it, the effects' too.
+  fieldEffects_.clear();
+  objectSmoke_.stop();
   return {};
 }
 
@@ -477,6 +481,8 @@ std::string FieldScene::nameKeyOf(std::string_view mapId) const {
 void FieldScene::tick(const game::field::FieldInput& input, float seconds) {
   field_->setInput(input);
   field_->tick(seconds);
+  // The original's object list ticks the effects once a frame with the field.
+  fieldEffects_.advance(seconds, field_->rules().transition.frameSeconds);
 }
 
 void FieldScene::finishTick() {
@@ -790,8 +796,17 @@ void FieldScene::update(double frameSeconds, float alpha, bool paused) {
             .lift = stage_.partnerLift,
             .hiddenBones = stage_.partnerHiddenBones});
   }
+  if (!paused) {
+    advanceObjectSmoke(frameSeconds);
+  }
   mapRenderer_->setShade(1.0F - stage_.sceneryDarkness);
-  primDrawer_->set(stage_.prims, mapRenderer_->camera().scale());
+  if (stage_.camera || fieldEffects_.empty()) {
+    primDrawer_->set(stage_.prims, mapRenderer_->camera().scale());
+  } else {
+    std::vector<ScenePrim> prims = stage_.prims;
+    std::ranges::move(drawEffects(), std::back_inserter(prims));
+    primDrawer_->set(std::move(prims), mapRenderer_->camera().scale());
+  }
   const scene::Pose player = field_->drawnPose(playerActor_->entity, alpha);
   // tamer.c: checkMapInteraction calls unsetCameraFollowPlayer when a warp fires, and map.c:
   // tickCameraFollowPlayer only follows while the tamer's state is 0: the camera stays put while

@@ -29,6 +29,10 @@ constexpr std::string_view SpecialKey = "special";
 constexpr std::string_view DropItemKey = "drop_item";
 constexpr std::string_view DropChanceKey = "drop_chance";
 constexpr std::string_view MovesKey = "moves";
+constexpr std::string_view ConditionFxKey = "condition_fx";
+constexpr std::string_view NodeKey = "node";
+constexpr std::string_view OffsetKey = "offset";
+constexpr std::size_t OffsetAxes = 3;
 
 template <std::size_t Count>
 std::array<std::optional<std::int32_t>, Count>
@@ -52,31 +56,46 @@ readOptionalTexts(YamlReader& reader, const YamlNode& node, std::string_view wha
   return values;
 }
 
+std::optional<ConditionFxPoint> readConditionFx(YamlReader& reader, const YamlNode& row) {
+  const YamlNode* node = row.find(ConditionFxKey);
+  if (node == nullptr || !reader.expectKeys(*node, ConditionFxKey, {NodeKey, OffsetKey})) {
+    return std::nullopt;
+  }
+  ConditionFxPoint point{.node = reader.integer<std::uint32_t>(reader.field(*node, NodeKey))};
+  const std::span<const YamlNode> axes =
+      reader.sequence(reader.field(*node, OffsetKey), OffsetKey, OffsetAxes);
+  for (std::size_t axis = 0; axis < axes.size(); ++axis) {
+    point.offset.at(axis) = reader.integer<std::int32_t>(axes[axis]);
+  }
+  return point;
+}
+
 DigimonRow readRow(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, messages::DigimonRowText,
                          {IdKey, EntryIndexKey, NameKey, FileNameKey, BoneCountKey, RadiusKey,
                           HeightKey, TypeKey, LevelKey, SpecialKey, DropItemKey, DropChanceKey,
-                          MovesKey})) {
+                          MovesKey},
+                         {ConditionFxKey})) {
     return {};
   }
   const auto integer = [&](std::string_view key) {
     return reader.integer<std::int32_t>(reader.field(node, key));
   };
-  return {
-      .id = reader.text(reader.field(node, IdKey)),
-      .index = integer(EntryIndexKey),
-      .name = reader.text(reader.field(node, NameKey)),
-      .fileName = reader.text(reader.field(node, FileNameKey)),
-      .boneCount = integer(BoneCountKey),
-      .radius = integer(RadiusKey),
-      .height = integer(HeightKey),
-      .type = integer(TypeKey),
-      .level = integer(LevelKey),
-      .special =
-          readOptionalIntegers<3>(reader, reader.field(node, SpecialKey), messages::SpecialsText),
-      .dropItem = reader.optionalText(reader.field(node, DropItemKey)),
-      .dropChance = integer(DropChanceKey),
-      .moves = readOptionalTexts<16>(reader, reader.field(node, MovesKey), messages::MovesText)};
+  return {.id = reader.text(reader.field(node, IdKey)),
+          .index = integer(EntryIndexKey),
+          .name = reader.text(reader.field(node, NameKey)),
+          .fileName = reader.text(reader.field(node, FileNameKey)),
+          .boneCount = integer(BoneCountKey),
+          .radius = integer(RadiusKey),
+          .height = integer(HeightKey),
+          .type = integer(TypeKey),
+          .level = integer(LevelKey),
+          .special = readOptionalIntegers<3>(reader, reader.field(node, SpecialKey),
+                                             messages::SpecialsText),
+          .dropItem = reader.optionalText(reader.field(node, DropItemKey)),
+          .dropChance = integer(DropChanceKey),
+          .moves = readOptionalTexts<16>(reader, reader.field(node, MovesKey), messages::MovesText),
+          .conditionFx = readConditionFx(reader, node)};
 }
 
 } // namespace

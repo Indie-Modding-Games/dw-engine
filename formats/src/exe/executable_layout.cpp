@@ -97,6 +97,7 @@ constexpr std::array Layouts = {
         .healingValues = {.address = 0x8013435C, .count = 4},
         .evolutionItemTargets = {.address = 0x80127C5C, .count = 44},
         .transportTargets = {.address = 0x8013024C, .count = 6},
+        .conditionFxOffsets = {.address = 0x8012A2C4, .count = 177},
         .itemCode =
             {
                 .handlers = {.hpHealing = 0x800C4AC0,

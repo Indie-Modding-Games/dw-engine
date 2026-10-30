@@ -133,6 +133,17 @@ private:
         moveList.append(reference<std::uint8_t>(ids_.moves, move, NoneU8, where));
       }
       node.set("moves", std::move(moveList));
+      if (i < tables_->conditionFxOffsets.size()) {
+        const auto& point = tables_->conditionFxOffsets[i];
+        YamlNode conditionFx = YamlNode::mapping();
+        conditionFx.set("node", number(point[3]));
+        YamlNode offset = YamlNode::sequence();
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+          offset.append(number(point.at(axis)));
+        }
+        conditionFx.set("offset", std::move(offset));
+        node.set("condition_fx", std::move(conditionFx));
+      }
       list.append(std::move(node));
     }
     YamlNode root = YamlNode::mapping();

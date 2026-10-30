@@ -88,6 +88,10 @@ TEST_CASE("the tables become documents with ids and resolved references") {
   CHECK(at(digimon, {"digimon", std::size_t{1}, "drop_item"}).text() == "null");
   CHECK(at(digimon, {"digimon", std::size_t{0}, "moves", std::size_t{0}}).text() == "spit_fire_1");
   CHECK(at(digimon, {"digimon", std::size_t{0}, "special", std::size_t{1}}).text() == "null");
+  CHECK(at(digimon, {"digimon", std::size_t{0}, "condition_fx", "node"}).text() == "3");
+  CHECK(at(digimon, {"digimon", std::size_t{0}, "condition_fx", "offset", std::size_t{1}}).text() ==
+        "-50");
+  CHECK(digimon.find("digimon")->items()[1].find("condition_fx") == nullptr);
 
   const YamlNode& moves = documentNamed(yaml, "moves");
   CHECK(at(moves, {"moves", std::size_t{0}, "learn_chances", std::size_t{1}}).text() == "16");

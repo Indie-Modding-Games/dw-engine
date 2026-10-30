@@ -200,6 +200,8 @@ private:
   // Keeps a snapshot of the game while the field is free, every few seconds, for a bug report
   // made while it is not.
   void keepFieldSnapshot(double frameSeconds);
+  // The sulking partner's butterfly (butterfly.c), shown or taken away.
+  void showButterfly(bool partnerNormal, const session::GameSession& session);
   // Shows the story lock's message in the dialog, unless the dialog is on screen already.
   void showLockNotice(const std::string& textKey);
 

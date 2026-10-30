@@ -473,7 +473,11 @@ core::Result<ExecutableTables> readExecutableTables(const MemoryImage& image,
       store(readMapSoundPara(image, layout), tables.mapSoundPara, error) &&
       store(readJukeboxTracks(image, layout), tables.jukeboxTracks, error) &&
       store(readItemEffects(image, layout), tables.itemEffects, error) &&
-      store(readTransportTargets(image, layout), tables.transportTargets, error);
+      store(readTransportTargets(image, layout), tables.transportTargets, error) &&
+      store(readRecords<std::array<std::int16_t, 4>>(
+                image, layout.conditionFxOffsets, "CONDITION_FX_OFFSETS", 8,
+                [](ByteCursor& c) { return readArray<std::int16_t, 4>([&] { return c.i16(); }); }),
+            tables.conditionFxOffsets, error);
   if (!read) {
     return std::unexpected{std::move(error)};
   }

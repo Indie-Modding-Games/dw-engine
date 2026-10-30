@@ -17,6 +17,7 @@ dwe_add_app(game
         src/dev_views.cpp
         src/device_names.cpp
         src/evolution_effects.cpp
+        src/field_effects.cpp
         src/evolution_scene.cpp
         src/field_hud.cpp
         src/field_scene.cpp
@@ -30,6 +31,7 @@ dwe_add_app(game
         src/field_scene_fighters.cpp
         src/field_scene_objects.cpp
         src/field_scene_partner_body.cpp
+        src/field_scene_fx.cpp
         src/scene_prims.cpp
         src/frame_stats.cpp
         src/game.cpp
@@ -127,7 +129,7 @@ target_compile_definitions(game PRIVATE DWE_GAME_PACK="${PROJECT_SOURCE_DIR}/con
 if(BUILD_TESTING)
     file(GLOB game_test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
     add_executable(dwe_game_tests ${game_test_sources} src/battle_motion.cpp src/bug_report.cpp src/control_json.cpp
-                                  src/evolution_effects.cpp
+                                  src/evolution_effects.cpp src/field_effects.cpp
                                   src/device_names.cpp src/discard_screen.cpp src/game_saves.cpp src/minimap_setting.cpp
                                   src/pause_box.cpp src/place_command.cpp src/remote_control.cpp src/save_command.cpp src/save_flow.cpp
                                   src/save_machine_flow.cpp src/sleep_steps.cpp src/state_trace.cpp src/ui_skin_setting.cpp src/user_settings.cpp)

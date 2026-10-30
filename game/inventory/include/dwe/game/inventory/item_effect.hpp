@@ -100,6 +100,14 @@ struct Evolution {
   bool requiresPreviousLevel = false;
 };
 
+// The particles over the partner as the item takes effect (item.c: addHealingParticleEffect).
+struct HealingParticles {
+  // hasParticle2: a ring of particles joins the spiral.
+  bool ring = false;
+  // Only when the item cured the partner's sickness (handleMedicineHealing returns 1).
+  bool onlyIfSicknessCured = false;
+};
+
 struct ItemEffect {
   // The item's id in data/items.
   std::string item;
@@ -122,6 +130,7 @@ struct ItemEffect {
   // The partner relieves itself if it needs to (item.c: handlePortaPotty).
   bool relievesToilet = false;
   std::optional<Evolution> evolution = std::nullopt;
+  std::optional<HealingParticles> healingParticles = std::nullopt;
 
   // Whether using the item changes anything.
   [[nodiscard]] bool doesSomething() const;

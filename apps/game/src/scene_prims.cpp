@@ -32,6 +32,29 @@ constexpr std::array Attributes{
 // Points this close to the camera plane or behind it are not drawn (the original drops primitives
 // whose depth is out of its ordering table).
 constexpr float MinClipW = 1.0e-3F;
+
+// Which texels a copy of a primitive draws (scene_prims.slang): all of them, only those without
+// STP (drawn opaque) or only those with it (mixed); in the bits over the sampler's.
+enum class TexelFilter : std::uint32_t { All = 0, Opaque = 1, SemiTransparent = 2 };
+constexpr std::uint32_t FilterShift = 8;
+
+// A primitive with a per-texel STP mask becomes two: its opaque texels drawn with the alpha
+// pipeline, then its STP texels with its own blend.
+std::vector<std::pair<ScenePrim, TexelFilter>> splitByStp(const std::vector<ScenePrim>& prims) {
+  std::vector<std::pair<ScenePrim, TexelFilter>> out;
+  out.reserve(prims.size());
+  for (const ScenePrim& prim : prims) {
+    if (!prim.stpMask) {
+      out.emplace_back(prim, TexelFilter::All);
+      continue;
+    }
+    ScenePrim opaque = prim;
+    opaque.blend = ScenePrimBlend::Alpha;
+    out.emplace_back(opaque, TexelFilter::Opaque);
+    out.emplace_back(prim, TexelFilter::SemiTransparent);
+  }
+  return out;
+}
 } // namespace
 
 core::Result<std::unique_ptr<ScenePrimDrawer>> ScenePrimDrawer::create(render::Renderer& renderer) {
@@ -68,7 +91,7 @@ ScenePrimDrawer::triangles(const std::vector<ScenePrim>& prims, float pixelScale
   out.reserve(prims.size() * 6);
   // Original pixels to clip units per unit of w (clip y points down, as screen y).
   const glm::vec2 toNdc = glm::vec2{2.0F * pixelScale} / extent;
-  for (const ScenePrim& prim : prims) {
+  for (const auto& [prim, filter] : splitByStp(prims)) {
     const std::size_t count = prim.shape == ScenePrim::Shape::Triangle ? 3
                               : prim.shape == ScenePrim::Shape::Quad   ? 4
                                                                        : 2;
@@ -80,7 +103,8 @@ ScenePrimDrawer::triangles(const std::vector<ScenePrim>& prims, float pixelScale
       continue;
     }
     const glm::uvec2 texture{prim.texture.index,
-                             static_cast<std::uint32_t>(rhi::SamplerKind::NearestClamp)};
+                             static_cast<std::uint32_t>(rhi::SamplerKind::NearestClamp) |
+                                 (static_cast<std::uint32_t>(filter) << FilterShift)};
     const auto vertex = [&](const ScenePrimCorner& corner, glm::vec2 offset) {
       glm::vec4 position = corner.clip;
       position.x += offset.x * toNdc.x * position.w;

@@ -66,6 +66,15 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
         (cardShop_ != nullptr && cardShop_->take(*screen, scene)) || takeSaveMachine(*screen)) {
       continue;
     }
+    // Routine 38 (overworld.c: createNinjamonEffect): the smoke runs on its own while the section
+    // goes on.
+    if (screen->screen == session::StoryScreen::SmokeEffect) {
+      scene.startObjectSmoke();
+      if (screen->waits) {
+        scenes.screenClosed();
+      }
+      continue;
+    }
     core::logDebug("[port:story] call_routine {}: the app has no screen {} yet, closed at once",
                    screen->routine, static_cast<int>(screen->screen));
     if (screen->waits) {

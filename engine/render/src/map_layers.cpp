@@ -41,6 +41,11 @@ MapDepthLayers::MapDepthLayers(const assets::MapObjects& objects, const MapCamer
     }
     instances_.push_back(std::move(instance));
   }
+  sortDrawOrder();
+  quads_.reserve(instances_.size());
+}
+
+void MapDepthLayers::sortDrawOrder() {
   // Far to near. In one ordering-table entry the original draws the instance added last first
   // (AddPrim prepends).
   drawOrder_.resize(instances_.size());
@@ -51,7 +56,13 @@ MapDepthLayers::MapDepthLayers(const assets::MapObjects& objects, const MapCamer
     }
     return lhs > rhs;
   });
-  quads_.reserve(instances_.size());
+}
+
+void MapDepthLayers::setOrderValue(std::size_t instance, std::int32_t value) {
+  if (instance < instances_.size() && instances_[instance].orderValue != value) {
+    instances_[instance].orderValue = value;
+    sortDrawOrder();
+  }
 }
 
 void MapDepthLayers::update(double seconds) {

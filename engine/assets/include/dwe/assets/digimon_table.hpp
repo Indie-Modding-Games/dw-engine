@@ -15,6 +15,14 @@ namespace dwe::assets {
 
 class VirtualFileSystem;
 
+// Where a species' condition effects hang (effect_common.c: CONDITION_FX_OFFSETS,
+// translateConditionFXToEntity): an offset in the space of one node of its model, in the original's
+// axes and units.
+struct ConditionFxPoint {
+  std::uint32_t node = 0;
+  std::array<std::int32_t, 3> offset{};
+};
+
 // The table of every Digimon, `data/digimon` (content/schemas/digimon.schema.json): the
 // executable's DIGIMON_DATA (params.h: DigimonPara). References to other tables are their ids, or
 // the raw number as text when the extractor found it outside its table.
@@ -34,6 +42,8 @@ struct DigimonRow {
   std::optional<std::string> dropItem;
   std::int32_t dropChance = 0;
   std::array<std::optional<std::string>, 16> moves{};
+  // Nothing for a species the executable's table does not cover (a pack's new one).
+  std::optional<ConditionFxPoint> conditionFx;
 };
 
 struct DigimonTable {

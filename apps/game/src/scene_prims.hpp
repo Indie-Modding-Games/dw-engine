@@ -8,7 +8,9 @@
 
 #include <glm/glm.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -40,6 +42,9 @@ struct ScenePrim {
   // The renderer's white texture for an untextured one.
   rhi::TextureId texture{};
   ScenePrimBlend blend = ScenePrimBlend::Alpha;
+  // The original's semi-transparency per texel: only the texels with STP (alpha 128 in an image
+  // that keeps it, FieldScene::stpSceneImage) mix by `blend`; the others are drawn opaque.
+  bool stpMask = false;
 };
 
 // Builds the clip-space corners of a world point, and its view depth (the original's ordering-table
@@ -55,6 +60,25 @@ struct ScenePrimFrame {
   }
   // How far in front of the camera a world point is (0 behind it).
   [[nodiscard]] float depth(glm::vec3 world) const { return -(view * glm::vec4{world, 1.0F}).z; }
+  // The clip point of a world point that is depth-tested as if it were `nearer` world units closer
+  // to the camera along its line of sight, where it still shows on screen: the original sorts some
+  // primitives into the ordering table ahead of their depth (effect_common.c: addFXPrim, 0x37
+  // entries of 16 units). On the near plane when that passes the camera.
+  [[nodiscard]] glm::vec4 clipNearer(glm::vec3 world, float nearer) const {
+    const glm::vec4 seen = view * glm::vec4{world, 1.0F};
+    const glm::vec4 at = projection * seen;
+    const float distance = -seen.z;
+    if (distance <= 0.0F || at.w <= 0.0F) {
+      return at;
+    }
+    if (distance <= nearer) {
+      return {at.x, at.y, 0.0F, at.w};
+    }
+    // The point slid toward the eye along its sight line keeps its place on screen.
+    const glm::vec4 moved =
+        projection * glm::vec4{glm::vec3{seen} * ((distance - nearer) / distance), 1.0F};
+    return {at.x, at.y, std::max(moved.z / moved.w, 0.0F) * at.w, at.w};
+  }
 };
 
 // A clip point on the near plane (an original primitive sorted in front of everything) or the far
@@ -66,6 +90,41 @@ struct ScenePrimFrame {
   // Just inside the far plane, so the depth test keeps it.
   constexpr float FarDepth = 0.9999F;
   return {clip.x, clip.y, FarDepth * clip.w, clip.w};
+}
+
+// efe.c: renderEFEFlash and renderParticleFlash: a glow of one quarter image mirrored into four
+// around a clip point, `half` original pixels from the point to each side. `texel` is the quarter's
+// top-left corner in the image (its outer corner), `side` its size, both in texels.
+struct SceneGlow {
+  glm::vec4 centre{0.0F, 0.0F, 0.0F, 1.0F};
+  float half = 0.0F;
+  glm::vec3 color{1.0F};
+  rhi::TextureId texture{};
+  glm::vec2 texel{0.0F};
+  glm::vec2 side{0.0F};
+  glm::vec2 imageSize{1.0F};
+};
+// The four quarters, additive, the outer corner of each taking the quarter's top left.
+[[nodiscard]] inline std::array<ScenePrim, 4> glowQuarters(const SceneGlow& glow) {
+  const glm::vec2 from = glow.texel / glow.imageSize;
+  const glm::vec2 to = (glow.texel + glow.side) / glow.imageSize;
+  std::array<ScenePrim, 4> out{};
+  std::size_t next = 0;
+  for (const glm::vec2 sign : {glm::vec2{-1.0F, -1.0F}, glm::vec2{1.0F, -1.0F},
+                               glm::vec2{-1.0F, 1.0F}, glm::vec2{1.0F, 1.0F}}) {
+    ScenePrim& quarter = out.at(next++);
+    quarter = {.shape = ScenePrim::Shape::Quad,
+               .color = glm::vec4{glow.color, 1.0F},
+               .texture = glow.texture,
+               .blend = ScenePrimBlend::Additive};
+    quarter.corners[0] = {.clip = glow.centre, .offset = sign * glow.half, .uv = from};
+    quarter.corners[1] = {
+        .clip = glow.centre, .offset = {0.0F, sign.y * glow.half}, .uv = {to.x, from.y}};
+    quarter.corners[2] = {
+        .clip = glow.centre, .offset = {sign.x * glow.half, 0.0F}, .uv = {from.x, to.y}};
+    quarter.corners[3] = {.clip = glow.centre, .offset = {0.0F, 0.0F}, .uv = to};
+  }
+  return out;
 }
 
 // Draws a field scene's primitives in the scene pass, after the models, tested against their depth

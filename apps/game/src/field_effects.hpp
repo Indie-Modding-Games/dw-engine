@@ -1,0 +1,178 @@
+#pragma once
+
+#include <dwe/rhi/bindless.hpp>
+#include <dwe/ruleset/random.hpp>
+
+#include <glm/glm.hpp>
+
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <vector>
+
+#include "scene_prims.hpp"
+
+namespace dwe::app {
+
+// A point in the original's world axes and units (y down, z the other way from the world's).
+using OriginalPoint = glm::ivec3;
+
+// The images the field's effects draw with, each keeping the original's STP bits
+// (FieldScene::stpSceneImage).
+struct FieldEffectImages {
+  // ETCDAT/ETCTIM.BIN entry 2 (VRAM 768, 384; 256 x 48 texels): the clouds with palette 0 (CLUT
+  // 192, 488), the particles with palette 1 (CLUT 192, 489).
+  std::optional<rhi::TextureId> clouds;
+  std::optional<rhi::TextureId> particles;
+  // Entry 3 (VRAM 960, 384; 256 x 64) with palette 2 (CLUT 272, 482).
+  std::optional<rhi::TextureId> butterfly;
+  // ETCDAT/SPOT256.TIM (128 x 128), the sparks' flash.
+  std::optional<rhi::TextureId> glow;
+};
+
+// What one drawn frame of the effects needs to know of the scene.
+struct FieldEffectView {
+  ScenePrimFrame frame;
+  // The map's projection distance (VIEWPORT_DISTANCE).
+  float focalLength = 1000.0F;
+  FieldEffectImages images;
+  // Where each butterfly circles (effect_common.c: translateConditionFXToEntity of the partner),
+  // in the world's axes; nothing draws none.
+  std::optional<glm::vec3> butterflyCentre;
+};
+
+// A cloud of smoke or dust (efe.c: CLOUD_FX_DATA): it rises and fades over 14 frames.
+struct FieldCloud {
+  std::int32_t x = 0;
+  std::int32_t z = 0;
+  std::int32_t state = 0;
+};
+
+// A spark of light that bursts into particles (efe.c: PARTICLE_FX_DATA), without a fighter.
+struct FieldSpark {
+  OriginalPoint position{0};
+  // createParticleFX's `count`: 0, 1 (a hit) or 2 (a block).
+  std::int32_t mode = 0;
+  glm::ivec3 color{0};
+  std::int32_t state = 0;
+  std::int32_t timer = 0;
+  std::int32_t endFrame = 0;
+  // spread[0..3][i]: each flash's offset and size.
+  std::array<std::array<std::int32_t, 3>, 4> spread{};
+};
+
+// One particle of the healing effect (particle.c: ParticleObjEntry).
+struct HealingMote {
+  std::int32_t counter = -1;
+  OriginalPoint position{0};
+  // pos.pad: the spiral's particles' size, rolled every frame.
+  std::int32_t size = 0;
+};
+
+// The particles over the partner as an item heals it (particle.c: HEALING_PARTICLES).
+struct FieldHealing {
+  std::int32_t frame = 0;
+  // Where the spiral starts: the partner's x and z, the y over its head.
+  OriginalPoint origin{0};
+  std::int32_t radius = 0;
+  // hasParticle2: the larger items add a ring of particles.
+  bool ring = false;
+  std::array<HealingMote, 20> spiral{};
+  std::array<HealingMote, 20> rings{};
+};
+
+// The butterfly that flies around the partner while it sulks (butterfly.c).
+struct FieldButterfly {
+  std::int32_t frame = 0;
+};
+
+// The field's own effects, as the original's object list runs them a frame at a time: the clouds
+// (efe.c: createCloudFX, tickCloudFX, renderCloudFX), the sparks (createParticleFX, tickParticleFX,
+// renderParticleFX), the healing particles (particle.c) and the butterfly (butterfly.c).
+class FieldEffects {
+public:
+  // The particles' 50 directions are rolled once, as initializeParticleFX does at boot.
+  explicit FieldEffects(std::uint64_t seed);
+
+  // createCloudFX: at most 60 at once; the cloud's height is its own.
+  void addCloud(std::int32_t x, std::int32_t z);
+  // removeAllCloudFX.
+  void removeClouds() { clouds_.clear(); }
+  // createParticleFX(kind, count, position, NULL, lifetime): at most 4 at once; an unknown kind or
+  // count makes none.
+  void addSpark(std::int32_t kind, std::int32_t mode, OriginalPoint position,
+                std::int32_t lifetime);
+  // addHealingParticleEffect: one at a time; `feet` is where the partner stands, `height` and
+  // `radius` its species' (DIGIMON_DATA). False when one is already running.
+  bool addHealing(OriginalPoint feet, std::int32_t height, std::int32_t radius, bool ring);
+  // setButterfly and unsetButterfly: one at a time here (the partner's).
+  void setButterfly();
+  void unsetButterfly() { butterfly_.reset(); }
+  [[nodiscard]] bool hasButterfly() const { return butterfly_.has_value(); }
+  // Everything gone (a map change: the original's objects of the field go with it).
+  void clear();
+
+  // One frame of the original's object list for these objects (tickCloudFX, tickParticleFX,
+  // tickHealingParticles, tickButterfly). The butterfly waits while `inMenu` (IS_IN_MENU).
+  void tickFrame(bool inMenu = false);
+  // Real seconds of the field; whole frames of `frameSeconds` tick.
+  void advance(double seconds, double frameSeconds, bool inMenu = false);
+
+  // The frame's primitives, back to front within each kind: the clouds, the sparks' flashes and
+  // particles, the healing particles and the butterfly.
+  [[nodiscard]] std::vector<ScenePrim> draw(const FieldEffectView& view) const;
+
+  [[nodiscard]] const std::vector<FieldCloud>& clouds() const { return clouds_; }
+  [[nodiscard]] const std::vector<FieldSpark>& sparks() const { return sparks_; }
+  [[nodiscard]] const std::optional<FieldHealing>& healing() const { return healing_; }
+  [[nodiscard]] const std::optional<FieldButterfly>& butterfly() const { return butterfly_; }
+  [[nodiscard]] bool empty() const {
+    return clouds_.empty() && sparks_.empty() && !healing_ && !butterfly_;
+  }
+
+private:
+  // libc rand: 15 bits.
+  std::int32_t rand();
+  void tickHealing(FieldHealing& healing);
+
+  ruleset::Random random_;
+  std::array<glm::ivec3, 50> directions_{};
+  std::vector<FieldCloud> clouds_;
+  std::vector<FieldSpark> sparks_;
+  std::optional<FieldHealing> healing_;
+  std::optional<FieldButterfly> butterfly_;
+  double pending_ = 0.0;
+};
+
+// The smoke a character vanishes in (overworld.c: createNinjamonEffect, renderNinjamonEffect): the
+// map's first 41 sprite objects drift right and down by their own steps, start over from where they
+// were once past x 160, and all hide after 60 frames.
+class ObjectSmoke {
+public:
+  static constexpr std::size_t Objects = 0x29;
+
+  explicit ObjectSmoke(std::uint64_t seed) : random_(seed) {}
+
+  // createNinjamonEffect: keeps where the objects are (storeMapObjectPosition) and rolls each one's
+  // steps.
+  void start(std::span<const glm::ivec2> places);
+  [[nodiscard]] bool active() const { return active_; }
+  void stop() { active_ = false; }
+  // One frame of renderNinjamonEffect over the objects' places; true on the frame they all hide
+  // (the smoke then ends).
+  bool frame(std::span<glm::ivec2> places);
+
+private:
+  // randomLimit(10) + from.
+  std::int32_t roll(std::int32_t from) { return random_.below(StepRoll) + from; }
+  static constexpr std::int32_t StepRoll = 10;
+
+  ruleset::Random random_;
+  std::array<glm::ivec2, Objects> stored_{};
+  std::array<glm::ivec2, Objects> steps_{};
+  std::int32_t counter_ = 0;
+  bool active_ = false;
+};
+
+} // namespace dwe::app

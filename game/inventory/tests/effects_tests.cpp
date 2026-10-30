@@ -124,3 +124,16 @@ TEST_CASE("an item missing from data/item_effects, or a case nobody decoded, is 
   REQUIRE_FALSE(hidden.has_value());
   CHECK(hidden.error().message.find("food") != std::string::npos);
 }
+
+TEST_CASE("the larger items show the healing particles with the ring, medicine only on a cure") {
+  // item.c: HEAL_EFFECT_VARIANT {0, 0, 1, 1}; handleRestore passes 1; handleStatusItems cases 0xd
+  // and 0xe only when handleMedicineHealing returns 1.
+  const ItemEffects effects = fixtureItemEffects(originalRules());
+  const auto revival = required(resolved(effects, Revival).healingParticles);
+  CHECK(revival.ring);
+  CHECK_FALSE(revival.onlyIfSicknessCured);
+  const auto bandage = required(resolved(effects, Bandage).healingParticles);
+  CHECK_FALSE(bandage.ring);
+  CHECK(bandage.onlyIfSicknessCured);
+  CHECK_FALSE(resolved(effects, PowerDisk).healingParticles.has_value());
+}

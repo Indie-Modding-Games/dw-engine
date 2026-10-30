@@ -81,7 +81,7 @@ private:
 // The partner as the inventory sees it in the field: it may refuse an item, and takes its effect.
 class InventoryAdapter::PartnerTarget final : public game::inventory::ItemEffectTarget {
 public:
-  PartnerTarget(GameSession& session, const InventoryAdapter& adapter)
+  PartnerTarget(GameSession& session, InventoryAdapter& adapter)
       : session_(&session), adapter_(&adapter) {}
 
   bool accepts(const ItemEffect& effect, UseContext /*context*/) override {
@@ -100,11 +100,18 @@ public:
       return;
     }
     heal(effect);
+    bool sicknessCured = false;
     if (effect.medicine) {
-      partner.cure(
+      sicknessCured = partner.cure(
           {.injuryPercent = curePercent(effect.medicine->injuryCure, effect.medicine->injuryRoll),
            .sicknessPercent =
                curePercent(effect.medicine->sicknessCure, effect.medicine->sicknessRoll)});
+    }
+    // item.c: the healing items call addHealingParticleEffect; the medicine only when
+    // handleMedicineHealing cured the sickness.
+    if (effect.healingParticles &&
+        (!effect.healingParticles->onlyIfSicknessCured || sicknessCured)) {
+      adapter_->pendingHealing_ = *effect.healingParticles;
     }
     if (effect.statGain) {
       partner.addStatGains(statBlockOf(*effect.statGain));
@@ -212,7 +219,7 @@ private:
   }
 
   GameSession* session_;
-  const InventoryAdapter* adapter_;
+  InventoryAdapter* adapter_;
 };
 
 InventoryAdapter::InventoryAdapter(InventoryAdapterDesc desc)

@@ -110,6 +110,7 @@ Estado: **Igual** (mismo comportamiento), **Desviación aprobada** (cambio decid
 | Piloto automático y orinal | `item.c: handleChips`, `handlePortaPotty` | `effects.chip.script`, `effects.chip.toilet` | `effects_tests`: "chips give…" | Igual |
 | Comida, favorita, baño −1 | `item.c: handleFood` | `describeFood`; `data/item_effects`, `effects.food` | `effects_tests`: "food gives…" | Igual |
 | Evolución por tabla y fija | `item.c: handleEvoItems`, `EVOLUTION_ITEM_TARGET` | `describeEvolution`; `effects.evolution` | `effects_tests`: "evolution items…" | Igual |
+| Partículas de curación: con anillo los objetos grandes; la medicina solo si cura la enfermedad | `item.c` (`addHealingParticleEffect`), `handleMedicineHealing` | `ItemEffect::healingParticles`; `effects.healing_particles`; `InventoryAdapter::takeHealingParticles` | `effects_tests`: "the larger items show…" | Igual |
 | Existencias por disparador `0x180 + i` | `script_common.c: shopFillBuyItemList` | `shopStock`, `StockTriggers`; `shop.stock_trigger_base` | `shop_tests`: "the stock is…" | Igual |
 | Cuándo se puede comprar | `script_common.c: shopFillBuyItemList` | `shop.cpp: isBuyable` | `shop_tests`: "the stock is…", "with the bag full…" | Igual |
 | Precio, descuento de bebé 90 % | `script_common.c: tickItemMenuAmountBox`, `isPartnerBaby` | `buyPrice`, `buy`; `shop.baby_discount_percent` | `shop_tests`: "buying pays…" | Igual |

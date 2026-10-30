@@ -55,6 +55,9 @@ public:
   // An instance's ordering-table entry (assets::MapOrder): Nearest-Farthest, BehindEverything or
   // ScreenSpace.
   [[nodiscard]] std::int32_t orderValue(std::size_t instance) const;
+  // Puts an instance in another ordering-table entry, as a script's effect does
+  // (overworld.c: renderNinjamonEffect).
+  void setOrderValue(std::size_t instance, std::int32_t value);
 
   [[nodiscard]] std::size_t instanceCount() const { return instances_.size(); }
 
@@ -80,6 +83,8 @@ public:
   void restartAnimation(std::size_t instance);
 
 private:
+  void sortDrawOrder();
+
   struct Instance {
     std::vector<assets::MapSpriteFrame> frames;
     glm::vec2 position{0.0F};

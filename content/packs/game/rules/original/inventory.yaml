@@ -139,6 +139,15 @@ effects:
       - { item: giga_hand, evolves_to: ggdr }
       - { item: noble_mane, evolves_to: panj }
       - { item: metalbanana, evolves_to: mtet }
+  # item.c: addHealingParticleEffect(partner, hasParticle2) tras curar. handleHPHealingItem y
+  # handleMPHealingItem toman hasParticle2 de HEAL_EFFECT_VARIANT {0, 0, 1, 1} (por índice desde el
+  # primero de cada tipo), handleDoubleFloppy (también omnipotent) pasa 0 y handleRestore 1. bandage y
+  # medicine (handleStatusItems 0xd y 0xe) solo cuando handleMedicineHealing devuelve 1: la enfermedad
+  # se curó.
+  healing_particles:
+    plain: [sm_recovery, med_recovery, mp_floppy, medium_mp, double_flop, omnipotent]
+    ring: [lrg_recovery, sup_recovery, large_mp, restore, sup_restore]
+    sickness_cured: [bandage, medicine]
 # Rarezas del original (docs/reference/inventory.md, "Rarezas"). true reproduce el original.
 quirks:
   # item.c: giveItem: lo que pasa de 99 al apilar se pierde (y la tienda ya lo ha cobrado).

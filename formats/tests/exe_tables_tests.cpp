@@ -3,7 +3,10 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "exe_fixture.hpp"
 
@@ -149,6 +152,8 @@ TEST_CASE("every table of a synthetic executable is read field by field") {
         dwe::formats::exe::TransportTarget{.mapId = 1, .exit = 3, .trigger = 0x51, .cost = 500});
   CHECK(tables->transportTargets[1].mapId == 2);
   CHECK(tables->transportTargets[1].cost == 1000);
+  CHECK(tables->conditionFxOffsets ==
+        std::vector<std::array<std::int16_t, 4>>{{std::int16_t{90}, -50, 0, 3}});
   CHECK(tables->mapLightUpdateData[0].trigger == 0xFFFF);
   CHECK(tables->digimonVlallSoundIds == std::vector<std::uint8_t>{0, 4, 0});
   CHECK(tables->digimonVballSoundIds == std::vector<std::uint8_t>{0, 0, 9});

@@ -740,6 +740,17 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   if (fieldIdle && !paused()) {
     fieldPoop_.update();
   }
+  // particle.c: addHealingParticleEffect, from the item the partner just took in the field.
+  if (const auto healing = game_.systems.inventory->takeHealingParticles(); healing) {
+    const assets::DigimonRow* row =
+        species_ ? species_->find(session.partnerView().species) : nullptr;
+    const glm::vec3 feet = field.partner().position;
+    // The original's axes: y and z point the other way.
+    scene_->fieldEffects().addHealing(
+        {static_cast<std::int32_t>(feet.x), static_cast<std::int32_t>(-feet.y),
+         static_cast<std::int32_t>(-feet.z)},
+        row != nullptr ? row->height : 0, row != nullptr ? row->radius : 0, healing->ring);
+  }
   const auto partnerEvents = session.takePartnerEvents();
   showPartnerEvents(deathScene_.take(evolutionScene_.take(partnerEvents)), session, *scene_);
   guardFactsChanged = guardFactsChanged || !partnerEvents.empty() ||
@@ -758,6 +769,7 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   // partnerTickNormal), so a care scene shows no need bubble; and in its training state
   // (partnerSetState(10)), so a course shows it while game time stands still.
   const bool fieldRunning = !paused() && field.gameTimeRan();
+  showButterfly(fieldIdle && !field.heldForCare(), session);
   fieldHud_.update(fieldRunning, fieldRunning || (!paused() && gymScreen_.active()),
                    field.heldForCare()
                        ? std::nullopt
@@ -780,6 +792,32 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   scene_->setPartnerMood(partner.conditions, partner.mood.happiness);
   scene_->update(frameSeconds, alpha, paused());
   keepFieldSnapshot(frameSeconds);
+}
+
+// partner_impl.c: handleConditionBubble: a partner whose only condition is sulking, in its normal
+// state, has the butterfly instead of a bubble (setButterfly); a scene, a battle or any other
+// condition takes it away (unsetButterfly from partnerTick, tamerTick, handlePraiseScold and
+// handleConditionBubble). It flies round the point of CONDITION_FX_OFFSETS of the species.
+void PlaySession::showButterfly(bool partnerNormal, const session::GameSession& session) {
+  FieldEffects& effects = scene_->fieldEffects();
+  const game::partner::PartnerState& partner = session.partner().state();
+  if (!partnerNormal || !partner.conditions.only(game::partner::Condition::Sulking)) {
+    effects.unsetButterfly();
+    return;
+  }
+  const assets::DigimonRow* row =
+      species_ ? species_->find(session.partnerView().species) : nullptr;
+  if (row == nullptr || !row->conditionFx) {
+    effects.unsetButterfly();
+    scene_->setPartnerConditionPoint(std::nullopt);
+    return;
+  }
+  const auto& offset = row->conditionFx->offset;
+  scene_->setPartnerConditionPoint(
+      std::pair{row->conditionFx->node,
+                glm::vec3{static_cast<float>(offset[0]), static_cast<float>(offset[1]),
+                          static_cast<float>(offset[2])}});
+  effects.setButterfly();
 }
 
 screens::ScreenSettings PlaySession::partnerStatus() const {

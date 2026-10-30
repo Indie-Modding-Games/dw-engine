@@ -250,7 +250,8 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
 )";
   memory.addFile("packs/base/data/digimon.yaml",
                  "digimon:\n- id: species_a\n  index: 2\n" +
-                     std::vformat(row, std::make_format_args("Test species_a", "SPCA")));
+                     std::vformat(row, std::make_format_args("Test species_a", "SPCA")) +
+                     "  condition_fx: {node: 3, offset: [90, 20, 0]}\n");
   memory.addFile("packs/my_mod/data/digimon.yaml",
                  "digimon:\n- id: my_mod:pebble\n" +
                      std::vformat(row, std::make_format_args("Pebble", "PEBB")));
@@ -268,6 +269,11 @@ TEST_CASE("the packs' digimon and raise tables compose for the game's readers") 
   CHECK(table->find("species_a")->index == 2);
   CHECK(table->find("my_mod:pebble")->index == 3);
   CHECK(table->find("my_mod:pebble")->name == "Pebble");
+  // CONDITION_FX_OFFSETS: the original's species have it, a new one may leave it out.
+  REQUIRE(table->find("species_a")->conditionFx);
+  CHECK(table->find("species_a")->conditionFx->node == 3);
+  CHECK(table->find("species_a")->conditionFx->offset == std::array<std::int32_t, 3>{90, 20, 0});
+  CHECK_FALSE(table->find("my_mod:pebble")->conditionFx);
 }
 
 TEST_CASE(

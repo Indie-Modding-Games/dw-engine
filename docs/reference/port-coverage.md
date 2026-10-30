@@ -53,9 +53,9 @@ de inicio y los mapas cercanos, y reclutar.
 | 10 | El cuadro final del combate no dice la orden aprendida ni el bonus de MP | `battle_ui.c:297` `handleBattleEndBox`, `battle_hud.c` `BTL_appendCommandLearnedText`, `BTL_appendMPBonusText` | `apps/screens/include/dwe/screens/battle_view.hpp:116` |
 | 11 | Con la bolsa llena, recibir un objeto no pregunta cuál tirar: la rutina 0 se cierra al momento | `script_common.c:1815` `openDiscardItem` | `apps/session/src/story_routines/routine_discard_item.cpp` |
 | 12 | Sin medallas ni la escena de premio (medalla o nivel del jugador) | `script_common.c:3026` `unlockMedal`, `tamer.c:721` `checkMedalConditions`, `:793` `checkPendingAwards`, `:1751` `tamerTickAwardSomething` | — |
-| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas, el cuadro del dinero y el humo de un personaje que desaparece | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox`; `overworld.c:777` `createNinjamonEffect` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14, 15 y 38 |
-| 14 | El compañero infeliz se distrae, pero no se ve la mariposa que persigue | `butterfly.c` `setButterfly`, `tickButterfly` | `game/partner/src/partner_tick.cpp:313` |
-| 15 | No hay partículas de curación al usar un objeto ni partículas de objeto en combate | `particle.c` `addHealingParticleEffect`, `tickHealingParticles`; `battle_effect.c` `BTL_addItemParticles` | — |
+| 13 | Las pantallas de servicio de la ciudad se cierran al momento: guardarropía de objetos, gramola, intercambio por méritos, trueque, cartas y el cuadro del dinero (el humo de un personaje que desaparece ya sale: rutina 38) | `shop/script_menu.c` `tickItemKeeper`, `openJukebox`, `openMeritShop`, `openMojyamonShop`, `openBuyCardMenu`, `rollCardPack`; `script_common.c` `createShopBitsBox` | `apps/game/src/story_scene_glue.cpp:48`; rutinas 1, 2, 9, 11, 14 y 15 |
+| 14 | Cerrado: la mariposa vuela alrededor del compañero que solo está distraído (`butterfly.c`; punto de `CONDITION_FX_OFFSETS`) | `butterfly.c` `setButterfly`, `tickButterfly` | `apps/game/src/field_effects.cpp`, `apps/game/src/play_session.cpp` |
+| 15 | Las partículas de curación ya salen al usar un objeto en el campo; faltan las partículas de objeto en combate | `battle_effect.c` `BTL_addItemParticles` | `apps/game/src/field_effects.cpp` (campo) |
 | 16 | La pesca: la cámara no va al corcho ni se mueve con la cruceta, el sedal y las ondas no se dibujan, y el cebo es un marcador | `fish/fish.c` `FISH_panCameraTo`, `FISH_panCameraWithDPad`, `FISH_clipLineToRect`, `FISH_tickRipple`, `FISH_showBaitSprite` | `apps/game/src/fishing_screen.cpp:50`, `:231` |
 | 17 | Las escenas de muerte y renacer no dibujan el iris ni los fragmentos, destellos y chispas del huevo | `murd/murd.c`, `dooa/dooa.c`, `doo2/doo2.c` | `apps/game/src/death_scene.cpp:265`, `:394` |
 | 18 | Objetos de mapa con lógica sin portar: tapa de los cofres, montones de tierra y vagoneta de la mina, roca, cajas de la ciudad de juguete, engranajes, pedestal, cristales de teletransporte, niebla; y las rutinas de guion que los ponen (19, 20, 26, 27, 41–44, 49) siguen sin hacer nada | `map_object.c` (`tickOpenChestTray`, `decreaseDirtPileSize`, `spawnBoulder`, `spawnToyTownBoxes`, `spawnGearbox`, `spawnAngemonPedestal`, `loadWarpCrystals`), `overworld.c:1012` `tickRemoveMist` | `game/story/src/story_routines.cpp:27` (rutina sin manejador: sigue) |
@@ -83,9 +83,9 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | Sistema | Ficheros del decomp | Portado | Parcial | Falta | No aplica | Cobertura |
 |---|---|---:|---:|---:|---:|---:|
 | [Batalla](#batalla) | `btl/`, `main/` (9 ficheros) | 145 | 4 | 5 | 17 | 95 % |
-| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 168 | 3 | 54 | 60 | 75 % |
+| [Efectos de batalla](#efectos-de-batalla) | `btl/`, `main/` (6 ficheros) | 174 | 4 | 49 | 58 | 78 % |
 | [Campo: movimiento, colisión y cámara](#campo-movimiento-colision-y-camara) | `main/` (5 ficheros) | 73 | 4 | 5 | 14 | 91 % |
-| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 52 | 1 | 15 | 34 | 77 % |
+| [NPC y objetos del mapa](#npc-y-objetos-del-mapa) | `main/` (8 ficheros) | 59 | 0 | 11 | 32 | 84 % |
 | [Compañero: IA y cuidado](#companero-ia-y-cuidado) | `main/partner.c`, `main/partner_impl.c` | 49 | 0 | 0 | 2 | 100 % |
 | [Guion e intérprete](#guion-e-interprete) | `main/script_common.c`, `main/script_interp.c`, `main/script_textbox.c`, `main/script_value.c` | 86 | 4 | 4 | 51 | 94 % |
 | [Menús e interfaz](#menus-e-interfaz) | `main/` (8 ficheros) | 74 | 1 | 3 | 46 | 96 % |
@@ -101,7 +101,7 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 46 | 1 | 1 | 38 | 97 % |
-| **Total** | 2438 funciones | 961 | 34 | 344 | 1099 | 73 % |
+| **Total** | 2438 funciones | 974 | 34 | 335 | 1095 | 74 % |
 
 ## Batalla
 
@@ -131,7 +131,7 @@ La máquina de efectos de las técnicas (scripts EFE): proyectiles, golpes, cám
 
 Ficheros del decomp: `btl/battle_effect.c`, `main/buff_model.c`, `main/efe.c`, `main/efe_table.c`, `main/effect_common.c`, `main/particle.c`.
 
-Portado 168, parcial 3, falta 54, no aplica 60.
+Portado 174, parcial 4, falta 49, no aplica 58.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
@@ -182,18 +182,14 @@ Portado 168, parcial 3, falta 54, no aplica 60.
 | `BTL_initializeUnk2` | `btl/battle_effect.c:6676` | falta | Prepara los anillos de mejora de stats. | — |
 | `tickBuffModel` | `main/buff_model.c:38` | falta | Anima el modelo que acompaña a una mejora de stats. | — |
 | `morphBuffModel` | `main/buff_model.c:48` | falta (citada en docs) | Alterna la paleta del modelo de mejora. | — |
-| `initializeParticleFX` | `main/efe.c:350` | falta | Prepara las partículas de los efectos. | — |
-| `tickParticleFX` | `main/efe.c:463` | parcial | Mueve las partículas de los efectos. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
+| `tickParticleFX` | `main/efe.c:463` | parcial | Mueve las partículas de los efectos. | `apps/game/src/field_effects.cpp` · campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md) |
 | `addEntityParticleFX` | `main/efe.c:611` | parcial | Lanza partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `initializeEntityParticleFX` | `main/efe.c:633` | falta | Prepara las partículas pegadas a luchadores. | — |
 | `tickEntityParticleFX` | `main/efe.c:638` | parcial | Mueve las partículas pegadas a un luchador. | `game/battle/src/particle_rolls.cpp` · solo sus tiradas, con --original-rolls (battle.md) |
 | `setEFEFlashOffset` | `main/efe.c:965` | falta | Mueve un destello de luz. | — |
-| `translateConditionFXToEntity` | `main/effect_common.c:307` | falta | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_status.cpp:274` |
-| `tickHealingParticles` | `main/particle.c:82` | falta | Mueve las partículas de curación al usar un objeto. | — |
-| `initializeHealingParticles` | `main/particle.c:201` | falta | Prepara las partículas de curación. | — |
-| `addHealingParticleEffect` | `main/particle.c:209` | falta | Lanza las partículas de curación sobre el compañero. | — |
+| `translateConditionFXToEntity` | `main/effect_common.c:307` | parcial | Pega un efecto de estado a la posición de un personaje. | `apps/game/src/field_scene_fx.cpp` · solo la mariposa del compañero en el campo (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx) |
 
-No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (15); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
+No aplica: limpieza de objetos y memoria del original: el motor libera lo suyo (21); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (13); gráficos, memoria o ficheros del hardware original: los sustituye el motor (9); preparación de tablas, objetos o recursos del original: el motor monta los suyos (3); lectura del fichero de efecto; la hace la extracción (2); tabla de saltos del original (2); lectura del disco (2); dato auxiliar de la escena de renacer (2); tabla de ficheros del disco (1); carga asíncrona del original (1); depuración del original (1); preparación del original (1).
 
 ## Campo: movimiento, colisión y cámara
 
@@ -223,15 +219,11 @@ Los personajes del mapa y su IA de paseo, cofres, objetos del suelo y decorados 
 
 Ficheros del decomp: `main/anim.c`, `main/bubble.c`, `main/butterfly.c`, `main/drop_shadow.c`, `main/map_object.c`, `main/model.c`, `main/overworld.c`, `main/world_object.c`.
 
-Portado 52, parcial 1, falta 15, no aplica 34.
+Portado 59, parcial 0, falta 11, no aplica 32.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
 | `animateEntityTexture` | `main/anim.c:76` | falta (citada en docs) | Anima por código la textura de algunos personajes (ojos, brillos). | docs/formats/modelos.md: no se extrae |
-| `initializeButterfly` | `main/butterfly.c:60` | falta | Prepara la mariposa que distrae al compañero infeliz. | — |
-| `setButterfly` | `main/butterfly.c:71` | falta | Hace salir la mariposa que persigue el compañero infeliz (condición de distraído). | la condición sí está (partner_tick.cpp:313); la mariposa no se ve |
-| `tickButterfly` | `main/butterfly.c:94` | falta | Hace volar la mariposa. | — |
-| `unsetButterfly` | `main/butterfly.c:134` | falta | Quita la mariposa. | — |
 | `loadWarpCrystals` | `main/map_object.c:500` | falta | Carga los cristales de teletransporte de un mapa. | solo lo cita la extracción del disco |
 | `initializeMedalModel` | `main/map_object.c:656` | falta | Carga el modelo de una medalla. | preparación de tablas, objetos o recursos del original: el motor monta los suyos |
 | `spawnToyTownBoxes` | `main/map_object.c:662` | falta | Pone las cajas de la ciudad de juguete. | solo lo cita la extracción del disco |
@@ -241,10 +233,9 @@ Portado 52, parcial 1, falta 15, no aplica 34.
 | `tickCloseChestTray` | `main/map_object.c:1096` | falta | Anima la tapa del cofre al cerrarse. | — |
 | `moveAngemonPedestal` | `main/map_object.c:1167` | falta | Mueve el pedestal del santuario. | — |
 | `activateMedalTexture` | `main/map_object.c:1193` | falta (citada en docs) | Pone la textura de la medalla ganada. | — |
-| `createNinjamonEffect` | `main/overworld.c:777` | parcial | Nube de humo de un personaje que desaparece. | `apps/session/include/dwe/session/story_scenes.hpp:113` · la rutina 38 se cierra sin el humo |
 | `tickRemoveMist` | `main/overworld.c:1012` | falta | Disipa la niebla del mapa. | — |
 
-No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (13); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
+No aplica: dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (11); gráficos, memoria o ficheros del hardware original: los sustituye el motor (5); limpieza de objetos y memoria del original: el motor libera lo suyo (3); consulta interna (2); animación del original; el motor anima sus clips (1); recorte de dibujo (1); preparación de tablas, objetos o recursos del original: el motor monta los suyos (1); estado de dibujo (1); modelo vacío del original (1); preparación de modelos (1); lectura del disco; los modelos los extrae dwx (1); subida de textura del original (1); limpieza del original (1); tabla de objetos del original (1); bucle de objetos del original; el motor tiene su bucle (1).
 
 ## Compañero: IA y cuidado
 

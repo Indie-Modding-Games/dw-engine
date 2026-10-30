@@ -255,6 +255,10 @@ inline ExecutableFixture makeExecutableFixture() {
   image.u8(layout.transportTargets.address + 8, 2);
   image.u16(layout.transportTargets.address + 10, 0x52);
   image.u32(layout.transportTargets.address + 12, 1000);
+  layout.conditionFxOffsets = {.address = image.place(8), .count = 1};
+  image.i16(layout.conditionFxOffsets.address, 90);
+  image.i16(layout.conditionFxOffsets.address + 2, -50);
+  image.i16(layout.conditionFxOffsets.address + 6, 3);
   layout.jukeboxTracks = {.address = image.place(4), .count = 2};
   image.u8(layout.jukeboxTracks.address, 0x1D);
   image.u8(layout.jukeboxTracks.address + 3, 2);

@@ -360,12 +360,12 @@ BTL_tickBuffRings = { status = "falta", what = "Anima los anillos de una mejora 
 BTL_initializeUnk2 = { status = "falta", what = "Prepara los anillos de mejora de stats." }
 tickBuffModel = { status = "falta", what = "Anima el modelo que acompaña a una mejora de stats." }
 morphBuffModel = { status = "falta", what = "Alterna la paleta del modelo de mejora." }
-initializeParticleFX = { status = "falta", what = "Prepara las partículas de los efectos." }
-tickParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas de los efectos." }
+initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "campo: las 50 direcciones, con la semilla del motor (Suposición)", what = "Prepara las partículas de los efectos." }
+tickParticleFX = { status = "parcial", dwe = "apps/game/src/field_effects.cpp", note = "campo: las chispas sin luchador (gimnasio); batalla: solo sus tiradas, con --original-rolls (game/battle/src/particle_rolls.cpp, battle.md)", what = "Mueve las partículas de los efectos." }
 addEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Lanza partículas pegadas a un luchador." }
 initializeEntityParticleFX = { status = "falta", what = "Prepara las partículas pegadas a luchadores." }
 tickEntityParticleFX = { status = "parcial", dwe = "game/battle/src/particle_rolls.cpp", note = "solo sus tiradas, con --original-rolls (battle.md)", what = "Mueve las partículas pegadas a un luchador." }
-tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas)", what = "Mueve las nubes de humo y polvo de los efectos." }
+tickCloudFX = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Nubes (las de las técnicas); las del campo (gimnasio, cacas): apps/game/src/field_effects.cpp", what = "Mueve las nubes de humo y polvo de los efectos." }
 EFECreateFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Crea un destello de luz de una técnica." }
 tickEFEFlash = { status = "portado", dwe = "game/battle/src/effect_runner_fx.cpp", note = "battle.md: Destellos", what = "Anima un destello de luz." }
 setEFEFlashOffset = { status = "falta", what = "Mueve un destello de luz." }
@@ -373,13 +373,13 @@ findEFEDATFile = { status = "no-aplica", note = "lectura del disco", what = "Bus
 initializeEFE = { status = "no-aplica", note = "preparación del original", what = "Prepara el sistema de efectos." }
 getEFEDATEntry = { status = "no-aplica", note = "lectura del disco", what = "Da una entrada del fichero de efectos." }
 fillEFEXTable = { status = "no-aplica", note = "tabla de saltos del original", what = "Rellena la tabla de órdenes de efecto." }
-translateConditionFXToEntity = { status = "falta", what = "Pega un efecto de estado a la posición de un personaje." }
+translateConditionFXToEntity = { status = "parcial", dwe = "apps/game/src/field_scene_fx.cpp", note = "solo la mariposa del compañero en el campo (CONDITION_FX_OFFSETS en la tabla de especies: condition_fx)", what = "Pega un efecto de estado a la posición de un personaje." }
 doSomethingWithSomePoints = { status = "portado", dwe = "game/battle/src/effect_runner.cpp:47", what = "Prueba si un golpe en línea cruza la caja de un luchador." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Guarda la altura de la criatura para la escena de renacer." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "dato auxiliar de la escena de renacer", what = "Lee la altura guardada para la escena de renacer." }
-tickHealingParticles = { status = "falta", what = "Mueve las partículas de curación al usar un objeto." }
-initializeHealingParticles = { status = "falta", what = "Prepara las partículas de curación." }
-addHealingParticleEffect = { status = "falta", what = "Lanza las partículas de curación sobre el compañero." }
+tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "el anillo de la partícula 0 divide por cero: Suposición -1", what = "Mueve las partículas de curación al usar un objeto." }
+initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara las partículas de curación." }
+addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "qué objetos y si llevan anillo: inventory.yaml effects.healing_particles", what = "Lanza las partículas de curación sobre el compañero." }
 
 # --- Campo
 findAABBHitEntity = { status = "portado", note = "solo en las comprobaciones de golpe de los efectos; el campo choca con su rejilla", dwe = "game/battle/src/effect_runner_subops.cpp:717", what = "Busca la entidad cuya caja toca otra." }
@@ -429,10 +429,10 @@ tickMomentum = { status = "portado", dwe = "apps/game/src/field_scene.cpp:485", 
 tickAnimation = { status = "portado", note = "Sonidos de clip (0x4000) en el campo, el combate y las escenas de cuidado: FieldScene::playClipSounds; bancos de la especie en SessionSound.", what = "Avanza la animación de un personaje." }
 animHandleKeyFrameInstruction = { status = "portado", dwe = "docs/formats/modelos.md:113", what = "Ejecuta una orden de fotograma clave de la animación." }
 initializeConditionBubbles = { status = "portado", dwe = "apps/game/src/play_session.cpp:43", what = "Prepara las burbujas de necesidad del compañero." }
-initializeButterfly = { status = "falta", what = "Prepara la mariposa que distrae al compañero infeliz." }
-setButterfly = { status = "falta", what = "Hace salir la mariposa que persigue el compañero infeliz (condición de distraído).", note = "la condición sí está (partner_tick.cpp:313); la mariposa no se ve" }
-tickButterfly = { status = "falta", what = "Hace volar la mariposa." }
-unsetButterfly = { status = "falta", what = "Quita la mariposa." }
+initializeButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Prepara la mariposa que distrae al compañero infeliz." }
+setButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", what = "Hace salir la mariposa que persigue el compañero infeliz (condición de distraído)." }
+tickButterfly = { status = "portado", dwe = "apps/game/src/field_effects.cpp", what = "Hace volar la mariposa." }
+unsetButterfly = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "se quita en cuanto el compañero sale de su estado normal o tiene otra condición", what = "Quita la mariposa." }
 clearChests = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Vacía los cofres del mapa al salir." }
 loadDirtCartModel = { status = "portado", dwe = "apps/session/src/story_routines/routine_dirt_cart.cpp", what = "Carga la vagoneta de tierra de la mina." }
 initializeChest = { status = "portado", dwe = "game/field/src/field_items.cpp", what = "Prepara los cofres de la partida." }
@@ -633,7 +633,8 @@ rollCardPack = { status = "portado", dwe = "apps/session/src/story_routines/rout
 openBuyCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la compra de cartas." }
 openSellCardMenu = { status = "portado", dwe = "apps/session/src/story_routines/routine_card_shop.cpp", what = "Abre la venta de cartas." }
 createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp", note = "la tienda lo enseña de la primera elección a la despedida; la rutina 15 se cierra sin enseñar el cuadro", what = "Enseña el dinero del jugador durante un diálogo." }
-createNinjamonEffect = { status = "parcial", note = "la rutina 38 se cierra sin el humo", what = "Nube de humo de un personaje que desaparece." }
+createNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "rutina 38: apps/game/src/story_scene_glue.cpp", what = "Nube de humo de un personaje que desaparece." }
+renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "la deriva de los objetos y su orden 10 (MapDepthLayers::setOrderValue)", what = "Mueve el humo de un personaje que desaparece y lo esconde al acabar." }
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
 initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }

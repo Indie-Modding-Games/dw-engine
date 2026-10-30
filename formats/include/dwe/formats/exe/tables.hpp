@@ -292,6 +292,9 @@ struct ExecutableTables {
   std::vector<JukeboxTrack> jukeboxTracks;
   std::vector<ItemEffectCode> itemEffects; // one per item of itemPara
   std::vector<TransportTarget> transportTargets;
+  // Where a type's condition effects hang (effect_common.c: translateConditionFXToEntity): an
+  // offset x, y, z in a node's space and the node (pad).
+  std::vector<std::array<std::int16_t, 4>> conditionFxOffsets;
 };
 
 // Reads a table of char* pointers to NUL-terminated strings. A null pointer reads as an empty

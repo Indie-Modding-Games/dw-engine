@@ -117,6 +117,7 @@ struct ExecutableLayout {
   TableLocation healingValues;         // int16[]: HEALING_VALUES
   TableLocation evolutionItemTargets;  // u8[]: EVOLUTION_ITEM_TARGET
   TableLocation transportTargets;      // TransportTarget[]: BIRDRA_TRANSPORT_TARGETS
+  TableLocation conditionFxOffsets;    // SVECTOR[]: CONDITION_FX_OFFSETS, by original type
   ItemCodeLayout itemCode;
   MusicCodeLayout musicCode;
 };

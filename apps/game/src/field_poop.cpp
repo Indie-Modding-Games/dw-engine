@@ -19,6 +19,12 @@ namespace {
 
 constexpr std::string_view OpenMenuCommand = "open_menu";
 
+// partner_impl.c: createPoopPile: the cloud's x is (tile x - 50) * 100 + 50 and its z
+// (50 - tile y) * 100 - 50, the middle of the tile in the original's axes.
+constexpr std::int32_t PileTileOrigin = 50;
+constexpr std::int32_t PileTileSide = 100;
+constexpr std::int32_t PileTileHalf = 50;
+
 glm::vec3 centreOf(game::partner::Tile tile) {
   return assets::collisionCellCenter({.column = tile.x, .row = tile.y});
 }
@@ -46,8 +52,14 @@ void FieldPoop::placeOne() {
   const game::field::Field& field = scene_->field();
   const game::field::CharacterState partner = field.partner();
   const assets::CollisionCell cell = assets::collisionCellAt(partner.position);
-  poop_->placePending(*session_, field.mapId(), {.x = cell.column, .y = cell.row},
-                      assets::yawToOriginal(partner.yaw));
+  const std::optional<game::partner::Tile> placed =
+      poop_->placePending(*session_, field.mapId(), {.x = cell.column, .y = cell.row},
+                          assets::yawToOriginal(partner.yaw));
+  if (placed) {
+    // partner_impl.c: createPoopPile puffs a cloud over the pile's tile (createCloudFX).
+    scene_->fieldEffects().addCloud(((placed->x - PileTileOrigin) * PileTileSide) + PileTileHalf,
+                                    ((PileTileOrigin - placed->y) * PileTileSide) - PileTileHalf);
+  }
 }
 
 void FieldPoop::update() {

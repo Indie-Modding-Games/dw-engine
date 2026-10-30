@@ -86,6 +86,11 @@ public:
   [[nodiscard]] const game::inventory::Inventory& inventory() const;
   [[nodiscard]] const assets::ItemTable& items() const;
   [[nodiscard]] const ItemUseRules& itemUseRules() const { return itemUse_; }
+  // The healing particles the last item used in the field asks for (particle.c:
+  // addHealingParticleEffect), once: the field's scene draws them.
+  [[nodiscard]] std::optional<game::inventory::HealingParticles> takeHealingParticles() {
+    return std::exchange(pendingHealing_, std::nullopt);
+  }
 
 private:
   class Serializer;
@@ -101,6 +106,7 @@ private:
   ItemUseRules itemUse_;
   std::unique_ptr<Serializer> serializer_;
   std::function<void(const std::vector<game::inventory::Stack>&)> lossListener_;
+  std::optional<game::inventory::HealingParticles> pendingHealing_;
 };
 
 } // namespace dwe::session

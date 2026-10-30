@@ -183,6 +183,37 @@ Suposiciones:
 - Los números al azar de los efectos usan una semilla propia, no la del juego.
 - Los cuadros de los efectos son constantes del código, no del ruleset.
 
+## Efectos del campo
+
+`FieldEffects` (`field_effects.cpp`, sin estado del motor, con pruebas) corre los efectos propios del campo un cuadro del
+original a la vez (los ticks lógicos del campo, `transition.frameSeconds`) y `FieldScene` los dibuja con las mismas
+primitivas que la evolución (`field_scene_fx.cpp`). Las texturas son las de `ETCDAT/ETCTIM.BIN` con su bit STP
+(`stpSceneImage`): solo los téxeles con STP se suman (`ScenePrim::stpMask`); el resto sale opaco. Todo se borra al
+cambiar de mapa.
+
+- Nubes de humo y polvo (`efe.c: createCloudFX`, `tickCloudFX`, `renderCloudFX`): 14 cuadros, altura, tamaño, columna
+  y tono de sus tablas; hasta 60. Las piden el gimnasio (`GymPorts::addCloud`, `TRN_createCloudFXLine`) y cada caca que
+  sale (`createPoopPile`).
+- Chispas del gimnasio (`createParticleFX(0, 0, …)`, `tickParticleFX`, `renderParticleFX`): 0x13 cuadros, el destello
+  (`SPOT256`, dos) solo en el segundo y 25 partículas que se abren con el seno de 512 por vuelta; hasta 4.
+- Partículas de curación (`particle.c`): 44 cuadros; una espiral que baja desde encima de la cabeza (una partícula por
+  cuadro durante 20) y, con los objetos grandes, un anillo de 4 por cuadro. Qué objetos las lanzan y cuáles llevan
+  anillo está en `inventory.yaml` (`effects.healing_particles`); la medicina solo cuando cura la enfermedad.
+  `InventoryAdapter::takeHealingParticles` las pasa a `PlaySession`.
+- Mariposa (`butterfly.c`): mientras la única condición del compañero es estar distraído y está en su estado normal;
+  vuela en círculo alrededor del punto de `CONDITION_FX_OFFSETS` de su especie (tabla de especies: `condition_fx`, un nodo
+  del modelo y un desplazamiento) y bate las alas cada 2 cuadros.
+- Humo de un personaje que desaparece (rutina 38, `overworld.c: createNinjamonEffect`, `renderNinjamonEffect`):
+  `ObjectSmoke` mueve los 41 primeros objetos del mapa a la derecha y abajo con pasos al azar, los devuelve a su sitio
+  al pasar de x 160, los pone en la entrada 10 de la tabla de orden (`MapDepthLayers::setOrderValue`) y los esconde a
+  los 60 cuadros.
+
+Suposiciones:
+
+- Las 50 direcciones de las partículas y los números al azar usan una semilla propia, no la del juego.
+- La partícula 0 del anillo de curación divide por cero en el original (`512 / (i * 13 / 4)`); se toma -1.
+- Una especie nueva sin `condition_fx` no tiene mariposa.
+
 ## Muerte y renacer
 
 `DeathScene` juega la vida perdida (`murd.c: MURD_tickScene`), la muerte (`dooa.c: DOOA_tickDissolve`) y el renacer

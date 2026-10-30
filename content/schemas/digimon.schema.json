@@ -33,6 +33,16 @@
             "description": "16 move slots; slot i is the move of animation 0x2E + i. null = empty slot (0xFF).",
             "type": "array", "minItems": 16, "maxItems": 16,
             "items": { "$ref": "#/$defs/reference" }
+          },
+          "condition_fx": {
+            "description": "Where the type's condition effects hang (CONDITION_FX_OFFSETS: translateConditionFXToEntity): a node of its model and an offset x, y, z in its space.",
+            "type": "object",
+            "required": ["node", "offset"],
+            "additionalProperties": false,
+            "properties": {
+              "node": { "type": "integer", "minimum": 0 },
+              "offset": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer" } }
+            }
           }
         }
       }

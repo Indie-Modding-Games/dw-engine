@@ -336,7 +336,7 @@ EffectRules readEffects(YamlReader& reader, const YamlNode& node) {
   if (!reader.expectKeys(node, "effects",
                          {"stat_limit", "hp_mp_limit", "conscious_only", "double_floppy", "status",
                           "injury_roll", "sickness_roll", "revive", "battle_disk", "chip", "food",
-                          "evolution"})) {
+                          "evolution", "healing_particles"})) {
     return effects;
   }
   effects.statLimit = positive(reader, node, "stat_limit");
@@ -355,6 +355,12 @@ EffectRules readEffects(YamlReader& reader, const YamlNode& node) {
   readChip(reader, reader.field(node, "chip"), effects);
   readFood(reader, reader.field(node, "food"), effects);
   readEvolution(reader, reader.field(node, "evolution"), effects);
+  const YamlNode& particles = reader.field(node, "healing_particles");
+  if (reader.expectKeys(particles, "healing_particles", {"plain", "ring", "sickness_cured"})) {
+    effects.healingParticles = {.plain = itemIds(reader, particles, "plain"),
+                                .ring = itemIds(reader, particles, "ring"),
+                                .sicknessCured = itemIds(reader, particles, "sickness_cured")};
+  }
   return effects;
 }
 

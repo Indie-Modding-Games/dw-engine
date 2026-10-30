@@ -61,6 +61,14 @@ core::Result<ItemEffect> ItemEffects::resolve(std::string_view item) const {
   if (!described) {
     return std::unexpected{described.error()};
   }
+  const HealingParticleRules& particles = rules_.healingParticles;
+  if (std::ranges::contains(particles.ring, item)) {
+    effect.healingParticles = HealingParticles{.ring = true, .onlyIfSicknessCured = false};
+  } else if (std::ranges::contains(particles.plain, item)) {
+    effect.healingParticles = HealingParticles{.ring = false, .onlyIfSicknessCured = false};
+  } else if (std::ranges::contains(particles.sicknessCured, item)) {
+    effect.healingParticles = HealingParticles{.ring = false, .onlyIfSicknessCured = true};
+  }
   return effect;
 }
 
