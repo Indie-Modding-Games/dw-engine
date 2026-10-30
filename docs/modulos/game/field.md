@@ -178,6 +178,10 @@ Dónde quedan los personajes (jugador, compañero y NPC) unos respecto a otros y
   (su `ScriptedActor` pierde la velocidad, que si no volvía a moverlos en la siguiente retención), y el que ya no
   tiene animación de guion (`setActiveAnim` a 0) vuelve a sus propias animaciones; el que la tiene la conserva, como
   `NPC_ACTIVE_ANIM` en el original hasta que un guion la quita.
+- **Camino con más tramos que puntos** (Igual, `overworld.c: tickWaypointWait`, `NPCEntityTickWaypointWalk`,
+  `map.c: loadMap`): un mapa puede dar menos puntos de paso que tramos tiene el camino de un NPC (dgha02, id de
+  script 7). El original lee los huecos que `loadMap` dejó a cero: el tramo espera 0 fotogramas o anda al origen del
+  mapa. Aquí igual (`waypointOf`); antes el NPC se quedaba quieto con un error en el log.
 - **Sitios de aparición**: el compañero al entrar por un warp (a `spawnDistance` del jugador) y al ponerse junto al
   jugador cuando se atasca o se aleja (`placePartnerNearPlayer`) prueba la rejilla y además que no pisa a fondo a
   nadie; si no, prueba el siguiente sitio. Un NPC aparece donde dice su registro y, si pisa a alguien, la regla de

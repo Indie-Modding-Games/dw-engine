@@ -1356,6 +1356,21 @@ TEST_CASE("an NPC put on the player stays where it was put; the player walks off
   CHECK(*field.npcs().positionOf(7) == glm::vec3{30.0F, 0.0F, 0.0F});
 }
 
+TEST_CASE("an NPC path past its map's waypoints uses the zeroed slots, as the original") {
+  // dgha02's script id 7 has more path parts than waypoints: the original reads the table's slots
+  // that loadMap cleared, so it waits 0 frames and walks to the map's origin.
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  MapDocument map = roomMap("room");
+  const std::size_t slot = addNpc(map, 1000.0F, 0.0F, 7);
+  map.npcs[slot].aiSections = {0, 0, 1, -1, -1, -1, -1, -1};
+  map.npcs[slot].waypoints = {{1, 0, 0}};
+  field.enterMapAt(map, at(-1500.0F, 0.0F, 1500.0F));
+  REQUIRE(spawnNpc(field, slot));
+  run(field, 3.0F);
+  CHECK(groundDistance(*field.npcs().positionOf(7), glm::vec3{0.0F}) < 900.0F);
+}
+
 TEST_CASE("an NPC on a wall cell stays there when it appears and after a talk") {
   // Kunemon's bed in mayo02 is a wall cell: the original keeps it at (143, -1000) through a talk
   // and 300 frames after (DuckStation, e1-cp28).

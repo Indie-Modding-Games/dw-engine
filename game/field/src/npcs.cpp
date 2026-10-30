@@ -41,6 +41,13 @@ glm::vec2 ground(glm::vec3 v) {
   return {v.x, v.z};
 }
 
+// A path part's waypoint. A map can give fewer waypoints than its path has parts (dgha02's script
+// id 7): the original reads the table's later slots, which loadMap -> clearMapDigimon (overworld.c:
+// 1155) zeroed, so such a part waits 0 frames or walks to the map's origin.
+glm::ivec3 waypointOf(const assets::MapNpc& record, std::size_t part) {
+  return part < record.waypoints.size() ? record.waypoints[part] : glm::ivec3{0};
+}
+
 bool spansOverlap(float aMin, float aMax, float bMin, float bMax) {
   return aMax >= bMin && aMin <= bMax;
 }
@@ -580,7 +587,7 @@ void FieldNpcs::setTrackState(Npc& npc, std::uint8_t state) {
 
 void FieldNpcs::tickPath(Npc& npc, float seconds) {
   const assets::MapNpc& record = records_[npc.slot];
-  if (npc.pathBroken || npc.activeSection >= record.aiSections.size()) {
+  if (npc.activeSection >= record.aiSections.size()) {
     return;
   }
   switch (record.aiSections[npc.activeSection]) {
@@ -610,19 +617,13 @@ void FieldNpcs::waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds
     npc.hasTarget = true;
     return;
   }
-  if (npc.activeSection >= record.waypoints.size()) {
-    core::logError("[port:npc] tickWaypointWait (overworld.c:1706): script id {} waits on waypoint "
-                   "{} of {}; it stands",
-                   npc.scriptId, npc.activeSection, record.waypoints.size());
-    npc.pathBroken = true;
-    return;
-  }
   npc.waitSeconds += seconds;
-  const float wait = static_cast<float>(record.waypoints[npc.activeSection].x) * frameSeconds_;
+  const std::int32_t frames = waypointOf(record, npc.activeSection).x;
+  const float wait = static_cast<float>(frames) * frameSeconds_;
   if (npc.waitSeconds >= wait) {
     core::logDebug("[port:npc] tickWaypointWait (overworld.c:1706): script id {} waited {} "
                    "frames on part {}",
-                   npc.scriptId, record.waypoints[npc.activeSection].x, npc.activeSection);
+                   npc.scriptId, frames, npc.activeSection);
     npc.hasTarget = false;
     npc.waitSeconds = 0.0F;
     ++npc.activeSection;
@@ -632,15 +633,7 @@ void FieldNpcs::waitOnPath(Npc& npc, const assets::MapNpc& record, float seconds
 void FieldNpcs::walkOnPath(Npc& npc, const assets::MapNpc& record, Motion motion, float seconds) {
   // overworld.c: NPCEntityTickWaypointWalk.
   if (!npc.hasTarget) {
-    if (npc.activeSection >= record.waypoints.size()) {
-      core::logError("[port:npc] NPCEntityTickWaypointWalk (overworld.c:1740): script id {} walks "
-                     "to waypoint {} of {}; it stands",
-                     npc.scriptId, npc.activeSection, record.waypoints.size());
-      npc.pathBroken = true;
-      npc.motion = Motion::Idle;
-      return;
-    }
-    npc.target = assets::toWorldPosition(record.waypoints[npc.activeSection]);
+    npc.target = assets::toWorldPosition(waypointOf(record, npc.activeSection));
     npc.motion = motion;
     npc.hasTarget = true;
     return;

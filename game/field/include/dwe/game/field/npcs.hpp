@@ -174,8 +174,6 @@ private:
     float waitSeconds = 0.0F;
     glm::vec3 target{};
     scene::Motion motion = scene::Motion::Idle;
-    // A path that points past its waypoints: logged once, and the NPC stands.
-    bool pathBroken = false;
     Blocker blocker = Blocker::None;
     // Held by a script (MapDigimonEntity.stopAnim) and the script's animation (NPC_ACTIVE_ANIM).
     bool held = false;
