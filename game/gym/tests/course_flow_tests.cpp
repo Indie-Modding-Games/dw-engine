@@ -75,7 +75,7 @@ public:
   }
   void restartObjects(const ObjectGroup& group) override { restarts.push_back(group.first); }
   std::optional<std::int32_t> objectRow(std::int32_t /*object*/) override { return row; }
-  std::optional<std::int32_t> partnerHeadRow() override { return std::nullopt; }
+  std::optional<std::int32_t> partnerHeadRow() override { return headRow; }
   std::optional<Point> partnerPosition() override { return Point{}; }
   void movePartner(Point /*delta*/) override {}
   void runOn(Actor /*actor*/) override { ++runs; }
@@ -102,6 +102,7 @@ public:
   int tamerLooks = 0;
   std::vector<std::int32_t> tamerClips;
   bool onScreen = true;
+  std::optional<std::int32_t> headRow;
   std::int32_t row = 0;
   std::vector<std::int32_t> sounds;
   std::vector<std::optional<Point>> walkedTo;
@@ -388,4 +389,18 @@ TEST_CASE("gym.md sounds: no looping voice is left once a session ends, however 
       CHECK(ports.playing.empty());
     }
   }
+}
+
+TEST_CASE("gym.md MP: the lit water drops to 20 pixels above the partner's head row") {
+  // trn_mp.c: moveMapObjects(.., 0, screen.vy - 0x14), screen from getDrawPosition of the head.
+  MpCourse waterfall;
+  waterfall.objects = ObjectGroup{.first = 164, .count = 8};
+  waterfall.headLift = 20;
+  GymRules gym = gymRules();
+  gym.courses.front().detail = waterfall;
+  FakePorts ports;
+  ports.headRow = 54; // the original's row, measured with the partner under the waterfall
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 4);
+  CHECK(ports.row == 34);
 }

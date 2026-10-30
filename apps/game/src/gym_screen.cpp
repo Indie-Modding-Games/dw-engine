@@ -4,6 +4,7 @@
 #include <dwe/core/log.hpp>
 #include <dwe/game/gym/brain_learning.hpp>
 #include <dwe/game/partner/state.hpp>
+#include <dwe/render/map_camera.hpp>
 #include <dwe/screens/name_keys.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
@@ -286,8 +287,23 @@ public:
     return static_cast<std::int32_t>(std::lround(at->y + layers.offset(instance).y));
   }
   std::optional<std::int32_t> partnerHeadRow() override {
-    core::logDebug("[port:gym] getDrawPosition(partner head): not ported yet");
-    return std::nullopt;
+    // overworld.c: getDrawPosition of the partner's location raised by its species' height: the
+    // background row the map's objects are placed in.
+    game::field::Field& field = desc_->scene->field();
+    const render::MapCamera* camera = desc_->scene->camera();
+    const assets::DigimonRow* row =
+        desc_->species != nullptr ? desc_->species->find(partnerSpecies()) : nullptr;
+    if (camera == nullptr || row == nullptr) {
+      return std::nullopt;
+    }
+    glm::vec3 head = field.partner().position;
+    head.y += static_cast<float>(row->height);
+    const std::optional<render::BackgroundPoint> point = camera->projectToBackground(head);
+    if (!point) {
+      return std::nullopt;
+    }
+    core::logDebug("[port:gym] getDrawPosition(partner head): row {:.1f}", point->pixel.y);
+    return static_cast<std::int32_t>(point->pixel.y);
   }
   std::optional<Point> partnerPosition() override {
     return originalOf(desc_->scene->field().partner().position);
