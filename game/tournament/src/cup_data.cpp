@@ -16,6 +16,7 @@ using core::YamlNode;
 
 // Each jump table entry is a JUMP_TO of four bytes (getCupDataJumpTableEntry: id * 4 + 2).
 constexpr std::uint32_t EntrySize = 4;
+constexpr std::uint32_t TextEntry = 0;
 // The cup's entries: 0 its text, then the requirements, the overlevel, the eligible and the rivals.
 constexpr std::uint32_t RequirementsEntry = 1;
 constexpr std::uint32_t OverlevelEntry = 2;
@@ -59,7 +60,42 @@ std::vector<std::uint8_t> bytesOf(std::string_view text) {
   return bytes;
 }
 
+std::optional<std::uint32_t> sectionStart(const YamlNode& sections, std::int32_t id) {
+  for (const YamlNode& section : sections.items()) {
+    if (hexAfter(section.find("id"), HexPrefix) == static_cast<std::uint32_t>(id)) {
+      return hexAfter(section.find("at"), LabelPrefix);
+    }
+  }
+  return std::nullopt;
+}
+
 } // namespace
+
+std::vector<std::int32_t> sectionList(const YamlNode& listing, std::int32_t section) {
+  const YamlNode* sections = listing.find("sections");
+  const YamlNode* instructions = listing.find("instructions");
+  if (sections == nullptr || instructions == nullptr || !sections->isSequence() ||
+      !instructions->isSequence() || section < 0) {
+    return {};
+  }
+  const std::optional<std::uint32_t> start = sectionStart(*sections, section);
+  if (!start) {
+    return {};
+  }
+  for (const YamlNode& instruction : instructions->items()) {
+    if (hexAfter(instruction.find("at"), HexPrefix) != start) {
+      continue;
+    }
+    const YamlNode* op = instruction.find("op");
+    const YamlNode* data = instruction.find("data");
+    if (op == nullptr || !op->isScalar() || op->text() != "data" || data == nullptr ||
+        !data->isScalar()) {
+      return {};
+    }
+    return cupList(bytesOf(data->text()));
+  }
+  return {};
+}
 
 core::Result<CupData> cupDataOf(const YamlNode& listing, std::int32_t cup) {
   const YamlNode* sections = listing.find("sections");
@@ -68,13 +104,7 @@ core::Result<CupData> cupDataOf(const YamlNode& listing, std::int32_t cup) {
       !instructions->isSequence() || cup < 0) {
     return core::fail("the script is no listing");
   }
-  std::optional<std::uint32_t> start;
-  for (const YamlNode& section : sections->items()) {
-    if (hexAfter(section.find("id"), HexPrefix) == std::uint32_t{CupDataSection}) {
-      start = hexAfter(section.find("at"), LabelPrefix);
-      break;
-    }
-  }
+  const std::optional<std::uint32_t> start = sectionStart(*sections, CupDataSection);
   if (!start) {
     return core::fail(std::format("the script has no section {}", CupDataSection));
   }
@@ -111,6 +141,7 @@ core::Result<CupData> cupDataOf(const YamlNode& listing, std::int32_t cup) {
     return cupList(bytesOf(found->second.data));
   };
   CupData data;
+  data.textAt = jump(*table + (TextEntry * EntrySize));
   for (const auto& [entry, out] :
        {std::pair{RequirementsEntry, &data.requirements},
         std::pair{OverlevelEntry, &data.overlevel}, std::pair{EligibleEntry, &data.eligible},

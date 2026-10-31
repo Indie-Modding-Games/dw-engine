@@ -14,7 +14,8 @@
     "stats",
     "levels",
     "first_level",
-    "moves"
+    "moves",
+    "schedule"
   ],
   "additionalProperties": false,
   "properties": {
@@ -202,6 +203,123 @@
           },
           "minItems": 4,
           "maxItems": 4
+        }
+      }
+    },
+    "schedule": {
+      "description": "The registration at the arena's counter (story routine 18, dget.c: initTournamentSchedule).",
+      "type": "object",
+      "required": [
+        "day_variable",
+        "species_variable",
+        "tomorrow_flag",
+        "registered_triggers",
+        "overlevel_trigger",
+        "last_minute_today",
+        "cycle_days",
+        "recruit_trigger_end",
+        "grade_a_won_trigger",
+        "local_list_section",
+        "lines",
+        "sounds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "day_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "species_variable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tomorrow_flag": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "registered_triggers": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "overlevel_trigger": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_minute_today": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cycle_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "recruit_trigger_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "grade_a_won_trigger": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "local_list_section": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines": {
+          "description": "MAPHEAD lines of one section: the title, the question, the question for an overlevel partner and the choice.",
+          "type": "object",
+          "required": [
+            "section",
+            "title",
+            "ask",
+            "ask_overlevel",
+            "choice"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "section": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "title": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ask": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ask_overlevel": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "choice": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "sounds": {
+          "description": "The slot and the sound of a cell that cannot be picked (tickTournamentSchedule).",
+          "type": "object",
+          "required": [
+            "slot",
+            "refuse"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "slot": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "refuse": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     }

@@ -1,0 +1,48 @@
+<rml>
+<head>
+	<title>Tournament schedule</title>
+	<link type="text/rcss" href="../common/base.rcss"/>
+	<link type="text/rcss" href="structure.rcss"/>
+	<script src="logic.lua"></script>
+</head>
+<body>
+	<div id="frame">
+		<div id="title" class="original-box"><div id="title-text"></div></div>
+		<div id="grid" class="original-box">
+			<div class="vline vline-top" id="vline-top-0"></div><div class="vline vline-rows" id="vline-rows-0"></div>
+			<div class="vline vline-top" id="vline-top-1"></div><div class="vline vline-rows" id="vline-rows-1"></div>
+			<div class="vline vline-top" id="vline-top-2"></div><div class="vline vline-rows" id="vline-rows-2"></div>
+			<div class="vline vline-top" id="vline-top-3"></div><div class="vline vline-rows" id="vline-rows-3"></div>
+			<div class="vline vline-top" id="vline-top-4"></div><div class="vline vline-rows" id="vline-rows-4"></div>
+			<div class="hline"></div>
+			<div class="cell-cursor" id="cursor"></div>
+			<div class="day" id="day-0"></div>
+			<div class="day" id="day-1"></div>
+			<div class="day" id="day-2"></div>
+			<div class="day" id="day-3"></div>
+			<div class="day" id="day-4"></div>
+			<div class="cell" id="cell-0-0"></div><div class="cell" id="cell-0-1"></div><div class="cell" id="cell-0-2"></div><div class="cell" id="cell-0-3"></div><div class="cell" id="cell-0-4"></div><div class="cell" id="cell-0-5"></div>
+			<div class="cell" id="cell-1-0"></div><div class="cell" id="cell-1-1"></div><div class="cell" id="cell-1-2"></div><div class="cell" id="cell-1-3"></div><div class="cell" id="cell-1-4"></div><div class="cell" id="cell-1-5"></div>
+			<div class="cell" id="cell-2-0"></div><div class="cell" id="cell-2-1"></div><div class="cell" id="cell-2-2"></div><div class="cell" id="cell-2-3"></div><div class="cell" id="cell-2-4"></div><div class="cell" id="cell-2-5"></div>
+			<div class="cell" id="cell-3-0"></div><div class="cell" id="cell-3-1"></div><div class="cell" id="cell-3-2"></div><div class="cell" id="cell-3-3"></div><div class="cell" id="cell-3-4"></div><div class="cell" id="cell-3-5"></div>
+			<div class="cell" id="cell-4-0"></div><div class="cell" id="cell-4-1"></div><div class="cell" id="cell-4-2"></div><div class="cell" id="cell-4-3"></div><div class="cell" id="cell-4-4"></div><div class="cell" id="cell-4-5"></div>
+		</div>
+		<div id="info" class="original-box text-box">
+			<div class="text-row" id="info-0"><span class="run" id="info-0-run-0"></span><span class="run" id="info-0-run-1"></span><span class="run" id="info-0-run-2"></span><span class="run" id="info-0-run-3"></span></div>
+			<div class="text-row" id="info-1"><span class="run" id="info-1-run-0"></span><span class="run" id="info-1-run-1"></span><span class="run" id="info-1-run-2"></span><span class="run" id="info-1-run-3"></span></div>
+			<div class="text-row" id="info-2"><span class="run" id="info-2-run-0"></span><span class="run" id="info-2-run-1"></span><span class="run" id="info-2-run-2"></span><span class="run" id="info-2-run-3"></span></div>
+			<div class="text-row" id="info-3"><span class="run" id="info-3-run-0"></span><span class="run" id="info-3-run-1"></span><span class="run" id="info-3-run-2"></span><span class="run" id="info-3-run-3"></span></div>
+			<div class="text-row" id="info-4"><span class="run" id="info-4-run-0"></span><span class="run" id="info-4-run-1"></span><span class="run" id="info-4-run-2"></span><span class="run" id="info-4-run-3"></span></div>
+			<div class="text-row" id="info-5"><span class="run" id="info-5-run-0"></span><span class="run" id="info-5-run-1"></span><span class="run" id="info-5-run-2"></span><span class="run" id="info-5-run-3"></span></div>
+			<div class="text-row" id="info-6"><span class="run" id="info-6-run-0"></span><span class="run" id="info-6-run-1"></span><span class="run" id="info-6-run-2"></span><span class="run" id="info-6-run-3"></span></div>
+			<div class="text-row" id="info-7"><span class="run" id="info-7-run-0"></span><span class="run" id="info-7-run-1"></span><span class="run" id="info-7-run-2"></span><span class="run" id="info-7-run-3"></span></div>
+		</div>
+		<div id="talk" class="original-box text-box">
+			<div class="text-row" id="talk-0"><span class="run" id="talk-0-run-0"></span><span class="run" id="talk-0-run-1"></span><span class="run" id="talk-0-run-2"></span><span class="run" id="talk-0-run-3"></span><span class="run" id="talk-0-run-4"></span><span class="run" id="talk-0-run-5"></span></div>
+			<div class="text-row" id="talk-1"><span class="run" id="talk-1-run-0"></span><span class="run" id="talk-1-run-1"></span><span class="run" id="talk-1-run-2"></span><span class="run" id="talk-1-run-3"></span><span class="run" id="talk-1-run-4"></span><span class="run" id="talk-1-run-5"></span></div>
+			<div class="text-row" id="talk-2"><span class="run" id="talk-2-run-0"></span><span class="run" id="talk-2-run-1"></span><span class="run" id="talk-2-run-2"></span><span class="run" id="talk-2-run-3"></span><span class="run" id="talk-2-run-4"></span><span class="run" id="talk-2-run-5"></span></div>
+			<div class="text-row" id="talk-3"><span class="run" id="talk-3-run-0"></span><span class="run" id="talk-3-run-1"></span><span class="run" id="talk-3-run-2"></span><span class="run" id="talk-3-run-3"></span><span class="run" id="talk-3-run-4"></span><span class="run" id="talk-3-run-5"></span></div>
+		</div>
+	</div>
+</body>
+</rml>

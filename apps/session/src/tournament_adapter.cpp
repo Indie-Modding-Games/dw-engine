@@ -10,8 +10,11 @@
 
 #include <algorithm>
 #include <format>
+#include <map>
+#include <optional>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace dwe::session {
 
@@ -20,6 +23,9 @@ namespace {
 using game::tournament::TournamentSectionName;
 
 constexpr std::string_view StadiumData = "data/stadium";
+constexpr std::string_view TournamentData = "data/tournaments";
+// The cup variable's value with no cup picked (initTournamentSchedule: writePStat(3, 0xFF)).
+constexpr std::uint8_t NoCup = 0xFF;
 
 core::Result<core::YamlNode> readYaml(const assets::VirtualFileSystem& files, std::string_view id) {
   auto parsed = assets::AssetId::parse(id);
@@ -63,6 +69,24 @@ core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
     return std::unexpected{read.error()};
   }
   rules_ = std::move(*read);
+  schedule_.reset();
+  table_.reset();
+  auto schedule = game::tournament::parseScheduleRules(*section);
+  if (!schedule) {
+    return std::unexpected{schedule.error()};
+  }
+  auto tournaments = readYaml(*desc_.files, TournamentData);
+  auto table =
+      tournaments
+          ? game::tournament::parseTournamentTable(*tournaments)
+          : core::Result<game::tournament::TournamentTable>{std::unexpected{tournaments.error()}};
+  if (table) {
+    schedule_ = std::move(*schedule);
+    table_ = std::move(*table);
+  } else {
+    core::logWarning("[port:tournament] {} is not read ({}): no registration", TournamentData,
+                     table.error().message);
+  }
   if (const ruleset::Section* values = rules.section(StoryValuesSection); values != nullptr) {
     auto limits = readStoryValueRules(*values);
     if (!limits) {
@@ -73,6 +97,21 @@ core::Result<void> TournamentAdapter::readRules(const ruleset::Ruleset& rules) {
     lostLimit_ = limitOf(*limits, ScriptStat::TournamentsLost);
   }
   return {};
+}
+
+// tournament.c: getCupDataJumpTable reads the active map's script.
+core::Result<std::pair<std::uint16_t, core::YamlNode>> TournamentAdapter::mapListing() const {
+  const game::story::StoryRunner* runner = desc_.story != nullptr ? desc_.story->runner() : nullptr;
+  const std::optional<std::uint16_t> script =
+      runner != nullptr ? runner->mapScript() : std::nullopt;
+  if (!script) {
+    return core::fail("no map script is active");
+  }
+  auto listing = readYaml(*desc_.files, std::format("script/dg/{}", *script));
+  if (!listing) {
+    return std::unexpected{listing.error()};
+  }
+  return std::pair{*script, std::move(*listing)};
 }
 
 const assets::DigimonRow* TournamentAdapter::rowOfNumber(std::int32_t number) const {
@@ -97,18 +136,11 @@ core::Result<void> TournamentAdapter::begin(GameSession& session) {
   if (!cup) {
     return std::unexpected{cup.error()};
   }
-  // tournament.c: getCupDataJumpTable reads the active map's script.
-  const game::story::StoryRunner* runner = desc_.story->runner();
-  const std::optional<std::uint16_t> script =
-      runner != nullptr ? runner->mapScript() : std::nullopt;
-  if (!script) {
-    return core::fail("no map script is active");
-  }
-  auto listing = readYaml(*desc_.files, std::format("script/dg/{}", *script));
+  auto listing = mapListing();
   if (!listing) {
     return std::unexpected{listing.error()};
   }
-  auto data = game::tournament::cupDataOf(*listing, *cup);
+  auto data = game::tournament::cupDataOf(listing->second, *cup);
   if (!data) {
     return std::unexpected{data.error()};
   }
@@ -250,6 +282,168 @@ core::Result<std::int32_t> TournamentAdapter::finish(GameSession& session) {
                 wins_);
   bracket_.reset();
   return wins_;
+}
+
+bool TournamentAdapter::registered() const {
+  if (!rules_ || desc_.story == nullptr) {
+    return false;
+  }
+  const auto set = desc_.story->state().trigger(rules_->registeredTrigger);
+  return set && *set;
+}
+
+core::Result<game::tournament::Schedule> TournamentAdapter::openSchedule(GameSession& session) {
+  if (!rules_ || !schedule_ || !table_ || desc_.story == nullptr || desc_.battle == nullptr ||
+      desc_.battle->digimonTable() == nullptr) {
+    return core::fail("there are no registration rules");
+  }
+  const game::tournament::TournamentRules& rules = *rules_;
+  const game::tournament::ScheduleRules& schedule = *schedule_;
+  game::story::StoryState& story = desc_.story->state();
+  if (auto cleared = story.setVariable(rules.cupVariable, NoCup); !cleared) {
+    return std::unexpected{cleared.error()};
+  }
+  auto listing = mapListing();
+  if (!listing) {
+    return std::unexpected{listing.error()};
+  }
+  const assets::DigimonRow* partner =
+      desc_.battle->digimonTable()->find(session.partner().state().species);
+  if (partner == nullptr) {
+    return core::fail(
+        std::format("the partner's species {} is unknown", session.partner().state().species));
+  }
+  // Every cup the schedule names, read once.
+  std::map<std::int32_t, std::optional<game::tournament::CupData>> cups;
+  cupTexts_.clear();
+  const auto cupOf = [&](std::int32_t cup) -> const game::tournament::CupData* {
+    auto [found, added] = cups.try_emplace(cup);
+    if (added) {
+      auto data = game::tournament::cupDataOf(listing->second, cup);
+      if (data) {
+        if (data->textAt) {
+          cupTexts_[cup] = std::format("story_{:03}.text.{:04x}", listing->first, *data->textAt);
+        }
+        found->second = std::move(*data);
+      } else {
+        core::logWarning("[port:tournament] getCupDataJumpTable (tournament.c:146): {}",
+                         data.error().message);
+      }
+    }
+    return found->second ? &*found->second : nullptr;
+  };
+  const std::vector<std::int32_t> local =
+      game::tournament::sectionList(listing->second, schedule.localListSection);
+  const auto trigger = [&story](std::int32_t number) {
+    const auto set = story.trigger(number);
+    return set && *set;
+  };
+  const game::tournament::CupOpening opening{.trigger = trigger, .localList = local};
+  const auto lists = [&](std::int32_t cup, auto member) {
+    const game::tournament::CupData* data = cupOf(cup);
+    return data != nullptr && std::ranges::contains(data->*member, partner->index);
+  };
+  const ruleset::GameTime now = session.clock().time();
+  const game::tournament::ScheduleFacts facts{
+      .day = now.day,
+      .minuteOfDay = (now.hour * 60) + now.minute,
+      .open =
+          [&](std::int32_t cup) {
+            const game::tournament::CupData* data = cupOf(cup);
+            return data != nullptr && game::tournament::cupOpen(rules, schedule, *data, opening);
+          },
+      .eligible =
+          [&](std::int32_t cup) { return lists(cup, &game::tournament::CupData::eligible); },
+      .overlevel =
+          [&](std::int32_t cup) { return lists(cup, &game::tournament::CupData::overlevel); }};
+  game::tournament::Schedule built = game::tournament::buildSchedule(schedule, *table_, facts);
+  core::logDebug("[port:tournament] initTournamentSchedule (dget.c:664): day {}, {:02}:{:02}",
+                 now.day, now.hour, now.minute);
+  return built;
+}
+
+std::string TournamentAdapter::grade(std::int32_t cup) const {
+  if (!table_ || cup < 0 || static_cast<std::size_t>(cup) >= table_->grades.size()) {
+    return {};
+  }
+  return table_->grades[static_cast<std::size_t>(cup)];
+}
+
+std::string TournamentAdapter::cupTextKey(std::int32_t cup) const {
+  const auto found = cupTexts_.find(cup);
+  return found != cupTexts_.end() ? found->second : std::string{};
+}
+
+std::string TournamentAdapter::lineKey(std::int32_t line) {
+  if (!schedule_ || desc_.files == nullptr) {
+    return {};
+  }
+  if (!lineTables_) {
+    auto tables = readMapHeadLineTables(*desc_.files);
+    if (!tables) {
+      core::logWarning("[port:tournament] showMapHeadTextbox (dget.c:704): {}",
+                       tables.error().message);
+      return {};
+    }
+    lineTables_ = std::move(*tables);
+  }
+  const auto table = lineTables_->find(schedule_->linesSection);
+  const auto at = static_cast<std::size_t>(line);
+  if (table == lineTables_->end() || line < 0 || at >= table->second.size()) {
+    return {};
+  }
+  return table->second[at];
+}
+
+core::Result<void> TournamentAdapter::chooseCup(std::int32_t cup) {
+  if (!rules_ || desc_.story == nullptr) {
+    return core::fail("there are no tournament rules");
+  }
+  return desc_.story->state().setVariable(rules_->cupVariable, static_cast<std::uint8_t>(cup));
+}
+
+core::Result<void> TournamentAdapter::markOverlevel(bool overlevel) {
+  if (!schedule_ || desc_.story == nullptr) {
+    return core::fail("there are no registration rules");
+  }
+  return desc_.story->state().setTrigger(schedule_->overlevelTrigger, overlevel);
+}
+
+core::Result<void> TournamentAdapter::enter(GameSession& session, std::size_t column) {
+  if (!rules_ || !schedule_ || desc_.story == nullptr || desc_.battle == nullptr ||
+      desc_.battle->digimonTable() == nullptr) {
+    return core::fail("there are no registration rules");
+  }
+  const game::tournament::ScheduleRules& schedule = *schedule_;
+  game::story::StoryState& story = desc_.story->state();
+  if (auto set = story.setTrigger(rules_->registeredTrigger, true); !set) {
+    return set;
+  }
+  for (const std::int32_t trigger : schedule.registeredTriggers) {
+    if (auto set = story.setTrigger(trigger, true); !set) {
+      return set;
+    }
+  }
+  const std::int32_t day = game::tournament::entryDay(schedule, session.clock().time().day, column);
+  if (auto written = story.setVariable(schedule.dayVariable, static_cast<std::uint8_t>(day));
+      !written) {
+    return written;
+  }
+  const assets::DigimonRow* partner =
+      desc_.battle->digimonTable()->find(session.partner().state().species);
+  if (partner == nullptr) {
+    return core::fail(
+        std::format("the partner's species {} is unknown", session.partner().state().species));
+  }
+  if (auto written =
+          story.setVariable(schedule.speciesVariable, static_cast<std::uint8_t>(partner->index));
+      !written) {
+    return written;
+  }
+  core::logInfo("[port:tournament] initTournamentSchedule (dget.c:722): entered for day {:#x}, "
+                "species {}",
+                day, partner->index);
+  return {};
 }
 
 } // namespace dwe::session

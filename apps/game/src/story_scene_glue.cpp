@@ -50,6 +50,9 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
   if (jukebox_ != nullptr) {
     jukebox_->update(scenes);
   }
+  if (schedule_ != nullptr) {
+    schedule_->update(scenes);
+  }
   if (trade_ != nullptr) {
     trade_->update(scenes);
   }
@@ -69,6 +72,7 @@ void StorySceneGlue::update(session::StoryScenes& scenes, BattleScreen& battle,
         (eggBox_ != nullptr && eggBox_->take(*screen, scenes)) ||
         (discard_ != nullptr && discard_->take(*screen)) ||
         (jukebox_ != nullptr && jukebox_->take(*screen, scene)) ||
+        (schedule_ != nullptr && schedule_->take(*screen, scene)) ||
         (trade_ != nullptr && trade_->take(*screen, scene)) ||
         (cardShop_ != nullptr && cardShop_->take(*screen, scene)) ||
         (meritShop_ != nullptr && meritShop_->take(*screen, scene)) || takeSaveMachine(*screen)) {

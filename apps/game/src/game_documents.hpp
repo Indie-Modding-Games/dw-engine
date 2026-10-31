@@ -32,6 +32,7 @@ inline constexpr std::array GameDocuments{
     GameDocument{.name = "item_keeper", .asset = "ui/item_keeper/document"},
     GameDocument{.name = "discard_menu", .asset = "ui/discard_menu/document"},
     GameDocument{.name = "jukebox", .asset = "ui/jukebox/document"},
+    GameDocument{.name = "tournament_schedule", .asset = "ui/tournament_schedule/document"},
     GameDocument{.name = "trade_menu", .asset = "ui/trade_menu/document"},
     GameDocument{.name = "card_shop", .asset = "ui/card_shop/document"},
     GameDocument{.name = "merit_shop", .asset = "ui/merit_shop/document"},

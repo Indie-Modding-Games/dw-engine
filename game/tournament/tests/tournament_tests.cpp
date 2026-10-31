@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -198,4 +200,165 @@ instructions:
   CHECK(cup->rivals.empty());
   CHECK_FALSE(cupDataOf(*node, 1));
   CHECK_FALSE(cupDataOf(*node, 2));
+}
+
+namespace {
+
+ScheduleRules originalScheduleRules() {
+  const auto bytes = dwe::assets::DiskFileSystem{}.readFile(
+      std::filesystem::path{DWE_GAME_PACK} / "rules" / "original" / "tournament.yaml");
+  REQUIRE(bytes);
+  auto node = dwe::core::parseYaml(
+      std::string_view{reinterpret_cast<const char*>(bytes->data()), bytes->size()});
+  REQUIRE(node);
+  auto rules = parseScheduleRules(
+      {.name = "tournament", .owner = "test", .file = "tournament.yaml", .node = *node});
+  REQUIRE_MESSAGE(rules, (rules ? std::string{} : rules.error().message));
+  return *rules;
+}
+
+CupData cupWith(std::vector<std::int32_t> requirements, std::vector<std::int32_t> rivals = {}) {
+  CupData data;
+  data.requirements = std::move(requirements);
+  data.rivals = std::move(rivals);
+  return data;
+}
+
+} // namespace
+
+TEST_CASE("dget.c initTournamentSchedule: the registration's values read from the section") {
+  const ScheduleRules rules = originalScheduleRules();
+  CHECK(rules.dayVariable == 2);
+  CHECK(rules.speciesVariable == 4);
+  CHECK(rules.registeredTriggers == std::vector<std::int32_t>{38, 39});
+  CHECK(rules.overlevelTrigger == 40);
+  CHECK(rules.lastMinuteToday == 600);
+  CHECK(rules.linesSection == 0x4D8);
+  CHECK(rules.askOverlevelLine == 3);
+  // pstat 2: today as is, tomorrow plus 0x80 (not wrapped at 30).
+  CHECK(entryDay(rules, 12, 0) == 12);
+  CHECK(entryDay(rules, 12, 1) == (13 | 0x80));
+  CHECK(entryDay(rules, 29, 1) == (30 | 0x80));
+}
+
+TEST_CASE("data/tournaments: grades by cup and each day's cups") {
+  constexpr std::string_view Table = R"(tournaments:
+- {id: grade_d, index: 0, name: Grade D, grade: D}
+- {id: grade_c, index: 1, name: Grade C, grade: C}
+- {id: fire_cup, index: 11, name: Fire Cup, grade: F}
+schedule:
+- {day: 0, tournaments: [grade_d, fire_cup]}
+- {day: 1, tournaments: []}
+)";
+  const auto node = dwe::core::parseYaml(Table);
+  REQUIRE(node);
+  const auto table = parseTournamentTable(*node);
+  REQUIRE_MESSAGE(table, (table ? std::string{} : table.error().message));
+  CHECK(table->grades.at(11) == "F");
+  CHECK(table->days.at(0) == std::vector<std::int32_t>{0, 11});
+  CHECK(table->days.at(1).empty());
+}
+
+TEST_CASE("dget.c isTournamentEnabled: residents, the Grade A cup and the map's list") {
+  const TournamentRules rules = originalRules();
+  const ScheduleRules schedule = originalScheduleRules();
+  std::set<std::int32_t> set;
+  const auto trigger = [&set](std::int32_t number) { return set.contains(number); };
+  const std::vector<std::int32_t> local{0x0C, 0x0D};
+  const CupOpening opening{.trigger = trigger, .localList = local};
+  // No residents needed: always on the schedule.
+  CHECK(cupOpen(rules, schedule, cupWith({0, 0, 0}), opening));
+  // Two of the listed rivals must live in the city.
+  const CupData listed = cupWith({2, 0, 0}, {0x10, 0x11, 0x40});
+  CHECK_FALSE(cupOpen(rules, schedule, listed, opening));
+  set = {200 + 0x10, 200 + 0x40};
+  CHECK(cupOpen(rules, schedule, listed, opening));
+  // An empty rival list counts every resident trigger (200 to 311).
+  const CupData anyone = cupWith({3, 0, 0});
+  set = {200, 250, 311};
+  CHECK(cupOpen(rules, schedule, anyone, opening));
+  set = {200, 250, 312};
+  CHECK_FALSE(cupOpen(rules, schedule, anyone, opening));
+  // Type 1: the Grade A cup won (trigger 18).
+  const CupData gradeA = cupWith({1, 0, 1}, {0x10});
+  set = {200 + 0x10};
+  CHECK_FALSE(cupOpen(rules, schedule, gradeA, opening));
+  set.insert(18);
+  CHECK(cupOpen(rules, schedule, gradeA, opening));
+  // Type 2: residents of the map's list.
+  const CupData mapList = cupWith({1, 2, 2}, {0x10});
+  set = {200 + 0x10, 200 + 0x0C};
+  CHECK_FALSE(cupOpen(rules, schedule, mapList, opening));
+  set.insert(200 + 0x0D);
+  CHECK(cupOpen(rules, schedule, mapList, opening));
+  // Any other type: the rivals up to the first above that species number.
+  const CupData upTo = cupWith({1, 2, 0x30}, {0x10, 0x20, 0x38, 0x21});
+  set = {200 + 0x10, 200 + 0x38, 200 + 0x21};
+  CHECK_FALSE(cupOpen(rules, schedule, upTo, opening));
+  set.insert(200 + 0x20);
+  CHECK(cupOpen(rules, schedule, upTo, opening));
+}
+
+TEST_CASE("dget.c fillEnabledTournamentTable: five days, open cups packed, two days enterable") {
+  const ScheduleRules rules = originalScheduleRules();
+  TournamentTable table;
+  table.days.resize(30);
+  table.days.at(29) = {0, 1, 2};
+  table.days.at(0) = {0, 11, 3};
+  table.days.at(1) = {4};
+  table.days.at(3) = {0, 1, 2, 3, 4, 5, 6};
+  ScheduleFacts facts{.day = 29,
+                      .minuteOfDay = 600,
+                      .open = [](std::int32_t cup) { return cup != 1 && cup != 11; },
+                      .eligible = [](std::int32_t cup) { return cup == 0 || cup == 2; },
+                      .overlevel = [](std::int32_t cup) { return cup == 3; }};
+  Schedule schedule = buildSchedule(rules, table, facts);
+  CHECK(schedule.firstDay == 29);
+  // Day 29: cup 1 is not open, so cup 2 moves up.
+  REQUIRE(schedule.days[0][0]);
+  REQUIRE(schedule.days[0][1]);
+  CHECK(schedule.days[0][1]->cup == 2);
+  CHECK_FALSE(schedule.days[0][2]);
+  CHECK(schedule.days[0][0]->eligible);
+  // Day 0 (the cycle wraps): cup 3 is overlevel and can be entered too.
+  REQUIRE(schedule.days[1][1]);
+  CHECK(schedule.days[1][1]->cup == 3);
+  CHECK(schedule.days[1][1]->overlevel);
+  CHECK(schedule.days[1][1]->enterable());
+  // Day 2 onwards is shown but never enterable; at most six rows.
+  REQUIRE(schedule.days[4][0]);
+  CHECK_FALSE(schedule.days[4][0]->enterable());
+  REQUIRE(schedule.days[4][5]);
+  CHECK(schedule.days[4][5]->cup == 6);
+  // After ten o'clock today's cups are closed.
+  facts.minuteOfDay = 601;
+  schedule = buildSchedule(rules, table, facts);
+  CHECK_FALSE(schedule.days[0][0]->enterable());
+  CHECK(schedule.days[1][0]->enterable());
+}
+
+TEST_CASE("tournament.c getCupDataJumpTable: a cup's text and a section's list") {
+  constexpr std::string_view Listing = R"(sections:
+- id: 0x000a
+  at: l_0100
+- id: 0x000b
+  at: l_0500
+instructions:
+- {at: 0x0100, label: l_0100, op: jump_to, target: l_0200}
+- {at: 0x0200, label: l_0200, op: jump_to, target: l_0400}
+- {at: 0x0204, op: jump_to, target: l_0410}
+- {at: 0x0208, op: jump_to, target: l_0410}
+- {at: 0x020c, op: jump_to, target: l_0410}
+- {at: 0x0210, op: jump_to, target: l_0410}
+- {at: 0x0400, label: l_0400, op: show_textbox, text: "Grade D"}
+- {at: 0x0410, label: l_0410, op: data, data: "08 00 00 ff"}
+- {at: 0x0500, label: l_0500, op: data, data: "0c 0d 0e ff"}
+)";
+  const auto node = dwe::core::parseYaml(Listing);
+  REQUIRE(node);
+  const auto cup = cupDataOf(*node, 0);
+  REQUIRE(cup);
+  CHECK(cup->textAt == std::uint32_t{0x400});
+  CHECK(sectionList(*node, 11) == std::vector<std::int32_t>{0x0C, 0x0D, 0x0E});
+  CHECK(sectionList(*node, 12).empty());
 }

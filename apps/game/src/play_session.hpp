@@ -59,6 +59,7 @@
 #include "story_field_link.hpp"
 #include "story_scene_glue.hpp"
 #include "story_textbox.hpp"
+#include "tournament_schedule_screen.hpp"
 #include "user_settings.hpp"
 
 namespace dwe::app {
@@ -241,6 +242,7 @@ private:
   ItemKeeperScreen itemKeeperScreen_;
   DiscardScreen discardScreen_;
   JukeboxScreen jukeboxScreen_;
+  TournamentScheduleScreen scheduleScreen_;
   TradeScreen tradeScreen_;
   CardShopScreen cardShopScreen_;
   MeritShopScreen meritShopScreen_;

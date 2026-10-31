@@ -3,12 +3,15 @@
 #include <dwe/game/battle/battle.hpp>
 #include <dwe/game/tournament/tournament.hpp>
 #include <dwe/session/battle_adapter.hpp>
+#include <dwe/session/map_head_lines.hpp>
 #include <dwe/session/session_system.hpp>
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace dwe::assets {
 class VirtualFileSystem;
@@ -46,6 +49,8 @@ public:
     return bracket_ ? &*bracket_ : nullptr;
   }
   [[nodiscard]] std::int32_t cup() const { return cup_; }
+  // The story variable that holds the cup entered (pstat 3); 0 without rules.
+  [[nodiscard]] std::int32_t cupVariable() const { return rules_ ? rules_->cupVariable : 0; }
   // The round being played (0 to 2) and the matches won so far.
   [[nodiscard]] std::size_t round() const { return round_; }
   [[nodiscard]] std::int32_t wins() const { return wins_; }
@@ -61,8 +66,34 @@ public:
   // registration cleared and the wins in the result variable. The wins.
   core::Result<std::int32_t> finish(GameSession& session);
 
+  // The registration at the counter (story routine 18: dget/dget.c: initTournamentSchedule).
+  [[nodiscard]] const game::tournament::ScheduleRules* scheduleRules() const {
+    return schedule_ ? &*schedule_ : nullptr;
+  }
+  // Whether the partner is registered already (trigger 37): the routine then ends at once.
+  [[nodiscard]] bool registered() const;
+  // The five days' schedule from today on the active map's script (fillEnabledTournamentTable),
+  // with what the partner may enter; clears the cup variable (writePStat(3, 0xFF)).
+  core::Result<game::tournament::Schedule> openSchedule(GameSession& session);
+  // A cup's grade mark (TOURNAMENT_GRADES) and the key of its text in the active map's script (the
+  // show_textbox of its entry 0, initTournamentInfo); empty when unknown.
+  [[nodiscard]] std::string grade(std::int32_t cup) const;
+  [[nodiscard]] std::string cupTextKey(std::int32_t cup) const;
+  // The key of a MAPHEAD line of the registration's section; empty when unknown.
+  [[nodiscard]] std::string lineKey(std::int32_t line);
+  // The cup picked (tickTournamentSchedule: writePStat(3, cup)).
+  core::Result<void> chooseCup(std::int32_t cup);
+  // The partner too strong for the cup picked (initTournamentSchedule state 3): trigger 40 set or
+  // cleared.
+  core::Result<void> markOverlevel(bool overlevel);
+  // The entry (state 5): the registration's triggers, the day (the column picked: 0 today) and the
+  // partner's species.
+  core::Result<void> enter(GameSession& session, std::size_t column);
+
 private:
   [[nodiscard]] const assets::DigimonRow* rowOfNumber(std::int32_t number) const;
+  // The active map's script listing and its number.
+  core::Result<std::pair<std::uint16_t, core::YamlNode>> mapListing() const;
 
   TournamentAdapterDesc desc_;
   std::optional<game::tournament::TournamentRules> rules_;
@@ -75,6 +106,11 @@ private:
   std::size_t round_ = 0;
   std::int32_t wins_ = 0;
   bool lost_ = false;
+  std::optional<game::tournament::ScheduleRules> schedule_;
+  std::optional<game::tournament::TournamentTable> table_;
+  std::optional<MapHeadLineTables> lineTables_;
+  // The cups' text keys of the schedule opened last, by cup.
+  std::map<std::int32_t, std::string> cupTexts_;
 };
 
 } // namespace dwe::session

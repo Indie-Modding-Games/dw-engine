@@ -21,6 +21,7 @@
 #include "story_naming.hpp"
 #include "story_shop.hpp"
 #include "story_tournament.hpp"
+#include "tournament_schedule_screen.hpp"
 #include "trade_screen.hpp"
 
 namespace dwe::app {
@@ -51,6 +52,8 @@ public:
   void attachDiscard(DiscardScreen* discard) { discard_ = discard; }
   // The jukebox the story's Jukebox screen opens (call_routine 9).
   void attachJukebox(JukeboxScreen* jukebox) { jukebox_ = jukebox; }
+  // The tournaments' registration the story's TournamentSchedule screen opens (call_routine 18).
+  void attachTournamentSchedule(TournamentScheduleScreen* schedule) { schedule_ = schedule; }
   // The item trader the story's TradeShop screen opens (call_routine 2).
   void attachTrade(TradeScreen* trade) { trade_ = trade; }
   // The card shop's menus the story's CardBuy and CardSell screens open (call_routine 14).
@@ -80,6 +83,7 @@ private:
   EggBoxScreen* eggBox_ = nullptr;
   DiscardScreen* discard_ = nullptr;
   JukeboxScreen* jukebox_ = nullptr;
+  TournamentScheduleScreen* schedule_ = nullptr;
   TradeScreen* trade_ = nullptr;
   CardShopScreen* cardShop_ = nullptr;
   MeritShopScreen* meritShop_ = nullptr;

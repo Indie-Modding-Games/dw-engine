@@ -334,6 +334,11 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
                       .session = game_.session.get(),
                       .species = species_ ? &*species_ : nullptr,
                       .ui = context.ui}),
+      scheduleScreen_({.tournament = game_.systems.tournament,
+                       .session = game_.session.get(),
+                       .story = game_.systems.story,
+                       .species = species_ ? &*species_ : nullptr,
+                       .ui = context.ui}),
       tradeScreen_({.trader = game_.systems.itemTrader,
                     .session = game_.session.get(),
                     .sound = game_.session->sound(),
@@ -365,6 +370,7 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
   storyScenes_.attachEggBox(&eggBoxScreen_);
   storyScenes_.attachDiscard(&discardScreen_);
   storyScenes_.attachJukebox(&jukeboxScreen_);
+  storyScenes_.attachTournamentSchedule(&scheduleScreen_);
   storyScenes_.attachTrade(&tradeScreen_);
   tradeScreen_.setSpecies(species_ ? &*species_ : nullptr);
   storyScenes_.attachCardShop(&cardShopScreen_);
@@ -417,7 +423,7 @@ PlaySession::~PlaySession() {
        {std::string_view{"hud"},   BattleDocument,          PartnerMenuDocument,
         DestinationChoiceDocument, SleepMenuDocument,       DialogDocument,
         ShopMenuDocument,          ItemKeeperDocument,      DiscardMenuDocument,
-        JukeboxDocument,           TradeMenuDocument,       CardShopDocument,
+        JukeboxDocument,           TournamentScheduleDocument, TradeMenuDocument,       CardShopDocument,
         MeritShopDocument,         FieldItemNoticeDocument, AwardNoticeDocument,
         FishingBaitDocument,       FishingNoticeDocument,   FishingHudDocument,
         CurlingHudDocument,        EggBoxDocument,          NamingBoxDocument,
@@ -439,7 +445,7 @@ void PlaySession::type(std::string_view text, bool enter) {
 bool PlaySession::holdsMenu() const {
   // The item keeper and the discard menu read pause (P) for an item's description.
   return takesText() || gymScreen_.active() || itemKeeperScreen_.active() ||
-         discardScreen_.active();
+         discardScreen_.active() || scheduleScreen_.active();
 }
 
 void PlaySession::pressStory(const input::InputState& input) {
@@ -459,6 +465,7 @@ void PlaySession::pressItemKeeper(const input::InputState& input) {
   itemKeeperScreen_.press(input);
   discardScreen_.press(input);
   jukeboxScreen_.press(input);
+  scheduleScreen_.press(input);
   tradeScreen_.press(input);
   cardShopScreen_.press(input);
   meritShopScreen_.press(input);
@@ -488,7 +495,7 @@ void PlaySession::tick(const game::field::FieldInput& intent, const FishingButto
                          fieldRules ? std::optional{fieldRules->sleepSound} : std::nullopt);
   if (sleepScreen_.active() || shopScreen_.active() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
-      cardShopScreen_.active() || meritShopScreen_.active()) {
+      cardShopScreen_.active() || meritShopScreen_.active() || scheduleScreen_.active()) {
     return;
   }
   // partner.c: partnerTickOverworld runs the partner's state: the care scenes below (praise and
@@ -604,13 +611,14 @@ void PlaySession::showLockNotice(const std::string& textKey) {
 bool PlaySession::handle(const ui::UiCommand& command) {
   if (eggBoxScreen_.handle(command) || shopScreen_.handle(command) ||
       itemKeeperScreen_.handle(command) || discardScreen_.handle(command) ||
-      jukeboxScreen_.handle(command) || tradeScreen_.handle(command) ||
-      cardShopScreen_.handle(command) || meritShopScreen_.handle(command) ||
-      sleepScreen_.handle(command) || saveMachine_.handle(command) ||
-      praiseScold_.handle(command) || feedScene_.handle(command) || fieldToilet_.handle(command) ||
-      fieldPoop_.handle(command) || fieldItemsScreen_.handle(command) ||
-      awardScreen_.handle(command) || fishingScreen_.handle(command) ||
-      battleScreen_.handle(command) || freeExploration_.handle(command)) {
+      jukeboxScreen_.handle(command) || scheduleScreen_.handle(command) ||
+      tradeScreen_.handle(command) || cardShopScreen_.handle(command) ||
+      meritShopScreen_.handle(command) || sleepScreen_.handle(command) ||
+      saveMachine_.handle(command) || praiseScold_.handle(command) || feedScene_.handle(command) ||
+      fieldToilet_.handle(command) || fieldPoop_.handle(command) ||
+      fieldItemsScreen_.handle(command) || awardScreen_.handle(command) ||
+      fishingScreen_.handle(command) || battleScreen_.handle(command) ||
+      freeExploration_.handle(command)) {
     return true;
   }
   if (command.name == "to_title") {
@@ -817,8 +825,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
     return angerAnchorOf(*scene_, species, enemy, lift);
   });
   if (storyTextbox_) {
-    storyTextbox_->cover(jukeboxScreen_.active() || tradeScreen_.active() ||
-                         cardShopScreen_.active() || meritShopScreen_.active());
+    storyTextbox_->cover(jukeboxScreen_.active() || scheduleScreen_.active() ||
+                         tradeScreen_.active() || cardShopScreen_.active() ||
+                         meritShopScreen_.active());
     storyTextbox_->update(*scene_, species);
   }
   fieldPoop_.show();
@@ -875,7 +884,8 @@ bool PlaySession::paused() const {
          toTitleAsked_ || evolutionScene_.active() || deathScene_.active() ||
          shopScreen_.active() || itemKeeperScreen_.active() || discardScreen_.active() ||
          jukeboxScreen_.active() || tradeScreen_.active() || cardShopScreen_.active() ||
-         meritShopScreen_.active() || fieldItemsScreen_.active() || awardScreen_.active();
+         meritShopScreen_.active() || fieldItemsScreen_.active() || awardScreen_.active() ||
+         scheduleScreen_.active();
 }
 
 float PlaySession::fadeLevel() const {

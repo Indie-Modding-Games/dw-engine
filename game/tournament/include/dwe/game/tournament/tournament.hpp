@@ -11,6 +11,7 @@
 #include <functional>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -95,6 +96,8 @@ struct CupData {
   std::vector<std::int32_t> overlevel;
   std::vector<std::int32_t> eligible;
   std::vector<std::int32_t> rivals;
+  // Where the cup's text is in the script (entry 0: the show_textbox initTournamentInfo shows).
+  std::optional<std::uint32_t> textAt;
 };
 
 // A list's species as the script stores them: bytes up to the first 0xFE or 0xFF.
@@ -109,6 +112,10 @@ inline constexpr std::int32_t CupDataSection = 10;
 // leads to the cup's, whose entries 1 to 4 lead to its lists. Fails when the script has no such
 // cup.
 core::Result<CupData> cupDataOf(const core::YamlNode& listing, std::int32_t cup);
+
+// A section of a map script that is a list of species, as cupList reads it (dget.c:
+// isTournamentEnabled reads the active map's section 11). Empty when the script lacks it.
+std::vector<std::int32_t> sectionList(const core::YamlNode& listing, std::int32_t section);
 
 // startTournament: the seven rivals. `resident(species)` tells whether the species lives in the
 // city. Fails when the cup has nobody to draw.
@@ -170,5 +177,99 @@ std::int32_t winsNeeded(const TournamentRules& rules, std::int32_t cup);
 
 // The species the arena puts in for one it has no fighter for (STD_tournamentMain).
 std::int32_t standIn(const TournamentRules& rules, std::int32_t species);
+
+// The registration at the arena's counter (story routine 18, dget/dget.c: initTournamentSchedule).
+
+// The schedule shows five days of up to six cups each (fillEnabledTournamentTable).
+inline constexpr std::size_t ScheduleDays = 5;
+inline constexpr std::size_t ScheduleRows = 6;
+
+struct ScheduleRules {
+  // The values the registration writes: the day entered (pstat 2: the day, or the next one plus
+  // `tomorrowFlag`), the partner's species (pstat 4), the registration's other triggers (38 and 39
+  // besides the registration's own) and the trigger of an overlevel entry (40).
+  std::int32_t dayVariable = 0;
+  std::int32_t speciesVariable = 0;
+  std::int32_t tomorrowFlag = 0;
+  std::vector<std::int32_t> registeredTriggers;
+  std::int32_t overlevelTrigger = 0;
+  // Today's cups take entries up to this minute of the day (minutesOfDay() <= 600).
+  std::int32_t lastMinuteToday = 0;
+  // The days of the schedule's cycle (day % 30).
+  std::int32_t cycleDays = 0;
+  // isTournamentEnabled: the residents' triggers counted when a cup lists no rivals (200 to 311),
+  // the trigger of requirement type 1 (the Grade A cup won) and the active map's section with the
+  // species of requirement type 2 (11).
+  std::int32_t recruitTriggerEnd = 0;
+  std::int32_t gradeAWonTrigger = 0;
+  std::int32_t localListSection = 0;
+  // The MAPHEAD lines the registration says (showMapHeadTextbox(n, ..., 0x4d8)): the schedule's
+  // title, the question, the question for an overlevel partner and the choice.
+  std::int32_t linesSection = 0;
+  std::int32_t titleLine = 0;
+  std::int32_t askLine = 0;
+  std::int32_t askOverlevelLine = 0;
+  std::int32_t choiceLine = 0;
+  // tickTournamentSchedule's sound for a cell that cannot be picked (playSound(0, 0xB)); the
+  // cursor's, the pick's and the close's are the menus' own (2, 3 and 4).
+  std::int32_t soundSlot = 0;
+  std::int32_t refuseSound = 0;
+};
+
+// The section's schedule part.
+core::Result<ScheduleRules> parseScheduleRules(const ruleset::Section& section);
+
+// data/tournaments: each cup's grade mark (TOURNAMENT_GRADES) and the cups of each day of the
+// cycle (TOURNAMENT_SCHEDULE), by cup number.
+struct TournamentTable {
+  std::vector<std::string> grades;
+  std::vector<std::vector<std::int32_t>> days;
+};
+core::Result<TournamentTable> parseTournamentTable(const core::YamlNode& document);
+
+// What isTournamentEnabled reads besides the cup's lists.
+struct CupOpening {
+  // Whether a story trigger is set.
+  std::function<bool(std::int32_t)> trigger;
+  // The active map's list of requirement type 2.
+  std::span<const std::int32_t> localList;
+};
+
+// dget.c: isTournamentEnabled: whether the cup is on the schedule at all.
+bool cupOpen(const TournamentRules& rules, const ScheduleRules& schedule, const CupData& data,
+             const CupOpening& opening);
+
+// A cup on the schedule: whether the partner may enter (tournamentCheckEligible: its species in
+// the cup's eligible list) and whether it is too strong for it (tournamentCheckFair: in the
+// overlevel list). Only today's and tomorrow's cups are checked; the others are never open.
+struct ScheduleCell {
+  std::int32_t cup = 0;
+  bool eligible = false;
+  bool overlevel = false;
+  // tickTournamentSchedule: a cell with either mark can be entered.
+  [[nodiscard]] bool enterable() const { return eligible || overlevel; }
+};
+
+struct Schedule {
+  // The day of the cycle of the first column (DAY).
+  std::int32_t firstDay = 0;
+  std::array<std::array<std::optional<ScheduleCell>, ScheduleRows>, ScheduleDays> days{};
+};
+
+// fillEnabledTournamentTable: from `day` on, each day's open cups in the table's order; today's are
+// checked only up to the last minute to enter.
+struct ScheduleFacts {
+  std::int32_t day = 0;
+  std::int32_t minuteOfDay = 0;
+  std::function<bool(std::int32_t)> open;
+  std::function<bool(std::int32_t)> eligible;
+  std::function<bool(std::int32_t)> overlevel;
+};
+Schedule buildSchedule(const ScheduleRules& rules, const TournamentTable& table,
+                       const ScheduleFacts& facts);
+
+// initTournamentSchedule state 5: the day the entry is for, as pstat 2 keeps it (the column
+// picked: 0 today, else tomorrow with the flag).
+std::int32_t entryDay(const ScheduleRules& rules, std::int32_t day, std::size_t column);
 
 } // namespace dwe::game::tournament

@@ -32,3 +32,24 @@ first_level: 3
 # STD_initializeOpponent: de las 15 primeras técnicas de la especie, las que no son remate (0x3a a 0x70) y cuyo coste
 # por 3 paga su MP / 10. STD_tickEnemyAI: preferencias 30, 30, 30 y 0.
 moves: {slots: 15, finishers: [58, 113], mp_cost_factor: 3, mp_divisor: 10, priorities: [30, 30, 30, 0]}
+
+# La inscripción en el mostrador (rutina 18 del guion; dget/dget.c: initTournamentSchedule). Escribe el día inscrito en
+# la variable 2 (hoy, o mañana + 0x80), la especie del compañero en la 4 y pone los disparadores 37, 38 y 39; el 40 si
+# el compañero es demasiado fuerte para la copa (lista de la entrada 2). Las copas de hoy se aceptan hasta el minuto
+# 600 (10:00); el calendario va por días % 30. isTournamentEnabled cuenta los residentes 200 a 311, la copa A ganada
+# (disparador 18) y la lista de la sección 11 del guion del mapa. Lo que se dice son frases de la sección 0x4d8 de
+# MAPHEAD: 1 el título, 2 la pregunta, 3 la pregunta si es demasiado fuerte, 4 «Enter / Don't enter». Una casilla que no
+# se puede elegir suena con playSound(0, 0xb); mover, elegir y cerrar son los sonidos de los menús (2, 3 y 4).
+schedule:
+  day_variable: 2
+  species_variable: 4
+  tomorrow_flag: 128
+  registered_triggers: [38, 39]
+  overlevel_trigger: 40
+  last_minute_today: 600
+  cycle_days: 30
+  recruit_trigger_end: 312
+  grade_a_won_trigger: 18
+  local_list_section: 11
+  lines: {section: 1240, title: 1, ask: 2, ask_overlevel: 3, choice: 4}
+  sounds: {slot: 0, refuse: 11}

@@ -95,13 +95,13 @@ Cobertura = portado + medio parcial, sobre lo que hace falta portar (todo menos 
 | [Pesca](#pesca) | `fish/fish.c`, `fish/fish_model.c`, `main/fish.c` | 64 | 9 | 8 | 39 | 85 % |
 | [Muerte y renacer](#muerte-y-renacer) | `doo2/doo2.c`, `dooa/dooa.c`, `murd/murd.c` | 39 | 0 | 0 | 17 | 100 % |
 | [Guardado y carga](#guardado-y-carga) | `main/main_menu.c` | 9 | 0 | 2 | 24 | 82 % |
-| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 8 | 8 | 72 | 361 | 14 % |
+| [Torneos](#torneos) | `dget/`, `main/`, `std/` (6 ficheros) | 19 | 7 | 63 | 360 | 25 % |
 | [Versus y demo](#versus-y-demo) | `main/`, `vs/` (10 ficheros) | 0 | 0 | 91 | 315 | 0 % |
 | [Minijuego de piedras](#minijuego-de-piedras) | `kar/kar.c`, `main/kar.c` | 32 | 3 | 3 | 10 | 88 % |
 | [Audio](#audio) | `main/sound.c`, `main/sound_async.c` | 21 | 0 | 0 | 13 | 100 % |
 | [Vídeos y final](#videos-y-final) | `eab/eab.c`, `endi/endi.c`, `mov/mov.c` | 3 | 0 | 23 | 18 | 12 % |
 | [Núcleo y plataforma](#nucleo-y-plataforma) | `main/` (11 ficheros) | 48 | 1 | 0 | 37 | 99 % |
-| **Total** | 2438 funciones | 1076 | 40 | 253 | 1069 | 80 % |
+| **Total** | 2438 funciones | 1087 | 39 | 244 | 1068 | 81 % |
 
 ## Batalla
 
@@ -361,20 +361,10 @@ Inscripción, calendario y el overlay de copas, que trae su propio motor de comb
 
 Ficheros del decomp: `dget/dget.c`, `main/tournament.c`, `std/std_effect.c`, `std/std_hud.c`, `std/std_main.c`, `std/std_setup.c`.
 
-Portado 8, parcial 8, falta 72, no aplica 361.
+Portado 19, parcial 7, falta 63, no aplica 360.
 
 | Función | Decomp | Estado | Qué hace | Motor / nota |
 |---|---|---|---|---|
-| `fillEnabledTournamentTable` | `dget/dget.c:101` | falta | Arma la tabla de copas de los próximos 5 días y marca las que el compañero puede inscribir. | — |
-| `buildScheduleLabels` | `dget/dget.c:147` | falta | Crea la cabecera con los días del calendario de copas en el tablón. | — |
-| `buildScheduleEntries` | `dget/dget.c:201` | falta | Crea la cuadrícula del calendario con cada copa y su rango por día. | — |
-| `initTournamentInfo` | `dget/dget.c:285` | falta | Abre el recuadro con la información de la copa seleccionada (requisitos y premio). | — |
-| `tournamentCheckFair` | `dget/dget.c:331` | falta | Indica si la especie del compañero está entre las admitidas por la copa. | — |
-| `isTournamentEnabled` | `dget/dget.c:350` | falta (citada en docs) | Indica si una copa está disponible según el avance de la historia. | — |
-| `tournamentCheckEligible` | `dget/dget.c:429` | falta (citada en docs) | Comprueba si el compañero cumple los requisitos de inscripción de la copa. | — |
-| `tickTournamentSchedule` | `dget/dget.c:468` | falta | Mueve el cursor del calendario y confirma o cancela la elección de copa. | — |
-| `tickTournamentInfo` | `dget/dget.c:631` | falta | Cierra el recuadro de información de la copa al pulsar un botón. | — |
-| `initTournamentSchedule` | `dget/dget.c:664` | parcial | Enseña el calendario de torneos. | `apps/session/include/dwe/session/story_scenes.hpp:109` · la rutina 18 se cierra sin pantalla |
 | `updateTournamentRegistration` | `main/tournament.c:42` | falta (citada en docs) | Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa. | — |
 | `checkTournamentMedalConditions` | `main/tournament.c:168` | parcial | Mira si toca dar la medalla de los torneos. | `apps/session/src/story_routines/routine_tournament_medal.cpp:15` · la rutina 22 sigue al momento sin copas ganadas; no hay torneos |
 | `scriptCheckTournamentMedal` | `main/tournament.c:242` | parcial | Comprueba y da la medalla de los torneos. | `apps/session/include/dwe/session/story_scenes.hpp:110` · la rutina 22 se cierra sin pantalla |
@@ -446,7 +436,7 @@ Portado 8, parcial 8, falta 72, no aplica 361.
 | `STD_initializeCamera` | `std/std_setup.c:415` | falta | Coloca la cámara inicial de la arena de copa. | — |
 | `STD_tournamentMain` | `std/std_setup.c:521` | parcial | Flujo completo de la copa: cuadro, combates, resultados y premio. | `apps/game/src/story_tournament.cpp:1` · sustitutos, cuadro, tres combates y recuperación; sin arena, cuadro animado ni escenas (tournament.md: Hueco) |
 
-No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (28); limpieza de objetos y memoria del original: el motor libera lo suyo (16); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
+No aplica: copias de otra función, que cuenta por las dos (300); dibujo del original: el motor dibuja con su propio renderizador; el hueco visual, si lo hay, va en la función de lógica (27); limpieza de objetos y memoria del original: el motor libera lo suyo (16); búsqueda genérica en la tabla de entidades (2); gráficos, memoria o ficheros del hardware original: los sustituye el motor (2); utilidad genérica de reloj (1); lectura de punteros del guion del original (1); ajuste de UV de modelos del original (1); carga de modelos del original (1); cámara libre de depuración con el segundo mando (1); aplicación de proyección y punto de vista del original (1); asignación directa de valores de cámara (1); cálculo auxiliar de distancias (1); comprobación geométrica auxiliar (1); interpolación lineal genérica (1); cuenta genérica de dígitos (1); bucle de cuadros del original (1); configuración de luces del original (1).
 
 ## Versus y demo
 

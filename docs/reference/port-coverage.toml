@@ -636,7 +636,7 @@ createShopBitsBox = { status = "parcial", dwe = "apps/game/src/shop_screen.cpp",
 createNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "rutina 38: apps/game/src/story_scene_glue.cpp", what = "Nube de humo de un personaje que desaparece." }
 renderNinjamonEffect = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "la deriva de los objetos y su orden 10 (MapDepthLayers::setOrderValue)", what = "Mueve el humo de un personaje que desaparece y lo esconde al acabar." }
 tickSaveMachine = { status = "portado", dwe = "apps/game/src/save_machine_flow.hpp", what = "La máquina de guardar que abre el guion: registro para el modo versus y guardado." }
-initTournamentSchedule = { status = "parcial", note = "la rutina 18 se cierra sin pantalla", what = "Enseña el calendario de torneos." }
+initTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Enseña el calendario de torneos." }
 scriptCheckTournamentMedal = { status = "parcial", note = "la rutina 22 se cierra sin pantalla", what = "Comprueba y da la medalla de los torneos." }
 scriptStartTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", what = "Empieza un torneo." }
 tamerTickOpening = { status = "falta", note = "la escena del compañero 5 acaba al momento", what = "Escena de apertura del jugador." }
@@ -866,15 +866,15 @@ EVL_initEvoSequence = { status = "portado", dwe = "apps/game/src/evolution_effec
 evoSequenceAlwaysTrue = { status = "portado", dwe = "apps/game/src/evolution_scene.cpp:145", what = "Condición de espera de la carga de la evolución, siempre cierta." }
 
 # --- Tournaments and versus
-fillEnabledTournamentTable = { status = "falta", what = "Arma la tabla de copas de los próximos 5 días y marca las que el compañero puede inscribir." }
-buildScheduleLabels = { status = "falta", what = "Crea la cabecera con los días del calendario de copas en el tablón." }
-buildScheduleEntries = { status = "falta", what = "Crea la cuadrícula del calendario con cada copa y su rango por día." }
-initTournamentInfo = { status = "falta", what = "Abre el recuadro con la información de la copa seleccionada (requisitos y premio)." }
-tournamentCheckFair = { status = "falta", what = "Indica si la especie del compañero está entre las admitidas por la copa." }
-isTournamentEnabled = { status = "falta", what = "Indica si una copa está disponible según el avance de la historia." }
-tournamentCheckEligible = { status = "falta", what = "Comprueba si el compañero cumple los requisitos de inscripción de la copa." }
-tickTournamentSchedule = { status = "falta", what = "Mueve el cursor del calendario y confirma o cancela la elección de copa." }
-tickTournamentInfo = { status = "falta", what = "Cierra el recuadro de información de la copa al pulsar un botón." }
+fillEnabledTournamentTable = { status = "portado", dwe = "game/tournament/src/schedule.cpp:1", what = "Arma la tabla de copas de los próximos 5 días y marca las que el compañero puede inscribir." }
+buildScheduleLabels = { status = "portado", dwe = "content/packs/game/ui/tournament_schedule/document.rml", what = "Crea la cabecera con los días del calendario de copas en el tablón." }
+buildScheduleEntries = { status = "portado", dwe = "content/packs/game/ui/tournament_schedule/document.rml", what = "Crea la cuadrícula del calendario con cada copa y su rango por día." }
+initTournamentInfo = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Abre el recuadro con la información de la copa seleccionada (requisitos y premio)." }
+tournamentCheckFair = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Indica si la especie del compañero está entre las admitidas por la copa." }
+isTournamentEnabled = { status = "portado", dwe = "game/tournament/src/schedule.cpp:1", what = "Indica si una copa está disponible según el avance de la historia." }
+tournamentCheckEligible = { status = "portado", dwe = "apps/session/src/tournament_adapter.cpp:1", what = "Comprueba si el compañero cumple los requisitos de inscripción de la copa." }
+tickTournamentSchedule = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Mueve el cursor del calendario y confirma o cancela la elección de copa." }
+tickTournamentInfo = { status = "portado", dwe = "apps/game/src/tournament_schedule_screen.cpp:1", what = "Cierra el recuadro de información de la copa al pulsar un botón." }
 updateTournamentRegistration = { status = "falta", what = "Valida la inscripción pendiente y avisa cuando llega el día y la hora de la copa." }
 minutesOfDay = { status = "no-aplica", note = "utilidad genérica de reloj", what = "Convierte la hora actual del juego en minutos del día." }
 getCupDataJumpTable = { status = "portado", dwe = "game/tournament/src/cup_data.cpp:1", what = "Busca en el guion del mapa los datos de una copa por sección e id." }
