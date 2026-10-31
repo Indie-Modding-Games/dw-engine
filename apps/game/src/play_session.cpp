@@ -33,6 +33,7 @@
 #include "partner_tab.hpp"
 #include "place_command.hpp"
 #include "story_map_edits.hpp"
+#include "story_set_command.hpp"
 #include "title_screen.hpp"
 
 namespace dwe::app {
@@ -187,6 +188,9 @@ void SessionCommands::drop(Autotest* autotest) {
   if (!std::exchange(placements, {}).empty()) {
     dropped(messages::PlaceFailed);
   }
+  if (!std::exchange(storyWrites, {}).empty()) {
+    dropped(messages::StorySetFailed);
+  }
   if (std::exchange(saveMachine, false)) {
     dropped(messages::SaveMachineFailed);
   }
@@ -218,6 +222,8 @@ void SessionCommands::bind(script::ScriptVm& scripts) {
   scripts.bindCommand(BattleWinCommand, [this](std::string_view) { battleWin = true; });
   scripts.bindCommand(PlaceCommand,
                       [this](std::string_view where) { placements.emplace_back(where); });
+  scripts.bindCommand(StorySetCommand,
+                      [this](std::string_view what) { storyWrites.emplace_back(what); });
   scripts.bindCommand(EvolveCommand,
                       [this](std::string_view form) { evolution = std::string{form}; });
   care.bind(scripts);
@@ -678,6 +684,20 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
       core::logWarning(
           "{}", core::formatMessage(messages::PlaceFailed,
                                     core::formatMessage(messages::NoNpcToPlace, placement->npc)));
+    }
+  }
+  for (const std::string& what : std::exchange(commands.storyWrites, {})) {
+    auto write = storyWriteFromText(what);
+    if (write && game_.systems.story == nullptr) {
+      write = core::fail(std::string{messages::NoStory});
+    }
+    if (write) {
+      if (auto written = applyStoryWrite(game_.systems.story->state(), *write); !written) {
+        write = std::unexpected{written.error()};
+      }
+    }
+    if (!write) {
+      core::logWarning("{}", core::formatMessage(messages::StorySetFailed, write.error().message));
     }
   }
   if (const auto npcs = std::exchange(commands.battle, std::nullopt)) {

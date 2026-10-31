@@ -96,6 +96,8 @@ struct SessionCommands {
   std::optional<std::string> gym;
   // place("<who> <x> <z> <rotation>") commands, in order (place_command.hpp).
   std::vector<std::string> placements;
+  // story_set("trigger <n> on|off" | "var <n> <value>") commands, in order (story_set_command.hpp).
+  std::vector<std::string> storyWrites;
 
   void bind(script::ScriptVm& scripts);
   // Forgets what was queued with no game to apply it to, and says so; a route that asked for a save
