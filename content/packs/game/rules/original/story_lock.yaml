@@ -17,7 +17,7 @@
 #
 # Mapas y salidas verificados en el decomp y en los scripts extraídos (E1-01:
 # _work/logs/plan/hitos-disparadores.md).
-active_stage: stage_4
+active_stage: stage_5
 closed_message: story_lock.closed_exit
 stages:
   # Etapa 1: la apertura, File City con sus casas y el Green Gym, y el Native Forest hasta el
